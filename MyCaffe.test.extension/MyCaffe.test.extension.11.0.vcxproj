@@ -154,7 +154,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(CUDA_PATH_V11_0)\cudann_11.0-win-v8.0.3.33;$(CUDA_PATH_V11_0)\nvapi_440;$(SolutionDir)CudaDnnDLL\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CUDA_PATH_V11_0)\cudann_11.0-win-v8.0.3.33;$(CUDA_PATH_V11_0)\nvapi_450;$(SolutionDir)CudaDnnDLL\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>CUDA11_0;WIN32;_DEBUG;_WINDOWS;_USRDLL;CUDADLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Sync</ExceptionHandling>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -164,7 +164,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>cublas.lib;cudart.lib;cuda.lib;curand.lib;$(CUDA_PATH_V11_0)\cudann_11.0-win-v8.0.3.33\cudnn.lib;$(CUDA_PATH_V11_0)\nvapi_440\nvapi64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cublas.lib;cudart.lib;cuda.lib;curand.lib;$(CUDA_PATH_V11_0)\cudann_11.0-win-v8.0.3.33\cudnn.lib;$(CUDA_PATH_V11_0)\nvapi_450\nvapi64.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ShowProgress>LinkVerboseLib</ShowProgress>
       <AdditionalLibraryDirectories>%(CUDA_LIB_PATH);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libcmtd.lib; libcmt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -213,7 +213,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(CUDA_PATH_V11_0)\cudann_11.0-win-v8.0.3.33;$(CUDA_PATH_V11_0)\nvapi_440;$(SolutionDir)CudaDnnDLL\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CUDA_PATH_V11_0)\cudann_11.0-win-v8.0.3.33;$(CUDA_PATH_V11_0)\nvapi_450;$(SolutionDir)CudaDnnDLL\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>CUDA11_0;WIN32;NDEBUG;_WINDOWS;_USRDLL;CUDADLL_NN_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>false</FunctionLevelLinking>
@@ -223,7 +223,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>cublas.lib;cudart.lib;cuda.lib;curand.lib;$(CUDA_PATH_V11_0)\cudann_11.0-win-v8.0.3.33\cudnn.lib;$(CUDA_PATH_V11_0)\nvapi_440\nvapi64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cublas.lib;cudart.lib;cuda.lib;curand.lib;$(CUDA_PATH_V11_0)\cudann_11.0-win-v8.0.3.33\cudnn.lib;$(CUDA_PATH_V11_0)\nvapi_450\nvapi64.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(CUDA_LIB_PATH);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <IgnoreSpecificDefaultLibraries>libcmt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
