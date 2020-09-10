@@ -637,6 +637,9 @@ namespace MyCaffe.db.image
             if (nWait1 == 0)
                 return false;
 
+            if (nPeriodInMs <= 0 || dfReplacementPct <= 0)
+                return false;
+
             return m_colDatasets[m_nStrIDHashCode].StartAutomaticRefreshSchedule(strDs, bTraining, bTesting, nPeriodInMs, dfReplacementPct);
         }
 
@@ -692,6 +695,9 @@ namespace MyCaffe.db.image
         {
             int nWait1 = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
             if (nWait1 == 0)
+                return false;
+
+            if (nPeriodInMs <= 0 || dfReplacementPct <= 0)
                 return false;
 
             return m_colDatasets[m_nStrIDHashCode].StartAutomaticRefreshSchedule(nDsID, bTraining, bTesting, nPeriodInMs, dfReplacementPct);
