@@ -264,7 +264,7 @@ namespace MyCaffe.db.image
                     throw new Exception("Label selections are not valid when using LoadLimit > 0");
 
                 if (bBoosted != false)
-                    throw new Exception("Boosted qeruies are not valid when using LoadLimit > 0.");
+                    throw new Exception("Boosted queries are not valid when using LoadLimit > 0.");
 
                 if (nDirectIdx != -1)
                     throw new Exception("DirectIndex queries are not valid when using LoadLimit > 0.");
