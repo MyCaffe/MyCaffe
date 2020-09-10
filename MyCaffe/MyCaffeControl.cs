@@ -2009,7 +2009,7 @@ namespace MyCaffe
         public Bitmap GetTestImage(Phase phase, out int nLabel, out string strLabel)
         {
             int nSrcId = (phase == Phase.TRAIN) ? m_dataSet.TrainingSource.ID : m_dataSet.TestingSource.ID;
-            SimpleDatum sd = m_imgDb.QueryImage(nSrcId, 0, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+            SimpleDatum sd = m_imgDb.QueryImage(nSrcId, 0, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
             m_dataTransformer.TransformLabel(sd);
 
             nLabel = sd.Label;
