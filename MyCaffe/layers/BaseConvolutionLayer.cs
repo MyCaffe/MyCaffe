@@ -100,6 +100,10 @@ namespace MyCaffe.layers
         /// Whether or not to force n-dim 2 column.
         /// </summary>
         protected bool m_bForceNDim2col;
+        /// <summary>
+        /// Specifies whether or not the reshape on forward is needed or not.
+        /// </summary>
+        protected bool m_bReshapeOnForwardNeeded = true;
 
         List<List<int>> m_rgrgLastBottomShape = new List<List<int>>();
         List<List<int>> m_rgrgLastTopShape = new List<List<int>>();
@@ -283,7 +287,13 @@ namespace MyCaffe.layers
             return true;
         }
 
-        private bool compareShapes(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        /// <summary>
+        /// Compare the shapes of the top and bottom and if the same, return true, otherwise false.
+        /// </summary>
+        /// <param name="colBottom">Specifies the bottom blobs.</param>
+        /// <param name="colTop">Specifies the top blobs.</param>
+        /// <returns>If the top and bottom blobs have not changed shape, true is returned, otherwise false.</returns>
+        protected bool compareShapes(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             if (!compareShapes(colBottom, m_rgrgLastBottomShape))
                 return false;
@@ -650,8 +660,12 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            m_bReshapeOnForwardNeeded = true;
             if (compareShapes(colBottom, colTop))
+            {
+                m_bReshapeOnForwardNeeded = false;
                 return;
+            }
 
             int nFirstSpatialAxis = m_nChannelAxis + 1;
             m_log.CHECK_EQ(colBottom[0].num_axes, nFirstSpatialAxis + m_nNumSpatialAxes, "bottom num_axes may not change.");

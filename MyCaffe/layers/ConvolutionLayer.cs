@@ -249,6 +249,8 @@ namespace MyCaffe.layers
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             base.Reshape(colBottom, colTop);
+            if (!m_bReshapeOnForwardNeeded)
+                return;
 
             if (!m_param.convolution_param.useCudnn(m_nNumSpatialAxes))
                 return;
