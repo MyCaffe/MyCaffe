@@ -25,8 +25,8 @@ namespace MyCaffe.basecode
         string m_strGpuIds = "0";
         IMAGEDB_LOAD_METHOD m_imageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
         int m_nImageDbLoadLimit = 0;
-        int m_nAutoRefreshScheduledUpdateInMs = 0;
-        double m_dfAutoRefreshScheduledReplacementPct = 0;
+        int m_nAutoRefreshScheduledUpdateInMs = 10000;
+        double m_dfAutoRefreshScheduledReplacementPct = 0.3;
         bool m_bImageDbLoadDataCriteria = false;
         bool m_bImageDbLoadDebugData = false;
         SNAPSHOT_WEIGHT_UPDATE_METHOD m_snapshotWeightUpdateMethod = SNAPSHOT_WEIGHT_UPDATE_METHOD.FAVOR_ACCURACY;
@@ -332,7 +332,7 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
-        /// Get/set the automatic refresh scheduled udpate period (only applies when ImageDbLoadLimit > 0).
+        /// Get/set the automatic refresh scheduled udpate period (default = 10000, only applies when ImageDbLoadLimit > 0).
         /// </summary>
         public int ImageDbAutoRefreshScheduledUpdateInMs
         {
@@ -341,7 +341,7 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
-        /// Get/set the automatic refresh scheduled update replacement percentage used on refresh (only applies when ImageDbLoadLimit > 0).
+        /// Get/set the automatic refresh scheduled update replacement percentage used on refresh (default = 0.3, only applies when ImageDbLoadLimit > 0).
         /// </summary>
         public double ImageDbAutoRefreshScheduledReplacementPercent
         {
