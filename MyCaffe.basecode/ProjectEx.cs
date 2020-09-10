@@ -669,6 +669,22 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Returns the image load limit refresh period in milliseconds.
+        /// </summary>
+        public int ImageLoadLimitRefreshPeriod
+        {
+            get { return m_project.Settings.ImageDbAutoRefreshScheduledUpdateInMs; }
+        }
+
+        /// <summary>
+        /// Returns the image load limit refresh percentage (to update).
+        /// </summary>
+        public double ImageLoadLimitRefreshPercent
+        {
+            get { return m_project.Settings.ImageDbAutoRefreshScheduledReplacementPercent; }
+        }
+
+        /// <summary>
         /// Returns the snapshot weight update favor.  The snapshot can favor an improving accuracy, decreasing error, or both when saving weights.
         /// </summary>
         /// <remarks>
