@@ -148,7 +148,7 @@ namespace MyCaffe.db.image
                 if (EventWaitHandle.WaitAny(rgAbort, 0) != EventWaitHandle.WaitTimeout)
                     return 0;
 
-                if (loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ALL && nImageDbAutoRefreshScheduledUpdateInMs > 0 && dfImageDbAutoRefreshScheduledReplacementPct > 0)
+                if (loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ALL && nImageDbLoadLimit > 0 && nImageDbAutoRefreshScheduledUpdateInMs > 0 && dfImageDbAutoRefreshScheduledReplacementPct > 0)
                     StartAutomaticRefreshSchedule(true, true, nImageDbAutoRefreshScheduledUpdateInMs, dfImageDbAutoRefreshScheduledReplacementPct);
 
                 m_lDefaultQueryState = m_queryStates.CreateNewState(qsTraining, qsTesting);
@@ -272,6 +272,9 @@ namespace MyCaffe.db.image
         public bool StartAutomaticRefreshSchedule(bool bTraining, bool bTesting, int nPeriodInMs, double dfReplacementPct)
         {
             if (m_refreshScheduleThread != null)
+                return false;
+
+            if (nPeriodInMs == 0 || dfReplacementPct == 0)
                 return false;
 
             if (bTraining && m_TrainingImages.LoadMethod != IMAGEDB_LOAD_METHOD.LOAD_ALL)
