@@ -189,8 +189,8 @@ namespace MyCaffe.test
                 }
                 else
                 {
-                    log.CHECK_EQ(settings.ImageDbAutoRefreshScheduledReplacementPercent, 0, "The default auto refresh scheduled replacement percentage should be 0.");
-                    log.CHECK_EQ(settings.ImageDbAutoRefreshScheduledUpdateInMs, 0, "The default auto refresh scheduled update period should be 0.");
+                    log.CHECK_EQ(settings.ImageDbAutoRefreshScheduledReplacementPercent, 0.3, "The default auto refresh scheduled replacement percentage should be 0.3.");
+                    log.CHECK_EQ(settings.ImageDbAutoRefreshScheduledUpdateInMs, 10000, "The default auto refresh scheduled update period should be 10000.");
                 }
 
 
@@ -206,7 +206,7 @@ namespace MyCaffe.test
                 str = sw.ElapsedMilliseconds.ToString();
                 Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
-                if (!bSetParamsDuringInit)
+                if (!bSetParamsDuringInit && settings.ImageDbLoadLimit > 0)
                     db.StartAutomaticRefreshSchedule(strDs, true, false, nRefreshUpdate, dfReplacePct);
 
                 int nPeriodInMs;
