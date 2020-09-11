@@ -248,8 +248,9 @@ namespace MyCaffe.trainers
         /// <param name="log">Specifies the output log to use.</param>
         /// <param name="evtCancel">Specifies the cancel event.</param>
         /// <param name="nProjectID">Specifies the project ID if any.</param>
+        /// <param name="ci">Optionally, specifies the database connection information (default = null).</param>
         /// <returns>When data is pre-loaded the discovered vocabulary is returned as a bucket collection.</returns>
-        protected virtual BucketCollection preloaddata(Log log, CancelEvent evtCancel, int nProjectID)
+        protected virtual BucketCollection preloaddata(Log log, CancelEvent evtCancel, int nProjectID, ConnectInfo ci = null)
         {
             return null;
         }
@@ -582,10 +583,11 @@ namespace MyCaffe.trainers
         /// <param name="log">Specifies the output log to use.</param>
         /// <param name="evtCancel">Specifies the cancel event.</param>
         /// <param name="nProjectID">Specifies the project ID used, if any.</param>
+        /// <param name="ci">Optionally, specifies the database connection information (default = null).</param>
         /// <returns>When data is pre-loaded the discovered vocabulary is returned as a BucketCollection.</returns>
-        public BucketCollection PreloadData(Log log, CancelEvent evtCancel, int nProjectID)
+        public BucketCollection PreloadData(Log log, CancelEvent evtCancel, int nProjectID, ConnectInfo ci = null)
         {
-            return preloaddata(log, evtCancel, nProjectID);
+            return preloaddata(log, evtCancel, nProjectID, ci);
         }
 
         /// <summary>

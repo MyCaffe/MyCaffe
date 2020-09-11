@@ -174,8 +174,9 @@ namespace MyCaffe.trainers
         /// <param name="log">Specifies the output log to use.</param>
         /// <param name="evtCancel">Specifies the event used to cancel the pre-load.</param>
         /// <param name="nProjectID">Specifies the ProjectID if any.</param>
+        /// <param name="ci">Optionally, specifies the database connection information (default = null).</param>
         /// <returns>When data is pre-loaded the vocabulary discovered is returned as a Bucket Collection.</returns>
-        BucketCollection PreloadData(Log log, CancelEvent evtCancel, int nProjectID);
+        BucketCollection PreloadData(Log log, CancelEvent evtCancel, int nProjectID, ConnectInfo ci = null);
         /// <summary>
         /// The ResizeModel method gives the custom trainer the opportunity to resize the model if needed.
         /// </summary>

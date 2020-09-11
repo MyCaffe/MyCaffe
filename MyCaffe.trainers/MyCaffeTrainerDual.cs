@@ -363,8 +363,9 @@ namespace MyCaffe.trainers
         /// <param name="evtCancel">Specifies the cancel event.</param>
         /// <param name="nProjectID">Specifies the project ID if any.</param>
         /// <param name="bUsePreloadData">Returns whether or not to use pre-load data, or dynamic data.</param>
+        /// <param name="ci">Optionally, specifies the database connection information (default = null).</param>
         /// <returns>When data is pre-loaded the discovered vocabulary is returned as a bucket collection.</returns>
-        protected virtual BucketCollection preloaddata(Log log, CancelEvent evtCancel, int nProjectID, out bool bUsePreloadData)
+        protected virtual BucketCollection preloaddata(Log log, CancelEvent evtCancel, int nProjectID, out bool bUsePreloadData, ConnectInfo ci = null)
         {
             bUsePreloadData = false;
             return null;
@@ -921,10 +922,11 @@ namespace MyCaffe.trainers
         /// <param name="log">Specifies the output log to use.</param>
         /// <param name="evtCancel">Specifies the cancel event.</param>
         /// <param name="nProjectID">Specifies the project ID used, if any.</param>
+        /// <param name="ci">Optionally, specifies the database connection information (default = null).</param>
         /// <returns>When data is pre-loaded the discovered vocabulary is returned as a BucketCollection.</returns>
-        BucketCollection IXMyCaffeCustomTrainerRNN.PreloadData(Log log, CancelEvent evtCancel, int nProjectID)
+        BucketCollection IXMyCaffeCustomTrainerRNN.PreloadData(Log log, CancelEvent evtCancel, int nProjectID, ConnectInfo ci = null)
         {
-            return preloaddata(log, evtCancel, nProjectID, out m_bUsePreloadData);
+            return preloaddata(log, evtCancel, nProjectID, out m_bUsePreloadData, ci);
         }
 
         /// <summary>
