@@ -1925,7 +1925,7 @@ namespace MyCaffe.test
         {
         }
 
-        protected override BucketCollection preloaddata(Log log, CancelEvent evtCancel, int nProjectID)
+        protected override BucketCollection preloaddata(Log log, CancelEvent evtCancel, int nProjectID, ConnectInfo ci = null)
         {
             initialize(log);
             IXMyCaffeGymData igym = m_igym as IXMyCaffeGymData;
@@ -2374,7 +2374,7 @@ namespace MyCaffe.test
         {
         }
 
-        protected override BucketCollection preloaddata(Log log, CancelEvent evtCancel, int nProjectID, out bool bUsePreloadData)
+        protected override BucketCollection preloaddata(Log log, CancelEvent evtCancel, int nProjectID, out bool bUsePreloadData, ConnectInfo ci = null)
         {
             initialize(log);
             IXMyCaffeGymData igym = m_igym as IXMyCaffeGymData;
