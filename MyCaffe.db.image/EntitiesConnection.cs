@@ -75,6 +75,9 @@ namespace MyCaffe.db.image
             if (ci.Server != null)
                 strServerName = ci.Server;
 
+            if (strServerName == "NONE" || strServerName == "DEFAULT")
+                strServerName = ".";
+
             string strKey = strDb + strServerName;
             int nKey = strKey.GetHashCode();
 
