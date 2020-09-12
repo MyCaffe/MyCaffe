@@ -278,10 +278,16 @@ namespace MyCaffe.db.image
                 return false;
 
             if (bTraining && m_TrainingImages.LoadMethod != IMAGEDB_LOAD_METHOD.LOAD_ALL)
-                throw new Exception("The automatic refresh schedule is only valid when using the LOAD_ALL load method - please change the Training set load method.");
+            {
+                m_log.WriteLine("WARNING: The shared training data source '" + m_TrainingImages.Source.Name + "' appears to already be open with the '" + m_TrainingImages.LoadMethod.ToString() + "', so the load limit with automatic refresh will not be used.");
+                return false;
+            }
 
             if (bTesting && m_TestingImages.LoadMethod != IMAGEDB_LOAD_METHOD.LOAD_ALL)
-                throw new Exception("The automatic refresh schedule is only valid when using the LOAD_ALL load method - please change the Testing set load method.");
+            {
+                m_log.WriteLine("WARNING: The shared testing data source '" + m_TestingImages.Source.Name + "' appears to already be open with the '" + m_TestingImages.LoadMethod.ToString() + "', so the load limit with automatic refresh will not be used.");
+                return false;
+            }
 
             m_nRefreshUpdatePeriod = nPeriodInMs;
             m_dfRegreshReplacementPct = dfReplacementPct;
