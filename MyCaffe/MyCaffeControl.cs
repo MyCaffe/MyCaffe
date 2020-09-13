@@ -338,6 +338,9 @@ namespace MyCaffe
         /// </summary>
         public void Unload(bool bUnloadImageDb = true)
         {
+            if (m_solver == null && m_net == null)
+                return;
+
             if (m_syncUnload.WaitOne(0))
                 return;
 
@@ -370,7 +373,7 @@ namespace MyCaffe
                     m_imgDb = null;
                 }
 
-                m_project = null;
+                m_project = null;                
             }
             finally
             {
