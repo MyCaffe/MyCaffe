@@ -719,6 +719,7 @@ namespace MyCaffe.common
         bool m_bOwner = true;
         object m_memSync = new object();
         bool m_bEnableRnnExtendedVersion = false;
+        static object m_createSync = new object();
 
         /// <summary>
         /// Specifies the type of string information to quer from the Cuda C++ layer.
@@ -1174,15 +1175,18 @@ namespace MyCaffe.common
 
             try
             {
-                if (m_dt == DataType.DOUBLE)
+                lock (m_createSync)
                 {
-                    double[] rg = m_cuda.RunDouble(0, (int)CUDAFN.INITIALIZE, new double[] { nDeviceID, (int)flags });
-                    m_hKernel = (long)rg[0];
-                }
-                else
-                {
-                    float[] rg = m_cuda.RunFloat(0, (int)CUDAFN.INITIALIZE, new float[] { nDeviceID, (int)flags });
-                    m_hKernel = (long)rg[0];
+                    if (m_dt == DataType.DOUBLE)
+                    {
+                        double[] rg = m_cuda.RunDouble(0, (int)CUDAFN.INITIALIZE, new double[] { nDeviceID, (int)flags });
+                        m_hKernel = (long)rg[0];
+                    }
+                    else
+                    {
+                        float[] rg = m_cuda.RunFloat(0, (int)CUDAFN.INITIALIZE, new float[] { nDeviceID, (int)flags });
+                        m_hKernel = (long)rg[0];
+                    }
                 }
             }
             catch (Exception excpt)
@@ -1197,15 +1201,18 @@ namespace MyCaffe.common
             {
                 ResetDevice();
 
-                if (m_dt == DataType.DOUBLE)
+                lock (m_createSync)
                 {
-                    double[] rg = m_cuda.RunDouble(0, (int)CUDAFN.INITIALIZE, new double[] { nDeviceID, (int)flags });
-                    m_hKernel = (long)rg[0];
-                }
-                else
-                {
-                    float[] rg = m_cuda.RunFloat(0, (int)CUDAFN.INITIALIZE, new float[] { nDeviceID, (int)flags });
-                    m_hKernel = (long)rg[0];
+                    if (m_dt == DataType.DOUBLE)
+                    {
+                        double[] rg = m_cuda.RunDouble(0, (int)CUDAFN.INITIALIZE, new double[] { nDeviceID, (int)flags });
+                        m_hKernel = (long)rg[0];
+                    }
+                    else
+                    {
+                        float[] rg = m_cuda.RunFloat(0, (int)CUDAFN.INITIALIZE, new float[] { nDeviceID, (int)flags });
+                        m_hKernel = (long)rg[0];
+                    }
                 }
             }
 
