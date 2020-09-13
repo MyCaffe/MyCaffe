@@ -191,6 +191,8 @@ namespace MyCaffe.test
                 {
                     log.CHECK_EQ(settings.ImageDbAutoRefreshScheduledReplacementPercent, 0.3, "The default auto refresh scheduled replacement percentage should be 0.3.");
                     log.CHECK_EQ(settings.ImageDbAutoRefreshScheduledUpdateInMs, 10000, "The default auto refresh scheduled update period should be 10000.");
+                    settings.ImageDbAutoRefreshScheduledUpdateInMs = 0;
+                    settings.ImageDbAutoRefreshScheduledReplacementPercent = 0;
                 }
 
 
