@@ -9,6 +9,7 @@ namespace MyCaffe.basecode
     /// <summary>
     /// The ConnectInfo class specifies the server, database and username/password used to connect to a database.
     /// </summary>
+    [Serializable]
     public class ConnectInfo
     {
         TYPE m_location = TYPE.NONE;
