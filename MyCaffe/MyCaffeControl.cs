@@ -94,8 +94,8 @@ namespace MyCaffe
         bool m_bLoadLite = false;
         string m_strSolver = null;  // Used with LoadLite.
         string m_strModel = null;   // Used with LoadLite.
-        Semaphore m_syncUnload = new Semaphore(0, 1);
-        Semaphore m_syncMain = new Semaphore(0, 1);
+        ManualResetEvent m_evtSyncUnload = new ManualResetEvent(false);
+        ManualResetEvent m_evtSyncMain = new ManualResetEvent(false);
         ConnectInfo m_dsCi = null;
 
         /// <summary>
@@ -181,8 +181,10 @@ namespace MyCaffe
         /// </summary>
         public void dispose()
         {
-            if (m_syncMain.WaitOne(0))
+            if (m_evtSyncMain.WaitOne(0))
                 return;
+
+            m_evtSyncMain.Set();
 
             try
             {
@@ -217,7 +219,7 @@ namespace MyCaffe
             }
             finally
             {
-                m_syncMain.Release();
+                m_evtSyncMain.Reset();
             }
         }
 
@@ -341,8 +343,10 @@ namespace MyCaffe
             if (m_solver == null && m_net == null)
                 return;
 
-            if (m_syncUnload.WaitOne(0))
+            if (m_evtSyncUnload.WaitOne(0))
                 return;
+
+            m_evtSyncUnload.Set();
 
             try
             {
@@ -377,7 +381,7 @@ namespace MyCaffe
             }
             finally
             {
-                m_syncUnload.Release();
+                m_evtSyncUnload.Reset();
             }
         }
 
