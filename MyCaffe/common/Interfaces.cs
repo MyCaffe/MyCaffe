@@ -409,7 +409,8 @@ namespace MyCaffe.common
         /// Unload the currently loaded project.
         /// </summary>
         /// <param name="bUnloadImageDb">Optionally, specifies whether or not to unload the image database. The default = <i>true</i>.</param>
-        void Unload(bool bUnloadImageDb = true);
+        /// <param name="bIgnoreExceptions">Optionally, specifies to ignore exceptions that occur (default = <i>false</i>).</param>
+        void Unload(bool bUnloadImageDb = true, bool bIgnoreExceptions = false);
         /// <summary>
         /// Train the network a set number of iterations and allow for single stepping.
         /// </summary>
