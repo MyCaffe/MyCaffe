@@ -634,7 +634,7 @@ namespace MyCaffe.db.image
         {
             foreach (DatasetEx2 ds in m_rgDatasets)
             {
-                if (ds.DatasetID == nDsID)
+                if (ds.DatasetID == nDsID || nDsID == 0)
                 {
                     return ds.StopAutomaticRefreshSchedule(bTraining, bTesting);
                 }
