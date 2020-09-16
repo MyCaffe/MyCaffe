@@ -1086,7 +1086,8 @@ namespace MyCaffe.solvers
 
         private void args_OnGetWeights(object sender, GetBytesArgs e)
         {
-            e.Data = m_net.SaveWeights(m_persist, m_param.snapshot_diff);
+            if (m_net != null)
+                e.Data = m_net.SaveWeights(m_persist, m_param.snapshot_diff);
         }
 
         private void args_OnGetState(object sender, GetBytesArgs e)
