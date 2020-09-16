@@ -193,15 +193,29 @@ namespace MyCaffe
 
                 if (m_hCopyBuffer != 0)
                 {
-                    m_cuda.FreeHostBuffer(m_hCopyBuffer);
+                    try
+                    {
+                        m_cuda.FreeHostBuffer(m_hCopyBuffer);
+                    }
+                    catch
+                    {
+                    }
+
                     m_hCopyBuffer = 0;
                 }
 
-                Unload();
+                Unload(true, true);
 
                 if (m_cuda != null)
                 {
-                    m_cuda.Dispose();
+                    try
+                    {
+                        m_cuda.Dispose();
+                    }
+                    catch
+                    {
+                    }
+
                     m_cuda = null;
                 }
 
@@ -338,7 +352,9 @@ namespace MyCaffe
         /// <summary>
         /// Unload the currently loaded project, if any.
         /// </summary>
-        public void Unload(bool bUnloadImageDb = true)
+        /// <param name="bUnloadImageDb">Optionally, specifies to unload the image database (default = true).</param>
+        /// <param name="bIgnoreExceptions">Optionally, specifies to ignore exceptions on error (default = false).</param>
+        public void Unload(bool bUnloadImageDb = true, bool bIgnoreExceptions = false)
         {
             if (m_solver == null && m_net == null)
                 return;
@@ -377,7 +393,12 @@ namespace MyCaffe
                     m_imgDb = null;
                 }
 
-                m_project = null;                
+                m_project = null;
+            }
+            catch (Exception excpt)
+            {
+                if (!bIgnoreExceptions)
+                    throw excpt;
             }
             finally
             {
