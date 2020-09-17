@@ -1107,6 +1107,9 @@ namespace MyCaffe.solvers
         /// <returns>The args are returned.</returns>
         public SnapshotArgs GetSnapshotArgs(byte[] rgState, byte[] rgWeights, double dfAccuracy, double dfError, int nIteration, SNAPSHOT_WEIGHT_UPDATE_METHOD wtUpdt)
         {
+            if (dfAccuracy == 0)
+                dfAccuracy = 0.0001;
+
             SnapshotArgs args = new SnapshotArgs(rgState, rgWeights, dfAccuracy, dfError, nIteration, wtUpdt);
 
             args.IncludeState = m_param.snapshot_include_state;
