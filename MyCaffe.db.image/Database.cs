@@ -89,16 +89,29 @@ namespace MyCaffe.db.image
 
                     List<RawImage> rgImg = entities.RawImages.Where(p => p.SourceID == nSrcId).Take(1).ToList();
                     if (rgImg.Count == 0)
-                        throw new Exception("No images found for data source = '" + strSrc + "' on connection: " + ci.ToString());
+                        throw new Exception("No images found for data source = '" + strSrc + "' on connection: " + ci.ToString("signalpop."));
+
+                    byte[] rgRawData = rgImg[0].Data;
+                    int nVirtualId = rgImg[0].VirtualID.GetValueOrDefault(0);
+                    if (rgRawData == null && nVirtualId > 0)
+                    {
+                        int nSrcId1 = rgImg[0].OriginalSourceID.GetValueOrDefault(rgImg[0].SourceID.GetValueOrDefault(0));
+                        rgImg = entities.RawImages.Where(p => p.ID == nVirtualId).Take(1).ToList();
+                        if (rgImg.Count == 0)
+                            throw new Exception("No images found for data source = '" + strSrc + "' on connection: " + ci.ToString("signalpop."));
+
+                        rgRawData = rgImg[0].Data;
+                        strSrc = GetSourceName(nSrcId1);
+                    }
 
                     m_strPrimaryImgPath = getImagePathBase(strSrc, entities);
-                    byte[] rgData = getRawImage(rgImg[0].Data, null, ci, entities, true);
+                    byte[] rgData = getRawImage(rgRawData, null, ci, entities, true);
                     if (rgData == null || rgData.Length == 0)
-                        throw new Exception("The image at image ID = " + rgImg[0].ID.ToString() + " for data source = '" + strSrc + "' on connection: " + ci.ToString() + " is empty!");
+                        throw new Exception("The image at image ID = " + rgImg[0].ID.ToString() + " for data source = '" + strSrc + "' on connection: " + ci.ToString("signalpop.") + " is empty!");
                 }
                 catch (Exception excpt)
                 {
-                    throw new Exception("Failed to get raw image data for data source = '" + strSrc + "' on connection: " + ci.ToString() + " with error = '" + excpt.Message + "'", excpt);
+                    throw new Exception("Failed to get raw image data for data source = '" + strSrc + "' on connection: " + ci.ToString("signalpop.") + " with error = '" + excpt.Message + "'", excpt);
                 }
                 finally
                 {
