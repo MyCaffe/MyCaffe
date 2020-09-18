@@ -31,6 +31,7 @@ namespace MyCaffe.db.image
     {
         static ConnectInfo g_connectInfo = new ConnectInfo(".", "DNN");
         static Dictionary<int, string> m_rgstrConnections = new Dictionary<int, string>();
+        static Dictionary<int, ConnectInfo> m_rgciConnections = new Dictionary<int, ConnectInfo>();
 
         /// <summary>
         /// The EntitiesConnection constructor.
@@ -81,7 +82,7 @@ namespace MyCaffe.db.image
             string strKey = strDb + strServerName;
             int nKey = strKey.GetHashCode();
 
-            if (m_rgstrConnections.ContainsKey(nKey))
+            if (m_rgstrConnections.ContainsKey(nKey) && m_rgciConnections.ContainsKey(nKey) && m_rgciConnections[nKey].Compare(ci))
                 return m_rgstrConnections[nKey];
 
             string strProviderName = "System.Data.SqlClient";
@@ -117,7 +118,15 @@ namespace MyCaffe.db.image
 
             string strConnection = builder.ToString();
 
-            m_rgstrConnections.Add(nKey, strConnection);
+            if (!m_rgstrConnections.ContainsKey(nKey))
+                m_rgstrConnections.Add(nKey, strConnection);
+            else
+                m_rgstrConnections[nKey] = strConnection;
+
+            if (!m_rgciConnections.ContainsKey(nKey))
+                m_rgciConnections.Add(nKey, ci);
+            else
+                m_rgciConnections[nKey] = ci;
 
             return strConnection;
         }
