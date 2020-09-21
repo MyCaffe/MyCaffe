@@ -178,7 +178,7 @@ namespace MyCaffe.app
                 if (rgSqlInst == null || rgSqlInst.Count == 0)
                 {
                     setStatus("For most operations, you must download and install 'Microsoft SQL' or 'Microsoft SQL Express' first!", STATUS.WARNING);
-                    setStatus("see 'https://www.microsoft.com/en-us/sql-server/sql-server-editions-express'");
+                    setStatus("see 'https://www.microsoft.com/en-us/sql-server/sql-server-downloads'");
                     setStatus("");
                 }
                 else
