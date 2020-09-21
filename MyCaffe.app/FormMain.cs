@@ -152,12 +152,16 @@ namespace MyCaffe.app
 
                 // Initialize the ImageDB Menu.
                 int nSelectedImgDbVer = Properties.Settings.Default.ImgDbVer;
+
                 List<ToolStripMenuItem> rgItems = new List<ToolStripMenuItem>();
                 foreach (ToolStripMenuItem item in imageDBToolStripMenuItem.DropDownItems)
                 {
                     item.Checked = false;
                     rgItems.Add(item);
                 }
+
+                if (nSelectedImgDbVer >= rgItems.Count)
+                    nSelectedImgDbVer = rgItems.Count - 1;
 
                 rgItems[nSelectedImgDbVer].Checked = true;
 
@@ -177,17 +181,19 @@ namespace MyCaffe.app
                     setStatus("see 'https://www.microsoft.com/en-us/sql-server/sql-server-editions-express'");
                     setStatus("");
                 }
-
-                Dictionary<string, string> rgCuda = getCudaPaths();
-                FormSqlInstances dlg = new FormSqlInstances(rgSqlInst, rgCuda);
-
-                if (dlg.ShowDialog() == DialogResult.OK)
-                {
-                    strSqlInstance = dlg.Instance;
-                    m_strDllPath = dlg.CudaPath;
-                }
                 else
-                    setStatus("You are NOT connected to SQL.", STATUS.WARNING);
+                {
+                    Dictionary<string, string> rgCuda = getCudaPaths();
+                    FormSqlInstances dlg = new FormSqlInstances(rgSqlInst, rgCuda);
+
+                    if (dlg.ShowDialog() == DialogResult.OK)
+                    {
+                        strSqlInstance = dlg.Instance;
+                        m_strDllPath = dlg.CudaPath;
+                    }
+                    else
+                        setStatus("You are NOT connected to SQL.", STATUS.WARNING);
+                }
 
                 if (strSqlInstance != null)
                 {
