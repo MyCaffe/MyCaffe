@@ -25,8 +25,8 @@ namespace MyCaffe.basecode
         string m_strGpuIds = "0";
         IMAGEDB_LOAD_METHOD m_imageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
         int m_nImageDbLoadLimit = 0;
-        int m_nAutoRefreshScheduledUpdateInMs = 10000;
-        double m_dfAutoRefreshScheduledReplacementPct = 0.3;
+        int m_nAutoRefreshScheduledUpdateInMs = 0;
+        double m_dfAutoRefreshScheduledReplacementPct = 0;
         bool m_bImageDbLoadDataCriteria = false;
         bool m_bImageDbLoadDebugData = false;
         SNAPSHOT_WEIGHT_UPDATE_METHOD m_snapshotWeightUpdateMethod = SNAPSHOT_WEIGHT_UPDATE_METHOD.FAVOR_ACCURACY;
@@ -328,7 +328,21 @@ namespace MyCaffe.basecode
         public int ImageDbLoadLimit
         {
             get { return m_nImageDbLoadLimit; }
-            set { m_nImageDbLoadLimit = value; }
+            set
+            {
+                if (value == 0 && m_nImageDbLoadLimit != 0)
+                {
+                    m_nAutoRefreshScheduledUpdateInMs = 0;
+                    m_dfAutoRefreshScheduledReplacementPct = 0;
+                }
+                else if (value != 0 && m_nImageDbLoadLimit == 0)
+                {
+                    m_nAutoRefreshScheduledUpdateInMs = 10000;
+                    m_dfAutoRefreshScheduledReplacementPct = 0.3;
+                }
+
+                m_nImageDbLoadLimit = value;
+            }
         }
 
         /// <summary>
