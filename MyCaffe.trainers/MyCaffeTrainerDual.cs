@@ -94,6 +94,7 @@ namespace MyCaffe.trainers
         BucketCollection m_rgVocabulary = null;
         Stage m_stage = Stage.RL;
         bool m_bUsePreloadData = false;
+        object m_syncObj = new object();
 
         enum TRAINER_TYPE
         {
@@ -449,13 +450,22 @@ namespace MyCaffe.trainers
         /// </summary>
         public void CleanUp()
         {
-            if (m_itrainer != null)
-            {
-                m_itrainer.Shutdown(3000);
-                m_itrainer = null;
-            }
+            cleanup(3000, true);
+        }
 
-            shutdown();
+        private void cleanup(int nWait, bool bCallShutdown)
+        {
+            lock (m_syncObj)
+            {
+                if (m_itrainer != null)
+                {
+                    m_itrainer.Shutdown(nWait);
+                    m_itrainer = null;
+                }
+
+                if (bCallShutdown)
+                    shutdown();
+            }
         }
 
         /// <summary>
@@ -563,8 +573,7 @@ namespace MyCaffe.trainers
                 nIterationOverride = m_nIterations;
 
             m_itrainer.Test(nIterationOverride, type);
-            m_itrainer.Shutdown(500);
-            m_itrainer = null;
+            cleanup(500, false);
         }
 
         /// <summary>
@@ -583,8 +592,7 @@ namespace MyCaffe.trainers
                 nIterationOverride = m_nIterations;
 
             m_itrainer.Train(nIterationOverride, type, step);
-            m_itrainer.Shutdown(1000);
-            m_itrainer = null;
+            cleanup(1000, false);
         }
 
         #endregion
@@ -823,8 +831,7 @@ namespace MyCaffe.trainers
                 throw new Exception("The trainer must be set to to 'C51.ST', PG.SIMPLE', 'PG.ST' or 'PG.MT' to run in reinforcement learning mode.");
 
             ResultCollection res = itrainer.RunOne(nDelay);
-            m_itrainer.Shutdown(50);
-            m_itrainer = null;
+            cleanup(50, false);
 
             return res;
         }
@@ -851,8 +858,7 @@ namespace MyCaffe.trainers
                 throw new Exception("The IxTrainerRL interface must be implemented.");
 
             byte[] rgResults = itrainer.Run(nN, strRunProperties, out type);
-            m_itrainer.Shutdown(0);
-            m_itrainer = null;
+            cleanup(0, false);
 
             return rgResults;
         }
@@ -882,8 +888,7 @@ namespace MyCaffe.trainers
                 strRunProperties = icallback.GetRunProperties();
 
             float[] rgResults = itrainer.Run(nN, strRunProperties);
-            m_itrainer.Shutdown(0);
-            m_itrainer = null;
+            cleanup(0, false);
 
             return rgResults;
         }

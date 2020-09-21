@@ -54,6 +54,7 @@ namespace MyCaffe.trainers
         int m_nIteration = 0;
         int m_nIterations = -1;
         BucketCollection m_rgVocabulary = null;
+        object m_syncObj = new object();
 
         enum TRAINER_TYPE
         {
@@ -333,13 +334,22 @@ namespace MyCaffe.trainers
         /// </summary>
         public void CleanUp()
         {
-            if (m_itrainer != null)
-            {
-                m_itrainer.Shutdown(3000);
-                m_itrainer = null;
-            }
+            cleanup(3000, true);
+        }
 
-            shutdown();
+        private void cleanup(int nWait, bool bCallShutdown = false)
+        {
+            lock (m_syncObj)
+            {
+                if (m_itrainer != null)
+                {
+                    m_itrainer.Shutdown(nWait);
+                    m_itrainer = null;
+                }
+
+                if (bCallShutdown)
+                    shutdown();
+            }
         }
 
         /// <summary>
@@ -397,8 +407,7 @@ namespace MyCaffe.trainers
                 strRunProperties = icallback.GetRunProperties();
 
             float[] rgResults = m_itrainer.Run(nN, strRunProperties);
-            m_itrainer.Shutdown(0);
-            m_itrainer = null;
+            cleanup(0);
 
             return rgResults;
         }
@@ -421,8 +430,7 @@ namespace MyCaffe.trainers
                 strRunProperties = icallback.GetRunProperties();
 
             byte[] rgResults = m_itrainer.Run(nN, strRunProperties, out type);
-            m_itrainer.Shutdown(0);
-            m_itrainer = null;
+            cleanup(0);
 
             return rgResults;
         }
@@ -442,8 +450,7 @@ namespace MyCaffe.trainers
                 nIterationOverride = m_nIterations;
 
             m_itrainer.Test(nIterationOverride, type);
-            m_itrainer.Shutdown(0);
-            m_itrainer = null;
+            cleanup(0);
         }
 
         /// <summary>
@@ -462,9 +469,7 @@ namespace MyCaffe.trainers
                 nIterationOverride = m_nIterations;
 
             m_itrainer.Train(nIterationOverride, type, step);
-
-            m_itrainer.Shutdown(0);
-            m_itrainer = null;
+            cleanup(0);
         }
 
         #endregion
