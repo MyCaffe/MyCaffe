@@ -173,6 +173,7 @@ namespace MyCaffe.app
                 if (!File.Exists(AssemblyDirectory + "\\index.chm"))
                     localHelpToolStripMenuItem.Enabled = false;
 
+                Dictionary<string, string> rgCuda = getCudaPaths();
                 string strSqlInstance = null;
 
                 if (rgSqlInst == null || rgSqlInst.Count == 0)
@@ -183,7 +184,6 @@ namespace MyCaffe.app
                 }
                 else
                 {
-                    Dictionary<string, string> rgCuda = getCudaPaths();
                     FormSqlInstances dlg = new FormSqlInstances(rgSqlInst, rgCuda);
 
                     if (dlg.ShowDialog() == DialogResult.OK)
@@ -195,9 +195,10 @@ namespace MyCaffe.app
                         setStatus("You are NOT connected to SQL.", STATUS.WARNING);
                 }
 
+                m_bwInit.RunWorkerAsync();
+
                 if (strSqlInstance != null)
                 {
-                    m_bwInit.RunWorkerAsync();
                     m_dlgWait.ShowDialog();
 
                     string strService = strSqlInstance.TrimStart('.', '\\');
