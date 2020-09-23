@@ -105,7 +105,7 @@ namespace MyCaffe.db.image
                 sqlBuilder.MultipleActiveResultSets = false;
                 sqlBuilder.Encrypt = true;
                 sqlBuilder.TrustServerCertificate = true;
-                sqlBuilder.ConnectTimeout = 60;
+                sqlBuilder.ConnectTimeout = 180;
             }
 
             string strProviderString = sqlBuilder.ToString();
