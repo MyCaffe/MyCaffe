@@ -31,7 +31,7 @@ assembly signing altogether.
 <H3>III. Required Software</H3>
 <b>MyCaffe</b> requires the following software.
 </br>
-</br>a.) Microsoft Visual Studio 2017 (recommended) or Visual Studio 2015
+</br>a.) Microsoft Visual Studio 2017 or Microsoft Visual Studio 2019
 </br>
 </br>b.) Microsoft SQL or Microsoft SQL Express
 </br>Both 'a' and 'b' are available from Microsoft at www.microsoft.com.
