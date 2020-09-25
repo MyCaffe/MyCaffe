@@ -176,7 +176,10 @@ namespace MyCaffe.layers
                     rgBottomDataPair.Add(new KeyValuePair<double, int>(rgBottomData[nIdx], j));
                 }
 
-                rgBottomDataPair.Sort(new Comparison<KeyValuePair<double, int>>(sortDataItems));
+                if (m_param.argmax_param.op == ArgMaxParameter.COMPARE_OPERATOR.MIN)
+                    rgBottomDataPair.Sort(new Comparison<KeyValuePair<double, int>>(sortDataItemsDescending));
+                else
+                    rgBottomDataPair.Sort(new Comparison<KeyValuePair<double, int>>(sortDataItemsAscending));
 
                 for (int j = 0; j < m_nTopK; j++)
                 {
@@ -209,13 +212,24 @@ namespace MyCaffe.layers
             colTop[0].mutable_cpu_data = convert(rgTopData);
         }
 
-        private int sortDataItems(KeyValuePair<double, int> a, KeyValuePair<double, int> b)
+        private int sortDataItemsAscending(KeyValuePair<double, int> a, KeyValuePair<double, int> b)
         {
             if (a.Key < b.Key)
                 return 1;
 
             if (a.Key > b.Key)
                 return -1;
+
+            return 0;
+        }
+
+        private int sortDataItemsDescending(KeyValuePair<double, int> a, KeyValuePair<double, int> b)
+        {
+            if (a.Key < b.Key)
+                return -1;
+
+            if (a.Key > b.Key)
+                return 1;
 
             return 0;
         }

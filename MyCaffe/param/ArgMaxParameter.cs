@@ -13,11 +13,27 @@ namespace MyCaffe.param
     /// <remarks>
     /// @see [Detecting Unexpected Obstacles for Self-Driving Cars: Fusing Deep Learning and Geometric Modeling](https://arxiv.org/abs/1612.06573v1) by Sebastian Ramos, Stefan Gehrig, Peter Pinggera, Uwe Franke, and Carsten Rother, 2016. 
     /// </remarks>
-    public class ArgMaxParameter : LayerParameterBase 
+    public class ArgMaxParameter : LayerParameterBase
     {
         bool m_bOutMaxVal = false;
         uint m_nTopK = 1;
         int? m_nAxis = null;
+        COMPARE_OPERATOR m_op = COMPARE_OPERATOR.MAX;
+
+        /// <summary>
+        /// Defines the compare operator to use (max or min, default = max).
+        /// </summary>
+        public enum COMPARE_OPERATOR
+        {
+            /// <summary>
+            /// Perform an arg max comparison (default).
+            /// </summary>
+            MAX,
+            /// <summary>
+            /// Perform an arg min comparison.
+            /// </summary>
+            MIN
+        }
 
         /** @copydoc LayerParameterBase */
         public ArgMaxParameter()
@@ -25,9 +41,19 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Specifies the operator to use (default = MAX).
+        /// </summary>
+        [Description("Specifies the operator to use (default = MAX).")]
+        public COMPARE_OPERATOR op
+        {
+            get { return m_op; }
+            set { m_op = value; }
+        }
+
+        /// <summary>
         /// If true produce pairs (argmax, maxval)
         /// </summary>
-        [Description("If true, produce pairs (argmax, maxval).")]
+        [Description("If true, produce pairs (argmax, maxval -or- argmin, minval when using 'op' = MIN).")]
         public bool out_max_val
         {
             get { return m_bOutMaxVal; }
@@ -78,6 +104,7 @@ namespace MyCaffe.param
             m_bOutMaxVal = p.m_bOutMaxVal;
             m_nTopK = p.m_nTopK;
             m_nAxis = p.m_nAxis;
+            m_op = p.m_op;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -106,6 +133,9 @@ namespace MyCaffe.param
             if (axis.HasValue)
                 rgChildren.Add("axis", axis.Value.ToString());
 
+            if (op != COMPARE_OPERATOR.MAX)
+                rgChildren.Add("op", op.ToString());
+
             return new RawProto(strName, "", rgChildren);
         }
 
@@ -127,6 +157,14 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("axis")) != null)
                 p.axis = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("op")) != null)
+            {
+                if (strVal == COMPARE_OPERATOR.MIN.ToString())
+                    p.op = COMPARE_OPERATOR.MIN;
+                else
+                    p.op = COMPARE_OPERATOR.MAX;
+            }
 
             return p;
         }
