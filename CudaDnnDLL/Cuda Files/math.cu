@@ -7613,6 +7613,150 @@ template long Math<float>::softmaxloss_bwd(int n, long hTopData, long hLabels, l
 
 
 template<typename T>
+__global__ void min_fwd_kernel(int nthreads, const T* bottom_data_a, const T* bottom_data_b, int blob_idx, T* top_data, T* mask)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nthreads && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		T minval = FLT_MAX;
+		int minidx = -1;
+
+		if (bottom_data_a[i] < bottom_data_b[i])
+		{
+			// only update for very first bottom_data blob (blob_idx == 0)
+			if (blob_idx == 0)
+			{
+				minval = bottom_data_a[i];
+				top_data[i] = minval;
+				minidx = blob_idx;
+				mask[i] = minidx;
+			}
+		}
+		else
+		{
+			minval = bottom_data_b[i];
+			top_data[i] = minval;
+			minidx = blob_idx + 1;
+			mask[i] = minidx;
+		}
+	}
+}
+
+template<typename T>
+__global__ void min_fwd_kernel_nomask(int nthreads, const T* bottom_data_a, const T* bottom_data_b, int blob_idx, T* top_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nthreads && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		T minval = FLT_MAX;
+		int minidx = -1;
+
+		if (bottom_data_a[i] < bottom_data_b[i])
+		{
+			// only update for very first bottom_data blob (blob_idx == 0)
+			if (blob_idx == 0)
+			{
+				minval = bottom_data_a[i];
+				top_data[i] = minval;
+				minidx = blob_idx;
+			}
+		}
+		else
+		{
+			minval = bottom_data_b[i];
+			top_data[i] = minval;
+			minidx = blob_idx + 1;
+		}
+	}
+}
+
+template <class T>
+long Math<T>::min_fwd(int n, long hA, long hB, int nIdx, long hY, long hMask)
+{
+	LONG lErr;
+	MemoryItem* pA;
+	MemoryItem* pB;
+	MemoryItem* pY;
+	MemoryItem* pMask;
+
+	if (lErr = m_pMemCol->GetData(hA, &pA))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hB, &pB))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	T* a = (T*)pA->Data();
+	T* b = (T*)pB->Data();
+	T* y = (T*)pY->Data();
+	T* mask = NULL;
+
+	if (hMask > 0)
+	{
+		if (lErr = m_pMemCol->GetData(hMask, &pMask))
+			return lErr;
+
+		mask = (T*)pMask->Data();
+		min_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, a, b, nIdx, y, mask);
+	}
+	else
+	{
+		min_fwd_kernel_nomask<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, a, b, nIdx, y);
+	}
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::min_fwd(int n, long hA, long hB, int nIdx, long hY, long hMask);
+template long Math<float>::min_fwd(int n, long hA, long hB, int nIdx, long hY, long hMask);
+
+
+
+template<typename T>
+__global__ void min_bwd_kernel(int nthreads, const T* top_diff, int blob_idx, T* mask, T* bottom_diff)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nthreads && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		T gradient = 0;
+
+		if (mask[i] == blob_idx)
+			gradient += top_diff[i];
+
+		bottom_diff[i] = gradient;
+	}
+}
+
+template <class T>
+long Math<T>::min_bwd(int n, long hX, int nIdx, long hMask, long hY)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+	MemoryItem* pMask;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hMask, &pMask))
+		return lErr;
+
+	T* x = (T*)pX->Data();
+	T* y = (T*)pY->Data();
+	T* mask = (T*)pMask->Data();
+
+	min_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, nIdx, mask, y);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::min_bwd(int n, long hX, int nIdx, long hMask, long hY);
+template long Math<float>::min_bwd(int n, long hX, int nIdx, long hMask, long hY);
+
+
+template<typename T>
 __global__ void max_fwd_kernel(int nthreads, const T* bottom_data_a, const T* bottom_data_b, int blob_idx, T* top_data, T* mask)
 {
 	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
@@ -7640,6 +7784,33 @@ __global__ void max_fwd_kernel(int nthreads, const T* bottom_data_a, const T* bo
 		}
 	}
 }
+template<typename T>
+__global__ void max_fwd_kernel_nomask(int nthreads, const T* bottom_data_a, const T* bottom_data_b, int blob_idx, T* top_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nthreads && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		T maxval = -FLT_MAX;
+		int maxidx = -1;
+
+		if (bottom_data_a[i] > bottom_data_b[i])
+		{
+			// only update for very first bottom_data blob (blob_idx == 0)
+			if (blob_idx == 0)
+			{
+				maxval = bottom_data_a[i];
+				top_data[i] = maxval;
+				maxidx = blob_idx;
+			}
+		}
+		else
+		{
+			maxval = bottom_data_b[i];
+			top_data[i] = maxval;
+			maxidx = blob_idx + 1;
+		}
+	}
+}
+
 
 template <class T>
 long Math<T>::max_fwd(int n, long hA, long hB, int nIdx, long hY, long hMask)
@@ -7665,9 +7836,20 @@ long Math<T>::max_fwd(int n, long hA, long hB, int nIdx, long hY, long hMask)
 	T* a = (T*)pA->Data();
 	T* b = (T*)pB->Data();
 	T* y = (T*)pY->Data();
-	T* mask = (T*)pMask->Data();
+	T* mask = NULL;
 
-	max_fwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, nIdx, y, mask);
+	if (hMask > 0)
+	{
+		if (lErr = m_pMemCol->GetData(hMask, &pMask))
+			return lErr;
+
+		mask = (T*)pMask->Data();
+		max_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, a, b, nIdx, y, mask);
+	}
+	else
+	{
+		max_fwd_kernel_nomask<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, a, b, nIdx, y);
+	}
 
 	return cudaStreamSynchronize(0);
 }

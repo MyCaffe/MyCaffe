@@ -707,6 +707,12 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_SOFTMAXLOSS_BWD:
 			return m_device.cuda_softmaxloss_bwd(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_MIN_FWD:
+			return m_device.cuda_min_fwd(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_MIN_BWD:
+			return m_device.cuda_min_bwd(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_MAX_FWD:
 			return m_device.cuda_max_fwd(lCount, pfInput, plCount, ppfOutput);
 
@@ -1604,6 +1610,12 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_SOFTMAXLOSS_BWD:
 		return "CUDA_FN_SOFTMAXLOSS_BWD";
+
+	case CUDA_FN_MIN_FWD:
+		return "CUDA_FN_MIN_FWD";
+
+	case CUDA_FN_MIN_BWD:
+		return "CUDA_FN_MIN_BWD";
 
 	case CUDA_FN_MAX_FWD:
 		return "CUDA_FN_MAX_FWD";

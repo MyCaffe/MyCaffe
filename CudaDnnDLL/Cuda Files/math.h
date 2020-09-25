@@ -249,6 +249,8 @@ class Math
 		long softmaxloss_fwd(int nCount, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
 		long softmaxloss_bwd(int nCount, long hTopData, long hLabels, long hBottomDiff, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
 
+		long min_fwd(int nCount, long hA, long hB, int nIdx, long hY, long hMask);
+		long min_bwd(int nCount, long hX, int nIdx, long hMask, long hY);
 		long max_fwd(int nCount, long hA, long hB, int nIdx, long hY, long hMask);
 		long max_bwd(int nCount, long hX, int nIdx, long hMask, long hY);
 

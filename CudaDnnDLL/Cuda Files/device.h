@@ -414,6 +414,8 @@ class Device
 		long cuda_softmaxloss_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_softmaxloss_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
+		long cuda_min_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_min_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_max_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_max_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
@@ -3725,6 +3727,40 @@ inline long Device<T>::cuda_softmaxloss_bwd(long lInput, T* pfInput, long* plOut
 	return m_math.softmaxloss_bwd(nCount, hTopData, hLabels, hBottomDiff, nOuterNum, nDim, nInnerNum, hCounts, nIgnoreLabel);
 }
 
+template <class T>
+inline long Device<T>::cuda_min_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+		return lErr;
+
+	int nCount = (int)pfInput[0];
+	long hA = (long)pfInput[1];
+	long hB = (long)pfInput[2];
+	int nIdx = (int)pfInput[3];
+	long hY = (long)pfInput[4];
+	long hMask = (long)pfInput[5];
+
+	return m_math.min_fwd(nCount, hA, hB, nIdx, hY, hMask);
+}
+
+template <class T>
+inline long Device<T>::cuda_min_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 5, 5))
+		return lErr;
+
+	int nCount = (int)pfInput[0];
+	long hX = (long)pfInput[1];
+	int nIdx = (int)pfInput[2];
+	long hMask = (long)pfInput[3];
+	long hY = (long)pfInput[4];
+
+	return m_math.min_bwd(nCount, hX, nIdx, hMask, hY);
+}
 
 template <class T>
 inline long Device<T>::cuda_max_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)

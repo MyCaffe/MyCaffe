@@ -297,6 +297,9 @@ const int CUDA_FN_PRELU_BWD_PARAM = 440;
 const int CUDA_FN_SOFTMAXLOSS_FWD = 444;
 const int CUDA_FN_SOFTMAXLOSS_BWD = 445;
 
+const int CUDA_FN_MIN_FWD = 446;
+const int CUDA_FN_MIN_BWD = 447;
+
 const int CUDA_FN_MAX_FWD = 448;
 const int CUDA_FN_MAX_BWD = 449;
 

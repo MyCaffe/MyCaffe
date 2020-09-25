@@ -1014,6 +1014,9 @@ namespace MyCaffe.common
             CUDA_SOFTMAXLOSS_FWD = 444,
             CUDA_SOFTMAXLOSS_BWD = 445,
 
+            CUDA_MIN_FWD = 446,
+            CUDA_MIN_BWD = 447,
+
             CUDA_MAX_FWD = 448,
             CUDA_MAX_BWD = 449,
 
@@ -7722,6 +7725,42 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MAX_BWD, new double[] { nCount, hTopDiff, nIdx, hMask, hBottomDiff });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MAX_BWD, new float[] { nCount, hTopDiff, nIdx, hMask, hBottomDiff });
+        }
+
+        /// <summary>
+        /// Performs a min forward pass in Cuda.
+        /// </summary>
+        /// <remarks>
+        /// Calculation: @f$ Y[i] = min(A[i], B[i]) @f$
+        /// </remarks>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="hBottomDataA">Specifies a handle to the Bottom A data in GPU memory.</param>
+        /// <param name="hBottomDataB">Specifies a handle to the Bottom B data in GPU memory.</param>
+        /// <param name="nIdx">Specifies the blob index used to set the mask.</param>
+        /// <param name="hTopData">Specifies a handle to the Top data in GPU memory.</param>
+        /// <param name="hMask">Specifies a handle to the mask data in GPU.</param>
+        public void min_fwd(int nCount, long hBottomDataA, long hBottomDataB, int nIdx, long hTopData, long hMask)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MIN_FWD, new double[] { nCount, hBottomDataA, hBottomDataB, nIdx, hTopData, hMask });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MIN_FWD, new float[] { nCount, hBottomDataA, hBottomDataB, nIdx, hTopData, hMask });
+        }
+
+        /// <summary>
+        /// Performs a min backward pass in Cuda.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="hTopDiff">Specifies a handle to the top diff in GPU memory.</param>
+        /// <param name="nIdx">Specifies the blob index used to test the mask.</param>
+        /// <param name="hMask">Specifies a handle to the mask data in GPU.</param>
+        /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
+        public void min_bwd(int nCount, long hTopDiff, int nIdx, long hMask, long hBottomDiff)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MIN_BWD, new double[] { nCount, hTopDiff, nIdx, hMask, hBottomDiff });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MIN_BWD, new float[] { nCount, hTopDiff, nIdx, hMask, hBottomDiff });
         }
 
         /// <summary>
