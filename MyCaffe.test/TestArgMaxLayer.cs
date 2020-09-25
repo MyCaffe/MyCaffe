@@ -231,6 +231,135 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestCpuMin()
+        {
+            ArgMaxLayerTest test = new ArgMaxLayerTest();
+
+            try
+            {
+                foreach (IArgMaxLayerTest t in test.Tests)
+                {
+                    t.TestCpu(ArgMaxParameter.COMPARE_OPERATOR.MIN);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestCpuMinVal()
+        {
+            ArgMaxLayerTest test = new ArgMaxLayerTest();
+
+            try
+            {
+                foreach (IArgMaxLayerTest t in test.Tests)
+                {
+                    t.TestCpuMaxVal(ArgMaxParameter.COMPARE_OPERATOR.MIN);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestCpuMinTopK()
+        {
+            ArgMaxLayerTest test = new ArgMaxLayerTest();
+
+            try
+            {
+                foreach (IArgMaxLayerTest t in test.Tests)
+                {
+                    t.TestCpuTopK(ArgMaxParameter.COMPARE_OPERATOR.MIN);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestCpuMinValTopK()
+        {
+            ArgMaxLayerTest test = new ArgMaxLayerTest();
+
+            try
+            {
+                foreach (IArgMaxLayerTest t in test.Tests)
+                {
+                    t.TestCpuMaxValTopK(ArgMaxParameter.COMPARE_OPERATOR.MIN);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestCpuMinAxis()
+        {
+            ArgMaxLayerTest test = new ArgMaxLayerTest();
+
+            try
+            {
+                foreach (IArgMaxLayerTest t in test.Tests)
+                {
+                    t.TestCpuAxis(ArgMaxParameter.COMPARE_OPERATOR.MIN);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestCpuMinAxisTopK()
+        {
+            ArgMaxLayerTest test = new ArgMaxLayerTest();
+
+            try
+            {
+                foreach (IArgMaxLayerTest t in test.Tests)
+                {
+                    t.TestCpuAxisTopK(ArgMaxParameter.COMPARE_OPERATOR.MIN);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// This test fails.
+        /// </summary>
+        [TestMethod]
+        public void TestCpuAxisMinValTopK()
+        {
+            ArgMaxLayerTest test = new ArgMaxLayerTest();
+
+            try
+            {
+                foreach (IArgMaxLayerTest t in test.Tests)
+                {
+                    t.TestCpuAxisMaxValTopK(ArgMaxParameter.COMPARE_OPERATOR.MIN);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -241,13 +370,13 @@ namespace MyCaffe.test
         void TestSetupAxis();
         void TestSetupAxisNegativeIndexing();
         void TestSetupAxisMaxVal();
-        void TestCpu();
-        void TestCpuMaxVal();
-        void TestCpuTopK();
-        void TestCpuMaxValTopK();
-        void TestCpuAxis();
-        void TestCpuAxisTopK();
-        void TestCpuAxisMaxValTopK();
+        void TestCpu(ArgMaxParameter.COMPARE_OPERATOR op = ArgMaxParameter.COMPARE_OPERATOR.MAX);
+        void TestCpuMaxVal(ArgMaxParameter.COMPARE_OPERATOR op = ArgMaxParameter.COMPARE_OPERATOR.MAX);
+        void TestCpuTopK(ArgMaxParameter.COMPARE_OPERATOR op = ArgMaxParameter.COMPARE_OPERATOR.MAX);
+        void TestCpuMaxValTopK(ArgMaxParameter.COMPARE_OPERATOR op = ArgMaxParameter.COMPARE_OPERATOR.MAX);
+        void TestCpuAxis(ArgMaxParameter.COMPARE_OPERATOR op = ArgMaxParameter.COMPARE_OPERATOR.MAX);
+        void TestCpuAxisTopK(ArgMaxParameter.COMPARE_OPERATOR op = ArgMaxParameter.COMPARE_OPERATOR.MAX);
+        void TestCpuAxisMaxValTopK(ArgMaxParameter.COMPARE_OPERATOR op = ArgMaxParameter.COMPARE_OPERATOR.MAX);
     }
 
     class ArgMaxLayerTest : TestBase
@@ -348,9 +477,10 @@ namespace MyCaffe.test
             m_log.CHECK_EQ(Top.shape(3), Bottom.shape(3), "The top and bottom shape(3) should be equal.");
         }
 
-        public void TestCpu()
+        public void TestCpu(ArgMaxParameter.COMPARE_OPERATOR op)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ARGMAX);
+            p.argmax_param.op = op;
             ArgMaxLayer<T> layer = new ArgMaxLayer<T>(m_cuda, m_log, p);
 
             layer.Setup(BottomVec, TopVec);
@@ -373,14 +503,18 @@ namespace MyCaffe.test
 
                 for (int j = 0; j < nDim; j++)
                 {
-                    m_log.CHECK_LE(rgBottomData[i * nDim + j], dfMaxVal, "the values are not as expected.");
+                    if (op == ArgMaxParameter.COMPARE_OPERATOR.MIN)
+                        m_log.CHECK_GE(rgBottomData[i * nDim + j], dfMaxVal, "the values are not as expected.");
+                    else
+                        m_log.CHECK_LE(rgBottomData[i * nDim + j], dfMaxVal, "the values are not as expected.");
                 }
             }
         }
 
-        public void TestCpuMaxVal()
+        public void TestCpuMaxVal(ArgMaxParameter.COMPARE_OPERATOR op)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ARGMAX);
+            p.argmax_param.op = op;
             p.argmax_param.out_max_val = true;
             ArgMaxLayer<T> layer = new ArgMaxLayer<T>(m_cuda, m_log, p);
 
@@ -390,30 +524,34 @@ namespace MyCaffe.test
             // Now, check values
             double[] rgBottomData = convert(Bottom.update_cpu_data());
             double[] rgTopData = convert(Top.update_cpu_data());
-            int nMaxInd;
-            double dfMaxVal;
+            int nIdx;
+            double dfVal1;
             int nNum = Bottom.shape(0);
             int nDim = Bottom.count() / nNum;
 
             for (int i = 0; i < nNum; i++)
             {
-                m_log.CHECK_GE(rgTopData[i], 0, "The top value at " + i.ToString() + " should be >= 0.");
-                m_log.CHECK_LE(rgTopData[i], nDim, "The top value at " + i.ToString() + " should be <= nDim (" + nDim.ToString() + ")");
-                nMaxInd = (int)rgTopData[i * 2];
-                dfMaxVal = rgTopData[i * 2 + 1];
+                nIdx = (int)rgTopData[i * 2];
+                m_log.CHECK_GE(nIdx, 0, "The top value at " + (i * 2).ToString() + " should be >= 0.");
+                m_log.CHECK_LE(nIdx, nDim, "The top value at " + (i * 2).ToString() + " should be <= nDim (" + nDim.ToString() + ")");
+                dfVal1 = rgTopData[i * 2 + 1];
 
-                m_log.CHECK_EQ(rgBottomData[i * nDim + nMaxInd], dfMaxVal, "the values are not as expected.");
+                m_log.CHECK_EQ(rgBottomData[i * nDim + nIdx], dfVal1, "the values are not as expected.");
 
                 for (int j = 0; j < nDim; j++)
                 {
-                    m_log.CHECK_LE(rgBottomData[i * nDim + j], dfMaxVal, "the values are not as expected.");
+                    if (op == ArgMaxParameter.COMPARE_OPERATOR.MIN)
+                        m_log.CHECK_GE(rgBottomData[i * nDim + j], dfVal1, "the values are not as expected.");
+                    else
+                        m_log.CHECK_LE(rgBottomData[i * nDim + j], dfVal1, "the values are not as expected.");
                 }
             }
         }
 
-        public void TestCpuTopK()
+        public void TestCpuTopK(ArgMaxParameter.COMPARE_OPERATOR op)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ARGMAX);
+            p.argmax_param.op = op;
             p.argmax_param.top_k = (uint)m_nTopK;
             ArgMaxLayer<T> layer = new ArgMaxLayer<T>(m_cuda, m_log, p);
 
@@ -422,8 +560,8 @@ namespace MyCaffe.test
 
             // Now, check values
             double[] rgBottomData = convert(Bottom.update_cpu_data());
-            int nMaxInd;
-            double dfMaxVal;
+            int nIdx;
+            double dfVal;
             int nNum = Bottom.shape(0);
             int nDim = Bottom.count() / nNum;
 
@@ -435,15 +573,23 @@ namespace MyCaffe.test
 
                 for (int j = 0; j < m_nTopK; j++)
                 {
-                    nMaxInd = (int)convert(Top.data_at(new List<int>() { i, 0, j, 0 }));
-                    dfMaxVal = rgBottomData[i * nDim + nMaxInd];
+                    nIdx = (int)convert(Top.data_at(new List<int>() { i, 0, j, 0 }));
+                    dfVal = rgBottomData[i * nDim + nIdx];
 
                     int nCount = 0;
 
                     for (int k = 0; k < nDim; k++)
                     {
-                        if (rgBottomData[i * nDim + k] > dfMaxVal)
-                            nCount++;
+                        if (op == ArgMaxParameter.COMPARE_OPERATOR.MIN)
+                        {
+                            if (rgBottomData[i * nDim + k] < dfVal)
+                                nCount++;
+                        }
+                        else
+                        {
+                            if (rgBottomData[i * nDim + k] > dfVal)
+                                nCount++;
+                        }
                     }
 
                     m_log.CHECK_EQ(j, nCount, "The values are not as expected.");
@@ -451,9 +597,10 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestCpuMaxValTopK()
+        public void TestCpuMaxValTopK(ArgMaxParameter.COMPARE_OPERATOR op)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ARGMAX);
+            p.argmax_param.op = op;
             p.argmax_param.out_max_val = true;
             p.argmax_param.top_k = (uint)m_nTopK;
             ArgMaxLayer<T> layer = new ArgMaxLayer<T>(m_cuda, m_log, p);
@@ -463,8 +610,8 @@ namespace MyCaffe.test
 
             // Now, check values
             double[] rgBottomData = convert(Bottom.update_cpu_data());
-            int nMaxInd;
-            double dfMaxVal;
+            int nIdx;
+            double dfVal;
             int nNum = Bottom.shape(0);
             int nDim = Bottom.count() / nNum;
 
@@ -476,17 +623,25 @@ namespace MyCaffe.test
 
                 for (int j = 0; j < m_nTopK; j++)
                 {
-                    nMaxInd = (int)convert(Top.data_at(new List<int>() { i, 0, j, 0 }));
-                    dfMaxVal = convert(Top.data_at(new List<int>() { i, 1, j, 0 }));
+                    nIdx = (int)convert(Top.data_at(new List<int>() { i, 0, j, 0 }));
+                    dfVal = convert(Top.data_at(new List<int>() { i, 1, j, 0 }));
 
-                    m_log.CHECK_EQ(rgBottomData[i * nDim + nMaxInd], dfMaxVal, "The values are not as expected.");
+                    m_log.CHECK_EQ(rgBottomData[i * nDim + nIdx], dfVal, "The values are not as expected.");
 
                     int nCount = 0;
 
                     for (int k = 0; k < nDim; k++)
                     {
-                        if (rgBottomData[i * nDim + k] > dfMaxVal)
-                            nCount++;
+                        if (op == ArgMaxParameter.COMPARE_OPERATOR.MIN)
+                        {
+                            if (rgBottomData[i * nDim + k] < dfVal)
+                                nCount++;
+                        }
+                        else
+                        {
+                            if (rgBottomData[i * nDim + k] > dfVal)
+                                nCount++;
+                        }
                     }
 
                     m_log.CHECK_EQ(j, nCount, "The values are not as expected.");
@@ -494,9 +649,10 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestCpuAxis()
+        public void TestCpuAxis(ArgMaxParameter.COMPARE_OPERATOR op)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ARGMAX);
+            p.argmax_param.op = op;
             p.argmax_param.axis = 0;
             ArgMaxLayer<T> layer = new ArgMaxLayer<T>(m_cuda, m_log, p);
 
@@ -504,8 +660,8 @@ namespace MyCaffe.test
             layer.Forward(BottomVec, TopVec);
 
             // Now, check values
-            int nMaxInd;
-            double dfMaxVal;
+            int nIdx;
+            double dfVal1;
             List<int> rgShape = Bottom.shape();
 
             for (int i = 0; i < rgShape[1]; i++)
@@ -514,25 +670,30 @@ namespace MyCaffe.test
                 {
                     for (int k = 0; k < rgShape[3]; k++)
                     {
-                        nMaxInd = (int)convert(Top.data_at(new List<int>() { 0, i, j, k }));
-                        dfMaxVal = convert(Bottom.data_at(new List<int>() { nMaxInd, i, j, k }));
+                        nIdx = (int)convert(Top.data_at(new List<int>() { 0, i, j, k }));
+                        dfVal1 = convert(Bottom.data_at(new List<int>() { nIdx, i, j, k }));
 
-                        m_log.CHECK_GE(nMaxInd, 0, "The max index should be >= 0.");
-                        m_log.CHECK_LE(nMaxInd, rgShape[0], "The max index should be <= the shape(0).");
+                        m_log.CHECK_GE(nIdx, 0, "The max index should be >= 0.");
+                        m_log.CHECK_LE(nIdx, rgShape[0], "The max index should be <= the shape(0).");
 
                         for (int l = 0; l < rgShape[0]; l++)
                         {
                             double dfVal = convert(Bottom.data_at(new List<int>() { l, i, j, k }));
-                            m_log.CHECK_LE(dfVal, dfMaxVal, "The value is not as expected.");
+
+                            if (op == ArgMaxParameter.COMPARE_OPERATOR.MIN)
+                                m_log.CHECK_GE(dfVal, dfVal1, "The value is not as expected.");
+                            else
+                                m_log.CHECK_LE(dfVal, dfVal1, "The value is not as expected.");
                         }
                     }
                 }
             }
         }
 
-        public void TestCpuAxisTopK()
+        public void TestCpuAxisTopK(ArgMaxParameter.COMPARE_OPERATOR op)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ARGMAX);
+            p.argmax_param.op = op;
             p.argmax_param.axis = 2;
             p.argmax_param.top_k = (uint)m_nTopK;
             ArgMaxLayer<T> layer = new ArgMaxLayer<T>(m_cuda, m_log, p);
@@ -541,8 +702,8 @@ namespace MyCaffe.test
             layer.Forward(BottomVec, TopVec);
 
             // Now, check values
-            int nMaxInd;
-            double dfMaxVal;
+            int nIdx;
+            double dfVal1;
             List<int> rgShape = Bottom.shape();
 
             for (int i = 0; i < rgShape[0]; i++)
@@ -553,11 +714,11 @@ namespace MyCaffe.test
                     {
                         for (int m = 0; m < m_nTopK; m++)
                         {
-                            nMaxInd = (int)convert(Top.data_at(new List<int>() { i, j, m, k }));
-                            dfMaxVal = convert(Bottom.data_at(new List<int>() { i, j, nMaxInd, k }));
+                            nIdx = (int)convert(Top.data_at(new List<int>() { i, j, m, k }));
+                            dfVal1 = convert(Bottom.data_at(new List<int>() { i, j, nIdx, k }));
 
-                            m_log.CHECK_GE(nMaxInd, 0, "The max index should be >= 0.");
-                            m_log.CHECK_LE(nMaxInd, rgShape[2], "The max index should be <= the shape(2).");
+                            m_log.CHECK_GE(nIdx, 0, "The max index should be >= 0.");
+                            m_log.CHECK_LE(nIdx, rgShape[2], "The max index should be <= the shape(2).");
 
                             int nCount = 0;
 
@@ -565,8 +726,16 @@ namespace MyCaffe.test
                             {
                                 double dfVal = convert(Bottom.data_at(new List<int>() { i, j, l, k }));
 
-                                if (dfVal > dfMaxVal)
-                                    nCount++;
+                                if (op == ArgMaxParameter.COMPARE_OPERATOR.MIN)
+                                {
+                                    if (dfVal < dfVal1)
+                                        nCount++;
+                                }
+                                else
+                                {
+                                    if (dfVal > dfVal1)
+                                        nCount++;
+                                }
                             }
 
                             m_log.CHECK_EQ(m, nCount, "The value is not expected.");
@@ -576,9 +745,10 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestCpuAxisMaxValTopK()
+        public void TestCpuAxisMaxValTopK(ArgMaxParameter.COMPARE_OPERATOR op)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ARGMAX);
+            p.argmax_param.op = op;
             p.argmax_param.top_k = (uint)m_nTopK;
             p.argmax_param.out_max_val = true;
             ArgMaxLayer<T> layer = new ArgMaxLayer<T>(m_cuda, m_log, p);
@@ -588,8 +758,8 @@ namespace MyCaffe.test
 
             // Now, check values
             double[] rgBottomData = convert(Bottom.mutable_cpu_data);
-            int nMaxIdx;
-            double dfMaxVal;
+            int nIdx;
+            double dfVal1;
             int nNum = Bottom.num;
             int nDim = Bottom.count() / nNum;
 
@@ -601,11 +771,11 @@ namespace MyCaffe.test
 
                 for (int j = 0; j < m_nTopK; j++)
                 {
-                    nMaxIdx = (int)convert(Top.data_at(i, 0, j, 0));
-                    dfMaxVal = convert(Top.data_at(i, 1, j, 0));
+                    nIdx = (int)convert(Top.data_at(i, 0, j, 0));
+                    dfVal1 = convert(Top.data_at(i, 1, j, 0));
 
-                    double dfBottom = rgBottomData[i * nDim + nMaxIdx];
-                    m_log.CHECK_EQ(dfBottom, dfMaxVal, "The max values do not match!");
+                    double dfBottom = rgBottomData[i * nDim + nIdx];
+                    m_log.CHECK_EQ(dfBottom, dfVal1, "The max values do not match!");
 
                     int nCount = 0;
 
@@ -613,8 +783,16 @@ namespace MyCaffe.test
                     {
                         dfBottom = rgBottomData[i * nDim + k];
 
-                        if (dfBottom > dfMaxVal)
-                            nCount++;
+                        if (op == ArgMaxParameter.COMPARE_OPERATOR.MIN)
+                        {
+                            if (dfBottom < dfVal1)
+                                nCount++;
+                        }
+                        else
+                        {
+                            if (dfBottom > dfVal1)
+                                nCount++;
+                        }
                     }
 
                     m_log.CHECK_EQ(j, nCount, "The number of items over max should equal " + j.ToString());
