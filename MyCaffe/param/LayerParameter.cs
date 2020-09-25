@@ -259,6 +259,10 @@ namespace MyCaffe.param
             /// </summary>
             LRN,
             /// <summary>
+            /// Initializes a parameter for the MathLayer.
+            /// </summary>
+            MATH,
+            /// <summary>
             /// Initializes a parameter for the MemoryDataLayer.
             /// </summary>
             MEMORYDATA,
@@ -1018,6 +1022,12 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new LRNParameter();
                     break;
 
+                case LayerType.MATH:
+                    expected_bottom.Add("input");
+                    expected_top.Add("math");
+                    m_rgLayerParameters[lt] = new MathParameter();
+                    break;
+
                 case LayerType.MEMORY_LOSS:
                     expected_bottom.Add("input");
                     expected_top.Add("loss");
@@ -1759,6 +1769,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.MATH
+        /// </summary>
+        public MathParameter math_param
+        {
+            get { return (MathParameter)m_rgLayerParameters[LayerType.MATH]; }
+            set { m_rgLayerParameters[LayerType.MATH] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.MEMORY_DATA
         /// </summary>
         public MemoryDataParameter memory_data_param
@@ -2307,6 +2326,9 @@ namespace MyCaffe.param
 
                 case LayerType.LRN:
                     return "LRN";
+
+                case LayerType.MATH:
+                    return "MATH";
                
                 case LayerType.MEMORYDATA:
                     return "MemoryData";
@@ -3083,6 +3105,9 @@ namespace MyCaffe.param
 
                 case "lrn":
                     return LayerType.LRN;
+
+                case "math":
+                    return LayerType.MATH;
 
                 case "memorydata":
                     return LayerType.MEMORYDATA;

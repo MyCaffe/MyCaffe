@@ -1215,6 +1215,9 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.LRN:
                     return new LRNLayer<T>(cuda, log, p);
 
+                case LayerParameter.LayerType.MATH:
+                    return new MathLayer<T>(cuda, log, p);
+
                 case LayerParameter.LayerType.MEMORYDATA:
                     return new MemoryDataLayer<T>(cuda, log, p);
 
