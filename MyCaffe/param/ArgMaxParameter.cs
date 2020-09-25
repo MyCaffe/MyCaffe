@@ -41,10 +41,10 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Specifies the operator to use (default = MAX).
+        /// Specifies the operation to use (default = MAX).
         /// </summary>
-        [Description("Specifies the operator to use (default = MAX).")]
-        public COMPARE_OPERATOR op
+        [Description("Specifies the operation to use (default = MAX).")]
+        public COMPARE_OPERATOR operation
         {
             get { return m_op; }
             set { m_op = value; }
@@ -133,8 +133,8 @@ namespace MyCaffe.param
             if (axis.HasValue)
                 rgChildren.Add("axis", axis.Value.ToString());
 
-            if (op != COMPARE_OPERATOR.MAX)
-                rgChildren.Add("op", op.ToString());
+            if (operation != COMPARE_OPERATOR.MAX)
+                rgChildren.Add("operation", operation.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -158,12 +158,12 @@ namespace MyCaffe.param
             if ((strVal = rp.FindValue("axis")) != null)
                 p.axis = int.Parse(strVal);
 
-            if ((strVal = rp.FindValue("op")) != null)
+            if ((strVal = rp.FindValue("operation")) != null)
             {
                 if (strVal == COMPARE_OPERATOR.MIN.ToString())
-                    p.op = COMPARE_OPERATOR.MIN;
+                    p.operation = COMPARE_OPERATOR.MIN;
                 else
-                    p.op = COMPARE_OPERATOR.MAX;
+                    p.operation = COMPARE_OPERATOR.MAX;
             }
 
             return p;

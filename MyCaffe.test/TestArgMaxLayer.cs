@@ -480,7 +480,7 @@ namespace MyCaffe.test
         public void TestCpu(ArgMaxParameter.COMPARE_OPERATOR op)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ARGMAX);
-            p.argmax_param.op = op;
+            p.argmax_param.operation = op;
             ArgMaxLayer<T> layer = new ArgMaxLayer<T>(m_cuda, m_log, p);
 
             layer.Setup(BottomVec, TopVec);
@@ -514,7 +514,7 @@ namespace MyCaffe.test
         public void TestCpuMaxVal(ArgMaxParameter.COMPARE_OPERATOR op)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ARGMAX);
-            p.argmax_param.op = op;
+            p.argmax_param.operation = op;
             p.argmax_param.out_max_val = true;
             ArgMaxLayer<T> layer = new ArgMaxLayer<T>(m_cuda, m_log, p);
 
@@ -551,7 +551,7 @@ namespace MyCaffe.test
         public void TestCpuTopK(ArgMaxParameter.COMPARE_OPERATOR op)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ARGMAX);
-            p.argmax_param.op = op;
+            p.argmax_param.operation = op;
             p.argmax_param.top_k = (uint)m_nTopK;
             ArgMaxLayer<T> layer = new ArgMaxLayer<T>(m_cuda, m_log, p);
 
@@ -600,7 +600,7 @@ namespace MyCaffe.test
         public void TestCpuMaxValTopK(ArgMaxParameter.COMPARE_OPERATOR op)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ARGMAX);
-            p.argmax_param.op = op;
+            p.argmax_param.operation = op;
             p.argmax_param.out_max_val = true;
             p.argmax_param.top_k = (uint)m_nTopK;
             ArgMaxLayer<T> layer = new ArgMaxLayer<T>(m_cuda, m_log, p);
@@ -652,7 +652,7 @@ namespace MyCaffe.test
         public void TestCpuAxis(ArgMaxParameter.COMPARE_OPERATOR op)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ARGMAX);
-            p.argmax_param.op = op;
+            p.argmax_param.operation = op;
             p.argmax_param.axis = 0;
             ArgMaxLayer<T> layer = new ArgMaxLayer<T>(m_cuda, m_log, p);
 
@@ -693,7 +693,7 @@ namespace MyCaffe.test
         public void TestCpuAxisTopK(ArgMaxParameter.COMPARE_OPERATOR op)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ARGMAX);
-            p.argmax_param.op = op;
+            p.argmax_param.operation = op;
             p.argmax_param.axis = 2;
             p.argmax_param.top_k = (uint)m_nTopK;
             ArgMaxLayer<T> layer = new ArgMaxLayer<T>(m_cuda, m_log, p);
@@ -748,7 +748,7 @@ namespace MyCaffe.test
         public void TestCpuAxisMaxValTopK(ArgMaxParameter.COMPARE_OPERATOR op)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ARGMAX);
-            p.argmax_param.op = op;
+            p.argmax_param.operation = op;
             p.argmax_param.top_k = (uint)m_nTopK;
             p.argmax_param.out_max_val = true;
             ArgMaxLayer<T> layer = new ArgMaxLayer<T>(m_cuda, m_log, p);

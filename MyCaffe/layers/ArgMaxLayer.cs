@@ -176,7 +176,7 @@ namespace MyCaffe.layers
                     rgBottomDataPair.Add(new KeyValuePair<double, int>(rgBottomData[nIdx], j));
                 }
 
-                if (m_param.argmax_param.op == ArgMaxParameter.COMPARE_OPERATOR.MIN)
+                if (m_param.argmax_param.operation == ArgMaxParameter.COMPARE_OPERATOR.MIN)
                     rgBottomDataPair.Sort(new Comparison<KeyValuePair<double, int>>(sortDataItemsDescending));
                 else
                     rgBottomDataPair.Sort(new Comparison<KeyValuePair<double, int>>(sortDataItemsAscending));
