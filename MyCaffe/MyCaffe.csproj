@@ -116,6 +116,7 @@
     <Compile Include="fillers\UniformFiller.cs" />
     <Compile Include="fillers\XavierFiller.cs" />
     <Compile Include="Interfaces.cs" />
+    <Compile Include="layers\MathLayer.cs" />
     <Compile Include="layers\ImageDataLayer.cs" />
     <Compile Include="layers\DataNormalizerLayer.cs" />
     <Compile Include="layers\ParameterLayer.cs" />
@@ -195,6 +196,7 @@
     </Compile>
     <Compile Include="param.beta\DecodeParameter.cs" />
     <Compile Include="param.beta\DataSequenceParameter.cs" />
+    <Compile Include="param\MathParameter.cs" />
     <Compile Include="param\ImageDataParameter.cs" />
     <Compile Include="param\DataLabelMappingParameter.cs" />
     <Compile Include="param\DataDebugParameter.cs" />
