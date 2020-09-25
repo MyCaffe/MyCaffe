@@ -375,6 +375,13 @@ namespace MyCaffe.converter.onnx
 
                 switch (layer.type)
                 {
+                    case LayerParameter.LayerType.ARGMAX:
+                        if (layer.layer_param.argmax_param.operation == ArgMaxParameter.COMPARE_OPERATOR.MIN)
+                            node.OpType = OnnxDefinitions.OPERATORS.ArgMin.ToString();
+                        else
+                            node.OpType = OnnxDefinitions.OPERATORS.ArgMax.ToString();
+                        break;
+
                     case LayerParameter.LayerType.ELTWISE:
                         if (layer.layer_param.eltwise_param.operation == EltwiseParameter.EltwiseOp.SUM)
                             node.OpType = OnnxDefinitions.OPERATORS.Add.ToString();
@@ -382,6 +389,8 @@ namespace MyCaffe.converter.onnx
                             node.OpType = OnnxDefinitions.OPERATORS.Mul.ToString();
                         else if (layer.layer_param.eltwise_param.operation == EltwiseParameter.EltwiseOp.MAX)
                             node.OpType = OnnxDefinitions.OPERATORS.Max.ToString();
+                        else if (layer.layer_param.eltwise_param.operation == EltwiseParameter.EltwiseOp.MIN)
+                            node.OpType = OnnxDefinitions.OPERATORS.Min.ToString();
                         break;
 
                     case LayerParameter.LayerType.BATCHNORM:
@@ -1358,6 +1367,20 @@ namespace MyCaffe.converter.onnx
                     fillParameter(node.Attribute, layer.eltwise_param, EltwiseParameter.EltwiseOp.SUM);
                 }
 
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.ArgMin))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.ARGMAX);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.argmax_param, ArgMaxParameter.COMPARE_OPERATOR.MIN);
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.ArgMax))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.ARGMAX);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.argmax_param, ArgMaxParameter.COMPARE_OPERATOR.MAX);
+                }
+
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.BatchNormalization))
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.BATCHNORM);
@@ -1446,6 +1469,13 @@ namespace MyCaffe.converter.onnx
                     layer = new LayerParameter(LayerParameter.LayerType.POOLING);
                     layer.name = strNodeName;
                     fillParameter(node.Attribute, layer.pooling_param, PoolingParameter.PoolingMethod.MAX, false);
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Min))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.ELTWISE);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.eltwise_param, EltwiseParameter.EltwiseOp.MIN);
                 }
 
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Max))
@@ -1547,6 +1577,11 @@ namespace MyCaffe.converter.onnx
             }
 
             return colLearnable;
+        }
+
+        private void fillParameter(RepeatedField<AttributeProto> rg, ArgMaxParameter p, ArgMaxParameter.COMPARE_OPERATOR op)
+        {
+            p.operation = op;
         }
 
         private void fillParameter(RepeatedField<AttributeProto> rg, EltwiseParameter p, EltwiseParameter.EltwiseOp op)
