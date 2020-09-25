@@ -6826,6 +6826,471 @@ long Math<T>::clip_bwd(int n, long hTopDiff, long hBottomData, long hBottomDiff,
 template long Math<double>::clip_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, double dfMin, double dfMax);
 template long Math<float>::clip_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, float fMin, float fMax);
 
+template<typename T>
+__global__ void acos_fwd_kernel(int n, T* in, T* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		T y = acos(in[i]);
+		if (isnan(y) || isinf(y))
+			y = 0;
+		out[i] = y;
+	}
+}
+
+template<typename T>
+__global__ void acosh_fwd_kernel(int n, T* in, T* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		T y = acosh(in[i]);
+		if (isnan(y) || isinf(y))
+			y = 0;
+		out[i] = y;
+	}
+}
+
+template<typename T>
+__global__ void cos_fwd_kernel(int n, T* in, T* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		T y = cos(in[i]);
+		if (isnan(y) || isinf(y))
+			y = 0;
+		out[i] = y;
+	}
+}
+
+template<typename T>
+__global__ void cosh_fwd_kernel(int n, T* in, T* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		T y = cosh(in[i]);
+		if (isnan(y) || isinf(y))
+			y = 0;
+		out[i] = y;
+	}
+}
+
+template<typename T>
+__global__ void asin_fwd_kernel(int n, T* in, T* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		T y = asin(in[i]);
+		if (isnan(y) || isinf(y))
+			y = 0;
+		out[i] = y;
+	}
+}
+
+template<typename T>
+__global__ void asinh_fwd_kernel(int n, T* in, T* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		T y = asinh(in[i]);
+		if (isnan(y) || isinf(y))
+			y = 0;
+		out[i] = y;
+	}
+}
+
+template<typename T>
+__global__ void sin_fwd_kernel(int n, T* in, T* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		T y = sin(in[i]);
+		if (isnan(y) || isinf(y))
+			y = 0;
+		out[i] = y;
+	}
+}
+
+template<typename T>
+__global__ void sinh_fwd_kernel(int n, T* in, T* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		T y = sinh(in[i]);
+		if (isnan(y) || isinf(y))
+			y = 0;
+		out[i] = y;
+	}
+}
+
+template<typename T>
+__global__ void atan_fwd_kernel(int n, T* in, T* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		T y = atan(in[i]);
+		if (isnan(y) || isinf(y))
+			y = 0;
+		out[i] = y;
+	}
+}
+
+template<typename T>
+__global__ void atanh_fwd_kernel(int n, T* in, T* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		T y = atanh(in[i]);
+		if (isnan(y) || isinf(y))
+			y = 0;
+		out[i] = y;
+	}
+}
+
+template<typename T>
+__global__ void tan_fwd_kernel(int n, T* in, T* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		T y = tan(in[i]);
+		if (isnan(y) || isinf(y))
+			y = 0;
+		out[i] = y;
+	}
+}
+
+template<typename T>
+__global__ void tanh_fwd_kernel2(int n, T* in, T* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		T y = tanh(in[i]);
+		if (isnan(y) || isinf(y))
+			y = 0;
+		out[i] = y;
+	}
+}
+
+template <class T>
+long Math<T>::math_fwd(int n, long hBottomData, long hTopData, int nFunction)
+{
+	LONG lErr;
+	MemoryItem* pBottomData;
+	MemoryItem* pTopData;
+
+	if (lErr = m_pMemCol->GetData(hBottomData, &pBottomData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hTopData, &pTopData))
+		return lErr;
+
+	T* bottom_data = (T*)pBottomData->Data();
+	T* top_data = (T*)pTopData->Data();
+
+	switch (nFunction)
+	{
+		case MATH_ACOS:
+			acos_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+			break;
+
+		case MATH_ACOSH:
+			acosh_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+			break;
+
+		case MATH_COS:
+			cos_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+			break;
+
+		case MATH_COSH:
+			cosh_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+			break;
+
+		case MATH_ASIN:
+			asin_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+			break;
+
+		case MATH_ASINH:
+			asinh_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+			break;
+
+		case MATH_SIN:
+			sin_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+			break;
+
+		case MATH_SINH:
+			sinh_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+			break;
+
+		case MATH_ATAN:
+			atan_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+			break;
+
+		case MATH_ATANH:
+			atanh_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+			break;
+
+		case MATH_TAN:
+			tan_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+			break;
+
+		case MATH_TANH:
+			tanh_fwd_kernel2<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+			break;
+	}
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::math_fwd(int nCount, long hBottomData, long hTopData, int nFunction);
+template long Math<float>::math_fwd(int nCount, long hBottomData, long hTopData, int nFunction);
+
+template<typename T>
+__global__ void acos_bwd_kernel(int n, T* top_diff, T* top_data, T* btm_diff, T* btm_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		// f(x) = acos(x)
+		// f'(x) = -1/sqrt(1-x^2) http://math2.org/math/derivatives/tableof.htm	
+		T x = btm_data[i];
+		T val = sqrt(1 - x * x);
+		T grad = (val == 0) ? 0 : -1.0 / val;
+		btm_diff[i] = (top_data[i] == 0) ? 0 : top_diff[i] * grad;
+	}
+}
+
+template<typename T>
+__global__ void acosh_bwd_kernel(int n, T* top_diff, T* top_data, T* btm_diff, T* btm_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		// f(x) = acosh(x)
+		// f'(x) = sqrt(-1 + x) * sqrt(1 + x)
+		T x = btm_data[i];
+		T val = sqrt(-1 + x) * sqrt(1 + x);
+		T grad = (val == 0) ? 0 : -1.0 / val;
+		btm_diff[i] = (top_data[i] == 0) ? 0 : top_diff[i] * grad;
+	}
+}
+
+template<typename T>
+__global__ void cos_bwd_kernel(int n, T* top_diff, T* top_data, T* btm_diff, T* btm_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		// f(x) = cos(x)
+		// f'(x) = -sin(x) http://math2.org/math/derivatives/tableof.htm
+		T x = btm_data[i];
+		T grad = -sin(x);
+		btm_diff[i] = (top_data[i] == 0) ? 0 : top_diff[i] * grad;
+	}
+}
+
+template<typename T>
+__global__ void cosh_bwd_kernel(int n, T* top_diff, T* top_data, T* btm_diff, T* btm_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		// f(x) = cosh(x)
+		// f'(x) = sinh(x) http://math2.org/math/derivatives/tableof.htm
+		T x = btm_data[i];
+		T grad = sinh(x);
+		btm_diff[i] = (top_data[i] == 0) ? 0 : top_diff[i] * grad;
+	}
+}
+
+template<typename T>
+__global__ void asin_bwd_kernel(int n, T* top_diff, T* top_data, T* btm_diff, T* btm_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		// f(x) = asin(x)
+		// f'(x) = 1/sqrt(1-x^2) http://math2.org/math/derivatives/tableof.htm
+		T x = btm_data[i];
+		T val = sqrt(1 - x * x);
+		T grad = (val == 0) ? 0 : 1.0 / val;
+		btm_diff[i] = (top_data[i] == 0) ? 0 : top_diff[i] * grad;
+	}
+}
+
+template<typename T>
+__global__ void asinh_bwd_kernel(int n, T* top_diff, T* top_data, T* btm_diff, T* btm_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		// f(x) = asina(x)
+		// f'(x) = 1/sqrt(1 + x^2) 
+		T x = btm_data[i];
+		T val = sqrt(1 + x * x);
+		T grad = (val == 0) ? 0 : 1.0 / val;
+		btm_diff[i] = (top_data[i] == 0) ? 0 : top_diff[i] * grad;
+	}
+}
+
+template<typename T>
+__global__ void sin_bwd_kernel(int n, T* top_diff, T* top_data, T* btm_diff, T* btm_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		// f(x) = sin(x)
+		// f'(x) = cos(x) http://math2.org/math/derivatives/tableof.htm
+		T x = btm_data[i];
+		T grad = cos(x);
+		btm_diff[i] = (top_data[i] == 0) ? 0 : top_diff[i] * grad;
+	}
+}
+
+template<typename T>
+__global__ void sinh_bwd_kernel(int n, T* top_diff, T* top_data, T* btm_diff, T* btm_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		// f(x) = sinh(x)
+		// f'(x) = cosh(x) http://math2.org/math/derivatives/tableof.htm
+		T x = btm_data[i];
+		T grad = cosh(x);
+		btm_diff[i] = (top_data[i] == 0) ? 0 : top_diff[i] * grad;
+	}
+}
+
+template<typename T>
+__global__ void atan_bwd_kernel(int n, T* top_diff, T* top_data, T* btm_diff, T* btm_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		// f(x) = atan(x)
+		// f'(x) = 1 / (1 + x^2) http://math2.org/math/derivatives/tableof.htm
+		T x = btm_data[i];
+		T val = 1 + (x * x);
+		T grad = (val == 0) ? 0 : 1.0 / val;
+		btm_diff[i] = (top_data[i] == 0) ? 0 : top_diff[i] * grad;
+	}
+}
+
+template<typename T>
+__global__ void atanh_bwd_kernel(int n, T* top_diff, T* top_data, T* btm_diff, T* btm_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		// f(x) = atanh(x)
+		// f'(x) = 1 / (1 - x^2)
+		T x = btm_data[i];
+		T val = 1 - (x * x);
+		T grad = (val == 0) ? 0 : 1.0 / val;
+		btm_diff[i] = (top_data[i] == 0) ? 0 : top_diff[i] * grad;
+	}
+}
+
+template<typename T>
+__global__ void tan_bwd_kernel(int n, T* top_diff, T* top_data, T* btm_diff, T* btm_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		// f(x) = tan(x)
+		// f'(x) = sec(x)^2 = 1.0 / cos(x)^2 http://math2.org/math/derivatives/tableof.htm
+		T cosx = cos(btm_data[i]);
+		T cosxsq = cosx * cosx;
+		T grad = (cosxsq == 0) ? 0 : 1.0 / cosxsq;
+		btm_diff[i] = (top_data[i] == 0) ? 0 : top_diff[i] * grad;
+	}
+}
+
+template<typename T>
+__global__ void tanh_bwd_kernel2(int n, T* top_diff, T* top_data, T* btm_diff, T* btm_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		// f(x) = tanh(x)
+		// f'(x) = sec(x)^2 = 1.0 / cos(x)^2, or
+		// f'(x) = 1 - tanh(x)^2, http://math2.org/math/derivatives/tableof.htm
+		T tanh = top_data[i];
+		T grad = 1 - tanh * tanh;
+		btm_diff[i] = (top_data[i] == 0) ? 0 : top_diff[i] * grad;
+	}
+}
+
+template <class T>
+long Math<T>::math_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, int nFunction)
+{
+	LONG lErr;
+	MemoryItem* pTopDiff;
+	MemoryItem* pTopData;
+	MemoryItem* pBottomDiff;
+	MemoryItem* pBottomData;
+
+	if (lErr = m_pMemCol->GetData(hTopDiff, &pTopDiff))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hTopData, &pTopData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBottomDiff, &pBottomDiff))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBottomData, &pBottomData))
+		return lErr;
+
+	T* top_diff = (T*)pTopDiff->Data();
+	T* top_data = (T*)pTopData->Data();
+	T* bottom_diff = (T*)pBottomDiff->Data();
+	T* bottom_data = (T*)pBottomData->Data();
+
+	switch (nFunction)
+	{
+		case MATH_ACOS:
+			acos_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+			break;
+
+		case MATH_ACOSH:
+			acosh_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+			break;
+
+		case MATH_COS:
+			cos_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+			break;
+
+		case MATH_COSH:
+			cosh_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+			break;
+
+		case MATH_ASIN:
+			asin_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+			break;
+
+		case MATH_ASINH:
+			asinh_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+			break;
+
+		case MATH_SIN:
+			sin_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+			break;
+
+		case MATH_SINH:
+			sinh_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+			break;
+
+		case MATH_ATAN:
+			atan_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+			break;
+
+		case MATH_ATANH:
+			atanh_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+			break;
+
+		case MATH_TAN:
+			tan_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+			break;
+
+		case MATH_TANH:
+			tanh_bwd_kernel2<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+			break;
+	}
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::math_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, int nFunction);
+template long Math<float>::math_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, int nFunction);
+
+
 
 template<typename T>
 __global__ void tanh_fwd_kernel(int n, T* in, T* out)

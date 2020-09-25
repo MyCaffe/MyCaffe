@@ -34,6 +34,23 @@ const int AGGREGATION_MIN = 2;
 const int DISTANCE_METHOD_HAMMING = 0;
 const int DISTANCE_METHOD_EUCLIDEAN = 1;
 
+const int MATH_NOP = 0;
+
+const int MATH_ACOS = 1;
+const int MATH_ACOSH = 2;
+const int MATH_COS = 3;
+const int MATH_COSH = 4;
+
+const int MATH_ASIN = 10;
+const int MATH_ASINH = 11;
+const int MATH_SIN = 12;
+const int MATH_SINH = 13;
+
+const int MATH_ATAN = 20;
+const int MATH_ATANH = 21;
+const int MATH_TAN = 22;
+const int MATH_TANH = 23;
+
 
 //=============================================================================
 //	Forward References
@@ -221,6 +238,9 @@ class Math
 
 		long clip_fwd(int nCount, long hBottomData, long hTopData, T fMin, T fMax);
 		long clip_bwd(int nCount, long hTopDiff, long hBottomData, long hBottomDiff, T fMin, T fMax);
+
+		long math_fwd(int nCount, long hBottomData, long hTopData, int nFunction);
+		long math_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, int nFunction);
 
 		long tanh_fwd(int nCount, long hBottomData, long hTopData);
 		long tanh_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff);

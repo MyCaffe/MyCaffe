@@ -337,6 +337,9 @@ const int CUDA_FN_LSTM_BWD = 481;
 const int CUDA_FN_LSTM_UNIT_FWD = 482;
 const int CUDA_FN_LSTM_UNIT_BWD = 483;
 
+const int CUDA_FN_MATH_FWD = 487;
+const int CUDA_FN_MATH_BWD = 488;
+
 const int CUDA_FN_COEFF_SUM_FWD = 490;
 const int CUDA_FN_COEFF_SUM_BWD = 491;
 

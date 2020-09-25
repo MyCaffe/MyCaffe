@@ -11,6 +11,68 @@ using MyCaffe.basecode;
 namespace MyCaffe.common
 {
     /// <summary>
+    /// Defines the mathematical function to run.
+    /// </summary>
+    public enum MATH_FUNCTION
+    {
+        /// <summary>
+        /// Specifies to run a no operation.
+        /// </summary>
+        NOP = 0,
+
+        /// <summary>
+        /// Specifies to run the acos function.
+        /// </summary>
+        ACOS = 1,
+        /// <summary>
+        /// Specifies to run the acosh function.
+        /// </summary>
+        ACOSH = 2,
+        /// <summary>
+        /// Specifies to run the cos function.
+        /// </summary>
+        COS = 3,
+        /// <summary>
+        /// Specifies to run the cosh function.
+        /// </summary>
+        COSH = 4,
+
+        /// <summary>
+        /// Specifies to run the asin function.
+        /// </summary>
+        ASIN = 10,
+        /// <summary>
+        /// Specifies to run the asinh function.
+        /// </summary>
+        ASINH = 11,
+        /// <summary>
+        /// Specifies to run the sin function.
+        /// </summary>
+        SIN = 12,
+        /// <summary>
+        /// Specifies to run the sinh function.
+        /// </summary>
+        SINH = 13,
+
+        /// <summary>
+        /// Specifies to run the atan function.
+        /// </summary>
+        ATAN = 20,
+        /// <summary>
+        /// Specifies to run the atanh function.
+        /// </summary>
+        ATANH = 21,
+        /// <summary>
+        /// Specifies to run the tan function.
+        /// </summary>
+        TAN = 22,
+        /// <summary>
+        /// Specifies to run the tanh function.
+        /// </summary>
+        TANH = 23,
+    }
+
+    /// <summary>
     /// Specifies the distance method used when calculating batch distances.
     /// </summary>
     public enum DistanceMethod
@@ -1054,6 +1116,9 @@ namespace MyCaffe.common
 
             CUDA_LSTM_UNIT_FWD = 482,
             CUDA_LSTM_UNIT_BWD = 483,
+
+            CUDA_MATH_FWD = 487,
+            CUDA_MATH_BWD = 488,
 
             CUDA_COEFF_SUM_FWD = 490,
             CUDA_COEFF_SUM_BWD = 491,
@@ -6757,7 +6822,6 @@ namespace MyCaffe.common
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_FILL, new float[] { nCount, nOuterNum, nChannels, nInnerNum, hX, nLabelDim, hLabels, hY });
         }
 
-
         /// <summary>
         /// Subtracts the values of the channels from X and places the result in Y.
         /// </summary>
@@ -7049,7 +7113,7 @@ namespace MyCaffe.common
 
 #pragma warning restore 1591
 
-
+        
         /// <summary>
         /// Performs the forward pass for the accuracy layer
         /// </summary>
@@ -7303,6 +7367,42 @@ namespace MyCaffe.common
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CLIP_BWD, new float[] { nCount, hTopDiff, hBottomData, hBottomDiff, convertF1(fMin), convertF1(fMax) });
         }
+
+        /// <summary>
+        /// Performs a Math function forward pass in Cuda.
+        /// </summary>
+        /// <remarks>
+        /// Calculation @f$ Y[i] = function(X[i]) @f$
+        /// </remarks>
+        /// <param name="nCount">Specifies the number of items in the bottom and top data.</param>
+        /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
+        /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
+        /// <param name="function">Specifies the mathematical function to use.</param>
+        public void math_fwd(int nCount, long hBottomData, long hTopData, MATH_FUNCTION function)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MATH_FWD, new double[] { nCount, hBottomData, hTopData, (int)function });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MATH_FWD, new float[] { nCount, hBottomData, hTopData, (int)function });
+        }
+
+        /// <summary>
+        /// Performs a Math function backward pass in Cuda.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="hTopDiff">Specifies a handle to the top diff in GPU memory.</param>
+        /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
+        /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
+        /// <param name="hBottomData">Specifies a handle tot he bottom data in GPU memory.</param>
+        /// <param name="function">Specifies the mathematical function to use.</param>
+        public void math_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, MATH_FUNCTION function)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MATH_BWD, new double[] { nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, (int)function });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MATH_BWD, new float[] { nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, (int)function });
+        }
+
 
         /// <summary>
         /// Performs a TanH forward pass in Cuda.

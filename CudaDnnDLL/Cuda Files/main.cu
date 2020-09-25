@@ -785,6 +785,12 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_LSTM_UNIT_BWD:
 			return m_device.cuda_lstm_unit_bwd(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_MATH_FWD:
+			return m_device.cuda_math_fwd(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_MATH_BWD:
+			return m_device.cuda_math_bwd(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_COEFF_SUM_FWD:
 			return m_device.cuda_coeff_sum_fwd(lCount, pfInput, plCount, ppfOutput);
 
@@ -1685,6 +1691,12 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_LSTM_UNIT_BWD:
 		return "CUDA_FN_LSTM_UNIT_BWD";
+
+	case CUDA_FN_MATH_FWD:
+		return "CUDA_FN_MATH_FWD";
+
+	case CUDA_FN_MATH_BWD:
+		return "CUDA_FN_MATH_BWD";
 
 	case CUDA_FN_COEFF_SUM_FWD:
 		return "CUDA_FN_COEFF_SUM_FWD";
