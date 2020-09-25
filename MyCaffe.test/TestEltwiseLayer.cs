@@ -193,6 +193,42 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestMin()
+        {
+            EltwiseLayerTest test = new EltwiseLayerTest();
+
+            try
+            {
+                foreach (IEltwiseLayerTest t in test.Tests)
+                {
+                    t.TestMin();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestMinGradient()
+        {
+            EltwiseLayerTest test = new EltwiseLayerTest();
+
+            try
+            {
+                foreach (IEltwiseLayerTest t in test.Tests)
+                {
+                    t.TestMinGradient();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface IEltwiseLayerTest : ITest
@@ -207,6 +243,8 @@ namespace MyCaffe.test
         void TestSumCoeffGradient();
         void TestMax();
         void TestMaxGradient();
+        void TestMin();
+        void TestMinGradient();
     }
 
     class EltwiseLayerTest : TestBase
@@ -435,6 +473,43 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ELTWISE);
             p.eltwise_param.operation = EltwiseParameter.EltwiseOp.MAX;
+            EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
+
+            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-4);
+            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+        }
+
+        public void TestMin()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.ELTWISE);
+            p.eltwise_param.operation = EltwiseParameter.EltwiseOp.MIN;
+            EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
+
+            layer.Setup(BottomVec, TopVec);
+            layer.Forward(BottomVec, TopVec);
+
+            double[] rgTop = convert(Top.update_cpu_data());
+            int nCount = Top.count();
+            double[] rgBottomA = convert(Bottom.update_cpu_data());
+            double[] rgBottomB = convert(BottomB.update_cpu_data());
+            double[] rgBottomC = convert(BottomC.update_cpu_data());
+
+            for (int i = 0; i < nCount; i++)
+            {
+                double dfTop = rgTop[i];
+                double dfBottomA = rgBottomA[i];
+                double dfBottomB = rgBottomB[i];
+                double dfBottomC = rgBottomC[i];
+                double dfExpected = Math.Min(dfBottomA, Math.Min(dfBottomB, dfBottomC));
+
+                m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+            }
+        }
+
+        public void TestMinGradient()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.ELTWISE);
+            p.eltwise_param.operation = EltwiseParameter.EltwiseOp.MIN;
             EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
 
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-4);

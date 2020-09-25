@@ -23,7 +23,7 @@ namespace MyCaffe.layers
     {
         EltwiseParameter.EltwiseOp m_op;
         List<double> m_rgdfCoeffs = new List<double>();
-        Blob<T> m_blobMaxIdx;
+        Blob<T> m_blobIdx;
         bool m_bStableProdGrad;
         bool m_bCoeffBlob;
 
@@ -44,14 +44,14 @@ namespace MyCaffe.layers
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.ELTWISE;
-            m_blobMaxIdx = new Blob<T>(cuda, log);
-            m_blobMaxIdx.Name = m_param.name + " maxidx";
+            m_blobIdx = new Blob<T>(cuda, log);
+            m_blobIdx.Name = m_param.name + " idx";
         }
 
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
-            m_blobMaxIdx.Dispose();
+            m_blobIdx.Dispose();
             base.dispose();
         }
 
@@ -62,7 +62,7 @@ namespace MyCaffe.layers
             {
                 BlobCollection<T> col = new BlobCollection<T>();
 
-                col.Add(m_blobMaxIdx);
+                col.Add(m_blobIdx);
 
                 return col;
             }
@@ -149,8 +149,8 @@ namespace MyCaffe.layers
             colTop[0].ReshapeLike(colBottom[0]);
 
             // If max operation, we will initialize the vector index part.
-            if (m_param.eltwise_param.operation == EltwiseParameter.EltwiseOp.MAX && colTop.Count == 1)
-                m_blobMaxIdx.Reshape(colBottom[0].shape());
+            if ((m_param.eltwise_param.operation == EltwiseParameter.EltwiseOp.MAX || m_param.eltwise_param.operation == EltwiseParameter.EltwiseOp.MIN) && colTop.Count == 1)
+                m_blobIdx.Reshape(colBottom[0].shape());
         }
 
         /// <summary>
@@ -203,12 +203,22 @@ namespace MyCaffe.layers
                     break;
 
                 case EltwiseParameter.EltwiseOp.MAX:
-                    hMask = m_blobMaxIdx.mutable_gpu_data;
+                    hMask = m_blobIdx.mutable_gpu_data;
                     m_cuda.max_fwd(nCount, colBottom[0].gpu_data, colBottom[1].gpu_data, 0, hTopData, hMask);
 
                     for (int i = 2; i < colBottom.Count; i++)
                     {
                         m_cuda.max_fwd(nCount, hTopData, colBottom[i].gpu_data, i-1, hTopData, hMask);
+                    }
+                    break;
+
+                case EltwiseParameter.EltwiseOp.MIN:
+                    hMask = m_blobIdx.mutable_gpu_data;
+                    m_cuda.min_fwd(nCount, colBottom[0].gpu_data, colBottom[1].gpu_data, 0, hTopData, hMask);
+
+                    for (int i = 2; i < colBottom.Count; i++)
+                    {
+                        m_cuda.min_fwd(nCount, hTopData, colBottom[i].gpu_data, i - 1, hTopData, hMask);
                     }
                     break;
 
@@ -288,8 +298,13 @@ namespace MyCaffe.layers
                             break;
 
                         case EltwiseParameter.EltwiseOp.MAX:
-                            hMask = m_blobMaxIdx.gpu_data;
+                            hMask = m_blobIdx.gpu_data;
                             m_cuda.max_bwd(nCount, hTopDiff, i, hMask, hBottomDiff);
+                            break;
+
+                        case EltwiseParameter.EltwiseOp.MIN:
+                            hMask = m_blobIdx.gpu_data;
+                            m_cuda.min_bwd(nCount, hTopDiff, i, hMask, hBottomDiff);
                             break;
 
                         default:

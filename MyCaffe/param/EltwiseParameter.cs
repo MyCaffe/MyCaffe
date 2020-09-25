@@ -35,7 +35,11 @@ namespace MyCaffe.param
             /// <summary>
             /// Find the eltwise maximum.
             /// </summary>
-            MAX = 2
+            MAX = 2,
+            /// <summary>
+            /// Find the eltwise minimum.
+            /// </summary>
+            MIN = 3
         }
 
         EltwiseOp m_operation = EltwiseOp.SUM;
@@ -165,6 +169,10 @@ namespace MyCaffe.param
 
                     case "MAX":
                         p.operation = EltwiseOp.MAX;
+                        break;
+
+                    case "MIN":
+                        p.operation = EltwiseOp.MIN;
                         break;
 
                     default:
