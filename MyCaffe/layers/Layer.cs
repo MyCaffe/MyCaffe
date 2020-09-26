@@ -90,6 +90,13 @@ namespace MyCaffe.layers
         /// Specifies whether or not the layer should convert the bottom when using half sized memory.
         /// </summary>
         protected bool m_bConvertBottom = true;
+        /// <summary>
+        /// Specifies whether or not the reshape on forward is needed or not.
+        /// </summary>
+        protected bool m_bReshapeOnForwardNeeded = true;
+
+        private List<List<int>> m_rgrgLastBottomShape = new List<List<int>>();
+        private List<List<int>> m_rgrgLastTopShape = new List<List<int>>();
 
         private double m_dfForwardTiming = 0;
         private double m_dfForwardAverageTiming = 0;
@@ -232,9 +239,13 @@ namespace MyCaffe.layers
         {
             try
             {
+                m_rgrgLastBottomShape = new List<List<int>>();
+                m_rgrgLastTopShape = new List<List<int>>();
+
                 CheckBlobCounts(colBottom, colTop);
                 LayerSetUp(colBottom, colTop);
                 Reshape(colBottom, colTop);
+                setShapes(colBottom, colTop);
                 SetLossWeights(colTop);
             }
             catch (Exception excpt)
@@ -388,6 +399,97 @@ namespace MyCaffe.layers
             }
         }
 
+        /// <summary>
+        /// Tests the shapes of both the bottom and top blobs and if they are the same as the previous sizing, returns <i>false</i> indicating that no reshape is needed.
+        /// </summary>
+        /// <param name="colBottom">Specifies the bottom blobs.</param>
+        /// <param name="colTop">Specifies the top blobs.</param>
+        /// <param name="bReset">Specifies to reset the test (set to <i>false</i> when using in second derivative classes, e.g. set to true in BaseConvolutionLayer, and false in ConvolutionLayer).</param>
+        /// <returns>If a reshape is needed, returns <i>true</i> otherwise returns <i>fasle</i>.</returns>
+        protected bool reshapeNeeded(BlobCollection<T> colBottom, BlobCollection<T> colTop, bool bReset = true)
+        {
+            if (!bReset)
+                return m_bReshapeOnForwardNeeded;
+
+            if (!compareShapes(colBottom, colTop))
+            {
+                m_bReshapeOnForwardNeeded = true;
+                return true;
+            }
+            else
+            {
+                m_bReshapeOnForwardNeeded = false;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Compare the shapes of the top and bottom and if the same, return true, otherwise false.
+        /// </summary>
+        /// <param name="colBottom">Specifies the bottom blobs.</param>
+        /// <param name="colTop">Specifies the top blobs.</param>
+        /// <returns>If the top and bottom blobs have not changed shape, true is returned, otherwise false.</returns>
+        protected bool compareShapes(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            if (!compareShapes(colBottom, m_rgrgLastBottomShape))
+                return false;
+
+            if (!compareShapes(colTop, m_rgrgLastTopShape))
+                return false;
+
+            return true;
+        }
+
+        private bool compareShapes(BlobCollection<T> col, List<List<int>> rgrg)
+        {
+            if (rgrg.Count != col.Count)
+                return false;
+
+            for (int i = 0; i < col.Count; i++)
+            {
+                int nCount = col[i].shape().Count;
+                if (rgrg[i].Count != nCount)
+                    return false;
+
+                for (int j = 0; j < nCount; j++)
+                {
+                    if (col[i].shape()[j] != rgrg[i][j])
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void setShapes(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            setShapes(colBottom, ref m_rgrgLastBottomShape);
+            setShapes(colTop, ref m_rgrgLastTopShape);
+        }
+
+        private void setShapes(BlobCollection<T> col, ref List<List<int>> rgrg)
+        {
+            if (rgrg.Count != col.Count)
+                rgrg = new List<List<int>>(col.Count);
+
+            for (int i = 0; i < col.Count; i++)
+            {
+                int nCount = col[i].shape().Count;
+                if (rgrg.Count < col.Count)
+                    rgrg.Add(new List<int>());
+                else if (rgrg[i].Count != nCount)
+                    rgrg[i] = new List<int>(nCount);
+
+                for (int j = 0; j < nCount; j++)
+                {
+                    nCount = col[i].shape().Count;
+                    if (rgrg[i].Count < nCount)
+                        rgrg[i].Add(col[i].shape()[j]);
+                    else
+                        rgrg[i][j] = col[i].shape()[j];
+                }
+            }
+        }
 
         /// <summary>
         /// Given the bottom (input) Blobs, this function computes the top (output) Blobs and the loss.
