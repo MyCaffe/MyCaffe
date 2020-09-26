@@ -96,6 +96,8 @@ namespace MyCaffe.layers
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             base.Reshape(colBottom, colTop);
+            if (!reshapeNeeded(colBottom, colTop, false))
+                return;
 
             if (!m_param.sigmoid_param.useCudnn())
                 return;

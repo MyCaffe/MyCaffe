@@ -63,6 +63,9 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            if (!reshapeNeeded(colBottom, colTop, true))
+                return;
+
             colTop[0].ReshapeLike(colBottom[0], colBottom[0].HalfSize);
         }
     }

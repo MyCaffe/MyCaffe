@@ -166,6 +166,9 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            if (!reshapeNeeded(colBottom, colTop))
+                return;
+
             m_log.CHECK_GE(colBottom[0].num_axes, 2, "Number of axes of bottom blob must be >= 2.");
             colTop[0].ReshapeLike(colBottom[0]);
 
