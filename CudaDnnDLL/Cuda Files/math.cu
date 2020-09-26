@@ -7185,10 +7185,10 @@ __global__ void tan_bwd_kernel(int n, T* top_diff, T* top_data, T* btm_diff, T* 
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
 		// f(x) = tan(x)
-		// f'(x) = sec(x)^2 = 1.0 / cos(x)^2 http://math2.org/math/derivatives/tableof.htm
-		T cosx = cos(btm_data[i]);
-		T cosxsq = cosx * cosx;
-		T grad = (cosxsq == 0) ? 0 : 1.0 / cosxsq;
+		// f'(x) = sec(x)^2 = 1.0 / cos(x)^2 
+		// f'(x) = 1 + tanx(x)^2 http://math2.org/math/derivatives/tableof.htm
+		T tanx = top_data[i];
+		T grad = 1 + tanx * tanx;
 		btm_diff[i] = (top_data[i] == 0) ? 0 : top_diff[i] * grad;
 	}
 }
