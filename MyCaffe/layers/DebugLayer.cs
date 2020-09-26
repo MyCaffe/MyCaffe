@@ -146,6 +146,9 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            if (!reshapeNeeded(colBottom, colTop))
+                return;
+
             // Reshape the temp batch storage.
             for (int i = 0; i < m_nMaxBatches; i++)
             {
