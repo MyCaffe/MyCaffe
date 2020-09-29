@@ -375,6 +375,10 @@ namespace MyCaffe.converter.onnx
 
                 switch (layer.type)
                 {
+                    case LayerParameter.LayerType.ABSVAL:
+                        node.OpType = OnnxDefinitions.OPERATORS.Abs.ToString();
+                        break;
+
                     case LayerParameter.LayerType.ARGMAX:
                         if (layer.layer_param.argmax_param.operation == ArgMaxParameter.COMPARE_OPERATOR.MIN)
                             node.OpType = OnnxDefinitions.OPERATORS.ArgMin.ToString();
@@ -385,8 +389,12 @@ namespace MyCaffe.converter.onnx
                     case LayerParameter.LayerType.ELTWISE:
                         if (layer.layer_param.eltwise_param.operation == EltwiseParameter.EltwiseOp.SUM)
                             node.OpType = OnnxDefinitions.OPERATORS.Add.ToString();
+                        if (layer.layer_param.eltwise_param.operation == EltwiseParameter.EltwiseOp.SUB)
+                            node.OpType = OnnxDefinitions.OPERATORS.Sub.ToString();
                         else if (layer.layer_param.eltwise_param.operation == EltwiseParameter.EltwiseOp.PROD)
                             node.OpType = OnnxDefinitions.OPERATORS.Mul.ToString();
+                        else if (layer.layer_param.eltwise_param.operation == EltwiseParameter.EltwiseOp.DIV)
+                            node.OpType = OnnxDefinitions.OPERATORS.Div.ToString();
                         else if (layer.layer_param.eltwise_param.operation == EltwiseParameter.EltwiseOp.MAX)
                             node.OpType = OnnxDefinitions.OPERATORS.Max.ToString();
                         else if (layer.layer_param.eltwise_param.operation == EltwiseParameter.EltwiseOp.MIN)
@@ -416,6 +424,16 @@ namespace MyCaffe.converter.onnx
                         addAttributes(node.Attribute, layer.layer_param.dropout_param);
                         break;
 
+                    case LayerParameter.LayerType.ELU:
+                        node.OpType = OnnxDefinitions.OPERATORS.Elu.ToString();
+                        addAttributes(node.Attribute, layer.layer_param.elu_param);
+                        break;
+
+                    case LayerParameter.LayerType.EXP:
+                        node.OpType = OnnxDefinitions.OPERATORS.Exp.ToString();
+                        addAttributes(node.Attribute, layer.layer_param.exp_param);
+                        break;
+
                     case LayerParameter.LayerType.FLATTEN:
                         node.OpType = OnnxDefinitions.OPERATORS.Flatten.ToString();
                         addAttributes(node.Attribute, layer.layer_param.flatten_param);
@@ -432,6 +450,11 @@ namespace MyCaffe.converter.onnx
                     case LayerParameter.LayerType.LRN:
                         node.OpType = OnnxDefinitions.OPERATORS.LRN.ToString();
                         addAttributes(node.Attribute, layer.layer_param.lrn_param);
+                        break;
+
+                    case LayerParameter.LayerType.LOG:
+                        node.OpType = OnnxDefinitions.OPERATORS.Log.ToString();
+                        addAttributes(node.Attribute, layer.layer_param.log_param);
                         break;
 
                     case LayerParameter.LayerType.MATH:
@@ -461,6 +484,17 @@ namespace MyCaffe.converter.onnx
                             node.OpType = OnnxDefinitions.OPERATORS.Tan.ToString();
                         else if (layer.layer_param.math_param.function == MATH_FUNCTION.TANH)
                             node.OpType = OnnxDefinitions.OPERATORS.Tanh.ToString();
+
+                        else if (layer.layer_param.math_param.function == MATH_FUNCTION.CEIL)
+                            node.OpType = OnnxDefinitions.OPERATORS.Ceil.ToString();
+                        else if (layer.layer_param.math_param.function == MATH_FUNCTION.FLOOR)
+                            node.OpType = OnnxDefinitions.OPERATORS.Floor.ToString();
+                        else if (layer.layer_param.math_param.function == MATH_FUNCTION.NEG)
+                            node.OpType = OnnxDefinitions.OPERATORS.Neg.ToString();
+                        else if (layer.layer_param.math_param.function == MATH_FUNCTION.SIGN)
+                            node.OpType = OnnxDefinitions.OPERATORS.Sign.ToString();
+                        else if (layer.layer_param.math_param.function == MATH_FUNCTION.SQRT)
+                            node.OpType = OnnxDefinitions.OPERATORS.Sqrt.ToString();
                         break;
 
                     case LayerParameter.LayerType.POOLING:
@@ -488,6 +522,10 @@ namespace MyCaffe.converter.onnx
                     case LayerParameter.LayerType.PRELU:
                         node.OpType = OnnxDefinitions.OPERATORS.PRelu.ToString();
                         colParams = layer.blobs;
+                        break;
+
+                    case LayerParameter.LayerType.POWER:
+                        node.OpType = OnnxDefinitions.OPERATORS.Pow.ToString();
                         break;
 
                     case LayerParameter.LayerType.RELU:
@@ -653,6 +691,10 @@ namespace MyCaffe.converter.onnx
             rgA.Add(attrib);
         }
 
+        private void addAttributes(RepeatedField<AttributeProto> rgA, LogParameter p)
+        {
+        }
+
         private void addAttributes(RepeatedField<AttributeProto> rgA, PoolingParameter p)
         {
             AttributeProto attrib = new AttributeProto();
@@ -678,6 +720,14 @@ namespace MyCaffe.converter.onnx
             w = (p.pad_w.HasValue) ? p.pad_w.Value : (p.pad.Count > 0) ? p.pad[0] : 0;
             attrib.Ints.Add(w);
             rgA.Add(attrib);
+        }
+
+        private void addAttributes(RepeatedField<AttributeProto> rgA, EluParameter p)
+        {
+        }
+
+        private void addAttributes(RepeatedField<AttributeProto> rgA, ExpParameter p)
+        {
         }
 
         private void addAttributes(RepeatedField<AttributeProto> rgA, ReLUParameter p)
@@ -1390,7 +1440,13 @@ namespace MyCaffe.converter.onnx
 
                 List<string> rgstrExcludedInputs = new List<string>();
 
-                if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Acos))
+                if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Abs))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.ABSVAL);
+                    layer.name = strNodeName;
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Acos))
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.MATH);
                     layer.name = strNodeName;
@@ -1453,6 +1509,13 @@ namespace MyCaffe.converter.onnx
                     fillParameter(node.Attribute, layer.math_param, MyCaffe.common.MATH_FUNCTION.ATANH);
                 }
 
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.AveragePool))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.POOLING);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.pooling_param, PoolingParameter.PoolingMethod.AVE, false);
+                }
+
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.BatchNormalization))
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.BATCHNORM);
@@ -1511,6 +1574,18 @@ namespace MyCaffe.converter.onnx
                     fillParameter(node.Attribute, layer.dropout_param);
                 }
 
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Elu))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.ELU);
+                    layer.name = strNodeName;
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Exp))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.EXP);
+                    layer.name = strNodeName;
+                }
+
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Flatten))
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.FLATTEN);
@@ -1543,11 +1618,17 @@ namespace MyCaffe.converter.onnx
                     fillParameter(node.Attribute, layer.lrn_param);
                 }
 
-                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.AveragePool))
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Log))
                 {
-                    layer = new LayerParameter(LayerParameter.LayerType.POOLING);
+                    layer = new LayerParameter(LayerParameter.LayerType.LOG);
                     layer.name = strNodeName;
-                    fillParameter(node.Attribute, layer.pooling_param, PoolingParameter.PoolingMethod.AVE, false);
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.LeakyRelu))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.RELU);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.relu_param, true);
                 }
 
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.MaxPool))
@@ -1578,6 +1659,13 @@ namespace MyCaffe.converter.onnx
                     fillParameter(node.Attribute, layer.eltwise_param, EltwiseParameter.EltwiseOp.PROD);
                 }
 
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Neg))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.MATH);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.math_param, MyCaffe.common.MATH_FUNCTION.NEG);
+                }
+
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.GlobalAveragePool))
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.POOLING);
@@ -1590,6 +1678,12 @@ namespace MyCaffe.converter.onnx
                     layer = new LayerParameter(LayerParameter.LayerType.POOLING);
                     layer.name = strNodeName;
                     fillParameter(node.Attribute, layer.pooling_param, PoolingParameter.PoolingMethod.MAX, true);
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Pow))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.POWER);
+                    layer.name = strNodeName;
                 }
 
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.PRelu))
@@ -1610,13 +1704,6 @@ namespace MyCaffe.converter.onnx
                     layer = new LayerParameter(LayerParameter.LayerType.RELU);
                     layer.name = strNodeName;
                     fillParameter(node.Attribute, layer.relu_param, false);
-                }
-
-                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.LeakyRelu))
-                {
-                    layer = new LayerParameter(LayerParameter.LayerType.RELU);
-                    layer.name = strNodeName;
-                    fillParameter(node.Attribute, layer.relu_param, true);
                 }
 
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Reshape))
@@ -1640,6 +1727,13 @@ namespace MyCaffe.converter.onnx
                     fillParameter(node.Attribute, layer.math_param, MyCaffe.common.MATH_FUNCTION.SINH);
                 }
 
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Sign))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.MATH);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.math_param, MyCaffe.common.MATH_FUNCTION.SIGN);
+                }
+
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Softmax))
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
@@ -1651,6 +1745,20 @@ namespace MyCaffe.converter.onnx
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.SPLIT);
                     layer.name = strNodeName;
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Sqrt))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.MATH);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.math_param, MyCaffe.common.MATH_FUNCTION.SQRT);
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Sub))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.ELTWISE);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.eltwise_param, EltwiseParameter.EltwiseOp.SUB);
                 }
 
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Tan))
