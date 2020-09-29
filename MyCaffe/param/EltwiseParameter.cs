@@ -39,7 +39,15 @@ namespace MyCaffe.param
             /// <summary>
             /// Find the eltwise minimum.
             /// </summary>
-            MIN = 3
+            MIN = 3,
+            /// <summary>
+            /// Perform an eltwise division.
+            /// </summary>
+            DIV = 4,
+            /// <summary>
+            /// Perform the eltwise subtraction
+            /// </summary>
+            SUB = 5
         }
 
         EltwiseOp m_operation = EltwiseOp.SUM;
@@ -173,6 +181,14 @@ namespace MyCaffe.param
 
                     case "MIN":
                         p.operation = EltwiseOp.MIN;
+                        break;
+
+                    case "DIV":
+                        p.operation = EltwiseOp.DIV;
+                        break;
+
+                    case "SUB":
+                        p.operation = EltwiseOp.SUB;
                         break;
 
                     default:

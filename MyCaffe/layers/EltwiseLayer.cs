@@ -112,7 +112,7 @@ namespace MyCaffe.layers
             // Blob-wise coefficients for the elementwise operation.
             m_rgdfCoeffs = Utility.Create<double>(colBottom.Count, 1.0);
 
-            int nCoeffBlobCount = (m_bCoeffBlob) ? 1 : 0;
+            int nCoeffBlobCount = (m_bCoeffBlob) ?  (m_param.eltwise_param.operation == EltwiseParameter.EltwiseOp.SUB) ? -1 : 1 : 0;
 
             for (int i = 0; i < m_param.eltwise_param.coeff.Count - nCoeffBlobCount; i++)
             {
@@ -177,6 +177,15 @@ namespace MyCaffe.layers
                     }
                     break;
 
+                case EltwiseParameter.EltwiseOp.DIV:
+                    m_cuda.div(nCount, colBottom[0].gpu_data, colBottom[1].gpu_data, hTopData);
+
+                    for (int i = 2; i < colBottom.Count; i++)
+                    {
+                        m_cuda.div(nCount, hTopData, colBottom[i].gpu_data, hTopData);
+                    }
+                    break;
+
                 case EltwiseParameter.EltwiseOp.SUM:
                     if (m_bCoeffBlob)
                     {
@@ -189,6 +198,31 @@ namespace MyCaffe.layers
                         {
                             long hBottomData = colBottom[i].gpu_data;
                             m_cuda.coeff_sum_fwd(nCount, nDim, i * nNum, m_rgdfCoeffs[i], hCoeffData, hBottomData, hTopData);
+                        }
+                    }
+                    else
+                    {
+                        m_cuda.set(nCount, hTopData, 0);
+                        // TODO(shelhamer) does cuBLAS optimize to sum of coeff = 1?
+                        for (int i = 0; i < colBottom.Count; i++)
+                        {
+                            m_cuda.axpy(nCount, m_rgdfCoeffs[i], colBottom[i].gpu_data, hTopData);
+                        }
+                    }
+                    break;
+
+                case EltwiseParameter.EltwiseOp.SUB:
+                    if (m_bCoeffBlob)
+                    {
+                        int nNum = colTop[0].num;
+                        int nDim = nCount / nNum;
+                        hCoeffData = colBottom[colBottom.Count - 1].gpu_data;
+                        nCoeffCount = 1;
+
+                        for (int i = 0; i < colBottom.Count - nCoeffCount; i++)
+                        {
+                            long hBottomData = colBottom[i].gpu_data;
+                            m_cuda.coeff_sub_fwd(nCount, nDim, i * nNum, m_rgdfCoeffs[i], hCoeffData, hBottomData, hTopData);
                         }
                     }
                     else
@@ -280,6 +314,11 @@ namespace MyCaffe.layers
                             {
                                 m_cuda.div(nCount, hTopData, hBottomData, hBottomDiff);
                             }
+                            m_cuda.mul(nCount, hBottomDiff, hTopDiff, hBottomDiff);
+                            break;
+
+                        case EltwiseParameter.EltwiseOp.DIV:
+                            m_cuda.mul(nCount, hTopData, hBottomData, hBottomDiff);
                             m_cuda.mul(nCount, hBottomDiff, hTopDiff, hBottomDiff);
                             break;
 
