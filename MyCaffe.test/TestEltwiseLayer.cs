@@ -51,6 +51,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestDiv()
+        {
+            EltwiseLayerTest test = new EltwiseLayerTest();
+
+            try
+            {
+                foreach (IEltwiseLayerTest t in test.Tests)
+                {
+                    t.TestDiv();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestSum()
         {
             EltwiseLayerTest test = new EltwiseLayerTest();
@@ -78,6 +96,42 @@ namespace MyCaffe.test
                 foreach (IEltwiseLayerTest t in test.Tests)
                 {
                     t.TestSumCoeff();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSub()
+        {
+            EltwiseLayerTest test = new EltwiseLayerTest();
+
+            try
+            {
+                foreach (IEltwiseLayerTest t in test.Tests)
+                {
+                    t.TestSub();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSubCoeff()
+        {
+            EltwiseLayerTest test = new EltwiseLayerTest();
+
+            try
+            {
+                foreach (IEltwiseLayerTest t in test.Tests)
+                {
+                    t.TestSubCoeff();
                 }
             }
             finally
@@ -123,6 +177,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestDivGradient()
+        {
+            EltwiseLayerTest test = new EltwiseLayerTest();
+
+            try
+            {
+                foreach (IEltwiseLayerTest t in test.Tests)
+                {
+                    t.TestDivGradient();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestSumGradient()
         {
             EltwiseLayerTest test = new EltwiseLayerTest();
@@ -150,6 +222,42 @@ namespace MyCaffe.test
                 foreach (IEltwiseLayerTest t in test.Tests)
                 {
                     t.TestSumCoeffGradient();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSubGradient()
+        {
+            EltwiseLayerTest test = new EltwiseLayerTest();
+
+            try
+            {
+                foreach (IEltwiseLayerTest t in test.Tests)
+                {
+                    t.TestSubGradient();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSubCoeffGradient()
+        {
+            EltwiseLayerTest test = new EltwiseLayerTest();
+
+            try
+            {
+                foreach (IEltwiseLayerTest t in test.Tests)
+                {
+                    t.TestSubCoeffGradient();
                 }
             }
             finally
@@ -235,12 +343,18 @@ namespace MyCaffe.test
     {
         void TestSetup();
         void TestProd();
+        void TestDiv();
         void TestSum();
         void TestSumCoeff();
+        void TestSub();
+        void TestSubCoeff();
         void TestStableProdGradient();
+        void TestDivGradient();
         void TestUnstableProdGradient();
         void TestSumGradient();
         void TestSumCoeffGradient();
+        void TestSubGradient();
+        void TestSubCoeffGradient();
         void TestMax();
         void TestMaxGradient();
         void TestMin();
@@ -340,6 +454,33 @@ namespace MyCaffe.test
             }
         }
 
+        public void TestDiv()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.ELTWISE);
+            p.eltwise_param.operation = EltwiseParameter.EltwiseOp.DIV;
+            EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
+
+            layer.Setup(BottomVec, TopVec);
+            layer.Forward(BottomVec, TopVec);
+
+            double[] rgTop = convert(Top.update_cpu_data());
+            int nCount = Top.count();
+            double[] rgBottomA = convert(Bottom.update_cpu_data());
+            double[] rgBottomB = convert(BottomB.update_cpu_data());
+            double[] rgBottomC = convert(BottomC.update_cpu_data());
+
+            for (int i = 0; i < nCount; i++)
+            {
+                double dfTop = rgTop[i];
+                double dfBottomA = rgBottomA[i];
+                double dfBottomB = rgBottomB[i];
+                double dfBottomC = rgBottomC[i];
+                double dfExpected = dfBottomA * dfBottomB * dfBottomC;
+
+                m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+            }
+        }
+
         public void TestSum()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ELTWISE);
@@ -397,6 +538,63 @@ namespace MyCaffe.test
             }
         }
 
+        public void TestSub()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.ELTWISE);
+            p.eltwise_param.operation = EltwiseParameter.EltwiseOp.SUB;
+            EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
+
+            layer.Setup(BottomVec, TopVec);
+            layer.Forward(BottomVec, TopVec);
+
+            double[] rgTop = convert(Top.update_cpu_data());
+            int nCount = Top.count();
+            double[] rgBottomA = convert(Bottom.update_cpu_data());
+            double[] rgBottomB = convert(BottomB.update_cpu_data());
+            double[] rgBottomC = convert(BottomC.update_cpu_data());
+
+            for (int i = 0; i < nCount; i++)
+            {
+                double dfTop = rgTop[i];
+                double dfBottomA = rgBottomA[i];
+                double dfBottomB = rgBottomB[i];
+                double dfBottomC = rgBottomC[i];
+                double dfExpected = dfBottomA - dfBottomB - dfBottomC;
+
+                m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+            }
+        }
+
+        public void TestSubCoeff()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.ELTWISE);
+            p.eltwise_param.operation = EltwiseParameter.EltwiseOp.SUB;
+            p.eltwise_param.coeff.Add(1);
+            p.eltwise_param.coeff.Add(-0.5);
+            p.eltwise_param.coeff.Add(2);
+            EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
+
+            layer.Setup(BottomVec, TopVec);
+            layer.Forward(BottomVec, TopVec);
+
+            double[] rgTop = convert(Top.update_cpu_data());
+            int nCount = Top.count();
+            double[] rgBottomA = convert(Bottom.update_cpu_data());
+            double[] rgBottomB = convert(BottomB.update_cpu_data());
+            double[] rgBottomC = convert(BottomC.update_cpu_data());
+
+            for (int i = 0; i < nCount; i++)
+            {
+                double dfTop = rgTop[i];
+                double dfBottomA = rgBottomA[i];
+                double dfBottomB = rgBottomB[i];
+                double dfBottomC = rgBottomC[i];
+                double dfExpected = (1.0 * dfBottomA) - (-0.5 * dfBottomB) - (2.0 * dfBottomC);
+
+                m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+            }
+        }
+
         public void TestStableProdGradient()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ELTWISE);
@@ -419,6 +617,16 @@ namespace MyCaffe.test
             checker.CheckGradientEltwise(layer, BottomVec, TopVec);
         }
 
+        public void TestDivGradient()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.ELTWISE);
+            p.eltwise_param.operation = EltwiseParameter.EltwiseOp.DIV;
+            EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
+
+            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+        }
+
         public void TestSumGradient()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ELTWISE);
@@ -433,6 +641,29 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ELTWISE);
             p.eltwise_param.operation = EltwiseParameter.EltwiseOp.SUM;
+            p.eltwise_param.coeff.Add(1);
+            p.eltwise_param.coeff.Add(-0.5);
+            p.eltwise_param.coeff.Add(2);
+            EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
+
+            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+        }
+
+        public void TestSubGradient()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.ELTWISE);
+            p.eltwise_param.operation = EltwiseParameter.EltwiseOp.SUB;
+            EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
+
+            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+        }
+
+        public void TestSubCoeffGradient()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.ELTWISE);
+            p.eltwise_param.operation = EltwiseParameter.EltwiseOp.SUB;
             p.eltwise_param.coeff.Add(1);
             p.eltwise_param.coeff.Add(-0.5);
             p.eltwise_param.coeff.Add(2);
