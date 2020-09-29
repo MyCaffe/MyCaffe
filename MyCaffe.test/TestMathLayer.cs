@@ -453,6 +453,186 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestForwardCeil()
+        {
+            MathLayerTest test = new MathLayerTest();
+
+            try
+            {
+                foreach (IMathLayerTest t in test.Tests)
+                {
+                    t.TestForward(MyCaffe.common.MATH_FUNCTION.CEIL);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientCeil()
+        {
+            MathLayerTest test = new MathLayerTest();
+
+            try
+            {
+                foreach (IMathLayerTest t in test.Tests)
+                {
+                    t.TestGradient(MyCaffe.common.MATH_FUNCTION.CEIL);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardFloor()
+        {
+            MathLayerTest test = new MathLayerTest();
+
+            try
+            {
+                foreach (IMathLayerTest t in test.Tests)
+                {
+                    t.TestForward(MyCaffe.common.MATH_FUNCTION.FLOOR);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientFloor()
+        {
+            MathLayerTest test = new MathLayerTest();
+
+            try
+            {
+                foreach (IMathLayerTest t in test.Tests)
+                {
+                    t.TestGradient(MyCaffe.common.MATH_FUNCTION.FLOOR);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardNeg()
+        {
+            MathLayerTest test = new MathLayerTest();
+
+            try
+            {
+                foreach (IMathLayerTest t in test.Tests)
+                {
+                    t.TestForward(MyCaffe.common.MATH_FUNCTION.NEG);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientNeg()
+        {
+            MathLayerTest test = new MathLayerTest();
+
+            try
+            {
+                foreach (IMathLayerTest t in test.Tests)
+                {
+                    t.TestGradient(MyCaffe.common.MATH_FUNCTION.NEG);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardSign()
+        {
+            MathLayerTest test = new MathLayerTest();
+
+            try
+            {
+                foreach (IMathLayerTest t in test.Tests)
+                {
+                    t.TestForward(MyCaffe.common.MATH_FUNCTION.SIGN);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientSign()
+        {
+            MathLayerTest test = new MathLayerTest();
+
+            try
+            {
+                foreach (IMathLayerTest t in test.Tests)
+                {
+                    t.TestGradient(MyCaffe.common.MATH_FUNCTION.SIGN);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardSqrt()
+        {
+            MathLayerTest test = new MathLayerTest();
+
+            try
+            {
+                foreach (IMathLayerTest t in test.Tests)
+                {
+                    t.TestForward(MyCaffe.common.MATH_FUNCTION.SQRT);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientSqrt()
+        {
+            MathLayerTest test = new MathLayerTest();
+
+            try
+            {
+                foreach (IMathLayerTest t in test.Tests)
+                {
+                    t.TestGradient(MyCaffe.common.MATH_FUNCTION.SQRT);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface IMathLayerTest : ITest
