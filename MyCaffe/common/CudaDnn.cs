@@ -70,6 +70,27 @@ namespace MyCaffe.common
         /// Specifies to run the tanh function.
         /// </summary>
         TANH = 23,
+
+        /// <summary>
+        /// Specifies to run the ceil function.
+        /// </summary>
+        CEIL = 30,
+        /// <summary>
+        /// Specifies to run the floor function.
+        /// </summary>
+        FLOOR = 31,
+        /// <summary>
+        /// Specifies to flip the sign of the inputs.
+        /// </summary>
+        NEG = 32,
+        /// <summary>
+        /// Specifies to run the sign function.
+        /// </summary>
+        SIGN = 33,
+        /// <summary>
+        /// Specifies to run the sqrt function.
+        /// </summary>
+        SQRT = 34
     }
 
     /// <summary>
@@ -1122,6 +1143,9 @@ namespace MyCaffe.common
 
             CUDA_COEFF_SUM_FWD = 490,
             CUDA_COEFF_SUM_BWD = 491,
+
+            CUDA_COEFF_SUB_FWD = 492,
+            CUDA_COEFF_SUB_BWD = 493,
 
             CUDA_CROSS_ENTROPY_FWD = 496,
             CUDA_CROSS_ENTROPY_IGNORE = 497,
@@ -8491,6 +8515,44 @@ namespace MyCaffe.common
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COEFF_SUM_BWD, new float[] { nCount, nDim, nNumOffset, (float)dfCoeff, hCoeffData, hTopDiff, hBottomDiff });
         }
+
+        /// <summary>
+        /// Performs a coefficient sub foward pass in Cuda.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="nDim"><b><i>Specifies the dimension of the data where the data is sized 'num' x 'dim'.</i></b></param>
+        /// <param name="nNumOffset">Specifies the offset applied to the coefficent indexing.</param>
+        /// <param name="dfCoeff">Specifies a primary coefficient value applied to each input before summing.</param>
+        /// <param name="hCoeffData">Optionally specifies a handle to coefficient data that is applied to the primary coefficient.</param>
+        /// <param name="hBottom">Specifies a handle to the bottom data in GPU memory.</param>
+        /// <param name="hTop">Specifies a handle to the top data in GPU memory.</param>
+        public void coeff_sub_fwd(int nCount, int nDim, int nNumOffset, double dfCoeff, long hCoeffData, long hBottom, long hTop)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COEFF_SUB_FWD, new double[] { nCount, nDim, nNumOffset, dfCoeff, hCoeffData, hBottom, hTop });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COEFF_SUB_FWD, new float[] { nCount, nDim, nNumOffset, (float)dfCoeff, hCoeffData, hBottom, hTop });
+        }
+
+
+        /// <summary>
+        /// Performs a coefficient sub backward pass in Cuda.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="nDim"><b><i>Specifies the dimension of the data where the data is sized 'num' x 'dim'.</i></b></param>
+        /// <param name="nNumOffset">Specifies the offset applied to the coefficent indexing.</param>
+        /// <param name="dfCoeff">Specifies a primary coefficient value applied to each input before summing.</param>
+        /// <param name="hCoeffData">Optionally specifies a handle to coefficient data that is applied to the primary coefficient.</param>
+        /// <param name="hTopDiff">Specifies a handle to the top diff in GPU memory.</param>
+        /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
+        public void coeff_sub_bwd(int nCount, int nDim, int nNumOffset, double dfCoeff, long hCoeffData, long hTopDiff, long hBottomDiff)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COEFF_SUB_BWD, new double[] { nCount, nDim, nNumOffset, dfCoeff, hCoeffData, hTopDiff, hBottomDiff });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COEFF_SUB_BWD, new float[] { nCount, nDim, nNumOffset, (float)dfCoeff, hCoeffData, hTopDiff, hBottomDiff });
+        }
+
 
         /// <summary>
         /// Performs a sigmoid cross entropy forward pass in Cuda.
