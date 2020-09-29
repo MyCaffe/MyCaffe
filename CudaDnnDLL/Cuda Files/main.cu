@@ -797,6 +797,12 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_COEFF_SUM_BWD:
 			return m_device.cuda_coeff_sum_bwd(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_COEFF_SUB_FWD:
+			return m_device.cuda_coeff_sub_fwd(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_COEFF_SUB_BWD:
+			return m_device.cuda_coeff_sub_bwd(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_SIGMOID_CROSS_ENTROPY_FWD:
 			return m_device.cuda_sigmoid_cross_entropy_fwd(lCount, pfInput, plCount, ppfOutput);
 
@@ -1703,6 +1709,12 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_COEFF_SUM_BWD:
 		return "CUDA_FN_COEFF_SUM_BWD";
+
+	case CUDA_FN_COEFF_SUB_FWD:
+		return "CUDA_FN_COEFF_SUB_FWD";
+
+	case CUDA_FN_COEFF_SUB_BWD:
+		return "CUDA_FN_COEFF_SUB_BWD";
 
 	case CUDA_FN_SIGMOID_CROSS_ENTROPY_FWD:
 		return "CUDA_FN_SIGMOID_CROSS_ENTROPY_FWD";

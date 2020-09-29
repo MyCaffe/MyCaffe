@@ -458,6 +458,8 @@ class Device
 
 		long cuda_coeff_sum_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_coeff_sum_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_coeff_sub_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_coeff_sub_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
 		long cuda_sigmoid_cross_entropy_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_sigmoid_cross_entropy_ignore(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -4353,6 +4355,44 @@ inline long Device<T>::cuda_coeff_sum_bwd(long lInput, T* pfInput, long* plOutpu
 	long hBottomDiff = (long)pfInput[6];
 
 	return m_math.coeff_sum_bwd(nCount, nDim, nNumOffset, fCoeff, hCoeffData, hTopDiff, hBottomDiff);
+}
+
+template <class T>
+inline long Device<T>::cuda_coeff_sub_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+		return lErr;
+
+	int nCount = (int)pfInput[0];
+	int nDim = (int)pfInput[1];
+	int nNumOffset = (int)pfInput[2];
+	T fCoeff = pfInput[3];
+	long hCoeffData = (long)pfInput[4];
+	long hBottomData = (long)pfInput[5];
+	long hTopData = (long)pfInput[6];
+
+	return m_math.coeff_sub_fwd(nCount, nDim, nNumOffset, fCoeff, hCoeffData, hBottomData, hTopData);
+}
+
+template <class T>
+inline long Device<T>::cuda_coeff_sub_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+		return lErr;
+
+	int nCount = (int)pfInput[0];
+	int nDim = (int)pfInput[1];
+	int nNumOffset = (int)pfInput[2];
+	T fCoeff = pfInput[3];
+	long hCoeffData = (long)pfInput[4];
+	long hTopDiff = (long)pfInput[5];
+	long hBottomDiff = (long)pfInput[6];
+
+	return m_math.coeff_sub_bwd(nCount, nDim, nNumOffset, fCoeff, hCoeffData, hTopDiff, hBottomDiff);
 }
 
 template <class T>
