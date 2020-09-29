@@ -3923,7 +3923,7 @@ __global__ void div_kernel(const int n, T* a, T* b, T* y)
 {
 	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
-		y[i] = a[i] / b[i];
+		y[i] = (b[i] == 0) ? 0 : a[i] / b[i];
 	}
 }
 
@@ -3932,7 +3932,7 @@ __global__ void div_kernel_half(const int n, __half* a, __half* b, __half* y)
 #if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 530)
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)
 	{
-		y[i] = a[i] / b[i];
+		y[i] = ((float)b[i] == 0) ? 0 : a[i] / b[i];
 	}
 #endif
 }
@@ -6970,6 +6970,55 @@ __global__ void tanh_fwd_kernel2(int n, T* in, T* out)
 	}
 }
 
+template<typename T>
+__global__ void ceil_fwd_kernel(int n, T* in, T* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		out[i] = ceil(in[i]);
+	}
+}
+
+template<typename T>
+__global__ void floor_fwd_kernel(int n, T* in, T* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		out[i] = floor(in[i]);
+	}
+}
+
+template<typename T>
+__global__ void neg_fwd_kernel(int n, T* in, T* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		out[i] = -1 * in[i];
+	}
+}
+
+template<typename T>
+__global__ void sign_fwd_kernel(int n, T* in, T* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		out[i] = (in[i] > 0) - (in[i] < 0);
+	}
+}
+
+template<typename T>
+__global__ void sqrt_fwd_kernel(int n, T* in, T* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		T y = sqrt(in[i]);
+		if (isnan(y) || isinf(y))
+			y = 0;
+		out[i] = y;
+	}
+}
+
+
 template <class T>
 long Math<T>::math_fwd(int n, long hBottomData, long hTopData, int nFunction)
 {
@@ -7035,6 +7084,25 @@ long Math<T>::math_fwd(int n, long hBottomData, long hTopData, int nFunction)
 		case MATH_TANH:
 			tanh_fwd_kernel2<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
 			break;
+
+		case MATH_CEIL:
+			ceil_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+			break;
+
+		case MATH_FLOOR:
+			floor_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+			break;
+
+		case MATH_NEG:
+			neg_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+			break;
+
+		case MATH_SQRT:
+			sqrt_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+			break;
+
+		default:
+			return ERROR_PARAM_OUT_OF_RANGE;
 	}
 
 	return cudaStreamSynchronize(0);
@@ -7189,7 +7257,7 @@ __global__ void tan_bwd_kernel(int n, T* top_diff, T* top_data, T* btm_diff, T* 
 		// f'(x) = 1 + tanx(x)^2 http://math2.org/math/derivatives/tableof.htm
 		T tanx = top_data[i];
 		T grad = 1 + tanx * tanx;
-		btm_diff[i] = (top_data[i] == 0) ? 0 : top_diff[i] * grad;
+		btm_diff[i] = top_diff[i] * grad;
 	}
 }
 
@@ -7202,10 +7270,60 @@ __global__ void tanh_bwd_kernel2(int n, T* top_diff, T* top_data, T* btm_diff, T
 		// f'(x) = sec(x)^2 = 1.0 / cos(x)^2, or
 		// f'(x) = 1 - tanh(x)^2, http://math2.org/math/derivatives/tableof.htm
 		T tanh = top_data[i];
-		T grad = 1 - tanh * tanh;
-		btm_diff[i] = (top_data[i] == 0) ? 0 : top_diff[i] * grad;
+		T grad =  1 - tanh * tanh;
+		btm_diff[i] = top_diff[i] * grad;
 	}
 }
+
+template<typename T>
+__global__ void ceil_bwd_kernel(int n, T* top_diff, T* top_data, T* btm_diff, T* btm_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		btm_diff[i] = 0;
+	}
+}
+
+template<typename T>
+__global__ void floor_bwd_kernel(int n, T* top_diff, T* top_data, T* btm_diff, T* btm_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		btm_diff[i] = 0;
+	}
+}
+
+template<typename T>
+__global__ void neg_bwd_kernel(int n, T* top_diff, T* top_data, T* btm_diff, T* btm_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		btm_diff[i] = 0;
+	}
+}
+
+template<typename T>
+__global__ void sign_bwd_kernel(int n, T* top_diff, T* top_data, T* btm_diff, T* btm_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		btm_diff[i] = 0;
+	}
+}
+
+template<typename T>
+__global__ void sqrt_bwd_kernel(int n, T* top_diff, T* top_data, T* btm_diff, T* btm_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		// f(x) = sqrt(x)
+		// f'(x) = 1 / (2 * sqrt(x))
+		T sqrt = top_data[i];
+		T grad = (sqrt == 0) ? 0 : 1 / (2 * sqrt);
+		btm_diff[i] = top_diff[i] * grad;
+	}
+}
+
 
 template <class T>
 long Math<T>::math_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, int nFunction)
@@ -7282,6 +7400,29 @@ long Math<T>::math_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff, lo
 		case MATH_TANH:
 			tanh_bwd_kernel2<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
 			break;
+
+		case MATH_CEIL:
+			ceil_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+			break;
+
+		case MATH_FLOOR:
+			floor_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+			break;
+
+		case MATH_NEG:
+			neg_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+			break;
+
+		case MATH_SIGN:
+			sign_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+			break;
+
+		case MATH_SQRT:
+			sqrt_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+			break;
+
+		default:
+			return ERROR_PARAM_OUT_OF_RANGE;
 	}
 
 	return cudaStreamSynchronize(0);
@@ -9920,6 +10061,102 @@ long Math<T>::coeff_sum_bwd(int nCount, int nDim, int nNumOffset, T fCoeff, long
 
 template long Math<double>::coeff_sum_bwd(int nCount, int nDim, int nNumOffset, double fCoeff, long hCoeffData, long hTopDiff, long hBottomDiff);
 template long Math<float>::coeff_sum_bwd(int nCount, int nDim, int nNumOffset, float fCoeff, long hCoeffData, long hTopDiff, long hBottomDiff);
+
+
+template <typename T>
+__global__ void coeff_sub_fwd_kernel(const int nthreads, const int dim, const int num_offset, const T coeff, const T* coeff_data, const T* in, T* out)
+{
+	for (int idx = blockIdx.x * blockDim.x + threadIdx.x; idx < nthreads && idx >= 0; idx += blockDim.x * gridDim.x)
+	{
+		int n = num_offset + idx / dim;
+		T other_coeff = (coeff_data != NULL) ? coeff_data[n] : T(1);
+		T final_coeff = coeff * other_coeff;
+		T result = in[idx] * final_coeff;
+
+		if (num_offset == 0)
+			out[idx] = result;
+		else
+			out[idx] -= result;
+	}
+}
+
+template <class T>
+long Math<T>::coeff_sub_fwd(int nCount, int nDim, int nNumOffset, T fCoeff, long hCoeffData, long hBottom, long hTop)
+{
+	LONG lErr;
+	MemoryItem* pCoeffData = NULL;
+	MemoryItem* pBottom;
+	MemoryItem* pTop;
+
+	if (hCoeffData != 0)
+	{
+		if (lErr = m_pMemCol->GetData(hCoeffData, &pCoeffData))
+			return lErr;
+	}
+
+	if (lErr = m_pMemCol->GetData(hBottom, &pBottom))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hTop, &pTop))
+		return lErr;
+
+	T* coeffdata = (pCoeffData == NULL) ? NULL : (T*)pCoeffData->Data();
+	T* bottom = (T*)pBottom->Data();
+	T* top = (T*)pTop->Data();
+
+	coeff_sub_fwd_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nDim, nNumOffset, fCoeff, coeffdata, bottom, top);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::coeff_sub_fwd(int nCount, int nDim, int nNumOffset, double fCoeff, long hCoeffData, long hBottom, long hTop);
+template long Math<float>::coeff_sub_fwd(int nCount, int nDim, int nNumOffset, float fCoeff, long hCoeffData, long hBottom, long hTop);
+
+
+template <typename T>
+__global__ void coeff_sub_bwd_kernel(const int nthreads, const int dim, const int num_offset, const T coeff, const T* coeff_data, const T* in, T* out)
+{
+	for (int idx = blockIdx.x * blockDim.x + threadIdx.x; idx < nthreads && idx >= 0; idx += blockDim.x * gridDim.x)
+	{
+		int n = num_offset + idx / dim;
+		T other_coeff = (coeff_data != NULL) ? coeff_data[n] : T(1);
+		T final_coeff = coeff * other_coeff;
+		T result = in[idx] * final_coeff;
+		out[idx] = result;
+	}
+}
+
+template <class T>
+long Math<T>::coeff_sub_bwd(int nCount, int nDim, int nNumOffset, T fCoeff, long hCoeffData, long hTopDiff, long hBottomDiff)
+{
+	LONG lErr;
+	MemoryItem* pCoeffData = NULL;
+	MemoryItem* pBottomDiff;
+	MemoryItem* pTopDiff;
+
+	if (hCoeffData != 0)
+	{
+		if (lErr = m_pMemCol->GetData(hCoeffData, &pCoeffData))
+			return lErr;
+	}
+
+	if (lErr = m_pMemCol->GetData(hTopDiff, &pTopDiff))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBottomDiff, &pBottomDiff))
+		return lErr;
+
+	T* coeffdata = (pCoeffData == NULL) ? NULL : (T*)pCoeffData->Data();
+	T* topdiff = (T*)pTopDiff->Data();
+	T* bottomdiff = (T*)pBottomDiff->Data();
+
+	coeff_sub_bwd_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nDim, nNumOffset, fCoeff, coeffdata, topdiff, bottomdiff);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::coeff_sub_bwd(int nCount, int nDim, int nNumOffset, double fCoeff, long hCoeffData, long hTopDiff, long hBottomDiff);
+template long Math<float>::coeff_sub_bwd(int nCount, int nDim, int nNumOffset, float fCoeff, long hCoeffData, long hTopDiff, long hBottomDiff);
 
 
 template <typename T>

@@ -51,6 +51,12 @@ const int MATH_ATANH = 21;
 const int MATH_TAN = 22;
 const int MATH_TANH = 23;
 
+const int MATH_CEIL = 30;
+const int MATH_FLOOR = 31;
+const int MATH_NEG = 32;
+const int MATH_SIGN = 33;
+const int MATH_SQRT = 34;
+
 
 //=============================================================================
 //	Forward References
@@ -311,6 +317,8 @@ class Math
 
 		long coeff_sum_fwd(int nCount, int nDim, int nNumOffset, T fCoeff, long hCoeffData, long hBottom, long hTop);
 		long coeff_sum_bwd(int nCount, int nDim, int nNumOffset, T fCoeff, long hCoeffData, long hTopDiff, long hBottomDiff);
+		long coeff_sub_fwd(int nCount, int nDim, int nNumOffset, T fCoeff, long hCoeffData, long hBottom, long hTop);
+		long coeff_sub_bwd(int nCount, int nDim, int nNumOffset, T fCoeff, long hCoeffData, long hTopDiff, long hBottomDiff);
 
 		long sigmoid_cross_entropy_fwd(int nCount, long hInput, long hTarget, long hLoss, bool bHasIgnoreLabel, int nIgnoreLabel, long hCount);
 		long sigmoid_cross_entropy_ignore(int nCount, int nIgnoreLabel, long hTarget, long hData);
