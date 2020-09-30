@@ -48,17 +48,17 @@ namespace MyCaffe.layers.ssd
         {
             m_type = LayerParameter.LayerType.NORMALIZATION2;
             m_blobNorm = new Blob<T>(cuda, log, false);
-            m_blobNorm.Name = "norm";
+            m_blobNorm.Name = m_param.name + " norm";
             m_blobSumChannelMultiplier = new Blob<T>(cuda, log, false);
-            m_blobSumChannelMultiplier.Name = "sum_chan_mult";
+            m_blobSumChannelMultiplier.Name = m_param.name + " sum_chan_mult";
             m_blobSumSpatialMultiplier = new Blob<T>(cuda, log, false);
-            m_blobSumSpatialMultiplier.Name = "sum_spat_mult";
+            m_blobSumSpatialMultiplier.Name = m_param.name + " sum_spat_mult";
             m_blobBuffer = new Blob<T>(cuda, log, false);
-            m_blobBuffer.Name = "buffer";
+            m_blobBuffer.Name = m_param.name + " buffer";
             m_blobBufferChannel = new Blob<T>(cuda, log, false);
-            m_blobBufferChannel.Name = "buffer_chan";
+            m_blobBufferChannel.Name = m_param.name + " buffer_chan";
             m_blobBufferSpatial = new Blob<T>(cuda, log, false);
-            m_blobBufferSpatial.Name = "buffer_spat";
+            m_blobBufferSpatial.Name = m_param.name + " buffer_spat";
         }
 
         /** @copydoc Layer::dispose */
@@ -147,6 +147,7 @@ namespace MyCaffe.layers.ssd
             else
             {
                 Blob<T> blobScale = new Blob<T>(m_cuda, m_log);
+                blobScale.Name = m_param.name + " scale";
                 List<int> rgShape = new List<int>();
 
                 if (!m_bChannelShared)

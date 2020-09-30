@@ -42,11 +42,11 @@ namespace MyCaffe.layers.ssd
             m_type = LayerParameter.LayerType.PERMUTE;
 
             m_blobPermuteOrder = new Blob<T>(cuda, log);
-            m_blobPermuteOrder.Name = "order";
+            m_blobPermuteOrder.Name = m_param.name + " order";
             m_blobNewSteps = new Blob<T>(cuda, log);
-            m_blobNewSteps.Name = "new-steps";
+            m_blobNewSteps.Name = m_param.name + " new-steps";
             m_blobOldSteps = new Blob<T>(cuda, log);
-            m_blobOldSteps.Name = "old-steps";
+            m_blobOldSteps.Name = m_param.name + " old-steps";
         }
 
         /** @copydoc Layer::dispose */

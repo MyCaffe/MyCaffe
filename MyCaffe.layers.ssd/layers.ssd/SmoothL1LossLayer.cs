@@ -50,9 +50,9 @@ namespace MyCaffe.layers.ssd
             m_type = LayerParameter.LayerType.SMOOTHL1_LOSS;
 
             m_blobDiff = new Blob<T>(cuda, log, false);
-            m_blobDiff.Name = "diff";
+            m_blobDiff.Name = m_param.name + " diff";
             m_blobErrors = new Blob<T>(cuda, log, false);
-            m_blobErrors.Name = "errors";
+            m_blobErrors.Name = m_param.name + " errors";
 
             m_bHasWeights = false;
         }
