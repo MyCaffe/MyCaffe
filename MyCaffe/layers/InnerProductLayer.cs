@@ -60,12 +60,12 @@ namespace MyCaffe.layers
             if (p.inner_product_param.enable_noise)
             {
                 m_blobEpsilonWeight = new Blob<T>(cuda, log);
-                m_blobEpsilonWeight.Name = "epsilon_wt";
+                m_blobEpsilonWeight.Name = m_param.name + " epsilon_wt";
 
                 if (p.inner_product_param.bias_term)
                 {
                     m_blobEpsilonBias = new Blob<T>(cuda, log);
-                    m_blobEpsilonBias.Name = "epsilon_bias";
+                    m_blobEpsilonBias.Name = m_param.name + " epsilon_bias";
                 }
             }
         }
