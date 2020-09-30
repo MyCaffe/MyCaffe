@@ -71,11 +71,11 @@ namespace MyCaffe.layers.ssd
         {
             m_type = LayerParameter.LayerType.DETECTION_OUTPUT;
             m_blobBboxPreds = new Blob<T>(cuda, log);
-            m_blobBboxPreds.Name = "bbox preds";
+            m_blobBboxPreds.Name = m_param.name + " bbox preds";
             m_blobBboxPermute = new Blob<T>(cuda, log);
-            m_blobBboxPermute.Name = "bbox permute";
+            m_blobBboxPermute.Name = m_param.name + " bbox permute";
             m_blobConfPermute = new Blob<T>(cuda, log);
-            m_blobConfPermute.Name = "bbox conf";
+            m_blobConfPermute.Name = m_param.name + " bbox conf";
             m_bboxUtil = new BBoxUtility<T>(cuda, log);
         }
 
@@ -257,12 +257,13 @@ namespace MyCaffe.layers.ssd
                         while (strLine != null)
                         {
                             string[] rgstr = strLine.Split(' ');
-                            if (rgstr.Length != 3)
+                            if (rgstr.Length != 3 && rgstr.Length != 4)
                                 throw new Exception("Invalid name_size_file format, expected 'name' 'height' 'width'");
 
-                            strName = rgstr[0];
-                            nHeight = int.Parse(rgstr[1]);
-                            nWidth = int.Parse(rgstr[2]);
+                            int nNameIdx = (rgstr.Length == 4) ? 1 : 0;
+                            strName = rgstr[nNameIdx].Trim(',');
+                            nHeight = int.Parse(rgstr[nNameIdx + 1].Trim(','));
+                            nWidth = int.Parse(rgstr[nNameIdx + 2].Trim(','));
 
                             m_rgstrNames.Add(strName);
                             m_rgSizes.Add(new SizeF(nWidth, nHeight));

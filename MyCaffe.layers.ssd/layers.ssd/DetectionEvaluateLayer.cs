@@ -110,12 +110,13 @@ namespace MyCaffe.layers.ssd
 
                     while (strLine != null)
                     {
-                        string[] rgstr = strLine.Split(' ');
-                        if (rgstr.Length == 3)
+                        string[] rgstr = strLine.Split(' ', ',');
+                        if (rgstr.Length == 3 || rgstr.Length == 4)
                         {
-                            string strName = rgstr[0];
-                            int nHeight = int.Parse(rgstr[1]);
-                            int nWidth = int.Parse(rgstr[2]);
+                            int nNameIdx = (rgstr.Length == 4) ? 1 : 0;
+                            string strName = rgstr[nNameIdx].Trim(',');
+                            int nHeight = int.Parse(rgstr[nNameIdx + 1].Trim(','));
+                            int nWidth = int.Parse(rgstr[nNameIdx + 2].Trim(','));
 
                             m_rgSizes.Add(new SizeF(nWidth, nHeight));
                         }
