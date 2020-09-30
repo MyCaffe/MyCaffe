@@ -88,14 +88,23 @@ namespace MyCaffe.data
                 if (nSrcId > 0)
                     m_factory.DeleteSourceData(nSrcId);
 
-                if (!loadFile(m_param.DataBatchFileTrain2007, strSrc, nExtractTotal, ref nExtractIdx, nTotal, ref nIdx, m_log, m_param.ExtractFiles, rgNameToLabel))
+                List<Tuple<int, string, Size>> rgFileSizes = new List<Tuple<int, string, Size>>();
+
+                if (!loadFile(m_param.DataBatchFileTrain2007, strSrc, nExtractTotal, ref nExtractIdx, nTotal, ref nIdx, m_log, m_param.ExtractFiles, rgNameToLabel, rgFileSizes))
                     return false;
 
-                if (!loadFile(m_param.DataBatchFileTrain2012, strSrc, nExtractTotal, ref nExtractIdx, nTotal, ref nIdx, m_log, m_param.ExtractFiles, rgNameToLabel))
+                if (!loadFile(m_param.DataBatchFileTrain2012, strSrc, nExtractTotal, ref nExtractIdx, nTotal, ref nIdx, m_log, m_param.ExtractFiles, rgNameToLabel, rgFileSizes))
                     return false;
+
+                string strDir = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\VOC0712\\";
+                if (!Directory.Exists(strDir))
+                    Directory.CreateDirectory(strDir);
+
+                saveFileSizes(rgFileSizes, strDir + "train_name_size.txt");
 
                 SourceDescriptor srcTrain = m_factory.LoadSource(strSrc);
 
+                rgFileSizes = new List<Tuple<int, string, Size>>();
                 m_rgImg = new List<SimpleDatum>();
                 nIdx = 0;
                 nTotal = 4952;
@@ -108,8 +117,10 @@ namespace MyCaffe.data
                 if (nSrcId > 0)
                     m_factory.DeleteSourceData(nSrcId);
 
-                if (!loadFile(m_param.DataBatchFileTest2007, strSrc, nExtractTotal, ref nExtractIdx, nTotal, ref nIdx, m_log, m_param.ExtractFiles, rgNameToLabel))
+                if (!loadFile(m_param.DataBatchFileTest2007, strSrc, nExtractTotal, ref nExtractIdx, nTotal, ref nIdx, m_log, m_param.ExtractFiles, rgNameToLabel, rgFileSizes))
                     return false;
+
+                saveFileSizes(rgFileSizes, strDir + "test_name_size.txt");
 
                 SourceDescriptor srcTest = m_factory.LoadSource(strSrc);
 
@@ -130,6 +141,24 @@ namespace MyCaffe.data
             }
         }
 
+        private void saveFileSizes(List<Tuple<int, string, Size>> rgFileSizes, string strFile)
+        {
+            if (File.Exists(strFile))
+                File.Delete(strFile);
+
+            using (StreamWriter sw = new StreamWriter(strFile))
+            {
+                foreach (Tuple<int, string, Size> item in rgFileSizes)
+                {
+                    string strLine = item.Item1.ToString() + ", ";
+                    strLine += item.Item2.ToString() + ", ";
+                    strLine += item.Item3.Height.ToString() + ", ";
+                    strLine += item.Item3.Width.ToString();
+                    sw.WriteLine(strLine);
+                }
+            }
+        }
+
         private void addLabels(int nSrcId, Dictionary<string, int> rgNameToLabel)
         {
             foreach (KeyValuePair<string, int> kv in rgNameToLabel)
@@ -138,7 +167,7 @@ namespace MyCaffe.data
             }
         }
 
-        private bool loadFile(string strImagesFile, string strSourceName, int nExtractTotal, ref int nExtractIdx, int nTotal, ref int nIdx, Log log, bool bExtractFiles, Dictionary<string, int> rgNameToLabel)
+        private bool loadFile(string strImagesFile, string strSourceName, int nExtractTotal, ref int nExtractIdx, int nTotal, ref int nIdx, Log log, bool bExtractFiles, Dictionary<string, int> rgNameToLabel, List<Tuple<int, string, Size>> rgFileSizes)
         {
             Stopwatch sw = new Stopwatch();
 
@@ -199,6 +228,8 @@ namespace MyCaffe.data
                         log.WriteLine("Loading file " + i.ToString() + " of " + rgFiles.Count.ToString() + "...");
                         sw.Restart();
                     }
+
+                    rgFileSizes.Add(new Tuple<int, string, Size>(nIdx, rgFiles[i].Item1, new Size(datum.Width, datum.Height)));
                 }
 
                 m_factory.ClearImageCashe(true);
