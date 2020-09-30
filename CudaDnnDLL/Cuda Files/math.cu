@@ -7097,6 +7097,10 @@ long Math<T>::math_fwd(int n, long hBottomData, long hTopData, int nFunction)
 			neg_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
 			break;
 
+		case MATH_SIGN:
+			sign_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+			break;
+
 		case MATH_SQRT:
 			sqrt_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
 			break;
