@@ -475,7 +475,7 @@ namespace MyCaffe.test
                 double dfBottomA = rgBottomA[i];
                 double dfBottomB = rgBottomB[i];
                 double dfBottomC = rgBottomC[i];
-                double dfExpected = dfBottomA * dfBottomB * dfBottomC;
+                double dfExpected = dfBottomA / dfBottomB / dfBottomC;
 
                 m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
             }
