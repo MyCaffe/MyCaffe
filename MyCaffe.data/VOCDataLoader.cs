@@ -96,7 +96,7 @@ namespace MyCaffe.data
                 if (!loadFile(m_param.DataBatchFileTrain2012, strSrc, nExtractTotal, ref nExtractIdx, nTotal, ref nIdx, m_log, m_param.ExtractFiles, rgNameToLabel, rgFileSizes))
                     return false;
 
-                string strDir = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\VOC0712\\";
+                string strDir = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\ssd\\VOC0712\\";
                 if (!Directory.Exists(strDir))
                     Directory.CreateDirectory(strDir);
 
