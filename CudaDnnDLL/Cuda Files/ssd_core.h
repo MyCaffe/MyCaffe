@@ -1194,6 +1194,32 @@ public:
 		return SsdBbox<T>::jaccardOverlap(fxmin1, fymin1, fxmax1, fymax1, fxmin2, fymin2, fxmax2, fymax2);
 	}
 
+	float jaccardOverlap(BBOX bbox1, T fxmin2, T fymin2, T fxmax2, T fymax2)
+	{
+		int nIdx = std::get<0>(bbox1);
+		MEM type1 = std::get<1>(bbox1);
+		T fxmin1;
+		T fymin1;
+		T fxmax1;
+		T fymax1;
+		m_rgBbox[type1]->getBounds(nIdx, &fxmin1, &fymin1, &fxmax1, &fymax1);
+
+		return SsdBbox<T>::jaccardOverlap(fxmin1, fymin1, fxmax1, fymax1, fxmin2, fymin2, fxmax2, fymax2);
+	}
+
+	float jaccardOverlap(T fxmin1, T fymin1, T fxmax1, T fymax1, BBOX bbox2)
+	{
+		int nIdx = std::get<0>(bbox2);
+		MEM type2 = std::get<1>(bbox2);
+		T fxmin2;
+		T fymin2;
+		T fxmax2;
+		T fymax2;
+		m_rgBbox[type2]->getBounds(nIdx, &fxmin2, &fymin2, &fxmax2, &fymax2);
+
+		return SsdBbox<T>::jaccardOverlap(fxmin1, fymin1, fxmax1, fymax1, fxmin2, fymin2, fxmax2, fymax2);
+	}
+
 	long match(vector<BBOX>& rgGt, vector<BBOX>& rgPredBBox, int nLabel, vector<int>* match_indices, vector<float>* match_overlaps);
 
 	long findMatches(vector<map<int, vector<BBOX>>>& rgAllLocPreds, map<int, vector<BBOX>>& rgAllGt, vector<BBOX>& rgPriorBbox, vector<BBOX>& rgPriorVariances, vector<map<int, vector<float>>>& all_match_overlaps, vector<map<int, vector<int>>>& all_match_indices);

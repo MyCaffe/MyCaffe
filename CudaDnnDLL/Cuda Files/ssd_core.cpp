@@ -284,17 +284,23 @@ long SsdData<T>::match(vector<BBOX>& rgGt, vector<BBOX>& rgPredBBox, int nLabel,
 
 	// Store the positive overlap between predictions and ground truth.
 	map<int, map<int, float>> overlaps;
-	for (int i = 0; i < nNumPred; i++)
+	for (int j = 0; j < nNumGt; j++)
 	{
-		if (m_bIgnoreCrossBoundaryBbox && isCrossBoundaryBbox(rgPredBBox[i]))
-		{
-			(*match_indices)[i] = -2;
-			continue;
-		}
+		T fxminGt;
+		T fyminGt;
+		T fxmaxGt;
+		T fymaxGt;
+		getBounds(rgGt[rgGtIndices[j]], &fxminGt, &fyminGt, &fxmaxGt, &fymaxGt);
 
-		for (int j = 0; j < nNumGt; j++)
+		for (int i = 0; i < nNumPred; i++)
 		{
-			float fOverlap = jaccardOverlap(rgPredBBox[i], rgGt[rgGtIndices[j]]);
+			if (m_bIgnoreCrossBoundaryBbox && isCrossBoundaryBbox(rgPredBBox[i]))
+			{
+				(*match_indices)[i] = -2;
+				continue;
+			}
+
+			float fOverlap = jaccardOverlap(rgPredBBox[i], fxminGt, fyminGt, fxmaxGt, fymaxGt);
 			if (fOverlap > T(1e-6))
 			{
 				(*match_overlaps)[i] = (std::max)((*match_overlaps)[i], fOverlap);
@@ -923,6 +929,12 @@ long SsdData<T>::applyNMS(vector<BBOX>& bboxes, vector<T>& scores, T fThreshold,
 			continue;
 		}
 
+		T fxminBestBbox;
+		T fyminBestBbox;
+		T fxmaxBestBbox;
+		T fymaxBestBbox;
+		getBounds(best_bbox, &fxminBestBbox, &fyminBestBbox, &fxmaxBestBbox, &fymaxBestBbox);
+
 		pindices->push_back(nBestIdx);
 		// Erase the best box.
 		score_index_vec.erase(score_index_vec.begin());
@@ -962,14 +974,14 @@ long SsdData<T>::applyNMS(vector<BBOX>& bboxes, vector<T>& scores, T fThreshold,
 				}
 				else
 				{
-					fCurOverlap = jaccardOverlap(best_bbox, cur_bbox);
+					fCurOverlap = jaccardOverlap(fxminBestBbox, fyminBestBbox, fxmaxBestBbox, fymaxBestBbox, cur_bbox);
 					// Store the overlap for future use.
 					(*poverlaps)[nBestIdx][nCurIdx] = fCurOverlap;
 				}
 			}
 			else
 			{
-				fCurOverlap = jaccardOverlap(best_bbox, cur_bbox);
+				fCurOverlap = jaccardOverlap(fxminBestBbox, fyminBestBbox, fxmaxBestBbox, fymaxBestBbox, cur_bbox);
 			}
 
 			// Remove it if necessary.
