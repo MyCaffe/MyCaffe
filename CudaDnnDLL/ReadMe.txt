@@ -17,9 +17,12 @@ Several builds of the CudaDnnDLL are created to support different versions of CU
 and in some cases support different compute levels.  The following variantes are
 currently built.
 
-CudaDnnDll.10.1 - supports CUDA 10.1 and 10.2 with compute level 5.3+
+CudaDnnDll.11.0 - supports CUDA 11.0 with compute level 5.3+
+CudaDnnDll.10.2 - supports CUDA 10.2 with compute level 5.3+
+CudaDnnDll.10.2.3_5 - supports CUDA 10.2 with compute level 3.5
+CudaDnnDll.10.1 - supports CUDA 10.1 with compute level 5.3+
+CudaDnnDll.10.1.3_5 - supports CUDA 10.1 with compute level 3.5
 CudaDnnDll.10.0 - supports CUDA 10.0
 CudaDnnDll.9.2  - supports CUDA 9.2
-CudaDnnDll.10.1.3_5 - supports CUDA 10.1 and 10.2 with compute level 3.5
 
 /////////////////////////////////////////////////////////////////////////////
