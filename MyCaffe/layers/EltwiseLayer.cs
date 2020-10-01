@@ -112,7 +112,7 @@ namespace MyCaffe.layers
             // Blob-wise coefficients for the elementwise operation.
             m_rgdfCoeffs = Utility.Create<double>(colBottom.Count, 1.0);
 
-            int nCoeffBlobCount = (m_bCoeffBlob) ?  (m_param.eltwise_param.operation == EltwiseParameter.EltwiseOp.SUB) ? -1 : 1 : 0;
+            int nCoeffBlobCount = (m_bCoeffBlob) ? 1 : 0;
 
             for (int i = 0; i < m_param.eltwise_param.coeff.Count - nCoeffBlobCount; i++)
             {
@@ -227,10 +227,11 @@ namespace MyCaffe.layers
                     }
                     else
                     {
-                        m_cuda.copy(nCount, colBottom[0].gpu_data, hTopData);
+                        m_cuda.scale(nCount, m_rgdfCoeffs[0], colBottom[0].gpu_data, hTopData);
+
                         for (int i = 1; i < colBottom.Count; i++)
                         {
-                            m_cuda.sub(nCount, hTopData, colBottom[i].gpu_data, hTopData);
+                            m_cuda.axpy(nCount, -1 * m_rgdfCoeffs[i], colBottom[i].gpu_data, hTopData);
                         }
                     }
                     break;
@@ -342,10 +343,8 @@ namespace MyCaffe.layers
                             }
                             else
                             {
-                                if (m_rgdfCoeffs[i] == 1.0)
-                                    m_cuda.copy(nCount, hTopDiff, hBottomDiff);
-                                else
-                                    m_cuda.scale(nCount, m_rgdfCoeffs[i], hTopDiff, hBottomDiff);
+                                double dfScale = (i == 0) ? 1 : -1;
+                                m_cuda.scale(nCount, dfScale * m_rgdfCoeffs[i], hTopDiff, hBottomDiff);
                             }
                             break;
 
