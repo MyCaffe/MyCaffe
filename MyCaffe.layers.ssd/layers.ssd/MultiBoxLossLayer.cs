@@ -538,27 +538,22 @@ namespace MyCaffe.layers.ssd
                 m_blobConfLoss.SetData(0, 0);
             }
 
-            colTop[0].SetData(0, 0);
+            double dfNormalizer = GetNormalizer(m_param.loss_param.normalization.Value, m_nNum, m_nNumPriors, m_nNumMatches);
+            double dfLoss = 0;
 
             if (m_param.propagate_down[0])
             {
-                double dfNormalizer = GetNormalizer(m_param.loss_param.normalization.Value, m_nNum, m_nNumPriors, m_nNumMatches);
                 double dfLocLoss = Utility.ConvertVal<T>(m_blobLocLoss.GetData(0));
-                double dfLoss = Utility.ConvertVal<T>(colTop[0].GetData(0));
-
                 dfLoss += m_fLocWeight * dfLocLoss / dfNormalizer;
-                colTop[0].SetData(dfLoss, 0);
             }
 
             if (m_param.propagate_down[1])
             {
-                double dfNormalizer = GetNormalizer(m_param.loss_param.normalization.Value, m_nNum, m_nNumPriors, m_nNumMatches);
                 double dfConfLoss = Utility.ConvertVal<T>(m_blobConfLoss.GetData(0));
-                double dfLoss = Utility.ConvertVal<T>(colTop[0].GetData(0));
-
                 dfLoss += dfConfLoss / dfNormalizer;
-                colTop[0].SetData(dfLoss, 0);
             }
+
+            colTop[0].SetData(dfLoss, 0);
         }
 
 
