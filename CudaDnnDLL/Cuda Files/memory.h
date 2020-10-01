@@ -1698,7 +1698,7 @@ inline long Memory<T>::SsdEncodeConfPrediction(long hSsd, int nConfPredCount, lo
 	if (pSsd == NULL)
 		return ERROR_SSD_NOT_INITIALIZED;
 
-	return pSsd->EncodeLocPrediction(nConfPredCount, hConfPred, nConfGtCount, hConfGt);
+	return pSsd->EncodeConfPrediction(nConfPredCount, hConfPred, nConfGtCount, hConfGt);
 }
 
 template <class T>
