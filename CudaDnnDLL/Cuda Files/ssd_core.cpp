@@ -425,6 +425,9 @@ long SsdData<T>::findMatches(vector<map<int, vector<BBOX>>>& rgAllLocPreds, map<
 {
 	LONG lErr;
 
+	all_match_indices.clear();
+	all_match_overlaps.clear();
+
 	// Find the matches.
 	for (int i = 0; i < m_nNum; i++)
 	{
