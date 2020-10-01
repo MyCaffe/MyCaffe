@@ -94,20 +94,20 @@ namespace MyCaffe.layers
             m_log.CHECK(m_param.eltwise_param.coeff.Count == 0 ||
                         m_param.eltwise_param.coeff.Count == colBottom.Count, "Eltwise layer takes one coefficient per bottom blob.");
 
-            m_log.CHECK(!(m_param.eltwise_param.operation == EltwiseParameter.EltwiseOp.PROD &&
-                          m_param.eltwise_param.coeff.Count > 0), "Eltwise layer only takes coefficients for summation.");
+            m_log.CHECK(!((m_param.eltwise_param.operation == EltwiseParameter.EltwiseOp.PROD || m_param.eltwise_param.operation == EltwiseParameter.EltwiseOp.DIV) &&
+                          m_param.eltwise_param.coeff.Count > 0), "Eltwise layer only takes coefficients for SUM and SUB operations.");
 
             m_op = m_param.eltwise_param.operation;
             m_bCoeffBlob = m_param.eltwise_param.coeff_blob;
 
             if (m_bCoeffBlob)
-                m_log.CHECK_EQ((double)m_op, (double)EltwiseParameter.EltwiseOp.SUM, "coeff_blob option only implemented for the SUM operation.");
+                m_log.CHECK(m_op == EltwiseParameter.EltwiseOp.SUM || m_op == EltwiseParameter.EltwiseOp.SUB, "coeff_blob option only implemented for the SUM and SUB operation.");
 
             int nCoeffSize = m_param.eltwise_param.coeff.Count;
             m_log.CHECK(nCoeffSize == 0 || (!m_bCoeffBlob && nCoeffSize == colBottom.Count)
                                         || (m_bCoeffBlob && nCoeffSize == colBottom.Count - 1), "Eltwise Layer takes one coefficient per bottom blob.");
-            m_log.CHECK(m_op == EltwiseParameter.EltwiseOp.SUM ||
-                        layer_param.eltwise_param.coeff.Count == 0, "Eltwise layer only takes coefficients for summation.");
+            m_log.CHECK(m_op == EltwiseParameter.EltwiseOp.SUM || m_op == EltwiseParameter.EltwiseOp.SUB ||
+                        layer_param.eltwise_param.coeff.Count == 0, "Eltwise layer only takes coefficients for SUM and SUB operations.");
 
             // Blob-wise coefficients for the elementwise operation.
             m_rgdfCoeffs = Utility.Create<double>(colBottom.Count, 1.0);
@@ -227,11 +227,10 @@ namespace MyCaffe.layers
                     }
                     else
                     {
-                        m_cuda.set(nCount, hTopData, 0);
-                        // TODO(shelhamer) does cuBLAS optimize to sum of coeff = 1?
-                        for (int i = 0; i < colBottom.Count; i++)
+                        m_cuda.copy(nCount, colBottom[0].gpu_data, hTopData);
+                        for (int i = 1; i < colBottom.Count; i++)
                         {
-                            m_cuda.axpy(nCount, m_rgdfCoeffs[i], colBottom[i].gpu_data, hTopData);
+                            m_cuda.sub(nCount, hTopData, colBottom[i].gpu_data, hTopData);
                         }
                     }
                     break;
@@ -326,6 +325,20 @@ namespace MyCaffe.layers
                             if (m_bCoeffBlob)
                             {
                                 m_cuda.coeff_sum_bwd(nCount, nDim, i * nNum, m_rgdfCoeffs[i], hCoeffData, hTopDiff, hBottomDiff);
+                            }
+                            else
+                            {
+                                if (m_rgdfCoeffs[i] == 1.0)
+                                    m_cuda.copy(nCount, hTopDiff, hBottomDiff);
+                                else
+                                    m_cuda.scale(nCount, m_rgdfCoeffs[i], hTopDiff, hBottomDiff);
+                            }
+                            break;
+
+                        case EltwiseParameter.EltwiseOp.SUB:
+                            if (m_bCoeffBlob)
+                            {
+                                m_cuda.coeff_sub_bwd(nCount, nDim, i * nNum, m_rgdfCoeffs[i], hCoeffData, hTopDiff, hBottomDiff);
                             }
                             else
                             {
