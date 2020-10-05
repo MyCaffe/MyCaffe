@@ -109,16 +109,20 @@ namespace MyCaffe.test
                 }
                 else
                 {
-                    strPath = AssemblyDirectory + "\\MyCaffe.test.extension.11.0.dll";
+                    strPath = AssemblyDirectory + "\\MyCaffe.test.extension.11.1.dll";
 
                     if (!File.Exists(strPath))
                     {
-                        strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.2.dll";
+                        strPath = AssemblyDirectory + "\\MyCaffe.test.extension.11.0.dll";
                         if (!File.Exists(strPath))
                         {
-                            strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+                            strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.2.dll";
                             if (!File.Exists(strPath))
-                                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+                            {
+                                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+                                if (!File.Exists(strPath))
+                                    strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+                            }
                         }
                     }
                 }
