@@ -6,6 +6,8 @@ using System.Data.SqlClient;
 using System.Data.Entity.Core.EntityClient;
 using System.Data.Entity;
 using MyCaffe.basecode;
+using System.Data.Entity.SqlServer;
+using System.Data.Entity.Infrastructure;
 
 namespace MyCaffe.db.image
 {
@@ -21,6 +23,24 @@ namespace MyCaffe.db.image
         public DNNEntities(string strConnectionString)
             : base(strConnectionString)
         {
+        }
+    }
+
+    /// <summary>
+    /// The DNNConfiguration class used to define the connection strategy.
+    /// </summary>
+    /// <remarks>
+    /// @see [Connection resiliency and retry logic](https://docs.microsoft.com/en-us/ef/ef6/fundamentals/connection-resiliency/retry-logic?redirectedfrom=MSDN) 
+    /// </remarks>
+    public class DNNConfiguration : DbConfiguration
+    {
+        /// <summary>
+        /// The DNNConfiguration constructor.
+        /// </summary>
+        public DNNConfiguration()
+        {
+            SetExecutionStrategy("System.Data.SqlClient", () => new SqlAzureExecutionStrategy());
+            SetDefaultConnectionFactory(new LocalDbConnectionFactory("mssqllocaldb"));
         }
     }
 
