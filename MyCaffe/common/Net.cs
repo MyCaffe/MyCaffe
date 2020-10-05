@@ -117,6 +117,7 @@ namespace MyCaffe.common
         Blob<T> m_blobWork = null;
         List<Layer<T>> m_rgConnectedLayers = new List<Layer<T>>();
         Blob<T> m_debugBlob = null;
+        int m_nLastNonFrozenLayerIdx = 0;
 
         /// <summary>
         /// Specifies the OnGetWorkspace event that fires when the getWorkspace() function is called by a layer to get a shareable workspace to conserve GPU memory.
@@ -663,6 +664,17 @@ namespace MyCaffe.common
 
                 if (m_sharedNet == null)
                     ShareWeights();
+
+                // Set last non frozen layer to optimize back propagation
+                // by only performing back-brpopagation up to the last
+                // non-frozen layer.
+                for (int i = 0; i < m_rgLayers.Count; i++)
+                {
+                    m_nLastNonFrozenLayerIdx = i;
+
+                    if (!m_rgLayers[i].layer_param.freeze_learning && m_rgLayers[i].layer_param.type != LayerParameter.LayerType.SPLIT)
+                        break;
+                }
 
                 m_bDebugInfo = param.debug_info;
                 m_log.WriteLine("Network initialization done.");
@@ -1910,7 +1922,9 @@ namespace MyCaffe.common
             }
 
             if (step != TRAIN_STEP.FORWARD)
-                Backward();
+            {
+                Backward(int.MaxValue, m_nLastNonFrozenLayerIdx);
+            }
 
             return true;
         }
