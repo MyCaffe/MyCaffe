@@ -116,14 +116,22 @@ namespace MyCaffe.app
             edt.Item4.Enabled = false;
             edt.Item5.Enabled = false;
 
+            string strAlternateUrl = null;
+            if (sender == btnDownload3)
+                strAlternateUrl = "https://signalpop.blob.core.windows.net/datasets-voc0712/VOCtest_06-Nov-2007.tar";
+            else if (sender == btnDownload2)
+                strAlternateUrl = "https://signalpop.blob.core.windows.net/datasets-voc0712/VOCtrainval_06-Nov-2007.tar";
+            else if (sender == btnDownload1)
+                strAlternateUrl = "https://signalpop.blob.core.windows.net/datasets-voc0712/VOCtrainval_11-May-2012.tar";
+
             WebClient webClient = new WebClient();
             webClient.DownloadFileCompleted += WebClient_DownloadFileCompleted;
             webClient.DownloadProgressChanged += WebClient_DownloadProgressChanged;
             m_rgWebClients.Add(webClient);
-            getFile(webClient, folderBrowserDialog1.SelectedPath, edt);
+            getFile(strAlternateUrl, webClient, folderBrowserDialog1.SelectedPath, edt);
         }
 
-        private void getFile(WebClient web, string strFolder, Tuple<string, TextBox, Label, Button, Button> edt)
+        private void getFile(string strAlternateUrl, WebClient web, string strFolder, Tuple<string, TextBox, Label, Button, Button> edt)
         {
             string strDstFile = strFolder.TrimEnd('\\') + "\\" + edt.Item1;
             TextBox edtFile = edt.Item2;
@@ -132,6 +140,19 @@ namespace MyCaffe.app
 
             string strSubDir = (edt.Item1.Contains("2012")) ? "voc2012" : "voc2007";
             string strSrcFile = "http://" + lblDownloadSite.Text + "/" + strSubDir + "/" + edt.Item1;
+
+            if (strAlternateUrl.Length > 0)
+            {
+                if (MessageBox.Show("The primary download site at '" + strSrcFile + "' appears to be down, so the file will be downloaded from the alternate site '" + strAlternateUrl + "'." + Environment.NewLine + Environment.NewLine + "Do you want to proceed?", "Confirm Download", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) != DialogResult.Yes)
+                {
+                    edt.Item2.Enabled = true;
+                    edt.Item3.Enabled = true;
+                    edt.Item4.Enabled = true;
+                    return;
+                }
+
+                strSrcFile = strAlternateUrl;
+            }
 
             web.DownloadFileAsync(new Uri(strSrcFile), strDstFile, edt);   
         }
