@@ -502,6 +502,7 @@ namespace MyCaffe.test
                                 {
                                     double dfPct = (double)i / nCount;
                                     log.WriteLine("Loading files at " + dfPct.ToString("P") + ", loading " + i.ToString("N0") + " of " + nCount.ToString("N0") + "...");
+                                    log.Progress = dfPct;
                                     swNotify.Restart();
                                 }
 
