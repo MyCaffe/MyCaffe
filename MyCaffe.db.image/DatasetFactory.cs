@@ -871,6 +871,16 @@ namespace MyCaffe.db.image
             return m_db.GetRawImageDebugData(rgData, nOriginalSourceID);
         }
 
+        /// <summary>
+        /// Update the annotations on a given RawImage.
+        /// </summary>
+        /// <param name="nImageId">Specifies the ID of the RawImage to update.</param>
+        /// <param name="annotations">Specifies the new annotations to update.</param>
+        public void UpdateDatasetImageAnnotations(int nImageId, AnnotationGroupCollection annotations)
+        {
+            m_db.UpdateDatasetImageAnnotations(nImageId, annotations);
+        }
+
         #endregion
 
 

@@ -2832,24 +2832,43 @@ namespace MyCaffe.db.image
             }
         }
 
+        /// <summary>
+        /// Update the annotations of a given raw image.
+        /// </summary>
+        /// <param name="nImageId">Specifies the ID of the RawImage to update.</param>
+        /// <param name="annotations">Specifies the new annotations to update.</param>
+        public void UpdateDatasetImageAnnotations(int nImageId, AnnotationGroupCollection annotations)
+        {
+            using (DNNEntities entities = MyCaffe.db.image.EntitiesConnection.CreateEntities())
+            {
+                List<RawImage> rgImg = entities.RawImages.Where(p => p.ID == nImageId).ToList();
+                if (rgImg.Count > 0)
+                {
+                    rgImg[0].DataCriteria = SimpleDatum.SaveAnnotationDataToDataCriteriaByteArray(SimpleDatum.ANNOTATION_TYPE.BBOX, annotations);
+                    rgImg[0].DataCriteriaFormatID = (int)SimpleDatum.DATA_FORMAT.ANNOTATION_DATA;
+                    entities.SaveChanges();
+                }
+            }
+        }
+
         #endregion
 
 
         //---------------------------------------------------------------------
-            //  RawImage Results
-            //---------------------------------------------------------------------
+        //  RawImage Results
+        //---------------------------------------------------------------------
         #region RawImage Results
 
         /// <summary>
-            /// Save the results of a Run as a RawImageResult.
-            /// </summary>
-            /// <param name="nSrcId">Specifies the ID of the data source.</param>
-            /// <param name="nIdx">Specifies the index of the result.</param>
-            /// <param name="nLabel">Specifies the expected label of the result.</param>
-            /// <param name="dt">Specifies the time-stamp of the result.</param>
-            /// <param name="rgResults">Specifies the results of the run as a list of (int nLabel, double dfReult) values.</param>
-            /// <param name="bInvert">Specifies whether or not the results are inverted.</param>
-            /// <returns></returns>
+        /// Save the results of a Run as a RawImageResult.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the ID of the data source.</param>
+        /// <param name="nIdx">Specifies the index of the result.</param>
+        /// <param name="nLabel">Specifies the expected label of the result.</param>
+        /// <param name="dt">Specifies the time-stamp of the result.</param>
+        /// <param name="rgResults">Specifies the results of the run as a list of (int nLabel, double dfReult) values.</param>
+        /// <param name="bInvert">Specifies whether or not the results are inverted.</param>
+        /// <returns></returns>
         public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<Result> rgResults, bool bInvert)
         {
             if (rgResults.Count == 0)
