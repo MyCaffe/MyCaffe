@@ -436,7 +436,7 @@ namespace MyCaffe.test
                     if (bUseRichAnnotation)
                     {
                         sd.annotation_type = m_annoType;
-                        sd.annotation_group = new List<AnnotationGroup>();
+                        sd.annotation_group = new AnnotationGroupCollection();
 
                         for (int g=0; g<i; g++)
                         {
@@ -681,7 +681,7 @@ namespace MyCaffe.test
                 if (bUseRichAnnotation)
                 {
                     datum.annotation_type = type;
-                    datum.annotation_group = new List<AnnotationGroup>();
+                    datum.annotation_group = new AnnotationGroupCollection();
 
                     for (int g = 0; g < i; g++)
                     {

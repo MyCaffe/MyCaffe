@@ -42,7 +42,7 @@ namespace MyCaffe.basecode
         int m_nOriginalSourceID = 0;
         int m_nHitCount = 0;
         ANNOTATION_TYPE m_nAnnotationType = ANNOTATION_TYPE.NONE;
-        List<AnnotationGroup> m_rgAnnotationGroup = null;
+        AnnotationGroupCollection m_rgAnnotationGroup = null;
         /// <summary>
         /// Specifies a user value.
         /// </summary>
@@ -1000,7 +1000,7 @@ namespace MyCaffe.basecode
 
             if (d.m_rgAnnotationGroup != null)
             {
-                m_rgAnnotationGroup = new List<AnnotationGroup>();
+                m_rgAnnotationGroup = new AnnotationGroupCollection();
 
                 foreach (AnnotationGroup g in d.m_rgAnnotationGroup)
                 {
@@ -2045,7 +2045,7 @@ namespace MyCaffe.basecode
         /// <summary>
         /// When using annoations, each annotation group contains an annotation for a particular class used with SSD.
         /// </summary>
-        public List<AnnotationGroup> annotation_group
+        public AnnotationGroupCollection annotation_group
         {
             get { return m_rgAnnotationGroup; }
             set { m_rgAnnotationGroup = value; }
@@ -2314,30 +2314,44 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
-        /// Save the annotation data and type to the data criteria.
+        /// Save the annotation data to a byte array.
         /// </summary>
-        public void SaveAnnotationDataToDataCriteria()
+        /// <param name="type">Specifies the annotation type.</param>
+        /// <param name="annotations">Specifies the annotations to save.</param>
+        /// <returns>The byte array containing the annotations is returned.</returns>
+        public static byte[] SaveAnnotationDataToDataCriteriaByteArray(ANNOTATION_TYPE type, AnnotationGroupCollection annotations)
         {
             using (MemoryStream ms = new MemoryStream())
             using (BinaryWriter bw = new BinaryWriter(ms))
             {
-                bw.Write((int)m_nAnnotationType);
+                bw.Write((int)type);
 
                 int nCount = 0;
-                if (m_rgAnnotationGroup != null)
-                    nCount = m_rgAnnotationGroup.Count;
+                if (annotations != null)
+                    nCount = annotations.Count;
 
                 bw.Write(nCount);
 
-                for (int i = 0; i < m_rgAnnotationGroup.Count; i++)
+                if (annotations != null)
                 {
-                    m_rgAnnotationGroup[i].Save(bw);
+                    for (int i = 0; i < annotations.Count; i++)
+                    {
+                        annotations[i].Save(bw);
+                    }
                 }
 
                 bw.Flush();
-                DataCriteria = ms.ToArray();
-                DataCriteriaFormat = DATA_FORMAT.ANNOTATION_DATA;
+                return ms.ToArray();
             }
+        }
+
+        /// <summary>
+        /// Save the annotation data and type to the data criteria.
+        /// </summary>
+        public void SaveAnnotationDataToDataCriteria()
+        {
+            DataCriteria = SaveAnnotationDataToDataCriteriaByteArray(m_nAnnotationType, m_rgAnnotationGroup);
+            DataCriteriaFormat = DATA_FORMAT.ANNOTATION_DATA;
         }
 
         /// <summary>
@@ -2357,7 +2371,7 @@ namespace MyCaffe.basecode
             using (BinaryReader br = new BinaryReader(ms))
             {
                 m_nAnnotationType = (ANNOTATION_TYPE)br.ReadInt32();
-                m_rgAnnotationGroup = new List<AnnotationGroup>();
+                m_rgAnnotationGroup = new AnnotationGroupCollection();
 
                 int nCount = br.ReadInt32();
                 if (nCount > 0)

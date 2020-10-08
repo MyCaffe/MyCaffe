@@ -461,7 +461,7 @@ namespace MyCaffe.data
         /// <param name="d">Specifies the Datum to transform.</param>
         /// <param name="blob">Specifies the Blob where the transformed data is placed.</param>
         /// <returns>When a datum contains annotations, the tranformed annotation groups are returned, otherwise <i>null</i> is returned.</returns>
-        public List<AnnotationGroup> Transform(SimpleDatum d, Blob<T> blob)
+        public AnnotationGroupCollection Transform(SimpleDatum d, Blob<T> blob)
         {
             bool bDoMirror;
             return Transform(d, blob, out bDoMirror);
@@ -474,7 +474,7 @@ namespace MyCaffe.data
         /// <param name="blob">Specifies the Blob where the transformed data is placed.</param>
         /// <param name="bDoMirror">Returns whether or not a mirror took place.</param>
         /// <returns>When a datum contains annotations, the tranformed annotation groups are returned, otherwise <i>null</i> is returned.</returns>
-        public List<AnnotationGroup> Transform(SimpleDatum d, Blob<T> blob, out bool bDoMirror)
+        public AnnotationGroupCollection Transform(SimpleDatum d, Blob<T> blob, out bool bDoMirror)
         {
             int nCropSize = (int)m_param.crop_size;
             int nDatumChannels = d.Channels;
@@ -826,7 +826,7 @@ namespace MyCaffe.data
         /// <param name="bMirror">Returns whether or not a mirror occurred.</param>
         /// <param name="bResize">Specifies to resize the data.</param>
         /// <returns>Transformed data.</returns>
-        public T[] Transform(SimpleDatum d, out List<AnnotationGroup> rgTransformedAnnoVec, out bool bMirror, bool bResize = true)
+        public T[] Transform(SimpleDatum d, out AnnotationGroupCollection rgTransformedAnnoVec, out bool bMirror, bool bResize = true)
         {
             // Transform the datum.
             NormalizedBBox crop_bbox = new NormalizedBBox(0, 0, 0, 0);
@@ -846,11 +846,11 @@ namespace MyCaffe.data
         /// <param name="bMirror">Specifies to mirror the data.</param>
         /// <param name="bResize">Specifies to resize the data.</param>
         /// <returns></returns>
-        public List<AnnotationGroup> TransformAnnotation(SimpleDatum d, NormalizedBBox crop_bbox, bool bMirror, bool bResize)
+        public AnnotationGroupCollection TransformAnnotation(SimpleDatum d, NormalizedBBox crop_bbox, bool bMirror, bool bResize)
         {
             int nImgHt = d.Height;
             int nImgWd = d.Width;
-            List<AnnotationGroup> rgTransformedAnnotationGroup = new List<AnnotationGroup>();
+            AnnotationGroupCollection rgTransformedAnnotationGroup = new AnnotationGroupCollection();
 
             if (d.annotation_type == SimpleDatum.ANNOTATION_TYPE.BBOX)
             {

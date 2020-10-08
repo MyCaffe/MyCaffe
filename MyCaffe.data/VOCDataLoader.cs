@@ -275,7 +275,7 @@ namespace MyCaffe.data
                 return false;
             }
 
-            datum.annotation_group = new List<AnnotationGroup>();
+            datum.annotation_group = new AnnotationGroupCollection();
             datum.annotation_type = type;
 
             string strExt = Path.GetExtension(strFile).ToLower();

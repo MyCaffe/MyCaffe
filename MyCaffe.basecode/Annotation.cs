@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -178,6 +179,191 @@ namespace MyCaffe.basecode
             }
 
             return new AnnotationGroup(rgAnnotations, nGroupLabel);
+        }
+    }
+
+    /// <summary>
+    /// Defines a collection of AnnotationGroups.
+    /// </summary>
+    public class AnnotationGroupCollection : IEnumerable<AnnotationGroup>
+    {
+        List<AnnotationGroup> m_rgItems = new List<AnnotationGroup>();
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        public AnnotationGroupCollection()
+        {
+        }
+
+        /// <summary>
+        /// Specifies the number of items in the collection.
+        /// </summary>
+        public int Count
+        {
+            get { return m_rgItems.Count; }
+        }
+
+        /// <summary>
+        /// Get/set a specific item within the collection at a given index.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index of the item to get/set.</param>
+        /// <returns>The item at the index is returned.</returns>
+        public AnnotationGroup this[int nIdx]
+        {
+            get { return m_rgItems[nIdx]; }
+            set { m_rgItems[nIdx] = value; }
+        }
+
+        /// <summary>
+        /// Add a new AnnotationGroup to the collection.
+        /// </summary>
+        /// <param name="g">Specifies the AnnotationGroup to add.</param>
+        public void Add(AnnotationGroup g)
+        {
+            m_rgItems.Add(g);
+        }
+
+        /// <summary>
+        /// Remove an AnnotationGroup from the collection if it exists.
+        /// </summary>
+        /// <param name="g">Specifies the AnnotationGroup to remove.</param>
+        /// <returns>If found and removed <i>true</i> is returned, otherwise <i>false</i>.</returns>
+        public bool Remove(AnnotationGroup g)
+        {
+            return m_rgItems.Remove(g);
+        }
+
+        /// <summary>
+        /// Remove an item at a given index.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index of the item to remove.</param>
+        public void RemoveAt(int nIdx)
+        {
+            m_rgItems.RemoveAt(nIdx);
+        }
+
+        /// <summary>
+        /// Clear all items from the collection.
+        /// </summary>
+        public void Clear()
+        {
+            m_rgItems.Clear();
+        }
+
+        /// <summary>
+        /// Returns the enumerator for the collection.
+        /// </summary>
+        /// <returns>The enumerator is returned.</returns>
+        public IEnumerator<AnnotationGroup> GetEnumerator()
+        {
+            return m_rgItems.GetEnumerator();
+        }
+
+        /// <summary>
+        /// Returns the enumerator for the collection.
+        /// </summary>
+        /// <returns>The enumerator is returned.</returns>
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return m_rgItems.GetEnumerator();
+        }
+
+        /// <summary>
+        /// Return a copy of the collection.
+        /// </summary>
+        /// <returns>A copy of the collection is returned.</returns>
+        public AnnotationGroupCollection Clone()
+        {
+            AnnotationGroupCollection col = new AnnotationGroupCollection();
+
+            foreach (AnnotationGroup g in m_rgItems)
+            {
+                col.Add(g.Clone());
+            }
+
+            return col;
+        }
+
+        /// <summary>
+        /// Return the min/max labels found int the collection.
+        /// </summary>
+        /// <returns>A tuple containing the min/max lable found is returned.</returns>
+        public Tuple<int, int> GetMinMaxLabels()
+        {
+            int nMin = int.MaxValue;
+            int nMax = -int.MaxValue;
+
+            for (int i = 0; i < m_rgItems.Count; i++)
+            {
+                nMin = Math.Min(nMin, m_rgItems[i].group_label);
+                nMax = Math.Max(nMax, m_rgItems[i].group_label);
+            }
+
+            return new Tuple<int, int>(nMin, nMax);
+        }
+
+        /// <summary>
+        /// Save an AnnotationGroupCollection to a binary writer.
+        /// </summary>
+        /// <param name="bw">Specifies the binary writer.</param>
+        /// <param name="rg">Specifies the AnnotationGroupCollection to save.</param>
+        public static void SaveList(BinaryWriter bw, AnnotationGroupCollection rg)
+        {
+            bw.Write(rg.Count);
+
+            foreach (AnnotationGroup g in rg)
+            {
+                g.Save(bw);
+            }
+        }
+
+        /// <summary>
+        /// Load an AnnotationGroupCollection from a binary stream.
+        /// </summary>
+        /// <param name="br">Specifies the binary reader.</param>
+        /// <returns>The list of annotation groups is returned.</returns>
+        public static AnnotationGroupCollection LoadList(BinaryReader br)
+        {
+            AnnotationGroupCollection rg = new AnnotationGroupCollection();
+            int nCount = br.ReadInt32();
+
+            for (int i = 0; i < nCount; i++)
+            {
+                rg.Add(AnnotationGroup.Load(br));
+            }
+
+            return rg;
+        }
+
+        /// <summary>
+        /// Saves a AnnotationGroupCollection to a byte array.
+        /// </summary>
+        /// <param name="rg">Specifies the list of AnnotationGroup to save.</param>
+        /// <returns>The byte array is returned.</returns>
+        public static byte[] ToByteArray(AnnotationGroupCollection rg)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            using (BinaryWriter bw = new BinaryWriter(ms))
+            {
+                SaveList(bw, rg);
+                ms.Flush();
+                return ms.ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Returns an AnnotationGroupCollection from a byte array.
+        /// </summary>
+        /// <param name="rg">Specifies the byte array to load.</param>
+        /// <returns>The list of annotation groups is returned.</returns>
+        public static AnnotationGroupCollection FromByteArray(byte[] rg)
+        {
+            using (MemoryStream ms = new MemoryStream(rg))
+            using (BinaryReader br = new BinaryReader(ms))
+            {
+                return LoadList(br);
+            }
         }
     }
 }

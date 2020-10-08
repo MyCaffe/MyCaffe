@@ -488,7 +488,7 @@ namespace MyCaffe.test
             if (bUseRichAnnotation)
             {
                 d.annotation_type = type;
-                d.annotation_group = new List<AnnotationGroup>();
+                d.annotation_group = new AnnotationGroupCollection();
                 AnnotationGroup anno_group = new AnnotationGroup(null, nLabel);
                 d.annotation_group.Add(anno_group);
 
@@ -846,7 +846,7 @@ namespace MyCaffe.test
 
             DataTransformer<T> transformer = new DataTransformer<T>(m_cuda, m_log, p, Phase.TEST, nChannels, nHeight, nWidth);
             transformer.InitRand();
-            List<AnnotationGroup> transformed_anno_vec = transformer.Transform(datum, blob);
+            AnnotationGroupCollection transformed_anno_vec = transformer.Transform(datum, blob);
 
             m_log.CHECK_EQ(transformed_anno_vec.Count, 1, "There should only be one Annotation group!");
             AnnotationGroup anno_group = transformed_anno_vec[0];
@@ -886,7 +886,7 @@ namespace MyCaffe.test
             p.crop_size = (uint)nCropSize;
             DataTransformer<T> transformer = new DataTransformer<T>(m_cuda, m_log, p, Phase.TEST, nChannels, nHeight, nWidth);
             transformer.InitRand();
-            List<AnnotationGroup> transformed_anno_vec = transformer.Transform(datum, blob);
+            AnnotationGroupCollection transformed_anno_vec = transformer.Transform(datum, blob);
 
             m_log.CHECK_EQ(transformed_anno_vec.Count, 1, "There should only be one Annotation group!");
             AnnotationGroup anno_group = transformed_anno_vec[0];
@@ -930,7 +930,7 @@ namespace MyCaffe.test
 
             for (int i = 0; i < 10; i++)
             {
-                List<AnnotationGroup> transformed_anno_vec = transformer.Transform(datum, blob, out bDoMirror);
+                AnnotationGroupCollection transformed_anno_vec = transformer.Transform(datum, blob, out bDoMirror);
 
                 m_log.CHECK_EQ(transformed_anno_vec.Count, 1, "There should only be one Annotation group!");
                 AnnotationGroup anno_group = transformed_anno_vec[0];

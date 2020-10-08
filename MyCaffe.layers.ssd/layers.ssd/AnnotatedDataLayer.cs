@@ -316,7 +316,7 @@ namespace MyCaffe.layers.ssd
             SimpleDatum datum;
             int nDim = 0;
             int nNumBboxes = 0;
-            Dictionary<int, List<AnnotationGroup>> rgAllAnno = null;
+            Dictionary<int, AnnotationGroupCollection> rgAllAnno = null;
             List<int> rgTopShape = null;
             bool bLabelDirty = false;
 
@@ -408,7 +408,7 @@ namespace MyCaffe.layers.ssd
 
                 // Apply data transformations (mirror, scale, crop...)
                 int nOffset = batch.Data.offset(i);
-                List<AnnotationGroup> rgTransformedAnnoVec;
+                AnnotationGroupCollection rgTransformedAnnoVec;
 
                 if (m_bOutputLabels)
                 {
@@ -439,7 +439,7 @@ namespace MyCaffe.layers.ssd
                         }
 
                         if (rgAllAnno == null)
-                            rgAllAnno = new Dictionary<int, List<AnnotationGroup>>();
+                            rgAllAnno = new Dictionary<int, AnnotationGroupCollection>();
 
                         rgAllAnno.Add(i, rgTransformedAnnoVec);
                     }
@@ -521,7 +521,7 @@ namespace MyCaffe.layers.ssd
                         int nIdx = 0;
                         for (int i = 0; i < nBatchSize; i++)
                         {
-                            List<AnnotationGroup> rgAnnoGroups = rgAllAnno[i];
+                            AnnotationGroupCollection rgAnnoGroups = rgAllAnno[i];
 
                             for (int g = 0; g < rgAnnoGroups.Count; g++)
                             {
