@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -205,6 +206,22 @@ namespace MyCaffe.basecode
             strOut += " difficult = " + m_bDifficult.ToString();
 
             return strOut;
+        }
+
+        /// <summary>
+        /// Calculates and returns the non-normalized bounding rectangle based in the specified width and height.
+        /// </summary>
+        /// <param name="nWidth">Specifies the non-normalized width.</param>
+        /// <param name="nHeight">Specifies the non-normalized height.</param>
+        /// <returns>The non-normalized bounding rectangle is returned.</returns>
+        public RectangleF GetBounds(int nWidth, int nHeight)
+        {
+            float fX1 = m_fxmin * nWidth;
+            float fX2 = m_fxmax * nWidth;
+            float fY1 = m_fymin * nHeight;
+            float fY2 = m_fymax * nHeight;
+
+            return new RectangleF(fX1, fY1, fX2 - fX1, fY2 - fY1);
         }
     }
 }
