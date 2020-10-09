@@ -874,11 +874,12 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Update the annotations on a given RawImage.
         /// </summary>
+        /// <param name="nSrcId">Specifies the ID of the data source.</param>
         /// <param name="nImageId">Specifies the ID of the RawImage to update.</param>
         /// <param name="annotations">Specifies the new annotations to update.</param>
-        public void UpdateDatasetImageAnnotations(int nImageId, AnnotationGroupCollection annotations)
+        public void UpdateDatasetImageAnnotations(int nSrcId, int nImageId, AnnotationGroupCollection annotations)
         {
-            m_db.UpdateDatasetImageAnnotations(nImageId, annotations);
+            m_db.UpdateDatasetImageAnnotations(nSrcId, nImageId, annotations);
         }
 
         #endregion
