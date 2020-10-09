@@ -2351,7 +2351,7 @@ namespace MyCaffe.basecode
         public void SaveAnnotationDataToDataCriteria()
         {
             DataCriteria = SaveAnnotationDataToDataCriteriaByteArray(m_nAnnotationType, m_rgAnnotationGroup);
-            DataCriteriaFormat = DATA_FORMAT.ANNOTATION_DATA;
+            DataCriteriaFormat = (m_rgAnnotationGroup.Count > 0) ? DATA_FORMAT.ANNOTATION_DATA : DATA_FORMAT.NONE;
         }
 
         /// <summary>
