@@ -188,12 +188,22 @@ namespace MyCaffe.basecode
     public class AnnotationGroupCollection : IEnumerable<AnnotationGroup>
     {
         List<AnnotationGroup> m_rgItems = new List<AnnotationGroup>();
+        Dictionary<int, string> m_rgLabels = new Dictionary<int, string>();
 
         /// <summary>
         /// The constructor.
         /// </summary>
         public AnnotationGroupCollection()
         {
+        }
+
+        /// <summary>
+        /// Get/set the label name mappings.
+        /// </summary>
+        public Dictionary<int, string> Labels
+        {
+            get { return m_rgLabels; }
+            set { m_rgLabels = value; }
         }
 
         /// <summary>
@@ -270,6 +280,22 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Find the annotation group with the given label.
+        /// </summary>
+        /// <param name="nLabel">Specifies the label to look for.</param>
+        /// <returns>Either the AnnotationGroup with the group label is returned, or <i>null</i>.</returns>
+        public AnnotationGroup Find(int nLabel)
+        {
+            foreach (AnnotationGroup g in m_rgItems)
+            {
+                if (g.group_label == nLabel)
+                    return g;
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Return a copy of the collection.
         /// </summary>
         /// <returns>A copy of the collection is returned.</returns>
@@ -280,6 +306,11 @@ namespace MyCaffe.basecode
             foreach (AnnotationGroup g in m_rgItems)
             {
                 col.Add(g.Clone());
+            }
+
+            foreach (KeyValuePair<int, string> kv in m_rgLabels)
+            {
+                col.m_rgLabels.Add(kv.Key, kv.Value);
             }
 
             return col;
@@ -340,13 +371,26 @@ namespace MyCaffe.basecode
         /// Saves a AnnotationGroupCollection to a byte array.
         /// </summary>
         /// <param name="rg">Specifies the list of AnnotationGroup to save.</param>
+        /// <param name="bIncludeLabels">Optionally, include the labels.</param>
         /// <returns>The byte array is returned.</returns>
-        public static byte[] ToByteArray(AnnotationGroupCollection rg)
+        public static byte[] ToByteArray(AnnotationGroupCollection rg, bool bIncludeLabels = false)
         {
             using (MemoryStream ms = new MemoryStream())
             using (BinaryWriter bw = new BinaryWriter(ms))
             {
                 SaveList(bw, rg);
+
+                bw.Write(bIncludeLabels);
+                if (bIncludeLabels)
+                {
+                    bw.Write(rg.Labels.Count);
+                    foreach (KeyValuePair<int, string> kv in rg.Labels)
+                    {
+                        bw.Write(kv.Key);
+                        bw.Write(kv.Value);
+                    }
+                }
+
                 ms.Flush();
                 return ms.ToArray();
             }
@@ -362,7 +406,21 @@ namespace MyCaffe.basecode
             using (MemoryStream ms = new MemoryStream(rg))
             using (BinaryReader br = new BinaryReader(ms))
             {
-                return LoadList(br);
+                AnnotationGroupCollection col = LoadList(br);
+
+                if (br.ReadBoolean())
+                {
+                    int nCount = br.ReadInt32();
+                    for (int i = 0; i < nCount; i++)
+                    {
+                        int nKey = br.ReadInt32();
+                        string strVal = br.ReadString();
+
+                        col.Labels.Add(nKey, strVal);
+                    }
+                }
+
+                return col;
             }
         }
     }
