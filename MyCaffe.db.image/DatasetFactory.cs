@@ -827,10 +827,11 @@ namespace MyCaffe.db.image
         /// Activates all images with the given source ID's.
         /// </summary>
         /// <param name="bActive">Specifies whether or not to activate the images.</param>
+        /// <param name="bAnnotatedOnly">Specifies to activate annotated images only.</param>
         /// <param name="rgSrcId">Specifies the source ID's who's images are to be activated.</param>
-        public void ActivateAllRawImages(bool bActive, params int[] rgSrcId)
+        public void ActivateAllRawImages(bool bActive, bool bAnnotatedOnly, params int[] rgSrcId)
         {
-            m_db.ActivateAllRawImages(bActive, rgSrcId);
+            m_db.ActivateAllRawImages(bActive, bAnnotatedOnly, rgSrcId);
         }
 
         /// <summary>

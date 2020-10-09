@@ -2807,8 +2807,9 @@ namespace MyCaffe.db.image
         /// Activate all raw images associated with a set of source ID's.
         /// </summary>
         /// <param name="bActive">Specifies whether or not to activate the images.</param>
+        /// <param name="bAnnotatedOnly">Specifies to activate annotated images only.</param>
         /// <param name="rgSrcId">Specifies the source ID's.</param>
-        public void ActivateAllRawImages(bool bActive, params int[] rgSrcId)
+        public void ActivateAllRawImages(bool bActive, bool bAnnotatedOnly, params int[] rgSrcId)
         {
             if (rgSrcId.Length == 0)
                 throw new Exception("You must specify at least one source iD.");
@@ -2827,6 +2828,12 @@ namespace MyCaffe.db.image
                 }
 
                 strCmd += ")";
+
+                if (bAnnotatedOnly)
+                {
+                    strCmd += " AND (";
+                    strCmd += "[DataCriteriaFormatID] = 9)";
+                }
 
                 entities.Database.ExecuteSqlCommand(strCmd);
             }
