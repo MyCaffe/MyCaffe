@@ -2355,33 +2355,48 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
-        /// Load the annotation data and type from the data criteria.
+        /// Load the AnnotationGroups from the byte array.
         /// </summary>
-        /// <returns>When successfully loaded <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
-        public bool LoadAnnotationDataFromDataCriteria()
+        /// <param name="rg">Specifies the byte array containing the annotation data.</param>
+        /// <param name="fmt">Specifies the annotation data format (expected to be ANNOATION_DATA).</param>
+        /// <param name="type">Returns the annoation data type.</param>
+        /// <returns>The AnnotationGroupCollection loaded is returned.</returns>
+        public static AnnotationGroupCollection LoadAnnotationDataFromDataCriteria(byte[] rg, DATA_FORMAT fmt, out ANNOTATION_TYPE type)
         {
-            if (DataCriteria == null || DataCriteriaFormat != DATA_FORMAT.ANNOTATION_DATA)
-            {
-                m_nAnnotationType = ANNOTATION_TYPE.NONE;
-                m_rgAnnotationGroup = null;
-                return false;
-            }
-          
-            using (MemoryStream ms = new MemoryStream(DataCriteria))
+            type = ANNOTATION_TYPE.NONE;
+
+            if (rg == null || fmt != DATA_FORMAT.ANNOTATION_DATA)
+                return null;
+
+            using (MemoryStream ms = new MemoryStream(rg))
             using (BinaryReader br = new BinaryReader(ms))
             {
-                m_nAnnotationType = (ANNOTATION_TYPE)br.ReadInt32();
-                m_rgAnnotationGroup = new AnnotationGroupCollection();
+                type = (ANNOTATION_TYPE)br.ReadInt32();
+                AnnotationGroupCollection rgGroups = new AnnotationGroupCollection();
 
                 int nCount = br.ReadInt32();
                 if (nCount > 0)
                 {
                     for (int i = 0; i < nCount; i++)
                     {
-                        m_rgAnnotationGroup.Add(AnnotationGroup.Load(br));
+                        rgGroups.Add(AnnotationGroup.Load(br));
                     }
                 }
+
+                return rgGroups;
             }
+        }
+
+        /// <summary>
+        /// Load the annotation data and type from the data criteria.
+        /// </summary>
+        /// <returns>When successfully loaded <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        public bool LoadAnnotationDataFromDataCriteria()
+        {
+            m_rgAnnotationGroup = LoadAnnotationDataFromDataCriteria(DataCriteria, DataCriteriaFormat, out m_nAnnotationType);
+
+            if (m_rgAnnotationGroup == null)
+                return false;
 
             return true;
         }
