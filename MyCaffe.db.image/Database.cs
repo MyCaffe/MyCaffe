@@ -2831,8 +2831,8 @@ namespace MyCaffe.db.image
 
                 if (bAnnotatedOnly)
                 {
-                    strCmd += " AND (";
-                    strCmd += "[DataCriteriaFormatID] = 9)";
+                    strCmd += " AND ([DataCriteriaFormatID] = 9)";
+                    strCmd += " AND (Convert(varbinary(8), [DataCriteria]) != 0x00000000)";
                 }
 
                 entities.Database.ExecuteSqlCommand(strCmd);
