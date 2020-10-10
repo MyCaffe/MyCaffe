@@ -1676,8 +1676,6 @@ namespace MyCaffe
 
                 if (rgResults.ResultType == ResultCollection.RESULT_TYPE.MULTIBOX)
                 {
-                    m_log.CHECK(sd.annotation_type == SimpleDatum.ANNOTATION_TYPE.BBOX, "The SimpleDatum should have an annotation type = BBOX when using MULTIBOX.");
-
                     Dictionary<int, List<Result>> rgLabeledResults = new Dictionary<int, List<Result>>();
                     Dictionary<int, int> rgLabeledOrder = new Dictionary<int, int>();
 
@@ -1695,25 +1693,34 @@ namespace MyCaffe
                     }
 
                     List<Tuple<int, List<Result>>> rgBestResults = new List<Tuple<int, List<Result>>>();
-                    List<int> rgDetectedLabels = rgLabeledOrder.OrderBy(p => p.Value).Select(p => p.Key).Take(sd.annotation_group.Count).ToList();
+                    List<int> rgDetectedLabels = rgLabeledOrder.OrderBy(p => p.Value).Select(p => p.Key).ToList();
 
-                    for (int j = 0; j < sd.annotation_group.Count; j++)
+                    if (sd.annotation_group != null)
                     {
-                        int nExpectedLabel = sd.annotation_group[j].group_label;
+                        rgDetectedLabels = rgDetectedLabels.Take(sd.annotation_group.Count).ToList();
 
-                        if (!rgCorrectCounts.ContainsKey(nExpectedLabel))
-                            rgCorrectCounts.Add(nExpectedLabel, 0);
-
-                        if (!rgLabelTotals.ContainsKey(nExpectedLabel))
-                            rgLabelTotals.Add(nExpectedLabel, 1);
-                        else
-                            rgLabelTotals[nExpectedLabel]++;
-
-                        if (rgDetectedLabels.Contains(nExpectedLabel))
+                        for (int j = 0; j < sd.annotation_group.Count; j++)
                         {
-                            rgCorrectCounts[nExpectedLabel]++;
-                            nCorrectCount++;
+                            int nExpectedLabel = sd.annotation_group[j].group_label;
+
+                            if (!rgCorrectCounts.ContainsKey(nExpectedLabel))
+                                rgCorrectCounts.Add(nExpectedLabel, 0);
+
+                            if (!rgLabelTotals.ContainsKey(nExpectedLabel))
+                                rgLabelTotals.Add(nExpectedLabel, 1);
+                            else
+                                rgLabelTotals[nExpectedLabel]++;
+
+                            if (rgDetectedLabels.Contains(nExpectedLabel))
+                            {
+                                rgCorrectCounts[nExpectedLabel]++;
+                                nCorrectCount++;
+                            }
                         }
+                    }
+                    else
+                    {
+                        m_log.WriteLine("WARNING: No annotation data found in image with ID = " + sd.ImageID.ToString());
                     }
                 }
                 else
