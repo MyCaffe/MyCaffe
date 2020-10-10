@@ -854,58 +854,61 @@ namespace MyCaffe.data
 
             if (d.annotation_type == SimpleDatum.ANNOTATION_TYPE.BBOX)
             {
-                // Go through each AnnotationGroup.
-                for (int g = 0; g < d.annotation_group.Count; g++)
+                if (d.annotation_group != null)
                 {
-                    // Go through each Annotation.
-                    bool bHasValidAnnotation = false;
-                    AnnotationGroup anno_group = d.annotation_group[g];
-                    AnnotationGroup transformed_anno_group = new AnnotationGroup();
-
-                    for (int a = 0; a < anno_group.annotations.Count; a++)
+                    // Go through each AnnotationGroup.
+                    for (int g = 0; g < d.annotation_group.Count; g++)
                     {
-                        Annotation anno = anno_group.annotations[a];
-                        NormalizedBBox bbox = anno.bbox;
+                        // Go through each Annotation.
+                        bool bHasValidAnnotation = false;
+                        AnnotationGroup anno_group = d.annotation_group[g];
+                        AnnotationGroup transformed_anno_group = new AnnotationGroup();
 
-                        // Adjust bounding box annotation.
-                        NormalizedBBox resize_bbox = bbox;
-                        if (bResize && m_param.resize_param != null && m_param.resize_param.Active)
+                        for (int a = 0; a < anno_group.annotations.Count; a++)
                         {
-                            m_log.CHECK_GT(nImgHt, 0, "The image height must be > 0!");
-                            m_log.CHECK_GT(nImgWd, 0, "The image width must be > 0!");
-                            resize_bbox = m_imgTransforms.UpdateBBoxByResizePolicy(m_param.resize_param, nImgWd, nImgHt, resize_bbox);
-                        }
+                            Annotation anno = anno_group.annotations[a];
+                            NormalizedBBox bbox = anno.bbox;
 
-                        if (m_param.emit_constraint != null && m_param.emit_constraint.Active && !m_bbox.MeetEmitConstraint(crop_bbox, resize_bbox, m_param.emit_constraint))
-                            continue;
-
-                        NormalizedBBox proj_bbox;
-                        if (m_bbox.Project(crop_bbox, resize_bbox, out proj_bbox))
-                        {
-                            bHasValidAnnotation = true;
-                            Annotation transformed_anno = new Annotation(proj_bbox.Clone(), anno.instance_id);
-                            NormalizedBBox transformed_bbox = transformed_anno.bbox;
-
-                            if (bMirror)
+                            // Adjust bounding box annotation.
+                            NormalizedBBox resize_bbox = bbox;
+                            if (bResize && m_param.resize_param != null && m_param.resize_param.Active)
                             {
-                                float fTemp = transformed_bbox.xmin;
-                                transformed_bbox.xmin = 1 - transformed_bbox.xmax;
-                                transformed_bbox.xmax = 1 - fTemp;
-                            }
-                            else if (bResize && m_param.resize_param != null && m_param.resize_param.Active)
-                            {
-                                m_bbox.Extrapolate(m_param.resize_param, nImgHt, nImgWd, crop_bbox, transformed_bbox);
+                                m_log.CHECK_GT(nImgHt, 0, "The image height must be > 0!");
+                                m_log.CHECK_GT(nImgWd, 0, "The image width must be > 0!");
+                                resize_bbox = m_imgTransforms.UpdateBBoxByResizePolicy(m_param.resize_param, nImgWd, nImgHt, resize_bbox);
                             }
 
-                            transformed_anno_group.annotations.Add(transformed_anno);
-                        }
-                    }
+                            if (m_param.emit_constraint != null && m_param.emit_constraint.Active && !m_bbox.MeetEmitConstraint(crop_bbox, resize_bbox, m_param.emit_constraint))
+                                continue;
 
-                    // Save for output.
-                    if (bHasValidAnnotation)
-                    {
-                        transformed_anno_group.group_label = anno_group.group_label;
-                        rgTransformedAnnotationGroup.Add(transformed_anno_group);
+                            NormalizedBBox proj_bbox;
+                            if (m_bbox.Project(crop_bbox, resize_bbox, out proj_bbox))
+                            {
+                                bHasValidAnnotation = true;
+                                Annotation transformed_anno = new Annotation(proj_bbox.Clone(), anno.instance_id);
+                                NormalizedBBox transformed_bbox = transformed_anno.bbox;
+
+                                if (bMirror)
+                                {
+                                    float fTemp = transformed_bbox.xmin;
+                                    transformed_bbox.xmin = 1 - transformed_bbox.xmax;
+                                    transformed_bbox.xmax = 1 - fTemp;
+                                }
+                                else if (bResize && m_param.resize_param != null && m_param.resize_param.Active)
+                                {
+                                    m_bbox.Extrapolate(m_param.resize_param, nImgHt, nImgWd, crop_bbox, transformed_bbox);
+                                }
+
+                                transformed_anno_group.annotations.Add(transformed_anno);
+                            }
+                        }
+
+                        // Save for output.
+                        if (bHasValidAnnotation)
+                        {
+                            transformed_anno_group.group_label = anno_group.group_label;
+                            rgTransformedAnnotationGroup.Add(transformed_anno_group);
+                        }
                     }
                 }
             }
