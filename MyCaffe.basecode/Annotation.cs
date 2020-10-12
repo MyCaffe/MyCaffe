@@ -189,12 +189,42 @@ namespace MyCaffe.basecode
     {
         List<AnnotationGroup> m_rgItems = new List<AnnotationGroup>();
         Dictionary<int, string> m_rgLabels = new Dictionary<int, string>();
+        int m_nImageID = 0;
+        int m_nImageIdx = 0;
+        int m_nSourceID = 0;
 
         /// <summary>
         /// The constructor.
         /// </summary>
         public AnnotationGroupCollection()
         {
+        }
+
+        /// <summary>
+        /// Specifies the ImageID.
+        /// </summary>
+        public int ImageID
+        {
+            get { return m_nImageID; }
+            set { m_nImageID = value; }
+        }
+
+        /// <summary>
+        /// Specifies the Image Index.
+        /// </summary>
+        public int ImageIdx
+        {
+            get { return m_nImageIdx; }
+            set { m_nImageIdx = value; }
+        }
+
+        /// <summary>
+        /// Specifies the Data Source ID.
+        /// </summary>
+        public int SourceID
+        {
+            get { return m_nSourceID; }
+            set { m_nSourceID = value; }
         }
 
         /// <summary>
@@ -313,6 +343,10 @@ namespace MyCaffe.basecode
                 col.m_rgLabels.Add(kv.Key, kv.Value);
             }
 
+            col.ImageID = m_nImageID;
+            col.ImageIdx = m_nImageIdx;
+            col.SourceID = m_nSourceID;
+
             return col;
         }
 
@@ -347,6 +381,10 @@ namespace MyCaffe.basecode
             {
                 g.Save(bw);
             }
+
+            bw.Write(rg.ImageID);
+            bw.Write(rg.ImageIdx);
+            bw.Write(rg.SourceID);
         }
 
         /// <summary>
@@ -363,6 +401,10 @@ namespace MyCaffe.basecode
             {
                 rg.Add(AnnotationGroup.Load(br));
             }
+
+            rg.ImageID = br.ReadInt32();
+            rg.ImageIdx = br.ReadInt32();
+            rg.SourceID = br.ReadInt32();
 
             return rg;
         }
@@ -390,6 +432,10 @@ namespace MyCaffe.basecode
                         bw.Write(kv.Value);
                     }
                 }
+
+                bw.Write(rg.ImageID);
+                bw.Write(rg.ImageIdx);
+                bw.Write(rg.SourceID);
 
                 ms.Flush();
                 return ms.ToArray();
@@ -419,6 +465,10 @@ namespace MyCaffe.basecode
                         col.Labels.Add(nKey, strVal);
                     }
                 }
+
+                col.ImageID = br.ReadInt32();
+                col.ImageIdx = br.ReadInt32();
+                col.SourceID = br.ReadInt32();
 
                 return col;
             }
