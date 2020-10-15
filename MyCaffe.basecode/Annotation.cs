@@ -15,6 +15,7 @@ namespace MyCaffe.basecode
     /// @see [SSD: Single Shot MultiBox Detector](https://arxiv.org/abs/1512.02325) by Wei Liu, Dragomir Anguelov, Dumitru Erhan, Christian Szegedy, Scott Reed, Cheng-Yang Fu, Alexander C. Berg, 2016.
     /// @see [GitHub: SSD: Single Shot MultiBox Detector](https://github.com/weiliu89/caffe/tree/ssd), by weiliu89/caffe, 2016
     /// </remarks>
+    [Serializable]
     public class Annotation
     {
         int m_nInstanceId = 0;
@@ -90,6 +91,7 @@ namespace MyCaffe.basecode
     /// <summary>
     /// The AnnoationGroup class manages a group of annotations.
     /// </summary>
+    [Serializable]
     public class AnnotationGroup
     {
         int m_nGroupLabel = 0;
@@ -185,6 +187,7 @@ namespace MyCaffe.basecode
     /// <summary>
     /// Defines a collection of AnnotationGroups.
     /// </summary>
+    [Serializable]
     public class AnnotationGroupCollection : IEnumerable<AnnotationGroup>
     {
         List<AnnotationGroup> m_rgItems = new List<AnnotationGroup>();
