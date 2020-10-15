@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using MyCaffe.basecode;
 
 /// <summary>
@@ -19,6 +21,15 @@ namespace MyCaffe.basecode
         /// </summary>
         public BaseParameter()
         {
+            // For international versions of Windows, force decimal to '.' instead of ','
+            // for parsing prototxt.
+            if (Thread.CurrentThread.CurrentCulture.NumberFormat.NumberDecimalSeparator != ".")
+            {
+                string strCultureName = Thread.CurrentThread.CurrentCulture.Name;
+                CultureInfo cinfo = new CultureInfo(strCultureName);
+                cinfo.NumberFormat.NumberDecimalSeparator = ".";
+                Thread.CurrentThread.CurrentCulture = cinfo;
+            }
         }
 
         /// <summary>
