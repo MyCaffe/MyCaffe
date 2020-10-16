@@ -259,6 +259,18 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Add another AnnotationGroupCollection to this one.
+        /// </summary>
+        /// <param name="col">Specifies the annotation group to add.</param>
+        public void Add(AnnotationGroupCollection col)
+        {
+            foreach (AnnotationGroup g in col)
+            {
+                m_rgItems.Add(g);
+            }
+        }
+
+        /// <summary>
         /// Add a new AnnotationGroup to the collection.
         /// </summary>
         /// <param name="g">Specifies the AnnotationGroup to add.</param>
