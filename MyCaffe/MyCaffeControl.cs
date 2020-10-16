@@ -1664,6 +1664,7 @@ namespace MyCaffe
                 nImageStartIdx = 0;
 
             List<Tuple<SimpleDatum, ResultCollection>> rgrgResults = new List<Tuple<SimpleDatum, ResultCollection>>();
+            int nTotalCount = 0;
 
             for (int i = 0; i < nCount; i++)
             {
@@ -1727,6 +1728,8 @@ namespace MyCaffe
                                 rgCorrectCounts[nExpectedLabel]++;
                                 nCorrectCount++;
                             }
+
+                            nTotalCount++;
                         }
                     }
                     else
@@ -1760,6 +1763,8 @@ namespace MyCaffe
                         nCorrectCount++;
                         rgCorrectCounts[nExpectedLabel]++;
                     }
+
+                    nTotalCount++;
                 }
 
                 double dfPct = ((double)i / (double)nCount);
@@ -1774,11 +1779,11 @@ namespace MyCaffe
                 }
             }
 
-            double dfCorrectPct = ((double)nCorrectCount / (double)nCount);
+            double dfCorrectPct = ((double)nCorrectCount / (double)nTotalCount);
 
             m_log.WriteLine("Test Many Completed.");
             m_log.WriteLine(" " + dfCorrectPct.ToString("P") + " correct detections.");
-            m_log.WriteLine(" " + (nCount - nCorrectCount).ToString("N") + " incorrect detections.");
+            m_log.WriteLine(" " + (nTotalCount - nCorrectCount).ToString("N") + " incorrect detections.");
 
             foreach (KeyValuePair<int, int> kv in rgCorrectCounts.OrderBy(p => p.Key).ToList())
             {
