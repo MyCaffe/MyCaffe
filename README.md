@@ -18,10 +18,10 @@ maintaining compatibility with CAFFE's solver descriptions, model descriptions a
 The C# based MyCaffe open-source project is independently maintained by <a href="http://www.signalpop.com">SignalPop LLC</a> and made 
 available under the Apache 2.0 License.
 <h3>Supported Development Environments:</h3>
-* Visual Studio 2017 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 11.0.3</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 8.0.3</a> </br>
+* Visual Studio 2019 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 11.1.0</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 8.0.4</a> </br>
 </br>
 
-NOTE: Compute 5.3 required for CUDA 11.0.3/cuDNN 8.0.3 to support __half sized memory.
+NOTE: Compute 5.3 required for CUDA 11.1.0/cuDNN 8.0.4 to support __half sized memory.
 
 <b>For detailed notes on building MyCaffe, please see the <a href="https://github.com/MyCaffe/MyCaffe/blob/master/INSTALL.md">INSTALL.md</a> file.</b>
 
@@ -38,6 +38,7 @@ We have several new models supported by MyCaffe with the train_val and solution 
  - Deep Q-Learning [14][15] with Noisy-Net [16] and Prioritized Replay Buffer [17]
  - Siamese Network [18][19]
  - Deep Metric Learning with Triplet Network [20][21]
+ - Single-Shot Multi-Box (SSD) Object Detection [22][23]
 
 For more information on the MyCaffe implementation of Policy Gradient Reinforcement Learning, see [MyCaffe: A Complete C# Re-Write of Caffe with Reinforcement Learning](https://arxiv.org/abs/1810.02272) by D. Brown, 2018. 
 
@@ -105,6 +106,10 @@ Source code available on GitHub at <a href="https://github.com/stella-emu/stella
 [20] [Deep metric learning using Triplet network](https://arxiv.org/abs/1412.6622) by E. Hoffer and N. Ailon, 2014, 2018, arXiv:1412.6622.
 
 [21] [In Defense of the Triplet Loss for Person Re-Identification](https://arxiv.org/abs/1703.07737v2) by A. Hermans, L. Beyer, and B. Leibe, 2017, arXiv:1703.07737v2.
+
+[22] [SSD: Single Shot MultiBox Detector](https://arxiv.org/abs/1512.02325) by Wei Liu, Dragomir Anguelov, Dumitru Erhan, Christian Szegedy, Scott Reed, Cheng-Yang Fu, Alexander C. Berg, 2016.
+
+[23] [GitHub: SSD: Single Shot MultiBox Detector](https://github.com/weiliu89/caffe/tree/ssd), by weiliu89/caffe, 2016
 
 For more information on the C++ CAFFE open-source project, please see the following <a href="http://caffe.berkeleyvision.org/">link</a>.
 
