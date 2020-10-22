@@ -100,6 +100,61 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestImportOnnxLeNetVer1ForTrain()
+        {
+            PersistOnnxTest test = new PersistOnnxTest();
+
+            try
+            {
+                foreach (IPersistOnnxTest t in test.Tests)
+                {
+                    t.TestImportOnnxLetNet("MNIST", 1);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestImportOnnxLeNetVer8ForTrain()
+        {
+            PersistOnnxTest test = new PersistOnnxTest();
+
+            try
+            {
+                foreach (IPersistOnnxTest t in test.Tests)
+                {
+                    t.TestImportOnnxLetNet("MNIST", 8);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestImportOnnxSSDForTrain()
+        {
+            PersistOnnxTest test = new PersistOnnxTest();
+
+            try
+            {
+                foreach (IPersistOnnxTest t in test.Tests)
+                {
+                    t.TestImportOnnxSSDModel("VOC0712");
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+
+        [TestMethod]
         public void TestImportOnnxAlexNetForRun()
         {
             PersistOnnxTest test = new PersistOnnxTest();
@@ -287,6 +342,8 @@ namespace MyCaffe.test
         void TestSave();
         void TestConvertLeNetToOnnx();
         void TestConvertOnnxToLeNet();
+        void TestImportOnnxLetNet(string strTrainingDs = null, int nVersion = 8);
+        void TestImportOnnxSSDModel(string strTrainingDs = null);
         void TestImportOnnxAlexNet(string strTrainingDs = null);
         void TestImportOnnxGoogNet(string strTrainingDs = null);
         void TestImportOnnxVGG19(string strTrainingDs = null);
@@ -638,6 +695,99 @@ namespace MyCaffe.test
 
             return strFile;
         }
+
+        private string downloadOnnxLeNetModel(int nVersion)
+        {
+            // Download a small onnx model from https://github.com/onnx (dowload is 26mb)
+            double dfSizeInMb = 26;
+            string strModel = "mnist-" + nVersion.ToString() + ".onnx";
+            string strUrl = "https://github.com/onnx/models/raw/master/vision/classification/mnist/model/" + strModel;
+            return download(strModel, strUrl, dfSizeInMb);
+        }
+
+        public void TestImportOnnxLetNet(string strTrainingDs, int nVersion)
+        {
+            string strTestPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\onnx\\imported\\mnist";
+            if (!Directory.Exists(strTestPath))
+                Directory.CreateDirectory(strTestPath);
+
+            string strOnnxFile = downloadOnnxLeNetModel(nVersion);
+            MyCaffeConversionControl<T> convert = new MyCaffeConversionControl<T>();
+
+            DatasetDescriptor dsTraining = null;
+            if (strTrainingDs != null)
+            {
+                DatasetFactory factory = new DatasetFactory();
+                dsTraining = factory.LoadDataset(strTrainingDs);
+            }
+
+            CudaDnn<T> cuda = null;
+
+            try
+            {
+                cuda = new CudaDnn<T>(0);
+                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
+                Trace.WriteLine(convert.ReportString);
+
+                data.Save(strTestPath, "LeNet" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                cuda.Dispose();
+                convert.Dispose();
+            }
+        }
+
+        private string downloadOnnxSSDModel()
+        {
+            // Download a small onnx model from https://github.com/onnx (dowload is 76.6mb)
+            double dfSizeInMb = 76.6;
+            string strModel = "ssd-10.onnx";
+            string strUrl = "https://github.com/onnx/models/raw/master/vision/object_detection_segmentation/ssd/model/" + strModel;
+            return download(strModel, strUrl, dfSizeInMb);
+        }
+
+        public void TestImportOnnxSSDModel(string strTrainingDs)
+        {
+            string strTestPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\onnx\\imported\\voc0712";
+            if (!Directory.Exists(strTestPath))
+                Directory.CreateDirectory(strTestPath);
+
+            string strOnnxFile = downloadOnnxSSDModel();
+            MyCaffeConversionControl<T> convert = new MyCaffeConversionControl<T>();
+
+            DatasetDescriptor dsTraining = null;
+            if (strTrainingDs != null)
+            {
+                DatasetFactory factory = new DatasetFactory();
+                dsTraining = factory.LoadDataset(strTrainingDs);
+            }
+
+            CudaDnn<T> cuda = null;
+
+            try
+            {
+                cuda = new CudaDnn<T>(0);
+                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
+                Trace.WriteLine(convert.ReportString);
+
+                data.Save(strTestPath, "LeNet" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                cuda.Dispose();
+                convert.Dispose();
+            }
+        }
+
 
         private string downloadOnnxAlexNetModel()
         {
