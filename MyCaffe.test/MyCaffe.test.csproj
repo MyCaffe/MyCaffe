@@ -112,6 +112,7 @@
     <Compile Include="TestDataSequenceLayer.cs" />
     <Compile Include="TestDatasetFactory.cs" />
     <Compile Include="TestCryptoRandom.cs" />
+    <Compile Include="TestConstantLayer.cs" />
     <Compile Include="TestMathLayer.cs" />
     <Compile Include="TestExtensionSsd.cs" />
     <Compile Include="TestImageTools.cs" />
