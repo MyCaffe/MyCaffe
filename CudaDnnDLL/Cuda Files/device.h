@@ -447,6 +447,9 @@ class Device
 
 		long cuda_permute(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
+		long cuda_gather_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_gather_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+
 		long cuda_lrn_fillscale(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_lrn_computeoutput(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_lrn_computediff(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -4133,6 +4136,48 @@ inline long Device<T>::cuda_permute(long lInput, T* pfInput, long* plOutput, T**
 	return m_math.permute(nCount, hX, bFwd, hPermuteOrder, hOldSteps, hNewSteps, nNumAxes, hY);
 }
 
+
+template <class T>
+inline long Device<T>::cuda_gather_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 9, 9))
+		return lErr;
+
+	int nCount = (int)pfInput[0];
+	long hX = (long)pfInput[1];
+	long hY = (long)pfInput[2];
+	int nAxis = (int)pfInput[3];
+	int nDim = (int)pfInput[4];
+	int nDimAtAxis = (int)pfInput[5];
+	int nM = (int)pfInput[6];
+	int nN = (int)pfInput[7];
+	long hIdx = (long)pfInput[8];
+
+	return m_math.gather_fwd(nCount, hX, hY, nAxis, nDim, nDimAtAxis, nM, nN, hIdx);
+}
+
+template <class T>
+inline long Device<T>::cuda_gather_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 9, 9))
+		return lErr;
+
+	int nCount = (int)pfInput[0];
+	long hX = (long)pfInput[1];
+	long hY = (long)pfInput[2];
+	int nAxis = (int)pfInput[3];
+	int nDim = (int)pfInput[4];
+	int nDimAtAxis = (int)pfInput[5];
+	int nM = (int)pfInput[6];
+	int nN = (int)pfInput[7];
+	long hIdx = (long)pfInput[8];
+
+	return m_math.gather_bwd(nCount, hX, hY, nAxis, nDim, nDimAtAxis, nM, nN, hIdx);
+}
 
 template <class T>
 inline long Device<T>::cuda_lrn_fillscale(long lInput, T* pfInput, long* plOutput, T** ppfOutput)

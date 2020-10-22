@@ -764,6 +764,12 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_PERMUTE:
 			return m_device.cuda_permute(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_GATHER_FWD:
+			return m_device.cuda_gather_fwd(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_GATHER_BWD:
+			return m_device.cuda_gather_bwd(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_LRN_FILLSCALE:
 			return m_device.cuda_lrn_fillscale(lCount, pfInput, plCount, ppfOutput);
 
@@ -1676,6 +1682,15 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_SMOOTHL1_BWD:
 		return "CUDA_FN_SMOOTHL1_BWD";
+
+	case CUDA_FN_PERMUTE:
+		return "CUDA_FN_PERMUTE";
+
+	case CUDA_FN_GATHER_FWD:
+		return "CUDA_FN_GATHER_FWD";
+
+	case CUDA_FN_GATHER_BWD:
+		return "CUDA_FN_GATHER_BWD";
 
 	case CUDA_FN_LRN_FILLSCALE:
 		return "CUDA_FN_LRN_FILLSCALE";

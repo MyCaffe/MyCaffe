@@ -332,6 +332,9 @@ const int CUDA_FN_SMOOTHL1_BWD = 471;
 
 const int CUDA_FN_PERMUTE = 474;
 
+const int CUDA_FN_GATHER_FWD = 476;
+const int CUDA_FN_GATHER_BWD = 477;
+
 const int CUDA_FN_LSTM_FWD = 480;
 const int CUDA_FN_LSTM_BWD = 481;
 const int CUDA_FN_LSTM_UNIT_FWD = 482;

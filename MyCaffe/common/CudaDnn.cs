@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.IO;
 using MyCaffe.basecode;
+using System.ComponentModel;
 
 namespace MyCaffe.common
 {
@@ -1131,6 +1132,9 @@ namespace MyCaffe.common
             CUDA_SMOOTHL1_BWD = 471,
 
             CUDA_PERMUTE = 474,
+
+            CUDA_GATHER_FWD = 476,
+            CUDA_GATHER_BWD = 477,
 
             CUDA_LSTM_FWD = 480,
             CUDA_LSTM_BWD = 481,
@@ -8178,6 +8182,46 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_PERMUTE, new double[] { nCount, hBottom, (bFwd) ? 1 : 0, hPermuteOrder, hOldSteps, hNewSteps, nNumAxes, hTop });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_PERMUTE, new float[] { nCount, hBottom, (bFwd) ? 1 : 0, hPermuteOrder, hOldSteps, hNewSteps, nNumAxes, hTop });
+        }
+
+        /// <summary>
+        /// Performs a gather forward pass where data at specifies indexes along a given axis are copied to the output data.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="hBottom">Specifies the input data.</param>
+        /// <param name="hTop">Specifies the output data.</param>
+        /// <param name="nAxis">Specifies the axis along which to copy.</param>
+        /// <param name="nDim">Specifies the dimension of each item at each index.</param>
+        /// <param name="nDimAtAxis">Specifies the dimension at the axis.</param>
+        /// <param name="nM">Specifies the M dimension.</param>
+        /// <param name="nN">Specifies the M dimension.</param>
+        /// <param name="hIdx">Specifies the indexes of the data to gather.</param>
+        public void gather_fwd(int nCount, long hBottom, long hTop, int nAxis, int nDim, int nDimAtAxis, int nM, int nN, long hIdx)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GATHER_FWD, new double[] { nCount, hBottom, hTop, nAxis, nDim, nDimAtAxis, nM, nN, hIdx });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GATHER_FWD, new float[] { nCount, hBottom, hTop, nAxis, nDim, nDimAtAxis, nM, nN, hIdx });
+        }
+
+        /// <summary>
+        /// Performs a gather backward pass where data at specifies indexes along a given axis are copied to the output data.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="hTop">Specifies the input data.</param>
+        /// <param name="hBottom">Specifies the output data.</param>
+        /// <param name="nAxis">Specifies the axis along which to copy.</param>
+        /// <param name="nDim">Specifies the dimension of each item at each index.</param>
+        /// <param name="nDimAtAxis">Specifies the dimension at the axis.</param>
+        /// <param name="nM">Specifies the M dimension.</param>
+        /// <param name="nN">Specifies the M dimension.</param>
+        /// <param name="hIdx">Specifies the indexes of the data to gather.</param>
+        public void gather_bwd(int nCount, long hBottom, long hTop, int nAxis, int nDim, int nDimAtAxis, int nM, int nN, long hIdx)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GATHER_BWD, new double[] { nCount, hTop, hBottom, nAxis, nDim, nDimAtAxis, nM, nN, hIdx });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GATHER_BWD, new float[] { nCount, hTop, hBottom, nAxis, nDim, nDimAtAxis, nM, nN, hIdx });
         }
 
         /// <summary>

@@ -305,6 +305,9 @@ class Math
 
 		long permute(int nCount, long hX, bool bFwd, long hPermuteOrder, long hOldSteps, long hNewSteps, int nNumAxes, long hY);
 
+		long gather_fwd(int nCount, long hX, long hY, int nAxis, int nDim, int nDimAtAxis, int nM, int nN, long hIdx);
+		long gather_bwd(int nCount, long hX, long hY, int nAxis, int nDim, int nDimAtAxis, int nM, int nN, long hIdx);
+
 		long lrn_fillscale(int nCount, long hBottomData, int nNum, int nChannels, int nHeight, int nWidth, int nSize, T fA, T fB, long hScaleData);
 		long lrn_computeoutput(int nCount, long hBottomData, long hScaleData, T fA, long hTopData);
 		long lrn_computediff(int nCount, long hBottomData, long hTopData, long hScaleData, long hTopDiff, int nNum, int nChannels, int nHeight, int nWidth, int nSize, T fB, T fA, long hBottomDiff);

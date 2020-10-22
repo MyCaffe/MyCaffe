@@ -9157,6 +9157,116 @@ template long Math<float>::permute(int n, long hX, bool bFwd, long hPermuteOrder
 
 
 template <typename T>
+__global__ void gather_fwd_kernel(int n, const T* x, T* y, const int nAxis, const int nDim, int nDimAtAxis, const int nM, const int nN, const int nMxN, const T* idx)
+{
+	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index < nMxN && index>=0; index += blockDim.x * gridDim.x)
+	{
+		const int nBatch = index / nN;
+		const int i = index % nN;
+
+		const int nSrcOffsetBatch = nBatch * nM;
+		const int nDstOffsetBatch = nBatch * nN * nDim;
+		int nIdx = (int)idx[i];
+
+		nIdx = (nIdx < 0) ? nIdx + nDimAtAxis : nIdx;
+
+		const int nSrcOffset = nSrcOffsetBatch + nIdx * nDim;
+		const int nDstOffset = nDstOffsetBatch + i * nDim;
+
+		y[nDstOffset] = x[nSrcOffset];
+	}
+}
+
+template <typename T>
+long Math<T>::gather_fwd(int n, long hX, long hY, int nAxis, int nDim, int nDimAtAxis, int nM, int nN, long hIdx)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+	MemoryItem* pIdx;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hIdx, &pIdx))
+		return lErr;
+
+	T* x = (T*)pX->Data();
+	T* y = (T*)pY->Data();
+	T* idx = (T*)pIdx->Data();
+
+	int nMxN = nM * nN;
+
+	gather_fwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, x, y, nAxis, nDim, nDimAtAxis, nM, nN, nMxN, idx);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::gather_fwd(int nCount, long hX, long hY, int nAxis, int nDim, int nDimAtAxis, int nM, int nN, long hIdx);
+template long Math<float>::gather_fwd(int nCount, long hX, long hY, int nAxis, int nDim, int nDimAtAxis, int nM, int nN, long hIdx);
+
+
+template <typename T>
+__global__ void gather_bwd_kernel(int n, const T* x, T* y, const int nAxis, const int nDim, const int nDimAtAxis, const int nM, const int nN, const int nMxN, const T* idx)
+{
+	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index < n && index>=0; index += blockDim.x * gridDim.x)
+	{
+		const int nBatch = index / nN;
+		const int i = index % nN;
+
+		const int nDstOffsetBatch = nBatch * nM;
+		const int nSrcOffsetBatch = nBatch * nN * nDim;
+		int nIdx = (int)idx[i];
+
+		nIdx = (nIdx < 0) ? nIdx + nDimAtAxis : nIdx;
+
+		const int nDstOffset = nSrcOffsetBatch + nIdx * nDim;
+		const int nSrcOffset = nDstOffsetBatch + i * nDim;
+
+		y[nDstOffset] = x[nSrcOffset];
+	}
+}
+
+template <typename T>
+long Math<T>::gather_bwd(int n, long hX, long hY, int nAxis, int nDim, int nDimAtAxis, int nM, int nN, long hIdx)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+	MemoryItem* pIdx;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hIdx, &pIdx))
+		return lErr;
+
+	T* x = (T*)pX->Data();
+	T* y = (T*)pY->Data();
+	T* idx = (T*)pIdx->Data();
+
+	int nMxN = nM * nN;
+
+	LONG lSize = n * sizeof(T);
+	if (lErr = cudaMemset(y, 0, (size_t)lSize))
+		return lErr;
+
+	gather_bwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, x, y, nAxis, nDim, nDimAtAxis, nM, nN, nMxN, idx);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::gather_bwd(int nCount, long hX, long hY, int nAxis, int nDim, int nDimAtAxis, int nM, int nN, long hIdx);
+template long Math<double>::gather_bwd(int nCount, long hX, long hY, int nAxis, int nDim, int nDimAtAxis, int nM, int nN, long hIdx);
+
+
+template <typename T>
 __global__ void cll_bwd_kernel_legacy(const int nCount, const int nChannels, const T fMargin, const T fAlpha, const T* y, const T* diff, const T* dist_sq, T* btm_diff)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nCount && i>=0; i += blockDim.x * gridDim.x)
