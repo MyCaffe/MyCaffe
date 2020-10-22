@@ -1239,6 +1239,9 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.CONCAT:
                     return new ConcatLayer<T>(cuda, log, p);
 
+                case LayerParameter.LayerType.CONSTANT:
+                    return new ConstantLayer<T>(cuda, log, p);
+
                 case LayerParameter.LayerType.CONTRASTIVE_LOSS:
                     return new ContrastiveLossLayer<T>(cuda, log, p);
 
@@ -1289,6 +1292,9 @@ namespace MyCaffe.layers
 
                 case LayerParameter.LayerType.FLATTEN:
                     return new FlattenLayer<T>(cuda, log, p);
+
+                case LayerParameter.LayerType.GATHER:
+                    return new GatherLayer<T>(cuda, log, p);
 
                 case LayerParameter.LayerType.GRADIENTSCALER:
                     return new GradientScaleLayer<T>(cuda, log, p);

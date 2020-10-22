@@ -127,6 +127,10 @@ namespace MyCaffe.param
             /// </summary>
             CONCAT,
             /// <summary>
+            /// Initializes a parameter for the ConstantLayer.
+            /// </summary>
+            CONSTANT,
+            /// <summary>
             /// Initializes a parameter for the ContrastiveLossLayer.
             /// </summary>
             CONTRASTIVE_LOSS,
@@ -206,6 +210,10 @@ namespace MyCaffe.param
             /// Initializes a parameter for the FlattenLayer.
             /// </summary>
             FLATTEN,
+            /// <summary>
+            /// Initializes a parameter for the GatherLayer.
+            /// </summary>
+            GATHER,
             /// <summary>
             /// Initializes a parameter for the GradScaleLayer (used for gradient reversal)
             /// </summary>
@@ -778,6 +786,11 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new ConcatParameter(); 
                     break;
 
+                case LayerType.CONSTANT:
+                    expected_top.Add("const");
+                    m_rgLayerParameters[lt] = new ConstantParameter();
+                    break;
+
                 case LayerType.CONTRASTIVE_LOSS:
                     expected_bottom.Add("f1");
                     expected_bottom.Add("f2");
@@ -936,6 +949,13 @@ namespace MyCaffe.param
                     expected_bottom.Add("x_1");
                     expected_top.Add("flatten");
                     m_rgLayerParameters[lt] = new FlattenParameter();
+                    break;
+
+                case LayerType.GATHER:
+                    expected_bottom.Add("input");
+                    expected_bottom.Add("idx");
+                    expected_top.Add("gthr");
+                    m_rgLayerParameters[lt] = new GatherParameter();
                     break;
 
                 case LayerType.GRADIENTSCALER:
@@ -1508,6 +1528,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.CONSTANT
+        /// </summary>
+        public ConstantParameter constant_param
+        {
+            get { return (ConstantParameter)m_rgLayerParameters[LayerType.CONSTANT]; }
+            set { m_rgLayerParameters[LayerType.CONSTANT] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.CONTRASTIVE_LOSS
         /// </summary>
         public ContrastiveLossParameter contrastive_loss_param
@@ -1667,6 +1696,15 @@ namespace MyCaffe.param
         {
             get { return (FlattenParameter)m_rgLayerParameters[LayerType.FLATTEN]; }
             set { m_rgLayerParameters[LayerType.FLATTEN] = value; }
+        }
+
+        /// <summary>
+        /// Returns the parameter set when initialized with LayerType.GATHER
+        /// </summary>
+        public GatherParameter gather_param
+        {
+            get { return (GatherParameter)m_rgLayerParameters[LayerType.GATHER]; }
+            set { m_rgLayerParameters[LayerType.GATHER] = value; }
         }
 
         /// <summary>
@@ -2222,6 +2260,9 @@ namespace MyCaffe.param
                 case LayerType.CONCAT:
                     return "Concat";
 
+                case LayerType.CONSTANT:
+                    return "Constant";
+
                 case LayerType.CONTRASTIVE_LOSS:
                     return "ContrastiveLoss";
 
@@ -2284,6 +2325,9 @@ namespace MyCaffe.param
 
                 case LayerType.FLATTEN:
                     return "Flatten";
+
+                case LayerType.GATHER:
+                    return "Gather";
 
                 case LayerType.GRN:
                     return "GRN";
@@ -2532,6 +2576,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(bias_param, "bias_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(clip_param, "clip_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(concat_param, "concat_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(constant_param, "constant_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(contrastive_loss_param, "contrastive_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(convolution_param, "convolution_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(crop_param, "crop_param"));
@@ -2717,6 +2762,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("concat_param")) != null)
                 p.concat_param = ConcatParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("constant_param")) != null)
+                p.constant_param = ConstantParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("contrastive_loss_param")) != null)
                 p.contrastive_loss_param = ContrastiveLossParameter.FromProto(rpp);
@@ -2989,6 +3037,9 @@ namespace MyCaffe.param
                 case "concat":
                     return LayerType.CONCAT;
 
+                case "constant":
+                    return LayerType.CONSTANT;
+
                 case "contrastiveloss":
                 case "contrastive_loss":
                     return LayerType.CONTRASTIVE_LOSS;
@@ -3057,6 +3108,9 @@ namespace MyCaffe.param
 
                 case "flatten":
                     return LayerType.FLATTEN;
+
+                case "gather":
+                    return LayerType.GATHER;
 
                 case "grn":
                     return LayerType.GRN;
