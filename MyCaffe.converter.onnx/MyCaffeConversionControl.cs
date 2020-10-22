@@ -33,6 +33,8 @@ namespace MyCaffe.converter.onnx
     public partial class MyCaffeConversionControl<T> : Component
     {
         string m_strReport = "";
+        string m_strOriginalPath = null;
+        bool m_bEnableBackward = false;
 
         /// <summary>
         /// The constructor.
@@ -40,6 +42,7 @@ namespace MyCaffe.converter.onnx
         public MyCaffeConversionControl()
         {
             InitializeComponent();
+            m_strOriginalPath = AssemblyDirectory;
         }
 
         /// <summary>
@@ -51,6 +54,18 @@ namespace MyCaffe.converter.onnx
             container.Add(this);
 
             InitializeComponent();
+            m_strOriginalPath = AssemblyDirectory;
+        }
+
+        private static string AssemblyDirectory
+        {
+            get
+            {
+                string codeBase = Assembly.GetExecutingAssembly().CodeBase;
+                UriBuilder uri = new UriBuilder(codeBase);
+                string path = Uri.UnescapeDataString(uri.Path);
+                return Path.GetDirectoryName(path);
+            }
         }
 
         /// <summary>
@@ -73,6 +88,7 @@ namespace MyCaffe.converter.onnx
         /// <param name="dstDataType">Optionally, specifies the output data type, which currently can be either FLOAT or DOUBLE (default = FLOAT).</param>
         public void ConvertMyCaffeToOnnxFile(CudaDnn<T> cuda, Log log, MyCaffeModelData data, string strOutputFile, bool bUseRawData = true, OnnxDefinitions.DataType dstDataType = OnnxDefinitions.DataType.FLOAT)
         {
+            m_strOriginalPath = Path.GetDirectoryName(strOutputFile);
             ModelProto protoOnnx = ConvertMyCaffeToOnnx(cuda, log, data, bUseRawData, dstDataType);
             PersistOnnx persist = new PersistOnnx();
 
@@ -140,6 +156,7 @@ namespace MyCaffe.converter.onnx
         /// <param name="phase">Optionally, specifies the phase (which netork) to convert (default = RUN).</param>
         public void ConvertMyCaffeToOnnxFile(MyCaffeControl<T> ctrl, string strOnnxFile, bool bUseRawData = true, OnnxDefinitions.DataType dstDataType = OnnxDefinitions.DataType.FLOAT, Phase phase = Phase.RUN)
         {
+            m_strOriginalPath = Path.GetDirectoryName(strOnnxFile);
             ModelProto proto = ConvertMyCaffeToOnnx(ctrl, bUseRawData, dstDataType, phase);
             PersistOnnx persist = new PersistOnnx();
             persist.Save(proto, strOnnxFile);
@@ -157,6 +174,7 @@ namespace MyCaffe.converter.onnx
         /// <returns>The MyCaffe model description, model weights and image mean are returned as a MyCaffeModelData object.</returns>
         public MyCaffeModelData ConvertOnnxToMyCaffeFromFile(CudaDnn<T> cuda, Log log, string strOnnxFile, bool bFixlupNeuronNodes = true, DatasetDescriptor dsTraining = null)
         {
+            m_strOriginalPath = Path.GetDirectoryName(strOnnxFile);
             PersistOnnx persist = new PersistOnnx();
             ModelProto proto = persist.Load(strOnnxFile);
             return ConvertOnnxToMyCaffe(cuda, log, proto, bFixlupNeuronNodes, dsTraining);
@@ -411,6 +429,11 @@ namespace MyCaffe.converter.onnx
                         addAttributes(node.Attribute, layer.layer_param.concat_param);
                         break;
 
+                    case LayerParameter.LayerType.CONSTANT:
+                        node.OpType = OnnxDefinitions.OPERATORS.Constant.ToString();
+                        addAttributes(node.Attribute, layer.layer_param.constant_param);
+                        break;
+
                     case LayerParameter.LayerType.CONVOLUTION:
                         node.OpType = OnnxDefinitions.OPERATORS.Conv.ToString();
                         addAttributes(node.Attribute, layer.layer_param.convolution_param);
@@ -437,6 +460,11 @@ namespace MyCaffe.converter.onnx
                     case LayerParameter.LayerType.FLATTEN:
                         node.OpType = OnnxDefinitions.OPERATORS.Flatten.ToString();
                         addAttributes(node.Attribute, layer.layer_param.flatten_param);
+                        break;
+
+                    case LayerParameter.LayerType.GATHER:
+                        node.OpType = OnnxDefinitions.OPERATORS.Gather.ToString();
+                        addAttributes(node.Attribute, layer.layer_param.gather_param);
                         break;
 
                     case LayerParameter.LayerType.INNERPRODUCT:
@@ -576,6 +604,26 @@ namespace MyCaffe.converter.onnx
             rgA.Add(attrib);
         }
 
+        private void addAttributes(RepeatedField<AttributeProto> rgA, ConstantParameter p)
+        {
+            AttributeProto attrib = new AttributeProto();
+            attrib.Name = "value";
+            attrib.T = new TensorProto();
+            attrib.T.DataType = (int)OnnxDefinitions.DataType.FLOAT;
+
+            for (int i = 0; i < p.values_f.Count; i++)
+            {
+                attrib.T.FloatData.Add(p.values_f[i]);
+            }
+
+            foreach (int nDim in p.output_shape.dim)
+            {
+                attrib.T.Dims.Add(nDim);
+            }
+
+            rgA.Add(attrib);
+        }
+
         private void addAttributes(RepeatedField<AttributeProto> rgA, ConvolutionParameter p)
         {
             AttributeProto attrib = new AttributeProto();
@@ -638,6 +686,14 @@ namespace MyCaffe.converter.onnx
         }
 
         private void addAttributes(RepeatedField<AttributeProto> rgA, FlattenParameter p)
+        {
+            AttributeProto attrib = new AttributeProto();
+            attrib.Name = "axis";
+            attrib.I = p.axis;
+            rgA.Add(attrib);
+        }
+
+        private void addAttributes(RepeatedField<AttributeProto> rgA, GatherParameter p)
         {
             AttributeProto attrib = new AttributeProto();
             attrib.Name = "axis";
@@ -778,7 +834,7 @@ namespace MyCaffe.converter.onnx
                 netParam.name = clean(proto.Graph.Name);
                 Tuple<List<string>, List<string>> rgInputs = addInputs(proto.Graph.Input, netParam, false);
                 addTensors(proto.Graph.Initializer, colLearnableBlobs, cuda, log);
-                colLearnableBlobs = addLayers(proto.Graph.Node, netParam, colLearnableBlobs, onnx, rgInputs.Item1);
+                colLearnableBlobs = addLayers(proto.Graph.Node, netParam, colLearnableBlobs, onnx, rgInputs.Item1, cuda, log);
                 addInputs(proto.Graph.Input, netParam, true, rgInputs.Item1, rgInputs.Item2);
 
                 NetParameter netParamFixed = fixupModel(netParam, colLearnableBlobs, rgInputs.Item2);
@@ -1425,9 +1481,10 @@ namespace MyCaffe.converter.onnx
             return str;
         }
 
-        private BlobCollection<T> addLayers(RepeatedField<NodeProto> rg, NetParameter p, BlobCollection<T> col, OnnxDefinitions onnx, List<string> rgstrInputs)
+        private BlobCollection<T> addLayers(RepeatedField<NodeProto> rg, NetParameter p, BlobCollection<T> col, OnnxDefinitions onnx, List<string> rgstrInputs, CudaDnn<T> cuda, Log log)
         {
             BlobCollection<T> colLearnable = new BlobCollection<T>();
+            Dictionary<string, ConstantParameter> rgConstants = new Dictionary<string, ConstantParameter>();
 
             foreach (NodeProto node in rg)
             {
@@ -1535,12 +1592,41 @@ namespace MyCaffe.converter.onnx
                     fillParameter(node.Attribute, layer.concat_param);
                 }
 
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Constant))
+                {
+                    if (!rgConstants.ContainsKey(node.Output[0]))
+                    {
+                        layer = new LayerParameter(LayerParameter.LayerType.CONSTANT);
+                        layer.name = strNodeName;
+                        fillParameter(node.Attribute, layer.name, layer.constant_param);
+                        rgConstants.Add(node.Output[0], layer.constant_param);
+                    }
+                }
+
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Conv))
                 {
                     for (int i = 1; i < node.Input.Count; i++)
                     {
+                        Blob<T> blob = col.FindBlob(node.Input[i]);
+                        if (blob == null && rgConstants.ContainsKey(node.Input[i]))
+                        {
+                            ConstantParameter constParam = rgConstants[node.Input[i]];
+                            blob = new Blob<T>(cuda, log, constParam.output_shape.dim);
+                            blob.Name = node.Input[i];
+
+                            if (constParam.values_f.Count > 1)
+                            {
+                                T[] rgData = Utility.ConvertVec<T>(constParam.values_f.ToArray());
+                                blob.SetData(rgData);
+                            }
+                            else if (constParam.values_f.Count == 1)
+                            {
+                                blob.SetData(constParam.values_f[0]);
+                            }
+                        }
+
                         rgstrLearnableBlobs.Add(node.Input[i]);
-                        colLearnable.Add(col.FindBlob(node.Input[i]));
+                        colLearnable.Add(blob);
                     }
 
                     layer = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
@@ -1549,8 +1635,10 @@ namespace MyCaffe.converter.onnx
                     bool bBiasTerm;
                     string strWt = rgstrLearnableBlobs[0];
                     string strBias = (rgstrLearnableBlobs.Count > 1) ? rgstrLearnableBlobs[1] : null;
-                    layer.convolution_param.num_output = (uint)getOutputs(layer.name, col, strWt, strBias, out bBiasTerm);
+                    layer.convolution_param.num_output = (uint)getOutputs(layer.name, colLearnable, strWt, strBias, out bBiasTerm);
                     layer.convolution_param.bias_term = bBiasTerm;
+
+                    m_bEnableBackward = true;
                 }
 
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Cos))
@@ -1565,6 +1653,13 @@ namespace MyCaffe.converter.onnx
                     layer = new LayerParameter(LayerParameter.LayerType.MATH);
                     layer.name = strNodeName;
                     fillParameter(node.Attribute, layer.math_param, MyCaffe.common.MATH_FUNCTION.COSH);
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Div))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.ELTWISE);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.eltwise_param, EltwiseParameter.EltwiseOp.DIV);
                 }
 
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Dropout))
@@ -1593,6 +1688,13 @@ namespace MyCaffe.converter.onnx
                     fillParameter(node.Attribute, layer.flatten_param);
                 }
 
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Gather))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.GATHER);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.gather_param);
+                }
+
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Gemm))
                 {
                     for (int i = 1; i < node.Input.Count; i++)
@@ -1609,6 +1711,8 @@ namespace MyCaffe.converter.onnx
                     string strBias = (rgstrLearnableBlobs.Count > 1) ? rgstrLearnableBlobs[1] : null;
                     layer.inner_product_param.num_output = (uint)getOutputs(layer.name, col, strWt, strBias, out bBiasTerm);
                     layer.inner_product_param.bias_term = bBiasTerm;
+
+                    m_bEnableBackward = true;
                 }
 
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.LRN))
@@ -1650,6 +1754,26 @@ namespace MyCaffe.converter.onnx
                     layer = new LayerParameter(LayerParameter.LayerType.ELTWISE);
                     layer.name = strNodeName;
                     fillParameter(node.Attribute, layer.eltwise_param, EltwiseParameter.EltwiseOp.MAX);
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.MatMul))
+                {
+                    for (int i = 1; i < node.Input.Count; i++)
+                    {
+                        rgstrLearnableBlobs.Add(node.Input[i]);
+                        colLearnable.Add(col.FindBlob(node.Input[i]));
+                    }
+
+                    layer = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.inner_product_param);
+                    bool bBiasTerm;
+                    string strWt = rgstrLearnableBlobs[0];
+                    string strBias = (rgstrLearnableBlobs.Count > 1) ? rgstrLearnableBlobs[1] : null;
+                    layer.inner_product_param.num_output = (uint)getOutputs(layer.name, col, strWt, strBias, out bBiasTerm);
+                    layer.inner_product_param.bias_term = bBiasTerm;
+
+                    m_bEnableBackward = true;
                 }
 
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Mul))
@@ -1710,7 +1834,7 @@ namespace MyCaffe.converter.onnx
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.RESHAPE);
                     layer.name = strNodeName;
-                    fillParameter(node.Attribute, layer.reshape_param);
+                    fillParameter(node.Attribute, layer.reshape_param, col, node.Input, node.Output[0], cuda, log);
                 }
 
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Sin))
@@ -1774,6 +1898,20 @@ namespace MyCaffe.converter.onnx
                     layer.name = strNodeName;
                 }
 
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Shape))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.RESHAPE);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.reshape_param, col, node.Input, node.Output[0], cuda, log);
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Unsqueeze))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.RESHAPE);
+                    layer.name = strNodeName;
+                    fillParameterUnsqueeze(node.Attribute, layer.reshape_param, col, node.Input, node.Output[0], cuda, log);
+                }
+
                 if (layer == null)
                     throw new Exception("Currently the node OpType '" + node.OpType + "' is not supported!");
 
@@ -1793,7 +1931,27 @@ namespace MyCaffe.converter.onnx
                     layer.top.Add(strOutput);
                 }
 
+                // Add any constant layers for constant inputs.
+                for (int i = 1; i < node.Input.Count; i++)
+                {
+                    if (!rgConstants.ContainsKey(node.Input[i]))
+                    {
+                        Blob<T> input = col.FindBlob(node.Input[i]);
+                        if (input != null)
+                        {
+                            LayerParameter layerConst = new LayerParameter(LayerParameter.LayerType.CONSTANT);
+                            layerConst.name = node.Input[i];
+                            layerConst.top.Add(node.Input[i]);
+                            fillParameter(input, layerConst.constant_param);
+                            m_strReport += "Adding constant layer '" + layerConst.ToString() + "'" + Environment.NewLine;
+                            p.layer.Add(layerConst);
+                        }
+                    }
+                }
+
                 m_strReport += "Adding layer '" + layer.ToString() + "'" + Environment.NewLine;
+
+                layer.freeze_learning = !m_bEnableBackward;
                 p.layer.Add(layer);
             }
 
@@ -1835,6 +1993,145 @@ namespace MyCaffe.converter.onnx
                 {
                     p.axis = (int)attrib.I;
                     break;
+                }
+            }
+        }
+
+        private void saveBinaryData(ConstantParameter p, string strName, float[] rgData)
+        {
+            string strFile = m_strOriginalPath + "\\" + strName + ".bin";
+
+            if (File.Exists(strFile))
+                File.Delete(strFile);
+
+            using (FileStream fs = new FileStream(strFile, FileMode.CreateNew, FileAccess.Write))
+            using (BinaryWriter bw = new BinaryWriter(fs))
+            {
+                BlobProto proto = new BlobProto();
+                proto.data = new List<float>(rgData);
+                proto.Save(bw);
+            }
+
+            p.binary_data_file = strFile;
+        }
+
+        private void saveBinaryData(ConstantParameter p, string strName, RepeatedField<float> rgData)
+        {
+            string strFile = m_strOriginalPath + "\\" + strName + ".bin";
+
+            if (File.Exists(strFile))
+                File.Delete(strFile);
+
+            using (FileStream fs = new FileStream(strFile, FileMode.CreateNew, FileAccess.Write))
+            using (BinaryWriter bw = new BinaryWriter(fs))
+            {
+                BlobProto proto = new BlobProto();
+                proto.data = rgData.ToList();
+                proto.Save(bw);
+            }
+
+            p.binary_data_file = strFile;
+        }
+
+        private void fillParameter(Blob<T> input, ConstantParameter p)
+        {
+            foreach (int nDim in input.shape())
+            {
+                p.output_shape.dim.Add(nDim);
+            }
+
+            float[] rgData = Utility.ConvertVecF<T>(input.update_cpu_data());
+
+            if (rgData.Length <= 32)
+                p.values_f = new List<float>(rgData);
+            else
+                saveBinaryData(p, input.Name, rgData);
+        }
+
+        private void fillParameter(RepeatedField<AttributeProto> rg, string strName, ConstantParameter p)
+        {
+            foreach (AttributeProto attrib in rg)
+            {
+                if (attrib.Name == "value_float")
+                {
+                    p.values_f.Add(attrib.F);
+                    break;
+                }
+                else if (attrib.Name == "value_floats")
+                {
+                    foreach (float f in attrib.Floats)
+                    {
+                        p.values_f.Add(f);
+                    }
+                    break;
+                }
+                if (attrib.Name == "value_int")
+                {
+                    p.values_f.Add(attrib.I);
+                    break;
+                }
+                else if (attrib.Name == "value_ints")
+                {
+                    foreach (int i in attrib.Ints)
+                    {
+                        p.values_f.Add(i);
+                    }
+                    break;
+                }
+                else if (attrib.Name == "value")
+                {
+                    if (attrib.T.DataType == (int)OnnxDefinitions.DataType.FLOAT)
+                    {
+                        if (attrib.T.FloatData.Count <= 32)
+                        {
+                            foreach (float f in attrib.T.FloatData)
+                            {
+                                p.values_f.Add(f);
+                            }
+                        }
+                        else
+                        {
+                            saveBinaryData(p, strName, attrib.T.FloatData);
+                        }
+                    }
+                    else if (attrib.T.DataType == (int)OnnxDefinitions.DataType.INT64)
+                    {
+                        if (attrib.T.Int64Data.Count <= 32)
+                        {
+                            foreach (float f in attrib.T.FloatData)
+                            {
+                                p.values_f.Add(f);
+                            }
+                        }
+                        else
+                        {
+                            byte[] rgRaw = attrib.T.RawData.ToByteArray();
+                            int nLen = rgRaw.Length / sizeof(long);
+                            long[] rgData1 = new long[nLen];
+
+                            Buffer.BlockCopy(rgRaw, 0, rgData1, 0, rgRaw.Length);
+
+                            foreach (long lVal in rgData1)
+                            {
+                                p.values_f.Add(lVal);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception("The datatype '" + ((OnnxDefinitions.DataType)attrib.T.DataType).ToString() + "' is not yet supported.");
+                    }
+
+                    p.output_shape = new BlobShape();
+
+                    foreach (long nDim in attrib.T.Dims)
+                    {
+                        p.output_shape.dim.Add((int)nDim);
+                    }
+                }
+                else
+                {
+                    throw new Exception("The attribute name '" + attrib.Name + "' is not yet supported!");
                 }
             }
         }
@@ -1969,6 +2266,18 @@ namespace MyCaffe.converter.onnx
             }
         }
 
+        private void fillParameter(RepeatedField<AttributeProto> rg, GatherParameter p)
+        {
+            foreach (AttributeProto attrib in rg)
+            {
+                if (attrib.Name == "axis")
+                {
+                    p.axis = (int)attrib.I;
+                    break;
+                }
+            }
+        }
+
         private void fillParameter(RepeatedField<AttributeProto> rg, PoolingParameter p, PoolingParameter.PoolingMethod pool, bool bGlobal)
         {
             foreach (AttributeProto attrib in rg)
@@ -2092,8 +2401,91 @@ namespace MyCaffe.converter.onnx
             }
         }
 
-        private void fillParameter(RepeatedField<AttributeProto> rg, ReshapeParameter p)
+        private void fillParameter(RepeatedField<AttributeProto> rg, ReshapeParameter p, BlobCollection<T> col, RepeatedField<string> rgInputs, string strOutputBlob, CudaDnn<T> cuda, Log log)
         {
+            List<float> rgShape = new List<float>();
+
+            p.shape = new BlobShape();
+
+            if (rgInputs.Count > 1)
+            {
+                Blob<T> shape = col.FindBlob(rgInputs[1]);
+                if (shape == null)
+                    throw new Exception("Missing 'shape' blob!");
+
+                float[] rgData = Utility.ConvertVecF<T>(shape.mutable_cpu_data);
+                rgShape = new List<float>(rgData);
+
+                foreach (float fDim in rgData)
+                {
+                    p.shape.dim.Add((int)fDim);
+                }
+
+                col.Remove(shape);
+            }
+            else
+            {
+                foreach (AttributeProto attrib in rg)
+                {
+                    if (attrib.Name == "shape")
+                    {
+                        foreach (long lDim in attrib.Ints)
+                        {
+                            p.shape.dim.Add((int)lDim);
+                        }
+                    }
+                }
+            }
+
+            Blob<T> input = col.FindBlob(rgInputs[0]);
+            if (input != null)
+            {
+                input.Reshape(p.shape);
+                input.Name = strOutputBlob;
+            }
+            else
+            {
+                Blob<T> output = new Blob<T>(cuda, log);
+                output.Reshape(p.shape);
+                output.Name = strOutputBlob;
+                col.Add(output);
+            }
+        }
+
+        private void fillParameterUnsqueeze(RepeatedField<AttributeProto> rg, ReshapeParameter p, BlobCollection<T> col, RepeatedField<string> rgInputs, string strOutputBlob, CudaDnn<T> cuda, Log log)
+        {
+            List<float> rgIdx = new List<float>();
+
+            p.shape = new BlobShape();
+
+            if (rgInputs.Count != 2)
+                throw new Exception("Expected two input blobs: 'data', 'index'");
+
+            Blob<T> data = col.FindBlob(rgInputs[0]);
+            if (data == null)
+                throw new Exception("Missing 'data' blob!");
+
+            Blob<T> index = col.FindBlob(rgInputs[1]);
+            if (index == null)
+                throw new Exception("Missing 'index' blob!");
+
+            float[] rgData = Utility.ConvertVecF<T>(index.mutable_cpu_data);
+            rgIdx = new List<float>(rgData);
+
+            p.shape.dim = new List<int>(data.shape());
+
+            foreach (int nIdx in rgIdx)
+            {
+                if (nIdx > p.shape.dim.Count)
+                    p.shape.dim.Add(1);
+                else
+                    p.shape.dim.Insert(nIdx, 1);
+            }
+
+            col.Remove(index);
+
+            data.Reshape(p.shape);
+            data.Name = strOutputBlob;
         }
 
         private void fillParameter(RepeatedField<AttributeProto> rg, PReLUParameter p)
