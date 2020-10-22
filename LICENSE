@@ -833,8 +833,9 @@ license and copyright terms herein.
   and distributed under The Code Project Open License (CPOL) 1.02
   (https://www.codeproject.com/info/cpol10.aspx)
 
-  The MyCaffe.converter.onnx uses the ONNXControl which is used under the Apache 2.0 
-  license (https://github.com/MyCaffe/OnnxControl/blob/master/LICENSE). 
+  Portions of MyCaffe use the ONNXControl and may use or are inspired by other ONNX 
+  algorithms.  ONNX is used under the Apache 2.0 license located at
+  (https://github.com/MyCaffe/OnnxControl/blob/master/LICENSE). 
   The OnnxControl is a C# component that uses the onnx.proto3 and 
   onnx-operators-proto3 files made available by the ONNX Project Contributors 
   located at https://onnx.ai and distributed under the MIT License shown below 
