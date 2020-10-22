@@ -1997,9 +1997,24 @@ namespace MyCaffe.converter.onnx
             }
         }
 
+        private string cleanFileName(string str)
+        {
+            string strOut = "";
+
+            foreach (char ch in str)
+            {
+                if (ch == '\\' || ch == '/')
+                    strOut += "_";
+                else
+                    strOut += ch;
+            }
+
+            return strOut;
+        }
+
         private void saveBinaryData(ConstantParameter p, string strName, float[] rgData)
         {
-            string strFile = m_strOriginalPath + "\\" + strName + ".bin";
+            string strFile = m_strOriginalPath + "\\" + cleanFileName(strName) + ".bin";
 
             if (File.Exists(strFile))
                 File.Delete(strFile);
