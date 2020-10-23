@@ -132,6 +132,30 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Returns the maximum scoring annotation within a group.
+        /// </summary>
+        /// <returns>The annotation with the maximum score is returned, or null if there are no annotations.</returns>
+        public Annotation GetMaxScoringAnnotation()
+        {
+            float fMaxScore = 0;
+            int nMaxIdx = -1;
+
+            for (int i = 0; i < m_rgAnnotations.Count; i++)
+            {
+                if (m_rgAnnotations[i].bbox.score > fMaxScore)
+                {
+                    nMaxIdx = i;
+                    fMaxScore = m_rgAnnotations[i].bbox.score;
+                }
+            }
+
+            if (nMaxIdx < 0)
+                return null;
+
+            return m_rgAnnotations[nMaxIdx];
+        }
+
+        /// <summary>
         /// Get/set the group annoations.
         /// </summary>
         public List<Annotation> annotations
@@ -362,6 +386,29 @@ namespace MyCaffe.basecode
         IEnumerator IEnumerable.GetEnumerator()
         {
             return m_rgItems.GetEnumerator();
+        }
+
+        /// <summary>
+        /// Returns the maximum scoring annotation within a collection of groups.
+        /// </summary>
+        /// <returns>The annotation with the maximum score is returned, or null if there are no annotations.</returns>
+        public Annotation GetMaxScoringAnnotation()
+        {
+            Annotation bestAnnotation = null;
+            float fMaxScore = 0;
+
+            foreach (AnnotationGroup g in m_rgItems)
+            {
+                Annotation a = g.GetMaxScoringAnnotation();
+
+                if (a != null && a.bbox.score > fMaxScore)
+                {
+                    fMaxScore = a.bbox.score;
+                    bestAnnotation = a;
+                }
+            }
+
+            return bestAnnotation;
         }
 
         /// <summary>
