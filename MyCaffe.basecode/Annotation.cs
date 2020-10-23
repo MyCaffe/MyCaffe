@@ -194,13 +194,35 @@ namespace MyCaffe.basecode
         Dictionary<int, string> m_rgLabels = new Dictionary<int, string>();
         int m_nImageID = 0;
         int m_nImageIdx = 0;
+        int m_nCreatorID = 0;
+        int m_nDatasetID = 0;
         int m_nSourceID = 0;
+        bool m_bHasDataCriteria = false;
+        bool m_bHasDebugData = false;
 
         /// <summary>
         /// The constructor.
         /// </summary>
         public AnnotationGroupCollection()
         {
+        }
+
+        /// <summary>
+        /// Get/set whether or not the image has a data criteria associated with it.
+        /// </summary>
+        public bool HasDataCriteria
+        {
+            get { return m_bHasDataCriteria; }
+            set { m_bHasDataCriteria = value; }
+        }
+
+        /// <summary>
+        /// Get/set whether or not the image has debug data associated with it.
+        /// </summary>
+        public bool HasDebugData
+        {
+            get { return m_bHasDebugData; }
+            set { m_bHasDebugData = value; }
         }
 
         /// <summary>
@@ -219,6 +241,24 @@ namespace MyCaffe.basecode
         {
             get { return m_nImageIdx; }
             set { m_nImageIdx = value; }
+        }
+
+        /// <summary>
+        /// Specifies the Dataset Creator ID.
+        /// </summary>
+        public int CreatorID
+        {
+            get { return m_nCreatorID; }
+            set { m_nCreatorID = value; }
+        }
+
+        /// <summary>
+        /// Specifies the Dataset ID.
+        /// </summary>
+        public int DatasetID
+        {
+            get { return m_nDatasetID; }
+            set { m_nDatasetID = value; }
         }
 
         /// <summary>
@@ -360,7 +400,11 @@ namespace MyCaffe.basecode
 
             col.ImageID = m_nImageID;
             col.ImageIdx = m_nImageIdx;
+            col.CreatorID = m_nCreatorID;
+            col.DatasetID = m_nDatasetID;
             col.SourceID = m_nSourceID;
+            col.HasDataCriteria = m_bHasDataCriteria;
+            col.HasDebugData = m_bHasDebugData;
 
             return col;
         }
@@ -399,7 +443,11 @@ namespace MyCaffe.basecode
 
             bw.Write(rg.ImageID);
             bw.Write(rg.ImageIdx);
+            bw.Write(rg.CreatorID);
+            bw.Write(rg.DatasetID);
             bw.Write(rg.SourceID);
+            bw.Write(rg.HasDataCriteria);
+            bw.Write(rg.HasDebugData);
         }
 
         /// <summary>
@@ -419,7 +467,11 @@ namespace MyCaffe.basecode
 
             rg.ImageID = br.ReadInt32();
             rg.ImageIdx = br.ReadInt32();
+            rg.CreatorID = br.ReadInt32();
+            rg.DatasetID = br.ReadInt32();
             rg.SourceID = br.ReadInt32();
+            rg.HasDataCriteria = br.ReadBoolean();
+            rg.HasDebugData = br.ReadBoolean();
 
             return rg;
         }
@@ -450,7 +502,11 @@ namespace MyCaffe.basecode
 
                 bw.Write(rg.ImageID);
                 bw.Write(rg.ImageIdx);
+                bw.Write(rg.CreatorID);
+                bw.Write(rg.DatasetID);
                 bw.Write(rg.SourceID);
+                bw.Write(rg.HasDataCriteria);
+                bw.Write(rg.HasDebugData);
 
                 ms.Flush();
                 return ms.ToArray();
@@ -483,7 +539,11 @@ namespace MyCaffe.basecode
 
                 col.ImageID = br.ReadInt32();
                 col.ImageIdx = br.ReadInt32();
+                col.CreatorID = br.ReadInt32();
+                col.DatasetID = br.ReadInt32();
                 col.SourceID = br.ReadInt32();
+                col.HasDataCriteria = br.ReadBoolean();
+                col.HasDebugData = br.ReadBoolean();
 
                 return col;
             }
