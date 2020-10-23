@@ -4112,6 +4112,23 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Searches for the dataset containing the sourceId.
+        /// </summary>
+        /// <param name="nSourceId">Specifies the source ID to look for.</param>
+        /// <returns>If found, the dataset ID is returned, otherwise 0 is returned.</returns>
+        public int FindDatasetFromSourceId(int nSourceId)
+        {
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<Dataset> rgDs = entities.Datasets.Where(p => p.TrainingSourceID == nSourceId || p.TestingSourceID == nSourceId).ToList();
+                if (rgDs.Count == 0)
+                    return 0;
+
+                return rgDs[0].ID;
+            }
+        }
+
+        /// <summary>
         /// Returns a datasets ID given its name.
         /// </summary>
         /// <param name="strName">Specifies the dataset name.</param>

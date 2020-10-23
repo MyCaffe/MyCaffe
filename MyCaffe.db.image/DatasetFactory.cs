@@ -1545,6 +1545,16 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Searches for the dataset containing the sourceId.
+        /// </summary>
+        /// <param name="nSourceId">Specifies the sourceId to look for.</param>
+        /// <returns>If found, the dataset ID is returned, otherwise 0 is returned.</returns>
+        public int FindDatasetFromSourceId(int nSourceId)
+        {
+            return m_db.FindDatasetFromSourceId(nSourceId);
+        }
+
+        /// <summary>
         /// Reset all dataset relabel flags with a given creator.
         /// </summary>
         /// <param name="nDsCreatorId">Specifies the ID of the dataset creator.</param>
