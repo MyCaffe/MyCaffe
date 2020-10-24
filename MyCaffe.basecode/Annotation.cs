@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 
 namespace MyCaffe.basecode
 {
@@ -62,6 +64,32 @@ namespace MyCaffe.basecode
         {
             get { return m_bbox; }
             set { m_bbox = value; }
+        }
+
+        /// <summary>
+        /// Normalize all annotations to the given rectangle.
+        /// </summary>
+        /// <param name="rc">Specifies the rectangle used to normalize all annotations.</param>
+        public void Normalize(Rectangle rc)
+        {
+            float fxmin = 0;
+            float fymin = 0;
+            float fxmax = 1;
+            float fymax = 1;
+
+            if (m_bbox.xmin > rc.Left)
+                fxmin = (m_bbox.xmin - rc.Left) / rc.Width;
+
+            if (m_bbox.ymin > rc.Top)
+                fymin = (m_bbox.ymin - rc.Top) / rc.Height;
+
+            if (m_bbox.xmax < rc.Right)
+                fxmax = (m_bbox.xmax - rc.Left) / rc.Width;
+
+            if (m_bbox.ymax < rc.Bottom)
+                fymax = (m_bbox.ymax - rc.Top) / rc.Height;
+
+            m_bbox.Set(fxmin, fymin, fxmax, fymax);
         }
 
         /// <summary>
@@ -142,7 +170,7 @@ namespace MyCaffe.basecode
 
             for (int i = 0; i < m_rgAnnotations.Count; i++)
             {
-                if (m_rgAnnotations[i].bbox.score > fMaxScore)
+                if (m_rgAnnotations[i].bbox.score >= fMaxScore)
                 {
                     nMaxIdx = i;
                     fMaxScore = m_rgAnnotations[i].bbox.score;
@@ -153,6 +181,18 @@ namespace MyCaffe.basecode
                 return null;
 
             return m_rgAnnotations[nMaxIdx];
+        }
+
+        /// <summary>
+        /// Normalize all annotations to the given rectangle.
+        /// </summary>
+        /// <param name="rc">Specifies the rectangle used to normalize all annotations.</param>
+        public void Normalize(Rectangle rc)
+        {
+            foreach (Annotation a in m_rgAnnotations)
+            {
+                a.Normalize(rc);
+            }
         }
 
         /// <summary>
@@ -401,7 +441,7 @@ namespace MyCaffe.basecode
             {
                 Annotation a = g.GetMaxScoringAnnotation();
 
-                if (a != null && a.bbox.score > fMaxScore)
+                if (a != null && a.bbox.score >= fMaxScore)
                 {
                     fMaxScore = a.bbox.score;
                     bestAnnotation = a;
@@ -475,6 +515,18 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Normalize all annotations to the given rectangle.
+        /// </summary>
+        /// <param name="rc">Specifies the rectangle used to normalize all annotations.</param>
+        public void Normalize(Rectangle rc)
+        {
+            foreach (AnnotationGroup g in m_rgItems)
+            {
+                g.Normalize(rc);
+            }
+        }
+
+        /// <summary>
         /// Save an AnnotationGroupCollection to a binary writer.
         /// </summary>
         /// <param name="bw">Specifies the binary writer.</param>
@@ -495,6 +547,21 @@ namespace MyCaffe.basecode
             bw.Write(rg.SourceID);
             bw.Write(rg.HasDataCriteria);
             bw.Write(rg.HasDebugData);
+        }
+
+        /// <summary>
+        /// Save the labels to a binary writer.
+        /// </summary>
+        /// <param name="bw">Specifies the binary writer.</param>
+        /// <param name="rg">Specifies the AnnotationGroupCollection to save.</param>
+        public static void SaveLabels(BinaryWriter bw, AnnotationGroupCollection rg)
+        {
+            bw.Write(rg.Labels.Count);
+            foreach (KeyValuePair<int, string> kv in rg.Labels)
+            {
+                bw.Write(kv.Key);
+                bw.Write(kv.Value);
+            }
         }
 
         /// <summary>
@@ -524,6 +591,27 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Load the labels from a binary reader.
+        /// </summary>
+        /// <param name="br">Specifies the binary reader.</param>
+        /// <returns>The labels are returned in a Dictionary.</returns>
+        public static Dictionary<int, string> LoadLabels(BinaryReader br)
+        {
+            Dictionary<int, string> rg = new Dictionary<int, string>();
+
+            int nCount = br.ReadInt32();
+            for (int i = 0; i < nCount; i++)
+            {
+                int nKey = br.ReadInt32();
+                string strVal = br.ReadString();
+
+                rg.Add(nKey, strVal);
+            }
+
+            return rg;
+        }
+
+        /// <summary>
         /// Saves a AnnotationGroupCollection to a byte array.
         /// </summary>
         /// <param name="rg">Specifies the list of AnnotationGroup to save.</param>
@@ -538,14 +626,7 @@ namespace MyCaffe.basecode
 
                 bw.Write(bIncludeLabels);
                 if (bIncludeLabels)
-                {
-                    bw.Write(rg.Labels.Count);
-                    foreach (KeyValuePair<int, string> kv in rg.Labels)
-                    {
-                        bw.Write(kv.Key);
-                        bw.Write(kv.Value);
-                    }
-                }
+                    SaveLabels(bw, rg);
 
                 bw.Write(rg.ImageID);
                 bw.Write(rg.ImageIdx);
@@ -573,16 +654,7 @@ namespace MyCaffe.basecode
                 AnnotationGroupCollection col = LoadList(br);
 
                 if (br.ReadBoolean())
-                {
-                    int nCount = br.ReadInt32();
-                    for (int i = 0; i < nCount; i++)
-                    {
-                        int nKey = br.ReadInt32();
-                        string strVal = br.ReadString();
-
-                        col.Labels.Add(nKey, strVal);
-                    }
-                }
+                    col.Labels = LoadLabels(br);
 
                 col.ImageID = br.ReadInt32();
                 col.ImageIdx = br.ReadInt32();
