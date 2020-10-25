@@ -98,6 +98,7 @@ namespace MyCaffe
         ManualResetEvent m_evtSyncUnload = new ManualResetEvent(false);
         ManualResetEvent m_evtSyncMain = new ManualResetEvent(false);
         ConnectInfo m_dsCi = null;
+        bool m_bEnableVerboseStatus = false;
 
         /// <summary>
         /// The OnSnapshot event fires each time a snap-shot is taken.
@@ -358,6 +359,15 @@ namespace MyCaffe
         {
             get { return m_solver.EnableTesting; }
             set { m_solver.EnableTesting = value; }
+        }
+
+        /// <summary>
+        /// Get/set whether or not to use verbose status.  When enabled, the full status is output when loading a project, otherwise a more minimum (faster) set is output (default = false for disabled).
+        /// </summary>
+        public bool EnableVerboseStatus
+        {
+            get { return m_bEnableVerboseStatus; }
+            set { m_bEnableVerboseStatus = value; }
         }
 
         /// <summary>
@@ -953,149 +963,170 @@ namespace MyCaffe
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
         public bool Load(Phase phase, ProjectEx p, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabaseBase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false)
         {
-            DatasetFactory factory = new DatasetFactory();
-            m_strStage = strStage;
-            m_imgDb = imgdb;
-            m_bImgDbOwner = false;
-
-            if (m_imgDb == null && bUseImageDb)
+            try
             {
-                if (m_settings.ImageDbVersion == IMGDB_VERSION.V2)
-                    m_imgDb = new MyCaffeImageDatabase2(m_log);
-                else
-                    m_imgDb = new MyCaffeImageDatabase(m_log);
+                m_log.Enable = m_bEnableVerboseStatus;
 
-                m_bImgDbOwner = true;
+                DatasetFactory factory = new DatasetFactory();
+                m_strStage = strStage;
+                m_imgDb = imgdb;
+                m_bImgDbOwner = false;
 
-                m_log.WriteLine("Loading primary images...");
-
-                if (m_imgDb is IXImageDatabase1)
-                    ((IXImageDatabase1)m_imgDb).InitializeWithDs1(m_settings, p.Dataset, m_evtCancel.Name);
-                else
-                    ((IXImageDatabase2)m_imgDb).InitializeWithDs(m_settings, p.Dataset, m_evtCancel.Name);
-
-                if (m_evtCancel.WaitOne(0))
-                    return false;
-
-//              m_imgDb.UpdateLabelBoosts(p.ID, p.Dataset.TrainingSource.ID);
-
-                Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> selMethod = MyCaffeImageDatabase.GetSelectionMethod(p);
-                IMGDB_LABEL_SELECTION_METHOD lblSel = selMethod.Item1;
-                IMGDB_IMAGE_SELECTION_METHOD imgSel = selMethod.Item2;
-
-                if (labelSelectionOverride.HasValue)
-                    lblSel = labelSelectionOverride.Value;
-
-                if (imageSelectionOverride.HasValue)
-                    imgSel = imageSelectionOverride.Value;
-
-                m_imgDb.SetSelectionMethod(lblSel, imgSel);
-                m_imgDb.QueryImageMean(p.Dataset.TrainingSource.ID);
-                m_log.WriteLine("Images loaded.");
-
-                if (p.TargetDatasetID > 0)
+                if (m_imgDb == null && bUseImageDb)
                 {
-                    DatasetDescriptor dsTarget = factory.LoadDataset(p.TargetDatasetID);
+                    if (m_settings.ImageDbVersion == IMGDB_VERSION.V2)
+                        m_imgDb = new MyCaffeImageDatabase2(m_log);
+                    else
+                        m_imgDb = new MyCaffeImageDatabase(m_log);
 
-                    m_log.WriteLine("Loading target dataset '" + dsTarget.Name + "' images using " + m_settings.ImageDbLoadMethod.ToString() + " loading method.");
+                    m_bImgDbOwner = true;
+
+                    m_log.WriteLine("Loading primary images...", true);
+                    m_log.Enable = true;
 
                     if (m_imgDb is IXImageDatabase1)
-                        ((IXImageDatabase1)m_imgDb).LoadDatasetByID1(dsTarget.ID);
+                        ((IXImageDatabase1)m_imgDb).InitializeWithDs1(m_settings, p.Dataset, m_evtCancel.Name);
                     else
-                        ((IXImageDatabase2)m_imgDb).LoadDatasetByID(dsTarget.ID);
+                        ((IXImageDatabase2)m_imgDb).InitializeWithDs(m_settings, p.Dataset, m_evtCancel.Name);
 
-                    m_imgDb.QueryImageMean(dsTarget.TrainingSource.ID);
-                    m_log.WriteLine("Target dataset images loaded.");
+                    if (m_evtCancel.WaitOne(0))
+                        return false;
+
+                    //              m_imgDb.UpdateLabelBoosts(p.ID, p.Dataset.TrainingSource.ID);
+
+                    Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> selMethod = MyCaffeImageDatabase.GetSelectionMethod(p);
+                    IMGDB_LABEL_SELECTION_METHOD lblSel = selMethod.Item1;
+                    IMGDB_IMAGE_SELECTION_METHOD imgSel = selMethod.Item2;
+
+                    if (labelSelectionOverride.HasValue)
+                        lblSel = labelSelectionOverride.Value;
+
+                    if (imageSelectionOverride.HasValue)
+                        imgSel = imageSelectionOverride.Value;
+
+                    m_imgDb.SetSelectionMethod(lblSel, imgSel);
+                    m_imgDb.QueryImageMean(p.Dataset.TrainingSource.ID);
+                    m_log.WriteLine("Images loaded.");
+
+                    if (p.TargetDatasetID > 0)
+                    {
+                        DatasetDescriptor dsTarget = factory.LoadDataset(p.TargetDatasetID);
+
+                        m_log.WriteLine("Loading target dataset '" + dsTarget.Name + "' images using " + m_settings.ImageDbLoadMethod.ToString() + " loading method.");
+
+                        if (m_imgDb is IXImageDatabase1)
+                            ((IXImageDatabase1)m_imgDb).LoadDatasetByID1(dsTarget.ID);
+                        else
+                            ((IXImageDatabase2)m_imgDb).LoadDatasetByID(dsTarget.ID);
+
+                        m_imgDb.QueryImageMean(dsTarget.TrainingSource.ID);
+                        m_log.WriteLine("Target dataset images loaded.");
+                    }
+
+                    m_log.Enable = m_bEnableVerboseStatus;
                 }
-            }
 
-            p.ModelDescription = addStage(p.ModelDescription, phase, strStage);
-            m_project = p;
-            m_project.Stage = getStage(m_strStage);
+                p.ModelDescription = addStage(p.ModelDescription, phase, strStage);
+                m_project = p;
+                m_project.Stage = getStage(m_strStage);
 
-            if (m_project == null)
-                throw new Exception("You must specify a project.");
+                if (m_project == null)
+                    throw new Exception("You must specify a project.");
 
-            m_dataSet = m_project.Dataset;
+                m_dataSet = m_project.Dataset;
 
-            if (m_cuda != null)
-                m_cuda.Dispose();
+                if (m_cuda != null)
+                    m_cuda.Dispose();
 
-            m_cuda = new CudaDnn<T>(m_rgGpu[0], DEVINIT.CUBLAS | DEVINIT.CURAND, null, m_strCudaPath, bResetFirst, bEnableMemTrace);
+                m_cuda = new CudaDnn<T>(m_rgGpu[0], DEVINIT.CUBLAS | DEVINIT.CURAND, null, m_strCudaPath, bResetFirst, bEnableMemTrace);
 
-            m_log.WriteLine("Cuda Connection created using '" + m_cuda.Path + "'.");
+                m_log.WriteLine("Cuda Connection created using '" + m_cuda.Path + "'.", true);
 
-            if (phase == Phase.TEST || phase == Phase.TRAIN)
-            {
-                m_log.WriteLine("Creating solver...");
-
-                m_solver = Solver<T>.Create(m_cuda, m_log, p, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, m_imgDb, m_persist, m_rgGpu.Count, 0);
-                m_solver.SnapshotWeightUpdateMethod = m_settings.SnapshotWeightUpdateMethod;
-                if (p.WeightsState != null || p.SolverState != null)
+                if (phase == Phase.TEST || phase == Phase.TRAIN)
                 {
-                    string strSkipBlobType = null;
+                    m_log.WriteLine("Creating solver...", true);
 
-                    ParameterDescriptor param = p.Parameters.Find("ModelResized");
-                    if (param != null && param.Value == "True")
-                        strSkipBlobType = BLOB_TYPE.IP_WEIGHT.ToString();
+                    m_solver = Solver<T>.Create(m_cuda, m_log, p, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, m_imgDb, m_persist, m_rgGpu.Count, 0);
+                    m_solver.SnapshotWeightUpdateMethod = m_settings.SnapshotWeightUpdateMethod;
+                    if (p.WeightsState != null || p.SolverState != null)
+                    {
+                        string strSkipBlobType = null;
 
-                    m_solver.Restore(p.WeightsState, p.SolverState, strSkipBlobType);
+                        ParameterDescriptor param = p.Parameters.Find("ModelResized");
+                        if (param != null && param.Value == "True")
+                            strSkipBlobType = BLOB_TYPE.IP_WEIGHT.ToString();
+
+                        m_solver.Restore(p.WeightsState, p.SolverState, strSkipBlobType);
+                    }
+
+                    m_solver.OnSnapshot += new EventHandler<SnapshotArgs>(m_solver_OnSnapshot);
+                    m_solver.OnTrainingIteration += new EventHandler<TrainingIterationArgs<T>>(m_solver_OnTrainingIteration);
+                    m_solver.OnTestingIteration += new EventHandler<TestingIterationArgs<T>>(m_solver_OnTestingIteration);
+                    m_log.WriteLine("Solver created.", true);
                 }
 
-                m_solver.OnSnapshot += new EventHandler<SnapshotArgs>(m_solver_OnSnapshot);
-                m_solver.OnTrainingIteration += new EventHandler<TrainingIterationArgs<T>>(m_solver_OnTrainingIteration);
-                m_solver.OnTestingIteration += new EventHandler<TestingIterationArgs<T>>(m_solver_OnTestingIteration);
-                m_log.WriteLine("Solver created.");
-            }
-
-            if (m_imgDb is IXImageDatabase1)
-            {
+                if (m_imgDb is IXImageDatabase1)
+                {
 #warning ImageDatabase V1 only
-                if (phase == Phase.TRAIN && m_imgDb != null)
-                    ((IXImageDatabase1)m_imgDb).UpdateLabelBoosts(p.ID, m_dataSet.TrainingSource.ID);
+                    if (phase == Phase.TRAIN && m_imgDb != null)
+                        ((IXImageDatabase1)m_imgDb).UpdateLabelBoosts(p.ID, m_dataSet.TrainingSource.ID);
 
-                if (phase == Phase.TEST && m_imgDb != null)
-                    ((IXImageDatabase1)m_imgDb).UpdateLabelBoosts(p.ID, m_dataSet.TestingSource.ID);
-            }
-
-            if (phase == Phase.RUN && !bCreateRunNet)
-                throw new Exception("You cannot opt out of creating the Run net when using the RUN phase.");
-
-            if (p == null || !bCreateRunNet)
-                return true;
-
-            TransformationParameter tp = null;
-            NetParameter netParam = createNetParameterForRunning(p, out tp);
-
-            m_dataTransformer = null;
-
-            if (tp != null)
-            {
-                SimpleDatum sdMean = (m_imgDb == null) ? null : m_imgDb.QueryImageMean(m_dataSet.TrainingSource.ID);
-                int nC = m_project.Dataset.TrainingSource.ImageChannels;
-                int nH = m_project.Dataset.TrainingSource.ImageHeight;
-                int nW = m_project.Dataset.TrainingSource.ImageWidth;
-
-                if (sdMean != null)
-                {
-                    m_log.CHECK_EQ(nC, sdMean.Channels, "The mean channel count does not match the datasets channel count.");
-                    m_log.CHECK_EQ(nH, sdMean.Height, "The mean height count does not match the datasets height count.");
-                    m_log.CHECK_EQ(nW, sdMean.Width, "The mean width count does not match the datasets width count.");
+                    if (phase == Phase.TEST && m_imgDb != null)
+                        ((IXImageDatabase1)m_imgDb).UpdateLabelBoosts(p.ID, m_dataSet.TestingSource.ID);
                 }
 
-                m_dataTransformer = new DataTransformer<T>(m_cuda, m_log, tp, Phase.RUN, nC, nH, nW, sdMean);
-            }
+                if (phase == Phase.RUN && !bCreateRunNet)
+                    throw new Exception("You cannot opt out of creating the Run net when using the RUN phase.");
 
-            if (phase == Phase.RUN)
-            {
-                m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_imgDb);
+                if (p == null || !bCreateRunNet)
+                    return true;
 
-                if (p.WeightsState != null)
-                    loadWeights(m_net, p.WeightsState);
+                TransformationParameter tp = null;
+                NetParameter netParam = createNetParameterForRunning(p, out tp);
+
+                m_dataTransformer = null;
+
+                if (tp != null)
+                {
+                    SimpleDatum sdMean = (m_imgDb == null) ? null : m_imgDb.QueryImageMean(m_dataSet.TrainingSource.ID);
+                    int nC = m_project.Dataset.TrainingSource.ImageChannels;
+                    int nH = m_project.Dataset.TrainingSource.ImageHeight;
+                    int nW = m_project.Dataset.TrainingSource.ImageWidth;
+
+                    if (sdMean != null)
+                    {
+                        m_log.CHECK_EQ(nC, sdMean.Channels, "The mean channel count does not match the datasets channel count.");
+                        m_log.CHECK_EQ(nH, sdMean.Height, "The mean height count does not match the datasets height count.");
+                        m_log.CHECK_EQ(nW, sdMean.Width, "The mean width count does not match the datasets width count.");
+                    }
+
+                    m_dataTransformer = new DataTransformer<T>(m_cuda, m_log, tp, Phase.RUN, nC, nH, nW, sdMean);
+                }
+
+                m_log.WriteLine("Creating run net...", true);
+
+                if (phase == Phase.RUN)
+                {
+                    m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_imgDb);
+
+                    if (p.WeightsState != null)
+                    {
+                        m_log.WriteLine("Loading run weights...", true);
+                        loadWeights(m_net, p.WeightsState);
+                    }
+                }
+                else if (phase == Phase.TEST || phase == Phase.TRAIN)
+                {
+                    m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_imgDb, Phase.RUN, null, m_solver.TrainingNet);
+                }
             }
-            else if (phase == Phase.TEST || phase == Phase.TRAIN)
+            catch (Exception excpt)
             {
-                m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_imgDb, Phase.RUN, null, m_solver.TrainingNet);
+                throw excpt;
+            }
+            finally
+            {
+                m_log.Enable = true;
             }
 
             return true;
@@ -1122,137 +1153,161 @@ namespace MyCaffe
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
         public bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabaseBase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false)
         {
-            m_strStage = strStage;
-            m_imgDb = imgdb;
-            m_bImgDbOwner = false;
-
-            RawProto protoSolver = RawProto.Parse(strSolver);
-            SolverParameter solverParam = SolverParameter.FromProto(protoSolver);
-
-            strModel = addStage(strModel, phase, strStage);
-
-            RawProto protoModel = RawProto.Parse(strModel);
-            solverParam.net_param = NetParameter.FromProto(protoModel);
-
-            m_dataSet = findDataset(solverParam.net_param);
-
-            if (m_imgDb == null && bUseImageDb)
+            try
             {
-                m_imgDb = new MyCaffeImageDatabase(m_log);
-                m_bImgDbOwner = true;
+                m_log.Enable = m_bEnableVerboseStatus;
 
-                m_log.WriteLine("Loading primary images...");
+                m_strStage = strStage;
+                m_imgDb = imgdb;
+                m_bImgDbOwner = false;
 
-                if (m_imgDb is IXImageDatabase1)
-                    ((IXImageDatabase1)m_imgDb).InitializeWithDs1(m_settings, m_dataSet, m_evtCancel.Name);
-                else
-                    ((IXImageDatabase2)m_imgDb).InitializeWithDs(m_settings, m_dataSet, m_evtCancel.Name);
+                RawProto protoSolver = RawProto.Parse(strSolver);
+                SolverParameter solverParam = SolverParameter.FromProto(protoSolver);
 
-                if (m_evtCancel.WaitOne(0))
-                    return false;
+                strModel = addStage(strModel, phase, strStage);
 
-                Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> selMethod = MyCaffeImageDatabase.GetSelectionMethod(m_settings);
-                IMGDB_LABEL_SELECTION_METHOD lblSel = selMethod.Item1;
-                IMGDB_IMAGE_SELECTION_METHOD imgSel = selMethod.Item2;
+                RawProto protoModel = RawProto.Parse(strModel);
+                solverParam.net_param = NetParameter.FromProto(protoModel);
 
-                if (labelSelectionOverride.HasValue)
-                    lblSel = labelSelectionOverride.Value;
+                m_dataSet = findDataset(solverParam.net_param);
 
-                if (imageSelectionOverride.HasValue)
-                    imgSel = imageSelectionOverride.Value;
-
-                m_imgDb.SetSelectionMethod(lblSel, imgSel);
-                m_imgDb.QueryImageMean(m_dataSet.TrainingSource.ID);
-                m_log.WriteLine("Images loaded.");
-
-                DatasetDescriptor dsTarget = findDataset(solverParam.net_param, m_dataSet);
-                if (dsTarget != null)
+                if (m_imgDb == null && bUseImageDb)
                 {
-                    m_log.WriteLine("Loading target dataset '" + dsTarget.Name + "' images using " + m_settings.ImageDbLoadMethod.ToString() + " loading method.");
+                    m_imgDb = new MyCaffeImageDatabase(m_log);
+                    m_bImgDbOwner = true;
+
+                    m_log.WriteLine("Loading primary images...", true);
+                    m_log.Enable = true;
 
                     if (m_imgDb is IXImageDatabase1)
-                        ((IXImageDatabase1)m_imgDb).LoadDatasetByID1(dsTarget.ID);
+                        ((IXImageDatabase1)m_imgDb).InitializeWithDs1(m_settings, m_dataSet, m_evtCancel.Name);
                     else
-                        ((IXImageDatabase2)m_imgDb).LoadDatasetByID(dsTarget.ID);
+                        ((IXImageDatabase2)m_imgDb).InitializeWithDs(m_settings, m_dataSet, m_evtCancel.Name);
 
-                    m_imgDb.QueryImageMean(dsTarget.TrainingSource.ID);
-                    m_log.WriteLine("Target dataset images loaded.");
+                    if (m_evtCancel.WaitOne(0))
+                        return false;
+
+                    Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> selMethod = MyCaffeImageDatabase.GetSelectionMethod(m_settings);
+                    IMGDB_LABEL_SELECTION_METHOD lblSel = selMethod.Item1;
+                    IMGDB_IMAGE_SELECTION_METHOD imgSel = selMethod.Item2;
+
+                    if (labelSelectionOverride.HasValue)
+                        lblSel = labelSelectionOverride.Value;
+
+                    if (imageSelectionOverride.HasValue)
+                        imgSel = imageSelectionOverride.Value;
+
+                    m_imgDb.SetSelectionMethod(lblSel, imgSel);
+                    m_imgDb.QueryImageMean(m_dataSet.TrainingSource.ID);
+                    m_log.WriteLine("Images loaded.", true);
+
+                    DatasetDescriptor dsTarget = findDataset(solverParam.net_param, m_dataSet);
+                    if (dsTarget != null)
+                    {
+                        m_log.WriteLine("Loading target dataset '" + dsTarget.Name + "' images using " + m_settings.ImageDbLoadMethod.ToString() + " loading method.", true);
+
+                        if (m_imgDb is IXImageDatabase1)
+                            ((IXImageDatabase1)m_imgDb).LoadDatasetByID1(dsTarget.ID);
+                        else
+                            ((IXImageDatabase2)m_imgDb).LoadDatasetByID(dsTarget.ID);
+
+                        m_imgDb.QueryImageMean(dsTarget.TrainingSource.ID);
+                        m_log.WriteLine("Target dataset images loaded.", true);
+                    }
+
+                    m_log.Enable = m_bEnableVerboseStatus;
                 }
-            }
 
-            m_project = null;
+                m_project = null;
 
-            if (m_cuda != null)
-                m_cuda.Dispose();
+                if (m_cuda != null)
+                    m_cuda.Dispose();
 
-            m_cuda = new CudaDnn<T>(m_rgGpu[0], DEVINIT.CUBLAS | DEVINIT.CURAND, null, m_strCudaPath, bResetFirst, bEnableMemTrace);
-            m_log.WriteLine("Cuda Connection created using '" + m_cuda.Path + "'.");
+                m_cuda = new CudaDnn<T>(m_rgGpu[0], DEVINIT.CUBLAS | DEVINIT.CURAND, null, m_strCudaPath, bResetFirst, bEnableMemTrace);
+                m_log.WriteLine("Cuda Connection created using '" + m_cuda.Path + "'.", true);
 
-            if (phase == Phase.TEST || phase == Phase.TRAIN)
-            {
-                m_log.WriteLine("Creating solver...");
+                if (phase == Phase.TEST || phase == Phase.TRAIN)
+                {
+                    m_log.WriteLine("Creating solver...", true);
 
-                m_solver = Solver<T>.Create(m_cuda, m_log, solverParam, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, m_imgDb, m_persist, m_rgGpu.Count, 0);
+                    m_solver = Solver<T>.Create(m_cuda, m_log, solverParam, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, m_imgDb, m_persist, m_rgGpu.Count, 0);
 
-                if (rgWeights != null)
-                    m_solver.Restore(rgWeights, null);
+                    if (rgWeights != null)
+                    {
+                        m_log.WriteLine("Restoring weights...", true);
+                        m_solver.Restore(rgWeights, null);
+                    }
 
-                m_solver.OnSnapshot += new EventHandler<SnapshotArgs>(m_solver_OnSnapshot);
-                m_solver.OnTrainingIteration += new EventHandler<TrainingIterationArgs<T>>(m_solver_OnTrainingIteration);
-                m_solver.OnTestingIteration += new EventHandler<TestingIterationArgs<T>>(m_solver_OnTestingIteration);
-                m_log.WriteLine("Solver created.");
-            }
+                    m_solver.OnSnapshot += new EventHandler<SnapshotArgs>(m_solver_OnSnapshot);
+                    m_solver.OnTrainingIteration += new EventHandler<TrainingIterationArgs<T>>(m_solver_OnTrainingIteration);
+                    m_solver.OnTestingIteration += new EventHandler<TestingIterationArgs<T>>(m_solver_OnTestingIteration);
+                    m_log.WriteLine("Solver created.", true);
+                }
 
-            if (!bCreateRunNet)
-            {
+                if (!bCreateRunNet)
+                {
+                    if (phase == Phase.RUN)
+                        throw new Exception("You cannot opt out of creating the Run net when using the RUN phase.");
+
+                    return true;
+                }
+
+                TransformationParameter tp = null;
+                NetParameter netParam = createNetParameterForRunning(m_dataSet, strModel, out tp);
+
+                m_dataTransformer = null;
+
+                if (tp != null)
+                {
+                    SimpleDatum sdMean = (m_imgDb == null) ? null : m_imgDb.QueryImageMean(m_dataSet.TrainingSource.ID);
+                    int nC = 0;
+                    int nH = 0;
+                    int nW = 0;
+
+                    if (sdMean != null)
+                    {
+                        nC = sdMean.Channels;
+                        nH = sdMean.Height;
+                        nW = sdMean.Width;
+                    }
+                    else if (m_project != null)
+                    {
+                        nC = m_project.Dataset.TrainingSource.ImageChannels;
+                        nH = m_project.Dataset.TrainingSource.ImageHeight;
+                        nW = m_project.Dataset.TrainingSource.ImageWidth;
+                    }
+
+                    if (nC == 0 || nH == 0 || nW == 0)
+                        throw new Exception("Unable to size the Data Transformer for there is no Mean or Project to gather the sizing information from.");
+
+                    m_dataTransformer = new DataTransformer<T>(m_cuda, m_log, tp, Phase.RUN, nC, nH, nW, sdMean);
+                }
+
+                m_log.WriteLine("Creating run net...", true);
+
                 if (phase == Phase.RUN)
-                    throw new Exception("You cannot opt out of creating the Run net when using the RUN phase.");
-
-                return true;
-            }
-
-            TransformationParameter tp = null;
-            NetParameter netParam = createNetParameterForRunning(m_dataSet, strModel, out tp);
-
-            m_dataTransformer = null;
-
-            if (tp != null)
-            {
-                SimpleDatum sdMean = (m_imgDb == null) ? null : m_imgDb.QueryImageMean(m_dataSet.TrainingSource.ID);
-                int nC = 0;
-                int nH = 0;
-                int nW = 0;
-
-                if (sdMean != null)
                 {
-                    nC = sdMean.Channels;
-                    nH = sdMean.Height;
-                    nW = sdMean.Width;
+                    m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_imgDb);
+
+                    if (rgWeights != null)
+                    {
+                        m_log.WriteLine("Loading run weights...", true);
+                        loadWeights(m_net, rgWeights);
+                    }
                 }
-                else if (m_project != null)
+                else if (phase == Phase.TEST || phase == Phase.TRAIN)
                 {
-                    nC = m_project.Dataset.TrainingSource.ImageChannels;
-                    nH = m_project.Dataset.TrainingSource.ImageHeight;
-                    nW = m_project.Dataset.TrainingSource.ImageWidth;
+                    netParam.force_backward = true;
+                    m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_imgDb, Phase.RUN, null, m_solver.TrainingNet);
                 }
-
-                if (nC == 0 || nH == 0 || nW == 0)
-                    throw new Exception("Unable to size the Data Transformer for there is no Mean or Project to gather the sizing information from.");
-
-                m_dataTransformer = new DataTransformer<T>(m_cuda, m_log, tp, Phase.RUN, nC, nH, nW, sdMean);
             }
-
-            if (phase == Phase.RUN)
+            catch (Exception excpt)
             {
-                m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_imgDb);
-
-                if (rgWeights != null)
-                    loadWeights(m_net, rgWeights);
+                throw excpt;
             }
-            else if (phase == Phase.TEST || phase == Phase.TRAIN)
+            finally
             {
-                netParam.force_backward = true;
-                m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_imgDb, Phase.RUN, null, m_solver.TrainingNet);
+                m_log.Enable = true;
             }
 
             return true;
@@ -1276,81 +1331,99 @@ namespace MyCaffe
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
         public bool LoadLite(Phase phase, string strSolver, string strModel, byte[] rgWeights = null, bool bResetFirst = false, bool bCreateRunNet = true, SimpleDatum sdMean = null, string strStage = null, bool bEnableMemTrace = false)
         {
-            m_bLoadLite = true;
-            m_strSolver = strSolver;
-            m_strModel = strModel;
-
-            m_strStage = strStage;
-            m_imgDb = null;
-            m_bImgDbOwner = false;
-
-            RawProto protoSolver = RawProto.Parse(strSolver);
-            SolverParameter solverParam = SolverParameter.FromProto(protoSolver);
-
-            strModel = addStage(strModel, phase, strStage);
-
-            RawProto protoModel = RawProto.Parse(strModel);
-            solverParam.net_param = NetParameter.FromProto(protoModel);
-
-            m_dataSet = null;
-            m_project = null;
-
-            if (m_cuda != null)
-                m_cuda.Dispose();
-
-            m_cuda = new CudaDnn<T>(m_rgGpu[0], DEVINIT.CUBLAS | DEVINIT.CURAND, null, m_strCudaPath, bResetFirst, bEnableMemTrace);
-            m_log.WriteLine("Cuda Connection created using '" + m_cuda.Path + "'.");
-
-            if (phase == Phase.TEST || phase == Phase.TRAIN)
+            try
             {
-                m_log.WriteLine("Creating solver...");
+                m_log.Enable = m_bEnableVerboseStatus;
 
-                m_solver = Solver<T>.Create(m_cuda, m_log, solverParam, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, m_imgDb, m_persist, m_rgGpu.Count, 0);
+                m_bLoadLite = true;
+                m_strSolver = strSolver;
+                m_strModel = strModel;
 
-                if (rgWeights != null)
-                    m_solver.Restore(rgWeights, null);
+                m_strStage = strStage;
+                m_imgDb = null;
+                m_bImgDbOwner = false;
 
-                m_solver.OnSnapshot += new EventHandler<SnapshotArgs>(m_solver_OnSnapshot);
-                m_solver.OnTrainingIteration += new EventHandler<TrainingIterationArgs<T>>(m_solver_OnTrainingIteration);
-                m_solver.OnTestingIteration += new EventHandler<TestingIterationArgs<T>>(m_solver_OnTestingIteration);
-                m_log.WriteLine("Solver created.");
-            }
+                RawProto protoSolver = RawProto.Parse(strSolver);
+                SolverParameter solverParam = SolverParameter.FromProto(protoSolver);
 
-            if (!bCreateRunNet)
-            {
+                strModel = addStage(strModel, phase, strStage);
+
+                RawProto protoModel = RawProto.Parse(strModel);
+                solverParam.net_param = NetParameter.FromProto(protoModel);
+
+                m_dataSet = null;
+                m_project = null;
+
+                if (m_cuda != null)
+                    m_cuda.Dispose();
+
+                m_cuda = new CudaDnn<T>(m_rgGpu[0], DEVINIT.CUBLAS | DEVINIT.CURAND, null, m_strCudaPath, bResetFirst, bEnableMemTrace);
+                m_log.WriteLine("Cuda Connection created using '" + m_cuda.Path + "'.", true);
+
+                if (phase == Phase.TEST || phase == Phase.TRAIN)
+                {
+                    m_log.WriteLine("Creating solver...", true);
+
+                    m_solver = Solver<T>.Create(m_cuda, m_log, solverParam, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, m_imgDb, m_persist, m_rgGpu.Count, 0);
+
+                    if (rgWeights != null)
+                        m_solver.Restore(rgWeights, null);
+
+                    m_solver.OnSnapshot += new EventHandler<SnapshotArgs>(m_solver_OnSnapshot);
+                    m_solver.OnTrainingIteration += new EventHandler<TrainingIterationArgs<T>>(m_solver_OnTrainingIteration);
+                    m_solver.OnTestingIteration += new EventHandler<TestingIterationArgs<T>>(m_solver_OnTestingIteration);
+                    m_log.WriteLine("Solver created.");
+                }
+
+                if (!bCreateRunNet)
+                {
+                    if (phase == Phase.RUN)
+                        throw new Exception("You cannot opt out of creating the Run net when using the RUN phase.");
+
+                    return true;
+                }
+
+                TransformationParameter tp = null;
+                int nC = 0;
+                int nH = 0;
+                int nW = 0;
+                NetParameter netParam = createNetParameterForRunning(sdMean, strModel, out tp, out nC, out nH, out nW);
+
+                m_dataTransformer = null;
+
+                if (tp != null)
+                {
+                    if (nC == 0 || nH == 0 || nW == 0)
+                        throw new Exception("Unable to size the Data Transformer for no Mean image was provided as the 'sdMean' parameter which is used to gather the sizing information.");
+
+                    m_dataTransformer = new DataTransformer<T>(m_cuda, m_log, tp, Phase.RUN, nC, nH, nW, sdMean);
+                }
+
+                m_log.WriteLine("Creating run net...", true);
+
                 if (phase == Phase.RUN)
-                    throw new Exception("You cannot opt out of creating the Run net when using the RUN phase.");
+                {
+                    m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, null);
 
-                return true;
+                    if (rgWeights != null)
+                    {
+                        m_log.WriteLine("Loading run weights...", true);
+                        loadWeights(m_net, rgWeights);
+                    }
+                }
+                else if (phase == Phase.TEST || phase == Phase.TRAIN)
+                {
+                    netParam.force_backward = true;
+                    m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, null, Phase.RUN, null, m_solver.TrainingNet);
+                }
             }
-
-            TransformationParameter tp = null;
-            int nC = 0;
-            int nH = 0;
-            int nW = 0;
-            NetParameter netParam = createNetParameterForRunning(sdMean, strModel, out tp, out nC, out nH, out nW);
-
-            m_dataTransformer = null;
-
-            if (tp != null)
+            catch (Exception excpt)
             {
-                if (nC == 0 || nH == 0 || nW == 0)
-                    throw new Exception("Unable to size the Data Transformer for no Mean image was provided as the 'sdMean' parameter which is used to gather the sizing information.");
-
-                m_dataTransformer = new DataTransformer<T>(m_cuda, m_log, tp, Phase.RUN, nC, nH, nW, sdMean);
+                throw excpt;
             }
-
-            if (phase == Phase.RUN)
+            finally
             {
-                m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, null);
-
-                if (rgWeights != null)
-                    loadWeights(m_net, rgWeights);
-            }
-            else if (phase == Phase.TEST || phase == Phase.TRAIN)
-            {
-                netParam.force_backward = true;
-                m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, null, Phase.RUN, null, m_solver.TrainingNet);
+                m_log.Enable = true;
             }
 
             return true;
@@ -1372,37 +1445,52 @@ namespace MyCaffe
         /// uses this setting so that it can view what the trained weights actually see.</param>
         public void LoadToRun(string strModel, byte[] rgWeights, BlobShape shape, SimpleDatum sdMean = null, TransformationParameter transParam = null, bool bForceBackward = false)
         {
-            m_dataSet = null;
-            m_project = null;
-
-            if (m_cuda != null)
-                m_cuda.Dispose();
-
-            m_cuda = new CudaDnn<T>(m_rgGpu[0], DEVINIT.CUBLAS | DEVINIT.CURAND, null, m_strCudaPath);
-            m_log.WriteLine("Cuda Connection created using '" + m_cuda.Path + "'.");
-
-            TransformationParameter tp = null;
-            NetParameter netParam = createNetParameterForRunning(shape, strModel, out tp);
-
-            netParam.force_backward = bForceBackward;
-
-            if (transParam != null)
-                tp = transParam;
-
-            if (tp != null)
+            try
             {
-                if (tp.use_imagedb_mean && sdMean == null)
-                    throw new Exception("The transformer expects an image mean, yet the sdMean parameter is null!");
+                m_log.Enable = m_bEnableVerboseStatus;
+                m_dataSet = null;
+                m_project = null;
 
-                m_dataTransformer = new DataTransformer<T>(m_cuda, m_log, tp, Phase.RUN, shape.dim[1], shape.dim[2], shape.dim[3], sdMean);
+                if (m_cuda != null)
+                    m_cuda.Dispose();
+
+                m_cuda = new CudaDnn<T>(m_rgGpu[0], DEVINIT.CUBLAS | DEVINIT.CURAND, null, m_strCudaPath);
+                m_log.WriteLine("Cuda Connection created using '" + m_cuda.Path + "'.", true);
+
+                TransformationParameter tp = null;
+                NetParameter netParam = createNetParameterForRunning(shape, strModel, out tp);
+
+                netParam.force_backward = bForceBackward;
+
+                if (transParam != null)
+                    tp = transParam;
+
+                if (tp != null)
+                {
+                    if (tp.use_imagedb_mean && sdMean == null)
+                        throw new Exception("The transformer expects an image mean, yet the sdMean parameter is null!");
+
+                    m_dataTransformer = new DataTransformer<T>(m_cuda, m_log, tp, Phase.RUN, shape.dim[1], shape.dim[2], shape.dim[3], sdMean);
+                }
+                else
+                {
+                    m_dataTransformer = null;
+                }
+
+                m_log.WriteLine("Creating run net...", true);
+                m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, null);
+
+                m_log.WriteLine("Loading weights...", true);
+                loadWeights(m_net, rgWeights);
             }
-            else
+            catch (Exception excpt)
             {
-                m_dataTransformer = null;
+                throw excpt;
             }
-
-            m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, null);
-            loadWeights(m_net, rgWeights);
+            finally
+            {
+                m_log.Enable = true;
+            }
         }
 
         private SimpleDatum getMeanImage(NetParameter p)
