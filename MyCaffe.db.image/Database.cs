@@ -1786,8 +1786,9 @@ namespace MyCaffe.db.image
         /// <param name="nLabel">Optionally, specifies a label from which images are to be queried (default = -1, which ignores this parameter).</param>
         /// <param name="nBoost">Optionally, specifies a boost from which images are to be queried (default = -1, which ignores this parameter).</param>
         /// <param name="bBoostIsExact">Optionally, specifies whether the boost value is exact (<i>true</i>) or the minimum boost where all values equal are greater are retrieved (<i>false</i>).  Default = false.</param>
+        /// <param name="bAnnotatedOnly">Optionally, specifies to query annotated images only (default = false).</param>
         /// <returns>The List of RawImage ID's is returned.</returns>
-        public List<int> QueryAllRawImageIDs(int nSrcId = 0, int nMax = int.MaxValue, int nLabel = -1, int nBoost = -1, bool bBoostIsExact = false)
+        public List<int> QueryAllRawImageIDs(int nSrcId = 0, int nMax = int.MaxValue, int nLabel = -1, int nBoost = -1, bool bBoostIsExact = false, bool bAnnotatedOnly = false)
         {
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
@@ -1805,6 +1806,9 @@ namespace MyCaffe.db.image
                     string strCompare = (bBoostIsExact) ? "=" : ">=";
                     strCmd += " AND (ActiveBoost " + strCompare + " " + nBoost.ToString() + ")";
                 }
+
+                if (bAnnotatedOnly)
+                    strCmd += " AND (DataCriteriaFormatID = " + ((int)SimpleDatum.DATA_FORMAT.ANNOTATION_DATA).ToString() + ")";
 
                 return entities.Database.SqlQuery<int>(strCmd).ToList();
             }
