@@ -401,6 +401,42 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Returns a list of RawImages from the database for a data source.
         /// </summary>
+        /// <param name="rgImageId">Specifies the list of image IDs (no maximum).</param>
+        /// <param name="evtCancel">Specifies the cancel event.</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="strDescription">Optionally, specifies a description to filter the images retrieved (when specified, only images matching the filter are returned) (default = null).</param>
+        /// <returns>The list of RawImage items is returned.</returns>
+        public List<RawImage> GetRawImagesAtID(List<int> rgImageId, ManualResetEvent evtCancel, int nSrcId = 0, string strDescription = null)
+        {
+            List<RawImage> rgImg = new List<RawImage>();
+
+            while (rgImageId.Count > 0)
+            {
+                List<int> rgIdx = new List<int>();
+
+                for (int i = 0; i < rgImageId.Count && i < 100; i++)
+                {
+                    rgIdx.Add(rgImageId[i]);
+                }
+
+                List<RawImage> rgImg1 = m_db.GetRawImagesAtID(rgIdx, nSrcId, strDescription);
+                rgImg.AddRange(rgImg1);
+
+                for (int i = 0; i < rgIdx.Count; i++)
+                {
+                    rgImageId.RemoveAt(0);
+                }
+
+                if (evtCancel.WaitOne(0))
+                    return null;
+            }
+
+            return rgImg;
+        }
+
+        /// <summary>
+        /// Returns a list of RawImages from the database for a data source.
+        /// </summary>
         /// <param name="rgImgItems">Specifies the list of image DbItems.</param>
         /// <param name="evtCancel">Specifies the cancel event.</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
@@ -469,6 +505,29 @@ namespace MyCaffe.db.image
         public List<SimpleDatum> GetImagesAt(List<DbItem> rgImageItems, ManualResetEvent evtCancel, int nSrcId = 0, string strDescription = null)
         {
             List<RawImage> rgImg = GetRawImagesAt(rgImageItems, evtCancel, nSrcId, strDescription);
+            if (rgImg == null)
+                return null;
+
+            List<SimpleDatum> rgSd = new List<SimpleDatum>();
+
+            foreach (RawImage img in rgImg)
+            {
+                rgSd.Add(LoadDatum(img));
+            }
+
+            return rgSd;
+        }
+
+        /// <summary>
+        /// Returns a list of SimpleDatum from the database for a data source.
+        /// </summary>
+        /// <param name="rgImageId">Specifies the list of image IDs (no maximum).</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="strDescription">Optionally, specifies a description to filter the images retrieved (when specified, only images matching the filter are returned) (default = null).</param>
+        /// <returns>The list of SimpleDatum items is returned.</returns>
+        public List<SimpleDatum> GetImagesAtID(List<int> rgImageId, int nSrcId = 0, string strDescription = null)
+        {
+            List<RawImage> rgImg = m_db.GetRawImagesAtID(rgImageId, nSrcId, strDescription);
             if (rgImg == null)
                 return null;
 
@@ -616,10 +675,11 @@ namespace MyCaffe.db.image
         /// <param name="nLabel">Optionally, specifies a label from which images are to be queried (default = -1, which ignores this parameter).</param>
         /// <param name="nBoost">Optionally, specifies a boost from which images are to be queried (default = -1, which ignores this parameter).</param>
         /// <param name="bBoostIsExact">Optionally, specifies whether the boost value is exact (<i>true</i>) or the minimum boost where all values equal are greater are retrieved (<i>false</i>).  Default = false.</param>
+        /// <param name="bAnnotatedOnly">Optionally, specifies to query annotated images only (default = false).</param>
         /// <returns>The list of raw image ID's is returned.</returns>
-        public List<int> QueryRawImageIDs(int nSrcId = 0, int nMax = int.MaxValue, int nLabel = -1, int nBoost = -1, bool bBoostIsExact = false)
+        public List<int> QueryRawImageIDs(int nSrcId = 0, int nMax = int.MaxValue, int nLabel = -1, int nBoost = -1, bool bBoostIsExact = false, bool bAnnotatedOnly = false)
         {
-            return m_db.QueryAllRawImageIDs(nSrcId, nMax, nLabel, nBoost, bBoostIsExact);
+            return m_db.QueryAllRawImageIDs(nSrcId, nMax, nLabel, nBoost, bBoostIsExact, bAnnotatedOnly);
         }
 
         /// <summary>
