@@ -240,7 +240,7 @@ namespace MyCaffe.basecode
             foreach (RawProto rp in col)
             {
                 RawProto protoType = rp.FindChild("type");
-                if (protoType != null && protoType.Value == "Data")
+                if (protoType != null && (protoType.Value == "Data" || protoType.Value == "AnnotatedData"))
                 {
                     RawProto protoParam = rp.FindChild("data_param");
                     if (protoParam != null)
