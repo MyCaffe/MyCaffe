@@ -1191,11 +1191,11 @@ namespace MyCaffe.converter.onnx
                         val.Type.TensorType.ElemType != (int)OnnxDefinitions.DataType.DOUBLE)
                         rgstrInvalid1.Add(val.Name);
                     else
-                        rgstrInput.Add(val.Name);
+                        rgstrInput.Add(convertWs(val.Name));
 
                     if (bAdd)
                     {
-                        p.input.Add(val.Name);
+                        p.input.Add(convertWs(val.Name));
                         List<int> rgShape = new List<int>();
 
                         TypeProto type = val.Type;
@@ -1230,7 +1230,7 @@ namespace MyCaffe.converter.onnx
                 }
 
                 Blob<T> blob = new Blob<T>(cuda, log, rgShape);
-                blob.Name = tensor.Name;
+                blob.Name = convertWs(tensor.Name);
 
                 if (typeof(T) == typeof(float))
                 {
@@ -1481,6 +1481,21 @@ namespace MyCaffe.converter.onnx
             return str;
         }
 
+        private string convertWs(string str)
+        {
+            string strOut = "";
+
+            foreach (char ch in str)
+            {
+                if (char.IsWhiteSpace(ch))
+                    strOut += "_";
+                else
+                    strOut += ch;
+            }
+
+            return strOut;
+        }
+
         private BlobCollection<T> addLayers(RepeatedField<NodeProto> rg, NetParameter p, BlobCollection<T> col, OnnxDefinitions onnx, List<string> rgstrInputs, CudaDnn<T> cuda, Log log)
         {
             BlobCollection<T> colLearnable = new BlobCollection<T>();
@@ -1490,10 +1505,10 @@ namespace MyCaffe.converter.onnx
             {
                 List<string> rgstrLearnableBlobs = new List<string>();
                 LayerParameter layer = null;
-                string strNodeName = node.Name;
+                string strNodeName = convertWs(node.Name);
 
                 if (string.IsNullOrEmpty(strNodeName))
-                    strNodeName = node.Output[0];
+                    strNodeName = convertWs(node.Output[0]);
 
                 List<string> rgstrExcludedInputs = new List<string>();
 
@@ -1581,7 +1596,8 @@ namespace MyCaffe.converter.onnx
 
                     for (int i = 1; i < node.Input.Count; i++)
                     {
-                        rgstrExcludedInputs.Add(node.Input[i]);
+                        string strInput = convertWs(node.Input[i]);
+                        rgstrExcludedInputs.Add(strInput);
                     }
                 }
 
@@ -1594,12 +1610,14 @@ namespace MyCaffe.converter.onnx
 
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Constant))
                 {
-                    if (!rgConstants.ContainsKey(node.Output[0]))
+                    string strOutput = convertWs(node.Output[0]);
+
+                    if (!rgConstants.ContainsKey(strOutput))
                     {
                         layer = new LayerParameter(LayerParameter.LayerType.CONSTANT);
                         layer.name = strNodeName;
                         fillParameter(node.Attribute, layer.name, layer.constant_param);
-                        rgConstants.Add(node.Output[0], layer.constant_param);
+                        rgConstants.Add(strOutput, layer.constant_param);
                     }
                 }
 
@@ -1607,12 +1625,14 @@ namespace MyCaffe.converter.onnx
                 {
                     for (int i = 1; i < node.Input.Count; i++)
                     {
-                        Blob<T> blob = col.FindBlob(node.Input[i]);
-                        if (blob == null && rgConstants.ContainsKey(node.Input[i]))
+                        string strInput = convertWs(node.Input[i]);
+
+                        Blob<T> blob = col.FindBlob(strInput);
+                        if (blob == null && rgConstants.ContainsKey(strInput))
                         {
-                            ConstantParameter constParam = rgConstants[node.Input[i]];
+                            ConstantParameter constParam = rgConstants[strInput];
                             blob = new Blob<T>(cuda, log, constParam.output_shape.dim);
-                            blob.Name = node.Input[i];
+                            blob.Name = strInput;
 
                             if (constParam.values_f.Count > 1)
                             {
@@ -1625,7 +1645,7 @@ namespace MyCaffe.converter.onnx
                             }
                         }
 
-                        rgstrLearnableBlobs.Add(node.Input[i]);
+                        rgstrLearnableBlobs.Add(convertWs(node.Input[i]));
                         colLearnable.Add(blob);
                     }
 
@@ -1699,8 +1719,9 @@ namespace MyCaffe.converter.onnx
                 {
                     for (int i = 1; i < node.Input.Count; i++)
                     {
-                        rgstrLearnableBlobs.Add(node.Input[i]);
-                        colLearnable.Add(col.FindBlob(node.Input[i]));
+                        string strInput = convertWs(node.Input[i]);
+                        rgstrLearnableBlobs.Add(strInput);
+                        colLearnable.Add(col.FindBlob(strInput));
                     }
 
                     layer = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
@@ -1760,8 +1781,9 @@ namespace MyCaffe.converter.onnx
                 {
                     for (int i = 1; i < node.Input.Count; i++)
                     {
-                        rgstrLearnableBlobs.Add(node.Input[i]);
-                        colLearnable.Add(col.FindBlob(node.Input[i]));
+                        string strInput = convertWs(node.Input[i]);
+                        rgstrLearnableBlobs.Add(strInput);
+                        colLearnable.Add(col.FindBlob(strInput));
                     }
 
                     layer = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
@@ -1814,8 +1836,9 @@ namespace MyCaffe.converter.onnx
                 {
                     for (int i = 1; i < node.Input.Count; i++)
                     {
-                        rgstrLearnableBlobs.Add(node.Input[i]);
-                        colLearnable.Add(col.FindBlob(node.Input[i]));
+                        string strInput = convertWs(node.Input[i]);
+                        rgstrLearnableBlobs.Add(strInput);
+                        colLearnable.Add(col.FindBlob(strInput));
                     }
 
                     layer = new LayerParameter(LayerParameter.LayerType.PRELU);
@@ -1917,8 +1940,9 @@ namespace MyCaffe.converter.onnx
 
                 foreach (string strInput in node.Input)
                 {
-                    if (!rgstrLearnableBlobs.Contains(strInput) && !rgstrExcludedInputs.Contains(strInput))
-                        layer.bottom.Add(strInput);
+                    string strInput1 = convertWs(strInput);
+                    if (!rgstrLearnableBlobs.Contains(strInput1) && !rgstrExcludedInputs.Contains(strInput1))
+                        layer.bottom.Add(strInput1);
 
                     foreach (string strLearnable in rgstrLearnableBlobs)
                     {
@@ -1928,7 +1952,7 @@ namespace MyCaffe.converter.onnx
 
                 foreach (string strOutput in node.Output)
                 {
-                    layer.top.Add(strOutput);
+                    layer.top.Add(convertWs(strOutput));
                 }
 
                 // Add any constant layers for constant inputs.
@@ -1940,8 +1964,8 @@ namespace MyCaffe.converter.onnx
                         if (input != null)
                         {
                             LayerParameter layerConst = new LayerParameter(LayerParameter.LayerType.CONSTANT);
-                            layerConst.name = node.Input[i];
-                            layerConst.top.Add(node.Input[i]);
+                            layerConst.name = convertWs(node.Input[i]);
+                            layerConst.top.Add(layerConst.name);
                             fillParameter(input, layerConst.constant_param);
                             m_strReport += "Adding constant layer '" + layerConst.ToString() + "'" + Environment.NewLine;
                             p.layer.Add(layerConst);
@@ -2424,7 +2448,8 @@ namespace MyCaffe.converter.onnx
 
             if (rgInputs.Count > 1)
             {
-                Blob<T> shape = col.FindBlob(rgInputs[1]);
+                string strInput1 = convertWs(rgInputs[1]);
+                Blob<T> shape = col.FindBlob(strInput1);
                 if (shape == null)
                     throw new Exception("Missing 'shape' blob!");
 
@@ -2452,17 +2477,18 @@ namespace MyCaffe.converter.onnx
                 }
             }
 
-            Blob<T> input = col.FindBlob(rgInputs[0]);
+            string strInput = convertWs(rgInputs[0]);
+            Blob<T> input = col.FindBlob(strInput);
             if (input != null)
             {
                 input.Reshape(p.shape);
-                input.Name = strOutputBlob;
+                input.Name = convertWs(strOutputBlob);
             }
             else
             {
                 Blob<T> output = new Blob<T>(cuda, log);
                 output.Reshape(p.shape);
-                output.Name = strOutputBlob;
+                output.Name = convertWs(strOutputBlob);
                 col.Add(output);
             }
         }
@@ -2476,11 +2502,13 @@ namespace MyCaffe.converter.onnx
             if (rgInputs.Count != 2)
                 throw new Exception("Expected two input blobs: 'data', 'index'");
 
-            Blob<T> data = col.FindBlob(rgInputs[0]);
+            string strInput0 = convertWs(rgInputs[0]);
+            Blob<T> data = col.FindBlob(strInput0);
             if (data == null)
                 throw new Exception("Missing 'data' blob!");
 
-            Blob<T> index = col.FindBlob(rgInputs[1]);
+            string strInput1 = convertWs(rgInputs[1]);
+            Blob<T> index = col.FindBlob(strInput1);
             if (index == null)
                 throw new Exception("Missing 'index' blob!");
 
@@ -2500,7 +2528,7 @@ namespace MyCaffe.converter.onnx
             col.Remove(index);
 
             data.Reshape(p.shape);
-            data.Name = strOutputBlob;
+            data.Name = convertWs(strOutputBlob);
         }
 
         private void fillParameter(RepeatedField<AttributeProto> rg, PReLUParameter p)
