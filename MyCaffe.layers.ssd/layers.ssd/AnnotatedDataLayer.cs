@@ -171,7 +171,7 @@ namespace MyCaffe.layers.ssd
             if (m_param.transform_param.resize_param != null && m_param.transform_param.resize_param.Active)
             {
                 if (m_param.transform_param.resize_param.resize_mode == ResizeParameter.ResizeMode.FIT_SMALL_SIZE)
-                    m_log.CHECK_EQ(nBatchSize, 1, "The FIT_MSALL_SIZE resize mode only supports a batch size of 1.");
+                    m_log.CHECK_EQ(nBatchSize, 1, "The FIT_SMALL_SIZE resize mode only supports a batch size of 1.");
             }
 
             // Read a data point, and use it to initialize the top blob.
