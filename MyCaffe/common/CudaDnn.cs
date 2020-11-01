@@ -8216,7 +8216,7 @@ namespace MyCaffe.common
         /// <param name="nM">Specifies the M dimension.</param>
         /// <param name="nN">Specifies the M dimension.</param>
         /// <param name="hIdx">Specifies the indexes of the data to gather.</param>
-        public void gather_bwd(int nCount, long hBottom, long hTop, int nAxis, int nDim, int nDimAtAxis, int nM, int nN, long hIdx)
+        public void gather_bwd(int nCount, long hTop, long hBottom, int nAxis, int nDim, int nDimAtAxis, int nM, int nN, long hIdx)
         {
             if (m_dt == DataType.DOUBLE)
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GATHER_BWD, new double[] { nCount, hTop, hBottom, nAxis, nDim, nDimAtAxis, nM, nN, hIdx });
