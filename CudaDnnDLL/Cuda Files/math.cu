@@ -9156,10 +9156,13 @@ template long Math<double>::permute(int n, long hX, bool bFwd, long hPermuteOrde
 template long Math<float>::permute(int n, long hX, bool bFwd, long hPermuteOrder, long hOldSteps, long hNewSteps, int nNumAxes, long hY);
 
 
+/// 
+/// Using kernel algorithm similar to https://github.com/microsoft/onnxruntime/blob/master/onnxruntime/core/providers/cpu/tensor/gather.cc but converted to GPU
+/// 
 template <typename T>
-__global__ void gather_fwd_kernel(int n, const T* x, T* y, const int nAxis, const int nDim, int nDimAtAxis, const int nM, const int nN, const int nMxN, const T* idx)
+__global__ void gather_fwd_kernel(int n, const T* x, T* y, const int nDim, int nDimAtAxis, const int nM, const int nN, const T* idx)
 {
-	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index < nMxN && index>=0; index += blockDim.x * gridDim.x)
+	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index < n && index>=0; index += blockDim.x * gridDim.x)
 	{
 		const int nBatch = index / nN;
 		const int i = index % nN;
@@ -9173,9 +9176,13 @@ __global__ void gather_fwd_kernel(int n, const T* x, T* y, const int nAxis, cons
 		const int nSrcOffset = nSrcOffsetBatch + nIdx * nDim;
 		const int nDstOffset = nDstOffsetBatch + i * nDim;
 
-		y[nDstOffset] = x[nSrcOffset];
+		for (int j = 0; j < nDim; j++)
+		{
+			y[nDstOffset+j] = x[nSrcOffset+j];
+		}
 	}
 }
+
 
 template <typename T>
 long Math<T>::gather_fwd(int n, long hX, long hY, int nAxis, int nDim, int nDimAtAxis, int nM, int nN, long hIdx)
@@ -9198,9 +9205,7 @@ long Math<T>::gather_fwd(int n, long hX, long hY, int nAxis, int nDim, int nDimA
 	T* y = (T*)pY->Data();
 	T* idx = (T*)pIdx->Data();
 
-	int nMxN = nM * nN;
-
-	gather_fwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, x, y, nAxis, nDim, nDimAtAxis, nM, nN, nMxN, idx);
+	gather_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, y, nDim, nDimAtAxis, nM, nN, idx);
 
 	return cudaStreamSynchronize(0);
 }
@@ -9210,11 +9215,11 @@ template long Math<float>::gather_fwd(int nCount, long hX, long hY, int nAxis, i
 
 
 template <typename T>
-__global__ void gather_bwd_kernel(int n, const T* x, T* y, const int nAxis, const int nDim, const int nDimAtAxis, const int nM, const int nN, const int nMxN, const T* idx)
+__global__ void gather_bwd_kernel(int n, const T* x, T* y, const int nDim, const int nDimAtAxis, const int nM, const int nN, const T* idx)
 {
 	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index < n && index>=0; index += blockDim.x * gridDim.x)
 	{
-		const int nBatch = index / nN;
+		int nBatch = index / nN;
 		const int i = index % nN;
 
 		const int nDstOffsetBatch = nBatch * nM;
@@ -9223,10 +9228,19 @@ __global__ void gather_bwd_kernel(int n, const T* x, T* y, const int nAxis, cons
 
 		nIdx = (nIdx < 0) ? nIdx + nDimAtAxis : nIdx;
 
-		const int nDstOffset = nSrcOffsetBatch + nIdx * nDim;
-		const int nSrcOffset = nDstOffsetBatch + i * nDim;
+		const int nDstOffset = nDstOffsetBatch + nIdx * nDim;
+		const int nSrcOffset = nSrcOffsetBatch + i * nDim;
 
-		y[nDstOffset] = x[nSrcOffset];
+		for (int j = 0; j < nDim; j++)
+		{
+			const T fVal = x[nSrcOffset + j];
+			const int nOffset = nDstOffset + j;
+			y[nOffset] = fVal;
+
+			const int t = 4 * 2;
+			int v = t + 2;	
+			nBatch += v;
+		}
 	}
 }
 
@@ -9251,19 +9265,17 @@ long Math<T>::gather_bwd(int n, long hX, long hY, int nAxis, int nDim, int nDimA
 	T* y = (T*)pY->Data();
 	T* idx = (T*)pIdx->Data();
 
-	int nMxN = nM * nN;
-
 	LONG lSize = n * sizeof(T);
 	if (lErr = cudaMemset(y, 0, (size_t)lSize))
 		return lErr;
 
-	gather_bwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, x, y, nAxis, nDim, nDimAtAxis, nM, nN, nMxN, idx);
+	gather_bwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, x, y, nDim, nDimAtAxis, nM, nN, idx);
 
 	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::gather_bwd(int nCount, long hX, long hY, int nAxis, int nDim, int nDimAtAxis, int nM, int nN, long hIdx);
-template long Math<double>::gather_bwd(int nCount, long hX, long hY, int nAxis, int nDim, int nDimAtAxis, int nM, int nN, long hIdx);
+template long Math<float>::gather_bwd(int nCount, long hX, long hY, int nAxis, int nDim, int nDimAtAxis, int nM, int nN, long hIdx);
 
 
 template <typename T>
