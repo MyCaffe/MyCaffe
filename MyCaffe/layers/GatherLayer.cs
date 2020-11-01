@@ -59,6 +59,10 @@ namespace MyCaffe.layers
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             m_nAxis = colBottom[0].CanonicalAxisIndex(m_param.gather_param.axis);
+
+            if (m_nAxis != 0 && m_nAxis != 1)
+                m_log.FAIL("Currently only axis = 0 or axis = 1 are supported.");
+
             m_nDim = colBottom[0].count(m_nAxis + 1);
             m_nDimAtAxis = colBottom[0].shape()[m_nAxis];
             m_nM = colBottom[0].count(0, m_nAxis);
@@ -83,7 +87,22 @@ namespace MyCaffe.layers
             }
 
             List<int> rgShape = new List<int>(colBottom[1].shape());
-            rgShape.Add(m_nDim);
+            int nLen = rgShape.Count;
+
+            while (rgShape.Count > 0 && rgShape[rgShape.Count - 1] == 1)
+            {
+                rgShape.RemoveAt(rgShape.Count - 1);
+            }
+
+            if (m_nAxis == 0)
+                rgShape.Add(m_nDim);
+            else if (m_nAxis == 1)
+                rgShape.Insert(0, m_nM);
+
+            for (int i = rgShape.Count; i < nLen; i++)
+            {
+                rgShape.Add(1);
+            }
 
             colTop[0].Reshape(rgShape);
         }
@@ -103,8 +122,9 @@ namespace MyCaffe.layers
             long hBottom = colBottom[0].gpu_data;
             long hIdx = colBottom[1].gpu_data;
             long hTop = colTop[0].mutable_gpu_data;
+            int nExpectedCount = (m_nAxis == 0) ? (m_nN * m_nDim) : (m_nN * m_nM);
 
-            m_log.CHECK_EQ(colTop[0].count(), m_nN * m_nM, "The top count should equal M*N!");
+            m_log.CHECK_EQ(colTop[0].count(), nExpectedCount, "The top count should equal " + nExpectedCount.ToString() + "!");
 
             m_cuda.gather_fwd(nCount, hBottom, hTop, m_nAxis, m_nDim, m_nDimAtAxis, m_nM, m_nN, hIdx);
         }
