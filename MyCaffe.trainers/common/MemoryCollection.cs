@@ -258,21 +258,21 @@ namespace MyCaffe.trainers.common
                     int nIdx = 0;
 
                     List<double> rgdfData = new List<double>();
-                    rgdfData.Add(double.Parse(rgstr[nIdx])); nIdx++;
-                    rgdfData.Add(double.Parse(rgstr[nIdx])); nIdx++;
-                    rgdfData.Add(double.Parse(rgstr[nIdx])); nIdx++;
-                    rgdfData.Add(double.Parse(rgstr[nIdx])); nIdx++;
+                    rgdfData.Add(BaseParameter.parseDouble(rgstr[nIdx])); nIdx++;
+                    rgdfData.Add(BaseParameter.parseDouble(rgstr[nIdx])); nIdx++;
+                    rgdfData.Add(BaseParameter.parseDouble(rgstr[nIdx])); nIdx++;
+                    rgdfData.Add(BaseParameter.parseDouble(rgstr[nIdx])); nIdx++;
                     SimpleDatum sdCurrent = new SimpleDatum(true, 4, 1, 1, -1, DateTime.MinValue, rgdfData, 0, false, -1);
 
                     int nAction = int.Parse(rgstr[nIdx]); nIdx++;
-                    double dfReward = double.Parse(rgstr[nIdx]); nIdx++;
+                    double dfReward = BaseParameter.parseDouble(rgstr[nIdx]); nIdx++;
                     bool bTerminated = (int.Parse(rgstr[nIdx]) == 1) ? true : false; nIdx++;
 
                     rgdfData = new List<double>();
-                    rgdfData.Add(double.Parse(rgstr[nIdx])); nIdx++;
-                    rgdfData.Add(double.Parse(rgstr[nIdx])); nIdx++;
-                    rgdfData.Add(double.Parse(rgstr[nIdx])); nIdx++;
-                    rgdfData.Add(double.Parse(rgstr[nIdx])); nIdx++;
+                    rgdfData.Add(BaseParameter.parseDouble(rgstr[nIdx])); nIdx++;
+                    rgdfData.Add(BaseParameter.parseDouble(rgstr[nIdx])); nIdx++;
+                    rgdfData.Add(BaseParameter.parseDouble(rgstr[nIdx])); nIdx++;
+                    rgdfData.Add(BaseParameter.parseDouble(rgstr[nIdx])); nIdx++;
                     SimpleDatum sdNext = new SimpleDatum(true, 4, 1, 1, -1, DateTime.MinValue, rgdfData, 0, false, -1);
 
                     rg.Add(new MemoryItem(null, sdCurrent, nAction, null, sdNext, dfReward, bTerminated, 0, 0));
