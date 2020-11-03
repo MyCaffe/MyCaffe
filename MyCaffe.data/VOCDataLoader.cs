@@ -325,22 +325,22 @@ namespace MyCaffe.data
                 XElement bndbox = obj.Descendants("bndbox").First();
 
                 val = bndbox.Descendants("xmin").First();
-                float fxmin = float.Parse(val.Value);
+                float fxmin = BaseParameter.parseFloat(val.Value);
                 if (fxmin > nWidth || fxmin < 0)
                     log.WriteLine("WARNING: '" + strFile + "' bounding box exceeds image boundary.");
 
                 val = bndbox.Descendants("ymin").First();
-                float fymin = float.Parse(val.Value);
+                float fymin = BaseParameter.parseFloat(val.Value);
                 if (fymin > nHeight || fymin < 0)
                     log.WriteLine("WARNING: '" + strFile + "' bounding box exceeds image boundary.");
 
                 val = bndbox.Descendants("xmax").First();
-                float fxmax = float.Parse(val.Value);
+                float fxmax = BaseParameter.parseFloat(val.Value);
                 if (fxmax > nWidth || fxmax < 0)
                     log.WriteLine("WARNING: '" + strFile + "' bounding box exceeds image boundary.");
 
                 val = bndbox.Descendants("ymax").First();
-                float fymax = float.Parse(val.Value);
+                float fymax = BaseParameter.parseFloat(val.Value);
                 if (fymax > nHeight || fymax < 0)
                     log.WriteLine("WARNING: '" + strFile + "' bounding box exceeds image boundary.");
 

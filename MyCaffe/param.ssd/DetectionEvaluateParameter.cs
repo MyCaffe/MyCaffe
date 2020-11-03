@@ -184,7 +184,7 @@ namespace MyCaffe.param.ssd
                 p.background_label_id = uint.Parse(strVal);
 
             if ((strVal = rp.FindValue("overlap_threshold")) != null)
-                p.overlap_threshold = float.Parse(strVal);
+                p.overlap_threshold = BaseParameter.parseFloat(strVal);
 
             if ((strVal = rp.FindValue("evaluate_difficult_gt")) != null)
                 p.evaulte_difficult_gt = bool.Parse(strVal);

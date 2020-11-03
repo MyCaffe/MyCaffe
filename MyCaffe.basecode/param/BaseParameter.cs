@@ -47,6 +47,27 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Parse float values using the US culture if the decimal separator = '.', then using the native culture, and if then 
+        /// lastly trying the US culture to handle prototypes containing '.' as the separator, yet parsed in a culture that does
+        /// not use '.' as a decimal.
+        /// </summary>
+        /// <param name="strVal">Specifies the value to parse.</param>
+        /// <returns>The float value is returned.</returns>
+        public static float parseFloat(string strVal)
+        {
+            if (Thread.CurrentThread.CurrentCulture.NumberFormat.NumberDecimalSeparator == "." || string.IsNullOrEmpty(Thread.CurrentThread.CurrentCulture.NumberFormat.NumberDecimalSeparator))
+                return float.Parse(strVal);
+
+            if (strVal.Contains(Thread.CurrentThread.CurrentCulture.NumberFormat.NumberDecimalSeparator))
+                return float.Parse(strVal);
+
+            if (cultureUS == null)
+                cultureUS = CultureInfo.CreateSpecificCulture("en-US");
+
+            return float.Parse(strVal, cultureUS);
+        }
+
+        /// <summary>
         /// Convert the parameter into a RawProto.
         /// </summary>
         /// <param name="strName">Specifies the name to associate with the RawProto.</param>

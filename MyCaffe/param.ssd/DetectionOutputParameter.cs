@@ -291,13 +291,13 @@ namespace MyCaffe.param.ssd
                 p.keep_top_k = int.Parse(strVal);
 
             if ((strVal = rp.FindValue("confidence_threshold")) != null)
-                p.confidence_threshold = float.Parse(strVal);
+                p.confidence_threshold = parseFloat(strVal);
 
             if ((strVal = rp.FindValue("visualize")) != null)
                 p.visualize = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("visualize_threshold")) != null)
-                p.visualize_threshold = float.Parse(strVal);
+                p.visualize_threshold = parseFloat(strVal);
 
             if ((strVal = rp.FindValue("save_file")) != null)
                 p.save_file = strVal;

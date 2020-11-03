@@ -120,14 +120,14 @@ namespace MyCaffe.param.ssd
                 ((OptionalParameter)p).Copy(OptionalParameter.FromProto(rpOption));
 
             if ((strVal = rp.FindValue("fraction")) != null)
-                p.fraction = float.Parse(strVal);
+                p.fraction = BaseParameter.parseFloat(strVal);
 
             p.value = new List<float>();
             RawProtoCollection col = rp.FindChildren("value");
             foreach (RawProto rp1 in col)
             {
                 if ((strVal = rp.FindValue("value")) != null)
-                    p.value.Add(float.Parse(strVal));
+                    p.value.Add(BaseParameter.parseFloat(strVal));
             }
 
             return p;

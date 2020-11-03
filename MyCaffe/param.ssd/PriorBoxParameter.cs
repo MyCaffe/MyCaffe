@@ -373,19 +373,19 @@ namespace MyCaffe.param.ssd
 
             if ((strVal = rp.FindValue("step")) != null)
             {
-                p.step = float.Parse(strVal);
+                p.step = parseFloat(strVal);
             }
             else
             {
                 if ((strVal = rp.FindValue("step_h")) != null)
-                    p.step_h = float.Parse(strVal);
+                    p.step_h = parseFloat(strVal);
 
                 if ((strVal = rp.FindValue("step_w")) != null)
-                    p.step_w = float.Parse(strVal);
+                    p.step_w = parseFloat(strVal);
             }
 
             if ((strVal = rp.FindValue("offset")) != null)
-                p.offset = float.Parse(strVal);
+                p.offset = parseFloat(strVal);
 
             return p;
         }

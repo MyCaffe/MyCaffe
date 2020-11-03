@@ -328,7 +328,7 @@ namespace MyCaffe.test
 
             foreach (string str in rgstr)
             {
-                rgf.Add(float.Parse(str));
+                rgf.Add(BaseParameter.parseFloat(str));
             }
 
             // Check the data.
