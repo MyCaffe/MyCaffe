@@ -11,6 +11,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Threading;
 using MyCaffe.db.image;
+using System.Globalization;
 
 namespace MyCaffe.test
 {
@@ -24,6 +25,8 @@ namespace MyCaffe.test
         protected bool m_bHalf = false;
         IMGDB_VERSION m_imgDbVer = IMGDB_VERSION.DEFAULT;
         static string m_strCudaPath = "";
+        static string m_strCulture = "";
+        static CultureInfo m_defaultCulture = null;
 
 
         public TestBase(string strName, int nDeviceID = DEFAULT_DEVICE_ID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT, object tag = null, bool bHalf = false)
@@ -62,6 +65,22 @@ namespace MyCaffe.test
 
                         if (int.TryParse(strImgDbVer, out nVal) && (nVal == 0 || nVal == 1))
                             m_imgDbVer = (IMGDB_VERSION)nVal;
+                    }
+                }
+            }
+
+            // If an auto test has set the CULTURE, use it instead of the default.
+            LocalDataStoreSlot ldsc = Thread.GetNamedDataSlot("CULTURE");
+            if (ldsc != null)
+            {
+                object obj = Thread.GetData(ldsc);
+                if (obj != null)
+                {
+                    string strCulture = obj.ToString();
+                    if (!string.IsNullOrEmpty(strCulture))
+                    {
+                        m_defaultCulture = Thread.CurrentThread.CurrentCulture;
+                        Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo(strCulture);
                     }
                 }
             }
@@ -246,6 +265,9 @@ namespace MyCaffe.test
                 cuda.ResetDevice();
                 cuda.Dispose();
             }
+
+            if (m_defaultCulture != null)
+                Thread.CurrentThread.CurrentCulture = m_defaultCulture;
         }
 
         public static bool ResetOnCleanup
