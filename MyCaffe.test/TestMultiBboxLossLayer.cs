@@ -196,7 +196,7 @@ namespace MyCaffe.test
             for (int i = 0; i < 8; i++)
             {
                 if (i >= 3 && i <= 6)
-                    rgf[nOffset + i] = BaseParameter.parseFloat(rgstr[i]);
+                    rgf[nOffset + i] = BaseParameter.ParseFloat(rgstr[i]);
                 else
                     rgf[nOffset + i] = int.Parse(rgstr[i]);
             }

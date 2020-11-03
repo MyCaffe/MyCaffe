@@ -164,7 +164,7 @@ namespace MyCaffe.test
             foreach (string str in rgstr)
             {
                 if (!string.IsNullOrEmpty(str))
-                    rgfItems.Add(BaseParameter.parseFloat(str));
+                    rgfItems.Add(BaseParameter.ParseFloat(str));
             }
 
             if (bIsGt)
@@ -202,7 +202,7 @@ namespace MyCaffe.test
             foreach (string str in rgstr)
             {
                 if (!string.IsNullOrEmpty(str))
-                    rgfItems.Add(BaseParameter.parseFloat(str));
+                    rgfItems.Add(BaseParameter.ParseFloat(str));
             }
 
             m_log.CHECK_EQ(rgfItems.Count, 5, "There should be 5 items to check!");
