@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Collections;
 using System.Windows.Forms;
+using MyCaffe.basecode;
 
 namespace MyCaffe.test.automated
 {
@@ -62,7 +63,7 @@ namespace MyCaffe.test.automated
             string strA = listviewX.SubItems[ColumnToSort].Text.TrimEnd(' ', '%');
             string strB = listviewY.SubItems[ColumnToSort].Text.TrimEnd(' ', '%');
 
-            if (double.TryParse(strA, out dfA) && double.TryParse(strB, out dfB))
+            if (BaseParameter.TryParse(strA, out dfA) && BaseParameter.TryParse(strB, out dfB))
                 compareResult = ObjectCompare.Compare(dfA, dfB);
             else
                 compareResult = ObjectCompare.Compare(strA, strB);
