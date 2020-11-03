@@ -135,7 +135,7 @@ namespace MyCaffe.basecode
 
             double dfVal;
 
-            if (!double.TryParse(strVal, out dfVal))
+            if (!BaseParameter.TryParse(strVal, out dfVal))
                 throw new Exception("Failed to parse '" + strName + "' as a Double.  The value = '" + strVal + "'");
 
             return dfVal;

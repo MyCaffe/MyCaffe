@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MyCaffe.basecode;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -144,7 +145,7 @@ namespace MyCaffe.app
                 double dfVMin;
                 double dfVMax;
 
-                if (!double.TryParse(edtVMin.Text, out dfVMin))
+                if (!BaseParameter.TryParse(edtVMin.Text, out dfVMin))
                 {
                     MessageBox.Show("The 'VMin' value is invalid.  Please enter a valid number.", "Invalid VMin", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     edtVMin.Focus();
@@ -152,7 +153,7 @@ namespace MyCaffe.app
                     return;
                 }
 
-                if (!double.TryParse(edtVMax.Text, out dfVMax))
+                if (!BaseParameter.TryParse(edtVMax.Text, out dfVMax))
                 {
                     MessageBox.Show("The 'VMax' value is invalid.  Please enter a valid number.", "Invalid VMax", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     edtVMax.Focus();
@@ -362,7 +363,7 @@ namespace MyCaffe.app
         {
             double dfVal;
 
-            if (double.TryParse(edtVMin.Text, out dfVal))
+            if (BaseParameter.TryParse(edtVMin.Text, out dfVal))
             {
                 edtVMin.BackColor = Color.White;
             }
@@ -376,7 +377,7 @@ namespace MyCaffe.app
         {
             double dfVal;
 
-            if (double.TryParse(edtVMax.Text, out dfVal))
+            if (BaseParameter.TryParse(edtVMax.Text, out dfVal))
             {
                 edtVMin.BackColor = Color.White;
             }

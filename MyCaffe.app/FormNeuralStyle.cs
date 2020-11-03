@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MyCaffe.basecode;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -75,7 +76,7 @@ namespace MyCaffe.app
                 return;
             }
 
-            if (!double.TryParse(edtLearningRate.Text, out dfLr) || dfLr <= 0)
+            if (!BaseParameter.TryParse(edtLearningRate.Text, out dfLr) || dfLr <= 0)
             {
                 MessageBox.Show("The 'Learning Rate' value is invalid - enter a positive real value greater than one.", "Invalid Learning Rate", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 DialogResult = DialogResult.None;
@@ -112,7 +113,7 @@ namespace MyCaffe.app
 
             if (chkEnableTvLoss.Checked)
             {
-                if (!double.TryParse(edtTvLoss.Text, out dfTvLoss) || dfTvLoss < 0 || dfTvLoss > 0.1)
+                if (!BaseParameter.TryParse(edtTvLoss.Text, out dfTvLoss) || dfTvLoss < 0 || dfTvLoss > 0.1)
                 {
                     MessageBox.Show("The 'TV-Loss' value is invalid - enter a real value within the range [0,0.1].", "Invalid TV-Loss", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     DialogResult = DialogResult.None;
