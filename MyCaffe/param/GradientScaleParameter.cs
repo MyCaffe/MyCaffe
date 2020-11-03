@@ -147,16 +147,16 @@ namespace MyCaffe.param
             GradientScaleParameter p = new GradientScaleParameter();
 
             if ((strVal = rp.FindValue("lower_bound")) != null)
-                p.lower_bound = parseDouble(strVal);
+                p.lower_bound = ParseDouble(strVal);
 
             if ((strVal = rp.FindValue("upper_bound")) != null)
-                p.upper_bound = parseDouble(strVal);
+                p.upper_bound = ParseDouble(strVal);
 
             if ((strVal = rp.FindValue("alpha")) != null)
-                p.alpha = parseDouble(strVal);
+                p.alpha = ParseDouble(strVal);
 
             if ((strVal = rp.FindValue("max_iter")) != null)
-                p.max_iter = parseDouble(strVal);
+                p.max_iter = ParseDouble(strVal);
 
             return p;
         }

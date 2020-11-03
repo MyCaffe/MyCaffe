@@ -124,7 +124,7 @@ namespace MyCaffe.param
                 p.across_channels = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("eps")) != null)
-                p.eps = parseDouble(strVal);
+                p.eps = ParseDouble(strVal);
 
             return p;
         }

@@ -398,7 +398,7 @@ namespace MyCaffe.param
             TransformationParameter p = new TransformationParameter();
 
             if ((strVal = rp.FindValue("scale")) != null)
-                p.scale = parseDouble(strVal);
+                p.scale = ParseDouble(strVal);
 
             if ((strVal = rp.FindValue("mirror")) != null)
                 p.mirror = bool.Parse(strVal);
@@ -422,7 +422,7 @@ namespace MyCaffe.param
                 p.force_gray = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("force_positive_range_max")) != null)
-                p.forced_positive_range_max = parseDouble(strVal);
+                p.forced_positive_range_max = ParseDouble(strVal);
 
             if ((strVal = rp.FindValue("mean_file")) != null)
                 p.mean_file = strVal;

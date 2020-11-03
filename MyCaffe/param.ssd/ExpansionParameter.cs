@@ -111,10 +111,10 @@ namespace MyCaffe.param.ssd
                 ((OptionalParameter)p).Copy(OptionalParameter.FromProto(rpOption));
 
             if ((strVal = rp.FindValue("prob")) != null)
-                p.prob = BaseParameter.parseFloat(strVal);
+                p.prob = BaseParameter.ParseFloat(strVal);
 
             if ((strVal = rp.FindValue("max_expand_ratio")) != null)
-                p.max_expand_ratio = BaseParameter.parseFloat(strVal);
+                p.max_expand_ratio = BaseParameter.ParseFloat(strVal);
 
             return p;
         }

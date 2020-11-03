@@ -126,13 +126,13 @@ namespace MyCaffe.param.ssd
                 ((OptionalParameter)p).Copy(OptionalParameter.FromProto(rpOption));
 
             if ((strVal = rp.FindValue("nms_threshold")) != null)
-                p.nms_threshold = BaseParameter.parseFloat(strVal);
+                p.nms_threshold = BaseParameter.ParseFloat(strVal);
 
             if ((strVal = rp.FindValue("top_k")) != null)
                 p.top_k = int.Parse(strVal);
 
             if ((strVal = rp.FindValue("eta")) != null)
-                p.eta = BaseParameter.parseFloat(strVal);
+                p.eta = BaseParameter.ParseFloat(strVal);
 
             return p;
         }

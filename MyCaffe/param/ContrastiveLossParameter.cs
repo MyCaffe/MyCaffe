@@ -214,7 +214,7 @@ namespace MyCaffe.param
             ContrastiveLossParameter p = new ContrastiveLossParameter();
 
             if ((strVal = rp.FindValue("margin")) != null)
-                p.margin = parseDouble(strVal);
+                p.margin = ParseDouble(strVal);
 
             if ((strVal = rp.FindValue("legacy_version")) != null)
                 p.legacy_version = bool.Parse(strVal);
@@ -239,7 +239,7 @@ namespace MyCaffe.param
             }
 
             if ((strVal = rp.FindValue("matching_distance_scale")) != null)
-                p.matching_distance_scale = parseDouble(strVal);
+                p.matching_distance_scale = ParseDouble(strVal);
 
             return p;
         }

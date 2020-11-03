@@ -239,10 +239,10 @@ namespace MyCaffe.param
             }
 
             if ((strVal = rp.FindValue("lr_mult")) != null)
-                p.lr_mult = parseDouble(strVal);
+                p.lr_mult = ParseDouble(strVal);
 
             if ((strVal = rp.FindValue("decay_mult")) != null)
-                p.decay_mult = parseDouble(strVal);
+                p.decay_mult = ParseDouble(strVal);
 
             return p;
         }

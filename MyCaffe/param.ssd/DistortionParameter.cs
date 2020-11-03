@@ -238,31 +238,31 @@ namespace MyCaffe.param.ssd
                 p.Active = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("brightness_prob")) != null)
-                p.brightness_prob = BaseParameter.parseFloat(strVal);
+                p.brightness_prob = BaseParameter.ParseFloat(strVal);
 
             if ((strVal = rp.FindValue("brightness_delta")) != null)
-                p.brightness_delta = BaseParameter.parseFloat(strVal);
+                p.brightness_delta = BaseParameter.ParseFloat(strVal);
 
             if ((strVal = rp.FindValue("contrast_prob")) != null)
-                p.contrast_prob = BaseParameter.parseFloat(strVal);
+                p.contrast_prob = BaseParameter.ParseFloat(strVal);
 
             if ((strVal = rp.FindValue("contrast_lower")) != null)
-                p.contrast_lower = BaseParameter.parseFloat(strVal);
+                p.contrast_lower = BaseParameter.ParseFloat(strVal);
 
             if ((strVal = rp.FindValue("contrast_upper")) != null)
-                p.contrast_upper = BaseParameter.parseFloat(strVal);
+                p.contrast_upper = BaseParameter.ParseFloat(strVal);
 
             if ((strVal = rp.FindValue("saturation_prob")) != null)
-                p.saturation_prob = BaseParameter.parseFloat(strVal);
+                p.saturation_prob = BaseParameter.ParseFloat(strVal);
 
             if ((strVal = rp.FindValue("saturation_lower")) != null)
-                p.saturation_lower = BaseParameter.parseFloat(strVal);
+                p.saturation_lower = BaseParameter.ParseFloat(strVal);
 
             if ((strVal = rp.FindValue("saturation_upper")) != null)
-                p.saturation_upper = BaseParameter.parseFloat(strVal);
+                p.saturation_upper = BaseParameter.ParseFloat(strVal);
 
             if ((strVal = rp.FindValue("random_order_prob")) != null)
-                p.random_order_prob = BaseParameter.parseFloat(strVal);
+                p.random_order_prob = BaseParameter.ParseFloat(strVal);
 
             if ((strVal = rp.FindValue("use_gpu")) != null)
                 p.use_gpu = bool.Parse(strVal);

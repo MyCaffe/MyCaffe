@@ -118,10 +118,10 @@ namespace MyCaffe.param
             p.Copy(EngineParameter.FromProto(rp));
 
             if ((strVal = rp.FindValue("min")) != null)
-                p.min = parseDouble(strVal);
+                p.min = ParseDouble(strVal);
 
             if ((strVal = rp.FindValue("max")) != null)
-                p.max = parseDouble(strVal);
+                p.max = ParseDouble(strVal);
 
             return p;
         }

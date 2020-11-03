@@ -233,10 +233,10 @@ namespace MyCaffe.param
                 p.use_global_stats = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("moving_average_fraction")) != null)
-                p.moving_average_fraction = parseDouble(strVal);
+                p.moving_average_fraction = ParseDouble(strVal);
 
             if ((strVal = rp.FindValue("eps")) != null)
-                p.eps = parseDouble(strVal);
+                p.eps = ParseDouble(strVal);
 
             if ((strVal = rp.FindValue("scale_bias")) != null)
             {

@@ -258,24 +258,24 @@ namespace MyCaffe.param
             p.ignore_channels = rp.FindArray<int>("ignore_ch");
 
             if ((strVal = rp.FindValue("input_min")) != null)
-                p.input_min = parseDouble(strVal);
+                p.input_min = ParseDouble(strVal);
 
             if ((strVal = rp.FindValue("input_max")) != null)
-                p.input_max = parseDouble(strVal);
+                p.input_max = ParseDouble(strVal);
 
             if ((strVal = rp.FindValue("output_min")) != null)
-                p.output_min = parseDouble(strVal);
+                p.output_min = ParseDouble(strVal);
 
             if ((strVal = rp.FindValue("output_max")) != null)
-                p.output_max = parseDouble(strVal);
+                p.output_max = ParseDouble(strVal);
 
             if ((strVal = rp.FindValue("input_mean")) != null)
-                p.input_mean = parseDouble(strVal);
+                p.input_mean = ParseDouble(strVal);
             else
                 p.input_mean = null;
 
             if ((strVal = rp.FindValue("input_stdev")) != null)
-                p.input_stdev = parseDouble(strVal);
+                p.input_stdev = ParseDouble(strVal);
             else
                 p.input_stdev = null;
 

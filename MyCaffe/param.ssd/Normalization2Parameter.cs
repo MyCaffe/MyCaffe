@@ -143,7 +143,7 @@ namespace MyCaffe.param.ssd
                 p.channel_shared = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("eps")) != null)
-                p.eps = parseFloat(strVal);
+                p.eps = ParseFloat(strVal);
 
             RawProto rgScaleFiller = rp.FindChild("scale_filler");
             if (rgScaleFiller != null)

@@ -118,7 +118,7 @@ namespace MyCaffe.param
             p.Copy(EngineParameter.FromProto(rp));
 
             if ((strVal = rp.FindValue("negative_slope")) != null)
-                p.negative_slope = parseDouble(strVal);
+                p.negative_slope = ParseDouble(strVal);
 
             return p;
         }

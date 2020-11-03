@@ -142,7 +142,7 @@ namespace MyCaffe.param.ssd
             }
 
             if ((strVal = rp.FindValue("emit_overlap")) != null)
-                p.emit_overlap = BaseParameter.parseFloat(strVal);
+                p.emit_overlap = BaseParameter.ParseFloat(strVal);
 
             return p;
         }

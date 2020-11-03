@@ -241,7 +241,7 @@ namespace MyCaffe.param.ssd
                 ((OptionalParameter)p).Copy(OptionalParameter.FromProto(rpOption));
 
             if ((strVal = rp.FindValue("prob")) != null)
-                p.prob = BaseParameter.parseFloat(strVal);
+                p.prob = BaseParameter.ParseFloat(strVal);
 
             if ((strVal = rp.FindValue("hist_eq")) != null)
                 p.hist_eq = bool.Parse(strVal);
@@ -256,7 +256,7 @@ namespace MyCaffe.param.ssd
                 p.gauss_blur = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("jpeg")) != null)
-                p.jpeg = BaseParameter.parseFloat(strVal);
+                p.jpeg = BaseParameter.ParseFloat(strVal);
 
             if ((strVal = rp.FindValue("posterize")) != null)
                 p.posterize = bool.Parse(strVal);

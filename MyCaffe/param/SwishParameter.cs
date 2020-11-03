@@ -120,7 +120,7 @@ namespace MyCaffe.param
             p.Copy(EngineParameter.FromProto(rp));
 
             if ((strVal = rp.FindValue("beta")) != null)
-                p.beta = parseDouble(strVal);
+                p.beta = ParseDouble(strVal);
 
             return p;
         }

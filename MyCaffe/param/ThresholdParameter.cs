@@ -84,7 +84,7 @@ namespace MyCaffe.param
             ThresholdParameter p = new ThresholdParameter();
 
             if ((strVal = rp.FindValue("threshold")) != null)
-                p.threshold = parseDouble(strVal);
+                p.threshold = ParseDouble(strVal);
 
             return p;
         }

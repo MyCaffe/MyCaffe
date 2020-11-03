@@ -122,7 +122,7 @@ namespace MyCaffe.param.beta
             TripletLossParameter p = new TripletLossParameter();
 
             if ((strVal = rp.FindValue("alpha")) != null)
-                p.alpha = parseDouble(strVal);
+                p.alpha = ParseDouble(strVal);
 
             if ((strVal = rp.FindValue("pregen_label_start")) != null)
                 p.pregen_label_start = int.Parse(strVal);

@@ -200,14 +200,14 @@ namespace MyCaffe.param.ssd
             Sampler p = new Sampler();
 
             if ((strVal = rp.FindValue("min_scale")) != null)
-                p.min_scale = BaseParameter.parseFloat(strVal);
+                p.min_scale = BaseParameter.ParseFloat(strVal);
             if ((strVal = rp.FindValue("max_scale")) != null)
-                p.max_scale = BaseParameter.parseFloat(strVal);
+                p.max_scale = BaseParameter.ParseFloat(strVal);
 
             if ((strVal = rp.FindValue("min_aspect_ratio")) != null)
-                p.min_aspect_ratio = BaseParameter.parseFloat(strVal);
+                p.min_aspect_ratio = BaseParameter.ParseFloat(strVal);
             if ((strVal = rp.FindValue("max_aspect_ratio")) != null)
-                p.max_aspect_ratio = BaseParameter.parseFloat(strVal);
+                p.max_aspect_ratio = BaseParameter.ParseFloat(strVal);
 
             return p;
         }

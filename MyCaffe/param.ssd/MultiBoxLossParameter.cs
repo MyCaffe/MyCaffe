@@ -550,7 +550,7 @@ namespace MyCaffe.param.ssd
                 p.conf_loss_type = ConfLossTypeFromString(strVal);
 
             if ((strVal = rp.FindValue("loc_weight")) != null)
-                p.loc_weight = parseFloat(strVal);
+                p.loc_weight = ParseFloat(strVal);
 
             if ((strVal = rp.FindValue("num_classes")) != null)
                 p.num_classes = uint.Parse(strVal);
@@ -562,7 +562,7 @@ namespace MyCaffe.param.ssd
                 p.match_type = MatchTypeFromString(strVal);
 
             if ((strVal = rp.FindValue("overlap_threshold")) != null)
-                p.overlap_threshold = parseFloat(strVal);
+                p.overlap_threshold = ParseFloat(strVal);
 
             if ((strVal = rp.FindValue("background_label_id")) != null)
                 p.background_label_id = uint.Parse(strVal);
@@ -574,10 +574,10 @@ namespace MyCaffe.param.ssd
                 p.do_neg_mining = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("neg_pos_ratio")) != null)
-                p.neg_pos_ratio = parseFloat(strVal);
+                p.neg_pos_ratio = ParseFloat(strVal);
 
             if ((strVal = rp.FindValue("neg_overlap")) != null)
-                p.neg_overlap = parseFloat(strVal);
+                p.neg_overlap = ParseFloat(strVal);
 
             if ((strVal = rp.FindValue("code_type")) != null)
                 p.code_type = PriorBoxParameter.CodeTypeFromString(strVal);

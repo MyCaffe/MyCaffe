@@ -252,7 +252,7 @@ namespace MyCaffe.param.beta
                 p.output_centroids = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("pregen_alpha")) != null)
-                p.pregen_alpha = parseDouble(strVal);
+                p.pregen_alpha = ParseDouble(strVal);
 
             if ((strVal = rp.FindValue("pregen_label_count")) != null)
                 p.pregen_label_count = int.Parse(strVal);

@@ -170,7 +170,7 @@ namespace MyCaffe.param
                 p.num_output = uint.Parse(strVal);
 
             if ((strVal = rp.FindValue("clipping_threshold")) != null)
-                p.clipping_threshold = parseDouble(strVal);
+                p.clipping_threshold = ParseDouble(strVal);
 
             RawProto rpWeightFiller = rp.FindChild("weight_filler");
             if (rpWeightFiller != null)

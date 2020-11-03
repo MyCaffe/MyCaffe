@@ -256,19 +256,19 @@ namespace MyCaffe.param.ssd
             SamplerConstraint p = new SamplerConstraint();
 
             if ((strVal = rp.FindValue("min_jaccard_overlap")) != null)
-                p.min_jaccard_overlap = BaseParameter.parseFloat(strVal);
+                p.min_jaccard_overlap = BaseParameter.ParseFloat(strVal);
             if ((strVal = rp.FindValue("max_jaccard_overlap")) != null)
-                p.max_jaccard_overlap = BaseParameter.parseFloat(strVal);
+                p.max_jaccard_overlap = BaseParameter.ParseFloat(strVal);
 
             if ((strVal = rp.FindValue("min_sample_coverage")) != null)
-                p.min_sample_coverage = BaseParameter.parseFloat(strVal);
+                p.min_sample_coverage = BaseParameter.ParseFloat(strVal);
             if ((strVal = rp.FindValue("max_sample_coverage")) != null)
-                p.max_sample_coverage = BaseParameter.parseFloat(strVal);
+                p.max_sample_coverage = BaseParameter.ParseFloat(strVal);
 
             if ((strVal = rp.FindValue("min_object_coverage")) != null)
-                p.min_object_coverage = BaseParameter.parseFloat(strVal);
+                p.min_object_coverage = BaseParameter.ParseFloat(strVal);
             if ((strVal = rp.FindValue("max_object_coverage")) != null)
-                p.max_object_coverage = BaseParameter.parseFloat(strVal);
+                p.max_object_coverage = BaseParameter.ParseFloat(strVal);
 
             return p;
         }

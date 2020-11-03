@@ -307,7 +307,7 @@ namespace MyCaffe.param.ssd
                 p.Active = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("prob")) != null)
-                p.prob = BaseParameter.parseFloat(strVal);
+                p.prob = BaseParameter.ParseFloat(strVal);
 
             if ((strVal = rp.FindValue("resize_mode")) != null)
             {
@@ -368,7 +368,7 @@ namespace MyCaffe.param.ssd
             foreach (RawProto rp1 in col)
             {
                 if ((strVal = rp.FindValue("pad_value")) != null)
-                    p.pad_value.Add(BaseParameter.parseFloat(strVal));
+                    p.pad_value.Add(BaseParameter.ParseFloat(strVal));
             }
 
             p.interp_mode = new List<InterpMode>();

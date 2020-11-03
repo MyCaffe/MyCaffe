@@ -114,13 +114,13 @@ namespace MyCaffe.param
             PowerParameter p = new PowerParameter();
 
             if ((strVal = rp.FindValue("power")) != null)
-                p.power = parseDouble(strVal);
+                p.power = ParseDouble(strVal);
 
             if ((strVal = rp.FindValue("scale")) != null)
-                p.scale = parseDouble(strVal);
+                p.scale = ParseDouble(strVal);
 
             if ((strVal = rp.FindValue("shift")) != null)
-                p.shift = parseDouble(strVal);
+                p.shift = ParseDouble(strVal);
 
             return p;
         }
