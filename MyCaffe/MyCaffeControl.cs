@@ -128,16 +128,6 @@ namespace MyCaffe
         /// <param name="ci">Optionally, specifies the connection information used to connect to the dataset.</param>
         public MyCaffeControl(SettingsCaffe settings, Log log, CancelEvent evtCancel, AutoResetEvent evtSnapshot = null, AutoResetEvent evtForceTest = null, ManualResetEvent evtPause = null, List<int> rgGpuId = null, string strCudaPath = "", bool bCreateCudaDnn = false, ConnectInfo ci = null)
         {
-            // For international versions of Windows, force decimal to '.' instead of ','
-            // for parsing prototxt.
-            if (Thread.CurrentThread.CurrentCulture.NumberFormat.NumberDecimalSeparator != ".")
-            {
-                string strCultureName = Thread.CurrentThread.CurrentCulture.Name;
-                CultureInfo cinfo = new CultureInfo(strCultureName);
-                cinfo.NumberFormat.NumberDecimalSeparator = ".";
-                Thread.CurrentThread.CurrentCulture = cinfo;
-            }
-
             m_dsCi = ci;
             m_guidUser = Guid.NewGuid();
 
