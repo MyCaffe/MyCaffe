@@ -1091,7 +1091,7 @@ namespace MyCaffe.extras
 
             dfLearningRate = 0;
             if ((strVal = proto.FindValue("learning_rate")) != null)
-                dfLearningRate = BaseParameter.parseDouble(strVal);
+                dfLearningRate = BaseParameter.ParseDouble(strVal);
 
             nMaxImageSize = 0;
             if ((strVal = proto.FindValue("max_image_size")) != null)
@@ -1115,11 +1115,11 @@ namespace MyCaffe.extras
 
                 double dfSWt = 0;
                 if ((strVal = styleProto.FindValue("style_wt")) != null)
-                    dfSWt = BaseParameter.parseDouble(strVal);
+                    dfSWt = BaseParameter.ParseDouble(strVal);
 
                 double dfCWt = 0;
                 if ((strVal = styleProto.FindValue("content_wt")) != null)
-                    dfCWt = BaseParameter.parseDouble(strVal);
+                    dfCWt = BaseParameter.ParseDouble(strVal);
 
                 rgLayers.Add(strLayer, new Tuple<double, double>(dfSWt, dfCWt));
             }
@@ -1137,7 +1137,7 @@ namespace MyCaffe.extras
 
             dfDataScale = 1.0;
             if ((strVal = proto.FindValue("data_scale")) != null)
-                dfDataScale = BaseParameter.parseDouble(strVal);
+                dfDataScale = BaseParameter.ParseDouble(strVal);
 
             bAllowHs = false;
             if ((strVal = proto.FindValue("allow_hs")) != null)

@@ -421,7 +421,7 @@ namespace MyCaffe.basecode
                         if (rp == null)
                             return null;
 
-                        return BaseParameter.parseDouble(rp.Value);
+                        return BaseParameter.ParseDouble(rp.Value);
                     }
                 }
             }
@@ -458,7 +458,7 @@ namespace MyCaffe.basecode
                 return null;
 
             double dfVal;
-            if (!double.TryParse(strVal, out dfVal))
+            if (!BaseParameter.TryParse(strVal, out dfVal))
                 return null;
 
             return dfVal;

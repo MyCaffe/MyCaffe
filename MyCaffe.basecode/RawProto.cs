@@ -161,10 +161,10 @@ namespace MyCaffe.basecode
                 return bool.Parse(strVal);
 
             if (t == typeof(double))
-                return BaseParameter.parseDouble(strVal);
+                return BaseParameter.ParseDouble(strVal);
 
             if (t == typeof(float))
-                return BaseParameter.parseFloat(strVal);
+                return BaseParameter.ParseFloat(strVal);
 
             if (t == typeof(long))
                 return long.Parse(strVal);
