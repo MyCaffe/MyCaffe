@@ -104,7 +104,7 @@ namespace MyCaffe.basecode.descriptors
             if (strVal == null)
                 return dfDefault;
 
-            return double.Parse(strVal);
+            return BaseParameter.parseDouble(strVal);
         }
 
         /// <summary>

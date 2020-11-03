@@ -161,7 +161,7 @@ namespace MyCaffe.basecode
                 return bool.Parse(strVal);
 
             if (t == typeof(double))
-                return double.Parse(strVal);
+                return BaseParameter.parseDouble(strVal);
 
             if (t == typeof(float))
                 return float.Parse(strVal);

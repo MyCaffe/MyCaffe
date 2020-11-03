@@ -421,7 +421,7 @@ namespace MyCaffe.basecode
                         if (rp == null)
                             return null;
 
-                        return double.Parse(rp.Value);
+                        return BaseParameter.parseDouble(rp.Value);
                     }
                 }
             }
