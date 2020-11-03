@@ -55,6 +55,7 @@
             this.trainMNISTToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.testMNISTToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.runTestImageToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.saveTestImagesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.abortToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.cancelToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
@@ -75,6 +76,10 @@
             this.imageDBToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.v1ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.v2ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.cultureToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.defaultToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.enUSToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.deDEToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openFileDialogAutoTests = new System.Windows.Forms.OpenFileDialog();
             this.m_bwLoadMnistDatabase = new System.ComponentModel.BackgroundWorker();
             this.m_bwProcess = new System.ComponentModel.BackgroundWorker();
@@ -89,7 +94,6 @@
             this.lblCudaPath = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
             this.m_bwLoadVOCDatabase = new System.ComponentModel.BackgroundWorker();
-            this.saveTestImagesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -102,7 +106,8 @@
             this.testToolStripMenuItem,
             this.helpToolStripMenuItem,
             this.gpuToolStripMenuItem,
-            this.imageDBToolStripMenuItem});
+            this.imageDBToolStripMenuItem,
+            this.cultureToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.Size = new System.Drawing.Size(957, 24);
@@ -305,6 +310,14 @@
             this.runTestImageToolStripMenuItem.Text = "Run Test Image";
             this.runTestImageToolStripMenuItem.Click += new System.EventHandler(this.runTestImageToolStripMenuItem_Click);
             // 
+            // saveTestImagesToolStripMenuItem
+            // 
+            this.saveTestImagesToolStripMenuItem.CheckOnClick = true;
+            this.saveTestImagesToolStripMenuItem.Name = "saveTestImagesToolStripMenuItem";
+            this.saveTestImagesToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
+            this.saveTestImagesToolStripMenuItem.Text = "Save Test Images...";
+            this.saveTestImagesToolStripMenuItem.Click += new System.EventHandler(this.saveTestImagesToolStripMenuItem_Click);
+            // 
             // abortToolStripMenuItem
             // 
             this.abortToolStripMenuItem.Enabled = false;
@@ -457,6 +470,39 @@
             this.v2ToolStripMenuItem.Text = "V2";
             this.v2ToolStripMenuItem.Click += new System.EventHandler(this.menuImgDb_Click);
             // 
+            // cultureToolStripMenuItem
+            // 
+            this.cultureToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.defaultToolStripMenuItem,
+            this.enUSToolStripMenuItem,
+            this.deDEToolStripMenuItem});
+            this.cultureToolStripMenuItem.Name = "cultureToolStripMenuItem";
+            this.cultureToolStripMenuItem.Size = new System.Drawing.Size(58, 20);
+            this.cultureToolStripMenuItem.Text = "Culture";
+            // 
+            // defaultToolStripMenuItem
+            // 
+            this.defaultToolStripMenuItem.Checked = true;
+            this.defaultToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.defaultToolStripMenuItem.Name = "defaultToolStripMenuItem";
+            this.defaultToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.defaultToolStripMenuItem.Text = "Default";
+            this.defaultToolStripMenuItem.Click += new System.EventHandler(this.defaultToolStripMenuItem_Click);
+            // 
+            // enUSToolStripMenuItem
+            // 
+            this.enUSToolStripMenuItem.Name = "enUSToolStripMenuItem";
+            this.enUSToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.enUSToolStripMenuItem.Text = "en-US";
+            this.enUSToolStripMenuItem.Click += new System.EventHandler(this.defaultToolStripMenuItem_Click);
+            // 
+            // deDEToolStripMenuItem
+            // 
+            this.deDEToolStripMenuItem.Name = "deDEToolStripMenuItem";
+            this.deDEToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.deDEToolStripMenuItem.Text = "de-DE";
+            this.deDEToolStripMenuItem.Click += new System.EventHandler(this.defaultToolStripMenuItem_Click);
+            // 
             // openFileDialogAutoTests
             // 
             this.openFileDialogAutoTests.DefaultExt = "dll";
@@ -560,14 +606,6 @@
             this.m_bwLoadVOCDatabase.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.m_bw_ProgressChanged);
             this.m_bwLoadVOCDatabase.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bw_RunWorkerCompleted);
             // 
-            // saveTestImagesToolStripMenuItem
-            // 
-            this.saveTestImagesToolStripMenuItem.CheckOnClick = true;
-            this.saveTestImagesToolStripMenuItem.Name = "saveTestImagesToolStripMenuItem";
-            this.saveTestImagesToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
-            this.saveTestImagesToolStripMenuItem.Text = "Save Test Images...";
-            this.saveTestImagesToolStripMenuItem.Click += new System.EventHandler(this.saveTestImagesToolStripMenuItem_Click);
-            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -654,6 +692,10 @@
         private System.Windows.Forms.ToolStripStatusLabel lblCudaPath;
         private System.Windows.Forms.ToolStripMenuItem usingTripletNETToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem saveTestImagesToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem cultureToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem enUSToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem deDEToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem defaultToolStripMenuItem;
     }
 }
 

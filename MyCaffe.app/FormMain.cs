@@ -424,6 +424,17 @@ namespace MyCaffe.app
             return (IMGDB_VERSION)nChecked;
         }
 
+        private string getCulture()
+        {
+            if (deDEToolStripMenuItem.Checked)
+                return "de-DE";
+
+            if (enUSToolStripMenuItem.Checked)
+                return "en-US";
+
+            return null;
+        }
+
         private void getMajorMinor(string strName, out int nMajor, out int nMinor)
         {
             nMajor = 0;
@@ -578,7 +589,7 @@ namespace MyCaffe.app
             openFileDialogAutoTests.InitialDirectory = initialDirectory;
             if (openFileDialogAutoTests.ShowDialog() == DialogResult.OK)
             {
-                FormAutomatedTests dlg = new FormAutomatedTests(openFileDialogAutoTests.FileName, getGpu(), getImageDbVersion(), m_strDllPath);
+                FormAutomatedTests dlg = new FormAutomatedTests(openFileDialogAutoTests.FileName, getGpu(), getImageDbVersion(), getCulture(), m_strDllPath);
 
                 setStatus("Running automatic tests.");
                 dlg.ShowDialog();
@@ -1200,7 +1211,7 @@ namespace MyCaffe.app
                 startAutotestsToolStripMenuItem.Enabled = false;
                 abortAutotestsToolStripMenuItem.Enabled = true;
                 m_autoTest.Initialize("c:\\temp", EntitiesConnection.GlobalDatabaseConnectInfo.Server);
-                m_autoTest.Run(openFileDialogAutoTests.FileName, false, getGpu(), getImageDbVersion(), m_strDllPath);
+                m_autoTest.Run(openFileDialogAutoTests.FileName, false, getGpu(), getImageDbVersion(), getCulture(), m_strDllPath);
             }
         }
 
@@ -1216,7 +1227,7 @@ namespace MyCaffe.app
                 startAutotestsToolStripMenuItem.Enabled = false;
                 abortAutotestsToolStripMenuItem.Enabled = true;
                 m_autoTest.Initialize("c:\\temp", EntitiesConnection.GlobalDatabaseConnectInfo.Server);
-                m_autoTest.Run(openFileDialogAutoTests.FileName, true, getGpu(), getImageDbVersion(), m_strDllPath);
+                m_autoTest.Run(openFileDialogAutoTests.FileName, true, getGpu(), getImageDbVersion(), getCulture(), m_strDllPath);
             }
         }
 
@@ -1856,6 +1867,15 @@ namespace MyCaffe.app
                     }
                 }
             }
+        }
+
+        private void defaultToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            defaultToolStripMenuItem.Checked = false;
+            enUSToolStripMenuItem.Checked = false;
+            deDEToolStripMenuItem.Checked = false;
+
+            ((ToolStripMenuItem)sender).Checked = true;
         }
     }
 
