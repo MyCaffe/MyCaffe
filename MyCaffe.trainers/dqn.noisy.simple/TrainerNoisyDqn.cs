@@ -1153,7 +1153,7 @@ namespace MyCaffe.trainers.dqn.noisy.simple
 
                 for (int j = 0; j < rgstr.Length; j++)
                 {
-                    rgf.Add(BaseParameter.parseFloat(rgstr[j]));
+                    rgf.Add(BaseParameter.ParseFloat(rgstr[j]));
                 }
 
                 layer.blobs[i].mutable_cpu_data = Utility.ConvertVec<T>(rgf.ToArray());
@@ -1167,7 +1167,7 @@ namespace MyCaffe.trainers.dqn.noisy.simple
 
                 for (int j = 0; j < rgstr.Length; j++)
                 {
-                    rgf.Add(BaseParameter.parseFloat(rgstr[j]));
+                    rgf.Add(BaseParameter.ParseFloat(rgstr[j]));
                 }
 
                 layer.internal_blobs[i].mutable_cpu_data = Utility.ConvertVec<T>(rgf.ToArray());
