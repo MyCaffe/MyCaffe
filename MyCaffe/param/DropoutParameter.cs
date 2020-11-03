@@ -146,7 +146,7 @@ namespace MyCaffe.param
             ((EngineParameter)p).Copy(EngineParameter.FromProto(rp));
 
             if ((strVal = rp.FindValue("dropout_ratio")) != null)
-                p.dropout_ratio = double.Parse(strVal);
+                p.dropout_ratio = parseDouble(strVal);
 
             if ((strVal = rp.FindValue("seed")) != null)
                 p.seed = long.Parse(strVal);

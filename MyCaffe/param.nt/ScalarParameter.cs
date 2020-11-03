@@ -134,7 +134,7 @@ namespace MyCaffe.param.nt
             ScalarParameter p = new ScalarParameter();
 
             if ((strVal = rp.FindValue("value")) != null)
-                p.value = double.Parse(strVal);
+                p.value = parseDouble(strVal);
 
             if ((strVal = rp.FindValue("operation")) != null)
             {

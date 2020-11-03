@@ -1064,7 +1064,7 @@ namespace MyCaffe.param
                 p.test_initialization = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("base_lr")) != null)
-                p.base_lr = double.Parse(strVal);
+                p.base_lr = parseDouble(strVal);
 
             if ((strVal = rp.FindValue("display")) != null)
                 p.display = int.Parse(strVal);
@@ -1082,16 +1082,16 @@ namespace MyCaffe.param
                 p.lr_policy = strVal;
 
             if ((strVal = rp.FindValue("gamma")) != null)
-                p.gamma = double.Parse(strVal);
+                p.gamma = parseDouble(strVal);
 
             if ((strVal = rp.FindValue("power")) != null)
-                p.power = double.Parse(strVal);
+                p.power = parseDouble(strVal);
 
             if ((strVal = rp.FindValue("momentum")) != null)
-                p.momentum = double.Parse(strVal);
+                p.momentum = parseDouble(strVal);
 
             if ((strVal = rp.FindValue("weight_decay")) != null)
-                p.weight_decay = double.Parse(strVal);
+                p.weight_decay = parseDouble(strVal);
 
             if ((strVal = rp.FindValue("regularization_type")) != null)
                 p.regularization_type = strVal;
@@ -1102,7 +1102,7 @@ namespace MyCaffe.param
             p.stepvalue = rp.FindArray<int>("stepvalue");
 
             if ((strVal = rp.FindValue("clip_gradients")) != null)
-                p.clip_gradients = double.Parse(strVal);
+                p.clip_gradients = parseDouble(strVal);
 
             if ((strVal = rp.FindValue("snapshot")) != null)
                 p.snapshot = int.Parse(strVal);
@@ -1176,13 +1176,13 @@ namespace MyCaffe.param
             }
 
             if ((strVal = rp.FindValue("delta")) != null)
-                p.delta = double.Parse(strVal);
+                p.delta = parseDouble(strVal);
 
             if ((strVal = rp.FindValue("momentum2")) != null)
-                p.momentum2 = double.Parse(strVal);
+                p.momentum2 = parseDouble(strVal);
 
             if ((strVal = rp.FindValue("rms_decay")) != null)
-                p.rms_decay = double.Parse(strVal);
+                p.rms_decay = parseDouble(strVal);
 
             if ((strVal = rp.FindValue("debug_info")) != null)
                 p.debug_info = bool.Parse(strVal);

@@ -177,7 +177,7 @@ namespace MyCaffe.param
                 p.axis = int.Parse(strVal);
 
             if ((strVal = rp.FindValue("coeff")) != null)
-                p.coeff = double.Parse(strVal);
+                p.coeff = parseDouble(strVal);
 
             return p;
         }

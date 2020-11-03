@@ -150,10 +150,10 @@ namespace MyCaffe.param.nt
                 p.axis = int.Parse(strVal);
 
             if ((strVal = rp.FindValue("alpha")) != null)
-                p.alpha = double.Parse(strVal);
+                p.alpha = parseDouble(strVal);
 
             if ((strVal = rp.FindValue("beta")) != null)
-                p.beta = double.Parse(strVal);
+                p.beta = parseDouble(strVal);
 
             if ((strVal = rp.FindValue("disable_scaling_on_gradient")) != null)
                 p.disable_scaling_on_gradient = bool.Parse(strVal);

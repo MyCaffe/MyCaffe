@@ -189,10 +189,10 @@ namespace MyCaffe.param
                 p.local_size = uint.Parse(strVal);
 
             if ((strVal = rp.FindValue("alpha")) != null)
-                p.alpha = double.Parse(strVal);
+                p.alpha = parseDouble(strVal);
 
             if ((strVal = rp.FindValue("beta")) != null)
-                p.beta = double.Parse(strVal);
+                p.beta = parseDouble(strVal);
 
             if ((strVal = rp.FindValue("norm_region")) != null)
             {
@@ -212,7 +212,7 @@ namespace MyCaffe.param
             }
 
             if ((strVal = rp.FindValue("k")) != null)
-                p.k = double.Parse(strVal);
+                p.k = parseDouble(strVal);
 
             return p;
         }

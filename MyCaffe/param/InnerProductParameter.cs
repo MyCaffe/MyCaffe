@@ -246,7 +246,7 @@ namespace MyCaffe.param
                 p.enable_noise = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("sigma_init")) != null)
-                p.sigma_init = double.Parse(strVal);
+                p.sigma_init = parseDouble(strVal);
 
             return p;
         }

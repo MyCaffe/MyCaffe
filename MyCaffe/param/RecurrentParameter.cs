@@ -265,7 +265,7 @@ namespace MyCaffe.param
                 p.expose_hidden = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("dropout_ratio")) != null)
-                p.dropout_ratio = double.Parse(strVal);
+                p.dropout_ratio = parseDouble(strVal);
 
             if ((strVal = rp.FindValue("dropout_seed")) != null)
                 p.dropout_seed = long.Parse(strVal);

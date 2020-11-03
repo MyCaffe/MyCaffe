@@ -346,19 +346,19 @@ namespace MyCaffe.param
             FillerParameter p = new FillerParameter(strVal);
 
             if ((strVal = rp.FindValue("value")) != null)
-                p.value = double.Parse(strVal);
+                p.value = parseDouble(strVal);
 
             if ((strVal = rp.FindValue("min")) != null)
-                p.min = double.Parse(strVal);
+                p.min = parseDouble(strVal);
 
             if ((strVal = rp.FindValue("max")) != null)
-                p.max = double.Parse(strVal);
+                p.max = parseDouble(strVal);
 
             if ((strVal = rp.FindValue("mean")) != null)
-                p.mean = double.Parse(strVal);
+                p.mean = parseDouble(strVal);
 
             if ((strVal = rp.FindValue("std")) != null)
-                p.std = double.Parse(strVal);
+                p.std = parseDouble(strVal);
 
             if ((strVal = rp.FindValue("sparse")) != null)
                 p.sparse = int.Parse(strVal);

@@ -121,13 +121,13 @@ namespace MyCaffe.param
             LogParameter p = new LogParameter();
 
             if ((strVal = rp.FindValue("base")) != null)
-                p.base_val = double.Parse(strVal);
+                p.base_val = parseDouble(strVal);
 
             if ((strVal = rp.FindValue("scale")) != null)
-                p.scale = double.Parse(strVal);
+                p.scale = parseDouble(strVal);
 
             if ((strVal = rp.FindValue("shift")) != null)
-                p.shift = double.Parse(strVal);
+                p.shift = parseDouble(strVal);
 
             return p;
         }
