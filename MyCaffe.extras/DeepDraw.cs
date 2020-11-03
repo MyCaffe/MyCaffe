@@ -504,7 +504,7 @@ namespace MyCaffe.extras
 
             dfOutputDetailPct = 0.25;
             if ((strVal = proto.FindValue("output_detail_pct")) != null)
-                dfOutputDetailPct = double.Parse(strVal);
+                dfOutputDetailPct = BaseParameter.parseDouble(strVal);
 
             strSrcBlobName = "data";
             if ((strVal = proto.FindValue("src_blob_name")) != null)
@@ -512,7 +512,7 @@ namespace MyCaffe.extras
 
             dfRandomImageScale = 16;
             if ((strVal = proto.FindValue("random_image_scale")) != null)
-                dfRandomImageScale = double.Parse(strVal);
+                dfRandomImageScale = BaseParameter.parseDouble(strVal);
 
             OctavesCollection col = new OctavesCollection();
             RawProtoCollection rpcol = proto.FindChildren("octave");
@@ -712,19 +712,19 @@ namespace MyCaffe.extras
 
             double dfSigmaStart = 0;
             if ((strVal = rp.FindValue("sigma_start")) != null)
-                dfSigmaStart = double.Parse(strVal);
+                dfSigmaStart = BaseParameter.parseDouble(strVal);
 
             double dfSigmaEnd = 0;
             if ((strVal = rp.FindValue("sigma_end")) != null)
-                dfSigmaEnd = double.Parse(strVal);
+                dfSigmaEnd = BaseParameter.parseDouble(strVal);
 
             double dfStepStart = 1.5;
             if ((strVal = rp.FindValue("step_start")) != null)
-                dfStepStart = double.Parse(strVal);
+                dfStepStart = BaseParameter.parseDouble(strVal);
 
             double dfStepEnd = 1.5;
             if ((strVal = rp.FindValue("step_end")) != null)
-                dfStepEnd = double.Parse(strVal);
+                dfStepEnd = BaseParameter.parseDouble(strVal);
 
             bool bSave = false;
             if ((strVal = rp.FindValue("save")) != null)
@@ -732,7 +732,7 @@ namespace MyCaffe.extras
 
             double dfPctOfDetail = .25;
             if ((strVal = rp.FindValue("pct_of_prev_detail")) != null)
-                dfPctOfDetail = double.Parse(strVal);
+                dfPctOfDetail = BaseParameter.parseDouble(strVal);
 
             return new Octaves(strLayer, nIterations, dfSigmaStart, dfSigmaEnd, dfStepStart, dfStepEnd, bSave, dfPctOfDetail);
         }
