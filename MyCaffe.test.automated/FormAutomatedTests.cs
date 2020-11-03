@@ -13,12 +13,14 @@ namespace MyCaffe.test.automated
     public partial class FormAutomatedTests : Form
     {
         string m_strPath;
+        string m_strCulture;
         int m_nGpuID = 0;
         IMGDB_VERSION m_imgDbVer = IMGDB_VERSION.DEFAULT;
         string m_strCudaPath = "";
 
-        public FormAutomatedTests(string strPath, int nGpuID, IMGDB_VERSION imgDbVer, string strCudaPath)
+        public FormAutomatedTests(string strPath, int nGpuID, IMGDB_VERSION imgDbVer, string strCulture, string strCudaPath)
         {
+            m_strCulture = strCulture;
             m_strPath = strPath;
             m_nGpuID = nGpuID;
             m_imgDbVer = imgDbVer;
@@ -32,6 +34,7 @@ namespace MyCaffe.test.automated
             automatedTester1.GpuId = m_nGpuID;
             automatedTester1.ImageDbVersion = m_imgDbVer;
             automatedTester1.CudaPath = m_strCudaPath;
+            automatedTester1.Culture = m_strCulture;
             automatedTester1.LoadFromDatabase();
             Text = "Automated Tests [" + automatedTester1.TestName + "]";
         }

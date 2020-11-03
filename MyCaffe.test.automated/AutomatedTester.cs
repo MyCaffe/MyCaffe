@@ -30,6 +30,7 @@ namespace MyCaffe.test.automated
         int m_nGpuId = 0;
         IMGDB_VERSION m_imgDbVer = IMGDB_VERSION.DEFAULT;
         string m_strCudaPath = "";
+        string m_strCulture = "en-US";
         bool m_bSkip = false;
 
         enum COLIDX
@@ -273,6 +274,12 @@ namespace MyCaffe.test.automated
             set { m_strCudaPath = value; }
         }
 
+        public string Culture
+        {
+            get { return m_strCulture; }
+            set { m_strCulture = value; }
+        }
+
         private void btnShowAll_Click(object sender, EventArgs e)
         {
             btnShowFailures.Checked = false;
@@ -343,7 +350,7 @@ namespace MyCaffe.test.automated
                 Properties.Settings.Default.Save();
             }
 
-            m_rgTestClasses.Run(m_evtCancel, m_bSkip, false, m_nGpuId, m_imgDbVer, m_strCudaPath);
+            m_rgTestClasses.Run(m_evtCancel, m_bSkip, false, m_nGpuId, m_imgDbVer, m_strCudaPath, m_strCulture);
             m_bSkip = false;
         }
 
@@ -700,20 +707,21 @@ namespace MyCaffe.test.automated
             return rgstr.ToArray();
         }
 
-        public void Run(AutoResetEvent evtCancel, bool bSkip, bool bServerMode = false, int nGpuId = 0, IMGDB_VERSION nImgDbVer = IMGDB_VERSION.DEFAULT, string strCudaPath = "")
+        public void Run(AutoResetEvent evtCancel, bool bSkip, bool bServerMode = false, int nGpuId = 0, IMGDB_VERSION nImgDbVer = IMGDB_VERSION.DEFAULT, string strCudaPath = "", string strCulture = "en-US")
         {
-            m_testTask = Task.Factory.StartNew(new Action<object>(testThread), new Tuple<AutoResetEvent, bool, bool, int, int, string>(evtCancel, bSkip, bServerMode, nGpuId, (int)nImgDbVer, strCudaPath), TaskCreationOptions.LongRunning);
+            m_testTask = Task.Factory.StartNew(new Action<object>(testThread), new Tuple<AutoResetEvent, bool, bool, int, int, string, string>(evtCancel, bSkip, bServerMode, nGpuId, (int)nImgDbVer, strCudaPath, strCulture), TaskCreationOptions.LongRunning);
         }
 
         private void testThread(object obj)
         {
-            Tuple<AutoResetEvent, bool, bool, int, int, string> param = obj as Tuple<AutoResetEvent, bool, bool, int, int, string>;
+            Tuple<AutoResetEvent, bool, bool, int, int, string, string> param = obj as Tuple<AutoResetEvent, bool, bool, int, int, string, string>;
             AutoResetEvent evtCancel = param.Item1;
             bool bSkip = param.Item2;
             bool bServerMode = param.Item3;
             int nGpuId = param.Item4;
             int nImgDbVer = param.Item5;
             string strCudaPath = param.Item6;
+            string strCulture = param.Item7;
             TestClass tcCurrent = null;
             MethodInfoEx miCurrent = null;
 
@@ -773,7 +781,7 @@ namespace MyCaffe.test.automated
                         {
                             eventLogStart.WriteEntry("Starting " + tcCurrent.Name + "::" + miCurrent.Name + " test.");
 
-                            miCurrent.Invoke(tcCurrent.Instance, nGpuId, nImgDbVer, strCudaPath);
+                            miCurrent.Invoke(tcCurrent.Instance, nGpuId, nImgDbVer, strCudaPath, strCulture);
 
                             if (miCurrent.Status == MethodInfoEx.STATUS.Failed)
                                 eventLogResult.WriteEntry("ERROR " + tcCurrent.Name + "::" + miCurrent.Name + " test - " + miCurrent.Status.ToString() + " Error Information: " + miCurrent.ErrorInfo.FullErrorString, EventLogEntryType.Warning);
@@ -1420,9 +1428,9 @@ namespace MyCaffe.test.automated
             get { return m_dfProgress; }
         }
 
-        public void Invoke(object instance, int nGpuId, int nImgDbVer, string strCudaPath)
+        public void Invoke(object instance, int nGpuId, int nImgDbVer, string strCudaPath, string strCulture)
         {
-            m_taskTest = Task.Factory.StartNew(new Action<object>(invoke), new Tuple<object, int, int, string>(instance, nGpuId, nImgDbVer, strCudaPath));
+            m_taskTest = Task.Factory.StartNew(new Action<object>(invoke), new Tuple<object, int, int, string, string>(instance, nGpuId, nImgDbVer, strCudaPath, strCulture));
             m_taskTest.Wait();
         }
 
@@ -1439,11 +1447,12 @@ namespace MyCaffe.test.automated
         public void invoke(object obj)
         {
             m_taskStatus = Task.Factory.StartNew(new Action(status));
-            Tuple<object, int, int, string> arg = obj as Tuple<object, int, int, string>;
+            Tuple<object, int, int, string, string> arg = obj as Tuple<object, int, int, string, string>;
             object instance = arg.Item1;
             int nGpuId = arg.Item2;
             int nImgDbVer = arg.Item3;
             string strCudaPath = arg.Item4;
+            string strCulture = arg.Item5;
 
             try
             {
@@ -1467,6 +1476,13 @@ namespace MyCaffe.test.automated
 
                 if (ldsp != null)
                     Thread.SetData(ldsp, strCudaPath);
+
+                LocalDataStoreSlot ldsc = Thread.GetNamedDataSlot("CULTURE");
+                if (ldsc == null)
+                    ldsc = Thread.AllocateNamedDataSlot("CULTURE");
+
+                if (ldsc != null)
+                    Thread.SetData(ldsc, strCulture);
 
                 m_swTiming.Reset();
                 m_swTiming.Start();
@@ -1497,6 +1513,7 @@ namespace MyCaffe.test.automated
                 Thread.FreeNamedDataSlot("GPUID");
                 Thread.FreeNamedDataSlot("IMGDBVER");
                 Thread.FreeNamedDataSlot("CUDAPATH");
+                Thread.FreeNamedDataSlot("CULTURE");
             }
         }
 
