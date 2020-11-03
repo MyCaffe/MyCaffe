@@ -3022,7 +3022,7 @@ namespace MyCaffe.db.image
             if (str == null)
                 return dfDefault;
 
-            return double.Parse(str);
+            return BaseParameter.parseDouble(str);
         }
 
         /// <summary>
@@ -3860,7 +3860,7 @@ namespace MyCaffe.db.image
             if (strVal == null)
                 return dfDefault;
 
-            return double.Parse(strVal);
+            return BaseParameter.parseDouble(strVal);
         }
 
         /// <summary>
@@ -4523,7 +4523,7 @@ namespace MyCaffe.db.image
             if (strVal == null)
                 return dfDefault;
 
-            return double.Parse(strVal);
+            return BaseParameter.parseDouble(strVal);
         }
 
         /// <summary>
