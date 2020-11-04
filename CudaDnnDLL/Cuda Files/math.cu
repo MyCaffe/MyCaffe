@@ -9236,10 +9236,6 @@ __global__ void gather_bwd_kernel(int n, const T* x, T* y, const int nDim, const
 			const T fVal = x[nSrcOffset + j];
 			const int nOffset = nDstOffset + j;
 			y[nOffset] = fVal;
-
-			const int t = 4 * 2;
-			int v = t + 2;	
-			nBatch += v;
 		}
 	}
 }
