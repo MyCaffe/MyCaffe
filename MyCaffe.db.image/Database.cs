@@ -2844,6 +2844,70 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Activate all raw images associated with a set of source ID's.
+        /// </summary>
+        /// <param name="bActive">Specifies whether or not to activate the images.</param>
+        /// <param name="bAnnotatedOnly">Specifies to activate annotated images only.</param>
+        /// <param name="nTgtLabel">If not null, specifies the target label.</param>
+        /// <param name="bTargetLabelExact">Specifies that the exact nTgtLabel value should be used, otherwise the nTgtLabel value or greater is used.</param>
+        /// <param name="nTgtBoost">If not null, specifies the target boost.</param>
+        /// <param name="bTargetBoostExact">Specifies that the exact nTgtBoost value should be used, otherwise the nTgtBoost value or greater is used.</param>
+        /// <param name="rgSrcId">Specifies the source ID's.</param>
+        public void ActivateAllRawImages(bool bActive, bool bAnnotatedOnly, int? nTgtLabel, bool bTargetLabelExact, int? nTgtBoost, bool bTargetBoostExact, params int[] rgSrcId)
+        {
+            if (rgSrcId.Length == 0)
+                throw new Exception("You must specify at least one source iD.");
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                string strActive = (bActive) ? "1" : "0";
+                string strCmd = "UPDATE RawImages SET [Active] = " + strActive + "  WHERE (";
+
+                for (int i = 0; i < rgSrcId.Length; i++)
+                {
+                    strCmd += "SourceID = " + rgSrcId[i].ToString();
+
+                    if (i < rgSrcId.Length - 1)
+                        strCmd += " OR ";
+                }
+
+                strCmd += ")";
+
+                if (bAnnotatedOnly)
+                {
+                    strCmd += " AND ([DataCriteriaFormatID] = 9)";
+                    strCmd += " AND (Convert(varbinary(8), [DataCriteria]) != 0x00000000)";
+                }
+
+                if (nTgtLabel.HasValue)
+                {
+                    strCmd += " AND ([ActiveLabel] ";
+
+                    if (bTargetLabelExact)
+                        strCmd += "=";
+                    else
+                        strCmd += ">=";
+
+                    strCmd += nTgtLabel.Value.ToString() + ")";
+                }
+
+                if (nTgtBoost.HasValue)
+                {
+                    strCmd += " AND ([ActiveBoost] ";
+
+                    if (bTargetBoostExact)
+                        strCmd += "=";
+                    else
+                        strCmd += ">=";
+
+                    strCmd += nTgtBoost.Value.ToString() + ")";
+                }
+
+                entities.Database.ExecuteSqlCommand(strCmd);
+            }
+        }
+
+        /// <summary>
         /// Update the annotations of a given raw image.
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>

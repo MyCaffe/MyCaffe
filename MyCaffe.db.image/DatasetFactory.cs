@@ -895,6 +895,21 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Activate all raw images associated with a set of source ID's.
+        /// </summary>
+        /// <param name="bActive">Specifies whether or not to activate the images.</param>
+        /// <param name="bAnnotatedOnly">Specifies to activate annotated images only.</param>
+        /// <param name="nTgtLabel">If not null, specifies the target label.</param>
+        /// <param name="bTargetLabelExact">Specifies that the exact nTgtLabel value should be used, otherwise the nTgtLabel value or greater is used.</param>
+        /// <param name="nTgtBoost">If not null, specifies the target boost.</param>
+        /// <param name="bTargetBoostExact">Specifies that the exact nTgtBoost value should be used, otherwise the nTgtBoost value or greater is used.</param>
+        /// <param name="rgSrcId">Specifies the source ID's.</param>
+        public void ActivateAllRawImages(bool bActive, bool bAnnotatedOnly, int? nTgtLabel, bool bTargetLabelExact, int? nTgtBoost, bool bTargetBoostExact, params int[] rgSrcId)
+        {
+            m_db.ActivateAllRawImages(bActive, bAnnotatedOnly, nTgtLabel, bTargetLabelExact, nTgtBoost, bTargetBoostExact, rgSrcId);
+        }
+
+        /// <summary>
         /// The FixupRawImageCopy function is used to fix errors in the copy source ID of a copied
         /// raw image.  For original images, this function does nothing.
         /// </summary>
