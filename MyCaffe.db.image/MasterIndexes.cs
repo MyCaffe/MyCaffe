@@ -475,6 +475,17 @@ namespace MyCaffe.db.image
                 lock (m_objSync)
                 {
                     int nIdxLoc = 0;
+
+                    // Reload on the fly if empty.
+                    if (m_rgIdx.Count == 0)
+                    {
+                        for (int i = 0; i < m_rgLabels.Length; i++)
+                        {
+                            if (m_rgLabels[i].Count > 0)
+                                m_rgIdx.Add(i);
+                        }
+                    }
+
                     int nIdx = m_rgIdx[nIdxLoc];
 
                     if (m_rgIdx.Count > 1)
