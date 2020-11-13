@@ -153,6 +153,7 @@ namespace MyCaffe.db.image
                     if (idx == null)
                     {
                         SetIndex(m_master.GetIndex(nLabel, bBoosted).Clone(), nLabel, bBoosted);
+                        idx = GetIndex(nLabel, bBoosted);
                         nIdx = idx.GetNext(type, m_bUseUniqueImageIndexes);
                     }
                     else
