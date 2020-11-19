@@ -217,14 +217,14 @@
             this.startToolStripMenuItem.Name = "startToolStripMenuItem";
             this.startToolStripMenuItem.Size = new System.Drawing.Size(155, 22);
             this.startToolStripMenuItem.Text = "Start";
-            this.startToolStripMenuItem.Click += new System.EventHandler(this.startToolStripMenuItem_Click);
+            this.startToolStripMenuItem.Click += new System.EventHandler(this.startServerAutoTestToolStripMenuItem_Click);
             // 
             // startWithResetToolStripMenuItem
             // 
             this.startWithResetToolStripMenuItem.Name = "startWithResetToolStripMenuItem";
             this.startWithResetToolStripMenuItem.Size = new System.Drawing.Size(155, 22);
             this.startWithResetToolStripMenuItem.Text = "Start with Reset";
-            this.startWithResetToolStripMenuItem.Click += new System.EventHandler(this.startWithResetToolStripMenuItem_Click);
+            this.startWithResetToolStripMenuItem.Click += new System.EventHandler(this.startServerAutoTestWithResetToolStripMenuItem_Click);
             // 
             // abortAutotestsToolStripMenuItem
             // 

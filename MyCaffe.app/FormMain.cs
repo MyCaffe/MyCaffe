@@ -548,16 +548,17 @@ namespace MyCaffe.app
             }
         }
 
-        private void runAutotestsToolStripMenuItem_Click(object sender, EventArgs e)
+        private bool verifyDatabase()
         {
             TestDatabaseManager dbMgrTest = new TestDatabaseManager(EntitiesConnection.GlobalDatabaseConnectInfo.Server);
+
             bool bExists;
             Exception err = dbMgrTest.DatabaseExists(out bExists);
 
             if (err != null)
             {
                 setStatus("ERROR Querying Testing Database! " + err.Message);
-                return;
+                return false;
             }
 
             if (!bExists)
@@ -565,13 +566,13 @@ namespace MyCaffe.app
                 FormCreateDatabase dlg = new FormCreateDatabase(dbMgrTest.DatabaseName, "You must create the 'Testing' Database first");
 
                 if (dlg.ShowDialog() != DialogResult.OK)
-                    return;
+                    return false;
 
                 err = dbMgrTest.CreateDatabase(dlg.DatabasePath);
                 if (err != null)
                 {
                     setStatus("ERROR Creating Testing Database! " + err.Message);
-                    return;
+                    return false;
                 }
 
                 setStatus("Testing database created.");
@@ -582,9 +583,17 @@ namespace MyCaffe.app
                 if (err != null)
                 {
                     setStatus("ERROR Updating Testing Database! " + err.Message);
-                    return;
+                    return false;
                 }
             }
+
+            return true;
+        }
+
+        private void runAutotestsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!verifyDatabase())
+                return;
 
             openFileDialogAutoTests.InitialDirectory = initialDirectory;
             if (openFileDialogAutoTests.ShowDialog() == DialogResult.OK)
@@ -1202,8 +1211,11 @@ namespace MyCaffe.app
 
         #region Server Based Autotesting
 
-        private void startToolStripMenuItem_Click(object sender, EventArgs e)
+        private void startServerAutoTestToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            if (!verifyDatabase())
+                return;
+
             openFileDialogAutoTests.InitialDirectory = initialDirectory;
             if (openFileDialogAutoTests.ShowDialog() == DialogResult.OK)
             {
@@ -1215,8 +1227,11 @@ namespace MyCaffe.app
             }
         }
 
-        private void startWithResetToolStripMenuItem_Click(object sender, EventArgs e)
+        private void startServerAutoTestWithResetToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            if (!verifyDatabase())
+                return;
+
             openFileDialogAutoTests.InitialDirectory = initialDirectory;
             if (openFileDialogAutoTests.ShowDialog() == DialogResult.OK)
             {
