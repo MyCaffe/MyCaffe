@@ -44,6 +44,7 @@ namespace MyCaffe.db.image
         Dictionary<int, string> m_rgSecondarySourcePath = new Dictionary<int, string>();
         object m_objRawImgSync = new object();
         Dictionary<string, string> m_rgstrDatabaseFilePath = new Dictionary<string, string>();
+        object m_objRemoteSync = new object();
 
         /// <summary>
         /// Defines the force load type.
@@ -1301,7 +1302,10 @@ namespace MyCaffe.db.image
             if (!String.IsNullOrEmpty(strDescription))
                 strCmd += " AND (Description = " + strDescription + ")";
 
-            return m_entities.Database.SqlQuery<RawImage>(strCmd).ToList();
+            lock (m_objRemoteSync)
+            {
+                return m_entities.Database.SqlQuery<RawImage>(strCmd).ToList();
+            }
         }
 
         /// <summary>
@@ -1588,7 +1592,11 @@ namespace MyCaffe.db.image
 
             string strCmd = "EXEC [dbo].[GetRawData] @strInfo = N'" + strInfo + "'";
             DbRawSqlQuery<byte[]> qry = entities.Database.SqlQuery<byte[]>(strCmd);
-            return qry.Single();
+
+            lock (m_objRemoteSync)
+            {
+                return qry.Single();
+            }
         }
 
         /// <summary>
