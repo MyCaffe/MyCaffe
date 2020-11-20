@@ -1759,6 +1759,8 @@ namespace MyCaffe.basecode
             if (colLayers.Count == 0)
                 colLayers = proto.FindChildren("layers");
 
+            RawProtoCollection colIP = new RawProtoCollection();
+
             foreach (RawProto protoChild in colLayers)
             {
                 RawProto type = protoChild.FindChild("type");
@@ -1829,8 +1831,15 @@ namespace MyCaffe.basecode
                 }
                 else if (strType.Contains("loss"))
                 {
-                    if (protoLast != null && (strTypeLast == "inner_product" || strTypeLast == "innerproduct"))
-                        rgLastIp.Add(protoLast);
+                    if (colIP.Count > 0)
+                    {
+                        rgLastIp.Add(colIP[0]);
+                        colIP.Clear();
+                    }
+                }
+                else if (strType == "inner_product" || strType == "innerproduct")
+                {
+                    colIP.Insert(0, protoChild);
                 }
 
                 protoLast = protoChild;
