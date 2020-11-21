@@ -51,8 +51,8 @@
     <Reference Include="Google.Protobuf, Version=3.12.1.0, Culture=neutral, PublicKeyToken=a7d26565bac4d604, processorArchitecture=MSIL">
       <HintPath>..\packages\Google.Protobuf.3.12.1\lib\net45\Google.Protobuf.dll</HintPath>
     </Reference>
-    <Reference Include="OnnxControl, Version=0.11.1.62, Culture=neutral, PublicKeyToken=8c813ab21bbfb2ac, processorArchitecture=MSIL">
-      <HintPath>..\packages\OnnxControl.0.11.1.62-beta1\lib\net40\OnnxControl.dll</HintPath>
+    <Reference Include="OnnxControl, Version=0.11.1.132, Culture=neutral, PublicKeyToken=8c813ab21bbfb2ac, processorArchitecture=MSIL">
+      <HintPath>..\packages\OnnxControl.0.11.1.132-beta1\lib\net40\OnnxControl.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
