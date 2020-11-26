@@ -153,6 +153,24 @@ namespace MyCaffe.test
             }
         }
 
+        [TestMethod]
+        public void TestImportOnnxEfficientNetForTrain()
+        {
+            PersistOnnxTest test = new PersistOnnxTest();
+
+            try
+            {
+                foreach (IPersistOnnxTest t in test.Tests)
+                {
+                    t.TestImportOnnxEfficientNetModel("CIFAR-10");
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
 
         [TestMethod]
         public void TestImportOnnxAlexNetForRun()
@@ -344,6 +362,7 @@ namespace MyCaffe.test
         void TestConvertOnnxToLeNet();
         void TestImportOnnxLetNet(string strTrainingDs = null, int nVersion = 8);
         void TestImportOnnxSSDModel(string strTrainingDs = null);
+        void TestImportOnnxEfficientNetModel(string strTrainingDs = null);
         void TestImportOnnxAlexNet(string strTrainingDs = null);
         void TestImportOnnxGoogNet(string strTrainingDs = null);
         void TestImportOnnxVGG19(string strTrainingDs = null);
@@ -776,6 +795,53 @@ namespace MyCaffe.test
                 Trace.WriteLine(convert.ReportString);
 
                 data.Save(strTestPath, "LeNet" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                cuda.Dispose();
+                convert.Dispose();
+            }
+        }
+
+
+        private string downloadOnnxEfficientNetModel()
+        {
+            // Download a small onnx model from https://github.com/onnx (dowload is 76.6mb)
+            double dfSizeInMb = 51.9;
+            string strModel = "efficientnet-lite4-11.onnx";
+            string strUrl = "https://github.com/onnx/models/raw/master/vision/classification/efficientnet-lite4/model/" + strModel;
+            return download(strModel, strUrl, dfSizeInMb);
+        }
+
+        public void TestImportOnnxEfficientNetModel(string strTrainingDs)
+        {
+            string strTestPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\onnx\\imported\\cifar10";
+            if (!Directory.Exists(strTestPath))
+                Directory.CreateDirectory(strTestPath);
+
+            string strOnnxFile = downloadOnnxEfficientNetModel();
+            MyCaffeConversionControl<T> convert = new MyCaffeConversionControl<T>();
+
+            DatasetDescriptor dsTraining = null;
+            if (strTrainingDs != null)
+            {
+                DatasetFactory factory = new DatasetFactory();
+                dsTraining = factory.LoadDataset(strTrainingDs);
+            }
+
+            CudaDnn<T> cuda = null;
+
+            try
+            {
+                cuda = new CudaDnn<T>(0);
+                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
+                Trace.WriteLine(convert.ReportString);
+
+                data.Save(strTestPath, "EfficientNetLite" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
             }
             catch (Exception excpt)
             {
