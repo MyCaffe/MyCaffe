@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,7 +10,7 @@ namespace MyCaffe.basecode
     /// <summary>
     /// Specifies a key-value pair of properties.
     /// </summary>
-    public class PropertySet
+    public class PropertySet : IEnumerable<KeyValuePair<string, string>>
     {
         Dictionary<string, string> m_rgProperties;
 
@@ -63,6 +64,19 @@ namespace MyCaffe.basecode
             }
 
             return m_rgProperties[strName];
+        }
+
+        /// <summary>
+        /// Sets a property in the property set to a value if it exists, otherwise it adds the new property.
+        /// </summary>
+        /// <param name="strName">Specifies the property name.</param>
+        /// <param name="strVal">Specifies the new property value.</param>
+        public void SetProperty(string strName, string strVal)
+        {
+            if (!m_rgProperties.ContainsKey(strName))
+                m_rgProperties.Add(strName, strVal);
+            else
+                m_rgProperties[strName] = strVal;
         }
 
         /// <summary>
@@ -156,6 +170,24 @@ namespace MyCaffe.basecode
             }
 
             return str;
+        }
+
+        /// <summary>
+        /// Returns an enumerator of the key/value pairs.
+        /// </summary>
+        /// <returns>The key/value pair enumerator is returned.</returns>
+        public IEnumerator<KeyValuePair<string, string>> GetEnumerator()
+        {
+            return m_rgProperties.GetEnumerator();
+        }
+
+        /// <summary>
+        /// Returns an enumerator of the key/value pairs.
+        /// </summary>
+        /// <returns>The key/value pair enumerator is returned.</returns>
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return m_rgProperties.GetEnumerator();
         }
     }
 }
