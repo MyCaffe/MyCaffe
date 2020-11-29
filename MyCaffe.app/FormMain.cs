@@ -306,7 +306,7 @@ namespace MyCaffe.app
             if (File.Exists(strFile))
                 rgPaths.Add("CUDA 10.2", strFile);
 
-            strFile = AssemblyDirectory + "\\cuda_10.2\\CudaDnnDll.10.2.3_5.dll";
+            strFile = AssemblyDirectory + "\\cuda_10.2.3_5\\CudaDnnDll.10.2.dll";
             if (File.Exists(strFile))
                 rgPaths.Add("CUDA 10.2 sm 3.5", strFile);
 
