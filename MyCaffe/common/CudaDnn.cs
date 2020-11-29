@@ -1397,7 +1397,7 @@ namespace MyCaffe.common
                                 strPath = fi.DirectoryName + "\\CudaDnnDll.10.2.dll";
                                 if (!File.Exists(strPath))
                                 {
-                                    strPath = fi.DirectoryName + "\\cuda_10.2\\CudaDnnDll.10.2.3_5.dll";
+                                    strPath = fi.DirectoryName + "\\cuda_10.2.3_5\\CudaDnnDll.10.2.dll";
                                     if (!File.Exists(strPath))
                                     {
                                         strPath = fi.DirectoryName + "\\CudaDnnDll.10.2.3_5.dll";
