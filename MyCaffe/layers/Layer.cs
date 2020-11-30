@@ -1293,9 +1293,6 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.FLATTEN:
                     return new FlattenLayer<T>(cuda, log, p);
 
-                case LayerParameter.LayerType.GATHER:
-                    return new GatherLayer<T>(cuda, log, p);
-
                 case LayerParameter.LayerType.GRADIENTSCALER:
                     return new GradientScaleLayer<T>(cuda, log, p);
 
