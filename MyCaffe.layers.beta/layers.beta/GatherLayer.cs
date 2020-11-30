@@ -5,8 +5,9 @@ using System.Text;
 using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
+using MyCaffe.param.beta;
 
-namespace MyCaffe.layers
+namespace MyCaffe.layers.beta
 {
     /// <summary>
     /// The GatherLayer extracts (gathers) data from specified indices along a given axis
@@ -76,35 +77,13 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            float[] rgIdx = convertF(colBottom[1].mutable_cpu_data);
+            string strErr;
+            float[] rgIdxf = convertF(colBottom[1].mutable_cpu_data);
+            List<int> rgTopShape = GatherParameter.Reshape(m_nAxis, colBottom[0].shape(), colBottom[1].shape(), rgIdxf, out m_nDim, out m_nDimAtAxis, out m_nM, out m_nN, out strErr);
+            if (rgTopShape == null)
+                m_log.FAIL(strErr);
 
-            m_log.CHECK_EQ(m_nN, rgIdx.Length, "N should equal the number of indices.");
-            for (int i=0; i<m_nN; i++)
-            {
-                int nIdx = (int)rgIdx[i];
-                if (nIdx < -m_nDimAtAxis || nIdx > m_nDimAtAxis)
-                    m_log.FAIL("The index at idx=" + i.ToString() + " is out of range!  Must be within range [-" + m_nDimAtAxis.ToString() + "," + m_nDimAtAxis.ToString() + "]");
-            }
-
-            List<int> rgShape = new List<int>(colBottom[1].shape());
-            int nLen = rgShape.Count;
-
-            while (rgShape.Count > 0 && rgShape[rgShape.Count - 1] == 1)
-            {
-                rgShape.RemoveAt(rgShape.Count - 1);
-            }
-
-            if (m_nAxis == 0)
-                rgShape.Add(m_nDim);
-            else if (m_nAxis == 1)
-                rgShape.Insert(0, m_nM);
-
-            for (int i = rgShape.Count; i < nLen; i++)
-            {
-                rgShape.Add(1);
-            }
-
-            colTop[0].Reshape(rgShape);
+            colTop[0].Reshape(rgTopShape);
         }
 
         /// <summary>

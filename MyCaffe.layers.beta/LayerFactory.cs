@@ -43,6 +43,9 @@ namespace MyCaffe.layers.beta
                 case LayerParameter.LayerType.DECODE:
                     return new DecodeLayer<double>(cuda, log, p);
 
+                case LayerParameter.LayerType.GATHER:
+                    return new GatherLayer<double>(cuda, log, p);
+
                 case LayerParameter.LayerType.GRN:
                     return new GRNLayer<double>(cuda, log, p);
 
@@ -90,6 +93,9 @@ namespace MyCaffe.layers.beta
 
                 case LayerParameter.LayerType.DECODE:
                     return new DecodeLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.GATHER:
+                    return new GatherLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.GRN:
                     return new GRNLayer<float>(cuda, log, p);
