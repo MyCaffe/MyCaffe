@@ -57,6 +57,7 @@
     <Compile Include="layers.beta\AccuracyDecodeLayer.cs" />
     <Compile Include="layers.beta\DecodeLayer.cs" />
     <Compile Include="layers.beta\AccuracyEncodingLayer.cs" />
+    <Compile Include="layers.beta\GatherLayer.cs" />
     <Compile Include="layers.beta\GRNLayer.cs" />
     <Compile Include="layers.beta\DataSequenceLayer.cs" />
     <Compile Include="layers.beta\KnnLayer.cs" />
