@@ -11,6 +11,7 @@ using MyCaffe.layers;
 using MyCaffe.db.image;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.data;
+using MyCaffe.layers.beta;
 
 /// <summary>
 /// Testing the gather layer.
@@ -238,6 +239,7 @@ namespace MyCaffe.test
             p.gather_param.axis = nAxis;
             GatherLayer<T> layer = new GatherLayer<T>(m_cuda, m_log, p);
             float[] rgInputData = null;
+            float[] rgIdxF = null;
 
             if (nAxis == 0)
             {
@@ -246,8 +248,8 @@ namespace MyCaffe.test
                 Bottom.mutable_cpu_data = convert(rgInputData);
 
                 m_blobIndices.Reshape(2, 2, 1, 1);
-                float[] rgIdx = new float[] { 0.0f, 1.0f, 1.0f, 2.0f };
-                m_blobIndices.mutable_cpu_data = convert(rgIdx);
+                rgIdxF = new float[] { 0.0f, 1.0f, 1.0f, 2.0f };
+                m_blobIndices.mutable_cpu_data = convert(rgIdxF);
 
                 BottomVec.Add(m_blobIndices);
             }
@@ -258,8 +260,8 @@ namespace MyCaffe.test
                 Bottom.mutable_cpu_data = convert(rgInputData);
 
                 m_blobIndices.Reshape(1, 2, 1, 1);
-                float[] rgIdx = new float[] { 0.0f, 2.0f };
-                m_blobIndices.mutable_cpu_data = convert(rgIdx);
+                rgIdxF = new float[] { 0.0f, 2.0f };
+                m_blobIndices.mutable_cpu_data = convert(rgIdxF);
 
                 BottomVec.Add(m_blobIndices);
             }
@@ -275,9 +277,19 @@ namespace MyCaffe.test
 
             m_log.CHECK_EQ(rgOutputData.Length, rgInputData.Length, "The output and input data should have the same length.");
 
+            List<int> rgIdx = new List<int>();
+            foreach (float f in rgIdxF)
+            {
+                rgIdx.Add((int)f);
+            }
+
             for (int i = 0; i < rgInputData.Length; i++)
             {
-                m_log.CHECK_EQ(rgInputData[i], rgOutputData[i], "The data at index #" + i.ToString() + " is not as expected.");
+                int nIdx = i % Bottom.num;
+                if (!rgIdx.Contains(nIdx))
+                    m_log.CHECK_EQ(0, rgOutputData[i], "The data at index #" + i.ToString() + " is not as expected.");
+                else
+                    m_log.CHECK_EQ(rgInputData[i], rgOutputData[i], "The data at index #" + i.ToString() + " is not as expected.");
             }
         }
     }
