@@ -403,6 +403,10 @@ namespace MyCaffe.param
             /// </summary>
             TRANSFORM,
             /// <summary>
+            /// Initializes a parameter for the TransposeLayer.
+            /// </summary>
+            TRANSPOSE,
+            /// <summary>
             /// Initializes a parameter for the LSTMSimpleLayer.
             /// </summary>
             LSTM_SIMPLE,
@@ -447,14 +451,6 @@ namespace MyCaffe.param
             /// </summary>
             TRIPLET_LOSS,
             /// <summary>
-            /// Initializes a parameter for the TripletSelectLayer.
-            /// </summary>
-            TRIPLET_SELECT,
-            /// <summary>
-            /// Initializes a parameter for the TripletDataLayer.
-            /// </summary>
-            TRIPLET_DATA,
-            /// <summary>
             /// Initializes a parameter for the KNNLayer.
             /// </summary>
             KNN,
@@ -462,10 +458,6 @@ namespace MyCaffe.param
             /// Initializes a parameter for the DebugLayer.
             /// </summary>
             DEBUG,
-            /// <summary>
-            /// Initializes a parameter for the BinaryHashLayer.
-            /// </summary>
-            BINARYHASH,
             /// <summary>
             /// Initializes a parameter for the VideoDataLayer.
             /// </summary>
@@ -588,7 +580,6 @@ namespace MyCaffe.param
                     break;
 
                 case LayerType.DATA:
-                case LayerType.TRIPLET_DATA:       
                     data_param = (DataParameter)p.data_param.Clone();
                     transform_param = (TransformationParameter)p.transform_param.Clone();
                     break;
@@ -852,7 +843,6 @@ namespace MyCaffe.param
                     break;
 
                 case LayerType.DATA:
-                case LayerType.TRIPLET_DATA:
                     expected_top.Add("data");
                     expected_top.Add("label");
                     m_rgLayerParameters[LayerType.TRANSFORM] = new TransformationParameter();
@@ -1263,6 +1253,12 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new TileParameter();
                     break;
 
+                case LayerType.TRANSPOSE:
+                    expected_bottom.Add("input");
+                    expected_top.Add("output");
+                    m_rgLayerParameters[lt] = new TransposeParameter();
+                    break;
+
                 case LayerType.TRIPLET_LOSS:
                     expected_bottom.Add("anchor");
                     expected_bottom.Add("pos");
@@ -1271,13 +1267,6 @@ namespace MyCaffe.param
                     expected_top.Add("loss");
                     m_rgLayerParameters[lt] = new TripletLossParameter();
                     m_rgLayerParameters[LayerType.LOSS] = new LossParameter();
-                    break;
-
-                case LayerType.TRIPLET_SELECT:
-                    expected_bottom.Add("input");
-                    expected_top.Add("anchor");
-                    expected_top.Add("pos");
-                    expected_top.Add("neg");
                     break;
 
                 case LayerType.TV_LOSS:
@@ -2051,6 +2040,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.TRANSPOSE
+        /// </summary>
+        public TransposeParameter transpose_param
+        {
+            get { return (TransposeParameter)m_rgLayerParameters[LayerType.TRANSPOSE]; }
+            set { m_rgLayerParameters[LayerType.TRANSPOSE] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.TRIPLET_LOSS
         /// </summary>
         public TripletLossParameter triplet_loss_param
@@ -2247,9 +2245,6 @@ namespace MyCaffe.param
 
                 case LayerType.BIAS:
                     return "Bias";
-
-                case LayerType.BINARYHASH:
-                    return "BinaryHash";
 
                 case LayerType.BNLL:
                     return "BNLL";
@@ -2479,17 +2474,11 @@ namespace MyCaffe.param
                 case LayerType.TILE:
                     return "Tile";
 
-                case LayerType.TRIPLET_LOSS_SIMPLE:
-                    return "SimpleTripletLoss";
+                case LayerType.TRANSPOSE:
+                    return "Transpose";
 
                 case LayerType.TRIPLET_LOSS:
                     return "TripletLoss";
-
-                case LayerType.TRIPLET_SELECT:
-                    return "TripletSelection";
-
-                case LayerType.TRIPLET_DATA:
-                    return "TripletData";
 
                 case LayerType.TV_LOSS:
                     return "TVLoss";
@@ -3025,9 +3014,6 @@ namespace MyCaffe.param
                 case "bias":
                     return LayerType.BIAS;
 
-                case "binaryhash":
-                    return LayerType.BINARYHASH;
-
                 case "bnll":
                     return LayerType.BNLL;
 
@@ -3277,21 +3263,9 @@ namespace MyCaffe.param
                 case "tile":
                     return LayerType.TILE;
 
-                case "simple_triplet_loss":
-                case "simpletripletloss":
-                    return LayerType.TRIPLET_LOSS_SIMPLE;
-
-                case "triplet_data":
-                case "tripletdata":
-                    return LayerType.TRIPLET_DATA;
-
                 case "triplet_loss":
                 case "tripletloss":
                     return LayerType.TRIPLET_LOSS;
-
-                case "triplet_selection":
-                case "tripletselection":
-                    return LayerType.TRIPLET_SELECT;
 
                 case "tvloss":
                 case "tv_loss":
