@@ -17,6 +17,7 @@ namespace MyCaffe.param.beta
         /** @copydoc LayerParameterBase */
         public TransposeParameter()
         {
+            m_shape.dim = new List<int>() { 0, 1, 2, 3 }; // By default, set to identity for n,c,h,w.
         }
 
         /// <summary>
