@@ -63,8 +63,7 @@ namespace MyCaffe.layers
 
             foreach (LayerParameter p in np.layer)
             {
-                if (p.type == LayerParameter.LayerType.DATA ||
-                    p.type == LayerParameter.LayerType.TRIPLET_DATA)
+                if (p.type == LayerParameter.LayerType.DATA)
                 {
                     m_strSource = p.data_param.source;
                     break;

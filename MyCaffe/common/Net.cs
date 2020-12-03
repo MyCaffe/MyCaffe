@@ -882,8 +882,7 @@ namespace MyCaffe.common
 
                 foreach (Layer<T> layer in m_rgLayers)
                 {
-                    if (layer.type == LayerParameter.LayerType.DATA ||
-                        layer.type == LayerParameter.LayerType.TRIPLET_DATA)
+                    if (layer.type == LayerParameter.LayerType.DATA)
                         strSrc = layer.layer_param.data_param.source;
 
                     else if (layer.type == LayerParameter.LayerType.LABELMAPPING)
@@ -908,8 +907,7 @@ namespace MyCaffe.common
 
                 foreach (Layer<T> layer in m_rgLayers)
                 {
-                    if (layer.type == LayerParameter.LayerType.DATA ||
-                        layer.type == LayerParameter.LayerType.TRIPLET_DATA)
+                    if (layer.type == LayerParameter.LayerType.DATA)
                         strSrc = layer.layer_param.data_param.source;
                 }
 
@@ -931,8 +929,7 @@ namespace MyCaffe.common
 
                 foreach (Layer<T> layer in m_rgLayers)
                 {
-                    if (layer.type == LayerParameter.LayerType.DATA ||
-                        layer.type == LayerParameter.LayerType.TRIPLET_DATA)
+                    if (layer.type == LayerParameter.LayerType.DATA)
                         strSrc = layer.layer_param.data_param.source;
                 }
 
@@ -954,8 +951,7 @@ namespace MyCaffe.common
 
                 foreach (Layer<T> layer in m_rgLayers)
                 {
-                    if (layer.type == LayerParameter.LayerType.DATA ||
-                        layer.type == LayerParameter.LayerType.TRIPLET_DATA)
+                    if (layer.type == LayerParameter.LayerType.DATA)
                         strSrc = layer.layer_param.data_param.source;
                 }
 
@@ -2650,8 +2646,7 @@ namespace MyCaffe.common
         {
             foreach (LayerParameter lp in m_param.layer)
             {
-                if (lp.type == LayerParameter.LayerType.DATA ||
-                    lp.type == LayerParameter.LayerType.TRIPLET_DATA)
+                if (lp.type == LayerParameter.LayerType.DATA)
                     return lp.data_param.source;
             }
 
