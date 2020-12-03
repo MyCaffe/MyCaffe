@@ -1494,13 +1494,11 @@ namespace MyCaffe
                     if (!lp.transform_param.use_imagedb_mean)
                         return null;
                 }
-                else if (lp.type == LayerParameter.LayerType.DATA ||
-                         lp.type == LayerParameter.LayerType.TRIPLET_DATA)
+                else if (lp.type == LayerParameter.LayerType.DATA)
                 {
                     switch (lp.type)
                     {
                         case LayerParameter.LayerType.DATA:
-                        case LayerParameter.LayerType.TRIPLET_DATA:
                             strSrc = lp.data_param.source;
                             break;
                     }
@@ -1526,15 +1524,13 @@ namespace MyCaffe
 
             foreach (LayerParameter lp in p.layer)
             {
-                if (lp.type == LayerParameter.LayerType.DATA ||
-                    lp.type == LayerParameter.LayerType.TRIPLET_DATA)
+                if (lp.type == LayerParameter.LayerType.DATA)
                 {
                     string strSrc = null;
 
                     switch (lp.type)
                     {
                         case LayerParameter.LayerType.DATA:
-                        case LayerParameter.LayerType.TRIPLET_DATA:
                             strSrc = lp.data_param.source;
                             break;
                     }
