@@ -2613,10 +2613,12 @@ namespace MyCaffe.param
             // Beta layers.
             rgParam.Add(new KeyValuePair<BaseParameter, string>(data_sequence_param, "data_sequence_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(decode_param, "decode_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(gather_param, "gather_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(knn_param, "knn_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(normalization1_param, "normalization_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(triplet_loss_param, "triplet_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(unpooling_param, "unpooling_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(transpose_param, "transpose_param"));
 
             // Nt layers.
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gram_param, "gram_param"));
@@ -2881,12 +2883,14 @@ namespace MyCaffe.param
             // Alpha layers
 
             // Beta layers.
-
             if ((rpp = rp.FindChild("data_sequence_param")) != null)
                 p.data_sequence_param = DataSequenceParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("decode_param")) != null)
                 p.decode_param = DecodeParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("gather_param")) != null)
+                p.gather_param = GatherParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("knn_param")) != null)
                 p.knn_param = KnnParameter.FromProto(rpp);
@@ -2896,6 +2900,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("triplet_loss_param")) != null)
                 p.triplet_loss_param = TripletLossParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("transpose_param")) != null)
+                p.transpose_param = TransposeParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("unpooling_param")) != null)
                 p.unpooling_param = UnPoolingParameter.FromProto(rpp);
@@ -3262,6 +3269,9 @@ namespace MyCaffe.param
 
                 case "tile":
                     return LayerType.TILE;
+
+                case "transpose":
+                    return LayerType.TRANSPOSE;
 
                 case "triplet_loss":
                 case "tripletloss":
