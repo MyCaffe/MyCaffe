@@ -92,7 +92,7 @@ namespace MyCaffe.param
         public List<int> dim
         {
             get { return m_rgDim; }
-            set { m_rgDim = new List<int>(); }
+            set { m_rgDim = new List<int>(value); }
         }
 
         /// <summary>
