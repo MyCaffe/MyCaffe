@@ -923,7 +923,7 @@ namespace MyCaffe.layers
             }
             else
             {
-                m_cuda.im2col_nd(hColBuff, 
+                m_cuda.col2im_nd(hColBuff, 
                               nColBuffOffset, 
                               m_nNumSpatialAxes, 
                               m_nNumKernelsCol2im,
