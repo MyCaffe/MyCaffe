@@ -551,6 +551,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_MINMAXVEC:
 			return m_device.cuda_minmaxvec(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_TRANSPOSE:
+			return m_device.cuda_transpose(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_SUMSQ:
 			return m_device.cuda_sumsq(lCount, pfInput, plCount, ppfOutput);
 
@@ -1484,6 +1487,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_MINMAXVEC:
 		return "CUDA_FN_MINMAXVEC";
+
+	case CUDA_FN_TRANSPOSE:
+		return "CUDA_FN_TRANSPOSE";
 
 	case CUDA_FN_SUMSQ:
 		return "CUDA_FN_SUMSQ";

@@ -2220,6 +2220,30 @@ template long Device<float>::cuda_minmaxvec(long lInput, float* pfInput, long* p
 
 
 template <class T>
+long Device<T>::cuda_transpose(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 8, 8))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	long hX = (long)pfInput[1];
+	long hY = (long)pfInput[2];
+	long hXCounts = (long)pfInput[3];
+	long hYCounts = (long)pfInput[4];
+	long hMapping = (long)pfInput[5];
+	int nNumAxes = (int)pfInput[6];
+	long hBuffer = (long)pfInput[7];
+
+	return m_math.transpose(n, hX, hY, hXCounts, hYCounts, hMapping, nNumAxes, hBuffer);
+}
+
+template long Device<double>::cuda_transpose(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_transpose(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::cuda_sumsq(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;

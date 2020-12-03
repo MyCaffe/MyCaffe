@@ -1030,6 +1030,7 @@ namespace MyCaffe.common
             CUDA_GER = 257,
             CUDA_SET_BOUNDS = 259,
             CUDA_MINMAXVEC = 260,
+            CUDA_TRANSPOSE = 261,
 
             CUDA_MULBSX = 270,
             CUDA_DIVBSX = 271,
@@ -6577,6 +6578,25 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MINMAXVEC, new double[] { n, hA, hWork1, hWork2, nK, hMin, hMax, (bNonZeroOnly) ? 1 : 0 });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MINMAXVEC, new float[] { n, hA, hWork1, hWork2, nK, hMin, hMax, (bNonZeroOnly) ? 1 : 0 });
+        }
+
+        /// <summary>
+        /// Perform a transpose on X producing Y, similar to the numpy.transpose operation.
+        /// </summary>
+        /// <param name="n">Specifies the number of items in both hX and hY (must be the same).</param>
+        /// <param name="hX">Specifies a handle to the input data in gpu memory.</param>
+        /// <param name="hY">Specifies a handle to the output data in gpu memory.</param>
+        /// <param name="hXCounts">Specifies a handle to the input counts in gpu memory.</param>
+        /// <param name="hYCounts">Specifies a handle to the output counts in gpu memory.</param>
+        /// <param name="hMapping">Specifies a handle to the mappings of each axis.</param>
+        /// <param name="nNumAxes">Specifies the number of axes.</param>
+        /// <param name="hBuffer">Specifies a handle to the buffer that should have 'n' * nNumAxes number of items.</param>
+        public void transpose(int n, long hX, long hY, long hXCounts, long hYCounts, long hMapping, int nNumAxes, long hBuffer)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TRANSPOSE, new double[] { n, hX, hY, hXCounts, hYCounts, hMapping, nNumAxes, hBuffer });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TRANSPOSE, new float[] { n, hX, hY, hXCounts, hYCounts, hMapping, nNumAxes, hBuffer });
         }
 
         /// <summary>

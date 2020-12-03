@@ -3148,6 +3148,80 @@ template long Math<float>::minmaxvec(int n, long hA, long hWork1, long hWork2, i
 
 
 template <class T>
+__global__ void transpose_kernel(const int n, const T* x, T* y, const T* xc, const T* yc, const T* map, const int nNumAxes, T* buf)
+{
+	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index < n && index >= 0; index += blockDim.x * gridDim.x)
+	{
+		T* from_inds = buf + index * nNumAxes;
+		int from_index = index;
+		int to_index = 0;
+
+		for (int i = 0; i < nNumAxes; i++)
+		{
+			const int from_count = (int)xc[i];
+			from_inds[i] = from_index / from_count;
+			from_index = from_index % from_count;
+		}
+
+		for (int i = 0; i < nNumAxes; i++)
+		{
+			const int to_count = (int)yc[i];
+			const int map_idx = (int)map[i];
+			const int from_idx = (int)from_inds[map_idx];
+
+			to_index += from_idx * to_count;
+		}
+
+		*(y + to_index) = *(x + index);
+	}
+}
+
+template <class T>
+long Math<T>::transpose(int n, long hX, long hY, long hXCounts, long hYCounts, long hMapping, int nNumAxes, long hBuffer)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+	MemoryItem* pXCounts;
+	MemoryItem* pYCounts;
+	MemoryItem* pMapping;
+	MemoryItem* pBuffer;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hXCounts, &pXCounts))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hYCounts, &pYCounts))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hMapping, &pMapping))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBuffer, &pBuffer))
+		return lErr;
+
+	T* x = (T*)pX->Data();
+	T* y = (T*)pY->Data();
+	T* xc = (T*)pXCounts->Data();
+	T* yc = (T*)pYCounts->Data();
+	T* map = (T*)pMapping->Data();
+	T* buf = (T*)pBuffer->Data();
+
+	transpose_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, y, xc, yc, map, nNumAxes, buf);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::transpose(int n, long hX, long hY, long hXCounts, long hYCounts, long hMapping, int nNumAxes, long hBuffer);
+template long Math<float>::transpose(int n, long hX, long hY, long hXCounts, long hYCounts, long hMapping, int nNumAxes, long hBuffer);
+
+
+template <class T>
 __global__ void naninf_kernel(const T* d_data, T* d_nan, T* d_inf, const size_t n)
 {
 	// Load a segment of the input vector into shared memory
