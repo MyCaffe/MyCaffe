@@ -100,7 +100,7 @@ namespace MyCaffe.param
             RawProtoCollection rgChildren = new RawProtoCollection();
 
             rgChildren.Add("min", min.ToString());
-            rgChildren.Add("max", min.ToString());
+            rgChildren.Add("max", max.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
