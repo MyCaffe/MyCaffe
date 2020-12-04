@@ -170,15 +170,16 @@ namespace MyCaffe.converter.onnx
         /// <param name="log">Specifies the output log used to show progress.</param>
         /// <param name="strOnnxFile">Specifies the ONNX .onnx file.</param>
         /// <param name="bFixlupNeuronNodes">Optionally, specifies to fixup the neuron nodes (e.g. Relu, Prelu, Elu, Sigmoid, Tahn, etc.) by connecting them to inline nodes by connnecting them back to their parent which is common in Caffe type models (default = true).</param>
+        /// <param name="bIncludeLastLayerWeights">Optionally, specifies to include the weights for the last layer (default = false, usually not included for transfer learning).</param>
         /// <param name="dsTraining">Optionally, specifies a training dataset which when supplied converts the model to a training model where inputs 
         /// are replaced with data layers, and outputs (e.g. softmax) with loss and accuracy layers (default = false).</param>
         /// <returns>The MyCaffe model description, model weights and image mean are returned as a MyCaffeModelData object.</returns>
-        public MyCaffeModelData ConvertOnnxToMyCaffeFromFile(CudaDnn<T> cuda, Log log, string strOnnxFile, bool bFixlupNeuronNodes = true, DatasetDescriptor dsTraining = null)
+        public MyCaffeModelData ConvertOnnxToMyCaffeFromFile(CudaDnn<T> cuda, Log log, string strOnnxFile, bool bFixlupNeuronNodes = true, bool bIncludeLastLayerWeights = false, DatasetDescriptor dsTraining = null)
         {
             m_strOriginalPath = Path.GetDirectoryName(strOnnxFile);
             PersistOnnx persist = new PersistOnnx();
             ModelProto proto = persist.Load(strOnnxFile);
-            return ConvertOnnxToMyCaffe(cuda, log, proto, bFixlupNeuronNodes, dsTraining);
+            return ConvertOnnxToMyCaffe(cuda, log, proto, bFixlupNeuronNodes, bIncludeLastLayerWeights, dsTraining);
         }
 
         /// <summary>
@@ -188,15 +189,19 @@ namespace MyCaffe.converter.onnx
         /// <param name="log">Specifies the output log used to show progress.</param>
         /// <param name="onnxModel">Specifies the ONNX model.</param>
         /// <param name="bFixupNeuronNodes">Optionally, specifies to fixup the neuron nodes (e.g. Relu, Prelu, Elu, Sigmoid, Tahn, etc.) by connecting them to inline nodes by connnecting them back to their parent which is common in Caffe type models (default = true).</param>
+        /// <param name="bIncludeLastLayerWeights">Optionally, specifies to include the weights for the last layer (default = false, usually not included for transfer learning).</param>
         /// <param name="dsTraining">Optionally, specifies a training dataset which when supplied converts the model to a training model where inputs 
         /// are replaced with data layers, and outputs (e.g. softmax) with loss and accuracy layers (default = false).</param>
         /// <returns>The MyCaffe model description, model weights and image mean are returned as a MyCaffeModelData object.</returns>
-        public MyCaffeModelData ConvertOnnxToMyCaffe(CudaDnn<T> cuda, Log log, ModelProto onnxModel, bool bFixupNeuronNodes = true, DatasetDescriptor dsTraining = null)
+        public MyCaffeModelData ConvertOnnxToMyCaffe(CudaDnn<T> cuda, Log log, ModelProto onnxModel, bool bFixupNeuronNodes = true, bool bIncludeLastLayerWeights = false, DatasetDescriptor dsTraining = null)
         {
             Tuple<NetParameter, BlobCollection<T>> data = convertToMyCaffe(cuda, log, onnxModel, bFixupNeuronNodes, dsTraining);
 
             NetParameter netParam = data.Item1;
             RawProto protoMyCaffe = netParam.ToProto("root");
+
+            if (!bIncludeLastLayerWeights && data.Item2.Count > 0)
+                data.Item2.RemoveAt(data.Item2.Count - 1);
 
             PersistCaffe<T> persist = new PersistCaffe<T>(log, false);
             byte[] rgWeights = persist.SaveWeights(data.Item2, false);
@@ -900,24 +905,34 @@ namespace MyCaffe.converter.onnx
 
         private NetParameter fixupModelForTraining(NetParameter netParam, DatasetDescriptor ds)
         {
+            string strName = (netParam.input.Count > 0) ? netParam.input[0] : "data";
+
             // Replace the inputs with the data layers.
-            LayerParameter dataLayerTrain = new LayerParameter(LayerParameter.LayerType.DATA, netParam.input[0]);
+            LayerParameter dataLayerTrain = new LayerParameter(LayerParameter.LayerType.DATA, strName);
             dataLayerTrain.include.Add(new NetStateRule(Phase.TRAIN));
             dataLayerTrain.transform_param.color_order = TransformationParameter.COLOR_ORDER.BGR;
             dataLayerTrain.transform_param.scale = 1.0;
             dataLayerTrain.data_param.batch_size = 16;
             dataLayerTrain.data_param.source = ds.TrainingSource.Name;
-            dataLayerTrain.top.Add(netParam.input[0]);
+            dataLayerTrain.top.Add(strName);
             dataLayerTrain.top.Add("label");
 
-            LayerParameter dataLayerTest = new LayerParameter(LayerParameter.LayerType.DATA, netParam.input[0]);
+            LayerParameter dataLayerTest = new LayerParameter(LayerParameter.LayerType.DATA, strName);
             dataLayerTest.include.Add(new NetStateRule(Phase.TEST));
             dataLayerTest.transform_param.color_order = TransformationParameter.COLOR_ORDER.BGR;
             dataLayerTest.transform_param.scale = 1.0;
             dataLayerTest.data_param.batch_size = 16;
             dataLayerTest.data_param.source = ds.TestingSource.Name;
-            dataLayerTest.top.Add(netParam.input[0]);
+            dataLayerTest.top.Add(strName);
             dataLayerTest.top.Add("label");
+
+            if (netParam.input.Count == 0)
+            {
+                if (netParam.layer[0].bottom.Count > 0)
+                    netParam.layer[0].bottom[0] = strName;
+                else
+                    netParam.layer[0].bottom.Add(strName);
+            }
 
             m_strReport += "Removed inputs " + Utility.ToString<string>(netParam.input) + Environment.NewLine;
             netParam.input.Clear();
@@ -1482,7 +1497,7 @@ namespace MyCaffe.converter.onnx
             return rgData;
         }
 
-        private int getOutputs(string strLayerName, BlobCollection<T> col, string strWt, string strBias, out bool bBiasTerm)
+        private int getOutputs(string strLayerName, BlobCollection<T> col, string strWt, string strBias, out bool bBiasTerm, int nAxis = 0)
         {
             int? nWtOutputs = null;
             int? nBiasOutputs = null;
@@ -1494,13 +1509,13 @@ namespace MyCaffe.converter.onnx
                 if (blob.Name == strWt)
                 {
                     blob.Tag = strLayerName;
-                    nWtOutputs = blob.shape()[0];
+                    nWtOutputs = blob.shape()[nAxis];
                 }
                 else if (blob.Name == strBias && strBias != null)
                 {
                     blob.Tag = strLayerName;
                     bBiasTerm = true;
-                    nBiasOutputs = blob.shape()[0];
+                    nBiasOutputs = blob.shape()[nAxis];
                 }
 
                 if (nWtOutputs.HasValue && bBiasTerm)
@@ -1545,12 +1560,15 @@ namespace MyCaffe.converter.onnx
             BlobCollection<T> colLearnable = new BlobCollection<T>();
             Dictionary<string, ConstantParameter> rgConstants = new Dictionary<string, ConstantParameter>();
             List<string> rgUsedConstants = new List<string>();
+            LayerParameter lastLayer = null;
+            LayerParameter lastLayerAdded = null;
 
             for (int nNodeIdx=0; nNodeIdx<rg.Count; nNodeIdx++)
             {
                 NodeProto node = rg[nNodeIdx];
                 List<string> rgstrLearnableBlobs = new List<string>();
                 LayerParameter layer = null;
+                bool bSkipLayer = false;
                 string strNodeName = convertWs(node.Name);
 
                 if (string.IsNullOrEmpty(strNodeName))
@@ -1583,6 +1601,16 @@ namespace MyCaffe.converter.onnx
                     layer = new LayerParameter(LayerParameter.LayerType.ELTWISE);
                     layer.name = strNodeName;
                     fillParameter(node.Attribute, layer.eltwise_param, EltwiseParameter.EltwiseOp.SUM);
+
+                    // Skip this layer if adding in an external variable.
+                    foreach (string strInput in node.Input)
+                    {
+                        if (!isInputUsed(p.layer, strInput))
+                        {
+                            bSkipLayer = true;
+                            break;
+                        }
+                    }
                 }
 
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.ArgMin))
@@ -1640,6 +1668,48 @@ namespace MyCaffe.converter.onnx
                     layer.name = strNodeName;
                     fillParameter(node.Attribute, layer.batch_norm_param);
 
+                    BlobCollection<T> colBlobs = new BlobCollection<T>();
+
+                    for (int i = 1; i < node.Input.Count; i++)
+                    {
+                        string strInput = convertWs(node.Input[i]);
+
+                        Blob<T> blob = col.FindBlob(strInput);
+                        if (blob == null && rgConstants.ContainsKey(strInput))
+                        {
+                            ConstantParameter constParam = rgConstants[strInput];
+                            blob = new Blob<T>(cuda, log, constParam.output_shape.dim);
+                            blob.Name = strInput;
+
+                            if (constParam.values_f.Count > 1)
+                            {
+                                T[] rgData = Utility.ConvertVec<T>(constParam.values_f.ToArray());
+                                blob.SetData(rgData);
+                            }
+                            else if (constParam.values_f.Count == 1)
+                            {
+                                blob.SetData(constParam.values_f[0]);
+                            }
+                        }
+
+                        blob.Tag = strNodeName;
+                        colBlobs.Add(blob);
+                    }
+
+                    colLearnable.Add(colBlobs[2]); // mean
+                    colLearnable.Add(colBlobs[3]); // var
+
+                    Blob<T> blobVarCor = new Blob<T>(cuda, log);
+                    blobVarCor.ReshapeLike(colBlobs[0]);
+                    blobVarCor.SetData(1.0);
+                    blobVarCor.Tag = strNodeName;
+
+                    colLearnable.Add(blobVarCor); // varcor.
+
+                    layer.batch_norm_param.scale_bias = true;
+                    colLearnable.Add(colBlobs[0]); // scale
+                    colLearnable.Add(colBlobs[1]); // bias;
+
                     for (int i = 1; i < node.Input.Count; i++)
                     {
                         string strInput = convertWs(node.Input[i]);
@@ -1694,6 +1764,9 @@ namespace MyCaffe.converter.onnx
 
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Conv))
                 {
+                    int nGroupReductionFactor = 1;
+                    int nFirstLearnableIdx = -1;
+
                     for (int i = 1; i < node.Input.Count; i++)
                     {
                         string strInput = convertWs(node.Input[i]);
@@ -1718,16 +1791,37 @@ namespace MyCaffe.converter.onnx
 
                         rgstrLearnableBlobs.Add(convertWs(node.Input[i]));
                         colLearnable.Add(blob);
+
+                        if (i == 1)
+                            nFirstLearnableIdx = colLearnable.Count - 1;
                     }
 
                     layer = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
                     layer.name = strNodeName;
-                    fillParameter(node.Attribute, layer.convolution_param);
+                    fillParameter(node.Attribute, layer.convolution_param, out nGroupReductionFactor);
                     bool bBiasTerm;
                     string strWt = rgstrLearnableBlobs[0];
                     string strBias = (rgstrLearnableBlobs.Count > 1) ? rgstrLearnableBlobs[1] : null;
                     layer.convolution_param.num_output = (uint)getOutputs(layer.name, colLearnable, strWt, strBias, out bBiasTerm);
                     layer.convolution_param.bias_term = bBiasTerm;
+
+                    // If the group was reduced, we must expand and duplicate the weights
+                    // by the same ratio.
+                    if (nFirstLearnableIdx >= 0 && nGroupReductionFactor > 1)
+                    {
+                        Blob<T> blob = colLearnable[nFirstLearnableIdx];
+                        Blob<T> blobNew = new Blob<T>(cuda, log);
+                        blobNew.Tag = blob.Tag;
+                        blobNew.Reshape(blob.num, blob.channels * nGroupReductionFactor, blob.height, blob.width);
+
+                        for (int c = 0; c < nGroupReductionFactor; c++)
+                        {
+                            blobNew.CopyFrom(blob, 0, c);
+                        }
+
+                        blob.Dispose();
+                        colLearnable[nFirstLearnableIdx] = blobNew;
+                    }
 
                     m_bEnableBackward = true;
                 }
@@ -1801,7 +1895,7 @@ namespace MyCaffe.converter.onnx
                     bool bBiasTerm;
                     string strWt = rgstrLearnableBlobs[0];
                     string strBias = (rgstrLearnableBlobs.Count > 1) ? rgstrLearnableBlobs[1] : null;
-                    layer.inner_product_param.num_output = (uint)getOutputs(layer.name, col, strWt, strBias, out bBiasTerm);
+                    layer.inner_product_param.num_output = (uint)getOutputs(layer.name, col, strWt, strBias, out bBiasTerm, 1);
                     layer.inner_product_param.bias_term = bBiasTerm;
 
                     m_bEnableBackward = true;
@@ -1863,7 +1957,7 @@ namespace MyCaffe.converter.onnx
                     bool bBiasTerm;
                     string strWt = rgstrLearnableBlobs[0];
                     string strBias = (rgstrLearnableBlobs.Count > 1) ? rgstrLearnableBlobs[1] : null;
-                    layer.inner_product_param.num_output = (uint)getOutputs(layer.name, col, strWt, strBias, out bBiasTerm);
+                    layer.inner_product_param.num_output = (uint)getOutputs(layer.name, col, strWt, strBias, out bBiasTerm, 1);
                     layer.inner_product_param.bias_term = bBiasTerm;
 
                     m_bEnableBackward = true;
@@ -1997,6 +2091,10 @@ namespace MyCaffe.converter.onnx
                     layer = new LayerParameter(LayerParameter.LayerType.TRANSPOSE);
                     layer.name = strNodeName;
                     fillParameter(node.Attribute, layer.transpose_param);
+
+                    // Skip the initial transpose if one exists for the data layers default to BGR which already does the transpose.
+                    if (p.layer.Count == 0 || p.layer[p.layer.Count - 1].type != LayerParameter.LayerType.DATA)
+                        bSkipLayer = true;
                 }
 
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Shape))
@@ -2062,12 +2160,33 @@ namespace MyCaffe.converter.onnx
                     }
                 }
 
-                m_strReport += "Adding layer '" + layer.ToString() + "'" + Environment.NewLine;
-                layer.freeze_learning = !m_bEnableBackward;
-                p.layer.Add(layer);
+                if (!bSkipLayer)
+                {
+                    // If we skip a layer, use the top of the last layer as input.
+                    if (lastLayer != null && lastLayerAdded != null && lastLayer.name != lastLayerAdded.name)
+                        layer.bottom = new List<string>(lastLayerAdded.top);
+
+                    m_strReport += "Adding layer '" + layer.ToString() + "'" + Environment.NewLine;
+                    layer.freeze_learning = !m_bEnableBackward;
+                    p.layer.Add(layer);
+                    lastLayerAdded = layer;
+                }
+
+                lastLayer = layer;
             }
 
             return colLearnable;
+        }
+
+        private bool isInputUsed(List<LayerParameter> rgLayers, string strBtm)
+        {
+            foreach (LayerParameter layer in rgLayers)
+            {
+                if (layer.top.Contains(strBtm))
+                    return true;
+            }
+
+            return false;
         }
 
         private bool isLayerUsed(RepeatedField<NodeProto> rgNodes, string strName, string strTop)
@@ -2297,8 +2416,10 @@ namespace MyCaffe.converter.onnx
             }
         }
 
-        private void fillParameter(RepeatedField<AttributeProto> rg, ConvolutionParameter p)
+        private void fillParameter(RepeatedField<AttributeProto> rg, ConvolutionParameter p, out int nGroupReductionFactor)
         {
+            nGroupReductionFactor = 1;
+
             foreach (AttributeProto attrib in rg)
             {
                 if (attrib.Name == "kernel_shape")
@@ -2381,7 +2502,10 @@ namespace MyCaffe.converter.onnx
                     p.group = (uint)attrib.I;
 
                     if (p.group > 144)
-                        p.group /= 3;
+                    {
+                        nGroupReductionFactor = 3;
+                        p.group /= (uint)nGroupReductionFactor;
+                    }
                 }
             }
 
