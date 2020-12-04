@@ -819,7 +819,7 @@ namespace MyCaffe.test
 
         public void TestImportOnnxEfficientNetModel(string strTrainingDs)
         {
-            string strTestPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\onnx\\imported\\cifar10";
+            string strTestPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\onnx\\imported\\efficientnet";
             if (!Directory.Exists(strTestPath))
                 Directory.CreateDirectory(strTestPath);
 
