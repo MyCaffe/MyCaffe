@@ -18,9 +18,9 @@
 //	Flags
 //=============================================================================
 
-const int MAX_HANDLES_MEM = 12288;
-const int MAX_HANDLES = 8192;
-const int MID_HANDLES = 1024;
+const int MAX_HANDLES_MEM = 12288 * 4;
+const int MAX_HANDLES = 8192 * 16;
+const int MID_HANDLES = 2048;
 const int MIN_HANDLES = 128;
 
 //-----------------------------------------------------------------------------
