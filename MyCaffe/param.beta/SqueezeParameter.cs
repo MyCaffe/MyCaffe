@@ -8,29 +8,26 @@ using MyCaffe.basecode;
 namespace MyCaffe.param.beta
 {
     /// <summary>
-    /// Specifies the parameters for the TransposeLayer.
+    /// Specifies the parameters for the SqueezeLayer.
     /// </summary>
-    public class TransposeParameter : LayerParameterBase
+    public class SqueezeParameter : LayerParameterBase
     {
         BlobShape m_shape = new BlobShape();
 
         /** @copydoc LayerParameterBase */
-        public TransposeParameter()
+        public SqueezeParameter()
         {
-            m_shape.dim = new List<int>() { 0, 1, 2, 3 }; // By default, set to identity for n,c,h,w.
+            m_shape.dim = new List<int>();
         }
 
         /// <summary>
-        /// Specifies the dimensions to transpose.
+        /// Specifies the axes to remove if dim=1 on squeeze, or add dim=1 on unsqueeze.
         /// </summary>
         /// <remarks>
-        /// For example, if you want to transpose NxCxHxW into WxNxHxC,
-        /// the parameter should be the following:
-        /// transpose_param { dim: 3 dim: 0 dim: 2 dim: 1 }
-        /// ie, if the i-th dim has value n, then the i-th axis of top is equal to the n-th axis of bottom.
+        /// For example, an unsqueeze axes { 0, 4 } changes a size of { 3, 4, 5 } to { 1, 3, 4, 5, 1 }
         /// </remarks>
-        [Description("Specifies the dimensions to transpose.")]
-        public List<int> dim
+        [Description("Specifies the axes to remove if dim=1 on squeeze, or add dim=1 on unsqueeze.")]
+        public List<int> axes
         {
             get { return m_shape.dim; }
             set { m_shape.dim = value; }
@@ -40,7 +37,7 @@ namespace MyCaffe.param.beta
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
             RawProto proto = RawProto.Parse(br.ReadString());
-            TransposeParameter p = FromProto(proto);
+            SqueezeParameter p = FromProto(proto);
 
             if (!bNewInstance)
                 Copy(p);
@@ -51,14 +48,14 @@ namespace MyCaffe.param.beta
         /** @copydoc LayerParameterBase::Copy */
         public override void Copy(LayerParameterBase src)
         {
-            TransposeParameter p = (TransposeParameter)src;
+            SqueezeParameter p = (SqueezeParameter)src;
             m_shape = p.m_shape.Clone();
         }
 
         /** @copydoc LayerParameterBase::Clone */
         public override LayerParameterBase Clone()
         {
-            TransposeParameter p = new TransposeParameter();
+            SqueezeParameter p = new SqueezeParameter();
             p.Copy(this);
             return p;
         }
@@ -78,9 +75,9 @@ namespace MyCaffe.param.beta
         /// </summary>
         /// <param name="rp">Specifies the RawProto to parse.</param>
         /// <returns>A new instance of the parameter is returned.</returns>
-        public static TransposeParameter FromProto(RawProto rp)
+        public static SqueezeParameter FromProto(RawProto rp)
         {
-            TransposeParameter p = new TransposeParameter();
+            SqueezeParameter p = new SqueezeParameter();
             p.m_shape = BlobShape.FromProto(rp);
 
             return p;
