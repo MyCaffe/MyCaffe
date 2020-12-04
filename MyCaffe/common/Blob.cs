@@ -850,6 +850,40 @@ namespace MyCaffe.common
             dst.mutable_cpu_data = rgDst;
         }
 
+        /// <summary>
+        /// Copy all data along a given channel from the source.
+        /// </summary>
+        /// <param name="blobSrc">Specifies the source blob to copy from.</param>
+        /// <param name="nChannelFrom">Specifies the channel within the source to copy from.</param>
+        /// <param name="nChannelTo">Specifies the channel in the destination (this blob) to copy into.</param>
+        /// <param name="bCopyDiff">Specifies whether or not to copy the data or diff.</param>
+        public void CopyFrom(Blob<T> blobSrc, int nChannelFrom, int nChannelTo, bool bCopyDiff = false)
+        {
+            m_log.CHECK_EQ(blobSrc.num, num, "The source and destination blobs must have the same num.");
+            m_log.CHECK_EQ(blobSrc.height, height, "The source and destination blobs must have the same height.");
+            m_log.CHECK_EQ(blobSrc.width, width, "The source and destination blobs must have the same width.");
+            m_log.CHECK_LT(nChannelFrom, blobSrc.channels, "The channel form parameter is out of range!");
+            m_log.CHECK_LT(nChannelTo, channels, "The channel to parameter is out of range!");
+
+            SyncedMemory<T> dst = (bCopyDiff) ? m_diff : m_data;
+            SyncedMemory<T> src = (bCopyDiff) ? blobSrc.m_diff : blobSrc.m_data;
+
+            int nCsrc = blobSrc.channels;
+            int nCdst = channels;
+            int nDim = height * width;
+            int nSrcOffset = nChannelFrom * nDim;
+            int nDstOffset = nChannelTo * nDim;
+            int nSrcStep = (nCsrc * nDim);
+            int nDstStep = (nCdst * nDim);
+
+            for (int n = 0; n < num; n++)
+            {
+                m_cuda.copy(nDim, src.gpu_data, dst.mutable_gpu_data, nSrcOffset, nDstOffset);
+                nSrcOffset += nSrcStep;
+                nDstOffset += nDstStep;
+            }
+        }
+
 
 #pragma warning disable 1591
 

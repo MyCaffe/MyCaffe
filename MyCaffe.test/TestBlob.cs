@@ -106,6 +106,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestCopyFromChannels()
+        {
+            BlobSimpleTest test = new BlobSimpleTest();
+
+            try
+            {
+                foreach (IBlobSimpleTest t in test.Tests)
+                {
+                    t.TestCopyFromChannels();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestMath_SumOfSquares()
         {
             BlobSimpleTest test = new BlobSimpleTest();
@@ -237,6 +255,7 @@ namespace MyCaffe.test
         void TestReshape();
         void TestLegacyBlobProtoShapeEquals();
         void TestCopyFrom();
+        void TestCopyFromChannels();
         void TestMath_SumOfSquares();
         void TestMath_Asum();
         void TestMath_Scale();
@@ -504,6 +523,51 @@ namespace MyCaffe.test
                         }
                     }
                 }
+            }
+        }
+
+        public void TestCopyFromChannels()
+        {
+            Blob<T> blobSrc = new Blob<T>(m_cuda, m_log, 100, 1, 20, 20);
+            Blob<T> blobDst = new Blob<T>(m_cuda, m_log, 100, 3, 20, 20);
+
+            try
+            {
+                FillerParameter p = new FillerParameter("uniform");
+                p.min = -3;
+                p.max = 3;
+                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, p);
+                filler.Fill(blobSrc);
+
+                for (int i = 0; i < 3; i++)
+                {
+                    blobDst.CopyFrom(blobSrc, 0, i);
+                }
+
+                for (int n = 0; n < blobSrc.num; n++)
+                {
+                    for (int c = 0; c < blobDst.channels; c++)
+                    {
+                        for (int h = 0; h < blobDst.height; h++)
+                        {
+                            for (int w = 0; w < blobDst.width; w++)
+                            {
+                                double dfDst = Utility.ConvertVal<T>(blobDst.data_at(n, c, h, w));
+                                double dfSrc = Utility.ConvertVal<T>(blobSrc.data_at(n, 0, h, w));
+                                m_log.CHECK_EQ(dfDst, dfSrc, "The data values do not match!");
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                blobSrc.Dispose();
+                blobDst.Dispose();
             }
         }
 
