@@ -276,7 +276,16 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            List<int> rgShape = new List<int>(colBottom[0].shape());
+
             // Figure out the dimensions
+            while (rgShape.Count <= m_param.inner_product_param.axis)
+            {
+                rgShape.Add(1);
+            }
+
+            colBottom[0].Reshape(rgShape);
+
             int nAxis = colBottom[0].CanonicalAxisIndex(m_param.inner_product_param.axis);
             int nNewK = colBottom[0].count(nAxis);
 
