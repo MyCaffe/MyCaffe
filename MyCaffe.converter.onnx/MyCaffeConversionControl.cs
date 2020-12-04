@@ -5,6 +5,7 @@ using MyCaffe.basecode.descriptors;
 using MyCaffe.common;
 using MyCaffe.layers;
 using MyCaffe.param;
+using MyCaffe.param.beta;
 using Onnx;
 using OnnxControl;
 using System;
@@ -424,6 +425,11 @@ namespace MyCaffe.converter.onnx
                         addAttributes(node.Attribute, layer.layer_param.batch_norm_param);
                         break;
 
+                    case LayerParameter.LayerType.CLIP:
+                        node.OpType = OnnxDefinitions.OPERATORS.Clip.ToString();
+                        addAttributes(node.Attribute, layer.layer_param.clip_param);
+                        break;
+
                     case LayerParameter.LayerType.CONCAT:
                         node.OpType = OnnxDefinitions.OPERATORS.Concat.ToString();
                         addAttributes(node.Attribute, layer.layer_param.concat_param);
@@ -572,6 +578,19 @@ namespace MyCaffe.converter.onnx
                     case LayerParameter.LayerType.SPLIT:
                         node.OpType = OnnxDefinitions.OPERATORS.Split.ToString();
                         break;
+
+                    case LayerParameter.LayerType.SQUEEZE:
+                        node.OpType = OnnxDefinitions.OPERATORS.Squeeze.ToString();
+                        break;
+
+                    case LayerParameter.LayerType.UNSQUEEZE:
+                        node.OpType = OnnxDefinitions.OPERATORS.Unsqueeze.ToString();
+                        break;
+
+                    case LayerParameter.LayerType.TRANSPOSE:
+                        node.OpType = OnnxDefinitions.OPERATORS.Transpose.ToString();
+                        addAttributes(node.Attribute, layer.layer_param.transpose_param);
+                        break;
                 }
 
                 foreach (Blob<T> blob in colParams)
@@ -593,6 +612,19 @@ namespace MyCaffe.converter.onnx
             attrib = new AttributeProto();
             attrib.Name = "momentum";
             attrib.F = (float)p.moving_average_fraction;
+            rgA.Add(attrib);
+        }
+
+        private void addAttributes(RepeatedField<AttributeProto> rgA, ClipParameter p)
+        {
+            AttributeProto attrib = new AttributeProto();
+            attrib.Name = "min";
+            attrib.F = (float)p.min;
+            rgA.Add(attrib);
+
+            attrib = new AttributeProto();
+            attrib.Name = "max";
+            attrib.F = (float)p.max;
             rgA.Add(attrib);
         }
 
@@ -806,6 +838,17 @@ namespace MyCaffe.converter.onnx
             rgA.Add(attrib);
         }
 
+        private void addAttributes(RepeatedField<AttributeProto> rgA, TransposeParameter p)
+        {
+            foreach (int nDim in p.dim)
+            {
+                AttributeProto attrib = new AttributeProto();
+                attrib.Name = "dim";
+                attrib.I = nDim;
+                rgA.Add(attrib);
+            }
+        }
+
         private string clean(string str)
         {
             string strOut = "";
@@ -826,6 +869,7 @@ namespace MyCaffe.converter.onnx
             try
             {
                 NetParameter netParam = new NetParameter();
+                BlobCollection<T> colTensors = new BlobCollection<T>();
                 BlobCollection<T> colLearnableBlobs = new BlobCollection<T>();
                 OnnxDefinitions onnx = new OnnxDefinitions();
 
@@ -833,8 +877,8 @@ namespace MyCaffe.converter.onnx
 
                 netParam.name = clean(proto.Graph.Name);
                 Tuple<List<string>, List<string>> rgInputs = addInputs(proto.Graph.Input, netParam, false);
-                addTensors(proto.Graph.Initializer, colLearnableBlobs, cuda, log);
-                colLearnableBlobs = addLayers(proto.Graph.Node, netParam, colLearnableBlobs, onnx, rgInputs.Item1, cuda, log);
+                addTensors(proto.Graph.Initializer, colTensors, cuda, log);
+                colLearnableBlobs = addLayers(proto.Graph.Node, netParam, colTensors, onnx, rgInputs.Item1, cuda, log, false);
                 addInputs(proto.Graph.Input, netParam, true, rgInputs.Item1, rgInputs.Item2);
 
                 NetParameter netParamFixed = fixupModel(netParam, colLearnableBlobs, rgInputs.Item2);
@@ -1496,13 +1540,15 @@ namespace MyCaffe.converter.onnx
             return strOut;
         }
 
-        private BlobCollection<T> addLayers(RepeatedField<NodeProto> rg, NetParameter p, BlobCollection<T> col, OnnxDefinitions onnx, List<string> rgstrInputs, CudaDnn<T> cuda, Log log)
+        private BlobCollection<T> addLayers(RepeatedField<NodeProto> rg, NetParameter p, BlobCollection<T> col, OnnxDefinitions onnx, List<string> rgstrInputs, CudaDnn<T> cuda, Log log, bool bIncludeConstants)
         {
             BlobCollection<T> colLearnable = new BlobCollection<T>();
             Dictionary<string, ConstantParameter> rgConstants = new Dictionary<string, ConstantParameter>();
+            List<string> rgUsedConstants = new List<string>();
 
-            foreach (NodeProto node in rg)
+            for (int nNodeIdx=0; nNodeIdx<rg.Count; nNodeIdx++)
             {
+                NodeProto node = rg[nNodeIdx];
                 List<string> rgstrLearnableBlobs = new List<string>();
                 LayerParameter layer = null;
                 string strNodeName = convertWs(node.Name);
@@ -1598,6 +1644,31 @@ namespace MyCaffe.converter.onnx
                     {
                         string strInput = convertWs(node.Input[i]);
                         rgstrExcludedInputs.Add(strInput);
+                    }
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Clip))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.CLIP);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.clip_param);
+
+                    for (int i = 1; i < node.Input.Count; i++)
+                    {
+                        Blob<T> input = col.FindBlob(node.Input[i]);
+                        if (input != null)
+                        {
+                            float[] rgF = Utility.ConvertVecF<T>(input.update_cpu_data());
+                            if (rgF.Length == 1)
+                            {
+                                if (i == 1)
+                                    layer.clip_param.min = rgF[0];
+                                else if (i == 2)
+                                    layer.clip_param.max = rgF[0];
+
+                                rgUsedConstants.Add(node.Input[i]);
+                            }
+                        }
                     }
                 }
 
@@ -1921,6 +1992,13 @@ namespace MyCaffe.converter.onnx
                     layer.name = strNodeName;
                 }
 
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Transpose))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.TRANSPOSE);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.transpose_param);
+                }
+
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Shape))
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.RESHAPE);
@@ -1928,11 +2006,16 @@ namespace MyCaffe.converter.onnx
                     fillParameter(node.Attribute, layer.reshape_param, col, node.Input, node.Output[0], cuda, log);
                 }
 
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Squeeze))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.SQUEEZE);
+                    layer.name = strNodeName;
+                }
+
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Unsqueeze))
                 {
-                    layer = new LayerParameter(LayerParameter.LayerType.RESHAPE);
+                    layer = new LayerParameter(LayerParameter.LayerType.UNSQUEEZE);
                     layer.name = strNodeName;
-                    fillParameterUnsqueeze(node.Attribute, layer.reshape_param, col, node.Input, node.Output[0], cuda, log);
                 }
 
                 if (layer == null)
@@ -1941,7 +2024,7 @@ namespace MyCaffe.converter.onnx
                 foreach (string strInput in node.Input)
                 {
                     string strInput1 = convertWs(strInput);
-                    if (!rgstrLearnableBlobs.Contains(strInput1) && !rgstrExcludedInputs.Contains(strInput1))
+                    if (!rgstrLearnableBlobs.Contains(strInput1) && !rgstrExcludedInputs.Contains(strInput1) && !rgUsedConstants.Contains(strInput1))
                         layer.bottom.Add(strInput1);
 
                     foreach (string strLearnable in rgstrLearnableBlobs)
@@ -1958,28 +2041,50 @@ namespace MyCaffe.converter.onnx
                 // Add any constant layers for constant inputs.
                 for (int i = 1; i < node.Input.Count; i++)
                 {
-                    if (!rgConstants.ContainsKey(node.Input[i]))
+                    if (!rgConstants.ContainsKey(node.Input[i]) && !rgUsedConstants.Contains(node.Input[i]) && !rgstrLearnableBlobs.Contains(node.Input[i]))
                     {
                         Blob<T> input = col.FindBlob(node.Input[i]);
                         if (input != null)
                         {
-                            LayerParameter layerConst = new LayerParameter(LayerParameter.LayerType.CONSTANT);
-                            layerConst.name = convertWs(node.Input[i]);
-                            layerConst.top.Add(layerConst.name);
-                            fillParameter(input, layerConst.constant_param);
-                            m_strReport += "Adding constant layer '" + layerConst.ToString() + "'" + Environment.NewLine;
-                            p.layer.Add(layerConst);
+                            string strName = convertWs(node.Input[i]);
+
+                            if (bIncludeConstants && isLayerUsed(rg, strName, strName))
+                            {
+                                LayerParameter layerConst = new LayerParameter(LayerParameter.LayerType.CONSTANT);
+                                layerConst.name = strName;
+                                layerConst.top.Add(layerConst.name);
+                                fillParameter(input, layerConst.constant_param);
+
+                                m_strReport += "Adding constant layer '" + layerConst.ToString() + "'" + Environment.NewLine;
+                                p.layer.Add(layerConst);
+                            }
                         }
                     }
                 }
 
                 m_strReport += "Adding layer '" + layer.ToString() + "'" + Environment.NewLine;
-
                 layer.freeze_learning = !m_bEnableBackward;
                 p.layer.Add(layer);
             }
 
             return colLearnable;
+        }
+
+        private bool isLayerUsed(RepeatedField<NodeProto> rgNodes, string strName, string strTop)
+        {
+            foreach (NodeProto node in rgNodes)
+            {
+                if (node.Name != strName)
+                {
+                    foreach (string strBtm in node.Input)
+                    {
+                        if (strBtm == strTop)
+                            return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         private void fillParameter(RepeatedField<AttributeProto> rg, ArgMaxParameter p, ArgMaxParameter.COMPARE_OPERATOR op)
@@ -2009,6 +2114,23 @@ namespace MyCaffe.converter.onnx
             }
         }
 
+        private void fillParameter(RepeatedField<AttributeProto> rg, ClipParameter p)
+        {
+            foreach (AttributeProto attrib in rg)
+            {
+                if (attrib.Name == "min")
+                {
+                    p.min = attrib.F;
+                    break;
+                }
+                else if (attrib.Name == "max")
+                {
+                    p.max = attrib.F;
+                    break;
+                }
+            }
+        }
+
         private void fillParameter(RepeatedField<AttributeProto> rg, ConcatParameter p)
         {
             foreach (AttributeProto attrib in rg)
@@ -2027,7 +2149,7 @@ namespace MyCaffe.converter.onnx
 
             foreach (char ch in str)
             {
-                if (ch == '\\' || ch == '/')
+                if (ch == '\\' || ch == '/' || ch == ':')
                     strOut += "_";
                 else
                     strOut += ch;
@@ -2257,6 +2379,9 @@ namespace MyCaffe.converter.onnx
                 else if (attrib.Name == "group")
                 {
                     p.group = (uint)attrib.I;
+
+                    if (p.group > 144)
+                        p.group /= 3;
                 }
             }
 
@@ -2493,44 +2618,6 @@ namespace MyCaffe.converter.onnx
             }
         }
 
-        private void fillParameterUnsqueeze(RepeatedField<AttributeProto> rg, ReshapeParameter p, BlobCollection<T> col, RepeatedField<string> rgInputs, string strOutputBlob, CudaDnn<T> cuda, Log log)
-        {
-            List<float> rgIdx = new List<float>();
-
-            p.shape = new BlobShape();
-
-            if (rgInputs.Count != 2)
-                throw new Exception("Expected two input blobs: 'data', 'index'");
-
-            string strInput0 = convertWs(rgInputs[0]);
-            Blob<T> data = col.FindBlob(strInput0);
-            if (data == null)
-                throw new Exception("Missing 'data' blob!");
-
-            string strInput1 = convertWs(rgInputs[1]);
-            Blob<T> index = col.FindBlob(strInput1);
-            if (index == null)
-                throw new Exception("Missing 'index' blob!");
-
-            float[] rgData = Utility.ConvertVecF<T>(index.mutable_cpu_data);
-            rgIdx = new List<float>(rgData);
-
-            p.shape.dim = new List<int>(data.shape());
-
-            foreach (int nIdx in rgIdx)
-            {
-                if (nIdx > p.shape.dim.Count)
-                    p.shape.dim.Add(1);
-                else
-                    p.shape.dim.Insert(nIdx, 1);
-            }
-
-            col.Remove(index);
-
-            data.Reshape(p.shape);
-            data.Name = convertWs(strOutputBlob);
-        }
-
         private void fillParameter(RepeatedField<AttributeProto> rg, PReLUParameter p)
         {
         }
@@ -2562,6 +2649,29 @@ namespace MyCaffe.converter.onnx
         private void fillParameter(RepeatedField<AttributeProto> rg, MathParameter p, MyCaffe.common.MATH_FUNCTION fn)
         {
             p.function = fn;
+        }
+
+        private void fillParameter(RepeatedField<AttributeProto> rg, TransposeParameter p)
+        {
+            List<int> rgDim = new List<int>();
+
+            foreach (AttributeProto attrib in rg)
+            {
+                if (attrib.Name == "dim")
+                {
+                    rgDim.Add((int)attrib.I);
+                }
+                else if (attrib.Name == "perm")
+                {
+                    foreach (long val in attrib.Ints)
+                    {
+                        rgDim.Add((int)val);
+                    }
+                }
+            }
+
+            if (rgDim.Count > 0)
+                p.dim = rgDim;
         }
     }
 
@@ -2600,8 +2710,11 @@ namespace MyCaffe.converter.onnx
 
             foreach (LayerData item in rgItems)
             {
-                p.top.Remove(item.Name);
-                strReport += "Removed top '" + item.Name + "' from layer '" + item.Layer.name + "(" + item.Layer.type.ToString() + ") at layer index = " + item.LayerIndex.ToString() + Environment.NewLine;
+                if (item.Layer.type != LayerParameter.LayerType.CONSTANT)
+                {
+                    p.top.Remove(item.Name);
+                    strReport += "Removed top '" + item.Name + "' from layer '" + item.Layer.name + "(" + item.Layer.type.ToString() + ") at layer index = " + item.LayerIndex.ToString() + Environment.NewLine;
+                }
             }
 
             return strReport;
@@ -2615,6 +2728,11 @@ namespace MyCaffe.converter.onnx
         public int Count
         {
             get { return m_rgItems.Count; }
+        }
+
+        public void Add(LayerData item)
+        {
+            m_rgItems.Add(item);
         }
 
         public void Add(List<string> rg, int nIdx, LayerParameter layer)
