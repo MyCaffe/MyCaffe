@@ -745,7 +745,7 @@ namespace MyCaffe.test
             try
             {
                 cuda = new CudaDnn<T>(0);
-                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
+                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, false, dsTraining);
                 Trace.WriteLine(convert.ReportString);
 
                 data.Save(strTestPath, "LeNet" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
@@ -791,7 +791,7 @@ namespace MyCaffe.test
             try
             {
                 cuda = new CudaDnn<T>(0);
-                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
+                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, false, dsTraining);
                 Trace.WriteLine(convert.ReportString);
 
                 data.Save(strTestPath, "LeNet" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
@@ -838,7 +838,7 @@ namespace MyCaffe.test
             try
             {
                 cuda = new CudaDnn<T>(0);
-                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
+                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, false, dsTraining);
                 Trace.WriteLine(convert.ReportString);
 
                 data.Save(strTestPath, "EfficientNetLite" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
@@ -885,7 +885,7 @@ namespace MyCaffe.test
             try
             {
                 cuda = new CudaDnn<T>(0);
-                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
+                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, false, dsTraining);
                 Trace.WriteLine(convert.ReportString);
 
                 data.Save(strTestPath, "AlexNet" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
@@ -931,7 +931,7 @@ namespace MyCaffe.test
             try
             {
                 cuda = new CudaDnn<T>(0);
-                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
+                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, false, dsTraining);
                 Trace.WriteLine(convert.ReportString);
 
                 data.Save(strTestPath, "GoogNet" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
@@ -977,7 +977,7 @@ namespace MyCaffe.test
             try
             {
                 cuda = new CudaDnn<T>(0);
-                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
+                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, false, dsTraining);
                 Trace.WriteLine(convert.ReportString);
 
                 data.Save(strTestPath, "VGG19" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
@@ -1023,7 +1023,7 @@ namespace MyCaffe.test
             try
             {
                 cuda = new CudaDnn<T>(0);
-                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
+                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, false, dsTraining);
                 Trace.WriteLine(convert.ReportString);
 
                 data.Save(strTestPath, "ResNet50" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
@@ -1069,7 +1069,7 @@ namespace MyCaffe.test
             try
             {
                 cuda = new CudaDnn<T>(0);
-                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
+                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, false, dsTraining);
                 Trace.WriteLine(convert.ReportString);
 
                 data.Save(strTestPath, "Inception" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
