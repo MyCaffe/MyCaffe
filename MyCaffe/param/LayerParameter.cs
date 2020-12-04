@@ -379,6 +379,14 @@ namespace MyCaffe.param
             /// </summary>
             SPLIT,
             /// <summary>
+            /// Initializes a parameter for the SqueezeLayer.
+            /// </summary>
+            SQUEEZE,
+            /// <summary>
+            /// Initializes a parameter for the SqueezeLayer.
+            /// </summary>
+            UNSQUEEZE,
+            /// <summary>
             /// Initializes a parameter for the SwishLayer
             /// </summary>
             SWISH,
@@ -1150,6 +1158,18 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("reshape");
                     m_rgLayerParameters[lt] = new ReshapeParameter();
+                    break;
+
+                case LayerType.SQUEEZE:
+                    expected_bottom.Add("input");
+                    expected_top.Add("squeeze");
+                    m_rgLayerParameters[LayerType.SQUEEZE] = new SqueezeParameter();
+                    break;
+
+                case LayerType.UNSQUEEZE:
+                    expected_bottom.Add("input");
+                    expected_top.Add("unsqueeze");
+                    m_rgLayerParameters[LayerType.SQUEEZE] = new SqueezeParameter();
                     break;
 
                 case LayerType.SCALAR:
@@ -1949,6 +1969,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.RESHAPE
+        /// </summary>
+        public SqueezeParameter squeeze_param
+        {
+            get { return (SqueezeParameter)m_rgLayerParameters[LayerType.SQUEEZE]; }
+            set { m_rgLayerParameters[LayerType.SQUEEZE] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.SCALAR
         /// </summary>
         public ScalarParameter scalar_param
@@ -2426,6 +2455,12 @@ namespace MyCaffe.param
                 case LayerType.RESHAPE:
                     return "Reshape";
 
+                case LayerType.SQUEEZE:
+                    return "Squeeze";
+
+                case LayerType.UNSQUEEZE:
+                    return "Unsqueeze";
+
                 case LayerType.SCALAR:
                     return "Scalar";
 
@@ -2616,6 +2651,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gather_param, "gather_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(knn_param, "knn_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(normalization1_param, "normalization_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(squeeze_param, "squeeze_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(triplet_loss_param, "triplet_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(unpooling_param, "unpooling_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(transpose_param, "transpose_param"));
@@ -2897,6 +2933,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("normalization_param")) != null)
                 p.normalization1_param = Normalization1Parameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("squeeze_param")) != null)
+                p.squeeze_param = SqueezeParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("triplet_loss_param")) != null)
                 p.triplet_loss_param = TripletLossParameter.FromProto(rpp);
@@ -3216,6 +3255,12 @@ namespace MyCaffe.param
 
                 case "reshape":
                     return LayerType.RESHAPE;
+
+                case "squeeze":
+                    return LayerType.SQUEEZE;
+
+                case "unsqueeze":
+                    return LayerType.UNSQUEEZE;
 
                 case "scalar":
                     return LayerType.SCALAR;
