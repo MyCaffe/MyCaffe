@@ -23,7 +23,7 @@ namespace MyCaffe.param.beta
         /// Specifies the first axis to gather: all preceding axes are retained in the output.
         /// May be negative to index from the end (e.g., -1 for the last axis).
         /// </summary>
-        [Description("Specifies the first axis to flatten: all preceding axes are retained in the output.")]
+        [Description("Specifies the first axis to gather: all preceding axes are retained in the output.")]
         public int axis
         {
             get { return m_nAxis; }
