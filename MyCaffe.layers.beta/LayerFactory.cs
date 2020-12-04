@@ -61,6 +61,12 @@ namespace MyCaffe.layers.beta
                 case LayerParameter.LayerType.TRIPLET_LOSS:
                     return new TripletLossLayer<double>(cuda, log, p);
 
+                case LayerParameter.LayerType.SQUEEZE:
+                    return new SqueezeLayer<double>(cuda, log, p);
+
+                case LayerParameter.LayerType.UNSQUEEZE:
+                    return new UnsqueezeLayer<double>(cuda, log, p);
+
                 case LayerParameter.LayerType.UNPOOLING1:
                     return new UnPoolingLayer1<double>(cuda, log, p);
 
@@ -114,6 +120,12 @@ namespace MyCaffe.layers.beta
 
                 case LayerParameter.LayerType.TRIPLET_LOSS:
                     return new TripletLossLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.SQUEEZE:
+                    return new SqueezeLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.UNSQUEEZE:
+                    return new UnsqueezeLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.UNPOOLING1:
                     return new UnPoolingLayer1<float>(cuda, log, p);

@@ -70,8 +70,8 @@
       <HintPath>..\packages\Microsoft.VisualStudio.QualityTools.UnitTestFramework.Updated.15.0.26228\lib\Microsoft.VisualStudio.QualityTools.UnitTestFramework.dll\Microsoft.VisualStudio.QualityTools.UnitTestFramework.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="OnnxControl, Version=0.11.1.132, Culture=neutral, PublicKeyToken=8c813ab21bbfb2ac, processorArchitecture=MSIL">
-      <HintPath>..\packages\OnnxControl.0.11.1.132-beta1\lib\net40\OnnxControl.dll</HintPath>
+    <Reference Include="OnnxControl, Version=0.11.1.151, Culture=neutral, PublicKeyToken=8c813ab21bbfb2ac, processorArchitecture=MSIL">
+      <HintPath>..\packages\OnnxControl.0.11.1.151-beta1\lib\net40\OnnxControl.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -113,6 +113,8 @@
     <Compile Include="TestDatasetFactory.cs" />
     <Compile Include="TestCryptoRandom.cs" />
     <Compile Include="TestConstantLayer.cs" />
+    <Compile Include="TestSqueezeLayer.cs" />
+    <Compile Include="TestTransposeLayer.cs" />
     <Compile Include="TestGatherLayer.cs" />
     <Compile Include="TestMathLayer.cs" />
     <Compile Include="TestExtensionSsd.cs" />
