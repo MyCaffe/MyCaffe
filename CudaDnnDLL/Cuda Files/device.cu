@@ -1588,6 +1588,27 @@ template long Device<float>::cuda_scale(long lInput, float* pfInput, long* plOut
 
 
 template <class T>
+long Device<T>::cuda_scale_to_range(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 5, 5))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	long hX = (long)pfInput[1];
+	long hY = (long)pfInput[2];
+	T fMin = pfInput[3];
+	T fMax = pfInput[4];
+
+	return m_math.scale_to_range(n, hX, hY, fMin, fMax);
+}
+
+template long Device<double>::cuda_scale_to_range(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_scale_to_range(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::cuda_add_scalar(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;

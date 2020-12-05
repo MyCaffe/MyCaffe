@@ -1116,7 +1116,7 @@ namespace MyCaffe.common
         /// <returns>The Host data is returned.</returns>
         public T[] update_cpu_data()
         {
-            return m_data.update_cpu_data();
+            return m_data.update_cpu_data(m_nCount);
         }
 
         /// <summary>
@@ -1178,7 +1178,7 @@ namespace MyCaffe.common
             if (m_diff == null)
                 return null;
 
-            return m_diff.update_cpu_data();
+            return m_diff.update_cpu_data(m_nCount);
         }
 
         /// <summary>
@@ -1410,6 +1410,16 @@ namespace MyCaffe.common
         public void scale_diff(double df)
         {
             scale_diff((T)Convert.ChangeType(df, typeof(T)));
+        }
+
+        /// <summary>
+        /// Scale the data in the blob to the range [dfMin,dfMax].
+        /// </summary>
+        /// <param name="dfMin">Specifies the minimum of the range.</param>
+        /// <param name="dfMax">Specifies the maximum of the range.</param>
+        public void scale_to_range(double dfMin, double dfMax)
+        {
+            m_cuda.scale_to_range(m_nCount, gpu_data, mutable_gpu_data, dfMin, dfMax);
         }
 
         /// <summary>

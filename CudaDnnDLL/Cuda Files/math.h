@@ -169,6 +169,7 @@ class Math
 		long asum(int n, long hX, T* pOut, int nXOff = 0);
 		long asum(int n, T* x, T* pOut);
 		long scale(int n, T fAlpha, long hX, long hY, int nXOff = 0, int nYOff = 0);
+		long scale_to_range(int n, long hX, long hY, T fMin, T fMax);
 		long add_scalar(int n, T fAlpha, long hY, int nYOff = 0);
 		long add(int n, long hA, long hB, long hY, T fAlpha);
 		long add(int n, T* a, T* b, T* c);

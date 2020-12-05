@@ -1,5 +1,5 @@
 //=============================================================================
-//  Copyright (c) 2016, SignalPOP.  All rights reserved.
+//  Copyright (c) 2016-2020, SignalPOP.  All rights reserved.
 //
 //	--CAFFE--
 //  Portions Copyright (c) 2014, 2015, The Regents of the University of California (Regents)
@@ -12,31 +12,6 @@
 //	--TSNE--
 //  Portions Copyright (c) 2014, Laurens van der Maaten (Delft University of Technology)
 //  All rights reserved.
-//   
-//  Redistribution and use in source and binary forms, with or without
-//  modification, are permitted provided that the following conditions are met:
-//  1. Redistributions of source code must retain the above copyright
-//     notice, this list of conditions and the following disclaimer.
-//  2. Redistributions in binary form must reproduce the above copyright
-//     notice, this list of conditions and the following disclaimer in the
-//     documentation and/or other materials provided with the distribution.
-//  3. All advertising materials mentioning features or use of this software
-//     must display the following acknowledgement:
-//     This product includes software developed by the Delft University of Technology.
-//  4. Neither the name of the Delft University of Technology nor the names of 
-//     its contributors may be used to endorse or promote products derived from 
-//     this software without specific prior written permission.
-// 
-//  THIS SOFTWARE IS PROVIDED BY LAURENS VAN DER MAATEN ''AS IS'' AND ANY EXPRESS
-//  OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
-//  OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO 
-//  EVENT SHALL LAURENS VAN DER MAATEN BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
-//  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
-//  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR 
-//  BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
-//  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
-//  IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
-//  OF SUCH DAMAGE.
 //
 //	--Guassian Blur--
 //	Created by AlanTatourian and Licensed by Microsoft under the Apache License, Version 2.0
@@ -2302,6 +2277,55 @@ long Math<float>::scale(int n, float fAlpha, long hX, long hY, int nXOff, int nY
 
 	return cudaStreamSynchronize(stream);
 }
+
+template <typename T>
+__global__ void scale_to_range_kernel(const int n, const T* x, T* y, const T fMinOriginal, const T fMin, const T fScale)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		y[i] = ((x[i] - fMinOriginal) * fScale) + fMin;
+	}
+}
+
+
+template <class T>
+long Math<T>::scale_to_range(int n, long hX, long hY, T fMin, T fMax)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	T* x = (T*)pX->Data();
+	T* y = (T*)pY->Data();
+	T fRange = fMax - fMin;
+	T fMinOriginal;
+	T fMaxOriginal;
+
+	if (lErr = minval(n, hX, &fMinOriginal))
+		return lErr;
+
+	if (lErr = maxval(n, hX, &fMaxOriginal))
+		return lErr;
+
+	T fRangeOriginal = fMaxOriginal - fMinOriginal;
+	if (fRangeOriginal == 0)
+		return 0;
+
+	T fScale = fRange / fRangeOriginal;
+
+	scale_to_range_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, y, fMinOriginal, fMin, fScale);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::scale_to_range(int n, long hX, long hY, double dfMin, double dfMax);
+template long Math<float>::scale_to_range(int n, long hX, long hY, float fMin, float fMax);
 
 
 template <typename T>

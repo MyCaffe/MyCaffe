@@ -1031,6 +1031,7 @@ namespace MyCaffe.common
             CUDA_SET_BOUNDS = 259,
             CUDA_MINMAXVEC = 260,
             CUDA_TRANSPOSE = 261,
+            CUDA_SCALE_TO_RANGE = 262,
 
             CUDA_MULBSX = 270,
             CUDA_DIVBSX = 271,
@@ -5989,6 +5990,22 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SCALE, new double[] { n, convertD(fAlpha), hX, hY, nXOff, nYOff });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SCALE, new float[] { n, convertF(fAlpha), hX, hY, nXOff, nYOff });
+        }
+
+        /// <summary>
+        /// Scales the values in X and places the result in Y (can also run inline where X = Y).
+        /// </summary>
+        /// <param name="n">Specifies the number of items (not bytes) in the vector X.</param>
+        /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
+        /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
+        /// <param name="fMin">Specifies the minimum of the new range.</param>
+        /// <param name="fMax">Specifies the maximum of the new range.</param>
+        public void scale_to_range(int n, long hX, long hY, double fMin, double fMax)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SCALE_TO_RANGE, new double[] { n, hX, hY, fMin, fMax });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SCALE_TO_RANGE, new float[] { n, hX, hY, (float)fMin, (float)fMax });
         }
 
         /// <summary>

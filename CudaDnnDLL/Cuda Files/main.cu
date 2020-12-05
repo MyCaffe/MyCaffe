@@ -479,6 +479,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_SCALE:
 			return m_device.cuda_scale(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_SCALE_TO_RANGE:
+			return m_device.cuda_scale_to_range(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_ADD_SCALAR:
 			return m_device.cuda_add_scalar(lCount, pfInput, plCount, ppfOutput);
 
@@ -1412,6 +1415,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_SCALE:
 		return "CUDA_FN_SCALE";
+
+	case CUDA_FN_SCALE_TO_RANGE:
+		return "CUDA_FN_SCALE_TO_RANGE";
 
 	case CUDA_FN_ADD_SCALAR:
 		return "CUDA_FN_ADD_SCALAR";
