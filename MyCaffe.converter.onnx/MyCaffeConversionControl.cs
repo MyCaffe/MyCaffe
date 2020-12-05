@@ -36,6 +36,8 @@ namespace MyCaffe.converter.onnx
         string m_strReport = "";
         string m_strOriginalPath = null;
         bool m_bEnableBackward = false;
+        double? m_dfWtScaleMin = null;
+        double? m_dfWtScaleMax = null;
 
         /// <summary>
         /// The constructor.
@@ -67,6 +69,17 @@ namespace MyCaffe.converter.onnx
                 string path = Uri.UnescapeDataString(uri.Path);
                 return Path.GetDirectoryName(path);
             }
+        }
+
+        /// <summary>
+        /// Set the scaling factors applied to the weights.
+        /// </summary>
+        /// <param name="dfMin">Specifies the minimum of the range.</param>
+        /// <param name="dfMax">Specifies the maximum of the range.</param>
+        public void SetWeightScaling(double dfMin, double dfMax)
+        {
+            m_dfWtScaleMax = dfMax;
+            m_dfWtScaleMin = dfMin;
         }
 
         /// <summary>
@@ -1515,7 +1528,7 @@ namespace MyCaffe.converter.onnx
                 {
                     blob.Tag = strLayerName;
                     bBiasTerm = true;
-                    nBiasOutputs = blob.shape()[nAxis];
+                    nBiasOutputs = blob.shape()[0];
                 }
 
                 if (nWtOutputs.HasValue && bBiasTerm)
@@ -1553,6 +1566,14 @@ namespace MyCaffe.converter.onnx
             }
 
             return strOut;
+        }
+
+        private void scale(Blob<T> blob)
+        {
+            if (!m_dfWtScaleMin.HasValue || !m_dfWtScaleMax.HasValue)
+                return;
+
+            blob.scale_to_range(m_dfWtScaleMin.Value, m_dfWtScaleMax.Value);
         }
 
         private BlobCollection<T> addLayers(RepeatedField<NodeProto> rg, NetParameter p, BlobCollection<T> col, OnnxDefinitions onnx, List<string> rgstrInputs, CudaDnn<T> cuda, Log log, bool bIncludeConstants)
@@ -1693,6 +1714,7 @@ namespace MyCaffe.converter.onnx
                         }
 
                         blob.Tag = strNodeName;
+                        scale(blob);
                         colBlobs.Add(blob);
                     }
 
@@ -1790,6 +1812,7 @@ namespace MyCaffe.converter.onnx
                         }
 
                         rgstrLearnableBlobs.Add(convertWs(node.Input[i]));
+                        scale(blob);
                         colLearnable.Add(blob);
 
                         if (i == 1)
@@ -1886,7 +1909,9 @@ namespace MyCaffe.converter.onnx
                     {
                         string strInput = convertWs(node.Input[i]);
                         rgstrLearnableBlobs.Add(strInput);
-                        colLearnable.Add(col.FindBlob(strInput));
+                        Blob<T> blob = col.FindBlob(strInput);
+                        scale(blob);
+                        colLearnable.Add(blob);
                     }
 
                     layer = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
@@ -1948,7 +1973,9 @@ namespace MyCaffe.converter.onnx
                     {
                         string strInput = convertWs(node.Input[i]);
                         rgstrLearnableBlobs.Add(strInput);
-                        colLearnable.Add(col.FindBlob(strInput));
+                        Blob<T> blob = col.FindBlob(strInput);
+                        scale(blob);
+                        colLearnable.Add(blob);
                     }
 
                     layer = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
@@ -2022,7 +2049,8 @@ namespace MyCaffe.converter.onnx
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.RESHAPE);
                     layer.name = strNodeName;
-                    fillParameter(node.Attribute, layer.reshape_param, col, node.Input, node.Output[0], cuda, log);
+                    if (!fillParameter(node.Attribute, layer.reshape_param, col, node.Input, node.Output[0], cuda, log))
+                        bSkipLayer = true;
                 }
 
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Sin))
@@ -2057,6 +2085,13 @@ namespace MyCaffe.converter.onnx
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.SPLIT);
                     layer.name = strNodeName;
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Slice))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.SLICE);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.slice_param);
                 }
 
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Sqrt))
@@ -2689,7 +2724,7 @@ namespace MyCaffe.converter.onnx
             }
         }
 
-        private void fillParameter(RepeatedField<AttributeProto> rg, ReshapeParameter p, BlobCollection<T> col, RepeatedField<string> rgInputs, string strOutputBlob, CudaDnn<T> cuda, Log log)
+        private bool fillParameter(RepeatedField<AttributeProto> rg, ReshapeParameter p, BlobCollection<T> col, RepeatedField<string> rgInputs, string strOutputBlob, CudaDnn<T> cuda, Log log)
         {
             List<float> rgShape = new List<float>();
 
@@ -2700,7 +2735,7 @@ namespace MyCaffe.converter.onnx
                 string strInput1 = convertWs(rgInputs[1]);
                 Blob<T> shape = col.FindBlob(strInput1);
                 if (shape == null)
-                    throw new Exception("Missing 'shape' blob!");
+                    return false;
 
                 float[] rgData = Utility.ConvertVecF<T>(shape.mutable_cpu_data);
                 rgShape = new List<float>(rgData);
@@ -2740,6 +2775,8 @@ namespace MyCaffe.converter.onnx
                 output.Name = convertWs(strOutputBlob);
                 col.Add(output);
             }
+
+            return true;
         }
 
         private void fillParameter(RepeatedField<AttributeProto> rg, PReLUParameter p)
@@ -2753,6 +2790,18 @@ namespace MyCaffe.converter.onnx
                 if (attrib.Name == "alpha")
                 {
                     p.negative_slope = attrib.F;
+                    break;
+                }
+            }
+        }
+
+        private void fillParameter(RepeatedField<AttributeProto> rg, SliceParameter p)
+        {
+            foreach (AttributeProto attrib in rg)
+            {
+                if (attrib.Name == "axis")
+                {
+                    p.axis = (int)attrib.I;
                     break;
                 }
             }
