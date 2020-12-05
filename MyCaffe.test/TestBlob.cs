@@ -178,6 +178,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestMath_ScaleToRange()
+        {
+            BlobSimpleTest test = new BlobSimpleTest();
+
+            try
+            {
+                foreach (IBlobSimpleTest t in test.Tests)
+                {
+                    t.TestMath_ScaleToRange();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestResize1()
         {
             BlobSimpleTest test = new BlobSimpleTest();
@@ -259,6 +277,7 @@ namespace MyCaffe.test
         void TestMath_SumOfSquares();
         void TestMath_Asum();
         void TestMath_Scale();
+        void TestMath_ScaleToRange();
         void TestResize1();
         void TestResize2();
         void TestResize3();
@@ -739,6 +758,53 @@ namespace MyCaffe.test
 
             m_log.EXPECT_NEAR(dfExpectedAsumData, dfAsumData2, m_fEpsilon * dfExpectedAsumData);
             m_log.EXPECT_NEAR(dfExpectedAsumDiff, dfAsumDiff2, m_fEpsilon * dfExpectedAsumDiff);
+        }
+
+        public void TestMath_ScaleToRange()
+        {
+            Blob<T> blob = new Blob<T>(m_cuda, m_log, 100, 1, 20, 20);
+            Blob<T> blobScaled = new Blob<T>(m_cuda, m_log, 100, 3, 20, 20);
+
+            try
+            {
+                FillerParameter p = new FillerParameter("uniform");
+                p.min = -3;
+                p.max = 3;
+                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, p);
+                filler.Fill(blob);
+
+                blobScaled.CopyFrom(blob, false, true);
+                blobScaled.scale_to_range(-1, 1);
+
+                double[] rgDfS = Utility.ConvertVec<T>(blobScaled.mutable_cpu_data);
+                double[] rgDfO = Utility.ConvertVec<T>(blob.mutable_cpu_data);
+                double dfMin = blob.min_data;
+                double dfMax = blob.max_data;
+                double dfRange = dfMax - dfMin;
+                double dfMinS = -1;
+                double dfMaxS = 1;
+                double dfRangeS = dfMaxS - dfMinS;
+                double dfScale = dfRangeS / dfRange;
+
+                for (int i = 0; i < rgDfS.Length; i++)
+                {
+                    double dfValS = rgDfS[i];
+                    double dfValO = rgDfO[i];
+
+                    double dfVal = (((dfValO - dfMin) * dfScale) + dfMinS);
+
+                    m_log.EXPECT_NEAR(dfVal, dfValS, 0.000001, "The values are not as expected.");
+                }
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                blob.Dispose();
+                blobScaled.Dispose();
+            }
         }
 
         private void Fill1(Blob<T> b)
