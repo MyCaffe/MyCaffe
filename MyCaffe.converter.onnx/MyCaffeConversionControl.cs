@@ -38,6 +38,7 @@ namespace MyCaffe.converter.onnx
         bool m_bEnableBackward = false;
         double? m_dfWtScaleMin = null;
         double? m_dfWtScaleMax = null;
+        List<string> m_rgstrIgnoreLayerNames = new List<string>();
 
         /// <summary>
         /// The constructor.
@@ -80,6 +81,15 @@ namespace MyCaffe.converter.onnx
         {
             m_dfWtScaleMax = dfMax;
             m_dfWtScaleMin = dfMin;
+        }
+
+        /// <summary>
+        /// Get/set the list of layer names to ignore (layers are ignored when they contain the text from one of these items).
+        /// </summary>
+        public List<string> IgnoeLayerNames
+        {
+            get { return m_rgstrIgnoreLayerNames; }
+            set { m_rgstrIgnoreLayerNames = value; }
         }
 
         /// <summary>
@@ -907,6 +917,8 @@ namespace MyCaffe.converter.onnx
                 if (dsTraining != null)
                     netParamFixed = fixupModelForTraining(netParamFixed, dsTraining);
 
+                netParamFixed = removeLayersWithOrphanedBottoms(netParamFixed);
+
                 return new Tuple<NetParameter, BlobCollection<T>>(netParamFixed, colLearnableBlobs);
             }
             catch (Exception excpt)
@@ -914,6 +926,60 @@ namespace MyCaffe.converter.onnx
                 m_strReport += "ERROR: " + excpt.Message + Environment.NewLine;
                 throw excpt;
             }
+        }
+
+        private NetParameter removeLayersWithOrphanedBottoms(NetParameter net)
+        {
+            List<int> rgRemoveIdx = new List<int>();
+            Dictionary<string, Tuple<int, int>> rgTopToLayerIdx = new Dictionary<string, Tuple<int, int>>();
+
+            // Find all tops and their associated layer index and top index.
+            for (int i = 0; i < net.layer.Count; i++)
+            {
+                for (int j=0; j<net.layer[i].top.Count; j++)
+                {
+                    if (!rgTopToLayerIdx.ContainsKey(net.layer[i].top[j]))
+                        rgTopToLayerIdx.Add(net.layer[i].top[j], new Tuple<int, int>(i, j));
+                }
+            }
+
+            // Replace the parent top with the bottom of the layer to be removed.
+            for (int i=1; i<net.layer.Count; i++)
+            {
+                Dictionary<string, Tuple<int, int>> rgBtmToParentTop = new Dictionary<string, Tuple<int, int>>();
+                bool bMissingBtmFound = false;
+
+                foreach (string strBtm in net.layer[i].bottom)
+                {
+                    if (!rgTopToLayerIdx.ContainsKey(strBtm))
+                    {
+                        rgRemoveIdx.Add(i);
+                        bMissingBtmFound = true;
+                    }
+                    else
+                    {
+                        rgBtmToParentTop.Add(strBtm, rgTopToLayerIdx[strBtm]);
+                    }
+                }
+
+                if (!bMissingBtmFound && net.layer[i].bottom.Count >= net.layer[i].expected_bottom.Count)
+                    rgBtmToParentTop.Clear();
+                else if (!rgRemoveIdx.Contains(i))
+                    rgRemoveIdx.Add(i);
+
+                foreach (KeyValuePair<string, Tuple<int, int>> kvTopInParent in rgBtmToParentTop)
+                {
+                    net.layer[kvTopInParent.Value.Item1].top[kvTopInParent.Value.Item2] = net.layer[i].top[0];
+                }
+            }
+
+            // Remove the layer.
+            for (int i = rgRemoveIdx.Count - 1; i >= 0; i--)
+            {
+                net.layer.RemoveAt(rgRemoveIdx[i]);
+            }
+
+            return net;
         }
 
         private NetParameter fixupModelForTraining(NetParameter netParam, DatasetDescriptor ds)
@@ -1051,18 +1117,26 @@ namespace MyCaffe.converter.onnx
                 if (isNeuron(layer.type))
                 {
                     string strBtm = layer.bottom[0];
-                    string strTop = layer.top[0];
 
-                    LayerParameter layerPrev = findLayerWithTop(netParam, strBtm);
-                    List<LayerParameter> rgLayerNext = findLayersWithBtm(netParam, strTop);
-
-                    // MyCaffe neural nodes pass data right back to the prev node.
-                    layer.top[0] = layer.bottom[0];
-
-                    // Connect the prev node top with the next node btm.
-                    foreach (LayerParameter layerNext in rgLayerNext)
+                    if (layer.top.Count == 0)
                     {
-                        replaceBtm(layerNext, strTop, strBtm);
+                        layer.top.Add(strBtm);
+                    }
+                    else
+                    {
+                        string strTop = layer.top[0];
+
+                        LayerParameter layerPrev = findLayerWithTop(netParam, strBtm);
+                        List<LayerParameter> rgLayerNext = findLayersWithBtm(netParam, strTop);
+
+                        // MyCaffe neural nodes pass data right back to the prev node.
+                        layer.top[0] = layer.bottom[0];
+
+                        // Connect the prev node top with the next node btm.
+                        foreach (LayerParameter layerNext in rgLayerNext)
+                        {
+                            replaceBtm(layerNext, strTop, strBtm);
+                        }
                     }
                 }
             }
@@ -1570,7 +1644,7 @@ namespace MyCaffe.converter.onnx
 
         private void scale(Blob<T> blob)
         {
-            if (!m_dfWtScaleMin.HasValue || !m_dfWtScaleMax.HasValue)
+            if (!m_dfWtScaleMin.HasValue || double.IsNaN(m_dfWtScaleMin.Value) || !m_dfWtScaleMax.HasValue || double.IsNaN(m_dfWtScaleMax.Value))
                 return;
 
             blob.scale_to_range(m_dfWtScaleMin.Value, m_dfWtScaleMax.Value);
@@ -2195,7 +2269,7 @@ namespace MyCaffe.converter.onnx
                     }
                 }
 
-                if (!bSkipLayer)
+                if (!bSkipLayer && !ignoreLayer(layer))
                 {
                     // If we skip a layer, use the top of the last layer as input.
                     if (lastLayer != null && lastLayerAdded != null && lastLayer.name != lastLayerAdded.name)
@@ -2211,6 +2285,17 @@ namespace MyCaffe.converter.onnx
             }
 
             return colLearnable;
+        }
+
+        private bool ignoreLayer(LayerParameter layer)
+        {
+            foreach (string strIgnore in m_rgstrIgnoreLayerNames)
+            {
+                if (layer.name.ToUpper().Contains(strIgnore.ToUpper()))
+                    return true;
+            }
+
+            return false;
         }
 
         private bool isInputUsed(List<LayerParameter> rgLayers, string strBtm)
