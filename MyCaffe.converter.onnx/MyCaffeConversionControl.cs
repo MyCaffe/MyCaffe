@@ -86,7 +86,7 @@ namespace MyCaffe.converter.onnx
         /// <summary>
         /// Get/set the list of layer names to ignore (layers are ignored when they contain the text from one of these items).
         /// </summary>
-        public List<string> IgnoeLayerNames
+        public List<string> IgnoreLayerNames
         {
             get { return m_rgstrIgnoreLayerNames; }
             set { m_rgstrIgnoreLayerNames = value; }
