@@ -387,6 +387,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestImportOnnxInceptionV2ForTrainNoDummy()
+        {
+            PersistOnnxTest test = new PersistOnnxTest();
+
+            try
+            {
+                foreach (IPersistOnnxTest t in test.Tests)
+                {
+                    t.TestImportOnnxInceptionV2("CIFAR-10", "DUMMY");
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -404,7 +422,7 @@ namespace MyCaffe.test
         void TestImportOnnxVGG19(string strTrainingDs = null);
         void TestImportOnnxResNet50(string strTrainingDs = null);
         void TestImportOnnxInceptionV1(string strTrainingDs = null);
-        void TestImportOnnxInceptionV2(string strTrainingDs = null);
+        void TestImportOnnxInceptionV2(string strTrainingDs = null, string strIgnoreLayer = null);
     }
 
     class PersistOnnxTest : TestBase
@@ -1135,7 +1153,7 @@ namespace MyCaffe.test
             return download(strModel, strUrl, dfSizeInMb);
         }
 
-        public void TestImportOnnxInceptionV2(string strTrainingDs)
+        public void TestImportOnnxInceptionV2(string strTrainingDs, string strIgnoreLayer)
         {
             string strTestPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\onnx\\imported\\inception";
             if (!Directory.Exists(strTestPath))
@@ -1143,6 +1161,9 @@ namespace MyCaffe.test
 
             string strOnnxFile = downloadOnnxInceptionV2Model();
             MyCaffeConversionControl<T> convert = new MyCaffeConversionControl<T>();
+
+            if (!string.IsNullOrEmpty(strIgnoreLayer))
+                convert.IgnoreLayerNames.Add(strIgnoreLayer);
 
             DatasetDescriptor dsTraining = null;
             if (strTrainingDs != null)
