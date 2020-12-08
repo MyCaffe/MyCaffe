@@ -590,6 +590,20 @@ namespace MyCaffe.converter.onnx
                         node.OpType = OnnxDefinitions.OPERATORS.Pow.ToString();
                         break;
 
+                    case LayerParameter.LayerType.REDUCTION:
+                        if (layer.layer_param.reduction_param.operation == ReductionParameter.ReductionOp.MAX)
+                            node.OpType = OnnxDefinitions.OPERATORS.ReduceMax.ToString();
+                        else if (layer.layer_param.reduction_param.operation == ReductionParameter.ReductionOp.MEAN)
+                            node.OpType = OnnxDefinitions.OPERATORS.ReduceMean.ToString();
+                        else if (layer.layer_param.reduction_param.operation == ReductionParameter.ReductionOp.MIN)
+                            node.OpType = OnnxDefinitions.OPERATORS.ReduceMin.ToString();
+                        else if (layer.layer_param.reduction_param.operation == ReductionParameter.ReductionOp.SUM)
+                            node.OpType = OnnxDefinitions.OPERATORS.ReduceSum.ToString();
+                        else if (layer.layer_param.reduction_param.operation == ReductionParameter.ReductionOp.SUMSQ)
+                            node.OpType = OnnxDefinitions.OPERATORS.ReduceSumSquare.ToString();
+                        addAttributes(node.Attribute, layer.layer_param.reduction_param);
+                        break;
+
                     case LayerParameter.LayerType.RELU:
                         if (layer.layer_param.relu_param.negative_slope != 0)
                             node.OpType = OnnxDefinitions.OPERATORS.LeakyRelu.ToString();
@@ -846,14 +860,21 @@ namespace MyCaffe.converter.onnx
         {
         }
 
+        private void addAttributes(RepeatedField<AttributeProto> rgA, ReductionParameter p)
+        {
+            AttributeProto attrib = new AttributeProto();
+            attrib.Name = "axes";
+            attrib.Ints.Add(p.axis);
+
+            rgA.Add(attrib);
+        }
+
         private void addAttributes(RepeatedField<AttributeProto> rgA, ReLUParameter p)
         {
             if (p.negative_slope != 0)
             {
                 AttributeProto attrib = new AttributeProto();
                 attrib.Name = "alpha";
-                attrib.F = (float)p.negative_slope;
-
                 rgA.Add(attrib);
             }
         }
@@ -969,7 +990,8 @@ namespace MyCaffe.converter.onnx
 
                 foreach (KeyValuePair<string, Tuple<int, int>> kvTopInParent in rgBtmToParentTop)
                 {
-                    net.layer[kvTopInParent.Value.Item1].top[kvTopInParent.Value.Item2] = net.layer[i].top[0];
+                    if (net.layer[i].top.Count > 0)
+                        net.layer[kvTopInParent.Value.Item1].top[kvTopInParent.Value.Item2] = net.layer[i].top[0];
                 }
             }
 
@@ -1858,6 +1880,16 @@ namespace MyCaffe.converter.onnx
                     }
                 }
 
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.ConstantOfShape))
+                {
+                    string strOutput = convertWs(node.Output[0]);
+
+                    layer = new LayerParameter(LayerParameter.LayerType.CONSTANT);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, strOutput, layer.constant_param);
+                    rgConstants.Add(strOutput, layer.constant_param);
+                }
+
                 else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Conv))
                 {
                     int nGroupReductionFactor = 1;
@@ -2225,6 +2257,55 @@ namespace MyCaffe.converter.onnx
                     layer.name = strNodeName;
                 }
 
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.ReduceMin))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.REDUCTION);
+                    layer.name = strNodeName;
+                    layer.reduction_param.operation = ReductionParameter.ReductionOp.MIN;
+                    fillParameter(node.Attribute, layer.reduction_param);
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.ReduceMax))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.REDUCTION);
+                    layer.name = strNodeName;
+                    layer.reduction_param.operation = ReductionParameter.ReductionOp.MAX;
+                    fillParameter(node.Attribute, layer.reduction_param);
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.ReduceSum))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.REDUCTION);
+                    layer.name = strNodeName;
+                    layer.reduction_param.operation = ReductionParameter.ReductionOp.SUM;
+                    fillParameter(node.Attribute, layer.reduction_param);
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.ReduceMean))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.REDUCTION);
+                    layer.name = strNodeName;
+                    layer.reduction_param.operation = ReductionParameter.ReductionOp.MEAN;
+                    fillParameter(node.Attribute, layer.reduction_param);
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.ReduceSumSquare))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.REDUCTION);
+                    layer.name = strNodeName;
+                    layer.reduction_param.operation = ReductionParameter.ReductionOp.SUMSQ;
+                    fillParameter(node.Attribute, layer.reduction_param);
+                }
+
+                // For now skipping these layers.
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.NonMaxSuppression) ||
+                         node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Cast) ||
+                         node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.TopK))
+                {
+                layer = new LayerParameter(LayerParameter.LayerType.CONSTANT);
+                    bSkipLayer = true;
+                }
+
                 if (layer == null)
                     throw new Exception("Currently the node OpType '" + node.OpType + "' is not supported!");
 
@@ -2496,7 +2577,7 @@ namespace MyCaffe.converter.onnx
                     }
                     else if (attrib.T.DataType == (int)OnnxDefinitions.DataType.INT64)
                     {
-                        if (attrib.T.Int64Data.Count <= 32)
+                        if (attrib.T.Int64Data.Count > 0 && attrib.T.Int64Data.Count <= 32)
                         {
                             foreach (float f in attrib.T.FloatData)
                             {
@@ -2867,6 +2948,20 @@ namespace MyCaffe.converter.onnx
         private void fillParameter(RepeatedField<AttributeProto> rg, PReLUParameter p)
         {
         }
+
+        private void fillParameter(RepeatedField<AttributeProto> rg, ReductionParameter p)
+        {
+            foreach (AttributeProto attrib in rg)
+            {
+                if (attrib.Name == "keepdims")
+                {
+                }
+                else if (attrib.Name == "axes")
+                {                
+                }
+            }
+        }
+
 
         private void fillParameter(RepeatedField<AttributeProto> rg, ReLUParameter p, bool bLeaky)
         {
