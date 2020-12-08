@@ -32,7 +32,15 @@ namespace MyCaffe.param
             /// <summary>
             /// Calculate the mean value.
             /// </summary>
-            MEAN = 4
+            MEAN = 4,
+            /// <summary>
+            /// Calculate the min value.
+            /// </summary>
+            MIN = 5,
+            /// <summary>
+            /// Calculate the max value.
+            /// </summary>
+            MAX = 6
         }
 
         ReductionOp m_operation = ReductionOp.SUM;
@@ -166,6 +174,14 @@ namespace MyCaffe.param
 
                     case "SUMSQ":
                         p.operation = ReductionOp.SUMSQ;
+                        break;
+
+                    case "MIN":
+                        p.operation = ReductionOp.MIN;
+                        break;
+
+                    case "MAX":
+                        p.operation = ReductionOp.MAX;
                         break;
 
                     default:

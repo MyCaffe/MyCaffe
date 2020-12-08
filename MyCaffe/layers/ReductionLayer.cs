@@ -171,6 +171,7 @@ namespace MyCaffe.layers
 
             T[] rgTop = colTop[0].mutable_cpu_data;
             int nOffset = 0;
+            long lPos;
 
             for (int i = 0; i < m_nNum; i++)
             {
@@ -187,6 +188,14 @@ namespace MyCaffe.layers
 
                     case ReductionParameter.ReductionOp.SUMSQ:
                         rgTop[i] = m_cuda.dot(m_nDim, hBottomData, hBottomData, nOffset, nOffset);
+                        break;
+
+                    case ReductionParameter.ReductionOp.MIN:
+                        rgTop[i] = convert(m_cuda.min(m_nDim, hBottomData, out lPos, nOffset));
+                        break;
+
+                    case ReductionParameter.ReductionOp.MAX:
+                        rgTop[i] = convert(m_cuda.max(m_nDim, hBottomData, out lPos, nOffset));
                         break;
 
                     default:
@@ -247,6 +256,8 @@ namespace MyCaffe.layers
                         break;
 
                     case ReductionParameter.ReductionOp.ASUM:
+                    case ReductionParameter.ReductionOp.MIN:
+                    case ReductionParameter.ReductionOp.MAX:
                         m_cuda.sign(m_nDim, hBottomData, hBottomDiff, nOffset, nOffset);
                         m_cuda.scal(m_nDim, dfBottomCoeff, hBottomDiff, nOffset);
                         break;
