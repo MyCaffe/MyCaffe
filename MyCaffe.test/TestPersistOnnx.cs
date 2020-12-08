@@ -475,7 +475,7 @@ namespace MyCaffe.test
                 Directory.CreateDirectory(strTestPath);
 
             string strModelFileBig = strTestPath + "\\bvlcalexnet-9.onnx";
-            string strDownloadPathBig = "https://github.com/onnx/models/raw/master/vision/classification/alexnet/model/bvlcalexnet-9.onnx";
+            //string strDownloadPathBig = "https://github.com/onnx/models/raw/master/vision/classification/alexnet/model/bvlcalexnet-9.onnx";
             string strModelFileSmall = strTestPath + "\\mnist-1.onnx";
             string strDownloadPathSmall = "https://github.com/onnx/models/raw/master/vision/classification/mnist/model/mnist-1.onnx";
             string strDownloadPath = strDownloadPathSmall;
@@ -825,6 +825,13 @@ namespace MyCaffe.test
             return download(strModel, strUrl, dfSizeInMb);
         }
 
+        /// <summary>
+        /// Test importing the ONNX SSD model.
+        /// </summary>
+        /// <param name="strTrainingDs">Specifies the dataset to use.</param>
+        /// <remarks>
+        /// NOTE: Currently this model is only imported in an incomplete form, primarily to use the weights in transfer learning.
+        /// </remarks>
         public void TestImportOnnxSSDModel(string strTrainingDs)
         {
             string strTestPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\onnx\\imported\\voc0712";
@@ -849,7 +856,7 @@ namespace MyCaffe.test
                 MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, false, dsTraining);
                 Trace.WriteLine(convert.ReportString);
 
-                data.Save(strTestPath, "LeNet" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
+                data.Save(strTestPath, "SSD" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
             }
             catch (Exception excpt)
             {
