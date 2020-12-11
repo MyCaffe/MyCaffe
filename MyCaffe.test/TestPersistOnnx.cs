@@ -405,6 +405,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestImportExportImportOnnxLeNet()
+        {
+            PersistOnnxTest test = new PersistOnnxTest();
+
+            try
+            {
+                foreach (IPersistOnnxTest t in test.Tests)
+                {
+                    t.TestImportExportImportOnnxLeNet("MNIST", 8);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -423,6 +441,7 @@ namespace MyCaffe.test
         void TestImportOnnxResNet50(string strTrainingDs = null);
         void TestImportOnnxInceptionV1(string strTrainingDs = null);
         void TestImportOnnxInceptionV2(string strTrainingDs = null, string strIgnoreLayer = null);
+        void TestImportExportImportOnnxLeNet(string strTrainingDs, int nVersion);
     }
 
     class PersistOnnxTest : TestBase
@@ -781,6 +800,11 @@ namespace MyCaffe.test
 
         public void TestImportOnnxLetNet(string strTrainingDs, int nVersion)
         {
+            testImportOnnxLetNet(strTrainingDs, nVersion);
+        }
+
+        public MyCaffeModelData testImportOnnxLetNet(string strTrainingDs, int nVersion)
+        {
             string strTestPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\onnx\\imported\\mnist";
             if (!Directory.Exists(strTestPath))
                 Directory.CreateDirectory(strTestPath);
@@ -804,6 +828,8 @@ namespace MyCaffe.test
                 Trace.WriteLine(convert.ReportString);
 
                 data.Save(strTestPath, "LeNet" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
+
+                return data;
             }
             catch (Exception excpt)
             {
@@ -814,6 +840,64 @@ namespace MyCaffe.test
                 cuda.Dispose();
                 convert.Dispose();
             }
+        }
+
+        public void TestImportExportImportOnnxLeNet(string strTrainingDs, int nVersion)
+        {
+            MyCaffeModelData data = testImportOnnxLetNet(strTrainingDs, nVersion);
+
+            DatasetDescriptor dsTraining = null;
+            if (strTrainingDs == null)
+                m_log.FAIL("The training dataset must be specified!");
+
+            DatasetFactory factory = new DatasetFactory();
+            dsTraining = factory.LoadDataset(strTrainingDs);
+
+            List<int> rgShape = new List<int>() { 1, dsTraining.TrainingSource.ImageChannels, dsTraining.TrainingSource.ImageHeight, dsTraining.TrainingSource.ImageWidth };
+            BlobShape shape = new BlobShape(rgShape);
+
+            // Convert the model to a model for running (removes data layers)
+            TransformationParameter transform;
+            NetParameter netParam = MyCaffeControl<T>.CreateNetParameterForRunning(shape, data.ModelDescription, out transform);
+            RawProto proto = netParam.ToProto("root");
+            data.ModelDescription = proto.ToString();
+
+            // Convert the mycaffe model (imported from an onnx model) back into an onnx model.
+            MyCaffeConversionControl<T> converter = new MyCaffeConversionControl<T>();
+            CudaDnn<T> cuda = null;
+
+            string strOnnxFile = data.LastSavedModeDescriptionFileName + ".export.onnx";
+
+            try
+            {
+                if (File.Exists(strOnnxFile))
+                    File.Delete(strOnnxFile);
+
+                cuda = new CudaDnn<T>(0);
+                converter.ConvertMyCaffeToOnnxFile(cuda, m_log, data, strOnnxFile);
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                cuda.Dispose();
+                converter.Dispose();
+            }
+
+
+            //-----------------------------------------------------------------
+            //  Verify the two files.
+            //-----------------------------------------------------------------
+            PersistOnnx onnxOriginal = new PersistOnnx();
+            ModelProto modelOriginal = onnxOriginal.Load(data.OriginalDownloadFile);
+
+            PersistOnnx onnxConvert = new PersistOnnx();
+            ModelProto modelConvert = onnxConvert.Load(strOnnxFile);
+
+            ModelProtoComparer compare = new ModelProtoComparer(m_log);
+            compare.Compare(modelOriginal, modelConvert);
         }
 
         private string downloadOnnxSSDModel()
@@ -1150,7 +1234,6 @@ namespace MyCaffe.test
             }
         }
 
-
         private string downloadOnnxInceptionV2Model()
         {
             // Download a small onnx model from https://github.com/onnx (dowload is 26.7mb)
@@ -1198,6 +1281,295 @@ namespace MyCaffe.test
                 cuda.Dispose();
                 convert.Dispose();
             }
+        }
+    }
+
+    class ModelProtoComparer
+    {
+        Log m_log;
+
+        public ModelProtoComparer(Log log)
+        {
+            m_log = log;
+        }
+
+        public bool Compare(ModelProto m1, ModelProto m2)
+        {
+            if (m1.ModelVersion != m2.ModelVersion)
+                m_log.FAIL("The model versions do not match!");
+
+            if (m1.IrVersion != m2.IrVersion && m2.IrVersion != 1)
+                m_log.FAIL("The IrVersions do not match!");
+
+            if (!compareRepeatedField("OpSetIDProto", m1.OpsetImport, m2.OpsetImport))
+                return false;
+
+            if (!compareRepeatedField("Graph.Initializer", m1.Graph.Initializer, m2.Graph.Initializer))
+                return false;
+
+            if (!compareRepeatedField("Graph.Input", m1.Graph.Input, m2.Graph.Input))
+                return false;
+
+            if (!compareRepeatedField("Graph.Output", m1.Graph.Output, m2.Graph.Output))
+                return false;
+
+            return true;
+        }
+
+        private bool compareRepeatedField(string str, Google.Protobuf.Collections.RepeatedField<NodeProto> rg1, Google.Protobuf.Collections.RepeatedField<NodeProto> rg2)
+        {
+            m_log.CHECK_GE(rg1.Count, rg2.Count, str + ": The counts do not match!");
+            for (int i = 0; i < rg2.Count; i++)
+            {
+                if (!compareNodeProto(rg1[i], rg2[i]))
+                    return false;
+            }
+            return true;
+        }
+
+        private bool compareNodeProto(NodeProto t1, NodeProto t2)
+        {
+            if (t1.Name != t2.Name)
+                m_log.FAIL("The value info names do not match!");
+
+            if (!compareRepeatedField("Input", t1.Input, t2.Input))
+                return false;
+
+            if (!compareRepeatedField("Output", t1.Output, t2.Output))
+                return false;
+
+            if (t1.OpType != t2.OpType)
+                m_log.FAIL("The OpTypes do not match!");
+
+            if (!compareRepeatedField("Node.Attribute", t1.Attribute, t2.Attribute))
+                return false;
+
+            return true;
+        }
+
+        private bool compareRepeatedField(string str, Google.Protobuf.Collections.RepeatedField<AttributeProto> rg1, Google.Protobuf.Collections.RepeatedField<AttributeProto> rg2)
+        {
+            m_log.CHECK_EQ(rg1.Count, rg2.Count, str + ": The counts do not match!");
+            for (int i = 0; i < rg1.Count; i++)
+            {
+                if (!compareAttributeProto(str, rg1[i], rg2[i]))
+                    return false;
+            }
+            return true;
+        }
+
+        private bool compareAttributeProto(string str, AttributeProto t1, AttributeProto t2)
+        {
+            if (t1.Name != t2.Name)
+                m_log.FAIL(str + ": The names do not match!");
+
+            string str1 = t1.ToString();
+            string str2 = t2.ToString();
+
+            if (str1 != str2)
+                m_log.FAIL(str + ": The attributes do not match!");
+
+            return true;
+        }
+
+        private bool compareRepeatedField(string str, Google.Protobuf.Collections.RepeatedField<ValueInfoProto> rg1, Google.Protobuf.Collections.RepeatedField<ValueInfoProto> rg2, bool bExactCount = false)
+        {
+            if (bExactCount)
+                m_log.CHECK_EQ(rg1.Count, rg2.Count, str + ": The counts do not match!");
+            else
+                m_log.CHECK_GE(rg1.Count, rg2.Count, str + ": The counts do not match!");
+
+            for (int i = 0; i < rg2.Count; i++)
+            {
+                if (!compareValueInfoProto(rg1[i], rg2[i], false))
+                    return false;
+            }
+            return true;
+        }
+
+        private bool compareValueInfoProto(ValueInfoProto t1, ValueInfoProto t2, bool bCompareNames)
+        {
+            if (!compareTypeProto("Type", t1.Type, t2.Type))
+                return false;
+
+            if (bCompareNames && t1.Name != t2.Name)
+                m_log.FAIL("The value info names do not match!");
+
+            return true;
+        }
+
+        private bool compareTypeProto(string str, TypeProto t1, TypeProto t2)
+        {
+            string str1 = t1.ToString();
+            string str2 = t2.ToString();
+
+            if (str1 != str2)
+                m_log.FAIL(str + ": The type protos do not match!");
+
+            return true;
+        }
+
+        private bool compareRepeatedField(string str, Google.Protobuf.Collections.RepeatedField<OperatorSetIdProto> rg1, Google.Protobuf.Collections.RepeatedField<OperatorSetIdProto> rg2)
+        {
+            m_log.CHECK_EQ(rg1.Count, rg2.Count, str + ": The counts do not match!");
+            for (int i = 0; i < rg1.Count; i++)
+            {
+                if (!compareOperatorSetIdProto(rg1[i], rg2[i]))
+                    return false;
+            }
+            return true;
+        }
+
+        private bool compareOperatorSetIdProto(OperatorSetIdProto o1, OperatorSetIdProto o2)
+        {
+            string str = "OperatorSetIDProto";
+            m_log.CHECK_GE(o2.Version, o1.Version, str + ": The versions do not match.");
+
+            if (o1.Domain != o2.Domain)
+                m_log.FAIL(str + ": The domains do not match!");
+
+            return true;
+        }
+
+        private bool compareRepeatedField(string str, Google.Protobuf.Collections.RepeatedField<TensorProto> rg1, Google.Protobuf.Collections.RepeatedField<TensorProto> rg2)
+        {
+            m_log.CHECK_LE(rg2.Count, rg1.Count, str + ": The counts do not match!");
+            for (int i = 0; i < rg2.Count - 1; i++)
+            {
+                Google.Protobuf.Collections.RepeatedField<long> dim2 = rg2[i].Dims;
+                int nIdx1 = -1;
+                bool bResized = false;
+
+                for (int j=0; j<rg1.Count; j++)
+                {
+                    Google.Protobuf.Collections.RepeatedField<long> dim1 = rg1[j].Dims;
+                    if (compare(dim1, dim2, out bResized))
+                    {
+                        nIdx1 = j;
+                        break;
+                    }
+                }
+
+                if (nIdx1 >= 0)
+                {
+                    if (!compareTensorProto(rg1[nIdx1], rg2[i], bResized))
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        private bool compare(Google.Protobuf.Collections.RepeatedField<long> rg1, Google.Protobuf.Collections.RepeatedField<long> rg2, out bool bReSized)
+        {
+            bReSized = false;
+
+            if (rg1.Count != rg2.Count)
+            {
+                int nIdx = rg1.Count - 1;
+                while (nIdx > 0)
+                {
+                    if (rg1[nIdx] == 1)
+                        rg1.RemoveAt(nIdx);
+                    else
+                        break;
+
+                    nIdx--;
+                    bReSized = true;
+                }
+
+                nIdx = rg2.Count - 1;
+                while (nIdx > 0)
+                {
+                    if (rg2[nIdx] == 1)
+                        rg2.RemoveAt(nIdx);
+                    else
+                        break;
+
+                    nIdx--;
+                    bReSized = true;
+                }
+
+                if (rg1.Count != rg2.Count)
+                    return false;
+            }
+
+            for (int i = 0; i < rg1.Count; i++)
+            {
+                if (rg1[i] != rg2[i])
+                    return false;
+            }
+
+            return true;
+        }
+
+        private bool compareTensorProto(TensorProto t1, TensorProto t2, bool bResized = false)
+        {
+            double[] rgdf1 = MyCaffeConversionControl<double>.getDataAsDouble(t1);
+            double[] rgdf2 = MyCaffeConversionControl<double>.getDataAsDouble(t2);
+
+            m_log.CHECK_EQ(rgdf1.Length, rgdf2.Length, "The lengths do not match!");
+
+            if (!bResized)
+            {
+                for (int i = 0; i < rgdf1.Length; i++)
+                {
+                    m_log.EXPECT_NEAR_FLOAT(rgdf1[i], rgdf2[i], 0.0000001, "The data items do not match!");
+                }
+            }
+
+            return true;
+        }
+
+        private bool compareRepeatedField(string str, Google.Protobuf.Collections.RepeatedField<int> f1, Google.Protobuf.Collections.RepeatedField<int> f2, Google.Protobuf.ByteString b1, Google.Protobuf.ByteString b2)
+        {
+            m_log.CHECK_EQ(f1.Count, f2.Count, str + ": The counts do not match!");
+            for (int i = 0; i < f1.Count; i++)
+            {
+                m_log.CHECK_EQ(f1[i], f2[i], str + ": The int fields do not match!");
+            }
+            return true;
+        }
+
+        private bool compareRepeatedField(string str, Google.Protobuf.Collections.RepeatedField<long> f1, Google.Protobuf.Collections.RepeatedField<long> f2, Google.Protobuf.ByteString b1, Google.Protobuf.ByteString b2)
+        {
+            m_log.CHECK_EQ(f1.Count, f2.Count, str + ": The counts do not match!");
+            for (int i = 0; i < f1.Count; i++)
+            {
+                m_log.CHECK_EQ(f1[i], f2[i], str + ": The long fields do not match!");
+            }
+            return true;
+        }
+
+        private bool compareRepeatedField(string str, Google.Protobuf.Collections.RepeatedField<float> f1, Google.Protobuf.Collections.RepeatedField<float> f2, Google.Protobuf.ByteString b1, Google.Protobuf.ByteString b2)
+        {
+            m_log.CHECK_EQ(f1.Count, f2.Count, str + ": The counts do not match!");
+            for (int i = 0; i < f1.Count; i++)
+            {
+                m_log.CHECK_EQ(f1[i], f2[i], str + ": The float fields do not match!");
+            }
+            return true;
+        }
+
+        private bool compareRepeatedField(string str, Google.Protobuf.Collections.RepeatedField<double> f1, Google.Protobuf.Collections.RepeatedField<double> f2, Google.Protobuf.ByteString b1, Google.Protobuf.ByteString b2)
+        {
+            m_log.CHECK_EQ(f1.Count, f2.Count, str + ": The counts do not match!");
+            for (int i = 0; i < f1.Count; i++)
+            {
+                m_log.CHECK_EQ(f1[i], f2[i], str + ": The double fields do not match!");
+            }
+            return true;
+        }
+
+        private bool compareRepeatedField(string str, Google.Protobuf.Collections.RepeatedField<string> f1, Google.Protobuf.Collections.RepeatedField<string> f2)
+        {
+            m_log.CHECK_EQ(f1.Count, f2.Count, str + ": The counts do not match!");
+            for (int i = 0; i < f1.Count; i++)
+            {
+                if (f1[i] != f2[i])
+                    m_log.FAIL(str + ": The string fields do not match!");
+            }
+            return true;
         }
     }
 }
