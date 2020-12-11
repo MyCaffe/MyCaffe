@@ -18,6 +18,7 @@ namespace MyCaffe.converter.onnx
         string m_strLastModelFileName = "";
         string m_strLastImageMeanFileName = "";
         string m_strLastWeightsFileName = "";
+        string m_strOriginalDownloadFile = null;
 
         /// <summary>
         /// The constructor.
@@ -33,11 +34,12 @@ namespace MyCaffe.converter.onnx
         }
 
         /// <summary>
-        /// Returns the model descriptor.
+        /// Get/set the model descriptor.
         /// </summary>
         public string ModelDescription
         {
             get { return m_strModelDescription; }
+            set { m_strModelDescription = value; }
         }
 
         /// <summary>
@@ -54,6 +56,15 @@ namespace MyCaffe.converter.onnx
         public byte[] ImageMean
         {
             get { return m_rgImageMean; }
+        }
+
+        /// <summary>
+        /// Specifies the original download file, if any.
+        /// </summary>
+        public string OriginalDownloadFile
+        {
+            get { return m_strOriginalDownloadFile; }
+            set { m_strOriginalDownloadFile = value; }
         }
 
         /// <summary>
