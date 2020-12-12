@@ -2056,7 +2056,7 @@ namespace MyCaffe.test
                 factory.PutRawImageCache(i, sd);
             }
 
-            factory.ClearImageCashe(true);
+            factory.ClearImageCache(true);
 
             rgLabels = rgLabels.OrderBy(p => p).ToList();
             for (int i = 0; i < rgLabels.Count; i++)
@@ -2091,7 +2091,7 @@ namespace MyCaffe.test
                 factory.PutRawImageCache(i, sd);
             }
 
-            factory.ClearImageCashe(true);
+            factory.ClearImageCache(true);
 
             rgLabels = rgLabels.OrderBy(p => p).ToList();
             for (int i = 0; i < rgLabels.Count; i++)
@@ -2246,7 +2246,7 @@ namespace MyCaffe.test
                 factory.PutRawImageCache(i, sd);
             }
 
-            factory.ClearImageCashe(true);
+            factory.ClearImageCache(true);
 
             List<RawImage> rgImg = factory.GetRawImagesAt(0, 20);
             for (int i = 0; i < rgImg.Count; i++)
