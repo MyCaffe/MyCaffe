@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Copyright (c) 2018-2020 SignalPop LLC. All rights reserved.
+// License: Apache 2.0
+// License: https://github.com/MyCaffe/MyCaffe/blob/master/LICENSE
+// Original Source: https://github.com/MyCaffe/MyCaffe/blob/master/MyCaffe.data/MnistDataLoader.cs
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
