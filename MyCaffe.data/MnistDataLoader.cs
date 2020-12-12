@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2018-2020 SignalPop LLC. All rights reserved.
+﻿// Copyright (c) 2018-2020 SignalPop LLC and contributors. All rights reserved.
 // License: Apache 2.0
 // License: https://github.com/MyCaffe/MyCaffe/blob/master/LICENSE
 // Original Source: https://github.com/MyCaffe/MyCaffe/blob/master/MyCaffe.data/MnistDataLoader.cs
@@ -26,6 +26,7 @@ namespace MyCaffe.data
     /// </remarks>
     public class MnistDataLoader
     {
+        MnistDataLoaderLite m_extractor;
         MnistDataParameters m_param;
         Log m_log;
         CancelEvent m_evtCancel;
@@ -51,10 +52,26 @@ namespace MyCaffe.data
         /// <param name="evtCancel">Specifies the cancel event used to abort the creation process.</param>
         public MnistDataLoader(MnistDataParameters param, Log log, CancelEvent evtCancel)
         {
+            m_extractor = new MnistDataLoaderLite(Path.GetDirectoryName(param.TrainImagesFile));
+            m_extractor.OnProgress += m_extractor_OnProgress;
+            m_extractor.OnError += m_extractor_OnError;
+
             m_param = param;
             m_log = log;
             m_evtCancel = evtCancel;
             m_evtCancel.Reset();
+        }
+
+        private void m_extractor_OnError(object sender, ProgressArgs e)
+        {
+            if (OnError != null)
+                OnError(sender, e);
+        }
+
+        private void m_extractor_OnProgress(object sender, ProgressArgs e)
+        {
+            if (OnProgress != null)
+                OnProgress(sender, e);
         }
 
         private string dataset_name
@@ -74,11 +91,10 @@ namespace MyCaffe.data
 
             try
             {
-                reportProgress(nIdx, nTotal, "Unpacking files...");
-                string strTrainImagesBin = expandFile(m_param.TrainImagesFile);
-                string strTrainLabelsBin = expandFile(m_param.TrainLabelsFile);
-                string strTestImagesBin = expandFile(m_param.TestImagesFile);
-                string strTestLabelsBin = expandFile(m_param.TestLabelsFile);
+                List<Tuple<byte[], int>> rgTrainImg;
+                List<Tuple<byte[], int>> rgTestImg;
+
+                m_extractor.ExtractImages(out rgTrainImg, out rgTestImg);
 
                 reportProgress(nIdx, nTotal, "Loading " + dataset_name + " database...");
 
@@ -103,7 +119,7 @@ namespace MyCaffe.data
                         factory.DeleteSourceData(nSrcId);
                 }
 
-                if (!loadFile(factory, strTrainImagesBin, strTrainLabelsBin, strTrainSrc, strExportFolder))
+                if (!loadFile(factory, rgTrainImg, m_extractor.Channels, m_extractor.Height, m_extractor.Width, strTrainSrc, strExportFolder))
                     return false;
 
                 string strTestSrc = "testing";
@@ -115,7 +131,7 @@ namespace MyCaffe.data
                         factory.DeleteSourceData(nSrcId);
                 }
 
-                if (!loadFile(factory, strTestImagesBin, strTestLabelsBin, strTestSrc, strExportFolder))
+                if (!loadFile(factory, rgTestImg, m_extractor.Channels, m_extractor.Height, m_extractor.Width, strTestSrc, strExportFolder))
                     return false;
 
                 if (!m_param.ExportToFile)
@@ -140,7 +156,7 @@ namespace MyCaffe.data
             }
         }
 
-        private bool loadFile(DatasetFactory factory, string strImagesFile, string strLabelsFile, string strSourceName, string strExportPath)
+        private bool loadFile(DatasetFactory factory, List<Tuple<byte[], int>> rgData, int nC, int nH, int nW, string strSourceName, string strExportPath)
         {
             if (strExportPath != null)
             {
@@ -153,52 +169,26 @@ namespace MyCaffe.data
             Stopwatch sw = new Stopwatch();
 
             reportProgress(0, 0, " Source: " + strSourceName);
-            reportProgress(0, 0, "  loading " + strImagesFile + "...");
-
-            BinaryFile image_file = new BinaryFile(strImagesFile);
-            BinaryFile label_file = new BinaryFile(strLabelsFile);
 
             try
             {
-                // Verify the files
-                uint magicImg = image_file.ReadUInt32();
-                uint magicLbl = label_file.ReadUInt32();
-
-                if (magicImg != 2051)
-                    throw new Exception("Incorrect image file magic.");
-
-                if (magicLbl != 2049)
-                    throw new Exception("Incorrect label file magic.");
-
-                uint num_items = image_file.ReadUInt32();
-                uint num_labels = label_file.ReadUInt32();
-
-                if (num_items != num_labels)
-                    throw new Exception("The number of items must be equal to the number of labels!");
-
-
-                // Add the data source to the database.
-                uint rows = image_file.ReadUInt32();
-                uint cols = image_file.ReadUInt32();
-                int nChannels = 1;  // black and white
-
                 if (factory != null)
                 {
-                    int nSrcId = factory.AddSource(strSourceName, nChannels, (int)cols, (int)rows, false, 0, true);
+                    int nSrcId = factory.AddSource(strSourceName, nC, nW, nH, false, 0, true);
 
                     factory.Open(nSrcId, 500, Database.FORCE_LOAD.NONE, m_log);
                     factory.DeleteSourceData();
                 }
 
                 // Storing to database;
-                byte[] rgLabel;
+                int nLabel;
                 byte[] rgPixels;
 
-                Datum datum = new Datum(false, nChannels, (int)cols, (int)rows, -1, DateTime.MinValue, new List<byte>(), 0, false, -1);
+                Datum datum = new Datum(false, nC, nW, nH, -1, DateTime.MinValue, new List<byte>(), 0, false, -1);
                 string strAction = (m_param.ExportToFile) ? "exporing" : "loading";
 
-                reportProgress(0, (int)num_items, "  " + strAction + " a total of " + num_items.ToString() + " items.");
-                reportProgress(0, (int)num_items, "   (with rows: " + rows.ToString() + ", cols: " + cols.ToString() + ")");
+                reportProgress(0, rgData.Count, "  " + strAction + " a total of " + rgData.Count.ToString() + " items.");
+                reportProgress(0, rgData.Count, "   (with rows: " + nH.ToString() + ", cols: " + nW.ToString() + ")");
 
                 sw.Start();
 
@@ -213,21 +203,21 @@ namespace MyCaffe.data
                     swFileDesc = new StreamWriter(fsFileDesc);
                 }
 
-                for (int i = 0; i < num_items; i++)
+                for (int i = 0; i < rgData.Count; i++)
                 {
-                    rgPixels = image_file.ReadBytes((int)(rows * cols));
-                    rgLabel = label_file.ReadBytes(1);
+                    rgPixels = rgData[i].Item1;
+                    nLabel = rgData[i].Item2;
 
                     if (sw.Elapsed.TotalMilliseconds > 1000)
                     {
-                        reportProgress(i, (int)num_items, " " + strAction + " data...");
+                        reportProgress(i, rgData.Count, " " + strAction + " data...");
                         sw.Restart();
                     }
 
-                    datum.SetData(rgPixels.ToList(), (int)rgLabel[0]);
+                    datum.SetData(rgPixels, nLabel);
 
                     if (factory != null)
-                        factory.PutRawImageCache(i, datum);
+                        factory.PutRawImageCache(i, datum, 5);
                     else if (strExportPath != null)
                         saveToFile(strExportPath, i, datum, swFileDesc);
 
@@ -249,17 +239,15 @@ namespace MyCaffe.data
 
                 if (factory != null)
                 {
-                    factory.ClearImageCashe(true);
+                    factory.ClearImageCache(true);
                     factory.UpdateSourceCounts();
                     factory.SaveImageMean(SimpleDatum.CalculateMean(m_log, rgImg.ToArray(), new WaitHandle[] { new ManualResetEvent(false) }), true);
                 }
 
-                reportProgress((int)num_items, (int)num_items, " " + strAction + " completed.");
+                reportProgress(rgData.Count, rgData.Count, " " + strAction + " completed.");
             }
             finally
             {
-                image_file.Dispose();
-                label_file.Dispose();
             }
 
             return true;
