@@ -232,7 +232,7 @@ namespace MyCaffe.data
                     rgFileSizes.Add(new Tuple<int, string, Size>(nIdx, rgFiles[i].Item1, new Size(datum.Width, datum.Height)));
                 }
 
-                m_factory.ClearImageCashe(true);
+                m_factory.ClearImageCache(true);
                 m_factory.Close();
             }
             finally
