@@ -61,6 +61,7 @@
     <Compile Include="CiFar10DataLoader.cs" />
     <Compile Include="CiFar10DataParameters.cs" />
     <Compile Include="MnistDataLoader.cs" />
+    <Compile Include="MnistDataLoaderLite.cs" />
     <Compile Include="MnistDataParameters.cs" />
     <Compile Include="ProgressArgs.cs" />
     <Compile Include="ProgressInfo.cs" />

@@ -169,7 +169,7 @@ namespace MyCaffe.data
 
                         Datum d = ImageData.GetImageDataD(img, 3, false, nLabel);
 
-                        m_factory.PutRawImageCache(nIdx, d);
+                        m_factory.PutRawImageCache(nIdx, d, 5);
                         m_rgImg.Add(new SimpleDatum(d));
 
                         nIdx++;
@@ -184,7 +184,7 @@ namespace MyCaffe.data
                             return false;
                     }
 
-                    m_factory.ClearImageCashe(true);
+                    m_factory.ClearImageCache(true);
 
                     if (nIdx == nTotal)
                         m_factory.UpdateSourceCounts();
