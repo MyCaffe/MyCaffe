@@ -253,27 +253,30 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="nIdx">Specifies the RawImage index.</param>
         /// <param name="sd">Specifies the data.</param>
+        /// <param name="nBackgroundWritingThreadCount">Optionally, specifies the background writing thread count, or 0 for to disable background writing (default = 0).</param>
         /// <param name="strDescription">Optionally, specifies the description (default = null).</param>
         /// <param name="rgParams">Optionally, specifies a variable number of parameters to add to the RawImage.</param>
-        public void PutRawImageCache(int nIdx, SimpleDatum sd, string strDescription = null, params ParameterData[] rgParams)
+        public void PutRawImageCache(int nIdx, SimpleDatum sd, int nBackgroundWritingThreadCount = 0, string strDescription = null, params ParameterData[] rgParams)
         {
-            RawImage img = m_db.CreateRawImage(nIdx, sd, strDescription, m_nOriginalSourceID);
-
+            RawImage img = m_db.CreateRawImage(nIdx, sd, nBackgroundWritingThreadCount, strDescription, m_nOriginalSourceID);
             if (m_imageCache.Add(img, sd, rgParams))
-                ClearImageCashe(true);
+                ClearImageCache(true);
         }
 
         /// <summary>
         /// Clear the RawImage cache and optionally save the images.
         /// </summary>
         /// <param name="bSave">When <i>true</i> the images in the cache are saved to the database in a bulk save, otherwise they are just flushed from the cache.</param>
-        public void ClearImageCashe(bool bSave)
+        public void ClearImageCache(bool bSave)
         {
             if (m_imageCache == null || m_imageCache.Count == 0)
                 return;
 
             if (bSave)
+            {
+                m_db.WaitForFileWriter();
                 m_db.PutRawImages(m_imageCache.Images, m_imageCache.Parameters, m_ciOpen);
+            }
 
             m_imageCache.Clear();
         }

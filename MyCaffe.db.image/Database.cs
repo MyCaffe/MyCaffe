@@ -19,7 +19,7 @@ namespace MyCaffe.db.image
     /// <summary>
     /// The Database class manages the actual connection to the physical database using <a href="https://msdn.microsoft.com/en-us/library/aa937723(v=vs.113).aspx">Entity Framworks</a> from Microsoft.
     /// </summary>
-    public class Database
+    public class Database : IDisposable
     {
         Source m_src = null;
         DNNEntities m_entities = null;
@@ -45,6 +45,7 @@ namespace MyCaffe.db.image
         object m_objRawImgSync = new object();
         Dictionary<string, string> m_rgstrDatabaseFilePath = new Dictionary<string, string>();
         object m_objRemoteSync = new object();
+        FileWriter m_fileWriter = null;
 
         /// <summary>
         /// Defines the force load type.
@@ -70,6 +71,15 @@ namespace MyCaffe.db.image
         /// </summary>
         public Database()
         {
+        }
+
+        /// <summary>
+        /// Release any resources used.
+        /// </summary>
+        public void Dispose()
+        {
+            if (m_fileWriter != null)
+                m_fileWriter.Cancel();
         }
 
         /// <summary>
@@ -1827,10 +1837,11 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="nIdx">Specifies the image index.</param>
         /// <param name="d">Specifies the SimpleDatum containing the data.</param>
+        /// <param name="nBackgroundWritingThreadCount">Optionally, specifies the background writing thread count, or 0 for to disable background writing (default = 0).</param>
         /// <param name="strDescription">Optionally, specifies the description (default = null).</param>
         /// <param name="nOriginalSourceID">Optionally, specifies the original source ID (default = null)</param>
         /// <returns>The RawImage is returned.</returns>
-        public RawImage CreateRawImage(int nIdx, SimpleDatum d, string strDescription = null, int? nOriginalSourceID = null)
+        public RawImage CreateRawImage(int nIdx, SimpleDatum d, int nBackgroundWritingThreadCount, string strDescription = null, int? nOriginalSourceID = null)
         {
             DateTime dtMin = new DateTime(1980, 1, 1);
             RawImage img = new RawImage();
@@ -1864,7 +1875,7 @@ namespace MyCaffe.db.image
             else
             {
                 img.VirtualID = 0;
-                img.Data = setImageByteData(d.GetByteData(out bEncoded), null, strGuid);
+                img.Data = setImageByteData(d.GetByteData(out bEncoded), null, strGuid, nBackgroundWritingThreadCount);
                 img.Encoded = bEncoded;
             }
 
@@ -1887,6 +1898,19 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Wait for the file writer to complete writing all files.
+        /// </summary>
+        /// <param name="nWait">Optionally, specifies an amount of time to wait.</param>
+        /// <returns>If all files have been written, <i>true</i> is returned.</returns>
+        public bool WaitForFileWriter(int nWait = int.MaxValue)
+        {
+            if (m_fileWriter == null)
+                return true;
+
+            return m_fileWriter.WaitUntilCompletion(nWait);
+        }
+
+        /// <summary>
         /// When enabled, saves the bytes to file and returns the file name of the binary file saved as an
         /// array of bytes..
         /// </summary>
@@ -1896,8 +1920,9 @@ namespace MyCaffe.db.image
         /// <param name="rgImg">Specifies the bytes to check for a path.</param>
         /// <param name="strType">Specifies an extra name to add to the file name.</param>
         /// <param name="strGuid">Specifies an optional guid string to use as the file name.</param>
+        /// <param name="nBackgroundWritingThreadCount">Optionally, specifies the background writing thread count, or 0 for to disable background writing (default = 0).</param>
         /// <returns></returns>
-        protected byte[] setImageByteData(byte[] rgImg, string strType = null, string strGuid = null)
+        protected byte[] setImageByteData(byte[] rgImg, string strType = null, string strGuid = null, int nBackgroundWritingThreadCount = 0)
         {
             if (rgImg == null)
                 return null;
@@ -1913,10 +1938,24 @@ namespace MyCaffe.db.image
 
             string strTypeExt = (strType == null) ? "" : "." + strType;
             string strFile = strGuid + strTypeExt + ".bin";
-            File.WriteAllBytes(m_strPrimaryImgPath + strFile, rgImg);
+
+            if (nBackgroundWritingThreadCount > 0)
+            {
+                if (m_fileWriter == null)
+                    m_fileWriter = new FileWriter(nBackgroundWritingThreadCount);
+                m_fileWriter.Add(m_strPrimaryImgPath + strFile, rgImg);
+            }
+            else
+            {
+                File.WriteAllBytes(m_strPrimaryImgPath + strFile, rgImg);
+            }
 
             string strTag = "FILE:" + strFile;
             return Encoding.ASCII.GetBytes(strTag);
+        }
+
+        private void fileWriterThread()
+        {
         }
 
         /// <summary>
@@ -2272,7 +2311,7 @@ namespace MyCaffe.db.image
         /// <returns>The ID of the RawImage is returned.</returns>
         public int PutRawImage(int nIdx, SimpleDatum d, string strDescription = null)
         {
-            RawImage img = CreateRawImage(nIdx, d, strDescription);
+            RawImage img = CreateRawImage(nIdx, d, 0, strDescription);
             m_entities.RawImages.Add(img);
             m_entities.SaveChanges();
 
@@ -5141,6 +5180,135 @@ namespace MyCaffe.db.image
         }
 
         #endregion
+    }
+
+    class FileDataCollection
+    {
+        List<Tuple<string, byte[]>> m_rgData = new List<Tuple<string, byte[]>>();
+        object m_syncObj = new object();
+
+        public FileDataCollection()
+        { 
+        }
+
+        public int Count
+        {
+            get { return m_rgData.Count; }
+        }
+
+        public void Add(string strFile, byte[] rgData)
+        {
+            lock (m_syncObj)
+            {
+                m_rgData.Add(new Tuple<string, byte[]>(strFile, rgData));
+            }
+        }
+
+        public Tuple<string, byte[]> Remove()
+        {
+            lock (m_syncObj)
+            {
+                if (m_rgData.Count == 0)
+                    return null;
+
+                Tuple<string, byte[]> item = m_rgData[0];
+                m_rgData.RemoveAt(0);
+                return item;
+            }
+        }
+    }
+
+    class FileWriter : IDisposable
+    {
+        FileDataCollection m_rgData = new FileDataCollection();
+        Task[] m_rgFileWriterThreads = null;
+        ManualResetEvent m_evtCancelFileWriterThread = new ManualResetEvent(false);
+        ManualResetEvent m_evtFileWriterDone = new ManualResetEvent(false);
+        ManualResetEvent m_evtFileWriterEmpty = new ManualResetEvent(true);
+        int m_nPeriod = 1000;
+        int m_nThreads = 50;
+
+        public FileWriter(int nThreads = 50, int nPeriod = 1000)
+        {
+            m_nPeriod = nPeriod;
+            m_nThreads = nThreads;
+        }
+
+        public void Dispose()
+        {
+            Cancel();
+            WaitUntilCompletion();
+
+            if (m_rgFileWriterThreads != null)
+            {
+                foreach (Task t in m_rgFileWriterThreads)
+                {
+                    t.Dispose();
+                }
+            }
+        }
+
+        public void Cancel()
+        {
+            m_evtCancelFileWriterThread.Set();
+        }
+
+        public void Add(string strPath, byte[] rgData)
+        {
+            m_evtFileWriterEmpty.Reset();
+            m_rgData.Add(strPath, rgData);
+
+            if (m_rgFileWriterThreads == null)
+            {
+                m_evtCancelFileWriterThread.Reset();
+                m_evtFileWriterDone.Reset();
+                m_rgFileWriterThreads = new Task[m_nThreads];
+
+                for (int i = 0; i < m_nThreads; i++)
+                {
+                    m_rgFileWriterThreads[i] = Task.Factory.StartNew(new Action(fileWriterThread));
+                }
+            }
+        }
+
+        public bool WaitUntilCompletion(int nWait = int.MaxValue)
+        {
+            if (m_rgFileWriterThreads == null)
+                return true;
+
+            if (m_evtFileWriterEmpty.WaitOne(nWait))
+                return true;
+
+            return false;
+        }
+
+        private void fileWriterThread()
+        {
+            try
+            {
+                int nWait = m_nPeriod;
+
+                while (!m_evtCancelFileWriterThread.WaitOne(nWait))
+                {
+                    Tuple<string, byte[]> item = m_rgData.Remove();
+                    if (item != null)
+                    {
+                        File.WriteAllBytes(item.Item1, item.Item2);
+                        Thread.Sleep(0);
+                        nWait = 5;
+                    }
+                    else
+                    {
+                        m_evtFileWriterEmpty.Set();
+                        nWait = m_nPeriod;
+                    }
+                }
+            }
+            finally
+            {
+                m_evtFileWriterDone.Set();
+            }
+        }
     }
 
     /// <summary>
