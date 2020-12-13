@@ -1494,6 +1494,11 @@ namespace MyCaffe.converter.onnx
             }
         }
 
+        /// <summary>
+        /// Converts the tensor data into an array of <i>float</i>.
+        /// </summary>
+        /// <param name="tensor">Specifies the tensor to convert.</param>
+        /// <returns>An array of <i>float</i> values is returned.</returns>
         public static float[] getDataAsFloat(TensorProto tensor)
         {
             float[] rgData = null;
@@ -1588,6 +1593,11 @@ namespace MyCaffe.converter.onnx
             return rgData;
         }
 
+        /// <summary>
+        /// Converts the tensor data into an array of <i>double</i>.
+        /// </summary>
+        /// <param name="tensor">Specifies the tensor to convert.</param>
+        /// <returns>An array of <i>double</i> values is returned.</returns>
         public static double[] getDataAsDouble(TensorProto tensor)
         {
             double[] rgData = null;

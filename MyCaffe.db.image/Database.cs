@@ -5182,7 +5182,9 @@ namespace MyCaffe.db.image
         #endregion
     }
 
-    class FileDataCollection
+#pragma warning disable 1591
+
+    class FileDataCollection /** @private */
     {
         List<Tuple<string, byte[]>> m_rgData = new List<Tuple<string, byte[]>>();
         object m_syncObj = new object();
@@ -5218,7 +5220,7 @@ namespace MyCaffe.db.image
         }
     }
 
-    class FileWriter : IDisposable
+    class FileWriter : IDisposable /** @private */
     {
         FileDataCollection m_rgData = new FileDataCollection();
         Task[] m_rgFileWriterThreads = null;
@@ -5310,6 +5312,8 @@ namespace MyCaffe.db.image
             }
         }
     }
+
+#pragma warning restore 1591
 
     /// <summary>
     /// The ParameterData class is used to save and retrieve parameter data.
