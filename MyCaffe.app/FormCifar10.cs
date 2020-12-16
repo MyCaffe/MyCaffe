@@ -177,7 +177,7 @@ namespace MyCaffe.app
             string strUrl = lblDownloadSite.Text;
 
             string strFileName = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-            strFileName += "\\MyCaffe\\downloads\\";
+            strFileName += "\\MyCaffe\\downloads\\cifar10\\";
 
             if (!Directory.Exists(strFileName))
                 Directory.CreateDirectory(strFileName);
