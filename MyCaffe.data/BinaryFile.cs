@@ -1,7 +1,7 @@
 ﻿// Copyright (c) 2018-2020 SignalPop LLC, and contributors. All rights reserved.
 // License: Apache 2.0
 // License: https://github.com/MyCaffe/MyCaffe/blob/master/LICENSE
-// Modified from Original Source: https://github.com/MyCaffe/MyCaffe/blob/master/MyCaffe.data/BinaryFile.cs
+// Modified from Original Source: https://github.com/MyCaffe/MyCaffe/blob/master/MyCaffe.data/MnistDataLoader.cs
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -17,10 +17,11 @@ namespace MyCaffe.data
     /// <summary>
     /// The BinaryFile class is used to manage binary files used by the MNIST dataset creator.
     /// </summary>
-    class BinaryFile : IDisposable
+    public class BinaryFile : IDisposable
     {
         FileStream m_file;
         BinaryReader m_reader;
+        bool _disposed = false;
 
         /// <summary>
         /// The constructor.
@@ -32,13 +33,34 @@ namespace MyCaffe.data
             m_reader = new BinaryReader(m_file);
         }
 
+        #region Disposable
+
+        /// <summary>
+        /// Release the resources used.
+        /// </summary>
+        /// <param name="disposing">Specifies that we are disposing.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            // dispose managed state (managed objects).
+            if (disposing)
+            {
+                m_reader.Close();
+                _disposed = true;
+            }
+        }
+
         /// <summary>
         /// Release all resources.
         /// </summary>
         public void Dispose()
         {
-            m_reader.Close();
+            Dispose(true);
         }
+
+        #endregion
 
         /// <summary>
         /// Returns the binary reader used.
