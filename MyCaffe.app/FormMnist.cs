@@ -1,4 +1,5 @@
-﻿using MyCaffe.data;
+﻿using MyCaffe.basecode;
+using MyCaffe.data;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -7,6 +8,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -18,16 +20,28 @@ namespace MyCaffe.app
         Dictionary<Button, TextBox> m_rgItems = new Dictionary<Button, TextBox>();
         MnistDataParameters m_param = null;
         bool m_bSqlLoaded;
+        WebClient m_webClient = null;
+        List<string> m_rgstrDownloadedFiles = new List<string>();
+        List<string> m_rgstrSrcFiles = new List<string>();
+        int m_nDownloadFileIdx = 0;
 
         public FormMnist(bool bSqlLoaded)
         {
             InitializeComponent();
 
+            m_rgstrSrcFiles = new List<string>()
+            {
+                "train-images-idx3-ubyte.gz",
+                "train-labels-idx1-ubyte.gz",
+                "t10k-images-idx3-ubyte.gz",
+                "t10k-labels-idx1-ubyte.gz"
+            };
+
             m_bSqlLoaded = bSqlLoaded;
-            edtTrainImagesFile.Tag = "train-images-idx3-ubyte";
-            edtTrainLabelsFile.Tag = "train-labels-idx1-ubyte";
-            edtTestImagesFile.Tag = "t10k-images-idx3-ubyte";
-            edtTestLabelsFile.Tag = "t10k-labels-idx1-ubyte";
+            edtTrainImagesFile.Tag = m_rgstrSrcFiles[0];
+            edtTrainLabelsFile.Tag = m_rgstrSrcFiles[1];
+            edtTestImagesFile.Tag = m_rgstrSrcFiles[2];
+            edtTestLabelsFile.Tag = m_rgstrSrcFiles[3];
 
             m_rgItems.Add(btnBrowseGz1, edtTrainImagesFile);
             m_rgItems.Add(btnBrowseGz2, edtTrainLabelsFile);
@@ -182,6 +196,77 @@ namespace MyCaffe.app
 
             if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
                 edtExportFolder.Text = folderBrowserDialog1.SelectedPath;
+        }
+
+        private void btnDownload_Click(object sender, EventArgs e)
+        {
+            string strUrl = lblDownloadSite.Text;
+
+            string strFileName = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+            strFileName += "\\MyCaffe\\downloads\\mnist\\";
+
+            if (!Directory.Exists(strFileName))
+                Directory.CreateDirectory(strFileName);
+
+            if (m_nDownloadFileIdx == m_rgstrSrcFiles.Count)
+                m_nDownloadFileIdx = 0;
+           
+            string strFile = m_rgstrSrcFiles[m_nDownloadFileIdx];
+            strFileName += strFile;
+            m_nDownloadFileIdx++;
+
+            if (m_webClient != null)
+                m_webClient.CancelAsync();
+
+            if (m_webClient == null)
+            {
+                m_webClient = new WebClient();
+                m_webClient.DownloadFileCompleted += WebClient_DownloadFileCompleted;
+                m_webClient.DownloadProgressChanged += WebClient_DownloadProgressChanged;
+            }
+
+            btnDownload.Enabled = false;
+            lblDownloadPct.Enabled = false;
+            m_webClient.DownloadFileAsync(new Uri("http://" + strUrl + "//" + strFile), strFileName, new Tuple<Label, Button, string>(lblDownloadPct, btnDownload, strFileName));
+        }
+
+        private void WebClient_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+        {
+            double dfPct = (e.BytesReceived / (double)e.TotalBytesToReceive);
+            Tuple<Label, Button, string> edt = e.UserState as Tuple<Label, Button, string>;
+            edt.Item1.Text = dfPct.ToString("P");
+        }
+
+        private void WebClient_DownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
+        {
+            if (e.Cancelled)
+                return;
+
+            Tuple<Label, Button, string> edt = e.UserState as Tuple<Label, Button, string>;
+            string strDir = Path.GetDirectoryName(edt.Item3);
+
+            m_rgstrDownloadedFiles.Add(edt.Item3);
+
+            if (m_rgstrDownloadedFiles.Count < 4)
+            {
+                btnDownload_Click(sender, new EventArgs());
+            }
+            else
+            {
+                edt.Item1.Enabled = true;
+                edt.Item2.Enabled = true;
+
+                edtTrainImagesFile.Text = m_rgstrDownloadedFiles[0];
+                edtTrainLabelsFile.Text = m_rgstrDownloadedFiles[1];
+                edtTestImagesFile.Text = m_rgstrDownloadedFiles[2];
+                edtTestLabelsFile.Text = m_rgstrDownloadedFiles[3];
+            }
+
+            if (m_webClient != null)
+            {
+                m_webClient.Dispose();
+                m_webClient = null;
+            }
         }
     }
 }

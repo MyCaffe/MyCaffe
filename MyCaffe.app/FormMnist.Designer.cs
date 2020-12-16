@@ -53,6 +53,8 @@
             this.edtExportFolder = new System.Windows.Forms.TextBox();
             this.btnBrowseFolder = new System.Windows.Forms.Button();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
+            this.lblDownloadPct = new System.Windows.Forms.Label();
+            this.btnDownload = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // lblDownload
@@ -258,11 +260,33 @@
             this.folderBrowserDialog1.RootFolder = System.Environment.SpecialFolder.MyComputer;
             this.folderBrowserDialog1.SelectedPath = "\\ProgramData\\MyCaffe\\test_data";
             // 
+            // lblDownloadPct
+            // 
+            this.lblDownloadPct.Font = new System.Drawing.Font("Century Gothic", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblDownloadPct.Location = new System.Drawing.Point(239, 194);
+            this.lblDownloadPct.Name = "lblDownloadPct";
+            this.lblDownloadPct.Size = new System.Drawing.Size(53, 17);
+            this.lblDownloadPct.TabIndex = 25;
+            this.lblDownloadPct.Text = "0.00 %";
+            this.lblDownloadPct.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // btnDownload
+            // 
+            this.btnDownload.Location = new System.Drawing.Point(158, 190);
+            this.btnDownload.Name = "btnDownload";
+            this.btnDownload.Size = new System.Drawing.Size(75, 23);
+            this.btnDownload.TabIndex = 24;
+            this.btnDownload.Text = "Download";
+            this.btnDownload.UseVisualStyleBackColor = true;
+            this.btnDownload.Click += new System.EventHandler(this.btnDownload_Click);
+            // 
             // FormMnist
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(666, 225);
+            this.Controls.Add(this.lblDownloadPct);
+            this.Controls.Add(this.btnDownload);
             this.Controls.Add(this.chkExportToFile);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnOK);
@@ -323,5 +347,7 @@
         private System.Windows.Forms.TextBox edtExportFolder;
         private System.Windows.Forms.Button btnBrowseFolder;
         private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog1;
+        private System.Windows.Forms.Label lblDownloadPct;
+        private System.Windows.Forms.Button btnDownload;
     }
 }
