@@ -836,15 +836,18 @@ namespace MyCaffe
         /// <param name="strModel">Specifies the model descriptor.</param>
         /// <param name="transform_param">Specifies the TransformationParameter to use.</param>
         /// <param name="stage">Optionally, specifies the stage to create the run network on.</param>
+        /// <param name="bSkipLossLayer">Optionally, specifies to skip the loss layer and not output a converted layer to replace it (default = false).</param>
+        /// <param name="bMaintainBatchSize">Optionally, specifies to keep the batch size, otherwise batch size is set to 1 (default = false).</param>
         /// <returns>The new NetParameter suitable for the RUN phase is returned.</returns>
-        public static NetParameter CreateNetParameterForRunning(BlobShape shape, string strModel, out TransformationParameter transform_param, Stage stage = Stage.NONE)
+        public static NetParameter CreateNetParameterForRunning(BlobShape shape, string strModel, out TransformationParameter transform_param, Stage stage = Stage.NONE, bool bSkipLossLayer = false, bool bMaintainBatchSize = false)
         {
+            int nNum = (bMaintainBatchSize) ? shape.dim[0] : 1;
             int nImageChannels = shape.dim[1];
             int nImageHeight = shape.dim[2];
             int nImageWidth = shape.dim[3];
 
             RawProto protoTransform = null;
-            RawProto protoModel = ProjectEx.CreateModelForRunning(strModel, "data", 1, nImageChannels, nImageHeight, nImageWidth, out protoTransform, stage);
+            RawProto protoModel = ProjectEx.CreateModelForRunning(strModel, "data", nNum, nImageChannels, nImageHeight, nImageWidth, out protoTransform, stage, bSkipLossLayer);
 
             if (protoTransform != null)
                 transform_param = TransformationParameter.FromProto(protoTransform);
