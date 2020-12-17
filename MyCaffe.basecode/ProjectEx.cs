@@ -1019,10 +1019,11 @@ namespace MyCaffe.basecode
         /// <param name="nWidth">Specifies the width of each item in the batch.</param>
         /// <param name="protoTransform">Returns a RawProto describing the Data Transformation parameters to use.</param>
         /// <param name="stage">Optionally, specifies the stage to create the run network on.</param>
+        /// <param name="bSkipLossLayer">Optionally, specifies to skip the loss layer and not output a converted layer to replace it (default = false).</param>
         /// <returns>The RawProto of the model description is returned.</returns>
-        public RawProto CreateModelForRunning(string strName, int nNum, int nChannels, int nHeight, int nWidth, out RawProto protoTransform, Stage stage = Stage.NONE)
+        public RawProto CreateModelForRunning(string strName, int nNum, int nChannels, int nHeight, int nWidth, out RawProto protoTransform, Stage stage = Stage.NONE, bool bSkipLossLayer = false)
         {
-            return CreateModelForRunning(m_project.ModelDescription, strName, nNum, nChannels, nHeight, nWidth, out protoTransform, stage);
+            return CreateModelForRunning(m_project.ModelDescription, strName, nNum, nChannels, nHeight, nWidth, out protoTransform, stage, bSkipLossLayer);
         }
 
         /// <summary>
@@ -1285,8 +1286,10 @@ namespace MyCaffe.basecode
         /// <param name="nWidth">Specifies the width of each item in the batch.</param>
         /// <param name="protoTransform">Returns a RawProto describing the Data Transformation parameters to use.</param>
         /// <param name="stage">Optionally, specifies the stage to create the run network on.</param>
+        /// <param name="bSkipLossLayer">Optionally, specifies to skip the loss layer and not output a converted layer to replace it (default = false).</param>
+        /// <param name="stage">Optionally, specifies the stage to create the run network on.</param>
         /// <returns>The RawProto of the model description is returned.</returns>
-        public static RawProto CreateModelForRunning(string strModelDescription, string strName, int nNum, int nChannels, int nHeight, int nWidth, out RawProto protoTransform, Stage stage = Stage.NONE)
+        public static RawProto CreateModelForRunning(string strModelDescription, string strName, int nNum, int nChannels, int nHeight, int nWidth, out RawProto protoTransform, Stage stage = Stage.NONE, bool bSkipLossLayer = false)
         {
             PhaseStageCollection psInclude;
             PhaseStageCollection psExclude;
@@ -1387,6 +1390,15 @@ namespace MyCaffe.basecode
                         {
                             bNoInput = true;
                             rgInputs.Clear();
+                        }
+                    }
+                    else if (strType == "data")
+                    {
+                        if (rgInputs.Count > 0)
+                        {
+                            RawProtoCollection colTop = layer.FindChildren("top");
+                            if (colTop.Count > 0)
+                                rgInputs[0] = new Tuple<string, int, int, int, int>(colTop[0].Value, rgInputs[0].Item2, rgInputs[0].Item3, rgInputs[0].Item4, rgInputs[0].Item5);
                         }
                     }
 
@@ -1521,8 +1533,15 @@ namespace MyCaffe.basecode
                     }
                     else if (strType == "softmaxwithloss")
                     {
-                        rgProtoSoftMaxLoss.Add(layer);
-                        bKeepLayer = true;
+                        if (!bSkipLossLayer)
+                        {
+                            rgProtoSoftMaxLoss.Add(layer);
+                            bKeepLayer = true;
+                        }
+                        else
+                        {
+                            rgRemove.Add(layer);
+                        }
                     }
                     else if (strType == "memoryloss" ||
                              strType == "contrastive_loss" ||
