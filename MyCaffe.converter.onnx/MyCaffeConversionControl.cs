@@ -40,6 +40,7 @@ namespace MyCaffe.converter.onnx
         double? m_dfWtScaleMin = null;
         double? m_dfWtScaleMax = null;
         List<string> m_rgstrIgnoreLayerNames = new List<string>();
+        int m_nReshapeCount = 0;
 
         /// <summary>
         /// The constructor.
@@ -149,7 +150,7 @@ namespace MyCaffe.converter.onnx
             }
 
             // Convert the MyCaffe net to an Onnx model.
-            ModelProto protoOnnx = convertToOnnx(net, nOpSetVersion, bUseRawData, dstDataType);
+            ModelProto protoOnnx = convertToOnnx(log, net, nOpSetVersion, bUseRawData, dstDataType);
 
             // Cleanup
             if (net != null)
@@ -170,7 +171,7 @@ namespace MyCaffe.converter.onnx
         public ModelProto ConvertMyCaffeToOnnx(MyCaffeControl<T> ctrl, int nOpSetVersion = 9, bool bUseRawData = true, OnnxDefinitions.DataType dstDataType = OnnxDefinitions.DataType.FLOAT, Phase phase = Phase.RUN)
         {
             Net<T> net = ctrl.GetInternalNet(phase);
-            return convertToOnnx(net, nOpSetVersion, bUseRawData, dstDataType);
+            return convertToOnnx(ctrl.Log, net, nOpSetVersion, bUseRawData, dstDataType);
         }
 
         /// <summary>
@@ -239,7 +240,7 @@ namespace MyCaffe.converter.onnx
             return new MyCaffeModelData(protoMyCaffe.ToString(), rgWeights);
         }
 
-        private ModelProto convertToOnnx(Net<T> net, int nOpSetVersion = 9, bool bUseRawData = true, OnnxDefinitions.DataType dstDataType = OnnxDefinitions.DataType.FLOAT)
+        private ModelProto convertToOnnx(Log log, Net<T> net, int nOpSetVersion = 9, bool bUseRawData = true, OnnxDefinitions.DataType dstDataType = OnnxDefinitions.DataType.FLOAT)
         {
             ModelProto proto = new ModelProto();
             NetParameter netParam = net.net_param;
@@ -272,7 +273,7 @@ namespace MyCaffe.converter.onnx
             proto.Graph.Name = netParam.name;
             addValueInfo(proto.Graph.Input, net.input_blobs);
             addValueInfo(proto.Graph.Output, net.output_blobs);
-            addNodes(proto.Graph.Node, net.layers);
+            addNodes(log, proto.Graph.Node, net.layers, proto.Graph.Initializer);
             addTensors(proto.Graph.Initializer, net.learnable_parameters, bUseRawData, dstDataType);
 
             return proto;
@@ -315,6 +316,21 @@ namespace MyCaffe.converter.onnx
             }
 
             return strOut;
+        }
+
+        private void addShapeTensor(RepeatedField<TensorProto> rg, string strName, List<int> rgShape)
+        {
+            TensorProto tensor = new TensorProto();
+            tensor.Name = strName;
+            tensor.DataType = (int)OnnxDefinitions.DataType.INT64;
+            tensor.Dims.Add(rgShape.Count);
+
+            for (int i = 0; i < rgShape.Count; i++)
+            {
+                tensor.Int64Data.Add(rgShape[i]);
+            }
+
+            rg.Add(tensor);
         }
 
         private void addTensors(RepeatedField<TensorProto> rg, BlobCollection<T> blobs, bool bUseRawData = true, OnnxDefinitions.DataType dstDataType = OnnxDefinitions.DataType.FLOAT)
@@ -425,7 +441,7 @@ namespace MyCaffe.converter.onnx
             }
         }
 
-        private void addNodes(RepeatedField<NodeProto> rg, List<Layer<T>> rgLayers)
+        private void addNodes(Log log, RepeatedField<NodeProto> rg, List<Layer<T>> rgLayers, RepeatedField<TensorProto> rgTensors)
         {
             Dictionary<string, List<string>> rgTopCounts = new Dictionary<string, List<string>>();
 
@@ -651,6 +667,14 @@ namespace MyCaffe.converter.onnx
                         addAttributes(node.Attribute, layer.layer_param.relu_param);
                         break;
 
+                    case LayerParameter.LayerType.RESHAPE:
+                        node.OpType = OnnxDefinitions.OPERATORS.Reshape.ToString();
+                        string strName = "reshape" + m_nReshapeCount.ToString();
+                        node.Input.Add(strName);
+                        m_nReshapeCount++;
+                        addAttributes(node.Attribute, rgTensors, strName, layer.layer_param.reshape_param);
+                        break;
+
                     case LayerParameter.LayerType.SOFTMAX:
                         node.OpType = OnnxDefinitions.OPERATORS.Softmax.ToString();
                         addAttributes(node.Attribute, layer.layer_param.softmax_param);
@@ -672,14 +696,25 @@ namespace MyCaffe.converter.onnx
                         node.OpType = OnnxDefinitions.OPERATORS.Transpose.ToString();
                         addAttributes(node.Attribute, layer.layer_param.transpose_param);
                         break;
+
+                    default:
+                        bool bTraceEnabled = log.EnableTrace;
+                        log.EnableTrace = true;
+                        log.WriteLine("Ignoring layer '" + layer.layer_param.name + "'(" + layer.type.ToString() + ")");
+                        log.EnableTrace = bTraceEnabled;
+                        node = null;
+                        break;
                 }
 
-                foreach (Blob<T> blob in colParams)
+                if (node != null)
                 {
-                    node.Input.Add(removeWs(blob.Name, '_'));
-                }
+                    foreach (Blob<T> blob in colParams)
+                    {
+                        node.Input.Add(removeWs(blob.Name, '_'));
+                    }
 
-                rg.Add(node);
+                    rg.Add(node);
+                }
             }
         }
 
@@ -844,7 +879,7 @@ namespace MyCaffe.converter.onnx
             attrib = new AttributeProto();
             attrib.Name = "beta";
             attrib.Type = AttributeProto.Types.AttributeType.Float;
-            attrib.F = 0.0f; // see InnerProductLayer.cs line 375
+            attrib.F = 1.0f; // ONNX requires this to be non zero.
             rgA.Add(attrib);
 
             attrib = new AttributeProto();
@@ -856,7 +891,7 @@ namespace MyCaffe.converter.onnx
             attrib = new AttributeProto();
             attrib.Name = "transB";
             attrib.Type = AttributeProto.Types.AttributeType.Int;
-            attrib.I = (p.transpose) ? 1 : 0;
+            attrib.I = (p.transpose) ? 0 : 1; // see line 381 InnerProductLayer.cs (value is opposite of p.transpose)
             rgA.Add(attrib);
         }
 
@@ -952,6 +987,23 @@ namespace MyCaffe.converter.onnx
                 attrib.F = (float)p.negative_slope;
                 rgA.Add(attrib);
             }
+        }
+
+        private void addAttributes(RepeatedField<AttributeProto> rgA, RepeatedField<TensorProto> rgTensors, string strName, ReshapeParameter p)
+        {
+            List<int> rgShape = new List<int>();
+
+            for (int i = 0; i < p.axis; i++)
+            {
+                rgShape.Add(-1);
+            }
+
+            for (int i = 0; i < p.shape.dim.Count; i++)
+            {
+                rgShape.Add(p.shape.dim[i]);
+            }
+
+            addShapeTensor(rgTensors, strName, rgShape);
         }
 
         private void addAttributes(RepeatedField<AttributeProto> rgA, SoftmaxParameter p)
