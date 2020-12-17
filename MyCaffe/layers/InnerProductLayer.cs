@@ -216,9 +216,7 @@ namespace MyCaffe.layers
                 // If necessary, initialize and fill the bias term.
                 if (m_bBiasTerm)
                 {
-                    List<int> rgBiasShape = Utility.Create<int>(1, 0);
-                    rgBiasShape[0] = m_nN;
-
+                    List<int> rgBiasShape = Utility.Create<int>(1, m_nN);
                     Blob<T> blobBias = new Blob<T>(m_cuda, m_log);
                     blobBias.Name = m_param.name + " bias";
                     blobBias.type = BLOB_TYPE.IP_WEIGHT;
@@ -311,8 +309,7 @@ namespace MyCaffe.layers
             // Set up the bias multiplier
             if (m_bBiasTerm)
             {
-                List<int> rgBiasShape = Utility.Create<int>(1, 0);
-                rgBiasShape[0] = m_nM;
+                List<int> rgBiasShape = Utility.Create<int>(1, m_nM);
                 m_blobBiasMultiplier.Reshape(rgBiasShape);
                 m_blobBiasMultiplier.SetData(1.0);
             }
