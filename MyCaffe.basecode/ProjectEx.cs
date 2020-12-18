@@ -1298,15 +1298,13 @@ namespace MyCaffe.basecode
             int nInputInsertIdx = -1;
             int nInputShapeInsertIdx = -1;
             bool bNoInput = false;
+            bool bNameSet = false;
 
             protoTransform = null;
 
             nNameIdx++;
             if (nNameIdx < 0)
                 nNameIdx = 0;
-
-            List<Tuple<string, int, int, int, int>> rgInputs = new List<Tuple<string, int, int, int, int>>();
-            rgInputs.Add(new Tuple<string, int, int, int, int>(strName, nNum, nChannels, nHeight, nWidth));
 
             RawProtoCollection rgLayers = proto.FindChildren("layer");
             bool bUsesLstm = false;
@@ -1322,8 +1320,22 @@ namespace MyCaffe.basecode
                         bUsesLstm = true;
                         break;
                     }
+                    else if (!bNameSet && (
+                        strType == "data" ||
+                        strType == "annotated_data"))
+                    {
+                        RawProto name = layer.FindChild("name");
+                        if (name != null)
+                        {
+                            strName = name.Value.ToLower();
+                            bNameSet = true;
+                        }
+                    }
                 }
             }
+
+            List<Tuple<string, int, int, int, int>> rgInputs = new List<Tuple<string, int, int, int, int>>();
+            rgInputs.Add(new Tuple<string, int, int, int, int>(strName, nNum, nChannels, nHeight, nWidth));
 
             bool bFoundInput = false;
             bool bFoundMemoryData = false;
@@ -1657,6 +1669,13 @@ namespace MyCaffe.basecode
             foreach (RawProto layer in rgRemove)
             {
                 proto.RemoveChild(layer);
+            }
+
+            RawProto layer1 = proto.FindChild("layer");
+            if (layer1 != null)
+            {
+                RawProto btm = layer1.FindChild("bottom");
+                btm.Value = strName;
             }
 
             if (input != null && input_shape != null)
