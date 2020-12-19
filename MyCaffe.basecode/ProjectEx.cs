@@ -1287,7 +1287,6 @@ namespace MyCaffe.basecode
         /// <param name="protoTransform">Returns a RawProto describing the Data Transformation parameters to use.</param>
         /// <param name="stage">Optionally, specifies the stage to create the run network on.</param>
         /// <param name="bSkipLossLayer">Optionally, specifies to skip the loss layer and not output a converted layer to replace it (default = false).</param>
-        /// <param name="stage">Optionally, specifies the stage to create the run network on.</param>
         /// <returns>The RawProto of the model description is returned.</returns>
         public static RawProto CreateModelForRunning(string strModelDescription, string strName, int nNum, int nChannels, int nHeight, int nWidth, out RawProto protoTransform, Stage stage = Stage.NONE, bool bSkipLossLayer = false)
         {
@@ -1324,10 +1323,10 @@ namespace MyCaffe.basecode
                         strType == "data" ||
                         strType == "annotated_data"))
                     {
-                        RawProto name = layer.FindChild("name");
-                        if (name != null)
+                        RawProtoCollection tops = layer.FindChildren("top");
+                        if (tops != null && tops.Count > 0)
                         {
-                            strName = name.Value.ToLower();
+                            strName = tops[0].Value.ToLower();
                             bNameSet = true;
                         }
                     }
@@ -1584,12 +1583,6 @@ namespace MyCaffe.basecode
                     else if (strType == "labelmapping")
                     {
                         rgRemove.Add(layer);
-                    }
-                    else if (strType == "binaryhash")
-                    {
-                        RawProtoCollection col = layer.FindChildren("bottom");
-                        if (col.Count > 0)
-                            layer.RemoveChild(col[col.Count - 1]);
                     }
                     else if (strType == "debug")
                     {
