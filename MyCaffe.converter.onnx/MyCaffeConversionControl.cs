@@ -444,7 +444,8 @@ namespace MyCaffe.converter.onnx
         private void addNodes(Log log, RepeatedField<NodeProto> rg, List<Layer<T>> rgLayers, RepeatedField<TensorProto> rgTensors)
         {
             Dictionary<string, List<string>> rgTopCounts = new Dictionary<string, List<string>>();
-
+            LayerParameter.LayerType m_lastType = LayerParameter.LayerType.DATA;
+            bool m_bReshapeBeforeInnerProductNeeded = true;
 
             foreach (Layer<T> layer in rgLayers)
             {
@@ -557,6 +558,28 @@ namespace MyCaffe.converter.onnx
                         break;
 
                     case LayerParameter.LayerType.INNERPRODUCT:
+                        if (m_lastType != LayerParameter.LayerType.RESHAPE && m_bReshapeBeforeInnerProductNeeded)
+                        {
+                            NodeProto node1 = new NodeProto();
+                            node1.OpType = OnnxDefinitions.OPERATORS.Reshape.ToString();
+                            node1.Name = "reshape" + m_nReshapeCount.ToString();
+                            node1.Input.Add(node.Input[0]);
+                            node1.Input.Add(node1.Name);
+                            string strOutput = node1.Name + "_out";
+                            node1.Output.Add(strOutput);
+                            m_nReshapeCount++;
+
+                            ReshapeParameter reshape_param = new ReshapeParameter();
+                            reshape_param.axis = 1;
+                            reshape_param.num_axes = -1;
+                            reshape_param.shape.dim.Add(-1);
+                            addAttributes(node1.Attribute, rgTensors, node1.Name, reshape_param, true);
+
+                            rg.Add(node1);
+                            node.Input[0] = strOutput;
+                        }
+
+                        m_bReshapeBeforeInnerProductNeeded = false;
                         node.OpType = OnnxDefinitions.OPERATORS.Gemm.ToString();
                         addAttributes(node.Attribute, layer.layer_param.inner_product_param);
                         colParams.Add(layer.blobs[0]);
@@ -672,7 +695,7 @@ namespace MyCaffe.converter.onnx
                         string strName = "reshape" + m_nReshapeCount.ToString();
                         node.Input.Add(strName);
                         m_nReshapeCount++;
-                        addAttributes(node.Attribute, rgTensors, strName, layer.layer_param.reshape_param);
+                        addAttributes(node.Attribute, rgTensors, strName, layer.layer_param.reshape_param, true);
                         break;
 
                     case LayerParameter.LayerType.SOFTMAX:
@@ -715,6 +738,8 @@ namespace MyCaffe.converter.onnx
 
                     rg.Add(node);
                 }
+
+                m_lastType = layer.type;
             }
         }
 
@@ -989,7 +1014,7 @@ namespace MyCaffe.converter.onnx
             }
         }
 
-        private void addAttributes(RepeatedField<AttributeProto> rgA, RepeatedField<TensorProto> rgTensors, string strName, ReshapeParameter p)
+        private void addAttributes(RepeatedField<AttributeProto> rgA, RepeatedField<TensorProto> rgTensors, string strName, ReshapeParameter p, bool bRemoveTrailingOnes)
         {
             List<int> rgShape = new List<int>();
 
@@ -1002,6 +1027,17 @@ namespace MyCaffe.converter.onnx
             {
                 rgShape.Add(p.shape.dim[i]);
             }
+
+            if (bRemoveTrailingOnes)
+            {
+                while (rgShape.Count > 2 && rgShape[rgShape.Count - 1] == 1)
+                {
+                    rgShape.RemoveAt(rgShape.Count - 1);
+                }
+            }
+
+            if (rgShape[0] == -1)
+                rgShape[0] = 0;
 
             addShapeTensor(rgTensors, strName, rgShape);
         }
