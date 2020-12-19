@@ -1326,7 +1326,7 @@ namespace MyCaffe.basecode
                         RawProtoCollection tops = layer.FindChildren("top");
                         if (tops != null && tops.Count > 0)
                         {
-                            strName = tops[0].Value.ToLower();
+                            strName = tops[0].Value;
                             bNameSet = true;
                         }
                     }
