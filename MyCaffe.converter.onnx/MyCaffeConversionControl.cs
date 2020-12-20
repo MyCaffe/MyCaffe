@@ -41,6 +41,7 @@ namespace MyCaffe.converter.onnx
         double? m_dfWtScaleMax = null;
         List<string> m_rgstrIgnoreLayerNames = new List<string>();
         int m_nReshapeCount = 0;
+        int m_nDropoutCount = 0;
 
         /// <summary>
         /// The constructor.
@@ -534,7 +535,9 @@ namespace MyCaffe.converter.onnx
 
                     case LayerParameter.LayerType.DROPOUT:
                         node.OpType = OnnxDefinitions.OPERATORS.Dropout.ToString();
-                        addAttributes(node.Attribute, layer.layer_param.dropout_param);
+                        string strTraining = addAttributes(node.Attribute, rgTensors, layer.layer_param.dropout_param);
+                        if (strTraining != null)
+                            node.Input.Add(strTraining);
                         break;
 
                     case LayerParameter.LayerType.ELU:
@@ -832,6 +835,8 @@ namespace MyCaffe.converter.onnx
                 attrib.Ints.Add(h);
                 w = (p.pad_w.HasValue) ? p.pad_w.Value : (p.pad.Count > 0) ? p.pad[0] : 0;
                 attrib.Ints.Add(w);
+                attrib.Ints.Add(h);
+                attrib.Ints.Add(w);
                 rgA.Add(attrib);
             }
 
@@ -854,7 +859,7 @@ namespace MyCaffe.converter.onnx
             rgA.Add(attrib);
         }
 
-        private void addAttributes(RepeatedField<AttributeProto> rgA, DropoutParameter p)
+        private string addAttributes(RepeatedField<AttributeProto> rgA, RepeatedField<TensorProto> rgTensors, DropoutParameter p)
         {
             AttributeProto attrib = new AttributeProto();
             attrib.Name = "ratio";
@@ -862,17 +867,17 @@ namespace MyCaffe.converter.onnx
             attrib.F = (float)p.dropout_ratio;
             rgA.Add(attrib);
 
-            attrib = new AttributeProto();
-            attrib.Name = "seed";
-            attrib.Type = AttributeProto.Types.AttributeType.Int;
-            attrib.I = p.seed;
-            rgA.Add(attrib);
+            //List<int> rgShape = new List<int>() { 1 };
+            //TensorProto tensor_training_mode = new TensorProto();
+            //tensor_training_mode.Name = "training_mode" + m_nDropoutCount;
+            //tensor_training_mode.DataType = (int)OnnxDefinitions.DataType.BOOL;
+            //tensor_training_mode.Int32Data.Add(1);
+            //rgTensors.Add(tensor_training_mode);
+            //m_nDropoutCount++;
 
-            attrib = new AttributeProto();
-            attrib.Name = "training_mode";
-            attrib.Type = AttributeProto.Types.AttributeType.Int;
-            attrib.I = (p.active) ? 1 : 0;
-            rgA.Add(attrib);
+            //return tensor_training_mode.Name;
+
+            return null;
         }
 
         private void addAttributes(RepeatedField<AttributeProto> rgA, FlattenParameter p)
@@ -979,6 +984,8 @@ namespace MyCaffe.converter.onnx
                 h = (p.pad_h.HasValue) ? p.pad_h.Value : (p.pad.Count > 0) ? p.pad[0] : 0;
                 attrib.Ints.Add(h);
                 w = (p.pad_w.HasValue) ? p.pad_w.Value : (p.pad.Count > 0) ? p.pad[0] : 0;
+                attrib.Ints.Add(w);
+                attrib.Ints.Add(h);
                 attrib.Ints.Add(w);
                 rgA.Add(attrib);
             }
