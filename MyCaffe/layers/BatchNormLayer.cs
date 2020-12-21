@@ -306,15 +306,15 @@ namespace MyCaffe.layers
                 m_colBlobs.Clear(true);
 
                 m_colBlobs.Add(new Blob<T>(m_cuda, m_log, rgSize, false));  // global mean
-                m_colBlobs[0].Name = "global mean";
+                m_colBlobs[0].Name = m_param.name + "_global_mean";
                 m_colBlobs[0].type = BLOB_TYPE.INTERNAL;
                 m_colBlobs[0].SetData(0.0);
                 m_colBlobs.Add(new Blob<T>(m_cuda, m_log, rgSize, false));  // glboal var
-                m_colBlobs[1].Name = "global variance";
+                m_colBlobs[1].Name = m_param.name + "_global_var";
                 m_colBlobs[1].type = BLOB_TYPE.INTERNAL;
                 m_colBlobs[1].SetData(0.0);
                 m_colBlobs.Add(new Blob<T>(m_cuda, m_log, rgSize, false));  // variance correction
-                m_colBlobs[2].Name = "var correction";
+                m_colBlobs[2].Name = m_param.name + "_var_corr";
                 m_colBlobs[2].type = BLOB_TYPE.INTERNAL;
                 m_colBlobs[2].SetData(1.0);
 
@@ -322,7 +322,7 @@ namespace MyCaffe.layers
                 {
                     m_colBlobs.Add(new Blob<T>(m_cuda, m_log, rgSize)); // scale
                     m_colBlobs[3].type = BLOB_TYPE.INTERNAL;
-                    m_colBlobs[3].Name = "scale";
+                    m_colBlobs[3].Name = m_param.name + "_scale";
 
                     FillerParameter fpScale = m_param.batch_norm_param.scale_filler;
                     if (fpScale == null)
@@ -332,7 +332,7 @@ namespace MyCaffe.layers
                     fillerScale.Fill(m_colBlobs[3]);
 
                     m_colBlobs.Add(new Blob<T>(m_cuda, m_log, rgSize)); // bias
-                    m_colBlobs[4].Name = "bias";
+                    m_colBlobs[4].Name = m_param.name + "_bias";
                     m_colBlobs[4].type = BLOB_TYPE.INTERNAL;
 
                     FillerParameter fpBias = m_param.batch_norm_param.bias_filler;
