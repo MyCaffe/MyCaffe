@@ -130,7 +130,7 @@ namespace MyCaffe.layers
                     nNewSize = colBottom[1].shape(i);
                     if (m_param.crop_param.offset.Count == 1)
                     {
-                        // If only one offset is givenm, all crops have the same offset.
+                        // If only one offset is given, all crops have the same offset.
                         nCropOffset = (int)m_param.crop_param.offset[0];
                     }
                     else if (m_param.crop_param.offset.Count > 1)
