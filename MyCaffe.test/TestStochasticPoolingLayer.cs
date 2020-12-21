@@ -23,7 +23,25 @@ namespace MyCaffe.test
             {
                 foreach (IPoolingStochasticLayerTest t in test.Tests)
                 {
-                    t.TestSetup();
+                    t.TestSetup(PoolingParameter.PoolingReshapeAlgorithm.CAFFE);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSetupUseOnnx()
+        {
+            PoolingStochasticLayerTest test = new PoolingStochasticLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IPoolingStochasticLayerTest t in test.Tests)
+                {
+                    t.TestSetup(PoolingParameter.PoolingReshapeAlgorithm.ONNX);
                 }
             }
             finally
@@ -114,7 +132,7 @@ namespace MyCaffe.test
 
     interface IPoolingStochasticLayerTest : ITest
     {
-        void TestSetup();
+        void TestSetup(PoolingParameter.PoolingReshapeAlgorithm alg);
         void TestStochastic();
         void TestStochasticTestPhase();
         void TestGradient();
@@ -137,9 +155,11 @@ namespace MyCaffe.test
             return p;
         }
 
-        public void TestSetup()
+        public void TestSetup(PoolingParameter.PoolingReshapeAlgorithm alg)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.POOLING);
+
+            p.pooling_param.reshape_algorithm = alg;
             p.pooling_param.engine = m_engine;
             p.pooling_param.kernel_size.Add(3);
             p.pooling_param.stride.Add(2);
@@ -151,7 +171,12 @@ namespace MyCaffe.test
             m_log.CHECK_EQ(BottomVec.Count, TopVec.Count, "The top and bottom vecs should have the same count.");
             m_log.CHECK_EQ(Bottom.num, Top.num, "The top and bottom should have the same num.");
             m_log.CHECK_EQ(Bottom.channels, Top.channels, "The top and bottom should have the same channels.");
-            m_log.CHECK_EQ(3, Top.height, "The top and bottom should have the same height.");
+
+            if (p.pooling_param.reshape_algorithm == PoolingParameter.PoolingReshapeAlgorithm.ONNX)
+                m_log.CHECK_EQ(2, Top.height, "The top height should = 2.");
+            else
+                m_log.CHECK_EQ(3, Top.height, "The top height should = 3.");
+
             m_log.CHECK_EQ(2, Top.width, "The top and bottom should have the same width.");
         }
 

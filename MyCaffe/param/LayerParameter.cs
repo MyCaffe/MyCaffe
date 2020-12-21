@@ -16,6 +16,10 @@ namespace MyCaffe.param
     /// </summary>
     public class LayerParameter : BaseParameter, ICloneable, IComparable, IBinaryPersist  
     {
+        /// <summary>
+        /// Specifies the level of conversion support for the layer.
+        /// </summary>
+        protected ONNX_CONVERSION_SUPPORT m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.NONE;
         // The layer name.
         string m_strName;
         // The layer type.
@@ -72,6 +76,25 @@ namespace MyCaffe.param
         List<string> m_rgstrExpectedTop = new List<string>();
         List<string> m_rgstrExpectedBottom = new List<string>();
         bool m_bFreezeLearning = false;
+
+        /// <summary>
+        /// Defines whether a layer node has ONNX conversion support or not.
+        /// </summary>
+        public enum ONNX_CONVERSION_SUPPORT
+        {
+            /// <summary>
+            /// Specifies that there is no ONNX conversion support.
+            /// </summary>
+            NONE,
+            /// <summary>
+            /// Specifies that there is ONNX inference conversion support.
+            /// </summary>
+            INFERENCE,
+            /// <summary>
+            /// Specifies that there is both ONNX inference and training conversion support.
+            /// </summary>
+            INFERENCE_AND_TRAINING
+        }
 
         /// <summary>
         /// Specifies the layer type.
@@ -719,6 +742,7 @@ namespace MyCaffe.param
                 case LayerType.ABSVAL:
                     expected_bottom.Add("input");
                     expected_top.Add("abs");
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
                     break;
 
                 case LayerType.ACCURACY:
@@ -742,16 +766,26 @@ namespace MyCaffe.param
                     m_rgLayerParameters[LayerType.DECODE] = new DecodeParameter();
                     break;
 
+                case LayerType.ANNOTATED_DATA:
+                    expected_top.Add("data");
+                    expected_top.Add("label");
+                    m_rgLayerParameters[LayerType.TRANSFORM] = new TransformationParameter();
+                    m_rgLayerParameters[LayerType.ANNOTATED_DATA] = new AnnotatedDataParameter();
+                    m_rgLayerParameters[LayerType.DATA] = new DataParameter();
+                    break;
+
                 case LayerType.ARGMAX:
                     expected_bottom.Add("input");
                     expected_top.Add("max");
                     m_rgLayerParameters[lt] = new ArgMaxParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
                     break;
 
                 case LayerType.BATCHNORM:
                     expected_bottom.Add("input");
                     expected_top.Add("norm");
                     m_rgLayerParameters[lt] = new BatchNormParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE_AND_TRAINING;
                     break;
 
                 case LayerType.BATCHREINDEX:
@@ -776,18 +810,21 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("clip");
                     m_rgLayerParameters[lt] = new ClipParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
                     break;
 
                 case LayerType.CONCAT:
                     expected_bottom.Add("x_1");
                     expected_bottom.Add("x_2");
                     expected_top.Add("concat");
-                    m_rgLayerParameters[lt] = new ConcatParameter(); 
+                    m_rgLayerParameters[lt] = new ConcatParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
                     break;
 
                 case LayerType.CONSTANT:
                     expected_top.Add("const");
                     m_rgLayerParameters[lt] = new ConstantParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
                     break;
 
                 case LayerType.CONTRASTIVE_LOSS:
@@ -805,6 +842,14 @@ namespace MyCaffe.param
                     expected_bottom.Add("enc");
                     expected_top.Add("label");
                     m_rgLayerParameters[LayerType.CONVOLUTION] = new ConvolutionParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE_AND_TRAINING;
+                    break;
+
+                case LayerType.CROP:
+                    expected_bottom.Add("upscore");
+                    expected_bottom.Add("data");
+                    expected_top.Add("score");
+                    m_rgLayerParameters[lt] = new CropParameter();
                     break;
 
                 case LayerType.DECODE:
@@ -818,21 +863,6 @@ namespace MyCaffe.param
                     expected_top.Add("upscore");
                     if (bNewParams || m_rgLayerParameters[LayerType.CONVOLUTION] == null)
                         m_rgLayerParameters[LayerType.CONVOLUTION] = new ConvolutionParameter();
-                    break;
-
-                case LayerType.CROP:
-                    expected_bottom.Add("upscore");
-                    expected_bottom.Add("data");
-                    expected_top.Add("score");
-                    m_rgLayerParameters[lt] = new CropParameter();
-                    break;
-
-                case LayerType.ANNOTATED_DATA:
-                    expected_top.Add("data");
-                    expected_top.Add("label");
-                    m_rgLayerParameters[LayerType.TRANSFORM] = new TransformationParameter();
-                    m_rgLayerParameters[LayerType.ANNOTATED_DATA] = new AnnotatedDataParameter();
-                    m_rgLayerParameters[LayerType.DATA] = new DataParameter();
                     break;
 
                 case LayerType.DETECTION_EVALUATE:
@@ -873,12 +903,6 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new DataSequenceParameter();
                     break;
 
-                case LayerType.MEMORYDATA:
-                    expected_top.Add("data");
-                    m_rgLayerParameters[LayerType.TRANSFORM] = new TransformationParameter();
-                    m_rgLayerParameters[LayerType.MEMORYDATA] = new MemoryDataParameter();
-                    break;
-
                 case LayerType.DEBUG:
                     expected_bottom.Add("input");
                     expected_bottom.Add("label");
@@ -890,6 +914,7 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("dropout");
                     m_rgLayerParameters[lt] = new DropoutParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE_AND_TRAINING;
                     break;
 
                 case LayerType.DUMMYDATA:
@@ -904,12 +929,14 @@ namespace MyCaffe.param
                     expected_bottom.Add("x_2");
                     expected_top.Add("eltwise");
                     m_rgLayerParameters[lt] = new EltwiseParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
                     break;
 
                 case LayerType.ELU:
                     expected_bottom.Add("input");
                     expected_top.Add("elu");
                     m_rgLayerParameters[lt] = new EluParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
                     break;
 
                 case LayerType.EMBED:
@@ -934,6 +961,7 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("exp");
                     m_rgLayerParameters[lt] = new ExpParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
                     break;
 
                 case LayerType.FILTER:
@@ -947,6 +975,7 @@ namespace MyCaffe.param
                     expected_bottom.Add("x_1");
                     expected_top.Add("flatten");
                     m_rgLayerParameters[lt] = new FlattenParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
                     break;
 
                 case LayerType.GATHER:
@@ -954,6 +983,7 @@ namespace MyCaffe.param
                     expected_bottom.Add("idx");
                     expected_top.Add("gthr");
                     m_rgLayerParameters[lt] = new GatherParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE_AND_TRAINING;
                     break;
 
                 case LayerType.GRADIENTSCALER:
@@ -1006,6 +1036,7 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("ip");
                     m_rgLayerParameters[lt] = new InnerProductParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE_AND_TRAINING;
                     break;
 
                 case LayerType.INPUT:
@@ -1032,18 +1063,27 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("log");
                     m_rgLayerParameters[lt] = new LogParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
                     break;
 
                 case LayerType.LRN:
                     expected_bottom.Add("input");
                     expected_top.Add("lrn");
                     m_rgLayerParameters[lt] = new LRNParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
                     break;
 
                 case LayerType.MATH:
                     expected_bottom.Add("input");
                     expected_top.Add("math");
                     m_rgLayerParameters[lt] = new MathParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
+                    break;
+
+                case LayerType.MEMORYDATA:
+                    expected_top.Add("data");
+                    m_rgLayerParameters[LayerType.TRANSFORM] = new TransformationParameter();
+                    m_rgLayerParameters[LayerType.MEMORYDATA] = new MemoryDataParameter();
                     break;
 
                 case LayerType.MEMORY_LOSS:
@@ -1110,6 +1150,7 @@ namespace MyCaffe.param
                     expected_top.Add("pool");
                     expected_top.Add("mask");
                     m_rgLayerParameters[lt] = new PoolingParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE_AND_TRAINING;
                     break;
 
                 case LayerType.UNPOOLING1:
@@ -1128,12 +1169,14 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("power");
                     m_rgLayerParameters[lt] = new PowerParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
                     break;
 
                 case LayerType.PRELU:
                     expected_bottom.Add("input");
                     expected_top.Add("prelu");
                     m_rgLayerParameters[lt] = new PReLUParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
                     break;
 
                 case LayerType.PRIORBOX:
@@ -1146,30 +1189,35 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("reduction");
                     m_rgLayerParameters[lt] = new ReductionParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
                     break;
 
                 case LayerType.RELU:
                     expected_bottom.Add("input");
                     expected_top.Add("relu");
                     m_rgLayerParameters[lt] = new ReLUParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE_AND_TRAINING;
                     break;
 
                 case LayerType.RESHAPE:
                     expected_bottom.Add("input");
                     expected_top.Add("reshape");
                     m_rgLayerParameters[lt] = new ReshapeParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE_AND_TRAINING;
                     break;
 
                 case LayerType.SQUEEZE:
                     expected_bottom.Add("input");
                     expected_top.Add("squeeze");
                     m_rgLayerParameters[LayerType.SQUEEZE] = new SqueezeParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
                     break;
 
                 case LayerType.UNSQUEEZE:
                     expected_bottom.Add("input");
                     expected_top.Add("unsqueeze");
                     m_rgLayerParameters[LayerType.SQUEEZE] = new SqueezeParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
                     break;
 
                 case LayerType.SCALAR:
@@ -1214,18 +1262,21 @@ namespace MyCaffe.param
                     expected_top.Add("sl1");
                     expected_top.Add("sl2");
                     m_rgLayerParameters[lt] = new SliceParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE_AND_TRAINING;
                     break;
 
                 case LayerType.SPLIT:
                     expected_bottom.Add("input");
                     expected_top.Add("sp1");
                     expected_top.Add("sp2");
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE_AND_TRAINING;
                     break;
 
                 case LayerType.SOFTMAX:
                     expected_bottom.Add("input");
                     expected_top.Add("softmax");
                     m_rgLayerParameters[lt] = new SoftmaxParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
                     break;
 
                 case LayerType.SOFTMAXWITH_LOSS:
@@ -1277,6 +1328,7 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("output");
                     m_rgLayerParameters[lt] = new TransposeParameter();
+                    m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
                     break;
 
                 case LayerType.TRIPLET_LOSS:
@@ -1352,6 +1404,14 @@ namespace MyCaffe.param
         {
             get { return m_bUseHalfSize; }
             set { m_bUseHalfSize = value; }
+        }
+
+        /// <summary>
+        /// Returns the level of Onnx conversion support.
+        /// </summary>
+        public ONNX_CONVERSION_SUPPORT onnx_conversion_support
+        {
+            get { return m_onnxConversionSupport; }
         }
 
         /// <summary>

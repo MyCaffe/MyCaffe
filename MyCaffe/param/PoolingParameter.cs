@@ -19,6 +19,26 @@ namespace MyCaffe.param
     {
         PoolingMethod m_pool = PoolingMethod.MAX;
         bool m_bGlobalPooling = false;
+        PoolingReshapeAlgorithm m_reshapeAlgorithm = PoolingReshapeAlgorithm.DEFAULT;
+
+        /// <summary>
+        /// Defines the pooling reshape algorithm to use.
+        /// </summary>
+        public enum PoolingReshapeAlgorithm
+        {
+            /// <summary>
+            /// Specifies the default reshape algorithm (CAFFE)
+            /// </summary>
+            DEFAULT,
+            /// <summary>
+            /// Specifies to use the default CAFFE reshape algorithm.
+            /// </summary>
+            CAFFE, // default
+            /// <summary>
+            /// Specifies to use the ONNX reshape algorithm.
+            /// </summary>
+            ONNX,
+        }
 
         /// <summary>
         /// Defines the pooling method.
@@ -94,6 +114,24 @@ namespace MyCaffe.param
             set { m_bGlobalPooling = value; }
         }
 
+        /// <summary>
+        /// Specifies the reshape algorithm to use, either the original Caffe reshape (default = false) or the new Onnx reshape algorithm (true).  See remarks for the difference.
+        /// </summary>
+        /// <remarks>
+        /// The original CAFFE reshape algorithm used is as follows:
+        ///     PoolHeight = (int)ceil((height + 2 * padh - kernelh) / strideh) + 1
+        ///     PoolWidth = (int)ceil((width + 2 * padw - kernelw) / stridew) + 1
+        ///     
+        /// And the new ONNX reshape algorithm (default) is as follows:
+        ///     PoolHeight = (int)floor((height + 2 * padh - kernelh) / strideh + 1)
+        ///     PoolWidth = (int)floor((width + 2 * padw - kernelw) / stridew + 1)
+        /// </remarks>
+        public PoolingReshapeAlgorithm reshape_algorithm
+        {
+            get { return m_reshapeAlgorithm; }
+            set { m_reshapeAlgorithm = value; }
+        }
+
         /** @copydoc KernelParameter::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -116,6 +154,7 @@ namespace MyCaffe.param
                 PoolingParameter p = (PoolingParameter)src;
                 m_pool = p.m_pool;
                 m_bGlobalPooling = p.m_bGlobalPooling;
+                m_reshapeAlgorithm = p.m_reshapeAlgorithm;
             }
         }
 
@@ -139,6 +178,9 @@ namespace MyCaffe.param
 
             if (global_pooling != false)
                 rgChildren.Add("global_pooling", global_pooling.ToString());
+
+            if (reshape_algorithm != PoolingReshapeAlgorithm.DEFAULT)
+                rgChildren.Add("reshape_algorithm", reshape_algorithm.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -178,6 +220,24 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("global_pooling")) != null)
                 p.global_pooling = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("reshape_algorithm")) != null)
+            {
+                switch (strVal)
+                {
+                    case "CAFFE":
+                        p.reshape_algorithm = PoolingReshapeAlgorithm.CAFFE;
+                        break;
+
+                    case "ONNX":
+                        p.reshape_algorithm = PoolingReshapeAlgorithm.ONNX;
+                        break;
+
+                    default:
+                        p.reshape_algorithm = PoolingReshapeAlgorithm.DEFAULT;
+                        break;
+                }
+            }
 
             return p;
         }

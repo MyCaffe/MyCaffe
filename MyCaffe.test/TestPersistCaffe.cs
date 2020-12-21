@@ -243,6 +243,8 @@ namespace MyCaffe.test
 
             RawProto proto = RawProto.Parse(strModelDesc);
             NetParameter net_param = NetParameter.FromProto(proto);
+            net_param.SetPoolingReshapeAlgorithm(PoolingParameter.PoolingReshapeAlgorithm.CAFFE);
+
             m_log.Enable = false;
             Net<T> net = new common.Net<T>(m_cuda, m_log, net_param, new CancelEvent(), db, Phase.TRAIN);
             m_log.Enable = true;
@@ -280,6 +282,8 @@ namespace MyCaffe.test
 
             RawProto proto = RawProto.Parse(strModelDesc);
             NetParameter net_param = NetParameter.FromProto(proto);
+            net_param.SetPoolingReshapeAlgorithm(PoolingParameter.PoolingReshapeAlgorithm.CAFFE);
+
             m_log.Enable = false;
             Net<T> net = new common.Net<T>(m_cuda, m_log, net_param, new CancelEvent(), db, Phase.TRAIN);
             m_log.Enable = true;
@@ -510,6 +514,7 @@ namespace MyCaffe.test
 
             RawProto proto = RawProto.Parse(strModelDesc);
             NetParameter net_param = NetParameter.FromProto(proto);
+            net_param.SetPoolingReshapeAlgorithm(PoolingParameter.PoolingReshapeAlgorithm.CAFFE);
             m_log.Enable = false;
             Net<T> net = new common.Net<T>(m_cuda, m_log, net_param, new CancelEvent(), db, Phase.TRAIN);
             m_log.Enable = true;

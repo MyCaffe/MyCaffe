@@ -121,7 +121,12 @@ namespace MyCaffe.test
 
             m_log.CHECK_EQ(Top.num, Bottom.num, "The top and bottom should have the same num.");
             m_log.CHECK_EQ(Top.channels, Bottom.channels, "The top and bottom should have the same channels.");
-            m_log.CHECK_EQ(Top.height, 3, "The top should have height = 3.");
+
+            if (p.pooling_param.reshape_algorithm == PoolingParameter.PoolingReshapeAlgorithm.ONNX)
+                m_log.CHECK_EQ(Top.height, 2, "The top should have height = 2.");
+            else
+                m_log.CHECK_EQ(Top.height, 3, "The top should have height = 3.");
+
             m_log.CHECK_EQ(Top.width, 2, "The top should have width = 2.");
         }
 

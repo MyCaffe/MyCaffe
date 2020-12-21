@@ -24,7 +24,7 @@ namespace MyCaffe.test
             {
                 foreach (IPoolingLayerTest t in test.Tests)
                 {
-                    t.TestSetup();
+                    t.TestSetup(PoolingParameter.PoolingReshapeAlgorithm.CAFFE);
                 }
             }
             finally
@@ -42,7 +42,43 @@ namespace MyCaffe.test
             {
                 foreach (IPoolingLayerTest t in test.Tests)
                 {
-                    t.TestSetupPadded();
+                    t.TestSetupPadded(PoolingParameter.PoolingReshapeAlgorithm.CAFFE);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSetupUseOnnxAlg()
+        {
+            PoolingLayerTest test = new PoolingLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IPoolingLayerTest t in test.Tests)
+                {
+                    t.TestSetup(PoolingParameter.PoolingReshapeAlgorithm.ONNX);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSetupUseOnnxAlgPadded()
+        {
+            PoolingLayerTest test = new PoolingLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IPoolingLayerTest t in test.Tests)
+                {
+                    t.TestSetupPadded(PoolingParameter.PoolingReshapeAlgorithm.ONNX);
                 }
             }
             finally
@@ -226,7 +262,7 @@ namespace MyCaffe.test
             {
                 foreach (IPoolingLayerTest t in test.Tests)
                 {
-                    t.TestSetupCuDNN();
+                    t.TestSetupCuDNN(PoolingParameter.PoolingReshapeAlgorithm.CAFFE);
                 }
             }
             finally
@@ -244,7 +280,43 @@ namespace MyCaffe.test
             {
                 foreach (IPoolingLayerTest t in test.Tests)
                 {
-                    t.TestSetupPaddedCuDNN();
+                    t.TestSetupPaddedCuDNN(PoolingParameter.PoolingReshapeAlgorithm.CAFFE);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSetupCuDNNUseOnnxAlg()
+        {
+            PoolingLayerTest test = new PoolingLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IPoolingLayerTest t in test.Tests)
+                {
+                    t.TestSetupCuDNN(PoolingParameter.PoolingReshapeAlgorithm.ONNX);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSetupPaddedCuDNNUseOnnxAlg()
+        {
+            PoolingLayerTest test = new PoolingLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IPoolingLayerTest t in test.Tests)
+                {
+                    t.TestSetupPaddedCuDNN(PoolingParameter.PoolingReshapeAlgorithm.ONNX);
                 }
             }
             finally
@@ -382,8 +454,8 @@ namespace MyCaffe.test
 
     interface IPoolingLayerTest : ITest
     {
-        void TestSetup();
-        void TestSetupPadded();
+        void TestSetup(PoolingParameter.PoolingReshapeAlgorithm alg);
+        void TestSetupPadded(PoolingParameter.PoolingReshapeAlgorithm alg);
         void TestSetupGlobalPooling();
         void TestForwardMax();
         void TestForwardMaxTopMask();
@@ -393,8 +465,8 @@ namespace MyCaffe.test
         void TestGradientMaxTopMask();
         void TestGradientAve();
         void TestGradientAvePadded();
-        void TestSetupCuDNN();
-        void TestSetupPaddedCuDNN();
+        void TestSetupCuDNN(PoolingParameter.PoolingReshapeAlgorithm alg);
+        void TestSetupPaddedCuDNN(PoolingParameter.PoolingReshapeAlgorithm alg);
         void TestForwardMaxCuDNN();
         void TestGradientMaxCuDNN();
         void TestForwardMaxPaddedCuDNN();
@@ -810,9 +882,11 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestSetup()
+        public void TestSetup(PoolingParameter.PoolingReshapeAlgorithm alg)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.POOLING);
+
+            p.pooling_param.reshape_algorithm = alg;
             p.pooling_param.kernel_size.Add(3);
             p.pooling_param.stride.Add(2);
             p.pooling_param.engine = m_engine;
@@ -822,13 +896,20 @@ namespace MyCaffe.test
 
             m_log.CHECK_EQ(Top.num, Bottom.num, "Top and bottom should have the same num.");
             m_log.CHECK_EQ(Top.channels, Bottom.channels, "Top and bottom should have the same channels.");
-            m_log.CHECK_EQ(3, Top.height, "The top height should be 3.");
+
+            if (p.pooling_param.reshape_algorithm == PoolingParameter.PoolingReshapeAlgorithm.ONNX)
+                m_log.CHECK_EQ(2, Top.height, "The top height should be 2.");
+            else
+                m_log.CHECK_EQ(3, Top.height, "The top height should be 3.");
+
             m_log.CHECK_EQ(2, Top.width, "The top width should be 2.");
         }
 
-        public void TestSetupPadded()
+        public void TestSetupPadded(PoolingParameter.PoolingReshapeAlgorithm alg)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.POOLING);
+
+            p.pooling_param.reshape_algorithm = alg;
             p.pooling_param.kernel_size.Add(3);
             p.pooling_param.stride.Add(2);
             p.pooling_param.pad.Add(1);
@@ -840,7 +921,12 @@ namespace MyCaffe.test
 
             m_log.CHECK_EQ(Top.num, Bottom.num, "Top and bottom should have the same num.");
             m_log.CHECK_EQ(Top.channels, Bottom.channels, "Top and bottom should have the same channels.");
-            m_log.CHECK_EQ(4, Top.height, "The top height should be 4.");
+
+            if (p.pooling_param.reshape_algorithm == PoolingParameter.PoolingReshapeAlgorithm.ONNX)
+                m_log.CHECK_EQ(3, Top.height, "The top height should be 3.");
+            else
+                m_log.CHECK_EQ(4, Top.height, "The top height should be 4.");
+
             m_log.CHECK_EQ(3, Top.width, "The top width should be 2.");
         }
 
@@ -1059,9 +1145,11 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestSetupCuDNN()
+        public void TestSetupCuDNN(PoolingParameter.PoolingReshapeAlgorithm alg)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.POOLING);
+
+            p.pooling_param.reshape_algorithm = alg;
             p.pooling_param.engine = m_engine;
             p.pooling_param.kernel_size.Add(3);
             p.pooling_param.stride.Add(2);
@@ -1071,13 +1159,20 @@ namespace MyCaffe.test
 
             m_log.CHECK_EQ(Top.num, Bottom.num, "Top and bottom should have the same num.");
             m_log.CHECK_EQ(Top.channels, Bottom.channels, "Top and bottom should have the same channels.");
-            m_log.CHECK_EQ(3, Top.height, "The top height should be 3.");
+
+            if (p.pooling_param.reshape_algorithm == PoolingParameter.PoolingReshapeAlgorithm.ONNX)
+                m_log.CHECK_EQ(2, Top.height, "The top height should be 2.");
+            else
+                m_log.CHECK_EQ(3, Top.height, "The top height should be 3.");
+
             m_log.CHECK_EQ(2, Top.width, "The top width should be 2.");
         }
 
-        public void TestSetupPaddedCuDNN()
+        public void TestSetupPaddedCuDNN(PoolingParameter.PoolingReshapeAlgorithm alg)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.POOLING);
+
+            p.pooling_param.reshape_algorithm = alg;
             p.pooling_param.engine = m_engine;
             p.pooling_param.kernel_size.Add(3);
             p.pooling_param.stride.Add(2);
@@ -1089,7 +1184,12 @@ namespace MyCaffe.test
 
             m_log.CHECK_EQ(Top.num, Bottom.num, "Top and bottom should have the same num.");
             m_log.CHECK_EQ(Top.channels, Bottom.channels, "Top and bottom should have the same channels.");
-            m_log.CHECK_EQ(4, Top.height, "The top height should be 4.");
+
+            if (p.pooling_param.reshape_algorithm == PoolingParameter.PoolingReshapeAlgorithm.ONNX)
+                m_log.CHECK_EQ(3, Top.height, "The top height should be 3.");
+            else
+                m_log.CHECK_EQ(4, Top.height, "The top height should be 4.");
+
             m_log.CHECK_EQ(3, Top.width, "The top width should be 3.");
         }
 

@@ -294,8 +294,16 @@ namespace MyCaffe.layers
                 m_nKernelW = colBottom[0].width;
             }
 
-            m_nPooledHeight = (int)Math.Ceiling((double)((m_nHeight + 2 * m_nPadH - m_nKernelH) / (double)m_nStrideH)) + 1;
-            m_nPooledWidth = (int)Math.Ceiling((double)((m_nWidth + 2 * m_nPadW - m_nKernelW) / (double)m_nStrideW)) + 1;
+            if (m_param.pooling_param.reshape_algorithm == PoolingParameter.PoolingReshapeAlgorithm.ONNX)
+            {
+                m_nPooledHeight = (int)Math.Floor((double)((m_nHeight + 2 * m_nPadH - m_nKernelH) / (double)m_nStrideH) + 1);
+                m_nPooledWidth = (int)Math.Floor((double)((m_nWidth + 2 * m_nPadW - m_nKernelW) / (double)m_nStrideW) + 1);
+            }
+            else // use original CAFFE method.
+            {
+                m_nPooledHeight = (int)Math.Ceiling((double)((m_nHeight + 2 * m_nPadH - m_nKernelH) / (double)m_nStrideH)) + 1;
+                m_nPooledWidth = (int)Math.Ceiling((double)((m_nWidth + 2 * m_nPadW - m_nKernelW) / (double)m_nStrideW)) + 1;
+            }
 
             if (m_nPooledHeight <= 0)
             {
