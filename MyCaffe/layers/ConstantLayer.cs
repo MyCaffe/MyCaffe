@@ -52,8 +52,6 @@ namespace MyCaffe.layers
                     m_rgF = proto.data;
                 }
             }
-
-            m_log.CHECK_EQ(m_rgF.Count, 1, "Currently, only single constant values are supported!");
         }
 
         /// <summary>
@@ -64,6 +62,8 @@ namespace MyCaffe.layers
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             colTop[0].Reshape(m_param.constant_param.output_shape);
+            T[] rgData = Utility.ConvertVec<T>(m_rgF.ToArray());
+            colTop[0].SetData(rgData);
         }
 
         /// <summary>
@@ -76,7 +76,6 @@ namespace MyCaffe.layers
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            colTop[0].SetData(m_rgF[0]);
         }
 
         /// @brief Not implemented - constant Layers do not perform backward.
