@@ -24,6 +24,7 @@ namespace MyCaffe.layers
         EltwiseParameter.EltwiseOp m_op;
         List<double> m_rgdfCoeffs = new List<double>();
         Blob<T> m_blobIdx;
+        Blob<T> m_blobSingleSecondary = null;
         bool m_bStableProdGrad;
         bool m_bCoeffBlob;
 
@@ -52,6 +53,10 @@ namespace MyCaffe.layers
         protected override void dispose()
         {
             m_blobIdx.Dispose();
+
+            if (m_blobSingleSecondary != null)
+                m_blobSingleSecondary.Dispose();
+
             base.dispose();
         }
 
@@ -142,7 +147,21 @@ namespace MyCaffe.layers
                 }
                 else
                 {
-                    m_log.CHECK(Utility.Compare<int>(colBottom[i].shape(), colBottom[0].shape()), "The bottoms should all be of the same shape.");
+                    if (colBottom.Count == 2 && colBottom[1].count() == 1)
+                    {
+                        if (m_blobSingleSecondary == null)
+                        {
+                            m_blobSingleSecondary = new Blob<T>(m_cuda, m_log, false);
+                            m_blobSingleSecondary.ReshapeLike(colBottom[0]);
+
+                            double dfVal = Utility.ConvertVal<T>(colBottom[i].GetData(0));
+                            m_blobSingleSecondary.SetData(dfVal);
+                        }
+                    }
+                    else
+                    {
+                        m_log.CHECK(Utility.Compare<int>(colBottom[i].shape(), colBottom[0].shape()), "The bottoms should all be of the same shape.");
+                    }
                 }
             }
 
@@ -160,6 +179,7 @@ namespace MyCaffe.layers
         /// <param name="colTop">output blob vector (length 1)</param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            Blob<T> blob = (m_blobSingleSecondary != null) ? m_blobSingleSecondary : colBottom[1];
             long hMask = 0;
             int nCount = colTop[0].count();
             long hTopData = colTop[0].mutable_gpu_data;
@@ -169,7 +189,7 @@ namespace MyCaffe.layers
             switch (m_op)
             {
                 case EltwiseParameter.EltwiseOp.PROD:
-                    m_cuda.mul(nCount, colBottom[0].gpu_data, colBottom[1].gpu_data, hTopData);
+                    m_cuda.mul(nCount, colBottom[0].gpu_data, blob.gpu_data, hTopData);
 
                     for (int i = 2; i < colBottom.Count; i++)
                     {
@@ -178,7 +198,7 @@ namespace MyCaffe.layers
                     break;
 
                 case EltwiseParameter.EltwiseOp.DIV:
-                    m_cuda.div(nCount, colBottom[0].gpu_data, colBottom[1].gpu_data, hTopData);
+                    m_cuda.div(nCount, colBottom[0].gpu_data, blob.gpu_data, hTopData);
 
                     for (int i = 2; i < colBottom.Count; i++)
                     {
