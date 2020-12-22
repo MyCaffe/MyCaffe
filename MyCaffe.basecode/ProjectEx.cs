@@ -1668,7 +1668,8 @@ namespace MyCaffe.basecode
             if (layer1 != null)
             {
                 RawProto btm = layer1.FindChild("bottom");
-                btm.Value = strName;
+                if (btm != null)
+                    btm.Value = strName;
             }
 
             if (input != null && input_shape != null)
