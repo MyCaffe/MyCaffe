@@ -85,28 +85,27 @@ namespace MyCaffe.param
         {
             BlobProto p = this;
 
-            if (bNewInstance)
                 p = new BlobProto();
 
             if (br.ReadBoolean())
-                m_rgShape = BlobShape.Load(br);
+                p.m_rgShape = BlobShape.Load(br);
 
-            m_rgdfData = Utility.Load<double>(br);
-            m_rgdfDiff = Utility.Load<double>(br);
-            m_rgfData = Utility.Load<float>(br);
-            m_rgfDiff = Utility.Load<float>(br);
-
-            if (br.ReadBoolean())
-                m_nNum = br.ReadInt32();
+            p.m_rgdfData = Utility.Load<double>(br);
+            p.m_rgdfDiff = Utility.Load<double>(br);
+            p.m_rgfData = Utility.Load<float>(br);
+            p.m_rgfDiff = Utility.Load<float>(br);
 
             if (br.ReadBoolean())
-                m_nChannels = br.ReadInt32();
+                p.m_nNum = br.ReadInt32();
 
             if (br.ReadBoolean())
-                m_nHeight = br.ReadInt32();
+                p.m_nChannels = br.ReadInt32();
 
             if (br.ReadBoolean())
-                m_nWidth = br.ReadInt32();
+                p.m_nHeight = br.ReadInt32();
+
+            if (br.ReadBoolean())
+                p.m_nWidth = br.ReadInt32();
 
             return p;
         }
