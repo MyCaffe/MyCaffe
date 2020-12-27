@@ -34,6 +34,8 @@ namespace MyCaffe.db.image
         /// </summary>
         protected LabelIndex m_rgLabelsBoosted = null;
         CryptoRandom m_random;
+        CryptoRandom m_randomLabel = new CryptoRandom(CryptoRandom.METHOD.CRYPTO);
+        CryptoRandom m_randomLabelBoosted = new CryptoRandom(CryptoRandom.METHOD.CRYPTO);
         DatasetFactory m_factory = new DatasetFactory();
         List<DbItem> m_rgImageIdx = null;
         IMGDB_SORT m_sort = IMGDB_SORT.BYIDX;
@@ -67,8 +69,8 @@ namespace MyCaffe.db.image
 
             List<LabelDescriptor> rgLabels = m_src.Labels.OrderBy(p => p.ActiveLabel).ToList();
 
-            m_rgLabels = new LabelIndex("LABELED", m_random, m_src, false, rgItems);
-            m_rgLabelsBoosted = new LabelIndex("LABELED BOOSTED", m_random, m_src, true, rgBoosted);
+            m_rgLabels = new LabelIndex("LABELED", m_randomLabel, m_random, m_src, false, rgItems);
+            m_rgLabelsBoosted = new LabelIndex("LABELED BOOSTED", m_randomLabelBoosted, m_random, m_src, true, rgBoosted);
         }
 
         /// <summary>
@@ -102,6 +104,14 @@ namespace MyCaffe.db.image
                 m_factory.Dispose();
                 m_factory = null;
             }
+        }
+
+        /// <summary>
+        /// Returns the raw indexes.
+        /// </summary>
+        public List<DbItem> RawIndexes
+        {
+            get { return m_rgImageIdx; }
         }
 
         /// <summary>
@@ -329,7 +339,8 @@ namespace MyCaffe.db.image
     public class LabelIndex /** @private */
     {
         string m_strName;
-        CryptoRandom m_random;
+        CryptoRandom m_randomData;
+        CryptoRandom m_randomLabel;
         SourceDescriptor m_src;
         Dictionary<int, int> m_rgLabelToIdxMap = new Dictionary<int, int>();
         Dictionary<int, int> m_rgIdxToLabelMap = new Dictionary<int, int>();
@@ -339,10 +350,11 @@ namespace MyCaffe.db.image
         int m_nIdx = 0;
         object m_objSync = new object();
 
-        public LabelIndex(string strName, CryptoRandom random, SourceDescriptor src, bool bBoosted, List<DbItem> rgItems)
+        public LabelIndex(string strName, CryptoRandom randomLabel, CryptoRandom randomData, SourceDescriptor src, bool bBoosted, List<DbItem> rgItems)
         {
             m_strName = strName;
-            m_random = random;
+            m_randomLabel = randomLabel;
+            m_randomData = randomData;
             m_src = src;
             m_bBoosted = bBoosted;
 
@@ -363,7 +375,7 @@ namespace MyCaffe.db.image
                     if (i < rgLabels.Count - 1)
                         rgItems = rgItems.Where(p => p.Label != nLabel).ToList();
 
-                    m_rgLabels[i] = new Index(strName + " label " + nLabel.ToString(), random, rgLabelList, nLabel, false);
+                    m_rgLabels[i] = new Index(strName + " label " + nLabel.ToString(), randomData, rgLabelList, nLabel, false);
                     if (rgLabelList.Count > 0)
                             m_rgIdx.Add(i);
 
@@ -376,7 +388,8 @@ namespace MyCaffe.db.image
         public LabelIndex(LabelIndex idx)
         {
             m_strName = idx.m_strName + " copy";
-            m_random = idx.m_random;
+            m_randomLabel = idx.m_randomLabel;
+            m_randomData = idx.m_randomData;
             m_src = idx.m_src;
             m_bBoosted = idx.m_bBoosted;
 
@@ -490,7 +503,7 @@ namespace MyCaffe.db.image
 
                     if (m_rgIdx.Count > 1)
                     {
-                        nIdxLoc = m_random.Next(m_rgIdx.Count);
+                        nIdxLoc = m_randomLabel.Next(0, m_rgIdx.Count - 1, true);
                         nIdx = m_rgIdx[nIdxLoc];
                     }
 

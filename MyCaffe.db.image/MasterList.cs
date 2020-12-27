@@ -38,7 +38,6 @@ namespace MyCaffe.db.image
         int m_nReplacementBatch = 100;
         object m_syncObj = new object();
 
-
         /// <summary>
         /// The OnCalculateImageMean event fires when the ImageSet needs to calculate the image mean for the image set.
         /// </summary>
@@ -89,6 +88,28 @@ namespace MyCaffe.db.image
             m_evtRefreshCancel.Set();
             if (m_evtRefreshRunning.WaitOne(0))
                 m_evtRefreshDone.WaitOne();
+        }
+
+        /// <summary>
+        /// Verify the loaded images against the master indexes.
+        /// </summary>
+        /// <param name="idx">Specifies the master indexes.</param>
+        public void Verify(MasterIndexes idx)
+        {
+            if (idx.RawIndexes.Count != m_rgImages.Length)
+                throw new Exception("The index count should match the image count!");
+
+            List<int> rgObservedIdx = new List<int>();
+            for (int i = 0; i < m_rgImages.Length; i++)
+            {
+                if (rgObservedIdx.Contains(m_rgImages[i].Index))
+                    throw new Exception("Duplicate image index found!  Your dataset may be corrupt.");
+
+                if (idx.RawIndexes[i].Index != m_rgImages[i].Index)
+                    throw new Exception("The image indexs do not match!  You may need to re-index the image list.");
+
+                rgObservedIdx.Add(m_rgImages[i].Index);
+            }
         }
 
         /// <summary>

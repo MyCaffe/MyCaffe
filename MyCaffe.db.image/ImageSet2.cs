@@ -97,8 +97,9 @@ namespace MyCaffe.db.image
         /// <param name="bUseUniqueLabelIndexes">Optionally, specifies to use unique label indexes which is slightly slower, but ensures each label is hit per epoch equally (default = true).</param>
         /// <param name="bUseUniqueImageIndexes">Optionally, specifies to use unique image indexes which is slightly slower, but ensures each image is hit per epoch (default = true).</param>
         /// <param name="nMaxLoadCount">Optionally, specifies to automaticall start the image refresh which only applies when the number of images loaded into memory is less than the actual number of images (default = false).</param>
+        /// <param name="bVerify">Optionally, verify the dataset indexes (only applies when using LOAD_ALL loading method (default = false).</param>
         /// <returns>Once initialized, the default query state for the image set is returned.  This method may be called multiple times and each time returns a new QueryState.</returns>
-        public QueryState Initialize(bool bSilentLoad, bool bUseUniqueLabelIndexes = true, bool bUseUniqueImageIndexes = true, int nMaxLoadCount = 0)
+        public QueryState Initialize(bool bSilentLoad, bool bUseUniqueLabelIndexes = true, bool bUseUniqueImageIndexes = true, int nMaxLoadCount = 0, bool bVerify = false)
         {
             if (m_masterList == null)
             {
@@ -117,7 +118,12 @@ namespace MyCaffe.db.image
             QueryState state = new QueryState(m_masterIdx, bUseUniqueLabelIndexes, bUseUniqueImageIndexes);
 
             if (m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ALL)
+            {
                 m_masterList.WaitForLoadingToComplete(m_rgAbort);
+
+                if (bVerify)
+                    m_masterList.Verify(m_masterIdx);
+            }
 
             return state;
         }
@@ -384,7 +390,6 @@ namespace MyCaffe.db.image
             }
 
             SimpleDatum sd = m_masterList.GetImage(nIdx.Value, bLoadDataCriteria, bLoadDebugData, m_loadMethod);
-
             state.UpdateStats(sd);
 
             return sd;

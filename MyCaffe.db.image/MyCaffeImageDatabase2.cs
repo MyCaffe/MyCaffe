@@ -234,7 +234,7 @@ namespace MyCaffe.db.image
                     if (m_log != null)
                         m_log.WriteLine("Loading dataset '" + ds.Name + "'...");
 
-                    long lQueryHandle = ds0.Initialize(ds, rgAbort.ToArray(), nPadW, nPadH, m_log, m_loadMethod, m_bSkipMeanCheck, m_nLoadLimit, s.ImageDbAutoRefreshScheduledUpdateInMs, s.ImageDbAutoRefreshScheduledReplacementPercent);
+                    long lQueryHandle = ds0.Initialize(ds, rgAbort.ToArray(), nPadW, nPadH, m_log, m_loadMethod, m_bSkipMeanCheck, m_nLoadLimit, s.ImageDbAutoRefreshScheduledUpdateInMs, s.ImageDbAutoRefreshScheduledReplacementPercent, s.VeriyDatasetOnLoad);
                     if (lQueryHandle == 0)
                     {
                         col.Dispose();
