@@ -5542,7 +5542,7 @@ namespace MyCaffe.db.image
         /// <returns>The string representation is returned.</returns>
         public override string ToString()
         {
-            return "ID=" + ID.ToString() + "; Idx=" + Index.ToString() + "; Time=" + Time.ToString() + "; Desc=" + Desc + "; Boost=" + Boost.ToString();
+            return "ID=" + ID.ToString() + "; Idx=" + Index.ToString() + "; Label=" + Label.ToString() + "; Time=" + Time.ToString() + "; Desc=" + Desc + "; Boost=" + Boost.ToString();
         }
     }
 }
