@@ -18,6 +18,7 @@ namespace MyCaffe.basecode
         bool m_bEnableRandomInputSelection = true;
         bool m_bEnablePairInputSelection = false;
         bool m_bUseTrainingSourceForTesting = false;
+        bool m_bVerifyDatasetOnLoad = false;
         double m_dfSuperBoostProbability = 0.0;
         int m_nMaximumIterationOverride = -1;
         int m_nTestingIterationOverride = -1;
@@ -51,6 +52,7 @@ namespace MyCaffe.basecode
             m_bEnableRandomInputSelection = s.m_bEnableRandomInputSelection;
             m_bEnablePairInputSelection = s.m_bEnablePairInputSelection;
             m_bUseTrainingSourceForTesting = s.m_bUseTrainingSourceForTesting;
+            m_bVerifyDatasetOnLoad = s.m_bVerifyDatasetOnLoad;
             m_dfSuperBoostProbability = s.m_dfSuperBoostProbability;
             m_nMaximumIterationOverride = s.m_nMaximumIterationOverride;
             m_nTestingIterationOverride = s.m_nTestingIterationOverride;
@@ -80,6 +82,7 @@ namespace MyCaffe.basecode
             m_bEnableRandomInputSelection = getBool(info, "bEnableRandomInputSelection", m_bEnableRandomInputSelection);
             m_bEnablePairInputSelection = getBool(info, "bEnablePairInputSelection", m_bEnablePairInputSelection);
             m_bUseTrainingSourceForTesting = getBool(info, "bUseTrainingSourceForTesting", m_bUseTrainingSourceForTesting);
+            m_bVerifyDatasetOnLoad = getBool(info, "bVerifyDatasetOnLoad", m_bVerifyDatasetOnLoad);
             m_dfSuperBoostProbability = getDouble(info, "dfSuperBoostProbability", m_dfSuperBoostProbability);
             m_nMaximumIterationOverride = getInt(info, "nMaximumIterationOverride", m_nMaximumIterationOverride);
             m_nTestingIterationOverride = getInt(info, "nTestingIterationOverride", m_nTestingIterationOverride);
@@ -157,6 +160,7 @@ namespace MyCaffe.basecode
             info.AddValue("bEnableRandomInputSelection", m_bEnableRandomInputSelection);
             info.AddValue("bEnablePairInputSelection", m_bEnablePairInputSelection);
             info.AddValue("bUseTrainingSourceForTesting", m_bUseTrainingSourceForTesting);
+            info.AddValue("bVerifyDatasetOnLoad", m_bVerifyDatasetOnLoad);
             info.AddValue("dfSuperBoostProbability", m_dfSuperBoostProbability);
             info.AddValue("nMaximumIterationOverride", m_nMaximumIterationOverride);
             info.AddValue("nTestingIterationOverride", m_nTestingIterationOverride);
@@ -187,6 +191,7 @@ namespace MyCaffe.basecode
             s.m_bEnableRandomInputSelection = m_bEnableRandomInputSelection;
             s.m_bEnablePairInputSelection = m_bEnablePairInputSelection;
             s.m_bUseTrainingSourceForTesting = m_bUseTrainingSourceForTesting;
+            s.m_bVerifyDatasetOnLoad = m_bVerifyDatasetOnLoad;
             s.m_dfSuperBoostProbability = m_dfSuperBoostProbability;
             s.m_nMaximumIterationOverride = m_nMaximumIterationOverride;
             s.m_nTestingIterationOverride = m_nTestingIterationOverride;
@@ -203,6 +208,15 @@ namespace MyCaffe.basecode
             s.m_bSkipMeanCheck = m_bSkipMeanCheck;
 
             return s;
+        }
+
+        /// <summary>
+        /// Get/set whether or not to verify the dataset on load (only applies when using the LOAD_ALL loading method).
+        /// </summary>
+        public bool VeriyDatasetOnLoad
+        {
+            get { return m_bVerifyDatasetOnLoad; }
+            set { m_bVerifyDatasetOnLoad = value; }
         }
 
         /// <summary>
