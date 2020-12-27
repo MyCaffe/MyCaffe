@@ -118,6 +118,8 @@ namespace MyCaffe.common
         List<Layer<T>> m_rgConnectedLayers = new List<Layer<T>>();
         Blob<T> m_debugBlob = null;
         int m_nLastNonFrozenLayerIdx = 0;
+        string m_strDataSource = null;
+        Layer<T> m_labelMappingLayer = null;
 
         /// <summary>
         /// Specifies the OnGetWorkspace event that fires when the getWorkspace() function is called by a layer to get a shareable workspace to conserve GPU memory.
@@ -382,11 +384,16 @@ namespace MyCaffe.common
                     layer_paramEx.solver_count = m_param.solver_count;
                     layer_paramEx.solver_rank = m_param.solver_rank;
 
-                    // Setup layer cont.
+                    // Setup layer continued.
                     Layer<T> layer1 = Layer<T>.Create(m_cuda, m_log, layer_paramEx, m_evtCancel, m_db, new TransferInput(getInput, setInput));
                     layer1.OnGetWorkspace += layer_OnGetWorkspace;
                     layer1.OnSetWorkspace += layer_OnSetWorkspace;
                     layer1.OnGetIteration += layer_OnGetIteration;
+
+                    if (layer1.type == LayerParameter.LayerType.DATA)
+                        m_strDataSource = layer1.layer_param.data_param.source;
+                    else if (layer1.type == LayerParameter.LayerType.LABELMAPPING)
+                        m_labelMappingLayer = layer1;
 
                     m_rgLayers.Add(layer1);
 
@@ -878,16 +885,10 @@ namespace MyCaffe.common
         {
             get
             {
-                string strSrc = null;
+                string strSrc = m_strDataSource; // Set during Init
 
-                foreach (Layer<T> layer in m_rgLayers)
-                {
-                    if (layer.type == LayerParameter.LayerType.DATA)
-                        strSrc = layer.layer_param.data_param.source;
-
-                    else if (layer.type == LayerParameter.LayerType.LABELMAPPING)
-                        return ((LabelMappingLayer<T>)layer).GetActualLabelCounts(strSrc);
-                }
+                if (m_labelMappingLayer != null)
+                    return ((LabelMappingLayer<T>)m_labelMappingLayer).GetActualLabelCounts(strSrc);
 
                 if (string.IsNullOrEmpty(strSrc))
                     return "n/a";
@@ -903,13 +904,7 @@ namespace MyCaffe.common
         {
             get
             {
-                string strSrc = null;
-
-                foreach (Layer<T> layer in m_rgLayers)
-                {
-                    if (layer.type == LayerParameter.LayerType.DATA)
-                        strSrc = layer.layer_param.data_param.source;
-                }
+                string strSrc = m_strDataSource; // Set during Init
 
                 if (string.IsNullOrEmpty(strSrc))
                     return "n/a";
@@ -925,13 +920,7 @@ namespace MyCaffe.common
         {
             get
             {
-                string strSrc = null;
-
-                foreach (Layer<T> layer in m_rgLayers)
-                {
-                    if (layer.type == LayerParameter.LayerType.DATA)
-                        strSrc = layer.layer_param.data_param.source;
-                }
+                string strSrc = m_strDataSource; // Set during Init
 
                 if (string.IsNullOrEmpty(strSrc))
                     return "n/a";
@@ -947,13 +936,7 @@ namespace MyCaffe.common
         {
             get
             {
-                string strSrc = null;
-
-                foreach (Layer<T> layer in m_rgLayers)
-                {
-                    if (layer.type == LayerParameter.LayerType.DATA)
-                        strSrc = layer.layer_param.data_param.source;
-                }
+                string strSrc = m_strDataSource; // Set during Init
 
                 if (string.IsNullOrEmpty(strSrc))
                     return "n/a";
