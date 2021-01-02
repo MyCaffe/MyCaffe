@@ -255,10 +255,11 @@ namespace MyCaffe.db.image
         /// <param name="sd">Specifies the data.</param>
         /// <param name="nBackgroundWritingThreadCount">Optionally, specifies the background writing thread count, or 0 for to disable background writing (default = 0).</param>
         /// <param name="strDescription">Optionally, specifies the description (default = null).</param>
+        /// <param name="bActive">Optionally, specifies whether or not the image is added as active (default = true)</param>
         /// <param name="rgParams">Optionally, specifies a variable number of parameters to add to the RawImage.</param>
-        public void PutRawImageCache(int nIdx, SimpleDatum sd, int nBackgroundWritingThreadCount = 0, string strDescription = null, params ParameterData[] rgParams)
+        public void PutRawImageCache(int nIdx, SimpleDatum sd, int nBackgroundWritingThreadCount = 0, string strDescription = null, bool bActive = true, params ParameterData[] rgParams)
         {
-            RawImage img = m_db.CreateRawImage(nIdx, sd, nBackgroundWritingThreadCount, strDescription, m_nOriginalSourceID);
+            RawImage img = m_db.CreateRawImage(nIdx, sd, nBackgroundWritingThreadCount, strDescription, m_nOriginalSourceID, bActive);
             if (m_imageCache.Add(img, sd, rgParams))
                 ClearImageCache(true);
         }

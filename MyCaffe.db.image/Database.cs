@@ -1845,8 +1845,9 @@ namespace MyCaffe.db.image
         /// <param name="nBackgroundWritingThreadCount">Optionally, specifies the background writing thread count, or 0 for to disable background writing (default = 0).</param>
         /// <param name="strDescription">Optionally, specifies the description (default = null).</param>
         /// <param name="nOriginalSourceID">Optionally, specifies the original source ID (default = null)</param>
+        /// <param name="bActive">Optionally, specifies whether the image is active or not (default = true).</param>
         /// <returns>The RawImage is returned.</returns>
-        public RawImage CreateRawImage(int nIdx, SimpleDatum d, int nBackgroundWritingThreadCount, string strDescription = null, int? nOriginalSourceID = null)
+        public RawImage CreateRawImage(int nIdx, SimpleDatum d, int nBackgroundWritingThreadCount, string strDescription = null, int? nOriginalSourceID = null, bool bActive = true)
         {
             DateTime dtMin = new DateTime(1980, 1, 1);
             RawImage img = new RawImage();
@@ -1863,7 +1864,7 @@ namespace MyCaffe.db.image
             img.ActiveLabel = d.Label;
             img.OriginalLabel = d.Label;
             img.SourceID = m_src.ID;
-            img.Active = true;
+            img.Active = bActive;
             img.AutoLabel = d.AutoLabeled;
             img.Description = strDescription;
 
