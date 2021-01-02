@@ -368,7 +368,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Sets all pooling layers to use the specified reshape algorithm.
         /// </summary>
-        /// <param name="alg">Specifies the reshape algorithm to use (DEFAULT, CAFFE or ONNX).
+        /// <param name="alg">Specifies the reshape algorithm to use (DEFAULT, CAFFE or ONNX).</param>
         public void SetPoolingReshapeAlgorithm(PoolingParameter.PoolingReshapeAlgorithm alg)
         {
             foreach (LayerParameter layer in m_rgLayers)
