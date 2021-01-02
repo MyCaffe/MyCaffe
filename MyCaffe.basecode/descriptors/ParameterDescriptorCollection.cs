@@ -14,6 +14,7 @@ namespace MyCaffe.basecode.descriptors
     public class ParameterDescriptorCollection : IEnumerable<ParameterDescriptor>
     {
         List<ParameterDescriptor> m_rgParams = new List<ParameterDescriptor>();
+        Dictionary<string, int> m_rgParamIdx = new Dictionary<string, int>();
 
         /// <summary>
         /// The ParameterDescriptorCollection constructor.
@@ -30,6 +31,7 @@ namespace MyCaffe.basecode.descriptors
         {
             foreach (ParameterDescriptor p in rg)
             {
+                m_rgParamIdx.Add(p.Name, m_rgParams.Count);
                 m_rgParams.Add(new ParameterDescriptor(p));
             }
         }
@@ -58,6 +60,7 @@ namespace MyCaffe.basecode.descriptors
         /// <param name="p">Specifies the item to add.</param>
         public void Add(ParameterDescriptor p)
         {
+            m_rgParamIdx.Add(p.Name, m_rgParams.Count);
             m_rgParams.Add(p);
         }
 
@@ -68,13 +71,11 @@ namespace MyCaffe.basecode.descriptors
         /// <returns>If found, the item is returned, otherwise <i>null</i> is returned.</returns>
         public ParameterDescriptor Find(string strName)
         {
-            foreach (ParameterDescriptor p in m_rgParams)
-            {
-                if (p.Name == strName)
-                    return p;
-            }
+            if (!m_rgParamIdx.ContainsKey(strName))
+                return null;
 
-            return null;
+            int nIdx = m_rgParamIdx[strName];
+            return m_rgParams[nIdx];
         }
 
         /// <summary>
