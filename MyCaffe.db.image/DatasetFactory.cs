@@ -1653,6 +1653,16 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Set a batch of dataset parameters.
+        /// </summary>
+        /// <param name="nDsId">Specifies the ID of the dataset.</param>
+        /// <param name="rgP">Specifies a dictionary of name,value pairs.</param>
+        public void SetDatasetParameters(int nDsId, Dictionary<string, string> rgP)
+        {
+            m_db.SetDatasetParameters(nDsId, rgP);
+        }
+
+        /// <summary>
         /// Adds a new parameter or Sets the value of an existing dataset parameter.
         /// </summary>
         /// <param name="nDsId">Specifies the ID of the dataset.</param>

@@ -4693,6 +4693,32 @@ namespace MyCaffe.db.image
             }
         }
 
+        /// <summary>
+        /// Adds a batch of new parametes.
+        /// </summary>
+        /// <param name="nDsId">Specifies the ID of the dataset.</param>
+        /// <param name="rgP">Specifies a dictionary of name,value pairs.</param>
+        public void SetDatasetParameters(int nDsId, Dictionary<string, string> rgP)
+        {
+            WaitForFileWriter();
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                entities.Configuration.AutoDetectChangesEnabled = false;
+                entities.Configuration.ValidateOnSaveEnabled = false;
+
+                foreach (KeyValuePair<string, string> kv in rgP)
+                {
+                    DatasetParameter dsp = new DatasetParameter();
+                    dsp.Name = kv.Key;
+                    dsp.Value = kv.Value;
+                    dsp.DatasetID = nDsId;
+                    entities.DatasetParameters.Add(dsp);
+                }
+
+                entities.SaveChanges();
+            }
+        }
 
         /// <summary>
         /// Delete a dataset.
