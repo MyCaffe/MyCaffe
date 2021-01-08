@@ -39,6 +39,15 @@ namespace MyCaffe.basecode.descriptors
         }
 
         /// <summary>
+        /// Creates a copy of the parameter descriptor.
+        /// </summary>
+        /// <returns>The copy of the descriptor is returned.</returns>
+        public virtual ParameterDescriptor Clone()
+        {
+            return new ParameterDescriptor(ID, Name, Value);
+        }
+
+        /// <summary>
         /// Return the database ID of the item.
         /// </summary>
         public int ID
