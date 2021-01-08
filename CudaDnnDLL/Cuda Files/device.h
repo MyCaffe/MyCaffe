@@ -780,12 +780,12 @@ inline long Device<T>::GetRequiredCompute(long lInput, T* pfInput, long* plOutpu
 	int nMajor = 3;
 	int nMinor = 5;
 
-#ifdef __SM__
-#if (__SM__ >= 530)
-	nMajor = 5;
-	nMinor = 3;
-#endif
-#endif
+//#ifdef __SM__
+//#if (__SM__ >= 530)
+//	nMajor = 5;
+//	nMinor = 3;
+//#endif
+//#endif
 
 	// ppfOutput has up to MAX_OUTPUT(16) pre-allocated items
 	T* pfOutput = *ppfOutput;
