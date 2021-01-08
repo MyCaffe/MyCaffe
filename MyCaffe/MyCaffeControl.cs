@@ -2024,8 +2024,9 @@ namespace MyCaffe
         /// <param name="rgSd">Specifies the list of Datum to run.</param>
         /// <param name="bSort">Optionally, specifies whether or not to sor the results.</param>
         /// <param name="bUseSolverNet">Optionally, specifies whether or not to use the training net vs. the run net.</param>
+        /// <param name="nMax">Optionally, specifies a maximum number of SimpleDatums to process (default = int.MaxValue).</param>
         /// <returns>A list of results of the run are returned.</returns>
-        protected List<ResultCollection> Run(List<SimpleDatum> rgSd, bool bSort = true, bool bUseSolverNet = false)
+        public List<ResultCollection> Run(List<SimpleDatum> rgSd, bool bSort = true, bool bUseSolverNet = false, int nMax = int.MaxValue)
         {
             m_log.CHECK(m_dataTransformer != null, "The data transformer is not initialized!");
 
@@ -2037,14 +2038,14 @@ namespace MyCaffe
             int nChannels = m_dataSet.TestingSource.ImageChannels;
             int nHeight = m_dataSet.TestingSource.ImageHeight;
             int nWidth = m_dataSet.TestingSource.ImageWidth;
-            Blob<T> blob = new common.Blob<T>(m_cuda, m_log, nBatchSize, nChannels, nHeight, nWidth);
             List<T> rgDataInput = new List<T>();
 
-            foreach (SimpleDatum sd in rgSd)
+            Blob<T> blob = new common.Blob<T>(m_cuda, m_log, nBatchSize, nChannels, nHeight, nWidth, false);
+
+            for (int i=0; i<rgSd.Count && i <nMax; i++)
             {
-                Datum d = new Datum(sd);
-                m_dataTransformer.MaskImage(d);
-                rgDataInput.AddRange(m_dataTransformer.Transform(d));
+                m_dataTransformer.MaskImage(rgSd[i]);
+                rgDataInput.AddRange(m_dataTransformer.Transform(rgSd[i]));
             }
 
             blob.mutable_cpu_data = rgDataInput.ToArray();
@@ -2066,13 +2067,13 @@ namespace MyCaffe
             else
             {
                 lastLayerType = m_net.layers[m_net.layers.Count - 1].type;
-                colResults = m_net.Forward(colBottom, out dfLoss);
+                colResults = m_net.Forward(colBottom, out dfLoss, true);
             }
 
             T[] rgDataOutput = colResults[0].update_cpu_data();
             int nOutputCount = rgDataOutput.Length / rgSd.Count;
 
-            for (int i = 0; i < rgSd.Count; i++)
+            for (int i = 0; i < rgSd.Count && i < nMax; i++)
             {
                 List<Result> rgResults = new List<Result>();
 
@@ -2090,6 +2091,79 @@ namespace MyCaffe
             }
 
             blob.Dispose();
+
+            return rgFinalResults;
+        }
+
+        /// <summary>
+        /// Run on a Blob of data. 
+        /// </summary>
+        /// <param name="blob">Specifies the blob of data.</param>
+        /// <param name="bSort">Optionally, specifies whether or not to sor the results.</param>
+        /// <param name="bUseSolverNet">Optionally, specifies whether or not to use the training net vs. the run net.</param>
+        /// <param name="nMax">Optionally, specifies a maximum number of SimpleDatums to process (default = int.MaxValue).</param>
+        /// <returns>A list of results of the run are returned.</returns>
+        public List<ResultCollection> Run(Blob<T> blob, bool bSort = true, bool bUseSolverNet = false, int nMax = int.MaxValue)
+        {
+            m_log.CHECK(m_dataTransformer != null, "The data transformer is not initialized!");
+
+            if (m_net == null)
+                throw new Exception("The Run net has not been created!");
+
+            List<ResultCollection> rgFinalResults = new List<ResultCollection>();
+            int nBatchSize = blob.num;
+            int nChannels = m_dataSet.TestingSource.ImageChannels;
+            if (blob.channels != nChannels)
+                throw new Exception("The blob channels must match those of the testing dataset which has channels = " + m_dataSet.TestingSource.ImageChannels.ToString());
+
+            int nHeight = m_dataSet.TestingSource.ImageHeight;
+            if (blob.height != nHeight)
+                throw new Exception("The blob height must match those of the testing dataset which has height = " + m_dataSet.TestingSource.ImageHeight.ToString());
+
+            int nWidth = m_dataSet.TestingSource.ImageWidth;
+            if (blob.width != nWidth)
+                throw new Exception("The blob width must match those of the testing dataset which as width = " + m_dataSet.TestingSource.ImageWidth.ToString());
+
+            m_dataTransformer.SetRange(blob);
+
+            BlobCollection<T> colBottom = new BlobCollection<T>() { blob };
+            double dfLoss = 0;
+
+            BlobCollection<T> colResults;
+            LayerParameter.LayerType lastLayerType;
+
+            if (bUseSolverNet)
+            {
+                lastLayerType = m_solver.TrainingNet.layers[m_net.layers.Count - 1].type;
+                m_solver.TrainingNet.SetEnablePassthrough(true);
+                colResults = m_solver.TrainingNet.Forward(colBottom, out dfLoss);
+                m_solver.TrainingNet.SetEnablePassthrough(false);
+            }
+            else
+            {
+                lastLayerType = m_net.layers[m_net.layers.Count - 1].type;
+                colResults = m_net.Forward(colBottom, out dfLoss, true);
+            }
+
+            T[] rgDataOutput = colResults[0].update_cpu_data();
+            int nOutputCount = rgDataOutput.Length / blob.num;
+
+            for (int i = 0; i < blob.num && i < nMax; i++)
+            {
+                List<Result> rgResults = new List<Result>();
+
+                for (int j = 0; j < nOutputCount; j++)
+                {
+                    int nIdx = i * nOutputCount + j;
+                    double dfProb = (double)Convert.ChangeType(rgDataOutput[nIdx], typeof(double));
+                    rgResults.Add(new Result(j, dfProb));
+                }
+
+                ResultCollection result = new ResultCollection(rgResults, lastLayerType);
+                result.SetLabels(m_imgDb.GetLabels(m_dataSet.TrainingSource.ID));
+
+                rgFinalResults.Add(result);
+            }
 
             return rgFinalResults;
         }
@@ -2126,6 +2200,7 @@ namespace MyCaffe
         {
             return Run(d, bSort, false);
         }
+
 
         /// <summary>
         /// Retrieves a random image from either the training or test set depending on the Phase specified.
