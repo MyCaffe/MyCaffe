@@ -959,11 +959,11 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LPTSTR pszInput, T** p
 #endif
 #endif
 
-	switch (lfnIdx)
-	{
-		default:
+	//switch (lfnIdx)
+	//{
+	//	default:
 			return ERROR_NOT_SUPPORTED;
-	}
+	//}
 }
 
 template long Kernel<double>::Run(long lfnIdx, double* pfInput, long lCount, LPTSTR pszInput, double** ppfOutput, long* plCount);

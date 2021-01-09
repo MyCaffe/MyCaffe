@@ -3151,7 +3151,7 @@ inline long Device<T>::SsdMultiboxLossForward(long lInput, T* pfInput, long* plO
 	retval.push_back((int)all_match_indices.size());
 	for (int i = 0; i < all_match_indices.size(); i++)
 	{
-		int nCountIdx = retval.size();
+		int nCountIdx = (int)retval.size();
 		int nMapCount = 0;
 		retval.push_back(0);
 

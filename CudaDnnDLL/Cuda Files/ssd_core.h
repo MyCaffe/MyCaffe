@@ -906,16 +906,16 @@ public:
 			{
 				fdecode_center_x = fxmin_bbox * fprior_width + fprior_center_x;
 				fdecode_center_y = fymin_bbox * fprior_height + fprior_center_y;
-				fdecode_width = exp(fxmax_bbox) * fprior_width;
-				fdecode_height = exp(fymax_bbox) * fprior_height;
+				fdecode_width = T(exp(fxmax_bbox) * fprior_width);
+				fdecode_height = T(exp(fymax_bbox) * fprior_height);
 			}
 			// Variance is encoded in bbox, we need to scale the offset accordingly.
 			else
 			{
 				fdecode_center_x = fxmin_prior_var * fxmin_bbox * fprior_width + fprior_center_x;
 				fdecode_center_y = fymin_prior_var * fymin_bbox * fprior_height + fprior_center_y;
-				fdecode_width = exp(fxmax_prior_var * fxmax_bbox) * fprior_width;
-				fdecode_height = exp(fymax_prior_var * fymax_bbox) * fprior_height;
+				fdecode_width = T(exp(fxmax_prior_var * fxmax_bbox) * fprior_width);
+				fdecode_height = T(exp(fymax_prior_var * fymax_bbox) * fprior_height);
 			}
 
 			*pfxmin = fdecode_center_x - fdecode_width / T(2.0);
@@ -1069,16 +1069,16 @@ public:
 			{
 				*pfxmin = (fbbox_center_x - fprior_center_x) / fprior_width;
 				*pfymin = (fbbox_center_y - fprior_center_y) / fprior_height;
-				*pfxmax = log(fbbox_width / fprior_width);
-				*pfymax = log(fbbox_height / fprior_height);
+				*pfxmax = T(log(fbbox_width / fprior_width));
+				*pfymax = T(log(fbbox_height / fprior_height));
 			}
 			// Encode variance in bbox.
 			else
 			{
 				*pfxmin = (fbbox_center_x - fprior_center_x) / fprior_width / fxmin_prior_var;
 				*pfymin = (fbbox_center_y - fprior_center_y) / fprior_height / fymin_prior_var;
-				*pfxmax = log(fbbox_width / fprior_width) / fxmax_prior_var;
-				*pfymax = log(fbbox_height / fprior_height) / fymax_prior_var;
+				*pfxmax = T(log(fbbox_width / fprior_width) / fxmax_prior_var);
+				*pfymax = T(log(fbbox_height / fprior_height) / fymax_prior_var);
 			}
 		}
 		else if (m_codeType == SSD_CODE_TYPE_CORNER_SIZE)

@@ -9,6 +9,7 @@
 #include <nvapi.h>
 #include <string>
 
+#define USES_CONVERSION_SIMPLE int _convert; UINT _acp = ATL::_AtlGetConversionACP() /*CP_THREAD_ACP*/; LPCSTR _lpa;
 
 //=============================================================================
 //	Local Classes
@@ -101,7 +102,7 @@ template long Device<float>::DisablePeerAccess(long lInput, float* pfInput, long
 template <class T>
 long Device<T>::GetDeviceName(int nDevice, LPTSTR* pszDevice)
 {
-	USES_CONVERSION;
+	USES_CONVERSION_SIMPLE;
 	LONG lErr;
 	cudaDeviceProp prop;
 
@@ -191,7 +192,7 @@ int getSPcores(cudaDeviceProp prop)
 template <class T>
 long Device<T>::GetDeviceP2PInfo(int nDevice, LPTSTR* pszDevice)
 {
-	USES_CONVERSION;
+	USES_CONVERSION_SIMPLE;
 	LONG lErr;
 	cudaDeviceProp prop;
 
@@ -251,7 +252,7 @@ template long Device<float>::GetDeviceP2PInfo(long lInput, LONG* pInput, LPTSTR*
 template <class T>
 long Device<T>::GetDeviceInfo(int nDevice, LPTSTR* pszDevice, bool bVerbose)
 {
-	USES_CONVERSION;
+	USES_CONVERSION_SIMPLE;
 	LONG lErr;
 
 	char rgID[256];

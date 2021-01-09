@@ -669,7 +669,7 @@ long Math<T>::copy_batch(int n, int nNum, int nDim, long hSrcData, long hSrcLabe
 	// making room for the new items.
 	for (int i = 0; i < nLabelCount; i++)
 	{
-		int nCount = cursors[nLabelCount + i];
+		int nCount = (int)cursors[nLabelCount + i];
 
 		if (nCount > 0)
 		{
@@ -818,11 +818,11 @@ long Math<T>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrc
 				int nLabelOffset = nLabel - nLabelStart;
 
 				// Find a labeled item with the same label but different data.
-				int nCacheCount = cursors[nLabelCount + nLabelOffset];
+				int nCacheCount = (int)cursors[nLabelCount + nLabelOffset];
 				if (nCacheCount == 0)
 					return ERROR_PARAM_OUT_OF_RANGE;
 
-				int nLabelIdx = cursors[nLabelOffset];
+				int nLabelIdx = (int)cursors[nLabelOffset];
 
 				// The current cursor points to the data of the anchor, so
 				// we want to find a data other than the anchor with the same
@@ -894,7 +894,7 @@ long Math<T>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrc
 				return ERROR_BATCH_TOO_SMALL;
 
 			// Find a labeled item with the different label.
-			int nLabelIdx = cursors[nLabelOffset];
+			int nLabelIdx = (int)cursors[nLabelOffset];
 			T* src = srccache + (nLabelOffset * nCacheSize * nDim) + (nLabelIdx * nDim);
 
 			if (lErr = cudaMemcpy(negatives + (i * nDim), src, sizeof(T) * nDim, cudaMemcpyDeviceToDevice))
@@ -963,7 +963,7 @@ long Math<T>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrc
 				return ERROR_BATCH_TOO_SMALL;
 
 			// Find a labeled item with the different label.
-			int nLabelIdx = cursors[nLabelOffset];
+			int nLabelIdx = (int)cursors[nLabelOffset];
 			T* src = srccache + (nLabelOffset * nCacheSize * nDim) + (nLabelIdx * nDim);
 
 			MemoryItem* pNegative1;
@@ -8355,7 +8355,6 @@ __global__ void min_fwd_kernel_nomask(int nthreads, const T* bottom_data_a, cons
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nthreads && i >= 0; i += blockDim.x * gridDim.x)
 	{
 		T minval = FLT_MAX;
-		int minidx = -1;
 
 		if (bottom_data_a[i] < bottom_data_b[i])
 		{
@@ -8364,14 +8363,12 @@ __global__ void min_fwd_kernel_nomask(int nthreads, const T* bottom_data_a, cons
 			{
 				minval = bottom_data_a[i];
 				top_data[i] = minval;
-				minidx = blob_idx;
 			}
 		}
 		else
 		{
 			minval = bottom_data_b[i];
 			top_data[i] = minval;
-			minidx = blob_idx + 1;
 		}
 	}
 }
@@ -8498,7 +8495,6 @@ __global__ void max_fwd_kernel_nomask(int nthreads, const T* bottom_data_a, cons
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nthreads && i >= 0; i += blockDim.x * gridDim.x)
 	{
 		T maxval = -FLT_MAX;
-		int maxidx = -1;
 
 		if (bottom_data_a[i] > bottom_data_b[i])
 		{
@@ -8507,14 +8503,12 @@ __global__ void max_fwd_kernel_nomask(int nthreads, const T* bottom_data_a, cons
 			{
 				maxval = bottom_data_a[i];
 				top_data[i] = maxval;
-				maxidx = blob_idx;
 			}
 		}
 		else
 		{
 			maxval = bottom_data_b[i];
 			top_data[i] = maxval;
-			maxidx = blob_idx + 1;
 		}
 	}
 }

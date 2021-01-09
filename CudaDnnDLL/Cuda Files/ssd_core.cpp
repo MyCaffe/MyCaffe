@@ -839,7 +839,7 @@ long SsdData<T>::computeLocLoss(SsdMemory<T>* pLocPred, SsdMemory<T>* pLocPredDi
 
 					if (m_locLossType == SSD_LOC_LOSS_TYPE_SMOOTH_L1)
 					{
-						T fAbsVal = fabs(fVal);
+						T fAbsVal = T(fabs(fVal));
 						if (fAbsVal < T(1.0))
 							fLoss += T(0.5) * fVal * fVal;
 						else
