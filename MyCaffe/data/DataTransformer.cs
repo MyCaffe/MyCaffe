@@ -565,7 +565,13 @@ namespace MyCaffe.data
                 rgMean = m_rgfMeanData;
 
                 int nExpected = nDatumChannels * nDatumHeight * nDatumWidth;
-                m_log.CHECK_EQ(rgMean.Length, nExpected, "The size of the 'mean' image is incorrect!  Expected '" + nExpected.ToString() + "' elements, yet loaded '" + rgMean.Length + "' elements.");
+                if (nExpected != rgMean.Length)
+                {
+                    if (nExpected > rgMean.Length)
+                        m_log.WriteLine("The size of the 'mean' image is incorrect!  Expected '" + nExpected.ToString() + "' elements, yet loaded '" + rgMean.Length + "' elements.");
+                    else
+                        m_log.WriteLine("WARNING: The size of the 'mean' image is larger than expected!  Expected '" + nExpected.ToString() + "' elements, yet loaded '" + rgMean.Length + "' elements.");
+                }
             }
 
             if (m_rgMeanValues.Count > 0)
