@@ -67,8 +67,8 @@ namespace MyCaffe.common
                     log.WriteLine("WARNING: Half sizes currently only supported with the 'float' base type - changing back to full size.");
             }
 
-            m_tZero = (T)Convert.ChangeType(0, typeof(T));
-            m_tMinusOne = (T)Convert.ChangeType(-1, typeof(T));
+            m_tZero = Zero;
+            m_tMinusOne = MinusOne;
             m_bIncludeDiff = bIncludeDiff;
             m_cuda = cuda;
             m_log = log;
@@ -78,6 +78,7 @@ namespace MyCaffe.common
             if (m_bIncludeDiff)
                 m_diff = new SyncedMemory<T>(m_cuda, m_log, 0, null, bUseHalfSize);
         }
+
 
         /// <summary>
         /// <b>DEPRECIATED</b>; use <code>Blob(...,rgShape)</code> instead.
@@ -172,6 +173,30 @@ namespace MyCaffe.common
             : this(cuda, log, true, bUseHalfSize)
         {
             FromProto(bp);
+        }
+
+        /// <summary>
+        /// Returns Zero (0) in type T.
+        /// </summary>
+        public static T Zero
+        {
+            get { return (T)Convert.ChangeType(0, typeof(T)); }
+        }
+
+        /// <summary>
+        /// Returns One (1) in type T.
+        /// </summary>
+        public static T One
+        {
+            get { return (T)Convert.ChangeType(1, typeof(T)); }
+        }
+
+        /// <summary>
+        /// Returns MinusOne (-1) in type T.
+        /// </summary>
+        public static T MinusOne
+        {
+            get { return (T)Convert.ChangeType(-1, typeof(T)); }
         }
 
         /// <summary>
@@ -1569,6 +1594,20 @@ namespace MyCaffe.common
         public void SetData(T[] rgData, int nCount = -1, bool bSetCount = true)
         {
             m_data.SetData(rgData, nCount, bSetCount);
+        }
+
+        /// <summary>
+        /// Either sets all of the data items in the Blob to a given value, or alternatively only sets a single
+        /// indexed item to a given value.
+        /// </summary>
+        /// <param name="fVal">Specifies the value to set.</param>
+        /// <param name="nIdx">Optionally, specifies the index of the item to set.</param>
+        public void SetData(T fVal, int nIdx = -1)
+        {
+            if (mutable_gpu_data == 0)
+                return;
+
+            m_cuda.set(count(), mutable_gpu_data, fVal, nIdx);
         }
 
         /// <summary>
