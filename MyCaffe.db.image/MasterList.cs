@@ -374,7 +374,7 @@ namespace MyCaffe.db.image
         /// <returns>The indexes are returned as a list.</returns>
         public List<DbItem> ReloadIndexing()
         {
-            return m_rgImages.Select(p => new DbItem { id = p.ImageID, index = p.Index, label = p.Label, boost = p.Boost, time = p.TimeStamp, desc = p.Description }).ToList();
+            return m_rgImages.Select(p => new DbItem { id = p.ImageID, index = p.Index, label = p.Label, boost = p.Boost, time = p.TimeStamp, desc = p.Description, originalsrcid = p.OriginalSourceID }).ToList();
         }
 
         /// <summary>
