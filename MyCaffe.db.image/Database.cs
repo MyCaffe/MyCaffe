@@ -1140,7 +1140,7 @@ namespace MyCaffe.db.image
 
                 iQuery = iQuery.OrderBy(p => p.Idx);
 
-                return iQuery.Select(p => new DbItem { id = p.ID, index = p.Idx, label = p.ActiveLabel, boost = p.ActiveBoost, time = p.TimeStamp, desc = p.Description }).ToList();
+                return iQuery.Select(p => new DbItem { id = p.ID, index = p.Idx, label = p.ActiveLabel, boost = p.ActiveBoost, time = p.TimeStamp, desc = p.Description, originalsrcid = p.OriginalSourceID }).ToList();
             }
         }
 
@@ -1492,16 +1492,72 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Queries the Debug Data for an image an Converts the raw image data criteria data which may be stored as a path to the underlying data file, to the actual data.
+        /// </summary>
+        /// <param name="nImgID">Specifies the image ID that has the raw data, which may contain an image path.</param>
+        /// <param name="nOriginalSourceID">Optionally, specifies the original source ID that stores the image.</param>
+        /// <returns>The actual raw data is returned.</returns>
+        public byte[] GetRawImageDebugData(int nImgID, int? nOriginalSourceID = null)
+        {
+            byte[] rgData = null;
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                var data = entities.RawImages.Where(p => p.ID == nImgID).Select(p => new { p.DebugData, p.VirtualID }).FirstOrDefault();
+                if (data.DebugData == null)
+                {
+                    nImgID = data.VirtualID.GetValueOrDefault(0);
+                    if (nImgID == 0)
+                        return null;
+
+                    rgData = entities.RawImages.Where(p => p.ID == nImgID).Select(p => p.DebugData).FirstOrDefault();
+                    if (rgData == null)
+                        return null;
+                }
+            }
+
+            return getRawImage(rgData, nOriginalSourceID);
+        }
+
+        /// <summary>
         /// Converts the raw image data criteria data which may be stored as a path to the underlying data file, to the actual data.
         /// </summary>
         /// <param name="rgData">Specifies the raw data, which may contain an image path.</param>
+        /// <param name="nOriginalSourceID">Optionally, specifies the original source ID that stores the image.</param>
+        /// <returns>The actual raw data is returned.</returns>
+        public byte[] GetRawImageDataCriteria(byte[] rgData, int? nOriginalSourceID = null)
+        {
+            return getRawImage(rgData, nOriginalSourceID);
+        }
+
+        /// <summary>
+        /// Queries the Data Criteria for an image an Converts the raw image data criteria data which may be stored as a path to the underlying data file, to the actual data.
+        /// </summary>
+        /// <param name="nImgID">Specifies the image ID that has the raw data, which may contain an image path.</param>
         /// <param name="nOriginalSourceID">Optionally, specifies the original source ID that stores the image.</param>
         /// <remarks>
         /// You must Open the database with the source under which the image is stored.
         /// </remarks>
         /// <returns>The actual raw data is returned.</returns>
-        public byte[] GetRawImageDataCriteria(byte[] rgData, int? nOriginalSourceID = null)
+        public byte[] GetRawImageDataCriteria(int nImgID, int? nOriginalSourceID = null)
         {
+            byte[] rgData = null;
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                var data = entities.RawImages.Where(p => p.ID == nImgID).Select(p => new { p.DataCriteria, p.VirtualID }).FirstOrDefault();
+                if (data.DataCriteria == null)
+                {
+                    nImgID = data.VirtualID.GetValueOrDefault(0);
+                    if (nImgID == 0)
+                        return null;
+
+                    rgData = entities.RawImages.Where(p => p.ID == nImgID).Select(p => p.DataCriteria).FirstOrDefault();
+                    if (rgData == null)
+                        return null;
+                }
+            }
+
             return getRawImage(rgData, nOriginalSourceID);
         }
 
@@ -5478,6 +5534,7 @@ namespace MyCaffe.db.image
             item.boost = boost;
             item.time = time;
             item.desc = desc;
+            item.originalsrcid = originalsrcid;
             return item;
         }
 
@@ -5567,6 +5624,19 @@ namespace MyCaffe.db.image
         /// Specifies the image description used within the lambda statement.
         /// </summary>
         public string desc { get; set; }
+
+        /// <summary>
+        /// Specifies the original source ID.
+        /// </summary>
+        public int? OriginalSourceID
+        {
+            get { return originalsrcid; }
+        }
+
+        /// <summary>
+        /// Specifies the original source id used within the lambda statement.
+        /// </summary>
+        public int? originalsrcid { get; set; }
 
         /// <summary>
         /// Returns the string representation of the DbItem.

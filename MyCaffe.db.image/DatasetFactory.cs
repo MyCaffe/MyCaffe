@@ -941,6 +941,18 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Queries the Data Criteria data for an image and then converts the raw image debug data which may be stored as a path to the underlying data file, to the actual data.
+        /// </summary>
+        /// <param name="nImgID">Specifies the raw image ID.</param>
+        /// <param name="nOriginalSourceID">Specifies the original source ID that stores the image.</param>
+        /// <returns>The actual raw data is returned.</returns>
+        public byte[] GetRawImageDataCriteria(int nImgID, int nOriginalSourceID)
+        {
+            return m_db.GetRawImageDataCriteria(nImgID, nOriginalSourceID);
+        }
+
+
+        /// <summary>
         /// Converts the raw image debug data which may be stored as a path to the underlying data file, to the actual data.
         /// </summary>
         /// <param name="rgData">Specifies the raw data, which may contain an image path.</param>
@@ -949,6 +961,17 @@ namespace MyCaffe.db.image
         public byte[] GetRawImageDebugData(byte[] rgData, int nOriginalSourceID)
         {
             return m_db.GetRawImageDebugData(rgData, nOriginalSourceID);
+        }
+
+        /// <summary>
+        /// Queries the Debug data for an image and then converts the raw image debug data which may be stored as a path to the underlying data file, to the actual data.
+        /// </summary>
+        /// <param name="nImgID">Specifies the raw image ID.</param>
+        /// <param name="nOriginalSourceID">Specifies the original source ID that stores the image.</param>
+        /// <returns>The actual raw data is returned.</returns>
+        public byte[] GetRawImageDebugData(int nImgID, int nOriginalSourceID)
+        {
+            return m_db.GetRawImageDebugData(nImgID, nOriginalSourceID);
         }
 
         /// <summary>
