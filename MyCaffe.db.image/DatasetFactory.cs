@@ -1765,11 +1765,12 @@ namespace MyCaffe.db.image
         /// Returns a list of the image indexes of all boosted images in the Data Source.
         /// </summary>
         /// <param name="bBoostedOnly">Specifies to only return the indexes of boosted images.</param>
-        /// <param name="bActiveOnly">Optionally, specifies to query active images only (default = true).</param>
+        /// <param name="bIncludeActive">Optionally, specifies to query active images (default = true).</param>
+        /// <param name="bIncludeInactive">Optionally, specifies to query inactive images (default = false).</param>
         /// <returns>The list of DbItem's is returned where each DbItem contains the image index, label, and boost.</returns>
-        public List<DbItem> LoadImageIndexes(bool bBoostedOnly, bool bActiveOnly = true)
+        public List<DbItem> LoadImageIndexes(bool bBoostedOnly, bool bIncludeActive = true, bool bIncludeInactive = false)
         {
-            return m_db.GetAllRawImageIndexes(bBoostedOnly, bActiveOnly);
+            return m_db.GetAllRawImageIndexes(bBoostedOnly, bIncludeActive, bIncludeInactive);
         }
 
         /// <summary>
