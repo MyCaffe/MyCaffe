@@ -251,14 +251,18 @@ namespace MyCaffe.layers
         /// <summary>
         /// Re-initialize the parameters of the layer.
         /// </summary>
+        /// <param name="target">Specifies the weights to target (e.g. weights, bias or both).</param>
         /// <returns>When handled, this method returns <i>true</i>, otherwise <i>false</i>.</returns>
-        public override bool ReInitializeParameters()
+        public override bool ReInitializeParameters(WEIGHT_TARGET target)
         {
-            base.ReInitializeParameters();
+            base.ReInitializeParameters(target);
 
-            for (int i = 0; i < 3; i++)
+            if (target == WEIGHT_TARGET.BOTH || target == WEIGHT_TARGET.WEIGHTS)
             {
-                m_colBlobs[i].SetData(0);
+                for (int i = 0; i < 3; i++)
+                {
+                    m_colBlobs[i].SetData(0);
+                }
             }
 
             return true;

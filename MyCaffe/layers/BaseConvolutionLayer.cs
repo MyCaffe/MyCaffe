@@ -263,15 +263,19 @@ namespace MyCaffe.layers
         /// <summary>
         /// Re-initialize the parameters of the layer.
         /// </summary>
+        /// <param name="target">Specifies the weights to target (e.g. weights, bias or both).</param>
         /// <returns>When handled, this method returns <i>true</i>, otherwise <i>false</i>.</returns>
-        public override bool ReInitializeParameters()
+        public override bool ReInitializeParameters(WEIGHT_TARGET target)
         {
-            base.ReInitializeParameters();
+            base.ReInitializeParameters(target);
 
-            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, m_param.convolution_param.weight_filler);
-            filler.Fill(m_colBlobs[0]);
+            if (target == WEIGHT_TARGET.WEIGHTS || target == WEIGHT_TARGET.BOTH)
+            {
+                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, m_param.convolution_param.weight_filler);
+                filler.Fill(m_colBlobs[0]);
+            }
 
-            if (m_param.convolution_param.bias_term && m_colBlobs.Count > 1)
+            if (m_param.convolution_param.bias_term && m_colBlobs.Count > 1 && (target == WEIGHT_TARGET.BOTH || target == WEIGHT_TARGET.BIAS))
             {
                 Filler<T> fillerBias = Filler<T>.Create(m_cuda, m_log, m_param.convolution_param.bias_filler);
                 fillerBias.Fill(m_colBlobs[1]);

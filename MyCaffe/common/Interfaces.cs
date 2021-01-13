@@ -27,9 +27,19 @@ namespace MyCaffe.common
     /// <param name="e">Specifies the arguments.</param>
     public delegate void onGetWorkspace(object sender, WorkspaceArgs e);
 
+    [Serializable]
+    public enum WEIGHT_TARGET
+    {
+        NONE,
+        WEIGHTS,
+        BIAS,
+        BOTH
+    }
+
     /// <summary>
     /// Defines the tpe of data held by a given Blob.
     /// </summary>
+    [Serializable]
     public enum BLOB_TYPE
     {
         /// <summary>
@@ -348,9 +358,10 @@ namespace MyCaffe.common
         /// Re-initializes each of the specified layers by re-running the filler (if any) specified by the layer.  
         /// When the 'rgstr' parameter is <i>null</i> or otherwise empty, the blobs of all layers are re-initialized. 
         /// </summary>
+        /// <param name="target">Specifies the weights to target (e.g. weights, bias or both).</param>
         /// <param name="rgstrLayers">Specifies the layers to reinitialize, when <i>null</i> or empty, all layers are re-initialized</param>
         /// <returns>If a layer is specified and found, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
-        bool ReInitializeParameters(params string[] rgstrLayers);
+        bool ReInitializeParameters(WEIGHT_TARGET target, params string[] rgstrLayers);
         /// <summary>
         /// VerifyCompute compares the current compute of the current device (or device specified) against the required compute of the current CudaDnnDLL.dll used.
         /// </summary>

@@ -144,31 +144,38 @@ namespace MyCaffe.layers
         /// <summary>
         /// Re-initialize the parameters of the layer.
         /// </summary>
+        /// <param name="target">Specifies the weights to target (e.g. weights, bias or both).</param>
         /// <returns>When handled, this method returns <i>true</i>, otherwise <i>false</i>.</returns>
-        public override bool ReInitializeParameters()
+        public override bool ReInitializeParameters(WEIGHT_TARGET target)
         {
-            base.ReInitializeParameters();
+            base.ReInitializeParameters(target);
 
-            Filler<T> weight_filler = Filler<T>.Create(m_cuda, m_log, m_param.lstm_simple_param.weight_filler);
-            weight_filler.Fill(m_colBlobs[0]);
-            weight_filler.Fill(m_colBlobs[1]);
-
-            Filler<T> bias_filler = Filler<T>.Create(m_cuda, m_log, m_param.lstm_simple_param.bias_filler);
-            bias_filler.Fill(m_colBlobs[2]);
-
-            // Initialize the bias for the forget gate to 5.0 as described in the
-            // Clockwork RNN paper: 
-            // [1] Koutnik, J., Greff, K., Gomez, F., Schmidhuber, J., 'A Clockwork RNN', 2014"
-            if (m_param.lstm_simple_param.enable_clockwork_forgetgate_bias)
+            if (target == WEIGHT_TARGET.BOTH || target == WEIGHT_TARGET.WEIGHTS)
             {
-                double[] rgBias = convertD(m_colBlobs[2].mutable_cpu_data);
+                Filler<T> weight_filler = Filler<T>.Create(m_cuda, m_log, m_param.lstm_simple_param.weight_filler);
+                weight_filler.Fill(m_colBlobs[0]);
+                weight_filler.Fill(m_colBlobs[1]);
+            }
 
-                for (int i = m_nH; i < 2 * m_nH; i++)
+            if (target == WEIGHT_TARGET.BOTH || target == WEIGHT_TARGET.BIAS)
+            {
+                Filler<T> bias_filler = Filler<T>.Create(m_cuda, m_log, m_param.lstm_simple_param.bias_filler);
+                bias_filler.Fill(m_colBlobs[2]);
+
+                // Initialize the bias for the forget gate to 5.0 as described in the
+                // Clockwork RNN paper: 
+                // [1] Koutnik, J., Greff, K., Gomez, F., Schmidhuber, J., 'A Clockwork RNN', 2014"
+                if (m_param.lstm_simple_param.enable_clockwork_forgetgate_bias)
                 {
-                    rgBias[i] = 5.0;
-                }
+                    double[] rgBias = convertD(m_colBlobs[2].mutable_cpu_data);
 
-                m_colBlobs[2].mutable_cpu_data = convert(rgBias);
+                    for (int i = m_nH; i < 2 * m_nH; i++)
+                    {
+                        rgBias[i] = 5.0;
+                    }
+
+                    m_colBlobs[2].mutable_cpu_data = convert(rgBias);
+                }
             }
 
             return true;

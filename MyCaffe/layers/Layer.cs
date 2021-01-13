@@ -180,21 +180,10 @@ namespace MyCaffe.layers
         /// <summary>
         /// Re-initialize the parameters of the layer.
         /// </summary>
+        /// <param name="target">Specifies the weights to target (e.g. weights, bias or both).</param>
         /// <returns>When handled, this method returns <i>true</i>, otherwise <i>false</i>.</returns>
-        public virtual bool ReInitializeParameters()
+        public virtual bool ReInitializeParameters(WEIGHT_TARGET target)
         {
-            foreach (Blob<T> b in m_colBlobs)
-            {
-                b.SetDiff(0);
-                b.SetData(0);
-            }
-
-            foreach (Blob<T> b in internal_blobs)
-            {
-                b.SetDiff(0);
-                b.SetData(0);
-            }
-
             return true;
         }
 
