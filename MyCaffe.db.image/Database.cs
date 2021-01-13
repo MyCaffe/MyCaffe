@@ -1514,6 +1514,10 @@ namespace MyCaffe.db.image
                     if (rgData == null)
                         return null;
                 }
+                else
+                {
+                    rgData = data.DebugData;
+                }
             }
 
             return getRawImage(rgData, nOriginalSourceID);
@@ -1555,6 +1559,10 @@ namespace MyCaffe.db.image
                     rgData = entities.RawImages.Where(p => p.ID == nImgID).Select(p => p.DataCriteria).FirstOrDefault();
                     if (rgData == null)
                         return null;
+                }
+                else
+                {
+                    rgData = data.DataCriteria;
                 }
             }
 
