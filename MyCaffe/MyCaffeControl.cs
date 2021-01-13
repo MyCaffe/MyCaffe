@@ -421,13 +421,14 @@ namespace MyCaffe
         /// Re-initializes each of the specified layers by re-running the filler (if any) specified by the layer.  
         /// When the 'rgstr' parameter is <i>null</i> or otherwise empty, the blobs of all layers are re-initialized. 
         /// </summary>
+        /// <param name="target">Specifies the weights to target (e.g. weights, bias or both).</param>
         /// <param name="rgstrLayers">Specifies the layers to reinitialize, when <i>null</i> or empty, all layers are re-initialized</param>
         /// <returns>If a layer is specified and found, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
         /// <remarks>This method causes the OnTrainingIteration event to fire with the updated values from the re-init.</remarks>
-        public bool ReInitializeParameters(params string[] rgstrLayers)
+        public bool ReInitializeParameters(WEIGHT_TARGET target, params string[] rgstrLayers)
         {
             Net<T> net = GetInternalNet(Phase.TRAIN);
-            net.ReInitializeParameters(rgstrLayers);
+            net.ReInitializeParameters(target, rgstrLayers);
             return m_solver.ForceOnTrainingIterationEvent();
         }
 
