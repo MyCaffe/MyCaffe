@@ -27,12 +27,27 @@ namespace MyCaffe.common
     /// <param name="e">Specifies the arguments.</param>
     public delegate void onGetWorkspace(object sender, WorkspaceArgs e);
 
+    /// <summary>
+    /// Defines the type of weight to target in re-initializations.
+    /// </summary>
     [Serializable]
     public enum WEIGHT_TARGET
     {
+        /// <summary>
+        /// No weights are targeted.
+        /// </summary>
         NONE,
+        /// <summary>
+        /// Generic weights are targeted.
+        /// </summary>
         WEIGHTS,
+        /// <summary>
+        /// Bias weights are targeted.
+        /// </summary>
         BIAS,
+        /// <summary>
+        /// Both weights and bias are targeted.
+        /// </summary>
         BOTH
     }
 
