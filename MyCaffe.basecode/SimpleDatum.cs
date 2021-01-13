@@ -949,6 +949,60 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Subtract the data of another SimpleDatum from this one, and take the absolute value, so this = Math.Abs(this - sd).
+        /// </summary>
+        /// <param name="sd">Specifies the other SimpleDatum to subtract.</param>
+        /// <returns>If both data values are different <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        public bool SubAbs(SimpleDatum sd)
+        {
+            bool bDifferent = false;
+
+            if (sd.ItemCount != ItemCount)
+                throw new Exception("Both simple datums must have the same number of elements!");
+
+            if (m_rgByteData != null)
+            {
+                if (sd.m_rgByteData == null)
+                    throw new Exception("Both simple datums must have the same type of data!");
+
+                for (int i = 0; i < m_rgByteData.Length; i++)
+                {
+                    m_rgByteData[i] = (byte)Math.Abs(m_rgByteData[i] - sd.m_rgByteData[i]);
+                    if (m_rgByteData[i] != 0)
+                        bDifferent = true;
+                }
+            }
+
+            if (m_rgRealDataD != null)
+            {
+                if (sd.m_rgRealDataD == null)
+                    throw new Exception("Both simple datums must have the same type of data!");
+
+                for (int i = 0; i < m_rgRealDataD.Length; i++)
+                {
+                    m_rgRealDataD[i] = Math.Abs(m_rgRealDataD[i] - sd.m_rgRealDataD[i]);
+                    if (m_rgRealDataD[i] != 0)
+                        bDifferent = true;
+                }
+            }
+
+            if (m_rgRealDataF != null)
+            {
+                if (sd.m_rgRealDataF == null)
+                    throw new Exception("Both simple datums must have the same type of data!");
+
+                for (int i = 0; i < m_rgRealDataF.Length; i++)
+                {
+                    m_rgRealDataF[i] = Math.Abs(m_rgRealDataF[i] - sd.m_rgRealDataF[i]);
+                    if (m_rgRealDataF[i] != 0)
+                        bDifferent = true;
+                }
+            }
+
+            return bDifferent;
+        }
+
+        /// <summary>
         /// Copy another SimpleDatum into this one.
         /// </summary>
         /// <param name="d">Specifies the SimpleDatum to copy.</param>
