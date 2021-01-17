@@ -328,6 +328,142 @@ namespace MyCaffe.basecode
         /// Converts a SimplDatum (or Datum) into an image, optionally using a ColorMapper.
         /// </summary>
         /// <param name="d">Specifies the Datum to use.</param>
+        /// <param name="nChannel">Specifies to only use the data along a given channel to color the image.</param>
+        /// <param name="clrMap">Optionally, specifies a color mapper to use when converting each value into a color (default = null, not used).</param>
+        /// <param name="rgClrOrder">Optionally, specifies the color ordering. Note, this list must have the same number of elements as there are channels.</param>
+        /// <returns>The Image of the data is returned.</returns>
+        public static Bitmap GetImageAtChannel(SimpleDatum d, int nChannel, ColorMapper clrMap = null, List<int> rgClrOrder = null)
+        {
+            if (d.Channels != 1 && d.Channels != 3)
+                throw new Exception("Standard images only support either 1 or 3 channels.");
+
+            Bitmap bmp = new Bitmap(d.Width, d.Height);
+            List<byte>[] rgrgByteData = new List<byte>[d.Channels];
+            List<double>[] rgrgRealData = new List<double>[d.Channels];
+            int nOffset = 0;
+            int nCount = d.Height * d.Width;
+            bool bDataIsReal = d.HasRealData;
+            double dfMin = 1;
+            double dfMax = 0;
+
+
+            for (int i = 0; i < d.Channels; i++)
+            {
+                List<byte> rgByteData = new List<byte>();
+                List<double> rgRealData = new List<double>();
+                int nChIdx = i;
+
+                if (rgClrOrder != null)
+                    nChIdx = rgClrOrder[i];
+
+                if (bDataIsReal)
+                {
+                    for (int j = 0; j < nCount; j++)
+                    {
+                        double dfVal = d.GetDataAtD(nOffset + j);
+                        dfMin = Math.Min(dfMin, dfVal);
+                        dfMax = Math.Max(dfMax, dfVal);
+                        rgRealData.Add(dfVal);
+                    }
+
+                    rgrgRealData[nChIdx] = rgRealData;
+                }
+                else
+                {
+                    for (int j = 0; j < nCount; j++)
+                    {
+                        rgByteData.Add(d.ByteData[nOffset + j]);
+                    }
+
+                    rgrgByteData[nChIdx] = rgByteData;
+                }
+
+                nOffset += nCount;
+            }
+
+            LockBitmap bmp1 = new LockBitmap(bmp);
+
+            try
+            {
+                bmp1.LockBits();
+
+                for (int y = 0; y < bmp1.Height; y++)
+                {
+                    for (int x = 0; x < bmp1.Width; x++)
+                    {
+                        Color clr;
+                        int nIdx = (y * bmp1.Width) + x;
+
+                        if (d.Channels == 1)
+                        {
+                            if (bDataIsReal)
+                            {
+                                if (dfMin >= 0 && dfMax <= 1.0)
+                                {
+                                    int nG = (int)(rgrgRealData[0][nIdx] * 255.0);
+                                    if (nG < 0)
+                                        nG = 0;
+                                    if (nG > 255)
+                                        nG = 255;
+
+                                    clr = Color.FromArgb(nG, nG, nG);
+                                }
+                                else
+                                {
+                                    clr = Color.FromArgb((int)rgrgRealData[0][nIdx]);
+                                }
+
+                                if (clrMap != null)
+                                    clr = clrMap.GetColor(clr.ToArgb());
+                            }
+                            else
+                            {
+                                clr = Color.FromArgb((int)rgrgByteData[0][nIdx], (int)rgrgByteData[0][nIdx], (int)rgrgByteData[0][nIdx]);
+                            }
+                        }
+                        else
+                        {
+                            if (bDataIsReal)
+                            {
+                                int nR = (nChannel == 0) ? (int)rgrgRealData[0][nIdx] : 0;
+                                int nG = (nChannel == 1) ? (int)rgrgRealData[1][nIdx] : 0;
+                                int nB = (nChannel == 2) ? (int)rgrgRealData[2][nIdx] : 0;
+
+                                clr = Color.FromArgb(nR, nG, nB);
+
+                                if (clrMap != null)
+                                    clr = clrMap.GetColor(clr.ToArgb());
+                            }
+                            else
+                            {
+                                int nR = (nChannel == 0) ? (int)rgrgByteData[0][nIdx] : 0;
+                                int nG = (nChannel == 1) ? (int)rgrgByteData[1][nIdx] : 0;
+                                int nB = (nChannel == 2) ? (int)rgrgByteData[2][nIdx] : 0;
+
+                                clr = Color.FromArgb(nR, nG, nB);
+                            }
+                        }
+
+                        bmp1.SetPixel(x, y, clr);
+                    }
+                }
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                bmp1.UnlockBits();
+            }
+
+            return bmp;
+        }
+
+        /// <summary>
+        /// Converts a SimplDatum (or Datum) into an image, optionally using a ColorMapper.
+        /// </summary>
+        /// <param name="d">Specifies the Datum to use.</param>
         /// <param name="clrMap">Optionally, specifies a color mapper to use when converting each value into a color (default = null, not used).</param>
         /// <param name="rgClrOrder">Optionally, specifies the color ordering. Note, this list must have the same number of elements as there are channels.</param>
         /// <returns>The Image of the data is returned.</returns>
@@ -430,7 +566,9 @@ namespace MyCaffe.basecode
                                     clr = clrMap.GetColor(clr.ToArgb());
                             }
                             else
+                            {
                                 clr = Color.FromArgb((int)rgrgByteData[0][nIdx], (int)rgrgByteData[1][nIdx], (int)rgrgByteData[2][nIdx]);
+                            }
                         }
 
                         bmp1.SetPixel(x, y, clr);
