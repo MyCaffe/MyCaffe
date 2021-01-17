@@ -102,7 +102,7 @@ namespace MyCaffe.layers
                     if (j == m_nConcatAxis)
                         continue;
 
-                    m_log.CHECK_EQ(rgTopShape[j], colBottom[i].shape(j), "All inputs must have the same shape, except at concat_axis.");
+                    m_log.CHECK_EQ(rgTopShape[j], colBottom[i].shape(j), "All inputs must have the same shape, except at concat_axis.  You might try switching between the ONNX(p) and CAFFE(t) type pooling sizing methods.");
                 }
 
                 nBottomCountSum += colBottom[i].count();
