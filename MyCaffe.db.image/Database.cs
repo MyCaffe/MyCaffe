@@ -1143,7 +1143,7 @@ namespace MyCaffe.db.image
 
                 iQuery = iQuery.OrderBy(p => p.Idx);
 
-                return iQuery.Select(p => new DbItem { id = p.ID, index = p.Idx, label = p.ActiveLabel, boost = p.ActiveBoost, time = p.TimeStamp, desc = p.Description, originalsrcid = p.OriginalSourceID }).ToList();
+                return iQuery.Select(p => new DbItem { id = p.ID, index = p.Idx, label = p.ActiveLabel, boost = p.ActiveBoost, time = p.TimeStamp, desc = p.Description, originalsrcid = p.OriginalSourceID, active = p.Active }).ToList();
             }
         }
 
@@ -5546,6 +5546,7 @@ namespace MyCaffe.db.image
             item.time = time;
             item.desc = desc;
             item.originalsrcid = originalsrcid;
+            item.active = active;
             return item;
         }
 
@@ -5650,12 +5651,25 @@ namespace MyCaffe.db.image
         public int? originalsrcid { get; set; }
 
         /// <summary>
+        /// Specifies whether or not the item is active.
+        /// </summary>
+        public bool Active
+        {
+            get { return active.GetValueOrDefault(false); }
+        }
+
+        /// <summary>
+        /// Specifies the active state used within the lambda statement.
+        /// </summary>
+        public bool? active { get; set; }
+
+        /// <summary>
         /// Returns the string representation of the DbItem.
         /// </summary>
         /// <returns>The string representation is returned.</returns>
         public override string ToString()
         {
-            return "ID=" + ID.ToString() + "; Idx=" + Index.ToString() + "; Label=" + Label.ToString() + "; Time=" + Time.ToString() + "; Desc=" + Desc + "; Boost=" + Boost.ToString();
+            return "Active=" + Active.ToString() + "; ID=" + ID.ToString() + "; Idx=" + Index.ToString() + "; Label=" + Label.ToString() + "; Time=" + Time.ToString() + "; Desc=" + Desc + "; Boost=" + Boost.ToString();
         }
     }
 }
