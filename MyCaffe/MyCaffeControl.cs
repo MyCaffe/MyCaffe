@@ -84,7 +84,6 @@ namespace MyCaffe
         CudaDnn<T> m_cuda;
         Solver<T> m_solver;
         Net<T> m_net;
-        bool m_bDisposing = false;
         MemoryStream m_msWeights = new MemoryStream();
         Guid m_guidUser;
         PersistCaffe<T> m_persist;
