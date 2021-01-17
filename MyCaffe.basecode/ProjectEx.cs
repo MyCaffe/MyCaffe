@@ -1409,7 +1409,10 @@ namespace MyCaffe.basecode
                         {
                             RawProtoCollection colTop = layer.FindChildren("top");
                             if (colTop.Count > 0)
+                            {
                                 rgInputs[0] = new Tuple<string, int, int, int, int>(colTop[0].Value, rgInputs[0].Item2, rgInputs[0].Item3, rgInputs[0].Item4, rgInputs[0].Item5);
+                                break;
+                            }
                         }
                     }
 
