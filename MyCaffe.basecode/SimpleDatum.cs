@@ -1558,7 +1558,9 @@ namespace MyCaffe.basecode
         /// <returns>The padded data is returned as a generic array.</returns>
         public static T[] PadData<T>(List<T> rgData, int nImagePadX, int nImagePadY, int nHeight, int nWidth, int nChannels)
         {
-            List<T> rgDataNew = new List<T>();
+            int nDstIdx = 0;
+            int nCount = nChannels * (nHeight * (nImagePadX + nWidth) + (nImagePadY * nImagePadX));
+            T[] rgDataNew = new T[nCount];
 
             for (int c = 0; c < nChannels; c++)
             {
@@ -1566,14 +1568,16 @@ namespace MyCaffe.basecode
                 {
                     for (int i = 0; i < nImagePadX; i++)
                     {
-                        rgDataNew.Add((T)Convert.ChangeType(0.0, typeof(T)));
+                        rgDataNew[nDstIdx] = (T)Convert.ChangeType(0.0, typeof(T));
+                        nDstIdx++;
                     }
 
                     for (int x = 0; x < nWidth; x++)
                     {
                         int nIdx = (c * nWidth * nHeight) + (y * nWidth) + x;
 
-                        rgDataNew.Add(rgData[nIdx]);
+                        rgDataNew[nDstIdx] = rgData[nIdx];
+                        nDstIdx++;
                     }
                 }
 
@@ -1581,12 +1585,13 @@ namespace MyCaffe.basecode
                 {
                     for (int x = 0; x < nWidth + nImagePadX; x++)
                     {
-                        rgDataNew.Add((T)Convert.ChangeType(0.0, typeof(T)));
+                        rgDataNew[nDstIdx] = (T)Convert.ChangeType(0.0, typeof(T));
+                        nDstIdx++;
                     }
                 }
             }
 
-            return rgDataNew.ToArray();
+            return rgDataNew;
         }
 
         /// <summary>
@@ -1622,20 +1627,29 @@ namespace MyCaffe.basecode
         /// <returns>The encoded doubles are returned as an array of <i>byte</i> values.</returns>
         public static byte[] GetByteData(List<double> rgData)
         {
-            List<byte> rgByte = new List<byte>();
-
             int nCount = rgData.Count;
             int nSize = sizeof(double);
 
-            rgByte.AddRange(BitConverter.GetBytes(nCount));
-            rgByte.AddRange(BitConverter.GetBytes(nSize));
+            int nOffset = 0;
+            int nDataCount = sizeof(int) + sizeof(int) + (nSize * rgData.Count);
+            byte[] rgByte = new byte[nDataCount];
+
+            byte[] rg = BitConverter.GetBytes(nCount);
+            Array.Copy(rg, 0, rgByte, nOffset, rg.Length);
+            nOffset += rg.Length;
+
+            rg = BitConverter.GetBytes(nSize);
+            Array.Copy(rg, 0, rgByte, nOffset, rg.Length);
+            nOffset += rg.Length;
 
             foreach (double df in rgData)
             {
-                rgByte.AddRange(BitConverter.GetBytes(df));
+                rg = BitConverter.GetBytes(df);
+                Array.Copy(rg, 0, rgByte, nOffset, rg.Length);
+                nOffset += rg.Length;
             }
 
-            return rgByte.ToArray();
+            return rgByte;
         }
 
         /// <summary>
@@ -1648,20 +1662,29 @@ namespace MyCaffe.basecode
         /// <returns>The encoded doubles are returned as an array of <i>byte</i> values.</returns>
         public static byte[] GetByteData(List<float> rgData)
         {
-            List<byte> rgByte = new List<byte>();
-
             int nCount = rgData.Count;
             int nSize = sizeof(float);
 
-            rgByte.AddRange(BitConverter.GetBytes(nCount));
-            rgByte.AddRange(BitConverter.GetBytes(nSize));
+            int nOffset = 0;
+            int nDataCount = sizeof(int) + sizeof(int) + (nSize * rgData.Count);
+            byte[] rgByte = new byte[nDataCount];
+
+            byte[] rg = BitConverter.GetBytes(nCount);
+            Array.Copy(rg, 0, rgByte, nOffset, rg.Length);
+            nOffset += rg.Length;
+
+            rg = BitConverter.GetBytes(nSize);
+            Array.Copy(rg, 0, rgByte, nOffset, rg.Length);
+            nOffset += rg.Length;
 
             foreach (float df in rgData)
             {
-                rgByte.AddRange(BitConverter.GetBytes(df));
+                rg = BitConverter.GetBytes(df);
+                Array.Copy(rg, 0, rgByte, nOffset, rg.Length);
+                nOffset += rg.Length;
             }
 
-            return rgByte.ToArray();
+            return rgByte;
         }
 
         /// <summary>
