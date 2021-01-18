@@ -1917,7 +1917,7 @@ namespace MyCaffe.db.image
             }
             else
             {
-                List<byte> rgDataBytes = new List<byte>(SimpleDatum.GetByteData(rgData, nPadW, nPadH, nHeight, nWidth, nChannels));
+                byte[] rgDataBytes = SimpleDatum.GetByteData(rgData, nPadW, nPadH, nHeight, nWidth, nChannels);
                 sd = new SimpleDatum(img.Encoded.GetValueOrDefault(),
                                    nChannels,
                                    nWidth + nPadW,
@@ -2005,7 +2005,7 @@ namespace MyCaffe.db.image
             }
             else
             {
-                List<byte> rgDataBytes = new List<byte>(SimpleDatum.GetByteData(img.Data, nPadW, nPadH, nHeight, nWidth, nChannels));
+                byte[] rgDataBytes = SimpleDatum.GetByteData(img.Data, nPadW, nPadH, nHeight, nWidth, nChannels);
                 sd = new SimpleDatum(img.Encoded.GetValueOrDefault(),
                                               nChannels,
                                               nWidth + nPadW,
