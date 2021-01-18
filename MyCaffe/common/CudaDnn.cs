@@ -785,6 +785,7 @@ namespace MyCaffe.common
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class CudaDnn<T> : ICudaDnn, IDisposable
     {
+        Params m_param = new Params();
         CudaDnnMemoryTracker<T> m_memTracker;
         int m_nDeviceId;
         string m_strPath = "";
@@ -1277,12 +1278,12 @@ namespace MyCaffe.common
                 {
                     if (m_dt == DataType.DOUBLE)
                     {
-                        double[] rg = m_cuda.RunDouble(0, (int)CUDAFN.INITIALIZE, new double[] { nDeviceID, (int)flags });
+                        double[] rg = m_cuda.RunDouble(0, (int)CUDAFN.INITIALIZE, m_param.AsDouble(nDeviceID, (int)flags));
                         m_hKernel = (long)rg[0];
                     }
                     else
                     {
-                        float[] rg = m_cuda.RunFloat(0, (int)CUDAFN.INITIALIZE, new float[] { nDeviceID, (int)flags });
+                        float[] rg = m_cuda.RunFloat(0, (int)CUDAFN.INITIALIZE, m_param.AsFloat(nDeviceID, (int)flags));
                         m_hKernel = (long)rg[0];
                     }
                 }
@@ -1303,12 +1304,12 @@ namespace MyCaffe.common
                 {
                     if (m_dt == DataType.DOUBLE)
                     {
-                        double[] rg = m_cuda.RunDouble(0, (int)CUDAFN.INITIALIZE, new double[] { nDeviceID, (int)flags });
+                        double[] rg = m_cuda.RunDouble(0, (int)CUDAFN.INITIALIZE, m_param.AsDouble(nDeviceID, (int)flags));
                         m_hKernel = (long)rg[0];
                     }
                     else
                     {
-                        float[] rg = m_cuda.RunFloat(0, (int)CUDAFN.INITIALIZE, new float[] { nDeviceID, (int)flags });
+                        float[] rg = m_cuda.RunFloat(0, (int)CUDAFN.INITIALIZE, m_param.AsFloat(nDeviceID, (int)flags));
                         m_hKernel = (long)rg[0];
                     }
                 }
@@ -1498,9 +1499,9 @@ namespace MyCaffe.common
                 hSrcKernel = m_hKernel;
 
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)hSrcKernel, (int)CUDAFN.KERNEL_MEMCOPY, new double[] { nCount, hSrc, nSrcOffset, hDstKernel, hDst, nDstOffset, hHostBuffer, hHostKernel, hStream });
+                m_cuda.RunDouble((int)hSrcKernel, (int)CUDAFN.KERNEL_MEMCOPY, m_param.AsDouble(nCount, hSrc, nSrcOffset, hDstKernel, hDst, nDstOffset, hHostBuffer, hHostKernel, hStream));
             else
-                m_cuda.RunFloat((int)hSrcKernel, (int)CUDAFN.KERNEL_MEMCOPY, new float[] { nCount, hSrc, nSrcOffset, hDstKernel, hDst, nDstOffset, hHostBuffer, hHostKernel, hStream });
+                m_cuda.RunFloat((int)hSrcKernel, (int)CUDAFN.KERNEL_MEMCOPY, m_param.AsFloat(nCount, hSrc, nSrcOffset, hDstKernel, hDst, nDstOffset, hHostBuffer, hHostKernel, hStream));
         }
 
         /// <summary>
@@ -1514,9 +1515,9 @@ namespace MyCaffe.common
         public void KernelAdd(int nCount, long hA, long hDstKernel, long hB, long hC)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.KERNEL_ADD, new double[] { nCount, hA, hDstKernel, hB, hC });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.KERNEL_ADD, m_param.AsDouble(nCount, hA, hDstKernel, hB, hC));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.KERNEL_ADD, new float[] { nCount, hA, hDstKernel, hB, hC });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.KERNEL_ADD, m_param.AsFloat(nCount, hA, hDstKernel, hB, hC));
         }
 
         /// <summary>
@@ -1533,12 +1534,12 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.KERNEL_COPY_NCCL, new double[] { hSrcKernel, hSrcNccl });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.KERNEL_COPY_NCCL, m_param.AsDouble( hSrcKernel, hSrcNccl));
                 return (long)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.KERNEL_COPY_NCCL, new float[] { hSrcKernel, hSrcNccl });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.KERNEL_COPY_NCCL, m_param.AsFloat( hSrcKernel, hSrcNccl));
                 return (long)rg[0];
             }
         }
@@ -1604,9 +1605,9 @@ namespace MyCaffe.common
         public void CombineData(int nCount, long hOriginal, long hUpdated, double dfUpdatedPct, long hServer, double dfServerPct, long hNewData) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COMBINE_DATA, new double[] { nCount, hOriginal, hUpdated, dfUpdatedPct, hServer, dfServerPct, hNewData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COMBINE_DATA, m_param.AsDouble( nCount, hOriginal, hUpdated, dfUpdatedPct, hServer, dfServerPct, hNewData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COMBINE_DATA, new float[] { nCount, hOriginal, hUpdated, (float)dfUpdatedPct, hServer, (float)dfServerPct, hNewData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COMBINE_DATA, m_param.AsFloat( nCount, hOriginal, hUpdated, (float)dfUpdatedPct, hServer, (float)dfServerPct, hNewData));
         }
 
 #pragma warning restore 1591
@@ -1632,21 +1633,17 @@ namespace MyCaffe.common
 
             if (m_dt == DataType.DOUBLE)
             {
-                List<double> rgInput = new List<double>() { nDeviceID, (int)flags };
-
                 if (lSeed.HasValue)
-                    rgInput.Add(lSeed.Value);
-
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SETDEVICE, rgInput.ToArray());
+                    m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SETDEVICE, m_param.AsDouble(nDeviceID, (int)flags, lSeed.Value));
+                else
+                    m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SETDEVICE, m_param.AsDouble(nDeviceID, (int)flags));
             }
             else
             {
-                List<float> rgInput = new List<float>() { nDeviceID, (int)flags };
-
                 if (lSeed.HasValue)
-                    rgInput.Add(lSeed.Value);
-
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SETDEVICE, rgInput.ToArray());
+                    m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SETDEVICE, m_param.AsFloat(nDeviceID, (int)flags, lSeed.Value));
+                else
+                    m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SETDEVICE, m_param.AsFloat(nDeviceID, (int)flags));
             }
         }
 
@@ -1657,9 +1654,9 @@ namespace MyCaffe.common
         public void SetRandomSeed(long lSeed)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SETRANDOMSEED, new double[] { lSeed });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SETRANDOMSEED, m_param.AsDouble(lSeed));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SETRANDOMSEED, new float[] { lSeed });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SETRANDOMSEED, m_param.AsFloat(lSeed));
         }
 
         /// <summary>
@@ -1756,12 +1753,12 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GETDEVICEPROP, new double[] { nDeviceID, (int)DEVPROP.MULTIGPUBOARDGROUPID });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GETDEVICEPROP, m_param.AsDouble(nDeviceID, (int)DEVPROP.MULTIGPUBOARDGROUPID));
                 return (int)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GETDEVICEPROP, new float[] { nDeviceID, (int)DEVPROP.MULTIGPUBOARDGROUPID });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GETDEVICEPROP, m_param.AsFloat(nDeviceID, (int)DEVPROP.MULTIGPUBOARDGROUPID));
                 return (int)rg[0];
             }
         }
@@ -1776,12 +1773,12 @@ namespace MyCaffe.common
             {
                 if (m_dt == DataType.DOUBLE)
                 {
-                    double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GETDEVICEPROP, new double[] { 0, (int)DEVPROP.DEVICECOUNT });
+                    double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GETDEVICEPROP, m_param.AsDouble(0, (int)DEVPROP.DEVICECOUNT));
                     return (int)rg[0];
                 }
                 else
                 {
-                    float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GETDEVICEPROP, new float[] { 0, (int)DEVPROP.DEVICECOUNT });
+                    float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GETDEVICEPROP, m_param.AsFloat(0, (int)DEVPROP.DEVICECOUNT));
                     return (int)rg[0];
                 }
             }
@@ -1804,12 +1801,12 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CHECKMEMORYATTRIB, new double[] { hSrc, nSrcDeviceID, hDst, nDstDeviceID });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CHECKMEMORYATTRIB, m_param.AsDouble(hSrc, nSrcDeviceID, hDst, nDstDeviceID));
                 return (rg[0] == 0) ? false : true;
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CHECKMEMORYATTRIB, new float[] { hSrc, nSrcDeviceID, hDst, nDstDeviceID });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CHECKMEMORYATTRIB, m_param.AsFloat(hSrc, nSrcDeviceID, hDst, nDstDeviceID));
                 return (rg[0] == 0) ? false : true;
             }
         }
@@ -1829,7 +1826,7 @@ namespace MyCaffe.common
 
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GETDEVICEMEMORY, new double[] { nDeviceID });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GETDEVICEMEMORY, m_param.AsDouble(nDeviceID));
                 dfFree = rg[1];
                 dfUsed = rg[2];
                 bCudaCallUsed = (rg[3] == 0) ? false : true;
@@ -1837,7 +1834,7 @@ namespace MyCaffe.common
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GETDEVICEMEMORY, new float[] { nDeviceID });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GETDEVICEMEMORY, m_param.AsFloat(nDeviceID));
                 dfFree = (double)rg[1];
                 dfUsed = (double)rg[2];
                 bCudaCallUsed = (rg[3] == 0) ? false : true;
@@ -1884,12 +1881,12 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.DEVICE_CANACCESSPEER, new double[] { nSrcDeviceID, nPeerDeviceID });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.DEVICE_CANACCESSPEER, m_param.AsDouble(nSrcDeviceID, nPeerDeviceID));
                 return (rg[0] == 0) ? false : true;
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.DEVICE_CANACCESSPEER, new float[] { nSrcDeviceID, nPeerDeviceID });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.DEVICE_CANACCESSPEER, m_param.AsFloat(nSrcDeviceID, nPeerDeviceID));
                 return (rg[0] == 0) ? false : true;
             }
         }
@@ -1901,9 +1898,9 @@ namespace MyCaffe.common
         public void DeviceEnablePeerAccess(int nPeerDeviceID)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.DEVICE_ENABLEPEERACCESS, new double[] { nPeerDeviceID });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.DEVICE_ENABLEPEERACCESS, m_param.AsDouble(nPeerDeviceID));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.DEVICE_ENABLEPEERACCESS, new float[] { nPeerDeviceID });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.DEVICE_ENABLEPEERACCESS, m_param.AsFloat(nPeerDeviceID));
         }
 
         /// <summary>
@@ -1913,9 +1910,9 @@ namespace MyCaffe.common
         public void DeviceDisablePeerAccess(int nPeerDeviceID)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.DEVICE_DISABLEPEERACCESS, new double[] { nPeerDeviceID });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.DEVICE_DISABLEPEERACCESS, m_param.AsDouble(nPeerDeviceID));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.DEVICE_DISABLEPEERACCESS, new float[] { nPeerDeviceID });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.DEVICE_DISABLEPEERACCESS, m_param.AsFloat(nPeerDeviceID));
         }
 
         #endregion
@@ -2140,7 +2137,7 @@ namespace MyCaffe.common
                     m_memTracker.FreeMemory(m_hKernel, m_nDeviceId, hMem);
 
                     if (m_rgGhostMemory == null || !m_bGhostMemoryEnabled)
-                        m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREEMEM, new double[] { hMem });
+                        m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREEMEM, m_param.AsDouble(hMem));
                     else
                         m_rgGhostMemory.Remove(hMem);
                 }
@@ -2149,7 +2146,7 @@ namespace MyCaffe.common
                     m_memTracker.FreeMemory(m_hKernel, m_nDeviceId, hMem);
 
                     if (m_rgGhostMemory == null || !m_bGhostMemoryEnabled)
-                        m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREEMEM, new float[] { hMem });
+                        m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREEMEM, m_param.AsFloat(hMem));
                     else
                         m_rgGhostMemory.Remove(hMem);
                 }
@@ -2165,9 +2162,9 @@ namespace MyCaffe.common
         public void CopyDeviceToHost(long lCount, long hGpuSrc, long hHostDst)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.COPY_DEVICE_TO_HOST, new double[] { lCount, hGpuSrc, hHostDst });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.COPY_DEVICE_TO_HOST, m_param.AsDouble(lCount, hGpuSrc, hHostDst));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.COPY_DEVICE_TO_HOST, new float[] { lCount, hGpuSrc, hHostDst });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.COPY_DEVICE_TO_HOST, m_param.AsFloat(lCount, hGpuSrc, hHostDst));
         }
 
         /// <summary>
@@ -2179,9 +2176,9 @@ namespace MyCaffe.common
         public void CopyHostToDevice(long lCount, long hHostSrc, long hGpuDst)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.COPY_HOST_TO_DEVICE, new double[] { lCount, hHostSrc, hGpuDst });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.COPY_HOST_TO_DEVICE, m_param.AsDouble(lCount, hHostSrc, hGpuDst));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.COPY_HOST_TO_DEVICE, new float[] { lCount, hHostSrc, hGpuDst });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.COPY_HOST_TO_DEVICE, m_param.AsFloat(lCount, hHostSrc, hGpuDst));
         }
 
         /// <summary>
@@ -2196,12 +2193,12 @@ namespace MyCaffe.common
 
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.ALLOCHOSTBUFFER, new double[] { lCapacity });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.ALLOCHOSTBUFFER, m_param.AsDouble(lCapacity));
                 return (long)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.ALLOCHOSTBUFFER, new float[] { lCapacity });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.ALLOCHOSTBUFFER, m_param.AsFloat(lCapacity));
                 return (long)rg[0];
             }
         }
@@ -2213,9 +2210,9 @@ namespace MyCaffe.common
         public void FreeHostBuffer(long hMem)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREEHOSTBUFFER, new double[] { hMem });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREEHOSTBUFFER, m_param.AsDouble(hMem));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREEHOSTBUFFER, new float[] { hMem });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREEHOSTBUFFER, m_param.AsFloat(hMem));
         }
 
         /// <summary>
@@ -2227,12 +2224,12 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GETHOSTBUFFERCAPACITY, new double[] { hMem });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GETHOSTBUFFERCAPACITY, m_param.AsDouble(hMem));
                 return (long)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GETHOSTBUFFERCAPACITY, new float[] { hMem });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GETHOSTBUFFERCAPACITY, m_param.AsFloat(hMem));
                 return (long)rg[0];
             }
         }
@@ -2267,9 +2264,9 @@ namespace MyCaffe.common
         public T[] GetHostMemory(long hMem)
         {
             if (m_dt == DataType.DOUBLE)
-                return convert(m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GETHOSTMEM, new double[] { hMem }));
+                return convert(m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GETHOSTMEM, m_param.AsDouble(hMem)));
             else
-                return convert(m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GETHOSTMEM, new float[] { hMem }));
+                return convert(m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GETHOSTMEM, m_param.AsFloat(hMem)));
         }
 
         /// <summary>
@@ -2308,8 +2305,7 @@ namespace MyCaffe.common
             {
                 if (m_rgGhostMemory == null)
                 {
-                    List<double> rg = new List<double>() { hMem, lCount };
-                    double[] rgr = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GETMEM, rg.ToArray());
+                    double[] rgr = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GETMEM, m_param.AsDouble(hMem, lCount));
                     return convert(rgr);
                 }
                 else
@@ -2321,8 +2317,7 @@ namespace MyCaffe.common
             {
                 if (m_rgGhostMemory == null)
                 {
-                    List<float> rg = new List<float>() { hMem, lCount };
-                    float[] rgr = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GETMEM, rg.ToArray());
+                    float[] rgr = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GETMEM, m_param.AsFloat(hMem, lCount));
                     return convert(rgr);
                 }
                 else
@@ -2393,38 +2388,62 @@ namespace MyCaffe.common
             if (rgSrc == null || nCount == 0)
                 throw new ArgumentOutOfRangeException("There are no data items to set!");
 
-            if (m_dt == DataType.DOUBLE)
+            if (m_hKernel > 0)
             {
-                List<double> rg = new List<double>() { hMem, nCount };
-
-                if (hStream > 0)
-                    rg.Add(hStream);
-
-                rg.AddRange(convertD(rgSrc, nCount));
-
-                if (m_hKernel > 0)
+                if (m_rgGhostMemory != null)
                 {
-                    if (m_rgGhostMemory == null)
-                        m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SETMEM, rg.ToArray());
-                    else
-                        m_rgGhostMemory[hMem] = Utility.Clone<T>(new List<T>(rgSrc)).ToArray();
+                    m_rgGhostMemory[hMem] = Utility.Clone<T>(rgSrc);
                 }
-            }
-            else
-            {
-                List<float> rg = new List<float>() { hMem, nCount };
-
-                if (hStream > 0)
-                    rg.Add(hStream);
-
-                rg.AddRange(convertF(rgSrc, nCount));
-
-                if (m_hKernel > 0)
+                else
                 {
-                    if (m_rgGhostMemory == null)
-                        m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SETMEM, rg.ToArray());
+                    if (m_dt == DataType.DOUBLE)
+                    {
+                        int nDataCount = 2;
+
+                        if (hStream > 0)
+                            nDataCount++;
+
+                        nDataCount += nCount;
+
+                        double[] rg = new double[nDataCount];
+
+                        rg[0] = hMem;
+                        rg[1] = nCount;
+                        int nIdx = 2;
+
+                        if (hStream > 0)
+                        {
+                            rg[nIdx] = hStream;
+                            nIdx++;
+                        }
+
+                        convertD(rgSrc, rg, nIdx, nCount);
+                        m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SETMEM, rg);
+                    }
                     else
-                        m_rgGhostMemory[hMem] = Utility.Clone<T>(new List<T>(rgSrc)).ToArray();
+                    {
+                        int nDataCount = 2;
+
+                        if (hStream > 0)
+                            nDataCount++;
+
+                        nDataCount += nCount;
+
+                        float[] rg = new float[nDataCount];
+
+                        rg[0] = hMem;
+                        rg[1] = nCount;
+                        int nIdx = 2;
+
+                        if (hStream > 0)
+                        {
+                            rg[nIdx] = hStream;
+                            nIdx++;
+                        }
+
+                        convertF(rgSrc, rg, nIdx, nCount);
+                        m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SETMEM, rg);
+                    }
                 }
             }
         }
@@ -2464,30 +2483,34 @@ namespace MyCaffe.common
             if (rgSrc == null || rgSrc.Length == 0)
                 throw new ArgumentOutOfRangeException("There are no data items to set!");
 
-            if (m_dt == DataType.DOUBLE)
+            if (m_hKernel > 0)
             {
-                List<double> rg = new List<double>() { hMem, rgSrc.Length, nOffset };
-                rg.AddRange(convertD(rgSrc));
+                if (m_rgGhostMemory != null)
+                    throw new Exception("Ghost memory does not support SetMemoryAt.");
 
-                if (m_hKernel > 0)
+                if (m_dt == DataType.DOUBLE)
                 {
-                    if (m_rgGhostMemory == null)
-                        m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SETMEMAT, rg.ToArray());
-                    else
-                        throw new Exception("Ghost memory does not support SetMemoryAt.");
+                    int nDataCount = 3 + rgSrc.Length;
+                    double[] rg = new double[nDataCount];
+
+                    rg[0] = hMem;
+                    rg[1] = rgSrc.Length;
+                    rg[2] = nOffset;
+
+                    convertD(rgSrc, rg, 3);
+                    m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SETMEMAT, rg);
                 }
-            }
-            else
-            {
-                List<float> rg = new List<float>() { hMem, rgSrc.Length, nOffset };
-                rg.AddRange(convertF(rgSrc));
-
-                if (m_hKernel > 0)
+                else
                 {
-                    if (m_rgGhostMemory == null)
-                        m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SETMEMAT, rg.ToArray());
-                    else
-                        throw new Exception("Ghost memory does not support SetMemoryAt.");
+                    int nDataCount = 3 + rgSrc.Length;
+                    float[] rg = new float[nDataCount];
+
+                    rg[0] = hMem;
+                    rg[1] = rgSrc.Length;
+                    rg[2] = nOffset;
+
+                    convertF(rgSrc, rg, 3);
+                    m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SETMEMAT, rg);
                 }
             }
         }
@@ -2501,15 +2524,25 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                List<double> rg = new List<double>() { hMem, rgSrc.Length };
-                rg.AddRange(convertD(rgSrc));
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SETHOSTMEM, rg.ToArray());
+                int nDataCount = 2 + rgSrc.Length;
+                double[] rg = new double[nDataCount];
+
+                rg[0] = hMem;
+                rg[1] = rgSrc.Length;
+
+                convertD(rgSrc, rg, 2);
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SETHOSTMEM, rg);
             }
             else
             {
-                List<float> rg = new List<float>() { hMem, rgSrc.Length };
-                rg.AddRange(convertF(rgSrc));
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SETHOSTMEM, rg.ToArray());
+                int nDataCount = 2 + rgSrc.Length;
+                float[] rg = new float[nDataCount];
+
+                rg[0] = hMem;
+                rg[1] = rgSrc.Length;
+
+                convertF(rgSrc, rg, 2);
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SETHOSTMEM, rg);
             }
         }
 
@@ -2524,12 +2557,12 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CREATE_MEMORYPOINTER, new double[] { hData, lOffset, lCount });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CREATE_MEMORYPOINTER, m_param.AsDouble(hData, lOffset, lCount));
                 return (long)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CREATE_MEMORYPOINTER, new float[] { hData, lOffset, lCount });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CREATE_MEMORYPOINTER, m_param.AsFloat(hData, lOffset, lCount));
                 return (long)rg[0];
             }
         }
@@ -2541,9 +2574,9 @@ namespace MyCaffe.common
         public void FreeMemoryPointer(long hData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_MEMORYPOINTER, new double[] { hData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_MEMORYPOINTER, m_param.AsDouble(hData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_MEMORYPOINTER, new float[] { hData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_MEMORYPOINTER, m_param.AsFloat(hData));
         }
 
         /// <summary>
@@ -2559,7 +2592,7 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CREATE_MEMTEST, new double[] { dfPctToAllocate });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CREATE_MEMTEST, m_param.AsDouble(dfPctToAllocate));
                 ulTotalNumBlocks = (ulong)rg[1];
                 dfMemAllocatedInGB = (double)rg[2];
                 ulMemStartAddr = (ulong)rg[3];
@@ -2568,7 +2601,7 @@ namespace MyCaffe.common
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CREATE_MEMTEST, new float[] { (float)dfPctToAllocate });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CREATE_MEMTEST, m_param.AsFloat((float)dfPctToAllocate));
                 ulTotalNumBlocks = (ulong)rg[1];
                 dfMemAllocatedInGB = (double)rg[2];
                 ulMemStartAddr = (ulong)rg[3];
@@ -2584,9 +2617,9 @@ namespace MyCaffe.common
         public void FreeMemoryTest(long h)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_MEMTEST, new double[] { h });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_MEMTEST, m_param.AsDouble(h));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_MEMTEST, new float[] { h });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_MEMTEST, m_param.AsFloat(h));
         }
 
         /// <summary>
@@ -2615,12 +2648,12 @@ namespace MyCaffe.common
 
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.RUN_MEMTEST, new double[] { h, (double)type, ulBlockStartOffset, ulBlockCount, (bVerbose) ? 1 : 0, (bWrite) ? 1 : 0, (bReadWrite) ? 1 : 0, (bRead) ? 1 : 0 });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.RUN_MEMTEST, m_param.AsDouble(h, (double)type, ulBlockStartOffset, ulBlockCount, (bVerbose) ? 1 : 0, (bWrite) ? 1 : 0, (bReadWrite) ? 1 : 0, (bRead) ? 1 : 0));
                 return (T[])Convert.ChangeType(rg, typeof(T[]));
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.RUN_MEMTEST, new float[] { h, (float)type, ulBlockStartOffset, ulBlockCount, (bVerbose) ? 1 : 0, (bWrite) ? 1 : 0, (bReadWrite) ? 1 : 0, (bRead) ? 1 : 0 });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.RUN_MEMTEST, m_param.AsFloat(h, (float)type, ulBlockStartOffset, ulBlockCount, (bVerbose) ? 1 : 0, (bWrite) ? 1 : 0, (bReadWrite) ? 1 : 0, (bRead) ? 1 : 0));
                 return (T[])Convert.ChangeType(rg, typeof(T[]));
             }
         }
@@ -2643,12 +2676,12 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CREATE_IMAGEOP, new double[] { nNum, dfBrightnessProb, dfBrightnessDelta, dfContrastProb, dfContrastLower, dfContrastUpper, dfSaturationProb, dfSaturationLower, dfSaturationUpper, lRandomSeed });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CREATE_IMAGEOP, m_param.AsDouble(nNum, dfBrightnessProb, dfBrightnessDelta, dfContrastProb, dfContrastLower, dfContrastUpper, dfSaturationProb, dfSaturationLower, dfSaturationUpper, lRandomSeed));
                 return (long)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CREATE_IMAGEOP, new float[] { nNum, (float)dfBrightnessProb, (float)dfBrightnessDelta, (float)dfContrastProb, (float)dfContrastLower, (float)dfContrastUpper, (float)dfSaturationProb, (float)dfSaturationLower, (float)dfSaturationUpper, lRandomSeed });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CREATE_IMAGEOP, m_param.AsFloat(nNum, (float)dfBrightnessProb, (float)dfBrightnessDelta, (float)dfContrastProb, (float)dfContrastLower, (float)dfContrastUpper, (float)dfSaturationProb, (float)dfSaturationLower, (float)dfSaturationUpper, lRandomSeed));
                 return (long)rg[0];
             }
         }
@@ -2660,9 +2693,9 @@ namespace MyCaffe.common
         public void FreeImageOp(long h)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_IMAGEOP, new double[] { h });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_IMAGEOP, m_param.AsDouble(h));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_IMAGEOP, new float[] { h });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_IMAGEOP, m_param.AsFloat(h));
         }
 
         /// <summary>
@@ -2677,9 +2710,9 @@ namespace MyCaffe.common
         public void DistortImage(long h, int nCount, int nNum, int nDim, long hX, long hY)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.DISTORTIMAGE_IMAGEOP, new double[] { h, nCount, nNum, nDim, hX, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.DISTORTIMAGE_IMAGEOP, m_param.AsDouble(h, nCount, nNum, nDim, hX, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.DISTORTIMAGE_IMAGEOP, new float[] { h, nCount, nNum, nDim, hX, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.DISTORTIMAGE_IMAGEOP, m_param.AsFloat(h, nCount, nNum, nDim, hX, hY));
         }
 
         #endregion
@@ -2699,12 +2732,12 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CREATE_STREAM, new double[] { (bNonBlocking) ? 1.0 : 0.0, nIndex });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CREATE_STREAM, m_param.AsDouble((bNonBlocking) ? 1.0 : 0.0, nIndex));
                 return (long)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CREATE_STREAM, new float[] { (bNonBlocking) ? 1.0f : 0.0f, nIndex });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CREATE_STREAM, m_param.AsFloat((bNonBlocking) ? 1.0f : 0.0f, nIndex));
                 return (long)rg[0];
             }
         }
@@ -2716,9 +2749,9 @@ namespace MyCaffe.common
         public void FreeStream(long h)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_STREAM, new double[] { h });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_STREAM, m_param.AsDouble(h));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_STREAM, new float[] { h });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_STREAM, m_param.AsFloat(h));
         }
 
         /// <summary>
@@ -2728,9 +2761,9 @@ namespace MyCaffe.common
         public void SynchronizeStream(long h = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SYNCRHONIZE_STREAM, new double[] { h });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SYNCRHONIZE_STREAM, m_param.AsDouble(h));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SYNCRHONIZE_STREAM, new float[] { h });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SYNCRHONIZE_STREAM, m_param.AsFloat(h));
         }
 
         /// <summary>
@@ -2753,12 +2786,12 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CREATE_CUDNN, new double[] { hStream });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CREATE_CUDNN, m_param.AsDouble(hStream));
                 return (long)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CREATE_CUDNN, new float[] { hStream });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CREATE_CUDNN, m_param.AsFloat(hStream));
                 return (long)rg[0];
             }
         }
@@ -2770,9 +2803,9 @@ namespace MyCaffe.common
         public void FreeCuDNN(long h)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_CUDNN, new double[] { h });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_CUDNN, m_param.AsDouble(h));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_CUDNN, new float[] { h });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_CUDNN, m_param.AsFloat(h));
         }
 
         /// <summary>
@@ -2844,9 +2877,9 @@ namespace MyCaffe.common
         public void FreeNCCL(long hNccl)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_NCCL, new double[] { hNccl });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_NCCL, m_param.AsDouble(hNccl));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_NCCL, new float[] { hNccl });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_NCCL, m_param.AsFloat(hNccl));
         }
 
         /// <summary>
@@ -2892,9 +2925,9 @@ namespace MyCaffe.common
         public void NcclInitializeMultiProcess(long hNccl)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.NCCL_INIT_MULTIPROCESS, new double[] { hNccl });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.NCCL_INIT_MULTIPROCESS, m_param.AsDouble(hNccl));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.NCCL_INIT_MULTIPROCESS, new float[] { hNccl });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.NCCL_INIT_MULTIPROCESS, m_param.AsFloat(hNccl));
         }
 
         /// <summary>
@@ -2911,9 +2944,9 @@ namespace MyCaffe.common
         {
             Trace.WriteLine("Broadcasting from device ID " + GetDeviceID().ToString());
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.NCCL_BROADCAST, new double[] { hNccl, hStream, hX, nCount });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.NCCL_BROADCAST, m_param.AsDouble(hNccl, hStream, hX, nCount));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.NCCL_BROADCAST, new float[] { hNccl, hStream, hX, nCount });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.NCCL_BROADCAST, m_param.AsFloat(hNccl, hStream, hX, nCount));
         }
 
         /// <summary>
@@ -2931,9 +2964,9 @@ namespace MyCaffe.common
         public void NcclAllReduce(long hNccl, long hStream, long hX, int nCount, NCCL_REDUCTION_OP op, double dfScale = 1.0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.NCCL_ALLREDUCE, new double[] { hNccl, hStream, hX, nCount, (int)op, dfScale });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.NCCL_ALLREDUCE, m_param.AsDouble(hNccl, hStream, hX, nCount, (int)op, dfScale));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.NCCL_ALLREDUCE, new float[] { hNccl, hStream, hX, nCount, (int)op, (float)dfScale });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.NCCL_ALLREDUCE, m_param.AsFloat(hNccl, hStream, hX, nCount, (int)op, (float)dfScale));
         }
 
 
@@ -2963,9 +2996,9 @@ namespace MyCaffe.common
         public void FreeExtension(long hExtension)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_EXTENSION, new double[] { hExtension });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_EXTENSION, m_param.AsDouble(hExtension));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_EXTENSION, new float[] { hExtension });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_EXTENSION, m_param.AsFloat(hExtension));
         }
 
         /// <summary>
@@ -3025,9 +3058,9 @@ namespace MyCaffe.common
         public void FreeTensorDesc(long h)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_TENSORDESC, new double[] { h });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_TENSORDESC, m_param.AsDouble(h));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_TENSORDESC, new float[] { h });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_TENSORDESC, m_param.AsFloat(h));
         }
 
         /// <summary>
@@ -3088,9 +3121,9 @@ namespace MyCaffe.common
         public void SetTensorDesc(long hHandle, int n, int c, int h, int w, bool bHalf = false)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_TENSORDESC, new double[] { hHandle, (bHalf) ? 1 : 0, n, c, h, w });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_TENSORDESC, m_param.AsDouble(hHandle, (bHalf) ? 1 : 0, n, c, h, w));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_TENSORDESC, new float[] { hHandle, (bHalf) ? 1 : 0, n, c, h, w });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_TENSORDESC, m_param.AsFloat(hHandle, (bHalf) ? 1 : 0, n, c, h, w));
         }
 
         /// <summary>
@@ -3109,9 +3142,9 @@ namespace MyCaffe.common
         public void SetTensorDesc(long hHandle, int n, int c, int h, int w, int nStride, int cStride, int hStride, int wStride, bool bHalf = false)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_TENSORDESC, new double[] { hHandle, (bHalf) ? 1 : 0, n, c, h, w, nStride, cStride, hStride, wStride });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_TENSORDESC, m_param.AsDouble(hHandle, (bHalf) ? 1 : 0, n, c, h, w, nStride, cStride, hStride, wStride));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_TENSORDESC, new float[] { hHandle, (bHalf) ? 1 : 0, n, c, h, w, nStride, cStride, hStride, wStride });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_TENSORDESC, m_param.AsFloat(hHandle, (bHalf) ? 1 : 0, n, c, h, w, nStride, cStride, hStride, wStride));
         }
 
         /// <summary>
@@ -3144,9 +3177,9 @@ namespace MyCaffe.common
         public void AddTensor(long hCuDnn, T fAlpha, long hSrcDesc, long hSrc, int nSrcOffset, T fBeta, long hDstDesc, long hDst, int nDstOffset)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.ADD_TENSOR, new double[] { hCuDnn, convertD(fAlpha), hSrcDesc, hSrc, nSrcOffset, convertD(fBeta), hDstDesc, hDst, nDstOffset });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.ADD_TENSOR, m_param.AsDouble(hCuDnn, convertD(fAlpha), hSrcDesc, hSrc, nSrcOffset, convertD(fBeta), hDstDesc, hDst, nDstOffset));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.ADD_TENSOR, new float[] { hCuDnn, convertF(fAlpha), hSrcDesc, hSrc, nSrcOffset, convertF(fBeta), hDstDesc, hDst, nDstOffset });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.ADD_TENSOR, m_param.AsFloat(hCuDnn, convertF(fAlpha), hSrcDesc, hSrc, nSrcOffset, convertF(fBeta), hDstDesc, hDst, nDstOffset));
         }
 
 
@@ -3175,9 +3208,9 @@ namespace MyCaffe.common
         public void FreeFilterDesc(long h)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_FILTERDESC, new double[] { h });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_FILTERDESC, m_param.AsDouble(h));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_FILTERDESC, new float[] { h });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_FILTERDESC, m_param.AsFloat(h));
         }
 
         /// <summary>
@@ -3224,9 +3257,9 @@ namespace MyCaffe.common
         public void SetFilterDesc(long hHandle, int n, int c, int h, int w, bool bHalf = false)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_FILTERDESC, new double[] { hHandle, (bHalf) ? 1 : 0, n, c, h, w });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_FILTERDESC, m_param.AsDouble(hHandle, (bHalf) ? 1 : 0, n, c, h, w));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_FILTERDESC, new float[] { hHandle, (bHalf) ? 1 : 0, n, c, h, w });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_FILTERDESC, m_param.AsFloat(hHandle, (bHalf) ? 1 : 0, n, c, h, w));
         }
 
         /// <summary>
@@ -3254,9 +3287,9 @@ namespace MyCaffe.common
         public void FreeConvolutionDesc(long h)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_CONVDESC, new double[] { h });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_CONVDESC, m_param.AsDouble(h));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_CONVDESC, new float[] { h });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_CONVDESC, m_param.AsFloat(h));
         }
 
         /// <summary>
@@ -3274,9 +3307,9 @@ namespace MyCaffe.common
         public void SetConvolutionDesc(long hHandle, int hPad, int wPad, int hStride, int wStride, int hDilation, int wDilation, bool bUseTensorCores, bool bHalf = false)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_CONVDESC, new double[] { hHandle, (bHalf) ? 1 : 0, hPad, wPad, hStride, wStride, hDilation, wDilation, (bUseTensorCores) ? 1 : 0 });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_CONVDESC, m_param.AsDouble(hHandle, (bHalf) ? 1 : 0, hPad, wPad, hStride, wStride, hDilation, wDilation, (bUseTensorCores) ? 1 : 0));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_CONVDESC, new float[] { hHandle, (bHalf) ? 1 : 0, hPad, wPad, hStride, wStride, hDilation, wDilation, (bUseTensorCores) ? 1 : 0 });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_CONVDESC, m_param.AsFloat(hHandle, (bHalf) ? 1 : 0, hPad, wPad, hStride, wStride, hDilation, wDilation, (bUseTensorCores) ? 1 : 0));
         }
 
         /// <summary>
@@ -3300,7 +3333,7 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_CONVINFO, new double[] { hCuDnn, hBottomDesc, hFilterDesc, hConvDesc, hTopDesc, lWorkspaceSizeLimitInBytes, (bUseTensorCores) ? 1 : 0, (int)preferredFwdAlgo });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_CONVINFO, m_param.AsDouble(hCuDnn, hBottomDesc, hFilterDesc, hConvDesc, hTopDesc, lWorkspaceSizeLimitInBytes, (bUseTensorCores) ? 1 : 0, (int)preferredFwdAlgo));
                 algoFwd = (CONV_FWD_ALGO)rg[0];
                 lWsSizeFwd = (ulong)rg[1];
                 algoBwdFilter = (CONV_BWD_FILTER_ALGO)rg[2];
@@ -3310,7 +3343,7 @@ namespace MyCaffe.common
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_CONVINFO, new float[] { hCuDnn, hBottomDesc, hFilterDesc, hConvDesc, hTopDesc, lWorkspaceSizeLimitInBytes, (bUseTensorCores) ? 1 : 0, (int)preferredFwdAlgo });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_CONVINFO, m_param.AsFloat(hCuDnn, hBottomDesc, hFilterDesc, hConvDesc, hTopDesc, lWorkspaceSizeLimitInBytes, (bUseTensorCores) ? 1 : 0, (int)preferredFwdAlgo));
                 algoFwd = (CONV_FWD_ALGO)rg[0];
                 lWsSizeFwd = (ulong)rg[1];
                 algoBwdFilter = (CONV_BWD_FILTER_ALGO)rg[2];
@@ -3368,9 +3401,9 @@ namespace MyCaffe.common
         public void ConvolutionForward(long hCuDnn, T fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hFilterDesc, long hWeight, int nWeightOffset, long hConvDesc, CONV_FWD_ALGO algoFwd, long hWorkspace, int nWorkspaceOffset, ulong lWorkspaceSize, T fBeta, long hTopDesc, long hTopData, int nTopOffset, bool bSyncStream = true)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FWD_CONV, new double[] { hCuDnn, convertD(fAlpha), hBottomDesc, hBottomData, nBottomOffset, hFilterDesc, hWeight, nWeightOffset, hConvDesc, (double)algoFwd, hWorkspace, nWorkspaceOffset, lWorkspaceSize, convertD(fBeta), hTopDesc, hTopData, nTopOffset, (bSyncStream) ? 1 : 0 });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FWD_CONV, m_param.AsDouble(hCuDnn, convertD(fAlpha), hBottomDesc, hBottomData, nBottomOffset, hFilterDesc, hWeight, nWeightOffset, hConvDesc, (double)algoFwd, hWorkspace, nWorkspaceOffset, lWorkspaceSize, convertD(fBeta), hTopDesc, hTopData, nTopOffset, (bSyncStream) ? 1 : 0));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FWD_CONV, new float[] { hCuDnn, convertF(fAlpha), hBottomDesc, hBottomData, nBottomOffset, hFilterDesc, hWeight, nWeightOffset, hConvDesc, (float)algoFwd, hWorkspace, nWorkspaceOffset, lWorkspaceSize, convertF(fBeta), hTopDesc, hTopData, nTopOffset, (bSyncStream) ? 1 : 0 });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FWD_CONV, m_param.AsFloat(hCuDnn, convertF(fAlpha), hBottomDesc, hBottomData, nBottomOffset, hFilterDesc, hWeight, nWeightOffset, hConvDesc, (float)algoFwd, hWorkspace, nWorkspaceOffset, lWorkspaceSize, convertF(fBeta), hTopDesc, hTopData, nTopOffset, (bSyncStream) ? 1 : 0));
         }
 
         /// <summary>
@@ -3405,9 +3438,9 @@ namespace MyCaffe.common
         public void ConvolutionBackwardBias(long hCuDnn, T fAlpha, long hTopDesc, long hTopDiff, int nTopOffset, T fBeta, long hBiasDesc, long hBiasDiff, int nBiasOffset, bool bSyncStream = true)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.BWD_CONV_BIAS, new double[] { hCuDnn, convertD(fAlpha), hTopDesc, hTopDiff, nTopOffset, convertD(fBeta), hBiasDesc, hBiasDiff, nBiasOffset, (bSyncStream) ? 1 : 0 });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.BWD_CONV_BIAS, m_param.AsDouble(hCuDnn, convertD(fAlpha), hTopDesc, hTopDiff, nTopOffset, convertD(fBeta), hBiasDesc, hBiasDiff, nBiasOffset, (bSyncStream) ? 1 : 0));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.BWD_CONV_BIAS, new float[] { hCuDnn, convertF(fAlpha), hTopDesc, hTopDiff, nTopOffset, convertF(fBeta), hBiasDesc, hBiasDiff, nBiasOffset, (bSyncStream) ? 1 : 0 });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.BWD_CONV_BIAS, m_param.AsFloat(hCuDnn, convertF(fAlpha), hTopDesc, hTopDiff, nTopOffset, convertF(fBeta), hBiasDesc, hBiasDiff, nBiasOffset, (bSyncStream) ? 1 : 0));
         }
 
         /// <summary>
@@ -3458,9 +3491,9 @@ namespace MyCaffe.common
         public void ConvolutionBackwardFilter(long hCuDnn, T fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, CONV_BWD_FILTER_ALGO algoBwd, long hWorkspace, int nWorkspaceOffset, ulong lWorkspaceSize, T fBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset, bool bSyncStream = true)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.BWD_CONV_FILTER, new double[] { hCuDnn, convertD(fAlpha), hBottomDesc, hBottomData, nBottomOffset, hTopDesc, hTopDiff, nTopOffset, hConvDesc, (double)algoBwd, hWorkspace, nWorkspaceOffset, lWorkspaceSize, convertD(fBeta), hFilterDesc, hWeightDiff, nWeightOffset, (bSyncStream) ? 1 : 0 });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.BWD_CONV_FILTER, m_param.AsDouble(hCuDnn, convertD(fAlpha), hBottomDesc, hBottomData, nBottomOffset, hTopDesc, hTopDiff, nTopOffset, hConvDesc, (double)algoBwd, hWorkspace, nWorkspaceOffset, lWorkspaceSize, convertD(fBeta), hFilterDesc, hWeightDiff, nWeightOffset, (bSyncStream) ? 1 : 0));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.BWD_CONV_FILTER, new float[] { hCuDnn, convertF(fAlpha), hBottomDesc, hBottomData, nBottomOffset, hTopDesc, hTopDiff, nTopOffset, hConvDesc, (float)algoBwd, hWorkspace, nWorkspaceOffset, lWorkspaceSize, convertF(fBeta), hFilterDesc, hWeightDiff, nWeightOffset, (bSyncStream) ? 1 : 0 });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.BWD_CONV_FILTER, m_param.AsFloat(hCuDnn, convertF(fAlpha), hBottomDesc, hBottomData, nBottomOffset, hTopDesc, hTopDiff, nTopOffset, hConvDesc, (float)algoBwd, hWorkspace, nWorkspaceOffset, lWorkspaceSize, convertF(fBeta), hFilterDesc, hWeightDiff, nWeightOffset, (bSyncStream) ? 1 : 0));
         }
 
         /// <summary>
@@ -3511,9 +3544,9 @@ namespace MyCaffe.common
         public void ConvolutionBackwardData(long hCuDnn, T fAlpha, long hFilterDesc, long hWeight, int nWeightOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, CONV_BWD_DATA_ALGO algoBwd, long hWorkspace, int nWorkspaceOffset, ulong lWorkspaceSize, T fBeta, long hBottomDesc, long hBottomDiff, int nBottomOffset, bool bSyncStream = true)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.BWD_CONV_DATA, new double[] { hCuDnn, convertD(fAlpha), hFilterDesc, hWeight, nWeightOffset, hTopDesc, hTopDiff, nTopOffset, hConvDesc, (double)algoBwd, hWorkspace, nWorkspaceOffset, lWorkspaceSize, convertD(fBeta), hBottomDesc, hBottomDiff, nBottomOffset, (bSyncStream) ? 1 : 0 });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.BWD_CONV_DATA, m_param.AsDouble(hCuDnn, convertD(fAlpha), hFilterDesc, hWeight, nWeightOffset, hTopDesc, hTopDiff, nTopOffset, hConvDesc, (double)algoBwd, hWorkspace, nWorkspaceOffset, lWorkspaceSize, convertD(fBeta), hBottomDesc, hBottomDiff, nBottomOffset, (bSyncStream) ? 1 : 0));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.BWD_CONV_DATA, new float[] { hCuDnn, convertF(fAlpha), hFilterDesc, hWeight, nWeightOffset, hTopDesc, hTopDiff, nTopOffset, hConvDesc, (float)algoBwd, hWorkspace, nWorkspaceOffset, lWorkspaceSize, convertF(fBeta), hBottomDesc, hBottomDiff, nBottomOffset, (bSyncStream) ? 1 : 0 });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.BWD_CONV_DATA, m_param.AsFloat(hCuDnn, convertF(fAlpha), hFilterDesc, hWeight, nWeightOffset, hTopDesc, hTopDiff, nTopOffset, hConvDesc, (float)algoBwd, hWorkspace, nWorkspaceOffset, lWorkspaceSize, convertF(fBeta), hBottomDesc, hBottomDiff, nBottomOffset, (bSyncStream) ? 1 : 0));
         }
 
         /// <summary>
@@ -3541,9 +3574,9 @@ namespace MyCaffe.common
         public void FreePoolingDesc(long h)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_POOLDESC, new double[] { h });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_POOLDESC, m_param.AsDouble(h));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_POOLDESC, new float[] { h });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_POOLDESC, m_param.AsFloat(h));
         }
 
         /// <summary>
@@ -3560,9 +3593,9 @@ namespace MyCaffe.common
         public void SetPoolingDesc(long hHandle, PoolingMethod method, int h, int w, int hPad, int wPad, int hStride, int wStride)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_POOLDESC, new double[] { hHandle, (int)method, h, w, hPad, wPad, hStride, wStride });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_POOLDESC, m_param.AsDouble(hHandle, (int)method, h, w, hPad, wPad, hStride, wStride));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_POOLDESC, new float[] { hHandle, (int)method, h, w, hPad, wPad, hStride, wStride });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_POOLDESC, m_param.AsFloat(hHandle, (int)method, h, w, hPad, wPad, hStride, wStride));
         }
 
         /// <summary>
@@ -3579,9 +3612,9 @@ namespace MyCaffe.common
         public void PoolingForward(long hCuDnn, long hPoolingDesc, T fAlpha, long hBottomDesc, long hBottomData, T fBeta, long hTopDesc, long hTopData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FWD_POOL, new double[] { hCuDnn, hPoolingDesc, convertD(fAlpha), hBottomDesc, hBottomData, convertD(fBeta), hTopDesc, hTopData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FWD_POOL, m_param.AsDouble(hCuDnn, hPoolingDesc, convertD(fAlpha), hBottomDesc, hBottomData, convertD(fBeta), hTopDesc, hTopData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FWD_POOL, new float[] { hCuDnn, hPoolingDesc, convertF(fAlpha), hBottomDesc, hBottomData, convertF(fBeta), hTopDesc, hTopData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FWD_POOL, m_param.AsFloat(hCuDnn, hPoolingDesc, convertF(fAlpha), hBottomDesc, hBottomData, convertF(fBeta), hTopDesc, hTopData));
         }
 
         /// <summary>
@@ -3602,9 +3635,9 @@ namespace MyCaffe.common
         public void PoolingBackward(long hCuDnn, long hPoolingDesc, T fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, T fBeta, long hBottomDiffDesc, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.BWD_POOL, new double[] { hCuDnn, hPoolingDesc, convertD(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertD(fBeta), hBottomDiffDesc, hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.BWD_POOL, m_param.AsDouble(hCuDnn, hPoolingDesc, convertD(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertD(fBeta), hBottomDiffDesc, hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.BWD_POOL, new float[] { hCuDnn, hPoolingDesc, convertF(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertF(fBeta), hBottomDiffDesc, hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.BWD_POOL, m_param.AsFloat(hCuDnn, hPoolingDesc, convertF(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertF(fBeta), hBottomDiffDesc, hBottomDiff));
         }
 
         /// <summary>
@@ -3618,9 +3651,9 @@ namespace MyCaffe.common
         public void DeriveBatchNormDesc(long hFwdScaleBiasMeanVarDesc, long hFwdBottomDesc, long hBwdScaleBiasMeanVarDesc, long hBwdBottomDesc, BATCHNORM_MODE mode)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.DERIVE_BNDESC, new double[] { hFwdScaleBiasMeanVarDesc, hFwdBottomDesc, hBwdScaleBiasMeanVarDesc, hBwdBottomDesc, (int)mode });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.DERIVE_BNDESC, m_param.AsDouble(hFwdScaleBiasMeanVarDesc, hFwdBottomDesc, hBwdScaleBiasMeanVarDesc, hBwdBottomDesc, (int)mode));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.DERIVE_BNDESC, new float[] { hFwdScaleBiasMeanVarDesc, hFwdBottomDesc, hBwdScaleBiasMeanVarDesc, hBwdBottomDesc, (int)mode });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.DERIVE_BNDESC, m_param.AsFloat(hFwdScaleBiasMeanVarDesc, hFwdBottomDesc, hBwdScaleBiasMeanVarDesc, hBwdBottomDesc, (int)mode));
         }
 
         /// <summary>
@@ -3647,9 +3680,9 @@ namespace MyCaffe.common
         public void BatchNormForward(long hCuDnn, BATCHNORM_MODE mode, T fAlpha, T fBeta, long hFwdBottomDesc, long hBottomData, long hFwdTopDesc, long hTopData, long hFwdScaleBiasMeanVarDesc, long hScaleData, long hBiasData, double dfFactor, long hGlobalMean, long hGlobalVar, double dfEps, long hSaveMean, long hSaveInvVar, bool bTraining)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FWD_BN, new double[] { hCuDnn, (int)mode, convertD(fAlpha), convertD(fBeta), hFwdBottomDesc, hBottomData, hFwdTopDesc, hTopData, hFwdScaleBiasMeanVarDesc, hScaleData, hBiasData, dfFactor, hGlobalMean, hGlobalVar, dfEps, hSaveMean, hSaveInvVar, (bTraining) ? 1 : 0 });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FWD_BN, m_param.AsDouble(hCuDnn, (int)mode, convertD(fAlpha), convertD(fBeta), hFwdBottomDesc, hBottomData, hFwdTopDesc, hTopData, hFwdScaleBiasMeanVarDesc, hScaleData, hBiasData, dfFactor, hGlobalMean, hGlobalVar, dfEps, hSaveMean, hSaveInvVar, (bTraining) ? 1 : 0));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FWD_BN, new float[] { hCuDnn, (int)mode, convertF(fAlpha), convertF(fBeta), hFwdBottomDesc, hBottomData, hFwdTopDesc, hTopData, hFwdScaleBiasMeanVarDesc, hScaleData, hBiasData, (float)dfFactor, hGlobalMean, hGlobalVar, (float)dfEps, hSaveMean, hSaveInvVar, (bTraining) ? 1 : 0 });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FWD_BN, m_param.AsFloat(hCuDnn, (int)mode, convertF(fAlpha), convertF(fBeta), hFwdBottomDesc, hBottomData, hFwdTopDesc, hTopData, hFwdScaleBiasMeanVarDesc, hScaleData, hBiasData, (float)dfFactor, hGlobalMean, hGlobalVar, (float)dfEps, hSaveMean, hSaveInvVar, (bTraining) ? 1 : 0));
         }
 
         /// <summary>
@@ -3677,9 +3710,9 @@ namespace MyCaffe.common
         public void BatchNormBackward(long hCuDnn, BATCHNORM_MODE mode, T fAlphaDiff, T fBetaDiff, T fAlphaParamDiff, T fBetaParamDiff, long hBwdBottomDesc, long hBottomData, long hTopDiffDesc, long hTopDiff, long hBottomDiffDesc, long hBottomDiff, long hBwdScaleBiasMeanVarDesc, long hScaleData, long hScaleDiff, long hBiasDiff, double dfEps, long hSaveMean, long hSaveInvVar)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.BWD_BN, new double[] { hCuDnn, (int)mode, convertD(fAlphaDiff), convertD(fBetaDiff), convertD(fAlphaParamDiff), convertD(fBetaParamDiff), hBwdBottomDesc, hBottomData, hTopDiffDesc, hTopDiff, hBottomDiffDesc, hBottomDiff, hBwdScaleBiasMeanVarDesc, hScaleData, hScaleDiff, hBiasDiff, dfEps, hSaveMean, hSaveInvVar });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.BWD_BN, m_param.AsDouble(hCuDnn, (int)mode, convertD(fAlphaDiff), convertD(fBetaDiff), convertD(fAlphaParamDiff), convertD(fBetaParamDiff), hBwdBottomDesc, hBottomData, hTopDiffDesc, hTopDiff, hBottomDiffDesc, hBottomDiff, hBwdScaleBiasMeanVarDesc, hScaleData, hScaleDiff, hBiasDiff, dfEps, hSaveMean, hSaveInvVar));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.BWD_BN, new float[] { hCuDnn, (int)mode, convertF(fAlphaDiff), convertF(fBetaDiff), convertF(fAlphaParamDiff), convertF(fBetaParamDiff), hBwdBottomDesc, hBottomData, hTopDiffDesc, hTopDiff, hBottomDiffDesc, hBottomDiff, hBwdScaleBiasMeanVarDesc, hScaleData, hScaleDiff, hBiasDiff, (float)dfEps, hSaveMean, hSaveInvVar });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.BWD_BN, m_param.AsFloat(hCuDnn, (int)mode, convertF(fAlphaDiff), convertF(fBetaDiff), convertF(fAlphaParamDiff), convertF(fBetaParamDiff), hBwdBottomDesc, hBottomData, hTopDiffDesc, hTopDiff, hBottomDiffDesc, hBottomDiff, hBwdScaleBiasMeanVarDesc, hScaleData, hScaleDiff, hBiasDiff, (float)dfEps, hSaveMean, hSaveInvVar));
         }
 
         /// <summary>
@@ -3707,9 +3740,9 @@ namespace MyCaffe.common
         public void FreeDropoutDesc(long h)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_DROPOUTDESC, new double[] { h });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_DROPOUTDESC, m_param.AsDouble(h));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_DROPOUTDESC, new float[] { h });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_DROPOUTDESC, m_param.AsFloat(h));
         }
 
         /// <summary>
@@ -3723,9 +3756,9 @@ namespace MyCaffe.common
         public void SetDropoutDesc(long hCuDnn, long hDropoutDesc, double dfDropout, long hStates, long lSeed)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_DROPOUTDESC, new double[] { hCuDnn, hDropoutDesc, dfDropout, hStates, lSeed });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_DROPOUTDESC, m_param.AsDouble(hCuDnn, hDropoutDesc, dfDropout, hStates, lSeed));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_DROPOUTDESC, new float[] { hCuDnn, hDropoutDesc, (float)dfDropout, hStates, lSeed });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_DROPOUTDESC, m_param.AsFloat(hCuDnn, hDropoutDesc, (float)dfDropout, hStates, lSeed));
         }
 
         /// <summary>
@@ -3739,13 +3772,13 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_DROPOUT_INFO, new double[] { hCuDnn, hBottomDesc });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_DROPOUT_INFO, m_param.AsDouble(hCuDnn, hBottomDesc));
                 ulStateCount = (ulong)Math.Round(rg[0]/sizeof(double), 0, MidpointRounding.AwayFromZero);
                 ulReservedCount = (ulong)Math.Round(rg[1]/sizeof(double), 0, MidpointRounding.AwayFromZero);  
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_DROPOUT_INFO, new float[] { hCuDnn, hBottomDesc });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_DROPOUT_INFO, m_param.AsFloat(hCuDnn, hBottomDesc));
                 ulStateCount = (ulong)Math.Round(rg[0] / sizeof(float), 0, MidpointRounding.AwayFromZero);
                 ulReservedCount = (ulong)Math.Round(rg[1] / sizeof(float), 0, MidpointRounding.AwayFromZero);
             }
@@ -3764,9 +3797,9 @@ namespace MyCaffe.common
         public void DropoutForward(long hCuDnn, long hDropoutDesc, long hBottomDesc, long hBottomData, long hTopDesc, long hTopData, long hReserved)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FWD_DROPOUT, new double[] { hCuDnn, hDropoutDesc, hBottomDesc, hBottomData, hTopDesc, hTopData, hReserved });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FWD_DROPOUT, m_param.AsDouble(hCuDnn, hDropoutDesc, hBottomDesc, hBottomData, hTopDesc, hTopData, hReserved));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FWD_DROPOUT, new float[] { hCuDnn, hDropoutDesc, hBottomDesc, hBottomData, hTopDesc, hTopData, hReserved });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FWD_DROPOUT, m_param.AsFloat(hCuDnn, hDropoutDesc, hBottomDesc, hBottomData, hTopDesc, hTopData, hReserved));
         }
 
         /// <summary>
@@ -3782,9 +3815,9 @@ namespace MyCaffe.common
         public void DropoutBackward(long hCuDnn, long hDropoutDesc, long hTopDesc, long hTop, long hBottomDesc, long hBottom, long hReserved)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.BWD_DROPOUT, new double[] { hCuDnn, hDropoutDesc, hTopDesc, hTop, hBottomDesc, hBottom, hReserved });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.BWD_DROPOUT, m_param.AsDouble(hCuDnn, hDropoutDesc, hTopDesc, hTop, hBottomDesc, hBottom, hReserved));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.BWD_DROPOUT, new float[] { hCuDnn, hDropoutDesc, hTopDesc, hTop, hBottomDesc, hBottom, hReserved });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.BWD_DROPOUT, m_param.AsFloat(hCuDnn, hDropoutDesc, hTopDesc, hTop, hBottomDesc, hBottom, hReserved));
         }
 
         /// <summary>
@@ -3812,9 +3845,9 @@ namespace MyCaffe.common
         public void FreeLRNDesc(long h)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_LRNDESC, new double[] { h });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_LRNDESC, m_param.AsDouble(h));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_LRNDESC, new float[] { h });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_LRNDESC, m_param.AsFloat(h));
         }
 
         /// <summary>
@@ -3828,9 +3861,9 @@ namespace MyCaffe.common
         public void SetLRNDesc(long hHandle, uint nSize, double fAlpha, double fBeta, double fK)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_LRNDESC, new double[] { hHandle, nSize, fAlpha, fBeta, fK });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_LRNDESC, m_param.AsDouble(hHandle, nSize, fAlpha, fBeta, fK));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_LRNDESC, new float[] { hHandle, nSize, (float)fAlpha, (float)fBeta, (float)fK });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_LRNDESC, m_param.AsFloat(hHandle, nSize, (float)fAlpha, (float)fBeta, (float)fK));
         }
 
         /// <summary>
@@ -3847,9 +3880,9 @@ namespace MyCaffe.common
         public void LRNCrossChannelForward(long hCuDnn, long hNormDesc, T fAlpha, long hBottomDesc, long hBottomData, T fBeta, long hTopDesc, long hTopData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.LRN_CC_FWD, new double[] { hCuDnn, hNormDesc, convertD(fAlpha), hBottomDesc, hBottomData, convertD(fBeta), hTopDesc, hTopData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.LRN_CC_FWD, m_param.AsDouble(hCuDnn, hNormDesc, convertD(fAlpha), hBottomDesc, hBottomData, convertD(fBeta), hTopDesc, hTopData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.LRN_CC_FWD, new float[] { hCuDnn, hNormDesc, convertF(fAlpha), hBottomDesc, hBottomData, convertF(fBeta), hTopDesc, hTopData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.LRN_CC_FWD, m_param.AsFloat(hCuDnn, hNormDesc, convertF(fAlpha), hBottomDesc, hBottomData, convertF(fBeta), hTopDesc, hTopData));
         }
 
         /// <summary>
@@ -3870,9 +3903,9 @@ namespace MyCaffe.common
         public void LRNCrossChannelBackward(long hCuDnn, long hNormDesc, T fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, T fBeta, long hBottomDiffDesc, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.LRN_CC_BWD, new double[] { hCuDnn, hNormDesc, convertD(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertD(fBeta), hBottomDiffDesc, hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.LRN_CC_BWD, m_param.AsDouble(hCuDnn, hNormDesc, convertD(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertD(fBeta), hBottomDiffDesc, hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.LRN_CC_BWD, new float[] { hCuDnn, hNormDesc, convertF(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertF(fBeta), hBottomDiffDesc, hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.LRN_CC_BWD, m_param.AsFloat(hCuDnn, hNormDesc, convertF(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertF(fBeta), hBottomDiffDesc, hBottomDiff));
         }
 
         /// <summary>
@@ -3894,9 +3927,9 @@ namespace MyCaffe.common
         public void DivisiveNormalizationForward(long hCuDnn, long hNormDesc, T fAlpha, long hBottomDataDesc, long hBottomData, long hTemp1, long hTemp2, T fBeta, long hTopDataDesc, long hTopData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.LCN_CC_FWD, new double[] { hCuDnn, hNormDesc, convertD(fAlpha), hBottomDataDesc, hBottomData, hTemp1, hTemp2, convertD(fBeta), hTopDataDesc, hTopData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.LCN_CC_FWD, m_param.AsDouble(hCuDnn, hNormDesc, convertD(fAlpha), hBottomDataDesc, hBottomData, hTemp1, hTemp2, convertD(fBeta), hTopDataDesc, hTopData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.LCN_CC_FWD, new float[] { hCuDnn, hNormDesc, convertF(fAlpha), hBottomDataDesc, hBottomData, hTemp1, hTemp2, convertF(fBeta), hTopDataDesc, hTopData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.LCN_CC_FWD, m_param.AsFloat(hCuDnn, hNormDesc, convertF(fAlpha), hBottomDataDesc, hBottomData, hTemp1, hTemp2, convertF(fBeta), hTopDataDesc, hTopData));
         }
 
         /// <summary>
@@ -3919,9 +3952,9 @@ namespace MyCaffe.common
         public void DivisiveNormalizationBackward(long hCuDnn, long hNormDesc, T fAlpha, long hBottomDataDesc, long hBottomData, long hTopDiff, long hTemp1, long hTemp2, T fBeta, long hBottomDiffDesc, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.LCN_CC_BWD, new double[] { hCuDnn, hNormDesc, convertD(fAlpha), hBottomDataDesc, hBottomData, hTopDiff, hTemp1, hTemp2, convertD(fBeta), hBottomDiffDesc, hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.LCN_CC_BWD, m_param.AsDouble(hCuDnn, hNormDesc, convertD(fAlpha), hBottomDataDesc, hBottomData, hTopDiff, hTemp1, hTemp2, convertD(fBeta), hBottomDiffDesc, hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.LCN_CC_BWD, new float[] { hCuDnn, hNormDesc, convertF(fAlpha), hBottomDataDesc, hBottomData, hTopDiff, hTemp1, hTemp2, convertF(fBeta), hBottomDiffDesc, hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.LCN_CC_BWD, m_param.AsFloat(hCuDnn, hNormDesc, convertF(fAlpha), hBottomDataDesc, hBottomData, hTopDiff, hTemp1, hTemp2, convertF(fBeta), hBottomDiffDesc, hBottomDiff));
         }
 
         /// <summary>
@@ -3937,9 +3970,9 @@ namespace MyCaffe.common
         public void TanhForward(long hCuDnn, T fAlpha, long hBottomDataDesc, long hBottomData, T fBeta, long hTopDataDesc, long hTopData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.TANH_FWD, new double[] { hCuDnn, convertD(fAlpha), hBottomDataDesc, hBottomData, convertD(fBeta), hTopDataDesc, hTopData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.TANH_FWD, m_param.AsDouble(hCuDnn, convertD(fAlpha), hBottomDataDesc, hBottomData, convertD(fBeta), hTopDataDesc, hTopData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.TANH_FWD, new float[] { hCuDnn, convertF(fAlpha), hBottomDataDesc, hBottomData, convertF(fBeta), hTopDataDesc, hTopData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.TANH_FWD, m_param.AsFloat(hCuDnn, convertF(fAlpha), hBottomDataDesc, hBottomData, convertF(fBeta), hTopDataDesc, hTopData));
         }
 
         /// <summary>
@@ -3959,9 +3992,9 @@ namespace MyCaffe.common
         public void TanhBackward(long hCuDnn, T fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, T fBeta, long hBottomDiffDesc, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.TANH_BWD, new double[] { hCuDnn, convertD(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertD(fBeta), hBottomDiffDesc, hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.TANH_BWD, m_param.AsDouble(hCuDnn, convertD(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertD(fBeta), hBottomDiffDesc, hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.TANH_BWD, new float[] { hCuDnn, convertF(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertF(fBeta), hBottomDiffDesc, hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.TANH_BWD, m_param.AsFloat(hCuDnn, convertF(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertF(fBeta), hBottomDiffDesc, hBottomDiff));
         }
 
         /// <summary>
@@ -3977,9 +4010,9 @@ namespace MyCaffe.common
         public void EluForward(long hCuDnn, T fAlpha, long hBottomDataDesc, long hBottomData, T fBeta, long hTopDataDesc, long hTopData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.ELU_FWD, new double[] { hCuDnn, convertD(fAlpha), hBottomDataDesc, hBottomData, convertD(fBeta), hTopDataDesc, hTopData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.ELU_FWD, m_param.AsDouble(hCuDnn, convertD(fAlpha), hBottomDataDesc, hBottomData, convertD(fBeta), hTopDataDesc, hTopData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.ELU_FWD, new float[] { hCuDnn, convertF(fAlpha), hBottomDataDesc, hBottomData, convertF(fBeta), hTopDataDesc, hTopData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.ELU_FWD, m_param.AsFloat(hCuDnn, convertF(fAlpha), hBottomDataDesc, hBottomData, convertF(fBeta), hTopDataDesc, hTopData));
         }
 
         /// <summary>
@@ -3999,9 +4032,9 @@ namespace MyCaffe.common
         public void EluBackward(long hCuDnn, T fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, T fBeta, long hBottomDiffDesc, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.ELU_BWD, new double[] { hCuDnn, convertD(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertD(fBeta), hBottomDiffDesc, hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.ELU_BWD, m_param.AsDouble(hCuDnn, convertD(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertD(fBeta), hBottomDiffDesc, hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.ELU_BWD, new float[] { hCuDnn, convertF(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertF(fBeta), hBottomDiffDesc, hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.ELU_BWD, m_param.AsFloat(hCuDnn, convertF(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertF(fBeta), hBottomDiffDesc, hBottomDiff));
         }
 
         /// <summary>
@@ -4017,9 +4050,9 @@ namespace MyCaffe.common
         public void SigmoidForward(long hCuDnn, T fAlpha, long hBottomDataDesc, long hBottomData, T fBeta, long hTopDataDesc, long hTopData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SIGMOID_FWD, new double[] { hCuDnn, convertD(fAlpha), hBottomDataDesc, hBottomData, convertD(fBeta), hTopDataDesc, hTopData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SIGMOID_FWD, m_param.AsDouble(hCuDnn, convertD(fAlpha), hBottomDataDesc, hBottomData, convertD(fBeta), hTopDataDesc, hTopData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SIGMOID_FWD, new float[] { hCuDnn, convertF(fAlpha), hBottomDataDesc, hBottomData, convertF(fBeta), hTopDataDesc, hTopData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SIGMOID_FWD, m_param.AsFloat(hCuDnn, convertF(fAlpha), hBottomDataDesc, hBottomData, convertF(fBeta), hTopDataDesc, hTopData));
         }
 
         /// <summary>
@@ -4039,9 +4072,9 @@ namespace MyCaffe.common
         public void SigmoidBackward(long hCuDnn, T fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, T fBeta, long hBottomDiffDesc, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SIGMOID_BWD, new double[] { hCuDnn, convertD(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertD(fBeta), hBottomDiffDesc, hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SIGMOID_BWD, m_param.AsDouble(hCuDnn, convertD(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertD(fBeta), hBottomDiffDesc, hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SIGMOID_BWD, new float[] { hCuDnn, convertF(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertF(fBeta), hBottomDiffDesc, hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SIGMOID_BWD, m_param.AsFloat(hCuDnn, convertF(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertF(fBeta), hBottomDiffDesc, hBottomDiff));
         }
 
         /// <summary>
@@ -4062,9 +4095,9 @@ namespace MyCaffe.common
         public void ReLUForward(long hCuDnn, T fAlpha, long hBottomDataDesc, long hBottomData, T fBeta, long hTopDataDesc, long hTopData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.RELU_FWD, new double[] { hCuDnn, convertD(fAlpha), hBottomDataDesc, hBottomData, convertD(fBeta), hTopDataDesc, hTopData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.RELU_FWD, m_param.AsDouble(hCuDnn, convertD(fAlpha), hBottomDataDesc, hBottomData, convertD(fBeta), hTopDataDesc, hTopData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.RELU_FWD, new float[] { hCuDnn, convertF(fAlpha), hBottomDataDesc, hBottomData, convertF(fBeta), hTopDataDesc, hTopData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.RELU_FWD, m_param.AsFloat(hCuDnn, convertF(fAlpha), hBottomDataDesc, hBottomData, convertF(fBeta), hTopDataDesc, hTopData));
         }
 
         /// <summary>
@@ -4084,9 +4117,9 @@ namespace MyCaffe.common
         public void ReLUBackward(long hCuDnn, T fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, T fBeta, long hBottomDiffDesc, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.RELU_BWD, new double[] { hCuDnn, convertD(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertD(fBeta), hBottomDiffDesc, hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.RELU_BWD, m_param.AsDouble(hCuDnn, convertD(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertD(fBeta), hBottomDiffDesc, hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.RELU_BWD, new float[] { hCuDnn, convertF(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertF(fBeta), hBottomDiffDesc, hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.RELU_BWD, m_param.AsFloat(hCuDnn, convertF(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertF(fBeta), hBottomDiffDesc, hBottomDiff));
         }
 
         /// <summary>
@@ -4102,9 +4135,9 @@ namespace MyCaffe.common
         public void SoftmaxForward(long hCuDnn, T fAlpha, long hBottomDataDesc, long hBottomData, T fBeta, long hTopDataDesc, long hTopData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SOFTMAX_FWD, new double[] { hCuDnn, convertD(fAlpha), hBottomDataDesc, hBottomData, convertD(fBeta), hTopDataDesc, hTopData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SOFTMAX_FWD, m_param.AsDouble(hCuDnn, convertD(fAlpha), hBottomDataDesc, hBottomData, convertD(fBeta), hTopDataDesc, hTopData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SOFTMAX_FWD, new float[] { hCuDnn, convertF(fAlpha), hBottomDataDesc, hBottomData, convertF(fBeta), hTopDataDesc, hTopData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SOFTMAX_FWD, m_param.AsFloat(hCuDnn, convertF(fAlpha), hBottomDataDesc, hBottomData, convertF(fBeta), hTopDataDesc, hTopData));
         }
 
         /// <summary>
@@ -4122,9 +4155,9 @@ namespace MyCaffe.common
         public void SoftmaxBackward(long hCuDnn, T fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, T fBeta, long hBottomDiffDesc, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SOFTMAX_BWD, new double[] { hCuDnn, convertD(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, convertD(fBeta), hBottomDiffDesc, hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SOFTMAX_BWD, m_param.AsDouble(hCuDnn, convertD(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, convertD(fBeta), hBottomDiffDesc, hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SOFTMAX_BWD, new float[] { hCuDnn, convertF(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, convertF(fBeta), hBottomDiffDesc, hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SOFTMAX_BWD, m_param.AsFloat(hCuDnn, convertF(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, convertF(fBeta), hBottomDiffDesc, hBottomDiff));
         }
 
         /// <summary>
@@ -4156,9 +4189,9 @@ namespace MyCaffe.common
             int nFn = (m_bEnableRnnExtendedVersion) ? (int)CUDAFN.FREE_RNN_DATA_DESCEX : (int)CUDAFN.FREE_RNN_DATA_DESC;
 
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, nFn, new double[] { h });
+                m_cuda.RunDouble((int)m_hKernel, nFn, m_param.AsDouble(h));
             else
-                m_cuda.RunFloat((int)m_hKernel, nFn, new float[] { h });
+                m_cuda.RunFloat((int)m_hKernel, nFn, m_param.AsFloat(h));
         }
 
         /// <summary>
@@ -4232,9 +4265,9 @@ namespace MyCaffe.common
         public void FreeRnnDesc(long h)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_RNN_DESC, new double[] { h });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_RNN_DESC, m_param.AsDouble(h));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_RNN_DESC, new float[] { h });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_RNN_DESC, m_param.AsFloat(h));
         }
 
         /// <summary>
@@ -4250,9 +4283,9 @@ namespace MyCaffe.common
         public void SetRnnDesc(long hCuDnn, long hRnnDesc, int nHiddenCount, int nNumLayers, long hDropoutDesc, RNN_MODE mode, bool bUseTensorCores)
         {           
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_RNN_DESC, new double[] { hCuDnn, hRnnDesc, nHiddenCount, nNumLayers, hDropoutDesc, (int)mode, (bUseTensorCores) ? 1 : 0 });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_RNN_DESC, m_param.AsDouble(hCuDnn, hRnnDesc, nHiddenCount, nNumLayers, hDropoutDesc, (int)mode, (bUseTensorCores) ? 1 : 0));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_RNN_DESC, new float[] { hCuDnn, hRnnDesc, nHiddenCount, nNumLayers, hDropoutDesc, (int)mode, (bUseTensorCores) ? 1 : 0 });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_RNN_DESC, m_param.AsFloat(hCuDnn, hRnnDesc, nHiddenCount, nNumLayers, hDropoutDesc, (int)mode, (bUseTensorCores) ? 1 : 0));
         }
 
         /// <summary>
@@ -4266,12 +4299,12 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_RNN_PARAMCOUNT, new double[] { hCuDnn, hRnnDesc, hXDesc, (m_bEnableRnnExtendedVersion) ? 1 : 0 });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_RNN_PARAMCOUNT, m_param.AsDouble(hCuDnn, hRnnDesc, hXDesc, (m_bEnableRnnExtendedVersion) ? 1 : 0));
                 return (int)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_RNN_PARAMCOUNT, new float[] { hCuDnn, hRnnDesc, hXDesc, (m_bEnableRnnExtendedVersion) ? 1 : 0 });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_RNN_PARAMCOUNT, m_param.AsFloat(hCuDnn, hRnnDesc, hXDesc, (m_bEnableRnnExtendedVersion) ? 1 : 0));
                 return (int)rg[0];
             }
         }
@@ -4288,15 +4321,13 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                List<double> rgArg = new List<double>() { hCuDnn, hRnnDesc, (m_bEnableRnnExtendedVersion) ? 1 : 0, hXDesc };
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_RNN_WORKSPACECOUNT, rgArg.ToArray());
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_RNN_WORKSPACECOUNT, m_param.AsDouble(hCuDnn, hRnnDesc, (m_bEnableRnnExtendedVersion) ? 1 : 0, hXDesc));
                 nReservedCount = (int)rg[1];
                 return (int)rg[0];
             }
             else
             {
-                List<float> rgArg = new List<float>() { hCuDnn, hRnnDesc, (m_bEnableRnnExtendedVersion) ? 1 : 0, hXDesc };
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_RNN_WORKSPACECOUNT, rgArg.ToArray());
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_RNN_WORKSPACECOUNT, m_param.AsFloat(hCuDnn, hRnnDesc, (m_bEnableRnnExtendedVersion) ? 1 : 0, hXDesc));
                 nReservedCount = (int)rg[1];
                 return (int)rg[0];
             }
@@ -4320,7 +4351,7 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_RNN_LINLAYERPARAMS, new double[] { hCuDnn, hRnnDesc, nLayer, hXDesc, hWtDesc, hWtData, nLinLayer, (m_bEnableRnnExtendedVersion) ? 1 : 0 });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_RNN_LINLAYERPARAMS, m_param.AsDouble(hCuDnn, hRnnDesc, nLayer, hXDesc, hWtDesc, hWtData, nLinLayer, (m_bEnableRnnExtendedVersion) ? 1 : 0));
                 nWtCount = (int)rg[0];
                 hWt = (long)rg[1];
                 nBiasCount = (int)rg[2];
@@ -4328,7 +4359,7 @@ namespace MyCaffe.common
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_RNN_LINLAYERPARAMS, new float[] { hCuDnn, hRnnDesc, nLayer, hXDesc, hWtDesc, hWtData, nLinLayer, (m_bEnableRnnExtendedVersion) ? 1 : 0 });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_RNN_LINLAYERPARAMS, m_param.AsFloat(hCuDnn, hRnnDesc, nLayer, hXDesc, hWtDesc, hWtData, nLinLayer, (m_bEnableRnnExtendedVersion) ? 1 : 0));
                 nWtCount = (int)rg[0];
                 hWt = (long)rg[1];
                 nBiasCount = (int)rg[2];
@@ -4706,12 +4737,12 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_PCA, new double[] { nMaxIterations, nM, nN, nK, hData, hScoresResult, hLoadsResult, hResiduals, hEigenvalues });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_PCA, m_param.AsDouble(nMaxIterations, nM, nN, nK, hData, hScoresResult, hLoadsResult, hResiduals, hEigenvalues));
                 return (long)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_PCA, new float[] { nMaxIterations, nM, nN, nK, hData, hScoresResult, hLoadsResult, hResiduals, hEigenvalues });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_PCA, m_param.AsFloat(nMaxIterations, nM, nN, nK, hData, hScoresResult, hLoadsResult, hResiduals, hEigenvalues));
                 return (long)rg[0];
             }
         }
@@ -4733,14 +4764,14 @@ namespace MyCaffe.common
 
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_RUN_PCA, new double[] { hPCA, nSteps });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_RUN_PCA, m_param.AsDouble(hPCA, nSteps));
                 bDone = (rg[0] == 1.0) ? true : false;
                 nCurrentIteration = (int)rg[1];
                 nCurrentK = (int)rg[2];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_RUN_PCA, new float[] { hPCA, nSteps });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_RUN_PCA, m_param.AsFloat(hPCA, nSteps));
                 bDone = (rg[0] == 1.0f) ? true : false;
                 nCurrentIteration = (int)rg[1];
                 nCurrentK = (int)rg[2];
@@ -4759,9 +4790,9 @@ namespace MyCaffe.common
         public void FreePCA(long hPCA)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_FREE_PCA, new double[] { hPCA });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_FREE_PCA, m_param.AsDouble(hPCA));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_FREE_PCA, new float[] { hPCA });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_FREE_PCA, m_param.AsFloat(hPCA));
         }
 
         /// <summary>
@@ -4888,9 +4919,9 @@ namespace MyCaffe.common
         public void SetupSSD(long hSSD, int nNum, int nNumPriors, int nNumGt)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SETUP_SSD, new double[] { hSSD, nNum, nNumPriors, nNumGt });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SETUP_SSD, m_param.AsDouble(hSSD, nNum, nNumPriors, nNumGt));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SETUP_SSD, new float[] { hSSD, nNum, nNumPriors, nNumGt });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SETUP_SSD, m_param.AsFloat(hSSD, nNum, nNumPriors, nNumGt));
         }
 
         /// <summary>
@@ -4900,9 +4931,9 @@ namespace MyCaffe.common
         public void FreeSSD(long hSSD)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_FREE_SSD, new double[] { hSSD });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_FREE_SSD, m_param.AsDouble(hSSD));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_FREE_SSD, new float[] { hSSD });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_FREE_SSD, m_param.AsFloat(hSSD));
         }
 
         /// <summary>
@@ -4930,7 +4961,7 @@ namespace MyCaffe.common
 
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SSD_FWD_MULTIBOXLOSS, new double[] { hSSD, nLocDataCount, hLocGpuData, nConfDataCount, hConfGpuData, nPriorDataCount, hPriorGpuData, nGtDataCount, hGtGpuData });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SSD_FWD_MULTIBOXLOSS, m_param.AsDouble(hSSD, nLocDataCount, hLocGpuData, nConfDataCount, hConfGpuData, nPriorDataCount, hPriorGpuData, nGtDataCount, hGtGpuData));
                 nMatchCount = (int)rg[nIdx];
                 nIdx++;
                 nNumNegs = (int)rg[nIdx];
@@ -4987,7 +5018,7 @@ namespace MyCaffe.common
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SSD_FWD_MULTIBOXLOSS, new float[] { hSSD, nLocDataCount, hLocGpuData, nConfDataCount, hConfGpuData, nPriorDataCount, hPriorGpuData, nGtDataCount, hGtGpuData });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SSD_FWD_MULTIBOXLOSS, m_param.AsFloat(hSSD, nLocDataCount, hLocGpuData, nConfDataCount, hConfGpuData, nPriorDataCount, hPriorGpuData, nGtDataCount, hGtGpuData));
                 nMatchCount = (int)rg[nIdx];
                 nIdx++;
                 nNumNegs = (int)rg[nIdx];
@@ -5057,9 +5088,9 @@ namespace MyCaffe.common
         public void SsdEncodeLocPrediction(long hSSD, int nLocPredCount, long hLocPred, int nLocGtCount, long hLocGt)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SSD_ENCODE_LOCPRED, new double[] { hSSD, nLocPredCount, hLocPred, nLocGtCount, hLocGt });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SSD_ENCODE_LOCPRED, m_param.AsDouble(hSSD, nLocPredCount, hLocPred, nLocGtCount, hLocGt));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SSD_ENCODE_LOCPRED, new float[] { hSSD, nLocPredCount, hLocPred, nLocGtCount, hLocGt });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SSD_ENCODE_LOCPRED, m_param.AsFloat(hSSD, nLocPredCount, hLocPred, nLocGtCount, hLocGt));
         }
 
         /// <summary>
@@ -5073,9 +5104,9 @@ namespace MyCaffe.common
         public void SsdEncodeConfPrediction(long hSSD, int nConfPredCount, long hConfPred, int nConfGtCount, long hConfGt)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SSD_ENCODE_CONFPRED, new double[] { hSSD, nConfPredCount, hConfPred, nConfGtCount, hConfGt });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SSD_ENCODE_CONFPRED, m_param.AsDouble(hSSD, nConfPredCount, hConfPred, nConfGtCount, hConfGt));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SSD_ENCODE_CONFPRED, new float[] { hSSD, nConfPredCount, hConfPred, nConfGtCount, hConfGt });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SSD_ENCODE_CONFPRED, m_param.AsFloat(hSSD, nConfPredCount, hConfPred, nConfGtCount, hConfGt));
         }
 
         #endregion
@@ -5121,11 +5152,9 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                List<double> rg = new List<double>() { nCount, hHandle, (double)Convert.ChangeType(fVal, typeof(double)), nIdx, nXOff };
-
                 if (m_rgGhostMemory == null)
                 {
-                    m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SET, rg.ToArray());
+                    m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SET, m_param.AsDouble(nCount, hHandle, (double)Convert.ChangeType(fVal, typeof(double)), nIdx, nXOff));
                 }
                 else
                 {
@@ -5137,11 +5166,9 @@ namespace MyCaffe.common
             }
             else
             {
-                List<float> rg = new List<float>() { nCount, hHandle, (float)Convert.ChangeType(fVal, typeof(float)), nIdx, nXOff };
-
                 if (m_rgGhostMemory == null)
                 {
-                    m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SET, rg.ToArray());
+                    m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SET, m_param.AsFloat(nCount, hHandle, (float)Convert.ChangeType(fVal, typeof(float)), nIdx, nXOff));
                 }
                 else
                 {
@@ -5187,9 +5214,9 @@ namespace MyCaffe.common
         public T[] get(int nCount, long hHandle, int nIdx = -1)
         {
             if (m_dt == DataType.DOUBLE)
-                return convert(m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GET, new double[] { nCount, hHandle, nIdx }));
+                return convert(m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GET, m_param.AsDouble(nCount, hHandle, nIdx)));
             else
-                return convert(m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GET, new float[] { nCount, hHandle, nIdx }));
+                return convert(m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GET, m_param.AsFloat(nCount, hHandle, nIdx)));
         }
 
         /// <summary>
@@ -5218,9 +5245,9 @@ namespace MyCaffe.common
                 nDstHalfSizeOverride = (bDstHalfSizeOverride.Value) ? 1 : 0;
 
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COPY, new double[] { nCount, hSrc, hDst, nSrcOffset, nDstOffset, hStream, nSrcHalfSizeOverride, nDstHalfSizeOverride });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COPY, m_param.AsDouble(nCount, hSrc, hDst, nSrcOffset, nDstOffset, hStream, nSrcHalfSizeOverride, nDstHalfSizeOverride));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY, new float[] { nCount, hSrc, hDst, nSrcOffset, nDstOffset, hStream, nSrcHalfSizeOverride, nDstHalfSizeOverride });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY, m_param.AsFloat(nCount, hSrc, hDst, nSrcOffset, nDstOffset, hStream, nSrcHalfSizeOverride, nDstHalfSizeOverride));
         }
 
         /// <summary>
@@ -5237,9 +5264,9 @@ namespace MyCaffe.common
         public void copy(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, long hDst, long hSimilar, bool bInvert = false)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COPY_SIM, new double[] { nCount, nNum, nDim, hSrc1, hSrc2, hDst, hSimilar, (bInvert) ? 1 : 0 });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COPY_SIM, m_param.AsDouble(nCount, nNum, nDim, hSrc1, hSrc2, hDst, hSimilar, (bInvert) ? 1 : 0));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY_SIM, new float[] { nCount, nNum, nDim, hSrc1, hSrc2, hDst, hSimilar, (bInvert) ? 1 : 0 });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY_SIM, m_param.AsFloat(nCount, nNum, nDim, hSrc1, hSrc2, hDst, hSimilar, (bInvert) ? 1 : 0));
         }
 
         /// <summary>
@@ -5264,9 +5291,9 @@ namespace MyCaffe.common
         public void copy_batch(int nCount, int nNum, int nDim, long hSrcData, long hSrcLbl, int nDstCount, long hDstCache, long hWorkDevData, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, long hWorkDataHost)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COPY_BATCH, new double[] { nCount, nNum, nDim, hSrcData, hSrcLbl, nDstCount, hDstCache, hWorkDevData, nLabelStart, nLabelCount, nCacheSize, hCacheHostCursors, hWorkDataHost });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COPY_BATCH, m_param.AsDouble(nCount, nNum, nDim, hSrcData, hSrcLbl, nDstCount, hDstCache, hWorkDevData, nLabelStart, nLabelCount, nCacheSize, hCacheHostCursors, hWorkDataHost));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY_BATCH, new float[] { nCount, nNum, nDim, hSrcData, hSrcLbl, nDstCount, hDstCache, hWorkDevData, nLabelStart, nLabelCount, nCacheSize, hCacheHostCursors, hWorkDataHost });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY_BATCH, m_param.AsFloat(nCount, nNum, nDim, hSrcData, hSrcLbl, nDstCount, hDstCache, hWorkDevData, nLabelStart, nLabelCount, nCacheSize, hCacheHostCursors, hWorkDataHost));
         }
 
         /// <summary>
@@ -5359,9 +5386,9 @@ namespace MyCaffe.common
         public void copy_expand(int n, int nNum, int nDim, long hX, long hA)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COPY_EXPAND, new double[] { n, nNum, nDim, hX, hA });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COPY_EXPAND, m_param.AsDouble(n, nNum, nDim, hX, hA));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY_EXPAND, new float[] { n, nNum, nDim, hX, hA });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY_EXPAND, m_param.AsFloat(n, nNum, nDim, hX, hA));
         }
 
         /// <summary>
@@ -5376,9 +5403,9 @@ namespace MyCaffe.common
         public void fill(int n, int nDim, long hSrc, int nSrcOff, int nCount, long hDst)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COPY_FILL, new double[] { n, nDim, hSrc, nSrcOff, nCount, hDst });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COPY_FILL, m_param.AsDouble(n, nDim, hSrc, nSrcOff, nCount, hDst));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY_FILL, new float[] { n, nDim, hSrc, nSrcOff, nCount, hDst });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY_FILL, m_param.AsFloat(n, nDim, hSrc, nSrcOff, nCount, hDst));
         }
 
         /// <summary>
@@ -5389,9 +5416,9 @@ namespace MyCaffe.common
         public void sort(int nCount, long hY)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SORT, new double[] { nCount, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SORT, m_param.AsDouble(nCount, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SORT, new float[] { nCount, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SORT, m_param.AsFloat(nCount, hY));
         }
 
         /// <summary>
@@ -5458,9 +5485,9 @@ namespace MyCaffe.common
         public void gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, long hA, long hB, T fBeta, long hC, int nAOffset = 0, int nBOffset = 0, int nCOffset = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GEMM, new double[] { (bTransA) ? 1.0 : 0.0, (bTransB) ? 1.0 : 0.0, m, n, k, convertD(fAlpha), hA, hB, convertD(fBeta), hC, nAOffset, nBOffset, nCOffset });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GEMM, m_param.AsDouble((bTransA) ? 1.0 : 0.0, (bTransB) ? 1.0 : 0.0, m, n, k, convertD(fAlpha), hA, hB, convertD(fBeta), hC, nAOffset, nBOffset, nCOffset));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GEMM, new float[] { (bTransA) ? 1.0f : 0.0f, (bTransB) ? 1.0f : 0.0f, m, n, k, convertF(fAlpha), hA, hB, convertF(fBeta), hC, nAOffset, nBOffset, nCOffset });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GEMM, m_param.AsFloat((bTransA) ? 1.0f : 0.0f, (bTransB) ? 1.0f : 0.0f, m, n, k, convertF(fAlpha), hA, hB, convertF(fBeta), hC, nAOffset, nBOffset, nCOffset));
         }
 
         /// <summary>
@@ -5485,9 +5512,9 @@ namespace MyCaffe.common
         public void gemm(bool bTransA, bool bTransB, int m, int n, int k, double fAlpha, long hA, long hB, double fBeta, long hC, uint lda, uint ldb, uint ldc)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GEMM2, new double[] { (bTransA) ? 1.0 : 0.0, (bTransB) ? 1.0 : 0.0, m, n, k, fAlpha, hA, hB, fBeta, hC, lda, ldb, ldc });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GEMM2, m_param.AsDouble((bTransA) ? 1.0 : 0.0, (bTransB) ? 1.0 : 0.0, m, n, k, fAlpha, hA, hB, fBeta, hC, lda, ldb, ldc));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GEMM2, new float[] { (bTransA) ? 1.0f : 0.0f, (bTransB) ? 1.0f : 0.0f, m, n, k, (float)fAlpha, hA, hB, (float)fBeta, hC, lda, ldb, ldc });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GEMM2, m_param.AsFloat((bTransA) ? 1.0f : 0.0f, (bTransB) ? 1.0f : 0.0f, m, n, k, (float)fAlpha, hA, hB, (float)fBeta, hC, lda, ldb, ldc));
         }
 
         /// <summary>
@@ -5548,9 +5575,9 @@ namespace MyCaffe.common
         public void gemv(bool bTransA, int m, int n, T fAlpha, long hA, long hX, T fBeta, long hY, int nAOffset = 0, int nXOffset = 0, int nYOffset = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GEMV, new double[] { (bTransA) ? 1.0 : 0.0, m, n, convertD(fAlpha), hA, hX, convertD(fBeta), hY, nAOffset, nXOffset, nYOffset });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GEMV, m_param.AsDouble((bTransA) ? 1.0 : 0.0, m, n, convertD(fAlpha), hA, hX, convertD(fBeta), hY, nAOffset, nXOffset, nYOffset));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GEMV, new float[] { (bTransA) ? 1.0f : 0.0f, m, n, convertF(fAlpha), hA, hX, convertF(fBeta), hY, nAOffset, nXOffset, nYOffset });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GEMV, m_param.AsFloat((bTransA) ? 1.0f : 0.0f, m, n, convertF(fAlpha), hA, hX, convertF(fBeta), hY, nAOffset, nXOffset, nYOffset));
         }
 
         /// <summary>
@@ -5602,9 +5629,9 @@ namespace MyCaffe.common
         public void ger(int m, int n, T fAlpha, long hX, long hY, long hA)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GER, new double[] { m, n, convertD(fAlpha), hX, hY, hA });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GER, m_param.AsDouble(m, n, convertD(fAlpha), hX, hY, hA));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GER, new float[] { m, n, convertF(fAlpha), hX, hY, hA });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GER, m_param.AsFloat(m, n, convertF(fAlpha), hX, hY, hA));
         }
 
         /// <summary>
@@ -5652,9 +5679,9 @@ namespace MyCaffe.common
         public void axpy(int n, T fAlpha, long hX, long hY, int nXOff = 0, int nYOff = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_AXPY, new double[] { n, convertD(fAlpha), hX, hY, nXOff, nYOff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_AXPY, m_param.AsDouble(n, convertD(fAlpha), hX, hY, nXOff, nYOff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_AXPY, new float[] { n, convertF(fAlpha), hX, hY, nXOff, nYOff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_AXPY, m_param.AsFloat(n, convertF(fAlpha), hX, hY, nXOff, nYOff));
         }
 
         /// <summary>
@@ -5705,9 +5732,9 @@ namespace MyCaffe.common
         public void axpby(int n, T fAlpha, long hX, T fBeta, long hY)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_AXPBY, new double[] { n, convertD(fAlpha), hX, convertD(fBeta), hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_AXPBY, m_param.AsDouble(n, convertD(fAlpha), hX, convertD(fBeta), hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_AXPBY, new float[] { n, convertF(fAlpha), hX, convertF(fBeta), hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_AXPBY, m_param.AsFloat(n, convertF(fAlpha), hX, convertF(fBeta), hY));
         }
 
         /// <summary>
@@ -5726,9 +5753,9 @@ namespace MyCaffe.common
         public void mulbsx(int n, long hA, int nAOff, long hX, int nXOff, int nC, int nSpatialDim, bool bTranspose, long hB, int nBOff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MULBSX, new double[] { n, hA, nAOff, hX, nXOff, nC, nSpatialDim, (bTranspose) ? 1 : 0, hB, nBOff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MULBSX, m_param.AsDouble(n, hA, nAOff, hX, nXOff, nC, nSpatialDim, (bTranspose) ? 1 : 0, hB, nBOff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MULBSX, new float[] { n, hA, nAOff, hX, nXOff, nC, nSpatialDim, (bTranspose) ? 1 : 0, hB, nBOff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MULBSX, m_param.AsFloat(n, hA, nAOff, hX, nXOff, nC, nSpatialDim, (bTranspose) ? 1 : 0, hB, nBOff));
         }
 
         /// <summary>
@@ -5747,9 +5774,9 @@ namespace MyCaffe.common
         public void divbsx(int n, long hA, int nAOff, long hX, int nXOff, int nC, int nSpatialDim, bool bTranspose, long hB, int nBOff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_DIVBSX, new double[] { n, hA, nAOff, hX, nXOff, nC, nSpatialDim, (bTranspose) ? 1 : 0, hB, nBOff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_DIVBSX, m_param.AsDouble(n, hA, nAOff, hX, nXOff, nC, nSpatialDim, (bTranspose) ? 1 : 0, hB, nBOff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_DIVBSX, new float[] { n, hA, nAOff, hX, nXOff, nC, nSpatialDim, (bTranspose) ? 1 : 0, hB, nBOff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_DIVBSX, m_param.AsFloat(n, hA, nAOff, hX, nXOff, nC, nSpatialDim, (bTranspose) ? 1 : 0, hB, nBOff));
         }
 
         /// <summary>
@@ -5763,7 +5790,7 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SET_BOUNDS, new double[] { n, dfMin, dfMax, hX });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SET_BOUNDS, m_param.AsDouble(n, dfMin, dfMax, hX));
             }
             else
             {
@@ -5780,7 +5807,7 @@ namespace MyCaffe.common
                 else if (dfMin < -float.MaxValue)
                     fMax = -float.MaxValue;
 
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SET_BOUNDS, new float[] { n, fMin, fMax, hX });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SET_BOUNDS, m_param.AsFloat(n, fMin, fMax, hX));
             }
         }
 
@@ -5827,9 +5854,9 @@ namespace MyCaffe.common
         public void scal(int n, T fAlpha, long hX, int nXOff = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SCAL, new double[] { n, convertD(fAlpha), hX, nXOff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SCAL, m_param.AsDouble(n, convertD(fAlpha), hX, nXOff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SCAL, new float[] { n, convertF(fAlpha), hX, nXOff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SCAL, m_param.AsFloat(n, convertF(fAlpha), hX, nXOff));
         }
 
         /// <summary>
@@ -5878,12 +5905,12 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_DOT, new double[] { n, hX, hY, nXOff, nYOff });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_DOT, m_param.AsDouble(n, hX, hY, nXOff, nYOff));
                 return (T)Convert.ChangeType(rg[0], typeof(T));
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_DOT, new float[] { n, hX, hY, nXOff, nYOff });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_DOT, m_param.AsFloat(n, hX, hY, nXOff, nYOff));
                 return (T)Convert.ChangeType(rg[0], typeof(T));
             }
         }
@@ -5932,12 +5959,12 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ASUM, new double[] { n, hX, nXOff });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ASUM, m_param.AsDouble(n, hX, nXOff));
                 return (T)Convert.ChangeType(rg[0], typeof(T));
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ASUM, new float[] { n, hX, nXOff });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ASUM, m_param.AsFloat(n, hX, nXOff));
                 return (T)Convert.ChangeType(rg[0], typeof(T));
             }
         }
@@ -5987,9 +6014,9 @@ namespace MyCaffe.common
         public void scale(int n, T fAlpha, long hX, long hY, int nXOff = 0, int nYOff = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SCALE, new double[] { n, convertD(fAlpha), hX, hY, nXOff, nYOff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SCALE, m_param.AsDouble(n, convertD(fAlpha), hX, hY, nXOff, nYOff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SCALE, new float[] { n, convertF(fAlpha), hX, hY, nXOff, nYOff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SCALE, m_param.AsFloat(n, convertF(fAlpha), hX, hY, nXOff, nYOff));
         }
 
         /// <summary>
@@ -6003,9 +6030,9 @@ namespace MyCaffe.common
         public void scale_to_range(int n, long hX, long hY, double fMin, double fMax)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SCALE_TO_RANGE, new double[] { n, hX, hY, fMin, fMax });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SCALE_TO_RANGE, m_param.AsDouble(n, hX, hY, fMin, fMax));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SCALE_TO_RANGE, new float[] { n, hX, hY, (float)fMin, (float)fMax });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SCALE_TO_RANGE, m_param.AsFloat(n, hX, hY, (float)fMin, (float)fMax));
         }
 
         /// <summary>
@@ -6049,9 +6076,9 @@ namespace MyCaffe.common
         public void add_scalar(int n, T fAlpha, long hY, int nYOff = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ADD_SCALAR, new double[] { n, convertD(fAlpha), hY, nYOff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ADD_SCALAR, m_param.AsDouble(n, convertD(fAlpha), hY, nYOff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ADD_SCALAR, new float[] { n, convertF(fAlpha), hY, nYOff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ADD_SCALAR, m_param.AsFloat(n, convertF(fAlpha), hY, nYOff));
         }
 
         /// <summary>
@@ -6067,9 +6094,9 @@ namespace MyCaffe.common
         public void add(int n, long hA, long hB, long hY)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ADD, new double[] { n, hA, hB, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ADD, m_param.AsDouble(n, hA, hB, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ADD, new float[] { n, hA, hB, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ADD, m_param.AsFloat(n, hA, hB, hY));
         }
 
         /// <summary>
@@ -6086,9 +6113,9 @@ namespace MyCaffe.common
         public void add(int n, long hA, long hB, long hY, double dfAlpha)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ADD, new double[] { n, hA, hB, hY, dfAlpha });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ADD, m_param.AsDouble(n, hA, hB, hY, dfAlpha));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ADD, new float[] { n, hA, hB, hY, (float)dfAlpha });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ADD, m_param.AsFloat(n, hA, hB, hY, (float)dfAlpha));
         }
 
         /// <summary>
@@ -6105,9 +6132,9 @@ namespace MyCaffe.common
         public void add(int n, long hA, long hB, long hY, float fAlpha)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ADD, new double[] { n, hA, hB, hY, fAlpha });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ADD, m_param.AsDouble(n, hA, hB, hY, fAlpha));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ADD, new float[] { n, hA, hB, hY, fAlpha });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ADD, m_param.AsFloat(n, hA, hB, hY, fAlpha));
         }
 
         /// <summary>
@@ -6128,9 +6155,9 @@ namespace MyCaffe.common
         public void add(int n, long hA, long hB, long hY, double dfAlphaA, double dfAlphaB, int nAOff = 0, int nBOff = 0, int nYOff = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ADD2, new double[] { n, hA, hB, hY, dfAlphaA, dfAlphaB, nAOff, nBOff, nYOff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ADD2, m_param.AsDouble(n, hA, hB, hY, dfAlphaA, dfAlphaB, nAOff, nBOff, nYOff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ADD2, new float[] { n, hA, hB, hY, (float)dfAlphaA, (float)dfAlphaB, nAOff, nBOff, nYOff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ADD2, m_param.AsFloat(n, hA, hB, hY, (float)dfAlphaA, (float)dfAlphaB, nAOff, nBOff, nYOff));
         }
 
         /// <summary>
@@ -6152,9 +6179,9 @@ namespace MyCaffe.common
         public void sub(int n, long hA, long hB, long hY, int nAOff = 0, int nBOff = 0, int nYOff = 0, int nB = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SUB, new double[] { n, hA, hB, hY, nAOff, nBOff, nYOff, nB });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SUB, m_param.AsDouble(n, hA, hB, hY, nAOff, nBOff, nYOff, nB));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SUB, new float[] { n, hA, hB, hY, nAOff, nBOff, nYOff, nB });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SUB, m_param.AsFloat(n, hA, hB, hY, nAOff, nBOff, nYOff, nB));
         }
 
 
@@ -6174,9 +6201,9 @@ namespace MyCaffe.common
         public void mul(int n, long hA, long hB, long hY, int nAOff = 0, int nBOff = 0, int nYOff = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MUL, new double[] { n, hA, hB, hY, nAOff, nBOff, nYOff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MUL, m_param.AsDouble(n, hA, hB, hY, nAOff, nBOff, nYOff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MUL, new float[] { n, hA, hB, hY, nAOff, nBOff, nYOff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MUL, m_param.AsFloat(n, hA, hB, hY, nAOff, nBOff, nYOff));
         }
 
         /// <summary>
@@ -6197,9 +6224,9 @@ namespace MyCaffe.common
         public void sub_and_dot(int n, int nN, int nInnerNum, long hA, long hB, long hY, int nAOff, int nBOff, int nYOff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SUB_AND_DOT, new double[] { n, nN, nInnerNum, hA, hB, hY, nAOff, nBOff, nYOff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SUB_AND_DOT, m_param.AsDouble(n, nN, nInnerNum, hA, hB, hY, nAOff, nBOff, nYOff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SUB_AND_DOT, new float[] { n, nN, nInnerNum, hA, hB, hY, nAOff, nBOff, nYOff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SUB_AND_DOT, m_param.AsFloat(n, nN, nInnerNum, hA, hB, hY, nAOff, nBOff, nYOff));
         }
 
         /// <summary>
@@ -6242,9 +6269,9 @@ namespace MyCaffe.common
         public void mul_scalar(int n, T fAlpha, long hY)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MUL_SCALAR, new double[] { n, convertD(fAlpha), hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MUL_SCALAR, m_param.AsDouble(n, convertD(fAlpha), hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MUL_SCALAR, new float[] { n, convertF(fAlpha), hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MUL_SCALAR, m_param.AsFloat(n, convertF(fAlpha), hY));
         }
 
         /// <summary>
@@ -6260,9 +6287,9 @@ namespace MyCaffe.common
         public void div(int n, long hA, long hB, long hY)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_DIV, new double[] { n, hA, hB, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_DIV, m_param.AsDouble(n, hA, hB, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_DIV, new float[] { n, hA, hB, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_DIV, m_param.AsFloat(n, hA, hB, hY));
         }
 
         /// <summary>
@@ -6277,9 +6304,9 @@ namespace MyCaffe.common
         public void abs(int n, long hA, long hY)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ABS, new double[] { n, hA, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ABS, m_param.AsDouble(n, hA, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ABS, new float[] { n, hA, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ABS, m_param.AsFloat(n, hA, hY));
         }
 
         /// <summary>
@@ -6311,9 +6338,9 @@ namespace MyCaffe.common
         public void exp(int n, long hA, long hY, int nAOff, int nYOff, double dfBeta)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_EXP, new double[] { n, hA, hY, nAOff, nYOff, dfBeta });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_EXP, m_param.AsDouble(n, hA, hY, nAOff, nYOff, dfBeta));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_EXP, new float[] { n, hA, hY, nAOff, nYOff, (float)dfBeta });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_EXP, m_param.AsFloat(n, hA, hY, nAOff, nYOff, (float)dfBeta));
         }
 
         /// <summary>
@@ -6344,9 +6371,9 @@ namespace MyCaffe.common
         public void log(int n, long hA, long hY, double dfBeta, double dfAlpha = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LOG, new double[] { n, hA, hY, dfBeta, dfAlpha });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LOG, m_param.AsDouble(n, hA, hY, dfBeta, dfAlpha));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LOG, new float[] { n, hA, hY, (float)dfBeta, (float)dfAlpha });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LOG, m_param.AsFloat(n, hA, hY, (float)dfBeta, (float)dfAlpha));
         }
 
         /// <summary>
@@ -6398,9 +6425,9 @@ namespace MyCaffe.common
         public void powx(int n, long hA, T fAlpha, long hY, int nAOff = 0, int nYOff = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_POWX, new double[] { n, hA, convertD(fAlpha), hY, nAOff, nYOff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_POWX, m_param.AsDouble(n, hA, convertD(fAlpha), hY, nAOff, nYOff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_POWX, new float[] { n, hA, convertF(fAlpha), hY, nAOff, nYOff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_POWX, m_param.AsFloat(n, hA, convertF(fAlpha), hY, nAOff, nYOff));
         }
 
         /// <summary>
@@ -6414,9 +6441,9 @@ namespace MyCaffe.common
         public void sign(int n, long hX, long hY, int nXOff = 0, int nYOff = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SIGN, new double[] { n, hX, hY, nXOff, nYOff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SIGN, m_param.AsDouble(n, hX, hY, nXOff, nYOff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SIGN, new float[] { n, hX, hY, nXOff, nYOff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SIGN, m_param.AsFloat(n, hX, hY, nXOff, nYOff));
         }
 
 #pragma warning disable 1591
@@ -6424,33 +6451,33 @@ namespace MyCaffe.common
         public void student(int n, long hX, long hY) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_STUDENT, new double[] { n, hX, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_STUDENT, m_param.AsDouble(n, hX, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_STUDENT, new float[] { n, hX, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_STUDENT, m_param.AsFloat(n, hX, hY));
         }
 
         public void logistic1(int n, long hX, long hY) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LOGISTIC1, new double[] { n, hX, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LOGISTIC1, m_param.AsDouble(n, hX, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LOGISTIC1, new float[] { n, hX, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LOGISTIC1, m_param.AsFloat(n, hX, hY));
         }
 
         public void logistic2(int n, long hX, long hY) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LOGISTIC2, new double[] { n, hX, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LOGISTIC2, m_param.AsDouble(n, hX, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LOGISTIC2, new float[] { n, hX, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LOGISTIC2, m_param.AsFloat(n, hX, hY));
         }
 
         public void reciprocol(int n, long hX, long hY) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_RECIPROCOL, new double[] { n, hX, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_RECIPROCOL, m_param.AsDouble(n, hX, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_RECIPROCOL, new float[] { n, hX, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_RECIPROCOL, m_param.AsFloat(n, hX, hY));
         }
 
 #pragma warning restore 1591
@@ -6464,9 +6491,9 @@ namespace MyCaffe.common
         public void sqrt(int n, long hX, long hY)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SQRT, new double[] { n, hX, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SQRT, m_param.AsDouble(n, hX, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SQRT, new float[] { n, hX, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SQRT, m_param.AsFloat(n, hX, hY));
         }
 
         /// <summary>
@@ -6478,9 +6505,9 @@ namespace MyCaffe.common
         public void sqrt_scale(int nCount, long hX, long hY)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SQRT_SCALE, new double[] { nCount, hX, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SQRT_SCALE, m_param.AsDouble(nCount, hX, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SQRT_SCALE, new float[] { nCount, hX, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SQRT_SCALE, m_param.AsFloat(nCount, hX, hY));
         }
 
         /// <summary>
@@ -6493,9 +6520,9 @@ namespace MyCaffe.common
         public void compare_signs(int n, long hA, long hB, long hY)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COMPARE_SIGNS, new double[] { n, hA, hB, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COMPARE_SIGNS, m_param.AsDouble(n, hA, hB, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COMPARE_SIGNS, new float[] { n, hA, hB, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COMPARE_SIGNS, m_param.AsFloat(n, hA, hB, hY));
         }
 
         /// <summary>
@@ -6513,13 +6540,13 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MAXVAL, new double[] { n, hA, nAOff });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MAXVAL, m_param.AsDouble(n, hA, nAOff));
                 lPos = (long)rg[1];
                 return rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MAXVAL, new float[] { n, hA, nAOff });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MAXVAL, m_param.AsFloat(n, hA, nAOff));
                 lPos = (long)rg[1];
                 return rg[0];
             }
@@ -6540,13 +6567,13 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MINVAL, new double[] { n, hA, nAOff });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MINVAL, m_param.AsDouble(n, hA, nAOff));
                 lPos = (long)rg[1];
                 return rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MINVAL, new float[] { n, hA, nAOff });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MINVAL, m_param.AsFloat(n, hA, nAOff));
                 lPos = (long)rg[1];
                 return rg[0];
             }
@@ -6568,12 +6595,12 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MINMAXVAL, new double[] { n, hA, hWork1, hWork2, (bDetectNans) ? 1 : 0, nAOff });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MINMAXVAL, m_param.AsDouble(n, hA, hWork1, hWork2, (bDetectNans) ? 1 : 0, nAOff));
                 return new Tuple<double, double, double, double>(rg[0], rg[1], rg[2], rg[3]);
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MINMAXVAL, new float[] { n, hA, hWork1, hWork2, (bDetectNans) ? 1 : 0, nAOff });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MINMAXVAL, m_param.AsFloat(n, hA, hWork1, hWork2, (bDetectNans) ? 1 : 0, nAOff));
                 return new Tuple<double, double, double, double>(rg[0], rg[1], rg[2], rg[3]);
             }
         }
@@ -6592,9 +6619,9 @@ namespace MyCaffe.common
         public void minmax(int n, long hA, long hWork1, long hWork2, int nK, long hMin, long hMax, bool bNonZeroOnly)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MINMAXVEC, new double[] { n, hA, hWork1, hWork2, nK, hMin, hMax, (bNonZeroOnly) ? 1 : 0 });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MINMAXVEC, m_param.AsDouble(n, hA, hWork1, hWork2, nK, hMin, hMax, (bNonZeroOnly) ? 1 : 0));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MINMAXVEC, new float[] { n, hA, hWork1, hWork2, nK, hMin, hMax, (bNonZeroOnly) ? 1 : 0 });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MINMAXVEC, m_param.AsFloat(n, hA, hWork1, hWork2, nK, hMin, hMax, (bNonZeroOnly) ? 1 : 0));
         }
 
         /// <summary>
@@ -6611,9 +6638,9 @@ namespace MyCaffe.common
         public void transpose(int n, long hX, long hY, long hXCounts, long hYCounts, long hMapping, int nNumAxes, long hBuffer)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TRANSPOSE, new double[] { n, hX, hY, hXCounts, hYCounts, hMapping, nNumAxes, hBuffer });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TRANSPOSE, m_param.AsDouble(n, hX, hY, hXCounts, hYCounts, hMapping, nNumAxes, hBuffer));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TRANSPOSE, new float[] { n, hX, hY, hXCounts, hYCounts, hMapping, nNumAxes, hBuffer });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TRANSPOSE, m_param.AsFloat(n, hX, hY, hXCounts, hYCounts, hMapping, nNumAxes, hBuffer));
         }
 
         /// <summary>
@@ -6628,12 +6655,12 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SUMSQ, new double[] { n, hW, hA, nAOff });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SUMSQ, m_param.AsDouble(n, hW, hA, nAOff));
                 return rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SUMSQ, new float[] { n, hW, hA, nAOff });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SUMSQ, m_param.AsFloat(n, hW, hA, nAOff));
                 return rg[0];
             }
         }
@@ -6652,12 +6679,12 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SUMSQDIFF, new double[] { n, hW, hA, hB, nAOff, nBOff });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SUMSQDIFF, m_param.AsDouble(n, hW, hA, hB, nAOff, nBOff));
                 return rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SUMSQDIFF, new float[] { n, hW, hA, hB, nAOff, nBOff });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SUMSQDIFF, m_param.AsFloat(n, hW, hA, hB, nAOff, nBOff));
                 return rg[0];
             }
         }
@@ -6674,9 +6701,9 @@ namespace MyCaffe.common
         public void width(int n, long hMean, long hMin, long hMax, double dfAlpha, long hWidth) 
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_WIDTH, new double[] { n, hMean, hMin, hMax, dfAlpha, hWidth });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_WIDTH, m_param.AsDouble(n, hMean, hMin, hMax, dfAlpha, hWidth));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_WIDTH, new float[] { n, hMean, hMin, hMax, (float)dfAlpha, hWidth });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_WIDTH, m_param.AsFloat(n, hMean, hMin, hMax, (float)dfAlpha, hWidth));
         }
 
         /// <summary>
@@ -6693,12 +6720,12 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CONTAINS_POINT, new double[] { n, hMean, hWidth, hX, hWork, nXOff });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CONTAINS_POINT, m_param.AsDouble(n, hMean, hWidth, hX, hWork, nXOff));
                 return (rg[0] == 0) ? false : true;
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CONTAINS_POINT, new float[] { n, hMean, hWidth, hX, hWork, nXOff });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CONTAINS_POINT, m_param.AsFloat(n, hMean, hWidth, hX, hWork, nXOff));
                 return (rg[0] == 0) ? false : true;
             }
         }
@@ -6712,9 +6739,9 @@ namespace MyCaffe.common
         public void denan(int n, long hX, double dfReplacement)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_DENAN, new double[] { n, hX, dfReplacement });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_DENAN, m_param.AsDouble(n, hX, dfReplacement));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_DENAN, new float[] { n, hX, (float)dfReplacement });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_DENAN, m_param.AsFloat(n, hX, (float)dfReplacement));
         }
 
         /// <summary>
@@ -6738,9 +6765,9 @@ namespace MyCaffe.common
         public void im2col(long hDataIm, int nDataImOffset, int nChannels, int nHeight, int nWidth, int nKernelH, int nKernelW, int nPadH, int nPadW, int nStrideH, int nStrideW, int nDilationH, int nDilationW, long hDataCol, int nDataColOffset)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_IM2COL, new double[] { hDataIm, nDataImOffset, nChannels, nHeight, nWidth, nKernelH, nKernelW, nPadH, nPadW, nStrideH, nStrideW, nDilationH, nDilationW, hDataCol, nDataColOffset });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_IM2COL, m_param.AsDouble(hDataIm, nDataImOffset, nChannels, nHeight, nWidth, nKernelH, nKernelW, nPadH, nPadW, nStrideH, nStrideW, nDilationH, nDilationW, hDataCol, nDataColOffset));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_IM2COL, new float[] { hDataIm, nDataImOffset, nChannels, nHeight, nWidth, nKernelH, nKernelW, nPadH, nPadW, nStrideH, nStrideW, nDilationH, nDilationW, hDataCol, nDataColOffset });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_IM2COL, m_param.AsFloat(hDataIm, nDataImOffset, nChannels, nHeight, nWidth, nKernelH, nKernelW, nPadH, nPadW, nStrideH, nStrideW, nDilationH, nDilationW, hDataCol, nDataColOffset));
         }
 
         /// <summary>
@@ -6762,9 +6789,9 @@ namespace MyCaffe.common
         public void im2col_nd(long hDataIm, int nDataImOffset, int nNumSpatialAxes, int nImCount, int nChannelAxis, long hImShape, long hColShape, long hKernelShape, long hPad, long hStride, long hDilation, long hDataCol, int nDataColOffset)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_IM2COL_ND, new double[] { hDataIm, nDataImOffset, nNumSpatialAxes, nImCount, nChannelAxis, hImShape, hColShape, hKernelShape, hPad, hStride, hDilation, hDataCol, nDataColOffset });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_IM2COL_ND, m_param.AsDouble(hDataIm, nDataImOffset, nNumSpatialAxes, nImCount, nChannelAxis, hImShape, hColShape, hKernelShape, hPad, hStride, hDilation, hDataCol, nDataColOffset));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_IM2COL_ND, new float[] { hDataIm, nDataImOffset, nNumSpatialAxes, nImCount, nChannelAxis, hImShape, hColShape, hKernelShape, hPad, hStride, hDilation, hDataCol, nDataColOffset });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_IM2COL_ND, m_param.AsFloat(hDataIm, nDataImOffset, nNumSpatialAxes, nImCount, nChannelAxis, hImShape, hColShape, hKernelShape, hPad, hStride, hDilation, hDataCol, nDataColOffset));
         }
 
         /// <summary>
@@ -6788,9 +6815,9 @@ namespace MyCaffe.common
         public void col2im(long hDataCol, int nDataColOffset, int nChannels, int nHeight, int nWidth, int nKernelH, int nKernelW, int nPadH, int nPadW, int nStrideH, int nStrideW, int nDilationH, int nDilationW, long hDataIm, int nDataImOffset)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COL2IM, new double[] { hDataCol, nDataColOffset, nChannels, nHeight, nWidth, nKernelH, nKernelW, nPadH, nPadW, nStrideH, nStrideW, nDilationH, nDilationW, hDataIm, nDataImOffset });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COL2IM, m_param.AsDouble(hDataCol, nDataColOffset, nChannels, nHeight, nWidth, nKernelH, nKernelW, nPadH, nPadW, nStrideH, nStrideW, nDilationH, nDilationW, hDataIm, nDataImOffset));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COL2IM, new float[] { hDataCol, nDataColOffset, nChannels, nHeight, nWidth, nKernelH, nKernelW, nPadH, nPadW, nStrideH, nStrideW, nDilationH, nDilationW, hDataIm, nDataImOffset });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COL2IM, m_param.AsFloat(hDataCol, nDataColOffset, nChannels, nHeight, nWidth, nKernelH, nKernelW, nPadH, nPadW, nStrideH, nStrideW, nDilationH, nDilationW, hDataIm, nDataImOffset));
         }
 
         /// <summary>
@@ -6812,9 +6839,9 @@ namespace MyCaffe.common
         public void col2im_nd(long hDataCol, int nDataColOffset, int nNumSpatialAxes, int nColCount, int nChannelAxis, long hImShape, long hColShape, long hKernelShape, long hPad, long hStride, long hDilation, long hDataIm, int nDataImOffset)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COL2IM_ND, new double[] { hDataCol, nDataColOffset, nNumSpatialAxes, nColCount, nChannelAxis, hImShape, hColShape, hKernelShape, hPad, hStride, hDilation, hDataIm, nDataImOffset });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COL2IM_ND, m_param.AsDouble(hDataCol, nDataColOffset, nNumSpatialAxes, nColCount, nChannelAxis, hImShape, hColShape, hKernelShape, hPad, hStride, hDilation, hDataIm, nDataImOffset));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COL2IM_ND, new float[] { hDataCol, nDataColOffset, nNumSpatialAxes, nColCount, nChannelAxis, hImShape, hColShape, hKernelShape, hPad, hStride, hDilation, hDataIm, nDataImOffset });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COL2IM_ND, m_param.AsFloat(hDataCol, nDataColOffset, nNumSpatialAxes, nColCount, nChannelAxis, hImShape, hColShape, hKernelShape, hPad, hStride, hDilation, hDataIm, nDataImOffset));
         }
 
         /// <summary>
@@ -6829,9 +6856,9 @@ namespace MyCaffe.common
         public void channel_min(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MIN, new double[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MIN, m_param.AsDouble(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MIN, new float[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MIN, m_param.AsFloat(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
         }
 
         /// <summary>
@@ -6846,9 +6873,9 @@ namespace MyCaffe.common
         public void channel_max(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MAX, new double[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MAX, m_param.AsDouble(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MAX, new float[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MAX, m_param.AsFloat(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
         }
 
         /// <summary>
@@ -6863,9 +6890,9 @@ namespace MyCaffe.common
         public void channel_compare(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_COMPARE, new double[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_COMPARE, m_param.AsDouble(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_COMPARE, new float[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_COMPARE, m_param.AsFloat(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
         }
 
         /// <summary>
@@ -6890,9 +6917,9 @@ namespace MyCaffe.common
         public void channel_fill(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, int nLabelDim, long hLabels, long hY)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_FILL, new double[] { nCount, nOuterNum, nChannels, nInnerNum, hX, nLabelDim, hLabels, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_FILL, m_param.AsDouble(nCount, nOuterNum, nChannels, nInnerNum, hX, nLabelDim, hLabels, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_FILL, new float[] { nCount, nOuterNum, nChannels, nInnerNum, hX, nLabelDim, hLabels, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_FILL, m_param.AsFloat(nCount, nOuterNum, nChannels, nInnerNum, hX, nLabelDim, hLabels, hY));
         }
 
         /// <summary>
@@ -6907,9 +6934,9 @@ namespace MyCaffe.common
         public void channel_sub(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUB, new double[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUB, m_param.AsDouble(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUB, new float[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUB, m_param.AsFloat(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
         }
 
         /// <summary>
@@ -6924,9 +6951,9 @@ namespace MyCaffe.common
         public void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM, new double[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM, m_param.AsDouble(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM, new float[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM, m_param.AsFloat(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
         }
 
         /// <summary>
@@ -6942,9 +6969,9 @@ namespace MyCaffe.common
         public void channel_div(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, int nMethod = 1)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_DIV, new double[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY, nMethod });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_DIV, m_param.AsDouble(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, nMethod));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_DIV, new float[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY, nMethod });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_DIV, m_param.AsFloat(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, nMethod));
         }
 
         /// <summary>
@@ -6960,9 +6987,9 @@ namespace MyCaffe.common
         public void channel_mul(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, int nMethod = 1)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MUL, new double[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY, nMethod });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MUL, m_param.AsDouble(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, nMethod));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MUL, new float[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY, nMethod });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MUL, m_param.AsFloat(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, nMethod));
         }
 
         /// <summary>
@@ -6978,9 +7005,9 @@ namespace MyCaffe.common
         public void channel_dot(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hA, long hY)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_DOT, new double[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hA, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_DOT, m_param.AsDouble(nCount, nOuterNum, nChannels, nInnerNum, hX, hA, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_DOT, new float[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hA, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_DOT, m_param.AsFloat(nCount, nOuterNum, nChannels, nInnerNum, hX, hA, hY));
         }
 
         /// <summary>
@@ -6994,9 +7021,9 @@ namespace MyCaffe.common
         public void sum(int nCount, int nOuterNum, int nInnerNum, long hX, long hY)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SUM, new double[] { nCount, nOuterNum, nInnerNum, hX, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SUM, m_param.AsDouble(nCount, nOuterNum, nInnerNum, hX, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SUM, new float[] { nCount, nOuterNum, nInnerNum, hX, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SUM, m_param.AsFloat(nCount, nOuterNum, nInnerNum, hX, hY));
         }
 
         /// <summary>
@@ -7009,9 +7036,9 @@ namespace MyCaffe.common
         public void rng_setseed(long lSeed)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_RNG_SETSEED, new double[] { lSeed });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_RNG_SETSEED, m_param.AsDouble(lSeed));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_RNG_SETSEED, new float[] { lSeed });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_RNG_SETSEED, m_param.AsFloat(lSeed));
         }
 
         /// <summary>
@@ -7059,12 +7086,12 @@ namespace MyCaffe.common
             if (m_dt == DataType.DOUBLE)
             {
                 if (m_rgGhostMemory == null || !m_bGhostMemoryEnabled)
-                    m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_RNG_UNIFORM, new double[] { n, (double)Convert.ChangeType(fMin, typeof(double)), (double)Convert.ChangeType(fMax, typeof(double)), hY });
+                    m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_RNG_UNIFORM, m_param.AsDouble(n, (double)Convert.ChangeType(fMin, typeof(double)), (double)Convert.ChangeType(fMax, typeof(double)), hY));
             }
             else
             {
                 if (m_rgGhostMemory == null || !m_bGhostMemoryEnabled)
-                    m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_RNG_UNIFORM, new float[] { n, (float)Convert.ChangeType(fMin, typeof(float)), (float)Convert.ChangeType(fMax, typeof(float)), hY });
+                    m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_RNG_UNIFORM, m_param.AsFloat(n, (float)Convert.ChangeType(fMin, typeof(float)), (float)Convert.ChangeType(fMax, typeof(float)), hY));
             }
         }
 
@@ -7113,12 +7140,12 @@ namespace MyCaffe.common
             if (m_dt == DataType.DOUBLE)
             {
                 if (m_rgGhostMemory == null || !m_bGhostMemoryEnabled)
-                    m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_RNG_GAUSSIAN, new double[] { n, (double)Convert.ChangeType(fMu, typeof(double)), (double)Convert.ChangeType(fSigma, typeof(double)), hY });
+                    m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_RNG_GAUSSIAN, m_param.AsDouble(n, (double)Convert.ChangeType(fMu, typeof(double)), (double)Convert.ChangeType(fSigma, typeof(double)), hY));
             }
             else
             {
                 if (m_rgGhostMemory == null || !m_bGhostMemoryEnabled)
-                    m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_RNG_GAUSSIAN, new float[] { n, (float)Convert.ChangeType(fMu, typeof(float)), (float)Convert.ChangeType(fSigma, typeof(float)), hY });
+                    m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_RNG_GAUSSIAN, m_param.AsFloat(n, (float)Convert.ChangeType(fMu, typeof(float)), (float)Convert.ChangeType(fSigma, typeof(float)), hY));
             }
         }
 
@@ -7232,9 +7259,9 @@ namespace MyCaffe.common
         public void batchreidx_fwd(int nCount, int nInnerDim, long hBottomData, long hPermutData, long hTopData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_BATCHREIDX_FWD, new double[] { nCount, nInnerDim, hBottomData, hPermutData, hTopData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_BATCHREIDX_FWD, m_param.AsDouble(nCount, nInnerDim, hBottomData, hPermutData, hTopData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_BATCHREIDX_FWD, new float[] { nCount, nInnerDim, hBottomData, hPermutData, hTopData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_BATCHREIDX_FWD, m_param.AsFloat(nCount, nInnerDim, hBottomData, hPermutData, hTopData));
         }
 
         /// <summary>
@@ -7250,9 +7277,9 @@ namespace MyCaffe.common
         public void batchreidx_bwd(int nCount, int nInnerDim, long hTopDiff, long hTopIdx, long hBegins, long hCounts, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_BATCHREIDX_BWD, new double[] { nCount, nInnerDim, hTopDiff, hTopIdx, hBegins, hCounts, hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_BATCHREIDX_BWD, m_param.AsDouble(nCount, nInnerDim, hTopDiff, hTopIdx, hBegins, hCounts, hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_BATCHREIDX_BWD, new float[] { nCount, nInnerDim, hTopDiff, hTopIdx, hBegins, hCounts, hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_BATCHREIDX_BWD, m_param.AsFloat(nCount, nInnerDim, hTopDiff, hTopIdx, hBegins, hCounts, hBottomDiff));
         }
 
         /// <summary>
@@ -7268,9 +7295,9 @@ namespace MyCaffe.common
         public void embed_fwd(int nCount, long hBottomData, long hWeight, int nM, int nN, int nK, long hTopData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_EMBED_FWD, new double[] { nCount, hBottomData, hWeight, nM, nN, nK, hTopData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_EMBED_FWD, m_param.AsDouble(nCount, hBottomData, hWeight, nM, nN, nK, hTopData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_EMBED_FWD, new float[] { nCount, hBottomData, hWeight, nM, nN, nK, hTopData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_EMBED_FWD, m_param.AsFloat(nCount, hBottomData, hWeight, nM, nN, nK, hTopData));
         }
 
         /// <summary>
@@ -7286,9 +7313,9 @@ namespace MyCaffe.common
         public void embed_bwd(int nCount, long hBottomData, long hTopDiff, int nM, int nN, int nK, long hWeightDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_EMBED_BWD, new double[] { nCount, hBottomData, hTopDiff, nM, nN, nK, hWeightDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_EMBED_BWD, m_param.AsDouble(nCount, hBottomData, hTopDiff, nM, nN, nK, hWeightDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_EMBED_BWD, new float[] { nCount, hBottomData, hTopDiff, nM, nN, nK, hWeightDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_EMBED_BWD, m_param.AsFloat(nCount, hBottomData, hTopDiff, nM, nN, nK, hWeightDiff));
         }
 
         /// <summary>
@@ -7315,9 +7342,9 @@ namespace MyCaffe.common
         public void pooling_fwd(POOLING_METHOD method, int nCount, long hBottomData, int num, int nChannels, int nHeight, int nWidth, int nPooledHeight, int nPooledWidth, int nKernelH, int nKernelW, int nStrideH, int nStrideW, int nPadH, int nPadW, long hTopData, long hMask, long hTopMask)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_POOL_FWD, new double[] { (int)method, nCount, hBottomData, num, nChannels, nHeight, nWidth, nPooledHeight, nPooledWidth, nKernelH, nKernelW, nStrideH, nStrideW, nPadH, nPadW, hTopData, hMask, hTopMask });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_POOL_FWD, m_param.AsDouble((int)method, nCount, hBottomData, num, nChannels, nHeight, nWidth, nPooledHeight, nPooledWidth, nKernelH, nKernelW, nStrideH, nStrideW, nPadH, nPadW, hTopData, hMask, hTopMask));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_POOL_FWD, new float[] { (int)method, nCount, hBottomData, num, nChannels, nHeight, nWidth, nPooledHeight, nPooledWidth, nKernelH, nKernelW, nStrideH, nStrideW, nPadH, nPadW, hTopData, hMask, hTopMask });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_POOL_FWD, m_param.AsFloat((int)method, nCount, hBottomData, num, nChannels, nHeight, nWidth, nPooledHeight, nPooledWidth, nKernelH, nKernelW, nStrideH, nStrideW, nPadH, nPadW, hTopData, hMask, hTopMask));
         }
 
         /// <summary>
@@ -7344,9 +7371,9 @@ namespace MyCaffe.common
         public void pooling_bwd(POOLING_METHOD method, int nCount, long hTopDiff, int num, int nChannels, int nHeight, int nWidth, int nPooledHeight, int nPooledWidth, int nKernelH, int nKernelW, int nStrideH, int nStrideW, int nPadH, int nPadW, long hBottomDiff, long hMask, long hTopMask)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_POOL_BWD, new double[] { (int)method, nCount, hTopDiff, num, nChannels, nHeight, nWidth, nPooledHeight, nPooledWidth, nKernelH, nKernelW, nStrideH, nStrideW, nPadH, nPadW, hBottomDiff, hMask, hTopMask });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_POOL_BWD, m_param.AsDouble((int)method, nCount, hTopDiff, num, nChannels, nHeight, nWidth, nPooledHeight, nPooledWidth, nKernelH, nKernelW, nStrideH, nStrideW, nPadH, nPadW, hBottomDiff, hMask, hTopMask));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_POOL_BWD, new float[] { (int)method, nCount, hTopDiff, num, nChannels, nHeight, nWidth, nPooledHeight, nPooledWidth, nKernelH, nKernelW, nStrideH, nStrideW, nPadH, nPadW, hBottomDiff, hMask, hTopMask });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_POOL_BWD, m_param.AsFloat((int)method, nCount, hTopDiff, num, nChannels, nHeight, nWidth, nPooledHeight, nPooledWidth, nKernelH, nKernelW, nStrideH, nStrideW, nPadH, nPadW, hBottomDiff, hMask, hTopMask));
         }
 
         /// <summary>
@@ -7372,9 +7399,9 @@ namespace MyCaffe.common
         public void unpooling_fwd(POOLING_METHOD method, int nCount, long hBottomData, int num, int nChannels, int nHeight, int nWidth, int nPooledHeight, int nPooledWidth, int nKernelH, int nKernelW, int nStrideH, int nStrideW, int nPadH, int nPadW, long hTopData, long hMask)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_UNPOOL_FWD, new double[] { (int)method, nCount, hBottomData, num, nChannels, nHeight, nWidth, nPooledHeight, nPooledWidth, nKernelH, nKernelW, nStrideH, nStrideW, nPadH, nPadW, hTopData, hMask });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_UNPOOL_FWD, m_param.AsDouble((int)method, nCount, hBottomData, num, nChannels, nHeight, nWidth, nPooledHeight, nPooledWidth, nKernelH, nKernelW, nStrideH, nStrideW, nPadH, nPadW, hTopData, hMask));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_UNPOOL_FWD, new float[] { (int)method, nCount, hBottomData, num, nChannels, nHeight, nWidth, nPooledHeight, nPooledWidth, nKernelH, nKernelW, nStrideH, nStrideW, nPadH, nPadW, hTopData, hMask });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_UNPOOL_FWD, m_param.AsFloat((int)method, nCount, hBottomData, num, nChannels, nHeight, nWidth, nPooledHeight, nPooledWidth, nKernelH, nKernelW, nStrideH, nStrideW, nPadH, nPadW, hTopData, hMask));
         }
 
         /// <summary>
@@ -7400,9 +7427,9 @@ namespace MyCaffe.common
         public void unpooling_bwd(POOLING_METHOD method, int nCount, long hTopDiff, int num, int nChannels, int nHeight, int nWidth, int nPooledHeight, int nPooledWidth, int nKernelH, int nKernelW, int nStrideH, int nStrideW, int nPadH, int nPadW, long hBottomDiff, long hMask)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_UNPOOL_BWD, new double[] { (int)method, nCount, hTopDiff, num, nChannels, nHeight, nWidth, nPooledHeight, nPooledWidth, nKernelH, nKernelW, nStrideH, nStrideW, nPadH, nPadW, hBottomDiff, hMask });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_UNPOOL_BWD, m_param.AsDouble((int)method, nCount, hTopDiff, num, nChannels, nHeight, nWidth, nPooledHeight, nPooledWidth, nKernelH, nKernelW, nStrideH, nStrideW, nPadH, nPadW, hBottomDiff, hMask));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_UNPOOL_BWD, new float[] { (int)method, nCount, hTopDiff, num, nChannels, nHeight, nWidth, nPooledHeight, nPooledWidth, nKernelH, nKernelW, nStrideH, nStrideW, nPadH, nPadW, hBottomDiff, hMask });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_UNPOOL_BWD, m_param.AsFloat((int)method, nCount, hTopDiff, num, nChannels, nHeight, nWidth, nPooledHeight, nPooledWidth, nKernelH, nKernelW, nStrideH, nStrideW, nPadH, nPadW, hBottomDiff, hMask));
         }
 
         /// <summary>
@@ -7419,9 +7446,9 @@ namespace MyCaffe.common
         public void clip_fwd(int nCount, long hBottomData, long hTopData, T fMin, T fMax)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CLIP_FWD, new double[] { nCount, hBottomData, hTopData, convertD1(fMin), convertD1(fMax) });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CLIP_FWD, m_param.AsDouble(nCount, hBottomData, hTopData, convertD1(fMin), convertD1(fMax)));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CLIP_FWD, new float[] { nCount, hBottomData, hTopData, convertF1(fMin), convertF1(fMax) });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CLIP_FWD, m_param.AsFloat(nCount, hBottomData, hTopData, convertF1(fMin), convertF1(fMax)));
         }
 
         /// <summary>
@@ -7436,9 +7463,9 @@ namespace MyCaffe.common
         public void clip_bwd(int nCount, long hTopDiff, long hBottomData, long hBottomDiff, T fMin, T fMax)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CLIP_BWD, new double[] { nCount, hTopDiff, hBottomData, hBottomDiff, convertD1(fMin), convertD1(fMax) });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CLIP_BWD, m_param.AsDouble(nCount, hTopDiff, hBottomData, hBottomDiff, convertD1(fMin), convertD1(fMax)));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CLIP_BWD, new float[] { nCount, hTopDiff, hBottomData, hBottomDiff, convertF1(fMin), convertF1(fMax) });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CLIP_BWD, m_param.AsFloat(nCount, hTopDiff, hBottomData, hBottomDiff, convertF1(fMin), convertF1(fMax)));
         }
 
         /// <summary>
@@ -7454,9 +7481,9 @@ namespace MyCaffe.common
         public void math_fwd(int nCount, long hBottomData, long hTopData, MATH_FUNCTION function)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MATH_FWD, new double[] { nCount, hBottomData, hTopData, (int)function });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MATH_FWD, m_param.AsDouble(nCount, hBottomData, hTopData, (int)function));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MATH_FWD, new float[] { nCount, hBottomData, hTopData, (int)function });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MATH_FWD, m_param.AsFloat(nCount, hBottomData, hTopData, (int)function));
         }
 
         /// <summary>
@@ -7471,9 +7498,9 @@ namespace MyCaffe.common
         public void math_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, MATH_FUNCTION function)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MATH_BWD, new double[] { nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, (int)function });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MATH_BWD, m_param.AsDouble(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, (int)function));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MATH_BWD, new float[] { nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, (int)function });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MATH_BWD, m_param.AsFloat(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, (int)function));
         }
 
 
@@ -7491,9 +7518,9 @@ namespace MyCaffe.common
         public void tanh_fwd(int nCount, long hBottomData, long hTopData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TANH_FWD, new double[] { nCount, hBottomData, hTopData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TANH_FWD, m_param.AsDouble(nCount, hBottomData, hTopData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TANH_FWD, new float[] { nCount, hBottomData, hTopData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TANH_FWD, m_param.AsFloat(nCount, hBottomData, hTopData));
         }
 
         /// <summary>
@@ -7509,9 +7536,9 @@ namespace MyCaffe.common
         public void tanh_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TANH_BWD, new double[] { nCount, hTopDiff, hTopData, hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TANH_BWD, m_param.AsDouble(nCount, hTopDiff, hTopData, hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TANH_BWD, new float[] { nCount, hTopDiff, hTopData, hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TANH_BWD, m_param.AsFloat(nCount, hTopDiff, hTopData, hBottomDiff));
         }
 
         /// <summary>
@@ -7528,9 +7555,9 @@ namespace MyCaffe.common
         public void sigmoid_fwd(int nCount, long hBottomData, long hTopData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SIGMOID_FWD, new double[] { nCount, hBottomData, hTopData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SIGMOID_FWD, m_param.AsDouble(nCount, hBottomData, hTopData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SIGMOID_FWD, new float[] { nCount, hBottomData, hTopData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SIGMOID_FWD, m_param.AsFloat(nCount, hBottomData, hTopData));
         }
 
         /// <summary>
@@ -7546,9 +7573,9 @@ namespace MyCaffe.common
         public void sigmoid_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SIGMOID_BWD, new double[] { nCount, hTopDiff, hTopData, hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SIGMOID_BWD, m_param.AsDouble(nCount, hTopDiff, hTopData, hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SIGMOID_BWD, new float[] { nCount, hTopDiff, hTopData, hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SIGMOID_BWD, m_param.AsFloat(nCount, hTopDiff, hTopData, hBottomDiff));
         }
 
         /// <summary>
@@ -7566,9 +7593,9 @@ namespace MyCaffe.common
         public void swish_bwd(int nCount, long hTopDiff, long hTopData, long hSigmoidOutputData, long hBottomDiff, double dfBeta)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SWISH_BWD, new double[] { nCount, hTopDiff, hTopData, hSigmoidOutputData, hBottomDiff, dfBeta });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SWISH_BWD, m_param.AsDouble(nCount, hTopDiff, hTopData, hSigmoidOutputData, hBottomDiff, dfBeta));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SWISH_BWD, new float[] { nCount, hTopDiff, hTopData, hSigmoidOutputData, hBottomDiff, (float)dfBeta });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SWISH_BWD, m_param.AsFloat(nCount, hTopDiff, hTopData, hSigmoidOutputData, hBottomDiff, (float)dfBeta));
         }
 
         /// <summary>
@@ -7609,9 +7636,9 @@ namespace MyCaffe.common
         public void relu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, T fNegativeSlope)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_RELU_BWD, new double[] { nCount, hTopDiff, hTopData, hBottomDiff, convertD(fNegativeSlope) });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_RELU_BWD, m_param.AsDouble(nCount, hTopDiff, hTopData, hBottomDiff, convertD(fNegativeSlope)));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_RELU_BWD, new float[] { nCount, hTopDiff, hTopData, hBottomDiff, convertF(fNegativeSlope) });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_RELU_BWD, m_param.AsFloat(nCount, hTopDiff, hTopData, hBottomDiff, convertF(fNegativeSlope)));
         }
 
         /// <summary>
@@ -7629,9 +7656,9 @@ namespace MyCaffe.common
         public void elu_fwd(int nCount, long hBottomData, long hTopData, double dfAlpha)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ELU_FWD, new double[] { nCount, hBottomData, hTopData, dfAlpha });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ELU_FWD, m_param.AsDouble(nCount, hBottomData, hTopData, dfAlpha));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ELU_FWD, new float[] { nCount, hBottomData, hTopData, (float)dfAlpha });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ELU_FWD, m_param.AsFloat(nCount, hBottomData, hTopData, (float)dfAlpha));
         }
 
         /// <summary>
@@ -7649,9 +7676,9 @@ namespace MyCaffe.common
         public void elu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomData, long hBottomDiff, double dfAlpha)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ELU_BWD, new double[] { nCount, hTopDiff, hTopData, hBottomData, hBottomDiff, dfAlpha });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ELU_BWD, m_param.AsDouble(nCount, hTopDiff, hTopData, hBottomData, hBottomDiff, dfAlpha));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ELU_BWD, new float[] { nCount, hTopDiff, hTopData, hBottomData, hBottomDiff, (float)dfAlpha });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ELU_BWD, m_param.AsFloat(nCount, hTopDiff, hTopData, hBottomData, hBottomDiff, (float)dfAlpha));
         }
 
         /// <summary>
@@ -7669,9 +7696,9 @@ namespace MyCaffe.common
         public void dropout_fwd(int nCount, long hBottomData, long hMask, uint uiThreshold, T fScale, long hTopData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_DROPOUT_FWD, new double[] { nCount, hBottomData, hMask, uiThreshold, convertD(fScale), hTopData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_DROPOUT_FWD, m_param.AsDouble(nCount, hBottomData, hMask, uiThreshold, convertD(fScale), hTopData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_DROPOUT_FWD, new float[] { nCount, hBottomData, hMask, uiThreshold, convertF(fScale), hTopData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_DROPOUT_FWD, m_param.AsFloat(nCount, hBottomData, hMask, uiThreshold, convertF(fScale), hTopData));
         }
 
         /// <summary>
@@ -7689,9 +7716,9 @@ namespace MyCaffe.common
         public void dropout_bwd(int nCount, long hTopDiff, long hMask, uint uiThreshold, T fScale, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_DROPOUT_BWD, new double[] { nCount, hTopDiff, hMask, uiThreshold, convertD(fScale), hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_DROPOUT_BWD, m_param.AsDouble(nCount, hTopDiff, hMask, uiThreshold, convertD(fScale), hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_DROPOUT_BWD, new float[] { nCount, hTopDiff, hMask, uiThreshold, convertF(fScale), hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_DROPOUT_BWD, m_param.AsFloat(nCount, hTopDiff, hMask, uiThreshold, convertF(fScale), hBottomDiff));
         }
 
         /// <summary>
@@ -7706,9 +7733,9 @@ namespace MyCaffe.common
         public void bnll_fwd(int nCount, long hBottomData, long hTopData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_BNLL_FWD, new double[] { nCount, hBottomData, hTopData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_BNLL_FWD, m_param.AsDouble(nCount, hBottomData, hTopData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_BNLL_FWD, new float[] { nCount, hBottomData, hTopData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_BNLL_FWD, m_param.AsFloat(nCount, hBottomData, hTopData));
         }
 
         /// <summary>
@@ -7721,9 +7748,9 @@ namespace MyCaffe.common
         public void bnll_bwd(int nCount, long hTopDiff, long hBottomData, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_BNLL_BWD, new double[] { nCount, hTopDiff, hBottomData, hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_BNLL_BWD, m_param.AsDouble(nCount, hTopDiff, hBottomData, hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_BNLL_BWD, new float[] { nCount, hTopDiff, hBottomData, hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_BNLL_BWD, m_param.AsFloat(nCount, hTopDiff, hBottomData, hBottomDiff));
         }
 
         /// <summary>
@@ -7745,9 +7772,9 @@ namespace MyCaffe.common
         public void prelu_fwd(int nCount, int nChannels, int nDim, long hBottomData, long hTopData, long hSlopeData, int nDivFactor)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_PRELU_FWD, new double[] { nCount, nChannels, nDim, hBottomData, hTopData, hSlopeData, nDivFactor });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_PRELU_FWD, m_param.AsDouble(nCount, nChannels, nDim, hBottomData, hTopData, hSlopeData, nDivFactor));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_PRELU_FWD, new float[] { nCount, nChannels, nDim, hBottomData, hTopData, hSlopeData, nDivFactor });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_PRELU_FWD, m_param.AsFloat(nCount, nChannels, nDim, hBottomData, hTopData, hSlopeData, nDivFactor));
         }
 
 
@@ -7767,9 +7794,9 @@ namespace MyCaffe.common
         public void prelu_bwd_param(int nCDim, int nNum, int nTopOffset, long hTopDiff, long hBottomData, long hBackBuffDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_PRELU_BWD_PARAM, new double[] { nCDim, nNum, nTopOffset, hTopDiff, hBottomData, hBackBuffDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_PRELU_BWD_PARAM, m_param.AsDouble(nCDim, nNum, nTopOffset, hTopDiff, hBottomData, hBackBuffDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_PRELU_BWD_PARAM, new float[] { nCDim, nNum, nTopOffset, hTopDiff, hBottomData, hBackBuffDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_PRELU_BWD_PARAM, m_param.AsFloat(nCDim, nNum, nTopOffset, hTopDiff, hBottomData, hBackBuffDiff));
         }
 
         /// <summary>
@@ -7790,9 +7817,9 @@ namespace MyCaffe.common
         public void prelu_bwd(int nCount, int nChannels, int nDim, long hTopDiff, long hBottomData, long hBottomDiff, long hSlopeData, int nDivFactor)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_PRELU_BWD, new double[] { nCount, nChannels, nDim, hTopDiff, hBottomData, hBottomDiff, hSlopeData, nDivFactor });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_PRELU_BWD, m_param.AsDouble(nCount, nChannels, nDim, hTopDiff, hBottomData, hBottomDiff, hSlopeData, nDivFactor));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_PRELU_BWD, new float[] { nCount, nChannels, nDim, hTopDiff, hBottomData, hBottomDiff, hSlopeData, nDivFactor });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_PRELU_BWD, m_param.AsFloat(nCount, nChannels, nDim, hTopDiff, hBottomData, hBottomDiff, hSlopeData, nDivFactor));
         }
 
         /// <summary>
@@ -7879,9 +7906,9 @@ namespace MyCaffe.common
         public void max_fwd(int nCount, long hBottomDataA, long hBottomDataB, int nIdx, long hTopData, long hMask)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MAX_FWD, new double[] { nCount, hBottomDataA, hBottomDataB, nIdx, hTopData, hMask });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MAX_FWD, m_param.AsDouble(nCount, hBottomDataA, hBottomDataB, nIdx, hTopData, hMask));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MAX_FWD, new float[] { nCount, hBottomDataA, hBottomDataB, nIdx, hTopData, hMask });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MAX_FWD, m_param.AsFloat(nCount, hBottomDataA, hBottomDataB, nIdx, hTopData, hMask));
         }
 
         /// <summary>
@@ -7895,9 +7922,9 @@ namespace MyCaffe.common
         public void max_bwd(int nCount, long hTopDiff, int nIdx, long hMask, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MAX_BWD, new double[] { nCount, hTopDiff, nIdx, hMask, hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MAX_BWD, m_param.AsDouble(nCount, hTopDiff, nIdx, hMask, hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MAX_BWD, new float[] { nCount, hTopDiff, nIdx, hMask, hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MAX_BWD, m_param.AsFloat(nCount, hTopDiff, nIdx, hMask, hBottomDiff));
         }
 
         /// <summary>
@@ -7915,9 +7942,9 @@ namespace MyCaffe.common
         public void min_fwd(int nCount, long hBottomDataA, long hBottomDataB, int nIdx, long hTopData, long hMask)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MIN_FWD, new double[] { nCount, hBottomDataA, hBottomDataB, nIdx, hTopData, hMask });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MIN_FWD, m_param.AsDouble(nCount, hBottomDataA, hBottomDataB, nIdx, hTopData, hMask));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MIN_FWD, new float[] { nCount, hBottomDataA, hBottomDataB, nIdx, hTopData, hMask });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MIN_FWD, m_param.AsFloat(nCount, hBottomDataA, hBottomDataB, nIdx, hTopData, hMask));
         }
 
         /// <summary>
@@ -7931,9 +7958,9 @@ namespace MyCaffe.common
         public void min_bwd(int nCount, long hTopDiff, int nIdx, long hMask, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MIN_BWD, new double[] { nCount, hTopDiff, nIdx, hMask, hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MIN_BWD, m_param.AsDouble(nCount, hTopDiff, nIdx, hMask, hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MIN_BWD, new float[] { nCount, hTopDiff, nIdx, hMask, hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MIN_BWD, m_param.AsFloat(nCount, hTopDiff, nIdx, hMask, hBottomDiff));
         }
 
         /// <summary>
@@ -7949,9 +7976,9 @@ namespace MyCaffe.common
         public void crop_fwd(int nCount, int nNumAxes, long hSrcStrides, long hDstStrides, long hOffsets, long hBottomData, long hTopData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CROP_FWD, new double[] { nCount, nNumAxes, hSrcStrides, hDstStrides, hOffsets, hBottomData, hTopData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CROP_FWD, m_param.AsDouble(nCount, nNumAxes, hSrcStrides, hDstStrides, hOffsets, hBottomData, hTopData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CROP_FWD, new float[] { nCount, nNumAxes, hSrcStrides, hDstStrides, hOffsets, hBottomData, hTopData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CROP_FWD, m_param.AsFloat(nCount, nNumAxes, hSrcStrides, hDstStrides, hOffsets, hBottomData, hTopData));
         }
 
         /// <summary>
@@ -7967,9 +7994,9 @@ namespace MyCaffe.common
         public void crop_bwd(int nCount, int nNumAxes, long hSrcStrides, long hDstStrides, long hOffsets, long hBottomDiff, long hTopDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CROP_BWD, new double[] { nCount, nNumAxes, hSrcStrides, hDstStrides, hOffsets, hBottomDiff, hTopDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CROP_BWD, m_param.AsDouble(nCount, nNumAxes, hSrcStrides, hDstStrides, hOffsets, hBottomDiff, hTopDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CROP_BWD, new float[] { nCount, nNumAxes, hSrcStrides, hDstStrides, hOffsets, hBottomDiff, hTopDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CROP_BWD, m_param.AsFloat(nCount, nNumAxes, hSrcStrides, hDstStrides, hOffsets, hBottomDiff, hTopDiff));
         }
 
         /// <summary>
@@ -7986,9 +8013,9 @@ namespace MyCaffe.common
         public void concat_fwd(int nCount, long hBottomData, int nNumConcats, int nConcatInputSize, int nTopConcatAxis, int nBottomConcatAxis, int nOffsetConcatAxis, long hTopData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CONCAT_FWD, new double[] { nCount, hBottomData, nNumConcats, nConcatInputSize, nTopConcatAxis, nBottomConcatAxis, nOffsetConcatAxis, hTopData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CONCAT_FWD, m_param.AsDouble(nCount, hBottomData, nNumConcats, nConcatInputSize, nTopConcatAxis, nBottomConcatAxis, nOffsetConcatAxis, hTopData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CONCAT_FWD, new float[] { nCount, hBottomData, nNumConcats, nConcatInputSize, nTopConcatAxis, nBottomConcatAxis, nOffsetConcatAxis, hTopData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CONCAT_FWD, m_param.AsFloat(nCount, hBottomData, nNumConcats, nConcatInputSize, nTopConcatAxis, nBottomConcatAxis, nOffsetConcatAxis, hTopData));
         }
 
 
@@ -8006,9 +8033,9 @@ namespace MyCaffe.common
         public void concat_bwd(int nCount, long hTopDiff, int nNumConcats, int nConcatInputSize, int nTopConcatAxis, int nBottomConcatAxis, int nOffsetConcatAxis, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CONCAT_BWD, new double[] { nCount, hTopDiff, nNumConcats, nConcatInputSize, nTopConcatAxis, nBottomConcatAxis, nOffsetConcatAxis, hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CONCAT_BWD, m_param.AsDouble(nCount, hTopDiff, nNumConcats, nConcatInputSize, nTopConcatAxis, nBottomConcatAxis, nOffsetConcatAxis, hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CONCAT_BWD, new float[] { nCount, hTopDiff, nNumConcats, nConcatInputSize, nTopConcatAxis, nBottomConcatAxis, nOffsetConcatAxis, hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CONCAT_BWD, m_param.AsFloat(nCount, hTopDiff, nNumConcats, nConcatInputSize, nTopConcatAxis, nBottomConcatAxis, nOffsetConcatAxis, hBottomDiff));
         }
 
         /// <summary>
@@ -8025,9 +8052,9 @@ namespace MyCaffe.common
         public void slice_fwd(int nCount, long hBottomData, int nNumSlices, int nSliceSize, int nBottomSliceAxis, int nTopSliceAxis, int nOffsetSliceAxis, long hTopData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SLICE_FWD, new double[] { nCount, hBottomData, nNumSlices, nSliceSize, nBottomSliceAxis, nTopSliceAxis, nOffsetSliceAxis, hTopData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SLICE_FWD, m_param.AsDouble(nCount, hBottomData, nNumSlices, nSliceSize, nBottomSliceAxis, nTopSliceAxis, nOffsetSliceAxis, hTopData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SLICE_FWD, new float[] { nCount, hBottomData, nNumSlices, nSliceSize, nBottomSliceAxis, nTopSliceAxis, nOffsetSliceAxis, hTopData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SLICE_FWD, m_param.AsFloat(nCount, hBottomData, nNumSlices, nSliceSize, nBottomSliceAxis, nTopSliceAxis, nOffsetSliceAxis, hTopData));
         }
 
         /// <summary>
@@ -8044,9 +8071,9 @@ namespace MyCaffe.common
         public void slice_bwd(int nCount, long hTopDiff, int nNumSlices, int nSliceSize, int nBottomSliceAxis, int nTopSliceAxis, int nOffsetSliceAxis, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SLICE_BWD, new double[] { nCount, hTopDiff, nNumSlices, nSliceSize, nBottomSliceAxis, nTopSliceAxis, nOffsetSliceAxis, hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SLICE_BWD, m_param.AsDouble(nCount, hTopDiff, nNumSlices, nSliceSize, nBottomSliceAxis, nTopSliceAxis, nOffsetSliceAxis, hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SLICE_BWD, new float[] { nCount, hTopDiff, nNumSlices, nSliceSize, nBottomSliceAxis, nTopSliceAxis, nOffsetSliceAxis, hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SLICE_BWD, m_param.AsFloat(nCount, hTopDiff, nNumSlices, nSliceSize, nBottomSliceAxis, nTopSliceAxis, nOffsetSliceAxis, hBottomDiff));
         }
 
         /// <summary>
@@ -8061,9 +8088,9 @@ namespace MyCaffe.common
         public void tile_fwd(int nCount, long hBottomData, int nInnerDim, int nTiles, int nBottomTileAxis, long hTopData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TILE_FWD, new double[] { nCount, hBottomData, nInnerDim, nTiles, nBottomTileAxis, hTopData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TILE_FWD, m_param.AsDouble(nCount, hBottomData, nInnerDim, nTiles, nBottomTileAxis, hTopData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TILE_FWD, new float[] { nCount, hBottomData, nInnerDim, nTiles, nBottomTileAxis, hTopData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TILE_FWD, m_param.AsFloat(nCount, hBottomData, nInnerDim, nTiles, nBottomTileAxis, hTopData));
         }
 
         /// <summary>
@@ -8078,9 +8105,9 @@ namespace MyCaffe.common
         public void tile_bwd(int nCount, long hTopDiff, int nTileSize, int nTiles, int nBottomTileAxis, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TILE_BWD, new double[] { nCount, hTopDiff, nTileSize, nTiles, nBottomTileAxis, hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TILE_BWD, m_param.AsDouble(nCount, hTopDiff, nTileSize, nTiles, nBottomTileAxis, hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TILE_BWD, new float[] { nCount, hTopDiff, nTileSize, nTiles, nBottomTileAxis, hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TILE_BWD, m_param.AsFloat(nCount, hTopDiff, nTileSize, nTiles, nBottomTileAxis, hBottomDiff));
         }
 
         /// <summary>
@@ -8095,9 +8122,9 @@ namespace MyCaffe.common
         public void bias_fwd(int nCount, long hBottomData, long hBiasData, int nBiasDim, int nInnerDim, long hTopData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_BIAS_FWD, new double[] { nCount, hBottomData, hBiasData, nBiasDim, nInnerDim, hTopData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_BIAS_FWD, m_param.AsDouble(nCount, hBottomData, hBiasData, nBiasDim, nInnerDim, hTopData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_BIAS_FWD, new float[] { nCount, hBottomData, hBiasData, nBiasDim, nInnerDim, hTopData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_BIAS_FWD, m_param.AsFloat(nCount, hBottomData, hBiasData, nBiasDim, nInnerDim, hTopData));
         }
 
         /// <summary>
@@ -8117,9 +8144,9 @@ namespace MyCaffe.common
         public void scale_fwd(int nCount, long hX, long hScaleData, int nScaleDim, int nInnerDim, long hY, long hBiasData = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SCALE_FWD, new double[] { nCount, hX, hScaleData, nScaleDim, nInnerDim, hY, hBiasData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SCALE_FWD, m_param.AsDouble(nCount, hX, hScaleData, nScaleDim, nInnerDim, hY, hBiasData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SCALE_FWD, new float[] { nCount, hX, hScaleData, nScaleDim, nInnerDim, hY, hBiasData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SCALE_FWD, m_param.AsFloat(nCount, hX, hScaleData, nScaleDim, nInnerDim, hY, hBiasData));
         }
 
         /// <summary>
@@ -8135,9 +8162,9 @@ namespace MyCaffe.common
         public void threshold_fwd(int nCount, double dfThreshold, long hX, long hY)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_THRESHOLD_FWD, new double[] { nCount, dfThreshold, hX, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_THRESHOLD_FWD, m_param.AsDouble(nCount, dfThreshold, hX, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_THRESHOLD_FWD, new float[] { nCount, (float)dfThreshold, hX, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_THRESHOLD_FWD, m_param.AsFloat(nCount, (float)dfThreshold, hX, hY));
         }
 
         /// <summary>
@@ -8159,9 +8186,9 @@ namespace MyCaffe.common
         public void cll_bwd(int nCount, int nChannels, double dfMargin, bool bLegacyVersion, double dfAlpha, long hY, long hDiff, long hDistSq, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CLL_BWD, new double[] { nCount, nChannels, dfMargin, (bLegacyVersion) ? 1.0 : 0.0, dfAlpha, hY, hDiff, hDistSq, hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CLL_BWD, m_param.AsDouble(nCount, nChannels, dfMargin, (bLegacyVersion) ? 1.0 : 0.0, dfAlpha, hY, hDiff, hDistSq, hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CLL_BWD, new float[] { nCount, nChannels, (float)dfMargin, (bLegacyVersion) ? 1.0f : 0.0f, (float)dfAlpha, hY, hDiff, hDistSq, hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CLL_BWD, m_param.AsFloat(nCount, nChannels, (float)dfMargin, (bLegacyVersion) ? 1.0f : 0.0f, (float)dfAlpha, hY, hDiff, hDistSq, hBottomDiff));
         }
 
         /// <summary>
@@ -8178,9 +8205,9 @@ namespace MyCaffe.common
         public void smoothl1_fwd(int nCount, long hX, long hY)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SMOOTHL1_FWD, new double[] { nCount, hX, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SMOOTHL1_FWD, m_param.AsDouble(nCount, hX, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SMOOTHL1_FWD, new float[] { nCount, hX, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SMOOTHL1_FWD, m_param.AsFloat( nCount, hX, hY));
         }
 
         /// <summary>
@@ -8197,9 +8224,9 @@ namespace MyCaffe.common
         public void smoothl1_bwd(int nCount, long hX, long hY)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SMOOTHL1_BWD, new double[] { nCount, hX, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SMOOTHL1_BWD, m_param.AsDouble(nCount, hX, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SMOOTHL1_BWD, new float[] { nCount, hX, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SMOOTHL1_BWD, m_param.AsFloat( nCount, hX, hY));
         }
 
         /// <summary>
@@ -8216,9 +8243,9 @@ namespace MyCaffe.common
         public void permute(int nCount, long hBottom, bool bFwd, long hPermuteOrder, long hOldSteps, long hNewSteps, int nNumAxes, long hTop)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_PERMUTE, new double[] { nCount, hBottom, (bFwd) ? 1 : 0, hPermuteOrder, hOldSteps, hNewSteps, nNumAxes, hTop });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_PERMUTE, m_param.AsDouble(nCount, hBottom, (bFwd) ? 1 : 0, hPermuteOrder, hOldSteps, hNewSteps, nNumAxes, hTop));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_PERMUTE, new float[] { nCount, hBottom, (bFwd) ? 1 : 0, hPermuteOrder, hOldSteps, hNewSteps, nNumAxes, hTop });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_PERMUTE, m_param.AsFloat( nCount, hBottom, (bFwd) ? 1 : 0, hPermuteOrder, hOldSteps, hNewSteps, nNumAxes, hTop));
         }
 
         /// <summary>
@@ -8236,9 +8263,9 @@ namespace MyCaffe.common
         public void gather_fwd(int nCount, long hBottom, long hTop, int nAxis, int nDim, int nDimAtAxis, int nM, int nN, long hIdx)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GATHER_FWD, new double[] { nCount, hBottom, hTop, nAxis, nDim, nDimAtAxis, nM, nN, hIdx });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GATHER_FWD, m_param.AsDouble(nCount, hBottom, hTop, nAxis, nDim, nDimAtAxis, nM, nN, hIdx));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GATHER_FWD, new float[] { nCount, hBottom, hTop, nAxis, nDim, nDimAtAxis, nM, nN, hIdx });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GATHER_FWD, m_param.AsFloat( nCount, hBottom, hTop, nAxis, nDim, nDimAtAxis, nM, nN, hIdx));
         }
 
         /// <summary>
@@ -8256,9 +8283,9 @@ namespace MyCaffe.common
         public void gather_bwd(int nCount, long hTop, long hBottom, int nAxis, int nDim, int nDimAtAxis, int nM, int nN, long hIdx)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GATHER_BWD, new double[] { nCount, hTop, hBottom, nAxis, nDim, nDimAtAxis, nM, nN, hIdx });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GATHER_BWD, m_param.AsDouble(nCount, hTop, hBottom, nAxis, nDim, nDimAtAxis, nM, nN, hIdx));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GATHER_BWD, new float[] { nCount, hTop, hBottom, nAxis, nDim, nDimAtAxis, nM, nN, hIdx });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GATHER_BWD, m_param.AsFloat( nCount, hTop, hBottom, nAxis, nDim, nDimAtAxis, nM, nN, hIdx));
         }
 
         /// <summary>
@@ -8277,9 +8304,9 @@ namespace MyCaffe.common
         public void lrn_fillscale(int nCount, long hBottomData, int nNum, int nChannels, int nHeight, int nWidth, int nSize, T fAlphaOverSize, T fK, long hScaleData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LRN_FILLSCALE, new double[] { nCount, hBottomData, nNum, nChannels, nHeight, nWidth, nSize, convertD(fAlphaOverSize), convertD(fK), hScaleData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LRN_FILLSCALE, m_param.AsDouble(nCount, hBottomData, nNum, nChannels, nHeight, nWidth, nSize, convertD(fAlphaOverSize), convertD(fK), hScaleData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LRN_FILLSCALE, new float[] { nCount, hBottomData, nNum, nChannels, nHeight, nWidth, nSize, convertF(fAlphaOverSize), convertF(fK), hScaleData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LRN_FILLSCALE, m_param.AsFloat( nCount, hBottomData, nNum, nChannels, nHeight, nWidth, nSize, convertF(fAlphaOverSize), convertF(fK), hScaleData));
         }
 
         /// <summary>
@@ -8293,9 +8320,9 @@ namespace MyCaffe.common
         public void lrn_computeoutput(int nCount, long hBottomData, long hScaleData, T fNegativeBeta, long hTopData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LRN_COMPUTEOUTPUT, new double[] { nCount, hBottomData, hScaleData, convertD(fNegativeBeta), hTopData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LRN_COMPUTEOUTPUT, m_param.AsDouble(nCount, hBottomData, hScaleData, convertD(fNegativeBeta), hTopData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LRN_COMPUTEOUTPUT, new float[] { nCount, hBottomData, hScaleData, convertF(fNegativeBeta), hTopData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LRN_COMPUTEOUTPUT, m_param.AsFloat( nCount, hBottomData, hScaleData, convertF(fNegativeBeta), hTopData));
         }
 
 
@@ -8318,9 +8345,9 @@ namespace MyCaffe.common
         public void lrn_computediff(int nCount, long hBottomData, long hTopData, long hScaleData, long hTopDiff, int nNum, int nChannels, int nHeight, int nWidth, int nSize, T fNegativeBeta, T fCacheRatio, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LRN_COMPUTEDIFF, new double[] { nCount, hBottomData, hTopData, hScaleData, hTopDiff, nNum, nChannels, nHeight, nWidth, nSize, convertD(fNegativeBeta), convertD(fCacheRatio), hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LRN_COMPUTEDIFF, m_param.AsDouble(nCount, hBottomData, hTopData, hScaleData, hTopDiff, nNum, nChannels, nHeight, nWidth, nSize, convertD(fNegativeBeta), convertD(fCacheRatio), hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LRN_COMPUTEDIFF, new float[] { nCount, hBottomData, hTopData, hScaleData, hTopDiff, nNum, nChannels, nHeight, nWidth, nSize, convertF(fNegativeBeta), convertF(fCacheRatio), hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LRN_COMPUTEDIFF, m_param.AsFloat( nCount, hBottomData, hTopData, hScaleData, hTopDiff, nNum, nChannels, nHeight, nWidth, nSize, convertF(fNegativeBeta), convertF(fCacheRatio), hBottomDiff));
         }
 
         /// <summary>
@@ -8337,9 +8364,9 @@ namespace MyCaffe.common
         public void sgd_update(int nCount, long hNetParamsDiff, long hHistoryData, T fMomentum, T fLocalRate)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SGD_UPDATE, new double[] { nCount, hNetParamsDiff, hHistoryData, convertD(fMomentum), convertD(fLocalRate) });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SGD_UPDATE, m_param.AsDouble(nCount, hNetParamsDiff, hHistoryData, convertD(fMomentum), convertD(fLocalRate)));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SGD_UPDATE, new float[] { nCount, hNetParamsDiff, hHistoryData, convertF(fMomentum), convertF(fLocalRate) });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SGD_UPDATE, m_param.AsFloat( nCount, hNetParamsDiff, hHistoryData, convertF(fMomentum), convertF(fLocalRate)));
         }
 
         /// <summary>
@@ -8357,9 +8384,9 @@ namespace MyCaffe.common
         public void nesterov_update(int nCount, long hNetParamsDiff, long hHistoryData, T fMomentum, T fLocalRate)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_NESTEROV_UPDATE, new double[] { nCount, hNetParamsDiff, hHistoryData, convertD(fMomentum), convertD(fLocalRate) });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_NESTEROV_UPDATE, m_param.AsDouble(nCount, hNetParamsDiff, hHistoryData, convertD(fMomentum), convertD(fLocalRate)));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_NESTEROV_UPDATE, new float[] { nCount, hNetParamsDiff, hHistoryData, convertF(fMomentum), convertF(fLocalRate) });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_NESTEROV_UPDATE, m_param.AsFloat( nCount, hNetParamsDiff, hHistoryData, convertF(fMomentum), convertF(fLocalRate)));
         }
 
 
@@ -8377,9 +8404,9 @@ namespace MyCaffe.common
         public void adagrad_update(int nCount, long hNetParamsDiff, long hHistoryData, T fDelta, T fLocalRate)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ADAGRAD_UPDATE, new double[] { nCount, hNetParamsDiff, hHistoryData, convertD(fDelta), convertD(fLocalRate) });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ADAGRAD_UPDATE, m_param.AsDouble(nCount, hNetParamsDiff, hHistoryData, convertD(fDelta), convertD(fLocalRate)));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ADAGRAD_UPDATE, new float[] { nCount, hNetParamsDiff, hHistoryData, convertF(fDelta), convertF(fLocalRate) });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ADAGRAD_UPDATE, m_param.AsFloat( nCount, hNetParamsDiff, hHistoryData, convertF(fDelta), convertF(fLocalRate)));
         }
 
         /// <summary>
@@ -8398,9 +8425,9 @@ namespace MyCaffe.common
         public void adadelta_update(int nCount, long hNetParamsDiff, long hHistoryData1, long hHistoryData2, T fMomentum, T fDelta, T fLocalRate)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ADADELTA_UPDATE, new double[] { nCount, hNetParamsDiff, hHistoryData1, hHistoryData2, convertD(fMomentum), convertD(fDelta), convertD(fLocalRate) });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ADADELTA_UPDATE, m_param.AsDouble(nCount, hNetParamsDiff, hHistoryData1, hHistoryData2, convertD(fMomentum), convertD(fDelta), convertD(fLocalRate)));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ADADELTA_UPDATE, new float[] { nCount, hNetParamsDiff, hHistoryData1, hHistoryData2, convertF(fMomentum), convertF(fDelta), convertF(fLocalRate) });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ADADELTA_UPDATE, m_param.AsFloat( nCount, hNetParamsDiff, hHistoryData1, hHistoryData2, convertF(fMomentum), convertF(fDelta), convertF(fLocalRate)));
         }
 
         /// <summary>
@@ -8420,9 +8447,9 @@ namespace MyCaffe.common
         public void adam_update(int nCount, long hNetParamsDiff, long hValM, long hValV, T fBeta1, T fBeta2, T fEpsHat, T fCorrectedLocalRate)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ADAM_UPDATE, new double[] { nCount, hNetParamsDiff, hValM, hValV, convertD(fBeta1), convertD(fBeta2), convertD(fEpsHat), convertD(fCorrectedLocalRate) });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ADAM_UPDATE, m_param.AsDouble(nCount, hNetParamsDiff, hValM, hValV, convertD(fBeta1), convertD(fBeta2), convertD(fEpsHat), convertD(fCorrectedLocalRate)));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ADAM_UPDATE, new float[] { nCount, hNetParamsDiff, hValM, hValV, convertF(fBeta1), convertF(fBeta2), convertF(fEpsHat), convertF(fCorrectedLocalRate) });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ADAM_UPDATE, m_param.AsFloat( nCount, hNetParamsDiff, hValM, hValV, convertF(fBeta1), convertF(fBeta2), convertF(fEpsHat), convertF(fCorrectedLocalRate)));
         }
 
         /// <summary>
@@ -8441,9 +8468,9 @@ namespace MyCaffe.common
         public void rmsprop_update(int nCount, long hNetParamsDiff, long hHistoryData, T fRmsDecay, T fDelta, T fLocalRate)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_RMSPROP_UPDATE, new double[] { nCount, hNetParamsDiff, hHistoryData, convertD(fRmsDecay), convertD(fDelta), convertD(fLocalRate) });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_RMSPROP_UPDATE, m_param.AsDouble(nCount, hNetParamsDiff, hHistoryData, convertD(fRmsDecay), convertD(fDelta), convertD(fLocalRate)));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_RMSPROP_UPDATE, new float[] { nCount, hNetParamsDiff, hHistoryData, convertF(fRmsDecay), convertF(fDelta), convertF(fLocalRate) });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_RMSPROP_UPDATE, m_param.AsFloat( nCount, hNetParamsDiff, hHistoryData, convertF(fRmsDecay), convertF(fDelta), convertF(fLocalRate)));
         }
 
         /// <summary>
@@ -8475,9 +8502,9 @@ namespace MyCaffe.common
         public void lstm_fwd(int t, int nN, int nH, long hWeight_h, long hWeight_i, long hClipData, int nClipOffset, long hTopData, int nTopOffset, long hCellData, int nCellOffset, long hPreGateData, int nPreGateOffset, long hGateData, int nGateOffset, long hHT1Data, int nHT1Offset, long hCT1Data, int nCT1Offset, long hHtoGateData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_FWD, new double[] { t, nN, nH, hWeight_h, hWeight_i, hClipData, nClipOffset, hTopData, nTopOffset, hCellData, nCellOffset, hPreGateData, nPreGateOffset, hGateData, nGateOffset, hHT1Data, nHT1Offset, hCT1Data, nCT1Offset, hHtoGateData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_FWD, m_param.AsDouble(t, nN, nH, hWeight_h, hWeight_i, hClipData, nClipOffset, hTopData, nTopOffset, hCellData, nCellOffset, hPreGateData, nPreGateOffset, hGateData, nGateOffset, hHT1Data, nHT1Offset, hCT1Data, nCT1Offset, hHtoGateData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_FWD, new float[] { t, nN, nH, hWeight_h, hWeight_i, hClipData, nClipOffset, hTopData, nTopOffset, hCellData, nCellOffset, hPreGateData, nPreGateOffset, hGateData, nGateOffset, hHT1Data, nHT1Offset, hCT1Data, nCT1Offset, hHtoGateData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_FWD, m_param.AsFloat( t, nN, nH, hWeight_h, hWeight_i, hClipData, nClipOffset, hTopData, nTopOffset, hCellData, nCellOffset, hPreGateData, nPreGateOffset, hGateData, nGateOffset, hHT1Data, nHT1Offset, hCT1Data, nCT1Offset, hHtoGateData));
         }
 
         /// <summary>
@@ -8513,9 +8540,9 @@ namespace MyCaffe.common
         public void lstm_bwd(int t, int nN, int nH, double dfClippingThreshold, long hWeight_h, long hClipData, int nClipOffset, long hTopDiff, int nTopOffset, long hCellData, long hCellDiff, int nCellOffset, long hPreGateDiff, int nPreGateOffset, long hGateData, long hGateDiff, int nGateOffset, long hCT1Data, int nCT1Offset, long hDHT1Diff, int nDHT1Offset, long hDCT1Diff, int nDCT1Offset, long hHtoHData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_BWD, new double[] { t, nN, nH, dfClippingThreshold, hWeight_h, hClipData, nClipOffset, hTopDiff, nTopOffset, hCellData, hCellDiff, nCellOffset, hPreGateDiff, nPreGateOffset, hGateData, hGateDiff, nGateOffset, hCT1Data, nCT1Offset, hDHT1Diff, nDHT1Offset, hDCT1Diff, nDCT1Offset, hHtoHData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_BWD, m_param.AsDouble(t, nN, nH, dfClippingThreshold, hWeight_h, hClipData, nClipOffset, hTopDiff, nTopOffset, hCellData, hCellDiff, nCellOffset, hPreGateDiff, nPreGateOffset, hGateData, hGateDiff, nGateOffset, hCT1Data, nCT1Offset, hDHT1Diff, nDHT1Offset, hDCT1Diff, nDCT1Offset, hHtoHData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_BWD, new float[] { t, nN, nH, (float)dfClippingThreshold, hWeight_h, hClipData, nClipOffset, hTopDiff, nTopOffset, hCellData, hCellDiff, nCellOffset, hPreGateDiff, nPreGateOffset, hGateData, hGateDiff, nGateOffset, hCT1Data, nCT1Offset, hDHT1Diff, nDHT1Offset, hDCT1Diff, nDCT1Offset, hHtoHData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_BWD, m_param.AsFloat( t, nN, nH, (float)dfClippingThreshold, hWeight_h, hClipData, nClipOffset, hTopDiff, nTopOffset, hCellData, hCellDiff, nCellOffset, hPreGateDiff, nPreGateOffset, hGateData, hGateDiff, nGateOffset, hCT1Data, nCT1Offset, hDHT1Diff, nDHT1Offset, hDCT1Diff, nDCT1Offset, hHtoHData));
         }
 
         /// <summary>
@@ -8536,9 +8563,9 @@ namespace MyCaffe.common
         public void lstm_unit_fwd(int nCount, int nHiddenDim, int nXCount, long hX, long hX_acts, long hC_prev, long hCont, long hC, long hH)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_UNIT_FWD, new double[] { nCount, nHiddenDim, nXCount, hX, hX_acts, hC_prev, hCont, hC, hH });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_UNIT_FWD, m_param.AsDouble(nCount, nHiddenDim, nXCount, hX, hX_acts, hC_prev, hCont, hC, hH));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_UNIT_FWD, new float[] { nCount, nHiddenDim, nXCount, hX, hX_acts, hC_prev, hCont, hC, hH });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_UNIT_FWD, m_param.AsFloat( nCount, nHiddenDim, nXCount, hX, hX_acts, hC_prev, hCont, hC, hH));
         }
 
         /// <summary>
@@ -8563,9 +8590,9 @@ namespace MyCaffe.common
         public void lstm_unit_bwd(int nCount, int nHiddenDim, int nXCount, long hC_prev, long hX_acts, long hC, long hH, long hCont, long hC_diff, long hH_diff, long hC_prev_diff, long hX_acts_diff, long hX_diff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_UNIT_BWD, new double[] { nCount, nHiddenDim, nXCount, hC_prev, hX_acts, hC, hH, hCont, hC_diff, hH_diff, hC_prev_diff, hX_acts_diff, hX_diff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_UNIT_BWD, m_param.AsDouble(nCount, nHiddenDim, nXCount, hC_prev, hX_acts, hC, hH, hCont, hC_diff, hH_diff, hC_prev_diff, hX_acts_diff, hX_diff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_UNIT_BWD, new float[] { nCount, nHiddenDim, nXCount, hC_prev, hX_acts, hC, hH, hCont, hC_diff, hH_diff, hC_prev_diff, hX_acts_diff, hX_diff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_UNIT_BWD, m_param.AsFloat( nCount, nHiddenDim, nXCount, hC_prev, hX_acts, hC, hH, hCont, hC_diff, hH_diff, hC_prev_diff, hX_acts_diff, hX_diff));
         }
 
         /// <summary>
@@ -8581,9 +8608,9 @@ namespace MyCaffe.common
         public void coeff_sum_fwd(int nCount, int nDim, int nNumOffset, double dfCoeff, long hCoeffData, long hBottom, long hTop)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COEFF_SUM_FWD, new double[] { nCount, nDim, nNumOffset, dfCoeff, hCoeffData, hBottom, hTop });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COEFF_SUM_FWD, m_param.AsDouble(nCount, nDim, nNumOffset, dfCoeff, hCoeffData, hBottom, hTop));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COEFF_SUM_FWD, new float[] { nCount, nDim, nNumOffset, (float)dfCoeff, hCoeffData, hBottom, hTop });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COEFF_SUM_FWD, m_param.AsFloat( nCount, nDim, nNumOffset, (float)dfCoeff, hCoeffData, hBottom, hTop));
         }
 
 
@@ -8600,9 +8627,9 @@ namespace MyCaffe.common
         public void coeff_sum_bwd(int nCount, int nDim, int nNumOffset, double dfCoeff, long hCoeffData, long hTopDiff, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COEFF_SUM_BWD, new double[] { nCount, nDim, nNumOffset, dfCoeff, hCoeffData, hTopDiff, hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COEFF_SUM_BWD, m_param.AsDouble(nCount, nDim, nNumOffset, dfCoeff, hCoeffData, hTopDiff, hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COEFF_SUM_BWD, new float[] { nCount, nDim, nNumOffset, (float)dfCoeff, hCoeffData, hTopDiff, hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COEFF_SUM_BWD, m_param.AsFloat( nCount, nDim, nNumOffset, (float)dfCoeff, hCoeffData, hTopDiff, hBottomDiff));
         }
 
         /// <summary>
@@ -8618,9 +8645,9 @@ namespace MyCaffe.common
         public void coeff_sub_fwd(int nCount, int nDim, int nNumOffset, double dfCoeff, long hCoeffData, long hBottom, long hTop)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COEFF_SUB_FWD, new double[] { nCount, nDim, nNumOffset, dfCoeff, hCoeffData, hBottom, hTop });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COEFF_SUB_FWD, m_param.AsDouble( nCount, nDim, nNumOffset, dfCoeff, hCoeffData, hBottom, hTop));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COEFF_SUB_FWD, new float[] { nCount, nDim, nNumOffset, (float)dfCoeff, hCoeffData, hBottom, hTop });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COEFF_SUB_FWD, m_param.AsFloat( nCount, nDim, nNumOffset, (float)dfCoeff, hCoeffData, hBottom, hTop));
         }
 
 
@@ -8637,9 +8664,9 @@ namespace MyCaffe.common
         public void coeff_sub_bwd(int nCount, int nDim, int nNumOffset, double dfCoeff, long hCoeffData, long hTopDiff, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COEFF_SUB_BWD, new double[] { nCount, nDim, nNumOffset, dfCoeff, hCoeffData, hTopDiff, hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COEFF_SUB_BWD, m_param.AsDouble( nCount, nDim, nNumOffset, dfCoeff, hCoeffData, hTopDiff, hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COEFF_SUB_BWD, new float[] { nCount, nDim, nNumOffset, (float)dfCoeff, hCoeffData, hTopDiff, hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COEFF_SUB_BWD, m_param.AsFloat( nCount, nDim, nNumOffset, (float)dfCoeff, hCoeffData, hTopDiff, hBottomDiff));
         }
 
 
@@ -8656,9 +8683,9 @@ namespace MyCaffe.common
         public void cross_entropy_fwd(int nCount, long hInput, long hTarget, long hLoss, bool bHasIgnoreLabel, int nIgnoreLabel, long hCountData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CROSS_ENTROPY_FWD, new double[] { nCount, hInput, hTarget, hLoss, (bHasIgnoreLabel) ? 1 : 0, nIgnoreLabel, hCountData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CROSS_ENTROPY_FWD, m_param.AsDouble( nCount, hInput, hTarget, hLoss, (bHasIgnoreLabel) ? 1 : 0, nIgnoreLabel, hCountData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CROSS_ENTROPY_FWD, new float[] { nCount, hInput, hTarget, hLoss, (bHasIgnoreLabel) ? 1 : 0, nIgnoreLabel, hCountData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CROSS_ENTROPY_FWD, m_param.AsFloat( nCount, hInput, hTarget, hLoss, (bHasIgnoreLabel) ? 1 : 0, nIgnoreLabel, hCountData));
         }
 
         /// <summary>
@@ -8671,9 +8698,9 @@ namespace MyCaffe.common
         public void cross_entropy_ignore(int nCount, int nIgnoreLabel, long hTarget, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CROSS_ENTROPY_IGNORE, new double[] { nCount, nIgnoreLabel, hTarget, hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CROSS_ENTROPY_IGNORE, m_param.AsDouble( nCount, nIgnoreLabel, hTarget, hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CROSS_ENTROPY_IGNORE, new float[] { nCount, nIgnoreLabel, hTarget, hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CROSS_ENTROPY_IGNORE, m_param.AsFloat( nCount, nIgnoreLabel, hTarget, hBottomDiff));
         }
 
 #pragma warning disable 1591
@@ -8681,33 +8708,33 @@ namespace MyCaffe.common
         public void matrix_set_diagonal(int nCount, int nRows, double dfVal, long hData) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_SET_DIAGONAL, new double[] { nCount, nRows, dfVal, hData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_SET_DIAGONAL, m_param.AsDouble( nCount, nRows, dfVal, hData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_SET_DIAGONAL, new float[] { nCount, nRows, (float)dfVal, hData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_SET_DIAGONAL, m_param.AsFloat( nCount, nRows, (float)dfVal, hData));
         }
 
         public void matrix_set_diagonal(int nCount, int nRows, long hDiagonal, double dfScaleA, double dfScaleB, long hData) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_SET_DIAGONAL2, new double[] { nCount, nRows, hDiagonal, dfScaleA, dfScaleB, hData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_SET_DIAGONAL2, m_param.AsDouble( nCount, nRows, hDiagonal, dfScaleA, dfScaleB, hData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_SET_DIAGONAL2, new float[] { nCount, nRows, hDiagonal, (float)dfScaleA, (float)dfScaleB, hData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_SET_DIAGONAL2, m_param.AsFloat( nCount, nRows, hDiagonal, (float)dfScaleA, (float)dfScaleB, hData));
         }
 
         public void matrix_add_vector(ORIENTATION orientation, int nWidth, int nHeight, double dfScale, long hA, long hB, long hY) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_ADD_VECTOR, new double[] { (int)orientation, nWidth, nHeight, dfScale, hA, hB, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_ADD_VECTOR, m_param.AsDouble( (int)orientation, nWidth, nHeight, dfScale, hA, hB, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_ADD_VECTOR, new float[] { (int)orientation, nWidth, nHeight, (float)dfScale, hA, hB, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_ADD_VECTOR, m_param.AsFloat( (int)orientation, nWidth, nHeight, (float)dfScale, hA, hB, hY));
         }
 
         public void matrix_transpose_operation(TRANSPOSE_OPERATION op, int nWidth, int nHeight, long hA, long hB, long hY, double dfScaleA = 1.0, double dfScaleB = 1.0) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_TRANSPOSE_OPERATION, new double[] { (int)op, nWidth, nHeight, hA, hB, hY, dfScaleA, dfScaleB });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_TRANSPOSE_OPERATION, m_param.AsDouble( (int)op, nWidth, nHeight, hA, hB, hY, dfScaleA, dfScaleB));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_TRANSPOSE_OPERATION, new float[] { (int)op, nWidth, nHeight, hA, hB, hY, (float)dfScaleA, (float)dfScaleB });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_TRANSPOSE_OPERATION, m_param.AsFloat( (int)op, nWidth, nHeight, hA, hB, hY, (float)dfScaleA, (float)dfScaleB));
         }
 
         public void matrix_transpose_add(int nWidth, int nHeight, double dfScaleA, double dfScaleB, long hA, long hB, long hY) /** @private */
@@ -8728,25 +8755,25 @@ namespace MyCaffe.common
         public void matrix_aggregate_cols(AGGREGATIONS op, int nWidth, int nHeight, long hA, long hY) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_AGGREGATE_COLS, new double[] { (int)op, nWidth, nHeight, hA, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_AGGREGATE_COLS, m_param.AsDouble( (int)op, nWidth, nHeight, hA, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_AGGREGATE_COLS, new float[] { (int)op, nWidth, nHeight, hA, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_AGGREGATE_COLS, m_param.AsFloat( (int)op, nWidth, nHeight, hA, hY));
         }
 
         public void matrix_aggregate_rows(AGGREGATIONS op, int nWidth, int nHeight, long hA, long hOnes, long hY) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_AGGREGATE_ROWS, new double[] { (int)op, nWidth, nHeight, hA, hOnes, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_AGGREGATE_ROWS, m_param.AsDouble( (int)op, nWidth, nHeight, hA, hOnes, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_AGGREGATE_ROWS, new float[] { (int)op, nWidth, nHeight, hA, hOnes, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_AGGREGATE_ROWS, m_param.AsFloat( (int)op, nWidth, nHeight, hA, hOnes, hY));
         }
 
         public void matrix_transpose(int nWidth, int nHeight, long hA, long hY) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_TRANSPOSE, new double[] { nWidth, nHeight, hA, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_TRANSPOSE, m_param.AsDouble( nWidth, nHeight, hA, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_TRANSPOSE, new float[] { nWidth, nHeight, hA, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_TRANSPOSE, m_param.AsFloat( nWidth, nHeight, hA, hY));
         }
 
         /// <summary>
@@ -8761,49 +8788,49 @@ namespace MyCaffe.common
         public void matrix_meancenter_by_column(int nWidth, int nHeight, long hA, long hB, long hY, bool bNormalize = false)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_MEANCENTER_BY_COL, new double[] { nWidth, nHeight, hA, hB, hY, (bNormalize) ? 1 : 0 });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_MEANCENTER_BY_COL, m_param.AsDouble( nWidth, nHeight, hA, hB, hY, (bNormalize) ? 1 : 0));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_MEANCENTER_BY_COL, new float[] { nWidth, nHeight, hA, hB, hY, (bNormalize) ? 1 : 0 });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_MEANCENTER_BY_COL, m_param.AsFloat( nWidth, nHeight, hA, hB, hY, (bNormalize) ? 1 : 0));
         }
 
         public void matrix_euclidean_distance(long hX, long hY, long hOut, int n, int d, int nStart, int nEnd) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_EUCLIDEAN_DIST, new double[] { hX, hY, hOut, n, d, nStart, nEnd });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_EUCLIDEAN_DIST, m_param.AsDouble( hX, hY, hOut, n, d, nStart, nEnd));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_EUCLIDEAN_DIST, new float[] { hX, hY, hOut, n, d, nStart, nEnd });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_EUCLIDEAN_DIST, m_param.AsFloat( hX, hY, hOut, n, d, nStart, nEnd));
         }
 
         public void matrix_dot(int m, int n, int k, long hA, long hB, long hC) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_DOT, new double[] { m, n, k, hA, hB, hC });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_DOT, m_param.AsDouble( m, n, k, hA, hB, hC));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_DOT, new float[] { m, n, k, hA, hB, hC });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_DOT, m_param.AsFloat( m, n, k, hA, hB, hC));
         }
 
         public void matrix_mean_rows(int nWidth, int nHeight, long hA, long hOnes, double dfAlpha, long hY) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_MEAN, new double[] { nWidth, nHeight, hA, hOnes, dfAlpha, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_MEAN, m_param.AsDouble( nWidth, nHeight, hA, hOnes, dfAlpha, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_MEAN, new float[] { nWidth, nHeight, hA, hOnes, (float)dfAlpha, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_MEAN, m_param.AsFloat( nWidth, nHeight, hA, hOnes, (float)dfAlpha, hY));
         }
 
         public void matrix_stdev_rows(int nWidth, int nHeight, long hA, long hOnes, long hMean, long hWork, long hY) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_STDEV, new double[] { nWidth, nHeight, hA, hOnes, hMean, hWork, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_STDEV, m_param.AsDouble( nWidth, nHeight, hA, hOnes, hMean, hWork, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_STDEV, new float[] { nWidth, nHeight, hA, hOnes, hMean, hWork, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_STDEV, m_param.AsFloat( nWidth, nHeight, hA, hOnes, hMean, hWork, hY));
         }
 
         public void matrix_correlations(int nWidth, int nHeight, long hA, long hOnes, long hMean, long hStdev, long hWork, long hY) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_CORRELATIONS, new double[] { nWidth, nHeight, hA, hOnes, hMean, hStdev, hWork, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_CORRELATIONS, m_param.AsDouble( nWidth, nHeight, hA, hOnes, hMean, hStdev, hWork, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_CORRELATIONS, new float[] { nWidth, nHeight, hA, hOnes, hMean, hStdev, hWork, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_CORRELATIONS, m_param.AsFloat( nWidth, nHeight, hA, hOnes, hMean, hStdev, hWork, hY));
         }
 
 #pragma warning restore 1591
@@ -8817,45 +8844,45 @@ namespace MyCaffe.common
         public void tsne_update(int n, double dfMomentum, double dfLearningRate, long hdY, long huY, long hGains, long hY, double fGainFactor1 = 0.2, double fGainFactor2 = 0.8) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_UPDATE, new double[] { n, dfMomentum, dfLearningRate, hdY, huY, hGains, hY, fGainFactor1, fGainFactor2 });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_UPDATE, m_param.AsDouble( n, dfMomentum, dfLearningRate, hdY, huY, hGains, hY, fGainFactor1, fGainFactor2));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_UPDATE, new float[] { n, (float)dfMomentum, (float)dfLearningRate, hdY, huY, hGains, hY, (float)fGainFactor1, (float)fGainFactor2 });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_UPDATE, m_param.AsFloat( n, (float)dfMomentum, (float)dfLearningRate, hdY, huY, hGains, hY, (float)fGainFactor1, (float)fGainFactor2));
         }
 
         public void tsne_update_grad(int n, long hPosF, long hNegF, double dfSumQ, long hdC) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_UPDATE_GRAD, new double[] { n, hPosF, hNegF, dfSumQ, hdC });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_UPDATE_GRAD, m_param.AsDouble( n, hPosF, hNegF, dfSumQ, hdC));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_UPDATE_GRAD, new float[] { n, hPosF, hNegF, (float)dfSumQ, hdC });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_UPDATE_GRAD, m_param.AsFloat( n, hPosF, hNegF, (float)dfSumQ, hdC));
         }
 
         public void tsne_compute_exact_error(int n, long hP, long hQ, long hY) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_EXACT_ERROR, new double[] { n, hP, hQ, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_EXACT_ERROR, m_param.AsDouble( n, hP, hQ, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_EXACT_ERROR, new float[] { n, hP, hQ, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_EXACT_ERROR, m_param.AsFloat( n, hP, hQ, hY));
         }
 
         public void tsne_compute_squared_euclidean_distance(int n, int d, long hWork, long hX, long hDD_on_host) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_SQUARED_EUCLIDEAN_DISTANCE, new double[] { n, d, hWork, hX, hDD_on_host });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_SQUARED_EUCLIDEAN_DISTANCE, m_param.AsDouble( n, d, hWork, hX, hDD_on_host));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_SQUARED_EUCLIDEAN_DISTANCE, new float[] { n, d, hWork, hX, hDD_on_host });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_SQUARED_EUCLIDEAN_DISTANCE, m_param.AsFloat( n, d, hWork, hX, hDD_on_host));
         }
 
         public double tsne_compute_q_matrix(int n, long hDD_on_host, long hQ, bool bQisHostMem) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_Q_MATRIX, new double[] { n, hDD_on_host, hQ, (bQisHostMem) ? 1 : 0 });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_Q_MATRIX, m_param.AsDouble( n, hDD_on_host, hQ, (bQisHostMem) ? 1 : 0));
                 return rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_Q_MATRIX, new float[] { n, hDD_on_host, hQ, (bQisHostMem) ? 1 : 0 });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_Q_MATRIX, m_param.AsFloat( n, hDD_on_host, hQ, (bQisHostMem) ? 1 : 0));
                 return rg[0];
             }
         }
@@ -8863,21 +8890,21 @@ namespace MyCaffe.common
         public void tsne_compute_exact_gradient(int n, int d, long hY, long hP, long hQ, bool bQonHost, long hdC, double dfSumQ) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_EXACT_GRADIENT, new double[] { n, d, hY, hP, hQ, (bQonHost) ? 1 : 0, hdC, dfSumQ });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_EXACT_GRADIENT, m_param.AsDouble( n, d, hY, hP, hQ, (bQonHost) ? 1 : 0, hdC, dfSumQ));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_EXACT_GRADIENT, new float[] { n, d, hY, hP, hQ, (bQonHost) ? 1 : 0, hdC, (float)dfSumQ });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_EXACT_GRADIENT, m_param.AsFloat( n, d, hY, hP, hQ, (bQonHost) ? 1 : 0, hdC, (float)dfSumQ));
         }
 
         public long tsne_symmetrize_matrix(int n, long hRowP, long hColP, long hValP) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_SYMMETRIZE_MATRIX, new double[] { n, hRowP, hColP, hValP });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_SYMMETRIZE_MATRIX, m_param.AsDouble( n, hRowP, hColP, hValP));
                 return (long)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_SYMMETRIZE_MATRIX, new float[] { n, hRowP, hColP, hValP });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_SYMMETRIZE_MATRIX, m_param.AsFloat( n, hRowP, hColP, hValP));
                 return (long)rg[0];
             }
         }
@@ -8886,7 +8913,7 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_KNN_BOUNDS, new double[] { n, hData, dfCirclePct });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_KNN_BOUNDS, m_param.AsDouble( n, hData, dfCirclePct));
                 dfMinX = rg[0];
                 dfMinY = rg[1];
                 dfMaxX = rg[2];
@@ -8894,7 +8921,7 @@ namespace MyCaffe.common
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_KNN_BOUNDS, new float[] { n, hData, (float)dfCirclePct });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_KNN_BOUNDS, m_param.AsFloat( n, hData, (float)dfCirclePct));
                 dfMinX = rg[0];
                 dfMinY = rg[1];
                 dfMaxX = rg[2];
@@ -8906,12 +8933,12 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_CREATE_GAUSSIAN_PERPLEXITY, new double[] { n, d, k, hX, hCurP, hValP, hRowPonHost, hColPonHost, fPerplexity });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_CREATE_GAUSSIAN_PERPLEXITY, m_param.AsDouble( n, d, k, hX, hCurP, hValP, hRowPonHost, hColPonHost, fPerplexity));
                 return (long)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_CREATE_GAUSSIAN_PERPLEXITY, new float[] { n, d, k, hX, hCurP, hValP, hRowPonHost, hColPonHost, (float)fPerplexity });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_CREATE_GAUSSIAN_PERPLEXITY, m_param.AsFloat( n, d, k, hX, hCurP, hValP, hRowPonHost, hColPonHost, (float)fPerplexity));
                 return (long)rg[0];
             }
         }
@@ -8922,14 +8949,14 @@ namespace MyCaffe.common
 
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_FIND_GAUSSIAN_PERPLEXITY, new double[] { hTsnePerplexity });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_FIND_GAUSSIAN_PERPLEXITY, m_param.AsDouble(hTsnePerplexity));
                 bDone = (rg[0] == 1.0) ? true : false;
                 nCurrentIteration = (int)rg[1];
                 nMaxIteration = (int)rg[2];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_FIND_GAUSSIAN_PERPLEXITY, new float[] { hTsnePerplexity });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_FIND_GAUSSIAN_PERPLEXITY, m_param.AsFloat( hTsnePerplexity));
                 bDone = (rg[0] == 1.0) ? true : false;
                 nCurrentIteration = (int)rg[1];
                 nMaxIteration = (int)rg[2];
@@ -8941,21 +8968,21 @@ namespace MyCaffe.common
         public void FreeTsneGaussianPerplexity(long hTsnePerplexity) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_FREE_GAUSSIAN_PERPLEXITY, new double[] { hTsnePerplexity });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_FREE_GAUSSIAN_PERPLEXITY, m_param.AsDouble(hTsnePerplexity));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_FREE_GAUSSIAN_PERPLEXITY, new float[] { hTsnePerplexity });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_FREE_GAUSSIAN_PERPLEXITY, m_param.AsFloat( hTsnePerplexity));
         }
 
         public long CreateTsne(int n, int d, long hY, long hValP, long hRowP, long hColP, long hdC, double fTheta) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_CREATE, new double[] { n, d, hY, hValP, hRowP, hColP, hdC, fTheta });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_CREATE, m_param.AsDouble( n, d, hY, hValP, hRowP, hColP, hdC, fTheta));
                 return (long)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_CREATE, new float[] { n, d, hY, hValP, hRowP, hColP, hdC, (float)fTheta });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_CREATE, m_param.AsFloat( n, d, hY, hValP, hRowP, hColP, hdC, (float)fTheta));
                 return (long)rg[0];
             }
         }
@@ -8963,21 +8990,21 @@ namespace MyCaffe.common
         public void ComputeTsneGradient(long hTsne, bool bValPUpdated) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_GRADIENT1, new double[] { hTsne, (bValPUpdated) ? 1 : 0 });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_GRADIENT1, m_param.AsDouble( hTsne, (bValPUpdated) ? 1 : 0));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_GRADIENT1, new float[] { hTsne, (bValPUpdated) ? 1 : 0 });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_GRADIENT1, m_param.AsFloat( hTsne, (bValPUpdated) ? 1 : 0));
         }
 
         public double EvaluateTsneError(long hTsne) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_ERROR1, new double[] { hTsne });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_ERROR1, m_param.AsDouble( hTsne));
                 return rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_ERROR1, new float[] { hTsne });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_ERROR1, m_param.AsFloat( hTsne));
                 return rg[0];
             }
         }
@@ -8985,9 +9012,9 @@ namespace MyCaffe.common
         public void FreeTsne(long hTsne) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_FREE, new double[] { hTsne });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_FREE, m_param.AsDouble( hTsne));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_FREE, new float[] { hTsne });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_FREE, m_param.AsFloat( hTsne));
         }
 
 #pragma warning restore 1591
@@ -9016,9 +9043,9 @@ namespace MyCaffe.common
         public void gaussian_blur(int n, int nChannels, int nHeight, int nWidth, double dfSigma, long hX, long hY)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GUASSIAN_BLUR, new double[] { n, nChannels, nHeight, nWidth, dfSigma, hX, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GUASSIAN_BLUR, m_param.AsDouble( n, nChannels, nHeight, nWidth, dfSigma, hX, hY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GUASSIAN_BLUR, new float[] { n, nChannels, nHeight, nWidth, (float)dfSigma, hX, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GUASSIAN_BLUR, m_param.AsFloat( n, nChannels, nHeight, nWidth, (float)dfSigma, hX, hY));
         }
 
         /// <summary>
@@ -9041,9 +9068,9 @@ namespace MyCaffe.common
         public double hamming_distance(int n, double dfThreshold, long hA, long hB, long hY, int nOffA = 0, int nOffB = 0, int nOffY = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_HAMMING_DIFF, new double[] { n, dfThreshold, hA, hB, hY, nOffA, nOffB, nOffY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_HAMMING_DIFF, m_param.AsDouble( n, dfThreshold, hA, hB, hY, nOffA, nOffB, nOffY));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_HAMMING_DIFF, new float[] { n, (float)dfThreshold, hA, hB, hY, nOffA, nOffB, nOffY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_HAMMING_DIFF, m_param.AsFloat( n, (float)dfThreshold, hA, hB, hY, nOffA, nOffB, nOffY));
 
             return asum_double(n, hY);
         }
@@ -9166,6 +9193,27 @@ namespace MyCaffe.common
             return rgf;
         }
 
+        private float[] convertF(T[] rg, float[] rgDst, int nOffset = 0, int nCount = -1)
+        {
+            if (rg == null)
+                return null;
+
+            if (nCount == -1)
+                nCount = rg.Length;
+
+            if (typeof(T) == typeof(float))
+            {
+                float[] rgConv = (float[])Convert.ChangeType(rg, typeof(float[]));
+                Array.Copy(rgConv, 0, rgDst, nOffset, nCount);
+            }
+            else
+            {
+                Array.Copy(rg, 0, rgDst, nOffset, nCount);
+            }
+
+            return rgDst;
+        }
+
         private double convertD1(T df)
         {
             return (double)Convert.ChangeType(df, typeof(double));
@@ -9188,6 +9236,44 @@ namespace MyCaffe.common
             return rgdf;
         }
 
+        private double[] convertD(T[] rg, double[] rgDst, int nOffset = 0, int nCount = -1)
+        {
+            if (rg == null)
+                return null;
+
+            if (nCount == -1)
+                nCount = rg.Length;
+
+            if (typeof(T) == typeof(double))
+            {
+                double[] rgConv = (double[])Convert.ChangeType(rg, typeof(double[]));
+                Array.Copy(rgConv, 0, rgDst, nOffset, nCount);
+            }
+            else
+            {
+                Array.Copy(rg, 0, rgDst, nOffset, nCount);
+            }
+
+            return rgDst;
+        }
+
         #endregion
+    }
+
+    class Params
+    {
+        public Params()
+        {
+        }
+
+        public double[] AsDouble(params double[] rg)
+        {
+            return rg;
+        }
+
+        public float[] AsFloat(params float[] rg)
+        {
+            return rg;
+        }
     }
 }
