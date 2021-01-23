@@ -2542,5 +2542,66 @@ namespace MyCaffe.common
 
             return Math.Sqrt(dfSum / rgDf.Length);
         }
+
+        /// <summary>
+        /// Set the values of a 3 channel image embedded within the blob in the order RGB or BGR where the full hxw is stored for each color in order.
+        /// </summary>
+        /// <param name="nX">Specifies the x pixel within the image.</param>
+        /// <param name="nY">Specifies the y pxiel within the image.</param>
+        /// <param name="R">Specifies the color for the Red color channel.</param>
+        /// <param name="G">Specifies the color for the Green color channel.</param>
+        /// <param name="B">Specifies the color for the Blue color channel.</param>
+        /// <param name="order">Optionally, specifies the color ordering RGB or BGR (default = RGB).</param>
+        /// <returns>The original pixel is returned as a three item tuple.</returns>
+        public Tuple<T, T, T> SetPixel(int nX, int nY, byte R, byte G, byte B, TransformationParameter.COLOR_ORDER order = TransformationParameter.COLOR_ORDER.RGB)
+        {
+            int nDim = width * height;
+            int nIdxR = nY * width + nX;
+            int nIdxG = nDim + nIdxR;
+            int nIdxB = nDim + nDim + nIdxR;
+
+            if (order == TransformationParameter.COLOR_ORDER.BGR)
+            {
+                int nTemp = nIdxB;
+                nIdxB = nIdxR;
+                nIdxR = nTemp;
+            }
+
+            T fR = Utility.ConvertVal<T>((double)R);
+            T fG = Utility.ConvertVal<T>((double)G);
+            T fB = Utility.ConvertVal<T>((double)B);
+
+            T[] rg = m_cuda.SetPixel(mutable_gpu_data, count(), true, new Tuple<int, T>(nIdxR, fR), new Tuple<int, T>(nIdxG, fG), new Tuple<int, T>(nIdxB, fB));
+
+            return new Tuple<T, T, T>(rg[0], rg[1], rg[2]);
+        }
+
+        /// <summary>
+        /// Sets a pixel to the values within a three item tuple where the first item is assigned RED, second GREEN and third BLUE.
+        /// </summary>
+        /// <param name="nX">Specifies the x pixel within the image.</param>
+        /// <param name="nY">Specifies the y pxiel within the image.</param>
+        /// <param name="pixel">Specifies the color values for RED, GREEN and BLUE.</param>
+        /// <param name="order">Optionally, specifies the color ordering RGB or BGR (default = RGB).</param>
+        public void SetPixel(int nX, int nY, Tuple<T, T, T> pixel, TransformationParameter.COLOR_ORDER order = TransformationParameter.COLOR_ORDER.RGB)
+        {
+            int nDim = width * height;
+            int nIdxR = nY * width + nX;
+            int nIdxG = nDim + nIdxR;
+            int nIdxB = nDim + nDim + nIdxR;
+
+            if (order == TransformationParameter.COLOR_ORDER.BGR)
+            {
+                int nTemp = nIdxB;
+                nIdxB = nIdxR;
+                nIdxR = nTemp;
+            }
+
+            T fR = pixel.Item1;
+            T fG = pixel.Item2;
+            T fB = pixel.Item3;
+
+            m_cuda.SetPixel(mutable_gpu_data, count(), false, new Tuple<int, T>(nIdxR, fR), new Tuple<int, T>(nIdxG, fG), new Tuple<int, T>(nIdxB, fB));
+        }
     }
 }

@@ -894,6 +894,8 @@ namespace MyCaffe.common
             NCCL_BROADCAST = 44,
             NCCL_ALLREDUCE = 45,
 
+            SETPIXEL = 46,
+
             CREATE_CUDNN = 47,
             FREE_CUDNN = 48,
 
@@ -2512,6 +2514,69 @@ namespace MyCaffe.common
                     convertF(rgSrc, rg, 3);
                     m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SETMEMAT, rg);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Set a pixel value where each pixel is defined a set index, value tuple.
+        /// </summary>
+        /// <param name="hMem">Specifies the memory where the values are set.</param>
+        /// <param name="nCount">Specifies the number of allocated items in the memory.</param>
+        /// <param name="bReturnOriginal">Specifies whether or not to return the original values (before setting).</param>
+        /// <param name="rgPixel">Specifies the pixel values.</param>
+        /// <returns>When 'bReturnOriginal' is True, the original values (before setting) are returned.</returns>
+        public T[] SetPixel(long hMem, int nCount, bool bReturnOriginal, params Tuple<int, T>[] rgPixel)
+        {
+            if (rgPixel.Length == 0)
+                throw new Exception("You must specify at least one pixel!");
+
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = new double[4 + rgPixel.Length * 2];
+
+                rg[0] = hMem;
+                rg[1] = nCount;
+                rg[2] = (bReturnOriginal) ? 1 : 0;
+                rg[3] = rgPixel.Length;
+                int nIdx = 4;
+
+                for (int i = 0; i < rgPixel.Length; i++)
+                {
+                    rg[nIdx] = rgPixel[i].Item1;
+                    nIdx++;
+                    rg[nIdx] = convertD1(rgPixel[i].Item2);
+                    nIdx++;
+                }
+
+                rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SETPIXEL, rg);
+                if (rg == null)
+                    return null;
+
+                return convert(rg);
+            }
+            else
+            {
+                float[] rg = new float[4 + rgPixel.Length * 2];
+
+                rg[0] = hMem;
+                rg[1] = nCount;
+                rg[2] = (bReturnOriginal) ? 1 : 0;
+                rg[3] = rgPixel.Length;
+                int nIdx = 4;
+
+                for (int i = 0; i < rgPixel.Length; i++)
+                {
+                    rg[nIdx] = rgPixel[i].Item1;
+                    nIdx++;
+                    rg[nIdx] = convertF1(rgPixel[i].Item2);
+                    nIdx++;
+                }
+
+                rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SETPIXEL, rg);
+                if (rg == null)
+                    return null;
+
+                return convert(rg);
             }
         }
 
@@ -9176,6 +9241,11 @@ namespace MyCaffe.common
             return (float)Convert.ChangeType(f, typeof(float));
         }
 
+        private T convertF1(float f)
+        {
+            return (T)Convert.ChangeType(f, typeof(T));
+        }
+
         private float[] convertF(T[] rg, int nCount = -1)
         {
             if (rg == null)
@@ -9217,6 +9287,11 @@ namespace MyCaffe.common
         private double convertD1(T df)
         {
             return (double)Convert.ChangeType(df, typeof(double));
+        }
+
+        private T convertD1(double df)
+        {
+            return (T)Convert.ChangeType(df, typeof(T));
         }
 
         private double[] convertD(T[] rg, int nCount = -1)

@@ -93,6 +93,8 @@ const int CUDA_FN_NCCL_INIT_MULTIPROCESS = 43;
 const int CUDA_FN_NCCL_BROADCAST = 44;
 const int CUDA_FN_NCCL_ALLREDUCE = 45;
 
+const int CUDA_FN_SETPIXEL = 46;
+
 const int CUDNN_FN_CREATE_CUDNN = 47;
 const int CUDNN_FN_FREE_CUDNN = 48;
 
