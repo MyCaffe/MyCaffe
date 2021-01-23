@@ -1019,7 +1019,7 @@ namespace MyCaffe.test
             m_log.CHECK_EQ(dfG2, dfG, "The values are not as expected!");
             m_log.CHECK_EQ(dfB2, dfB, "The values are not as expected!");
 
-            m_blob_preshaped.SetPixel(nX, nY, pixel2, order);
+            m_blob_preshaped.SetPixel(nX, nY, pixel2, false, order);
         }
     }
 }
