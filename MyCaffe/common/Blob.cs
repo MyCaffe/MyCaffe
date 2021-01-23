@@ -2571,7 +2571,7 @@ namespace MyCaffe.common
             T fG = Utility.ConvertVal<T>((double)G);
             T fB = Utility.ConvertVal<T>((double)B);
 
-            T[] rg = m_cuda.SetPixel(mutable_gpu_data, count(), true, new Tuple<int, T>(nIdxR, fR), new Tuple<int, T>(nIdxG, fG), new Tuple<int, T>(nIdxB, fB));
+            T[] rg = m_cuda.SetPixel(mutable_gpu_data, count(), true, 0, new Tuple<int, T>(nIdxR, fR), new Tuple<int, T>(nIdxG, fG), new Tuple<int, T>(nIdxB, fB));
 
             return new Tuple<T, T, T>(rg[0], rg[1], rg[2]);
         }
@@ -2584,8 +2584,9 @@ namespace MyCaffe.common
         /// <param name="pixel">Specifies the color values for RED, GREEN and BLUE.</param>
         /// <param name="bReturnOriginal">Optionally, specifies to return the original pixel.</param>
         /// <param name="order">Optionally, specifies the color ordering RGB or BGR (default = RGB).</param>
+        /// <param name="nOffset">Optionally, specifies the offset to start at (default = 0).</param>
         /// <returns>The original pixel is returned as a three item tuple.</returns>
-        public Tuple<T, T, T> SetPixel(int nX, int nY, Tuple<T, T, T> pixel, bool bReturnOriginal = false, TransformationParameter.COLOR_ORDER order = TransformationParameter.COLOR_ORDER.RGB)
+        public Tuple<T, T, T> SetPixel(int nX, int nY, Tuple<T, T, T> pixel, bool bReturnOriginal = false, TransformationParameter.COLOR_ORDER order = TransformationParameter.COLOR_ORDER.RGB, int nOffset = 0)
         {
             int nDim = width * height;
             int nIdxR = nY * width + nX;
@@ -2605,12 +2606,12 @@ namespace MyCaffe.common
 
             if (bReturnOriginal)
             {
-                T[] rg = m_cuda.SetPixel(mutable_gpu_data, count(), true, new Tuple<int, T>(nIdxR, fR), new Tuple<int, T>(nIdxG, fG), new Tuple<int, T>(nIdxB, fB));
+                T[] rg = m_cuda.SetPixel(mutable_gpu_data, count(), true, nOffset, new Tuple<int, T>(nIdxR, fR), new Tuple<int, T>(nIdxG, fG), new Tuple<int, T>(nIdxB, fB));
                 return new Tuple<T, T, T>(rg[0], rg[1], rg[2]);
             }
             else
             {
-                m_cuda.SetPixel(mutable_gpu_data, count(), true, new Tuple<int, T>(nIdxR, fR), new Tuple<int, T>(nIdxG, fG), new Tuple<int, T>(nIdxB, fB));
+                m_cuda.SetPixel(mutable_gpu_data, count(), true, nOffset, new Tuple<int, T>(nIdxR, fR), new Tuple<int, T>(nIdxG, fG), new Tuple<int, T>(nIdxB, fB));
                 return null;
             }
         }

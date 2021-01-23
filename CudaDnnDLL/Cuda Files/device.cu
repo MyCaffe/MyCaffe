@@ -826,15 +826,16 @@ long Device<T>::SetPixel(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, INT_MAX))
+	if (lErr = verifyInput(lInput, pfInput, 5, INT_MAX))
 		return lErr;
 
 	long hHandle = (long)pfInput[0];
 	size_t lCount = (size_t)pfInput[1];
 	bool bReturnOriginal = (pfInput[2] == 0) ? false : true;
-	size_t lPixels = (size_t)pfInput[3];
+	int nOffset = (int)pfInput[3];
+	size_t lPixels = (size_t)pfInput[4];
 
-	T* pPixels = &pfInput[4];
+	T* pPixels = &pfInput[5];
 
 	if (bReturnOriginal)
 	{
@@ -851,7 +852,7 @@ long Device<T>::SetPixel(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 		int nIdx = (int)pPixels[nPixelIdx];
 		T fVal = pPixels[nPixelIdx + 1];
 
-		if (lErr = m_memory.SetMemoryAt(hHandle, &fVal, 1, nIdx))
+		if (lErr = m_memory.SetMemoryAt(hHandle, &fVal, 1, nIdx + nOffset))
 			return lErr;
 	}
 
@@ -867,17 +868,18 @@ long Device<T>::GetPixel(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, INT_MAX))
+	if (lErr = verifyInput(lInput, pfInput, 5, INT_MAX))
 		return lErr;
 
 	long hHandle = (long)pfInput[0];
 	size_t lCount = (size_t)pfInput[1];
 	bool bReturnOriginal = (pfInput[2] == 0) ? false : true;
-	size_t lPixels = (size_t)pfInput[3];
+	int nOffset = (int)pfInput[3];
+	size_t lPixels = (size_t)pfInput[4];
 	if ((long)lPixels < 0)
 		return ERROR_PARAM_OUT_OF_RANGE;
 
-	T* pPixels = &pfInput[4];
+	T* pPixels = &pfInput[5];
 	T* pfOutput = *ppfOutput;
 
 	if (lPixels > *plOutput)
@@ -891,7 +893,7 @@ long Device<T>::GetPixel(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 		int nPixelIdx = i * 2;
 		int nIdx = (int)pPixels[nPixelIdx];
 
-		if (lErr = m_memory.GetMemoryAt(hHandle, &pfOutput[i], 1, nIdx))
+		if (lErr = m_memory.GetMemoryAt(hHandle, &pfOutput[i], 1, nIdx + nOffset))
 			return lErr;
 	}
 

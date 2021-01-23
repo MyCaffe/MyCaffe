@@ -266,6 +266,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestSetPixelAtOffset()
+        {
+            BlobSimpleTest test = new BlobSimpleTest();
+
+            try
+            {
+                foreach (IBlobSimpleTest t in test.Tests)
+                {
+                    t.TestSetPixelAtOffset();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     class BlobSimpleTest : TestBase
@@ -300,6 +318,7 @@ namespace MyCaffe.test
         void TestResize2();
         void TestResize3();
         void TestSetPixel();
+        void TestSetPixelAtOffset();
     }
 
     class BlobSimpleTest<T> : Test<T>, IBlobSimpleTest 
@@ -1007,7 +1026,7 @@ namespace MyCaffe.test
             m_log.CHECK_EQ(dfG2, 8, "The values are not as expected!");
             m_log.CHECK_EQ(dfB2, 9, "The values are not as expected!");
 
-            m_blob_preshaped.SetPixel(nX, nY, pixel);
+            m_blob_preshaped.SetPixel(nX, nY, pixel, false, order);
 
             pixel2 = m_blob_preshaped.SetPixel(nX, nY, (byte)dfR, (byte)dfG, (byte)dfB, order);
 
@@ -1019,7 +1038,91 @@ namespace MyCaffe.test
             m_log.CHECK_EQ(dfG2, dfG, "The values are not as expected!");
             m_log.CHECK_EQ(dfB2, dfB, "The values are not as expected!");
 
-            m_blob_preshaped.SetPixel(nX, nY, pixel2, false, order);
+            m_blob_preshaped.SetPixel(nX, nY, pixel, false, order);
+        }
+
+
+        public void TestSetPixelAtOffset()
+        {
+            int nOffset = 3 * 28 * 28;
+            m_blob_preshaped.Reshape(2, 3, 28, 28);
+            Fill3(m_blob_preshaped);
+
+            double[] rgdf = Utility.ConvertVec<T>(m_blob_preshaped.mutable_cpu_data);
+
+            for (int y = 0; y < 28; y++)
+            {
+                for (int x = 0; x < 28; x++)
+                {
+                    testPixel(nOffset, x, y, TransformationParameter.COLOR_ORDER.RGB, rgdf);
+                    testPixel(nOffset, x, y, TransformationParameter.COLOR_ORDER.BGR, rgdf);
+                }
+            }
+
+            double[] rgdf1 = Utility.ConvertVec<T>(m_blob_preshaped.mutable_cpu_data);
+
+            for (int i = 0; i < rgdf.Length; i++)
+            {
+                m_log.CHECK_EQ(rgdf[i], rgdf1[i], "The values are not as expected!");
+            }
+        }
+
+        private void testPixel(int nOffset, int nX, int nY, TransformationParameter.COLOR_ORDER order, double[] rgdf)
+        {
+            Tuple<T, T, T> val = new Tuple<T, T, T>(Utility.ConvertVal<T>(10.0), Utility.ConvertVal<T>(8.0), Utility.ConvertVal<T>(9.0));
+            Tuple<T, T, T> pixel = m_blob_preshaped.SetPixel(nX, nY, val, true, order, nOffset);
+
+            double[] rgdf1 = Utility.ConvertVec<T>(m_blob_preshaped.mutable_cpu_data);
+            for (int i = 0; i < nOffset; i++)
+            {
+                m_log.CHECK_EQ(rgdf[i], rgdf1[i], "The values pre offset should not change!");
+            }
+
+            Tuple<T, T, T> pixel2 = m_blob_preshaped.SetPixel(nX, nY, pixel, true, order, nOffset);
+
+            rgdf1 = Utility.ConvertVec<T>(m_blob_preshaped.mutable_cpu_data);
+            for (int i = 0; i < nOffset; i++)
+            {
+                m_log.CHECK_EQ(rgdf[i], rgdf1[i], "The values pre offset should not change!");
+            }
+
+            double dfR2 = Utility.ConvertVal<T>(pixel2.Item1);
+            double dfG2 = Utility.ConvertVal<T>(pixel2.Item2);
+            double dfB2 = Utility.ConvertVal<T>(pixel2.Item3);
+
+            m_log.CHECK_EQ(dfR2, 10, "The values are not as expected!");
+            m_log.CHECK_EQ(dfG2, 8, "The values are not as expected!");
+            m_log.CHECK_EQ(dfB2, 9, "The values are not as expected!");
+
+            m_blob_preshaped.SetPixel(nX, nY, pixel, false, order, nOffset);
+
+            rgdf1 = Utility.ConvertVec<T>(m_blob_preshaped.mutable_cpu_data);
+            for (int i = 0; i < nOffset; i++)
+            {
+                m_log.CHECK_EQ(rgdf[i], rgdf1[i], "The values pre offset should not change!");
+            }
+
+            pixel2 = m_blob_preshaped.SetPixel(nX, nY, val, true, order, nOffset);
+
+            rgdf1 = Utility.ConvertVec<T>(m_blob_preshaped.mutable_cpu_data);
+            for (int i = 0; i < nOffset; i++)
+            {
+                m_log.CHECK_EQ(rgdf[i], rgdf1[i], "The values pre offset should not change!");
+            }
+
+            dfR2 = Utility.ConvertVal<T>(pixel2.Item1);
+            dfG2 = Utility.ConvertVal<T>(pixel2.Item2);
+            dfB2 = Utility.ConvertVal<T>(pixel2.Item3);
+
+            double dfR = Utility.ConvertVal<T>(pixel.Item1);
+            double dfG = Utility.ConvertVal<T>(pixel.Item2);
+            double dfB = Utility.ConvertVal<T>(pixel.Item3);
+
+            m_log.CHECK_EQ(dfR2, dfR, "The values are not as expected!");
+            m_log.CHECK_EQ(dfG2, dfG, "The values are not as expected!");
+            m_log.CHECK_EQ(dfB2, dfB, "The values are not as expected!");
+
+            m_blob_preshaped.SetPixel(nX, nY, pixel, false, order, nOffset);
         }
     }
 }

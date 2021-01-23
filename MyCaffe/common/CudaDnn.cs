@@ -2523,22 +2523,24 @@ namespace MyCaffe.common
         /// <param name="hMem">Specifies the memory where the values are set.</param>
         /// <param name="nCount">Specifies the number of allocated items in the memory.</param>
         /// <param name="bReturnOriginal">Specifies whether or not to return the original values (before setting).</param>
+        /// <param name="nOffset">Specifies the offset of where the first pixel data starts.</param>
         /// <param name="rgPixel">Specifies the pixel values.</param>
         /// <returns>When 'bReturnOriginal' is True, the original values (before setting) are returned.</returns>
-        public T[] SetPixel(long hMem, int nCount, bool bReturnOriginal, params Tuple<int, T>[] rgPixel)
+        public T[] SetPixel(long hMem, int nCount, bool bReturnOriginal, int nOffset, params Tuple<int, T>[] rgPixel)
         {
             if (rgPixel.Length == 0)
                 throw new Exception("You must specify at least one pixel!");
 
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = new double[4 + rgPixel.Length * 2];
+                double[] rg = new double[5 + rgPixel.Length * 2];
 
                 rg[0] = hMem;
                 rg[1] = nCount;
                 rg[2] = (bReturnOriginal) ? 1 : 0;
-                rg[3] = rgPixel.Length;
-                int nIdx = 4;
+                rg[3] = nOffset;
+                rg[4] = rgPixel.Length;
+                int nIdx = 5;
 
                 for (int i = 0; i < rgPixel.Length; i++)
                 {
@@ -2556,13 +2558,14 @@ namespace MyCaffe.common
             }
             else
             {
-                float[] rg = new float[4 + rgPixel.Length * 2];
+                float[] rg = new float[5 + rgPixel.Length * 2];
 
                 rg[0] = hMem;
                 rg[1] = nCount;
                 rg[2] = (bReturnOriginal) ? 1 : 0;
-                rg[3] = rgPixel.Length;
-                int nIdx = 4;
+                rg[3] = nOffset;
+                rg[4] = rgPixel.Length;
+                int nIdx = 5;
 
                 for (int i = 0; i < rgPixel.Length; i++)
                 {
