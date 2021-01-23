@@ -114,6 +114,8 @@ class Device
 		long GetMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long SetMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long SetMemoryAt(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long SetPixel(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long GetPixel(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
 		long CopyHostBufferToGpu(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long CopyGpuToHostBuffer(long lInput, T* pfInput, long* plOutput, T** ppfOutput);

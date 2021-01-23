@@ -259,6 +259,7 @@ class Memory
 		long AllocMemory(int nDeviceID, bool bHalf, size_t lCount, T* pSrc, long hStream, long* phHandle);
 		long FreeMemory(long hHandle);
 		long GetMemory(long hHandle, MemoryItem** ppItem);
+		long GetMemoryAt(long hHandle, T* pDst, size_t lCount, size_t nOffset);
 		long SetMemory(long hHandle, T* pSrc, size_t lCount, long hStream);
 		long SetMemoryAt(long hHandle, T* pSrc, size_t lCount, size_t nOffset);
 
@@ -703,6 +704,33 @@ inline long Memory<T>::GetMemory(long hHandle, MemoryItem** ppItem)
 {
 	return m_memory.GetData(hHandle, ppItem);
 }
+
+template <class T>
+inline long Memory<T>::GetMemoryAt(long hHandle, T* pDst, size_t lCount, size_t nOffset)
+{
+	long long lSize = lCount * sizeof(T);
+	if (lSize > SIZE_MAX)
+		return ERROR_MEMORY_RANGE_EXCEEDED;
+
+	long long lOffset = nOffset * sizeof(T);
+	if (lOffset > SIZE_MAX)
+		return ERROR_MEMORY_RANGE_EXCEEDED;
+
+	LONG lErr;
+	size_t lSize1 = (size_t)lSize;
+	size_t lOffset1 = (size_t)lOffset;
+	void* pDst1 = (void*)pDst;
+	MemoryItem* pItem;
+
+	if (lErr = m_memory.GetData(hHandle, &pItem))
+		return lErr;
+
+	lErr = m_memory.GetDataAt(hHandle, pItem->IsHalf(), (size_t)lSize1, pDst1, (size_t)lOffset1);
+#pragma message(Reminder "Need to handle conversion from half to whole.")
+
+	return lErr;
+}
+
 
 template <class T>
 inline T* Memory<T>::GetMemoryToHost(long hHandle, size_t* plCount)

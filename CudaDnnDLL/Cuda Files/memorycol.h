@@ -147,6 +147,29 @@ class MemoryItem
 			return cudaMemcpy(pDst, m_pData, lSize, cudaMemcpyDeviceToHost);
 		}
 
+		long GetDataAt(size_t lSize, void* pDst, size_t nOffsetInBytes)
+		{
+			if (pDst == NULL)
+				return ERROR_PARAM_NULL;
+
+			if (m_pData == NULL)
+				return ERROR_MEMORY_OUT;
+
+			if (lSize <= 0)
+				return ERROR_PARAM_OUT_OF_RANGE;
+
+			long long lSize1 = lSize + nOffsetInBytes;
+			if (lSize1 > SIZE_MAX)
+				return ERROR_MEMORY_RANGE_EXCEEDED;
+
+			if ((size_t)lSize1 > m_lSize)
+				return ERROR_PARAM_OUT_OF_RANGE;
+
+			byte* pData = ((byte*)m_pData) + nOffsetInBytes;
+
+			return cudaMemcpy(pDst, pData, lSize, cudaMemcpyDeviceToHost);
+		}
+
 		long SetData(size_t lSize, void* pSrc, cudaStream_t pStream = NULL)
 		{
 			if (pSrc == NULL)
@@ -288,6 +311,7 @@ class MemoryCollection
 		long Allocate(int nDeviceID, bool bHalf, void* pData, size_t lSize, long* phHandle);
 		long Free(long hHandle);
 		long GetData(long hHandle, MemoryItem** ppItem);
+		long GetDataAt(long hHandle, bool bHalf, size_t lSize, void* pDst, size_t nOffsetInBytes);
 		long SetData(long hHandle, bool bHalf, size_t lSize, void* pSrc, cudaStream_t pStream);
 		long SetDataAt(long hHandle, bool bHalf, size_t lSize, void* pSrc, size_t nOffsetInBytes);
 		long SetData(MemoryItem* pItem, bool bHalf, size_t lSize, void* pSrc, cudaStream_t pStream);
@@ -343,6 +367,36 @@ inline long MemoryCollection::GetData(long hHandle, MemoryItem** ppItem)
 
 	*ppItem = &m_rgHandles[hHandle];
 	return 0;
+}
+
+inline long MemoryCollection::GetDataAt(long hHandle, bool bHalf, size_t lSize, void* pDst, size_t nOffsetInBytes)
+{
+	MemoryItem* pItem;
+
+	if (hHandle < 1 || hHandle >= MAX_ITEMS * 2)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	//--------------------------------------------------------
+	//	If the handle is in the range [MAX_ITEM, MAX_ITEM*2]
+	//	then it is a ponter into already existing memory.
+	//--------------------------------------------------------
+	if (hHandle > MAX_ITEMS)
+	{
+		if (m_pMemPtrs == NULL)
+			return ERROR_PARAM_OUT_OF_RANGE;
+
+		LONG lErr;
+
+		MemoryItem* pItem;
+		if (lErr = m_pMemPtrs->GetData(hHandle - MAX_ITEMS, &pItem))
+			return lErr;
+	}
+	else
+	{
+		pItem = &m_rgHandles[hHandle];
+	}
+
+	return pItem->GetDataAt(lSize, pDst, nOffsetInBytes);
 }
 
 inline long MemoryCollection::SetData(long hHandle, bool bHalf, size_t lSize, void* pSrc, cudaStream_t pStream)

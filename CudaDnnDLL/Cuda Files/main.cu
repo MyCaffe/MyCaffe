@@ -110,6 +110,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_SETMEMAT:
 			return m_device.SetMemoryAt(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_SETPIXEL:
+			return m_device.SetPixel(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_COPY_DEVICE_TO_HOST:
 			return m_device.CopyGpuToHostBuffer(lCount, pfInput, plCount, ppfOutput);
 
@@ -1058,6 +1061,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_SETMEMAT:
 		return "CUDA_FN_SETMEMAT";
+
+	case CUDA_FN_SETPIXEL:
+		return "CUDA_FN_SETPIXEL";
 
 	case CUDA_FN_COPY_DEVICE_TO_HOST:
 		return "CUDA_FN_COPY_DEVICE_TO_HOST";

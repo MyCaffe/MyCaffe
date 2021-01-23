@@ -822,6 +822,88 @@ template long Device<float>::SetMemoryAt(long lInput, float* pfInput, long* plOu
 
 
 template <class T>
+long Device<T>::SetPixel(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 4, INT_MAX))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+	size_t lCount = (size_t)pfInput[1];
+	bool bReturnOriginal = (pfInput[2] == 0) ? false : true;
+	size_t lPixels = (size_t)pfInput[3];
+
+	T* pPixels = &pfInput[4];
+
+	if (bReturnOriginal)
+	{
+		if (lErr = verifyOutput(plOutput, ppfOutput))
+			return lErr;
+
+		if (lErr = GetPixel(lInput, pfInput, plOutput, ppfOutput))
+			return lErr;
+	}
+
+	for (int i = 0; i < lPixels; i++)
+	{
+		int nPixelIdx = i * 2;
+		int nIdx = (int)pPixels[nPixelIdx];
+		T fVal = pPixels[nPixelIdx + 1];
+
+		if (lErr = m_memory.SetMemoryAt(hHandle, &fVal, 1, nIdx))
+			return lErr;
+	}
+
+	return 0;
+}
+
+template long Device<double>::SetPixel(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::SetPixel(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
+long Device<T>::GetPixel(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 4, INT_MAX))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+	size_t lCount = (size_t)pfInput[1];
+	bool bReturnOriginal = (pfInput[2] == 0) ? false : true;
+	size_t lPixels = (size_t)pfInput[3];
+	if ((long)lPixels < 0)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	T* pPixels = &pfInput[4];
+	T* pfOutput = *ppfOutput;
+
+	if (lPixels > *plOutput)
+	{
+		if (lErr = m_memory.AllocHost(lPixels, &pfOutput, NULL, false, false, true))
+			return lErr;
+	}
+
+	for (int i = 0; i < lPixels; i++)
+	{
+		int nPixelIdx = i * 2;
+		int nIdx = (int)pPixels[nPixelIdx];
+
+		if (lErr = m_memory.GetMemoryAt(hHandle, &pfOutput[i], 1, nIdx))
+			return lErr;
+	}
+
+	*plOutput = (long)lPixels;
+	return 0;
+}
+
+template long Device<double>::GetPixel(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::GetPixel(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::CopyGpuToHostBuffer(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
