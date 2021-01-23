@@ -45,6 +45,11 @@ const int CAFFE_CUDA_NUM_THREADS	= 512;
 //	Macros
 //-----------------------------------------------------------------------------
 
+#define Stringize( L )     #L 
+#define MakeString( M, L ) M(L)
+#define $Line MakeString( Stringize, __LINE__ )
+#define Reminder __FILE__ "(" $Line ") : Reminder: "
+
 #  define CUDA_SAFE_CALL_NO_SYNC( call) {                                    \
     cudaError_t err = call;                                                    \
     if( cudaSuccess != err) {                                                \
