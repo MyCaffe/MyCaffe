@@ -248,6 +248,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestSetPixel()
+        {
+            BlobSimpleTest test = new BlobSimpleTest();
+
+            try
+            {
+                foreach (IBlobSimpleTest t in test.Tests)
+                {
+                    t.TestSetPixel();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     class BlobSimpleTest : TestBase
@@ -281,6 +299,7 @@ namespace MyCaffe.test
         void TestResize1();
         void TestResize2();
         void TestResize3();
+        void TestSetPixel();
     }
 
     class BlobSimpleTest<T> : Test<T>, IBlobSimpleTest 
@@ -944,6 +963,63 @@ namespace MyCaffe.test
             m_blob = m_blob_preshaped.Resize(new List<int>() { 2, 3, 56, 56 });
 
             SaveImage(m_blob, strTemp + "test3_56x56.png");
+        }
+
+        public void TestSetPixel()
+        {
+            m_blob_preshaped.Reshape(1, 3, 28, 28);
+            Fill3(m_blob_preshaped);
+
+            double[] rgdf = Utility.ConvertVec<T>(m_blob_preshaped.mutable_cpu_data);
+
+            for (int y = 0; y < 28; y++)
+            {
+                for (int x = 0; x < 28; x++)
+                {
+                    testPixel(x, y, TransformationParameter.COLOR_ORDER.RGB);
+                    testPixel(x, y, TransformationParameter.COLOR_ORDER.BGR);
+                }
+            }
+
+            double[] rgdf1 = Utility.ConvertVec<T>(m_blob_preshaped.mutable_cpu_data);
+
+            for (int i = 0; i < rgdf.Length; i++)
+            {
+                m_log.CHECK_EQ(rgdf[i], rgdf1[i], "The values are not as expected!");
+            }
+        }
+
+        private void testPixel(int nX, int nY, TransformationParameter.COLOR_ORDER order)
+        {
+            Tuple<T, T, T> pixel = m_blob_preshaped.SetPixel(nX, nY, 10, 8, 9, order);
+
+            double dfR = Utility.ConvertVal<T>(pixel.Item1);
+            double dfG = Utility.ConvertVal<T>(pixel.Item2);
+            double dfB = Utility.ConvertVal<T>(pixel.Item3);
+
+            Tuple<T, T, T> pixel2 = m_blob_preshaped.SetPixel(nX, nY, (byte)dfR, (byte)dfG, (byte)dfB, order);
+
+            double dfR2 = Utility.ConvertVal<T>(pixel2.Item1);
+            double dfG2 = Utility.ConvertVal<T>(pixel2.Item2);
+            double dfB2 = Utility.ConvertVal<T>(pixel2.Item3);
+
+            m_log.CHECK_EQ(dfR2, 10, "The values are not as expected!");
+            m_log.CHECK_EQ(dfG2, 8, "The values are not as expected!");
+            m_log.CHECK_EQ(dfB2, 9, "The values are not as expected!");
+
+            m_blob_preshaped.SetPixel(nX, nY, pixel);
+
+            pixel2 = m_blob_preshaped.SetPixel(nX, nY, (byte)dfR, (byte)dfG, (byte)dfB, order);
+
+            dfR2 = Utility.ConvertVal<T>(pixel2.Item1);
+            dfG2 = Utility.ConvertVal<T>(pixel2.Item2);
+            dfB2 = Utility.ConvertVal<T>(pixel2.Item3);
+
+            m_log.CHECK_EQ(dfR2, dfR, "The values are not as expected!");
+            m_log.CHECK_EQ(dfG2, dfG, "The values are not as expected!");
+            m_log.CHECK_EQ(dfB2, dfB, "The values are not as expected!");
+
+            m_blob_preshaped.SetPixel(nX, nY, pixel2, order);
         }
     }
 }
