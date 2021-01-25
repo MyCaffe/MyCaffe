@@ -611,6 +611,7 @@ namespace MyCaffe.data
             if (crop_bbox != null)
                 crop_bbox.Set((float)w_off / nDatumWidth, (float)h_off / nDatumHeight, (float)(w_off + nWidth) / nDatumWidth, (float)(h_off + nHeight) / nDatumHeight);
 
+            bool bIsRealData = d.IsRealData;
             double[] rgdfData = d.RealDataD;
             float[] rgfData = d.RealDataF;
             byte[] rgbData = d.ByteData;
@@ -642,7 +643,7 @@ namespace MyCaffe.data
                         else
                             nTopIdx = (c * nHeight + h) * nWidth + w;
 
-                        fDataElement = (d.IsRealData) ? ((rgfData != null) ? rgfData[nDataIdx] : (float)rgdfData[nDataIdx]) : rgbData[nDataIdx];
+                        fDataElement = (bIsRealData) ? ((rgfData != null) ? rgfData[nDataIdx] : (float)rgdfData[nDataIdx]) : rgbData[nDataIdx];
 
                         if (bUseMeanImage)
                         {
@@ -753,6 +754,7 @@ namespace MyCaffe.data
             if (crop_bbox != null)
                 crop_bbox.Set((float)w_off / nDatumWidth, (float)h_off / nDatumHeight, (float)(w_off + nWidth) / nDatumWidth, (float)(h_off + nHeight) / nDatumHeight);
 
+            bool bIsRealData = d.IsRealData;
             double[] rgdfData = d.RealDataD;
             float[] rgfData = d.RealDataF;
             byte[] rgbData = d.ByteData;
@@ -784,7 +786,7 @@ namespace MyCaffe.data
                         else
                             nTopIdx = (c * nHeight + h) * nWidth + w;
 
-                        dfDataElement = (d.IsRealData) ? ((rgdfData != null) ? rgdfData[nDataIdx] : rgfData[nDataIdx]) : rgbData[nDataIdx];
+                        dfDataElement = (bIsRealData) ? ((rgdfData != null) ? rgdfData[nDataIdx] : rgfData[nDataIdx]) : rgbData[nDataIdx];
 
                         if (bUseMeanImage)
                         {
