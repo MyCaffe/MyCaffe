@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26730.3
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30907.101
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyCaffe.basecode", "MyCaffe.basecode\MyCaffe.basecode.csproj", "{D168418C-CDCC-4F5B-BF55-292A38CC2429}"
 EndProject
@@ -49,6 +49,12 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CudaPreProcDll.11.1", "CudaPreProcDLL\CudaPreProcDll.11.1.vcxproj", "{B4B07C5C-1EA3-4BB0-986D-DC26329F0D8D}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MyCaffe.test.extension.11.1", "MyCaffe.test.extension\MyCaffe.test.extension.11.1.vcxproj", "{123D82E4-F6C7-49EB-A35B-14BE2AC05397}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CudaDnnDll.11.2", "CudaDnnDLL\CudaDnnDll.11.2.vcxproj", "{B7781D52-2324-44E8-94BF-5CB50665602C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CudaPreProcDll.11.2", "CudaPreProcDLL\CudaPreProcDll.11.2.vcxproj", "{81A8703B-9E56-45E0-9C8C-553F35A7A6BC}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MyCaffe.test.extension.11.2", "MyCaffe.test.extension\MyCaffe.test.extension.11.2.vcxproj", "{9A00CF3D-3442-4ECD-8756-6011D9C77AC3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -234,6 +240,30 @@ Global
 		{123D82E4-F6C7-49EB-A35B-14BE2AC05397}.Release|x64.Build.0 = Release|x64
 		{123D82E4-F6C7-49EB-A35B-14BE2AC05397}.Release|x86.ActiveCfg = Release|Win32
 		{123D82E4-F6C7-49EB-A35B-14BE2AC05397}.Release|x86.Build.0 = Release|Win32
+		{B7781D52-2324-44E8-94BF-5CB50665602C}.Debug|x64.ActiveCfg = Debug|x64
+		{B7781D52-2324-44E8-94BF-5CB50665602C}.Debug|x64.Build.0 = Debug|x64
+		{B7781D52-2324-44E8-94BF-5CB50665602C}.Debug|x86.ActiveCfg = Debug|Win32
+		{B7781D52-2324-44E8-94BF-5CB50665602C}.Debug|x86.Build.0 = Debug|Win32
+		{B7781D52-2324-44E8-94BF-5CB50665602C}.Release|x64.ActiveCfg = Release|x64
+		{B7781D52-2324-44E8-94BF-5CB50665602C}.Release|x64.Build.0 = Release|x64
+		{B7781D52-2324-44E8-94BF-5CB50665602C}.Release|x86.ActiveCfg = Release|Win32
+		{B7781D52-2324-44E8-94BF-5CB50665602C}.Release|x86.Build.0 = Release|Win32
+		{81A8703B-9E56-45E0-9C8C-553F35A7A6BC}.Debug|x64.ActiveCfg = Debug|x64
+		{81A8703B-9E56-45E0-9C8C-553F35A7A6BC}.Debug|x64.Build.0 = Debug|x64
+		{81A8703B-9E56-45E0-9C8C-553F35A7A6BC}.Debug|x86.ActiveCfg = Debug|Win32
+		{81A8703B-9E56-45E0-9C8C-553F35A7A6BC}.Debug|x86.Build.0 = Debug|Win32
+		{81A8703B-9E56-45E0-9C8C-553F35A7A6BC}.Release|x64.ActiveCfg = Release|x64
+		{81A8703B-9E56-45E0-9C8C-553F35A7A6BC}.Release|x64.Build.0 = Release|x64
+		{81A8703B-9E56-45E0-9C8C-553F35A7A6BC}.Release|x86.ActiveCfg = Release|Win32
+		{81A8703B-9E56-45E0-9C8C-553F35A7A6BC}.Release|x86.Build.0 = Release|Win32
+		{9A00CF3D-3442-4ECD-8756-6011D9C77AC3}.Debug|x64.ActiveCfg = Debug|x64
+		{9A00CF3D-3442-4ECD-8756-6011D9C77AC3}.Debug|x64.Build.0 = Debug|x64
+		{9A00CF3D-3442-4ECD-8756-6011D9C77AC3}.Debug|x86.ActiveCfg = Debug|Win32
+		{9A00CF3D-3442-4ECD-8756-6011D9C77AC3}.Debug|x86.Build.0 = Debug|Win32
+		{9A00CF3D-3442-4ECD-8756-6011D9C77AC3}.Release|x64.ActiveCfg = Release|x64
+		{9A00CF3D-3442-4ECD-8756-6011D9C77AC3}.Release|x64.Build.0 = Release|x64
+		{9A00CF3D-3442-4ECD-8756-6011D9C77AC3}.Release|x86.ActiveCfg = Release|Win32
+		{9A00CF3D-3442-4ECD-8756-6011D9C77AC3}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

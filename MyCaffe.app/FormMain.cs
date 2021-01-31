@@ -296,19 +296,19 @@ namespace MyCaffe.app
         {
             Dictionary<string, string> rgPaths = new Dictionary<string, string>();
 
-            rgPaths.Add("Default (CUDA 11.1)", AssemblyDirectory + "\\cuda_11.1\\CudaDnnDll.11.1.dll");
+            rgPaths.Add("Default (CUDA 11.2)", AssemblyDirectory + "\\cuda_11.2\\CudaDnnDll.11.2.dll");
 
-            string strFile = AssemblyDirectory + "\\cuda_11.0\\CudaDnnDll.11.0.dll";
+            string strFile = AssemblyDirectory + "\\cuda_11.1\\CudaDnnDll.11.1.dll";
+            if (File.Exists(strFile))
+                rgPaths.Add("CUDA 11.1", strFile);
+
+            strFile = AssemblyDirectory + "\\cuda_11.0\\CudaDnnDll.11.0.dll";
             if (File.Exists(strFile))
                 rgPaths.Add("CUDA 11.0", strFile);
 
             strFile = AssemblyDirectory + "\\cuda_10.2\\CudaDnnDll.10.2.dll";
             if (File.Exists(strFile))
                 rgPaths.Add("CUDA 10.2", strFile);
-
-            strFile = AssemblyDirectory + "\\cuda_10.2.3_5\\CudaDnnDll.10.2.dll";
-            if (File.Exists(strFile))
-                rgPaths.Add("CUDA 10.2 sm 3.5", strFile);
 
             return rgPaths;
         }
