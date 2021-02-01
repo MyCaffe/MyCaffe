@@ -94,6 +94,8 @@
             this.lblCudaPath = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
             this.m_bwLoadVOCDatabase = new System.ComponentModel.BackgroundWorker();
+            this.toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
+            this.getSQLExpressToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -135,7 +137,9 @@
             this.createDatabaseToolStripMenuItem,
             this.loadMNISTToolStripMenuItem,
             this.loadCIFAR10ToolStripMenuItem,
-            this.loadVOC2007ToolStripMenuItem});
+            this.loadVOC2007ToolStripMenuItem,
+            this.toolStripSeparator6,
+            this.getSQLExpressToolStripMenuItem});
             this.databaseToolStripMenuItem.Name = "databaseToolStripMenuItem";
             this.databaseToolStripMenuItem.Size = new System.Drawing.Size(67, 20);
             this.databaseToolStripMenuItem.Text = "&Database";
@@ -143,28 +147,28 @@
             // createDatabaseToolStripMenuItem
             // 
             this.createDatabaseToolStripMenuItem.Name = "createDatabaseToolStripMenuItem";
-            this.createDatabaseToolStripMenuItem.Size = new System.Drawing.Size(160, 22);
+            this.createDatabaseToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.createDatabaseToolStripMenuItem.Text = "&Create Database";
             this.createDatabaseToolStripMenuItem.Click += new System.EventHandler(this.createDatabaseToolStripMenuItem_Click);
             // 
             // loadMNISTToolStripMenuItem
             // 
             this.loadMNISTToolStripMenuItem.Name = "loadMNISTToolStripMenuItem";
-            this.loadMNISTToolStripMenuItem.Size = new System.Drawing.Size(160, 22);
+            this.loadMNISTToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.loadMNISTToolStripMenuItem.Text = "Load MNIST...";
             this.loadMNISTToolStripMenuItem.Click += new System.EventHandler(this.loadMNISTToolStripMenuItem_Click);
             // 
             // loadCIFAR10ToolStripMenuItem
             // 
             this.loadCIFAR10ToolStripMenuItem.Name = "loadCIFAR10ToolStripMenuItem";
-            this.loadCIFAR10ToolStripMenuItem.Size = new System.Drawing.Size(160, 22);
+            this.loadCIFAR10ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.loadCIFAR10ToolStripMenuItem.Text = "Load CIFAR-10...";
             this.loadCIFAR10ToolStripMenuItem.Click += new System.EventHandler(this.loadCIFAR10ToolStripMenuItem_Click);
             // 
             // loadVOC2007ToolStripMenuItem
             // 
             this.loadVOC2007ToolStripMenuItem.Name = "loadVOC2007ToolStripMenuItem";
-            this.loadVOC2007ToolStripMenuItem.Size = new System.Drawing.Size(160, 22);
+            this.loadVOC2007ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.loadVOC2007ToolStripMenuItem.Text = "Load VOC0712...";
             this.loadVOC2007ToolStripMenuItem.Click += new System.EventHandler(this.loadVOC2007ToolStripMenuItem_Click);
             // 
@@ -485,21 +489,21 @@
             this.defaultToolStripMenuItem.Checked = true;
             this.defaultToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
             this.defaultToolStripMenuItem.Name = "defaultToolStripMenuItem";
-            this.defaultToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.defaultToolStripMenuItem.Size = new System.Drawing.Size(112, 22);
             this.defaultToolStripMenuItem.Text = "Default";
             this.defaultToolStripMenuItem.Click += new System.EventHandler(this.defaultToolStripMenuItem_Click);
             // 
             // enUSToolStripMenuItem
             // 
             this.enUSToolStripMenuItem.Name = "enUSToolStripMenuItem";
-            this.enUSToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.enUSToolStripMenuItem.Size = new System.Drawing.Size(112, 22);
             this.enUSToolStripMenuItem.Text = "en-US";
             this.enUSToolStripMenuItem.Click += new System.EventHandler(this.defaultToolStripMenuItem_Click);
             // 
             // deDEToolStripMenuItem
             // 
             this.deDEToolStripMenuItem.Name = "deDEToolStripMenuItem";
-            this.deDEToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.deDEToolStripMenuItem.Size = new System.Drawing.Size(112, 22);
             this.deDEToolStripMenuItem.Text = "de-DE";
             this.deDEToolStripMenuItem.Click += new System.EventHandler(this.defaultToolStripMenuItem_Click);
             // 
@@ -606,6 +610,18 @@
             this.m_bwLoadVOCDatabase.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.m_bw_ProgressChanged);
             this.m_bwLoadVOCDatabase.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bw_RunWorkerCompleted);
             // 
+            // toolStripSeparator6
+            // 
+            this.toolStripSeparator6.Name = "toolStripSeparator6";
+            this.toolStripSeparator6.Size = new System.Drawing.Size(177, 6);
+            // 
+            // getSQLExpressToolStripMenuItem
+            // 
+            this.getSQLExpressToolStripMenuItem.Name = "getSQLExpressToolStripMenuItem";
+            this.getSQLExpressToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.getSQLExpressToolStripMenuItem.Text = "Get SQL Express...";
+            this.getSQLExpressToolStripMenuItem.Click += new System.EventHandler(this.getSqlExpressMenuItem_Click);
+            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -696,6 +712,8 @@
         private System.Windows.Forms.ToolStripMenuItem enUSToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem deDEToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem defaultToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator6;
+        private System.Windows.Forms.ToolStripMenuItem getSQLExpressToolStripMenuItem;
     }
 }
 

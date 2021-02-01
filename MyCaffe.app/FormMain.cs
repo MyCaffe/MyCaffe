@@ -27,6 +27,7 @@ namespace MyCaffe.app
 {
     public partial class FormMain : Form
     {
+        string m_strSqlDownloadUrl = "https://www.microsoft.com/en-us/sql-server/sql-server-downloads";
         CancelEvent m_evtCancel = new CancelEvent();
         CancelEvent m_evtCaffeCancel = new CancelEvent();
         AutoResetEvent m_evtCommandRead = new AutoResetEvent(false);
@@ -183,7 +184,7 @@ namespace MyCaffe.app
                 if (rgSqlInst == null || rgSqlInst.Count == 0)
                 {
                     setStatus("For most operations, you must download and install 'Microsoft SQL' or 'Microsoft SQL Express' first!", STATUS.WARNING);
-                    setStatus("see 'https://www.microsoft.com/en-us/sql-server/sql-server-downloads'");
+                    setStatus("see '" + m_strSqlDownloadUrl + "'");
                     setStatus("");
                 }
                 else
@@ -1897,6 +1898,13 @@ namespace MyCaffe.app
             deDEToolStripMenuItem.Checked = false;
 
             ((ToolStripMenuItem)sender).Checked = true;
+        }
+
+        private void getSqlExpressMenuItem_Click(object sender, EventArgs e)
+        {
+            Process p = new Process();
+            p.StartInfo = new ProcessStartInfo(m_strSqlDownloadUrl);
+            p.Start();
         }
     }
 
