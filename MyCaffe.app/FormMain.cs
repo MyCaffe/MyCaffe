@@ -111,7 +111,6 @@ namespace MyCaffe.app
 
             m_log = new Log("Test Run");
             m_log.OnWriteLine += Log_OnWriteLine;
-            m_caffeRun = new MyCaffeControl<float>(new SettingsCaffe(), m_log, m_evtCancel);
             m_progress.Initialize();
 
             if (lvStatus is ListViewEx)
@@ -127,6 +126,11 @@ namespace MyCaffe.app
                 string path = Uri.UnescapeDataString(uri.Path);
                 return Path.GetDirectoryName(path);
             }
+        }
+
+        private MyCaffeControl<float> createMyCaffe(SettingsCaffe settings, Log log, CancelEvent evtCancel)
+        {
+            return new MyCaffeControl<float>(settings, log, evtCancel, null, null, null, null, m_strDllPath);
         }
 
         private void FormMain_Load(object sender, EventArgs e)
@@ -194,6 +198,8 @@ namespace MyCaffe.app
                     else
                         setStatus("You are NOT connected to SQL.", STATUS.WARNING);
                 }
+
+                m_caffeRun = createMyCaffe(new SettingsCaffe(), m_log, m_evtCancel);
 
                 m_bwInit.RunWorkerAsync();
 
@@ -1084,7 +1090,7 @@ namespace MyCaffe.app
         {
             BackgroundWorker bw = sender as BackgroundWorker;
             Log log = new Log("MyCaffe");
-            MyCaffeControl<float> caffe = null;
+            MyCaffeControl<float> mycaffe = null;
 
             log.OnWriteLine += log_OnWriteLine1;
 
@@ -1108,7 +1114,7 @@ namespace MyCaffe.app
                                 settings.GpuIds = getGpu().ToString();
                                 settings.ImageDbVersion = getImageDbVersion();
 
-                                caffe = new MyCaffeControl<float>(settings, log, m_evtCaffeCancel);
+                                mycaffe = createMyCaffe(settings, log, m_evtCaffeCancel);
 
                                 string strSolver = System.Text.Encoding.UTF8.GetString(Properties.Resources.lenet_solver);
                                 string strModel = System.Text.Encoding.UTF8.GetString(Properties.Resources.lenet_train_test);
@@ -1125,41 +1131,41 @@ namespace MyCaffe.app
                                     strModel = System.Text.Encoding.UTF8.GetString(Properties.Resources.triplet_train_val);
                                 }
 
-                                caffe.Load(Phase.TRAIN, strSolver, strModel, null);
+                                mycaffe.Load(Phase.TRAIN, strSolver, strModel, null);
                                 bw.ReportProgress(1, new ProgressInfo(1, 1, "MyCaffe Created.", null, true));
                                 break;
 
                             case COMMAND.DESTROY:
                                 m_bCaffeCreated = false;
-                                caffe.Dispose();
-                                caffe = null;
+                                mycaffe.Dispose();
+                                mycaffe = null;
                                 bw.ReportProgress(0, new ProgressInfo(0, 0, "MyCaffe Destroyed", null, false));
                                 break;
 
                             case COMMAND.TRAIN:
-                                caffe.Train(5000);
-                                m_rgTrainedWeights = caffe.GetWeights();
-                                m_sdImageMean = caffe.GetImageMean();
+                                mycaffe.Train(5000);
+                                m_rgTrainedWeights = mycaffe.GetWeights();
+                                m_sdImageMean = mycaffe.GetImageMean();
                                 bw.ReportProgress(0, new ProgressInfo(0, 0, "MyCaffe Training completed.", null, true));
                                 break;
 
                             case COMMAND.TEST:
-                                double dfAccuracy = caffe.Test(100);
+                                double dfAccuracy = mycaffe.Test(100);
                                 log.WriteLine("Accuracy = " + dfAccuracy.ToString("P"));
                                 bw.ReportProgress(0, new ProgressInfo(0, 0, "MyCaffe Testing completed.", null, true));
                                 break;
 
                             case COMMAND.DEVICEINFO:
-                                string str1 = caffe.GetDeviceName(getGpu());
+                                string str1 = mycaffe.GetDeviceName(getGpu());
                                 str1 += Environment.NewLine;
-                                str1 += caffe.Cuda.GetDeviceInfo(getGpu(), true);
+                                str1 += mycaffe.Cuda.GetDeviceInfo(getGpu(), true);
                                 bw.ReportProgress(0, new ProgressInfo(0, 0, str1, null, true));
                                 break;
 
                             case COMMAND.SPECIALTEST_ALEXNETCIFAR:
                             case COMMAND.SPECIALTEST_RESNETCIFAR:
                                 bw.ReportProgress(0, new ProgressInfo(0, 0, "Starting special test " + m_Cmd.ToString(), null, true));
-                                caffe = runTest(m_Cmd, log);
+                                mycaffe = runTest(m_Cmd, log);
                                 bw.ReportProgress(0, new ProgressInfo(0, 0, "Completed special test " + m_Cmd.ToString(), null, true));
                                 break;
                         }
@@ -1173,9 +1179,9 @@ namespace MyCaffe.app
                 m_evtCaffeCancel.Reset();
             }
 
-            if (caffe != null)
+            if (mycaffe != null)
             {
-                caffe.Dispose();
+                mycaffe.Dispose();
                 m_evtCancel.Reset();
                 m_bCaffeCreated = false;
             }
@@ -1383,7 +1389,7 @@ namespace MyCaffe.app
 
         private MyCaffeControl<float> runTest_alexnetcifar(Log log)
         {
-            MyCaffeControl<float> caffe = null;
+            MyCaffeControl<float> mycaffe = null;
             SettingsCaffe settings = new SettingsCaffe();
             settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
             settings.EnableRandomInputSelection = true;
@@ -1392,20 +1398,20 @@ namespace MyCaffe.app
 
             log.WriteLine("Running AlexNet-Cifar test on GPU " + settings.GpuIds + "...");
 
-            caffe = new MyCaffeControl<float>(settings, log, m_evtCaffeCancel);
+            mycaffe = createMyCaffe(settings, log, m_evtCaffeCancel);
 
             string strSolver = System.Text.Encoding.UTF8.GetString(Properties.Resources.alexnet_cifar_solver);
             string strModel = System.Text.Encoding.UTF8.GetString(Properties.Resources.alexnet_cifar_train_val);
 
-            caffe.Load(Phase.TRAIN, strSolver, strModel, null);
-            caffe.Train();
+            mycaffe.Load(Phase.TRAIN, strSolver, strModel, null);
+            mycaffe.Train();
 
-            return caffe;
+            return mycaffe;
         }
 
         private MyCaffeControl<float> runTest_resnetcifar(Log log)
         {
-            MyCaffeControl<float> caffe = null;
+            MyCaffeControl<float> mycaffe = null;
             SettingsCaffe settings = new SettingsCaffe();
             int nGpuId = getGpu();
             settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
@@ -1415,22 +1421,22 @@ namespace MyCaffe.app
 
             log.WriteLine("Running ResNet56-Cifar test on GPU " + settings.GpuIds + "...");
 
-            caffe = new MyCaffeControl<float>(settings, log, m_evtCaffeCancel);
+            mycaffe = createMyCaffe(settings, log, m_evtCaffeCancel);
 
             string strSolver = System.Text.Encoding.UTF8.GetString(Properties.Resources.resnet56_cifar_solver);
             string strModel = System.Text.Encoding.UTF8.GetString(Properties.Resources.resnet56_cifar_train_val);
 
             // Use the OnTestingIteration event to log the ongoing results.
-            caffe.OnTestingIteration += Caffe_OnTestingIteration;
+            mycaffe.OnTestingIteration += Caffe_OnTestingIteration;
 
             // Use the OnTrainingIteration event to save the last error.
-            caffe.OnTrainingIteration += Caffe_OnTrainingIteration;
+            mycaffe.OnTrainingIteration += Caffe_OnTrainingIteration;
 
             // Load the model.
-            caffe.Load(Phase.TRAIN, strSolver, strModel, null);
+            mycaffe.Load(Phase.TRAIN, strSolver, strModel, null);
 
             // Get current mode used TCC or WDM
-            string strInfo = caffe.Cuda.GetDeviceP2PInfo(nGpuId);
+            string strInfo = mycaffe.Cuda.GetDeviceP2PInfo(nGpuId);
             if (strInfo.Contains("TCC Driver = YES"))
                 m_mode = MODE.TCC;
             else if (strInfo.Contains("TCC Driver = NO"))
@@ -1439,7 +1445,7 @@ namespace MyCaffe.app
                 m_mode = MODE.UNKNOWN;
 
             // Start training
-            caffe.Train();
+            mycaffe.Train();
 
             if (m_swResNetTest != null)
             {
@@ -1451,7 +1457,7 @@ namespace MyCaffe.app
                 m_swResNetTest = null;
             }
 
-            return caffe;
+            return mycaffe;
         }
 
         private void Caffe_OnTrainingIteration(object sender, TrainingIterationArgs<float> e)
