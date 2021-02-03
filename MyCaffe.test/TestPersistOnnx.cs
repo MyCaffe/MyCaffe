@@ -708,7 +708,7 @@ namespace MyCaffe.test
             {
                 string strOnnxModelFile = strTestPath + "\\lenet_from_mycaffe.onnx";
 
-                ProjectEx prj = new ProjectEx("AlexNet");
+                ProjectEx prj = new ProjectEx("LeNet");
                 prj.SolverDescription = loadTextFile(strModelPath + "\\lenet_solver.prototxt");
                 prj.ModelDescription = loadTextFile(strModelPath + "\\lenet_train_test.prototxt");
                 prj.WeightsState = loadBinaryFile(strModelPath + "\\my_weights.mycaffemodel");
