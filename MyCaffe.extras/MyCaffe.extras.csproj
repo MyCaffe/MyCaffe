@@ -33,7 +33,7 @@
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Release\MyCaffe.extras.xml</DocumentationFile>
     <NoWarn>1587</NoWarn>
-    <PlatformTarget>x64</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
