@@ -1184,6 +1184,8 @@ namespace MyCaffe.converter.onnx
                 if (dsTraining != null)
                     netParamFixed = fixupModelForTraining(netParamFixed, dsTraining);
 
+                netParamFixed = linkEmptyBottoms(netParamFixed);
+
                 netParamFixed = removeLayersWithOrphanedBottoms(netParamFixed);
 
                 return new Tuple<NetParameter, BlobCollection<T>>(netParamFixed, colLearnableBlobs);
@@ -1193,6 +1195,25 @@ namespace MyCaffe.converter.onnx
                 m_strReport += "ERROR: " + excpt.Message + Environment.NewLine;
                 throw excpt;
             }
+        }
+
+        private NetParameter linkEmptyBottoms(NetParameter net)
+        {
+            for (int i = 1; i < net.layer.Count; i++)
+            {
+                if (net.layer[i].type != LayerParameter.LayerType.DATA &&
+                    net.layer[i].type != LayerParameter.LayerType.ANNOTATED_DATA &&
+                    net.layer[i].type != LayerParameter.LayerType.DUMMYDATA &&
+                    net.layer[i].type != LayerParameter.LayerType.INPUT &&
+                    net.layer[i].type != LayerParameter.LayerType.MEMORYDATA &&
+                    net.layer[i].bottom.Count == 0 &&
+                    net.layer[i-1].top.Count == 1)
+                {
+                    net.layer[i].bottom.Add(net.layer[i - 1].top[0]);
+                }
+            }
+
+            return net;
         }
 
         private NetParameter removeLayersWithOrphanedBottoms(NetParameter net)
