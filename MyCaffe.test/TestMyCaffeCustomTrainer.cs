@@ -365,7 +365,7 @@ namespace MyCaffe.test
         }
 
         protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
-        {
+        {            
             if (dt == common.DataType.DOUBLE)
                 return new MyCaffeCustomTrainerTest<double>(strName, nDeviceID, engine);
             else
@@ -425,7 +425,7 @@ namespace MyCaffe.test
 
             m_log.WriteHeader("Test Training Cart-Pole for " + nIterations.ToString("N0") + " iterations.");
             m_log.WriteLine("Using trainer = " + strTrainerType + ", Accelerated Training = " + strAccelTrain + ", AllowDiscountReset = " + strAllowReset);
-            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, null, null, null, null, m_cuda.Path);
             MyCaffeCartPoleTrainer trainer = new MyCaffeCartPoleTrainer();
             ProjectEx project = getReinforcementProject(igym, nIterations, DATA_TYPE.VALUES, strTrainerType.Contains("SIMPLE"));
             DatasetDescriptor ds = trainer.GetDatasetOverride(0);
@@ -474,7 +474,7 @@ namespace MyCaffe.test
 
             m_log.WriteHeader("Test Training Cart-Pole for " + nIterations.ToString("N0") + " iterations.");
             m_log.WriteLine("Using trainer = " + strTrainerType + ", Accelerated Training = " + strAccelTrain + ", AllowDiscountReset = " + strAllowReset);
-            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, null, null, null, null, m_cuda.Path);
             MyCaffeCartPoleTrainerDual trainerX = new MyCaffeCartPoleTrainerDual();
 
             IXMyCaffeCustomTrainerRL itrainer = trainerX as IXMyCaffeCustomTrainerRL;
@@ -528,7 +528,7 @@ namespace MyCaffe.test
 
             m_log.WriteHeader("Test Training Cart-Pole for " + nIterations.ToString("N0") + " iterations.");
             m_log.WriteLine("Using trainer = " + strTrainerType + ", Accelerated Training = " + strAccelTrain + ", AllowDiscountReset = " + strAllowReset);
-            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, null, null, null, null, m_cuda.Path);
             MyCaffeCartPoleTrainerDual trainerX = new MyCaffeCartPoleTrainerDual();
 
             IXMyCaffeCustomTrainerRL itrainer = trainerX as IXMyCaffeCustomTrainerRL;
@@ -593,7 +593,7 @@ namespace MyCaffe.test
 
             m_log.WriteHeader("Test Training ATARI for " + nIterations.ToString("N0") + " iterations.");
             m_log.WriteLine("Using trainer = " + strTrainerType + ", Accelerated Training = " + strAccelTrain + ", AllowDiscountReset = " + strAllowReset);
-            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, null, null, null, null, m_cuda.Path);
             MyCaffeAtariTrainer trainer = new MyCaffeAtariTrainer();
             ProjectEx project = getReinforcementProject(igym, nIterations, dt);
             DatasetDescriptor ds = trainer.GetDatasetOverride(0);
@@ -659,7 +659,7 @@ namespace MyCaffe.test
 
             m_log.WriteHeader("Test Training ATARI for " + nIterations.ToString("N0") + " iterations.");
             m_log.WriteLine("Using trainer = " + strTrainerType + ", Accelerated Training = " + strAccelTrain + ", AllowDiscountReset = " + strAllowReset);
-            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, null, null, null, null, m_cuda.Path);
             MyCaffeAtariTrainerDual trainerX = new MyCaffeAtariTrainerDual();
 
             IXMyCaffeCustomTrainerRL itrainer = trainerX as IXMyCaffeCustomTrainerRL;
@@ -729,7 +729,7 @@ namespace MyCaffe.test
 
             m_log.WriteHeader("Test Training ATARI for " + nIterations.ToString("N0") + " iterations.");
             m_log.WriteLine("Using trainer = " + strTrainerType + ", Accelerated Training = " + strAccelTrain + ", AllowDiscountReset = " + strAllowReset);
-            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, null, null, null, null, m_cuda.Path);
             mycaffe.OnSnapshot += Mycaffe_OnSnapshot;
 
             MyCaffeAtariTrainerDual trainerX = new MyCaffeAtariTrainerDual();
@@ -805,7 +805,7 @@ namespace MyCaffe.test
 
             m_log.WriteHeader("Test Training ATARI for " + nIterations.ToString("N0") + " iterations.");
             m_log.WriteLine("Using trainer = " + strTrainerType + ", Accelerated Training = " + strAccelTrain + ", AllowDiscountReset = " + strAllowReset);
-            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, null, null, null, null, m_cuda.Path);
             mycaffe.OnSnapshot += Mycaffe_OnSnapshot;
 
             MyCaffeAtariTrainerDual trainerX = new MyCaffeAtariTrainerDual();
@@ -888,7 +888,7 @@ namespace MyCaffe.test
 
             m_log.WriteHeader("Test Training CharRNN for " + nIterations.ToString("N0") + " iterations.");
             m_log.WriteLine("Using trainer = " + strTrainerType + ", Accelerated Training = " + strAccelTrain);
-            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, null, null, null, null, m_cuda.Path);
             mycaffe.OnSnapshot += Mycaffe_OnSnapshot;
 
             string strModelPath = getTestPath("\\MyCaffe\\test_data\\models\\rnn\\char_rnn\\" + lstm.ToString().ToLower(), true);
@@ -993,7 +993,7 @@ namespace MyCaffe.test
 
             m_log.WriteHeader("Test Training CharRNN for " + nIterations.ToString("N0") + " iterations.");
             m_log.WriteLine("Using trainer = " + strTrainerType + ", Accelerated Training = " + strAccelTrain);
-            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, null, null, null, null, m_cuda.Path);
             mycaffe.OnSnapshot += Mycaffe_OnSnapshot;
 
             string strModelPath = getTestPath("\\MyCaffe\\test_data\\models\\rnn\\char_rnn\\" + lstm.ToString().ToLower(), true);
@@ -1112,7 +1112,7 @@ namespace MyCaffe.test
 
             m_log.WriteHeader("Test Training CharRNN for " + nIterations.ToString("N0") + " iterations.");
             m_log.WriteLine("Using trainer = " + strTrainerType + ", Accelerated Training = " + strAccelTrain);
-            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, null, null, null, null, m_cuda.Path);
             mycaffe.OnSnapshot += Mycaffe_OnSnapshot;
 
             string strModelPath = getTestPath("\\MyCaffe\\test_data\\models\\rnn\\wav\\" + lstm.ToString().ToLower(), true);
@@ -1212,7 +1212,7 @@ namespace MyCaffe.test
 
             m_log.WriteHeader("Test Training CharRNN for " + nIterations.ToString("N0") + " iterations.");
             m_log.WriteLine("Using trainer = " + strTrainerType + ", Accelerated Training = " + strAccelTrain);
-            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, null, null, null, null, m_cuda.Path);
             mycaffe.OnSnapshot += Mycaffe_OnSnapshot;
 
             string strModelPath = getTestPath("\\MyCaffe\\test_data\\models\\rnn\\wav\\" + lstm.ToString().ToLower(), true);

@@ -1679,6 +1679,8 @@ namespace MyCaffe.app
             Settings arg = obj as Settings;
             CancelEvent evtCancel = arg.Cancel;
             string strGym = arg.Gym;
+
+            CudaDnn<float>.SetDefaultCudaPath(m_strDllPath);
             MyCaffeCustomTrainerTest<float> test = new MyCaffeCustomTrainerTest<float>(strGym, arg.Gpu, EngineParameter.Engine.DEFAULT);
             int nIterations = arg.Iterations;
             int nMiniBatch = arg.MiniBatch;
@@ -1823,6 +1825,8 @@ namespace MyCaffe.app
             Tuple<CancelEvent, NeuralStyleInfo> arg = obj as Tuple<CancelEvent, NeuralStyleInfo>;
             CancelEvent evtCancel = arg.Item1;
             NeuralStyleInfo info = arg.Item2;
+
+            CudaDnn<float>.SetDefaultCudaPath(m_strDllPath);
             NeuralStyleTransferTest<float> test = new NeuralStyleTransferTest<float>("Neural Style Test", getGpu(), EngineParameter.Engine.DEFAULT);
 
             test.Log.OnWriteLine += Log_OnWriteLine1;
