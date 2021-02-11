@@ -266,19 +266,6 @@
           <Property Name="Encoded" Type="Boolean" />
           <Property Name="SourceID" Type="Int32" />
         </EntityType>
-        <EntityType Name="RawImageParameter">
-          <Key>
-            <PropertyRef Name="ID" />
-          </Key>
-          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="Name" Type="String" MaxLength="256" FixedLength="false" Unicode="true" />
-          <Property Name="Value" Type="Binary" MaxLength="Max" FixedLength="false" />
-          <Property Name="SourceID" Type="Int32" />
-          <Property Name="RawImageID" Type="Int32" />
-          <Property Name="TextValue" Type="String" MaxLength="1024" FixedLength="false" Unicode="true" />
-          <Property Name="NumericValue" Type="Decimal" Precision="12" Scale="5" />
-          <Property Name="NumericValue2" Type="Double" />
-        </EntityType>
         <EntityType Name="RawImageResult">
           <Key>
             <PropertyRef Name="ID" />
@@ -321,7 +308,6 @@
           <EntitySet Name="Labels" EntityType="Self.Label" />
           <EntitySet Name="RawImageGroups" EntityType="Self.RawImageGroup" />
           <EntitySet Name="RawImageMeans" EntityType="Self.RawImageMean" />
-          <EntitySet Name="RawImageParameters" EntityType="Self.RawImageParameter" />
           <EntitySet Name="RawImageResults" EntityType="Self.RawImageResult" />
           <EntitySet Name="SourceParameters" EntityType="Self.SourceParameter" />
           <EntitySet Name="Sources" EntityType="Self.Source" />
@@ -330,6 +316,7 @@
           <EntitySet Name="Datasets" EntityType="DNNModel.Dataset" />
           <EntitySet Name="RawImages" EntityType="DNNModel.RawImage" />
           <EntitySet Name="DatasetParameters" EntityType="DNNModel.DatasetParameter" />
+          <EntitySet Name="RawImageParameters" EntityType="DNNModel.RawImageParameter" />
         </EntityContainer>
         <EntityType Name="DatasetCreator">
           <Key>
@@ -407,6 +394,19 @@
           <Property Name="Value" Type="String" MaxLength="1024" FixedLength="false" Unicode="true" />
           <Property Name="DatasetID" Type="Int32" />
         </EntityType>
+        <EntityType Name="RawImageParameter">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="String" MaxLength="256" FixedLength="false" Unicode="true" />
+          <Property Name="Value" Type="Binary" MaxLength="Max" FixedLength="false" />
+          <Property Name="SourceID" Type="Int32" />
+          <Property Name="RawImageID" Type="Int32" />
+          <Property Name="TextValue" Type="String" MaxLength="1024" FixedLength="false" Unicode="true" />
+          <Property Name="NumericValue" Type="Decimal" Precision="12" Scale="5" />
+          <Property Name="NumericValue2" Type="Double" />
+        </EntityType>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -473,20 +473,6 @@
                 <ScalarProperty Name="Data" ColumnName="Data" />
                 <ScalarProperty Name="Encoded" ColumnName="Encoded" />
                 <ScalarProperty Name="SourceID" ColumnName="SourceID" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="RawImageParameters">
-            <EntityTypeMapping TypeName="DNNModel.RawImageParameter">
-              <MappingFragment StoreEntitySet="RawImageParameters">
-                <ScalarProperty Name="NumericValue2" ColumnName="NumericValue2" />
-                <ScalarProperty Name="NumericValue" ColumnName="NumericValue" />
-                <ScalarProperty Name="ID" ColumnName="ID" />
-                <ScalarProperty Name="Name" ColumnName="Name" />
-                <ScalarProperty Name="Value" ColumnName="Value" />
-                <ScalarProperty Name="SourceID" ColumnName="SourceID" />
-                <ScalarProperty Name="RawImageID" ColumnName="RawImageID" />
-                <ScalarProperty Name="TextValue" ColumnName="TextValue" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -604,6 +590,20 @@
             <EntityTypeMapping TypeName="DNNModel.DatasetParameter">
               <MappingFragment StoreEntitySet="DatasetParameters">
                 <ScalarProperty Name="DatasetID" ColumnName="DatasetID" />
+                <ScalarProperty Name="Value" ColumnName="Value" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="ID" ColumnName="ID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="RawImageParameters">
+            <EntityTypeMapping TypeName="DNNModel.RawImageParameter">
+              <MappingFragment StoreEntitySet="RawImageParameters">
+                <ScalarProperty Name="NumericValue2" ColumnName="NumericValue2" />
+                <ScalarProperty Name="NumericValue" ColumnName="NumericValue" />
+                <ScalarProperty Name="TextValue" ColumnName="TextValue" />
+                <ScalarProperty Name="RawImageID" ColumnName="RawImageID" />
+                <ScalarProperty Name="SourceID" ColumnName="SourceID" />
                 <ScalarProperty Name="Value" ColumnName="Value" />
                 <ScalarProperty Name="Name" ColumnName="Name" />
                 <ScalarProperty Name="ID" ColumnName="ID" />

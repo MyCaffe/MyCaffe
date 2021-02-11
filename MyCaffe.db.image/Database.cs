@@ -3299,8 +3299,16 @@ namespace MyCaffe.db.image
                 riP = rgP[0];
             }
 
+            float fVal = 0;
+            if (dfVal < -float.MaxValue)
+                fVal = -float.MaxValue;
+            else if (dfVal > float.MaxValue)
+                fVal = float.MaxValue;
+            else
+                fVal = (float)dfVal;
+
             riP.TextValue = strValue;
-            riP.NumericValue2 = dfVal;
+            riP.NumericValue2 = fVal;
             riP.NumericValue = null;
             riP.Value = setImageByteData(rgData, "param_" + strName);
 
