@@ -404,7 +404,7 @@ namespace MyCaffe.basecode
 #pragma warning restore 1591
 
     /// <summary>
-    /// The IXImageDatabaseBase interface defines the eneral interface to the in-memory image database.
+    /// The IXImageDatabaseBase interface defines the general interface to the in-memory image database.
     /// </summary>
     [ServiceContract(CallbackContract = typeof(IXImageDatabaseEvent), SessionMode = SessionMode.Required)]
     public interface IXImageDatabaseBase
