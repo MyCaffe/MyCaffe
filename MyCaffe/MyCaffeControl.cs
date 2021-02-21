@@ -1690,8 +1690,9 @@ namespace MyCaffe
         /// <param name="bOnTargetSet">Optionally, specifies to test on the target dataset (if exists) as opposed to the source dataset.  The default is <i>false</i>, which tests on the default (source) dataset.</param>
         /// <param name="imgSelMethod">Optionally, specifies the image selection method (default = RANDOM).</param>
         /// <param name="nImageStartIdx">Optionally, specifies the image start index (default = 0).</param>
+        /// <param name="dtImageStartTime">Optionally, specifies the image start time (default = null).  Note either the 'nImageStartIdx' or 'dtImageStartTime' may be used, but not both.</param>
         /// <returns>The list of SimpleDatum and their ResultCollections (after running the model on each) is returned.</returns>
-        public List<Tuple<SimpleDatum, ResultCollection>> TestMany(int nCount, bool bOnTrainingSet, bool bOnTargetSet = false, IMGDB_IMAGE_SELECTION_METHOD imgSelMethod = IMGDB_IMAGE_SELECTION_METHOD.RANDOM, int nImageStartIdx = 0)
+        public List<Tuple<SimpleDatum, ResultCollection>> TestMany(int nCount, bool bOnTrainingSet, bool bOnTargetSet = false, IMGDB_IMAGE_SELECTION_METHOD imgSelMethod = IMGDB_IMAGE_SELECTION_METHOD.RANDOM, int nImageStartIdx = 0, DateTime? dtImageStartTime = null)
         {
             m_lastPhaseRun = Phase.RUN;
 
@@ -1740,6 +1741,17 @@ namespace MyCaffe
             if (nImageStartIdx < 0)
                 nImageStartIdx = 0;
 
+            List<SimpleDatum> rgImg = null;
+            if (dtImageStartTime.HasValue && dtImageStartTime.Value > DateTime.MinValue)
+            {
+                rgImg = m_imgDb.GetImagesFromTime(nSrcId, dtImageStartTime.Value, nCount);
+                if (nCount > rgImg.Count)
+                    nCount = rgImg.Count;
+
+                if (nCount == 0)
+                    throw new Exception("No images found after time '" + dtImageStartTime.Value.ToString() + "'.  Make sure to use the LOAD_ALL image loading method when running TestMany after a specified time.");
+            }
+
             List<Tuple<SimpleDatum, ResultCollection>> rgrgResults = new List<Tuple<SimpleDatum, ResultCollection>>();
             int nTotalCount = 0;
 
@@ -1751,7 +1763,7 @@ namespace MyCaffe
                     return null;
                 }
 
-                SimpleDatum sd = m_imgDb.QueryImage(nSrcId, nImageStartIdx + i, lblSelMethod, imgSelMethod, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+                SimpleDatum sd = (rgImg != null) ? rgImg[i] : m_imgDb.QueryImage(nSrcId, nImageStartIdx + i, lblSelMethod, imgSelMethod, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
                 m_dataTransformer.TransformLabel(sd);
 
                 if (!sd.GetDataValid(false))
