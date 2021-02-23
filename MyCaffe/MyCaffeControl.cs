@@ -1751,11 +1751,7 @@ namespace MyCaffe
                     throw new Exception("No images found after time '" + dtImageStartTime.Value.ToString() + "'.  Make sure to use the LOAD_ALL image loading method when running TestMany after a specified time.");
             }
 
-            m_log.WriteLine("Updating run weights...");
-            bool bLogEnabled = m_log.IsEnabled;
-            m_log.Enable = false;
-            UpdateRunWeights();
-            m_log.Enable = bLogEnabled;
+            UpdateRunWeights(false);
 
             List<Tuple<SimpleDatum, ResultCollection>> rgrgResults = new List<Tuple<SimpleDatum, ResultCollection>>();
             int nTotalCount = 0;
@@ -2359,10 +2355,27 @@ namespace MyCaffe
         /// <summary>
         /// Loads the weights from the training net into the Net used for running.
         /// </summary>
-        public void UpdateRunWeights()
+        /// <param name="bOutputStatus">Optionally, specifies to output status as the weights are updated (default = false).</param>
+        public void UpdateRunWeights(bool bOutputStatus = false)
         {
-            if (m_net != null)  
-                loadWeights(m_net, m_solver.net.SaveWeights(m_persist));
+            bool? bLogEnabled = null;
+
+            try
+            {
+                if (!bOutputStatus)
+                {
+                    bLogEnabled = m_log.IsEnabled;
+                    m_log.Enable = false;
+                }
+
+                if (m_net != null)
+                    loadWeights(m_net, m_solver.net.SaveWeights(m_persist));
+            }
+            finally
+            {
+                if (bLogEnabled.HasValue)
+                    m_log.Enable = bLogEnabled.Value;
+            }
         }
 
         /// <summary>

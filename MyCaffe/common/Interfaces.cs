@@ -517,7 +517,8 @@ namespace MyCaffe.common
         /// <summary>
         /// Loads the weights from the training net into the Net used for running.
         /// </summary>
-        void UpdateRunWeights();
+        /// <param name="bOutputStatus">Optionally, specifies whether or not the status is output as the weights are updated (default = false).</param>
+        void UpdateRunWeights(bool bOutputStatus = false);
         /// <summary>
         /// Loads the training Net with new weights.
         /// </summary>
