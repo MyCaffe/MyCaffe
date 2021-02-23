@@ -2260,7 +2260,7 @@ namespace MyCaffe.basecode
             {
                 for (int i = 0; i < sd.ItemCount; i++)
                 {
-                    rgdfMean[i] += sd.ByteData[i] / nTotal;
+                    rgdfMean[i] += (double)sd.ByteData[i] / (double)nTotal;
                 }
             }
 
