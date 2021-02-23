@@ -1724,11 +1724,9 @@ namespace MyCaffe
 
             sw.Start();
 
-            UpdateRunWeights();
             m_log.WriteHeader("Test Many (" + nCount.ToString() + ") - on " + strSet + " '" + strSrc + "'");
 
             LabelMappingParameter labelMapping = null;
-
             foreach (Layer<T> layer in m_solver.TestingNet.layers)
             {
                 if (layer.type == LayerParameter.LayerType.LABELMAPPING)
@@ -1744,6 +1742,7 @@ namespace MyCaffe
             List<SimpleDatum> rgImg = null;
             if (dtImageStartTime.HasValue && dtImageStartTime.Value > DateTime.MinValue)
             {
+                m_log.WriteLine("INFO: Starting test many at images with time " + dtImageStartTime.Value.ToString() + " or later...");
                 rgImg = m_imgDb.GetImagesFromTime(nSrcId, dtImageStartTime.Value, nCount);
                 if (nCount > rgImg.Count)
                     nCount = rgImg.Count;
@@ -1751,6 +1750,12 @@ namespace MyCaffe
                 if (nCount == 0)
                     throw new Exception("No images found after time '" + dtImageStartTime.Value.ToString() + "'.  Make sure to use the LOAD_ALL image loading method when running TestMany after a specified time.");
             }
+
+            m_log.WriteLine("Updating run weights...");
+            bool bLogEnabled = m_log.IsEnabled;
+            m_log.Enable = false;
+            UpdateRunWeights();
+            m_log.Enable = bLogEnabled;
 
             List<Tuple<SimpleDatum, ResultCollection>> rgrgResults = new List<Tuple<SimpleDatum, ResultCollection>>();
             int nTotalCount = 0;
