@@ -143,7 +143,14 @@ namespace MyCaffe.db.stream
                 m_rgInfo.Add("BitsPerSample", wav.Format.wBitsPerSample);
                 m_rgInfo.Add("FormatTag", wav.Format.wFormatTag);
 
-                return wav.Samples;
+                List<double[]> rgData = new List<double[]>();
+
+                for (int i = 0; i < wav.Samples[0].Length; i++)
+                {
+                    rgData.Add(new double[] { wav.Samples[0][i], wav.Samples[1][i] });
+                }
+
+                return rgData;
             }
         }
 
