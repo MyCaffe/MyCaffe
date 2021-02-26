@@ -237,11 +237,12 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
-        /// Returns whehter or not the Buckets hold Real values or not.
+        /// Get/set whether or not the Buckets hold Real values.
         /// </summary>
         public bool IsDataReal
         {
             get { return m_bIsDataReal; }
+            set { m_bIsDataReal = value; }
         }
 
         /// <summary>
