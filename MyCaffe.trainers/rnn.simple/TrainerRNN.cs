@@ -911,24 +911,32 @@ namespace MyCaffe.trainers.rnn.simple
                 }
             }
 
-            if (bDataNeeded)
+            if (bDataNeeded && m_runProperties != null)
             {
                 GetDataArgs e = getDataArgs(Phase.RUN, 0, 0, false, m_nSequenceLength);
                 e.ExtraProperties = m_runProperties;
                 e.ExtraProperties.SetProperty("DataCountRequested", m_nSequenceLength.ToString());
                 m_icallback.OnGetData(e);
 
-                float[] rgf = e.State.Data.GetData<float>();
-                int nDim = e.State.Data.Height * e.State.Data.Width;
-
-                if (e.State.Data.Channels != rgCorrectLengthSequence.Length)
-                    throw new Exception("The data length received is incorrect!");
-
-                for (int i = 0; i < rgCorrectLengthSequence.Length; i++)
+                if (e.State.Data != null)
                 {
-                    rgCorrectLengthSequence[i] = rgf[i * nDim];
+                    float[] rgf = e.State.Data.GetData<float>();
+                    int nDim = e.State.Data.Height * e.State.Data.Width;
+
+                    if (e.State.Data.Channels != rgCorrectLengthSequence.Length)
+                        throw new Exception("The data length received is incorrect!");
+
+                    for (int i = 0; i < rgCorrectLengthSequence.Length; i++)
+                    {
+                        rgCorrectLengthSequence[i] = rgf[i * nDim];
+                    }
+
+                    bDataNeeded = false;
                 }
             }
+
+            if (bDataNeeded)
+                m_mycaffe.Log.WriteLine("WARNING: No seed data found - using random data.");
 
             for (int i = 0; i < rgCorrectLengthSequence.Length; i++)
             {
