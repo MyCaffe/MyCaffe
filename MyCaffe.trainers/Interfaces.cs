@@ -174,9 +174,10 @@ namespace MyCaffe.trainers
         /// <param name="log">Specifies the output log to use.</param>
         /// <param name="evtCancel">Specifies the event used to cancel the pre-load.</param>
         /// <param name="nProjectID">Specifies the ProjectID if any.</param>
+        /// <param name="propertyOverride">Optionally, specifies the properites to override those already specified during initialization (default = null).</param>
         /// <param name="ci">Optionally, specifies the database connection information (default = null).</param>
         /// <returns>When data is pre-loaded the vocabulary discovered is returned as a Bucket Collection.</returns>
-        BucketCollection PreloadData(Log log, CancelEvent evtCancel, int nProjectID, ConnectInfo ci = null);
+        BucketCollection PreloadData(Log log, CancelEvent evtCancel, int nProjectID, PropertySet propertyOverride = null, ConnectInfo ci = null);
         /// <summary>
         /// The ResizeModel method gives the custom trainer the opportunity to resize the model if needed.
         /// </summary>
@@ -209,8 +210,8 @@ namespace MyCaffe.trainers
         /// <summary>
         /// The GetRunProperties method is used to qeury the properties used when Running, if any.
         /// </summary>
-        /// <returns>The property string is returned.</returns>
-        string GetRunProperties();
+        /// <returns>The property set returned.</returns>
+        PropertySet GetRunProperties();
     }
 
     /// <summary>
@@ -262,10 +263,10 @@ namespace MyCaffe.trainers
         /// Run a number of 'nN' samples on the trainer.
         /// </summary>
         /// <param name="nN">Specifies the number of samples to run.</param>
-        /// <param name="strRunProperties">Optionally specifies properties to use when running.</param>
+        /// <param name="runProp">Optionally specifies properties to use when running.</param>
         /// <param name="type">Specifies the output data type returned as a raw byte stream.</param>
         /// <returns>The run results are returned in the same native type as that of the CustomQuery used.</returns>
-        byte[] Run(int nN, string strRunProperties, out string type);
+        byte[] Run(int nN, PropertySet runProp, out string type);
     }
 
     /// <summary>
@@ -277,18 +278,18 @@ namespace MyCaffe.trainers
         /// Run a number of 'nN' samples on the trainer.
         /// </summary>
         /// <param name="nN">specifies the number of samples to run.</param>
-        /// <param name="strRunProperties">Optionally specifies properties to use when running.</param>
+        /// <param name="runProp">Optionally specifies properties to use when running.</param>
         /// <returns>The result collection containing the action is returned.</returns>
-        float[] Run(int nN, string strRunProperties);
+        float[] Run(int nN, PropertySet runProp);
 
         /// <summary>
         /// Run a number of 'nN' samples on the trainer.
         /// </summary>
         /// <param name="nN">Specifies the number of samples to run.</param>
-        /// <param name="strRunProperties">Optionally specifies properties to use when running.</param>
+        /// <param name="runProp">Optionally specifies properties to use when running.</param>
         /// <param name="type">Specifies the output data type returned as a raw byte stream.</param>
         /// <returns>The run results are returned in the same native type as that of the CustomQuery used.</returns>
-        byte[] Run(int nN, string strRunProperties, out string type);
+        byte[] Run(int nN, PropertySet runProp, out string type);
     }
 
     /// <summary>
