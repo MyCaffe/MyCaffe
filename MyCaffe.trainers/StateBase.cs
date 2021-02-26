@@ -23,6 +23,7 @@ namespace MyCaffe.trainers
         double[] m_rgState = null;
         double[] m_rgClip = null;
         Image m_img = null;
+        double m_dfTestingPercent = 0.2; // default to 20% of the tail end of the data for testing.
 
         /// <summary>
         /// The constructor.
@@ -30,6 +31,18 @@ namespace MyCaffe.trainers
         public StateBase(int nActionCount)
         {
             m_nActionCount = nActionCount;
+        }
+
+        /// <summary>
+        /// Get/set the percentage of the data to reserve for testing.
+        /// </summary>
+        /// <remarks>
+        /// When set to 0, the same data is used for both testing and training (not recommended).
+        /// </remarks>
+        public double TestingPercent
+        {
+            get { return m_dfTestingPercent; }
+            set { m_dfTestingPercent = value; }
         }
 
         /// <summary>
