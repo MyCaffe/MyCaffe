@@ -39,11 +39,14 @@ namespace MyCaffe.basecode
             {
                 if (strP.Length > 0)
                 {
-                    string[] rgstrItem = strP.Split('=');
-                    if (rgstrItem.Length == 2)
+                    int nPos = strP.IndexOf('=');
+                    if (nPos > 0)
                     {
-                        if (!m_rgProperties.ContainsKey(rgstrItem[0]))
-                            m_rgProperties.Add(rgstrItem[0], rgstrItem[1]);
+                        string strKey = strP.Substring(0, nPos);
+                        string strVal = strP.Substring(nPos + 1);
+
+                        if (!m_rgProperties.ContainsKey(strKey))
+                            m_rgProperties.Add(strKey, strVal);
                     }
                 }
             }
