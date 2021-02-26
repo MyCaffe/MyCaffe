@@ -1914,8 +1914,9 @@ namespace MyCaffe
         /// Run on a set of images in the MyCaffeImageDatabase based on their image indexes.
         /// </summary>
         /// <param name="rgImageIdx">Specifies a list of image indexes.</param>
+        /// <param name="blob">Specifies a work blob.</param>
         /// <returns>A list of results from the run is returned - one result per image.</returns>
-        public List<ResultCollection> Run(List<int> rgImageIdx)
+        public List<ResultCollection> Run(List<int> rgImageIdx, ref Blob<T> blob)
         {
             List<SimpleDatum> rgSd = new List<SimpleDatum>();
 
@@ -1926,7 +1927,35 @@ namespace MyCaffe
                 rgSd.Add(sd);
             }
 
-            return Run(rgSd, true, false);
+            return Run(rgSd, ref blob);
+        }
+
+        /// <summary>
+        /// Run on a set of images in the MyCaffeImageDatabase based on their image indexes.
+        /// </summary>
+        /// <param name="rgImageIdx">Specifies a list of image indexes.</param>
+        /// <returns>A list of results from the run is returned - one result per image.</returns>
+        public List<ResultCollection> Run(List<int> rgImageIdx)
+        {
+            List<SimpleDatum> rgSd = new List<SimpleDatum>();
+
+            if (m_dataSet == null)
+                throw new Exception("Running on indexes requires a full Load that includes loading the dataset.");
+
+            foreach (int nImageIdx in rgImageIdx)
+            {
+                SimpleDatum sd = m_imgDb.QueryImage(m_dataSet.TrainingSource.ID, nImageIdx, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+                m_dataTransformer.TransformLabel(sd);
+                rgSd.Add(sd);
+            }
+
+            Blob<T> blob = null;
+            List<ResultCollection> rgRes = Run(rgSd, ref blob);
+
+            if (blob != null)
+                blob.Dispose();
+
+            return rgRes;
         }
 
         /// <summary>
@@ -2035,11 +2064,11 @@ namespace MyCaffe
         /// Run on a given list of Datum. 
         /// </summary>
         /// <param name="rgSd">Specifies the list of Datum to run.</param>
-        /// <param name="bSort">Optionally, specifies whether or not to sor the results.</param>
+        /// <param name="blob">Specifies a work blob.</param>
         /// <param name="bUseSolverNet">Optionally, specifies whether or not to use the training net vs. the run net.</param>
         /// <param name="nMax">Optionally, specifies a maximum number of SimpleDatums to process (default = int.MaxValue).</param>
         /// <returns>A list of results of the run are returned.</returns>
-        public List<ResultCollection> Run(List<SimpleDatum> rgSd, bool bSort = true, bool bUseSolverNet = false, int nMax = int.MaxValue)
+        public List<ResultCollection> Run(List<SimpleDatum> rgSd, ref Blob<T> blob, bool bUseSolverNet = false, int nMax = int.MaxValue)
         {
             m_log.CHECK(m_dataTransformer != null, "The data transformer is not initialized!");
 
@@ -2048,19 +2077,23 @@ namespace MyCaffe
 
             List<ResultCollection> rgFinalResults = new List<ResultCollection>();
             int nBatchSize = rgSd.Count;
-            int nChannels = m_dataSet.TestingSource.ImageChannels;
-            int nHeight = m_dataSet.TestingSource.ImageHeight;
-            int nWidth = m_dataSet.TestingSource.ImageWidth;
+            int nChannels = rgSd[0].Channels;
+            int nHeight = rgSd[0].Height;
+            int nWidth = rgSd[0].Width;
             List<T> rgDataInput = new List<T>();
 
-            Blob<T> blob = new common.Blob<T>(m_cuda, m_log, nBatchSize, nChannels, nHeight, nWidth, false);
+            if (blob == null)
+                blob = new common.Blob<T>(m_cuda, m_log, nBatchSize, nChannels, nHeight, nWidth, false);
 
-            for (int i=0; i<rgSd.Count && i <nMax; i++)
+            int nCount = 0;
+            for (int i=0; i<rgSd.Count && i < nMax; i++)
             {
                 m_dataTransformer.MaskImage(rgSd[i]);
                 rgDataInput.AddRange(m_dataTransformer.Transform(rgSd[i]));
+                nCount++;
             }
 
+            blob.Reshape(nCount, nChannels, nHeight, nWidth);
             blob.mutable_cpu_data = rgDataInput.ToArray();
             m_dataTransformer.SetRange(blob);
 
@@ -2098,12 +2131,12 @@ namespace MyCaffe
                 }
 
                 ResultCollection result = new ResultCollection(rgResults, lastLayerType);
-                result.SetLabels(m_imgDb.GetLabels(m_dataSet.TrainingSource.ID));
+
+                if (m_imgDb != null && m_dataSet != null)
+                    result.SetLabels(m_imgDb.GetLabels(m_dataSet.TrainingSource.ID));
 
                 rgFinalResults.Add(result);
             }
-
-            blob.Dispose();
 
             return rgFinalResults;
         }
