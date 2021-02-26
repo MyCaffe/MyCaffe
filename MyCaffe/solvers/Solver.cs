@@ -128,7 +128,11 @@ namespace MyCaffe.solvers
         /// </summary>
         public event EventHandler<TestingIterationArgs<T>> OnTestingIteration;
         /// <summary>
-        /// When specifies, the OnTest event fires during a TestAll and overrides the call to Test.
+        /// When specified, the OnTestResults event fires after each single test run.  The recipient is responsible for setting the accuracy.
+        /// </summary>
+        public event EventHandler<TestResultArgs<T>> OnTestResults;
+        /// <summary>
+        /// When specified, the OnTest event fires during a TestAll and overrides the call to Test.
         /// </summary>
         public event EventHandler<TestArgs> OnTest;
         /// <summary>
@@ -1565,6 +1569,7 @@ namespace MyCaffe.solvers
             int nTestCount = 0;
             int nAccuracyIdx = 0;
             int nMinRank = int.MaxValue;
+            bool bAccuracyValid = false;
             Stopwatch swTiming = new Stopwatch();
 
             for (int i = 0; i < nIter; i++)
@@ -1584,41 +1589,56 @@ namespace MyCaffe.solvers
                 if (m_param.test_compute_loss)
                     dfLoss += iter_loss;
 
-                if (i == 0)
+                TestResultArgs<T> args = new TestResultArgs<T>(colResult);
+                if (OnTestResults != null)
                 {
-                    for (int j = 0; j < colResult.Count; j++)
+                    OnTestResults(this, args);
+                    if (args.AccuracyValid)
                     {
-                        double[] result_vec = Utility.ConvertVec<T>(colResult[j].update_cpu_data());
+                        test_score.Add(args.Accuracy);
+                        test_score_output_id.Add(1);
+                        bAccuracyValid = true;
+                    }
+                }
 
-                        for (int k = 0; k < colResult[j].count(); k++)
+                if (!args.AccuracyValid)
+                {
+                    if (i == 0)
+                    {
+                        for (int j = 0; j < colResult.Count; j++)
                         {
-                            test_score.Add(result_vec[k]);
-                            test_score_output_id.Add(j);
-                        }
+                            double[] result_vec = Utility.ConvertVec<T>(colResult[j].update_cpu_data());
 
-                        if (colResult[j].type == BLOB_TYPE.ACCURACY)
-                        {
-                            int nRank = (int)getNumber(colResult[j].Tag, 0);
-                            if (nRank < nMinRank)
+                            for (int k = 0; k < colResult[j].count(); k++)
                             {
-                                nMinRank = nRank;
-                                nAccuracyIdx = j;
+                                test_score.Add(result_vec[k]);
+                                test_score_output_id.Add(j);
+                            }
+
+                            if (colResult[j].type == BLOB_TYPE.ACCURACY)
+                            {
+                                int nRank = (int)getNumber(colResult[j].Tag, 0);
+                                if (nRank < nMinRank)
+                                {
+                                    nMinRank = nRank;
+                                    nAccuracyIdx = j;
+                                }
                             }
                         }
                     }
-                }
-                else
-                {
-                    int idx = 0;
-
-                    for (int j = 0; j < colResult.Count; j++)
+                    else
                     {
-                        double[] result_vec = Utility.ConvertVec<T>(colResult[j].update_cpu_data());
+                        int idx = 0;
 
-                        for (int k = 0; k < colResult[j].count(); k++)
+                        for (int j = 0; j < colResult.Count; j++)
                         {
-                            test_score[idx] += result_vec[k];
-                            idx++;
+                            double[] result_vec = Utility.ConvertVec<T>(colResult[j].update_cpu_data());
+
+                            for (int k = 0; k < colResult[j].count(); k++)
+                            {
+                                test_score[idx] += result_vec[k];
+                                idx++;
+                            }
                         }
                     }
                 }
@@ -1657,22 +1677,31 @@ namespace MyCaffe.solvers
 
             double dfFinalScore = 0;
 
-            for (int i = 0; i < test_score.Count; i++)
+            if (bAccuracyValid)
             {
-                int nIdxTestScore = test_score_output_id[i];
-                int output_blob_index = test_net.output_blob_indices[nIdxTestScore];
-                string output_name = test_net.blob_names[output_blob_index];
-                double loss_weight = test_net.blob_loss_weights[output_blob_index];
-                double dfMeanScore = test_score[i] / nIter;
-                string strOut = "";
+                dfFinalScore = test_score.Sum();
+                int nTotal = test_score_output_id.Sum();
+                dfFinalScore /= nTotal;
+            }
+            else
+            {
+                for (int i = 0; i < test_score.Count; i++)
+                {
+                    int nIdxTestScore = test_score_output_id[i];
+                    int output_blob_index = test_net.output_blob_indices[nIdxTestScore];
+                    string output_name = test_net.blob_names[output_blob_index];
+                    double loss_weight = test_net.blob_loss_weights[output_blob_index];
+                    double dfMeanScore = test_score[i] / nIter;
+                    string strOut = "";
 
-                if (loss_weight != 0)
-                    strOut += " (* " + loss_weight.ToString() + " = " + (loss_weight * dfMeanScore).ToString() + " loss)";
+                    if (loss_weight != 0)
+                        strOut += " (* " + loss_weight.ToString() + " = " + (loss_weight * dfMeanScore).ToString() + " loss)";
 
-                m_log.WriteLine("   Test net output #" + i.ToString() + ": " + output_name + " = " + dfMeanScore.ToString() + strOut);
+                    m_log.WriteLine("   Test net output #" + i.ToString() + ": " + output_name + " = " + dfMeanScore.ToString() + strOut);
 
-                if (i == nAccuracyIdx)
-                    dfFinalScore = dfMeanScore;
+                    if (i == nAccuracyIdx)
+                        dfFinalScore = dfMeanScore;
+                }
             }
 
             if (test_score.Count == 0)
