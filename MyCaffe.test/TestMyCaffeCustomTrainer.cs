@@ -2379,7 +2379,7 @@ namespace MyCaffe.test
         {
         }
 
-        protected override BucketCollection preloaddata(Log log, CancelEvent evtCancel, int nProjectID, out bool bUsePreloadData, ConnectInfo ci = null)
+        protected override BucketCollection preloaddata(Log log, CancelEvent evtCancel, int nProjectID, PropertySet propertySetOverride = null, ConnectInfo ci = null)
         {
             initialize(log);
             IXMyCaffeGymData igym = m_igym as IXMyCaffeGymData;
@@ -2387,8 +2387,6 @@ namespace MyCaffe.test
             int nDataLen;
             SimpleDatum sd = state.Item1.GetData(false, out nDataLen);
             BucketCollection rgBucketCollection = null;
-
-            bUsePreloadData = true;
 
             if (sd.IsRealData)
             {

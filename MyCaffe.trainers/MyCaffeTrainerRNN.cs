@@ -138,7 +138,7 @@ namespace MyCaffe.trainers
             switch (m_trainerType)
             {
                 case TRAINER_TYPE.RNN_SIMPLE:
-                    return new rnn.simple.TrainerRNN<double>(mycaffe, m_properties, m_random, this, m_rgVocabulary, true);
+                    return new rnn.simple.TrainerRNN<double>(mycaffe, m_properties, m_random, this, m_rgVocabulary);
 
                 default:
                     throw new Exception("Unknown trainer type '" + m_trainerType.ToString() + "'!");
@@ -165,7 +165,7 @@ namespace MyCaffe.trainers
             switch (m_trainerType)
             {
                 case TRAINER_TYPE.RNN_SIMPLE:
-                    return new rnn.simple.TrainerRNN<float>(mycaffe, m_properties, m_random, this, m_rgVocabulary, true);
+                    return new rnn.simple.TrainerRNN<float>(mycaffe, m_properties, m_random, this, m_rgVocabulary);
 
                 default:
                     throw new Exception("Unknown trainer type '" + m_trainerType.ToString() + "'!");
@@ -249,9 +249,10 @@ namespace MyCaffe.trainers
         /// <param name="log">Specifies the output log to use.</param>
         /// <param name="evtCancel">Specifies the cancel event.</param>
         /// <param name="nProjectID">Specifies the project ID if any.</param>
+        /// <param name="propertyOverride">Optionally, specifies the properites to override those already specified during initialization (default = null).</param>
         /// <param name="ci">Optionally, specifies the database connection information (default = null).</param>
         /// <returns>When data is pre-loaded the discovered vocabulary is returned as a bucket collection.</returns>
-        protected virtual BucketCollection preloaddata(Log log, CancelEvent evtCancel, int nProjectID, ConnectInfo ci = null)
+        protected virtual BucketCollection preloaddata(Log log, CancelEvent evtCancel, int nProjectID, PropertySet propertyOverride = null, ConnectInfo ci = null)
         {
             return null;
         }
@@ -401,12 +402,12 @@ namespace MyCaffe.trainers
             if (m_itrainer == null)
                 m_itrainer = createTrainer(mycaffe);
 
-            string strRunProperties = null;
+            PropertySet runProp = null;
             IXMyCaffeCustomTrainerCallbackRNN icallback = m_icallback as IXMyCaffeCustomTrainerCallbackRNN;
             if (icallback != null)
-                strRunProperties = icallback.GetRunProperties();
+                runProp = icallback.GetRunProperties();
 
-            float[] rgResults = m_itrainer.Run(nN, strRunProperties);
+            float[] rgResults = m_itrainer.Run(nN, runProp);
             cleanup(0);
 
             return rgResults;
@@ -424,12 +425,12 @@ namespace MyCaffe.trainers
             if (m_itrainer == null)
                 m_itrainer = createTrainer(mycaffe);
 
-            string strRunProperties = null;
+            PropertySet runProp = null;
             IXMyCaffeCustomTrainerCallbackRNN icallback = m_icallback as IXMyCaffeCustomTrainerCallbackRNN;
             if (icallback != null)
-                strRunProperties = icallback.GetRunProperties();
+                runProp = icallback.GetRunProperties();
 
-            byte[] rgResults = m_itrainer.Run(nN, strRunProperties, out type);
+            byte[] rgResults = m_itrainer.Run(nN, runProp, out type);
             cleanup(0);
 
             return rgResults;
@@ -588,11 +589,12 @@ namespace MyCaffe.trainers
         /// <param name="log">Specifies the output log to use.</param>
         /// <param name="evtCancel">Specifies the cancel event.</param>
         /// <param name="nProjectID">Specifies the project ID used, if any.</param>
+        /// <param name="propertyOverride">Optionally, specifies the properites to override those already specified during initialization (default = null).</param>
         /// <param name="ci">Optionally, specifies the database connection information (default = null).</param>
         /// <returns>When data is pre-loaded the discovered vocabulary is returned as a BucketCollection.</returns>
-        public BucketCollection PreloadData(Log log, CancelEvent evtCancel, int nProjectID, ConnectInfo ci = null)
+        public BucketCollection PreloadData(Log log, CancelEvent evtCancel, int nProjectID, PropertySet propertyOverride = null, ConnectInfo ci = null)
         {
-            return preloaddata(log, evtCancel, nProjectID, ci);
+            return preloaddata(log, evtCancel, nProjectID, propertyOverride, ci);
         }
 
         /// <summary>

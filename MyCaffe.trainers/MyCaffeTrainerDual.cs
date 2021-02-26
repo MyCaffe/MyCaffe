@@ -190,12 +190,14 @@ namespace MyCaffe.trainers
             int.TryParse(mycaffe.CurrentProject.GetSolverSetting("max_iter"), out m_nIterations);
             int.TryParse(mycaffe.CurrentProject.GetSolverSetting("snapshot"), out m_nSnapshot);
 
+            m_properties.SetProperty("UsePreLoadData", m_bUsePreloadData.ToString());
+
             if (stage == Stage.RNN)
             {
                 switch (m_trainerType)
                 {
                     case TRAINER_TYPE.RNN_SIMPLE:
-                        return new rnn.simple.TrainerRNN<double>(mycaffe, m_properties, m_random, this, m_rgVocabulary, m_bUsePreloadData);
+                        return new rnn.simple.TrainerRNN<double>(mycaffe, m_properties, m_random, this, m_rgVocabulary);
 
                     default:
                         throw new Exception("The trainer type '" + m_trainerType.ToString() + "' is not supported in the RNN stage!");
@@ -247,12 +249,14 @@ namespace MyCaffe.trainers
             int.TryParse(mycaffe.CurrentProject.GetSolverSetting("max_iter"), out m_nIterations);
             int.TryParse(mycaffe.CurrentProject.GetSolverSetting("snapshot"), out m_nSnapshot);
 
+            m_properties.SetProperty("UsePreLoadData", m_bUsePreloadData.ToString());
+
             if (stage == Stage.RNN)
             {
                 switch (m_trainerType)
                 {
                     case TRAINER_TYPE.RNN_SIMPLE:
-                        return new rnn.simple.TrainerRNN<float>(mycaffe, m_properties, m_random, this, m_rgVocabulary, m_bUsePreloadData);
+                        return new rnn.simple.TrainerRNN<float>(mycaffe, m_properties, m_random, this, m_rgVocabulary);
 
                     default:
                         throw new Exception("The trainer type '" + m_trainerType.ToString() + "' is not supported in the RNN stage!");
@@ -363,12 +367,11 @@ namespace MyCaffe.trainers
         /// <param name="log">Specifies the output log to use.</param>
         /// <param name="evtCancel">Specifies the cancel event.</param>
         /// <param name="nProjectID">Specifies the project ID if any.</param>
-        /// <param name="bUsePreloadData">Returns whether or not to use pre-load data, or dynamic data.</param>
+        /// <param name="propertyOverride">Optionally, specifies the properites to override those already specified during initialization (default = null).</param>
         /// <param name="ci">Optionally, specifies the database connection information (default = null).</param>
         /// <returns>When data is pre-loaded the discovered vocabulary is returned as a bucket collection.</returns>
-        protected virtual BucketCollection preloaddata(Log log, CancelEvent evtCancel, int nProjectID, out bool bUsePreloadData, ConnectInfo ci = null)
+        protected virtual BucketCollection preloaddata(Log log, CancelEvent evtCancel, int nProjectID, PropertySet propertyOverride = null, ConnectInfo ci = null)
         {
-            bUsePreloadData = false;
             return null;
         }
 
@@ -848,16 +851,16 @@ namespace MyCaffe.trainers
             if (m_itrainer == null)
                 m_itrainer = createTrainer(mycaffe, Stage.RL);
 
-            string strRunProperties = null;
+            PropertySet runProp = null;
             IXMyCaffeCustomTrainerCallbackRNN icallback = m_icallback as IXMyCaffeCustomTrainerCallbackRNN;
             if (icallback != null)
-                strRunProperties = icallback.GetRunProperties();
+                runProp = icallback.GetRunProperties();
 
             IxTrainerRL itrainer = m_itrainer as IxTrainerRL;
             if (itrainer == null)
                 throw new Exception("The IxTrainerRL interface must be implemented.");
 
-            byte[] rgResults = itrainer.Run(nN, strRunProperties, out type);
+            byte[] rgResults = itrainer.Run(nN, runProp, out type);
             cleanup(0, false);
 
             return rgResults;
@@ -882,12 +885,12 @@ namespace MyCaffe.trainers
             if (itrainer == null)
                 throw new Exception("The trainer must be set to to 'RNN.SIMPLE' to run in recurrent learning mode.");
 
-            string strRunProperties = null;
+            PropertySet runProp = null;
             IXMyCaffeCustomTrainerCallbackRNN icallback = m_icallback as IXMyCaffeCustomTrainerCallbackRNN;
             if (icallback != null)
-                strRunProperties = icallback.GetRunProperties();
+                runProp = icallback.GetRunProperties();
 
-            float[] rgResults = itrainer.Run(nN, strRunProperties);
+            float[] rgResults = itrainer.Run(nN, runProp);
             cleanup(0, false);
 
             return rgResults;
@@ -909,12 +912,12 @@ namespace MyCaffe.trainers
             if (itrainer == null)
                 throw new Exception("The trainer must be set to to 'RNN.SIMPLE' to run in recurrent learning mode.");
 
-            string strRunProperties = null;
+            PropertySet runProp = null;
             IXMyCaffeCustomTrainerCallbackRNN icallback = m_icallback as IXMyCaffeCustomTrainerCallbackRNN;
             if (icallback != null)
-                strRunProperties = icallback.GetRunProperties();
+                runProp = icallback.GetRunProperties();
 
-            byte[] rgResults = itrainer.Run(nN, strRunProperties, out type);
+            byte[] rgResults = itrainer.Run(nN, runProp, out type);
             m_itrainer.Shutdown(0);
             m_itrainer = null;
 
@@ -927,11 +930,12 @@ namespace MyCaffe.trainers
         /// <param name="log">Specifies the output log to use.</param>
         /// <param name="evtCancel">Specifies the cancel event.</param>
         /// <param name="nProjectID">Specifies the project ID used, if any.</param>
+        /// <param name="propertyOverride">Optionally, specifies the properites to override those already specified during initialization (default = null).</param>
         /// <param name="ci">Optionally, specifies the database connection information (default = null).</param>
         /// <returns>When data is pre-loaded the discovered vocabulary is returned as a BucketCollection.</returns>
-        BucketCollection IXMyCaffeCustomTrainerRNN.PreloadData(Log log, CancelEvent evtCancel, int nProjectID, ConnectInfo ci = null)
+        BucketCollection IXMyCaffeCustomTrainerRNN.PreloadData(Log log, CancelEvent evtCancel, int nProjectID, PropertySet propertyOverride = null, ConnectInfo ci = null)
         {
-            return preloaddata(log, evtCancel, nProjectID, out m_bUsePreloadData, ci);
+            return preloaddata(log, evtCancel, nProjectID, propertyOverride, ci);
         }
 
         /// <summary>
