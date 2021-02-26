@@ -19,7 +19,8 @@ namespace MyCaffe.trainers.rnn.simple
     /// The TrainerRNN implements a simple RNN trainer inspired by adepierre's GitHub site  referenced. 
     /// </summary>
     /// @see 1. [The Unreasonable Effectiveness of Recurrent Neural Networks](http://karpathy.github.io/2015/05/21/rnn-effectiveness/), by Andrej Karpathy, 2015, Github.io
-    /// @see 2. [GitHub: adepierre/caffe-char-rnn](https://github.com/adepierre/caffe-char-rnn), by adepierre, 2017, Github
+    /// @see 2. [karpathy/char-rnn sample.lua](https://github.com/karpathy/char-rnn/blob/master/sample.lua)
+    /// @see 3. [GitHub: adepierre/caffe-char-rnn](https://github.com/adepierre/caffe-char-rnn), by adepierre, 2017, Github
     /// @see 4. [MyCaffe: A Complete C# Re-Write of Caffe with Reinforcement Learning](https://arxiv.org/abs/1810.02272) by D. Brown, 2018, arXiv
     /// <remarks></remarks>
     public class TrainerRNN<T> : IxTrainerRNN, IDisposable
@@ -39,15 +40,18 @@ namespace MyCaffe.trainers.rnn.simple
         /// <param name="random">Specifies the random number generator to use.</param>
         /// <param name="icallback">Specifies the callback for parent notifications and queries.</param>
         /// <param name="rgVocabulary">Specifies the vocabulary to use.</param>
-        /// <param name="bUsePreloadData">Specifies whether or not to use the preloaded data, and if not, to use dynamic data.</param>
-        public TrainerRNN(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, IxTrainerCallback icallback, BucketCollection rgVocabulary, bool bUsePreloadData)
+        /// <remarks>
+        /// The 'bUsePreloadData' parameter has been replaced with a property 'UsePreLoadData'. When this property does not exist,
+        /// the 'UsePreLoadData' defaults to 'true'.
+        /// </remarks>
+        public TrainerRNN(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, IxTrainerCallback icallback, BucketCollection rgVocabulary)
         {
             m_icallback = icallback;
             m_mycaffe = mycaffe;
             m_properties = properties;
             m_random = random;
-            m_rgVocabulary = rgVocabulary;
-            m_bUsePreloadData = bUsePreloadData;
+            m_rgVocabulary = rgVocabulary;            
+            m_bUsePreloadData = properties.GetPropertyAsBool("UsePreLoadData", true); ;
         }
 
         /// <summary>
@@ -102,12 +106,12 @@ namespace MyCaffe.trainers.rnn.simple
         /// Run a single cycle on the environment after the delay.
         /// </summary>
         /// <param name="nN">specifies the number of samples to run.</param>
-        /// <param name="strRunProperties">Optionally specifies properties to use when running.</param>
+        /// <param name="runProp">Optionally specifies properties to use when running.</param>
         /// <returns>The results of the run containing the action are returned.</returns>
-        public float[] Run(int nN, string strRunProperties)
+        public float[] Run(int nN, PropertySet runProp)
         {
             m_mycaffe.CancelEvent.Reset();
-            Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.RUN, m_rgVocabulary, m_bUsePreloadData, strRunProperties);
+            Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.RUN, m_rgVocabulary, m_bUsePreloadData, runProp);
             float[] rgResults = agent.Run(nN);
             agent.Dispose();
 
@@ -118,13 +122,13 @@ namespace MyCaffe.trainers.rnn.simple
         /// Run a single cycle on the environment after the delay.
         /// </summary>
         /// <param name="nN">Specifies the number of samples to run.</param>
-        /// <param name="strRunProperties">Optionally specifies properties to use when running.</param>
+        /// <param name="runProp">Optionally specifies properties to use when running.</param>
         /// <param name="type">Returns the data type contained in the byte stream.</param>
         /// <returns>The results of the run containing the action are returned as a byte stream.</returns>
-        public byte[] Run(int nN, string strRunProperties, out string type)
+        public byte[] Run(int nN, PropertySet runProp, out string type)
         {
             m_mycaffe.CancelEvent.Reset();
-            Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.RUN, m_rgVocabulary, m_bUsePreloadData, strRunProperties);
+            Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.RUN, m_rgVocabulary, m_bUsePreloadData, runProp);
             byte[] rgResults = agent.Run(nN, out type);
             agent.Dispose();
 
@@ -177,10 +181,10 @@ namespace MyCaffe.trainers.rnn.simple
         PropertySet m_properties;
         CryptoRandom m_random;
 
-        public Agent(IxTrainerCallback icallback, MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, Phase phase, BucketCollection rgVocabulary, bool bUsePreloadData, string strRunProperties = null)
+        public Agent(IxTrainerCallback icallback, MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, Phase phase, BucketCollection rgVocabulary, bool bUsePreloadData, PropertySet runProp = null)
         {
             m_icallback = icallback;
-            m_brain = new Brain<T>(mycaffe, properties, random, icallback as IxTrainerCallbackRNN, phase, rgVocabulary, bUsePreloadData, strRunProperties);
+            m_brain = new Brain<T>(mycaffe, properties, random, icallback as IxTrainerCallbackRNN, phase, rgVocabulary, bUsePreloadData, runProp);
             m_properties = properties;
             m_random = random;
         }
@@ -284,11 +288,12 @@ namespace MyCaffe.trainers.rnn.simple
         T[] m_rgLabelInput;
         T m_tZero;
         T m_tOne;
-        double m_dfTemperature = 0;
+        double m_dfRunTemperature = 0;
+        double m_dfTestTemperature = 0;
         byte[] m_rgTestData = null;
         byte[] m_rgTrainData = null;
-        double[] m_rgdfTestData = null;
-        double[] m_rgdfTrainData = null;
+        float[] m_rgfTestData = null;
+        float[] m_rgfTrainData = null;
         bool m_bIsDataReal = false;
         Stopwatch m_sw = new Stopwatch();
         double m_dfLastLoss = 0;
@@ -303,12 +308,12 @@ namespace MyCaffe.trainers.rnn.simple
         DataCollectionPool m_dataPool = new DataCollectionPool();
         double m_dfScale = 1.0;
 
-        public Brain(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, IxTrainerCallbackRNN icallback, Phase phase, BucketCollection rgVocabulary, bool bUsePreloadData, string strRunProperties = null)
+        public Brain(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, IxTrainerCallbackRNN icallback, Phase phase, BucketCollection rgVocabulary, bool bUsePreloadData, PropertySet runProp = null)
         {
             string strOutputBlob = null;
 
-            if (strRunProperties != null)
-                m_runProperties = new PropertySet(strRunProperties);
+            if (runProp != null)
+                m_runProperties = runProp;
 
             m_icallback = icallback;
             m_mycaffe = mycaffe;
@@ -320,15 +325,16 @@ namespace MyCaffe.trainers.rnn.simple
             m_bDisableVocabulary = m_properties.GetPropertyAsBool("DisableVocabulary", false);
             m_nThreads = m_properties.GetPropertyAsInt("Threads", 1);
             m_dfScale = m_properties.GetPropertyAsDouble("Scale", 1.0);
+            m_dfTestTemperature = properties.GetPropertyAsDouble("TestTemperature", 0);
 
             if (m_nThreads > 1)
                 m_dataPool.Initialize(m_nThreads, icallback);
 
             if (m_runProperties != null)
             {
-                m_dfTemperature = Math.Abs(m_runProperties.GetPropertyAsDouble("Temperature", 0));
-                if (m_dfTemperature > 1.0)
-                    m_dfTemperature = 1.0;
+                m_dfRunTemperature = Math.Abs(m_runProperties.GetPropertyAsDouble("Temperature", 0));
+                if (m_dfRunTemperature > 1.0)
+                    m_dfRunTemperature = 1.0;
 
                 string strPhaseOnRun = m_runProperties.GetProperty("PhaseOnRun", false);
                 switch (strPhaseOnRun)
@@ -458,6 +464,7 @@ namespace MyCaffe.trainers.rnn.simple
                 m_solver = mycaffe.GetInternalSolver();
                 m_solver.OnStart += m_solver_OnStart;
                 m_solver.OnTestStart += m_solver_OnTestStart;
+                m_solver.OnTestResults += m_solver_OnTestResults;
                 m_solver.OnTestingIteration += m_solver_OnTestingIteration;
                 m_solver.OnTrainingIteration += m_solver_OnTrainingIteration;
 
@@ -531,28 +538,65 @@ namespace MyCaffe.trainers.rnn.simple
             get { return m_mycaffe.CancelEvent; }
         }
 
+        private void copyData(SimpleDatum sd, int nSrcOffset, float[] rgfDst, int nCount)
+        {
+            int nDim = sd.Height * sd.Width;
+            float[] rgfSrc = sd.GetData<float>();
+
+            if (nDim == 0)
+            {
+                Array.Copy(rgfSrc, nSrcOffset, rgfDst, 0, nCount);
+            }
+            else
+            {
+                for (int i = 0; i < nCount; i++)
+                {
+                    rgfDst[i] = rgfSrc[(nSrcOffset + i) * nDim];
+                }
+            }
+        }
+
         private void getRawData(StateBase s)
         {
-            int nTestLen = (int)(s.Data.ItemCount * 0.2);
-            int nTrainLen = s.Data.ItemCount - nTestLen;
+            int nTestLen = (int)(s.Data.Channels * s.TestingPercent);
+            int nTrainLen = s.Data.Channels - nTestLen;
 
             if (s.Data.IsRealData)
             {
                 m_bIsDataReal = true;
-                m_rgdfTestData = new double[nTestLen];
-                m_rgdfTrainData = new double[nTrainLen];
 
-                Array.Copy(s.Data.GetData<double>(), 0, m_rgdfTrainData, 0, nTrainLen);
-                Array.Copy(s.Data.GetData<double>(), nTrainLen, m_rgdfTestData, 0, nTestLen);
+                m_rgfTrainData = new float[nTrainLen];
+                copyData(s.Data, 0, m_rgfTrainData, nTrainLen);
+
+                if (nTestLen == 0)
+                {
+                    m_rgfTestData = m_rgfTrainData;
+                }
+                else
+                {
+                    m_rgfTestData = new float[nTestLen];
+                    copyData(s.Data, nTrainLen, m_rgfTestData, nTestLen);
+                }
             }
             else
             {
-                m_bIsDataReal = false;
-                m_rgTestData = new byte[nTestLen];
-                m_rgTrainData = new byte[nTrainLen];
+                int nDim = s.Data.Height * s.Data.Width;
+                if (nDim != 1)
+                    throw new Exception("When training on binary data the height and width must = 1.");
 
+                m_bIsDataReal = false;
+                m_rgTrainData = new byte[nTrainLen];
                 Array.Copy(s.Data.ByteData, 0, m_rgTrainData, 0, nTrainLen);
-                Array.Copy(s.Data.ByteData, nTrainLen, m_rgTestData, 0, nTestLen);
+
+                if (nTestLen == 0)
+                {
+                    m_rgTestData = m_rgTrainData;
+                }
+                else
+                {
+                    m_rgTestData = new byte[nTestLen];
+                    Array.Copy(s.Data.ByteData, nTrainLen, m_rgTestData, 0, nTestLen);
+                }
             }
         }
 
@@ -574,6 +618,52 @@ namespace MyCaffe.trainers.rnn.simple
         private void m_solver_OnTestStart(object sender, EventArgs e)
         {
             FeedNet(false);
+        }
+
+        /// <summary>
+        /// Retrieve the score with the maximum probability - the index is the label.
+        /// </summary>
+        /// <param name="rgfScores">Specifies the scores (should be in blocks equal to the nDim)</param>
+        /// <param name="nIdx">Specifies the block offset within the scores.</param>
+        /// <param name="nDim">Specifies the number of labels.</param>
+        /// <returns>The maximum scoring label is returned.</returns>
+        private int getLabel(float[] rgfScores, int nIdx, int nDim)
+        {
+            float[] rgfLastScores = new float[nDim];
+            int nStartIdx = nIdx * nDim;
+
+            for (int i = 0; i < nDim; i++)
+            {
+                rgfLastScores[i] = rgfScores[nStartIdx + i];
+            }
+
+            return getLastPrediction(rgfLastScores, m_dfTestTemperature);
+        }
+
+        private void m_solver_OnTestResults(object sender, TestResultArgs<T> e)
+        {
+            if (e.Results.Count != 2)
+                return;
+
+            int nNum = e.Results[1].num;
+            if (nNum != m_rgLabelInput.Length)
+                return;
+
+            int nDim = e.Results[1].count(1);
+
+            float[] rgfScores = Utility.ConvertVecF<T>(e.Results[1].mutable_cpu_data);
+            int nCorrectCount = 0;
+            for (int i = 0; i < m_nBatchSize; i++)
+            {
+                int nIdx = (m_lstmType == LayerParameter.LayerType.LSTM_SIMPLE) ? (i * m_nSequenceLength + m_nSequenceLength - 1) : ((nNum - m_nBatchSize) + i);
+                int nExpectedLabel = (int)Utility.ConvertVal<T>(m_rgLabelInput[nIdx]);
+                int nActualLabel = getLabel(rgfScores, nIdx, nDim);
+
+                if (nExpectedLabel == nActualLabel)
+                    nCorrectCount++;
+            }
+
+            e.Accuracy = (double)nCorrectCount / m_nBatchSize;
         }
 
         public void Train(StateBase s, int nIterations, TRAIN_STEP step)
@@ -602,19 +692,19 @@ namespace MyCaffe.trainers.rnn.simple
             {
                 if (m_bUsePreloadData)
                 {
-                    double[] rgdfData = (bTrain) ? m_rgdfTrainData : m_rgdfTestData;
+                    float[] rgfData = (bTrain) ? m_rgfTrainData : m_rgfTestData;
 
                     // Re-order the data according to caffe input specification for LSTM layer.
                     for (int i = 0; i < m_nBatchSize; i++)
                     {
-                        int nCurrentValIdx = m_random.Next(rgdfData.Length - m_nSequenceLength - 1);
+                        int nCurrentValIdx = m_random.Next(rgfData.Length - m_nSequenceLength - 1);
 
                         for (int j = 0; j < m_nSequenceLength; j++)
                         {
                             // Feed the net with input data and labels (clips are always the same)
-                            double dfData = rgdfData[nCurrentValIdx + j];
+                            double dfData = rgfData[nCurrentValIdx + j];
                             // Labels are the same with an offset of +1
-                            double dfLabel = rgdfData[nCurrentValIdx + j + 1]; // predict next value
+                            double dfLabel = rgfData[nCurrentValIdx + j + 1]; // predict next value
                             float fDataIdx = findIndex(dfData, out bFound);
                             float fLabelIdx = findIndex(dfLabel, out bFound);
 
@@ -792,26 +882,51 @@ namespace MyCaffe.trainers.rnn.simple
             }
 
             // If a seed is specified, add it to the end of the sequence.
+            bool bDataNeeded = true;
             if (!bIsReal && m_runProperties != null)
             {
-                string strSeed = m_runProperties.GetProperty("Seed", false);
-                if (!string.IsNullOrEmpty(strSeed))
-                {
-                    strSeed = Utility.Replace(strSeed, '~', ';');
+                byte[] rgSeed = m_runProperties.GetPropertyBlob("Seed", false);
 
-                    int nStart = rgCorrectLengthSequence.Length - strSeed.Length;
+                if (rgSeed != null && rgSeed.Length > 0)
+                {
+                    int nLen = rgSeed.Length;
+                    if (rgSeed[nLen - 1] == 0)
+                        nLen--;
+
+                    int nStart = rgCorrectLengthSequence.Length - nLen;
                     if (nStart < 0)
                         nStart = 0;
 
                     for (int i = nStart; i < rgCorrectLengthSequence.Length; i++)
                     {
-                        char ch = strSeed[i - nStart];
+                        byte bVal = rgSeed[i - nStart];
                         bool bFound;
-                        int nIdx = (int)findIndex((byte)ch, out bFound);
+                        int nIdx = (int)findIndex(bVal, out bFound);
 
                         if (bFound)
                             rgCorrectLengthSequence[i] = nIdx;
                     }
+
+                    bDataNeeded = false;
+                }
+            }
+
+            if (bDataNeeded)
+            {
+                GetDataArgs e = getDataArgs(Phase.RUN, 0, 0, false, m_nSequenceLength);
+                e.ExtraProperties = m_runProperties;
+                e.ExtraProperties.SetProperty("DataCountRequested", m_nSequenceLength.ToString());
+                m_icallback.OnGetData(e);
+
+                float[] rgf = e.State.Data.GetData<float>();
+                int nDim = e.State.Data.Height * e.State.Data.Width;
+
+                if (e.State.Data.Channels != rgCorrectLengthSequence.Length)
+                    throw new Exception("The data length received is incorrect!");
+
+                for (int i = 0; i < rgCorrectLengthSequence.Length; i++)
+                {
+                    rgCorrectLengthSequence[i] = rgf[i * nDim];
                 }
             }
 
@@ -992,15 +1107,15 @@ namespace MyCaffe.trainers.rnn.simple
                 rgData[i] = rgDataRaw[nOffset + i];
             }
 
-            return getLastPrediction(rgData, rgVocabulary);
+            return getLastPrediction(rgData, m_dfRunTemperature);
         }
 
-        private int getLastPrediction(float[] rgData, BucketCollection rgVocabulary)
+        private int getLastPrediction(float[] rgData, double dfTemperature)
         {
             int nIdx = m_nVocabSize - 1;
 
             // If no temperature, return directly the character with the best score
-            if (m_dfTemperature == 0)
+            if (dfTemperature == 0)
             {
                 nIdx = ArgMax(rgData, 0, m_nVocabSize);
             }
@@ -1011,10 +1126,11 @@ namespace MyCaffe.trainers.rnn.simple
                 double[] rgProba = new double[m_nVocabSize];
                 double dfExpoSum = 0;
 
+                double dfMax = rgData.Max();
                 for (int i = 0; i < m_nVocabSize; i++)
                 {
                     // The max value is subtracted for numerical stability
-                    rgProba[i] = Math.Exp((rgData[i] - (m_nVocabSize - 1)) / m_dfTemperature);
+                    rgProba[i] = Math.Exp((rgData[i] - dfMax) / dfTemperature);
                     dfExpoSum += rgProba[i];
                 }
 
@@ -1027,15 +1143,18 @@ namespace MyCaffe.trainers.rnn.simple
                 {
                     // Return the first index for which the accumulated probability is bigger than the random number.
                     if (rgAccumulatedProba[i - 1] > dfRandom)
-                        return i - 1;
+                    {
+                        nIdx = i - 1;
+                        break;
+                    }
 
                     rgProba[i] /= dfExpoSum;
                     rgAccumulatedProba[i] = rgAccumulatedProba[i - 1] + rgProba[i];
                 }
             }
 
-            if (nIdx < 0 || nIdx > rgVocabulary.Count)
-                throw new Exception("Invalid index - out of the vocabulary range of [0," + rgVocabulary.Count.ToString() + "]");
+            if (nIdx < 0 || nIdx > m_nVocabSize)
+                throw new Exception("Invalid index - out of the vocabulary range of [0," + m_nVocabSize.ToString() + "]");
 
             return nIdx;
         }
