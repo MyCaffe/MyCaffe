@@ -301,22 +301,27 @@ namespace MyCaffe.trainers
         /// <summary>
         /// The OnIntialize callback fires when initializing the trainer.
         /// </summary>
+        /// <param name="e">Specifies the argument sent with the callback.</param>
         void OnInitialize(InitializeArgs e);
         /// <summary>
         /// The OnShutdown callback fires when shutting down the trainer.
         /// </summary>
+        /// <param name="e">Specifies the argument sent with the callback.</param>
         void OnShutdown();
         /// <summary>
         /// The OnGetData callback fires from within the Train method and is used to get a new observation data.
         /// </summary>
+        /// <param name="e">Specifies the argument sent with the callback.</param>
         void OnGetData(GetDataArgs e);
         /// <summary>
         /// The OnGetStatus callback fires on each iteration within the Train method.
         /// </summary>
+        /// <param name="e">Specifies the argument sent with the callback.</param>
         void OnUpdateStatus(GetStatusArgs e);
         /// <summary>
         /// The OnWait callback fires when waiting for a shutdown.
         /// </summary>
+        /// <param name="e">Specifies the argument sent with the callback.</param>
         void OnWait(WaitArgs e);
     }
 
@@ -329,7 +334,7 @@ namespace MyCaffe.trainers
         /// <summary>
         /// The OnOverlay method is optionally called just before displaying a gym image thus allowing for an overlay to be applied.
         /// </summary>
-        /// <param name="e"></param>
+        /// <param name="e">Specifies the argument sent with the callback.</param>
         void OnOverlay(OverlayArgs e);
     }
 
@@ -342,7 +347,13 @@ namespace MyCaffe.trainers
         /// <summary>
         /// The OnConvertOutput callback fires from within the Run method and is used to convert the network's output into the native format used by the CustomQuery.
         /// </summary>
-        /// <param name="e"></param>
+        /// <param name="e">Specifies the argument sent with the callback.</param>
         void OnConvertOutput(ConvertOutputArgs e);
+
+        /// <summary>
+        /// The OnTestAccuracyUpdate callback fires from within the Run method and is used to give the recipient the chance to determine whether the label detected is correct or not.
+        /// </summary>
+        /// <param name="e">Specifies the argument sent with the callback.</param>
+        void OnTestAccuracyUpdate(TestAccuracyUpdateArgs e);
     }
 }

@@ -542,4 +542,64 @@ namespace MyCaffe.trainers
             get { return m_bReset; }
         }
     }
+
+    /// <summary>
+    /// The TestAccuracyUpdateArgs are passed to the OnTestAccuracyUpdate event.
+    /// </summary>
+    public class TestAccuracyUpdateArgs : EventArgs
+    {
+        int m_nDetectedLabel;
+        int m_nExpectedLabel;
+        bool m_bIsCorrect;
+        bool m_bHandled = false;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="nDetectedLabel">Specifies the detected label.</param>
+        /// <param name="nExpectedLabel">Specifies the expected label.</param>
+        public TestAccuracyUpdateArgs(int nDetectedLabel, int nExpectedLabel)
+        {
+            m_nDetectedLabel = nDetectedLabel;
+            m_nExpectedLabel = nExpectedLabel;
+            m_bIsCorrect = false;
+        }
+
+        /// <summary>
+        /// Returns the detected label.
+        /// </summary>
+        public int DetectedLabel
+        {
+            get { return m_nDetectedLabel; }
+        }
+
+        /// <summary>
+        /// Returns the expected label.
+        /// </summary>
+        public int ExpectedLabel
+        {
+            get { return m_nExpectedLabel; }
+        }
+
+        /// <summary>
+        /// Get/set whether or not the expected and detected label match in a correct way.
+        /// </summary>
+        public bool IsCorrect
+        {
+            get { return m_bIsCorrect; }
+            set 
+            { 
+                m_bIsCorrect = value;
+                m_bHandled = true;
+            }
+        }
+
+        /// <summary>
+        /// Get whether or not the event was handled.
+        /// </summary>
+        public bool Handled
+        {
+            get { return m_bHandled; }
+        }
+    }
 }

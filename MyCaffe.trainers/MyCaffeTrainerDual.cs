@@ -336,6 +336,14 @@ namespace MyCaffe.trainers
         }
 
         /// <summary>
+        /// Override called by the OnTestAccuracyUpdate event fired from within the Run method and is used to give the recipient the chance to determine whether the label detected is correct or not.
+        /// </summary>
+        /// <param name="e">Specifies the argument sent with the callback.</param>
+        protected virtual void testAccuracyUpdate(TestAccuracyUpdateArgs e)
+        {
+        }
+
+        /// <summary>
         /// Returns <i>true</i> when the training is ready for a snap-shot, <i>false</i> otherwise.
         /// </summary>
         /// <param name="nIteration">Specifies the current iteration.</param>
@@ -631,6 +639,15 @@ namespace MyCaffe.trainers
         public void OnConvertOutput(ConvertOutputArgs e)
         {
             convertOutput(e);
+        }
+
+        /// <summary>
+        /// The OnTestAccuracyUpdate callback fires from within the Run method and is used to give the recipient the chance to determine whether the label detected is correct or not.
+        /// </summary>
+        /// <param name="e">Specifies the argument sent with the callback.</param>
+        public void OnTestAccuracyUpdate(TestAccuracyUpdateArgs e)
+        {
+            testAccuracyUpdate(e);
         }
 
         /// <summary>

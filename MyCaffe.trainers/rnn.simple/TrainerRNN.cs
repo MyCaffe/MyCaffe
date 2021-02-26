@@ -32,6 +32,7 @@ namespace MyCaffe.trainers.rnn.simple
         BucketCollection m_rgVocabulary = null;
         bool m_bUsePreloadData = true;
 
+
         /// <summary>
         /// The constructor.
         /// </summary>
@@ -101,6 +102,7 @@ namespace MyCaffe.trainers.rnn.simple
 
             return true;
         }
+
 
         /// <summary>
         /// Run a single cycle on the environment after the delay.
@@ -658,9 +660,22 @@ namespace MyCaffe.trainers.rnn.simple
                 int nIdx = (m_lstmType == LayerParameter.LayerType.LSTM_SIMPLE) ? (i * m_nSequenceLength + m_nSequenceLength - 1) : ((nNum - m_nBatchSize) + i);
                 int nExpectedLabel = (int)Utility.ConvertVal<T>(m_rgLabelInput[nIdx]);
                 int nActualLabel = getLabel(rgfScores, nIdx, nDim);
+                bool bHandled = false;
 
-                if (nExpectedLabel == nActualLabel)
-                    nCorrectCount++;
+                TestAccuracyUpdateArgs args = new TestAccuracyUpdateArgs(nActualLabel, nExpectedLabel);
+                m_icallback.OnTestAccuracyUpdate(args);
+                if (args.Handled)
+                {
+                    if (args.IsCorrect)
+                        nCorrectCount++;
+                    bHandled = true;
+                }
+
+                if (!bHandled)
+                {
+                    if (nExpectedLabel == nActualLabel)
+                        nCorrectCount++;
+                }
             }
 
             e.Accuracy = (double)nCorrectCount / m_nBatchSize;
