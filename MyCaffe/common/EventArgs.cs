@@ -109,6 +109,57 @@ namespace MyCaffe.common
     }
 
     /// <summary>
+    /// The TestResultArgs are passed to the Solver::OnTestResults event.
+    /// </summary>
+    /// <typeparam name="T">Specifies the base type used throughout MyCaffe.</typeparam>
+    public class TestResultArgs<T> : EventArgs
+    {
+        BlobCollection<T> m_results;
+        double m_dfAccuracy;
+        bool m_bAccuracyValid = false;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="res">Specifies the results returned after running the test.</param>
+        public TestResultArgs(BlobCollection<T> res)
+        {
+            m_results = res;
+            m_dfAccuracy = 0;
+        }
+
+        /// <summary>
+        /// Returns the results from the test.
+        /// </summary>
+        public BlobCollection<T> Results
+        {
+            get { return m_results; }
+        }
+
+        /// <summary>
+        /// Get/set the accuracy. The recipient of this event should set this value.
+        /// </summary>
+        public double Accuracy
+        {
+            get { return m_dfAccuracy; }
+            set 
+            { 
+                m_dfAccuracy = value;
+                m_bAccuracyValid = true;
+            }
+        }
+
+        /// <summary>
+        /// Get/set the accuracy valid flag.  When not valid, the OnTestResults event is ignored.
+        /// </summary>
+        public bool AccuracyValid
+        {
+            get { return m_bAccuracyValid; }
+            set { m_bAccuracyValid = value; }
+        }
+    }
+
+    /// <summary>
     /// The TestArgs are passed to the Solver::OnTest event.
     /// </summary>
     /// <remarks>
