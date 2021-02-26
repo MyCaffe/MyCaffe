@@ -410,6 +410,7 @@ namespace MyCaffe.trainers
         int m_nIndex = 0;
         bool m_bGetLabel = false;
         Phase m_phase = Phase.NONE;
+        PropertySet m_properties = null;
         IxTrainerGetDataCallback m_iOnGetData = null;
 
         /// <summary>
@@ -448,6 +449,15 @@ namespace MyCaffe.trainers
         public IxTrainerGetDataCallback GetDataCallback
         {
             get { return m_iOnGetData; }
+        }
+
+        /// <summary>
+        /// Get/set extra properties.
+        /// </summary>
+        public PropertySet ExtraProperties
+        {
+            get { return m_properties; }
+            set { m_properties = value; }
         }
 
         /// <summary>
