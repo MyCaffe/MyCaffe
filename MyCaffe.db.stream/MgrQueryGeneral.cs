@@ -167,7 +167,7 @@ namespace MyCaffe.db.stream
                 if (rgData == null || rgData.Length == 0)
                     return null;
 
-                return new SimpleDatum(false, 1, 1, rgData.Length, -1, DateTime.MinValue, rgData.ToList(), 0, false, -1);
+                return new SimpleDatum(false, rgData.Length, 1, 1, -1, DateTime.MinValue, rgData.ToList(), 0, false, -1);
             }
         }
 
