@@ -162,6 +162,14 @@ namespace MyCaffe.gym
         }
 
         /// <summary>
+        /// Returns the testinng percent of -1, which then uses the default of 0.2.
+        /// </summary>
+        public double TestingPercent
+        {
+            get { return -1; }
+        }
+
+        /// <summary>
         /// Returns the action space as a dictionary of name,actionid pairs.
         /// </summary>
         /// <returns>The action space is returned.</returns>
@@ -361,8 +369,9 @@ namespace MyCaffe.gym
         /// </summary>
         /// <param name="nAction">Specifies the action to run on the gym.</param>
         /// <param name="bGetLabel">Not used.</param>
+        /// <param name="propExtra">Optionally, specifies extra parameters.</param>
         /// <returns>A tuple containing state data, the reward, and the done state is returned.</returns>
-        public Tuple<State, double, bool> Step(int nAction, bool bGetLabel)
+        public Tuple<State, double, bool> Step(int nAction, bool bGetLabel, PropertySet propExtra = null)
         {
             CartPoleState state = new CartPoleState(m_state);
             double dfReward = 0;
