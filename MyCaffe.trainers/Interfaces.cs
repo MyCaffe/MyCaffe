@@ -18,11 +18,11 @@ namespace MyCaffe.trainers
     public enum ITERATOR_TYPE
     {
         /// <summary>
-        /// Use the iteration type.
+        /// Use the iteration iterator type.
         /// </summary>
         ITERATION = 0,
         /// <summary>
-        /// Use the episode type.
+        /// Use the episode iterator type.
         /// </summary>
         EPISODE = 1
     }
