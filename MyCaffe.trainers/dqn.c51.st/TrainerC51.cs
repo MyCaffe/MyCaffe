@@ -116,10 +116,10 @@ namespace MyCaffe.trainers.dqn.c51.st
         /// Run a set of iterations and return the resuts.
         /// </summary>
         /// <param name="nN">Specifies the number of samples to run.</param>
-        /// <param name="strRunProperties">Optionally specifies properties to use when running.</param>
+        /// <param name="runProp">Optionally specifies properties to use when running.</param>
         /// <param name="type">Returns the data type contained in the byte stream.</param>
         /// <returns>The results of the run containing the action are returned as a byte stream.</returns>
-        public byte[] Run(int nN, string strRunProperties, out string type)
+        public byte[] Run(int nN, PropertySet runProp, out string type)
         {
             m_mycaffe.CancelEvent.Reset();
             DqnAgent<T> agent = new DqnAgent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.RUN);
