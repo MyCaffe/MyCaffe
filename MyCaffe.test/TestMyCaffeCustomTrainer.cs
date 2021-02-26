@@ -1488,9 +1488,9 @@ namespace MyCaffe.test
         /// For now, the TRAIN phase is used during the Run (e.g. the TRAIN network)
         /// due to a bug in sharing the weights between the TRAIN and TEST/RUN networks.
         /// </remarks>
-        public string GetRunProperties()
+        public PropertySet GetRunProperties()
         {
-            return "";
+            return null;
         }
 
         public void Update(TRAINING_CATEGORY cat, Dictionary<string, double> rgValues)
@@ -1631,6 +1631,11 @@ namespace MyCaffe.test
             Observation obs = new Observation(null, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, stateData.GetData<double>(), state.Item2, state.Item3);
 
             e.State = new StateBase(m_igym.GetActionSpace().Count());
+
+            double dfTestingPct = m_igym.TestingPercent;
+            if (dfTestingPct >= 0)
+                e.State.TestingPercent = dfTestingPct;
+
             e.State.Reward = obs.Reward;
             e.State.Data = new SimpleDatum(true, nDataLen, 1, 1, -1, DateTime.Now, stateData.GetData<double>(), 0, false, 0);
             e.State.Done = obs.Done;
@@ -1925,7 +1930,7 @@ namespace MyCaffe.test
         {
         }
 
-        protected override BucketCollection preloaddata(Log log, CancelEvent evtCancel, int nProjectID, ConnectInfo ci = null)
+        protected override BucketCollection preloaddata(Log log, CancelEvent evtCancel, int nProjectID, PropertySet propertyOverride = null, ConnectInfo ci = null)
         {
             initialize(log);
             IXMyCaffeGymData igym = m_igym as IXMyCaffeGymData;
