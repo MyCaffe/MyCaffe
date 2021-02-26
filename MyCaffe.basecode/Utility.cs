@@ -707,6 +707,24 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Parses a comma delimited string into an array of int.
+        /// </summary>
+        /// <param name="str">Specifies the string to parse.</param>
+        /// <returns>The array of int is returned.</returns>
+        public static List<int> ParseListToInt(string str)
+        {
+            string[] rg = str.Split(',');
+            List<int> rgVal = new List<int>();
+
+            foreach (string str1 in rg)
+            {
+                rgVal.Add(int.Parse(str1));
+            }
+
+            return rgVal;
+        }
+
+        /// <summary>
         /// Parses a string into a number, or if the string does not contain a number returns 0.
         /// </summary>
         /// <param name="str">Specifies the string to parse.</param>
