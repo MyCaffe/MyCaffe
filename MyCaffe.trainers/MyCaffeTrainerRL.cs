@@ -462,12 +462,12 @@ namespace MyCaffe.trainers
             if (m_itrainer == null)
                 m_itrainer = createTrainer(mycaffe);
 
-            string strRunProperties = null;
+            PropertySet runProp = null;
             IXMyCaffeCustomTrainerCallbackRNN icallback = m_icallback as IXMyCaffeCustomTrainerCallbackRNN;
             if (icallback != null)
-                strRunProperties = icallback.GetRunProperties();
+                runProp = icallback.GetRunProperties();
 
-            byte[] rgResults = m_itrainer.Run(nN, strRunProperties, out type);
+            byte[] rgResults = m_itrainer.Run(nN, runProp, out type);
             cleanup(0);
 
             return rgResults;
