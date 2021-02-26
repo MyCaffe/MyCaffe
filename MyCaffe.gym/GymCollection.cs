@@ -36,6 +36,7 @@ namespace MyCaffe.gym
             m_rgGym.Add(new CartPoleGym());
             m_rgGym.Add(new AtariGym());
             m_rgGym.Add(new DataGeneralGym());
+            m_rgGym.Add(new ModelGym());
 
             return addCustomGyms();
         }

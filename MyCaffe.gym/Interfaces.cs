@@ -28,6 +28,10 @@ namespace MyCaffe.gym
         /// Specifies the Standard DATAGENERAL GYM Dataset ID.
         /// </summary>
         DATAGENERAL = 99991001,
+        /// <summary>
+        /// Specifies the Standard MODEL GYM Dataset ID.
+        /// </summary>
+        MODEL = 99991002
     }
 
     /// <summary>
@@ -46,7 +50,11 @@ namespace MyCaffe.gym
         /// <summary>
         /// Specifies the Standard DATAGENERAL GYM Training Dataset ID.
         /// </summary>
-        DATAGENERAL = 99996001
+        DATAGENERAL = 99996001,
+        /// <summary>
+        /// Specifies the Standard MODEL Training GYM Dataset ID.
+        /// </summary>
+        MODEL = 99996002
     }
 
     /// <summary>
@@ -65,7 +73,11 @@ namespace MyCaffe.gym
         /// <summary>
         /// Specifies the Standard DATAGENERAL GYM Testing Dataset ID.
         /// </summary>
-        DATAGENERAL = 99998001
+        DATAGENERAL = 99998001,
+        /// <summary>
+        /// Specifies the Standard MODEL GYM Testing Dataset ID.
+        /// </summary>
+        MODEL = 99998002
     }
 
     /// <summary>
@@ -104,8 +116,9 @@ namespace MyCaffe.gym
         /// </summary>
         /// <param name="nAction">Specifies the action to run, which is an index into the action space.</param>
         /// <param name="bGetLabel">Optionally, specifies to query the label (default = false).</param>
+        /// <param name="extraProp">Optionally, specifies extra properties.</param>
         /// <returns>A tuple containing state information and gym data, the reward and whether or not the gym is done is returned.</returns>
-        Tuple<State, double, bool> Step(int nAction, bool bGetLabel = false);
+        Tuple<State, double, bool> Step(int nAction, bool bGetLabel = false, PropertySet extraProp = null);
         /// <summary>
         /// Render the gym on a bitmap.
         /// </summary>
@@ -153,6 +166,10 @@ namespace MyCaffe.gym
         /// Returns whether or not the gym requires the display image.
         /// </summary>
         bool RequiresDisplayImage { get; }
+        /// <summary>
+        /// Returns the percentage of the data to use for testing, or -1 which then uses the default of 0.2.
+        /// </summary>
+        double TestingPercent { get; }
     }
 
     /// <summary>
