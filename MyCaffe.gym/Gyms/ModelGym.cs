@@ -299,6 +299,8 @@ namespace MyCaffe.gym
                     Stopwatch sw = new Stopwatch();
                     sw.Start();
 
+                    m_scores = new ScoreCollection();
+
                     while (m_nCurrentIdx < m_ds.TrainingSource.ImageCount)
                     {
                         // Query images sequentially by index in batches
