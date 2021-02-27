@@ -2100,10 +2100,10 @@ namespace MyCaffe.db.image
         public void LoadRawData(SimpleDatum sd, bool bLoadDataCriteria, bool bLoadDebugData)
         {
             if (bLoadDataCriteria && sd.DataCriteria != null)
-                sd.DataCriteria = m_db.GetRawImageDataCriteria(sd.DataCriteria);
+                sd.DataCriteria = m_db.GetRawImageDataCriteria(sd.DataCriteria, sd.OriginalSourceID);
 
             if (bLoadDebugData && sd.DebugData != null)
-                sd.DebugData = m_db.GetRawImageDebugData(sd.DebugData);
+                sd.DebugData = m_db.GetRawImageDebugData(sd.DebugData, sd.OriginalSourceID);
         }
 
         /// <summary>
