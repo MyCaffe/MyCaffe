@@ -1143,7 +1143,7 @@ namespace MyCaffe.db.image
 
                 iQuery = iQuery.OrderBy(p => p.Idx);
 
-                return iQuery.Select(p => new DbItem { id = p.ID, index = p.Idx, label = p.ActiveLabel, boost = p.ActiveBoost, time = p.TimeStamp, desc = p.Description, originalsrcid = p.OriginalSourceID, active = p.Active }).ToList();
+                return iQuery.Select(p => new DbItem { id = p.ID, virtualid = p.VirtualID, index = p.Idx, label = p.ActiveLabel, boost = p.ActiveBoost, time = p.TimeStamp, desc = p.Description, originalsrcid = p.OriginalSourceID, active = p.Active }).ToList();
             }
         }
 
@@ -5548,6 +5548,7 @@ namespace MyCaffe.db.image
         {
             DbItem item = new DbItem();
             item.id = id;
+            item.virtualid = virtualid;
             item.index = index;
             item.label = label;
             item.boost = boost;
@@ -5579,6 +5580,19 @@ namespace MyCaffe.db.image
         /// Specifies the image ID used within the lambda statement.
         /// </summary>
         public int id { get; set; } 
+
+        /// <summary>
+        /// Specifies the image VirtualID (if any).
+        /// </summary>
+        public int VirtualID
+        {
+            get { return virtualid.GetValueOrDefault(); }
+        }
+
+        /// <summary>
+        /// Specifies the image VirtualID used within the lambda statement.
+        /// </summary>
+        public int? virtualid { get; set; }
 
         /// <summary>
         /// Specifies the image index.
