@@ -1755,6 +1755,7 @@ namespace MyCaffe
 
             List<Tuple<SimpleDatum, ResultCollection>> rgrgResults = new List<Tuple<SimpleDatum, ResultCollection>>();
             int nTotalCount = 0;
+            int nMidPoint = 0;
 
             for (int i = 0; i < nCount; i++)
             {
@@ -1829,6 +1830,9 @@ namespace MyCaffe
                 }
                 else
                 {
+                    if (rgResults.ResultsOriginal.Count % 2 != 0)
+                        nMidPoint = (int)Math.Floor(rgResults.ResultsOriginal.Count / 2.0);
+
                     int nDetectedLabel = rgResults.DetectedLabel;
                     int nExpectedLabel = sd.Label;
 
@@ -1893,6 +1897,44 @@ namespace MyCaffe
                     dfCorrectPct = ((double)kv.Value / (double)nCount);
                     m_log.WriteLine("Label #" + kv.Key.ToString() + " had " + dfCorrectPct.ToString("P") + " correct detections out of " + nCount.ToString("N0") + " items with this label.");
                 }
+            }
+
+            if (nMidPoint > 0)
+            {
+                int nTotalBelow = 0;
+                int nCorrectBelow = 0;
+                int nTotalAbove = 0;
+                int nCorrectAbove = 0;
+                int nTotalBelowAndAbove = 0;
+                int nCorrectBelowAndAbove = 0;
+
+                List<KeyValuePair<int, int>> rgLabelTotalsList = rgLabelTotals.OrderBy(p => p.Key).ToList();
+                List<KeyValuePair<int, int>> rgCorrectCountsList = rgCorrectCounts.OrderBy(p => p.Key).ToList();
+
+                for (int i = 0; i < rgLabelTotalsList.Count; i++)
+                {
+                    if (i < nMidPoint)
+                    {
+                        nTotalBelow += rgLabelTotalsList[i].Value;
+                        nCorrectBelow += rgCorrectCountsList[i].Value;
+                        nTotalBelowAndAbove += rgLabelTotalsList[i].Value;
+                        nCorrectBelowAndAbove += rgCorrectCountsList[i].Value;
+                    }
+                    else if (i > nMidPoint)
+                    {
+                        nTotalAbove += rgLabelTotalsList[i].Value;
+                        nCorrectAbove += rgCorrectCountsList[i].Value;
+                        nTotalBelowAndAbove += rgLabelTotalsList[i].Value;
+                        nCorrectBelowAndAbove += rgCorrectCountsList[i].Value;
+                    }
+                }
+
+                dfCorrectPct = (nTotalBelow == 0) ? 0 : nCorrectBelow / (double)nTotalBelow;
+                m_log.WriteLine("Correct below midpoint of " + nMidPoint.ToString() + " = " + dfCorrectPct.ToString("P"));
+                dfCorrectPct = (nTotalAbove == 0) ? 0 : nCorrectAbove / (double)nTotalAbove;
+                m_log.WriteLine("Correct above midpoint of " + nMidPoint.ToString() + " = " + dfCorrectPct.ToString("P"));
+                dfCorrectPct = (nTotalBelowAndAbove == 0) ? 0 : nCorrectBelowAndAbove / (double)nTotalBelowAndAbove;
+                m_log.WriteLine("Correct below and above midpoint of " + nMidPoint.ToString() + " = " + dfCorrectPct.ToString("P"));
             }
 
             return rgrgResults;
