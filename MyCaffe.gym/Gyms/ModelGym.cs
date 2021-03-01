@@ -28,6 +28,7 @@ namespace MyCaffe.gym
     public class ModelGym : IXMyCaffeGymData, IDisposable
     {
         string m_strName = "Model";
+        string m_strProject = null;
         string m_strModelDesc;
         string m_strDataset;
         int m_nGpuID = 0;
@@ -107,7 +108,10 @@ namespace MyCaffe.gym
             m_rgWeights = properties.GetPropertyBlob("Weights");
             m_nBatchSize = properties.GetPropertyAsInt("BatchSize", 16);
             m_bRecreateData = properties.GetPropertyAsBool("RecreateData", false);
-
+            m_strProject = properties.GetProperty("ProjectName");
+            if (string.IsNullOrEmpty(m_strProject))
+                m_strProject = "default";
+            
             string strCudaPath = properties.GetProperty("CudaPath");
 
             SettingsCaffe s = new SettingsCaffe();
@@ -280,7 +284,6 @@ namespace MyCaffe.gym
                 int nDataCount = extraProp.GetPropertyAsInt("DataCountRequested");
                 string strStartTime = extraProp.GetProperty("SeedTime");
 
-
                 int nStartIdx = m_scores.Count - nDataCount;                
                 DateTime dt;
                 if (DateTime.TryParse(strStartTime, out dt))
@@ -361,7 +364,16 @@ namespace MyCaffe.gym
 
         private string save_file
         {
-            get { return Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\data.bin"; }
+            get 
+            {               
+                string strDir = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+                strDir += "\\MyCaffe\\test_data\\gym\\ModelGym\\";
+
+                if (!Directory.Exists(strDir))
+                    Directory.CreateDirectory(strDir);
+
+                return strDir + m_strProject + ".bin";
+            }
         }
 
         private void save(int nDim, int nWid, ScoreCollection col)
