@@ -6142,7 +6142,7 @@ __global__ void embed_fwd_kernel(int nCount, const T* bottom_data, const T* weig
 		assert(index < K);
 		assert(static_cast<T>(index) == bottom_data[n]);  // non integer input.
 #endif
-		const int weight_index = index * N + d;
+		const int weight_index = abs(index * N + d);
 		top_data[top_index] = weight[weight_index];
 	}
 }
