@@ -65,7 +65,7 @@ Please cite MyCaffe in your publications and projects if MyCaffe helps you in yo
 
 <h2>Donate</h2>
 If you like MyCaffe and would like to donate to help us add new features, you can donate at:
-ETH (Ethereum): 0xb0d26F749FC3aE8cadb29bA4E224CA4C9Af99e20
+<br>ETH (Ethereum): <b>0xb0d26F749FC3aE8cadb29bA4E224CA4C9Af99e20</b>
 
 <h2>References</h2>
 [1] [CAFFE: Convolutional Architecture for Fast Feature Embedding](https://arxiv.org/abs/1408.5093) by Yangqing Jai, Evan Shelhamer, Jeff Donahue, 
