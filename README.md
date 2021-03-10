@@ -64,7 +64,7 @@ Please cite MyCaffe in your publications and projects if MyCaffe helps you in yo
 </pre>
 
 <h2>Donate</h2>
-Send donations to support this project at:
+To support this project, kindly send donations to:
 <br>ETH (Ethereum): <b>0xb0d26F749FC3aE8cadb29bA4E224CA4C9Af99e20</b>
 
 <h2>References</h2>
