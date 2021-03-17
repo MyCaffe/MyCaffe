@@ -306,7 +306,6 @@ namespace MyCaffe.trainers
         /// <summary>
         /// The OnShutdown callback fires when shutting down the trainer.
         /// </summary>
-        /// <param name="e">Specifies the argument sent with the callback.</param>
         void OnShutdown();
         /// <summary>
         /// The OnGetData callback fires from within the Train method and is used to get a new observation data.
