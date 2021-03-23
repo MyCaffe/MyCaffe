@@ -1,5 +1,7 @@
 <H2>Welcome to MyCaffe!</H2>
 
+<a href="https://github.com/sponsors/MyCaffe">:heart: Sponsor to help us keep innovating for you!</a></br>
+
 <b><a href="https://github.com/mycaffe">MyCaffe</a></b> is a complete C# re-write of the native C++ CAFFE[1] open source project.
 
 MyCaffe allows Windows C# software developers to use and expand deep learning solutions in their native C# language.  All layers except for a few, and nearly every unit test are now provided in C#.
