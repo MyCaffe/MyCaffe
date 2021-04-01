@@ -568,7 +568,6 @@ namespace MyCaffe.test
             mycaffe.Dispose();
         }
 
-
         public void TrainAtariPG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, int nMiniBatch = 10, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false)
         {
             if (bDual)
@@ -1086,7 +1085,6 @@ namespace MyCaffe.test
             // Release the mycaffe resources.
             mycaffe.Dispose();
         }
-
 
         public void TrainWavRNN(bool bDual, bool bShowUi, string strTrainerType, LayerParameter.LayerType lstm, int nIterations = 100, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false)
         {
