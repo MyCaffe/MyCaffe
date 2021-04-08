@@ -7605,7 +7605,10 @@ namespace MyCaffe.common
         /// Performs a Mish backward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// Computes the mish gradient @f$ y' = (exp(x) * (4 + 6*exp(x) + 4*exp(2x) + exp(3x) + 4 * (1 + exp(x)) * x)) / (2 + 2*exp(x) + exp(2x))^2
+        /// Computes the mish gradient      @f$ y' = ((2*exp(x) * x * (1 + exp(x))) / ((1 + exp(x)) + 1)) - 
+        ///                                          ((2*exp(x) * x * ((1 + exp(x))^2 - 1) * (1 + exp(x))) / ((1 + exp(x))^2 - 1)^2) + 
+        ///                                          (((1 + exp(x))^2 - 1) / ((1 + exp(x))^2 + 1)) @f$
+        /// Note, see Wolfram Alpha with 'derivative of x * tanh(log(1 + e^x))'                                         
         /// 
         /// @see [Mish: A Self Regularized Non-Monotonic Neural Activation Function](https://arxiv.org/abs/1908.08681v1) by Diganta Misra, 2019.
         /// </remarks>
