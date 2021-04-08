@@ -668,6 +668,12 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_TANH_BWD:
 			return m_device.cuda_tanh_bwd(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_MISH_FWD:
+			return m_device.cuda_mish_fwd(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_MISH_BWD:
+			return m_device.cuda_mish_bwd(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_SIGMOID_FWD:
 			return m_device.cuda_sigmoid_fwd(lCount, pfInput, plCount, ppfOutput);
 
@@ -1598,6 +1604,12 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_TANH_BWD:
 		return "CUDA_FN_TANH_BWD";
+
+	case CUDA_FN_MISH_FWD:
+		return "CUDA_FN_MISH_FWD";
+
+	case CUDA_FN_MISH_BWD:
+		return "CUDA_FN_MISH_BWD";
 
 	case CUDA_FN_SIGMOID_FWD:
 		return "CUDA_FN_SIGMOID_FWD";

@@ -1079,6 +1079,9 @@ namespace MyCaffe.common
             CUDA_TANH_FWD = 420,
             CUDA_TANH_BWD = 421,
 
+            CUDA_MISH_FWD = 422,
+            CUDA_MISH_BWD = 423,
+
             CUDA_SIGMOID_FWD = 424,
             CUDA_SIGMOID_BWD = 425,
 
@@ -7579,6 +7582,44 @@ namespace MyCaffe.common
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MATH_BWD, m_param.AsFloat(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, (int)function));
         }
 
+        /// <summary>
+        /// Performs a Mish forward pass in Cuda.
+        /// </summary>
+        /// <remarks>
+        /// Computes the mish non-linearity @f$ y  = x * tanh(log( 1 + exp(x) )) @f$.
+        /// 
+        /// @see [Mish: A Self Regularized Non-Monotonic Neural Activation Function](https://arxiv.org/abs/1908.08681v1) by Diganta Misra, 2019.
+        /// </remarks>
+        /// <param name="nCount">Specifies the number of items in the bottom and top data.</param>
+        /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
+        /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
+        public void mish_fwd(int nCount, long hBottomData, long hTopData)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MISH_FWD, m_param.AsDouble(nCount, hBottomData, hTopData));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MISH_FWD, m_param.AsFloat(nCount, hBottomData, hTopData));
+        }
+
+        /// <summary>
+        /// Performs a Mish backward pass in Cuda.
+        /// </summary>
+        /// <remarks>
+        /// Computes the mish gradient @f$ y' = (exp(x) * (4 + 6*exp(x) + 4*exp(2x) + exp(3x) + 4 * (1 + exp(x)) * x)) / (2 + 2*exp(x) + exp(2x))^2
+        /// 
+        /// @see [Mish: A Self Regularized Non-Monotonic Neural Activation Function](https://arxiv.org/abs/1908.08681v1) by Diganta Misra, 2019.
+        /// </remarks>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="hTopDiff">Specifies a handle to the top diff in GPU memory.</param>
+        /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
+        /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
+        public void mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MISH_BWD, m_param.AsDouble(nCount, hTopDiff, hTopData, hBottomDiff));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MISH_BWD, m_param.AsFloat(nCount, hTopDiff, hTopData, hBottomDiff));
+        }
 
         /// <summary>
         /// Performs a TanH forward pass in Cuda.

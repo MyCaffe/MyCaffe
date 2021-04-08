@@ -397,6 +397,9 @@ class Device
 		long cuda_tanh_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_tanh_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
+		long cuda_mish_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_mish_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+
 		long cuda_sigmoid_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_sigmoid_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
@@ -2552,6 +2555,37 @@ inline long Device<T>::cuda_math_bwd(long lInput, T* pfInput, long* plOutput, T*
 	int nFunction = (int)pfInput[5];
 
 	return m_math.math_bwd(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, nFunction);
+}
+
+template <class T>
+inline long Device<T>::cuda_mish_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+		return lErr;
+
+	int nCount = (int)pfInput[0];
+	long hBottomData = (long)pfInput[1];
+	long hTopData = (long)pfInput[2];
+
+	return m_math.mish_fwd(nCount, hBottomData, hTopData);
+}
+
+template <class T>
+inline long Device<T>::cuda_mish_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 4, 4))
+		return lErr;
+
+	int nCount = (int)pfInput[0];
+	long hTopDiff = (long)pfInput[1];
+	long hTopData = (long)pfInput[2];
+	long hBottomDiff = (long)pfInput[3];
+
+	return m_math.mish_bwd(nCount, hTopDiff, hTopData, hBottomDiff);
 }
 
 template <class T>

@@ -7619,6 +7619,101 @@ template long Math<double>::tanh_bwd(int nCount, long hTopDiff, long hTopData, l
 template long Math<float>::tanh_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff);
 
 
+/// Computes the mish non-linearity @f$ y  = x * tanh(log( 1 + exp(x) )) @f$.
+/// with                            @f$ y' = ((2*exp(x) * x * (1 + exp(x))) / ((1 + exp(x)) + 1)) - 
+///                                          ((2*exp(x) * x * ((1 + exp(x))^2 - 1) * (1 + exp(x))) / ((1 + exp(x))^2 - 1)^2) + 
+///                                          (((1 + exp(x))^2 - 1) / ((1 + exp(x))^2 + 1)) @f$
+/// Note, see Wolfram Alpha with 'derivative of x * tanh(log(1 + e^x))'                                         
+template<typename T>
+__global__ void mish_fwd_kernel(int n, T* in, T* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		out[i] = in[i] * tanh(log(1 + exp(in[i])));
+	}
+}
+
+template <class T>
+long Math<T>::mish_fwd(int n, long hBottomData, long hTopData)
+{
+	LONG lErr;
+	MemoryItem* pBottomData;
+	MemoryItem* pTopData;
+
+	if (lErr = m_pMemCol->GetData(hBottomData, &pBottomData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hTopData, &pTopData))
+		return lErr;
+
+	T* bottom_data = (T*)pBottomData->Data();
+	T* top_data = (T*)pTopData->Data();
+
+	mish_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::mish_fwd(int nCount, long hBottomData, long hTopData);
+template long Math<float>::mish_fwd(int nCount, long hBottomData, long hTopData);
+
+
+/// Computes the mish non-linearity @f$ y  = x * tanh(log( 1 + exp(x) )) @f$.
+/// with                            @f$ y' = ((2*exp(x) * x * (1 + exp(x))) / ((1 + exp(x)) + 1)) - 
+///                                          ((2*exp(x) * x * ((1 + exp(x))^2 - 1) * (1 + exp(x))) / ((1 + exp(x))^2 - 1)^2) + 
+///                                          (((1 + exp(x))^2 - 1) / ((1 + exp(x))^2 + 1)) @f$
+/// Note, see Wolfram Alpha with 'derivative of x * tanh(log(1 + e^x))'                                         
+template<typename T>
+__global__ void mish_bwd_kernel(int n, T* in_diff, T* out_data, T* out_diff)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		T x = in_diff[i];
+		T expx = exp(x);
+		T one_p_expx = (1 + expx);
+		T one_p_expx_sq = one_p_expx * one_p_expx;
+		T one_p_expx_sq_p_one = one_p_expx_sq + 1;
+		T one_p_expx_sq_m_one = one_p_expx_sq - 1;
+		T two_expx_x = 2 * expx * x;
+
+		T val1 = (two_expx_x * one_p_expx) / one_p_expx_sq_p_one;
+		T val2 = (two_expx_x * (one_p_expx_sq_m_one * one_p_expx)) / (one_p_expx_sq_p_one * one_p_expx_sq_p_one);
+		T val3 = one_p_expx_sq_m_one / one_p_expx_sq_p_one;
+
+		out_diff[i] = val1 - val2 + val3;
+	}
+}
+
+template <class T>
+long Math<T>::mish_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff)
+{
+	LONG lErr;
+	MemoryItem* pTopDiff;
+	MemoryItem* pTopData;
+	MemoryItem* pBottomDiff;
+
+	if (lErr = m_pMemCol->GetData(hTopDiff, &pTopDiff))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hTopData, &pTopData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBottomDiff, &pBottomDiff))
+		return lErr;
+
+	T* top_diff = (T*)pTopDiff->Data();
+	T* top_data = (T*)pTopData->Data();
+	T* bottom_diff = (T*)pBottomDiff->Data();
+
+	mish_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff);
+template long Math<float>::mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff);
+
+
 template<typename T>
 __global__ void sigmoid_fwd_kernel(int n, T* in, T* out)
 {

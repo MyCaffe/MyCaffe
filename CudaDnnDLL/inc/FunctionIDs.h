@@ -277,6 +277,9 @@ const int CUDA_FN_UNPOOL_BWD = 411;
 const int CUDA_FN_TANH_FWD = 420;
 const int CUDA_FN_TANH_BWD = 421;
 
+const int CUDA_FN_MISH_FWD = 422;
+const int CUDA_FN_MISH_BWD = 423;
+
 const int CUDA_FN_SIGMOID_FWD = 424;
 const int CUDA_FN_SIGMOID_BWD = 425;
 

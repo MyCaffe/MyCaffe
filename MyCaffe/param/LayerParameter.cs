@@ -302,6 +302,10 @@ namespace MyCaffe.param
             /// </summary>
             MEMORY_LOSS,
             /// <summary>
+            /// Initializes a parameter for the MishLayer.
+            /// </summary>
+            MISH,
+            /// <summary>
             /// Initialize a parameter for the MultiBoxLossLayer.
             /// </summary>
             MULTIBOX_LOSS,
@@ -1090,6 +1094,12 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("loss");
                     m_rgLayerParameters[LayerType.LOSS] = new LossParameter();
+                    break;
+
+                case LayerType.MISH:
+                    expected_bottom.Add("input");
+                    expected_top.Add("mish");
+                    m_rgLayerParameters[lt] = new MishParameter();
                     break;
 
                 case LayerType.MULTIBOX_LOSS:
@@ -1894,6 +1904,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.MISH
+        /// </summary>
+        public MishParameter mish_param
+        {
+            get { return (MishParameter)m_rgLayerParameters[LayerType.MISH]; }
+            set { m_rgLayerParameters[LayerType.MISH] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initializing with LayerType.MULTIBOX_LOSS
         /// </summary>
         public MultiBoxLossParameter multiboxloss_param
@@ -2466,6 +2485,9 @@ namespace MyCaffe.param
 
                 case LayerType.MEMORY_LOSS:
                     return "MemoryLoss";
+
+                case LayerType.MISH:
+                    return "Mish";
 
                 case LayerType.MULTINOMIALLOGISTIC_LOSS:
                     return "MultinomialLogisticLoss";
@@ -3265,6 +3287,9 @@ namespace MyCaffe.param
                 case "memoryloss":
                 case "memory_loss":
                     return LayerType.MEMORY_LOSS;
+
+                case "mish":
+                    return LayerType.MISH;
 
                 case "multinomiallogisticloss":
                 case "multinomiallogistic_loss":
