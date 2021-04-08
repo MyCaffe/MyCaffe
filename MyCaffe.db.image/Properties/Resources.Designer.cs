@@ -268,11 +268,13 @@ namespace MyCaffe.db.image.Properties {
         ///	[SourceID] [int] NULL,
         ///	[RawImageID] [int] NULL,
         ///	[TextValue] [nvarchar](1024) NULL,
+        ///	[NumericValue] [numeric](12, 5) NULL,
+        ///	[NumericValue2] [real] NULL,
         /// CONSTRAINT [PK_RawImageParameters] PRIMARY KEY CLUSTERED 
         ///(
         ///	[ID] ASC
-        ///)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
-        ///) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY].
+        ///)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+        ///) ON [PRI [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string CreateRawImageParametersTable {
             get {
