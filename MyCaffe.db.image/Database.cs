@@ -426,7 +426,7 @@ namespace MyCaffe.db.image
             {
                 using (DNNEntities entities = EntitiesConnection.CreateEntities())
                 {
-                    List<Label> rg = entities.Labels.Where(p => p.SourceID == nSrcId && p.Label1 == nLabel).ToList();
+                    List<Label> rg = entities.Labels.AsNoTracking().Where(p => p.SourceID == nSrcId && p.Label1 == nLabel).ToList();
 
                     if (rg.Count == 0)
                         return null;
@@ -570,7 +570,7 @@ namespace MyCaffe.db.image
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                List<Label> rgLabels = entities.Labels.Where(p => p.SourceID == nSrcId).ToList();
+                List<Label> rgLabels = entities.Labels.AsNoTracking().Where(p => p.SourceID == nSrcId).ToList();
 
                 foreach (Label l in rgLabels)
                 {
@@ -599,7 +599,7 @@ namespace MyCaffe.db.image
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
-                List<Label> rgLabels = entities.Labels.Where(p => p.SourceID == nSrcId).OrderBy(p => p.Label1).ToList();
+                List<Label> rgLabels = entities.Labels.AsNoTracking().Where(p => p.SourceID == nSrcId).OrderBy(p => p.Label1).ToList();
 
                 string strOut = "(" + rgLabels.Count.ToString() + ") {";
 
@@ -711,7 +711,7 @@ namespace MyCaffe.db.image
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
-                List<Label> rgLabels = entities.Labels.Where(p => p.SourceID == nSrcId).ToList();
+                List<Label> rgLabels = entities.Labels.AsNoTracking().Where(p => p.SourceID == nSrcId).ToList();
 
                 if (bWithImagesOnly)
                     rgLabels = rgLabels.Where(p => p.ImageCount > 0).ToList();
@@ -968,7 +968,7 @@ namespace MyCaffe.db.image
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                List<LabelBoost> rgBoosts = entities.LabelBoosts.Where(p => p.ProjectID == nProjectId && p.SourceID == nSrcId).ToList();
+                List<LabelBoost> rgBoosts = entities.LabelBoosts.AsNoTracking().Where(p => p.ProjectID == nProjectId && p.SourceID == nSrcId).ToList();
 
                 if (bSort)
                     rgBoosts = rgBoosts.OrderBy(p => p.ActiveLabel).ToList();
@@ -1116,7 +1116,7 @@ namespace MyCaffe.db.image
         /// <returns></returns>
         public int GetImageCount()
         {
-            return m_entities.RawImages.Where(p => p.SourceID == m_src.ID).Count();
+            return m_entities.RawImages.AsNoTracking().Where(p => p.SourceID == m_src.ID).Count();
         }
 
         /// <summary>
@@ -1131,7 +1131,7 @@ namespace MyCaffe.db.image
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
                 int nSrcID = m_src.ID;
-                IQueryable<RawImage> iQuery = entities.RawImages.Where(p => p.SourceID == nSrcID);
+                IQueryable<RawImage> iQuery = entities.RawImages.AsNoTracking().Where(p => p.SourceID == nSrcID);
 
                 if (bIncludeActive && !bIncludeInactive)
                     iQuery = iQuery.Where(p => p.Active == true);
@@ -1163,7 +1163,7 @@ namespace MyCaffe.db.image
                     rgSrcId1.Add(id);
                 }
 
-                return entities.RawImages.Where(p => rgSrcId1.Contains(p.SourceID)).ToList();   
+                return entities.RawImages.AsNoTracking().Where(p => rgSrcId1.Contains(p.SourceID)).ToList();   
             }
         }
 
@@ -1177,7 +1177,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                IQueryable<RawImageParameter> iQuery = entities.RawImageParameters.Where(p => p.SourceID == nSrcId && p.Name == strName);
+                IQueryable<RawImageParameter> iQuery = entities.RawImageParameters.AsNoTracking().Where(p => p.SourceID == nSrcId && p.Name == strName);
                 return iQuery.ToList();
             }
         }
@@ -1191,7 +1191,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                IQueryable<RawImageParameter> iQuery = entities.RawImageParameters.Where(p => p.RawImageID == nImageID);
+                IQueryable<RawImageParameter> iQuery = entities.RawImageParameters.AsNoTracking().Where(p => p.RawImageID == nImageID);
                 return iQuery.ToList();
             }
         }
@@ -1209,7 +1209,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                IQueryable<RawImage> iQuery = entities.RawImages.Where(p => p.SourceID == nSrcId);
+                IQueryable<RawImage> iQuery = entities.RawImages.AsNoTracking().Where(p => p.SourceID == nSrcId);
 
                 if (bActive.HasValue)
                 {
@@ -1360,7 +1360,7 @@ namespace MyCaffe.db.image
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                List<RawImage> rgImg = entities.RawImages.Where(p => p.SourceID == nSrcId && p.TimeStamp == dt && p.Active == true).ToList();
+                List<RawImage> rgImg = entities.RawImages.AsNoTracking().Where(p => p.SourceID == nSrcId && p.TimeStamp == dt && p.Active == true).ToList();
 
                 if (rgImg.Count == 0)
                     return 0;
@@ -1396,7 +1396,7 @@ namespace MyCaffe.db.image
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                List<RawImage> rgImg = entities.RawImages.Where(p => p.ID == img.VirtualID).ToList();
+                List<RawImage> rgImg = entities.RawImages.AsNoTracking().Where(p => p.ID == img.VirtualID).ToList();
 
                 if (rgImg.Count == 0)
                 {
@@ -1435,7 +1435,7 @@ namespace MyCaffe.db.image
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                List<RawImage> rgImg = entities.RawImages.Where(p => p.ID == img.VirtualID).ToList();
+                List<RawImage> rgImg = entities.RawImages.AsNoTracking().Where(p => p.ID == img.VirtualID).ToList();
 
                 if (rgImg.Count == 0)
                 {
@@ -1467,7 +1467,7 @@ namespace MyCaffe.db.image
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                List<RawImage> rgImg = entities.RawImages.Where(p => p.ID == img.VirtualID).ToList();
+                List<RawImage> rgImg = entities.RawImages.AsNoTracking().Where(p => p.ID == img.VirtualID).ToList();
 
                 if (rgImg.Count == 0)
                 {
@@ -1506,14 +1506,14 @@ namespace MyCaffe.db.image
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                var data = entities.RawImages.Where(p => p.ID == nImgID).Select(p => new { p.DebugData, p.VirtualID }).FirstOrDefault();
+                var data = entities.RawImages.AsNoTracking().Where(p => p.ID == nImgID).Select(p => new { p.DebugData, p.VirtualID }).FirstOrDefault();
                 if (data.DebugData == null)
                 {
                     nImgID = data.VirtualID.GetValueOrDefault(0);
                     if (nImgID == 0)
                         return null;
 
-                    rgData = entities.RawImages.Where(p => p.ID == nImgID).Select(p => p.DebugData).FirstOrDefault();
+                    rgData = entities.RawImages.AsNoTracking().Where(p => p.ID == nImgID).Select(p => p.DebugData).FirstOrDefault();
                     if (rgData == null)
                         return null;
                 }
@@ -1552,14 +1552,14 @@ namespace MyCaffe.db.image
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                var data = entities.RawImages.Where(p => p.ID == nImgID).Select(p => new { p.DataCriteria, p.VirtualID }).FirstOrDefault();
+                var data = entities.RawImages.AsNoTracking().Where(p => p.ID == nImgID).Select(p => new { p.DataCriteria, p.VirtualID }).FirstOrDefault();
                 if (data.DataCriteria == null)
                 {
                     nImgID = data.VirtualID.GetValueOrDefault(0);
                     if (nImgID == 0)
                         return null;
 
-                    rgData = entities.RawImages.Where(p => p.ID == nImgID).Select(p => p.DataCriteria).FirstOrDefault();
+                    rgData = entities.RawImages.AsNoTracking().Where(p => p.ID == nImgID).Select(p => p.DataCriteria).FirstOrDefault();
                     if (rgData == null)
                         return null;
                 }
@@ -2411,7 +2411,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                List<RawImage> rgItems = entities.RawImages.Where(p => p.ID == nID).ToList();
+                List<RawImage> rgItems = entities.RawImages.AsNoTracking().Where(p => p.ID == nID).ToList();
 
                 if (rgItems.Count == 0)
                     return null;
@@ -2432,7 +2432,7 @@ namespace MyCaffe.db.image
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                return entities.RawImages.Where(p => p.SourceID == nSrcId).Count();
+                return entities.RawImages.AsNoTracking().Where(p => p.SourceID == nSrcId).Count();
             }
         }
 
@@ -2503,7 +2503,7 @@ namespace MyCaffe.db.image
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
-                List<RawImageMean> rgImg = entities.RawImageMeans.Where(p => p.SourceID == nSrcId).ToList();
+                List<RawImageMean> rgImg = entities.RawImageMeans.AsNoTracking().Where(p => p.SourceID == nSrcId).ToList();
 
                 if (rgImg.Count == 0)
                     return null;
@@ -2668,7 +2668,7 @@ namespace MyCaffe.db.image
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                IQueryable<RawImage> iQuery = entities.RawImages.Where(p => p.SourceID == nSrcId && p.Active == true);
+                IQueryable<RawImage> iQuery = entities.RawImages.AsNoTracking().Where(p => p.SourceID == nSrcId && p.Active == true);
                 iQuery = getQuery(iQuery, strFilterVal, nBoostVal);
                 return iQuery.Count();
             }
@@ -2740,7 +2740,7 @@ namespace MyCaffe.db.image
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
-                IQueryable<RawImage> iQuery = entities.RawImages.Where(p => p.SourceID == nSrcId);
+                IQueryable<RawImage> iQuery = entities.RawImages.AsNoTracking().Where(p => p.SourceID == nSrcId);
 
                 if (bActive && bInactive)
                     return iQuery.Count();
@@ -3143,7 +3143,7 @@ namespace MyCaffe.db.image
 
             using (DNNEntities entities = MyCaffe.db.image.EntitiesConnection.CreateEntities())
             {
-                return entities.RawImageResults.Where(p => p.SourceID == nSrcId).OrderBy(p => p.TimeStamp).ToList();
+                return entities.RawImageResults.AsNoTracking().Where(p => p.SourceID == nSrcId).OrderBy(p => p.TimeStamp).ToList();
             }
         }
 
@@ -3166,7 +3166,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                List<RawImageParameter> rgP = entities.RawImageParameters.Where(p => p.RawImageID == nRawImageID && p.Name == strName).ToList();
+                List<RawImageParameter> rgP = entities.RawImageParameters.AsNoTracking().Where(p => p.RawImageID == nRawImageID && p.Name == strName).ToList();
 
                 if (rgP.Count == 0)
                     return strDefault;
@@ -3236,7 +3236,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                List<RawImageParameter> rgP = entities.RawImageParameters.Where(p => p.RawImageID == nRawImageID && p.Name == strName).ToList();
+                List<RawImageParameter> rgP = entities.RawImageParameters.AsNoTracking().Where(p => p.RawImageID == nRawImageID && p.Name == strName).ToList();
 
                 if (rgP.Count == 0)
                     return null;
@@ -3255,7 +3255,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                List<RawImageParameter> rgP = entities.RawImageParameters.Where(p => p.RawImageID == nRawImageID && p.Name == strName).ToList();
+                List<RawImageParameter> rgP = entities.RawImageParameters.AsNoTracking().Where(p => p.RawImageID == nRawImageID && p.Name == strName).ToList();
 
                 if (rgP.Count == 0)
                     return null;
@@ -3411,13 +3411,13 @@ namespace MyCaffe.db.image
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
                 if (strType.ToLower() == "text")
-                    return entities.RawImageParameters.Where(p => p.SourceID == nSrcId && p.Name == strName && p.TextValue != null).Count();
+                    return entities.RawImageParameters.AsNoTracking().Where(p => p.SourceID == nSrcId && p.Name == strName && p.TextValue != null).Count();
 
                 if (strType.ToLower() == "numeric")
-                    return entities.RawImageParameters.Where(p => p.SourceID == nSrcId && p.Name == strName && p.NumericValue != null).Count();
+                    return entities.RawImageParameters.AsNoTracking().Where(p => p.SourceID == nSrcId && p.Name == strName && p.NumericValue != null).Count();
 
                 if (strType.ToLower() == "value")
-                    return entities.RawImageParameters.Where(p => p.SourceID == nSrcId && p.Name == strName && p.Value != null).Count();
+                    return entities.RawImageParameters.AsNoTracking().Where(p => p.SourceID == nSrcId && p.Name == strName && p.Value != null).Count();
             }
 
             return 0;
@@ -3439,19 +3439,19 @@ namespace MyCaffe.db.image
             {
                 if (strType.ToLower() == "text")
                 {
-                    int nCount = entities.RawImageParameters.Where(p => p.SourceID == nSrcId && p.Name == strName && p.TextValue != null).Take(1).Count();
+                    int nCount = entities.RawImageParameters.AsNoTracking().Where(p => p.SourceID == nSrcId && p.Name == strName && p.TextValue != null).Take(1).Count();
                     return (nCount > 0) ? true : false;
                 }
 
                 if (strType.ToLower() == "numeric")
                 {
-                    int nCount = entities.RawImageParameters.Where(p => p.SourceID == nSrcId && p.Name == strName && p.NumericValue != null).Take(1).Count();
+                    int nCount = entities.RawImageParameters.AsNoTracking().Where(p => p.SourceID == nSrcId && p.Name == strName && p.NumericValue != null).Take(1).Count();
                     return (nCount > 0) ? true : false;
                 }
 
                 if (strType.ToLower() == "value")
                 {
-                    int nCount = entities.RawImageParameters.Where(p => p.SourceID == nSrcId && p.Name == strName && p.Value != null).Take(1).Count();
+                    int nCount = entities.RawImageParameters.AsNoTracking().Where(p => p.SourceID == nSrcId && p.Name == strName && p.Value != null).Take(1).Count();
                     return (nCount > 0) ? true : false;
                 }
             }
@@ -3583,7 +3583,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                List<RawImageGroup> rgG = entities.RawImageGroups.Where(p => p.Idx == nIdx && p.StartDate == dtStart && p.EndDate == dtEnd).ToList();
+                List<RawImageGroup> rgG = entities.RawImageGroups.AsNoTracking().Where(p => p.Idx == nIdx && p.StartDate == dtStart && p.EndDate == dtEnd).ToList();
 
                 if (rgG.Count == 0)
                     return null;
@@ -3636,7 +3636,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                return entities.Sources.Select(p => p.ID).ToList();
+                return entities.Sources.AsNoTracking().Select(p => p.ID).ToList();
             }
         }
 
@@ -3794,7 +3794,7 @@ namespace MyCaffe.db.image
             strName = convertWs(strName, '_');
             using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
-                List<Source> rgSrc = entities.Sources.Where(p => p.Name == strName).ToList();
+                List<Source> rgSrc = entities.Sources.AsNoTracking().Where(p => p.Name == strName).ToList();
 
                 if (rgSrc.Count == 0)
                     return null;
@@ -3813,7 +3813,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
-                List<Source> rgSrc = entities.Sources.Where(p => p.ID == nID).ToList();
+                List<Source> rgSrc = entities.Sources.AsNoTracking().Where(p => p.ID == nID).ToList();
 
                 if (rgSrc.Count == 0)
                     return null;
@@ -3983,7 +3983,7 @@ namespace MyCaffe.db.image
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
-                List<SourceParameter> rgP = entities.SourceParameters.Where(p => p.SourceID == nSrcId).ToList();
+                List<SourceParameter> rgP = entities.SourceParameters.AsNoTracking().Where(p => p.SourceID == nSrcId).ToList();
                 Dictionary<string, string> rgPval = new Dictionary<string, string>();
 
                 foreach (SourceParameter p in rgP)
@@ -4010,7 +4010,7 @@ namespace MyCaffe.db.image
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                List<SourceParameter> rgP = entities.SourceParameters.Where(p => p.SourceID == nSrcId && p.Name == strName).ToList();
+                List<SourceParameter> rgP = entities.SourceParameters.AsNoTracking().Where(p => p.SourceID == nSrcId && p.Name == strName).ToList();
 
                 if (rgP.Count == 0)
                     return null;
@@ -4124,7 +4124,7 @@ namespace MyCaffe.db.image
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                IQueryable<RawImage> iquery = entities.RawImages.Where(p => p.SourceID == nSrcId).OrderBy(p => p.TimeStamp);
+                IQueryable<RawImage> iquery = entities.RawImages.AsNoTracking().Where(p => p.SourceID == nSrcId).OrderBy(p => p.TimeStamp);
                 if (strDesc != null)
                     iquery = iquery.Where(p => p.Description == strDesc);
 
@@ -4149,7 +4149,7 @@ namespace MyCaffe.db.image
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                IQueryable<RawImage> iquery = entities.RawImages.Where(p => p.SourceID == nSrcId).OrderByDescending(p => p.TimeStamp);
+                IQueryable<RawImage> iquery = entities.RawImages.AsNoTracking().Where(p => p.SourceID == nSrcId).OrderByDescending(p => p.TimeStamp);
                 if (strDesc != null)
                     iquery = iquery.Where(p => p.Description == strDesc);
 
@@ -4180,9 +4180,9 @@ namespace MyCaffe.db.image
                 IQueryable<RawImage> iquery;
                 
                 if (bEndInclusive)
-                    iquery = entities.RawImages.Where(p => p.SourceID == nSrcId && p.TimeStamp >= dtStart && p.TimeStamp <= dtEnd).OrderByDescending(p => p.TimeStamp);
+                    iquery = entities.RawImages.AsNoTracking().Where(p => p.SourceID == nSrcId && p.TimeStamp >= dtStart && p.TimeStamp <= dtEnd).OrderByDescending(p => p.TimeStamp);
                 else
-                    iquery = entities.RawImages.Where(p => p.SourceID == nSrcId && p.TimeStamp >= dtStart && p.TimeStamp < dtEnd).OrderByDescending(p => p.TimeStamp);
+                    iquery = entities.RawImages.AsNoTracking().Where(p => p.SourceID == nSrcId && p.TimeStamp >= dtStart && p.TimeStamp < dtEnd).OrderByDescending(p => p.TimeStamp);
 
                 if (strDesc != null)
                     iquery = iquery.Where(p => p.Description == strDesc);
@@ -4211,7 +4211,7 @@ namespace MyCaffe.db.image
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                IQueryable<RawImage> iquery = entities.RawImages.Where(p => p.SourceID == nSrcId).OrderByDescending(p => p.TimeStamp);
+                IQueryable<RawImage> iquery = entities.RawImages.AsNoTracking().Where(p => p.SourceID == nSrcId).OrderByDescending(p => p.TimeStamp);
                 if (strDesc != null)
                     iquery = iquery.Where(p => p.Description == strDesc);
 
@@ -4247,9 +4247,9 @@ namespace MyCaffe.db.image
                 IQueryable<RawImage> iquery;
 
                 if (bEndInclusive)
-                    iquery = entities.RawImages.Where(p => p.SourceID == nSrcId && p.TimeStamp >= dtStart && p.TimeStamp <= dtEnd).OrderByDescending(p => p.TimeStamp);
+                    iquery = entities.RawImages.AsNoTracking().Where(p => p.SourceID == nSrcId && p.TimeStamp >= dtStart && p.TimeStamp <= dtEnd).OrderByDescending(p => p.TimeStamp);
                 else
-                    iquery = entities.RawImages.Where(p => p.SourceID == nSrcId && p.TimeStamp >= dtStart && p.TimeStamp < dtEnd).OrderByDescending(p => p.TimeStamp);
+                    iquery = entities.RawImages.AsNoTracking().Where(p => p.SourceID == nSrcId && p.TimeStamp >= dtStart && p.TimeStamp < dtEnd).OrderByDescending(p => p.TimeStamp);
 
                 if (strDesc != null)
                     iquery = iquery.Where(p => p.Description == strDesc);
@@ -4294,11 +4294,11 @@ namespace MyCaffe.db.image
                 List<Dataset> rgDs = null;
 
                 if (nTestSrcID != 0 && nTrainSrcID != 0)
-                    rgDs = entities.Datasets.Where(p => p.TrainingSourceID == nTrainSrcID && p.TestingSourceID == nTestSrcID).ToList();
+                    rgDs = entities.Datasets.AsNoTracking().Where(p => p.TrainingSourceID == nTrainSrcID && p.TestingSourceID == nTestSrcID).ToList();
                 else if (nTestSrcID != 0)
-                    rgDs = entities.Datasets.Where(p => p.TestingSourceID == nTestSrcID).ToList();
+                    rgDs = entities.Datasets.AsNoTracking().Where(p => p.TestingSourceID == nTestSrcID).ToList();
                 else if (nTrainSrcID != 0)
-                    rgDs = entities.Datasets.Where(p => p.TrainingSourceID == nTrainSrcID).ToList();
+                    rgDs = entities.Datasets.AsNoTracking().Where(p => p.TrainingSourceID == nTrainSrcID).ToList();
 
                 if (rgDs != null && rgDs.Count > 0)
                     return rgDs[0].Name;
@@ -4316,7 +4316,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                List<Dataset> rgDs = entities.Datasets.Where(p => p.TrainingSourceID == nSourceId || p.TestingSourceID == nSourceId).ToList();
+                List<Dataset> rgDs = entities.Datasets.AsNoTracking().Where(p => p.TrainingSourceID == nSourceId || p.TestingSourceID == nSourceId).ToList();
                 if (rgDs.Count == 0)
                     return 0;
 
@@ -4335,7 +4335,7 @@ namespace MyCaffe.db.image
             strName = convertWs(strName, '_');
             using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
-                List<Dataset> rgDs = entities.Datasets.Where(p => p.Name == strName).ToList();
+                List<Dataset> rgDs = entities.Datasets.AsNoTracking().Where(p => p.Name == strName).ToList();
 
                 if (rgDs.Count == 0)
                     return 0;
@@ -4370,7 +4370,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
-                IQueryable<Dataset> iQuery = entities.Datasets.Where(p => p.ID == nID);
+                IQueryable<Dataset> iQuery = entities.Datasets.AsNoTracking().Where(p => p.ID == nID);
 
                 if (iQuery.Count() == 0)
                     return null;
@@ -4394,7 +4394,7 @@ namespace MyCaffe.db.image
             strName = convertWs(strName, '_');
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                List<Dataset> rgDs = entities.Datasets.Where(p => p.Name == strName).ToList();
+                List<Dataset> rgDs = entities.Datasets.AsNoTracking().Where(p => p.Name == strName).ToList();
 
                 if (rgDs.Count == 0)
                     return null;
@@ -4416,7 +4416,7 @@ namespace MyCaffe.db.image
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                List<Dataset> rgDs = entities.Datasets.Where(p => p.TestingSourceID == nTestingSrcId && p.TrainingSourceID == nTrainingSrcId).ToList();
+                List<Dataset> rgDs = entities.Datasets.AsNoTracking().Where(p => p.TestingSourceID == nTestingSrcId && p.TrainingSourceID == nTrainingSrcId).ToList();
 
                 if (rgDs.Count == 0)
                     return null;
@@ -4615,7 +4615,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
-                List<DatasetGroup> rgGroups = entities.DatasetGroups.Where(p => p.ID == nGroupID).ToList();
+                List<DatasetGroup> rgGroups = entities.DatasetGroups.AsNoTracking().Where(p => p.ID == nGroupID).ToList();
 
                 if (rgGroups.Count == 0)
                     return null;
@@ -4633,7 +4633,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                List<DatasetGroup> rgGroups = entities.DatasetGroups.Where(p => p.ID == nGroupID).ToList();
+                List<DatasetGroup> rgGroups = entities.DatasetGroups.AsNoTracking().Where(p => p.ID == nGroupID).ToList();
 
                 if (rgGroups.Count == 0)
                     return null;
@@ -4652,7 +4652,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
-                List<DatasetParameter> rgP = entities.DatasetParameters.Where(p => p.DatasetID == nDsId).ToList();
+                List<DatasetParameter> rgP = entities.DatasetParameters.AsNoTracking().Where(p => p.DatasetID == nDsId).ToList();
                 Dictionary<string, string> rgDsP = new Dictionary<string, string>();
 
                 foreach (DatasetParameter p in rgP)
@@ -4675,7 +4675,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                List<DatasetParameter> rgP = entities.DatasetParameters.Where(p => p.DatasetID == nDsId && p.Name == strName).ToList();
+                List<DatasetParameter> rgP = entities.DatasetParameters.AsNoTracking().Where(p => p.DatasetID == nDsId && p.Name == strName).ToList();
 
                 if (rgP.Count == 0)
                     return null;
@@ -4745,7 +4745,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                List<DatasetParameter> rgP = entities.DatasetParameters.Where(p => p.DatasetID == nDsId && p.Name == strName).ToList();
+                List<DatasetParameter> rgP = entities.DatasetParameters.AsNoTracking().Where(p => p.DatasetID == nDsId && p.Name == strName).ToList();
                 DatasetParameter dsP = null;
 
                 if (rgP.Count == 0)
@@ -4863,7 +4863,7 @@ namespace MyCaffe.db.image
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
                 if (nDatasetGroupID > 0)
-                    return entities.Datasets.Where(p => p.DatasetGroupID == nDatasetGroupID).ToList();
+                    return entities.Datasets.AsNoTracking().Where(p => p.DatasetGroupID == nDatasetGroupID).ToList();
 
                 return entities.Datasets.ToList();
             }
@@ -4879,7 +4879,7 @@ namespace MyCaffe.db.image
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
                 List<Dataset> rgDs = new List<Dataset>();
-                IQueryable<Dataset> iQuery = entities.Datasets.Where(p => p.DatasetCreatorID > 0);
+                IQueryable<Dataset> iQuery = entities.Datasets.AsNoTracking().Where(p => p.DatasetCreatorID > 0);
 
                 if (iQuery.Count() > 0)
                 {
@@ -4906,7 +4906,7 @@ namespace MyCaffe.db.image
                 if (bRelabeled.HasValue)
                 {
                     bool bRelabeledValue = bRelabeled.Value;
-                    return entities.Datasets.Where(p => p.DatasetCreatorID == nDsCreatorID && p.Relabeled == bRelabeled).ToList();
+                    return entities.Datasets.AsNoTracking().Where(p => p.DatasetCreatorID == nDsCreatorID && p.Relabeled == bRelabeled).ToList();
                 }
                 else
                 {
@@ -4924,7 +4924,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                List<DatasetGroup> rgGroups = entities.DatasetGroups.Where(p => p.Name == strName).ToList();
+                List<DatasetGroup> rgGroups = entities.DatasetGroups.AsNoTracking().Where(p => p.Name == strName).ToList();
 
                 if (rgGroups.Count == 0)
                     return 0;
@@ -4949,7 +4949,7 @@ namespace MyCaffe.db.image
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
-                List<DatasetCreator> rgDsc = entities.DatasetCreators.Where(p => p.ID == nDatasetCreatorID).ToList();
+                List<DatasetCreator> rgDsc = entities.DatasetCreators.AsNoTracking().Where(p => p.ID == nDatasetCreatorID).ToList();
 
                 if (rgDsc.Count == 0)
                     return "";
@@ -4967,7 +4967,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                List<DatasetCreator> rgDsc = entities.DatasetCreators.Where(p => p.Name == strName).ToList();
+                List<DatasetCreator> rgDsc = entities.DatasetCreators.AsNoTracking().Where(p => p.Name == strName).ToList();
 
                 if (rgDsc.Count == 0)
                     return 0;
@@ -5029,7 +5029,7 @@ namespace MyCaffe.db.image
                 int nSrcTestId = ds.TestingSourceID.GetValueOrDefault();
                 int nSrcTrainId = ds.TrainingSourceID.GetValueOrDefault();
 
-                List<RawImage> rgImg = entities.RawImages.Where(p => p.SourceID == nSrcTestId || p.SourceID == nSrcTrainId).OrderBy(p => p.TimeStamp).Take(1).ToList();
+                List<RawImage> rgImg = entities.RawImages.AsNoTracking().Where(p => p.SourceID == nSrcTestId || p.SourceID == nSrcTrainId).OrderBy(p => p.TimeStamp).Take(1).ToList();
                 if (rgImg.Count == 0)
                     return DateTime.MinValue;
 
@@ -5051,7 +5051,7 @@ namespace MyCaffe.db.image
                 int nSrcTestId = ds.TestingSourceID.GetValueOrDefault();
                 int nSrcTrainId = ds.TrainingSourceID.GetValueOrDefault();
 
-                List<RawImage> rgImg = entities.RawImages.Where(p => p.SourceID == nSrcTestId || p.SourceID == nSrcTrainId).OrderByDescending(p => p.TimeStamp).Take(1).ToList();
+                List<RawImage> rgImg = entities.RawImages.AsNoTracking().Where(p => p.SourceID == nSrcTestId || p.SourceID == nSrcTrainId).OrderByDescending(p => p.TimeStamp).Take(1).ToList();
                 if (rgImg.Count == 0)
                     return DateTime.MinValue;
 
@@ -5205,7 +5205,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
-                List<ModelGroup> rgGroups = entities.ModelGroups.Where(p => p.ID == nGroupID).ToList();
+                List<ModelGroup> rgGroups = entities.ModelGroups.AsNoTracking().Where(p => p.ID == nGroupID).ToList();
 
                 if (rgGroups.Count == 0)
                     return null;
@@ -5223,7 +5223,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                List<ModelGroup> rgGroups = entities.ModelGroups.Where(p => p.ID == nGroupID).ToList();
+                List<ModelGroup> rgGroups = entities.ModelGroups.AsNoTracking().Where(p => p.ID == nGroupID).ToList();
 
                 if (rgGroups.Count == 0)
                     return null;
@@ -5241,7 +5241,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                List<ModelGroup> rgGroup = entities.ModelGroups.Where(p => p.Name == strGroup).ToList();
+                List<ModelGroup> rgGroup = entities.ModelGroups.AsNoTracking().Where(p => p.Name == strGroup).ToList();
                 if (rgGroup.Count == 0)
                     return 0;
 
@@ -5258,7 +5258,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = MyCaffe.db.image.EntitiesConnection.CreateEntities())
             {
-                return entities.Datasets.Where(p => p.ModelGroupID == nModelGroupId).ToList();
+                return entities.Datasets.AsNoTracking().Where(p => p.ModelGroupID == nModelGroupId).ToList();
             }
         }
 
