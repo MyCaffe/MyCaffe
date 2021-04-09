@@ -9,9 +9,11 @@ using MyCaffe.param;
 namespace MyCaffe.layers
 {
     /// <summary>
-    /// The EuclideanLossLayer computes the Euclidean (L2) loss @f$
+    /// The EuclideanLossLayer computes the Euclidean (L2) loss
+    /// @f$
     ///     E = \frac{1}{2N} \sum\limits_{n=1}^N \left| \left| \hat{y}_n - y_n
-    ///         \right| \right|_2^2 @f$ for real-valued regression tasks.
+    ///         \right| \right|_2^2 
+    /// @f$ for real-valued regression tasks. 
     /// </summary>
     /// <remarks>
     /// This can be used for least-squares regression tasks.  An InnerProductLayer
@@ -148,8 +150,8 @@ namespace MyCaffe.layers
         ///     the predictions @f$ \hat{y} @f$; Backward fills their diff with
         ///     gradients
         ///     @f$ \frac{\partial E}{\partial \hat{y}} = 
-        ///         \frac{1}[n} \sum\limits_{n-1}^N (\hat{y}_n - y_n)
-        ///     @f$ if propagate_down[0] == true.
+        ///         \frac{1}{n} \sum\limits_{n=1}^N (\hat{y}_n - y_n)
+        ///     @f$ if propagate_down[1] == true.
         ///  -# @f$ (N \times C \times H \times W) @f$
         ///     the targets @f$ y @f$; Backward fills their diff with gradients
         ///     @f$ \frac{\partial E}{\partial y} = 
