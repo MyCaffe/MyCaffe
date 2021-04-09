@@ -6392,7 +6392,7 @@ namespace MyCaffe.common
         /// Calculates the exponent value of A and places the result in Y.
         /// </summary>
         /// <remarks>
-        /// Y = exp(A)
+        /// @f$ f(x) = exp(x) @f$
         /// </remarks>
         /// <param name="n">Specifies the number of items (not bytes) in the vectors A and Y.</param>
         /// <param name="hA">Specifies a handle to the vector A in GPU memory.</param>
@@ -6406,7 +6406,7 @@ namespace MyCaffe.common
         /// Calculates the exponent value of A * beta and places the result in Y.
         /// </summary>
         /// <remarks>
-        /// Y = exp(A * beta)
+        /// @f$ f(x) = exp(x * \beta) @f$
         /// </remarks>
         /// <param name="n">Specifies the number of items (not bytes) in the vectors A and Y.</param>
         /// <param name="hA">Specifies a handle to the vector A in GPU memory.</param>
@@ -6426,7 +6426,7 @@ namespace MyCaffe.common
         /// Calculates the log value of A and places the result in Y.
         /// </summary>
         /// <remarks>
-        /// Y = log(A)
+        /// @f$ f(x) = log(x) @f$
         /// </remarks>
         /// <param name="n">Specifies the number of items (not bytes) in the vectors A and Y.</param>
         /// <param name="hA">Specifies a handle to the vector A in GPU memory.</param>
@@ -6440,7 +6440,7 @@ namespace MyCaffe.common
         /// Calculates the log value of (A * beta) + alpha, and places the result in Y.
         /// </summary>
         /// <remarks>
-        /// @f$ Y = \ln((A * \beta) + \alpha) @f$
+        /// @f$ f(x) = \ln((x * \beta) + \alpha) @f$
         /// </remarks>
         /// <param name="n">Specifies the number of items (not bytes) in the vectors A and Y.</param>
         /// <param name="hA">Specifies a handle to the vector A in GPU memory.</param>
@@ -6459,7 +6459,7 @@ namespace MyCaffe.common
         /// Calculates the A raised to the power alpha and places the result in Y.
         /// </summary>
         /// <remarks>
-        /// Y = A^alpha
+        /// @f$ f(x) = x^\alpha @f$
         /// </remarks>
         /// <param name="n">Specifies the number of items (not bytes) in the vectors A and Y.</param>
         /// <param name="hA">Specifies a handle to the vector A in GPU memory.</param>
@@ -6476,7 +6476,7 @@ namespace MyCaffe.common
         /// Calculates the A raised to the power alpha and places the result in Y.
         /// </summary>
         /// <remarks>
-        /// Y = A^alpha
+        /// @f$ f(x) = x^\alpha @f$
         /// </remarks>
         /// <param name="n">Specifies the number of items (not bytes) in the vectors A and Y.</param>
         /// <param name="hA">Specifies a handle to the vector A in GPU memory.</param>
@@ -6493,7 +6493,7 @@ namespace MyCaffe.common
         /// Calculates the A raised to the power alpha and places the result in Y.
         /// </summary>
         /// <remarks>
-        /// Y = A^alpha
+        /// @f$ f(x) = x^\alpha @f$
         /// </remarks>
         /// <param name="n">Specifies the number of items (not bytes) in the vectors A and Y.</param>
         /// <param name="hA">Specifies a handle to the vector A in GPU memory.</param>
@@ -7586,7 +7586,7 @@ namespace MyCaffe.common
         /// Performs a Mish forward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// Computes the mish non-linearity @f$ y  = x * \tanh(\ln( 1 + \exp(x) )) @f$.
+        /// Computes the mish non-linearity @f$ f(x)  = x * tanh(ln( 1 + e^x )) @f$.
         /// 
         /// @see [Mish: A Self Regularized Non-Monotonic Neural Activation Function](https://arxiv.org/abs/1908.08681v1) by Diganta Misra, 2019.
         /// </remarks>
@@ -7605,8 +7605,8 @@ namespace MyCaffe.common
         /// Performs a Mish backward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// Computes the mish gradient @f$ y' = \frac{ \exp(x) * (4*\exp(x) * x + 4*x + 6*\exp(x) + 4*\exp(2x) + \exp(3x) + 4) }{ (2*\exp(x) + \exp(2x) + 2)^2 } @f$
-        /// Note, see Wolfram Alpha with 'derivative of x * \tanh(\ln(1 + \exp(x)))'                                         
+        /// Computes the mish gradient @f$ f(x)' = \frac{ exp(x) * (4*e^x * x + 4*x + 6*e^x + 4*e^2x + e^3x + 4) }{ (2*e^x + e^2x + 2)^2 } @f$
+        /// Note, see Wolfram Alpha with 'derivative of x * tanh(ln(1 + e^x))'                                         
         /// 
         /// @see [Mish: A Self Regularized Non-Monotonic Neural Activation Function](https://arxiv.org/abs/1908.08681v1) by Diganta Misra, 2019.
         /// </remarks>
@@ -7627,7 +7627,7 @@ namespace MyCaffe.common
         /// Performs a TanH forward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// Calculation @f$ Y[i] = \tanh(X[i]) @f$
+        /// Calculation @f$ f(x) = tanh(x) @f$
         /// 
         /// @see [Hyperbolic Function](https://en.wikipedia.org/wiki/Hyperbolic_function).
         /// </remarks>
@@ -7664,7 +7664,7 @@ namespace MyCaffe.common
         /// Performs a Sigmoid forward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// Calcuation @f$ Y[i] = 1.0 / (1.0 + \exp(-X[i])) @f$
+        /// Calcuation @f$ f(x) = 1.0 / (1.0 + e^-x) @f$
         /// 
         /// @see [Sigmoid Function](https://en.wikipedia.org/wiki/Sigmoid_function).
         /// </remarks>
@@ -7721,7 +7721,7 @@ namespace MyCaffe.common
         /// Performs a Rectifier Linear Unit (ReLU) forward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// Calculation @f$ Y[i] = (X[i] > 0) ? X[i] : X[i] * negativeSlope @f$
+        /// Calculation @f$ f(x) = (x > 0) ? x : x * negativeSlope @f$
         /// 
         /// @see [Rectifier](https://en.wikipedia.org/wiki/Rectifier_(neural_networks)), and
         /// @see [Understanding Deep Neural Networks with Rectified Linear Units](https://arxiv.org/abs/1611.01491) by Arora, et al., 2016,
@@ -7764,7 +7764,7 @@ namespace MyCaffe.common
         /// Performs a Exponential Linear Unit (ELU) forward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// Calculates @f$ Y[i] = (X[i] > 0) ? X[i] : \alpha * (\exp(X[i]) - 1) @f$
+        /// Calculates @f$ f(x) = (x > 0) ? x : \alpha * (e^x - 1) @f$
         /// 
         /// @see [Deep Residual Networks with Exponential Linear Unit](https://arxiv.org/abs/1604.04112) by Shah, et al., 2016
         /// </remarks>
@@ -7844,7 +7844,7 @@ namespace MyCaffe.common
         /// Performs a binomial normal log liklihod (BNLL) forward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// Computes @f$ Y[i] = \ln(1 + \exp(X[i])) @f$
+        /// Computes @f$ f(x) = ln(1 + e^x) @f$
         /// </remarks>
         /// <param name="nCount">Specifies the number of items.</param>
         /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
@@ -7876,7 +7876,7 @@ namespace MyCaffe.common
         /// Performs Parameterized Rectifier Linear Unit (ReLU) forward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// Calculation @f$ Y[i] = (X[i] > 0) ? X[i] : X[i] * slopeData @f$
+        /// Calculation @f$ f(x) = (x > 0) ? x : x * slopeData @f$
         /// 
         /// @see [Understanding Deep Neural Networks with Rectified Linear Units](https://arxiv.org/abs/1611.01491) by Arora, et al., 2016,
         /// @see [Delving Deep into Rectifiers: Surpassing Human-Level Performance on ImageNet Classification](https://arxiv.org/abs/1502.01852v1) by He, et al., 2015
@@ -8250,8 +8250,11 @@ namespace MyCaffe.common
         /// Performs a scale forward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// Calculation: if hBias = 0:  @f$ Y[i] = X[i] * scaleData[(i / nInnerDim) % nScaleDim] @f$
-        ///                 othrerwise: @f$ Y[i] = X[i] * scaleData[(i / nInnerDim) % nScaleDim] + biasData[(i / nInnerDim) % nScaleDim] @f$
+        /// Calculation: @f$ f(x) = 
+        /// \begin{cases}
+        ///     x * scaleData[(i / nInnerDim) \mod nScaleDim],                                           & \text{if } hBias == 0\\
+        ///     x * scaleData[(i / nInnerDim) \mod nScaleDim] + biasData[(i / nInnerDim) \mod nScaleDim] & \text{otherwise}
+        /// \end{cases} @f$
         /// </remarks>
         /// <param name="nCount">Specifies the number of items.</param>
         /// <param name="hX">Specifies the input data X in GPU memory.</param>
@@ -9389,7 +9392,9 @@ namespace MyCaffe.common
         #endregion
     }
 
-    class Params
+#pragma warning disable 1591
+
+    class Params /** @private */
     {
         public Params()
         {
@@ -9405,4 +9410,6 @@ namespace MyCaffe.common
             return rg;
         }
     }
+
+#pragma warning restore 1591
 }
