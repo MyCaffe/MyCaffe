@@ -111,25 +111,23 @@ namespace MyCaffe.test
         /// <param name="x">Specifies the input.</param>
         /// <returns>The calculated Mish value is returned.</returns>
         /// <remarks>
-        /// Computes the mish non-linearity @f$ y  = x * tanh(log( 1 + exp(x) )) @f$.
-        /// with                            @f$ y' = ((2*exp(x) * x * (1 + exp(x))) / ((1 + exp(x)) + 1)) - 
-        ///                                          ((2*exp(x) * x * ((1 + exp(x))^2 - 1) * (1 + exp(x))) / ((1 + exp(x))^2 - 1)^2) + 
-        ///                                          (((1 + exp(x))^2 - 1) / ((1 + exp(x))^2 + 1)) @f$
+        /// Computes the mish non-linearity @f$ y  = x * \tanh(\ln( 1 + \exp(x) )) @f$.
+        /// with                            @f$ y' = \frac{\exp(x) * (4*\exp(x) * x + 4*x + 6*\exp(x) + 4*\exp(2x) + \exp(3x) + 4)}{(2*\exp(x) + \exp(2x) + 2)^2} @f$
         /// Note, see Wolfram Alpha with 'derivative of x * tanh(log(1 + e^x))'                                         
         protected double mish_native_grad(double x)
         {
             double dfExpx = Math.Exp(x);
-            double dfTwoExpxX = 2 * dfExpx * x;
-            double dfOne_p_expx = 1 + dfExpx;
-            double dfOne_p_expx_sq = dfOne_p_expx * dfOne_p_expx;
-            double dfOne_p_expx_sq_m_one = dfOne_p_expx_sq - 1;
-            double dfOne_p_expx_sq_p_one = dfOne_p_expx_sq + 1;
+            double dfExp2x = Math.Exp(2 * x);
+            double dfExp3x = Math.Exp(3 * x);
 
-            double dfVal1 = (dfTwoExpxX * dfOne_p_expx) / dfOne_p_expx_sq_p_one;
-            double dfVal2 = (dfTwoExpxX * dfOne_p_expx_sq_m_one * dfOne_p_expx) / (dfOne_p_expx_sq_p_one * dfOne_p_expx_sq_p_one);
-            double dfVal3 = (dfOne_p_expx_sq_m_one / dfOne_p_expx_sq_p_one);
+            double dfVal1 = dfExpx * (4*dfExpx*x + 4*x + 6*dfExpx + 4*dfExp2x + dfExp3x + 4);
+            double dfVal2a = 2 * dfExpx + dfExp2x + 2;
+            double dfVal2 = dfVal2a * dfVal2a;
 
-            return dfVal1 - dfVal2 + dfVal3;
+            if (dfVal2 == 0)
+                return 0;
+
+            return dfVal1 / dfVal2;
         }
 
         public void TestForward(double dfFillerStd)
@@ -163,46 +161,6 @@ namespace MyCaffe.test
         }
 
         public void TestBackward(double dfFillerStd)
-        {
-            FillerParameter fp = new FillerParameter("gaussian");
-            fp.std = dfFillerStd;
-            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
-
-            filler.Fill(Bottom);
-
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.MISH);
-            p.mish_param.engine = m_engine;
-            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-
-            m_log.CHECK(layer.type == LayerParameter.LayerType.MISH, "The layer type is incorrect!");
-
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            double[] rgFwdBottomData = convert(Bottom.update_cpu_data());
-            double[] rgFwdTopData = convert(Top.update_cpu_data());
-
-            m_cuda.copy(TopVec[0].count(), TopVec[0].gpu_data, TopVec[0].mutable_gpu_diff);
-
-            layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
-
-            // Now, check values
-            double[] rgBwdBottomDiff = convert(Bottom.update_cpu_diff());
-            double dfMinPrecision = 1e-5;
-
-            for (int i = 0; i < Bottom.count(); i++)
-            {
-                double dfExpectedValueFwd = mish_native(rgFwdBottomData[i]);
-                double dfExpectedValueBwd = mish_native_grad(dfExpectedValueFwd) * dfExpectedValueFwd;
-                double dfPrecision = Math.Max(Math.Abs(dfExpectedValueBwd * 1e-4), dfMinPrecision);
-                double dfActual = rgBwdBottomDiff[i];
-
-                m_log.EXPECT_NEAR(dfExpectedValueBwd, dfActual, dfPrecision);
-            }
-        }
-
-
-        public void TestBackward2(double dfFillerStd)
         {
             FillerParameter fp = new FillerParameter("gaussian");
             fp.std = dfFillerStd;

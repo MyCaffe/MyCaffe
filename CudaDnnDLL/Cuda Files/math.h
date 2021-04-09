@@ -254,7 +254,7 @@ class Math
 		long tanh_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff);
 
 		long mish_fwd(int nCount, long hBottomData, long hTopData);
-		long mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff);
+		long mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
 
 		long sigmoid_fwd(int nCount, long hBottomData, long hTopData);
 		long sigmoid_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff);

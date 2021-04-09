@@ -7620,9 +7620,7 @@ template long Math<float>::tanh_bwd(int nCount, long hTopDiff, long hTopData, lo
 
 
 /// Computes the mish non-linearity @f$ y  = x * tanh(log( 1 + exp(x) )) @f$.
-/// with                            @f$ y' = ((2*exp(x) * x * (1 + exp(x))) / ((1 + exp(x)) + 1)) - 
-///                                          ((2*exp(x) * x * ((1 + exp(x))^2 - 1) * (1 + exp(x))) / ((1 + exp(x))^2 - 1)^2) + 
-///                                          (((1 + exp(x))^2 - 1) / ((1 + exp(x))^2 + 1)) @f$
+/// with                            @f$ y' = exp(x) * (4*exp(x) * x + 4*x + 6*exp(x) + 4*exp(2x) + exp(3x) + 4) / (2*exp(x) + exp(2x) + 2)^2 @f$
 /// Note, see Wolfram Alpha with 'derivative of x * tanh(log(1 + e^x))'                                         
 template<typename T>
 __global__ void mish_fwd_kernel(int n, T* in, T* out)
@@ -7658,39 +7656,37 @@ template long Math<double>::mish_fwd(int nCount, long hBottomData, long hTopData
 template long Math<float>::mish_fwd(int nCount, long hBottomData, long hTopData);
 
 
-/// Computes the mish non-linearity @f$ y  = x * tanh(log( 1 + exp(x) )) @f$.
-/// with                            @f$ y' = ((2*exp(x) * x * (1 + exp(x))) / ((1 + exp(x)) + 1)) - 
-///                                          ((2*exp(x) * x * ((1 + exp(x))^2 - 1) * (1 + exp(x))) / ((1 + exp(x))^2 - 1)^2) + 
-///                                          (((1 + exp(x))^2 - 1) / ((1 + exp(x))^2 + 1)) @f$
-/// Note, see Wolfram Alpha with 'derivative of x * tanh(log(1 + e^x))'                                         
+/// Computes the mish gradient @f$ y' = exp(x) * (4*exp(x) * x + 4*x + 6*exp(x) + 4*exp(2x) + exp(3x) + 4) / (2*exp(x) + exp(2x) + 2)^2 @f$
+/// Note, see Wolfram Alpha with 'derivative of x * tanh(log(1 + exp(x)))'                                         
 template<typename T>
-__global__ void mish_bwd_kernel(int n, T* in_diff, T* out_data, T* out_diff)
+__global__ void mish_bwd_kernel(int n, T* in_diff, T* out_data, T* out_diff, T* in_data)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		T mish_x = out_data[i];
-		T expx = exp(mish_x);
-		T one_p_expx = (1 + expx);
-		T one_p_expx_sq = one_p_expx * one_p_expx;
-		T one_p_expx_sq_p_one = one_p_expx_sq + 1;
-		T one_p_expx_sq_m_one = one_p_expx_sq - 1;
-		T two_expx_x = 2 * expx * mish_x;
+		T x = in_data[i];
+		T expx = exp(x);
+		T exp2x = exp(2 * x);
+		T exp3x = exp(3 * x);
+		T val1 = expx * (4*expx*x + 4*x + 6*expx + 4*exp2x + exp3x + 4);
+		T val2a = 2*expx + exp2x + 2;
+		T val2 = val2a * val2a;
+		T grad = 0;
 
-		T val1 = (two_expx_x * one_p_expx) / one_p_expx_sq_p_one;
-		T val2 = (two_expx_x * (one_p_expx_sq_m_one * one_p_expx)) / (one_p_expx_sq_p_one * one_p_expx_sq_p_one);
-		T val3 = one_p_expx_sq_m_one / one_p_expx_sq_p_one;
+		if (val2 != 0)
+			grad = val1 / val2;
 
-		out_diff[i] = in_diff[i] * (val1 - val2 + val3);
+		out_diff[i] = in_diff[i] * grad;
 	}
 }
 
 template <class T>
-long Math<T>::mish_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff)
+long Math<T>::mish_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData)
 {
 	LONG lErr;
 	MemoryItem* pTopDiff;
 	MemoryItem* pTopData;
 	MemoryItem* pBottomDiff;
+	MemoryItem* pBottomData;
 
 	if (lErr = m_pMemCol->GetData(hTopDiff, &pTopDiff))
 		return lErr;
@@ -7701,17 +7697,21 @@ long Math<T>::mish_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff)
 	if (lErr = m_pMemCol->GetData(hBottomDiff, &pBottomDiff))
 		return lErr;
 
+	if (lErr = m_pMemCol->GetData(hBottomData, &pBottomData))
+		return lErr;
+
 	T* top_diff = (T*)pTopDiff->Data();
 	T* top_data = (T*)pTopData->Data();
 	T* bottom_diff = (T*)pBottomDiff->Data();
+	T* bottom_data = (T*)pBottomData->Data();
 
-	mish_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff);
+	mish_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff);
-template long Math<float>::mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff);
+template long Math<double>::mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
+template long Math<float>::mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
 
 
 template<typename T>

@@ -13,9 +13,9 @@ namespace MyCaffe.layers
     /// This layer is initialized with the MyCaffe.param.MishParameter.
     /// </summary>
     /// <remarks>
-    /// Computes the mish non-linearity @f$ y  = x * tanh(log( 1 + e^x )) @f$.
-    /// with                            @f$ y' = ((2*e^x * x * (1 + e^x)) / ((1 + e^x) + 1)) - ((2*e^x * x * ((1 + e^x)^2 - 1) * (1 + e^x)) / ((1 + e^x)^2 - 1)^2) + (((1 + e^x)^2 - 1) / ((1 + e^x)^2 + 1)) @f$
-    /// Note, see Wolfram Alpha with 'derivative of @f$ x * tanh(log(1 + e^x))@f$'                                         
+    /// Computes the mish non-linearity @f$ y  = x * \tanh(\ln( 1 + \exp(x) )) @f$.
+    /// with                            @f$ y' = \frac{\exp(x) * (4*\exp(x) * x + 4*x + 6*\exp(x) + 4*\exp(2x) + \exp(3x) + 4)}{(2*\exp(x) + \exp(2x) + 2)^2} @f$
+    /// Note, see Wolfram Alpha with 'derivative of @f$ x * \tanh(\ln(1 + \exp(x))) @f$'                                         
     /// 
     /// @see [Mish: A Self Regularized Non-Monotonic Neural Activation Function](https://arxiv.org/abs/1908.08681v1) by Diganta Misra, 2019.
     /// @see [Meet Mish — New State of the Art AI Activation Function. The successor to ReLU?](https://lessw.medium.com/meet-mish-new-state-of-the-art-ai-activation-function-the-successor-to-relu-846a6d93471f) by Less Wright, 2019
@@ -47,7 +47,7 @@ namespace MyCaffe.layers
         /// <param name="colTop">top output Blob vector (length 1)
         ///  -# @f$ (N \times C \times H \times W) @f$
         ///     the computed outputs @f$ 
-        ///         y = x tanh(log(1 + e^x))
+        ///         y = x \tanh(\ln(1 + \exp(x)))
         ///     @f$.
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
@@ -74,7 +74,7 @@ namespace MyCaffe.layers
         ///     the inputs @f$ x @f$; Backward fills their diff with 
         ///     gradients @f$
         ///         \frac{\partial E}{\partial x}
-        ///             = \frac{\partial E}{\partial y}(((2*e^x * x * (1 + e^x)) / ((1 + e^x) + 1)) - ((2*e^x * x * ((1 + e^x)^2 - 1) * (1 + e^x)) / ((1 + e^x)^2 - 1)^2) + (((1 + e^x)^2 - 1) / ((1 + e^x)^2 + 1)))
+        ///             = \frac{\partial E}{\partial y}\frac{\exp(x) * (4*\exp(x) * x + 4*x + 6*\exp(x) + 4*\exp(2x) + \exp(3x) + 4)}{(2*\exp(x) + \exp(2x) + 2)^2}
         ///     @f$ if propagate_down[0]
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
@@ -82,9 +82,10 @@ namespace MyCaffe.layers
             long hTopData = colTop[0].gpu_data;
             long hTopDiff = colTop[0].gpu_diff;
             long hBottomDiff = colBottom[0].mutable_gpu_diff;
+            long hBottomData = colBottom[0].gpu_data;
             int nCount = colBottom[0].count();
 
-            m_cuda.mish_bwd(nCount, hTopDiff, hTopData, hBottomDiff);
+            m_cuda.mish_bwd(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData);
         }
     }
 }

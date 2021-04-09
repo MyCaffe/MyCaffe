@@ -2577,15 +2577,16 @@ inline long Device<T>::cuda_mish_bwd(long lInput, T* pfInput, long* plOutput, T*
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, 4))
+	if (lErr = verifyInput(lInput, pfInput, 5, 5))
 		return lErr;
 
 	int nCount = (int)pfInput[0];
 	long hTopDiff = (long)pfInput[1];
 	long hTopData = (long)pfInput[2];
 	long hBottomDiff = (long)pfInput[3];
+	long hBottomData = (long)pfInput[4];
 
-	return m_math.mish_bwd(nCount, hTopDiff, hTopData, hBottomDiff);
+	return m_math.mish_bwd(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData);
 }
 
 template <class T>

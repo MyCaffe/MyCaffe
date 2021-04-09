@@ -6440,7 +6440,7 @@ namespace MyCaffe.common
         /// Calculates the log value of (A * beta) + alpha, and places the result in Y.
         /// </summary>
         /// <remarks>
-        /// Y = log((A * beta) + alpha)
+        /// @f$ Y = \ln((A * \beta) + \alpha) @f$
         /// </remarks>
         /// <param name="n">Specifies the number of items (not bytes) in the vectors A and Y.</param>
         /// <param name="hA">Specifies a handle to the vector A in GPU memory.</param>
@@ -7586,7 +7586,7 @@ namespace MyCaffe.common
         /// Performs a Mish forward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// Computes the mish non-linearity @f$ y  = x * tanh(log( 1 + exp(x) )) @f$.
+        /// Computes the mish non-linearity @f$ y  = x * \tanh(\ln( 1 + \exp(x) )) @f$.
         /// 
         /// @see [Mish: A Self Regularized Non-Monotonic Neural Activation Function](https://arxiv.org/abs/1908.08681v1) by Diganta Misra, 2019.
         /// </remarks>
@@ -7605,10 +7605,8 @@ namespace MyCaffe.common
         /// Performs a Mish backward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// Computes the mish gradient      @f$ y' = ((2*exp(x) * x * (1 + exp(x))) / ((1 + exp(x)) + 1)) - 
-        ///                                          ((2*exp(x) * x * ((1 + exp(x))^2 - 1) * (1 + exp(x))) / ((1 + exp(x))^2 - 1)^2) + 
-        ///                                          (((1 + exp(x))^2 - 1) / ((1 + exp(x))^2 + 1)) @f$
-        /// Note, see Wolfram Alpha with 'derivative of x * tanh(log(1 + e^x))'                                         
+        /// Computes the mish gradient @f$ y' = \frac{ \exp(x) * (4*\exp(x) * x + 4*x + 6*\exp(x) + 4*\exp(2x) + \exp(3x) + 4) }{ (2*\exp(x) + \exp(2x) + 2)^2 } @f$
+        /// Note, see Wolfram Alpha with 'derivative of x * \tanh(\ln(1 + \exp(x)))'                                         
         /// 
         /// @see [Mish: A Self Regularized Non-Monotonic Neural Activation Function](https://arxiv.org/abs/1908.08681v1) by Diganta Misra, 2019.
         /// </remarks>
@@ -7616,19 +7614,20 @@ namespace MyCaffe.common
         /// <param name="hTopDiff">Specifies a handle to the top diff in GPU memory.</param>
         /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
         /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
-        public void mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff)
+        /// <param name="hBottomData">Specifies a handle tot he bottom data in GPU memory.</param>
+        public void mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MISH_BWD, m_param.AsDouble(nCount, hTopDiff, hTopData, hBottomDiff));
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MISH_BWD, m_param.AsDouble(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MISH_BWD, m_param.AsFloat(nCount, hTopDiff, hTopData, hBottomDiff));
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MISH_BWD, m_param.AsFloat(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData));
         }
 
         /// <summary>
         /// Performs a TanH forward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// Calculation @f$ Y[i] = tanh(X[i]) @f$
+        /// Calculation @f$ Y[i] = \tanh(X[i]) @f$
         /// 
         /// @see [Hyperbolic Function](https://en.wikipedia.org/wiki/Hyperbolic_function).
         /// </remarks>
@@ -7665,7 +7664,7 @@ namespace MyCaffe.common
         /// Performs a Sigmoid forward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// Calcuation @f$ Y[i] = 1.0 / (1.0 + exp(-X[i])) @f$
+        /// Calcuation @f$ Y[i] = 1.0 / (1.0 + \exp(-X[i])) @f$
         /// 
         /// @see [Sigmoid Function](https://en.wikipedia.org/wiki/Sigmoid_function).
         /// </remarks>
@@ -7765,7 +7764,7 @@ namespace MyCaffe.common
         /// Performs a Exponential Linear Unit (ELU) forward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// Calculates @f$ Y[i] = (X[i] > 0) ? X[i] : alpha * (exp(X[i]) - 1) @f$
+        /// Calculates @f$ Y[i] = (X[i] > 0) ? X[i] : \alpha * (\exp(X[i]) - 1) @f$
         /// 
         /// @see [Deep Residual Networks with Exponential Linear Unit](https://arxiv.org/abs/1604.04112) by Shah, et al., 2016
         /// </remarks>
@@ -7845,7 +7844,7 @@ namespace MyCaffe.common
         /// Performs a binomial normal log liklihod (BNLL) forward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// Computes @f$ Y[i] = log(1 + exp(X[i])) @f$
+        /// Computes @f$ Y[i] = \ln(1 + \exp(X[i])) @f$
         /// </remarks>
         /// <param name="nCount">Specifies the number of items.</param>
         /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
