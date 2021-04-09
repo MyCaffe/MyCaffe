@@ -13,11 +13,9 @@ namespace MyCaffe.layers
     /// This layer is initialized with the MyCaffe.param.MishParameter.
     /// </summary>
     /// <remarks>
-    /// Computes the mish non-linearity @f$ y  = x * tanh(log( 1 + exp(x) )) @f$.
-    /// with                            @f$ y' = ((2*exp(x) * x * (1 + exp(x))) / ((1 + exp(x)) + 1)) - 
-    ///                                          ((2*exp(x) * x * ((1 + exp(x))^2 - 1) * (1 + exp(x))) / ((1 + exp(x))^2 - 1)^2) + 
-    ///                                          (((1 + exp(x))^2 - 1) / ((1 + exp(x))^2 + 1)) @f$
-    /// Note, see Wolfram Alpha with 'derivative of x * tanh(log(1 + e^x))'                                         
+    /// Computes the mish non-linearity @f$ y  = x * tanh(log( 1 + e^x )) @f$.
+    /// with                            @f$ y' = ((2*e^x * x * (1 + e^x)) / ((1 + e^x) + 1)) - ((2*e^x * x * ((1 + e^x)^2 - 1) * (1 + e^x)) / ((1 + e^x)^2 - 1)^2) + (((1 + e^x)^2 - 1) / ((1 + e^x)^2 + 1)) @f$
+    /// Note, see Wolfram Alpha with 'derivative of @f$ x * tanh(log(1 + e^x))@f$'                                         
     /// 
     /// @see [Mish: A Self Regularized Non-Monotonic Neural Activation Function](https://arxiv.org/abs/1908.08681v1) by Diganta Misra, 2019.
     /// @see [Meet Mish — New State of the Art AI Activation Function. The successor to ReLU?](https://lessw.medium.com/meet-mish-new-state-of-the-art-ai-activation-function-the-successor-to-relu-846a6d93471f) by Less Wright, 2019
@@ -49,7 +47,7 @@ namespace MyCaffe.layers
         /// <param name="colTop">top output Blob vector (length 1)
         ///  -# @f$ (N \times C \times H \times W) @f$
         ///     the computed outputs @f$ 
-        ///         y = x \sigma (\beta x)
+        ///         y = x tanh(log(1 + e^x))
         ///     @f$.
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
@@ -76,8 +74,7 @@ namespace MyCaffe.layers
         ///     the inputs @f$ x @f$; Backward fills their diff with 
         ///     gradients @f$
         ///         \frac{\partial E}{\partial x}
-        ///             = \frac{\partial E}{\partial y}(\beta y + 
-        ///               \sigma (\beta x)(1 - \beta y))
+        ///             = \frac{\partial E}{\partial y}(((2*e^x * x * (1 + e^x)) / ((1 + e^x) + 1)) - ((2*e^x * x * ((1 + e^x)^2 - 1) * (1 + e^x)) / ((1 + e^x)^2 - 1)^2) + (((1 + e^x)^2 - 1) / ((1 + e^x)^2 + 1)))
         ///     @f$ if propagate_down[0]
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)

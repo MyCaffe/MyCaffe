@@ -7668,19 +7668,19 @@ __global__ void mish_bwd_kernel(int n, T* in_diff, T* out_data, T* out_diff)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		T x = in_diff[i];
-		T expx = exp(x);
+		T mish_x = out_data[i];
+		T expx = exp(mish_x);
 		T one_p_expx = (1 + expx);
 		T one_p_expx_sq = one_p_expx * one_p_expx;
 		T one_p_expx_sq_p_one = one_p_expx_sq + 1;
 		T one_p_expx_sq_m_one = one_p_expx_sq - 1;
-		T two_expx_x = 2 * expx * x;
+		T two_expx_x = 2 * expx * mish_x;
 
 		T val1 = (two_expx_x * one_p_expx) / one_p_expx_sq_p_one;
 		T val2 = (two_expx_x * (one_p_expx_sq_m_one * one_p_expx)) / (one_p_expx_sq_p_one * one_p_expx_sq_p_one);
 		T val3 = one_p_expx_sq_m_one / one_p_expx_sq_p_one;
 
-		out_diff[i] = val1 - val2 + val3;
+		out_diff[i] = in_diff[i] * (val1 - val2 + val3);
 	}
 }
 

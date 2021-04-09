@@ -193,7 +193,7 @@ namespace MyCaffe.test
             for (int i = 0; i < Bottom.count(); i++)
             {
                 double dfExpectedValueFwd = mish_native(rgFwdBottomData[i]);
-                double dfExpectedValueBwd = mish_native_grad(dfExpectedValueFwd);
+                double dfExpectedValueBwd = mish_native_grad(dfExpectedValueFwd) * dfExpectedValueFwd;
                 double dfPrecision = Math.Max(Math.Abs(dfExpectedValueBwd * 1e-4), dfMinPrecision);
                 double dfActual = rgBwdBottomDiff[i];
 
@@ -217,7 +217,7 @@ namespace MyCaffe.test
             m_log.CHECK(layer.type == LayerParameter.LayerType.MISH, "The layer type is incorrect!");
                 
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradient(layer, BottomVec, TopVec);
+            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
         }
 
         public void TestForward()
