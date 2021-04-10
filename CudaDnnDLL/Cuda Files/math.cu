@@ -208,6 +208,19 @@ inline __device__ T math_sign(T val)
 }
 
 
+template<typename T>
+__global__ void nan_inf_test(int n, const T* in, T* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		if (isnan(in[i]) || isinf(in[i]))
+			out[i] = 1;
+		else
+			out[i] = 0;
+	}
+}
+
+
 //=============================================================================
 //	Class Methods
 //=============================================================================
@@ -7621,18 +7634,26 @@ template long Math<float>::tanh_bwd(int nCount, long hTopDiff, long hTopData, lo
 
 /// Computes the mish non-linearity @f$ y  = x * tanh(log( 1 + exp(x) )) @f$.
 /// with                            @f$ y' = exp(x) * (4*exp(x) * x + 4*x + 6*exp(x) + 4*exp(2x) + exp(3x) + 4) / (2*exp(x) + exp(2x) + 2)^2 @f$
-/// Note, see Wolfram Alpha with 'derivative of x * tanh(log(1 + e^x))'                                         
-template<typename T>
-__global__ void mish_fwd_kernel(int n, T* in, T* out)
+/// Note, see Wolfram Alpha with 'derivative of @f$ x * tanh(log(1 + e^x)) @f$'
+/// Also note, log1p(x) = log(1 + x)                                         
+__global__ void mish_fwd_kernel(int n, const double* in, double* out, const double fThreshold)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		out[i] = in[i] * tanh(log(1 + exp(in[i])));
+		out[i] = in[i] * tanh((in[i] < fThreshold) ? log1p(exp(in[i])) : in[i]);
+	}
+}
+
+__global__ void mish_fwd_kernel(int n, const float* in, float* out, const float fThreshold)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		out[i] = in[i] * tanh((in[i] < fThreshold) ? log1pf(exp(in[i])) : in[i]);
 	}
 }
 
 template <class T>
-long Math<T>::mish_fwd(int n, long hBottomData, long hTopData)
+long Math<T>::mish_fwd(int n, long hBottomData, long hTopData, T fThreshold)
 {
 	LONG lErr;
 	MemoryItem* pBottomData;
@@ -7647,40 +7668,73 @@ long Math<T>::mish_fwd(int n, long hBottomData, long hTopData)
 	T* bottom_data = (T*)pBottomData->Data();
 	T* top_data = (T*)pTopData->Data();
 
-	mish_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+	mish_fwd_kernel<< <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data, fThreshold);
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::mish_fwd(int nCount, long hBottomData, long hTopData);
-template long Math<float>::mish_fwd(int nCount, long hBottomData, long hTopData);
+template long Math<double>::mish_fwd(int nCount, long hBottomData, long hTopData, double dfThreshold);
+template long Math<float>::mish_fwd(int nCount, long hBottomData, long hTopData, float fThreshold);
 
 
-/// Computes the mish gradient @f$ y' = exp(x) * (4*exp(x) * x + 4*x + 6*exp(x) + 4*exp(2x) + exp(3x) + 4) / (2*exp(x) + exp(2x) + 2)^2 @f$
-/// Note, see Wolfram Alpha with 'derivative of x * tanh(log(1 + exp(x)))'                                         
-template<typename T>
-__global__ void mish_bwd_kernel(int n, T* in_diff, T* out_data, T* out_diff, T* in_data)
+/// See https://github.com/thomasbrandon/mish-cuda/blob/master/csrc/mish.h                                       
+__global__ void mish_bwd_kernel(const int n, const double* in_diff, double* out_data, double* out_diff, const double* in_data, const double fThreshold)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		T x = in_data[i];
-		T expx = exp(x);
-		T exp2x = exp(2 * x);
-		T exp3x = exp(3 * x);
-		T val1 = expx * (4*expx*x + 4*x + 6*expx + 4*exp2x + exp3x + 4);
-		T val2a = 2*expx + exp2x + 2;
-		T val2 = val2a * val2a;
+		const double x = in_data[i];
+		const double sp = (x < fThreshold) ? log1p(exp(x)) : x;
+		const double grad_sp = 1 - exp(-sp);
+		const double tsp = tanh(sp);
+		const double grad_tsp = (1 - tsp * tsp) * grad_sp;
+		const double grad = x * grad_tsp + tsp;
+
+		out_diff[i] = in_diff[i] * grad;
+	}
+}
+
+__global__ void mish_bwd_kernel(const int n, const float* in_diff, float* out_data, float* out_diff, const float* in_data, const float fThreshold)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const float x = in_data[i];
+		const float sp = (x < fThreshold) ? log1pf(exp(x)) : x;
+		const float grad_sp = 1 - exp(-sp);
+		const float tsp = tanh(sp);
+		const float grad_tsp = (1 - tsp * tsp) * grad_sp;
+		const float grad = x * grad_tsp + tsp;
+
+		out_diff[i] = in_diff[i] * grad;
+	}
+}
+
+
+/// Computes the mish gradient @f$ y' = exp(x) * (4*exp(x) * x + 4*x + 6*exp(x) + 4*exp(2x) + exp(3x) + 4) / (2*exp(x) + exp(2x) + 2)^2 @f$
+/// Note, see Wolfram Alpha with 'derivative of x * tanh(log(1 + exp(x)))' 
+/// Also, see https://arxiv.org/vc/arxiv/papers/1908/1908.08681v2.pdf                                        
+template<typename T>
+__global__ void mish_bwd_kernel2(const int n, const T* in_diff, T* out_data, T* out_diff, const T* in_data, const T fThreshold)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const T x = in_data[i];
+		const T expx = exp(x);
+		const T exp2x = exp(2 * x);
+		const T exp3x = exp(3 * x);
+		const T w = 4*expx * x + 4*x + 6*expx + 4*exp2x + exp3x + 4;
+		const T delta = 2 * expx + exp2x + 2;
+		const T delta_sq = delta * delta;
 		T grad = 0;
 
-		if (val2 != 0)
-			grad = val1 / val2;
+		if (delta_sq != 0)
+			grad = expx * w / delta_sq;
 
 		out_diff[i] = in_diff[i] * grad;
 	}
 }
 
 template <class T>
-long Math<T>::mish_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData)
+long Math<T>::mish_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, T fThreshold, int nMethod)
 {
 	LONG lErr;
 	MemoryItem* pTopDiff;
@@ -7705,13 +7759,16 @@ long Math<T>::mish_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff, lo
 	T* bottom_diff = (T*)pBottomDiff->Data();
 	T* bottom_data = (T*)pBottomData->Data();
 
-	mish_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+	if (nMethod == 0)
+		mish_bwd_kernel<< <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data, fThreshold);
+	else
+		mish_bwd_kernel2<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data, fThreshold);
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
-template long Math<float>::mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
+template long Math<double>::mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, double dfThreshold, int nMethod);
+template long Math<float>::mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, float fThreshold, int nMethod);
 
 
 template<typename T>

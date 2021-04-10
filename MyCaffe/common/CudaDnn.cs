@@ -7593,12 +7593,13 @@ namespace MyCaffe.common
         /// <param name="nCount">Specifies the number of items in the bottom and top data.</param>
         /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
         /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
-        public void mish_fwd(int nCount, long hBottomData, long hTopData)
+        /// <param name="dfThreshold">Specifies the threshold value.</param>
+        public void mish_fwd(int nCount, long hBottomData, long hTopData, double dfThreshold)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MISH_FWD, m_param.AsDouble(nCount, hBottomData, hTopData));
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MISH_FWD, m_param.AsDouble(nCount, hBottomData, hTopData, dfThreshold));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MISH_FWD, m_param.AsFloat(nCount, hBottomData, hTopData));
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MISH_FWD, m_param.AsFloat(nCount, hBottomData, hTopData, (float)dfThreshold));
         }
 
         /// <summary>
@@ -7615,12 +7616,14 @@ namespace MyCaffe.common
         /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
         /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
         /// <param name="hBottomData">Specifies a handle tot he bottom data in GPU memory.</param>
-        public void mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData)
+        /// <param name="dfThreshold">Specifies the threshold value.</param>
+        /// <param name="nMethod">Optionally, specifies to run the new implementation when > 0.</param>
+        public void mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, double dfThreshold, int nMethod = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MISH_BWD, m_param.AsDouble(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData));
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MISH_BWD, m_param.AsDouble(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, dfThreshold, nMethod));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MISH_BWD, m_param.AsFloat(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData));
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MISH_BWD, m_param.AsFloat(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, (float)dfThreshold, nMethod));
         }
 
         /// <summary>

@@ -2562,14 +2562,15 @@ inline long Device<T>::cuda_mish_fwd(long lInput, T* pfInput, long* plOutput, T*
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+	if (lErr = verifyInput(lInput, pfInput, 4, 4))
 		return lErr;
 
 	int nCount = (int)pfInput[0];
 	long hBottomData = (long)pfInput[1];
 	long hTopData = (long)pfInput[2];
+	T fThreshold = pfInput[3];
 
-	return m_math.mish_fwd(nCount, hBottomData, hTopData);
+	return m_math.mish_fwd(nCount, hBottomData, hTopData, fThreshold);
 }
 
 template <class T>
@@ -2577,7 +2578,7 @@ inline long Device<T>::cuda_mish_bwd(long lInput, T* pfInput, long* plOutput, T*
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 5, 5))
+	if (lErr = verifyInput(lInput, pfInput, 6, 7))
 		return lErr;
 
 	int nCount = (int)pfInput[0];
@@ -2585,8 +2586,13 @@ inline long Device<T>::cuda_mish_bwd(long lInput, T* pfInput, long* plOutput, T*
 	long hTopData = (long)pfInput[2];
 	long hBottomDiff = (long)pfInput[3];
 	long hBottomData = (long)pfInput[4];
+	T fThreshold = pfInput[5];
+	int nMethod = 1;
 
-	return m_math.mish_bwd(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData);
+	if (lInput > 6)
+		nMethod = (int)pfInput[6];
+
+	return m_math.mish_bwd(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, fThreshold, nMethod);
 }
 
 template <class T>

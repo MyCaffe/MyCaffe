@@ -253,8 +253,8 @@ class Math
 		long tanh_fwd(int nCount, long hBottomData, long hTopData);
 		long tanh_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff);
 
-		long mish_fwd(int nCount, long hBottomData, long hTopData);
-		long mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
+		long mish_fwd(int nCount, long hBottomData, long hTopData, T fThreshold);
+		long mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, T fThreshold, int nMethod);
 
 		long sigmoid_fwd(int nCount, long hBottomData, long hTopData);
 		long sigmoid_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff);

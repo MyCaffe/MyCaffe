@@ -56,7 +56,7 @@ namespace MyCaffe.layers
             long hTopData = colTop[0].mutable_gpu_data;
             int nCount = colBottom[0].count();
 
-            m_cuda.mish_fwd(nCount, hBottomData, hTopData);
+            m_cuda.mish_fwd(nCount, hBottomData, hTopData, m_param.mish_param.threshold);
         }
 
         /// <summary>
@@ -85,7 +85,7 @@ namespace MyCaffe.layers
             long hBottomData = colBottom[0].gpu_data;
             int nCount = colBottom[0].count();
 
-            m_cuda.mish_bwd(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData);
+            m_cuda.mish_bwd(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, m_param.mish_param.threshold, m_param.mish_param.method);
         }
     }
 }

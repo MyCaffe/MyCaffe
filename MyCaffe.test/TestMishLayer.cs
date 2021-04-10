@@ -8,6 +8,7 @@ using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.fillers;
 using MyCaffe.layers;
+using System.Diagnostics;
 
 namespace MyCaffe.test
 {
@@ -49,12 +50,31 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestGradient2()
+        {
+            MishLayerTest2 test = new MishLayerTest2(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IMishLayerTest2 t in test.Tests)
+                {
+                    t.TestGradient2();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface IMishLayerTest2 : ITest
     {
         void TestForward();
         void TestGradient();
+        void TestGradient2();
     }
 
     class MishLayerTest2 : TestBase
@@ -160,7 +180,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestBackward(double dfFillerStd)
+        public void TestBackward(double dfFillerStd, int nMethod)
         {
             FillerParameter fp = new FillerParameter("gaussian");
             fp.std = dfFillerStd;
@@ -170,6 +190,7 @@ namespace MyCaffe.test
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.MISH);
             p.mish_param.engine = m_engine;
+            p.mish_param.method = nMethod;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             m_log.CHECK(layer.type == LayerParameter.LayerType.MISH, "The layer type is incorrect!");
@@ -185,7 +206,12 @@ namespace MyCaffe.test
 
         public void TestGradient()
         {
-            TestBackward(1.0);
+            TestBackward(1.0, 0);
+        }
+
+        public void TestGradient2()
+        {
+            TestBackward(1.0, 1);
         }
     }
 }

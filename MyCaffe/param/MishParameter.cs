@@ -17,6 +17,9 @@ namespace MyCaffe.param
     /// </remarks>
     public class MishParameter : EngineParameter
     {
+        double m_dfThreshold = 20;
+        int m_nMethod = 0;
+
         /** @copydoc LayerParameterBase */
         public MishParameter()
             : base()
@@ -42,6 +45,28 @@ namespace MyCaffe.param
             return false;
         }
 
+        /// <summary>
+        /// Specifies the max threshold value used in exp functions.
+        /// </summary>
+        /// <remarks>
+        /// @see [thomasbrandon/mish-cuda](https://github.com/thomasbrandon/mish-cuda/blob/master/csrc/mish.h) by thomasbrandon, 2019 MIT License.
+        /// </remarks>
+        [Description("Specifies the max threshold value used in exp functions.")] 
+        public double threshold
+        {
+            get { return m_dfThreshold; }
+            set { m_dfThreshold = value; }
+        }
+
+        /// <summary>
+        /// Specifies the method used for backward computation, where method = 0 uses the default scalled method, and method = 1 uses the straight derivative method.
+        /// </summary>
+        public int method
+        {
+            get { return m_nMethod; }
+            set { m_nMethod = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -54,12 +79,42 @@ namespace MyCaffe.param
             return p;
         }
 
+        /** @copydoc EngineParameter::Copy */
+        public override void Copy(LayerParameterBase src)
+        {
+            base.Copy(src);
+
+            if (src is MishParameter)
+            {
+                MishParameter p = (MishParameter)src;
+                m_dfThreshold = p.m_dfThreshold;
+                m_nMethod = p.m_nMethod;
+            }
+        }
+
         /** @copydoc EngineParameter::Clone */
         public override LayerParameterBase Clone()
         {
             MishParameter p = new MishParameter();
             p.Copy(this);
             return p;
+        }
+
+        /** @copydoc EngineParameter::ToProto */
+        public override RawProto ToProto(string strName)
+        {
+            RawProto rpBase = base.ToProto("engine");
+            RawProtoCollection rgChildren = new RawProtoCollection();
+
+            rgChildren.Add(rpBase.Children);
+
+            if (threshold != 0)
+                rgChildren.Add("threshold", threshold.ToString());
+
+            if (method != 0)
+                rgChildren.Add("method", threshold.ToString());
+
+            return new RawProto(strName, "", rgChildren);
         }
 
         /// <summary>
@@ -69,9 +124,16 @@ namespace MyCaffe.param
         /// <returns>A new instance of the parameter is returned.</returns>
         public static new MishParameter FromProto(RawProto rp)
         {
+            string strVal;
             MishParameter p = new MishParameter();
 
             ((EngineParameter)p).Copy(EngineParameter.FromProto(rp));
+
+            if ((strVal = rp.FindValue("threshold")) != null)
+                p.threshold = ParseDouble(strVal);
+
+            if ((strVal = rp.FindValue("method")) != null)
+                p.method = int.Parse(strVal);
 
             return p;
         }
