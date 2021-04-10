@@ -821,6 +821,35 @@ license and copyright terms herein.
 	OTHER DEALINGS IN THE SOFTWARE.
   ** end rbgirshick/fast-rccn License **
 
+  Some portions of the Mish fwd/bwd low-level software use, were derived from
+  or were inspired by the open-source mish-cuda project available on GitHub
+  at: https://github.com/thomasbrandon/mish-cuda and licensed under the MIT license
+  available at: https://github.com/thomasbrandon/mish-cuda/blob/master/LICENSE
+
+  ** start thomasbrandon/mish-cuda License **mish-cuda
+    MIT License
+
+    Copyright (c) 2019 thomasbrandon
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+  ** end thomasbrandon/mish-cuda License **
+
   The LockBitmap.cs file is provided by Vano Maisuradze, from 'Work with Bitmaps
   Faster in C#' from Code Project at:
   https://www.codeproject.com/Tips/240428/Work-with-Bitmaps-Faster-in-Csharp-3 
