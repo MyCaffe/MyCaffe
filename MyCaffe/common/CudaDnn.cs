@@ -671,11 +671,11 @@ namespace MyCaffe.common
         void FreeRnnDesc(long h);
         void SetRnnDesc(long hHandle, long hRnnDesc, int nHiddenSize, int nNumLayers, long hDropoutDesc, RNN_MODE mode, bool bUseTensorCores);
         int GetRnnParamCount(long hHandle, long hRnnDesc, long hXDesc);
-        int GetRnnWorkspaceCount(long hHandle, long hRnnDesc, long hXDesc, out int nReservedCount);
+        ulong GetRnnWorkspaceCount(long hHandle, long hRnnDesc, long hXDesc, out ulong nReservedCount);
         void GetRnnLinLayerParams(long hHandle, long hRnnDesc, int nLayer, long hXDesc, long hWtDesc, long hWtData, int nLinLayer, out int nWtCount, out long hWt, out int nBiasCount, out long hBias);
-        void RnnForward(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspace, int nWsCount, long hReserved, int hResCount, bool bTraining);
-        void RnnBackwardData(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspace, int nWsCount, long hReserved, int nResCount);
-        void RnnBackwardWeights(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspace, int nWsCount, long hWtDesc, long hWtDiff, long hReserved, int nResCount);
+        void RnnForward(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspace, ulong nWsCount, long hReserved, ulong hResCount, bool bTraining);
+        void RnnBackwardData(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspace, ulong nWsCount, long hReserved, ulong nResCount);
+        void RnnBackwardWeights(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspace, ulong nWsCount, long hWtDesc, long hWtDiff, long hReserved, ulong nResCount);
     }
 
     /// <summary>
@@ -1158,6 +1158,8 @@ namespace MyCaffe.common
 
             CUDA_COEFF_SUB_FWD = 492,
             CUDA_COEFF_SUB_BWD = 493,
+
+            CUDA_MAE_LOSS_BWD = 495,
 
             CUDA_CROSS_ENTROPY_FWD = 496,
             CUDA_CROSS_ENTROPY_IGNORE = 497,
@@ -4396,19 +4398,19 @@ namespace MyCaffe.common
         /// <param name="hXDesc">Specifies a handle to the data descriptor created with CreateRnnDataDesc.</param>
         /// <param name="nReservedCount">Returns the reserved count needed.</param>
         /// <returns>Returns the workspace count needed.</returns>
-        public int GetRnnWorkspaceCount(long hCuDnn, long hRnnDesc, long hXDesc, out int nReservedCount)
+        public ulong GetRnnWorkspaceCount(long hCuDnn, long hRnnDesc, long hXDesc, out ulong nReservedCount)
         {
             if (m_dt == DataType.DOUBLE)
             {
                 double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_RNN_WORKSPACECOUNT, m_param.AsDouble(hCuDnn, hRnnDesc, (m_bEnableRnnExtendedVersion) ? 1 : 0, hXDesc));
-                nReservedCount = (int)rg[1];
-                return (int)rg[0];
+                nReservedCount = (ulong)rg[1];
+                return (ulong)rg[0];
             }
             else
             {
                 float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_RNN_WORKSPACECOUNT, m_param.AsFloat(hCuDnn, hRnnDesc, (m_bEnableRnnExtendedVersion) ? 1 : 0, hXDesc));
-                nReservedCount = (int)rg[1];
-                return (int)rg[0];
+                nReservedCount = (ulong)rg[1];
+                return (ulong)rg[0];
             }
         }
 
@@ -4470,7 +4472,7 @@ namespace MyCaffe.common
         /// <param name="hReserved">Specifies a handle to the reserved GPU memory.</param>
         /// <param name="nResCount">Specifies the number of items within the reserved memory.</param>
         /// <param name="bTraining">Specifies the whether the forward pass is during taining or not.</param>
-        public void RnnForward(long hCuDnn, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspace, int nWsCount, long hReserved, int nResCount, bool bTraining)
+        public void RnnForward(long hCuDnn, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspace, ulong nWsCount, long hReserved, ulong nResCount, bool bTraining)
         {
             if (m_dt == DataType.DOUBLE)
             {
@@ -4570,7 +4572,7 @@ namespace MyCaffe.common
         /// <param name="nWsCount">Specifies the number of items within the workspace.</param>
         /// <param name="hReserved">Specifies a handle to the reserved GPU memory.</param>
         /// <param name="nResCount">Specifies the number of items within the reserved memory.</param>
-        public void RnnBackwardData(long hCuDnn, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspace, int nWsCount, long hReserved, int nResCount)
+        public void RnnBackwardData(long hCuDnn, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspace, ulong nWsCount, long hReserved, ulong nResCount)
         {
             if (m_dt == DataType.DOUBLE)
             {
@@ -4669,7 +4671,7 @@ namespace MyCaffe.common
         /// <param name="hWtDiff">Specifies a handle to the weight gradients.</param>
         /// <param name="hReserved">Specifies a handle to the reserved GPU memory.</param>
         /// <param name="nResCount">Specifies the number of items within the reserved memory.</param>
-        public void RnnBackwardWeights(long hCuDnn, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspace, int nWsCount, long hWtDesc, long hWtDiff, long hReserved, int nResCount)
+        public void RnnBackwardWeights(long hCuDnn, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspace, ulong nWsCount, long hWtDesc, long hWtDiff, long hReserved, ulong nResCount)
         {
             if (m_dt == DataType.DOUBLE)
             {
@@ -7581,6 +7583,31 @@ namespace MyCaffe.common
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MATH_BWD, m_param.AsFloat(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, (int)function));
         }
+
+        /// <summary>
+        /// Performs a MAE Loss backward pass in Cuda.
+        /// </summary>
+        /// <remarks>
+        /// The gradient is set to:
+        ///     +1 when predicted greater than target,
+        ///     -1 when predicted less than target,
+        ///      0 when predicted equal to target.
+        /// if propagate_down[1] == true.
+        /// 
+        /// @see [Mean Absolute Error (MAE) derivative](https://stats.stackexchange.com/questions/312737/mean-absolute-error-mae-derivative)
+        /// </remarks>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="hPredicted">Specifies a handle to the predicted data in GPU memory.</param>
+        /// <param name="hTarget">Specifies a handle to the target data in GPU memory.</param>
+        /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
+        public void mae_loss_bwd(int nCount, long hPredicted, long hTarget, long hBottomDiff)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MAE_LOSS_BWD, m_param.AsDouble(nCount, hPredicted, hTarget, hBottomDiff));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MAE_LOSS_BWD, m_param.AsFloat(nCount, hPredicted, hTarget, hBottomDiff));
+        }
+
 
         /// <summary>
         /// Performs a Mish forward pass in Cuda.
