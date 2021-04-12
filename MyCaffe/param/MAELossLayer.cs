@@ -15,7 +15,7 @@ namespace MyCaffe.param
     /// </remarks>
     public class MAELossParameter : LayerParameterBase
     {
-        int m_nAxis = 1;
+        int m_nAxis = 1; // Axis used to calculate the loss normalization.
 
         /** @copydoc LayerParameterBase */
         public MAELossParameter()
