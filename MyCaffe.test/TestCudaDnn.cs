@@ -7,6 +7,7 @@ using MyCaffe.common;
 using System.Diagnostics;
 using MyCaffe.param;
 using MyCaffe.basecode;
+using MyCaffe.fillers;
 
 namespace MyCaffe.test
 {
@@ -2591,8 +2592,8 @@ namespace MyCaffe.test
                         t.Cuda.SetRnnDesc(hCudnn, hDesc, nHiddenSize, nNumLayers, 0, RNN_MODE.LSTM, bUseTensorCores);
                         t.Cuda.SetRnnDataDesc(hDataDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nSeqLen, nBatchSize, nHiddenSize);
 
-                        int nReservedCount;
-                        int nWorkspaceCount = t.Cuda.GetRnnWorkspaceCount(hCudnn, hDesc, hDataDesc, out nReservedCount);
+                        ulong nReservedCount;
+                        ulong nWorkspaceCount = t.Cuda.GetRnnWorkspaceCount(hCudnn, hDesc, hDataDesc, out nReservedCount);
                     }
                     finally
                     {
@@ -3011,6 +3012,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestLoss_mae_loss_bwd()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+
+            try
+            {
+                foreach (ITestCudaDnn t in test.Tests)
+                {
+                    t.TestMAELossBwd();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     public interface ITestCudaDnn : ITest
@@ -3032,6 +3051,7 @@ namespace MyCaffe.test
         void TestCopySequenceK1();
         void TestCopySequenceK1Combine();
         void TestCopySequenceK2();
+        void TestMAELossBwd();
     }
 
     class CudaDnnTest : TestBase
@@ -3127,6 +3147,37 @@ namespace MyCaffe.test
             }
             
             base.dispose();
+        }
+
+        public void TestMAELossBwd()
+        {
+            m_A.Reshape(3, 2, 10, 1);
+            m_B.Reshape(3, 2, 10, 1);
+
+            FillerParameter fp = new FillerParameter("gaussian", 0, 0, 3);
+            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
+            filler.Fill(m_A);
+            filler.Fill(m_B);
+
+            m_cuda.mae_loss_bwd(m_A.count(), m_A.gpu_data, m_B.gpu_data, m_A.mutable_gpu_diff);
+
+            double[] rgPredicted = convert(m_A.mutable_cpu_data);
+            double[] rgTarget = convert(m_B.mutable_cpu_data);
+            double[] rgGrad = convert(m_A.mutable_cpu_diff);
+
+            for (int i = 0; i < rgPredicted.Length; i++)
+            {
+                double dfPredicted = rgPredicted[i];
+                double dfTarget = rgTarget[i];
+                double dfGrad = rgGrad[i];
+
+                if (dfPredicted > dfTarget)
+                    m_log.CHECK_EQ(dfGrad, 1, "The gradient is incorrect at i = " + i.ToString() + "!");
+                else if (dfPredicted < dfTarget)
+                    m_log.CHECK_EQ(dfGrad, -1, "The gradient is incorrect at i = " + i.ToString() + "!");
+                else
+                    m_log.CHECK_EQ(dfGrad, 0, "The gradient is incorrect at i = " + i.ToString() + "!");
+            }
         }
 
         public void TestAdd()
