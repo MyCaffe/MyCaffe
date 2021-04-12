@@ -154,6 +154,8 @@ namespace MyCaffe.basecode
 
         private object convert(string strVal, Type t)
         {
+            strVal = strVal.TrimEnd('}');
+
             if (t == typeof(string))
                 return strVal;
 
