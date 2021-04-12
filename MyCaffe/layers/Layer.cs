@@ -1528,7 +1528,7 @@ namespace MyCaffe.layers
         /// Creates and returns a new copy of this instance.
         /// </summary>
         /// <param name="bCloneBlobs">Specifies whether or not to clone (or just share) the shared Blobs.</param>
-        /// <returns></returns>
+        /// <returns>The cloned LayerParameter is returned.</returns>
         public override LayerParameter Clone(bool bCloneBlobs)
         {
             return new LayerParameterEx<T>(base.Clone(bCloneBlobs), m_colSharedBlobs, m_colLayerBlobs, m_layer);
