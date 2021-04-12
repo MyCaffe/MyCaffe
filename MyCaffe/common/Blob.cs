@@ -176,6 +176,21 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// The Blob constructor used to copy another blob by creating memory pointers to its data thus sharing the same GPU memory.
+        /// </summary>
+        /// <param name="blob">Specifies the blob whos data is to be shared.</param>
+        /// <param name="lCount">Specifies the number of items to share.</param>
+        /// <param name="lOffset">Specifies the offset into the blob where the shareing starts.</param>
+        public Blob(Blob<T> blob, long lCount, long lOffset)
+            : this(blob.Cuda, blob.Log, blob.m_bIncludeDiff)
+        {
+            m_data.set_gpu_data(blob.gpu_data, lCount, lOffset);
+
+            if (m_diff != null)
+                m_diff.set_gpu_data(blob.gpu_diff, lCount, lOffset);
+        }
+
+        /// <summary>
         /// Returns Zero (0) in type T.
         /// </summary>
         public static T Zero
@@ -615,6 +630,29 @@ namespace MyCaffe.common
             get
             {
                 return m_rgShape.Count;
+            }
+        }
+
+        /// <summary>
+        /// Returns the number of true axes, ignoring the trailing ones.
+        /// </summary>
+        public int num_true_axes
+        {
+            get
+            {
+                int nCount = 0;
+                bool bCount = false;
+
+                for (int i = m_rgShape.Count - 1; i >= 0; i--)
+                {
+                    if (bCount || m_rgShape[i] != 1)
+                    {
+                        nCount++;
+                        bCount = true;
+                    }
+                }
+
+                return nCount;
             }
         }
 
