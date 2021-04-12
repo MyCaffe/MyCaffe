@@ -1309,6 +1309,9 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.LRN:
                     return new LRNLayer<T>(cuda, log, p);
 
+                case LayerParameter.LayerType.MAE_LOSS:
+                    return new MAELossLayer<T>(cuda, log, p);
+
                 case LayerParameter.LayerType.MATH:
                     return new MathLayer<T>(cuda, log, p);
 
