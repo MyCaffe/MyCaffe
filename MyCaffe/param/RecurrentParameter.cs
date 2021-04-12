@@ -18,7 +18,8 @@ namespace MyCaffe.param
         FillerParameter m_weight_filler = new FillerParameter("xavier");
         FillerParameter m_bias_filler = new FillerParameter("constant", 0.1);
         bool m_bDebugInfo = false;
-        bool m_bExposeHidden = false; // caffe only
+        bool m_bExposeHiddenInput = false;
+        bool m_bExposeHiddenOutput = false;
         uint m_nNumLayers = 1; // cuDnn only
         double m_dfDropoutRatio = 0.0; // cuDnn only
         long m_lDropoutSeed = 0; // cuDnn only
@@ -39,9 +40,6 @@ namespace MyCaffe.param
             if (engine == Engine.CAFFE || engine == Engine.DEFAULT)
                 return "The engine setting is set on CAFFE or DEFAULT.";
 
-            if (m_bExposeHidden)
-                return "Exposing hidden is currently only offered by CAFFE.";
-
             return "";
         }
 
@@ -54,7 +52,7 @@ namespace MyCaffe.param
         /// <returns>Returns <i>true</i> when cuDnn is to be used, <i>false</i> otherwise.</returns>
         public bool useCudnn()
         {
-            if (engine == Engine.CAFFE || engine == Engine.DEFAULT || m_bExposeHidden)
+            if (engine == Engine.CAFFE || engine == Engine.DEFAULT)
                 return false;
 
             return true;
@@ -104,15 +102,26 @@ namespace MyCaffe.param
 
         /// <summary>
         /// Whether to add as additional inputs (bottoms) the initial hidden state
-        /// blobs, and add as additional outputs (tops) the final timestep hidden state
+        /// blobss.  The number of additional bottom/top blobs required depends on the
+        /// recurrent architecture -- e.g., 1 for RNN's, 2 for LSTM's.
+        /// </summary>
+        [Description("Specifies whether to add as additional inputs (bottoms) the initial hidden state blobs.  The number of additional bottom/top blobs required depends on the recurrent architecture -- e.g., 1 for RNN's, 2 for LSTM's.")]
+        public bool expose_hidden_input
+        {
+            get { return m_bExposeHiddenInput; }
+            set { m_bExposeHiddenInput = value; }
+        }
+
+        /// <summary>
+        /// Whether to add as additional outputs (tops) the final timestep hidden state
         /// blobs.  The number of additional bottom/top blobs required depends on the
         /// recurrent architecture -- e.g., 1 for RNN's, 2 for LSTM's.
         /// </summary>
-        [Description("Specifies whether to add as additional inputs (bottoms) the initial hidden state blobs, and add as additional outputs (tops) the final timestep hidden state blobs.  The number of additional bottom/top blobs required depends on the recurrent architecture -- e.g., 1 for RNN's, 2 for LSTM's.")]
-        public bool expose_hidden
+        [Description("Specifies whether to add as additional outputs (tops) the final timestep hidden state blobs.  The number of additional bottom/top blobs required depends on the recurrent architecture -- e.g., 1 for RNN's, 2 for LSTM's.")]
+        public bool expose_hidden_output
         {
-            get { return m_bExposeHidden; }
-            set { m_bExposeHidden = value; }
+            get { return m_bExposeHiddenOutput; }
+            set { m_bExposeHiddenOutput = value; }
         }
 
         /// <summary>
@@ -193,7 +202,8 @@ namespace MyCaffe.param
                 m_weight_filler = p.weight_filler.Clone();
                 m_bias_filler = p.bias_filler.Clone();
                 m_bDebugInfo = p.debug_info;
-                m_bExposeHidden = p.expose_hidden;
+                m_bExposeHiddenInput = p.expose_hidden_input;
+                m_bExposeHiddenOutput = p.expose_hidden_output;
                 m_dfDropoutRatio = p.dropout_ratio;
                 m_lDropoutSeed = p.dropout_seed;
                 m_nNumLayers = p.num_layers;
@@ -221,7 +231,9 @@ namespace MyCaffe.param
                 rgChildren.Add(bias_filler.ToProto("bias_filler"));
 
             rgChildren.Add("debug_info", debug_info.ToString());
-            rgChildren.Add("expose_hidden", expose_hidden.ToString());
+            rgChildren.Add("expose_hidden", (expose_hidden_input && expose_hidden_output).ToString());
+            rgChildren.Add("expose_hidden_input", expose_hidden_input.ToString());
+            rgChildren.Add("expose_hidden_output", expose_hidden_output.ToString());
 
             if (engine != Engine.CAFFE)
             {
@@ -262,7 +274,16 @@ namespace MyCaffe.param
                 p.debug_info = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("expose_hidden")) != null)
-                p.expose_hidden = bool.Parse(strVal);
+            {
+                p.expose_hidden_input = bool.Parse(strVal);
+                p.expose_hidden_output = bool.Parse(strVal);
+            }
+
+            if ((strVal = rp.FindValue("expose_hidden_input")) != null)
+                p.expose_hidden_input = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("expose_hidden_output")) != null)
+                p.expose_hidden_output = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("dropout_ratio")) != null)
                 p.dropout_ratio = ParseDouble(strVal);
