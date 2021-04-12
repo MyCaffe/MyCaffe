@@ -7632,6 +7632,53 @@ template long Math<double>::tanh_bwd(int nCount, long hTopDiff, long hTopData, l
 template long Math<float>::tanh_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff);
 
 
+/// The gradient is set to:
+///     +1 when predicted greater than target,
+///     -1 when predicted less than target,
+///      0 when predicted equal to target.
+/// if propagate_down[1] == true.
+/// 
+/// @see [Mean Absolute Error (MAE) derivative](https://stats.stackexchange.com/questions/312737/mean-absolute-error-mae-derivative)
+template<typename T>
+__global__ void mae_loss_bwd_kernel(const int n, const T* predicted, const T* target, T* out_diff)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const T diff = (predicted[i] - target[i]);
+		out_diff[i] = (diff > 0) ? 1 : (diff < 0) ? -1 : 0;
+	}
+}
+
+template <class T>
+long Math<T>::mae_loss_bwd(int n, long hPredicted, long hTarget, long hBottomDiff)
+{
+	LONG lErr;
+	MemoryItem* pPredicted;
+	MemoryItem* pTarget;
+	MemoryItem* pBottomDiff;
+
+	if (lErr = m_pMemCol->GetData(hPredicted, &pPredicted))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hTarget, &pTarget))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBottomDiff, &pBottomDiff))
+		return lErr;
+
+	T* predicted = (T*)pPredicted->Data();
+	T* target = (T*)pTarget->Data();
+	T* bottom_diff = (T*)pBottomDiff->Data();
+
+	mae_loss_bwd_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, predicted, target, bottom_diff);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::mae_loss_bwd(int nCount, long hPredicted, long hTarget, long hBottomDiff);
+template long Math<float>::mae_loss_bwd(int nCount, long hPredicted, long hTarget, long hBottomDiff);
+
+
 /// Computes the mish non-linearity @f$ y  = x * tanh(log( 1 + exp(x) )) @f$.
 /// with                            @f$ y' = exp(x) * (4*exp(x) * x + 4*x + 6*exp(x) + 4*exp(2x) + exp(3x) + 4) / (2*exp(x) + exp(2x) + 2)^2 @f$
 /// Note, see Wolfram Alpha with 'derivative of @f$ x * tanh(log(1 + e^x)) @f$'

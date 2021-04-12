@@ -253,6 +253,8 @@ class Math
 		long tanh_fwd(int nCount, long hBottomData, long hTopData);
 		long tanh_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff);
 
+		long mae_loss_bwd(int nCount, long hPredicted, long hTarget, long hBottomDiff);
+
 		long mish_fwd(int nCount, long hBottomData, long hTopData, T fThreshold);
 		long mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, T fThreshold, int nMethod);
 

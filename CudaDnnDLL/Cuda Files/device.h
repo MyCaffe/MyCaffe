@@ -397,6 +397,8 @@ class Device
 		long cuda_tanh_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_tanh_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
+		long cuda_mae_loss_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+
 		long cuda_mish_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_mish_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
@@ -1778,8 +1780,8 @@ inline long Device<T>::GetRnnWorkspaceCount(long lInput, T* pfInput, long* plOut
 	if (lErr = verifyInput(lInput, pfInput, 4, MAX_ARG))
 		return lErr;
 
-	int nWsCount = 0;
-	int nResCount = 0;
+	size_t nWsCount = 0;
+	size_t nResCount = 0;
 	long hHandle = (long)pfInput[0];
 	long hRnnDesc = (long)pfInput[1];
 	bool bUseExtendedVersion = (pfInput[2] != 0) ? true : false;
@@ -1899,11 +1901,11 @@ inline long Device<T>::RnnForward(long lInput, T* pfInput, long* plOutput, T** p
 	nIdx++;
 	long hWorkspace = (long)pfInput[nIdx];
 	nIdx++;
-	int nWsCount = (int)pfInput[nIdx];
+	size_t nWsCount = (size_t)pfInput[nIdx];
 	nIdx++;
 	long hReserved = (long)pfInput[nIdx];
 	nIdx++;
-	int nResCount = (int)pfInput[nIdx];
+	size_t nResCount = (size_t)pfInput[nIdx];
 	nIdx++;
 	bool bTraining = (pfInput[nIdx] == 0) ? false : true;
 	nIdx++;
@@ -1974,11 +1976,11 @@ inline long Device<T>::RnnBackwardData(long lInput, T* pfInput, long* plOutput, 
 
 	long hWorkspace = (long)pfInput[nIdx];
 	nIdx++;
-	int nWsCount = (int)pfInput[nIdx];
+	size_t nWsCount = (size_t)pfInput[nIdx];
 	nIdx++;
 	long hReserved = (long)pfInput[nIdx];
 	nIdx++;
-	int nResCount = (int)pfInput[nIdx];
+	size_t nResCount = (size_t)pfInput[nIdx];
 	nIdx++;
 
 	bool bUseExtendedVersion = false;	// When true, requires that hXDesc and hYDesc be a handle to cudnnRnnDataDesc_t (created with CreateRnnDataDescEx)
@@ -2019,7 +2021,7 @@ inline long Device<T>::RnnBackwardWeights(long lInput, T* pfInput, long* plOutpu
 
 	long hWorkspace = (long)pfInput[nIdx];
 	nIdx++;
-	int nWsCount = (int)pfInput[nIdx];
+	size_t nWsCount = (size_t)pfInput[nIdx];
 	nIdx++;
 
 	long hWtDesc = (long)pfInput[nIdx];
@@ -2029,7 +2031,7 @@ inline long Device<T>::RnnBackwardWeights(long lInput, T* pfInput, long* plOutpu
 
 	long hReserved = (long)pfInput[nIdx];
 	nIdx++;
-	int nResCount = (int)pfInput[nIdx];
+	size_t nResCount = (size_t)pfInput[nIdx];
 	nIdx++;
 
 	bool bUseExtendedVersion = false;	// When true, requires that hXDesc and hYDesc be a handle to cudnnRnnDataDesc_t (created with CreateRnnDataDescEx)
@@ -2555,6 +2557,22 @@ inline long Device<T>::cuda_math_bwd(long lInput, T* pfInput, long* plOutput, T*
 	int nFunction = (int)pfInput[5];
 
 	return m_math.math_bwd(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, nFunction);
+}
+
+template <class T>
+inline long Device<T>::cuda_mae_loss_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 4, 4))
+		return lErr;
+
+	int nCount = (int)pfInput[0];
+	long hPredicted = (long)pfInput[1];
+	long hTarget = (long)pfInput[2];
+	long hBottomDiff = (long)pfInput[3];
+
+	return m_math.mae_loss_bwd(nCount, hPredicted, hTarget, hBottomDiff);
 }
 
 template <class T>
