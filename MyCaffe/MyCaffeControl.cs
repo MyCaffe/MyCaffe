@@ -112,6 +112,7 @@ namespace MyCaffe
         /// </summary>
         public event EventHandler<TestingIterationArgs<T>> OnTestingIteration;
 
+
         /// <summary>
         /// The MyCaffeControl constructor.
         /// </summary>
@@ -439,6 +440,25 @@ namespace MyCaffe
         {
             m_solver.OnTest += onTest;
         }
+
+        /// <summary>
+        /// Sets the root solver's onStart event function triggered on the start of each training pass.
+        /// </summary>
+        /// <param name="onTrainingStart">Specifies the event handler called when testing.</param>
+        public void SetOnTrainingStartOverride(EventHandler onTrainingStart)
+        {
+            m_solver.OnStart += onTrainingStart;
+        }
+
+        /// <summary>
+        /// Sets the root solver's onTestingStart event function triggered on the start of each testing pass.
+        /// </summary>
+        /// <param name="onTestingStart">Specifies the event handler called when testing.</param>
+        public void SetOnTestingStartOverride(EventHandler onTestingStart)
+        {
+            m_solver.OnTestStart += onTestingStart;
+        }
+
 
         /// <summary>
         /// Adds a cancel override.
