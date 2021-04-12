@@ -9,7 +9,7 @@ using MyCaffe.param;
 namespace MyCaffe.layers
 {
     /// <summary>
-    /// Computes the mean absolute error as a loss which computes:
+    /// The MAELossLayer computes the mean absolute error as a loss which computes:
     /// @f$ L(y, y\hat) = \frac{1}{N} \sum_{i=0}^{N} |y - \hat{y}{i}| @f$ where @f$ \hat{y} @f$ is the predicted value.
     /// </summary>
     /// <remarks>
