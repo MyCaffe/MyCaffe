@@ -127,6 +127,7 @@
     <Compile Include="layers\SoftmaxCrossEntropyLossLayer.cs" />
     <Compile Include="layers\ClipLayer.cs" />
     <Compile Include="layers\MishLayer.cs" />
+    <Compile Include="layers\MAELossLayer.cs" />
     <Compile Include="layers\SwishLayer.cs" />
     <Compile Include="layers\MemoryDataLayer.cs" />
     <Compile Include="layers\DebugLayer.cs" />
@@ -202,6 +203,7 @@
     <Compile Include="param.beta\TransposeParameter.cs" />
     <Compile Include="param\ConstantParameter.cs" />
     <Compile Include="param.beta\GatherParameter.cs" />
+    <Compile Include="param\MAELossLayer.cs" />
     <Compile Include="param\MathParameter.cs" />
     <Compile Include="param\ImageDataParameter.cs" />
     <Compile Include="param\DataLabelMappingParameter.cs" />
