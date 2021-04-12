@@ -155,7 +155,7 @@ namespace MyCaffe.layers
         /// <param name="colBottom">bottom input blob vector (length 2)
         ///  -# @f$ (N \times C \times H \times W) @f$
         ///     the predictions @f$ x @f$, a blob with values in
-        ///     @f$ [-\infty, +\infty] @f$ indicating the predicted score for eachy of
+        ///     @f$ [-\infty, +\infty] @f$ indicating the predicted score for each of
         ///     the K = CHW classes.  This layer maps these scores to a
         ///     probability distribution over classes using the softmax function @f$
         ///     \hat{p}_{nk} = \exp(x_{nk}) /
