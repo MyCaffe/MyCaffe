@@ -2342,7 +2342,7 @@ template long Memory<float>::GetRnnParamCountEx(long hHandle, long hRnnDesc, lon
 
 
 template <class T>
-long Memory<T>::GetRnnWorkspaceCount(long hHandle, long hRnnDesc, long hXDesc, int* pnWsCount, int* pnResCount)
+long Memory<T>::GetRnnWorkspaceCount(long hHandle, long hRnnDesc, long hXDesc, size_t* pnWsCount, size_t* pnResCount)
 {
 	LONG lErr;
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
@@ -2356,12 +2356,12 @@ long Memory<T>::GetRnnWorkspaceCount(long hHandle, long hRnnDesc, long hXDesc, i
 	if (lErr = cudnnGetRNNWorkspaceSize(cudnn, desc, descX->MaxSeqLen(), descX->SeqTensors(), &sizeInBytes))
 		return lErr;
 
-	int nWsCount = (int)(sizeInBytes / sizeof(T));
+	size_t nWsCount = (size_t)(sizeInBytes / sizeof(T));
 
 	if (lErr = cudnnGetRNNTrainingReserveSize(cudnn, desc, descX->MaxSeqLen(), descX->SeqTensors(), &sizeInBytes))
 		return lErr;
 
-	int nResCount = (int)(sizeInBytes / sizeof(T));
+	size_t nResCount = (size_t)(sizeInBytes / sizeof(T));
 
 	*pnWsCount = nWsCount;
 	*pnResCount = nResCount;
@@ -2369,12 +2369,12 @@ long Memory<T>::GetRnnWorkspaceCount(long hHandle, long hRnnDesc, long hXDesc, i
 	return 0;
 }
 
-template long Memory<double>::GetRnnWorkspaceCount(long hHandle, long hRnnDesc, long hXDesc, int* pnWsCount, int* pnResCount);
-template long Memory<float>::GetRnnWorkspaceCount(long hHandle, long hRnnDesc, long hXDesc, int* pnWsCount, int* pnResCount);
+template long Memory<double>::GetRnnWorkspaceCount(long hHandle, long hRnnDesc, long hXDesc, size_t* pnWsCount, size_t* pnResCount);
+template long Memory<float>::GetRnnWorkspaceCount(long hHandle, long hRnnDesc, long hXDesc, size_t* pnWsCount, size_t* pnResCount);
 
 
 template <class T>
-long Memory<T>::GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, long hXDesc, int* pnWsCount, int* pnResCount)
+long Memory<T>::GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, long hXDesc, size_t* pnWsCount, size_t* pnResCount)
 {
 	LONG lErr;
 	cudnnDataType_t type = (sizeof(T) == 4) ? CUDNN_DATA_FLOAT : CUDNN_DATA_DOUBLE;
@@ -2431,7 +2431,7 @@ long Memory<T>::GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, long hXDesc,
 	}
 
 	size_t sizeInBytes;
-	int nWsCount = 0;
+	size_t nWsCount = 0;
 
 	if (!lErr)
 	{
@@ -2439,7 +2439,7 @@ long Memory<T>::GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, long hXDesc,
 
 		if (!lErr)
 		{
-			nWsCount = (int)(sizeInBytes / sizeof(T)) + 1;
+			nWsCount = (size_t)(sizeInBytes / sizeof(T)) + 1;
 
 			lErr = cudnnGetRNNTrainingReserveSize(cudnn, desc, nMaxSeqLen, rgDescX, &sizeInBytes);
 		}
@@ -2456,7 +2456,7 @@ long Memory<T>::GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, long hXDesc,
 	if (lErr)
 		return lErr;
 
-	int nResCount = (int)(sizeInBytes / sizeof(T)) + 1;
+	size_t nResCount = (size_t)(sizeInBytes / sizeof(T)) + 1;
 
 	*pnWsCount = nWsCount;
 	*pnResCount = nResCount;
@@ -2464,8 +2464,8 @@ long Memory<T>::GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, long hXDesc,
 	return 0;
 }
 
-template long Memory<double>::GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, long hXDesc, int* pnWsCount, int* pnResCount);
-template long Memory<float>::GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, long hXDesc, int* pnWsCount, int* pnResCount);
+template long Memory<double>::GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, long hXDesc, size_t* pnWsCount, size_t* pnResCount);
+template long Memory<float>::GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, long hXDesc, size_t* pnWsCount, size_t* pnResCount);
 
 
 template <class T>
@@ -2716,7 +2716,7 @@ template long Memory<float>::GetRnnLinLayerParamsEx(long hHandle, long hRnnDesc,
 
 
 template <class T>
-long Memory<T>::RnnForward(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspaceData, int nWsCount, long hReservedData, int nResCount, bool bTraining)
+long Memory<T>::RnnForward(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspaceData, size_t nWsCount, long hReservedData, size_t nResCount, bool bTraining)
 {
 	LONG lErr;
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
@@ -2822,11 +2822,11 @@ long Memory<T>::RnnForward(long hHandle, long hRnnDesc, long hXDesc, long hXData
 	return lErr;
 }
 
-template long Memory<double>::RnnForward(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspace, int nWsCount, long hReserved, int nResCount, bool bTraining);
-template long Memory<float>::RnnForward(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspace, int nWsCount, long hReserved, int nResCount, bool bTraining);
+template long Memory<double>::RnnForward(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspace, size_t nWsCount, long hReserved, size_t nResCount, bool bTraining);
+template long Memory<float>::RnnForward(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspace, size_t nWsCount, long hReserved, size_t nResCount, bool bTraining);
 
 template <class T>
-long Memory<T>::RnnForwardEx(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspaceData, int nWsCount, long hReservedData, int nResCount, bool bTraining)
+long Memory<T>::RnnForwardEx(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspaceData, size_t nWsCount, long hReservedData, size_t nResCount, bool bTraining)
 {
 	LONG lErr;
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
@@ -2943,12 +2943,12 @@ long Memory<T>::RnnForwardEx(long hHandle, long hRnnDesc, long hXDesc, long hXDa
 	return lErr;
 }
 
-template long Memory<double>::RnnForwardEx(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspace, int nWsCount, long hReserved, int nResCount, bool bTraining);
-template long Memory<float>::RnnForwardEx(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspace, int nWsCount, long hReserved, int nResCount, bool bTraining);
+template long Memory<double>::RnnForwardEx(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspace, size_t nWsCount, long hReserved, size_t nResCount, bool bTraining);
+template long Memory<float>::RnnForwardEx(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspace, size_t nWsCount, long hReserved, size_t nResCount, bool bTraining);
 
 
 template <class T>
-long Memory<T>::RnnBackwardData(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspaceData, int nWsCount, long hReservedData, int nResCount)
+long Memory<T>::RnnBackwardData(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspaceData, size_t nWsCount, long hReservedData, size_t nResCount)
 {
 	LONG lErr;
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
@@ -3045,11 +3045,11 @@ long Memory<T>::RnnBackwardData(long hHandle, long hRnnDesc, long hYDesc, long h
 	return lErr;
 }
 
-template long Memory<double>::RnnBackwardData(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspace, int nWsCount, long hReserved, int nResCount);
-template long Memory<float>::RnnBackwardData(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspace, int nWsCount, long hReserved, int nResCount);
+template long Memory<double>::RnnBackwardData(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspace, size_t nWsCount, long hReserved, size_t nResCount);
+template long Memory<float>::RnnBackwardData(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspace, size_t nWsCount, long hReserved, size_t nResCount);
 
 template <class T>
-long Memory<T>::RnnBackwardDataEx(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspaceData, int nWsCount, long hReservedData, int nResCount)
+long Memory<T>::RnnBackwardDataEx(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspaceData, size_t nWsCount, long hReservedData, size_t nResCount)
 {
 	LONG lErr;
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
@@ -3146,12 +3146,12 @@ long Memory<T>::RnnBackwardDataEx(long hHandle, long hRnnDesc, long hYDesc, long
 	return lErr;
 }
 
-template long Memory<double>::RnnBackwardDataEx(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspace, int nWsCount, long hReserved, int nResCount);
-template long Memory<float>::RnnBackwardDataEx(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspace, int nWsCount, long hReserved, int nResCount);
+template long Memory<double>::RnnBackwardDataEx(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspace, size_t nWsCount, long hReserved, size_t nResCount);
+template long Memory<float>::RnnBackwardDataEx(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspace, size_t nWsCount, long hReserved, size_t nResCount);
 
 
 template <class T>
-long Memory<T>::RnnBackwardWeights(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspaceData, int nWsCount, long hWtDesc, long hWtDiff, long hReservedData, int nResCount)
+long Memory<T>::RnnBackwardWeights(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspaceData, size_t nWsCount, long hWtDesc, long hWtDiff, long hReservedData, size_t nResCount)
 {
 	LONG lErr;
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
@@ -3207,11 +3207,11 @@ long Memory<T>::RnnBackwardWeights(long hHandle, long hRnnDesc, long hXDesc, lon
 	return lErr;
 }
 
-template long Memory<double>::RnnBackwardWeights(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspace, int nWsCount, long hWtDesc, long hWtDiff, long hReserved, int nResCount);
-template long Memory<float>::RnnBackwardWeights(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspace, int nWsCount, long hWtDesc, long hWtDiff, long hReserved, int nResCount);
+template long Memory<double>::RnnBackwardWeights(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspace, size_t nWsCount, long hWtDesc, long hWtDiff, long hReserved, size_t nResCount);
+template long Memory<float>::RnnBackwardWeights(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspace, size_t nWsCount, long hWtDesc, long hWtDiff, long hReserved, size_t nResCount);
 
 template <class T>
-long Memory<T>::RnnBackwardWeightsEx(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspaceData, int nWsCount, long hWtDesc, long hWtDiff, long hReservedData, int nResCount)
+long Memory<T>::RnnBackwardWeightsEx(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspaceData, size_t nWsCount, long hWtDesc, long hWtDiff, long hReservedData, size_t nResCount)
 {
 	LONG lErr;
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
@@ -3263,7 +3263,7 @@ long Memory<T>::RnnBackwardWeightsEx(long hHandle, long hRnnDesc, long hXDesc, l
 	return lErr;
 }
 
-template long Memory<double>::RnnBackwardWeightsEx(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspace, int nWsCount, long hWtDesc, long hWtDiff, long hReserved, int nResCount);
-template long Memory<float>::RnnBackwardWeightsEx(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspace, int nWsCount, long hWtDesc, long hWtDiff, long hReserved, int nResCount);
+template long Memory<double>::RnnBackwardWeightsEx(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspace, size_t nWsCount, long hWtDesc, long hWtDiff, long hReserved, size_t nResCount);
+template long Memory<float>::RnnBackwardWeightsEx(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspace, size_t nWsCount, long hWtDesc, long hWtDiff, long hReserved, size_t nResCount);
 
 //end memory.cu
