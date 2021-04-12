@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -2582,6 +2583,93 @@ namespace MyCaffe.basecode
             }
 
             return rgData;
+        }
+    }
+
+    /// <summary>
+    /// The SimpleDatumCollection holds a named array of SimpleDatums
+    /// </summary>
+    public class SimpleDatumCollection : IEnumerable<SimpleDatum>
+    {
+        string m_strName;
+        SimpleDatum[] m_rgItems = null;
+        List<int> m_rgShape;
+        object m_tag = null;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of items in the array.</param>
+        /// <param name="strName">Optionally, specifies the name of the array (default = "").</param>
+        /// <param name="rgShape">Optionally, specifies the shape of the items within the array.</param>
+        public SimpleDatumCollection(int nCount, string strName = "", List<int> rgShape = null)
+        {
+            m_strName = strName;
+            m_rgItems = new SimpleDatum[nCount];
+
+            m_rgShape = new List<int>() { nCount };
+
+            if (rgShape != null)
+                m_rgShape.AddRange(rgShape);
+        }
+
+        /// <summary>
+        /// Get/set a user defined value.
+        /// </summary>
+        public object Tag
+        {
+            get { return m_tag; }
+            set { m_tag = value; }
+        }
+
+        /// <summary>
+        /// Returns the shape of the items within the array (including the array count as the first element).
+        /// </summary>
+        public List<int> Shape
+        {
+            get { return m_rgShape; }
+        }
+
+        /// <summary>
+        /// Get/set the name of the array.
+        /// </summary>
+        public string Name
+        {
+            get { return m_strName; }
+            set { m_strName = value; }
+        }
+
+        /// <summary>
+        /// Get the number of items in the array.
+        /// </summary>
+        public int Count
+        {
+            get { return m_rgItems.Count(); }
+        }
+
+        /// <summary>
+        /// Get/set an item in the array at a specified index.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index of the item to get or set.</param>
+        /// <returns>The item at the index is returned.</returns>
+        public SimpleDatum this[int nIdx]
+        {
+            get { return m_rgItems[nIdx]; }
+            set { m_rgItems[nIdx] = value; }
+        }
+
+        /// <summary>
+        /// Get the enumerator for the collection.
+        /// </summary>
+        /// <returns>The enumerator for the collection is returned.</returns>
+        public IEnumerator<SimpleDatum> GetEnumerator()
+        {
+            return (IEnumerator<SimpleDatum>)m_rgItems.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return m_rgItems.GetEnumerator();
         }
     }
 }
