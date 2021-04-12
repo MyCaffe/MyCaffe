@@ -50,9 +50,15 @@ namespace MyCaffe.layers
 
         /// <summary>
         /// Whether the layer's hidden state at the first and last timesteps
-        /// are layer inputs and outputs, respectively.
+        /// are layer inputs.
         /// </summary>
-        bool m_bExposeHidden;
+        bool m_bExposeHiddenInput;
+
+        /// <summary>
+        /// Whether the layer's hidden state at the first and last timesteps
+        /// are layer outputs.
+        /// </summary>
+        bool m_bExposeHiddenOutput;
 
         BlobCollection<T> m_colRecurInputBlobs = new BlobCollection<T>();
         BlobCollection<T> m_colRecurOutputBlobs = new BlobCollection<T>();
@@ -85,9 +91,9 @@ namespace MyCaffe.layers
         long m_hWeightDesc;
         long m_hRnnDesc;
         long m_hWorkspace;
-        int m_nWorkspaceCount;
+        ulong m_nWorkspaceCount;
         long m_hReserved;
-        int m_nReservedCount;
+        ulong m_nReservedCount;
         RNN_MODE m_rnnMode;
         bool m_bUseTensors = false;
 
@@ -221,13 +227,14 @@ namespace MyCaffe.layers
 
             m_log.WriteLine("Initializing recurrent layer: assuming input batch contains " + m_nT.ToString() + " timesteps of " + m_nN.ToString() + " independent streams.");
 
-            m_log.CHECK_EQ(colBottom[1].num_axes, 2, "Bottom[1] must have exactly 2 axes -- (#timesteps, #streams)");
+            m_log.CHECK_EQ(colBottom[1].num_true_axes, 2, "Bottom[1] must have exactly 2 axes -- (#timesteps, #streams)");
             m_log.CHECK_EQ(m_nT, colBottom[1].shape(0), "The bottom[1].shape(0) must equal T = " + m_nT.ToString());
             m_log.CHECK_EQ(m_nN, colBottom[1].shape(1), "The bottom[1].shape(1) must equal N = " + m_nN.ToString());
 
             // If expose_hidden is set, we take as input and produce as output
             // the hidden state blobs at the first and last timesteps.
-            m_bExposeHidden = m_param.recurrent_param.expose_hidden;
+            m_bExposeHiddenInput = m_param.recurrent_param.expose_hidden_input;
+            m_bExposeHiddenOutput = m_param.recurrent_param.expose_hidden_output;
 
             if (m_param.recurrent_param.useCudnn())
                 layerSetUpCuDnn(colBottom, colTop);
@@ -344,8 +351,8 @@ namespace MyCaffe.layers
 
                 // Setup the workspace and reserved memory.
                 m_nWorkspaceCount = m_cuda.GetRnnWorkspaceCount(m_hCuDnn, m_hRnnDesc, m_hXDesc, out m_nReservedCount);
-                m_hWorkspace = m_cuda.AllocMemory(m_nWorkspaceCount);
-                m_hReserved = m_cuda.AllocMemory(m_nReservedCount);
+                m_hWorkspace = m_cuda.AllocMemory((long)m_nWorkspaceCount);
+                m_hReserved = m_cuda.AllocMemory((long)m_nReservedCount);
 
                 // Fill the weights.
                 if (!shareParameter(m_blobWts, rgWtShape))
@@ -423,7 +430,7 @@ namespace MyCaffe.layers
             m_log.CHECK_EQ(nNumRecurBlobs, rgRecurOutputNames.Count, "The number of recurrent input names must equal the number of recurrent output names.");
 
             // If provided, bottom[2] is a static input to the recurrent net.
-            int nNumHiddenExposed = (m_bExposeHidden) ? nNumRecurBlobs : 0;
+            int nNumHiddenExposed = (m_bExposeHiddenOutput || m_bExposeHiddenInput) ? nNumRecurBlobs : 0;
             m_bStaticInput = (colBottom.Count > 2 + nNumHiddenExposed) ? true : false;
 
             if (m_bStaticInput)
@@ -588,7 +595,7 @@ namespace MyCaffe.layers
             m_log.CHECK_GE(colBottom[0].num_axes, 2, "bottom[0] must have at least 2 axes -- (#timesteps, #streams, ...)");
             m_log.CHECK_EQ(m_nT, colBottom[0].shape(0), "input number of timesteps changed.");
             m_nN = colBottom[0].shape(1);
-            m_log.CHECK_EQ(colBottom[1].num_axes, 2, "bottom[1] must have exactly 2 axes -- (#timesteps, #streams)");
+            m_log.CHECK_EQ(colBottom[1].num_true_axes, 2, "bottom[1] must have exactly 2 axes -- (#timesteps, #streams)");
             m_log.CHECK_EQ(m_nT, colBottom[1].shape(0), "bottom[1].shape(0) should equal the timesteps T (" + m_nT.ToString() + ")");
             m_log.CHECK_EQ(m_nN, colBottom[1].shape(1), "bottom[1].shape(1) should equal the streams N (" + m_nN + ")");
 
@@ -603,6 +610,17 @@ namespace MyCaffe.layers
             colTop[0].ReshapeLike(m_blobY);
             colTop[0].ShareData(m_blobY);
             colTop[0].ShareDiff(m_blobY);
+
+            if (m_param.recurrent_param.expose_hidden_output)
+            {
+                colTop[1].ReshapeLike(m_blobHy);
+                colTop[1].ShareData(m_blobHy);
+                colTop[1].ShareDiff(m_blobHy);
+
+                colTop[2].ReshapeLike(m_blobCy);
+                colTop[2].ShareData(m_blobCy);
+                colTop[2].ShareDiff(m_blobCy);
+            }
         }
 
         private void reshapeCaffe(BlobCollection<T> colBottom, BlobCollection<T> colTop)
@@ -638,7 +656,7 @@ namespace MyCaffe.layers
                 m_blobXStaticInputBlob.ShareDiff(colBottom[2]);
             }
 
-            if (m_bExposeHidden)
+            if (m_bExposeHiddenInput)
             {
                 int nBottomOffset = 2 + nStaticInput;
                 for (int i = nBottomOffset, j = 0; i < colBottom.Count; i++, j++)
@@ -655,7 +673,7 @@ namespace MyCaffe.layers
                 colTop[i].ShareDiff(m_colOutputBlobs[i]);
             }
 
-            if (m_bExposeHidden)
+            if (m_bExposeHiddenOutput)
             {
                 int nTopOffset = m_colOutputBlobs.Count;
                 for (int i = nTopOffset, j = 0; i < colTop.Count; i++, j++)
@@ -685,7 +703,7 @@ namespace MyCaffe.layers
             {
                 int nMinBottoms = 2;
 
-                if (m_param.recurrent_param.expose_hidden)
+                if (m_param.recurrent_param.expose_hidden_input)
                 {
                     List<string> rgInputs = new List<string>();
                     RecurrentInputBlobNames(rgInputs);
@@ -705,15 +723,23 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Returns the exact number of required top (output) Blobs.
+        /// Returns the min number of required top (output) Blobs.
         /// </summary>
-        public override int ExactNumTopBlobs
+        public override int MinTopBlobs
+        {
+            get { return 1; }
+        }
+
+        /// <summary>
+        /// Returns the max number of required top (output) Blobs.
+        /// </summary>
+        public override int MaxTopBlobs
         {
             get
             {
-                int nNumTops = 1;
+                int nNumTops = MinTopBlobs;
 
-                if (m_param.recurrent_param.expose_hidden)
+                if (m_param.recurrent_param.expose_hidden_output)
                 {
                     List<string> rgOutputs = new List<string>();
                     RecurrentOutputBlobNames(rgOutputs);
@@ -834,10 +860,23 @@ namespace MyCaffe.layers
         {
             double dfClip = Utility.ConvertVal<T>(colBottom[1].GetData(0));
 
-            if (dfClip > 0)
+            if (dfClip > 0 || colBottom.Count > 2)
             {
-                m_blobCx.CopyFrom(m_blobCy);
-                m_blobHx.CopyFrom(m_blobHy);
+                // Allow for setting initial state used with cuDnn LSTM
+                if (colBottom.Count > 2)
+                {
+                    m_log.CHECK_EQ(colBottom[2].count(), m_blobCy.count(), "The bottom(2) should have the same shape as 'cy' which has a shape = " + m_blobCy.shape_string);
+                    m_blobCy.CopyFrom(colBottom[2]);
+                }
+
+                if (colBottom.Count > 3)
+                {
+                    m_log.CHECK_EQ(colBottom[3].count(), m_blobHy.count(), "The bottom(3) should have the same shape as 'hy' which has a shape = " + m_blobHy.shape_string);
+                    m_blobHy.CopyFrom(colBottom[3]);
+                }
+
+                m_blobCx.CopyFrom(m_blobCy); // initialized with previous state in LayerSetup when colBottom.Count > 2
+                m_blobHx.CopyFrom(m_blobHy); // initialized with previous state in LayerSetup when colBottom.Count > 3
             }
 
             m_cuda.RnnForward(m_hCuDnn,
@@ -872,7 +911,7 @@ namespace MyCaffe.layers
 
             m_log.CHECK_EQ(m_colRecurInputBlobs.Count, m_colRecurOutputBlobs.Count, "The recurrent input and output blobs must have the same count.");
 
-            if (!m_bExposeHidden)
+            if (!m_bExposeHiddenInput)
             {
                 for (int i = 0; i < m_colRecurInputBlobs.Count; i++)
                 {
@@ -886,7 +925,7 @@ namespace MyCaffe.layers
 
             m_unrolledNet.ForwardFromTo(0, m_nLastLayerIndex);
 
-            if (m_bExposeHidden)
+            if (m_bExposeHiddenOutput)
             {
                 int nTopOffset = m_colOutputBlobs.Count;
 
