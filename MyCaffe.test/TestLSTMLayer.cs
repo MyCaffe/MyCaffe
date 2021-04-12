@@ -996,9 +996,9 @@ namespace MyCaffe.test
             long hDropoutDesc = 0;
             long hStates = 0;
             long hWorkspace = 0;
-            int nWorkspaceCount = 0;
+            ulong nWorkspaceCount = 0;
             long hReserved = 0;
-            int nReservedCount = 0;
+            ulong nReservedCount = 0;
             Blob<T> blobX = null;
             Blob<T> blobHx = null;
             Blob<T> blobCx = null;
@@ -1078,8 +1078,8 @@ namespace MyCaffe.test
 
                 // Setup the workspace and reserved memory.
                 nWorkspaceCount = m_cuda.GetRnnWorkspaceCount(hCuDnn, hRnnDesc, hXDesc, out nReservedCount);
-                hWorkspace = m_cuda.AllocMemory(nWorkspaceCount);
-                hReserved = m_cuda.AllocMemory(nReservedCount);
+                hWorkspace = m_cuda.AllocMemory((long)nWorkspaceCount);
+                hReserved = m_cuda.AllocMemory((long)nReservedCount);
 
 
                 //-------------------------------------------------
