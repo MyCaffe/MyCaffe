@@ -290,7 +290,7 @@ namespace MyCaffe.param
             /// </summary>
             LRN,
             /// <summary>
-            /// Initializes a parameter for the MAELossLayer.
+            /// Initializes a parameter for the MAELossLayer, used with time series.
             /// </summary>
             MAE_LOSS,
             /// <summary>
