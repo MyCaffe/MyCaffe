@@ -98,14 +98,17 @@ namespace MyCaffe.layers.beta
             m_nDstStartIdx2 = Utility.CanonicalAxisIndex(m_param.merge_param.dst_start_idx2, colBottom[1].shape()[m_nCopyAxis]);
             m_nCopyDim2 = m_param.merge_param.copy_dim2;
 
-            m_nSrcSpatialDim1 = Utility.GetSpatialDim(colBottom[0].shape(), Math.Max(m_nCopyAxis, m_nOrderMajorAxis) + 2);
-            m_nSrcSpatialDim2 = Utility.GetSpatialDim(colBottom[1].shape(), Math.Max(m_nCopyAxis, m_nOrderMajorAxis) + 2);
+            m_nSrcSpatialDim1 = Utility.GetSpatialDim(colBottom[0].shape(), Math.Max(m_nCopyAxis, m_nOrderMajorAxis) + 1);
+            m_nSrcSpatialDim2 = Utility.GetSpatialDim(colBottom[1].shape(), Math.Max(m_nCopyAxis, m_nOrderMajorAxis) + 1);
             m_nDstSpatialDim = m_param.merge_param.dst_spatialdim;
             if (m_nDstSpatialDim <= 0)
                 m_nDstSpatialDim = 1;
 
             m_nSrcSpatialDimStartIdx1 = Utility.CanonicalAxisIndex(m_param.merge_param.src_spatialdim_start_idx1, m_nSrcSpatialDim1);
             m_nSrcSpatialDimStartIdx2 = Utility.CanonicalAxisIndex(m_param.merge_param.src_spatialdim_start_idx1, m_nSrcSpatialDim2);
+            m_nDstSpatialDimStartIdx1 = Utility.CanonicalAxisIndex(m_param.merge_param.dst_spatialdim_start_idx1, m_nDstSpatialDim);
+            m_nDstSpatialDimStartIdx2 = Utility.CanonicalAxisIndex(m_param.merge_param.dst_spatialdim_start_idx1, m_nDstSpatialDim);
+            m_nSpatialDimCopyCount = m_param.merge_param.spatialdim_copy_count;
 
             m_log.CHECK_GT(m_nCopyCount, 0, "The copy_count must be > 0!");
 
