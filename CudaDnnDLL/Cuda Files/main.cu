@@ -440,6 +440,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_COPY_SEQUENCE:
 			return m_device.cuda_copy_sequence(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_COPY_SEQUENCE2:
+			return m_device.cuda_copy_sequence2(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_COPY_EXPAND:
 			return m_device.cuda_copy_expand(lCount, pfInput, plCount, ppfOutput);
 
@@ -1388,6 +1391,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_COPY_SEQUENCE:
 		return "CUDA_FN_COPY_SEQUENCE";
+
+	case CUDA_FN_COPY_SEQUENCE2:
+		return "CUDA_FN_COPY_SEQUENCE2";
 
 	case CUDA_FN_COPY_EXPAND:
 		return "CUDA_FN_COPY_EXPAND";

@@ -150,6 +150,7 @@ class Math
 		long sort(int nCount, long hY);
 		long copy_batch(int n, int nNum, int nDim, long hSrcData, long hSrcLabel, int nDstCount, long hDstCache, long hWorkDevData, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, long hWorkHostData);
 		long copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrcLabel, int nSrcCacheCount, long hSrcCache, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, bool bOutputLabels, int nTopCount, long* rghTop, int* rgnTopCount, long hWorkHostData, bool bCombinePositiveAndNegative, int nRandomSeed);
+		long copy_sequence(int n, long hSrc, int nSrcStep, int nSrcStartIdx, int nCopyCount, int nCopyDim, long hDst, int nDstStep, int nDstStartIdx, int nSrcSpatialDim, int nDstSpatialDim, int nSrcSpatialDimStartIdx, int nDstSpatialDimStartIdx,  int nSpatialDimCount);
 		long copy_expand(int n, int nNum, int nDim, long hX, long hA);
 
 		long gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, __half* a, __half* b, T fBeta, __half* c);

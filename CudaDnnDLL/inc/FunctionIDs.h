@@ -189,6 +189,7 @@ const int CUDA_FN_SORT = 205;
 const int CUDA_FN_COPY_BATCH = 206;
 const int CUDA_FN_COPY_SEQUENCE = 207;
 const int CUDA_FN_COPY_EXPAND = 208;
+const int CUDA_FN_COPY_SEQUENCE2 = 209;
 
 const int CUDA_FN_GEMM2 = 219;
 const int CUDA_FN_GEMM = 220;

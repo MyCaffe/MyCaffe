@@ -306,6 +306,7 @@ class Device
 		long cuda_sort(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_copy_batch(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_copy_sequence(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_copy_sequence2(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_copy_expand(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
 		long cuda_gemm(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -4743,6 +4744,48 @@ inline long Device<T>::cuda_copy_sequence(long lInput, T* pfInput, long* plOutpu
 	return lErr;
 }
 
+template <class T>
+inline long Device<T>::cuda_copy_sequence2(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 11, 14))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	long hSrc = (long)pfInput[1];
+	int nSrcStep = (int)pfInput[2];
+	int nSrcStartIdx = (int)pfInput[3];
+	int nCopyCount = (int)pfInput[4];
+	int nCopyDim = (int)pfInput[5];
+	long hDst = (long)pfInput[6];
+	int nDstStep = (int)pfInput[7];
+	int nDstStartIdx = (int)pfInput[8];
+	int nSrcSpatialDim = (int)pfInput[9];
+	int nDstSpatialDim = (int)pfInput[10];
+	int nSrcSpatialDimStartIdx = 0;
+	int nDstSpatialDimStartIdx = 0;
+	int nSpatialDimCount = -1;
+
+	if (lInput > 11)
+	{
+		nSrcSpatialDimStartIdx = (int)pfInput[11];
+		if (nSrcSpatialDimStartIdx < 0)
+			nSrcSpatialDimStartIdx += nSrcSpatialDim;
+	}
+
+	if (lInput > 12)
+	{
+		nDstSpatialDimStartIdx = (int)pfInput[12];
+		if (nDstSpatialDimStartIdx < 0)
+			nDstSpatialDimStartIdx += nDstSpatialDim;
+	}
+
+	if (lInput > 13)
+		nSpatialDimCount = (int)pfInput[13];
+
+	return m_math.copy_sequence(n, hSrc, nSrcStep, nSrcStartIdx, nCopyCount, nCopyDim, hDst, nDstStep, nDstStartIdx, nSrcSpatialDim, nDstSpatialDim, nSrcSpatialDimStartIdx, nDstSpatialDimStartIdx, nSpatialDimCount);
+}
 
 template <class T>
 inline long Device<T>::cuda_copy_expand(long lInput, T* pfInput, long* plOutput, T** ppfOutput)

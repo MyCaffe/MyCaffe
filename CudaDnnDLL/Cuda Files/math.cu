@@ -1009,6 +1009,61 @@ template long Math<double>::copy_sequence(int nK, int nNum, int nDim, long hSrcD
 template long Math<float>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrcLabel, int nSrcCacheCount, long hSrcCache, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, bool bOutputLabels, int nTopCount, long* rghTop, int* rgnTopCount, long hWorkHostData, bool bCombinePositiveAndNegative, int nRandomSeed);
 
 
+template <class T>
+long Math<T>::copy_sequence(int n, long hSrc, int nSrcStep, int nSrcStartIdx, int nCopyCount, int nCopyDim, long hDst, int nDstStep, int nDstStartIdx, int nSrcSpatialDim, int nDstSpatialDim, int nSrcSpatialDimStartIdx, int nDstSpatialDimStartIdx, int nSpatialDimCount)
+{
+	LONG lErr;
+	MemoryItem* pSrc;
+	MemoryItem* pDst;
+
+	if (lErr = m_pMemCol->GetData(hSrc, &pSrc))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hDst, &pDst))
+		return lErr;
+
+	T* src = (T*)pSrc->Data();
+	T* dst = (T*)pDst->Data();
+
+	src += (nSrcStartIdx * nSrcSpatialDim);
+	dst += (nDstStartIdx * nDstSpatialDim);
+
+	for (int i = 0; i < nCopyCount; i++)
+	{
+		T* dst1 = dst;
+		T* src1 = src;
+
+		if (nSpatialDimCount > 0)
+		{
+			if (nSrcSpatialDimStartIdx > 0)
+				src1 += nSrcSpatialDimStartIdx;
+
+			if (nDstSpatialDimStartIdx > 0)
+				dst1 += nDstSpatialDimStartIdx;
+		}
+
+		size_t nCount = sizeof(T) * nCopyDim;
+
+		if (nSpatialDimCount > 0)
+			nCount *= nSpatialDimCount;
+		else
+			nCount *= nSrcSpatialDim;
+
+		lErr = cudaMemcpy(dst1, src1, nCount, cudaMemcpyDeviceToDevice);
+		if (lErr != 0)
+			return lErr;
+
+		src += (nSrcStep * nSrcSpatialDim);
+		dst += (nDstStep * nDstSpatialDim);
+	}
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::copy_sequence(int n, long hSrc, int nSrcStep, int nSrcStartIdx, int nCopyCount, int nCopyDim, long hDst, int nDstStep, int nDstStartIdx, int nSrcSpatialDim, int nDstSpatialDim, int nSrcSpatialDimStartIdx, int nDstSpatialDimStartIdx, int nSpatialDimCount);
+template long Math<float>::copy_sequence(int n, long hSrc, int nSrcStep, int nSrcStartIdx, int nCopyCount, int nCopyDim, long hDst, int nDstStep, int nDstStartIdx, int nSrcSpatialDim, int nDstSpatialDim, int nSrcSpatialDimStartIdx, int nDstSpatialDimStartIdx, int nSpatialDimCount);
+
+
 template <typename T>
 __global__ void copy_expand_kernel(const int nCount, const int dim, const T* x, T* y)
 {
