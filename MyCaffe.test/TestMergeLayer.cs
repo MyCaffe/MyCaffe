@@ -371,7 +371,7 @@ namespace MyCaffe.test
             p.merge_param.dst_spatialdim_start_idx1 = 0;
             p.merge_param.src_spatialdim_start_idx1 = -1;   // get last item in first inputs spatial data.
             p.merge_param.src_spatialdim_start_idx2 = 0;    // get first (and only) item in second input spatial data.
-            p.merge_param.dst_spatialdim_start_idx1 = 0;    // place first spatial data item at 0 spatial index (only one exists in dst)
+            p.merge_param.dst_spatialdim_start_idx1 = 0;    // place first spatial data item at the 0 spatial index (one exists in dst)
             p.merge_param.dst_spatialdim_start_idx2 = 0;    // place second spatial data item at 0 spatial index (only one exists in dst)
             p.merge_param.spatialdim_copy_count = 1;        // only copy 1 spatial item
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
@@ -394,15 +394,15 @@ namespace MyCaffe.test
             
             for (int i = 0; i < nBatch; i++)
             {
-                int nIdx1 = i * nSeq1;
-                int nIdx2 = i * nSeq2;
+                int nIdx1 = i * nSeq1 * nSrcSpatialDim1 + ((nSeq1 - 1) * nSrcSpatialDim1);
+                int nIdx2 = i * nSeq2 * nSrcSpatialDim2;
 
                 for (int j = 0; j < nSeq3; j++)
                 {
                     if (j == 0)
-                        rgExpected[nIdx2 + j] = rgBottomData1[nIdx1 + nSeq1 - 1]; // last of each seq in data 1
+                        rgExpected[nIdx2 + j] = rgBottomData1[nIdx1 + nSrcSpatialDim1 - 1]; // last of spatial dim in the last of each seq in data 1
                     else
-                        rgExpected[nIdx2 + j] = rgBottomData2[nIdx2 + j - 1];     // first up to last of seq in data 2
+                        rgExpected[nIdx2 + j] = rgBottomData2[nIdx2 + j - 1]; // first up to last of seq in data 2 (spatial dim = 1)
                 }
             }
 
@@ -425,12 +425,14 @@ namespace MyCaffe.test
             double[] rgSrcExpected1 = new double[rgBottomData1.Length];
             double[] rgSrcExpected2 = new double[rgBottomData2.Length];
 
+            int nSpatialDimIdx1 = Utility.CanonicalAxisIndex(p.merge_param.src_spatialdim_start_idx1, nSrcSpatialDim1);
+
             for (int i = 0; i < nBatch; i++)
             {
-                int nIdx1 = i * nSeq1;
-                int nIdx2 = i * nSeq2;
+                int nIdx1 = i * nSeq1 * nSrcSpatialDim1 + ((nSeq1 - 1) * nSrcSpatialDim1);
+                int nIdx2 = i * nSeq2 * nSrcSpatialDim2;
 
-                rgSrcExpected1[nIdx1 + nSeq1 - 1] = rgTopData[nIdx2];
+                rgSrcExpected1[nIdx1 + nSpatialDimIdx1] = rgTopData[nIdx2];
                 
                 for (int j = 1; j < nSeq3; j++)
                 {
