@@ -365,9 +365,14 @@ namespace MyCaffe.param.beta
 
             int nCopy1 = p.copy_dim1;
             int nCopy2 = p.copy_dim2;
-            rgNewShape[p.copy_axis] = nCopy1 + nCopy2;
+            int nIdx = p.copy_axis;
 
-            for (int i = p.copy_axis + 1; i < rgNewShape.Count; i++)
+            rgNewShape[nIdx] = nCopy1 + nCopy2;
+            nIdx++;
+            rgNewShape[nIdx] = rgShape1[nIdx];
+            nIdx++;
+
+            for (int i = nIdx; i < rgNewShape.Count; i++)
             {
                 if (p.m_nDstSpatialDim > 0)
                 {
@@ -375,8 +380,11 @@ namespace MyCaffe.param.beta
                     break;
                 }
 
-                log.CHECK_EQ(rgShape1[i], rgShape2[i], "Inputs must have the same dimensions after the copy axis.");
-                rgNewShape[i] = rgShape1[i];
+                if (p.spatialdim_copy_count <= 0)
+                {
+                    log.CHECK_EQ(rgShape1[i], rgShape2[i], "Inputs must have the same dimensions after the copy axis.");
+                    rgNewShape[i] = rgShape1[i];
+                }
             }
 
             return rgNewShape;
