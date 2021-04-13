@@ -3014,6 +3014,42 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestCopySequence2()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+
+            try
+            {
+                foreach (ITestCudaDnn t in test.Tests)
+                {
+                    t.TestCopySequence2();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestCopySequence2PortionSpatialDomain()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+
+            try
+            {
+                foreach (ITestCudaDnn t in test.Tests)
+                {
+                    t.TestCopySequence2PortionSpatialDomain();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestLoss_mae_loss_bwd()
         {
             CudaDnnTest test = new CudaDnnTest();
@@ -3051,6 +3087,8 @@ namespace MyCaffe.test
         void TestCopySequenceK1();
         void TestCopySequenceK1Combine();
         void TestCopySequenceK2();
+        void TestCopySequence2();
+        void TestCopySequence2PortionSpatialDomain();
         void TestMAELossBwd();
     }
 
@@ -4425,6 +4463,154 @@ namespace MyCaffe.test
             }
 
             colTop.Dispose();
+        }
+
+        public void TestCopySequence2()
+        {
+            // Using SEQ_MAJOR ordering.
+                                                // #. = sequence, max = 5; .# = batch, max = 4
+            double[] rgSrcData1 = new double[] { 1.1, 2.1, 3.1, 4.1, 5.1, 1.2, 2.2, 3.2, 4.2, 5.2, 1.3, 2.3, 3.3, 4.3, 5.3, 1.4, 2.4, 3.4, 4.4, 5.4 }; // 5 x 4 x 1 x 1
+                                                // #. = sequence, max = 2; .# = batch, max = 4
+            double[] rgSrcData2 = new double[] { 10.11, 20.11, 10.22, 20.22, 10.33, 20.33, 10.44, 20.44 }; // 2 x 4 x 1 x 1
+
+            // Copy src data 1 [-1,4,1,1] -> C
+            double[] rgExpected1 = new double[] { 5.1, 0.0, 0.0, 5.2, 0.0, 0.0, 5.3, 0.0, 0.0, 5.4, 0.0, 0.0 };
+            // Copy src data 2 [0:1,4,1,1] -> C
+            double[] rgExpected2 = new double[] { 5.1, 10.11, 20.11, 5.2, 10.22, 20.22, 5.3, 10.33, 20.33, 5.4, 10.44, 20.44 };
+
+            m_A = new Blob<T>(m_cuda, m_log, new List<int>() { 5, 4, 1, 1 });
+            m_B = new Blob<T>(m_cuda, m_log, new List<int>() { 2, 4, 1, 1 });
+            m_A.mutable_cpu_data = convert(rgSrcData1);
+            m_B.mutable_cpu_data = convert(rgSrcData2);
+            m_C = new Blob<T>(m_cuda, m_log, new List<int>() { 3, 4, 1, 1 });
+            m_C.SetData(0);
+
+            // Copy the last 1 x 4 x 1 x 1 from A
+            int nCopyAxis = 0;
+            int nSrcCopyAxisDim = m_A.shape()[nCopyAxis];
+            int nSrcStep = 5;   // src copy axis dim
+            m_log.CHECK_EQ(nSrcCopyAxisDim, nSrcStep, "The src step is incorrect!");
+            int nSrcStartIdx = 4;
+            int nCopyCount = 4; // batch
+            int nCopyDim = 1;
+            int nSrcCopyCount = m_A.shape()[nCopyAxis + 1];
+            m_log.CHECK_EQ(nSrcCopyCount, nCopyCount, "The src copy count is incorrect!");
+            int nDstCopyAxisDim = m_C.shape()[nCopyAxis];
+            int nDstStep = 3;
+            m_log.CHECK_EQ(nDstCopyAxisDim, nDstStep, "The dst step is incorrect!");
+            int nDstStartIdx = 0;
+            int nSpatialDim = 1 * 1;
+            m_cuda.copy_sequence(m_A.count(), m_A.gpu_data, nSrcStep, nSrcStartIdx, nCopyCount, nCopyDim, m_C.mutable_gpu_data, nDstStep, nDstStartIdx, nSpatialDim, nSpatialDim);
+
+            double[] rgC = convert(m_C.mutable_cpu_data);
+
+            for (int i = 0; i < rgC.Length; i++)
+            {
+                double dfExpected = rgExpected1[i];
+                double dfActual = rgC[i];
+                m_log.EXPECT_NEAR_FLOAT(dfExpected, dfActual, 0.000001, "The values are not as expected!");
+            }
+
+            // Copy all 2 x 4 x 1 x 1 from B
+            nSrcCopyAxisDim = m_B.shape()[nCopyAxis];
+            nSrcStep = 2;   // src copy axis dim
+            m_log.CHECK_EQ(nSrcCopyAxisDim, nSrcStep, "The src step is incorrect!");
+            nSrcStartIdx = 0;
+            nCopyDim = 2;
+            nSrcCopyCount = m_B.shape()[nCopyAxis + 1];
+            m_log.CHECK_EQ(nSrcCopyCount, nCopyCount, "The src copy count is incorrect!");
+            nDstCopyAxisDim = m_C.shape()[nCopyAxis];
+            nDstStep = 3;
+            m_log.CHECK_EQ(nDstCopyAxisDim, nDstStep, "The dst step is incorrect!");
+            nDstStartIdx = 1;
+            m_cuda.copy_sequence(m_B.count(), m_B.gpu_data, nSrcStep, nSrcStartIdx, nCopyCount, nCopyDim, m_C.mutable_gpu_data, nDstStep, nDstStartIdx, nSpatialDim, nSpatialDim);
+
+            rgC = convert(m_C.mutable_cpu_data);
+
+            for (int i = 0; i < rgC.Length; i++)
+            {
+                double dfExpected = rgExpected2[i];
+                double dfActual = rgC[i];
+                m_log.EXPECT_NEAR_FLOAT(dfExpected, dfActual, 0.000001, "The values are not as expected!");
+            }
+        }
+
+        public void TestCopySequence2PortionSpatialDomain()
+        {
+            // Using SEQ_MAJOR ordering.
+            // #. = sequence, max = 5; .# = batch, max = 4
+            double[] rgSrcData1 = new double[] { 1.1, 1.12, 1.13,  2.1, 2.12, 2.13,  3.1, 3.12, 3.13,  4.1, 4.12, 4.13,  5.1, 5.12, 5.13,                    
+                                                 1.2, 1.22, 1.23,  2.2, 2.22, 2.23,  3.2, 3.22, 3.23,  4.2, 4.22, 4.23,  5.2, 5.22, 5.23, 
+                                                 1.3, 1.32, 1.33,  2.3, 2.32, 2.33,  3.3, 3.32, 3.33,  4.3, 4.32, 4.33,  5.3, 5.32, 5.33, 
+                                                 1.4, 1.42, 1.43,  2.4, 2.42, 2.43,  3.4, 3.42, 3.43,  4.4, 4.42, 4.43,  5.4, 5.42, 5.43 }; // 5 x 4 x 3 x 1
+            // #. = sequence, max = 2; .# = batch, max = 4
+            double[] rgSrcData2 = new double[] { 10.11, 20.11, 10.22, 20.22, 10.33, 20.33, 10.44, 20.44 }; // 2 x 4 x 1 x 1
+
+            // Copy src data 1 [-1,4,(-1),1] -> C
+            double[] rgExpected1 = new double[] { 5.13, 0.0, 0.0, 5.23, 0.0, 0.0, 5.33, 0.0, 0.0, 5.43, 0.0, 0.0 };
+            // Copy src data 2 [0:1,4,1,1] -> C
+            double[] rgExpected2 = new double[] { 5.13, 10.11, 20.11, 5.23, 10.22, 20.22, 5.33, 10.33, 20.33, 5.43, 10.44, 20.44 };
+
+            m_A = new Blob<T>(m_cuda, m_log, new List<int>() { 5, 4, 3, 1 });
+            m_B = new Blob<T>(m_cuda, m_log, new List<int>() { 2, 4, 1, 1 });
+            m_A.mutable_cpu_data = convert(rgSrcData1);
+            m_B.mutable_cpu_data = convert(rgSrcData2);
+            m_C = new Blob<T>(m_cuda, m_log, new List<int>() { 3, 4, 1, 1 });
+            m_C.SetData(0);
+
+            // Copy the last 1 x 4 x 1 x 1 from A
+            int nCopyAxis = 0;
+            int nSrcCopyAxisDim = m_A.shape()[nCopyAxis];
+            int nSrcStep = 5;   // src copy axis dim
+            m_log.CHECK_EQ(nSrcCopyAxisDim, nSrcStep, "The src step is incorrect!");
+            int nSrcStartIdx = 4;
+            int nCopyCount = 4; // batch
+            int nCopyDim = 1;
+            int nSrcCopyCount = m_A.shape()[nCopyAxis + 1];
+            m_log.CHECK_EQ(nSrcCopyCount, nCopyCount, "The src copy count is incorrect!");
+            int nDstCopyAxisDim = m_C.shape()[nCopyAxis];
+            int nDstStep = 3;
+            m_log.CHECK_EQ(nDstCopyAxisDim, nDstStep, "The dst step is incorrect!");
+            int nDstStartIdx = 0;
+            int nSrcSpatialDim = 3 * 1;
+            int nDstSpatialDim = 1 * 1;
+            int nSrcSpatialDimStartIdx = -1; // index last item in the src spatial dim.
+            int nDstSpatialDimStartIdx = -1; // index last item in the dst spatial dim.
+            int nSpatialDimCount = 1;
+            m_cuda.copy_sequence(m_A.count(), m_A.gpu_data, nSrcStep, nSrcStartIdx, nCopyCount, nCopyDim, m_C.mutable_gpu_data, nDstStep, nDstStartIdx, nSrcSpatialDim, nDstSpatialDim, nSrcSpatialDimStartIdx, nDstSpatialDimStartIdx, nSpatialDimCount);
+
+            double[] rgC = convert(m_C.mutable_cpu_data);
+
+            for (int i = 0; i < rgC.Length; i++)
+            {
+                double dfExpected = rgExpected1[i];
+                double dfActual = rgC[i];
+                m_log.EXPECT_NEAR_FLOAT(dfExpected, dfActual, 0.000001, "The values are not as expected!");
+            }
+
+            // Copy all 2 x 4 x 1 x 1 from B
+            nSrcCopyAxisDim = m_B.shape()[nCopyAxis];
+            nSrcStep = 2;   // src copy axis dim
+            m_log.CHECK_EQ(nSrcCopyAxisDim, nSrcStep, "The src step is incorrect!");
+            nSrcStartIdx = 0;
+            nCopyDim = 2;
+            nSrcCopyCount = m_B.shape()[nCopyAxis + 1];
+            m_log.CHECK_EQ(nSrcCopyCount, nCopyCount, "The src copy count is incorrect!");
+            nDstCopyAxisDim = m_C.shape()[nCopyAxis];
+            nDstStep = 3;
+            m_log.CHECK_EQ(nDstCopyAxisDim, nDstStep, "The dst step is incorrect!");
+            nDstStartIdx = 1;
+            nSrcSpatialDim = 1;
+            m_cuda.copy_sequence(m_B.count(), m_B.gpu_data, nSrcStep, nSrcStartIdx, nCopyCount, nCopyDim, m_C.mutable_gpu_data, nDstStep, nDstStartIdx, nSrcSpatialDim, nDstSpatialDim);
+
+            rgC = convert(m_C.mutable_cpu_data);
+
+            for (int i = 0; i < rgC.Length; i++)
+            {
+                double dfExpected = rgExpected2[i];
+                double dfActual = rgC[i];
+                m_log.EXPECT_NEAR_FLOAT(dfExpected, dfActual, 0.000001, "The values are not as expected!");
+            }
         }
     }
 }
