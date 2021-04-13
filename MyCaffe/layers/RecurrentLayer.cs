@@ -430,13 +430,17 @@ namespace MyCaffe.layers
             m_log.CHECK_EQ(nNumRecurBlobs, rgRecurOutputNames.Count, "The number of recurrent input names must equal the number of recurrent output names.");
 
             // If provided, bottom[2] is a static input to the recurrent net.
-            int nNumHiddenExposed = (m_bExposeHiddenOutput || m_bExposeHiddenInput) ? nNumRecurBlobs : 0;
-            m_bStaticInput = (colBottom.Count > 2 + nNumHiddenExposed) ? true : false;
+            int nNumHiddenExposed = (m_bExposeHiddenOutput) ? nNumRecurBlobs : 0;
+            int nBottomCount = (m_bExposeHiddenInput) ? 4 : 2;
+            m_bStaticInput = (colBottom.Count > nBottomCount + nNumHiddenExposed) ? true : false;
 
             if (m_bStaticInput)
             {
                 m_log.CHECK_GE(colBottom[2].num_axes, 1, "When static input is present, the bottom[2].num_axes must be >= 1");
-                m_log.CHECK_EQ(m_nN, colBottom[2].shape(0), "When static input is present, the bottom[2].shape(0) must = N which is " + m_nN.ToString());
+                m_log.CHECK_EQ(m_nN, colBottom[2].shape(1), "When static input is present, the bottom[2].shape(1) must = N which is " + m_nN.ToString());
+
+                // Original appears to be a bug, for ordering is T,N,x,x
+                //m_log.CHECK_EQ(m_nN, colBottom[2].shape(0), "When static input is present, the bottom[2].shape(0) must = N which is " + m_nN.ToString());
             }
 
             // Create a NetParameter; setup the inputs that aren't unique to particular
@@ -613,13 +617,13 @@ namespace MyCaffe.layers
 
             if (m_param.recurrent_param.expose_hidden_output)
             {
-                colTop[1].ReshapeLike(m_blobHy);
-                colTop[1].ShareData(m_blobHy);
-                colTop[1].ShareDiff(m_blobHy);
+                colTop[1].ReshapeLike(m_blobCy);
+                colTop[1].ShareData(m_blobCy);
+                colTop[1].ShareDiff(m_blobCy);
 
-                colTop[2].ReshapeLike(m_blobCy);
-                colTop[2].ShareData(m_blobCy);
-                colTop[2].ShareDiff(m_blobCy);
+                colTop[2].ReshapeLike(m_blobHy);
+                colTop[2].ShareData(m_blobHy);
+                colTop[2].ShareDiff(m_blobHy);
             }
         }
 
@@ -890,11 +894,11 @@ namespace MyCaffe.layers
                               m_hWeightDesc,
                               m_blobWts.gpu_data,
                               m_hYDesc,
-                              m_blobY.gpu_data,
+                              m_blobY.mutable_gpu_data,
                               m_hHyDesc,
-                              m_blobHy.gpu_data,
+                              m_blobHy.mutable_gpu_data,
                               m_hCyDesc,
-                              m_blobCy.gpu_data,
+                              m_blobCy.mutable_gpu_data,
                               m_hWorkspace,
                               m_nWorkspaceCount,
                               m_hReserved,
@@ -954,6 +958,22 @@ namespace MyCaffe.layers
         {
             m_log.CHECK(!rgbPropagateDown[1], "Cannot backpropagate to sequence indicators.");
 
+            if (colTop.Count > 2)
+            {
+                // Copy state diffs back to previous LSTM
+                if (colTop.Count > 1)
+                {
+                    m_log.CHECK_EQ(colTop[1].count(), m_blobCy.count(), "The bottom(1) should have the same shape as 'cy' which has a shape = " + m_blobCy.shape_string);
+                    m_blobCy.CopyFrom(colTop[1], true);
+                }
+
+                if (colTop.Count > 2)
+                {
+                    m_log.CHECK_EQ(colTop[2].count(), m_blobHy.count(), "The bottom(2) should have the same shape as 'hy' which has a shape = " + m_blobHy.shape_string);
+                    m_blobHy.CopyFrom(colTop[2], true);
+                }
+            }
+
             m_cuda.RnnBackwardData(m_hCuDnn,
                               m_hRnnDesc,
                               m_hYDesc,
@@ -996,6 +1016,23 @@ namespace MyCaffe.layers
                               m_blobWts.mutable_gpu_diff,
                               m_hReserved,
                               m_nReservedCount);
+
+
+            if (colBottom.Count > 2)
+            {
+                // Copy state diffs back to previous LSTM
+                if (colBottom.Count > 2)
+                {
+                    m_log.CHECK_EQ(colBottom[2].count(), m_blobCx.count(), "The bottom(2) should have the same shape as 'cx' which has a shape = " + m_blobCx.shape_string);
+                    colBottom[2].CopyFrom(m_blobCx, true);
+                }
+
+                if (colBottom.Count > 3)
+                {
+                    m_log.CHECK_EQ(colBottom[3].count(), m_blobHx.count(), "The bottom(3) should have the same shape as 'hx' which has a shape = " + m_blobHx.shape_string);
+                    colBottom[3].CopyFrom(m_blobHx, true);
+                }
+            }
         }
 
         private void backward_cuda(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
