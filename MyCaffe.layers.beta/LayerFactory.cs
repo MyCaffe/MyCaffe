@@ -52,6 +52,9 @@ namespace MyCaffe.layers.beta
                 case LayerParameter.LayerType.KNN:
                     return new KnnLayer<double>(cuda, log, p);
 
+                case LayerParameter.LayerType.MERGE:
+                    return new MergeLayer<double>(cuda, log, p);
+
                 case LayerParameter.LayerType.NORMALIZATION1:
                     return new Normalization1Layer<double>(cuda, log, p);
 
@@ -111,6 +114,9 @@ namespace MyCaffe.layers.beta
 
                 case LayerParameter.LayerType.KNN:
                     return new KnnLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.MERGE:
+                    return new MergeLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.NORMALIZATION1:
                     return new Normalization1Layer<float>(cuda, log, p);

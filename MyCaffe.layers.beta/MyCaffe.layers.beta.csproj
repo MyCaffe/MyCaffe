@@ -57,6 +57,7 @@
     <Compile Include="layers.beta\AccuracyDecodeLayer.cs" />
     <Compile Include="layers.beta\DecodeLayer.cs" />
     <Compile Include="layers.beta\AccuracyEncodingLayer.cs" />
+    <Compile Include="layers.beta\MergeLayer.cs" />
     <Compile Include="layers.beta\UnsqueezeLayer.cs" />
     <Compile Include="layers.beta\SqueezeLayer.cs" />
     <Compile Include="layers.beta\TransposeLayer.cs" />
