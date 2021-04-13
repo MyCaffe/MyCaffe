@@ -56,6 +56,24 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Calculate the spatial dimension of an array starting at a given axis.
+        /// </summary>
+        /// <param name="rg">Specifies the shape to measure.</param>
+        /// <param name="nStartIdx">Specifies the starting axis.</param>
+        /// <returns>The spacial dimension is returned.</returns>
+        public static int GetSpatialDim(List<int> rg, int nStartIdx = 0)
+        {
+            int nDim = 1;
+
+            for (int i = nStartIdx; i < rg.Count; i++)
+            {
+                nDim *= rg[i];
+            }
+
+            return nDim;
+        }
+
+        /// <summary>
         /// Return the count of items given the shape.
         /// </summary>
         /// <param name="rgShape">Specifies the shape to count from the start index through the end index.</param>
