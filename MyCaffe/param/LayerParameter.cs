@@ -306,8 +306,12 @@ namespace MyCaffe.param
             /// </summary>
             MEMORY_LOSS,
             /// <summary>
+            /// Initializes a parameter for the MergeLayer.
+            /// </summary>            
+            MERGE,
+            /// <summary>
             /// Initializes a parameter for the MishLayer.
-            /// </summary>
+            /// </summary>            
             MISH,
             /// <summary>
             /// Initialize a parameter for the MultiBoxLossLayer.
@@ -1094,6 +1098,13 @@ namespace MyCaffe.param
                     expected_top.Add("math");
                     m_rgLayerParameters[lt] = new MathParameter();
                     m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
+                    break;
+
+                case LayerType.MERGE:
+                    expected_bottom.Add("input1");
+                    expected_bottom.Add("input2");
+                    expected_top.Add("merge");
+                    m_rgLayerParameters[lt] = new MergeParameter();
                     break;
 
                 case LayerType.MEMORYDATA:
@@ -1916,6 +1927,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.MERGE
+        /// </summary>
+        public MergeParameter merge_param
+        {
+            get { return (MergeParameter)m_rgLayerParameters[LayerType.MERGE]; }
+            set { m_rgLayerParameters[LayerType.MERGE] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.MEMORY_DATA
         /// </summary>
         public MemoryDataParameter memory_data_param
@@ -2500,6 +2520,9 @@ namespace MyCaffe.param
 
                 case LayerType.MATH:
                     return "MATH";
+
+                case LayerType.MERGE:
+                    return "Merge";
                
                 case LayerType.MEMORYDATA:
                     return "MemoryData";
@@ -2758,6 +2781,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(decode_param, "decode_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gather_param, "gather_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(knn_param, "knn_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(merge_param, "merge_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(normalization1_param, "normalization_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(squeeze_param, "squeeze_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(triplet_loss_param, "triplet_loss_param"));
@@ -3045,6 +3069,9 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("knn_param")) != null)
                 p.knn_param = KnnParameter.FromProto(rpp);
 
+            if ((rpp = rp.FindChild("merge_param")) != null)
+                p.merge_param = MergeParameter.FromProto(rpp);
+
             if ((rpp = rp.FindChild("normalization_param")) != null)
                 p.normalization1_param = Normalization1Parameter.FromProto(rpp);
 
@@ -3312,6 +3339,9 @@ namespace MyCaffe.param
 
                 case "math":
                     return LayerType.MATH;
+
+                case "merge":
+                    return LayerType.MERGE;
 
                 case "memorydata":
                     return LayerType.MEMORYDATA;
