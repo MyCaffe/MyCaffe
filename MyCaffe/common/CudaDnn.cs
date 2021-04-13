@@ -991,6 +991,7 @@ namespace MyCaffe.common
             CUDA_COPY_BATCH = 206,
             CUDA_COPY_SEQUENCE = 207,
             CUDA_COPY_EXPAND = 208,
+            CUDA_COPY_SEQUENCE2 = 209,
 
             CUDA_GEMM2 = 219,
             CUDA_GEMM = 220,
@@ -5453,6 +5454,31 @@ namespace MyCaffe.common
 
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY_SEQUENCE, rgarg.ToArray());
             }
+        }
+
+        /// <summary>
+        /// Copy a sequence from a source to a destination and allow for skip steps.
+        /// </summary>
+        /// <param name="n">Specifies the total number of items in src.</param>
+        /// <param name="hSrc">Specifies a handle to the source GPU memory.</param>
+        /// <param name="nSrcStep">Specifies the stepping used across the source.</param>
+        /// <param name="nSrcStartIdx">Specifies the starting index into the source.</param>
+        /// <param name="nCopyCount">Specifies the number of items to copy.</param>
+        /// <param name="nCopyDim">Specifies the dimension to copy (which x spatial dim = total copy amount).</param>
+        /// <param name="hDst">Specifies a handle to the destination GPU memory.</param>
+        /// <param name="nDstStep">Specifies the steping used across the desination.</param>
+        /// <param name="nDstStartIdx">Specifies the starting index where data is to be copied in the destination.</param>
+        /// <param name="nSrcSpatialDim">Specifies the src spatial dim of each item copied.  Src and Dst spatial dims should be equal when nSpatialDimCount is not used.</param>
+        /// <param name="nDstSpatialDim">Specifies the dst spatial dim of each item copied.  Src and Dst spatial dims should be equal when nSpatialDimCount is not used.</param>
+        /// <param name="nSrcSpatialDimStartIdx">Optionally, specifies the start index within the source spatial dim to start the copy (default = 0)</param>
+        /// <param name="nDstSpatialDimStartIdx">Optionally, specifies the start index within the destination spatial dim to start the copy (default = 0)</param>
+        /// <param name="nSpatialDimCount">Optionally, specifies the number of items to copy from within the spatial dim (default = -1, copy all)</param>
+        public void copy_sequence(int n, long hSrc, int nSrcStep, int nSrcStartIdx, int nCopyCount, int nCopyDim, long hDst, int nDstStep, int nDstStartIdx, int nSrcSpatialDim, int nDstSpatialDim, int nSrcSpatialDimStartIdx = 0, int nDstSpatialDimStartIdx = 0, int nSpatialDimCount = -1)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COPY_SEQUENCE2, m_param.AsDouble(n, hSrc, nSrcStep, nSrcStartIdx, nCopyCount, nCopyDim, hDst, nDstStep, nDstStartIdx, nSrcSpatialDim, nDstSpatialDim, nSrcSpatialDimStartIdx, nDstSpatialDimStartIdx, nSpatialDimCount));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY_SEQUENCE2, m_param.AsFloat(n, hSrc, nSrcStep, nSrcStartIdx, nCopyCount, nCopyDim, hDst, nDstStep, nDstStartIdx, nSrcSpatialDim, nDstSpatialDim, nSrcSpatialDimStartIdx, nDstSpatialDimStartIdx, nSpatialDimCount));
         }
 
         /// <summary>
