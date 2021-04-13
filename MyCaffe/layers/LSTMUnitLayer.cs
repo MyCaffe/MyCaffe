@@ -111,9 +111,9 @@ namespace MyCaffe.layers
             for (int i = 0; i < colBottom.Count; i++)
             {
                 if (i == 2)
-                    m_log.CHECK_EQ(2, colBottom[i].num_axes, "There should be 2 axes at bottom[2]");
+                    m_log.CHECK_EQ(2, colBottom[i].num_true_axes, "There should be 2 axes at bottom[2]");
                 else
-                    m_log.CHECK_EQ(3, colBottom[i].num_axes, "There should be 3 axes at bottom[" + i.ToString() + "]");
+                    m_log.CHECK_EQ(3, colBottom[i].num_true_axes, "There should be 3 axes at bottom[" + i.ToString() + "]");
 
                 m_log.CHECK_EQ(1, colBottom[i].shape(0), "The shape(0) at bottom[" + i.ToString() + "] should be 1.");
                 m_log.CHECK_EQ(nNumInstances, colBottom[i].shape(1), "The shape(1) at bottom[" + i.ToString() + "] should equal the number of instances (" + nNumInstances.ToString() + ")");                
