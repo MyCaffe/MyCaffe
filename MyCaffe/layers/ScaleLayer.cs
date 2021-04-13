@@ -248,16 +248,16 @@ namespace MyCaffe.layers
             // bottom[0].num_axes - 1, giving inner_dim_ == 1, would be equally
             // performant.)
             m_nAxis = (blobScale.num_axes == 0) ? 0 : colBottom[0].CanonicalAxisIndex(p.axis);
-            m_log.CHECK_GE(colBottom[0].num_axes, m_nAxis + blobScale.num_axes, "scale blob's shape extends past bottom[0]'s shape when applied starting with bottom[0] axis = " + m_nAxis.ToString());
+            m_log.CHECK_GE(colBottom[0].num_axes, m_nAxis + blobScale.num_true_axes, "scale blob's shape extends past bottom[0]'s shape when applied starting with bottom[0] axis = " + m_nAxis.ToString());
 
-            for (int i = 0; i < blobScale.num_axes; i++)
+            for (int i = 0; i < blobScale.num_true_axes; i++)
             {
                 m_log.CHECK_EQ(colBottom[0].shape(m_nAxis + i), blobScale.shape(i), "dimension mismatch between bottom[0]->shape(" + (m_nAxis + i).ToString() + ") and scale->shape(" + i.ToString() + ")");
             }
 
             m_nOuterDim = colBottom[0].count(0, m_nAxis);
             m_nScaleDim = blobScale.count();
-            m_nInnerDim = colBottom[0].count(m_nAxis + blobScale.num_axes);
+            m_nInnerDim = colBottom[0].count(m_nAxis + blobScale.num_true_axes);
 
             if (colBottom[0] == colTop[0])  // in-place computation
                 m_blobTemp.ReshapeLike(colBottom[0]);
