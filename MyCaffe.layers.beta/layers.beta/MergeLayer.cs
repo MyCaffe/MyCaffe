@@ -166,6 +166,7 @@ namespace MyCaffe.layers.beta
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
             colBottom[0].SetDiff(0);
+            colBottom[1].SetDiff(0);
             long hBtmDiff0 = colBottom[0].mutable_gpu_diff;
             long hBtmDiff1 = colBottom[1].mutable_gpu_diff;
             long hTopData = colTop[0].gpu_diff;
