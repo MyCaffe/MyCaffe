@@ -70,8 +70,8 @@
       <HintPath>..\packages\Microsoft.VisualStudio.QualityTools.UnitTestFramework.Updated.15.0.26228\lib\Microsoft.VisualStudio.QualityTools.UnitTestFramework.dll\Microsoft.VisualStudio.QualityTools.UnitTestFramework.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="OnnxControl, Version=0.11.2.9, Culture=neutral, PublicKeyToken=8c813ab21bbfb2ac, processorArchitecture=MSIL">
-      <HintPath>..\packages\OnnxControl.0.11.2.9-beta1\lib\net40\OnnxControl.dll</HintPath>
+    <Reference Include="OnnxControl, Version=0.11.2.46, Culture=neutral, PublicKeyToken=8c813ab21bbfb2ac, processorArchitecture=MSIL">
+      <HintPath>..\packages\OnnxControl.0.11.2.46-beta1\lib\net40\OnnxControl.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -113,7 +113,11 @@
     <Compile Include="TestDatasetFactory.cs" />
     <Compile Include="TestCryptoRandom.cs" />
     <Compile Include="TestConstantLayer.cs" />
+    <Compile Include="TestMAELossLayer.cs" />
+    <Compile Include="TestMergeLayer.cs" />
+    <Compile Include="TestHDF5Layer.cs" />
     <Compile Include="TestSqueezeLayer.cs" />
+    <Compile Include="TestMishLayer.cs" />
     <Compile Include="TestTransposeLayer.cs" />
     <Compile Include="TestGatherLayer.cs" />
     <Compile Include="TestMathLayer.cs" />
@@ -277,6 +281,10 @@
     <ProjectReference Include="..\MyCaffe.layers.beta\MyCaffe.layers.beta.csproj">
       <Project>{db6986db-ab61-4bd5-828e-a8eda0a6f56e}</Project>
       <Name>MyCaffe.layers.beta</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.layers.hdf5\MyCaffe.layers.hdf5.csproj">
+      <Project>{03210d74-58ae-488e-98d5-7851deca448a}</Project>
+      <Name>MyCaffe.layers.hdf5</Name>
     </ProjectReference>
     <ProjectReference Include="..\MyCaffe.layers.nt\MyCaffe.layers.nt.csproj">
       <Project>{bac34be4-818e-4f59-821b-fecfd6c797aa}</Project>
