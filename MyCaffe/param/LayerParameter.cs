@@ -2772,7 +2772,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(labelmapping_param, "labelmapping_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(log_param, "log_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(lrn_param, "lrn_param"));
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(mae_loss_param, "mae_loss_data_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(mae_loss_param, "mae_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(memory_data_param, "memory_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(mish_param, "mish_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(mvn_param, "mvn_param"));
