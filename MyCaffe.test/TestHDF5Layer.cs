@@ -99,8 +99,31 @@ namespace MyCaffe.test
 
         public void TestHDF5()
         {
-            string strFile = @"C:\Users\winda\Source\Repos\s2vt_data_python\s2vt_data_python\hdf5\buffer_16_s2vt_80\train_batches\batch_0.h5";
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\hdf5\\";
+            string strFile = strPath + "batch_0.h5";
             HDF5<T> hdf5 = new HDF5<T>(m_cuda, m_log, strFile);
+
+            hdf5.load_nd_dataset(m_blob_bottom, "cont", true);
+            m_log.CHECK_EQ(m_blob_bottom.num_axes, 2, "The 'cont_sentence' should have 2 axes.");
+            m_log.CHECK_EQ(m_blob_bottom.shape(0), 1000, "The 'cont_sentence' should have shape(0) = 1000");
+            m_log.CHECK_EQ(m_blob_bottom.shape(1), 16, "The 'cont_sentence' should have shape(1) = 16");
+
+            double[] rgData = convert(m_blob_bottom.mutable_cpu_data);
+            int nDim1 = 1000;
+            int nDim2 = 16;
+            for (int i = 0; i < nDim1; i++)
+            {
+                int nIdx = i % 80;
+
+                for (int j = 0; j < nDim2; j++)
+                {
+                    int nDataIdx = i * nDim2 + j;
+
+                    double dfExpected = (nIdx == 0) ? 0 : 1;
+                    double dfActual = rgData[nDataIdx];
+                    m_log.CHECK_EQ(dfExpected, dfActual, "The data items are not as expected for 'cont'!");
+                }
+            }
 
             hdf5.load_nd_dataset(m_blob_bottom, "cont_sentence", true);
             m_log.CHECK_EQ(m_blob_bottom.num_axes, 2, "The 'cont_sentence' should have 2 axes.");
