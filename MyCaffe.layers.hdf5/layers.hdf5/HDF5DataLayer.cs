@@ -55,18 +55,18 @@ namespace MyCaffe.layers.hdf5
                 Blob<T> blob = new Blob<T>(m_cuda, m_log, false);
                 hdf5.load_nd_dataset(blob, m_param.top[i], true);
 
-                m_colBlobs.Add(blob);
+                m_colHdfBlobs.Add(blob);
             }
 
             hdf5.Dispose();
 
             // MinTopBlobs=1 guarantees at least one top blob
-            m_log.CHECK_GE(m_colBlobs[0].num_axes, 1, "Input must have at least 1 axis.");
-            int nNum = m_colBlobs[0].shape(0);
+            m_log.CHECK_GE(m_colHdfBlobs[0].num_axes, 1, "Input must have at least 1 axis.");
+            int nNum = m_colHdfBlobs[0].shape(0);
 
             for (int i = 1; i < nTopCount; i++)
             {
-                m_log.CHECK_EQ(m_colBlobs[i].shape(0), nNum, "The 'num' on all blobs must be equal.");
+                m_log.CHECK_EQ(m_colHdfBlobs[i].shape(0), nNum, "The 'num' on all blobs must be equal.");
             }
 
             // Default to identity permutation.
@@ -117,7 +117,7 @@ namespace MyCaffe.layers.hdf5
 
             // Read the source to parse the filenames.
             m_log.WriteLine("Loading list of HDF5 file names from: " + m_param.hdf5_data_param.source);
-            m_rgstrFileNames = Utility.LoadTextLines(m_param.hdf5_data_param.source, m_log);
+            m_rgstrFileNames = Utility.LoadTextLines(m_param.hdf5_data_param.source, m_log, true);
             m_nNumFiles = m_rgstrFileNames.Count;
             m_nCurrentFile = 0;
 
@@ -146,7 +146,7 @@ namespace MyCaffe.layers.hdf5
 
             for (int i = 0; i < nTopSize; i++)
             {
-                rgTopShape = Utility.Clone<int>(m_colBlobs[i].shape());
+                rgTopShape = Utility.Clone<int>(m_colHdfBlobs[i].shape());
                 rgTopShape[0] = nBatchSize;
                 colTop[i].Reshape(rgTopShape);
             }
@@ -166,7 +166,7 @@ namespace MyCaffe.layers.hdf5
         {
             m_nCurrentRow++;
 
-            if (m_nCurrentRow == m_colBlobs[0].shape(0))
+            if (m_nCurrentRow == m_colHdfBlobs[0].shape(0))
             {
                 if (m_nNumFiles > 1)
                 {
@@ -223,7 +223,7 @@ namespace MyCaffe.layers.hdf5
                     int nDataDim = colTop[j].count() / colTop[j].shape(0);
                     int nSrcIdx = m_rgDataPermutation[m_nCurrentRow] * nDataDim;
                     int nDstIdx = i * nDataDim;
-                    m_cuda.copy(nDataDim, m_colBlobs[j].gpu_data, colTop[j].mutable_gpu_data, nSrcIdx, nDstIdx);
+                    m_cuda.copy(nDataDim, m_colHdfBlobs[j].gpu_data, colTop[j].mutable_gpu_data, nSrcIdx, nDstIdx);
                 }
 
                 Next();
