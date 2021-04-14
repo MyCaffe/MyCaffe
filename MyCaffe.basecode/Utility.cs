@@ -962,20 +962,39 @@ namespace MyCaffe.basecode
         /// </summary>
         /// <param name="strFile">Specifies the text file to load.</param>
         /// <param name="log">Optionally, specifies the output log used to output errors (default = null).  When null, any errors are thrown as exceptions.</param>
+        /// <param name="bPrependPath">Optionallly, specifies to prepend the path of the 'strFile' to each file within the file, but only do so with entries starting with '.'</param>
         /// <returns>A list containing each line of the text file is returned.</returns>
-        public static List<string> LoadTextLines(string strFile, Log log = null)
+        public static List<string> LoadTextLines(string strFile, Log log = null, bool bPrependPath = true)
         {
             List<string> rgstr = new List<string>();
 
             try
             {
+                string strPath = Path.GetDirectoryName(strFile);
+
                 using (StreamReader sr = new StreamReader(strFile))
                 {
                     string strLine = sr.ReadLine();
 
                     while (strLine != null)
                     {
-                        rgstr.Add(strLine);
+                        if (strLine.Length > 0)
+                        {
+                            if (strLine[0] == '.' && bPrependPath)
+                            {
+                                int nPos = strLine.LastIndexOf('/');
+                                if (nPos < 0)
+                                    nPos = strLine.LastIndexOf('\\');
+
+                                if (nPos >= 0)
+                                    strLine = strLine.Substring(nPos + 1);
+
+                                strLine = strPath + "\\" + Replace(strLine, '/', '\\');
+                            }
+
+                            rgstr.Add(strLine);
+                        }
+
                         strLine = sr.ReadLine();
                     }
                 }
@@ -990,6 +1009,5 @@ namespace MyCaffe.basecode
 
             return rgstr;
         }
-
     }
 }
