@@ -221,7 +221,7 @@ namespace MyCaffe.layers.hdf5
                 for (int j = 0; j < m_param.top.Count; j++)
                 {
                     int nDataDim = colTop[j].count() / colTop[j].shape(0);
-                    int nSrcIdx = m_rgDataPermutation[m_nCurrentRow];
+                    int nSrcIdx = m_rgDataPermutation[m_nCurrentRow] * nDataDim;
                     int nDstIdx = i * nDataDim;
                     m_cuda.copy(nDataDim, m_colBlobs[j].gpu_data, colTop[j].mutable_gpu_data, nSrcIdx, nDstIdx);
                 }
