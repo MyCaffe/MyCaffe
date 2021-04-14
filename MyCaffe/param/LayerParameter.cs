@@ -250,6 +250,10 @@ namespace MyCaffe.param
             /// </summary>
             GRN,
             /// <summary>
+            /// Initializes a parameter for the HDF5DataLayer.
+            /// </summary>
+            HDF5_DATA,
+            /// <summary>
             /// Initializes a parameter for the HingeLossLayer.
             /// </summary>
             HINGE_LOSS,
@@ -1014,6 +1018,13 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("gram");
                     m_rgLayerParameters[lt] = new GramParameter();
+                    break;
+
+                case LayerType.HDF5_DATA:
+                    expected_top.Add("data");
+                    expected_top.Add("label");
+                    m_rgLayerParameters[LayerType.TRANSFORM] = new TransformationParameter();
+                    m_rgLayerParameters[LayerType.HDF5_DATA] = new DataParameter();
                     break;
 
                 case LayerType.HINGE_LOSS:
@@ -1828,12 +1839,12 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Returns the parameter set when initialized with LayerType.TV_LOSS
+        /// Returns the parameter set when initialized with LayerType.HDF5_DATA
         /// </summary>
-        public TVLossParameter tv_loss_param
+        public HDF5DataParameter hdf5_data_param
         {
-            get { return (TVLossParameter)m_rgLayerParameters[LayerType.TV_LOSS]; }
-            set { m_rgLayerParameters[LayerType.TV_LOSS] = value; }
+            get { return (HDF5DataParameter)m_rgLayerParameters[LayerType.HDF5_DATA]; }
+            set { m_rgLayerParameters[LayerType.HDF5_DATA] = value; }
         }
 
         /// <summary>
@@ -2207,6 +2218,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.TV_LOSS
+        /// </summary>
+        public TVLossParameter tv_loss_param
+        {
+            get { return (TVLossParameter)m_rgLayerParameters[LayerType.TV_LOSS]; }
+            set { m_rgLayerParameters[LayerType.TV_LOSS] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.LSTM_SIMPLE
         /// </summary>
         public LSTMSimpleParameter lstm_simple_param
@@ -2481,6 +2501,9 @@ namespace MyCaffe.param
 
                 case LayerType.GRAM:
                     return "Gram";
+
+                case LayerType.HDF5_DATA:
+                    return "HDF5Data";
 
                 case LayerType.HINGE_LOSS:
                     return "HingeLoss";
@@ -2788,6 +2811,9 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(unpooling_param, "unpooling_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(transpose_param, "transpose_param"));
 
+            // HDF5 layes.
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(hdf5_data_param, "hdf5_data_param"));
+
             // Nt layers.
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gram_param, "gram_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(onehot_param, "onehot_param"));
@@ -3087,6 +3113,10 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("unpooling_param")) != null)
                 p.unpooling_param = UnPoolingParameter.FromProto(rpp);
 
+            // HDF5 layers.
+            if ((rpp = rp.FindChild("hdf5_data_param")) != null)
+                p.hdf5_data_param = HDF5DataParameter.FromProto(rpp);
+
             // Nt layers.
             if ((rpp = rp.FindChild("gram_param")) != null)
                 p.gram_param = GramParameter.FromProto(rpp);
@@ -3294,8 +3324,8 @@ namespace MyCaffe.param
                 case "gram":
                     return LayerType.GRAM;
 
-//                case "hdf5data":
-//                    return LayerType.HDF5DATA;
+                case "hdf5data":
+                    return LayerType.HDF5_DATA;
 
 //                case "hdf5output":
 //                    return LayerType.HDF5OUTPUT;
