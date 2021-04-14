@@ -21,6 +21,7 @@ namespace MyCaffe.param
         string m_strSource = null;
         uint m_nBatchSize;
         bool m_bShuffle;
+        List<BlobShape> m_rgExpectedTopShapes = new List<BlobShape>();
 
         /// <summary>
         /// This event is, optionally, called to verify the batch size of the HDF5DataParameter.
@@ -64,6 +65,16 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Specifies the expected top shapes.  Only used to verify input shapes, if the shape is -1 or does not exist the verification test is ignored for the shape.
+        /// </summary>
+        [Description("Specifies the expected top shapes.  Only used to verify input shapes, if the shape is -1 or does not exist the verification test is ignored for the shape.")]
+        public List<BlobShape> expected_top_shapes
+        {
+            get { return m_rgExpectedTopShapes; }
+            set { m_rgExpectedTopShapes = value; }
+        }
+
+        /// <summary>
         /// Specifies the whether to shuffle the data or now.
         /// </summary>
         [Description("Specifies whether to shuffle the data or now.")]
@@ -92,6 +103,12 @@ namespace MyCaffe.param
             m_strSource = p.m_strSource;
             m_nBatchSize = p.m_nBatchSize;
             m_bShuffle = p.m_bShuffle;
+
+            m_rgExpectedTopShapes = new List<BlobShape>();
+            foreach (BlobShape shape in p.m_rgExpectedTopShapes)
+            {
+                m_rgExpectedTopShapes.Add(shape.Clone());
+            }
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -113,7 +130,12 @@ namespace MyCaffe.param
 
             rgChildren.Add("source", "\"" + source + "\"");
             rgChildren.Add("batch_size", batch_size.ToString());
-            rgChildren.Add("backend", shuffle.ToString());
+            rgChildren.Add("shuffle", shuffle.ToString());
+
+            for (int i = 0; i < m_rgExpectedTopShapes.Count; i++)
+            {
+                rgChildren.Add(m_rgExpectedTopShapes[i].ToProto("expected_top_shape"));
+            }
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -139,6 +161,13 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("shuffle")) != null)
                 p.shuffle = bool.Parse(strVal);
+
+            p.m_rgExpectedTopShapes = new List<BlobShape>();
+            RawProtoCollection colExpectedTopShapes = rp.FindChildren("expected_top_shape");
+            foreach (RawProto rp1 in colExpectedTopShapes)
+            {
+                p.m_rgExpectedTopShapes.Add(BlobShape.FromProto(rp1));
+            }
 
             return p;
         }
