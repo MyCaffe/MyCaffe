@@ -929,10 +929,14 @@ namespace MyCaffe.basecode
         /// Randomly shuffle the entries in the specified list.
         /// </summary>
         /// <param name="rg">Specifies the input list to shuffle.</param>
+        /// <param name="nSeed">Optionally, specifies a seed for the random generator.</param>
         /// <returns>The newly shuffled list is returned.</returns>
-        public static List<int> RandomShuffle(List<int> rg)
+        public static List<int> RandomShuffle(List<int> rg, int? nSeed = null)
         {
-            Random random = new Random();
+            if (!nSeed.HasValue)
+                nSeed = (int)DateTime.Now.Ticks;
+
+            Random random = new Random(nSeed.Value);
             List<int> rg1 = new List<int>();
 
             while (rg.Count > 0)
