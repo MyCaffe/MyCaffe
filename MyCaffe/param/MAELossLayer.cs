@@ -68,8 +68,7 @@ namespace MyCaffe.param
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
-            if (axis != 1)
-                rgChildren.Add("axis", axis.ToString());
+            rgChildren.Add("axis", axis.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
