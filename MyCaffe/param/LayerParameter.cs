@@ -1022,9 +1022,7 @@ namespace MyCaffe.param
 
                 case LayerType.HDF5_DATA:
                     expected_top.Add("data");
-                    expected_top.Add("label");
-                    m_rgLayerParameters[LayerType.TRANSFORM] = new TransformationParameter();
-                    m_rgLayerParameters[LayerType.HDF5_DATA] = new DataParameter();
+                    m_rgLayerParameters[LayerType.HDF5_DATA] = new HDF5DataParameter();
                     break;
 
                 case LayerType.HINGE_LOSS:
