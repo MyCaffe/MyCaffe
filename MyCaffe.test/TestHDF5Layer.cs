@@ -77,10 +77,22 @@ namespace MyCaffe.test
 
     class HDF5LayerTest<T> : TestEx<T>, IHDF5LayerTest
     {
+        Blob<T> m_blobCont;
+        Blob<T> m_blobInput;
+        Blob<T> m_blobTarget;
+        Blob<T> m_blobStage;
+        Blob<T> m_blobFrameFc7;
+
         public HDF5LayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, new List<int>() { 2, 3, 4, 5 }, nDeviceID)
         {
             m_engine = engine;
+
+            m_blobCont = new Blob<T>(m_cuda, m_log, false);
+            m_blobInput = new Blob<T>(m_cuda, m_log, false);
+            m_blobTarget = new Blob<T>(m_cuda, m_log, false);
+            m_blobStage = new Blob<T>(m_cuda, m_log, false);
+            m_blobFrameFc7 = new Blob<T>(m_cuda, m_log, false);
         }
 
         protected override FillerParameter getFillerParam()
@@ -90,11 +102,59 @@ namespace MyCaffe.test
 
         protected override void dispose()
         {
+            m_blobCont.Dispose();
+            m_blobInput.Dispose();
+            m_blobTarget.Dispose();
+            m_blobStage.Dispose();
+            m_blobFrameFc7.Dispose();
+
             base.dispose();
         }
 
         public void TestForward()
         {
+            Stopwatch sw = new Stopwatch();
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\hdf5\\";
+            string strFile = strPath + "file_list.txt";
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.HDF5_DATA);
+            p.hdf5_data_param.source = strFile;
+            p.hdf5_data_param.batch_size = 80;
+            p.top.Add("cont_sentence");
+            p.top.Add("input_sentence");
+            p.top.Add("target_sentence");
+            p.top.Add("stage_indicator");
+            p.top.Add("frame_fc7");
+
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+            m_log.CHECK(layer.type == LayerParameter.LayerType.HDF5_DATA, "Incorrect layer type, expected " + LayerParameter.LayerType.HDF5_DATA.ToString());
+
+            BottomVec.Clear();
+            TopVec.Clear();
+
+            TopVec.Add(m_blobCont);
+            TopVec.Add(m_blobInput);
+            TopVec.Add(m_blobTarget);
+            TopVec.Add(m_blobStage);
+            TopVec.Add(m_blobFrameFc7);
+
+            layer.Setup(BottomVec, TopVec);
+            sw.Start();
+            layer.Forward(BottomVec, TopVec);
+            
+            for (int i = 0; i < 100; i++)
+            {
+                layer.Forward(BottomVec, TopVec);
+            }
+
+            sw.Stop();
+            double dfTime = sw.Elapsed.TotalMilliseconds;
+            int nCount = 101;
+
+            double dfAvePerFwd = dfTime / nCount;
+            double dfAvePerItem = dfAvePerFwd / p.hdf5_data_param.batch_size;
+
+            Trace.WriteLine("Average time (ms) per Forward = " + dfAvePerFwd.ToString("N5"));
+            Trace.WriteLine("Average time (ms) per Item = " + dfAvePerItem.ToString("N5"));
         }
 
         public void TestHDF5()
