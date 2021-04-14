@@ -1361,6 +1361,8 @@ namespace MyCaffe.converter.onnx
         {
             if (type == LayerParameter.LayerType.RELU ||
                 type == LayerParameter.LayerType.TANH ||
+                type == LayerParameter.LayerType.MISH ||
+                type == LayerParameter.LayerType.SWISH ||
                 type == LayerParameter.LayerType.MATH ||
                 type == LayerParameter.LayerType.SIGMOID ||
                 type == LayerParameter.LayerType.ELU ||
