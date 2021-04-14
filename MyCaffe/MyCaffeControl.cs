@@ -84,6 +84,7 @@ namespace MyCaffe
         CudaDnn<T> m_cuda;
         Solver<T> m_solver;
         Net<T> m_net;
+        bool m_bOwnRunNet = true;
         MemoryStream m_msWeights = new MemoryStream();
         Guid m_guidUser;
         PersistCaffe<T> m_persist;
@@ -385,7 +386,8 @@ namespace MyCaffe
 
                 if (m_net != null)
                 {
-                    m_net.Dispose();
+                    if (m_bOwnRunNet)
+                        m_net.Dispose();
                     m_net = null;
                 }
 
@@ -1130,7 +1132,16 @@ namespace MyCaffe
                 }
                 else if (phase == Phase.TEST || phase == Phase.TRAIN)
                 {
-                    m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_imgDb, Phase.RUN, null, m_solver.TrainingNet);
+                    try
+                    {
+                        m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_imgDb, Phase.RUN, null, m_solver.TrainingNet);
+                    }
+                    catch (Exception excpt)
+                    {
+                        m_log.WriteLine("WARNING: Failed to create run net - using Test net instead for running.  Error = " + excpt.Message);
+                        m_net = m_solver.TestingNet;
+                        m_bOwnRunNet = false;
+                    }
                 }
             }
             catch (Exception excpt)
@@ -1311,7 +1322,17 @@ namespace MyCaffe
                 else if (phase == Phase.TEST || phase == Phase.TRAIN)
                 {
                     netParam.force_backward = true;
-                    m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_imgDb, Phase.RUN, null, m_solver.TrainingNet);
+
+                    try
+                    {
+                        m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_imgDb, Phase.RUN, null, m_solver.TrainingNet);
+                    }
+                    catch (Exception excpt)
+                    {
+                        m_log.WriteLine("WARNING: Failed to create run net - using Test net instead for running.  Error = " + excpt.Message);
+                        m_net = m_solver.TestingNet;
+                        m_bOwnRunNet = false;
+                    }
                 }
             }
             catch (Exception excpt)
@@ -1427,7 +1448,17 @@ namespace MyCaffe
                 else if (phase == Phase.TEST || phase == Phase.TRAIN)
                 {
                     netParam.force_backward = true;
-                    m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, null, Phase.RUN, null, m_solver.TrainingNet);
+
+                    try
+                    {
+                        m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, null, Phase.RUN, null, m_solver.TrainingNet);
+                    }
+                    catch (Exception excpt)
+                    {
+                        m_log.WriteLine("WARNING: Failed to create run net - using Test net instead for running.  Error = " + excpt.Message);
+                        m_net = m_solver.TestingNet;
+                        m_bOwnRunNet = false;
+                    }
                 }
             }
             catch (Exception excpt)
@@ -2463,7 +2494,7 @@ namespace MyCaffe
                     m_log.Enable = false;
                 }
 
-                if (m_net != null)
+                if (m_net != null && m_bOwnRunNet)
                     loadWeights(m_net, m_solver.net.SaveWeights(m_persist));
             }
             finally
@@ -2504,7 +2535,7 @@ namespace MyCaffe
         /// <param name="rgWeights">Specifies the weights to load.</param>
         /// <param name="cudaOverride">Optionally, specifies a different cuda instance for the Net to use.</param>
         /// <returns>The new Net is returned.</returns>
-        public Net<T> GetNet(byte[] rgWeights, CudaDnn<T> cudaOverride = null)
+        public Net<T> CreateNet(byte[] rgWeights, CudaDnn<T> cudaOverride = null)
         {
             if (cudaOverride == null)
                 cudaOverride = m_cuda;
