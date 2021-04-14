@@ -343,6 +343,18 @@ namespace MyCaffe.param.beta
         /// <returns>The new shape is returned.</returns>
         public static List<int> Reshape(Log log, MergeParameter p, List<int> rgShape1, List<int> rgShape2)
         {
+            while (rgShape2.Count > rgShape1.Count && rgShape2.Count > 0)
+            {
+                if (rgShape2[rgShape2.Count - 1] == 1)
+                    rgShape2.RemoveAt(rgShape2.Count - 1);
+            }
+
+            while (rgShape1.Count > rgShape2.Count && rgShape1.Count > 0)
+            {
+                if (rgShape1[rgShape1.Count - 1] == 1)
+                    rgShape1.RemoveAt(rgShape1.Count - 1);
+            }
+
             log.CHECK_EQ(rgShape1.Count, rgShape2.Count, "The inputs must have the same number of axes.");
             log.CHECK_LT(p.copy_axis, rgShape1.Count, "There must be more axes than the copy axis!");
 
