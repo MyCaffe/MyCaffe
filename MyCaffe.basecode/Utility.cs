@@ -924,5 +924,68 @@ namespace MyCaffe.basecode
             TimeSpan ts = TimeSpan.FromMinutes(dfMin);
             return dt1 + ts;
         }
+
+        /// <summary>
+        /// Randomly shuffle the entries in the specified list.
+        /// </summary>
+        /// <param name="rg">Specifies the input list to shuffle.</param>
+        /// <returns>The newly shuffled list is returned.</returns>
+        public static List<int> RandomShuffle(List<int> rg)
+        {
+            Random random = new Random();
+            List<int> rg1 = new List<int>();
+
+            while (rg.Count > 0)
+            {
+                if (rg.Count == 1)
+                {
+                    rg1.Add(rg[0]);
+                    rg.Clear();
+                }
+                else
+                {
+                    int nIdx = random.Next(rg.Count);
+                    rg1.Add(rg[nIdx]);
+                    rg.RemoveAt(nIdx);
+                }
+            }
+
+            return rg1;
+        }
+
+        /// <summary>
+        /// Load each line of a text file and return the contents as a list.
+        /// </summary>
+        /// <param name="strFile">Specifies the text file to load.</param>
+        /// <param name="log">Optionally, specifies the output log used to output errors (default = null).  When null, any errors are thrown as exceptions.</param>
+        /// <returns>A list containing each line of the text file is returned.</returns>
+        public static List<string> LoadTextLines(string strFile, Log log = null)
+        {
+            List<string> rgstr = new List<string>();
+
+            try
+            {
+                using (StreamReader sr = new StreamReader(strFile))
+                {
+                    string strLine = sr.ReadLine();
+
+                    while (strLine != null)
+                    {
+                        rgstr.Add(strLine);
+                        strLine = sr.ReadLine();
+                    }
+                }
+            }
+            catch (Exception excpt)
+            {
+                if (log != null)
+                    log.FAIL("Failed to load '" + strFile + "'!  Error: " + excpt.Message);
+                else
+                    throw excpt;
+            }
+
+            return rgstr;
+        }
+
     }
 }
