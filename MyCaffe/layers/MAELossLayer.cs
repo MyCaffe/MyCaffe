@@ -113,6 +113,7 @@ namespace MyCaffe.layers
         /// <param name="colTop">top output blob vector (length 1)
         ///     the computed mean absolute error loss: 
         ///     @f$ E = \frac{1}{N} \sum_{i=0}^{N} |y - \hat{y}{i}| @f$ where @f$ \hat{y} @f$ is the predicted value.
+        /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             long hPredicted = colBottom[0].gpu_data;
