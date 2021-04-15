@@ -73,6 +73,8 @@ namespace MyCaffe.layers.hdf5
                     blob = m_colHdfBlobs[i];
                 }
 
+                blob.Name = m_param.top[i];
+
                 hdf5.load_nd_dataset(blob, m_param.top[i], true);
             }
 
