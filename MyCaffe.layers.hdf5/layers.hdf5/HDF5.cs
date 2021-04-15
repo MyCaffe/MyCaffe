@@ -129,11 +129,22 @@ namespace MyCaffe.layers.hdf5
                     H5D.read<float>(ds, dsType, rgData);
                     blob.mutable_cpu_data = Utility.ConvertVec<T>(rgBuffer);
                 }
+                else if (nSize == sizeof(byte))
+                {
+                    byte[] rgBuffer = new byte[blob.count()];
+                    H5Array<byte> rgData = new H5Array<byte>(rgBuffer);
+
+                    H5D.read<byte>(ds, dsType, rgData);
+
+                    float[] rgf = rgBuffer.Select(p1 => (float)p1).ToArray();
+                    blob.mutable_cpu_data = Utility.ConvertVec<T>(rgf);
+                }
                 else
                     m_log.FAIL("The dataset size of '" + nSize.ToString() + "' is not supported!");
             }
             catch (Exception excpt)
             {
+                m_log.FAIL(excpt.Message);
             }
             finally
             {
