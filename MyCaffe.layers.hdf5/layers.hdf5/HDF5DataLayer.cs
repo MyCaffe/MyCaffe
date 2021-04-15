@@ -42,7 +42,16 @@ namespace MyCaffe.layers.hdf5
         {
             m_type = LayerParameter.LayerType.HDF5_DATA;
         }
-       
+
+        /// <summary>
+        /// Release all internal blobs.
+        /// </summary>
+        protected override void dispose()
+        {
+            m_colHdfBlobs.Dispose();
+            base.dispose();
+        }
+
         protected virtual void LoadHDF5FileData(string strFile)
         {
             m_log.WriteLine("Loading HDF5 file: '" + strFile + "'");
@@ -52,10 +61,19 @@ namespace MyCaffe.layers.hdf5
             for (int i = 0; i < nTopCount; i++)
             {
                 // Allow reshape here, as we are loading data not params.
-                Blob<T> blob = new Blob<T>(m_cuda, m_log, false);
-                hdf5.load_nd_dataset(blob, m_param.top[i], true);
+                Blob<T> blob = null;
 
-                m_colHdfBlobs.Add(blob);
+                if (m_colHdfBlobs.Count < nTopCount)
+                {
+                    blob = new Blob<T>(m_cuda, m_log, false);
+                    m_colHdfBlobs.Add(blob);
+                }
+                else
+                {
+                    blob = m_colHdfBlobs[i];
+                }
+
+                hdf5.load_nd_dataset(blob, m_param.top[i], true);
             }
 
             hdf5.Dispose();
