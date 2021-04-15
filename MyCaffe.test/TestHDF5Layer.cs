@@ -35,6 +35,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestRead()
+        {
+            HDF5LayerTest test = new HDF5LayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IHDF5LayerTest t in test.Tests)
+                {
+                    t.TestRead();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestHDF5()
         {
             HDF5LayerTest test = new HDF5LayerTest(EngineParameter.Engine.CAFFE);
@@ -56,6 +74,7 @@ namespace MyCaffe.test
     interface IHDF5LayerTest : ITest
     {
         void TestForward();
+        void TestRead();
         void TestHDF5();
     }
 
@@ -77,11 +96,14 @@ namespace MyCaffe.test
 
     class HDF5LayerTest<T> : TestEx<T>, IHDF5LayerTest
     {
+        string m_strFileName;
         Blob<T> m_blobCont;
         Blob<T> m_blobInput;
         Blob<T> m_blobTarget;
         Blob<T> m_blobStage;
         Blob<T> m_blobFrameFc7;
+        Blob<T> m_blobTopLabel;
+        Blob<T> m_blobTopLabel2;
 
         public HDF5LayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, new List<int>() { 2, 3, 4, 5 }, nDeviceID)
@@ -93,6 +115,13 @@ namespace MyCaffe.test
             m_blobTarget = new Blob<T>(m_cuda, m_log, false);
             m_blobStage = new Blob<T>(m_cuda, m_log, false);
             m_blobFrameFc7 = new Blob<T>(m_cuda, m_log, false);
+
+            m_blobTopLabel = new Blob<T>(m_cuda, m_log, false);
+            m_blobTopLabel2 = new Blob<T>(m_cuda, m_log, false);
+
+            m_strFileName = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+            m_strFileName += "\\MyCaffe\\test_data\\data\\hdf5\\sample_data_list.txt";
+            m_log.WriteLine("Using sample HDF5 data file '" + m_strFileName + "'");
         }
 
         protected override FillerParameter getFillerParam()
@@ -107,6 +136,8 @@ namespace MyCaffe.test
             m_blobTarget.Dispose();
             m_blobStage.Dispose();
             m_blobFrameFc7.Dispose();
+            m_blobTopLabel.Dispose();
+            m_blobTopLabel2.Dispose();
 
             base.dispose();
         }
@@ -155,6 +186,95 @@ namespace MyCaffe.test
 
             Trace.WriteLine("Average time (ms) per Forward = " + dfAvePerFwd.ToString("N5"));
             Trace.WriteLine("Average time (ms) per Item = " + dfAvePerItem.ToString("N5"));
+        }
+
+        public void TestRead()
+        {
+            int nBatchSize = 5;
+            int nNumCols = 8;
+            int nHeight = 6;
+            int nWidth = 5;
+
+            // Create LayerParameter with the known parameters.
+            // The data file we are reading has 10 rows and 8 columns.
+            // with values from 0 to 10*8 reshaped in row-major order.
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.HDF5_DATA);
+            p.top.Add("data");
+            p.top.Add("label");
+            p.top.Add("label2");
+            p.hdf5_data_param.batch_size = (uint)nBatchSize;
+            p.hdf5_data_param.source = m_strFileName;
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+
+            BottomVec.Clear();
+            TopVec.Clear();
+            TopVec.Add(m_blob_top);
+            TopVec.Add(m_blobTopLabel);
+            TopVec.Add(m_blobTopLabel2);
+
+            layer.Setup(BottomVec, TopVec);
+
+            m_log.CHECK_EQ(m_blob_top.num, nBatchSize, "The top 'num' is incorrect.");
+            m_log.CHECK_EQ(m_blob_top.channels, nNumCols, "The top 'channels' is incorrect.");
+            m_log.CHECK_EQ(m_blob_top.height, nHeight, "The top 'height' is incorrect.");
+            m_log.CHECK_EQ(m_blob_top.width, nWidth, "The top 'width' is incorrect.");
+
+            m_log.CHECK_EQ(m_blobTopLabel.num_axes, 2, "The top label 'num_axes' is incorrect.");
+            m_log.CHECK_EQ(m_blobTopLabel.shape(0), nBatchSize, "The top label 'shape(0)' is incorrect.");
+            m_log.CHECK_EQ(m_blobTopLabel.shape(1), 1, "The top label 'shape(1)' is incorrect.");
+
+            m_log.CHECK_EQ(m_blobTopLabel2.num_axes, 2, "The top label2 'num_axes' is incorrect.");
+            m_log.CHECK_EQ(m_blobTopLabel2.shape(0), nBatchSize, "The top label2 'shape(0)' is incorrect.");
+            m_log.CHECK_EQ(m_blobTopLabel2.shape(1), 1, "The top label2 'shape(1)' is incorrect.");
+
+            layer.Setup(BottomVec, TopVec);
+
+            // Go through the data 10 times (5 batches)
+            int nDataSize = nNumCols * nHeight * nWidth;
+
+            for (int iter = 0; iter < 10; iter++)
+            {
+                layer.Forward(BottomVec, TopVec);
+
+                // On even iterations, we're reading the first half of the data.
+                // On odd iterations, we're reading the second half of the data.
+                // NB: label is 1- indexed
+                int nLabelOffset = 1 + ((iter % 2 == 0) ? 0 : nBatchSize);
+                int nLabel2Offset = 1 + nLabelOffset;
+                int nDataOffset = (iter % 2 == 0) ? 0 : nBatchSize * nDataSize;
+
+                // Every two iterations we are reading the second file,
+                // which has the same labels, but data is offset by total data size,
+                // which is 2400 (see generate_sample_data).
+                int nFileOffset = (iter % 4 < 2) ? 0 : 2400;
+                double[] rgLabel = convert(m_blobTopLabel.mutable_cpu_data);
+                double[] rgLabel2 = convert(m_blobTopLabel2.mutable_cpu_data);
+
+                for (int i=0; i<nBatchSize; i++)
+                {
+                    m_log.CHECK_EQ(nLabelOffset + i, rgLabel[i], "The label data is incorrect.");
+                    m_log.CHECK_EQ(nLabel2Offset + i, rgLabel2[i], "The label2 data is incorrect.");
+                }
+
+                double[] rgTopData = convert(m_blob_top.mutable_cpu_data);
+                for (int i = 0; i < nBatchSize; i++)
+                {
+                    for (int j = 0; j < nNumCols; j++)
+                    {
+                        for (int h = 0; h < nHeight; h++)
+                        {
+                            for (int w = 0; w < nWidth; w++)
+                            {
+                                int nIdx = i * nNumCols * nHeight * nWidth +
+                                           j * nHeight * nWidth +
+                                           h * nWidth +
+                                           w;
+                                m_log.CHECK_EQ(nFileOffset + nDataOffset + nIdx, rgTopData[nIdx], "debug: i " + i.ToString() + " j " + j.ToString() + " iter " + iter.ToString());
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         public void TestHDF5()
