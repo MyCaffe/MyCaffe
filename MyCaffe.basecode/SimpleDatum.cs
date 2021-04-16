@@ -2584,6 +2584,64 @@ namespace MyCaffe.basecode
 
             return rgData;
         }
+
+        /// <summary>
+        /// Transpose the data within a float array.
+        /// </summary>
+        /// <param name="rg">Specifies the array of data.</param>
+        /// <param name="nH">Specifies the height of the data.</param>
+        /// <param name="nW">Specifies the width of the data.</param>
+        /// <param name="nDim">Specifies the inner dimension of the data, default = 1</param>
+        /// <returns>The data is returned in a new transposed array.</returns>
+        public static float[] Transpose(float[] rg, int nH, int nW, int nDim = 1)
+        {
+            float[] rgT = new float[rg.Length];
+
+            for (int i = 0; i < nH; i++)
+            {
+                for (int j = 0; j < nW; j++)
+                {
+                    int nSrcIdx = (i * nW + j) * nDim;
+                    int nDstIdx = (j * nW + i) * nDim;
+
+                    if (nDim == 1)
+                        rgT[nDstIdx] = rg[nSrcIdx];
+                    else
+                        Array.Copy(rg, nSrcIdx, rgT, nDstIdx, nDim);
+                }
+            }
+
+            return rgT;
+        }
+
+        /// <summary>
+        /// Transpose the data within a double array.
+        /// </summary>
+        /// <param name="rg">Specifies the array of data.</param>
+        /// <param name="nH">Specifies the height of the data.</param>
+        /// <param name="nW">Specifies the width of the data.</param>
+        /// <param name="nDim">Specifies the inner dimension of the data, default = 1</param>
+        /// <returns>The data is returned in a new transposed array.</returns>
+        public static double[] Transpose(double[] rg, int nH, int nW, int nDim = 1)
+        {
+            double[] rgT = new double[rg.Length];
+
+            for (int i = 0; i < nH; i++)
+            {
+                for (int j = 0; j < nW; j++)
+                {
+                    int nSrcIdx = (i * nW + j) * nDim;
+                    int nDstIdx = (j * nW + i) * nDim;
+
+                    if (nDim == 1)
+                        rgT[nDstIdx] = rg[nSrcIdx];
+                    else
+                        Array.Copy(rg, nSrcIdx, rgT, nDstIdx, nDim);
+                }
+            }
+
+            return rgT;
+        }
     }
 
     /// <summary>
