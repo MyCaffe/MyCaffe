@@ -120,6 +120,7 @@ namespace MyCaffe.common
         int m_nLastNonFrozenLayerIdx = 0;
         string m_strDataSource = null;
         Layer<T> m_labelMappingLayer = null;
+        bool m_bFirstForwardInputWarning = true;
 
         /// <summary>
         /// Specifies the OnGetWorkspace event that fires when the getWorkspace() function is called by a layer to get a shareable workspace to conserve GPU memory.
@@ -286,6 +287,7 @@ namespace MyCaffe.common
         {
             try
             {
+                m_bFirstForwardInputWarning = true;
                 m_param = p;
 
                 // Set phase from the state.
@@ -1430,8 +1432,17 @@ namespace MyCaffe.common
         /// <returns></returns>
         public BlobCollection<T> Forward(BlobCollection<T> colBottom, out double dfLoss, bool bReshape = false)
         {
+            if (m_colNetInputBlobs.Count == 0)
+            {
+                if (m_bFirstForwardInputWarning)
+                {
+                    m_log.WriteLine("WARNING: bottom inputs are ignored, for this net does not take input.");
+                    m_bFirstForwardInputWarning = false;
+                }
+            }
+
             // Copy bottom to internal bottom
-            for (int i = 0; i < colBottom.Count; i++)
+            for (int i = 0; i < colBottom.Count && i < m_colNetInputBlobs.Count; i++)
             {
                 m_colNetInputBlobs[i].CopyFrom(colBottom[i], false, bReshape);
             }
