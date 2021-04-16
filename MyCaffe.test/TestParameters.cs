@@ -150,7 +150,7 @@ namespace MyCaffe.test
             ConcatParameter p = ConcatParameter.FromProto(proto);
 
             Assert.AreEqual(p.axis, -4);
-            Assert.AreEqual(p.concat_dim, (uint)3);
+            Assert.AreEqual(p.concat_dim.Value, (uint)3);
 
             RawProto proto2 = p.ToProto("concat_param");
             string strProto2 = proto2.ToString();
