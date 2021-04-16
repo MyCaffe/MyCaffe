@@ -19,7 +19,7 @@ namespace MyCaffe.param
     public class ConcatParameter : LayerParameterBase 
     {
         int m_nAxis = 1;
-        uint m_nConcatDim = 0;
+        uint? m_nConcatDim = null;
 
         /** @copydoc LayerParameterBase */
         public ConcatParameter()
@@ -44,7 +44,7 @@ namespace MyCaffe.param
         /// DEPRECIATED: alias for 'axis' -- does not support negative indexing.
         /// </summary>
         [Description("DEPRECIATED - use 'axis' instead.")]
-        public uint concat_dim
+        public uint? concat_dim
         {
             get { return m_nConcatDim; }
             set { m_nConcatDim = value; }
@@ -90,8 +90,8 @@ namespace MyCaffe.param
             if (axis != 1)
                 rgChildren.Add("axis", axis.ToString());
 
-            if (concat_dim != 0)
-                rgChildren.Add("concat_dim", concat_dim.ToString());
+            if (concat_dim.HasValue)
+                rgChildren.Add("concat_dim", concat_dim.Value.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }

@@ -73,9 +73,9 @@ namespace MyCaffe.layers
         {
             int nNumAxes = colBottom[0].num_axes;
 
-            if (m_param.concat_param.concat_dim > 0)
+            if (m_param.concat_param.concat_dim.HasValue)
             {
-                m_nConcatAxis = (int)m_param.concat_param.concat_dim;
+                m_nConcatAxis = (int)m_param.concat_param.concat_dim.Value;
                 // Don't allow negative indexing for concat_dim, a uint -- almost certainly
                 // unintended.
                 m_log.CHECK_GE(m_nConcatAxis, 0, "Casting concat_dim from uint to int produced a negative result; concat_dim must be > 0.");
