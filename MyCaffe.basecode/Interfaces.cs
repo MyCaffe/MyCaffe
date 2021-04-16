@@ -82,7 +82,11 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Applies to all stages.
         /// </summary>
-        ALL = 3
+        ALL = 3,
+        /// <summary>
+        /// Applies to stages specified within the solver prototxt.
+        /// </summary>
+        CUSTOM = 4
     }
 
 
