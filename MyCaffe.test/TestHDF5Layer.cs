@@ -283,12 +283,12 @@ namespace MyCaffe.test
             string strFile = strPath + "batch_0.h5";
             HDF5<T> hdf5 = new HDF5<T>(m_cuda, m_log, strFile);
 
-            hdf5.load_nd_dataset(m_blob_bottom, "cont", true);
-            m_log.CHECK_EQ(m_blob_bottom.num_axes, 2, "The 'cont_sentence' should have 2 axes.");
-            m_log.CHECK_EQ(m_blob_bottom.shape(0), 1000, "The 'cont_sentence' should have shape(0) = 1000");
-            m_log.CHECK_EQ(m_blob_bottom.shape(1), 16, "The 'cont_sentence' should have shape(1) = 16");
+            hdf5.load_nd_dataset(m_blobCont, "cont", true);
+            m_log.CHECK_EQ(m_blobCont.num_axes, 2, "The 'cont_sentence' should have 2 axes.");
+            m_log.CHECK_EQ(m_blobCont.shape(0), 1000, "The 'cont_sentence' should have shape(0) = 1000");
+            m_log.CHECK_EQ(m_blobCont.shape(1), 16, "The 'cont_sentence' should have shape(1) = 16");
 
-            double[] rgData = convert(m_blob_bottom.mutable_cpu_data);
+            double[] rgData = convert(m_blobCont.mutable_cpu_data);
             int nDim1 = 1000;
             int nDim2 = 16;
             for (int i = 0; i < nDim1; i++)
@@ -305,25 +305,25 @@ namespace MyCaffe.test
                 }
             }
 
-            hdf5.load_nd_dataset(m_blob_bottom, "cont_sentence", true);
-            m_log.CHECK_EQ(m_blob_bottom.num_axes, 2, "The 'cont_sentence' should have 2 axes.");
-            m_log.CHECK_EQ(m_blob_bottom.shape(0), 1000, "The 'cont_sentence' should have shape(0) = 1000");
-            m_log.CHECK_EQ(m_blob_bottom.shape(1), 16, "The 'cont_sentence' should have shape(1) = 16");
+            hdf5.load_nd_dataset(m_blobCont, "cont_sentence", true);
+            m_log.CHECK_EQ(m_blobCont.num_axes, 2, "The 'cont_sentence' should have 2 axes.");
+            m_log.CHECK_EQ(m_blobCont.shape(0), 1000, "The 'cont_sentence' should have shape(0) = 1000");
+            m_log.CHECK_EQ(m_blobCont.shape(1), 16, "The 'cont_sentence' should have shape(1) = 16");
 
-            hdf5.load_nd_dataset(m_blob_bottom, "input_sentence", true);
-            m_log.CHECK_EQ(m_blob_bottom.num_axes, 2, "The 'input_sentence' should have 2 axes.");
-            m_log.CHECK_EQ(m_blob_bottom.shape(0), 1000, "The 'input_sentence' should have shape(0) = 1000");
-            m_log.CHECK_EQ(m_blob_bottom.shape(1), 16, "The 'input_sentence' should have shape(1) = 16");
+            hdf5.load_nd_dataset(m_blobInput, "input_sentence", true);
+            m_log.CHECK_EQ(m_blobInput.num_axes, 2, "The 'input_sentence' should have 2 axes.");
+            m_log.CHECK_EQ(m_blobInput.shape(0), 1000, "The 'input_sentence' should have shape(0) = 1000");
+            m_log.CHECK_EQ(m_blobInput.shape(1), 16, "The 'input_sentence' should have shape(1) = 16");
 
-            hdf5.load_nd_dataset(m_blob_bottom, "target_sentence", true);
-            m_log.CHECK_EQ(m_blob_bottom.num_axes, 2, "The 'target_sentence' should have 2 axes.");
-            m_log.CHECK_EQ(m_blob_bottom.shape(0), 1000, "The 'target_sentence' should have shape(0) = 1000");
-            m_log.CHECK_EQ(m_blob_bottom.shape(1), 16, "The 'target_sentence' should have shape(1) = 16");
+            hdf5.load_nd_dataset(m_blobTarget, "target_sentence", true);
+            m_log.CHECK_EQ(m_blobTarget.num_axes, 2, "The 'target_sentence' should have 2 axes.");
+            m_log.CHECK_EQ(m_blobTarget.shape(0), 1000, "The 'target_sentence' should have shape(0) = 1000");
+            m_log.CHECK_EQ(m_blobTarget.shape(1), 16, "The 'target_sentence' should have shape(1) = 16");
 
-            hdf5.load_nd_dataset(m_blob_bottom, "stage_indicator", true);
-            m_log.CHECK_EQ(m_blob_bottom.num_axes, 2, "The 'stage_indicator' should have 2 axes.");
-            m_log.CHECK_EQ(m_blob_bottom.shape(0), 1000, "The 'stage_indicator' should have shape(0) = 1000");
-            m_log.CHECK_EQ(m_blob_bottom.shape(1), 16, "The 'stage_indicator' should have shape(1) = 16");
+            hdf5.load_nd_dataset(m_blobStage, "stage_indicator", true);
+            m_log.CHECK_EQ(m_blobStage.num_axes, 2, "The 'stage_indicator' should have 2 axes.");
+            m_log.CHECK_EQ(m_blobStage.shape(0), 1000, "The 'stage_indicator' should have shape(0) = 1000");
+            m_log.CHECK_EQ(m_blobStage.shape(1), 16, "The 'stage_indicator' should have shape(1) = 16");
 
             hdf5.load_nd_dataset(m_blob_bottom, "frame_fc7", true);
             m_log.CHECK_EQ(m_blob_bottom.num_axes, 3, "The 'frame_fc7' should have 2 axes.");
