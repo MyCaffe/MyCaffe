@@ -1581,7 +1581,7 @@ inline long Device<T>::SetRnnDataDesc(long lInput, T* pfInput, long* plOutput, T
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 5, MAX_ARG))
+	if (lErr = verifyInput(lInput, pfInput, 5, 7))
 		return lErr;
 
 	long hRnnDataDesc = (long)pfInput[0];
@@ -1590,29 +1590,22 @@ inline long Device<T>::SetRnnDataDesc(long lInput, T* pfInput, long* plOutput, T
 	int nBatchSize = (int)pfInput[3];
 	long nVectorSize = (long)pfInput[4];
 	int* rgSeqLen = NULL;
-	int nIdx = 5;
+	int nIdx1 = 5;
+	int nIdx2 = 7;
 
-	if (lInput != nIdx && lInput < nIdx + nBatchSize)
+	if (lInput != nIdx1 && lInput < nIdx2)
 		return ERROR_PARAM_OUT_OF_RANGE;
 
-	if (lInput > nIdx)
+	if (lInput > nIdx1)
 	{
-		rgSeqLen = (int*)malloc(sizeof(int) * nBatchSize);
+		int nCount = nIdx2 - nIdx1;
+		rgSeqLen = (int*)malloc(sizeof(int) * nCount);
 		if (rgSeqLen == NULL)
 			return ERROR_OUTOFMEMORY;
 
-		for (int i = 0; i < nBatchSize; i++)
+		for (int i = 0; i < nCount; i++)
 		{
-			rgSeqLen[i] = (int)pfInput[nIdx];
-
-			// All sequences must be the same length.
-			if (rgSeqLen[i] != nMaxSeqLen)
-			{
-				free(rgSeqLen);
-				return ERROR_PARAM_OUT_OF_RANGE;
-			}
-
-			nIdx++;
+			rgSeqLen[i] = (int)pfInput[i];
 		}
 	}
 
@@ -1658,7 +1651,7 @@ inline long Device<T>::SetRnnDataDescEx(long lInput, T* pfInput, long* plOutput,
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 5, MAX_ARG))
+	if (lErr = verifyInput(lInput, pfInput, 5, 7))
 		return lErr;
 
 	long hRnnDataDesc = (long)pfInput[0];
@@ -1666,23 +1659,24 @@ inline long Device<T>::SetRnnDataDescEx(long lInput, T* pfInput, long* plOutput,
 	int nMaxSeqLen = (int)pfInput[2];
 	int nBatchSize = (int)pfInput[3];
 	long nVectorSize = (long)pfInput[4];
-	int nIdx = 5;
+	int nIdx1 = 5;
+	int nIdx2 = 7;
 
-	if (lInput != nIdx && lInput < nIdx + nBatchSize)
+	if (lInput != nIdx1 && lInput < nIdx2)
 		return ERROR_PARAM_OUT_OF_RANGE;
 
-	int* rgSeqLen = (int*)malloc(sizeof(int) * nBatchSize);
-	if (rgSeqLen == NULL)
-		return ERROR_OUTOFMEMORY;
-
-	for (int i = 0; i < nBatchSize; i++)
+	int* rgSeqLen = NULL;
+	if (lInput > nIdx1)
 	{
-		rgSeqLen[i] = nMaxSeqLen;
+		int nCount = nIdx2 - nIdx2;
+		rgSeqLen = (int*)malloc(sizeof(int) * nCount);
+		if (rgSeqLen == NULL)
+			return ERROR_OUTOFMEMORY;
 
-		if (nIdx < lInput)
+		for (int i = 0; i < nCount; i++)
 		{
-			rgSeqLen[i] = (int)pfInput[nIdx];
-			nIdx++;
+			rgSeqLen[i] = (int)pfInput[nIdx1];
+			nIdx1++;
 		}
 	}
 
@@ -1726,7 +1720,7 @@ inline long Device<T>::SetRnnDesc(long lInput, T* pfInput, long* plOutput, T** p
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+	if (lErr = verifyInput(lInput, pfInput, 7, 8))
 		return lErr;
 
 	long hHandle = (long)pfInput[0];
@@ -1736,8 +1730,12 @@ inline long Device<T>::SetRnnDesc(long lInput, T* pfInput, long* plOutput, T** p
 	long hDropoutDesc = (long)pfInput[4];
 	int mode = (int)pfInput[5];
 	bool bUseTensorCores = (bool)(pfInput[6] == 1) ? true : false;
+	int dir = 0;
 
-	return m_memory.SetRnnDesc(hHandle, hRnnDesc, nHiddenCount, nNumLayers, hDropoutDesc, (RnnMode)mode, bUseTensorCores);
+	if (lInput > 7)
+		dir = (int)pfInput[7];
+
+	return m_memory.SetRnnDesc(hHandle, hRnnDesc, nHiddenCount, nNumLayers, hDropoutDesc, (RnnMode)mode, bUseTensorCores, (RnnDirection)dir);
 }
 
 template <class T>
