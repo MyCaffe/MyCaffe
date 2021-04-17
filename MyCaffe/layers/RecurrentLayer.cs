@@ -307,8 +307,8 @@ namespace MyCaffe.layers
                 m_blobCy.SetData(0);
 
                 // Set the input/output data descriptors
-                m_cuda.SetRnnDataDesc(m_hXDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, m_nT, m_nN, m_nInputSize);
-                m_cuda.SetRnnDataDesc(m_hYDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, m_nT, m_nN, m_nHiddenSize);
+                m_cuda.SetRnnDataDesc(m_hXDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, m_nT, m_nN, m_nInputSize, null);
+                m_cuda.SetRnnDataDesc(m_hYDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, m_nT, m_nN, m_nHiddenSize, null);
 
                 int[] rgDimA = new int[3];
                 int[] rgStrideA = new int[3];
@@ -599,7 +599,7 @@ namespace MyCaffe.layers
             m_log.CHECK_GE(colBottom[0].num_axes, 2, "bottom[0] must have at least 2 axes -- (#timesteps, #streams, ...)");
             m_log.CHECK_EQ(m_nT, colBottom[0].shape(0), "input number of timesteps changed.");
             m_nN = colBottom[0].shape(1);
-            m_log.CHECK_EQ(colBottom[1].num_true_axes, 2, "bottom[1] must have exactly 2 axes -- (#timesteps, #streams)");
+            m_log.CHECK_EQ(colBottom[1].num_axes, 2, "bottom[1] must have exactly 2 axes -- (#timesteps, #streams)");
             m_log.CHECK_EQ(m_nT, colBottom[1].shape(0), "bottom[1].shape(0) should equal the timesteps T (" + m_nT.ToString() + ")");
             m_log.CHECK_EQ(m_nN, colBottom[1].shape(1), "bottom[1].shape(1) should equal the streams N (" + m_nN + ")");
 
@@ -611,6 +611,18 @@ namespace MyCaffe.layers
 
         private void reshapeCuDnn(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            m_blobX.ReshapeLike(colBottom[0]);
+            m_blobX.ShareData(colBottom[0]);
+            m_blobX.ShareDiff(colBottom[0]);
+            m_log.CHECK_EQ(m_blobX.count(), m_nT * m_nN * m_nInputSize, "The input should be Sequence * Batch * InputSize in length.");
+
+            m_blobHx.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
+            m_blobCx.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
+
+            m_blobY.Reshape(m_nT, m_nN, m_nHiddenSize, 1);
+            m_blobHy.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
+            m_blobCy.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
+
             colTop[0].ReshapeLike(m_blobY);
             colTop[0].ShareData(m_blobY);
             colTop[0].ShareDiff(m_blobY);
