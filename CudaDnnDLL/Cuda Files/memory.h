@@ -53,7 +53,14 @@ enum RnnMode
 {
 	RNN_RELU = CUDNN_RNN_RELU,
 	RNN_TANH = CUDNN_RNN_TANH,
-	LSTM = CUDNN_LSTM
+	LSTM = CUDNN_LSTM,
+	GRU = CUDNN_GRU
+};
+
+enum RnnDirection
+{
+	UNIDIRECTIONAL = CUDNN_UNIDIRECTIONAL,
+	BIDIRECTIONAL = CUDNN_BIDIRECTIONAL
 };
 
 enum RnnDataLayout
@@ -383,7 +390,7 @@ class Memory
 		long CreateRnnDesc(long* phHandle);
 		long FreeRnnDesc(long hHandle);
 		cudnnRNNDescriptor_t GetRnnDesc(long hHandle);
-		long SetRnnDesc(long hHandle, long hRnnDesc, int nHiddenCount, int nNumLayers, long hDropoutDesc, RnnMode nMode, bool bUseTensorCores);
+		long SetRnnDesc(long hHandle, long hRnnDesc, int nHiddenCount, int nNumLayers, long hDropoutDesc, RnnMode nMode, bool bUseTensorCores, RnnDirection directional);
 		long GetRnnParamCount(long hHandle, long hRnnDesc, long hXDesc, int* pnCount);
 		long GetRnnWorkspaceCount(long hHandle, long hRnnDesc, long hXDesc, size_t* pnWsCount, size_t* pnResCount);
 		long GetRnnParamCountEx(long hHandle, long hRnnDesc, long hXDesc, int* pnCount);
@@ -1224,7 +1231,7 @@ inline cudnnRNNDescriptor_t Memory<T>::GetRnnDesc(long hHandle)
 }
 
 template <class T>
-inline long Memory<T>::SetRnnDesc(long hHandle, long hRnnDesc, int nHiddenCount, int nNumLayers, long hDropoutDesc, RnnMode mode, bool bUseTensorCores)
+inline long Memory<T>::SetRnnDesc(long hHandle, long hRnnDesc, int nHiddenCount, int nNumLayers, long hDropoutDesc, RnnMode mode, bool bUseTensorCores, RnnDirection direction)
 {
 	LONG lErr;
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
@@ -1236,12 +1243,16 @@ inline long Memory<T>::SetRnnDesc(long hHandle, long hRnnDesc, int nHiddenCount,
 		descDropout = (cudnnDropoutDescriptor_t)m_dropoutDesc.GetData(hDropoutDesc);
 	
 #ifdef CUDA11_0
-	if (lErr = cudnnSetRNNDescriptor_v6(cudnn, desc, nHiddenCount, nNumLayers, descDropout, CUDNN_LINEAR_INPUT, CUDNN_UNIDIRECTIONAL, (cudnnRNNMode_t)mode, CUDNN_RNN_ALGO_STANDARD, computeType))
+	if (lErr = cudnnSetRNNDescriptor_v6(cudnn, desc, nHiddenCount, nNumLayers, descDropout, CUDNN_LINEAR_INPUT, (cudnnDirectionMode_t)direction, (cudnnRNNMode_t)mode, CUDNN_RNN_ALGO_STANDARD, computeType))
 		return lErr | ERROR_CUDNN_OFFSET;
 #else
-	if (lErr = cudnnSetRNNDescriptor(cudnn, desc, nHiddenCount, nNumLayers, descDropout, CUDNN_LINEAR_INPUT, CUDNN_UNIDIRECTIONAL, (cudnnRNNMode_t)mode, CUDNN_RNN_ALGO_STANDARD, computeType))
+	if (lErr = cudnnSetRNNDescriptor(cudnn, desc, nHiddenCount, nNumLayers, descDropout, CUDNN_LINEAR_INPUT, (cudnnDirectionMode_t)direction, (cudnnRNNMode_t)mode, CUDNN_RNN_ALGO_STANDARD, computeType))
 		return lErr | ERROR_CUDNN_OFFSET;
 #endif
+
+	// Needed to auto padd when using CUDNN_RNN_DATA_LAYOUT_SEQ_MAJOR_UNPACKED.
+	if (lErr = cudnnSetRNNPaddingMode(desc, CUDNN_RNN_PADDED_IO_ENABLED))
+		return lErr | ERROR_CUDNN_OFFSET;
 
 	if (bUseTensorCores)
 	{
@@ -1310,7 +1321,8 @@ inline long Memory<T>::SetRnnDataDesc2(long hRnnDataDesc, RnnDataLayout layout, 
 	cudnnRNNDataDescriptor_t desc = (cudnnRNNDataDescriptor_t)m_rnnDataDesc2.GetData(hRnnDataDesc);
 	cudnnDataType_t computeType = (sizeof(T) == sizeof(double)) ? CUDNN_DATA_DOUBLE : CUDNN_DATA_FLOAT;
 
-	if (lErr = cudnnSetRNNDataDescriptor(desc, computeType, (cudnnRNNDataLayout_t)layout, nMaxSeqLen, nBatchSize, nVectorSize, rgSeqLen, NULL))
+	T fPad = T(0.0);
+	if (lErr = cudnnSetRNNDataDescriptor(desc, computeType, (cudnnRNNDataLayout_t)layout, nMaxSeqLen, nBatchSize, nVectorSize, rgSeqLen, (void*)&fPad))
 		return lErr | ERROR_CUDNN_OFFSET;
 
 	return CUDNN_STATUS_SUCCESS;
