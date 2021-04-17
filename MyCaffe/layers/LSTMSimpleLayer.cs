@@ -283,6 +283,12 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            if (m_bNetReshapeRequest)
+            {
+                m_nN = colBottom[0].num;
+                m_bNetReshapeRequest = false;
+            }
+
             // Figure out the dimensions.
             m_nT = colBottom[0].num / m_nN;     // length of sequence.
             m_log.CHECK_EQ(colBottom[0].num % m_nN, 0, "The inputs size should be a multiple of the batch size.");
@@ -311,8 +317,9 @@ namespace MyCaffe.layers
         /// <summary>
         /// Forward computation.
         /// </summary>
-        /// <param name="colBottom">inpub Blob vector (length 1)
-        ///  -# @f$ (N \times C \times H \times W) @f$
+        /// <param name="colBottom">inpub Blob vector (length 2)
+        ///  -# @f$ (N \times C \times H \times W) @f$ input
+        ///  -# @f$ (N \times 1 \times 1 \times 1) @f$ cont
         ///  </param>
         /// <param name="colTop">top output Blob vector (length 1)
         ///  -# @f$ (N \times C \times H \times W) @f$

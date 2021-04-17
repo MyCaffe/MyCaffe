@@ -430,8 +430,15 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            if (!reshapeNeeded(colBottom, colTop))
-                return;
+            if (m_bNetReshapeRequest)
+            {
+                m_nChannels = colBottom[0].channels;
+            }
+            else
+            {
+                if (!reshapeNeeded(colBottom, colTop))
+                    return;
+            }
 
             if (colBottom[0].num_axes >= 1)
                 m_log.CHECK_EQ(colBottom[0].shape(1), m_nChannels, "The colBottom[0].shape(1) should equal the channel count '" + m_nChannels.ToString() + "'.");
