@@ -1757,6 +1757,7 @@ namespace MyCaffe.common
         {
             for (int i = 0; i < m_rgLayers.Count; i++)
             {
+                m_rgLayers[i].SetNetReshapeRequest();
                 m_rgLayers[i].Reshape(m_rgcolBottomVecs[i], m_rgcolTopVecs[i]);
             }
         }
