@@ -227,7 +227,7 @@ namespace MyCaffe.layers
 
             m_log.WriteLine("Initializing recurrent layer: assuming input batch contains " + m_nT.ToString() + " timesteps of " + m_nN.ToString() + " independent streams.");
 
-            m_log.CHECK_EQ(colBottom[1].num_true_axes, 2, "Bottom[1] must have exactly 2 axes -- (#timesteps, #streams)");
+            m_log.CHECK_EQ(colBottom[1].num_axes, 2, "Bottom[1] must have exactly 2 axes -- (#timesteps, #streams)");
             m_log.CHECK_EQ(m_nT, colBottom[1].shape(0), "The bottom[1].shape(0) must equal T = " + m_nT.ToString());
             m_log.CHECK_EQ(m_nN, colBottom[1].shape(1), "The bottom[1].shape(1) must equal N = " + m_nN.ToString());
 
