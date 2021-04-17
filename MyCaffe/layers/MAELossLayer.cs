@@ -185,6 +185,12 @@ namespace MyCaffe.layers
             double dfLossWeight = dfTopDiff / dfNormalizer;
 
             m_cuda.scal(nCount, dfLossWeight, hBottomDiff);
+
+            if (colBottom.Count > 1)
+            {
+                long hBottomDiff2 = colBottom[1].mutable_gpu_diff;
+                m_cuda.scale(nCount, -1, hBottomDiff, hBottomDiff2);
+            }
         }
     }
 }
