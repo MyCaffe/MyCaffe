@@ -94,6 +94,10 @@ namespace MyCaffe.layers
         /// Specifies whether or not the reshape on forward is needed or not.
         /// </summary>
         protected bool m_bReshapeOnForwardNeeded = true;
+        /// <summary>
+        /// Specifies whether the reshape is requested from a Net.Reshape call or not.
+        /// </summary>
+        protected bool m_bNetReshapeRequest = false;
 
         private List<List<int>> m_rgrgLastBottomShape = new List<List<int>>();
         private List<List<int>> m_rgrgLastTopShape = new List<List<int>>();
@@ -202,6 +206,14 @@ namespace MyCaffe.layers
             }
 
             return args;
+        }
+
+        /// <summary>
+        /// Called by the Net when requesting a reshape.
+        /// </summary>
+        public void SetNetReshapeRequest()
+        {
+            m_bNetReshapeRequest = true;
         }
 
         /// <summary>
