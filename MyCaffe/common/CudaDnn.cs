@@ -327,7 +327,13 @@ namespace MyCaffe.common
         /// <summary>
         /// Specifies to use a 4 gate LSTM Recurrent Learning unit.
         /// </summary>
-        LSTM = 2
+        LSTM = 2,
+        /// <summary>
+        /// Specifies to use the GRU RNN where
+        /// @f$ h' = tanh(r * Uh(t-1) + Wx) @f$ and 
+        /// @f$ h = (1 - z) * h' + z * h(t-1) @f$
+        /// </summary>
+        GRU = 3
     }
 
     /// <summary>
@@ -343,6 +349,21 @@ namespace MyCaffe.common
         /// Specifies ordering with batch major ordering.
         /// </summary>
         RNN_BATCH_MAJOR = 2
+    }
+
+    /// <summary>
+    /// Specifies the RNN directional used.
+    /// </summary>
+    public enum RNN_DIRECTION
+    {
+        /// <summary>
+        /// Specifies a single direction RNN (default)
+        /// </summary>
+        RNN_UNIDIRECTIONAL,
+        /// <summary>
+        /// Specifies a bi-direction RNN where the output is concatinated at each layer.
+        /// </summary>
+        RNN_BIDIRECTIONAL
     }
 
     /// <summary>
@@ -669,7 +690,7 @@ namespace MyCaffe.common
 
         long CreateRnnDesc();
         void FreeRnnDesc(long h);
-        void SetRnnDesc(long hHandle, long hRnnDesc, int nHiddenSize, int nNumLayers, long hDropoutDesc, RNN_MODE mode, bool bUseTensorCores);
+        void SetRnnDesc(long hHandle, long hRnnDesc, int nHiddenSize, int nNumLayers, long hDropoutDesc, RNN_MODE mode, bool bUseTensorCores, RNN_DIRECTION direction = RNN_DIRECTION.RNN_UNIDIRECTIONAL);
         int GetRnnParamCount(long hHandle, long hRnnDesc, long hXDesc);
         ulong GetRnnWorkspaceCount(long hHandle, long hRnnDesc, long hXDesc, out ulong nReservedCount);
         void GetRnnLinLayerParams(long hHandle, long hRnnDesc, int nLayer, long hXDesc, long hWtDesc, long hWtData, int nLinLayer, out int nWtCount, out long hWt, out int nBiasCount, out long hBias);
@@ -4362,12 +4383,13 @@ namespace MyCaffe.common
         /// <param name="hDropoutDesc">Specifies the handle to the Droput descriptor (or 0 to ignore).  The droput descriptor is only used with two or more layers.</param>
         /// <param name="mode">Specifies the RNN_MODE (LSTM, RNN_RELU, RNN_TANH) to use.</param>
         /// <param name="bUseTensorCores">Optionally, specifies whether or not to use the Tensor Cores (if available).</param>
-        public void SetRnnDesc(long hCuDnn, long hRnnDesc, int nHiddenCount, int nNumLayers, long hDropoutDesc, RNN_MODE mode, bool bUseTensorCores)
-        {           
+        /// <param name="direction">Optionally, specifies the direction of the RNN; Unidirectional or BiDirectional.</param>
+        public void SetRnnDesc(long hCuDnn, long hRnnDesc, int nHiddenCount, int nNumLayers, long hDropoutDesc, RNN_MODE mode, bool bUseTensorCores, RNN_DIRECTION direction = RNN_DIRECTION.RNN_UNIDIRECTIONAL)
+        {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_RNN_DESC, m_param.AsDouble(hCuDnn, hRnnDesc, nHiddenCount, nNumLayers, hDropoutDesc, (int)mode, (bUseTensorCores) ? 1 : 0));
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_RNN_DESC, m_param.AsDouble(hCuDnn, hRnnDesc, nHiddenCount, nNumLayers, hDropoutDesc, (int)mode, (bUseTensorCores) ? 1 : 0, (double)direction));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_RNN_DESC, m_param.AsFloat(hCuDnn, hRnnDesc, nHiddenCount, nNumLayers, hDropoutDesc, (int)mode, (bUseTensorCores) ? 1 : 0));
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_RNN_DESC, m_param.AsFloat(hCuDnn, hRnnDesc, nHiddenCount, nNumLayers, hDropoutDesc, (int)mode, (bUseTensorCores) ? 1 : 0, (float)direction));
         }
 
         /// <summary>
