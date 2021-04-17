@@ -240,6 +240,39 @@ namespace MyCaffe.db.image.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to IF NOT EXISTS (SELECT *  FROM sys.indexes  WHERE name=&apos;_dta_index_RawImages_10_1189579276__K9_K10_K20_1_2_3_4_7_8_11_12_13_14_15_18_19_21_22_23_24&apos;) 
+        ///BEGIN
+        ///CREATE NONCLUSTERED INDEX [_dta_index_RawImages_10_1189579276__K9_K10_K20_1_2_3_4_7_8_11_12_13_14_15_18_19_21_22_23_24] ON [dbo].[RawImages]
+        ///(
+        ///	[SourceID] ASC,
+        ///	[Idx] ASC,
+        ///	[Active] ASC
+        ///)
+        ///INCLUDE([ID],[Height],[Width],[Channels],[TimeStamp],[Encoded],[GroupID],[OriginalBoost],[ActiveBoost],[AutoLabel],[VirtualID],[OriginalLabel],[ActiveLabel],[De [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string CreateRawImageIndex {
+            get {
+                return ResourceManager.GetString("CreateRawImageIndex", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IF NOT EXISTS (SELECT *  FROM sys.indexes  WHERE name=&apos;_dta_index_RawImages_10_1189579276__K9_K20&apos;) 
+        ///BEGIN
+        ///CREATE NONCLUSTERED INDEX [_dta_index_RawImages_10_1189579276__K9_K20] ON [dbo].[RawImages]
+        ///(
+        ///	[SourceID] ASC,
+        ///	[Active] ASC
+        ///)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+        ///END.
+        /// </summary>
+        internal static string CreateRawImageIndex2 {
+            get {
+                return ResourceManager.GetString("CreateRawImageIndex2", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to CREATE TABLE [dbo].[RawImageMeans](
         ///	[ID] [int] IDENTITY(1,1) NOT NULL,
         ///	[Height] [int] NULL,

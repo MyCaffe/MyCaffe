@@ -166,69 +166,77 @@ namespace MyCaffe.db.image
         /// <param name="bUpdateOnly">When <i>true</i> an existing database is being updated.</param>
         protected virtual void createTables(SqlConnection connection, bool bFullCreate, bool bUpdateOnly)
         {
-            if (bUpdateOnly)
-                return;
-
             SqlCommand cmdCreate;
 
-            cmdCreate = new SqlCommand(Properties.Resources.CreateDatasetGroupsTable, connection);
-            cmdCreate.ExecuteNonQuery();
-            cmdCreate.Dispose();
-
-            cmdCreate = new SqlCommand(Properties.Resources.CreateDatasetsTable, connection);
-            cmdCreate.ExecuteNonQuery();
-            cmdCreate.Dispose();
-
-            cmdCreate = new SqlCommand(Properties.Resources.CreateDatasetParametersTable, connection);
-            cmdCreate.ExecuteNonQuery();
-            cmdCreate.Dispose();
-
-            cmdCreate = new SqlCommand(Properties.Resources.CreateLabelsTable, connection);
-            cmdCreate.ExecuteNonQuery();
-            cmdCreate.Dispose();
-
-            cmdCreate = new SqlCommand(Properties.Resources.CreateLabelBoostsTable, connection);
-            cmdCreate.ExecuteNonQuery();
-            cmdCreate.Dispose();
-
-            cmdCreate = new SqlCommand(Properties.Resources.CreateRawImageGroupsTable, connection);
-            cmdCreate.ExecuteNonQuery();
-            cmdCreate.Dispose();
-
-            cmdCreate = new SqlCommand(Properties.Resources.CreateRawImageMeansTable, connection);
-            cmdCreate.ExecuteNonQuery();
-            cmdCreate.Dispose();
-
-            cmdCreate = new SqlCommand(Properties.Resources.CreateRawImageResultsTable, connection);
-            cmdCreate.ExecuteNonQuery();
-            cmdCreate.Dispose();
-
-            cmdCreate = new SqlCommand(Properties.Resources.CreateRawImageParametersTable, connection);
-            cmdCreate.ExecuteNonQuery();
-            cmdCreate.Dispose();
-
-            cmdCreate = new SqlCommand(Properties.Resources.CreateRawImagesTable, connection);
-            cmdCreate.ExecuteNonQuery();
-            cmdCreate.Dispose();
-
-            cmdCreate = new SqlCommand(Properties.Resources.CreateSourcesTable, connection);
-            cmdCreate.ExecuteNonQuery();
-            cmdCreate.Dispose();
-
-            cmdCreate = new SqlCommand(Properties.Resources.CreateSourceParametersTable, connection);
-            cmdCreate.ExecuteNonQuery();
-            cmdCreate.Dispose();
-
-            cmdCreate = new SqlCommand(Properties.Resources.CreateModelGroupsTable, connection);
-            cmdCreate.ExecuteNonQuery();
-            cmdCreate.Dispose();
-
-            if (bFullCreate)
+            if (!bUpdateOnly)
             {
-                cmdCreate = new SqlCommand(Properties.Resources.CreateDatasetCreatorsTable, connection);
+                cmdCreate = new SqlCommand(Properties.Resources.CreateDatasetGroupsTable, connection);
                 cmdCreate.ExecuteNonQuery();
                 cmdCreate.Dispose();
+
+                cmdCreate = new SqlCommand(Properties.Resources.CreateDatasetsTable, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
+
+                cmdCreate = new SqlCommand(Properties.Resources.CreateDatasetParametersTable, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
+
+                cmdCreate = new SqlCommand(Properties.Resources.CreateLabelsTable, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
+
+                cmdCreate = new SqlCommand(Properties.Resources.CreateLabelBoostsTable, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
+
+                cmdCreate = new SqlCommand(Properties.Resources.CreateRawImageGroupsTable, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
+
+                cmdCreate = new SqlCommand(Properties.Resources.CreateRawImageMeansTable, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
+
+                cmdCreate = new SqlCommand(Properties.Resources.CreateRawImageResultsTable, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
+
+                cmdCreate = new SqlCommand(Properties.Resources.CreateRawImageParametersTable, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
+
+                cmdCreate = new SqlCommand(Properties.Resources.CreateRawImagesTable, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
+
+                cmdCreate = new SqlCommand(Properties.Resources.CreateSourcesTable, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
+
+                cmdCreate = new SqlCommand(Properties.Resources.CreateSourceParametersTable, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
+
+                cmdCreate = new SqlCommand(Properties.Resources.CreateModelGroupsTable, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
+
+                if (bFullCreate)
+                {
+                    cmdCreate = new SqlCommand(Properties.Resources.CreateDatasetCreatorsTable, connection);
+                    cmdCreate.ExecuteNonQuery();
+                    cmdCreate.Dispose();
+                }
             }
+
+            cmdCreate = new SqlCommand(Properties.Resources.CreateRawImageIndex, connection);
+            cmdCreate.ExecuteNonQuery();
+            cmdCreate.Dispose();
+
+            cmdCreate = new SqlCommand(Properties.Resources.CreateRawImageIndex2, connection);
+            cmdCreate.ExecuteNonQuery();
+            cmdCreate.Dispose();
         }
 
         /// <summary>
