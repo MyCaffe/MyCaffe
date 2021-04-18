@@ -301,6 +301,7 @@ namespace MyCaffe.layers
             List<int> rgGateShape = new List<int>() { m_nT, m_nN, 4, m_nH };
             m_blobPreGate.Reshape(rgGateShape);
             m_blobGate.Reshape(rgGateShape);
+            m_blob_H_to_Gate.Reshape(rgGateShape);
 
             List<int> rgTopShape = new List<int>() { m_nT, m_nN, m_nH };
             m_blobCell.Reshape(rgTopShape);
@@ -312,6 +313,13 @@ namespace MyCaffe.layers
             List<int> rgMultiplierShape = new List<int>() { m_nN * m_nT };
             m_blobBiasMultiplier.Reshape(rgMultiplierShape);
             m_blobBiasMultiplier.SetData(1.0);
+
+            List<int> rgCellShape = new List<int>() { m_nN, m_nH };
+            m_blob_C_0.Reshape(rgCellShape);
+            m_blob_H_0.Reshape(rgCellShape);
+            m_blob_C_T.Reshape(rgCellShape);
+            m_blob_H_T.Reshape(rgCellShape);
+            m_blob_H_to_H.Reshape(rgCellShape);
         }
 
         /// <summary>
