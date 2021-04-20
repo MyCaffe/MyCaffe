@@ -686,7 +686,7 @@ namespace MyCaffe.common
 
         long CreateRnnDataDesc();
         void FreeRnnDataDesc(long h);
-        void SetRnnDataDesc(long hRnnDataDesc, RNN_DATALAYOUT layout, int nMaxSeqLen, int nBatchSize, int nVectorSize, int[] rgSeqLen = null);
+        void SetRnnDataDesc(long hRnnDataDesc, RNN_DATALAYOUT layout, int nMaxSeqLen, int nBatchSize, int nVectorSize, bool bBidirectional = false, int[] rgSeqLen = null);
 
         long CreateRnnDesc();
         void FreeRnnDesc(long h);
@@ -4305,8 +4305,9 @@ namespace MyCaffe.common
         /// <param name="nMaxSeqLen">Specifies the maximum sequence length.</param>
         /// <param name="nBatchSize">Specifies the batch count.</param>
         /// <param name="nVectorSize">Specifies the input vector count.</param>
+        /// <param name="bBidirectional">Specifies whether the Rnn is bidirectional or not (default = false).</param>
         /// <param name="rgSeqLen">Specifies the sequence lengths - currently this should be <i>null</i> which sets all sequence lengths to nMaxSeqLen.</param>
-        public void SetRnnDataDesc(long hRnnDataDesc, RNN_DATALAYOUT layout, int nMaxSeqLen, int nBatchSize, int nVectorSize, int[] rgSeqLen = null)
+        public void SetRnnDataDesc(long hRnnDataDesc, RNN_DATALAYOUT layout, int nMaxSeqLen, int nBatchSize, int nVectorSize, bool bBidirectional = false, int[] rgSeqLen = null)
         {
             if (!m_bEnableRnnExtendedVersion && layout != RNN_DATALAYOUT.RNN_SEQ_MAJOR)
                 throw new Exception("The non-extended functions only support RNN_SEQ_MAJOR ordering.");
@@ -4315,7 +4316,7 @@ namespace MyCaffe.common
 
             if (m_dt == DataType.DOUBLE)
             {
-                List<double> rgArg = new List<double>() { hRnnDataDesc, (double)layout, nMaxSeqLen, nBatchSize, nVectorSize };
+                List<double> rgArg = new List<double>() { hRnnDataDesc, (double)layout, nMaxSeqLen, nBatchSize, nVectorSize, (bBidirectional) ? 1 : 0 };
 
                 if (rgSeqLen != null)
                 {
@@ -4329,7 +4330,7 @@ namespace MyCaffe.common
             }
             else
             {
-                List<float> rgArg = new List<float>() { hRnnDataDesc, (float)layout, nMaxSeqLen, nBatchSize, nVectorSize };
+                List<float> rgArg = new List<float>() { hRnnDataDesc, (float)layout, nMaxSeqLen, nBatchSize, nVectorSize, (bBidirectional) ? 1 : 0 };
 
                 if (rgSeqLen != null)
                 {

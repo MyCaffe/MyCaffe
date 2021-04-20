@@ -1581,17 +1581,21 @@ inline long Device<T>::SetRnnDataDesc(long lInput, T* pfInput, long* plOutput, T
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 5, 7))
+	if (lErr = verifyInput(lInput, pfInput, 5, 8))
 		return lErr;
 
 	long hRnnDataDesc = (long)pfInput[0];
 	int layout = (int)pfInput[1];
 	int nMaxSeqLen = (int)pfInput[2];
 	int nBatchSize = (int)pfInput[3];
-	long nVectorSize = (long)pfInput[4];
+	long nInputSize = (long)pfInput[4];
+	bool bBidirectional = false;
 	int* rgSeqLen = NULL;
-	int nIdx1 = 5;
-	int nIdx2 = 7;
+	int nIdx1 = 6;
+	int nIdx2 = 8;
+
+	if (lInput > 5)
+		bBidirectional = (pfInput[5] == 0) ? false : true;
 
 	if (lInput != nIdx1 && lInput < nIdx2)
 		return ERROR_PARAM_OUT_OF_RANGE;
@@ -1609,7 +1613,7 @@ inline long Device<T>::SetRnnDataDesc(long lInput, T* pfInput, long* plOutput, T
 		}
 	}
 
-	lErr = m_memory.SetRnnDataDesc1(hRnnDataDesc, (RnnDataLayout)layout, nMaxSeqLen, nBatchSize, nVectorSize, rgSeqLen);
+	lErr = m_memory.SetRnnDataDesc1(hRnnDataDesc, (RnnDataLayout)layout, nMaxSeqLen, nBatchSize, nInputSize, bBidirectional, rgSeqLen);
 
 	if (rgSeqLen != NULL)
 		free(rgSeqLen);

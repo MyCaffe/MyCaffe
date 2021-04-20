@@ -73,7 +73,7 @@ public:
 		return 0;
 	}
 
-	long rnnDataHandle<T>::Set(cudnnDataType_t type, cudnnRNNDataLayout_t layout, int nMaxSeqLen, int nBatchSize, int nVectorSize, int* rgSeqLen /*not used*/)
+	long rnnDataHandle<T>::Set(cudnnDataType_t type, cudnnRNNDataLayout_t layout, int nMaxSeqLen, int nBatchSize, int nInputSize, int* rgSeqLen /*not used*/, bool bBidirectional = false)
 	{
 		LONG lErr;
 
@@ -83,7 +83,7 @@ public:
 		m_layout = layout;
 		m_nMaxSeqLen = nMaxSeqLen;
 		m_nBatchSize = nBatchSize;
-		m_nVectorSize = nVectorSize;
+		m_nVectorSize = nInputSize;
 
 		m_rgSeqTensors = (cudnnTensorDescriptor_t*)malloc(sizeof(cudnnTensorDescriptor_t) * nMaxSeqLen);
 		if (m_rgSeqTensors == NULL)
@@ -106,7 +106,7 @@ public:
 			}
 
 			rgDimA[0] = nBatchSize;
-			rgDimA[1] = nVectorSize;
+			rgDimA[1] = (bBidirectional) ? nInputSize * 2 : nInputSize;
 			rgDimA[2] = 1;
 
 			rgStrideA[0] = rgDimA[2] * rgDimA[1];

@@ -23,7 +23,8 @@ namespace MyCaffe.param
         uint m_nNumLayers = 1; // cuDnn only
         double m_dfDropoutRatio = 0.0; // cuDnn only
         long m_lDropoutSeed = 0; // cuDnn only
-        bool m_bCudnnEnableTensorCores = false;
+        bool m_bBidirectional = false; // cuDnn only
+        bool m_bCudnnEnableTensorCores = false; // cuDnn only
 
 
         /** @copydoc LayerParameterBase */
@@ -58,6 +59,15 @@ namespace MyCaffe.param
             return true;
         }
 
+        /// <summary>
+        /// Specifies whether the network is bidirectional (<i>true</i>) or unidirectional (<i>false</i> - default).
+        /// </summary>
+        [Description("Specifies whether the network is bidirectional (<i>true</i>) or unidirectional (<i>false</i> - default).")]
+        public bool bidirectional
+        {
+            get { return m_bBidirectional; }
+            set { m_bBidirectional = value; }
+        }
 
         /// <summary>
         /// The dimension of the output (and usually hidden state) representation --
@@ -207,6 +217,7 @@ namespace MyCaffe.param
                 m_dfDropoutRatio = p.dropout_ratio;
                 m_lDropoutSeed = p.dropout_seed;
                 m_nNumLayers = p.num_layers;
+                m_bBidirectional = p.bidirectional;
                 m_bCudnnEnableTensorCores = p.m_bCudnnEnableTensorCores;
             }
         }
@@ -240,6 +251,7 @@ namespace MyCaffe.param
                 rgChildren.Add("dropout_ratio", dropout_ratio.ToString());
                 rgChildren.Add("dropout_seed", dropout_seed.ToString());
                 rgChildren.Add("num_layers", num_layers.ToString());
+                rgChildren.Add("bidirectional", bidirectional.ToString());
             }
 
             rgChildren.Add("cudnn_enable_tensor_cores", cudnn_enable_tensor_cores.ToString());
@@ -293,6 +305,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("num_layers")) != null)
                 p.num_layers = uint.Parse(strVal);
+
+            if ((strVal = rp.FindValue("bidirectional")) != null)
+                p.bidirectional = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("cudnn_enable_tensor_cores")) != null)
                 p.cudnn_enable_tensor_cores = bool.Parse(strVal);

@@ -294,12 +294,13 @@ namespace MyCaffe.layers
                 m_blobX.ShareDiff(colBottom[0]);
                 m_log.CHECK_EQ(m_blobX.count(), m_nT * m_nN * m_nInputSize, "The input should be Sequence * Batch * InputSize in length.");
 
-                m_blobHx.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
-                m_blobCx.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
+                int nDir = (m_param.recurrent_param.bidirectional) ? 2 : 1;
+                m_blobHx.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, nDir);
+                m_blobCx.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, nDir);
 
-                m_blobY.Reshape(m_nT, m_nN, m_nHiddenSize, 1);
-                m_blobHy.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
-                m_blobCy.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
+                m_blobY.Reshape(m_nT, m_nN, m_nHiddenSize, nDir);
+                m_blobHy.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, nDir);
+                m_blobCy.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, nDir);
 
                 m_blobHx.SetData(0);
                 m_blobCx.SetData(0);
@@ -307,13 +308,13 @@ namespace MyCaffe.layers
                 m_blobCy.SetData(0);
 
                 // Set the input/output data descriptors
-                m_cuda.SetRnnDataDesc(m_hXDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, m_nT, m_nN, m_nInputSize, null);
-                m_cuda.SetRnnDataDesc(m_hYDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, m_nT, m_nN, m_nHiddenSize, null);
+                m_cuda.SetRnnDataDesc(m_hXDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, m_nT, m_nN, m_nInputSize, false);
+                m_cuda.SetRnnDataDesc(m_hYDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, m_nT, m_nN, m_nHiddenSize, m_param.recurrent_param.bidirectional);
 
                 int[] rgDimA = new int[3];
                 int[] rgStrideA = new int[3];
 
-                rgDimA[0] = m_nNumLayers; // Currently, only unidirectional.
+                rgDimA[0] = m_nNumLayers * ((m_param.recurrent_param.bidirectional) ? 2 : 1); 
                 rgDimA[1] = m_nN; // mini batch.
                 rgDimA[2] = m_nHiddenSize;
 
@@ -334,7 +335,8 @@ namespace MyCaffe.layers
                 m_cuda.SetDropoutDesc(m_hCuDnn, m_hDropoutDesc, m_param.recurrent_param.dropout_ratio, m_hDropoutStates, m_param.recurrent_param.dropout_seed);
 
                 // Setup the RNN descriptor.
-                m_cuda.SetRnnDesc(m_hCuDnn, m_hRnnDesc, m_nHiddenSize, m_nNumLayers, m_hDropoutDesc, m_rnnMode, m_bUseTensors);
+                RNN_DIRECTION dir = (m_param.recurrent_param.bidirectional) ? RNN_DIRECTION.RNN_BIDIRECTIONAL : RNN_DIRECTION.RNN_UNIDIRECTIONAL;
+                m_cuda.SetRnnDesc(m_hCuDnn, m_hRnnDesc, m_nHiddenSize, m_nNumLayers, m_hDropoutDesc, m_rnnMode, m_bUseTensors, dir);
 
                 // Setup parameters - do this after the rnn descriptor is set
                 // otherwise we will not know how many parameters we have to allocate.
@@ -364,8 +366,9 @@ namespace MyCaffe.layers
                     long hWt;
                     int nBiasCount;
                     long hBias;
+                    int nBidir = (m_param.recurrent_param.bidirectional) ? 2 : 1;
 
-                    for (int i = 0; i < m_nNumLayers; i++)
+                    for (int i = 0; i < m_nNumLayers * nBidir; i++)
                     {
                         for (int j = 0; j < nNumLinearLayers; j++)
                         {
@@ -816,6 +819,22 @@ namespace MyCaffe.layers
         /// </summary>
         /// <param name="rgNames">Specifies the output names.</param>
         protected abstract void OutputBlobNames(List<string> rgNames);
+
+        /// <summary>
+        /// Returns the internal blobs for this layer.
+        /// </summary>
+        public override BlobCollection<T> internal_blobs
+        {
+            get
+            {
+                BlobCollection<T> col = new common.BlobCollection<T>();
+                col.Add(m_blobCx);
+                col.Add(m_blobHx);
+                col.Add(m_blobCy);
+                col.Add(m_blobHy);
+                return col;
+            }
+        }
 
         /// <summary>
         /// Peforms the forward calculation.
