@@ -380,7 +380,7 @@ class Memory
 		long CreateRnnDataDesc1(long* phHandle);
 		long FreeRnnDataDesc1(long hHandle);
 		rnnDataHandle<T>* GetRnnDataDesc1(long hHandle);
-		long SetRnnDataDesc1(long hRnnDataDesc, RnnDataLayout layout, int nMaxSeqLen, int nBatchSize, int nVectorSize, int* rgSeqLen);
+		long SetRnnDataDesc1(long hRnnDataDesc, RnnDataLayout layout, int nMaxSeqLen, int nBatchSize, int nVectorSize, bool bBidirectional, int* rgSeqLen);
 
 		long CreateRnnDataDesc2(long* phHandle);
 		long FreeRnnDataDesc2(long hHandle);
@@ -1250,7 +1250,7 @@ inline long Memory<T>::SetRnnDesc(long hHandle, long hRnnDesc, int nHiddenCount,
 		return lErr | ERROR_CUDNN_OFFSET;
 #endif
 
-	// Needed to auto padd when using CUDNN_RNN_DATA_LAYOUT_SEQ_MAJOR_UNPACKED.
+	// Needed to auto pad when using CUDNN_RNN_DATA_LAYOUT_SEQ_MAJOR_UNPACKED.
 	if (lErr = cudnnSetRNNPaddingMode(desc, CUDNN_RNN_PADDED_IO_ENABLED))
 		return lErr | ERROR_CUDNN_OFFSET;
 
@@ -1285,13 +1285,13 @@ inline rnnDataHandle<T>* Memory<T>::GetRnnDataDesc1(long hHandle)
 }
 
 template <class T>
-inline long Memory<T>::SetRnnDataDesc1(long hRnnDataDesc, RnnDataLayout layout, int nMaxSeqLen, int nBatchSize, int nVectorSize, int* rgSeqLen)
+inline long Memory<T>::SetRnnDataDesc1(long hRnnDataDesc, RnnDataLayout layout, int nMaxSeqLen, int nBatchSize, int nInputSize, bool bBidirectional, int* rgSeqLen)
 {
 	LONG lErr;
 	rnnDataHandle<T>* desc = (rnnDataHandle<T>*)m_rnnDataDesc1.GetData(hRnnDataDesc);
 	cudnnDataType_t computeType = (sizeof(T) == sizeof(double)) ? CUDNN_DATA_DOUBLE : CUDNN_DATA_FLOAT;
 
-	if (lErr = desc->Set(computeType, (cudnnRNNDataLayout_t)layout, nMaxSeqLen, nBatchSize, nVectorSize, rgSeqLen))
+	if (lErr = desc->Set(computeType, (cudnnRNNDataLayout_t)layout, nMaxSeqLen, nBatchSize, nInputSize, rgSeqLen, bBidirectional))
 		return lErr | ERROR_CUDNN_OFFSET;
 
 	return CUDNN_STATUS_SUCCESS;

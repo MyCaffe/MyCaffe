@@ -2461,11 +2461,28 @@ long Memory<T>::GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, long hXDesc,
 	*pnWsCount = nWsCount;
 	*pnResCount = nResCount;
 
-	return 0;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, long hXDesc, size_t* pnWsCount, size_t* pnResCount);
 template long Memory<float>::GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, long hXDesc, size_t* pnWsCount, size_t* pnResCount);
+
+template <typename T>
+__global__ void init_data_kernel(const int n, const T alpha, T* y)
+{
+	int tid = blockIdx.x * blockDim.x + threadIdx.x;
+	if (tid < n)
+		y[tid] = alpha;
+}
+
+template <class T>
+void init_data(T* pData, int nCount, T val)
+{
+	int nBlock = 1024;
+	int nGrid = (nCount + nBlock - 1) / nBlock;
+
+	init_data_kernel<<<nGrid, nBlock>>>(nCount, val, pData);
+}
 
 
 template <class T>
@@ -2512,6 +2529,9 @@ long Memory<T>::GetRnnLinLayerParams(long hHandle, long hRnnDesc, int nLayer, lo
 
 	int nWtCount = rgDimA[0] * rgDimA[1] * rgDimA[2];
 
+	T fVal = T(1.0 / nWtCount);
+	init_data((T*)pWtDevMem, nWtCount, fVal);
+
 	cudnnDestroyFilterDescriptor(filterWts);
 
 
@@ -2534,6 +2554,7 @@ long Memory<T>::GetRnnLinLayerParams(long hHandle, long hRnnDesc, int nLayer, lo
 	}
 
 	int nBiasCount = rgDimA[0] * rgDimA[1] * rgDimA[2];
+	init_data((T*)pBiasDevMem, nBiasCount, T(1.0));
 
 	cudnnDestroyFilterDescriptor(filterBias);
 
@@ -2560,7 +2581,7 @@ long Memory<T>::GetRnnLinLayerParams(long hHandle, long hRnnDesc, int nLayer, lo
 	*pnBiasCount = nBiasCount;
 	*phBias = hBiasMemPtr;
 
-	return 0;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::GetRnnLinLayerParams(long hHandle, long hRnnDesc, int nLayer, long hXDesc, long hWtDesc, long hWtData, int nLinLayer, int* pnWtCount, long* phWt, int* pnBiasCount, long* phBias);
@@ -2654,6 +2675,9 @@ long Memory<T>::GetRnnLinLayerParamsEx(long hHandle, long hRnnDesc, int nLayer, 
 
 	int nWtCount = rgDimA[0] * rgDimA[1] * rgDimA[2];
 
+	T fVal = T(1.0 / nWtCount);
+	init_data((T*)pWtDevMem, nWtCount, fVal);
+
 	cudnnDestroyFilterDescriptor(filterWts);
 
 
@@ -2681,6 +2705,7 @@ long Memory<T>::GetRnnLinLayerParamsEx(long hHandle, long hRnnDesc, int nLayer, 
 	}
 
 	int nBiasCount = rgDimA[0] * rgDimA[1] * rgDimA[2];
+	init_data((T*)pBiasDevMem, nBiasCount, T(1.0));
 
 	cudnnDestroyFilterDescriptor(filterBias);
 	cudnnDestroyTensorDescriptor(tensorX);
@@ -2708,7 +2733,7 @@ long Memory<T>::GetRnnLinLayerParamsEx(long hHandle, long hRnnDesc, int nLayer, 
 	*pnBiasCount = nBiasCount;
 	*phBias = hBiasMemPtr;
 
-	return 0;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::GetRnnLinLayerParamsEx(long hHandle, long hRnnDesc, int nLayer, long hXDesc, long hWtDesc, long hWtData, int nLinLayer, int* pnWtCount, long* phWt, int* pnBiasCount, long* phBias);
@@ -2819,7 +2844,7 @@ long Memory<T>::RnnForward(long hHandle, long hRnnDesc, long hXDesc, long hXData
 
 	}
 
-	return lErr;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::RnnForward(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspace, size_t nWsCount, long hReserved, size_t nResCount, bool bTraining);
@@ -2940,7 +2965,7 @@ long Memory<T>::RnnForwardEx(long hHandle, long hRnnDesc, long hXDesc, long hXDa
 
 	}
 
-	return lErr;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::RnnForwardEx(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspace, size_t nWsCount, long hReserved, size_t nResCount, bool bTraining);
@@ -3042,7 +3067,7 @@ long Memory<T>::RnnBackwardData(long hHandle, long hRnnDesc, long hYDesc, long h
 		pReservedData->Data(),
 		pReservedData->Size());
 
-	return lErr;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::RnnBackwardData(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspace, size_t nWsCount, long hReserved, size_t nResCount);
@@ -3143,7 +3168,7 @@ long Memory<T>::RnnBackwardDataEx(long hHandle, long hRnnDesc, long hYDesc, long
 								pReservedData->Data(),
 								pReservedData->Size());
 
-	return lErr;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::RnnBackwardDataEx(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspace, size_t nWsCount, long hReserved, size_t nResCount);
@@ -3204,7 +3229,7 @@ long Memory<T>::RnnBackwardWeights(long hHandle, long hRnnDesc, long hXDesc, lon
 		pReservedData->Data(),
 		pReservedData->Size());
 
-	return lErr;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::RnnBackwardWeights(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspace, size_t nWsCount, long hWtDesc, long hWtDiff, long hReserved, size_t nResCount);
@@ -3260,7 +3285,7 @@ long Memory<T>::RnnBackwardWeightsEx(long hHandle, long hRnnDesc, long hXDesc, l
 									pReservedData->Data(),
 									pReservedData->Size());
 
-	return lErr;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::RnnBackwardWeightsEx(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspace, size_t nWsCount, long hWtDesc, long hWtDiff, long hReserved, size_t nResCount);
