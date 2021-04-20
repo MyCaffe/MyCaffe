@@ -1487,7 +1487,8 @@ namespace MyCaffe
         /// that matches the transformation used during training.</param>
         /// <param name="bForceBackward">Optionally, specifies to force backward propagation in the event that a backward pass is to be run on the Run net - The DeepDraw functionality
         /// uses this setting so that it can view what the trained weights actually see.</param>
-        public void LoadToRun(string strModel, byte[] rgWeights, BlobShape shape, SimpleDatum sdMean = null, TransformationParameter transParam = null, bool bForceBackward = false)
+        /// <param name="bConvertToRunNet">When <i>true</i>, the 'strModel' is converted from a training model to a run model, otherwise the model is used unaltered (default = <i>true</i>)</param>
+        public void LoadToRun(string strModel, byte[] rgWeights, BlobShape shape, SimpleDatum sdMean = null, TransformationParameter transParam = null, bool bForceBackward = false, bool bConvertToRunNet = true)
         {
             try
             {
@@ -1502,7 +1503,25 @@ namespace MyCaffe
                 m_log.WriteLine("Cuda Connection created using '" + m_cuda.Path + "'.", true);
 
                 TransformationParameter tp = null;
-                NetParameter netParam = createNetParameterForRunning(shape, strModel, out tp);
+                NetParameter netParam = null;
+
+                if (bConvertToRunNet)
+                {
+                    netParam = createNetParameterForRunning(shape, strModel, out tp);
+                }
+                else
+                {
+                    netParam = NetParameter.FromProto(RawProto.Parse(strModel));
+
+                    foreach (LayerParameter layer in netParam.layer)
+                    {
+                        if (layer.transform_param != null)
+                        {
+                            tp = layer.transform_param;
+                            break;
+                        }
+                    }
+                }
 
                 netParam.force_backward = bForceBackward;
 
