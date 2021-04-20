@@ -590,6 +590,48 @@ namespace MyCaffe.layers
             {
                 m_log.CHECK(rgLayerNames[i] == rgPseudoLosses[j], "The last layer at idx " + i.ToString() + " should be the pseudo layer named " + rgPseudoLosses[j]);
             }
+
+            // Setup shared Hx, Cx, Hy, Cy for transfers between tops and bottoms in 
+            // forward and backward when specified - Sharing is used so that code
+            // is similar between Caffe and CuDnn.
+            Blob<T> blob;
+            m_blobHx = new Blob<T>(m_cuda, m_log);
+            m_blobHx.Name = m_param.name + " hx";
+            m_blobHx.reshape_when_sharing = false;
+            blob = m_colRecurInputBlobs[0];
+            m_blobHx.ReshapeLike(blob);
+            m_blobHx.ShareData(blob);
+            m_blobHx.ShareDiff(blob);
+
+            if (m_colRecurInputBlobs.Count > 1)
+            {
+                m_blobCx = new Blob<T>(m_cuda, m_log);
+                m_blobCx.Name = m_param.name + " cx";
+                m_blobCx.reshape_when_sharing = false;
+                blob = m_colRecurInputBlobs[1];
+                m_blobCx.ReshapeLike(blob);
+                m_blobCx.ShareData(blob);
+                m_blobCx.ShareDiff(blob);
+            }
+
+            m_blobHy = new Blob<T>(m_cuda, m_log);
+            m_blobHy.Name = m_param.name + " hy";
+            m_blobHy.reshape_when_sharing = false;
+            blob = m_colRecurOutputBlobs[0];
+            m_blobHy.ReshapeLike(blob);
+            m_blobHy.ShareData(blob);
+            m_blobHy.ShareDiff(blob);
+
+            if (m_colRecurOutputBlobs.Count > 0)
+            {
+                m_blobCy = new Blob<T>(m_cuda, m_log);
+                m_blobCy.Name = m_param.name + " cy";
+                m_blobCy.reshape_when_sharing = false;
+                blob = m_colRecurOutputBlobs[1];
+                m_blobCy.ReshapeLike(blob);
+                m_blobCy.ShareData(blob);
+                m_blobCy.ShareDiff(blob);
+            }
         }
 
         /// <summary>
@@ -632,13 +674,13 @@ namespace MyCaffe.layers
 
             if (m_param.recurrent_param.expose_hidden_output)
             {
-                colTop[1].ReshapeLike(m_blobCy);
-                colTop[1].ShareData(m_blobCy);
-                colTop[1].ShareDiff(m_blobCy);
+                colTop[1].ReshapeLike(m_blobHy);
+                colTop[1].ShareData(m_blobHy);
+                colTop[1].ShareDiff(m_blobHy);
 
-                colTop[2].ReshapeLike(m_blobHy);
-                colTop[2].ShareData(m_blobHy);
-                colTop[2].ShareDiff(m_blobHy);
+                colTop[2].ReshapeLike(m_blobCy);
+                colTop[2].ShareData(m_blobCy);
+                colTop[2].ShareDiff(m_blobCy);
             }
         }
 
@@ -698,6 +740,8 @@ namespace MyCaffe.layers
                 for (int i = nTopOffset, j = 0; i < colTop.Count; i++, j++)
                 {
                     colTop[i].ReshapeLike(m_colRecurOutputBlobs[j]);
+                    colTop[i].ShareData(m_colRecurOutputBlobs[j]);
+                    colTop[i].ShareDiff(m_colRecurOutputBlobs[j]);
                 }
             }
         }
@@ -900,14 +944,13 @@ namespace MyCaffe.layers
                 // Allow for setting initial state used with cuDnn LSTM
                 if (colBottom.Count > 2)
                 {
-                    m_log.CHECK_EQ(colBottom[2].count(), m_blobCy.count(), "The bottom(2) should have the same shape as 'cy' which has a shape = " + m_blobCy.shape_string);
-                    m_blobCy.CopyFrom(colBottom[2]);
+                    m_log.CHECK_EQ(colBottom[2].count(), m_blobHy.count(), "The bottom(2) should have the same shape as 'hy' which has a shape = " + m_blobHy.shape_string);
+                    m_blobHy.CopyFrom(colBottom[2]);
                 }
-
                 if (colBottom.Count > 3)
                 {
-                    m_log.CHECK_EQ(colBottom[3].count(), m_blobHy.count(), "The bottom(3) should have the same shape as 'hy' which has a shape = " + m_blobHy.shape_string);
-                    m_blobHy.CopyFrom(colBottom[3]);
+                    m_log.CHECK_EQ(colBottom[3].count(), m_blobCy.count(), "The bottom(3) should have the same shape as 'cy' which has a shape = " + m_blobCy.shape_string);
+                    m_blobCy.CopyFrom(colBottom[3]);
                 }
 
                 m_blobCx.CopyFrom(m_blobCy); // initialized with previous state in LayerSetup when colBottom.Count > 2
@@ -935,6 +978,8 @@ namespace MyCaffe.layers
                               m_hReserved,
                               m_nReservedCount,
                               (m_phase == Phase.TRAIN) ? true : false);
+
+            // Tops are shared with cy and hy in Reshape
         }
 
         private void forward_cuda(BlobCollection<T> colBottom, BlobCollection<T> colTop)
@@ -948,6 +993,7 @@ namespace MyCaffe.layers
 
             if (!m_bExposeHiddenInput)
             {
+                // Copy timestep T to timestep 0
                 for (int i = 0; i < m_colRecurInputBlobs.Count; i++)
                 {
                     int nCount = m_colRecurInputBlobs[i].count();
@@ -960,15 +1006,7 @@ namespace MyCaffe.layers
 
             m_unrolledNet.ForwardFromTo(0, m_nLastLayerIndex);
 
-            if (m_bExposeHiddenOutput)
-            {
-                int nTopOffset = m_colOutputBlobs.Count;
-
-                for (int i = nTopOffset, j = 0; i < colTop.Count; i++, j++)
-                {
-                    colTop[i].ShareData(m_colRecurOutputBlobs[j]);
-                }
-            }
+            // Tops are shared with cy and hy in Reshape
         }
 
         /// <summary>
@@ -989,19 +1027,19 @@ namespace MyCaffe.layers
         {
             m_log.CHECK(!rgbPropagateDown[1], "Cannot backpropagate to sequence indicators.");
 
+            // Copy top diffs to timestep T diffs
             if (colTop.Count > 2)
             {
                 // Copy state diffs back to previous LSTM
                 if (colTop.Count > 1)
                 {
-                    m_log.CHECK_EQ(colTop[1].count(), m_blobCy.count(), "The bottom(1) should have the same shape as 'cy' which has a shape = " + m_blobCy.shape_string);
-                    m_blobCy.CopyFrom(colTop[1], true);
+                    m_log.CHECK_EQ(colTop[1].count(), m_blobHy.count(), "The bottom(1) should have the same shape as 'hy' which has a shape = " + m_blobHy.shape_string);
+                    m_blobHy.CopyFrom(colTop[1], true);
                 }
-
                 if (colTop.Count > 2)
                 {
-                    m_log.CHECK_EQ(colTop[2].count(), m_blobHy.count(), "The bottom(2) should have the same shape as 'hy' which has a shape = " + m_blobHy.shape_string);
-                    m_blobHy.CopyFrom(colTop[2], true);
+                    m_log.CHECK_EQ(colTop[2].count(), m_blobCy.count(), "The bottom(2) should have the same shape as 'cy' which has a shape = " + m_blobCy.shape_string);
+                    m_blobCy.CopyFrom(colTop[2], true);
                 }
             }
 
@@ -1048,20 +1086,19 @@ namespace MyCaffe.layers
                               m_hReserved,
                               m_nReservedCount);
 
-
+            // Copy timestep 0 diff to bottom diffs
             if (colBottom.Count > 2)
             {
                 // Copy state diffs back to previous LSTM
                 if (colBottom.Count > 2)
                 {
-                    m_log.CHECK_EQ(colBottom[2].count(), m_blobCx.count(), "The bottom(2) should have the same shape as 'cx' which has a shape = " + m_blobCx.shape_string);
-                    colBottom[2].CopyFrom(m_blobCx, true);
+                    m_log.CHECK_EQ(colBottom[2].count(), m_blobHx.count(), "The bottom(2) should have the same shape as 'hx' which has a shape = " + m_blobHx.shape_string);
+                    colBottom[2].CopyFrom(m_blobHx, true);
                 }
-
                 if (colBottom.Count > 3)
                 {
-                    m_log.CHECK_EQ(colBottom[3].count(), m_blobHx.count(), "The bottom(3) should have the same shape as 'hx' which has a shape = " + m_blobHx.shape_string);
-                    colBottom[3].CopyFrom(m_blobHx, true);
+                    m_log.CHECK_EQ(colBottom[3].count(), m_blobCx.count(), "The bottom(3) should have the same shape as 'cx' which has a shape = " + m_blobCx.shape_string);
+                    colBottom[3].CopyFrom(m_blobCx, true);
                 }
             }
         }
@@ -1070,12 +1107,30 @@ namespace MyCaffe.layers
         {
             m_log.CHECK(!rgbPropagateDown[1], "Cannot backpropagate to sequence indicators.");
 
+            // Copy top diffs to timestep T diffs (done automatically with tops sharing diffs)
+
             // TODO: skip backpropagation to inputs and parameters inside the unrolled
             // net according to propagate_down[0] and propagate_down[2].  For now just
             // backprop to inputs and parameters unconditionally, as either the inputs or
             // the parameters do need backward (or Net would have set
             // layer_needs_backward[i] = false for this layer).
             m_unrolledNet.Backward(m_nLastLayerIndex);
+
+            // Copy timestep 0 diff to bottom diffs
+            if (colBottom.Count > 2)
+            {
+                // Copy state diffs back to previous LSTM
+                if (colBottom.Count > 2)
+                {
+                    m_log.CHECK_EQ(colBottom[2].count(), m_blobHx.count(), "The bottom(2) should have the same shape as 'hx' which has a shape = " + m_blobHx.shape_string);
+                    colBottom[2].CopyFrom(m_blobHx, true);
+                }
+                if (colBottom.Count > 3)
+                {
+                    m_log.CHECK_EQ(colBottom[3].count(), m_blobCx.count(), "The bottom(3) should have the same shape as 'cx' which has a shape = " + m_blobCx.shape_string);
+                    colBottom[3].CopyFrom(m_blobCx, true);
+                }
+            }
         }
     }
 }
