@@ -17,6 +17,7 @@ using MyCaffe.param;
 using MyCaffe.data;
 using MyCaffe.layers;
 using System.Globalization;
+using System.Reflection;
 
 /// <summary>
 /// The MyCaffe namespace contains the main body of MyCaffe code that closesly tracks the C++ Caffe open-source project.  
@@ -237,6 +238,18 @@ namespace MyCaffe
             finally
             {
                 m_evtSyncMain.Reset();
+            }
+        }
+
+        /// <summary>
+        /// Get the file version of the MyCaffe assembly running.
+        /// </summary>
+        public FileVersionInfo Version
+        {
+            get
+            {
+                string strLocation = Assembly.GetExecutingAssembly().Location;
+                return FileVersionInfo.GetVersionInfo(strLocation);
             }
         }
 
