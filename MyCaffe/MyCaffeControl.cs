@@ -244,7 +244,7 @@ namespace MyCaffe
         /// <summary>
         /// Get the file version of the MyCaffe assembly running.
         /// </summary>
-        public FileVersionInfo Version
+        public static FileVersionInfo Version
         {
             get
             {
