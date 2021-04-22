@@ -175,6 +175,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestTranspose()
+        {
+            SimpleDatumTest test = new SimpleDatumTest();
+
+            try
+            {
+                foreach (ISimpleDatumTest t in test.Tests)
+                {
+                    t.TestTranspose();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface ISimpleDatumTest : ITest
@@ -188,6 +206,7 @@ namespace MyCaffe.test
         void TestSetDataFloat();
         void TestSetDataDouble();
         void TestSetDataByte();
+        void TestTranspose();
     }
 
     class SimpleDatumTest : TestBase
@@ -563,6 +582,33 @@ namespace MyCaffe.test
             {
                 byte bVal = (byte)rgfData[i];
                 m_log.CHECK_EQ(bVal, m_rgbData[i], "The data items should be equal!");
+            }
+        }
+
+        public void TestTranspose()
+        {
+            double[] rgf = new double[2 * 3 * 4] { 1.1, 1.2, 1.3, 1.4,
+                                                   2.1, 2.2, 2.3, 2.4,
+                                                   3.1, 3.2, 3.3, 3.4,
+                                                   4.1, 4.2, 4.3, 4.4,
+                                                   5.1, 5.2, 5.3, 5.4,
+                                                   6.1, 6.2, 6.3, 6.4 };
+            double[] rgfT = new double[2 * 3 * 4] { 1.1, 1.2, 1.3, 1.4,
+                                                    4.1, 4.2, 4.3, 4.4,
+                                                    2.1, 2.2, 2.3, 2.4,
+                                                    5.1, 5.2, 5.3, 5.4,
+                                                    3.1, 3.2, 3.3, 3.4,
+                                                    6.1, 6.2, 6.3, 6.4 };
+            double[] rgTa = new double[2 * 3 * 4];
+
+            int nH = 2;
+            int nW = 3;
+            int nDim = 4;
+            rgTa = SimpleDatum.Transpose(rgf, nH, nW, nDim);
+
+            for (int i = 0; i < rgTa.Length; i++)
+            {
+                m_log.CHECK_EQ(rgTa[i], rgfT[i], "The values are not as expected!");
             }
         }
     }
