@@ -788,19 +788,19 @@ namespace MyCaffe.layers
         /// <summary>
         /// Returns the min number of required top (output) Blobs.
         /// </summary>
-        public override int MinTopBlobs
-        {
-            get { return 1; }
-        }
+        //public override int MinTopBlobs
+        //{
+        //    get { return 1; }
+        //}
 
         /// <summary>
         /// Returns the max number of required top (output) Blobs.
         /// </summary>
-        public override int MaxTopBlobs
+        public override int ExactNumTopBlobs
         {
             get
             {
-                int nNumTops = MinTopBlobs;
+                int nNumTops = 1; // MinTopBlobs;
 
                 if (m_param.recurrent_param.expose_hidden_output)
                 {
