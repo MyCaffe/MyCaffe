@@ -2631,7 +2631,7 @@ namespace MyCaffe.basecode
                 for (int j = 0; j < nW; j++)
                 {
                     int nSrcIdx = (i * nW + j) * nDim;
-                    int nDstIdx = (j * nW + i) * nDim;
+                    int nDstIdx = (j * nH + i) * nDim;
 
                     if (nDim == 1)
                         rgT[nDstIdx] = rg[nSrcIdx];
