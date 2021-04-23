@@ -622,7 +622,7 @@ namespace MyCaffe.layers
             m_blobHy.ShareData(blob);
             m_blobHy.ShareDiff(blob);
 
-            if (m_colRecurOutputBlobs.Count > 0)
+            if (m_colRecurOutputBlobs.Count > 1)
             {
                 m_blobCy = new Blob<T>(m_cuda, m_log);
                 m_blobCy.Name = m_param.name + " cy";
@@ -872,10 +872,19 @@ namespace MyCaffe.layers
             get
             {
                 BlobCollection<T> col = new common.BlobCollection<T>();
-                col.Add(m_blobCx);
-                col.Add(m_blobHx);
-                col.Add(m_blobCy);
-                col.Add(m_blobHy);
+                
+                if (m_blobCx != null)
+                    col.Add(m_blobCx);
+
+                if (m_blobHx != null)
+                    col.Add(m_blobHx);
+
+                if (m_blobCy != null)
+                    col.Add(m_blobCy);
+
+                if (m_blobHy != null)
+                    col.Add(m_blobHy);
+
                 return col;
             }
         }
@@ -1117,18 +1126,19 @@ namespace MyCaffe.layers
             m_unrolledNet.Backward(m_nLastLayerIndex);
 
             // Copy timestep 0 diff to bottom diffs
-            if (colBottom.Count > 2)
+            int nCount = (m_bStaticInput) ? 3 : 2;
+            if (colBottom.Count > nCount)
             {
                 // Copy state diffs back to previous LSTM
-                if (colBottom.Count > 2)
+                if (colBottom.Count > nCount)
                 {
-                    m_log.CHECK_EQ(colBottom[2].count(), m_blobHx.count(), "The bottom(2) should have the same shape as 'hx' which has a shape = " + m_blobHx.shape_string);
-                    colBottom[2].CopyFrom(m_blobHx, true);
+                    m_log.CHECK_EQ(colBottom[nCount].count(), m_blobHx.count(), "The bottom(" + nCount.ToString() + ") should have the same shape as 'hx' which has a shape = " + m_blobHx.shape_string);
+                    colBottom[nCount].CopyFrom(m_blobHx, true);
                 }
-                if (colBottom.Count > 3)
+                if (colBottom.Count > nCount+1)
                 {
-                    m_log.CHECK_EQ(colBottom[3].count(), m_blobCx.count(), "The bottom(3) should have the same shape as 'cx' which has a shape = " + m_blobCx.shape_string);
-                    colBottom[3].CopyFrom(m_blobCx, true);
+                    m_log.CHECK_EQ(colBottom[nCount+1].count(), m_blobCx.count(), "The bottom(" + (nCount+1).ToString() + ") should have the same shape as 'cx' which has a shape = " + m_blobCx.shape_string);
+                    colBottom[nCount+1].CopyFrom(m_blobCx, true);
                 }
             }
         }
