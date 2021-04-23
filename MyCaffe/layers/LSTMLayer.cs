@@ -41,11 +41,18 @@ namespace MyCaffe.layers
     ///     
     /// [3] Graves, Alex. [Generating sequences with recurrent neural networks](https://arxiv.org/abs/1308.0850).
     ///     arXiv preprint arXiv: 1308.0850 (2013).
-    ///     
+    /// 
+    /// @see [Understanding LSTM Networks](http://colah.github.io/posts/2015-08-Understanding-LSTMs/) by Christopher Olah, 2015, colah's blog.
     /// @see [A Clockwork RNN](https://arxiv.org/abs/1402.3511) by Jan Koutnik, Klaus Greff, Faustino Gomez, and Jürgen Schmidhuber, 2014.
     /// @see [Predictive Business Process Monitoring with LSTM Neural Networks](https://arxiv.org/abs/1612.02130) by Niek Tax, Ilya Verenich, Marcello La Rosa, and Marlon Dumas, 2016. 
     /// @see [Using LSTM recurrent neural networks for detecting anomalous behavior of LHC superconducting magnets](https://arxiv.org/abs/1611.06241) by Maciej Wielgosz, Andrzej Skoczeń, and Matej Mertik, 2016.
     /// @see [Spatial, Structural and Temporal Feature Learning for Human Interaction Prediction](https://arxiv.org/abs/1608.05267v2) by Qiuhong Ke, Mohammed Bennamoun, Senjian An, Farid Bossaid, and Ferdous Sohel, 2016.
+    /// 
+    /// For Seq2Seq articles:
+    /// @see [Sequence to Sequence -- Video to Text](https://arxiv.org/abs/1505.00487) by Subhashini Venugopalan, Marcus Rohrbach, Jeff Donahue, Raymond Mooney, Trevor Darrell, Kate Saenko, 2015, arXiv:1505.00487
+    /// @see [On the Properties of Neural Machine Translation: Encoder-Decoder Approaches](https://arxiv.org/abs/1409.1259) by Kyunghyun Cho, Bart van Merrienboer, Dzmitry Bahdanau, Yoshua Bengio, 2014, arXiv:1409.1259, 2014
+    /// @see [Sequence to Sequence Learning with Neural Networks](https://arxiv.org/abs/1409.3215) by Ilya Sutskever, Oriol Vinyals, Quoc V. Le, 2014, arXiv:1409:3215
+    /// @see [Deep API Learning](https://arxiv.org/abs/1605.08535) by Xiaodong Gu, Hongyu Zhang, Dongmei Zhang, Sunghun Kim, 2016, arXiv:1605.08535
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class LSTMLayer<T> : RecurrentLayer<T>
