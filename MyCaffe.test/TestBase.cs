@@ -607,6 +607,11 @@ namespace MyCaffe.test
             return (double)Convert.ChangeType(t, typeof(double));
         }
 
+        protected float convertF(T t)
+        {
+            return (float)Convert.ChangeType(t, typeof(float));
+        }
+
         protected T convert(double df)
         {
             return (T)Convert.ChangeType(df, typeof(T));
