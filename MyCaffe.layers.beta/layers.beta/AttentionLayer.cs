@@ -14,6 +14,11 @@ namespace MyCaffe.layers
     /// The AttentionLayer provides focus for LSTM based encoder/decoder models.
     /// </summary>
     /// <remarks>
+    /// The AttentionLayer implementation was inspired by the C# Seq2SeqLearn implementation by mashmawy for language translation,
+    /// @see [mashmawy/Seq2SeqLearn](https://github.com/mashmawy/Seq2SeqLearn) distributed under MIT license.
+    /// 
+    /// And also inspired by the C# ChatBot implementation by HectorPulido which uses Seq2SeqLearn
+    /// @see [HectorPulido/Chatbot-seq2seq-C-](https://github.com/HectorPulido/Chatbot-seq2seq-C-) distributed under [MIT license](https://github.com/HectorPulido/Chatbot-seq2seq-C-/blob/master/LICENSE).
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class AttentionLayer<T> : Layer<T>
@@ -386,7 +391,7 @@ namespace MyCaffe.layers
             m_blobContext.Reshape(rgContextShape);
 
             addInternal(m_blobContext, m_blobTopT);
-            m_ipWc.Setup(m_colInternalBottom, m_colInternalTop);
+            m_ipWc.Reshape(m_colInternalBottom, m_colInternalTop);
 
             List<int> rgTopShape = Utility.Clone<int>(m_blobTopT.shape());
             rgTopShape[0] = m_blobTopT.shape(1);
