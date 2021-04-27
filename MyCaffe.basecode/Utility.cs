@@ -648,6 +648,28 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Create a new List and fill it with values starting with start and incrementing by inc.
+        /// </summary>
+        /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="nStart">Specifies the start value.</param>
+        /// <param name="nInc">Specifies the increment added to the last value added.</param>
+        /// <returns>The new List is returned.</returns>
+        public static List<int> Create(int nCount, int nStart, int nInc)
+        {
+            List<int> rg = new List<int>();
+            int nVal = nStart;
+
+            for (int i = 0; i < nCount; i++)
+            {
+                rg.Add(nVal);
+                nVal += nInc;
+            }
+
+            return rg;
+        }
+
+        /// <summary>
         /// Set all values of a List with a given value.
         /// </summary>
         /// <typeparam name="T"></typeparam>
