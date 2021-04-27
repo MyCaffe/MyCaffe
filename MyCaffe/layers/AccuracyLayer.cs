@@ -289,6 +289,14 @@ namespace MyCaffe.layers
         /// </param>
         protected void forward_cpu(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            if (typeof(T) == typeof(double))
+                forward_cpuD(colBottom, colTop);
+            else
+                forward_cpuF(colBottom, colTop);
+        }
+
+        private void forward_cpuD(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
             double dfAccuracy = 0;
             double[] rgBottomData = convertD(colBottom[0].update_cpu_data());
             double[] rgBottomLabel = convertD(colBottom[1].update_cpu_data());
@@ -323,8 +331,8 @@ namespace MyCaffe.layers
                     if (colTop.Count > 1)
                         rgNumsBuffer[nLabelValue]++;
 
-                    double prob_of_true_class = rgBottomData[i * nDim 
-                                                             + nLabelValue * m_nInnerNum 
+                    double prob_of_true_class = rgBottomData[i * nDim
+                                                             + nLabelValue * m_nInnerNum
                                                              + j];
                     int num_better_predictions = -1; // true_class also counts as 'better'
                     // Top-k accuracy
@@ -364,6 +372,96 @@ namespace MyCaffe.layers
                 for (int i = 0; i < colTop[1].count(); i++)
                 {
                     double dfVal = 0.0;
+
+                    if (rgNumsBuffer[i] != 0)
+                        dfVal = rgTopLabel[i] / rgNumsBuffer[i];
+
+                    rgTopLabel[i] = dfVal;
+                }
+
+                colTop[1].mutable_cpu_data = convert(rgTopLabel);
+            }
+
+            // Accuracy layer should not be used as a loss function.
+        }
+
+        private void forward_cpuF(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            float dfAccuracy = 0;
+            float[] rgBottomData = convertF(colBottom[0].update_cpu_data());
+            float[] rgBottomLabel = convertF(colBottom[1].update_cpu_data());
+            int nDim = colBottom[0].count() / m_nOuterNum;
+            int nNumLabels = colBottom[0].shape(m_nLabelAxis);
+            float[] rgNumsBuffer = null;
+            float[] rgTopLabel = null;
+
+            if (colTop.Count > 1)
+            {
+                m_blobNumsBuffer.SetData(0.0);
+                colTop[1].SetData(0.0);
+                rgTopLabel = convertF(colTop[1].mutable_cpu_data);
+                rgNumsBuffer = convertF(m_blobNumsBuffer.update_cpu_data());
+            }
+
+            int nCount = 0;
+            bool bNanDetected = false;
+
+            for (int i = 0; i < m_nOuterNum; i++)
+            {
+                for (int j = 0; j < m_nInnerNum; j++)
+                {
+                    int nLabelValue = (int)rgBottomLabel[i * m_nInnerNum + j];
+
+                    if (m_nIgnoreLabel.HasValue && m_nIgnoreLabel.Value == nLabelValue)
+                        continue;
+
+                    m_log.CHECK_GE(nLabelValue, 0, "The lable value must be >= 0.");
+                    m_log.CHECK_LT(nLabelValue, nNumLabels, "The label value must be < " + nNumLabels.ToString() + ".  Make sure that the prototxt 'num_outputs' setting is > the highest label number.");
+
+                    if (colTop.Count > 1)
+                        rgNumsBuffer[nLabelValue]++;
+
+                    double prob_of_true_class = rgBottomData[i * nDim
+                                                             + nLabelValue * m_nInnerNum
+                                                             + j];
+                    int num_better_predictions = -1; // true_class also counts as 'better'
+                    // Top-k accuracy
+                    for (int k = 0; k < nNumLabels && num_better_predictions < m_nTopK; k++)
+                    {
+                        double dfVal = rgBottomData[i * nDim + k * m_nInnerNum + j];
+
+                        if (double.IsNaN(dfVal) || double.IsInfinity(dfVal))
+                            bNanDetected = true;
+                        else if (dfVal >= prob_of_true_class)
+                            num_better_predictions += 1;
+                    }
+
+                    // Check if true label is in top_k predictions
+                    if (num_better_predictions != -1 && num_better_predictions < m_nTopK)
+                    {
+                        dfAccuracy += 1.0f;
+
+                        if (colTop.Count > 1)
+                            rgTopLabel[nLabelValue] += 1.0f;
+                    }
+
+                    nCount++;
+                }
+            }
+
+            if (bNanDetected)
+                m_log.WriteLine("WARNING: NAN/INF detected in output!");
+
+            // m_log.WriteLine("Accuracy: " + dfAccuracy.ToString());
+            dfAccuracy = (nCount == 0) ? 0 : (dfAccuracy / nCount);
+            colTop[0].SetData(dfAccuracy, 0);
+            colTop[0].Tag = m_param.accuracy_param.top_k;
+
+            if (colTop.Count > 1)
+            {
+                for (int i = 0; i < colTop[1].count(); i++)
+                {
+                    float dfVal = 0.0f;
 
                     if (rgNumsBuffer[i] != 0)
                         dfVal = rgTopLabel[i] / rgNumsBuffer[i];
