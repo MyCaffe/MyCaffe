@@ -953,13 +953,13 @@ namespace MyCaffe.layers
                 // Allow for setting initial state used with cuDnn LSTM
                 if (colBottom.Count > 2)
                 {
-                    m_log.CHECK_EQ(colBottom[2].count(), m_blobHy.count(), "The bottom(2) should have the same shape as 'hy' which has a shape = " + m_blobHy.shape_string);
-                    m_blobHy.CopyFrom(colBottom[2]);
+                    m_log.CHECK_LE(colBottom[2].count(), m_blobHy.count(), "The bottom(2) should have the same shape as 'hy' which has a shape = " + m_blobHy.shape_string);
+                    m_cuda.copy(colBottom[2].count(), colBottom[2].gpu_data, m_blobHy.mutable_gpu_data);
                 }
                 if (colBottom.Count > 3)
                 {
-                    m_log.CHECK_EQ(colBottom[3].count(), m_blobCy.count(), "The bottom(3) should have the same shape as 'cy' which has a shape = " + m_blobCy.shape_string);
-                    m_blobCy.CopyFrom(colBottom[3]);
+                    m_log.CHECK_LE(colBottom[3].count(), m_blobCy.count(), "The bottom(3) should have the same shape as 'cy' which has a shape = " + m_blobCy.shape_string);
+                    m_cuda.copy(colBottom[3].count(), colBottom[3].gpu_data, m_blobCy.mutable_gpu_data);                    
                 }
 
                 m_blobCx.CopyFrom(m_blobCy); // initialized with previous state in LayerSetup when colBottom.Count > 2
@@ -1102,12 +1102,12 @@ namespace MyCaffe.layers
                 if (colBottom.Count > 2)
                 {
                     m_log.CHECK_EQ(colBottom[2].count(), m_blobHx.count(), "The bottom(2) should have the same shape as 'hx' which has a shape = " + m_blobHx.shape_string);
-                    colBottom[2].CopyFrom(m_blobHx, true);
+                    m_cuda.copy(colBottom[2].count(), colBottom[2].gpu_diff, m_blobHx.mutable_gpu_diff);
                 }
                 if (colBottom.Count > 3)
                 {
                     m_log.CHECK_EQ(colBottom[3].count(), m_blobCx.count(), "The bottom(3) should have the same shape as 'cx' which has a shape = " + m_blobCx.shape_string);
-                    colBottom[3].CopyFrom(m_blobCx, true);
+                    m_cuda.copy(colBottom[3].count(), colBottom[3].gpu_diff, m_blobCx.mutable_gpu_diff);
                 }
             }
         }
@@ -1137,8 +1137,8 @@ namespace MyCaffe.layers
                 }
                 if (colBottom.Count > nCount+1)
                 {
-                    m_log.CHECK_EQ(colBottom[nCount+1].count(), m_blobCx.count(), "The bottom(" + (nCount+1).ToString() + ") should have the same shape as 'cx' which has a shape = " + m_blobCx.shape_string);
-                    colBottom[nCount+1].CopyFrom(m_blobCx, true);
+                    m_log.CHECK_EQ(colBottom[nCount + 1].count(), m_blobCx.count(), "The bottom(" + (nCount + 1).ToString() + ") should have the same shape as 'cx' which has a shape = " + m_blobCx.shape_string);
+                    colBottom[nCount + 1].CopyFrom(m_blobCx, true);
                 }
             }
         }
