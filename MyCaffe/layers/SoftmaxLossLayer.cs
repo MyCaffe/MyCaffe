@@ -107,11 +107,11 @@ namespace MyCaffe.layers
         {
             base.LayerSetUp(colBottom, colTop);
 
-            LayerParameter p = m_param.Clone(false);
-            p.SetType(LayerParameter.LayerType.SOFTMAX);
-
-            LayerParameter param_softmax = p.Clone(false);
+            LayerParameter param_softmax = m_param.Clone(false);
+            param_softmax.SetType(LayerParameter.LayerType.SOFTMAX);
+            param_softmax.softmax_param = m_param.softmax_param.Clone() as SoftmaxParameter;
             param_softmax.loss_weight.Clear();
+
             m_softmaxLayer = new SoftmaxLayer<T>(m_cuda, m_log, param_softmax);
             m_colSoftmaxBottom = new BlobCollection<T>();
             m_colSoftmaxTop = new BlobCollection<T>();
