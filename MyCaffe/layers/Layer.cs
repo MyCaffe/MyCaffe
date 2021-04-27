@@ -1086,6 +1086,16 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Converts a <i>float</i> to a generic.
+        /// </summary>
+        /// <param name="f">Specifies the <i>float</i> value.</param>
+        /// <returns>Returns the generic value.</returns>
+        protected T convert(float f)
+        {
+            return (T)Convert.ChangeType(f, typeof(T));
+        }
+
+        /// <summary>
         /// Converts a generic to a <i>double</i> value.
         /// </summary>
         /// <param name="df">Specifies the generic value.</param>

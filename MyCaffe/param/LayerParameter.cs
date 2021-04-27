@@ -126,6 +126,10 @@ namespace MyCaffe.param
             /// </summary>
             ARGMAX,
             /// <summary>
+            /// Initializes a parameter for the AttentionLayer.
+            /// </summary>
+            ATTENTION,
+            /// <summary>
             /// Initializes a parameter for the BiasLayer.
             /// </summary>
             BIAS,
@@ -161,6 +165,10 @@ namespace MyCaffe.param
             /// Initializes a parameter for the ConvolutionLayer.
             /// </summary>
             CONVOLUTION,
+            /// <summary>
+            /// Initializes a parameter for the CopyLayer.
+            /// </summary>
+            COPY,
             /// <summary>
             /// Initializes a parameter for the CropLayer.
             /// </summary>
@@ -797,6 +805,12 @@ namespace MyCaffe.param
                     m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
                     break;
 
+                case LayerType.ATTENTION:
+                    expected_bottom.Add("input");
+                    expected_top.Add("atten");
+                    m_rgLayerParameters[lt] = new AttentionParameter();
+                    break;
+
                 case LayerType.BATCHNORM:
                     expected_bottom.Add("input");
                     expected_top.Add("norm");
@@ -866,6 +880,11 @@ namespace MyCaffe.param
                     expected_bottom.Add("data");
                     expected_top.Add("score");
                     m_rgLayerParameters[lt] = new CropParameter();
+                    break;
+
+                case LayerType.COPY:
+                    expected_bottom.Add("src");
+                    expected_bottom.Add("dst");
                     break;
 
                 case LayerType.DECODE:
@@ -1297,6 +1316,7 @@ namespace MyCaffe.param
                     break;
 
                 case LayerType.SILENCE:
+                    expected_bottom.Add("input");
                     break;
 
                 case LayerType.SLICE:
@@ -1691,6 +1711,16 @@ namespace MyCaffe.param
             get { return (AnnotatedDataParameter)m_rgLayerParameters[LayerType.ANNOTATED_DATA]; }
             set { m_rgLayerParameters[LayerType.ANNOTATED_DATA] = value; }
         }
+
+        /// <summary>
+        /// Returns the parameter set when initialized with LayerType.ATTENTION
+        /// </summary>
+        public AttentionParameter attention_param
+        {
+            get { return (AttentionParameter)m_rgLayerParameters[LayerType.ATTENTION]; }
+            set { m_rgLayerParameters[LayerType.ATTENTION] = value; }
+        }
+
 
         /// <summary>
         /// Returns the parmeter set when initialized with LayerType.DETECTION_EVALUATE
@@ -2404,6 +2434,9 @@ namespace MyCaffe.param
                 case LayerType.ANNOTATED_DATA:
                     return "AnnotatedData";
 
+                case LayerType.ATTENTION:
+                    return "Attention";
+
                 case LayerType.BATCHNORM:
                     return "BatchNorm";
 
@@ -2433,6 +2466,9 @@ namespace MyCaffe.param
 
                 case LayerType.CROP:
                     return "Crop";
+
+                case LayerType.COPY:
+                    return "Copy";
 
                 case LayerType.DECODE:
                     return "Decode";
@@ -2798,6 +2834,7 @@ namespace MyCaffe.param
             // Alpha layers.
 
             // Beta layers.
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(attention_param, "attention_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(data_sequence_param, "data_sequence_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(decode_param, "decode_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gather_param, "gather_param"));
@@ -3081,6 +3118,9 @@ namespace MyCaffe.param
             // Alpha layers
 
             // Beta layers.
+            if ((rpp = rp.FindChild("attention_param")) != null)
+                p.attention_param = AttentionParameter.FromProto(rpp);
+
             if ((rpp = rp.FindChild("data_sequence_param")) != null)
                 p.data_sequence_param = DataSequenceParameter.FromProto(rpp);
 
@@ -3220,6 +3260,9 @@ namespace MyCaffe.param
                 case "annotateddata":
                     return LayerType.ANNOTATED_DATA;
 
+                case "attention":
+                    return LayerType.ATTENTION;
+
                 case "batchnorm":
                     return LayerType.BATCHNORM;
 
@@ -3250,6 +3293,9 @@ namespace MyCaffe.param
 
                 case "crop":
                     return LayerType.CROP;
+
+                case "copy":
+                    return LayerType.COPY;
 
                 case "decode":
                     return LayerType.DECODE;

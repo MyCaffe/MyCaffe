@@ -37,6 +37,12 @@ namespace MyCaffe.layers.beta
                 case LayerParameter.LayerType.ACCURACY_ENCODING:
                     return new AccuracyEncodingLayer<double>(cuda, log, p);
 
+                case LayerParameter.LayerType.ATTENTION:
+                    return new AttentionLayer<double>(cuda, log, p);
+
+                case LayerParameter.LayerType.COPY:
+                    return new CopyLayer<double>(cuda, log, p);
+
                 case LayerParameter.LayerType.DATA_SEQUENCE:
                     return new DataSequenceLayer<double>(cuda, log, p);
 
@@ -99,6 +105,12 @@ namespace MyCaffe.layers.beta
 
                 case LayerParameter.LayerType.ACCURACY_ENCODING:
                     return new AccuracyEncodingLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.ATTENTION:
+                    return new AttentionLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.COPY:
+                    return new CopyLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.DATA_SEQUENCE:
                     return new DataSequenceLayer<float>(cuda, log, p);
