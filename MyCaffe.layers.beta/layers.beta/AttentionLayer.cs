@@ -38,6 +38,7 @@ namespace MyCaffe.layers
         Blob<T> m_blobSoftmax = null;
         Blob<T> m_blobFocusedInput = null;
         Blob<T> m_blobContext = null;
+        Blob<T> m_blobTopT = null;
 
         BlobCollection<T> m_colInternalBottom = new BlobCollection<T>();
         BlobCollection<T> m_colInternalTop = new BlobCollection<T>();
@@ -138,6 +139,9 @@ namespace MyCaffe.layers
             m_blobContext = new Blob<T>(cuda, log);
             m_blobContext.Name = "context";
 
+            m_blobTopT = new Blob<T>(cuda, log);
+            m_blobTopT.Name = "topT";
+
             LayerParameter ipWcParam = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
             ipWcParam.name = "ipWc";
             ipWcParam.inner_product_param.axis = 2;
@@ -171,6 +175,7 @@ namespace MyCaffe.layers
             dispose(ref m_blobSoftmax);
             dispose(ref m_blobFocusedInput);
             dispose(ref m_blobContext);
+            dispose(ref m_blobTopT);
 
             base.dispose();
         }
@@ -306,8 +311,13 @@ namespace MyCaffe.layers
             rgContextShape[1] = 1;
             m_blobContext.Reshape(rgContextShape);
 
-            addInternal(m_blobContext, colTop[0]);
+            addInternal(m_blobContext, m_blobTopT);
             m_ipWc.Setup(m_colInternalBottom, m_colInternalTop);
+
+            List<int> rgTopShape = Utility.Clone<int>(m_blobTopT.shape());
+            rgTopShape[0] = m_blobTopT.shape(1);
+            rgTopShape[1] = m_blobTopT.shape(0);
+            colTop[0].Reshape(rgTopShape);
 
             blobs.Clear();
 
@@ -375,8 +385,13 @@ namespace MyCaffe.layers
             rgContextShape[1] = 1;
             m_blobContext.Reshape(rgContextShape);
 
-            addInternal(m_blobContext, colTop[0]);
+            addInternal(m_blobContext, m_blobTopT);
             m_ipWc.Setup(m_colInternalBottom, m_colInternalTop);
+
+            List<int> rgTopShape = Utility.Clone<int>(m_blobTopT.shape());
+            rgTopShape[0] = m_blobTopT.shape(1);
+            rgTopShape[1] = m_blobTopT.shape(0);
+            colTop[0].Reshape(rgTopShape);
         }
 
         /// <summary>
@@ -452,8 +467,11 @@ namespace MyCaffe.layers
                 }
             }
 
-            addInternal(m_blobContext, colTop[0]);
+            addInternal(m_blobContext, m_blobTopT);
             m_ipWc.Forward(m_colInternalBottom, m_colInternalTop);
+
+            // Reshape not needed for T = 1 in topT and top(0)
+            m_cuda.copy(m_blobTopT.count(), m_blobTopT.gpu_data, colTop[0].mutable_gpu_data);
         }
 
         /// <summary>
@@ -474,7 +492,11 @@ namespace MyCaffe.layers
             {
                 List<bool> rgbPropagate = new List<bool>() { true, true };
 
-                addInternal(m_blobContext, colTop[0]);
+                // Reshape not needed for T = 1 in topT and top(0)
+                m_cuda.copy(colTop[0].count(), colTop[0].gpu_data, m_blobTopT.mutable_gpu_data);
+                m_cuda.copy(colTop[0].count(), colTop[0].gpu_diff, m_blobTopT.mutable_gpu_diff);
+
+                addInternal(m_blobContext, m_blobTopT);
                 m_ipWc.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
 
                 // Apply gradient w.r.t input.
