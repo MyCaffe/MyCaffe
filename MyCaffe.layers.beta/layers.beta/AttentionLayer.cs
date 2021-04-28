@@ -339,7 +339,7 @@ namespace MyCaffe.layers
             // V
             blobs.Add(m_ipV.blobs[0]);
             // Wc
-            blobs.Add(m_ipWa.blobs[0]);
+            blobs.Add(m_ipWc.blobs[0]);
         }
 
         /// <summary>
@@ -412,10 +412,17 @@ namespace MyCaffe.layers
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            // Move this to the GPU.
-            float[] rgData = convertF(colBottom[0].mutable_cpu_data);
-            rgData = SimpleDatum.Transpose(rgData, colBottom[0].num, colBottom[0].channels, colBottom[0].count(2));
-            m_blobX.mutable_cpu_data = convert(rgData);
+            if (colBottom[0].channels == 1)
+            {
+                m_cuda.copy(m_blobX.count(), colBottom[0].gpu_data, m_blobX.mutable_gpu_data);
+            }
+            else // transpose from T,B,I to B,T,I
+            {
+                // Move this to the GPU.
+                float[] rgData = convertF(colBottom[0].mutable_cpu_data);
+                rgData = SimpleDatum.Transpose(rgData, colBottom[0].num, colBottom[0].channels, colBottom[0].count(2));
+                m_blobX.mutable_cpu_data = convert(rgData);
+            }
 
             // No need to transpose for state T = 1.
             m_cuda.copy(colBottom[1].count(), colBottom[1].gpu_data, m_blobState.mutable_gpu_data);
