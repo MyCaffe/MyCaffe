@@ -2225,6 +2225,207 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestMath_channel_scale1()
+        {
+            int nT = 3;
+            int nB = 2;
+            int nI = 3;
+
+            // Input contains contains 3 steps, 2 batches with data size = 3 per item.
+            double[] rgdfInput = new double[] { 0.01, 0.02, 0.03,  // t0
+                                                0.11, 0.12, 0.13,
+                                                1.01, 1.02, 1.03,  // t1
+                                                1.11, 1.12, 1.13,
+                                                2.01, 2.02, 2.03,  // t2
+                                                2.11, 2.12, 2.13 };
+            // Clip contains values 1 for active, 0 for inactive where one value is set per nT * nB.
+            double[] rgdfClip = new double[] { 1, 1,   // t0
+                                               1, 0,   // t1
+                                               0, 0 }; // t2
+                                                                             // Destination is expected to have label encodings corresponding to the labels of Label placed in the same order as Label.
+            double[] rgdfOutput = new double[] { 0.01, 0.02, 0.03,  // t0   
+                                                 0.11, 0.12, 0.13,
+                                                 1.01, 1.02, 1.03,  // t1
+                                                 0.00, 0.00, 0.00,
+                                                 0.00, 0.00, 0.00,  // t2
+                                                 0.00, 0.00, 0.00 };
+
+            TestMath_channel_scale(nT, nB, nI, rgdfInput, rgdfClip, rgdfOutput);
+        }
+
+        [TestMethod]
+        public void TestMath_channel_scale2()
+        {
+            int nT = 3;
+            int nB = 2;
+            int nI = 3;
+
+            // Input contains contains 3 steps, 2 batches with data size = 3 per item.
+            double[] rgdfInput = new double[] { 0.01, 0.02, 0.03,  // t0
+                                                0.11, 0.12, 0.13,
+                                                1.01, 1.02, 1.03,  // t1
+                                                1.11, 1.12, 1.13,
+                                                2.01, 2.02, 2.03,  // t2
+                                                2.11, 2.12, 2.13 };
+            // Clip contains values 1 for active, 0 for inactive where one value is set per nT * nB.
+            double[] rgdfClip = new double[] { 1, 0,   // t0
+                                               0, 1,   // t1
+                                               1, 1 }; // t2
+                                                       // Destination is expected to have label encodings corresponding to the labels of Label placed in the same order as Label.
+            double[] rgdfOutput = new double[] { 0.01, 0.02, 0.03,  // t0   
+                                                 0.00, 0.00, 0.00,
+                                                 0.00, 0.00, 0.00,  // t1
+                                                 1.11, 1.12, 1.13,
+                                                 2.01, 2.02, 2.03,  // t2
+                                                 2.11, 2.12, 2.13 };
+
+            TestMath_channel_scale(nT, nB, nI, rgdfInput, rgdfClip, rgdfOutput);
+        }
+
+        [TestMethod]
+        public void TestMath_channel_scale2b()
+        {
+            int nT = 3;
+            int nB = 2;
+            int nI = 3;
+
+            // Input contains contains 3 steps, 2 batches with data size = 3 per item.
+                                                // t0                t1                   t2
+            double[] rgdfInput = new double[] { 0.01, 0.02, 0.03,    1.01, 1.02, 1.03,    2.01, 2.02, 2.03,   // b0
+                                                0.11, 0.12, 0.13,    1.11, 1.12, 1.13,    2.11, 2.12, 2.13 }; // b1
+            // Clip contains values 1 for active, 0 for inactive where one value is set per nT * nB.
+                                             // t0                t1                   t2
+            double[] rgdfClip = new double[] {  1,                   0,                   1,   // b0
+                                                1,                   1,                   0 }; // b1
+            // Destination is expected to have label encodings corresponding to the labels of Label placed in the same order as Label.
+                                              // t0                t1                   t2
+            double[] rgdfOutput = new double[] { 0.01, 0.02, 0.03,    0.00, 0.00, 0.00,    2.01, 2.02, 2.03,   // b0
+                                                 0.11, 0.12, 0.13,    1.11, 1.12, 1.13,    0.00, 0.00, 0.00 }; // b1
+
+            rgdfInput = SimpleDatum.Transpose(rgdfInput, nB, nT, nI);
+            rgdfClip = SimpleDatum.Transpose(rgdfClip, nB, nT, 1);
+            rgdfOutput = SimpleDatum.Transpose(rgdfOutput, nB, nT, nI);
+
+            TestMath_channel_scale(nT, nB, nI, rgdfInput, rgdfClip, rgdfOutput);
+        }
+
+        [TestMethod]
+        public void TestMath_channel_scale3()
+        {
+            int nT = 3;
+            int nB = 2;
+            int nI = 3;
+
+            // Input contains contains 3 steps, 2 batches with data size = 3 per item.
+            double[] rgdfInput = new double[] { 0.01, 0.02, 0.03,  // t0
+                                                0.11, 0.12, 0.13,
+                                                1.01, 1.02, 1.03,  // t1
+                                                1.11, 1.12, 1.13,
+                                                2.01, 2.02, 2.03,  // t2
+                                                2.11, 2.12, 2.13 };
+            // Clip contains values 1 for active, 0 for inactive where one value is set per nT * nB.
+            double[] rgdfClip = new double[] { 1, 0,   // t0
+                                               0, 1,   // t1
+                                               1, 1 }; // t2
+                                                       // Destination is expected to have label encodings corresponding to the labels of Label placed in the same order as Label.
+            double[] rgdfOutput = new double[] { 0.01, 0.02, 0.03,  // t0   
+                                                 0.00, 0.00, 0.00,
+                                                 0.00, 0.00, 0.00,  // t1
+                                                 1.11, 1.12, 1.13,
+                                                 2.01, 2.02, 2.03,  // t2
+                                                 2.11, 2.12, 2.13 };
+
+            TestMath_channel_scale(nT, nB, nI, rgdfInput, rgdfClip, rgdfOutput);
+        }
+
+        [TestMethod]
+        public void TestMath_channel_scale3b()
+        {
+            int nT = 3;
+            int nB = 2;
+            int nI = 3;
+
+            // Input contains contains 3 steps, 2 batches with data size = 3 per item.
+                                             // t0                   t1                   t2
+            double[] rgdfInput = new double[] { 0.01, 0.02, 0.03,    1.01, 1.02, 1.03,    2.01, 2.02, 2.03,   // b0
+                                                0.11, 0.12, 0.13,    1.11, 1.12, 1.13,    2.11, 2.12, 2.13 }; // b1
+            // Clip contains values 1 for active, 0 for inactive where one value is set per nT * nB.
+                                             // t0                   t1                   t2
+            double[] rgdfClip = new double[] {  1,                   1,                   0,   // b0
+                                                1,                   1,                   0 }; // b1
+            // Destination is expected to have label encodings corresponding to the labels of Label placed in the same order as Label.
+                                              // t0                t1                   t2
+            double[] rgdfOutput = new double[] { 0.01, 0.02, 0.03,    1.01, 1.02, 1.03,    0.00, 0.00, 0.00,   // b0
+                                                 0.11, 0.12, 0.13,    1.11, 1.12, 1.13,    0.00, 0.00, 0.00 }; // b1
+
+            rgdfInput = SimpleDatum.Transpose(rgdfInput, nB, nT, nI);
+            rgdfClip = SimpleDatum.Transpose(rgdfClip, nB, nT, 1);
+            rgdfOutput = SimpleDatum.Transpose(rgdfOutput, nB, nT, nI);
+
+            TestMath_channel_scale(nT, nB, nI, rgdfInput, rgdfClip, rgdfOutput);
+        }
+
+
+        public void TestMath_channel_scale(int nT, int nB, int nI, double[] rgdfSrc, double[] rgdfClip, double[] rgdfExpected)
+        {
+            CudaDnnTest test = new CudaDnnTest();
+            Log log = new Log("Test Channel Scale");
+            long hSrc = 0;
+            long hClip = 0;
+            long hDst = 0;
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    try
+                    {
+                        int nCount = nT * nB * nI;
+
+                        hSrc = t.Cuda.AllocMemory(rgdfSrc);
+                        hClip = t.Cuda.AllocMemory(rgdfClip);
+                        hDst = t.Cuda.AllocMemory(nCount);
+
+                        t.Cuda.channel_scale(nCount, nT, nB, nI, hSrc, hClip, hDst);
+                        double[] rgDst = t.Cuda.GetMemoryDouble(hDst);
+
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            double df1 = rgdfExpected[i];
+                            double df2 = rgDst[i];
+
+                            log.EXPECT_EQUAL<float>(df1, df2, "The values do not match!");
+                        }
+                    }
+                    finally
+                    {
+                        if (hSrc != 0)
+                        {
+                            t.Cuda.FreeMemory(hSrc);
+                            hSrc = 0;
+                        }
+
+                        if (hDst != 0)
+                        {
+                            t.Cuda.FreeMemory(hDst);
+                            hDst = 0;
+                        }
+
+                        if (hClip != 0)
+                        {
+                            t.Cuda.FreeMemory(hClip);
+                            hClip = 0;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestStream()
         {
             CudaDnnTest test = new CudaDnnTest();

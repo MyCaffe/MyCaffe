@@ -2654,7 +2654,6 @@ long Device<T>::cuda_channel_div(long lInput, T* pfInput, long* plOutput, T** pp
 template long Device<double>::cuda_channel_div(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
 template long Device<float>::cuda_channel_div(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
 
-
 template <class T>
 long Device<T>::cuda_channel_mul(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
@@ -2679,6 +2678,29 @@ long Device<T>::cuda_channel_mul(long lInput, T* pfInput, long* plOutput, T** pp
 
 template long Device<double>::cuda_channel_mul(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
 template long Device<float>::cuda_channel_mul(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
+long Device<T>::cuda_channel_scale(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	int nOutNum = (int)pfInput[1];
+	int nChannels = (int)pfInput[2];
+	int nInNum = (int)pfInput[3];
+	long hX = (long)pfInput[4];
+	long hA = (long)pfInput[5];
+	long hY = (long)pfInput[6];
+
+	return m_math.channel_scale(n, nOutNum, nChannels, nInNum, hX, hA, hY);
+}
+
+template long Device<double>::cuda_channel_scale(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_channel_scale(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>

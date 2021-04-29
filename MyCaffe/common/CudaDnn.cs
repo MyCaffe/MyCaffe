@@ -719,6 +719,7 @@ namespace MyCaffe.common
 
         void channel_compare(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
         void channel_fill(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, int nLabelDim, long hLabels, long hY);
+        void channel_scale(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hA, long hY);
 
         void gemm(bool bTransA, bool bTransB, int m, int n, int k, double fAlpha, long hA, long hB, double fBeta, long hC);
         void gemm(bool bTransA, bool bTransB, int m, int n, int k, float fAlpha, long hA, long hB, float fBeta, long hC);
@@ -1077,6 +1078,7 @@ namespace MyCaffe.common
             CUDA_CHANNEL_MUL = 295,
             CUDA_CHANNEL_COMPARE = 296,
             CUDA_CHANNEL_FILL = 297,
+            CUDA_CHANNEL_SCALE = 298,
 
             CUDA_RNG_SETSEED = 349,
             CUDA_RNG_UNIFORM = 350,
@@ -7128,6 +7130,24 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MUL, m_param.AsDouble(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, nMethod));
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MUL, m_param.AsFloat(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, nMethod));
+        }
+
+        /// <summary>
+        /// Multiplies the values of the channels from X with the scalar values in B and places the result in Y.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of elements in X.</param>
+        /// <param name="nOuterNum">Specifies the number of items within X and B.</param>
+        /// <param name="nChannels">Specifies the number of channels per item of X and B.</param>
+        /// <param name="nInnerNum">Specifies the dimension of each data item in X (B should have data dimension = 1).</param>
+        /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
+        /// <param name="hA">Specifies a handle to the vector B containing the scalar values, one per num * channel.</param>
+        /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
+        public void channel_scale(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hA, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SCALE, m_param.AsDouble(nCount, nOuterNum, nChannels, nInnerNum, hX, hA, hY));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SCALE, m_param.AsFloat(nCount, nOuterNum, nChannels, nInnerNum, hX, hA, hY));
         }
 
         /// <summary>

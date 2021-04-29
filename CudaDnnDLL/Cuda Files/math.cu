@@ -5048,6 +5048,42 @@ template long Math<float>::channel_mul(int n, int nOutNum, int nChannels, int nI
 
 
 template <typename T>
+__global__ void channel_scale_kernel(const int count, const int num, const int channels, const int spatial_dim, const T* x, const T* a, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < count && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		int s = i / spatial_dim;
+		y[i] = x[i] * a[s];
+	}
+}
+
+template <typename T>
+long Math<T>::channel_scale(int n, int nOutNum, int nChannels, int nInNum, long hX, long hA, long hY)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pA;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hA, &pA))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	channel_scale_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pA->Data(), (T*)pY->Data());
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::channel_scale(int n, int nOutNum, int nChannels, int nInNum, long hX, long hA, long hY);
+template long Math<float>::channel_scale(int n, int nOutNum, int nChannels, int nInNum, long hX, long hA, long hY);
+
+
+template <typename T>
 __global__ void channel_dot_kernel(const int num, const int channels, const int spatial_dim, const T* x, const T* a, T* y)
 {
 	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<num * spatial_dim && i>=0; i += blockDim.x * gridDim.x)
