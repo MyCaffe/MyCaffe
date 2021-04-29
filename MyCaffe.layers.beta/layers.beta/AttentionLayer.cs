@@ -28,10 +28,10 @@ namespace MyCaffe.layers
         Layer<T> m_tanh = null;
         Layer<T> m_add = null;
         Layer<T> m_ipV = null;
-        Layer<T> m_softmax = null;
         Layer<T> m_ipWc = null;
 
         Blob<T> m_blobX = null;
+        Blob<T> m_blobClip = null;
         Blob<T> m_blobX1 = null;
         Blob<T> m_blobState = null;
         Blob<T> m_blobUh = null;
@@ -40,6 +40,7 @@ namespace MyCaffe.layers
         Blob<T> m_blobAddOutput = null;
         Blob<T> m_blobGG = null;
         Blob<T> m_blobAA = null;
+        Blob<T> m_blobScale = null;
         Blob<T> m_blobSoftmax = null;
         Blob<T> m_blobFocusedInput = null;
         Blob<T> m_blobContext = null;
@@ -47,7 +48,6 @@ namespace MyCaffe.layers
 
         BlobCollection<T> m_colInternalBottom = new BlobCollection<T>();
         BlobCollection<T> m_colInternalTop = new BlobCollection<T>();
-        Filler<T> m_filler = null;
 
         /// <summary>
         /// The AttentionLayer constructor.
@@ -100,16 +100,11 @@ namespace MyCaffe.layers
 
             m_ipV = new InnerProductLayer<T>(cuda, log, ipVParam);
 
-            LayerParameter softmaxParam = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
-            softmaxParam.name = "softmax";
-            softmaxParam.softmax_param.axis = 1;
-
-            m_softmax = new SoftmaxLayer<T>(cuda, log, softmaxParam);
-
-            m_filler = Filler<T>.Create(m_cuda, m_log, m_param.attention_param.weight_filler);
-
             m_blobX = new Blob<T>(cuda, log);
             m_blobX.Name = "x";
+
+            m_blobClip = new Blob<T>(cuda, log);
+            m_blobClip.Name = "clip";
 
             m_blobX1 = new Blob<T>(cuda, log);
             m_blobX1.Name = "x1";
@@ -135,6 +130,9 @@ namespace MyCaffe.layers
             m_blobAA = new Blob<T>(cuda, log);
             m_blobAA.Name = "aa";
 
+            m_blobScale = new Blob<T>(cuda, log, false);
+            m_blobScale.Name = "scale";
+
             m_blobSoftmax = new Blob<T>(cuda, log);
             m_blobSoftmax.Name = "softmax";
 
@@ -152,7 +150,7 @@ namespace MyCaffe.layers
             ipWcParam.inner_product_param.axis = 2;
             ipWcParam.inner_product_param.bias_term = false;
             ipWcParam.inner_product_param.num_output = m_param.attention_param.dim;
-            ipWcParam.inner_product_param.weight_filler = new FillerParameter("constant", 1);
+            ipWcParam.inner_product_param.weight_filler = m_param.attention_param.weight_filler;
 
             m_ipWc = new InnerProductLayer<T>(cuda, log, ipWcParam);
         }
@@ -160,23 +158,24 @@ namespace MyCaffe.layers
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
-            dispose(ref m_blobX);
-            dispose(ref m_blobX1);
             dispose(ref m_blobState);
             dispose(ref m_ipUa);
             dispose(ref m_ipWa);
             dispose(ref m_tanh);
             dispose(ref m_add);
             dispose(ref m_ipV);
-            dispose(ref m_softmax);
             dispose(ref m_ipWc);
 
+            dispose(ref m_blobX);
+            dispose(ref m_blobClip);
+            dispose(ref m_blobX1);
             dispose(ref m_blobUh);
             dispose(ref m_blobWc);
             dispose(ref m_blobFullWc);
             dispose(ref m_blobAddOutput);
             dispose(ref m_blobGG);
             dispose(ref m_blobAA);
+            dispose(ref m_blobScale);
             dispose(ref m_blobSoftmax);
             dispose(ref m_blobFocusedInput);
             dispose(ref m_blobContext);
@@ -218,7 +217,7 @@ namespace MyCaffe.layers
         /// </summary>
         public override int ExactNumBottomBlobs
         {
-            get { return 2; }
+            get { return 3; }
         }
 
         /// <summary>
@@ -303,9 +302,6 @@ namespace MyCaffe.layers
             addInternal(m_blobGG, m_blobAA);
             m_ipV.Setup(m_colInternalBottom, m_colInternalTop);
 
-            addInternal(m_blobAA, m_blobSoftmax);
-            m_softmax.Setup(m_colInternalBottom, m_colInternalTop);
-
             List<int> rgFocusShape = Utility.Clone<int>(colBottom[0].shape());
             rgFocusShape[0] = colBottom[0].shape(1);
             rgFocusShape[1] = colBottom[0].shape(0);
@@ -349,11 +345,19 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            m_log.CHECK_EQ(colBottom[2].count(), colBottom[0].count(0, 2), "The bottom[2] 'clip' must have shape T,B.");
+
             List<int> rgShape = Utility.Clone<int>(colBottom[0].shape());
             rgShape[0] = colBottom[0].shape(1); // batch
             rgShape[1] = colBottom[0].shape(0); // timesteps;
             m_blobX.Reshape(rgShape);
             m_blobX1.Reshape(rgShape);
+
+            while (rgShape.Count > 2)
+            {
+                rgShape.RemoveAt(rgShape.Count - 1);
+            }
+            m_blobClip.Reshape(rgShape);
 
             addInternal(m_blobX, m_blobUh);
             m_ipUa.Reshape(m_colInternalBottom, m_colInternalTop);
@@ -377,8 +381,8 @@ namespace MyCaffe.layers
             addInternal(m_blobGG, m_blobAA);
             m_ipV.Reshape(m_colInternalBottom, m_colInternalTop);
 
-            addInternal(m_blobAA, m_blobSoftmax);
-            m_softmax.Reshape(m_colInternalBottom, m_colInternalTop);
+            m_blobSoftmax.ReshapeLike(m_blobAA);
+            m_blobScale.ReshapeLike(m_blobSoftmax);
 
             List<int> rgFocusShape = Utility.Clone<int>(colBottom[0].shape());
             rgFocusShape[0] = colBottom[0].shape(1);
@@ -399,6 +403,96 @@ namespace MyCaffe.layers
             colTop[0].Reshape(rgTopShape);
         }
 
+        private void apply_clip(Blob<T> blobInput, Blob<T> blobClip, Blob<T> blobOutput, bool bDiff = false)
+        {
+            float[] rgClip = convertF(blobClip.mutable_cpu_data);
+            int nCount = blobInput.count(2);
+            for (int t = 0; t < blobInput.num; t++)
+            {
+                for (int b = 0; b < blobInput.channels; b++)
+                {
+                    int nClipIdx = t * blobInput.channels;
+                    float fClip = rgClip[nClipIdx];
+
+                    int nIdx = (t * blobInput.channels * nCount) + (b * nCount);
+
+                    if (bDiff)
+                        m_cuda.scale(nCount, convert(fClip), blobInput.gpu_diff, blobOutput.mutable_gpu_diff, nIdx, nIdx);
+                    else
+                        m_cuda.scale(nCount, convert(fClip), blobInput.gpu_data, blobOutput.mutable_gpu_data, nIdx, nIdx);
+                }
+            }
+        }
+
+        private void softmax_fwd(Blob<T> blobBottom, Blob<T> blobClip, Blob<T> blobScale, Blob<T> blobTop, int nAxis)
+        {
+            int nCount = blobBottom.count();
+            int nOuterNum = blobBottom.count(0, nAxis);
+            int nInnerNum = blobBottom.count(nAxis + 1);
+            int nChannels = blobTop.shape(nAxis);
+            long hBottomData = blobBottom.gpu_data;
+            long hTopData = blobTop.mutable_gpu_data;
+            long hScaleData = blobScale.mutable_gpu_data;
+
+            m_cuda.copy(nCount, hBottomData, hTopData);
+
+            // We need to subtract the max to avoid numerical issues, compute the exp
+            // and then normalize.
+            // compute max.
+            m_cuda.channel_max(nOuterNum * nInnerNum, nOuterNum, nChannels, nInnerNum, hTopData, hScaleData);
+
+            // subtract
+            m_cuda.channel_sub(nCount, nOuterNum, nChannels, nInnerNum, hScaleData, hTopData);
+
+            // exponentiate
+            m_cuda.exp(nCount, hTopData, hTopData);
+
+            // Apply clip.
+            for (int b = 0; b < blobClip.num; b++)
+            {
+                int nDim = blobTop.count(1);
+                int nIdxSrc = b * blobClip.channels;
+                int nIdxDst = b * nDim;
+                m_cuda.mul(nDim, blobClip.gpu_data, hTopData, hTopData, nIdxSrc, nIdxDst, nIdxDst);
+            }
+
+            // Sum after exp
+            m_cuda.channel_sum(nOuterNum * nInnerNum, nOuterNum, nChannels, nInnerNum, hTopData, hScaleData);
+
+            // divide
+            m_cuda.channel_div(nCount, nOuterNum, nChannels, nInnerNum, hScaleData, hTopData);
+        }
+
+        private void softmax_bwd(Blob<T> blobTop, Blob<T> blobClip, Blob<T> blobScale, Blob<T> blobBottom, int nAxis)
+        {
+            int nOuterNum = blobBottom.count(0, nAxis);
+            int nInnerNum = blobBottom.count(nAxis + 1);
+            long hTopDiff = blobTop.gpu_diff;
+            long hTopData = blobTop.gpu_data;
+            long hBottomDiff = blobBottom.mutable_gpu_diff;
+            long hScaleData = m_blobScale.mutable_gpu_data;
+            int nCount = blobTop.count();
+            int nChannels = blobTop.shape(nAxis);
+
+            m_cuda.copy(nCount, hTopDiff, hBottomDiff);
+
+            // Compute inner1d(top_diff, top_data) and subtract them from the bottom diff.
+            m_cuda.channel_dot(nOuterNum * nInnerNum, nOuterNum, nChannels, nInnerNum, hTopDiff, hTopData, hScaleData);
+            m_cuda.channel_sub(nCount, nOuterNum, nChannels, nInnerNum, hScaleData, hBottomDiff);
+
+            // Apply clip.
+            for (int b = 0; b < blobClip.num; b++)
+            {
+                int nDim = blobTop.count(1);
+                int nIdxSrc = b * blobClip.channels;
+                int nIdxDst = b * nDim;
+                m_cuda.mul(nDim, blobClip.gpu_data, hTopData, hTopData, nIdxSrc, nIdxDst, nIdxDst);
+            }
+
+            // elementwise multiplication
+            m_cuda.mul(nCount, hBottomDiff, hTopData, hBottomDiff);
+        }
+
         /// <summary>
         /// The forward computation.
         /// </summary>
@@ -412,17 +506,20 @@ namespace MyCaffe.layers
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            if (colBottom[0].channels == 1)
-            {
-                m_cuda.copy(m_blobX.count(), colBottom[0].gpu_data, m_blobX.mutable_gpu_data);
-            }
-            else // transpose from T,B,I to B,T,I
-            {
-                // Move this to the GPU.
-                float[] rgData = convertF(colBottom[0].mutable_cpu_data);
-                rgData = SimpleDatum.Transpose(rgData, colBottom[0].num, colBottom[0].channels, colBottom[0].count(2));
-                m_blobX.mutable_cpu_data = convert(rgData);
-            }
+            // Force values to 1 or 0.
+            m_cuda.sign(colBottom[2].count(), colBottom[2].gpu_data, colBottom[2].mutable_gpu_data);
+
+            // Apply the clip.
+            // Move this to the GPU.
+            apply_clip(colBottom[0], colBottom[2], m_blobX);
+
+            float[] rgData = convertF(m_blobX.mutable_cpu_data);
+            rgData = SimpleDatum.Transpose(rgData, colBottom[0].num, colBottom[0].channels, colBottom[0].count(2));
+            m_blobX.mutable_cpu_data = convert(rgData);
+
+            float[] rgClip = convertF(colBottom[2].mutable_cpu_data);
+            rgClip = SimpleDatum.Transpose(rgClip, colBottom[2].num, colBottom[2].channels, colBottom[2].count(2));
+            m_blobClip.mutable_cpu_data = convert(rgClip);
 
             // No need to transpose for state T = 1.
             m_cuda.copy(colBottom[1].count(), colBottom[1].gpu_data, m_blobState.mutable_gpu_data);
@@ -456,8 +553,7 @@ namespace MyCaffe.layers
             addInternal(m_blobGG, m_blobAA);
             m_ipV.Forward(m_colInternalBottom, m_colInternalTop);
 
-            addInternal(m_blobAA, m_blobSoftmax);
-            m_softmax.Forward(m_colInternalBottom, m_colInternalTop);
+            softmax_fwd(m_blobAA, m_blobClip, m_blobScale, m_blobSoftmax, 1);
             float[] rgSoftmax = convertF(m_blobSoftmax.mutable_cpu_data);
 
             // Apply softmax to each channel
@@ -500,7 +596,7 @@ namespace MyCaffe.layers
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
             // Gradient with respect to state then data.
-            if (rgbPropagateDown[0] && rgbPropagateDown[1])
+            if (rgbPropagateDown[0])
             {
                 List<bool> rgbPropagate = new List<bool>() { true, true };
 
@@ -546,8 +642,7 @@ namespace MyCaffe.layers
 
                 m_blobSoftmax.mutable_cpu_diff = convert(rgSoftmaxDiff);
 
-                addInternal(m_blobAA, m_blobSoftmax);
-                m_softmax.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+                softmax_bwd(m_blobSoftmax, m_blobClip, m_blobScale, m_blobAA, 1);
 
                 addInternal(m_blobGG, m_blobAA);
                 m_ipV.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
