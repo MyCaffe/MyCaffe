@@ -603,13 +603,28 @@ namespace MyCaffe.basecode
         /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
         /// <param name="rg1">Specifies the first List.</param>
         /// <param name="rg2">Specifies the second List.</param>
+        /// <param name="bExact">Optionally, specifies to look for an exact match.  When <i>false</i> a trailing one is accepted if the count()'s match.</param>
         /// <returns>If the Lists are the same, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
-        public static bool Compare<T>(List<T> rg1, List<T> rg2)
+        public static bool Compare<T>(List<T> rg1, List<T> rg2, bool bExact = true)
         {
             if (rg1.Count != rg2.Count)
-                return false;
+            {
+                if (bExact)
+                    return false;
 
-            for (int i = 0; i < rg1.Count; i++)
+                if (Math.Abs(rg1.Count - rg2.Count) > 1)
+                    return false;
+
+                T tOne = (T)Convert.ChangeType(1, typeof(T));
+
+                if (rg1.Count > rg2.Count && !rg1[rg1.Count - 1].Equals(tOne))
+                    return false;
+
+                if (rg2.Count > rg1.Count && !rg2[rg2.Count - 1].Equals(tOne))
+                    return false;                
+            }
+
+            for (int i = 0; i < rg1.Count && i < rg2.Count; i++)
             {
                 IComparable compare1 = rg1[i] as IComparable;
 
