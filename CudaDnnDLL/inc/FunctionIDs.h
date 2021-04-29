@@ -254,6 +254,7 @@ const int CUDA_FN_CHANNEL_DOT = 294;
 const int CUDA_FN_CHANNEL_MUL = 295;
 const int CUDA_FN_CHANNEL_COMPARE = 296;
 const int CUDA_FN_CHANNEL_FILL = 297;
+const int CUDA_FN_CHANNEL_SCALE = 298;
 
 const int CUDA_RNG_SETSEED = 349;
 const int CUDA_RNG_UNIFORM = 350;
