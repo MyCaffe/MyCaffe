@@ -432,23 +432,11 @@ namespace MyCaffe.layers
 
         private void apply_clip(Blob<T> blobInput, Blob<T> blobClip, Blob<T> blobOutput, bool bDiff = false)
         {
-            float[] rgClip = convertF(blobClip.mutable_cpu_data);
-            int nCount = blobInput.count(2);
-            for (int t = 0; t < blobInput.num; t++)
-            {
-                for (int b = 0; b < blobInput.channels; b++)
-                {
-                    int nClipIdx = t * blobInput.channels;
-                    float fClip = rgClip[nClipIdx];
+            long hSrc = (bDiff) ? blobInput.gpu_diff : blobInput.gpu_data;
+            long hClip = blobClip.gpu_data;
+            long hDst = (bDiff) ? blobOutput.mutable_gpu_diff : blobOutput.gpu_diff;
 
-                    int nIdx = (t * blobInput.channels * nCount) + (b * nCount);
-
-                    if (bDiff)
-                        m_cuda.scale(nCount, convert(fClip), blobInput.gpu_diff, blobOutput.mutable_gpu_diff, nIdx, nIdx);
-                    else
-                        m_cuda.scale(nCount, convert(fClip), blobInput.gpu_data, blobOutput.mutable_gpu_data, nIdx, nIdx);
-                }
-            }
+            m_cuda.channel_scale(blobInput.count(), blobInput.num, blobInput.channels, blobInput.count(2), hSrc, hClip, hDst);
         }
 
         private void softmax_fwd(Blob<T> blobBottom, Blob<T> blobClip, Blob<T> blobScale, Blob<T> blobTop, int nAxis)
@@ -551,7 +539,6 @@ namespace MyCaffe.layers
             m_cuda.sign(blobClip.count(), blobClip.gpu_data, blobClip.mutable_gpu_data);
 
             // Apply the clip.
-            // Move this to the GPU.
             apply_clip(blobX, blobClip, m_blobX);
 
             addInternal(blobX, m_blobX);
