@@ -99,6 +99,7 @@ namespace MyCaffe.test
         Blob<T> m_blobB = null;
         Blob<T> m_blobC = null;
         Blob<T> m_blobState = null;
+        Blob<T> m_blobHy = null;
         Blob<T> m_blobClip = null;
         float[] m_rgUa;
         float[] m_rgWa;
@@ -114,6 +115,7 @@ namespace MyCaffe.test
             m_blobA = new Blob<T>(m_cuda, m_log);
             m_blobB = new Blob<T>(m_cuda, m_log);
             m_blobC = new Blob<T>(m_cuda, m_log);
+            m_blobHy = new Blob<T>(m_cuda, m_log);
             m_blobState = new Blob<T>(m_cuda, m_log);
             m_blobClip = new Blob<T>(m_cuda, m_log);
         }
@@ -137,6 +139,7 @@ namespace MyCaffe.test
             dispose1(ref m_blobA);
             dispose1(ref m_blobB);
             dispose1(ref m_blobC);
+            dispose1(ref m_blobHy);
             dispose1(ref m_blobState);
             base.dispose();
         }
@@ -181,6 +184,8 @@ namespace MyCaffe.test
             m_blob_bottom.mutable_cpu_data = convert(rgData);
 
             m_blobState.Reshape(1, 2, (int)p.attention_param.dim, 1);
+            m_blobHy.ReshapeLike(m_blobState);
+            m_blobHy.SetData(0);
 
             List<int> rgShape = Utility.Clone<int>(m_blob_bottom.shape());
             while (rgShape.Count > 2)
@@ -192,6 +197,7 @@ namespace MyCaffe.test
 
             BottomVec.Clear();
             BottomVec.Add(m_blob_bottom);
+            BottomVec.Add(m_blobHy);
             BottomVec.Add(m_blobState);
             BottomVec.Add(m_blobClip);
 
@@ -210,6 +216,8 @@ namespace MyCaffe.test
 
             m_blob_bottom.mutable_cpu_data = convert(rgData);
             m_blobState.Reshape(1, 1, (int)p.attention_param.dim, 1);
+            m_blobHy.ReshapeLike(m_blobState);
+            m_blobHy.SetData(0);
 
             List<int> rgShape = Utility.Clone<int>(m_blob_bottom.shape());
             while (rgShape.Count > 2)
@@ -221,6 +229,7 @@ namespace MyCaffe.test
 
             BottomVec.Clear();
             BottomVec.Add(m_blob_bottom);
+            BottomVec.Add(m_blobHy);
             BottomVec.Add(m_blobState);
             BottomVec.Add(m_blobClip);
 
