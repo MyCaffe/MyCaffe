@@ -42,6 +42,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestForward2()
+        {
+            TransposeLayerTest test = new TransposeLayerTest();
+
+            try
+            {
+                foreach (ITransposeLayerTest t in test.Tests)
+                {
+                    t.TestForward2();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestGradient()
         {
             TransposeLayerTest test = new TransposeLayerTest();
@@ -63,6 +81,7 @@ namespace MyCaffe.test
     interface ITransposeLayerTest : ITest
     {
         void TestForward();
+        void TestForward2();
         void TestGradient();
     }
 
@@ -112,6 +131,39 @@ namespace MyCaffe.test
             b.mutable_cpu_data = convert(rgF.ToArray());
         }
 
+        private void Fill2(Blob<T> b)
+        {
+            List<int> rgShape = new List<int>() { 2, 3, 3 };
+            b.Reshape(rgShape);
+
+            List<float> rgF = new List<float>();
+            rgF.Add(1.10f);
+            rgF.Add(1.11f);
+            rgF.Add(1.12f);
+
+            rgF.Add(1.20f);
+            rgF.Add(1.21f);
+            rgF.Add(1.22f);
+
+            rgF.Add(1.30f);
+            rgF.Add(1.31f);
+            rgF.Add(1.32f);
+
+            rgF.Add(2.10f);
+            rgF.Add(2.11f);
+            rgF.Add(2.12f);
+
+            rgF.Add(2.20f);
+            rgF.Add(2.21f);
+            rgF.Add(2.22f);
+
+            rgF.Add(2.30f);
+            rgF.Add(2.31f);
+            rgF.Add(2.32f);
+
+            b.mutable_cpu_data = convert(rgF.ToArray());
+        }
+
         public void TestForward()
         {
             List<int> rgDim = new List<int>() { 0, 2, 1 };
@@ -154,6 +206,39 @@ namespace MyCaffe.test
             }
         }
 
+        public void TestForward2()
+        {
+            List<int> rgDim = new List<int>() { 1, 0, 2 };
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSPOSE);
+            p.transpose_param.dim = new List<int>(rgDim);
+
+            Fill2(m_blob_bottom);
+            float[] rgData = convertF(m_blob_bottom.mutable_cpu_data);
+
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+            layer.Setup(BottomVec, TopVec);
+            layer.Forward(BottomVec, TopVec);
+
+            m_log.CHECK_EQ(m_blob_bottom.count(), m_blob_top.count(), "The top and bottom should have the same count!");
+            m_log.CHECK_EQ(m_blob_bottom.num_axes, rgDim.Count, "The bottom must have the same number of axes as the rgDim!");
+            m_log.CHECK_EQ(m_blob_top.num_axes, rgDim.Count, "The bottom must have the same number of axes as the rgDim!");
+
+            for (int i = 0; i < rgDim.Count; i++)
+            {
+                int nAxis = rgDim[i];
+                int nDim = m_blob_bottom.shape()[nAxis];
+
+                m_log.CHECK_EQ(m_blob_top.shape()[i], nDim, "The top dimension at index " + i.ToString() + " is not correct!");
+            }
+
+            float[] rgExpected = SimpleDatum.Transpose(rgData, m_blob_bottom.num, m_blob_bottom.channels, m_blob_bottom.count(2));
+            float[] rgActual = convertF(m_blob_top.mutable_cpu_data);
+
+            for (int i = 0; i < rgActual.Length; i++)
+            {
+                m_log.EXPECT_EQUAL<float>(rgActual[i], rgExpected[i], "The values do not match!");
+            }
+        }
 
         public void TestGradient()
         {
