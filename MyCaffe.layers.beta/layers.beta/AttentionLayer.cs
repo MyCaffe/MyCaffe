@@ -23,6 +23,8 @@ namespace MyCaffe.layers
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class AttentionLayer<T> : Layer<T>
     {
+        Layer<T> m_transposeX = null;
+        Layer<T> m_transposeClip = null;
         Layer<T> m_ipUa = null;
         Layer<T> m_ipWa = null;
         Layer<T> m_tanh = null;
@@ -60,6 +62,12 @@ namespace MyCaffe.layers
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.ATTENTION;
+
+            List<int> rgDimClip = new List<int>() { 1, 0 };
+            LayerParameter transposeClipparam = new LayerParameter(LayerParameter.LayerType.TRANSPOSE);
+            transposeClipparam.transpose_param.dim = new List<int>(rgDimClip);
+
+            m_transposeClip = new TransposeLayer<T>(cuda, log, transposeClipparam);
 
             LayerParameter ipUaParam = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
             ipUaParam.name = "ipUa";
@@ -158,7 +166,8 @@ namespace MyCaffe.layers
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
-            dispose(ref m_blobState);
+            dispose(ref m_transposeX);
+            dispose(ref m_transposeClip);
             dispose(ref m_ipUa);
             dispose(ref m_ipWa);
             dispose(ref m_tanh);
@@ -166,6 +175,7 @@ namespace MyCaffe.layers
             dispose(ref m_ipV);
             dispose(ref m_ipWc);
 
+            dispose(ref m_blobState);
             dispose(ref m_blobX);
             dispose(ref m_blobClip);
             dispose(ref m_blobX1);
@@ -279,16 +289,28 @@ namespace MyCaffe.layers
 
             m_rgbParamPropagateDown = new DictionaryMap<bool>(m_colBlobs.Count, true);
 
-            List<int> rgShape = Utility.Clone<int>(blobX.shape());
-            rgShape[0] = blobX.shape(1); // batch
-            rgShape[1] = blobX.shape(0); // timesteps;
-            m_blobX.Reshape(rgShape);
-            m_blobX1.Reshape(rgShape);
+            List<int> rgDimX = new List<int>() { 1, 0 };
+            while (rgDimX.Count < colBottom[0].num_axes)
+            {
+                rgDimX.Add(rgDimX.Count);
+            }
+
+            LayerParameter transposeXparam = new LayerParameter(LayerParameter.LayerType.TRANSPOSE);
+            transposeXparam.transpose_param.dim = new List<int>(rgDimX);
+
+            m_transposeX = new TransposeLayer<T>(m_cuda, m_log, transposeXparam);
+
+            addInternal(blobX, m_blobX);
+            m_transposeX.Setup(m_colInternalBottom, m_colInternalTop);
+            m_blobX1.ReshapeLike(m_blobX);
 
             addInternal(m_blobX, m_blobUh);
             m_ipUa.Setup(m_colInternalBottom, m_colInternalTop);
 
-            rgShape = Utility.Clone<int>(blobCy.shape());
+            addInternal(blobClip, m_blobClip);
+            m_transposeClip.Setup(m_colInternalBottom, m_colInternalTop);
+
+            List<int> rgShape = Utility.Clone<int>(blobCy.shape());
             rgShape[0] = blobCy.shape(1); // batch
             rgShape[1] = blobCy.shape(0); // timesteps;
             m_blobState.Reshape(rgShape);
@@ -357,22 +379,17 @@ namespace MyCaffe.layers
 
             m_log.CHECK_EQ(blobClip.count(), blobX.count(0, 2), "The bottom[2] 'clip' must have shape T,B.");
 
-            List<int> rgShape = Utility.Clone<int>(blobX.shape());
-            rgShape[0] = blobX.shape(1); // batch
-            rgShape[1] = blobX.shape(0); // timesteps;
-            m_blobX.Reshape(rgShape);
-            m_blobX1.Reshape(rgShape);
-
-            while (rgShape.Count > 2)
-            {
-                rgShape.RemoveAt(rgShape.Count - 1);
-            }
-            m_blobClip.Reshape(rgShape);
+            addInternal(blobX, m_blobX);
+            m_transposeX.Reshape(m_colInternalBottom, m_colInternalTop);
+            m_blobX1.ReshapeLike(m_blobX);
 
             addInternal(m_blobX, m_blobUh);
             m_ipUa.Reshape(m_colInternalBottom, m_colInternalTop);
 
-            rgShape = Utility.Clone<int>(blobCy.shape());
+            addInternal(blobClip, m_blobClip);
+            m_transposeClip.Reshape(m_colInternalBottom, m_colInternalTop);
+
+            List<int> rgShape = Utility.Clone<int>(blobCy.shape());
             rgShape[0] = blobCy.shape(1); // batch
             rgShape[1] = blobCy.shape(0); // timesteps;
             m_blobState.Reshape(rgShape);
@@ -537,13 +554,11 @@ namespace MyCaffe.layers
             // Move this to the GPU.
             apply_clip(blobX, blobClip, m_blobX);
 
-            float[] rgData = convertF(m_blobX.mutable_cpu_data);
-            rgData = SimpleDatum.Transpose(rgData, blobX.num, blobX.channels, blobX.count(2));
-            m_blobX.mutable_cpu_data = convert(rgData);
+            addInternal(blobX, m_blobX);
+            m_transposeX.Forward(m_colInternalBottom, m_colInternalTop);
 
-            float[] rgClip = convertF(blobClip.mutable_cpu_data);
-            rgClip = SimpleDatum.Transpose(rgClip, blobClip.num, blobClip.channels, blobClip.count(2));
-            m_blobClip.mutable_cpu_data = convert(rgClip);
+            addInternal(blobClip, m_blobClip);
+            m_transposeClip.Forward(m_colInternalBottom, m_colInternalTop);
 
             // No need to transpose for state T = 1.
             m_cuda.copy(blobCy.count(), blobCy.gpu_data, m_blobState.mutable_gpu_data);
@@ -701,10 +716,8 @@ namespace MyCaffe.layers
                 // No need to transpose for state T = 1.
                 m_cuda.copy(blobCy.count(), m_blobState.gpu_diff, blobCy.mutable_gpu_diff);
 
-                // Move this to the GPU.
-                float[] rgX = convertF(m_blobX.mutable_cpu_diff);
-                rgX = SimpleDatum.Transpose(rgX, m_blobX.num, m_blobX.channels, m_blobX.count(2));
-                blobX.mutable_cpu_diff = convert(rgX);
+                addInternal(blobX, m_blobX);
+                m_transposeX.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
             }
         }
     }
