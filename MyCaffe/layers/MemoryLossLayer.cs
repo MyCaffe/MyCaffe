@@ -255,6 +255,7 @@ namespace MyCaffe.layers
         double m_dfNormalizer = 1;
         BlobCollection<T> m_colBottom;
         bool m_bEnableLossUpdate = true;
+        object m_tag = null;
 
         /// <summary>
         /// The constructor.
@@ -309,6 +310,15 @@ namespace MyCaffe.layers
         {
             get { return m_bEnableLossUpdate; }
             set { m_bEnableLossUpdate = value; }
+        }
+
+        /// <summary>
+        /// Get/set a user defined value.
+        /// </summary>
+        public object Tag
+        {
+            get { return m_tag; }
+            set { m_tag = value; }
         }
     }
 }
