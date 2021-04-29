@@ -182,6 +182,24 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Set the OnDebug event.
+        /// </summary>
+        /// <param name="fn">Specifies the event function to call when the OnDebug event fires.</param>
+        public virtual void SetOnDebug(EventHandler<GetWorkBlobArgs<T>> fn)
+        {
+            OnDebug += fn;
+        }
+
+        /// <summary>
+        /// Reset the OnDebug event, disabling it.
+        /// </summary>
+        /// <param name="fn">Specifies the event function to call when the OnDebug event fires.</param>
+        public virtual void ResetOnDebug(EventHandler<GetWorkBlobArgs<T>> fn)
+        {
+            OnDebug -= fn;
+        }
+
+        /// <summary>
         /// Re-initialize the parameters of the layer.
         /// </summary>
         /// <param name="target">Specifies the weights to target (e.g. weights, bias or both).</param>

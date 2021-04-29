@@ -849,9 +849,9 @@ namespace MyCaffe.common
                     // Enable layer debugging which checks for NAN/INF on each fwd/bwd pass, but is much
                     // slower and therefore only for debugging.
                     if (value)
-                        layer.OnDebug += layer_OnDebug;
+                        layer.SetOnDebug(layer_OnDebug);
                     else
-                        layer.OnDebug -= layer_OnDebug;
+                        layer.ResetOnDebug(layer_OnDebug);
                 }
 
                 m_bEnableLayerDebugging = value;

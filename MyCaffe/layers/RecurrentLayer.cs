@@ -212,6 +212,40 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Set the OnDebug event on the unrolled net.
+        /// </summary>
+        /// <param name="fn">Specifies the event function to call when the OnDebug event fires.</param>
+        public override void SetOnDebug(EventHandler<GetWorkBlobArgs<T>> fn)
+        {
+            base.SetOnDebug(fn);
+
+            if (m_unrolledNet == null)
+                return;
+
+            foreach (Layer<T> layer in m_unrolledNet.layers)
+            {
+                layer.SetOnDebug(fn);
+            }
+        }
+
+        /// <summary>
+        /// Reset the OnDebug event, disabling it on the unrolled net.
+        /// </summary>
+        /// <param name="fn">Specifies the event function to call when the OnDebug event fires.</param>
+        public override void ResetOnDebug(EventHandler<GetWorkBlobArgs<T>> fn)
+        {
+            base.ResetOnDebug(fn);
+
+            if (m_unrolledNet == null)
+                return;
+
+            foreach (Layer<T> layer in m_unrolledNet.layers)
+            {
+                layer.ResetOnDebug(fn);
+            }
+        }
+
+        /// <summary>
         /// Setup the layer.
         /// </summary>
         /// <param name="colBottom">Specifies the collection of bottom (input) Blobs.</param>
