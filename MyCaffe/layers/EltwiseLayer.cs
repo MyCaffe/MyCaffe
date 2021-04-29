@@ -160,7 +160,7 @@ namespace MyCaffe.layers
                     }
                     else
                     {
-                        m_log.CHECK(Utility.Compare<int>(colBottom[i].shape(), colBottom[0].shape()), "The bottoms should all be of the same shape.");
+                        m_log.CHECK(Utility.Compare<int>(colBottom[i].shape(), colBottom[0].shape(), false), "The bottoms should all be of the same shape.");
                     }
                 }
             }
