@@ -99,6 +99,7 @@ namespace MyCaffe.test
         Blob<T> m_blobB = null;
         Blob<T> m_blobC = null;
         Blob<T> m_blobState = null;
+        Blob<T> m_blobClip = null;
         float[] m_rgUa;
         float[] m_rgWa;
         float[] m_rgV;
@@ -114,6 +115,7 @@ namespace MyCaffe.test
             m_blobB = new Blob<T>(m_cuda, m_log);
             m_blobC = new Blob<T>(m_cuda, m_log);
             m_blobState = new Blob<T>(m_cuda, m_log);
+            m_blobClip = new Blob<T>(m_cuda, m_log);
         }
 
         protected override FillerParameter getFillerParam()
@@ -180,9 +182,18 @@ namespace MyCaffe.test
 
             m_blobState.Reshape(1, 2, (int)p.attention_param.dim, 1);
 
+            List<int> rgShape = Utility.Clone<int>(m_blob_bottom.shape());
+            while (rgShape.Count > 2)
+            {
+                rgShape.RemoveAt(rgShape.Count - 1);
+            }
+            m_blobClip.Reshape(rgShape);
+            m_blobClip.SetData(1);
+
             BottomVec.Clear();
             BottomVec.Add(m_blob_bottom);
             BottomVec.Add(m_blobState);
+            BottomVec.Add(m_blobClip);
 
             return rgData;
         }
@@ -200,9 +211,18 @@ namespace MyCaffe.test
             m_blob_bottom.mutable_cpu_data = convert(rgData);
             m_blobState.Reshape(1, 1, (int)p.attention_param.dim, 1);
 
+            List<int> rgShape = Utility.Clone<int>(m_blob_bottom.shape());
+            while (rgShape.Count > 2)
+            {
+                rgShape.RemoveAt(rgShape.Count - 1);
+            }
+            m_blobClip.Reshape(rgShape);
+            m_blobClip.SetData(1);
+
             BottomVec.Clear();
             BottomVec.Add(m_blob_bottom);
             BottomVec.Add(m_blobState);
+            BottomVec.Add(m_blobClip);
 
             return rgData;
         }
