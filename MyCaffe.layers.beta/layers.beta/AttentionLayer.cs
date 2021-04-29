@@ -452,13 +452,7 @@ namespace MyCaffe.layers
             m_cuda.copy(nCount, hBottomData, hTopData);
 
             // Apply clip.
-            for (int b = 0; b < blobClip.num; b++)
-            {
-                int nDim = blobTop.count(1);
-                int nIdxSrc = b * blobClip.channels;
-                int nIdxDst = b * nDim;
-                m_cuda.mul(nDim, blobClip.gpu_data, hTopData, hTopData, nIdxSrc, nIdxDst, nIdxDst);
-            }
+            m_cuda.channel_scale(nCount, nOuterNum, nChannels, nInnerNum, hTopData, blobClip.gpu_data, hTopData);
 
             // We need to subtract the max to avoid numerical issues, compute the exp
             // and then normalize.
@@ -471,20 +465,17 @@ namespace MyCaffe.layers
             // exponentiate
             m_cuda.exp(nCount, hTopData, hTopData);
 
-            // Apply clip to remove 1's.
-            for (int b = 0; b < blobClip.num; b++)
-            {
-                int nDim = blobTop.count(1);
-                int nIdxSrc = b * blobClip.channels;
-                int nIdxDst = b * nDim;
-                m_cuda.mul(nDim, blobClip.gpu_data, hTopData, hTopData, nIdxSrc, nIdxDst, nIdxDst);
-            }
+            // Apply clip.
+            m_cuda.channel_scale(nCount, nOuterNum, nChannels, nInnerNum, hTopData, blobClip.gpu_data, hTopData);
 
             // Sum after exp
             m_cuda.channel_sum(nOuterNum * nInnerNum, nOuterNum, nChannels, nInnerNum, hTopData, hScaleData);
 
             // divide
             m_cuda.channel_div(nCount, nOuterNum, nChannels, nInnerNum, hScaleData, hTopData);
+
+            // Denan for divide by zero.
+            m_cuda.denan(nCount, blobTop.mutable_gpu_data, 0);
         }
 
         private void softmax_bwd(Blob<T> blobTop, Blob<T> blobClip, Blob<T> blobScale, Blob<T> blobBottom, int nAxis)
@@ -505,13 +496,7 @@ namespace MyCaffe.layers
             m_cuda.channel_sub(nCount, nOuterNum, nChannels, nInnerNum, hScaleData, hBottomDiff);
 
             // Apply clip.
-            for (int b = 0; b < blobClip.num; b++)
-            {
-                int nDim = blobTop.count(1);
-                int nIdxSrc = b * blobClip.channels;
-                int nIdxDst = b * nDim;
-                m_cuda.mul(nDim, blobClip.gpu_data, hTopData, hTopData, nIdxSrc, nIdxDst, nIdxDst);
-            }
+            m_cuda.channel_scale(nCount, nOuterNum, nChannels, nInnerNum, hTopData, blobClip.gpu_data, hTopData);
 
             // elementwise multiplication
             m_cuda.mul(nCount, hBottomDiff, hTopData, hBottomDiff);
