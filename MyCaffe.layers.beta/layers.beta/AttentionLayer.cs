@@ -14,6 +14,11 @@ namespace MyCaffe.layers
     /// The AttentionLayer provides focus for LSTM based encoder/decoder models.
     /// </summary>
     /// <remarks>
+    /// @see [Attention Is All You Need](https://arxiv.org/abs/1706.03762) by Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, and Illia Polosukhin, 2017, arXiv:1706:03762
+    /// @see [Attention is All You Need](https://tzuruey.medium.com/attention-is-all-you-need-98d26aeb3517) by Jenny Ching, 2019, Medium
+    /// @see [Attention is All You Need in Speech Separation] by Cem Subakan, Mirco Ravanelli, Samuele Cornell, Mirko Bronzi, Jianyuan Zhong, 2020, arXiv:2010.13154
+    /// @see [Sequence to Sequence Learning with Neural Networks](https://arxiv.org/abs/1409.3215) by Ilya Sutskever, Oriol Vinyals, and Quoc V. Le, 2014, arXiv:1409.3215
+    /// 
     /// The AttentionLayer implementation was inspired by the C# Seq2SeqLearn implementation by mashmawy for language translation,
     /// @see [mashmawy/Seq2SeqLearn](https://github.com/mashmawy/Seq2SeqLearn) distributed under MIT license.
     /// 
