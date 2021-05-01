@@ -1433,6 +1433,7 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.TILE:
                     return new TileLayer<T>(cuda, log, p);
 
+                // DEPRECIATED
                 case LayerParameter.LayerType.LSTM_SIMPLE:
                     return new LSTMSimpleLayer<T>(cuda, log, p);
 
