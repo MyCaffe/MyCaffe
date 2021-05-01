@@ -55,9 +55,10 @@
   <ItemGroup>
     <Compile Include="LayerFactory.cs" />
     <Compile Include="layers.beta\AccuracyDecodeLayer.cs" />
+    <Compile Include="layers.beta\AttentionLayer.cs" />
     <Compile Include="layers.beta\DecodeLayer.cs" />
     <Compile Include="layers.beta\AccuracyEncodingLayer.cs" />
-    <Compile Include="layers.beta\AttentionLayer.cs" />
+    <Compile Include="layers.beta\LSTMAttentionLayer.cs" />
     <Compile Include="layers.beta\MergeLayer.cs" />
     <Compile Include="layers.beta\CopyLayer.cs" />
     <Compile Include="layers.beta\UnsqueezeLayer.cs" />
