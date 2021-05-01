@@ -295,7 +295,7 @@ namespace MyCaffe.test
                 {
                     // NOTE: 1000 iterations is quite short and may not produce results,
                     // for real training 100,000+ is a more common iteration to use.
-                    t.TrainCharRNN(false, false, "RNN.SIMPLE", LayerParameter.LayerType.LSTM_SIMPLE, 1000);
+                    t.TrainCharRNN(false, false, "RNN.SIMPLE", LayerParameter.LayerType.LSTM_ATTENTION, 1000);
                 }
             }
             finally
@@ -335,7 +335,7 @@ namespace MyCaffe.test
                 {
                     // NOTE: 1000 iterations is quite short and may not produce results,
                     // for real training 100,000+ is a more common iteration to use.
-                    t.TrainWavRNN(false, false, "RNN.SIMPLE", LayerParameter.LayerType.LSTM_SIMPLE, 1000);
+                    t.TrainWavRNN(false, false, "RNN.SIMPLE", LayerParameter.LayerType.LSTM_ATTENTION, 1000);
                 }
             }
             finally
