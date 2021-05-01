@@ -379,15 +379,23 @@ namespace MyCaffe.trainers.rnn.simple
             // Find the first LSTM layer to determine how to load the data.
             // NOTE: Only LSTM has a special loading order, other layers use the standard N, C, H, W ordering.
             LSTMLayer<T> lstmLayer = null;
+            LSTMAttentionLayer<T> lstmAttentionLayer = null;
             LSTMSimpleLayer<T> lstmSimpleLayer = null;
             foreach (Layer<T> layer1 in m_net.layers)
             {
                 if (layer1.layer_param.type == LayerParameter.LayerType.LSTM)
                 {
                     lstmLayer = layer1 as LSTMLayer<T>;
-                    m_lstmType = LayerParameter.LayerType.LSTM;
+                    m_lstmType = layer1.layer_param.type;
                     break;
                 }
+                else if (layer1.layer_param.type == LayerParameter.LayerType.LSTM_ATTENTION)
+                {
+                    lstmAttentionLayer = layer1 as LSTMAttentionLayer<T>;
+                    m_lstmType = LayerParameter.LayerType.LSTM_ATTENTION;
+                    break;
+                }
+                // DEPRECIATED
                 else if (layer1.layer_param.type == LayerParameter.LayerType.LSTM_SIMPLE)
                 {
                     lstmSimpleLayer = layer1 as LSTMSimpleLayer<T>;
@@ -396,8 +404,8 @@ namespace MyCaffe.trainers.rnn.simple
                 }
             }
 
-            if (lstmLayer == null && lstmSimpleLayer == null)
-                throw new Exception("Could not find the required LSTM or LSTM_SIMPLE layer!");
+            if (lstmLayer == null && lstmAttentionLayer == null && lstmSimpleLayer == null)
+                throw new Exception("Could not find the required LSTM or LSTM_ATTENTION or LSTM_SIMPLE layer!");
 
             if (m_phaseOnRun != Phase.NONE && m_phaseOnRun != Phase.RUN && strOutputBlob != null)
             {
@@ -421,7 +429,7 @@ namespace MyCaffe.trainers.rnn.simple
                     m_mycaffe.Log.CHECK_EQ(m_nVocabSize, rgVocabulary.Count, "The vocabulary count = '" + rgVocabulary.Count.ToString() + "' and last inner product output count = '" + m_nVocabSize.ToString() + "' - these do not match but they should!");
             }
 
-            if (m_lstmType == LayerParameter.LayerType.LSTM)
+            if (m_lstmType == LayerParameter.LayerType.LSTM || m_lstmType == LayerParameter.LayerType.LSTM_ATTENTION)
             {
                 m_nSequenceLength = m_blobData.shape(0);
                 m_nBatchSize = m_blobData.shape(1);
@@ -453,7 +461,7 @@ namespace MyCaffe.trainers.rnn.simple
 
             for (int i = 0; i < rgClipInput.Length; i++)
             {
-                if (m_lstmType == LayerParameter.LayerType.LSTM)
+                if (m_lstmType == LayerParameter.LayerType.LSTM || m_lstmType == LayerParameter.LayerType.LSTM_ATTENTION)
                     rgClipInput[i] = (i < m_nBatchSize) ? m_tZero : m_tOne;
                 else
                     rgClipInput[i] = (i % m_nSequenceLength == 0) ? m_tZero : m_tOne;
@@ -723,12 +731,12 @@ namespace MyCaffe.trainers.rnn.simple
                             float fDataIdx = findIndex(dfData, out bFound);
                             float fLabelIdx = findIndex(dfLabel, out bFound);
 
-                            // LSTM: Create input data, the data must be in the order
+                            // LSTM or LSTM_ATTENTION: Create input data, the data must be in the order
                             // seq1_val1, seq2_val1, ..., seqBatch_Size_val1, seq1_val2, seq2_val2, ..., seqBatch_Size_valSequence_Length
-                            if (m_lstmType == LayerParameter.LayerType.LSTM)
+                            if (m_lstmType == LayerParameter.LayerType.LSTM || m_lstmType == LayerParameter.LayerType.LSTM_ATTENTION)
                                 nIdx = m_nBatchSize * j + i;
 
-                            // LSTM_SIMPLE: Create input data, the data must be in the order
+                            // [DEPRECIATED] LSTM_SIMPLE: Create input data, the data must be in the order
                             // seq1_val1, seq1_val2, ..., seq1_valBatchSize, seq2_val1, seq2_val2, ..., seqSequenceLength_valBatchSize
                             else
                                 nIdx = i * m_nBatchSize + j;
@@ -785,12 +793,12 @@ namespace MyCaffe.trainers.rnn.simple
                         {
                             for (int j = 0; j < m_nSequenceLength; j++)
                             {
-                                // LSTM: Create input data, the data must be in the order
+                                // LSTM or LSTM_ATTENTION: Create input data, the data must be in the order
                                 // seq1_val1, seq2_val1, ..., seqBatch_Size_val1, seq1_val2, seq2_val2, ..., seqBatch_Size_valSequence_Length
-                                if (m_lstmType == LayerParameter.LayerType.LSTM)
+                                if (m_lstmType == LayerParameter.LayerType.LSTM || m_lstmType == LayerParameter.LayerType.LSTM_ATTENTION)
                                     nIdx = m_nBatchSize * j + i;
 
-                                // LSTM_SIMPLE: Create input data, the data must be in the order
+                                // [DEPRECIATED] LSTM_SIMPLE: Create input data, the data must be in the order
                                 // seq1_val1, seq1_val2, ..., seq1_valBatchSize, seq2_val1, seq2_val2, ..., seqSequenceLength_valBatchSize
                                 else
                                     nIdx = i * m_nBatchSize + j;
@@ -842,12 +850,12 @@ namespace MyCaffe.trainers.rnn.simple
                         float fDataIdx = findIndex(bData, out bFound);
                         float fLabelIdx = findIndex(bLabel, out bFound);
 
-                        // LSTM: Create input data, the data must be in the order
+                        // LSTM or LSTM_ATTENTION: Create input data, the data must be in the order
                         // seq1_val1, seq2_val1, ..., seqBatch_Size_val1, seq1_val2, seq2_val2, ..., seqBatch_Size_valSequence_Length
-                        if (m_lstmType == LayerParameter.LayerType.LSTM)
+                        if (m_lstmType == LayerParameter.LayerType.LSTM || m_lstmType == LayerParameter.LayerType.LSTM_ATTENTION)
                             nIdx = m_nBatchSize * j + i;
 
-                        // LSTM_SIMPLE: Create input data, the data must be in the order
+                        // [DEPRECIATED] LSTM_SIMPLE: Create input data, the data must be in the order
                         // seq1_val1, seq1_val2, ..., seq1_valBatchSize, seq2_val1, seq2_val2, ..., seqSequenceLength_valBatchSize
                         else
                             nIdx = i * m_nBatchSize + j;
