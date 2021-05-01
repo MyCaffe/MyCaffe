@@ -144,7 +144,7 @@ namespace MyCaffe.test
             base.dispose();
         }
 
-        public float[] Fill(LayerParameter p)
+        public float[] Fill(AttentionParameter p)
         {
             // timesteps = 3, batch = 2, input = 4
             float[] rgData = convertF(m_blob_bottom.mutable_cpu_data); // shape (3, 2, 4, 1)
@@ -183,7 +183,7 @@ namespace MyCaffe.test
 
             m_blob_bottom.mutable_cpu_data = convert(rgData);
 
-            m_blobState.Reshape(1, 2, (int)p.attention_param.dim, 1);
+            m_blobState.Reshape(1, 2, (int)p.dim, 1);
             m_blobHy.ReshapeLike(m_blobState);
             m_blobHy.SetData(0);
 
@@ -204,7 +204,7 @@ namespace MyCaffe.test
             return rgData;
         }
 
-        public float[] FillSmall(LayerParameter p)
+        public float[] FillSmall(AttentionParameter p)
         {
             m_blob_bottom.Reshape(2, 1, 1, 1);
 
@@ -215,7 +215,7 @@ namespace MyCaffe.test
             rgData[1] = 2.11f;
 
             m_blob_bottom.mutable_cpu_data = convert(rgData);
-            m_blobState.Reshape(1, 1, (int)p.attention_param.dim, 1);
+            m_blobState.Reshape(1, 1, (int)p.dim, 1);
             m_blobHy.ReshapeLike(m_blobState);
             m_blobHy.SetData(0);
 
@@ -527,7 +527,7 @@ namespace MyCaffe.test
 
             m_log.CHECK(layer.type == LayerParameter.LayerType.ATTENTION, "The layer type is incorrect!");
 
-            float[] rgData = Fill(p);
+            float[] rgData = Fill(p.attention_param);
 
             layer.Setup(BottomVec, TopVec);
             layer.Forward(BottomVec, TopVec);
@@ -556,7 +556,7 @@ namespace MyCaffe.test
 
             m_log.CHECK(layer.type == LayerParameter.LayerType.ATTENTION, "The layer type is incorrect!");
 
-            Fill(p);
+            Fill(p.attention_param);
 
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.01);
             checker.CheckGradient(layer, BottomVec, TopVec);
@@ -572,7 +572,7 @@ namespace MyCaffe.test
 
             m_log.CHECK(layer.type == LayerParameter.LayerType.ATTENTION, "The layer type is incorrect!");
 
-            float[] rgData = FillSmall(p);
+            float[] rgData = FillSmall(p.attention_param);
 
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.01);
             checker.CheckGradient(layer, BottomVec, TopVec);
