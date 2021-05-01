@@ -10,6 +10,7 @@ using MyCaffe.fillers;
 namespace MyCaffe.layers
 {
     /// <summary>
+    /// [DEPRECIATED - use LSTMAttentionLayer instead with enable_attention = false]
     /// The LSTMSimpleLayer is a simpe version of the long-short term memory layer.
     /// This layer is initialized with the MyCaffe.param.LSTMSimpleParameter.
     /// </summary>

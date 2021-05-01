@@ -12,6 +12,7 @@ using MyCaffe.solvers;
 using System.IO;
 using MyCaffe.fillers;
 
+/// [DEPRECIATED - use LSTMAttentionLayer instead with enable_attention = false]
 namespace MyCaffe.test
 {
     [TestClass]
@@ -486,6 +487,7 @@ namespace MyCaffe.test
             string strModel = (bShortModel) ? getModelShort(nNumOutput, nBatch) : getModel(nNumOutput, nBatch);
             SolverParameter solver_param = SolverParameter.FromProto(RawProto.Parse(strSolver));
             solver_param.net_param = NetParameter.FromProto(RawProto.Parse(strModel));
+            strModel = solver_param.net_param.ToProto("root").ToString();
             solver_param.device_id = nDeviceID;
 
             // Set device id
@@ -645,7 +647,11 @@ namespace MyCaffe.test
             test_clip_blob.Reshape(shape);
             test_net.Reshape();
 
-            string strFileName = "c:\\temp\\lstm_test_results_num_out_" + nNumOutput.ToString() + "_batch_" + nBatch.ToString() + "_maxiter_" + nMaxIter.ToString() + ".txt";
+            string strPath = "c:\\temp\\lstm";
+            if (!Directory.Exists(strPath))
+                Directory.CreateDirectory(strPath);
+
+            string strFileName = strPath + "\\lstm_simple_test_results_num_out_" + nNumOutput.ToString() + "_batch_" + nBatch.ToString() + "_maxiter_" + nMaxIter.ToString() + ".csv";
 
             if (File.Exists(strFileName))
                 File.Delete(strFileName);
@@ -664,7 +670,7 @@ namespace MyCaffe.test
                     BlobCollection<T> pred = test_net.Forward(out dfLoss);
                     m_log.CHECK_EQ(pred.Count, 1, "There should only be one result blob.");
                     m_log.CHECK_EQ(pred[0].count(), 1, "The result blob should only have one element.");
-                    sw.WriteLine(sequence.GetData(i).ToString() + " " + pred[0].GetData(0).ToString());
+                    sw.WriteLine(sequence.GetData(i).ToString() + ", " + pred[0].GetData(0).ToString());
 
                     if (swStatus.Elapsed.TotalMilliseconds > 2000)
                     {

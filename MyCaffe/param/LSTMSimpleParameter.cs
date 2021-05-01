@@ -8,6 +8,7 @@ using MyCaffe.basecode;
 namespace MyCaffe.param
 {
     /// <summary>
+    /// [DEPRECIATED - use LSTMAttentionParameter instead with enable_attention = false]
     /// Specifies the parameters for the LSTMSimpleLayer.
     /// </summary>
     /// <remarks>
