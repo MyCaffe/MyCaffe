@@ -285,7 +285,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void Train_RNNSIMPLE_CharRNN_LSTMSIMPLE()
+        public void Train_RNNSIMPLE_CharRNN_LSTMATTENTION()
         {
             MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest();
 
@@ -325,7 +325,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void Train_RNNSIMPLE_WavRNN_LSTMSIMPLE()
+        public void Train_RNNSIMPLE_WavRNN_LSTMATTENTION()
         {
             MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest();
 
