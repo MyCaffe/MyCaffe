@@ -731,7 +731,8 @@ namespace MyCaffe.extras
                 rgTypes.Add(LayerParameter.LayerType.BIAS);
                 rgTypes.Add(LayerParameter.LayerType.EMBED);
                 rgTypes.Add(LayerParameter.LayerType.LSTM);
-                rgTypes.Add(LayerParameter.LayerType.LSTM_SIMPLE);
+                rgTypes.Add(LayerParameter.LayerType.LSTM_ATTENTION);
+                rgTypes.Add(LayerParameter.LayerType.LSTM_SIMPLE);  // DEPRECIATED
                 rgTypes.Add(LayerParameter.LayerType.RNN);
 
                 foreach (LayerParameter layer in net_param.layer)
