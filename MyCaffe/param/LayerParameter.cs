@@ -462,9 +462,13 @@ namespace MyCaffe.param
             /// </summary>
             TRANSPOSE,
             /// <summary>
-            /// Initializes a parameter for the LSTMSimpleLayer.
+            /// Initializes a parameter for the LSTMSimpleLayer [DEPRECIATED].
             /// </summary>
             LSTM_SIMPLE,
+            /// <summary>
+            /// Initializes a parameter for the LSTMAttentionLayer.
+            /// </summary>
+            LSTM_ATTENTION,
             /// <summary>
             /// Initializes a parameter for the RecurrentLayer.
             /// </summary>
@@ -1411,11 +1415,19 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new TVLossParameter();
                     break;
 
+                // DEPRECIATED
                 case LayerType.LSTM_SIMPLE:
                     expected_bottom.Add("time_seq");
                     expected_bottom.Add("clip");
                     expected_top.Add("lstm");
                     m_rgLayerParameters[LayerType.LSTM_SIMPLE] = new LSTMSimpleParameter();
+                    break;
+
+                case LayerType.LSTM_ATTENTION:
+                    expected_bottom.Add("input");
+                    expected_bottom.Add("clip");
+                    expected_top.Add("lstm");
+                    m_rgLayerParameters[lt] = new LSTMAttentionParameter();
                     break;
 
                 case LayerType.RNN:
@@ -1712,6 +1724,7 @@ namespace MyCaffe.param
             set { m_rgLayerParameters[LayerType.ANNOTATED_DATA] = value; }
         }
 
+
         /// <summary>
         /// Returns the parameter set when initialized with LayerType.ATTENTION
         /// </summary>
@@ -1720,7 +1733,6 @@ namespace MyCaffe.param
             get { return (AttentionParameter)m_rgLayerParameters[LayerType.ATTENTION]; }
             set { m_rgLayerParameters[LayerType.ATTENTION] = value; }
         }
-
 
         /// <summary>
         /// Returns the parmeter set when initialized with LayerType.DETECTION_EVALUATE
@@ -2255,12 +2267,21 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Returns the parameter set when initialized with LayerType.LSTM_SIMPLE
+        /// [DEPRECIATED] Returns the parameter set when initialized with LayerType.LSTM_SIMPLE
         /// </summary>
         public LSTMSimpleParameter lstm_simple_param
         {
             get { return (LSTMSimpleParameter)m_rgLayerParameters[LayerType.LSTM_SIMPLE]; }
             set { m_rgLayerParameters[LayerType.LSTM_SIMPLE] = value; }
+        }
+
+        /// <summary>
+        /// Returns the parameter set when initialized with LayerType.LSTM_ATTENTION
+        /// </summary>
+        public LSTMAttentionParameter lstm_attention_param
+        {
+            get { return (LSTMAttentionParameter)m_rgLayerParameters[LayerType.LSTM_ATTENTION]; }
+            set { m_rgLayerParameters[LayerType.LSTM_ATTENTION] = value; }
         }
 
         /// <summary>
@@ -2704,8 +2725,12 @@ namespace MyCaffe.param
                 case LayerType.TV_LOSS:
                     return "TVLoss";
 
+                // DEPRECIATED
                 case LayerType.LSTM_SIMPLE:
                     return "LstmSimple";
+
+                case LayerType.LSTM_ATTENTION:
+                    return "LstmAttention";
 
                 case LayerType.RNN:
                     return "Rnn";
@@ -2828,7 +2853,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(tanh_param, "tanh_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(threshold_param, "threshold_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(tile_param, "tile_param"));
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(lstm_simple_param, "lstm_simple_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(lstm_simple_param, "lstm_simple_param")); // DEPRECIATED
             rgParam.Add(new KeyValuePair<BaseParameter, string>(recurrent_param, "recurrent_param"));
 
             // Alpha layers.
@@ -2839,6 +2864,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(decode_param, "decode_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gather_param, "gather_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(knn_param, "knn_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(lstm_attention_param, "lstm_attention_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(merge_param, "merge_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(normalization1_param, "normalization_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(squeeze_param, "squeeze_param"));
@@ -3109,7 +3135,8 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("tile_param")) != null)
                 p.tile_param = TileParameter.FromProto(rpp);
 
-            if ((rpp = rp.FindChild("lstm_simple_param")) != null)
+            // DEPRECIATED
+            if ((rpp = rp.FindChild("lstm_simple_param_x")) != null)
                 p.lstm_simple_param = LSTMSimpleParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("recurrent_param")) != null)
@@ -3132,6 +3159,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("knn_param")) != null)
                 p.knn_param = KnnParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("lstm_attention_param")) != null)
+                p.lstm_attention_param = LSTMAttentionParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("merge_param")) != null)
                 p.merge_param = MergeParameter.FromProto(rpp);
@@ -3554,9 +3584,14 @@ namespace MyCaffe.param
                 // case "windowdata":
                 //      return LayerType.WINDOWDATA;
 
+                // DEPRECIATED
                 case "lstmsimple":
                 case "lstm_simple":
                     return LayerType.LSTM_SIMPLE;
+
+                case "lstmattention":
+                case "lstm_attention":
+                    return LayerType.LSTM_ATTENTION;
 
                 case "rnn":
                     return LayerType.RNN;
