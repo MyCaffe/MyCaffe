@@ -110,6 +110,7 @@ namespace MyCaffe.layers
         ///  -# @f$ (N \times C \times H \times W) @f$
         ///     the predictions @f$ x @f$, a blob with values in
         ///     @f$ [-\infty, +\infty] @f$ indicating the target values.
+        /// </param>
         /// <param name="colTop">top output blob vector (length 1)
         ///     the computed mean absolute error loss: 
         ///     @f$ E = \frac{1}{N} \sum_{i=0}^{N} |y - \hat{y}{i}| @f$ where @f$ \hat{y} @f$ is the predicted value.
