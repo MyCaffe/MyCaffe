@@ -109,14 +109,16 @@
     </Compile>
     <Compile Include="TestAccuracyEncodingLayer.cs" />
     <Compile Include="TestAnnotatedDataLayer.cs" />
+    <Compile Include="TestAttentionLayer.cs" />
     <Compile Include="TestDataSequenceLayer.cs" />
     <Compile Include="TestDatasetFactory.cs" />
     <Compile Include="TestCryptoRandom.cs" />
     <Compile Include="TestConstantLayer.cs" />
+    <Compile Include="TestLSTMAttentionLayer.cs" />
+    <Compile Include="TestLSTMSimpleLayer.cs" />
     <Compile Include="TestMAELossLayer.cs" />
     <Compile Include="TestMergeLayer.cs" />
     <Compile Include="TestHDF5Layer.cs" />
-    <Compile Include="TestAttentionLayer.cs" />
     <Compile Include="TestSqueezeLayer.cs" />
     <Compile Include="TestMishLayer.cs" />
     <Compile Include="TestTransposeLayer.cs" />
@@ -211,7 +213,6 @@
     <Compile Include="TestIm2ColLayer.cs" />
     <Compile Include="TestInnerProductLayer.cs" />
     <Compile Include="TestLRNLayer.cs" />
-    <Compile Include="TestLSTMSimpleLayer.cs" />
     <Compile Include="TestNet.cs" />
     <Compile Include="TestParameters.cs" />
     <Compile Include="TestPoolingLayer.cs" />
