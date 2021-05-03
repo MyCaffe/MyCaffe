@@ -34,6 +34,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestForward2()
+        {
+            AttentionLayerTest test = new AttentionLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IAttentionLayerTest t in test.Tests)
+                {
+                    t.TestForward2();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestGradient()
         {
             AttentionLayerTest test = new AttentionLayerTest(EngineParameter.Engine.CAFFE);
@@ -73,6 +91,7 @@ namespace MyCaffe.test
     interface IAttentionLayerTest : ITest
     {
         void TestForward();
+        void TestForward2();
         void TestGradient();
         void TestGradient2();
     }
@@ -99,12 +118,10 @@ namespace MyCaffe.test
         Blob<T> m_blobB = null;
         Blob<T> m_blobC = null;
         Blob<T> m_blobState = null;
-        Blob<T> m_blobHy = null;
         Blob<T> m_blobClip = null;
         float[] m_rgUa;
         float[] m_rgWa;
         float[] m_rgV;
-        float[] m_rgWc;
         float[] m_rgAa;
         float[] m_rgSoftmax;
 
@@ -115,7 +132,6 @@ namespace MyCaffe.test
             m_blobA = new Blob<T>(m_cuda, m_log);
             m_blobB = new Blob<T>(m_cuda, m_log);
             m_blobC = new Blob<T>(m_cuda, m_log);
-            m_blobHy = new Blob<T>(m_cuda, m_log);
             m_blobState = new Blob<T>(m_cuda, m_log);
             m_blobClip = new Blob<T>(m_cuda, m_log);
         }
@@ -139,13 +155,14 @@ namespace MyCaffe.test
             dispose1(ref m_blobA);
             dispose1(ref m_blobB);
             dispose1(ref m_blobC);
-            dispose1(ref m_blobHy);
             dispose1(ref m_blobState);
             base.dispose();
         }
 
         public float[] Fill(AttentionParameter p)
         {
+            m_blob_bottom.Reshape(3, 2, 4, 1);
+
             // timesteps = 3, batch = 2, input = 4
             float[] rgData = convertF(m_blob_bottom.mutable_cpu_data); // shape (3, 2, 4, 1)
             // timestep 1, batch 1
@@ -182,10 +199,7 @@ namespace MyCaffe.test
             rgData[23] = 3.24f;
 
             m_blob_bottom.mutable_cpu_data = convert(rgData);
-
-            m_blobState.Reshape(1, 2, (int)p.dim, 1);
-            m_blobHy.ReshapeLike(m_blobState);
-            m_blobHy.SetData(0);
+            m_blobState.Reshape(new List<int>() { 2, (int)p.dim });
 
             List<int> rgShape = Utility.Clone<int>(m_blob_bottom.shape());
             while (rgShape.Count > 2)
@@ -197,12 +211,46 @@ namespace MyCaffe.test
 
             BottomVec.Clear();
             BottomVec.Add(m_blob_bottom);
-            BottomVec.Add(m_blobHy);
             BottomVec.Add(m_blobState);
             BottomVec.Add(m_blobClip);
 
             return rgData;
         }
+
+        public float[] Fill2(AttentionParameter p)
+        {
+            m_blob_bottom.Reshape(3, 1, 32, 1);
+
+            // timesteps = 3, batch = 1, input = 32
+            float[] rgData = convertF(m_blob_bottom.mutable_cpu_data);
+            for (int t = 0; t < m_blob_bottom.num; t++)
+            {
+                for (int i = 0; i < 32; i++)
+                {
+                    int nIdx = t * 32 + i;
+                    rgData[nIdx] = (t + 1) + (i * 0.01f);
+                }
+            }
+
+            m_blob_bottom.mutable_cpu_data = convert(rgData);
+            m_blobState.Reshape(new List<int>() { 1, (int)p.dim });
+
+            List<int> rgShape = Utility.Clone<int>(m_blob_bottom.shape());
+            while (rgShape.Count > 2)
+            {
+                rgShape.RemoveAt(rgShape.Count - 1);
+            }
+            m_blobClip.Reshape(rgShape);
+            m_blobClip.SetData(1);
+
+            BottomVec.Clear();
+            BottomVec.Add(m_blob_bottom);
+            BottomVec.Add(m_blobState);
+            BottomVec.Add(m_blobClip);
+
+            return rgData;
+        }
+
 
         public float[] FillSmall(AttentionParameter p)
         {
@@ -215,9 +263,7 @@ namespace MyCaffe.test
             rgData[1] = 2.11f;
 
             m_blob_bottom.mutable_cpu_data = convert(rgData);
-            m_blobState.Reshape(1, 1, (int)p.dim, 1);
-            m_blobHy.ReshapeLike(m_blobState);
-            m_blobHy.SetData(0);
+            m_blobState.Reshape(new List<int>() { 1, (int)p.dim });
 
             List<int> rgShape = Utility.Clone<int>(m_blob_bottom.shape());
             while (rgShape.Count > 2)
@@ -229,7 +275,6 @@ namespace MyCaffe.test
 
             BottomVec.Clear();
             BottomVec.Add(m_blob_bottom);
-            BottomVec.Add(m_blobHy);
             BottomVec.Add(m_blobState);
             BottomVec.Add(m_blobClip);
 
@@ -477,7 +522,7 @@ namespace MyCaffe.test
 
             // IP rgFullState with rgWa wts.
             nM = nB;
-            nK = nT;
+            nK = (int)p.dim;
             create_weights(ref m_rgWa, nN * nK);
             float[] rgWc = gemm(false, false, nM, nN, nK, 1.0f, rgState, m_rgWa, 0.0f);
 
@@ -506,14 +551,7 @@ namespace MyCaffe.test
             // Sum across all T.
             float[] rgContext = sum(rgFocusInput, nB, nT, nI);
 
-            // IP context with Wc
-            nM = nB;
-            nN = (int)p.dim;
-            nK = nI;
-            create_weights(ref m_rgWc, nN * nK);
-            float[] rgNewState = gemm(false, false, nM, nN, nK, 1.0f, rgContext, m_rgWc, 0.0f);
-
-            return rgNewState;
+            return rgContext;
         }
 
 
@@ -533,14 +571,43 @@ namespace MyCaffe.test
             layer.Forward(BottomVec, TopVec);
 
             // Now, check values
-            float[] rgExpected = calculateAttention(p.attention_param, rgData, convertF(m_blobState.mutable_cpu_data), m_blob_bottom.num, m_blob_bottom.channels, m_blob_bottom.count(2), m_blobState.count(2));
+            float[] rgExpected = calculateAttention(p.attention_param, rgData, convertF(m_blobState.mutable_cpu_data), m_blob_bottom.num, m_blob_bottom.channels, m_blob_bottom.count(2), m_blobState.count(1));
             float[] rgActual = convertF(m_blob_top.mutable_cpu_data);
 
             for (int i = 0; i < rgExpected.Length; i++)
             {
                 float fExpected = rgExpected[i];
                 float fActual = rgActual[i];
-                float fErr = 0.002f;
+                float fErr = 0.0004f;
+
+                m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, fErr, "The values are not as expected!");
+            }
+        }
+
+        public void TestForward2()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.ATTENTION);
+            p.attention_param.axis = 2;
+            p.attention_param.dim = 16;
+            p.attention_param.weight_filler = new FillerParameter("constant", 1);
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+
+            m_log.CHECK(layer.type == LayerParameter.LayerType.ATTENTION, "The layer type is incorrect!");
+
+            float[] rgData = Fill2(p.attention_param);
+
+            layer.Setup(BottomVec, TopVec);
+            layer.Forward(BottomVec, TopVec);
+
+            // Now, check values
+            float[] rgExpected = calculateAttention(p.attention_param, rgData, convertF(m_blobState.mutable_cpu_data), m_blob_bottom.num, m_blob_bottom.channels, m_blob_bottom.count(2), m_blobState.count(1));
+            float[] rgActual = convertF(m_blob_top.mutable_cpu_data);
+
+            for (int i = 0; i < rgExpected.Length; i++)
+            {
+                float fExpected = rgExpected[i];
+                float fActual = rgActual[i];
+                float fErr = 0.0004f;
 
                 m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, fErr, "The values are not as expected!");
             }
