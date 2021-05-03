@@ -65,9 +65,14 @@ namespace MyCaffe.layers
         Blob<T> m_blob_H_to_Gate;
         Blob<T> m_blob_H_to_H;
 
+        // MaxT 
+        Blob<T> m_blobMaxT = null;
+        int? m_nMaxT = null;
+
         // Attention values
         Layer<T> m_attention = null;
         Blob<T> m_blobContext = null;
+        Blob<T> m_blobLastCt = null;
         BlobCollection<T> m_colInternalBottom = new BlobCollection<T>();
         BlobCollection<T> m_colInternalTop = new BlobCollection<T>();
 
@@ -119,6 +124,8 @@ namespace MyCaffe.layers
             m_blob_H_to_Gate.Name = m_param.name + "h_to_gate";
             m_blob_H_to_H = new Blob<T>(m_cuda, m_log);
             m_blob_H_to_H.Name = m_param.name + " h_to_h";
+            m_blobMaxT = new Blob<T>(m_cuda, m_log);
+            m_blobMaxT.Name = m_param.name + " maxT";
         }
 
         /** @copydoc Layer::dispose */
@@ -128,6 +135,7 @@ namespace MyCaffe.layers
 
             dispose(ref m_attention);
             dispose(ref m_blobContext);
+            dispose(ref m_blobLastCt);
 
             dispose(ref m_blobBiasMultiplier);
             dispose(ref m_blobTop);
@@ -140,6 +148,8 @@ namespace MyCaffe.layers
             dispose(ref m_blob_H_T);
             dispose(ref m_blob_H_to_Gate);
             dispose(ref m_blob_H_to_H);
+
+            dispose(ref m_blobMaxT);
         }
 
         private void dispose(ref Layer<T> l)
@@ -178,6 +188,7 @@ namespace MyCaffe.layers
                 col.Add(m_blob_H_T);
                 col.Add(m_blob_H_to_Gate);
                 col.Add(m_blob_H_to_H);
+                col.Add(m_blobMaxT);
 
                 if (m_attention != null)
                 {
@@ -192,11 +203,11 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Returns the minimum number of required bottom (input) Blobs: input, clip
+        /// Returns the minimum number of required bottom (input) Blobs: input
         /// </summary>
         public override int MinBottomBlobs
         {
-            get { return 2; }
+            get { return 1; }
         }
 
         /// <summary>
@@ -249,7 +260,10 @@ namespace MyCaffe.layers
             if (m_param.lstm_attention_param.enable_attention)
                 m_log.CHECK_EQ(colBottom.Count, 4, "When using attention, four bottoms are required: x, xClip, encoding, encodingClip.");
             else
-                m_log.CHECK_EQ(colBottom.Count, 2, "When not using attention, two bottoms are required: x, clip.");
+            {
+                m_log.CHECK_GE(colBottom.Count, 1, "When not using attention, at least one bottom is required: x.");
+                m_log.CHECK_LE(colBottom.Count, 2, "When not using attention, no more than two bottoms is required: x, clip.");
+            }
 
             m_dfClippingThreshold = p.clipping_threshold;
             m_nN = colBottom[0].channels;
@@ -343,6 +357,9 @@ namespace MyCaffe.layers
                 m_blobContext = new Blob<T>(m_cuda, m_log);
                 m_blobContext.Name = "context_out";
 
+                m_blobLastCt = new Blob<T>(m_cuda, m_log);
+                m_blobLastCt.Name = "last_ct";
+
                 LayerParameter attentionParam = new LayerParameter(LayerParameter.LayerType.ATTENTION);
                 attentionParam.attention_param.axis = 2;
                 attentionParam.attention_param.dim = m_param.lstm_attention_param.num_output;
@@ -353,8 +370,13 @@ namespace MyCaffe.layers
 
                 Blob<T> blobEncoding = colBottom[2];
                 Blob<T> blobEncodingClip = colBottom[3];
-                addInternal(new List<Blob<T>>() { blobEncoding, m_blob_C_T, m_blob_H_T, blobEncodingClip }, m_blobContext);
+                addInternal(new List<Blob<T>>() { blobEncoding, m_blob_C_T, blobEncodingClip }, m_blobContext);
                 m_attention.Setup(m_colInternalBottom, m_colInternalTop);
+
+                foreach (Blob<T> b in m_attention.blobs)
+                {
+                    m_colBlobs.Add(b);
+                }
             }
         }
 
@@ -367,6 +389,7 @@ namespace MyCaffe.layers
         {
             if (m_bNetReshapeRequest)
             {
+                m_nMaxT = null;
                 m_nN = colBottom[0].channels;
                 m_bNetReshapeRequest = false;
             }
@@ -402,14 +425,34 @@ namespace MyCaffe.layers
             m_blob_H_T.Reshape(rgCellShape);
             m_blob_H_to_H.Reshape(rgCellShape);
 
+            if (colBottom.Count > 0)
+                m_blobMaxT.Reshape(new List<int>() { 1, colBottom[1].channels });
+
             // Attention reshape
             if (m_param.lstm_attention_param.enable_attention)
             {
                 Blob<T> blobEncoding = colBottom[2];
                 Blob<T> blobEncodingClip = colBottom[3];
-                addInternal(new List<Blob<T>>() { blobEncoding, m_blob_C_T, m_blob_H_T, blobEncodingClip }, m_blobContext);
+                addInternal(new List<Blob<T>>() { blobEncoding, m_blob_C_T, blobEncodingClip }, m_blobContext);
                 m_attention.Reshape(m_colInternalBottom, m_colInternalTop);
+
+                m_blobLastCt.ReshapeLike(m_blobContext);
+                m_blobLastCt.SetData(0);
+                m_blobLastCt.SetDiff(0);
             }
+        }
+
+        // Find the longest clip length.
+        private int calculate_maxT(Blob<T> blob)
+        {
+            for (int t = 0; t < blob.num; t++)
+            {
+                int nSrcIdx = t * blob.channels;
+                m_cuda.add(m_blobMaxT.count(), blob.gpu_data, m_blobMaxT.gpu_data, m_blobMaxT.mutable_gpu_data, 1.0, 1.0, nSrcIdx, 0, 0);
+            }
+
+            long lPos;
+            return (int)m_cuda.max(m_blobMaxT.count(), m_blobMaxT.gpu_data, out lPos);
         }
 
         /// <summary>
@@ -428,11 +471,17 @@ namespace MyCaffe.layers
             long hTopData = m_blobTop.mutable_gpu_data;
             long hBottomData = colBottom[0].gpu_data;
             long hClipData = 0;
+            int nMaxT = m_nT;
 
             if (colBottom.Count > 1)
             {
                 hClipData = colBottom[1].gpu_data;
                 m_log.CHECK_EQ(colBottom[0].count(0, 2), colBottom[1].count(), "The bottom[1].count() should equal the bottom[0].count(0,2).");
+
+                if (!m_nMaxT.HasValue)
+                    m_nMaxT = calculate_maxT(colBottom[1]);
+
+                nMaxT = m_nMaxT.Value;
             }
 
             long hWeight_i = m_colBlobs[0].gpu_data;
@@ -447,7 +496,7 @@ namespace MyCaffe.layers
             if (hClipData != 0)
             {
                 m_cuda.copy(m_blob_C_0.count(), m_blob_C_T.gpu_data, m_blob_C_0.mutable_gpu_data);
-                m_cuda.copy(m_blob_H_0.count(), m_blob_H_T.gpu_data, m_blob_H_0.mutable_gpu_data);
+                m_cuda.copy(m_blob_H_0.count(), m_blob_H_T.gpu_data, m_blob_H_0.mutable_gpu_data);                               
             }
             else
             {
@@ -459,7 +508,7 @@ namespace MyCaffe.layers
             m_cuda.gemm(false, false, m_nT * m_nN, 4 * m_nH, 1, m_tOne, m_blobBiasMultiplier.gpu_data, hBias, m_tOne, hPreGateData);
 
             // Compute recurrent forward propagation                
-            for (int t = 0; t < m_nT; t++)
+            for (int t = 0; t < nMaxT; t++)
             {
                 int nTopOffset = m_blobTop.offset(t);
                 int nCellOffset = m_blobCell.offset(t);
@@ -490,10 +539,8 @@ namespace MyCaffe.layers
                 {
                     Blob<T> blobEncoding = colBottom[2];
                     Blob<T> blobEncodingClip = colBottom[3];
-                    addInternal(new List<Blob<T>>() { blobEncoding, m_blob_C_T, m_blob_H_T, blobEncodingClip }, m_blobContext);
+                    addInternal(new List<Blob<T>>() { blobEncoding, m_blobLastCt, blobEncodingClip }, m_blobContext);
                     m_attention.Forward(m_colInternalBottom, m_colInternalTop);
-
-                    m_cuda.copy(m_blobContext.count(), m_blobContext.gpu_data, hHT1Data);
                 }
 
                 m_cuda.lstm_fwd(t,
@@ -516,11 +563,14 @@ namespace MyCaffe.layers
                                 hCT1Data,
                                 nCT1Offset,
                                 hHtoGateData);
+
+                if (m_param.lstm_attention_param.enable_attention)
+                    m_cuda.copy(m_blobLastCt.count(), hCellData, m_blobLastCt.mutable_gpu_data, nCellOffset, 0);
             }
 
             // Preserve cell state and output value for truncated BPTT
-            m_cuda.copy(m_nN * m_nH, hCellData, m_blob_C_T.mutable_gpu_data, m_blobCell.offset(m_nT - 1));
-            m_cuda.copy(m_nN * m_nH, hTopData, m_blob_H_T.mutable_gpu_data, m_blobTop.offset(m_nT - 1));
+            m_cuda.copy(m_nN * m_nH, hCellData, m_blob_C_T.mutable_gpu_data, m_blobCell.offset(nMaxT - 1));
+            m_cuda.copy(m_nN * m_nH, hTopData, m_blob_H_T.mutable_gpu_data, m_blobTop.offset(nMaxT - 1));
         }
 
         private void apply_clip(Blob<T> blobInput, Blob<T> blobClip, Blob<T> blobOutput, bool bDiff = false)
@@ -547,6 +597,7 @@ namespace MyCaffe.layers
             long hTopData = m_blobTop.gpu_data;
             long hBottomData = colBottom[0].gpu_data;
             long hClipData = 0;
+            int nMaxT = m_nT;
 
             List<bool> rgbPropagate = new List<bool>() { true, true };
 
@@ -555,6 +606,7 @@ namespace MyCaffe.layers
                 hClipData = colBottom[1].gpu_data;
                 m_cuda.sign(colBottom[1].count(), hClipData, hClipData); // Set to 1 or 0.
                 m_log.CHECK_EQ(colBottom[0].count(0, 2), colBottom[1].count(), "The bottom[1].count() should equal the bottom[0].count(0,2).");
+                nMaxT = m_nMaxT.Value;
             }
 
             long hWeight_i = m_colBlobs[0].gpu_data;
@@ -568,9 +620,9 @@ namespace MyCaffe.layers
             long hCellDiff = m_blobCell.mutable_gpu_diff;
             long hHtoHData = m_blob_H_to_H.mutable_gpu_data;
 
-            m_cuda.copy(m_nN * m_nH, m_blob_C_T.gpu_diff, hCellDiff, 0, m_blobCell.offset(m_nT - 1));
+            m_cuda.copy(m_nN * m_nH, m_blob_C_T.gpu_diff, hCellDiff, 0, m_blobCell.offset(nMaxT - 1));
 
-            for (int t = m_nT - 1; t >= 0; t--)
+            for (int t = nMaxT - 1; t >= 0; t--)
             {
                 int nTopOffset = m_blobTop.offset(t);
                 int nCellOffset = m_blobCell.offset(t);
@@ -603,6 +655,9 @@ namespace MyCaffe.layers
                     hDCT1Diff = hCellDiff;
                 }
 
+                if (m_param.lstm_attention_param.enable_attention)
+                    m_cuda.copy(m_blobLastCt.count(), hCellDiff, m_blobLastCt.mutable_gpu_diff, nCellOffset, 0);
+
                 m_cuda.lstm_bwd(t, 
                                 m_nN, 
                                 m_nH, 
@@ -630,11 +685,9 @@ namespace MyCaffe.layers
 
                 if (m_param.lstm_attention_param.enable_attention)
                 {
-                    m_cuda.copy(m_blobContext.count(), hDCT1Diff, m_blobContext.mutable_gpu_diff);
-
                     Blob<T> blobEncoding = colBottom[2];
                     Blob<T> blobEncodingClip = colBottom[3];
-                    addInternal(new List<Blob<T>>() { blobEncoding, m_blob_C_T, m_blob_H_T, blobEncodingClip }, m_blobContext);
+                    addInternal(new List<Blob<T>>() { blobEncoding, m_blobLastCt, blobEncodingClip }, m_blobContext);
                     m_attention.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
                 }
             }
