@@ -35,7 +35,6 @@ namespace MyCaffe.layers
         Layer<T> m_tanh = null;
         Layer<T> m_add1 = null;
         Layer<T> m_ipV = null;
-        Layer<T> m_ipWc = null;
 
         Blob<T> m_blobX = null;
         Blob<T> m_blobClip = null;
@@ -51,7 +50,6 @@ namespace MyCaffe.layers
         Blob<T> m_blobSoftmax = null;
         Blob<T> m_blobFocusedInput = null;
         Blob<T> m_blobContext = null;
-        Blob<T> m_blobTopT = null;
 
         BlobCollection<T> m_colInternalBottom = new BlobCollection<T>();
         BlobCollection<T> m_colInternalTop = new BlobCollection<T>();
@@ -85,7 +83,7 @@ namespace MyCaffe.layers
 
             LayerParameter ipWaParam = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
             ipWaParam.name = "ipWa";
-            ipWaParam.inner_product_param.axis = 2;
+            ipWaParam.inner_product_param.axis = 1;
             ipWaParam.inner_product_param.num_output = m_param.attention_param.dim;
             ipWaParam.inner_product_param.weight_filler = m_param.attention_param.weight_filler;
             ipWaParam.inner_product_param.bias_filler = m_param.attention_param.bias_filler;
@@ -113,15 +111,6 @@ namespace MyCaffe.layers
 
             m_ipV = new InnerProductLayer<T>(cuda, log, ipVParam);
 
-            LayerParameter ipWcParam = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
-            ipWcParam.name = "ipWc";
-            ipWcParam.inner_product_param.axis = 2;
-            ipWcParam.inner_product_param.bias_term = false;
-            ipWcParam.inner_product_param.num_output = m_param.attention_param.dim;
-            ipWcParam.inner_product_param.weight_filler = m_param.attention_param.weight_filler;
-
-            m_ipWc = new InnerProductLayer<T>(cuda, log, ipWcParam);
-
             m_blobX = new Blob<T>(cuda, log);
             m_blobX.Name = "x";
 
@@ -141,7 +130,7 @@ namespace MyCaffe.layers
             m_blobWc.Name = "Wc";
 
             m_blobFullWc = new Blob<T>(cuda, log);
-            m_blobFullWc.Name = "full_Wc";
+            m_blobFullWc.Name = "Full Wc";
 
             m_blobAddOutput = new Blob<T>(cuda, log);
             m_blobAddOutput.Name = "addOut";
@@ -163,9 +152,6 @@ namespace MyCaffe.layers
 
             m_blobContext = new Blob<T>(cuda, log);
             m_blobContext.Name = "context";
-
-            m_blobTopT = new Blob<T>(cuda, log);
-            m_blobTopT.Name = "topT";
         }
 
         /** @copydoc Layer::dispose */
@@ -178,7 +164,6 @@ namespace MyCaffe.layers
             dispose(ref m_tanh);
             dispose(ref m_add1);
             dispose(ref m_ipV);
-            dispose(ref m_ipWc);
 
             dispose(ref m_blobState);
             dispose(ref m_blobX);
@@ -194,7 +179,6 @@ namespace MyCaffe.layers
             dispose(ref m_blobSoftmax);
             dispose(ref m_blobFocusedInput);
             dispose(ref m_blobContext);
-            dispose(ref m_blobTopT);
 
             base.dispose();
         }
@@ -228,11 +212,11 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Returns the exact number of required bottom (input) Blobs: input, state (last ct), last hy, clip (1 on each input, 0 otherwise)
+        /// Returns the exact number of required bottom (input) Blobs: input, state (last ct), clip (1 on each input, 0 otherwise)
         /// </summary>
         public override int ExactNumBottomBlobs
         {
-            get { return 4; }
+            get { return 3; }
         }
 
         /// <summary>
@@ -288,9 +272,8 @@ namespace MyCaffe.layers
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             Blob<T> blobX = colBottom[0];
-            Blob<T> blobHy = colBottom[1];
-            Blob<T> blobCy = colBottom[2];
-            Blob<T> blobClip = colBottom[3];
+            Blob<T> blobCy = colBottom[1];
+            Blob<T> blobClip = colBottom[2];
 
             m_rgbParamPropagateDown = new DictionaryMap<bool>(m_colBlobs.Count, true);
 
@@ -315,10 +298,7 @@ namespace MyCaffe.layers
             addInternal(blobClip, m_blobClip);
             m_transposeClip.Setup(m_colInternalBottom, m_colInternalTop);
 
-            List<int> rgShape = Utility.Clone<int>(blobCy.shape());
-            rgShape[0] = blobCy.shape(1); // batch
-            rgShape[1] = blobCy.shape(0); // timesteps;
-            m_blobState.Reshape(rgShape);
+            m_blobState.ReshapeLike(blobCy);
 
             addInternal(m_blobState, m_blobWc);
             m_ipWa.Setup(m_colInternalBottom, m_colInternalTop);
@@ -344,12 +324,9 @@ namespace MyCaffe.layers
             rgContextShape[1] = 1;
             m_blobContext.Reshape(rgContextShape);
 
-            addInternal(m_blobContext, m_blobTopT);
-            m_ipWc.Setup(m_colInternalBottom, m_colInternalTop);
-
-            List<int> rgTopShape = Utility.Clone<int>(m_blobTopT.shape());
-            rgTopShape[0] = m_blobTopT.shape(1);
-            rgTopShape[1] = m_blobTopT.shape(0);
+            List<int> rgTopShape = Utility.Clone<int>(m_blobContext.shape());
+            rgTopShape[0] = m_blobContext.shape(1);
+            rgTopShape[1] = m_blobContext.shape(0);
             colTop[0].Reshape(rgTopShape);
 
             blobs.Clear();
@@ -366,8 +343,6 @@ namespace MyCaffe.layers
 
             // V
             blobs.Add(m_ipV.blobs[0]);
-            // Wc
-            blobs.Add(m_ipWc.blobs[0]);
         }
 
         /// <summary>
@@ -378,9 +353,8 @@ namespace MyCaffe.layers
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             Blob<T> blobX = colBottom[0];
-            Blob<T> blobHy = colBottom[1];
-            Blob<T> blobCy = colBottom[2];
-            Blob<T> blobClip = colBottom[3];
+            Blob<T> blobCy = colBottom[1];
+            Blob<T> blobClip = colBottom[2];
 
             m_log.CHECK_EQ(blobClip.count(), blobX.count(0, 2), "The bottom[2] 'clip' must have shape T,B.");
 
@@ -394,10 +368,7 @@ namespace MyCaffe.layers
             addInternal(blobClip, m_blobClip);
             m_transposeClip.Reshape(m_colInternalBottom, m_colInternalTop);
 
-            List<int> rgShape = Utility.Clone<int>(blobCy.shape());
-            rgShape[0] = blobCy.shape(1); // batch
-            rgShape[1] = blobCy.shape(0); // timesteps;
-            m_blobState.Reshape(rgShape);
+            m_blobState.ReshapeLike(blobCy);
 
             addInternal(m_blobState, m_blobWc);
             m_ipWa.Reshape(m_colInternalBottom, m_colInternalTop);
@@ -426,12 +397,9 @@ namespace MyCaffe.layers
             rgContextShape[1] = 1;
             m_blobContext.Reshape(rgContextShape);
 
-            addInternal(m_blobContext, m_blobTopT);
-            m_ipWc.Reshape(m_colInternalBottom, m_colInternalTop);
-
-            List<int> rgTopShape = Utility.Clone<int>(m_blobTopT.shape());
-            rgTopShape[0] = m_blobTopT.shape(1);
-            rgTopShape[1] = m_blobTopT.shape(0);
+            List<int> rgTopShape = Utility.Clone<int>(m_blobContext.shape());
+            rgTopShape[0] = m_blobContext.shape(1);
+            rgTopShape[1] = m_blobContext.shape(0);
             colTop[0].Reshape(rgTopShape);
         }
 
@@ -521,9 +489,8 @@ namespace MyCaffe.layers
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             Blob<T> blobX = colBottom[0];
-            Blob<T> blobHy = colBottom[1];
-            Blob<T> blobCy = colBottom[2];
-            Blob<T> blobClip = colBottom[3];
+            Blob<T> blobCy = colBottom[1];
+            Blob<T> blobClip = colBottom[2];
 
             // Force values to 1 or 0.
             m_cuda.sign(blobClip.count(), blobClip.gpu_data, blobClip.mutable_gpu_data);
@@ -591,14 +558,8 @@ namespace MyCaffe.layers
                 }
             }
 
-            addInternal(m_blobContext, m_blobTopT);
-            m_ipWc.Forward(m_colInternalBottom, m_colInternalTop);
-
             // Reshape not needed for T = 1 in topT and top(0)
-            m_cuda.copy(m_blobTopT.count(), m_blobTopT.gpu_data, colTop[0].mutable_gpu_data);
-
-            // Add previous Hy to new context.
-            m_cuda.add(colTop[0].count(), blobHy.gpu_data, colTop[0].gpu_data, colTop[0].mutable_gpu_data);
+            m_cuda.copy(m_blobContext.count(), m_blobContext.gpu_data, colTop[0].mutable_gpu_data);
         }
 
         /// <summary>
@@ -618,21 +579,14 @@ namespace MyCaffe.layers
             if (rgbPropagateDown[0])
             {
                 Blob<T> blobX = colBottom[0];
-                Blob<T> blobHy = colBottom[1];
-                Blob<T> blobCy = colBottom[2];
-                Blob<T> blobClip = colBottom[3];
+                Blob<T> blobCy = colBottom[1];
+                Blob<T> blobClip = colBottom[2];
 
                 List<bool> rgbPropagate = new List<bool>() { true, true };
 
-                // copy diff to previous Hy.
-                m_cuda.copy(colTop[0].count(), colTop[0].gpu_diff, blobHy.mutable_gpu_diff);
-
                 // Reshape not needed for T = 1 in topT and top(0)
-                m_cuda.copy(colTop[0].count(), colTop[0].gpu_data, m_blobTopT.mutable_gpu_data);
-                m_cuda.copy(colTop[0].count(), colTop[0].gpu_diff, m_blobTopT.mutable_gpu_diff);
-
-                addInternal(m_blobContext, m_blobTopT);
-                m_ipWc.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+                m_cuda.copy(colTop[0].count(), colTop[0].gpu_data, m_blobContext.mutable_gpu_data);
+                m_cuda.copy(colTop[0].count(), colTop[0].gpu_diff, m_blobContext.mutable_gpu_diff);
 
                 // Apply gradient w.r.t input.
                 // Move this to the GPU.
