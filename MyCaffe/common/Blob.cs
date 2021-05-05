@@ -1700,6 +1700,26 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Set a diff range with a given value.
+        /// </summary>
+        /// <param name="dfVal">Specifies the value to set.</param>
+        /// <param name="nStartIdx">Specifies the start index.</param>
+        /// <param name="nCount">Specifies the number of items to set.</param>
+        public void SetDiff(double dfVal, int nStartIdx, int nCount)
+        {
+            T tVal = (T)Convert.ChangeType(dfVal, typeof(T));
+            T[] rg = mutable_cpu_diff;
+
+            for (int i = 0; i < nCount; i++)
+            {
+                if (nStartIdx + i < rg.Length)
+                    rg[nStartIdx + i] = tVal;
+            }
+
+            mutable_cpu_diff = rg;
+        }
+
+        /// <summary>
         /// Sets a number of items within the Blob's diff.
         /// </summary>
         /// <param name="rgDiff">Specifies the diff to set.</param>
