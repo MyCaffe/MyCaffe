@@ -174,6 +174,56 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestGradientAttention()
+        {
+            LSTMAttentionLayerTest test = new LSTMAttentionLayerTest(m_log, m_evtCancel);
+
+            try
+            {
+                foreach (ILSTMAttentionLayerTest t in test.Tests)
+                {
+                    Stopwatch sw = new Stopwatch();
+
+                    sw.Start();
+                    t.TestGradientAttention();
+                    sw.Stop();
+
+                    if (m_log != null)
+                        m_log.WriteLine("Testing GradientAttention<" + t.DataType.ToString() + "> - " + sw.Elapsed.TotalMilliseconds.ToString("N5") + " ms.");
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientAttention2()
+        {
+            LSTMAttentionLayerTest test = new LSTMAttentionLayerTest(m_log, m_evtCancel);
+
+            try
+            {
+                foreach (ILSTMAttentionLayerTest t in test.Tests)
+                {
+                    Stopwatch sw = new Stopwatch();
+
+                    sw.Start();
+                    t.TestGradientAttention2();
+                    sw.Stop();
+
+                    if (m_log != null)
+                        m_log.WriteLine("Testing GradientAttention<" + t.DataType.ToString() + "> - " + sw.Elapsed.TotalMilliseconds.ToString("N5") + " ms.");
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestTrainingClockworkGradient()
         {
             LSTMAttentionLayerTest test = new LSTMAttentionLayerTest(m_log, m_evtCancel, m_strParams);
@@ -245,6 +295,8 @@ namespace MyCaffe.test
         void TestGradientBatchDefault();
         void TestGradientClipMask();
         void TestGradientBatchClipMask();
+        void TestGradientAttention();
+        void TestGradientAttention2();
         void TestTraining(int nTotalDataLength, int nNumOutput, int nBatch, bool bShortModel, int nMaxIter = 10000);
         void TestTraining2(int nTotalDataLength, int nNumOutput, int nTimeSteps, int nBatch, bool bShortModel, int nMaxIter = 10000);
     }
@@ -286,6 +338,8 @@ namespace MyCaffe.test
         CancelEvent m_evtCancel = new CancelEvent();
         string m_strParams;
         Blob<T> m_blob_bottom2;
+        Blob<T> m_blobEncoding;
+        Blob<T> m_blobEncodingClip;
 
         public LSTMAttentionLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, null, nDeviceID)
@@ -339,6 +393,12 @@ namespace MyCaffe.test
 
             m_blob_bottom2 = new Blob<T>(m_cuda, m_log, 4, 3, 1, 1);
             m_blob_bottom2.SetData(0);
+
+            m_blobEncoding = new Blob<T>(m_cuda, m_log, 3, 3, 1, 1);
+            m_blobEncoding.SetData(0);
+
+            m_blobEncodingClip = new Blob<T>(m_cuda, m_log, 3, 3, 1, 1);
+            m_blobEncodingClip.SetData(0);
         }
 
         public static string ParameterDescriptions
@@ -360,8 +420,45 @@ namespace MyCaffe.test
         protected override void dispose()
         {
             m_blob_bottom2.Dispose();
+            m_blobEncoding.Dispose();
+            m_blobEncodingClip.Dispose();
             base.dispose();
         }
+
+        public void Fill(BlobCollection<T> colBottom, Blob<T> blobData, Blob<T> blobClip, int nT, int nB, int nI, bool bAllClip)
+        {
+            blobData.Reshape(nT, nB, nI, 1);
+
+            float[] rgData = convertF(blobData.mutable_cpu_data);
+            for (int t = 0; t < blobData.num; t++)
+            {
+                for (int b = 0; b < blobData.channels; b++)
+                {
+                    for (int i = 0; i < nI; i++)
+                    {
+                        int nIdx = (t * nB * nI) + (b * nI) + i;
+                        rgData[nIdx] = (t + 1) + (b * 0.1f) + (i * 0.01f);
+                    }
+                }
+            }
+
+            blobData.mutable_cpu_data = convert(rgData);
+
+            List<int> rgShape = Utility.Clone<int>(blobData.shape());
+            while (rgShape.Count > 2)
+            {
+                rgShape.RemoveAt(rgShape.Count - 1);
+            }
+            blobClip.Reshape(rgShape);
+
+            blobClip.SetData(1);
+            if (!bAllClip)
+                blobClip.SetData(0, 0);
+
+            colBottom.Add(blobData);
+            colBottom.Add(blobClip);
+        }
+
 
         public Blob<T> Bottom2
         {
@@ -612,6 +709,50 @@ namespace MyCaffe.test
             BottomVec.Clear();
             BottomVec.Add(Bottom);
             BottomVec.Add(Bottom2);
+
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+
+            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+        }
+
+        public void TestGradientAttention()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.LSTM_ATTENTION);
+            p.lstm_attention_param.num_output = 1;
+            p.lstm_attention_param.weight_filler = new FillerParameter("uniform");
+            p.lstm_attention_param.weight_filler.min = -0.01;
+            p.lstm_attention_param.weight_filler.max = 0.01;
+            p.lstm_attention_param.bias_filler = new FillerParameter("constant", 0);
+            p.lstm_attention_param.enable_attention = true;
+
+            BottomVec.Clear();
+            // Decoder blobs
+            Fill(BottomVec, m_blob_bottom, m_blob_bottom2, 1, 1, 1, true);
+            // Encoder blobs
+            Fill(BottomVec, m_blobEncoding, m_blobEncodingClip, 1, 1, 1, false);
+
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+
+            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+        }
+
+        public void TestGradientAttention2()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.LSTM_ATTENTION);
+            p.lstm_attention_param.num_output = 1;
+            p.lstm_attention_param.weight_filler = new FillerParameter("uniform");
+            p.lstm_attention_param.weight_filler.min = -0.01;
+            p.lstm_attention_param.weight_filler.max = 0.01;
+            p.lstm_attention_param.bias_filler = new FillerParameter("constant", 0);
+            p.lstm_attention_param.enable_attention = true;
+
+            BottomVec.Clear();
+            // Decoder blobs
+            Fill(BottomVec, m_blob_bottom, m_blob_bottom2, 3, 1, 1, true);
+            // Encoder blobs
+            Fill(BottomVec, m_blobEncoding, m_blobEncodingClip, 2, 1, 1, false);
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);

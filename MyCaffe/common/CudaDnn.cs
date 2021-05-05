@@ -8711,6 +8711,7 @@ namespace MyCaffe.common
         /// <param name="t">Specifies the step within the sequence.</param>
         /// <param name="nN">Specifies the batch size.</param>
         /// <param name="nH">Specifies the number of hidden units.</param>
+        /// <param name="nI">Specifies the number the input size.</param>
         /// <param name="hWeight_h">Specifies a handle to the GPU memory holding the 'h' weights.</param>
         /// <param name="hWeight_i">Specifies a handle to the GPU memory holding the 'i' weights.</param>
         /// <param name="hClipData">Specifies a handle to the GPU memory holding the clip data.</param>
@@ -8728,12 +8729,15 @@ namespace MyCaffe.common
         /// <param name="hCT1Data">Specifies a handle to the GPU memory holding the CT1 data.</param>
         /// <param name="nCT1Offset">Specifies the CT1 offset for this step within the sequence.</param>
         /// <param name="hHtoGateData">Specifies a handle to the GPU memory holding the H to Gate data.</param>
-        public void lstm_fwd(int t, int nN, int nH, long hWeight_h, long hWeight_i, long hClipData, int nClipOffset, long hTopData, int nTopOffset, long hCellData, int nCellOffset, long hPreGateData, int nPreGateOffset, long hGateData, int nGateOffset, long hHT1Data, int nHT1Offset, long hCT1Data, int nCT1Offset, long hHtoGateData)
+        /// <param name="hContext">Optionally, specifies the attention context, or 0 when not used.</param>
+        /// <param name="hWeight_c">Optionally, specifies the attention context weights, or 0 when not used.</param>
+        /// <param name="hCtoGetData">Optionally, specifies the attention context to gate data, or 0 when not used.</param>
+        public void lstm_fwd(int t, int nN, int nH, int nI, long hWeight_h, long hWeight_i, long hClipData, int nClipOffset, long hTopData, int nTopOffset, long hCellData, int nCellOffset, long hPreGateData, int nPreGateOffset, long hGateData, int nGateOffset, long hHT1Data, int nHT1Offset, long hCT1Data, int nCT1Offset, long hHtoGateData, long hContext = 0, long hWeight_c = 0, long hCtoGetData = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_FWD, m_param.AsDouble(t, nN, nH, hWeight_h, hWeight_i, hClipData, nClipOffset, hTopData, nTopOffset, hCellData, nCellOffset, hPreGateData, nPreGateOffset, hGateData, nGateOffset, hHT1Data, nHT1Offset, hCT1Data, nCT1Offset, hHtoGateData));
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_FWD, m_param.AsDouble(t, nN, nH, nI, hWeight_h, hWeight_i, hClipData, nClipOffset, hTopData, nTopOffset, hCellData, nCellOffset, hPreGateData, nPreGateOffset, hGateData, nGateOffset, hHT1Data, nHT1Offset, hCT1Data, nCT1Offset, hHtoGateData, hContext, hWeight_c, hCtoGetData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_FWD, m_param.AsFloat( t, nN, nH, hWeight_h, hWeight_i, hClipData, nClipOffset, hTopData, nTopOffset, hCellData, nCellOffset, hPreGateData, nPreGateOffset, hGateData, nGateOffset, hHT1Data, nHT1Offset, hCT1Data, nCT1Offset, hHtoGateData));
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_FWD, m_param.AsFloat( t, nN, nH, nI, hWeight_h, hWeight_i, hClipData, nClipOffset, hTopData, nTopOffset, hCellData, nCellOffset, hPreGateData, nPreGateOffset, hGateData, nGateOffset, hHT1Data, nHT1Offset, hCT1Data, nCT1Offset, hHtoGateData, hContext, hWeight_c, hCtoGetData));
         }
 
         /// <summary>
@@ -8745,6 +8749,7 @@ namespace MyCaffe.common
         /// <param name="t">Specifies the step within the sequence.</param>
         /// <param name="nN">Specifies the batch size.</param>
         /// <param name="nH">Specifies the number of hidden units.</param>
+        /// <param name="nI">Specifies the number the input size.</param>
         /// <param name="dfClippingThreshold"></param>
         /// <param name="hWeight_h">Specifies a handle to the GPU memory holding the 'h' weights.</param>
         /// <param name="hClipData">Specifies a handle to the GPU memory holding the clip data.</param>
@@ -8766,12 +8771,14 @@ namespace MyCaffe.common
         /// <param name="hDCT1Diff">Specifies a handle to the DCT1 gradients.</param>
         /// <param name="nDCT1Offset">Specifies the DCT1 offset for this step within the sequence.</param>
         /// <param name="hHtoHData">Specifies a handle to the GPU memory holding the H to H data.</param>
-        public void lstm_bwd(int t, int nN, int nH, double dfClippingThreshold, long hWeight_h, long hClipData, int nClipOffset, long hTopDiff, int nTopOffset, long hCellData, long hCellDiff, int nCellOffset, long hPreGateDiff, int nPreGateOffset, long hGateData, long hGateDiff, int nGateOffset, long hCT1Data, int nCT1Offset, long hDHT1Diff, int nDHT1Offset, long hDCT1Diff, int nDCT1Offset, long hHtoHData)
+        /// <param name="hContextDiff">Optionally, specifies the handle to the GPU memory holding the context diff, or 0 when not used.</param>
+        /// <param name="hWeight_c">Optionally, specifies the handle to the GPU memory holding the 'c' weights, or 0 when not used.</param>
+        public void lstm_bwd(int t, int nN, int nH, int nI, double dfClippingThreshold, long hWeight_h, long hClipData, int nClipOffset, long hTopDiff, int nTopOffset, long hCellData, long hCellDiff, int nCellOffset, long hPreGateDiff, int nPreGateOffset, long hGateData, long hGateDiff, int nGateOffset, long hCT1Data, int nCT1Offset, long hDHT1Diff, int nDHT1Offset, long hDCT1Diff, int nDCT1Offset, long hHtoHData, long hContextDiff = 0, long hWeight_c = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_BWD, m_param.AsDouble(t, nN, nH, dfClippingThreshold, hWeight_h, hClipData, nClipOffset, hTopDiff, nTopOffset, hCellData, hCellDiff, nCellOffset, hPreGateDiff, nPreGateOffset, hGateData, hGateDiff, nGateOffset, hCT1Data, nCT1Offset, hDHT1Diff, nDHT1Offset, hDCT1Diff, nDCT1Offset, hHtoHData));
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_BWD, m_param.AsDouble(t, nN, nH, nI, dfClippingThreshold, hWeight_h, hClipData, nClipOffset, hTopDiff, nTopOffset, hCellData, hCellDiff, nCellOffset, hPreGateDiff, nPreGateOffset, hGateData, hGateDiff, nGateOffset, hCT1Data, nCT1Offset, hDHT1Diff, nDHT1Offset, hDCT1Diff, nDCT1Offset, hHtoHData, hContextDiff, hWeight_c));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_BWD, m_param.AsFloat( t, nN, nH, (float)dfClippingThreshold, hWeight_h, hClipData, nClipOffset, hTopDiff, nTopOffset, hCellData, hCellDiff, nCellOffset, hPreGateDiff, nPreGateOffset, hGateData, hGateDiff, nGateOffset, hCT1Data, nCT1Offset, hDHT1Diff, nDHT1Offset, hDCT1Diff, nDCT1Offset, hHtoHData));
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LSTM_BWD, m_param.AsFloat( t, nN, nH, nI, (float)dfClippingThreshold, hWeight_h, hClipData, nClipOffset, hTopDiff, nTopOffset, hCellData, hCellDiff, nCellOffset, hPreGateDiff, nPreGateOffset, hGateData, hGateDiff, nGateOffset, hCT1Data, nCT1Offset, hDHT1Diff, nDHT1Offset, hDCT1Diff, nDCT1Offset, hHtoHData, hContextDiff, hWeight_c));
         }
 
         /// <summary>
