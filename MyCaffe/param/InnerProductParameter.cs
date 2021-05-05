@@ -195,7 +195,7 @@ namespace MyCaffe.param
             rgChildren.Add("axis", axis.ToString());
 
             if (transpose != false)
-                rgChildren.Add("tranpose", transpose.ToString());
+                rgChildren.Add("transpose", transpose.ToString());
 
             if (min_top_axes != -1)
                 rgChildren.Add("min_top_axes", min_top_axes.ToString());
