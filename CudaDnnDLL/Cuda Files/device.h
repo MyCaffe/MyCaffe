@@ -4318,31 +4318,44 @@ inline long Device<T>::cuda_lstm_fwd(long lInput, T* pfInput, long* plOutput, T*
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 20, 20))
+	if (lErr = verifyInput(lInput, pfInput, 21, 24))
 		return lErr;
 
 	int t = (int)pfInput[0];
 	int nN = (int)pfInput[1];
 	int nH = (int)pfInput[2];
-	long hWeight_h = (long)pfInput[3];
-	long hWeight_i = (long)pfInput[4];
-	long hClipData = (long)pfInput[5];
-	int nClipOffset = (int)pfInput[6];
-	long hTopData = (long)pfInput[7];
-	int nTopOffset = (int)pfInput[8];
-	long hCellData = (long)pfInput[9];
-	int nCellOffset = (int)pfInput[10];
-	long hPreGateData = (long)pfInput[11];
-	int nPreGateOffset = (int)pfInput[12];
-	long hGateData = (long)pfInput[13];
-	int nGateOffset = (int)pfInput[14];
-	long hHT1Data = (long)pfInput[15];
-	int nHT1Offset = (int)pfInput[16];
-	long hCT1Data = (long)pfInput[17];
-	int nCT1Offset = (int)pfInput[18];
-	long hHtoGateData = (long)pfInput[19];
+	int nI = (int)pfInput[3];
+	long hWeight_h = (long)pfInput[4];
+	long hWeight_i = (long)pfInput[5];
+	long hClipData = (long)pfInput[6];
+	int nClipOffset = (int)pfInput[7];
+	long hTopData = (long)pfInput[8];
+	int nTopOffset = (int)pfInput[9];
+	long hCellData = (long)pfInput[10];
+	int nCellOffset = (int)pfInput[11];
+	long hPreGateData = (long)pfInput[12];
+	int nPreGateOffset = (int)pfInput[13];
+	long hGateData = (long)pfInput[14];
+	int nGateOffset = (int)pfInput[15];
+	long hHT1Data = (long)pfInput[16];
+	int nHT1Offset = (int)pfInput[17];
+	long hCT1Data = (long)pfInput[18];
+	int nCT1Offset = (int)pfInput[19];
+	long hHtoGateData = (long)pfInput[20];
+	long hContext = 0;
+	long hWeight_c = 0;
+	long hCtoGateData = 0;
 
-	return m_math.lstm_fwd(t, nN, nH, hWeight_h, hWeight_i, hClipData, nClipOffset, hTopData, nTopOffset, hCellData, nCellOffset, hPreGateData, nPreGateOffset, hGateData, nGateOffset, hHT1Data, nHT1Offset, hCT1Data, nCT1Offset, hHtoGateData);
+	if (lInput > 21)
+		hContext = (long)pfInput[21];
+
+	if (lInput > 22)
+		hWeight_c = (long)pfInput[22];
+
+	if (lInput > 23)
+		hCtoGateData = (long)pfInput[23];
+
+	return m_math.lstm_fwd(t, nN, nH, nI, hWeight_h, hWeight_i, hClipData, nClipOffset, hTopData, nTopOffset, hCellData, nCellOffset, hPreGateData, nPreGateOffset, hGateData, nGateOffset, hHT1Data, nHT1Offset, hCT1Data, nCT1Offset, hHtoGateData, hContext, hWeight_c, hCtoGateData);
 }
 
 
@@ -4351,35 +4364,44 @@ inline long Device<T>::cuda_lstm_bwd(long lInput, T* pfInput, long* plOutput, T*
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 24, 24))
+	if (lErr = verifyInput(lInput, pfInput, 25, 27))
 		return lErr;
 
 	int t = (int)pfInput[0];
 	int nN = (int)pfInput[1];
 	int nH = (int)pfInput[2];
-	T fClip = pfInput[3];
-	long hWeight_h = (long)pfInput[4];
-	long hClipData = (long)pfInput[5];
-	int nClipOffset = (int)pfInput[6];
-	long hTopDiff = (long)pfInput[7];
-	int nTopOffset = (int)pfInput[8];
-	long hCellData = (long)pfInput[9];
-	long hCellDiff = (long)pfInput[10];
-	int nCellOffset = (int)pfInput[11];
-	long hPreGateDiff = (long)pfInput[12];
-	int nPreGateOffset = (int)pfInput[13];
-	long hGateData = (long)pfInput[14];
-	long hGateDiff = (long)pfInput[15];
-	int nGateOffset = (int)pfInput[16];
-	long hCT1Data = (long)pfInput[17];
-	int nCT1Offset = (int)pfInput[18];
-	long hDHT1Diff = (long)pfInput[19];
-	int nDHT1Offset = (int)pfInput[20];
-	long hDCT1Diff = (long)pfInput[21];
-	int nDCT1Offset = (int)pfInput[22];
-	long hHtoHData = (long)pfInput[23];
+	int nI = (int)pfInput[3];
+	T fClip = pfInput[4];
+	long hWeight_h = (long)pfInput[5];
+	long hClipData = (long)pfInput[6];
+	int nClipOffset = (int)pfInput[7];
+	long hTopDiff = (long)pfInput[8];
+	int nTopOffset = (int)pfInput[9];
+	long hCellData = (long)pfInput[10];
+	long hCellDiff = (long)pfInput[11];
+	int nCellOffset = (int)pfInput[12];
+	long hPreGateDiff = (long)pfInput[13];
+	int nPreGateOffset = (int)pfInput[14];
+	long hGateData = (long)pfInput[15];
+	long hGateDiff = (long)pfInput[16];
+	int nGateOffset = (int)pfInput[17];
+	long hCT1Data = (long)pfInput[18];
+	int nCT1Offset = (int)pfInput[19];
+	long hDHT1Diff = (long)pfInput[20];
+	int nDHT1Offset = (int)pfInput[21];
+	long hDCT1Diff = (long)pfInput[22];
+	int nDCT1Offset = (int)pfInput[23];
+	long hHtoHData = (long)pfInput[24];
+	long hContextDiff = 0;
+	long hWeight_c = 0;
 
-	return m_math.lstm_bwd(t, nN, nH, fClip, hWeight_h, hClipData, nClipOffset, hTopDiff, nTopOffset, hCellData, hCellDiff, nCellOffset, hPreGateDiff, nPreGateOffset, hGateData, hGateDiff, nGateOffset, hCT1Data, nCT1Offset, hDHT1Diff, nDHT1Offset, hDCT1Diff, nDCT1Offset, hHtoHData);
+	if (lInput > 25)
+		hContextDiff = (long)pfInput[25];
+
+	if (lInput > 26)
+		hWeight_c = (long)pfInput[26];
+
+	return m_math.lstm_bwd(t, nN, nH, nI, fClip, hWeight_h, hClipData, nClipOffset, hTopDiff, nTopOffset, hCellData, hCellDiff, nCellOffset, hPreGateDiff, nPreGateOffset, hGateData, hGateDiff, nGateOffset, hCT1Data, nCT1Offset, hDHT1Diff, nDHT1Offset, hDCT1Diff, nDCT1Offset, hHtoHData, hContextDiff, hWeight_c);
 }
 
 

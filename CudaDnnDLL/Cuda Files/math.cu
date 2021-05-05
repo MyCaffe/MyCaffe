@@ -10115,7 +10115,7 @@ __global__ void lstm_bwd_kernel(const int nthreads, const int H, const int t, co
 
 
 template <class T>
-long Math<T>::lstm_fwd(int t, int nN, int nH, long hWeight_h, long hWeight_i, long hClipData, int nClipOffset, long hTopData, int nTopOffset, long hCellData, int nCellOffset, long hPreGateData, int nPreGateOffset, long hGateData, int nGateOffset, long hHT1Data, int nHT1Offset, long hCT1Data, int nCT1Offset, long hHtoGateData)
+long Math<T>::lstm_fwd(int t, int nN, int nH, int nI, long hWeight_h, long hWeight_i, long hClipData, int nClipOffset, long hTopData, int nTopOffset, long hCellData, int nCellOffset, long hPreGateData, int nPreGateOffset, long hGateData, int nGateOffset, long hHT1Data, int nHT1Offset, long hCT1Data, int nCT1Offset, long hHtoGateData, long hContext, long hWeight_c, long hCtoGateData)
 {
 	LONG lErr;
 	int nCount;
@@ -10173,15 +10173,48 @@ long Math<T>::lstm_fwd(int t, int nN, int nH, long hWeight_h, long hWeight_i, lo
 	T* h_t_1 = (t > 0) ? h_t + nHT1Offset : ((T*)pHT1Data->Data()) + nHT1Offset;
 	T* c_t_1 = (t > 0) ? c_t + nCT1Offset : ((T*)pCT1Data->Data()) + nCT1Offset;
 	T* h_to_gate = (T*)pHtoGateData->Data();
+	T* c_to_gate = NULL;
 
 	if (lErr = gemm(false, true, nN, 4 * nH, nH, T(1.0), h_t_1, weight_h, T(0.0), h_to_gate))
 		return lErr;
 
 	nCount = 4 * nN * nH;
-	clip_add_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, 4 * nH, t, clip_t, h_to_gate, pre_gate_t);
+	clip_add_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, 4 * nH, t, clip_t, h_to_gate, pre_gate_t);
 
 	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
+
+	// If provided add context to pre gate.
+	if (hContext != 0 && hWeight_c != 0 && hCtoGateData != 0)
+	{
+		MemoryItem* pContext;
+		MemoryItem* pWeight_c;
+		MemoryItem* pCtoGateData;
+
+		if (lErr = m_pMemCol->GetData(hContext, &pContext))
+			return lErr;
+
+		if (lErr = m_pMemCol->GetData(hWeight_c, &pWeight_c))
+			return lErr;
+
+		if (lErr = m_pMemCol->GetData(hCtoGateData, &pCtoGateData))
+			return lErr;
+
+		T* context = (T*)pContext->Data();
+		T* weight_c = (T*)pWeight_c->Data();
+		c_to_gate = ((T*)pCtoGateData->Data()) + nGateOffset;
+
+		if (lErr = gemm(false, true, nN, 4 * nH, nI, T(1.0), context, weight_c, T(0.0), c_to_gate))
+			return lErr;
+
+		nCount = 4 * nN * nH;
+		clip_add_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, 4 * nH, t, clip_t, c_to_gate, pre_gate_t);
+	}
+	// Must specify all or none.
+	else if (hContext != 0 || hWeight_c != 0 || hCtoGateData != 0)
+	{
+		return ERROR_PARAM_OUT_OF_RANGE;
+	}
 
 	nCount = 4 * nN * nH;
 	activation_fwd_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, nH, pre_gate_t, gate_t);
@@ -10195,13 +10228,13 @@ long Math<T>::lstm_fwd(int t, int nN, int nH, long hWeight_h, long hWeight_i, lo
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::lstm_fwd(int t, int nN, int nH, long hWeight_h, long hWeight_i, long hClipData, int nClipOffset, long hTopData, int nTopOffset, long hCellData, int nCellOffset, long hPreGateData, int nPreGateOffset, long hGateData, int nGateOffset, long hHT1Data, int nHT1Offset, long hCT1Data, int nCT1Offset, long hHtoGateData);
-template long Math<float>::lstm_fwd(int t, int nN, int nH, long hWeight_h, long hWeight_i, long hClipData, int nClipOffset, long hTopData, int nTopOffset, long hCellData, int nCellOffset, long hPreGateData, int nPreGateOffset, long hGateData, int nGateOffset, long hHT1Data, int nHT1Offset, long hCT1Data, int nCT1Offset, long hHtoGateData);
+template long Math<double>::lstm_fwd(int t, int nN, int nH, int nI, long hWeight_h, long hWeight_i, long hClipData, int nClipOffset, long hTopData, int nTopOffset, long hCellData, int nCellOffset, long hPreGateData, int nPreGateOffset, long hGateData, int nGateOffset, long hHT1Data, int nHT1Offset, long hCT1Data, int nCT1Offset, long hHtoGateData, long hContext, long hWeight_c, long hCtoGateData);
+template long Math<float>::lstm_fwd(int t, int nN, int nH, int nI, long hWeight_h, long hWeight_i, long hClipData, int nClipOffset, long hTopData, int nTopOffset, long hCellData, int nCellOffset, long hPreGateData, int nPreGateOffset, long hGateData, int nGateOffset, long hHT1Data, int nHT1Offset, long hCT1Data, int nCT1Offset, long hHtoGateData, long hContext, long hWeight_c, long hCtoGateData);
 
 
 
 template <class T>
-long Math<T>::lstm_bwd(int t, int nN, int nH, T fClip, long hWeight_h, long hClipData, int nClipOffset, long hTopDiff, int nTopOffset, long hCellData, long hCellDiff, int nCellOffset, long hPreGateDiff, int nPreGateOffset, long hGateData, long hGateDiff, int nGateOffset, long hCT1Data, int nCT1Offset, long hDHT1Diff, int nDHT1Offset, long hDCT1Diff, int nDCT1Offset, long hHtoHData)
+long Math<T>::lstm_bwd(int t, int nN, int nH, int nI, T fClip, long hWeight_h, long hClipData, int nClipOffset, long hTopDiff, int nTopOffset, long hCellData, long hCellDiff, int nCellOffset, long hPreGateDiff, int nPreGateOffset, long hGateData, long hGateDiff, int nGateOffset, long hCT1Data, int nCT1Offset, long hDHT1Diff, int nDHT1Offset, long hDCT1Diff, int nDCT1Offset, long hHtoHData, long hContextDiff, long hWeight_c)
 {
 	LONG lErr;
 	int nCount;
@@ -10282,6 +10315,29 @@ long Math<T>::lstm_bwd(int t, int nN, int nH, T fClip, long hWeight_h, long hCli
 	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
 
+	if (hContextDiff != 0 && hWeight_c != 0)
+	{
+		MemoryItem* pContextDiff;
+		MemoryItem* pWeight_c;
+
+		if (lErr = m_pMemCol->GetData(hContextDiff, &pContextDiff))
+			return lErr;
+
+		if (lErr = m_pMemCol->GetData(hWeight_c, &pWeight_c))
+			return lErr;
+
+		T* weight_c = (T*)pWeight_c->Data();
+		T* context_diff = (T*)pContextDiff->Data();
+
+		// Backprop errors to context.
+		if (lErr = gemm(false, true, nN, nI, 4 * nH, T(1.), pre_gate_diff_t, weight_c, T(1.), context_diff))
+			return lErr;
+	}
+	else if (hContextDiff != 0 || hWeight_c != 0)
+	{
+		return ERROR_PARAM_OUT_OF_RANGE;
+	}
+
 	// Backprop errors to previous time step.
 	if (lErr = gemm(false, false, nN, nH, 4 * nH, T(1.), pre_gate_diff_t, weight_h, T(0.), h_to_h))
 		return lErr;
@@ -10292,8 +10348,8 @@ long Math<T>::lstm_bwd(int t, int nN, int nH, T fClip, long hWeight_h, long hCli
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::lstm_bwd(int t, int nN, int nH, double fClip, long hWeight_h, long hClipData, int nClipOffset, long hTopDiff, int nTopOffset, long hCellData, long hCellDiff, int nCellOffset, long hPreGateDiff, int nPreGateOffset, long hGateData, long hGateDiff, int nGateOffset, long hCT1Data, int nCT1Offset, long hDHT1Diff, int nDHT1Offset, long hDCT1Diff, int nDCT1Offset, long hHtoHData);
-template long Math<float>::lstm_bwd(int t, int nN, int nH, float fClip, long hWeight_h, long hClipData, int nClipOffset, long hTopDiff, int nTopOffset, long hCellData, long hCellDiff, int nCellOffset, long hPreGateDiff, int nPreGateOffset, long hGateData, long hGateDiff, int nGateOffset, long hCT1Data, int nCT1Offset, long hDHT1Diff, int nDHT1Offset, long hDCT1Diff, int nDCT1Offset, long hHtoHData);
+template long Math<double>::lstm_bwd(int t, int nN, int nH, int nI, double fClip, long hWeight_h, long hClipData, int nClipOffset, long hTopDiff, int nTopOffset, long hCellData, long hCellDiff, int nCellOffset, long hPreGateDiff, int nPreGateOffset, long hGateData, long hGateDiff, int nGateOffset, long hCT1Data, int nCT1Offset, long hDHT1Diff, int nDHT1Offset, long hDCT1Diff, int nDCT1Offset, long hHtoHData, long hContextDiff, long hWeight_c);
+template long Math<float>::lstm_bwd(int t, int nN, int nH, int nI, float fClip, long hWeight_h, long hClipData, int nClipOffset, long hTopDiff, int nTopOffset, long hCellData, long hCellDiff, int nCellOffset, long hPreGateDiff, int nPreGateOffset, long hGateData, long hGateDiff, int nGateOffset, long hCT1Data, int nCT1Offset, long hDHT1Diff, int nDHT1Offset, long hDCT1Diff, int nDCT1Offset, long hHtoHData, long hContextDiff, long hWeight_c);
 
 
 template <typename T>
