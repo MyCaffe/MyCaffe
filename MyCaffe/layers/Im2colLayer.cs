@@ -322,7 +322,7 @@ namespace MyCaffe.layers
         /// <summary>
         /// Computes the error gradient w.r.t. the forwarded inputs.
         /// </summary>
-        /// <param name="colTop">top output Blob vecotr (length 1), 
+        /// <param name="colTop">top output Blob vector (length 1), 
         /// providing the error gradient with respect to the outputs.</param>
         /// <param name="rgbPropagateDown">see Layer::Backward</param>
         /// <param name="colBottom">input Blob vecotor (length 1), into which the top error
