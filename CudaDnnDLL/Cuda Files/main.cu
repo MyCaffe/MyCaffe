@@ -950,6 +950,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_SSD_ENCODE_CONFPRED:
 			return m_device.SsdEncodeConfPrediction(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_DEBUG:
+			return 0;
+
 		default:
 			return ERROR_PARAM_OUT_OF_RANGE;
 	}

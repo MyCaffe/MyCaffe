@@ -1243,7 +1243,9 @@ namespace MyCaffe.common
             CUDA_SETUP_SSD = 952,
             CUDA_SSD_FWD_MULTIBOXLOSS = 955,
             CUDA_SSD_ENCODE_LOCPRED = 958,
-            CUDA_SSD_ENCODE_CONFPRED = 959
+            CUDA_SSD_ENCODE_CONFPRED = 959,
+
+            CUDA_DEBUG = 1000
         }
 
 #pragma warning restore 1591
@@ -8940,6 +8942,14 @@ namespace MyCaffe.common
         }
 
 #pragma warning disable 1591
+
+        public void debug()
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_DEBUG, null);
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_DEBUG, null);
+        }
 
         public void matrix_set_diagonal(int nCount, int nRows, double dfVal, long hData) /** @private */
         {
