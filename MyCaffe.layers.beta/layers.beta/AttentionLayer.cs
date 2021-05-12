@@ -475,6 +475,20 @@ namespace MyCaffe.layers
             m_cuda.mul(nCount, hBottomDiff, hTopData, hBottomDiff);
         }
 
+        // Move to the GPU.
+        private float sum_diff(int nCount, Blob<T> b, int nOffset)
+        {
+            float[] rg = convertF(b.mutable_cpu_diff);
+            float fSum = 0;
+
+            for (int i = 0; i < nCount; i++)
+            {
+                fSum += rg[nOffset + i];
+            }
+
+            return fSum;
+        }
+
         /// <summary>
         /// The forward computation.
         /// </summary>
@@ -617,7 +631,7 @@ namespace MyCaffe.layers
                     {
                         int nIdxDst = (i * m_blobFocusedInput.channels * nCount) + (j * nCount);
                         m_cuda.mul(nCount, m_blobContext.gpu_diff, m_blobX.gpu_data, m_blobFocusedInput.mutable_gpu_diff, nIdxSrc, nIdxDst, nIdxDst);
-                        rgSoftmaxDiff[nIdxSoftmax + j] = m_cuda.asum_float(nCount, m_blobFocusedInput.gpu_diff, nIdxDst);
+                        rgSoftmaxDiff[nIdxSoftmax + j] = sum_diff(nCount, m_blobFocusedInput, nIdxDst);
                     }
                 }
 
