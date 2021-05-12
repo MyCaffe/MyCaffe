@@ -227,7 +227,8 @@ namespace MyCaffe.layers
         /// <param name="colBottom">bottom input Blob vector (length 1).</param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
-            m_log.CHECK(!rgbPropagateDown[0], "Can't backpropagate to EmbedLayer input.");
+            if (rgbPropagateDown[0])
+                m_log.WriteLine("WARNING: Can't backpropagate to EmbedLayer input.");
 
             if (m_rgbParamPropagateDown[0])
             {
