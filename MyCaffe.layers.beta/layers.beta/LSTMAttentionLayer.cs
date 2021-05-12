@@ -51,7 +51,6 @@ namespace MyCaffe.layers
         double m_dfClippingThreshold; // threshold for clipped gradient.
         Blob<T> m_blobBiasMultiplier;
 
-        Blob<T> m_blobTop;      // Output values.
         Blob<T> m_blobCell;     // Memory cell.
         Blob<T> m_blobPreGate;  // gate values before nonlinearity.
         Blob<T> m_blobGate;     // gate values after nonlinearity.
@@ -74,7 +73,6 @@ namespace MyCaffe.layers
         Layer<T> m_attention = null;
         Blob<T> m_blobContext = null;
         Blob<T> m_blobContextFull = null;
-        Blob<T> m_blobLastCt = null;
         BlobCollection<T> m_colInternalBottom = new BlobCollection<T>();
         BlobCollection<T> m_colInternalTop = new BlobCollection<T>();
 
@@ -106,8 +104,6 @@ namespace MyCaffe.layers
 
             m_blobBiasMultiplier = new Blob<T>(m_cuda, m_log);
             m_blobBiasMultiplier.Name = m_param.name + " biasmult";
-            m_blobTop = new Blob<T>(m_cuda, m_log);
-            m_blobTop.Name = m_param.name + " top";
             m_blobCell = new Blob<T>(m_cuda, m_log);
             m_blobCell.Name = m_param.name + " cell";
             m_blobPreGate = new Blob<T>(m_cuda, m_log);
@@ -138,10 +134,8 @@ namespace MyCaffe.layers
             dispose(ref m_attention);
             dispose(ref m_blobContext);
             dispose(ref m_blobContextFull);
-            dispose(ref m_blobLastCt);
 
             dispose(ref m_blobBiasMultiplier);
-            dispose(ref m_blobTop);
             dispose(ref m_blobCell);
             dispose(ref m_blobPreGate);
             dispose(ref m_blobGate);
@@ -182,7 +176,6 @@ namespace MyCaffe.layers
                 BlobCollection<T> col = new BlobCollection<T>();
 
                 col.Add(m_blobBiasMultiplier);
-                col.Add(m_blobTop);
                 col.Add(m_blobCell);
                 col.Add(m_blobPreGate);
                 col.Add(m_blobGate);
@@ -225,7 +218,7 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Returns the exact number of required top (output) Blobs: output.
+        /// Returns the exact number of required top (output) Blobs: output (ht).
         /// </summary>
         public override int ExactNumTopBlobs
         {
@@ -386,9 +379,6 @@ namespace MyCaffe.layers
                 m_blobContextFull = new Blob<T>(m_cuda, m_log);
                 m_blobContextFull.Name = "context_full";
 
-                m_blobLastCt = new Blob<T>(m_cuda, m_log);
-                m_blobLastCt.Name = "last_ct";
-
                 LayerParameter attentionParam = new LayerParameter(LayerParameter.LayerType.ATTENTION);
                 attentionParam.attention_param.axis = 2;
                 attentionParam.attention_param.dim = m_param.lstm_attention_param.num_output;
@@ -427,9 +417,6 @@ namespace MyCaffe.layers
             m_nT = colBottom[0].num;  // length of sequence.
             m_log.CHECK_EQ(colBottom[0].count() / m_nT / m_nN, m_nI, "The input size is incompatible with inner product parameters.");
 
-            List<int> rgOriginalTopShape = new List<int>() { m_nT, m_nN, m_nH };
-            colTop[0].Reshape(rgOriginalTopShape);
-
             // Gate initialization.
             List<int> rgGateShape = new List<int>() { m_nT, m_nN, 4, m_nH };
             m_blobPreGate.Reshape(rgGateShape);
@@ -438,9 +425,7 @@ namespace MyCaffe.layers
 
             List<int> rgTopShape = new List<int>() { m_nT, m_nN, m_nH };
             m_blobCell.Reshape(rgTopShape);
-            m_blobTop.Reshape(rgTopShape);
-            m_blobTop.ShareData(colTop[0]);
-            m_blobTop.ShareDiff(colTop[0]);
+            colTop[0].Reshape(rgTopShape);
 
             // Setup the bias multipler.
             List<int> rgMultiplierShape = new List<int>() { m_nT, m_nN };
@@ -470,10 +455,6 @@ namespace MyCaffe.layers
                 List<int> rgShape = Utility.Clone<int>(m_blobContext.shape());
                 rgShape[0] = m_nT;
                 m_blobContextFull.Reshape(rgShape);
-
-                m_blobLastCt.ReshapeLike(m_blob_C_T);
-                m_blobLastCt.SetData(0);
-                m_blobLastCt.SetDiff(0);
             }
         }
 
@@ -489,7 +470,12 @@ namespace MyCaffe.layers
             }
 
             long lPos;
-            return (int)m_cuda.max(m_blobMaxT.count(), m_blobMaxT.gpu_data, out lPos);
+            int nMax = (int)m_cuda.max(m_blobMaxT.count(), m_blobMaxT.gpu_data, out lPos);
+
+            if (nMax == 0)
+                nMax = 1;
+
+            return nMax;
         }
 
         /// <summary>
@@ -504,8 +490,7 @@ namespace MyCaffe.layers
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            m_log.CHECK_EQ(colTop[0].gpu_data, m_blobTop.gpu_data, "The top[0].gpu_data should equal the blobTop.gpu_data.");
-            long hTopData = m_blobTop.mutable_gpu_data;
+            long hTopData = colTop[0].mutable_gpu_data;
             long hBottomData = colBottom[0].gpu_data;
             long hClipData = 0;
             int nMaxT = m_nT;
@@ -530,7 +515,7 @@ namespace MyCaffe.layers
             long hCtoGateData = 0;
 
             // Initialize previous state.
-            if (hClipData != 0 && !m_param.lstm_attention_param.enable_attention)
+            if (hClipData != 0)
             {
                 m_cuda.copy(m_blob_C_0.count(), m_blob_C_T.gpu_data, m_blob_C_0.mutable_gpu_data);
                 m_cuda.copy(m_blob_H_0.count(), m_blob_H_T.gpu_data, m_blob_H_0.mutable_gpu_data);                               
@@ -550,7 +535,7 @@ namespace MyCaffe.layers
             // Compute recurrent forward propagation                
             for (int t = 0; t < nMaxT; t++)
             {
-                int nTopOffset = m_blobTop.offset(t);
+                int nTopOffset = colTop[0].offset(t);
                 int nCellOffset = m_blobCell.offset(t);
                 int nPreGateOffset = m_blobPreGate.offset(t);
                 int nGateOffset = m_blobGate.offset(t);
@@ -571,7 +556,7 @@ namespace MyCaffe.layers
                 else
                 {
                     hHT1Data = m_blob_H_T.gpu_data;
-                    nHT1Offset = -m_blobTop.offset(1);
+                    nHT1Offset = -colTop[0].offset(1);
                     hCT1Data = m_blob_C_T.gpu_data;
                     nCT1Offset = -m_blobCell.offset(1);
                 }
@@ -580,7 +565,7 @@ namespace MyCaffe.layers
                 {
                     Blob<T> blobEncoding = colBottom[2];
                     Blob<T> blobEncodingClip = colBottom[3];
-                    addInternal(new List<Blob<T>>() { blobEncoding, m_blobLastCt, blobEncodingClip }, m_blobContext);
+                    addInternal(new List<Blob<T>>() { blobEncoding, m_blob_C_T, blobEncodingClip }, m_blobContext);
                     m_attention.Forward(m_colInternalBottom, m_colInternalTop);
                     hContext = m_blobContext.gpu_data;
                     hCtoGateData = m_blob_C_to_Gate.mutable_gpu_data;
@@ -613,14 +598,11 @@ namespace MyCaffe.layers
                                 hContext,
                                 hWeight_c,
                                 hCtoGateData);
-
-                if (m_param.lstm_attention_param.enable_attention)
-                    m_cuda.copy(m_blobLastCt.count(), hCellData, m_blobLastCt.mutable_gpu_data, nCellOffset, 0);
             }
 
             // Preserve cell state and output value for truncated BPTT
             m_cuda.copy(m_nN * m_nH, hCellData, m_blob_C_T.mutable_gpu_data, m_blobCell.offset(nMaxT - 1));
-            m_cuda.copy(m_nN * m_nH, hTopData, m_blob_H_T.mutable_gpu_data, m_blobTop.offset(nMaxT - 1));
+            m_cuda.copy(m_nN * m_nH, hTopData, m_blob_H_T.mutable_gpu_data, colTop[0].offset(nMaxT - 1));
         }
 
         /// <summary>
@@ -635,7 +617,7 @@ namespace MyCaffe.layers
         ///  </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
-            long hTopData = m_blobTop.gpu_data;
+            long hTopData = colTop[0].gpu_data;
             long hBottomData = colBottom[0].gpu_data;
             long hClipData = 0;
             int nMaxT = m_nT;
@@ -655,7 +637,7 @@ namespace MyCaffe.layers
             long hGateData = m_blobGate.gpu_data;
             long hCellData = m_blobCell.gpu_data;
 
-            long hTopDiff = m_blobTop.mutable_gpu_diff;
+            long hTopDiff = colTop[0].mutable_gpu_diff;
             long hPreGateDiff = m_blobPreGate.mutable_gpu_diff;
             long hGateDiff = m_blobGate.mutable_gpu_diff;
             long hCellDiff = m_blobCell.mutable_gpu_diff;
@@ -677,7 +659,7 @@ namespace MyCaffe.layers
 
             for (int t = nMaxT - 1; t >= 0; t--)
             {
-                int nTopOffset = m_blobTop.offset(t);
+                int nTopOffset = colTop[0].offset(t);
                 int nCellOffset = m_blobCell.offset(t);
                 int nGateOffset = m_blobGate.offset(t);
                 int nPreGateOffset = m_blobPreGate.offset(t);
@@ -702,7 +684,7 @@ namespace MyCaffe.layers
                 {
                     nCT1Offset = m_blobCell.offset(t - 1);
                     hCT1Data = hCellData;
-                    nDHT1Offset = m_blobTop.offset(t - 1);
+                    nDHT1Offset = colTop[0].offset(t - 1);
                     hDHT1Diff = hTopDiff;
                     nDCT1Offset = m_blobCell.offset(t - 1);
                     hDCT1Diff = hCellDiff;
@@ -738,11 +720,9 @@ namespace MyCaffe.layers
 
                 if (m_param.lstm_attention_param.enable_attention)
                 {
-                    m_cuda.copy(m_blobLastCt.count(), hCellDiff, m_blobLastCt.mutable_gpu_diff, nCellOffset, 0);
-
                     Blob<T> blobEncoding = colBottom[2];
                     Blob<T> blobEncodingClip = colBottom[3];
-                    addInternal(new List<Blob<T>>() { blobEncoding, m_blobLastCt, blobEncodingClip }, m_blobContext);
+                    addInternal(new List<Blob<T>>() { blobEncoding, m_blob_C_T, blobEncodingClip }, m_blobContext);
                     m_attention.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
 
                     int nCount = m_blobContext.count();
