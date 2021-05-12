@@ -8943,6 +8943,9 @@ namespace MyCaffe.common
 
 #pragma warning disable 1591
 
+        /// <summary>
+        /// The debug function is uses only during debugging the debug version of the low-level DLL.
+        /// </summary>
         public void debug()
         {
             if (m_dt == DataType.DOUBLE)
