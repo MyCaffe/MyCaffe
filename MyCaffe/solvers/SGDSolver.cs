@@ -87,7 +87,7 @@ namespace MyCaffe.solvers
         }
 
         /// <summary>
-        /// Runs the pre-solve which parpares the Solver to start Solving.
+        /// Runs the pre-solve which prepares the Solver to start Solving.
         /// </summary>
         public void PreSolve()
         {
