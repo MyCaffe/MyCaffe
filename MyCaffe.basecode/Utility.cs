@@ -426,6 +426,17 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Convert a generic to a <i>float</i>.
+        /// </summary>
+        /// <typeparam name="T">Specifies the base type <i>float</i> or <i>float</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
+        /// <param name="fVal">Specifies the generic value.</param>
+        /// <returns>The <i>float</i> value is returned.</returns>
+        public static float ConvertValF<T>(T fVal)
+        {
+            return (float)Convert.ChangeType(fVal, typeof(float));
+        }
+
+        /// <summary>
         /// Convert a double to a generic.
         /// </summary>
         /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
