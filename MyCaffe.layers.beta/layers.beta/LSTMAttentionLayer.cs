@@ -663,18 +663,27 @@ namespace MyCaffe.layers
             long hCellDiff = m_blobCell.mutable_gpu_diff;
             long hHtoHDiff = m_blob_H_to_H.mutable_gpu_diff;
 
+            m_blobCell.SetDiff(0);
+            m_blobGate.SetDiff(0);
+            m_blobPreGate.SetDiff(0);
+            m_blob_H_to_H.SetDiff(0);
+            m_blob_H_to_Gate.SetDiff(0);
+            m_blobContext.SetDiff(0);
+
             long hWeight_c = 0;
             long hContextData = 0;
             long hContextDiff = 0;
 
             if (m_param.lstm_attention_param.enable_attention)
             {
+                m_blob_C_to_Gate.SetDiff(0);
                 hWeight_c = m_colBlobs[3].gpu_data;
                 hContextData = m_blobContext.gpu_data;
                 hContextDiff = m_blobContext.mutable_gpu_diff;
                 m_cuda.sign(colBottom[3].count(), colBottom[3].gpu_data, colBottom[3].mutable_gpu_data); // Set to 1 or 0.
             }
 
+            m_blob_C_T.SetDiff(0);
             m_cuda.copy(m_nN * m_nH, m_blob_C_T.gpu_diff, hCellDiff, 0, m_blobCell.offset(nMaxT - 1));
 
             for (int t = nMaxT - 1; t >= 0; t--)
