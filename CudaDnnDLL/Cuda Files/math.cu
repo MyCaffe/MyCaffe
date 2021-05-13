@@ -10330,7 +10330,7 @@ long Math<T>::lstm_bwd(int t, int nN, int nH, int nI, T fClip, long hWeight_h, l
 		T* context_diff = (T*)pContextDiff->Data();
 
 		// Backprop errors to context.
-		if (lErr = gemm(false, true, nN, nI, 4 * nH, T(1.), pre_gate_diff_t, weight_c, T(1.), context_diff))
+		if (lErr = gemm(false, false, nN, nI, 4 * nH, T(1.), pre_gate_diff_t, weight_c, T(1.), context_diff))
 			return lErr;
 	}
 	else if (hContextDiff != 0 || hWeight_c != 0)
