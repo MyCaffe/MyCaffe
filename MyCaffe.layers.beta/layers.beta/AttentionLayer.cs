@@ -207,6 +207,18 @@ namespace MyCaffe.layers
             get
             {
                 BlobCollection<T> col = new BlobCollection<T>();
+
+                col.Add(m_blobState);
+                col.Add(m_blobUh);
+                col.Add(m_blobWc);
+                col.Add(m_blobFullWc);
+                col.Add(m_blobAddOutput);
+                col.Add(m_blobGG);
+                col.Add(m_blobAA);
+                col.Add(m_blobScale);
+                col.Add(m_blobFocusedInput);
+                col.Add(m_blobContext);
+
                 return col;
             }
         }
@@ -595,6 +607,14 @@ namespace MyCaffe.layers
                 Blob<T> blobX = colBottom[0];
                 Blob<T> blobCy = colBottom[1];
                 Blob<T> blobClip = colBottom[2];
+
+                m_blobGG.SetDiff(0);
+                m_blobAA.SetDiff(0);
+                m_blobAddOutput.SetDiff(0);
+                m_blobUh.SetDiff(0);
+                m_blobFullWc.SetDiff(0);
+                m_blobWc.SetDiff(0);
+                m_blobScale.SetDiff(0);
 
                 List<bool> rgbPropagate = new List<bool>() { true, true };
 
