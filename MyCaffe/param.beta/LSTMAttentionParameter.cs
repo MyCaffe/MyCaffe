@@ -26,6 +26,7 @@ namespace MyCaffe.param
     public class LSTMAttentionParameter : LayerParameterBase
     {
         uint m_nNumOutput;
+        uint m_nNumIpOutput = 0;
         double m_dfClippingThreshold = 0;
         FillerParameter m_fillerWeights = new FillerParameter("xavier");
         FillerParameter m_fillerBias = new FillerParameter("constant", 0.1);
@@ -45,6 +46,16 @@ namespace MyCaffe.param
         {
             get { return m_nNumOutput; }
             set { m_nNumOutput = value; }
+        }
+
+        /// <summary>
+        /// Specifies the number of IP outputs for the layer.  Note, when 0, no inner product is performed.
+        /// </summary>
+        [Description("Specifies the number of outputs for the layer.  Note, whenb 0, no inner product is performed.")]
+        public uint num_output_ip
+        {
+            get { return m_nNumIpOutput; }
+            set { m_nNumIpOutput = value; }
         }
 
         /// <summary>
@@ -121,6 +132,7 @@ namespace MyCaffe.param
             LSTMAttentionParameter p = (LSTMAttentionParameter)src;
 
             m_nNumOutput = p.m_nNumOutput;
+            m_nNumIpOutput = p.m_nNumIpOutput;
             m_dfClippingThreshold = p.m_dfClippingThreshold;
             m_fillerWeights = p.m_fillerWeights.Clone();
             m_fillerBias = p.m_fillerBias.Clone();
@@ -146,6 +158,7 @@ namespace MyCaffe.param
             RawProtoCollection rgChildren = new RawProtoCollection();
 
             rgChildren.Add("num_output", m_nNumOutput.ToString());
+            rgChildren.Add("num_output_ip", m_nNumIpOutput.ToString());
 
             if (m_dfClippingThreshold != 0)
                 rgChildren.Add("clipping_threshold", m_dfClippingThreshold.ToString());
@@ -173,6 +186,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("num_output")) != null)
                 p.num_output = uint.Parse(strVal);
+
+            if ((strVal = rp.FindValue("num_output_ip")) != null)
+                p.num_output_ip = uint.Parse(strVal);
 
             if ((strVal = rp.FindValue("clipping_threshold")) != null)
                 p.clipping_threshold = ParseDouble(strVal);

@@ -64,6 +64,13 @@ namespace MyCaffe.layers
         Blob<T> m_blob_H_to_Gate;
         Blob<T> m_blob_H_to_H;
         Blob<T> m_blob_C_to_Gate = null;
+        Blob<T> m_blobEOutputWhd = null;
+        int m_nWeightItoHidx;
+        int m_nWeightHtoHidx;
+        int m_nWeightBiasidx;
+        int m_nWeightCtoHidx;
+        int m_nWeightWhdidx;
+        int m_nWeightWhdbidx;
 
         // MaxT 
         Blob<T> m_blobMaxT = null;
@@ -125,6 +132,12 @@ namespace MyCaffe.layers
             m_blob_H_to_H.Name = m_param.name + " h_to_h";
             m_blobMaxT = new Blob<T>(m_cuda, m_log);
             m_blobMaxT.Name = m_param.name + " maxT";
+
+            if (m_param.lstm_attention_param.num_output_ip > 0)
+            {
+                m_blobEOutputWhd = new Blob<T>(m_cuda, m_log);
+                m_blobEOutputWhd.Name = m_param.name + " ip";
+            }
         }
 
         /** @copydoc Layer::dispose */
@@ -150,6 +163,7 @@ namespace MyCaffe.layers
             dispose(ref m_blob_C_to_Gate);
 
             dispose(ref m_blobMaxT);
+            dispose(ref m_blobEOutputWhd);
         }
 
         private void dispose(ref Layer<T> l)
@@ -188,6 +202,9 @@ namespace MyCaffe.layers
                 col.Add(m_blob_H_to_Gate);
                 col.Add(m_blob_H_to_H);
                 col.Add(m_blobMaxT);
+
+                if (m_blobEOutputWhd != null)
+                    col.Add(m_blobEOutputWhd);
 
                 if (m_attention != null)
                 {
@@ -296,6 +313,7 @@ namespace MyCaffe.layers
                     blobWeights_I_H.Reshape(rgShape1);
                     weight_filler.Fill(blobWeights_I_H);
                 }
+                m_nWeightItoHidx = m_colBlobs.Count;
                 m_colBlobs.Add(blobWeights_I_H);
 
                 // hidden-to-hidden weights
@@ -310,6 +328,7 @@ namespace MyCaffe.layers
                     blobWeights_H_H.Reshape(rgShape2);
                     weight_filler.Fill(blobWeights_H_H);
                 }
+                m_nWeightHtoHidx = m_colBlobs.Count;
                 m_colBlobs.Add(blobWeights_H_H);
 
                 // If necessary, initialize and fill the bias term.
@@ -323,6 +342,7 @@ namespace MyCaffe.layers
                     blobBias.Reshape(rgShape3);
                     bias_filler.Fill(blobBias);
                 }
+                m_nWeightBiasidx = m_colBlobs.Count;
                 m_colBlobs.Add(blobBias);
 
                 // Initialize the bias for the forget gate to 5.0 as described in the
@@ -340,6 +360,35 @@ namespace MyCaffe.layers
                     blobBias.mutable_cpu_data = convert(rgBias);
                 }
 
+                if (m_param.lstm_attention_param.num_output_ip > 0)
+                {
+                    Blob<T> blobWeightWhd = new Blob<T>(m_cuda, m_log);
+                    blobWeightWhd.Name = m_param.name + " weights Whd";
+                    blobWeightWhd.type = BLOB_TYPE.WEIGHT;
+
+                    List<int> rgShapeWhd = new List<int>() { m_nH, (int)m_param.lstm_attention_param.num_output_ip };
+                    if (!shareParameter(blobWeightWhd, rgShapeWhd))
+                    {
+                        blobWeightWhd.Reshape(rgShapeWhd); 
+                        weight_filler.Fill(blobWeightWhd);
+                    }
+                    m_nWeightWhdidx = m_colBlobs.Count;
+                    m_colBlobs.Add(blobWeightWhd);
+
+                    Blob<T> blobWeightWhdb = new Blob<T>(m_cuda, m_log);
+                    blobWeightWhdb.Name = m_param.name + " weights Whdb";
+                    blobWeightWhdb.type = BLOB_TYPE.WEIGHT;
+
+                    List<int> rgShapeWhdb = new List<int>() { 1, (int)m_param.lstm_attention_param.num_output_ip };
+                    if (!shareParameter(blobWeightWhdb, rgShape1))
+                    {
+                        blobWeightWhdb.Reshape(rgShapeWhdb); 
+                        bias_filler.Fill(blobWeightWhdb);
+                    }
+                    m_nWeightWhdbidx = m_colBlobs.Count;
+                    m_colBlobs.Add(blobWeightWhdb);
+                }
+
                 if (m_param.lstm_attention_param.enable_attention)
                 {
                     // context-to-hidden weights
@@ -353,6 +402,7 @@ namespace MyCaffe.layers
                         blobWeights_C_H.Reshape(rgShape1); // same shape as I to H
                         weight_filler.Fill(blobWeights_C_H);
                     }
+                    m_nWeightCtoHidx = m_colBlobs.Count;
                     m_colBlobs.Add(blobWeights_C_H);
                 }
             }
@@ -448,6 +498,13 @@ namespace MyCaffe.layers
             if (colBottom.Count > 1)
                 m_blobMaxT.Reshape(new List<int>() { 1, colBottom[1].channels });
 
+            if (m_param.lstm_attention_param.num_output_ip > 0)
+            {
+                List<int> rgIpShape = new List<int>() { m_nT, m_nN, 1, (int)m_param.lstm_attention_param.num_output_ip };
+                m_blobEOutputWhd.Reshape(rgIpShape);
+                colTop[0].Reshape(rgIpShape);
+            }
+
             // Attention reshape
             if (m_param.lstm_attention_param.enable_attention)
             {
@@ -515,10 +572,10 @@ namespace MyCaffe.layers
                 nMaxT = m_nMaxT.Value;
             }
 
-            long hWeight_i = m_colBlobs[0].gpu_data;
-            long hWeight_h = m_colBlobs[1].gpu_data;
-            long hBias = m_colBlobs[2].gpu_data;
-            long hWeight_c = (m_param.lstm_attention_param.enable_attention) ? m_colBlobs[3].gpu_data : 0;
+            long hWeight_i = m_colBlobs[m_nWeightItoHidx].gpu_data;
+            long hWeight_h = m_colBlobs[m_nWeightHtoHidx].gpu_data;
+            long hBias = m_colBlobs[m_nWeightBiasidx].gpu_data;
+            long hWeight_c = (m_param.lstm_attention_param.enable_attention) ? m_colBlobs[m_nWeightCtoHidx].gpu_data : 0;
             long hPreGateData = m_blobPreGate.mutable_gpu_data;
             long hGateData = m_blobGate.mutable_gpu_data;
             long hCellData = m_blobCell.mutable_gpu_data;
@@ -623,6 +680,16 @@ namespace MyCaffe.layers
             // Preserve cell state and output value for truncated BPTT
             m_cuda.copy(m_nN * m_nH, hCellData, m_blob_C_T.mutable_gpu_data, m_blobCell.offset(nMaxT - 1));
             m_cuda.copy(m_nN * m_nH, hTopData, m_blob_H_T.mutable_gpu_data, colTop[0].offset(nMaxT - 1));
+
+            if (m_param.lstm_attention_param.num_output_ip > 0)
+            {
+                int nM = m_nT * m_nN;
+                int nN = (int)m_param.lstm_attention_param.num_output_ip;
+                int nK = m_nH;
+                m_cuda.gemm(false, false, nM, nN, nK, Blob<T>.One, hTopData, m_colBlobs[m_nWeightWhdidx].gpu_data, Blob<T>.Zero, m_blobEOutputWhd.mutable_gpu_data);
+                m_cuda.add(colTop[0].count(), m_blobEOutputWhd.gpu_data, m_colBlobs[m_nWeightWhdbidx].gpu_data, m_blobEOutputWhd.mutable_gpu_data);
+                colTop[0].CopyFrom(m_blobEOutputWhd);
+            }
         }
 
         /// <summary>
@@ -652,8 +719,8 @@ namespace MyCaffe.layers
                 nMaxT = m_nMaxT.Value;
             }
 
-            long hWeight_i = m_colBlobs[0].gpu_data;
-            long hWeight_h = m_colBlobs[1].gpu_data;
+            long hWeight_i = m_colBlobs[m_nWeightItoHidx].gpu_data;
+            long hWeight_h = m_colBlobs[m_nWeightHtoHidx].gpu_data;
             long hGateData = m_blobGate.gpu_data;
             long hCellData = m_blobCell.gpu_data;
 
@@ -674,10 +741,24 @@ namespace MyCaffe.layers
             long hContextData = 0;
             long hContextDiff = 0;
 
+            if (m_param.lstm_attention_param.num_output_ip > 0)
+            {
+                int nM = m_nT * m_nN;
+                int nN = (int)m_param.lstm_attention_param.num_output_ip;
+                int nK = m_nH;
+
+                m_cuda.copy(colTop[0].count(), colTop[0].gpu_diff, m_blobEOutputWhd.mutable_gpu_diff);
+                m_cuda.add(colTop[0].count(), colTop[0].gpu_diff, m_colBlobs[m_nWeightWhdbidx].gpu_diff, m_colBlobs[m_nWeightWhdbidx].mutable_gpu_diff);
+                m_cuda.gemm(false, true, nM, nK, nN, Blob<T>.One, m_blobEOutputWhd.gpu_diff, m_colBlobs[m_nWeightWhdidx].gpu_data, Blob<T>.Zero, m_blob_H_T.mutable_gpu_diff);
+                m_cuda.gemm(true, false, nK, nN, nM, Blob<T>.One, m_blob_H_T.gpu_data, m_blobEOutputWhd.gpu_diff, Blob<T>.One, m_colBlobs[m_nWeightWhdidx].mutable_gpu_diff);
+                hTopDiff = m_blob_H_T.gpu_diff;
+                hTopData = m_blob_H_T.gpu_data;
+            }
+
             if (m_param.lstm_attention_param.enable_attention)
             {
                 m_blob_C_to_Gate.SetDiff(0);
-                hWeight_c = m_colBlobs[3].gpu_data;
+                hWeight_c = m_colBlobs[m_nWeightCtoHidx].gpu_data;
                 hContextData = m_blobContext.gpu_data;
                 hContextDiff = m_blobContext.mutable_gpu_diff;
                 m_cuda.sign(colBottom[3].count(), colBottom[3].gpu_data, colBottom[3].mutable_gpu_data); // Set to 1 or 0.
@@ -762,29 +843,29 @@ namespace MyCaffe.layers
             if (m_rgbParamPropagateDown[0])
             {
                 // Gradient w.r.t input-to-hidden weight
-                m_cuda.gemm(true, false, 4 * m_nH, m_nI, m_nT * m_nN, m_tOne, hPreGateDiff, hBottomData, m_tOne, m_colBlobs[0].mutable_gpu_diff);
+                m_cuda.gemm(true, false, 4 * m_nH, m_nI, m_nT * m_nN, m_tOne, hPreGateDiff, hBottomData, m_tOne, m_colBlobs[m_nWeightItoHidx].mutable_gpu_diff);
             }
 
             if (m_rgbParamPropagateDown[1])
             {
                 // Gradient w.r.t. hidden-to-hidden weight
                 if (m_nT > 1)
-                    m_cuda.gemm(true, false, 4 * m_nH, m_nH, (m_nT - 1) * m_nN, m_tOne, hPreGateDiff, hTopData, m_tOne, m_colBlobs[1].mutable_gpu_diff, m_blobPreGate.offset(1));
+                    m_cuda.gemm(true, false, 4 * m_nH, m_nH, (m_nT - 1) * m_nN, m_tOne, hPreGateDiff, hTopData, m_tOne, m_colBlobs[m_nWeightHtoHidx].mutable_gpu_diff, m_blobPreGate.offset(1));
 
                 // Add gradient from previous time-step.
-                m_cuda.gemm(true, false, 4 * m_nH, m_nH, 1, m_tOne, hPreGateDiff, m_blob_H_0.gpu_data, m_tOne, m_colBlobs[1].mutable_gpu_diff);
+                m_cuda.gemm(true, false, 4 * m_nH, m_nH, 1, m_tOne, hPreGateDiff, m_blob_H_0.gpu_data, m_tOne, m_colBlobs[m_nWeightHtoHidx].mutable_gpu_diff);
             }
 
             if (m_rgbParamPropagateDown[2])
             {
                 // Gradient w.r.t. bias.
-                m_cuda.gemv(true, m_nT * m_nN, 4 * m_nH, m_tOne, hPreGateDiff, m_blobBiasMultiplier.gpu_data, m_tOne, m_colBlobs[2].mutable_gpu_diff);
+                m_cuda.gemv(true, m_nT * m_nN, 4 * m_nH, m_tOne, hPreGateDiff, m_blobBiasMultiplier.gpu_data, m_tOne, m_colBlobs[m_nWeightBiasidx].mutable_gpu_diff);
             }
 
             if (m_rgbParamPropagateDown[3] && m_param.lstm_attention_param.enable_attention)
             {
                 // Gradient w.r.t. context data.
-                m_cuda.gemm(true, false, 4 * m_nH, m_nI, m_nT * m_nN, m_tOne, hPreGateDiff, m_blobContextFull.gpu_data, m_tOne, m_colBlobs[3].mutable_gpu_diff);
+                m_cuda.gemm(true, false, 4 * m_nH, m_nI, m_nT * m_nN, m_tOne, hPreGateDiff, m_blobContextFull.gpu_data, m_tOne, m_colBlobs[m_nWeightCtoHidx].mutable_gpu_diff);
             }
 
             if (rgbPropagateDown[0])
