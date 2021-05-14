@@ -233,10 +233,10 @@ namespace MyCaffe.common
         {
             string strMarker = marker;
             List<int> rgShape = new List<int>() { 1, 1 };
-            rgShape[1] = btm.count(2);
+            rgShape[1] = btm.count(m_nAxis + 1);
             top.Reshape(rgShape);
 
-            int nSpatialDim = btm.count(2);
+            int nSpatialDim = btm.count(m_nAxis + 1);
             m_cuda.copy(nSpatialDim, btm.gpu_data, top.mutable_gpu_data, nSpatialDim * ix, 0);
 
             if (m_bNeedsBackprop)
