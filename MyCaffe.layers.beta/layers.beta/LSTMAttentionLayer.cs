@@ -735,7 +735,6 @@ namespace MyCaffe.layers
             m_blobPreGate.SetDiff(0);
             m_blob_H_to_H.SetDiff(0);
             m_blob_H_to_Gate.SetDiff(0);
-            m_blobContext.SetDiff(0);
 
             long hWeight_c = 0;
             long hContextData = 0;
@@ -757,6 +756,7 @@ namespace MyCaffe.layers
 
             if (m_param.lstm_attention_param.enable_attention)
             {
+                m_blobContext.SetDiff(0);
                 m_blob_C_to_Gate.SetDiff(0);
                 hWeight_c = m_colBlobs[m_nWeightCtoHidx].gpu_data;
                 hContextData = m_blobContext.gpu_data;
