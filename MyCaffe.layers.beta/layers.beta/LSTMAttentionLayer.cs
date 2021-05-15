@@ -500,7 +500,7 @@ namespace MyCaffe.layers
 
             if (m_param.lstm_attention_param.num_output_ip > 0)
             {
-                List<int> rgIpShape = new List<int>() { m_nT, m_nN, 1, (int)m_param.lstm_attention_param.num_output_ip };
+                List<int> rgIpShape = new List<int>() { m_nT, m_nN, (int)m_param.lstm_attention_param.num_output_ip };
                 m_blobEOutputWhd.Reshape(rgIpShape);
                 colTop[0].Reshape(rgIpShape);
             }
