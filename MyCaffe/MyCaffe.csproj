@@ -51,7 +51,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="CudaControlLib, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f59a5464a77ea1ad, processorArchitecture=MSIL">
-      <HintPath>..\packages\CudaControl.0.11.3.7-beta1\lib\net40\CudaControlLib.dll</HintPath>
+      <HintPath>..\packages\CudaControl.0.11.3.23-beta1\lib\net40\CudaControlLib.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Google.Protobuf, Version=3.14.0.0, Culture=neutral, PublicKeyToken=a7d26565bac4d604, processorArchitecture=MSIL">
@@ -88,6 +88,7 @@
     <Compile Include="common\Blob.cs" />
     <Compile Include="common\BlobCollection.cs" />
     <Compile Include="common\BlockingQueue.cs" />
+    <Compile Include="common\ComputeGraph.cs" />
     <Compile Include="common\CudaDnn.cs" />
     <Compile Include="common\CudaDnnMemoryTracker.cs" />
     <Compile Include="common\DebugInformation.cs" />
