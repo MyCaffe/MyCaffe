@@ -3136,7 +3136,7 @@ namespace MyCaffe.param
                 p.tile_param = TileParameter.FromProto(rpp);
 
             // DEPRECIATED
-            if ((rpp = rp.FindChild("lstm_simple_param_x")) != null)
+            if ((rpp = rp.FindChild("lstm_simple_param")) != null)
                 p.lstm_simple_param = LSTMSimpleParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("recurrent_param")) != null)
