@@ -20,10 +20,10 @@ maintaining compatibility with CAFFE's solver descriptions, model descriptions a
 The C# based MyCaffe open-source project is independently maintained by <a href="http://www.signalpop.com">SignalPop LLC</a> and made 
 available under the Apache 2.0 License.
 <h3>Supported Development Environments:</h3>
-* Visual Studio 2019 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 11.2.1</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 8.1.1</a> </br>
+* Visual Studio 2019 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 11.3.0</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 8.2.0</a> </br>
 </br>
 
-NOTE: Compute 5.3 and above required for CUDA 11.2.1/cuDNN 8.1.1 when using __half sized memory.
+NOTE: Compute 5.3 and above required for CUDA 11.3.0/cuDNN 8.2.0 when using __half sized memory.
 
 <b>For detailed notes on building MyCaffe, please see the <a href="https://github.com/MyCaffe/MyCaffe/blob/master/INSTALL.md">INSTALL.md</a> file.</b>
 
@@ -41,6 +41,7 @@ We have several new models supported by MyCaffe with the train_val and solution 
  - Siamese Network [18][19]
  - Deep Metric Learning with Triplet Network [20][21]
  - Single-Shot Multi-Box (SSD) Object Detection [22][23]
+ - Seq2Seq with Attention [24][25][26] (see MyCaffe-Samples at https://github.com/MyCaffe/MyCaffe-Samples/tree/master/Seq2Seq)
 
 For more information on the MyCaffe implementation of Policy Gradient Reinforcement Learning, see [MyCaffe: A Complete C# Re-Write of Caffe with Reinforcement Learning](https://arxiv.org/abs/1810.02272) by D. Brown, 2018. 
 
@@ -117,6 +118,12 @@ Source code available on GitHub at <a href="https://github.com/stella-emu/stella
 [22] [SSD: Single Shot MultiBox Detector](https://arxiv.org/abs/1512.02325) by Wei Liu, Dragomir Anguelov, Dumitru Erhan, Christian Szegedy, Scott Reed, Cheng-Yang Fu, Alexander C. Berg, 2016.
 
 [23] [GitHub: SSD: Single Shot MultiBox Detector](https://github.com/weiliu89/caffe/tree/ssd), by weiliu89/caffe, 2016
+
+[24] [Attention Is All You Need](https://arxiv.org/abs/1706.03762) by Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, and Illia Polosukhin, 2017, arXiv:1706:03762
+
+[25] [GitHub: mashmawy/Seq2SeqLearn](https://github.com/mashmawy/Seq2SeqLearn) by Mohamed Ashmawy, 2017
+
+[26] [GitHub: HectorPulido/Chatbot-seq2seq-C-](https://github.com/HectorPulido/Chatbot-seq2seq-C-) by Hector Pulido, 2018
 
 For more information on the C++ CAFFE open-source project, please see the following <a href="http://caffe.berkeleyvision.org/">link</a>.
 
