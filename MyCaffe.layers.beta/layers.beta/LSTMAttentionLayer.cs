@@ -536,9 +536,8 @@ namespace MyCaffe.layers
 
             long lPos;
             int nMax = (int)m_cuda.max(m_blobMaxT.count(), m_blobMaxT.gpu_data, out lPos);
-
-            if (nMax == 0)
-                nMax = 1;
+            if (convertF(blob.GetData(0)) ==0)
+                nMax++;
 
             nInitialClip = (int)convertF(blob.GetData(0));
 
