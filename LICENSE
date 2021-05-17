@@ -897,7 +897,7 @@ license and copyright terms herein.
 
    ** end ONNX license **
 
-  Portions of MyCaffe use the ONNXControl and may use or are inspired by other ONNX 
+  Portions of MyCaffe use the ONNXControl and may use or were inspired by other ONNX 
   runtime algorithms.  The ONNX runtime is used under the MIT license located at
   (https://github.com/microsoft/onnxruntime/blob/master/LICENSE). The ONNX runtime
   is on open-source project made available by Microsoft at:
@@ -928,6 +928,11 @@ license and copyright terms herein.
      SOFTWARE.
 
    ** end ONNX runtime license **
+
+  Portions of the LSTMAttention and Attention layers may use portions of or were 
+  inspired by the open source project mashmawy/Seq2SeqLearn GitHub project by 
+  Mohamed Ashmawy available at https://github.com/mashmawy/Seq2SeqLearn and 
+  distributed under the MIT license.
 
   The sample WAV file(s) 'How_I_Feel.x.wav' is distributed with permission from 
   CLOV15 Tunes LLC.  For more information on CLOV15, see https://soundcloud.com/clov15.
