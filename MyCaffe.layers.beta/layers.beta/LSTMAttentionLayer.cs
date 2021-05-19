@@ -582,7 +582,7 @@ namespace MyCaffe.layers
             long hCtoGateData = 0;
 
             // Initialize previous state.
-            if (hClipData != 0)
+            if (hClipData != 0 && nInitialClip != 0)
             {
                 m_cuda.copy(m_blob_C_0.count(), m_blob_C_T.gpu_data, m_blob_C_0.mutable_gpu_data);
                 m_cuda.copy(m_blob_H_0.count(), m_blob_H_T.gpu_data, m_blob_H_0.mutable_gpu_data);                               
@@ -599,9 +599,11 @@ namespace MyCaffe.layers
             if (m_param.lstm_attention_param.enable_attention)
             {
                 m_blobContextFull.SetData(0);
-                m_blobPrevCt.SetData(0);
-                m_blob_C_0.SetData(0.0);
-                m_blob_H_0.SetData(0.0);
+                if (nInitialClip == 0)
+                    m_blobPrevCt.SetData(0);
+
+                // Reset the clip for we want to use the initial context.
+                colBottom[1].SetData(1, 0);
             }
 
             // Compute recurrent forward propagation                
