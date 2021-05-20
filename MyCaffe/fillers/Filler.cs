@@ -83,6 +83,9 @@ namespace MyCaffe.fillers
                 case "constant":
                     return new ConstantFiller<T>(cuda, log, p);
 
+                case "sequence":
+                    return new SequenceFiller<T>(cuda, log, p);
+
                 case "gaussian":
                     return new GaussianFiller<T>(cuda, log, p);
 

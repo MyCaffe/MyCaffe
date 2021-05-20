@@ -109,6 +109,7 @@
     <Compile Include="data\DB.cs" />
     <Compile Include="data\ImageTransforms.cs" />
     <Compile Include="fillers\BilinearFiller.cs" />
+    <Compile Include="fillers\SequenceFiller.cs" />
     <Compile Include="fillers\ConstantFiller.cs" />
     <Compile Include="fillers\Filler.cs" />
     <Compile Include="fillers\GaussianFiller.cs" />
