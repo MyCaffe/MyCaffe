@@ -38,6 +38,11 @@ namespace MyCaffe.param
             /// </summary>
             CONSTANT,
             /// <summary>
+            /// The sequence filler fills a blob with values starting at the constant value and progressing in steps of 0.01.  This filler 
+            /// is primarily used for testing.
+            /// </summary>
+            SEQUENCE,
+            /// <summary>
             /// The uniform filler fills a blob with values from a uniform distribution.
             /// </summary>
             /// <remarks>
@@ -142,6 +147,9 @@ namespace MyCaffe.param
                     case "constant":
                         return FillerType.CONSTANT;
 
+                    case "sequence":
+                        return FillerType.SEQUENCE;
+
                     case "uniform":
                         return FillerType.UNIFORM;
 
@@ -181,6 +189,9 @@ namespace MyCaffe.param
             {
                 case FillerType.CONSTANT:
                     return "constant";
+
+                case FillerType.SEQUENCE:
+                    return "sequence";
 
                 case FillerType.UNIFORM:
                     return "uniform";
