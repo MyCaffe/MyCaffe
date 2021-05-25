@@ -7,6 +7,7 @@ using MyCaffe.common;
 using MyCaffe.param;
 using MyCaffe.fillers;
 using MyCaffe.layers.beta;
+using System.Diagnostics;
 
 namespace MyCaffe.layers
 {
@@ -50,6 +51,7 @@ namespace MyCaffe.layers
         Blob<T> m_blobSoftmax = null;
         Blob<T> m_blobFocusedInput = null;
         Blob<T> m_blobContext = null;
+        Blob<T> m_blobWork = null;
 
         BlobCollection<T> m_colInternalBottom = new BlobCollection<T>();
         BlobCollection<T> m_colInternalTop = new BlobCollection<T>();
@@ -152,6 +154,9 @@ namespace MyCaffe.layers
 
             m_blobContext = new Blob<T>(cuda, log);
             m_blobContext.Name = "context";
+
+            m_blobWork = new Blob<T>(cuda, log);
+            m_blobWork.Name = "work";
         }
 
         /** @copydoc Layer::dispose */
@@ -179,6 +184,7 @@ namespace MyCaffe.layers
             dispose(ref m_blobSoftmax);
             dispose(ref m_blobFocusedInput);
             dispose(ref m_blobContext);
+            dispose(ref m_blobWork);
 
             base.dispose();
         }
@@ -412,7 +418,7 @@ namespace MyCaffe.layers
             List<int> rgTopShape = Utility.Clone<int>(m_blobContext.shape());
             rgTopShape[0] = m_blobContext.shape(1);
             rgTopShape[1] = m_blobContext.shape(0);
-            colTop[0].Reshape(rgTopShape);
+            colTop[0].Reshape(rgTopShape);            
         }
 
         private void apply_clip(Blob<T> blobInput, Blob<T> blobClip, Blob<T> blobOutput, bool bDiff = false)
@@ -501,6 +507,41 @@ namespace MyCaffe.layers
             return fSum;
         }
 
+        private void fill_old(Blob<T> blob1, Blob<T> blobFull)
+        {
+            int nCount = blob1.count() / blob1.num;
+            for (int i = 0; i < blobFull.num; i++)
+            {
+                int nIdxSrc = (i * nCount);
+
+                for (int j = 0; j < blobFull.channels; j++)
+                {
+                    int nIdxDst = (i * blobFull.channels * nCount) + (j * nCount);
+                    m_cuda.copy(nCount, blob1.gpu_data, blobFull.mutable_gpu_data, nIdxSrc, nIdxDst);
+                }
+            }
+        }
+
+        private void fill(Blob<T> blob1, Blob<T> blobFull)
+        {
+            int nAxis = 1;
+            int nM = blob1.shape(nAxis);
+            int nN = blobFull.shape(nAxis);
+            int nK = blob1.count(nAxis + 1);
+
+            List<int> rgShape = new List<int>();
+            rgShape.Add(blob1.count(0, nAxis));
+            rgShape.Add(nN);
+            m_blobWork.Reshape(rgShape);
+            m_blobWork.SetData(1.0);
+
+            m_cuda.gemm(true, false, nM, nN, nK, 1.0, blob1.gpu_data, m_blobWork.gpu_data, 0.0, blobFull.mutable_gpu_data);
+            // Transpose result.
+            m_cuda.geam(true, false, nM, nN, 1.0, blobFull.gpu_data, blobFull.gpu_data, 0.0, blobFull.mutable_gpu_diff);
+            m_cuda.copy(blobFull.count(), blobFull.gpu_diff, blobFull.mutable_gpu_data);
+            blobFull.SetDiff(0.0);
+        }
+
         /// <summary>
         /// The forward computation.
         /// </summary>
@@ -540,18 +581,7 @@ namespace MyCaffe.layers
             m_ipWa.Forward(m_colInternalBottom, m_colInternalTop);
 
             // Duplicate Wc across all T.
-            // Move this to the GPU
-            int nCount = m_blobWc.count() / m_blobWc.num;
-            for (int i = 0; i < m_blobFullWc.num; i++)
-            {
-                int nIdxSrc = (i * nCount);
-
-                for (int j = 0; j < m_blobFullWc.channels; j++)
-                {
-                    int nIdxDst = (i * m_blobFullWc.channels * nCount) + (j * nCount);
-                    m_cuda.copy(nCount, m_blobWc.gpu_data, m_blobFullWc.mutable_gpu_data, nIdxSrc, nIdxDst);
-                }
-            }
+            fill(m_blobWc, m_blobFullWc);
 
             addInternal(new List<Blob<T>>() { m_blobUh, m_blobFullWc }, m_blobAddOutput);
             m_add1.Forward(m_colInternalBottom, m_colInternalTop);
@@ -563,26 +593,14 @@ namespace MyCaffe.layers
             m_ipV.Forward(m_colInternalBottom, m_colInternalTop);
 
             softmax_fwd(m_blobAA, m_blobClip, m_blobScale, m_blobSoftmax, 1);
-            float[] rgSoftmax = convertF(m_blobSoftmax.mutable_cpu_data);
 
             // Apply softmax to each channel
-            // Move this to the GPU
             m_blobFocusedInput.CopyFrom(m_blobX);
             m_blobContext.SetData(0);
-            nCount = m_blobFocusedInput.count(2);
-            for (int i = 0; i < m_blobFocusedInput.num; i++)
-            {
-                int nIdxDstContext = (i * m_blobContext.count(2));
-                int nIdxSoftmax = (i * m_blobSoftmax.channels);
-
-                for (int j = 0; j < m_blobFocusedInput.channels; j++)
-                {
-                    int nIdxFI = (i * m_blobFocusedInput.channels * nCount) + (j * nCount);
-
-                    m_cuda.scal(nCount, rgSoftmax[nIdxSoftmax + j], m_blobFocusedInput.mutable_gpu_data, nIdxFI);
-                    m_cuda.add(nCount, m_blobFocusedInput.gpu_data, m_blobContext.gpu_data, m_blobContext.mutable_gpu_data, 1.0, 1.0, nIdxFI, nIdxDstContext, nIdxDstContext);
-                }
-            }
+            int nCount = m_blobFocusedInput.count(2);
+            int nOuterNum = m_blobFocusedInput.count(0, 2);
+            // Scale by softmax and sum.
+            m_cuda.gemv(true, nOuterNum, nCount, 1.0, m_blobFocusedInput.gpu_data, m_blobSoftmax.gpu_data, 0.0, m_blobContext.mutable_gpu_data);
 
             // Reshape not needed for T = 1 in topT and top(0)
             m_cuda.copy(m_blobContext.count(), m_blobContext.gpu_data, colTop[0].mutable_gpu_data);
