@@ -5713,7 +5713,6 @@ namespace MyCaffe.common
         /// <param name="bTransB">Specifies whether or not to transpose B.</param>
         /// <param name="m">Specifies the width (number of columns) of A and C.</param>
         /// <param name="n">Specifies the height (number of rows) of B and C.</param>
-        /// <param name="k">Specifies the width (number of columns) of A and B.</param>
         /// <param name="fAlpha">Specifies a scalar multiplied by the data where the scalar is of type 'T'.</param>
         /// <param name="hA">Specifies a handle to the data for matrix A in GPU memory.</param>
         /// <param name="hB">Specifies a handle to the data for matrix B in GPU memory.</param>
