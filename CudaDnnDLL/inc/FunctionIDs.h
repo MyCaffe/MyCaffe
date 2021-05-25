@@ -191,6 +191,7 @@ const int CUDA_FN_COPY_SEQUENCE = 207;
 const int CUDA_FN_COPY_EXPAND = 208;
 const int CUDA_FN_COPY_SEQUENCE2 = 209;
 
+const int CUDA_FN_GEAM = 218;
 const int CUDA_FN_GEMM2 = 219;
 const int CUDA_FN_GEMM = 220;
 const int CUDA_FN_GEMV = 221;

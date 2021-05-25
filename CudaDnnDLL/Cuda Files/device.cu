@@ -1435,6 +1435,43 @@ template long Device<float>::cuda_gemv(long lInput, float* pfInput, long* plOutp
 
 
 template <class T>
+long Device<T>::cuda_geam(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 9, 12))
+		return lErr;
+
+	bool bTransA = (pfInput[0] == 0.0) ? false : true;
+	bool bTransB = (pfInput[1] == 0.0) ? false : true;
+	int m = (int)pfInput[2];
+	int n = (int)pfInput[3];
+	T fAlpha = pfInput[4];
+	long hA = (long)pfInput[5];
+	long hB = (long)pfInput[6];
+	T fBeta = pfInput[7];
+	long hC = (long)pfInput[8];
+	int nAOff = 0;
+	int nBOff = 0;
+	int nCOff = 0;
+
+	if (lInput > 9)
+		nAOff = (int)pfInput[9];
+
+	if (lInput > 10)
+		nBOff = (int)pfInput[10];
+
+	if (lInput > 11)
+		nCOff = (int)pfInput[11];
+
+	return m_math.geam(bTransA, bTransB, m, n, fAlpha, hA, hB, fBeta, hC, nAOff, nBOff, nCOff);
+}
+
+template long Device<double>::cuda_geam(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_geam(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::cuda_ger(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;

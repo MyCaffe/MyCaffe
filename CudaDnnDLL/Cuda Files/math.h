@@ -155,6 +155,8 @@ class Math
 
 		long gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, __half* a, __half* b, T fBeta, __half* c);
 		long gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, T* a, T* b, T fBeta, T* c);
+		long geam(bool bTransA, bool bTransB, int m, int n, T fAlpha, __half* a, __half* b, T fBeta, __half* c);
+		long geam(bool bTransA, bool bTransB, int m, int n, T fAlpha, T* a, T* b, T fBeta, T* c);
 		long gemv(bool bTransA, int m, int n, T fAlpha, T* a, T* x, T fBeta, T* y);
 
 		long nrm2(int n, long hA, int nAOff, T* pfResult);
@@ -162,6 +164,7 @@ class Math
 
 		long gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, long hA, long hB, T fBeta, long hC, int nAOff, int nBOff, int nCOff);
 		long gemm2(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, long hA, long hB, T fBeta, long hC, int lda, int ldb, int ldc);
+		long geam(bool bTransA, bool bTransB, int m, int n, T fAlpha, long hA, long hB, T fBeta, long hC, int nAOff, int nBOff, int nCOff);
 		long gemv(bool bTransA, int m, int n, T fAlpha, long hA, long hX, T fBeta, long hY, int nAOff, int nXOff, int nYOff);
 		long axpy(int n, T fAlpha, long hX, long hY, int nXOff = 0, int nYOff = 0);
 		long axpby(int n, T fAlpha, long hX, T fBeta, long hY);

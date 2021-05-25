@@ -1589,6 +1589,148 @@ long Math<float>::gemm2(bool bTransA, bool bTransB, int m, int n, int k, float f
 	return cudaStreamSynchronize(stream);
 }
 
+
+template <>
+long Math<double>::geam(bool bTransA, bool bTransB, int m, int n, double fAlpha, double* a, double* b, double fBeta, double* c)
+{
+	LONG lErr;
+
+	if (m_cublas == NULL)
+		return ERROR_CUBLAS_NULL;
+
+	// Note that cublas follows fortran order.
+	int lda = (bTransA) ? n : m;
+	int ldb = (bTransB) ? n : m;
+	cublasOperation_t cuTransA = (!bTransA) ? CUBLAS_OP_N : CUBLAS_OP_T;
+	cublasOperation_t cuTransB = (!bTransB) ? CUBLAS_OP_N : CUBLAS_OP_T;
+
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr | ERROR_CUBLAS_OFFSET;
+
+	if (lErr = cublasDgeam(m_cublas, cuTransA, cuTransB, m, n, &fAlpha, a, lda, &fBeta, b, ldb, c, m))
+		return lErr | ERROR_CUBLAS_OFFSET;
+
+	return cudaStreamSynchronize(stream);
+}
+
+template <>
+long Math<float>::geam(bool bTransA, bool bTransB, int m, int n, float fAlpha, float* a, float* b, float fBeta, float* c)
+{
+	LONG lErr;
+
+	if (m_cublas == NULL)
+		return ERROR_CUBLAS_NULL;
+
+	// Note that cublas follows fortran order.
+	int lda = (bTransA) ? n : m;
+	int ldb = (bTransB) ? n : m;
+	cublasOperation_t cuTransA = (!bTransA) ? CUBLAS_OP_N : CUBLAS_OP_T;
+	cublasOperation_t cuTransB = (!bTransB) ? CUBLAS_OP_N : CUBLAS_OP_T;
+
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr | ERROR_CUBLAS_OFFSET;
+
+	if (lErr = cublasSgeam(m_cublas, cuTransA, cuTransB, m, n, &fAlpha, a, lda, &fBeta, b, ldb, c, m))
+		return lErr | ERROR_CUBLAS_OFFSET;
+
+	return cudaStreamSynchronize(stream);
+}
+
+template <>
+long Math<double>::geam(bool bTransA, bool bTransB, int m, int n, double fAlpha, long hA, long hB, double fBeta, long hC, int nAOff, int nBOff, int nCOff)
+{
+	if (m_cublas == NULL)
+		return ERROR_CUBLAS_NULL;
+
+	LONG lErr;
+	MemoryItem* pA;
+	MemoryItem* pB;
+	MemoryItem* pC;
+
+	if (lErr = m_pMemCol->GetData(hA, &pA))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hB, &pB))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hC, &pC))
+		return lErr;
+
+	if (pA->IsHalf() && pB->IsHalf() && pC->IsHalf())
+	{
+		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
+	}
+	else
+	{
+		if (pA->IsHalf() || pB->IsHalf() || pC->IsHalf())
+			return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+		double* a = (double*)pA->Data();
+		double* b = (double*)pB->Data();
+		double* c = (double*)pC->Data();
+
+		if (nAOff > 0)
+			a += nAOff;
+
+		if (nBOff > 0)
+			b += nBOff;
+
+		if (nCOff > 0)
+			c += nCOff;
+
+		return geam(bTransA, bTransB, m, n, fAlpha, a, b, fBeta, c);
+	}
+}
+
+template <>
+long Math<float>::geam(bool bTransA, bool bTransB, int m, int n, float fAlpha, long hA, long hB, float fBeta, long hC, int nAOff, int nBOff, int nCOff)
+{
+	if (m_cublas == NULL)
+		return ERROR_CUBLAS_NULL;
+
+	LONG lErr;
+	MemoryItem* pA;
+	MemoryItem* pB;
+	MemoryItem* pC;
+
+	if (lErr = m_pMemCol->GetData(hA, &pA))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hB, &pB))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hC, &pC))
+		return lErr;
+
+	if (pA->IsHalf() && pB->IsHalf() && pC->IsHalf())
+	{
+		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
+	}
+	else
+	{
+		if (pA->IsHalf() || pB->IsHalf() || pC->IsHalf())
+			return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+		float* a = (float*)pA->Data();
+		float* b = (float*)pB->Data();
+		float* c = (float*)pC->Data();
+
+		if (nAOff > 0)
+			a += nAOff;
+
+		if (nBOff > 0)
+			b += nBOff;
+
+		if (nCOff > 0)
+			c += nCOff;
+
+		return geam(bTransA, bTransB, m, n, fAlpha, a, b, fBeta, c);
+	}
+}
+
+
 template <>
 long Math<double>::gemv(bool bTransA, int m, int n, double fAlpha, double* a, double* x, double fBeta, double* y)
 {

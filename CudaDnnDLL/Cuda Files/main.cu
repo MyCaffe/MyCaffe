@@ -455,6 +455,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_GEMV:
 			return m_device.cuda_gemv(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_GEAM:
+			return m_device.cuda_geam(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_GER:
 			return m_device.cuda_ger(lCount, pfInput, plCount, ppfOutput);
 
@@ -1412,6 +1415,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_GEMV:
 		return "CUDA_FN_GEMV";
+
+	case CUDA_FN_GEAM:
+		return "CUDA_FN_GEAM";
 
 	case CUDA_FN_GER:
 		return "CUDA_FN_GER";

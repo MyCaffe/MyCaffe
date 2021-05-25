@@ -312,6 +312,7 @@ class Device
 		long cuda_gemm(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_gemm2(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_gemv(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_geam(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_ger(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_axpy(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_axpby(long lInput, T* pfInput, long* plOutput, T** ppfOutput);

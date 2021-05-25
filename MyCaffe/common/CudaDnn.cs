@@ -725,6 +725,9 @@ namespace MyCaffe.common
         void gemm(bool bTransA, bool bTransB, int m, int n, int k, float fAlpha, long hA, long hB, float fBeta, long hC);
         void gemv(bool bTransA, int m, int n, double fAlpha, long hA, long hX, double fBeta, long hY);
         void gemv(bool bTransA, int m, int n, float fAlpha, long hA, long hX, float fBeta, long hY);
+        void geam(bool bTransA, bool bTransB, int m, int n, double fAlpha, long hA, long hB, double fBeta, long hC);
+        void geam(bool bTransA, bool bTransB, int m, int n, float fAlpha, long hA, long hB, float fBeta, long hC);
+
         void ger(int m, int n, double fAlpha, long hX, long hY, long hA);
         void ger(int m, int n, float fAlpha, long hX, long hY, long hA);
         void axpy(int n, double fAlpha, long hX, long hY);
@@ -1015,6 +1018,7 @@ namespace MyCaffe.common
             CUDA_COPY_EXPAND = 208,
             CUDA_COPY_SEQUENCE2 = 209,
 
+            CUDA_GEAM = 218,
             CUDA_GEMM2 = 219,
             CUDA_GEMM = 220,
             CUDA_GEMV = 221,
@@ -5658,6 +5662,75 @@ namespace MyCaffe.common
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GEMM2, m_param.AsFloat((bTransA) ? 1.0f : 0.0f, (bTransB) ? 1.0f : 0.0f, m, n, k, (float)fAlpha, hA, hB, (float)fBeta, hC, lda, ldb, ldc));
         }
+
+        /// <summary>
+        /// Perform a matrix-matrix addition/transposition operation: C = alpha transA (A) + beta transB (B) 
+        /// </summary>
+        /// <remarks>
+        /// This function uses [NVIDIA's cuBlas](https://developer.nvidia.com/cublas) but with a different parameter ordering.
+        /// </remarks>
+        /// <param name="bTransA">Specifies whether or not to transpose A.</param>
+        /// <param name="bTransB">Specifies whether or not to transpose B.</param>
+        /// <param name="m">Specifies the width (number of columns) of A, B and C.</param>
+        /// <param name="n">Specifies the height (number of rows) of A, B and C.</param>
+        /// <param name="fAlpha">Specifies a scalar multiplied by the data where the scalar is of type <code>double</code></param>
+        /// <param name="hA">Specifies a handle to the data for A in GPU memory.</param>
+        /// <param name="hB">Specifies a handle to the data for B in GPU memory.</param>
+        /// <param name="fBeta">Specifies a scalar multiplied by C where the scalar is of type <code>double</code></param>
+        /// <param name="hC">Specifies a handle to the data for C in GPU memory.</param>
+        public void geam(bool bTransA, bool bTransB, int m, int n, double fAlpha, long hA, long hB, double fBeta, long hC)
+        {
+            geam(bTransA, bTransB, m, n, (T)Convert.ChangeType(fAlpha, typeof(T)), hA, hB, (T)Convert.ChangeType(fBeta, typeof(T)), hC);
+        }
+
+        /// <summary>
+        /// Perform a matrix-matrix addition/transposition operation: C = alpha transA (A) + beta transB (B) 
+        /// </summary>
+        /// <remarks>
+        /// This function uses [NVIDIA's cuBlas](https://developer.nvidia.com/cublas) but with a different parameter ordering.
+        /// </remarks>
+        /// <param name="bTransA">Specifies whether or not to transpose A.</param>
+        /// <param name="bTransB">Specifies whether or not to transpose B.</param>
+        /// <param name="m">Specifies the width (number of columns) of A, B and C.</param>
+        /// <param name="n">Specifies the height (number of rows) of A, B and C.</param>
+        /// <param name="fAlpha">Specifies a scalar multiplied by the data where the scalar is of type <code>double</code></param>
+        /// <param name="hA">Specifies a handle to the data for A in GPU memory.</param>
+        /// <param name="hB">Specifies a handle to the data for B in GPU memory.</param>
+        /// <param name="fBeta">Specifies a scalar multiplied by C where the scalar is of type <code>double</code></param>
+        /// <param name="hC">Specifies a handle to the data for C in GPU memory.</param>
+        public void geam(bool bTransA, bool bTransB, int m, int n, float fAlpha, long hA, long hB, float fBeta, long hC)
+        {
+            geam(bTransA, bTransB, m, n, (T)Convert.ChangeType(fAlpha, typeof(T)), hA, hB, (T)Convert.ChangeType(fBeta, typeof(T)), hC);
+        }
+
+        /// <summary>
+        /// Perform a matrix-matrix multiplication operation: C = alpha transB (B) transA (A) + beta C 
+        /// </summary>
+        /// <remarks>
+        /// This function uses [NVIDIA's cuBlas](https://developer.nvidia.com/cublas) but with a different parameter ordering.
+        /// </remarks>
+        /// <param name="bTransA">Specifies whether or not to transpose A.</param>
+        /// <param name="bTransB">Specifies whether or not to transpose B.</param>
+        /// <param name="m">Specifies the width (number of columns) of A and C.</param>
+        /// <param name="n">Specifies the height (number of rows) of B and C.</param>
+        /// <param name="k">Specifies the width (number of columns) of A and B.</param>
+        /// <param name="fAlpha">Specifies a scalar multiplied by the data where the scalar is of type 'T'.</param>
+        /// <param name="hA">Specifies a handle to the data for matrix A in GPU memory.</param>
+        /// <param name="hB">Specifies a handle to the data for matrix B in GPU memory.</param>
+        /// <param name="fBeta">Specifies a scalar multiplied by C where the scalar is of type 'T'.</param>
+        /// <param name="hC">Specifies a handle to the data for matrix C in GPU memory.</param>
+        /// <param name="nAOffset">Specifies an offset (in items, not bytes) into the memory of A.</param>
+        /// <param name="nBOffset">Specifies an offset (in items, not bytes) into the memory of B.</param>
+        /// <param name="nCOffset">Specifies an offset (in items, not bytes) into the memory of C.</param>
+        public void geam(bool bTransA, bool bTransB, int m, int n, T fAlpha, long hA, long hB, T fBeta, long hC, int nAOffset = 0, int nBOffset = 0, int nCOffset = 0)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GEAM, m_param.AsDouble((bTransA) ? 1.0 : 0.0, (bTransB) ? 1.0 : 0.0, m, n, convertD(fAlpha), hA, hB, convertD(fBeta), hC, nAOffset, nBOffset, nCOffset));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GEAM, m_param.AsFloat((bTransA) ? 1.0f : 0.0f, (bTransB) ? 1.0f : 0.0f, m, n, convertF(fAlpha), hA, hB, convertF(fBeta), hC, nAOffset, nBOffset, nCOffset));
+        }
+
+
 
         /// <summary>
         /// Perform a matrix-vector multiplication operation: y = alpha transA (A) x + beta y (where x and y are vectors)

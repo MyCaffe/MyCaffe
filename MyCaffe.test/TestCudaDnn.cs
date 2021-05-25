@@ -8,6 +8,7 @@ using System.Diagnostics;
 using MyCaffe.param;
 using MyCaffe.basecode;
 using MyCaffe.fillers;
+using MyCaffe.layers;
 
 namespace MyCaffe.test
 {
@@ -2998,6 +2999,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestGeam()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+
+            try
+            {
+                foreach (ITestCudaDnn t in test.Tests)
+                {
+                    t.TestGeam();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestGemv()
         {
             CudaDnnTest test = new CudaDnnTest();
@@ -3291,6 +3310,7 @@ namespace MyCaffe.test
     {
         void TestAdd();
         void TestGemm();
+        void TestGeam();
         void TestGemv();
         void TestSum();
         void TestSum2();
@@ -3588,6 +3608,80 @@ namespace MyCaffe.test
                 double dfVal = convert(m_C.GetData(i));
                 double dfRes = rgResult[i];
                 m_log.CHECK_EQ(dfVal, dfRes, "The value does not match the expected result.");
+            }
+        }
+
+        private void fill(double[] rg, double dfStart, double dfStep)
+        {
+            for (int i = 0; i < rg.Length; i++)
+            {
+                rg[i] = dfStart + dfStep * i;
+            }
+        }
+
+        public void TestGeam()
+        {
+            int nM = 256;
+            int nN = 80;
+            int nK = 1;
+
+            double[] rgA = new double[nM * nK];
+            double[] rgB = new double[nK * nN];
+            double[] rgC = new double[nM * nN];
+
+            fill(rgA, 0.0, 0.01);
+            fill(rgB, 1.0, 0.0);
+
+            m_A.Reshape(1, nM, nK, 1);
+            m_B.Reshape(1, nK, nN, 1);
+            m_C.Reshape(1, nM, nN, 1);
+
+            m_A.mutable_cpu_data = convert(rgA);
+            m_B.mutable_cpu_data = convert(rgB);
+
+            // Create nM x nN matrix.
+            m_cuda.gemm(true, false, nM, nN, nK, 1.0, m_A.gpu_data, m_B.gpu_data, 0.0, m_C.mutable_gpu_data);
+
+            double[] rgC1 = convert(m_C.mutable_cpu_data);
+
+            m_y.Reshape(1, nN, nM, 1);
+
+            // Transpose C.
+            m_cuda.geam(true, false, nM, nN, 1.0, m_C.gpu_data, m_C.gpu_data, 0.0, m_y.mutable_gpu_data);
+
+            double[] rgY1 = convert(m_y.mutable_cpu_data);
+
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSPOSE);
+            p.transpose_param.dim[1] = 2;
+            p.transpose_param.dim[2] = 1;
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+
+            BlobCollection<T> colBtm = new BlobCollection<T>();
+            BlobCollection<T> colTop = new BlobCollection<T>();
+            colBtm.Add(m_C);
+            colTop.Add(m_y);
+
+            layer.Setup(colBtm, colTop);
+
+            // Convert to nN x nM
+            layer.Forward(colBtm, colTop);
+
+            double[] rgY = convert(m_y.mutable_cpu_data);
+
+            // Verify the results.
+            for (int i = 0; i < nN; i++)
+            {
+                for (int j = 0; j < nM; j++)
+                {
+                    int nIdx = i * nM + j;
+
+                    double dfExpected = rgA[j];
+                    double dfActual = rgY[nIdx];
+                    double dfActual1 = rgY1[nIdx];
+
+                    m_log.EXPECT_NEAR(dfExpected, dfActual, 0.00001, "The numbers are not as expected.");
+                    m_log.EXPECT_NEAR(dfActual, dfActual1, 0.00001, "The numbers are not as expected.");
+                }
             }
         }
 
