@@ -507,21 +507,6 @@ namespace MyCaffe.layers
             return fSum;
         }
 
-        private void fill_old(Blob<T> blob1, Blob<T> blobFull)
-        {
-            int nCount = blob1.count() / blob1.num;
-            for (int i = 0; i < blobFull.num; i++)
-            {
-                int nIdxSrc = (i * nCount);
-
-                for (int j = 0; j < blobFull.channels; j++)
-                {
-                    int nIdxDst = (i * blobFull.channels * nCount) + (j * nCount);
-                    m_cuda.copy(nCount, blob1.gpu_data, blobFull.mutable_gpu_data, nIdxSrc, nIdxDst);
-                }
-            }
-        }
-
         private void fill(Blob<T> blob1, Blob<T> blobFull)
         {
             int nAxis = 1;
