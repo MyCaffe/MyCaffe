@@ -119,7 +119,7 @@ namespace MyCaffe.layers.beta
 
             m_log.CHECK_GT(colBottom[0].shape().Count, 0, "The dimension of the transposed blob should be greater than zero.");
             m_log.CHECK_LE(colBottom[0].shape().Count, Blob<T>.MAX_BLOB_AXES, "The dimension of the transposed blob should be less than " + Blob<T>.MAX_BLOB_AXES.ToString() + ".");
-            m_log.CHECK_EQ(colBottom[0].shape().Count, m_param.transpose_param.dim.Count, "The dimension of the bottom blob must equal the number of dimensiosn in the transpose parameter.");
+            m_log.CHECK_EQ(colBottom[0].shape().Count, m_param.transpose_param.dim.Count, "The dimension of the bottom blob must equal the number of dimensions in the transpose parameter.");
 
             List<int> rgTopShape = permute(colBottom[0].shape());
             colTop[0].Reshape(rgTopShape);
