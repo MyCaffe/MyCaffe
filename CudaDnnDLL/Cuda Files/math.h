@@ -220,6 +220,7 @@ class Math
 		long channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 		long channel_div(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nMethod = 1);
 		long channel_mul(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nMethod = 1);
+		long channel_mulv(int n, int nOutNum, int nChannels, int nInNum, long hA, long hX, long hC);
 		long channel_scale(int n, int nOutNum, int nChannels, int nInNum, long hX, long hA, long hY);
 		long channel_dot(int n, int nOutNum, int nChannels, int nInNum, long hX, long hA, long hY);
 		long channel_compare(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);

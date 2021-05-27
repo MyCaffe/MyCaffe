@@ -2718,6 +2718,29 @@ template long Device<float>::cuda_channel_mul(long lInput, float* pfInput, long*
 
 
 template <class T>
+long Device<T>::cuda_channel_mulv(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	int nOutNum = (int)pfInput[1];
+	int nChannels = (int)pfInput[2];
+	int nInNum = (int)pfInput[3];
+	long hA = (long)pfInput[4];
+	long hX = (long)pfInput[5];
+	long hC = (long)pfInput[6];
+
+	return m_math.channel_mulv(n, nOutNum, nChannels, nInNum, hA, hX, hC);
+}
+
+template long Device<double>::cuda_channel_mulv(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_channel_mulv(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::cuda_channel_scale(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;

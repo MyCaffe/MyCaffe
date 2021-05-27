@@ -602,6 +602,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_CHANNEL_MUL:
 			return m_device.cuda_channel_mul(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_CHANNEL_MULV:
+			return m_device.cuda_channel_mulv(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_CHANNEL_SCALE:
 			return m_device.cuda_channel_scale(lCount, pfInput, plCount, ppfOutput);
 
@@ -1559,6 +1562,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_CHANNEL_MUL:
 		return "CUDA_FN_CHANNEL_MUL";
+
+	case CUDA_FN_CHANNEL_MULV:
+		return "CUDA_FN_CHANNEL_MULV";
 
 	case CUDA_FN_CHANNEL_SCALE:
 		return "CUDA_FN_CHANNEL_SCALE";

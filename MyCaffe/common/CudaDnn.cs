@@ -720,6 +720,8 @@ namespace MyCaffe.common
         void channel_compare(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
         void channel_fill(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, int nLabelDim, long hLabels, long hY);
         void channel_scale(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hA, long hY);
+        void channel_mulv(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hA, long hX, long hC);
+        void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
 
         void gemm(bool bTransA, bool bTransB, int m, int n, int k, double fAlpha, long hA, long hB, double fBeta, long hC);
         void gemm(bool bTransA, bool bTransB, int m, int n, int k, float fAlpha, long hA, long hB, float fBeta, long hC);
@@ -1083,6 +1085,7 @@ namespace MyCaffe.common
             CUDA_CHANNEL_COMPARE = 296,
             CUDA_CHANNEL_FILL = 297,
             CUDA_CHANNEL_SCALE = 298,
+            CUDA_CHANNEL_MULV = 299,
 
             CUDA_RNG_SETSEED = 349,
             CUDA_RNG_UNIFORM = 350,
@@ -7137,7 +7140,7 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Subtracts the values of the channels from X and places the result in Y.
+        /// Subtracts the values across the channels from X and places the result in Y.
         /// </summary>
         /// <param name="nCount">Specifies the number of elements in X.</param>
         /// <param name="nOuterNum">Specifies the number of images within X.</param>
@@ -7154,7 +7157,7 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Calculates the sum the the values within each channel of X and places the result in Y.
+        /// Calculates the sum the the values either across or within each channel (depending on bSumAcrossChannels setting) of X and places the result in Y.
         /// </summary>
         /// <param name="nCount">Specifies the number of elements in X.</param>
         /// <param name="nOuterNum">Specifies the number of images within X.</param>
@@ -7204,6 +7207,24 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MUL, m_param.AsDouble(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, nMethod));
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MUL, m_param.AsFloat(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, nMethod));
+        }
+
+        /// <summary>
+        /// Multiplies the values in vector X by each channel in matrix A and places the result in matrix C.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of elements in X.</param>
+        /// <param name="nOuterNum">Specifies the number of images within X.</param>
+        /// <param name="nChannels">Specifies the number of channels per image of X.</param>
+        /// <param name="nInnerNum">Specifies the dimension of each image in X.</param>
+        /// <param name="hA">Specifies a handle to the matrix X in GPU memory.</param>
+        /// <param name="hX">Specifies a handle to the vector X in GPU memory (must be of length nInnerDim).</param>
+        /// <param name="hC">Specifies a handle to the matrix C in GPU memory where the results are placed.</param>
+        public void channel_mulv(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hA, long hX, long hC)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MULV, m_param.AsDouble(nCount, nOuterNum, nChannels, nInnerNum, hA, hX, hC));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MULV, m_param.AsFloat(nCount, nOuterNum, nChannels, nInnerNum, hA, hX, hC));
         }
 
         /// <summary>

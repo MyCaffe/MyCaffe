@@ -362,6 +362,7 @@ class Device
 		long cuda_channel_sum(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_div(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_mul(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_channel_mulv(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_scale(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_dot(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_compare(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
