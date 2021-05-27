@@ -507,24 +507,41 @@ namespace MyCaffe.layers
             return fSum;
         }
 
-        private void fill(Blob<T> blob1, Blob<T> blobFull)
+        private void fill(Blob<T> blob1, Blob<T> blob2, Blob<T> blobFull, bool bUseDiff = false, int nBlob1AxisOffset = 0)
         {
             int nAxis = 1;
-            int nM = blob1.shape(nAxis);
+            int nM = blob1.shape(nAxis + nBlob1AxisOffset);
             int nN = blobFull.shape(nAxis);
-            int nK = blob1.count(nAxis + 1);
+            int nK = blob1.count(nAxis + nBlob1AxisOffset + 1);
 
-            List<int> rgShape = new List<int>();
-            rgShape.Add(blob1.count(0, nAxis));
-            rgShape.Add(nN);
-            m_blobWork.Reshape(rgShape);
-            m_blobWork.SetData(1.0);
+            if (blob2 == null)
+            {
+                List<int> rgShape = new List<int>();
+                rgShape.Add(blob1.count(0, nAxis));
+                rgShape.Add(nN);
+                m_blobWork.Reshape(rgShape);
+                m_blobWork.SetData(1.0);
+                blob2 = m_blobWork;
+            }
 
-            m_cuda.gemm(true, false, nM, nN, nK, 1.0, blob1.gpu_data, m_blobWork.gpu_data, 0.0, blobFull.mutable_gpu_data);
+            if (bUseDiff)
+                m_cuda.gemm(true, true, nM, nN, nK, 1.0, blob1.gpu_diff, blob2.gpu_data, 0.0, blobFull.mutable_gpu_diff);
+            else
+                m_cuda.gemm(true, false, nM, nN, nK, 1.0, blob1.gpu_data, blob2.gpu_data, 0.0, blobFull.mutable_gpu_data);
+
             // Transpose result.
-            m_cuda.geam(true, false, nM, nN, 1.0, blobFull.gpu_data, blobFull.gpu_data, 0.0, blobFull.mutable_gpu_diff);
-            m_cuda.copy(blobFull.count(), blobFull.gpu_diff, blobFull.mutable_gpu_data);
-            blobFull.SetDiff(0.0);
+            m_blobWork.ReshapeLike(blobFull);
+
+            if (bUseDiff)
+            {
+                m_cuda.geam(true, false, nM, nN, 1.0, blobFull.gpu_diff, blobFull.gpu_diff, 0.0, m_blobWork.mutable_gpu_data);
+                m_cuda.copy(m_blobWork.count(), m_blobWork.gpu_data, blobFull.mutable_gpu_diff);
+            }
+            else
+            {
+                m_cuda.geam(true, false, nM, nN, 1.0, blobFull.gpu_data, blobFull.gpu_data, 0.0, m_blobWork.mutable_gpu_data);
+                m_cuda.copy(m_blobWork.count(), m_blobWork.gpu_data, blobFull.mutable_gpu_data);
+            }
         }
 
         /// <summary>
@@ -566,7 +583,7 @@ namespace MyCaffe.layers
             m_ipWa.Forward(m_colInternalBottom, m_colInternalTop);
 
             // Duplicate Wc across all T.
-            fill(m_blobWc, m_blobFullWc);
+            fill(m_blobWc, null, m_blobFullWc);
 
             addInternal(new List<Blob<T>>() { m_blobUh, m_blobFullWc }, m_blobAddOutput);
             m_add1.Forward(m_colInternalBottom, m_colInternalTop);
@@ -625,40 +642,12 @@ namespace MyCaffe.layers
                 m_cuda.copy(colTop[0].count(), colTop[0].gpu_data, m_blobContext.mutable_gpu_data);
                 m_cuda.copy(colTop[0].count(), colTop[0].gpu_diff, m_blobContext.mutable_gpu_diff);
 
-                // Apply gradient w.r.t input.
-                // Move this to the GPU.
-                int nCount = m_blobContext.count(2);
-                float[] rgSoftmaxData = convertF(m_blobSoftmax.mutable_cpu_data);
-                for (int i = 0; i < m_blobFocusedInput.num; i++)
-                {
-                    int nIdxSrc = (i * m_blobContext.count(2));
-                    int nIdxSoftmax = i * m_blobFocusedInput.channels;
-
-                    for (int j = 0; j < m_blobFocusedInput.channels; j++)
-                    {
-                        int nIdxDst = (i * m_blobFocusedInput.channels * nCount) + (j * nCount);
-                        float fSoftmax = rgSoftmaxData[nIdxSoftmax + j];
-                        m_cuda.scale(nCount, convert(fSoftmax), m_blobContext.gpu_diff, m_blobX1.mutable_gpu_diff, nIdxSrc, nIdxDst);
-                    }
-                }
+                // Apply gradient w.r.t input. (x = context x softmax)
+                fill(m_blobContext, m_blobSoftmax, m_blobX1, true, 1);
 
                 // Apply gradient w.r.t softmax.
-                // Move this to the GPU.
-                float[] rgSoftmaxDiff = new float[rgSoftmaxData.Length];
-                for (int i = 0; i < m_blobX.num; i++)
-                {
-                    int nIdxSrc = (i * m_blobContext.count(2));
-                    int nIdxSoftmax = i * m_blobX.channels;
-
-                    for (int j = 0; j < m_blobFocusedInput.channels; j++)
-                    {
-                        int nIdxDst = (i * m_blobFocusedInput.channels * nCount) + (j * nCount);
-                        m_cuda.mul(nCount, m_blobContext.gpu_diff, m_blobX.gpu_data, m_blobFocusedInput.mutable_gpu_diff, nIdxSrc, nIdxDst, nIdxDst);
-                        rgSoftmaxDiff[nIdxSoftmax + j] = sum_diff(nCount, m_blobFocusedInput, nIdxDst);
-                    }
-                }
-
-                m_blobSoftmax.mutable_cpu_diff = convert(rgSoftmaxDiff);
+                m_cuda.channel_mulv(m_blobX.count(), m_blobX.num, m_blobX.channels, m_blobX.count(2), m_blobX.gpu_data, m_blobContext.gpu_diff, m_blobFocusedInput.mutable_gpu_diff);
+                m_cuda.channel_sum(m_blobX.count(), m_blobX.count(0, 2), m_blobX.shape(2), m_blobX.count(3), m_blobFocusedInput.gpu_diff, m_blobSoftmax.mutable_gpu_diff);
 
                 softmax_bwd(m_blobSoftmax, m_blobClip, m_blobScale, m_blobAA, 1);
 
