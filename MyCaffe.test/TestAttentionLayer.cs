@@ -119,8 +119,11 @@ namespace MyCaffe.test
         Blob<T> m_blobC = null;
         Blob<T> m_blobState = null;
         Blob<T> m_blobClip = null;
+        float[] m_rgBiasMult;
         float[] m_rgUa;
+        float[] m_rgUab;
         float[] m_rgWa;
+        float[] m_rgWab;
         float[] m_rgV;
         float[] m_rgAa;
         float[] m_rgSoftmax;
@@ -161,45 +164,30 @@ namespace MyCaffe.test
 
         public float[] Fill(AttentionParameter p)
         {
-            m_blob_bottom.Reshape(3, 2, 4, 1);
+            m_blob_bottom.Reshape(3, 1, 4, 1);
 
-            // timesteps = 3, batch = 2, input = 4
-            float[] rgData = convertF(m_blob_bottom.mutable_cpu_data); // shape (3, 2, 4, 1)
+            // timesteps = 3, batch = 1, input = 4
+            float[] rgData = convertF(m_blob_bottom.mutable_cpu_data); // shape (3, 1, 4, 1)
             // timestep 1, batch 1
             rgData[0] = 1.11f;
             rgData[1] = 1.12f;
             rgData[2] = 1.13f;
             rgData[3] = 1.14f;
-            // timestep 1, batch 2
-            rgData[4] = 1.21f;
-            rgData[5] = 1.22f;
-            rgData[6] = 1.23f;
-            rgData[7] = 1.24f;
 
             // timestep 2, batch 1
-            rgData[8] = 2.11f;
-            rgData[9] = 2.12f;
-            rgData[10] = 2.13f;
-            rgData[11] = 2.14f;
-            // timestep 2, batch 2
-            rgData[12] = 2.21f;
-            rgData[13] = 2.22f;
-            rgData[14] = 2.23f;
-            rgData[15] = 2.24f;
+            rgData[4] = 2.11f;
+            rgData[5] = 2.12f;
+            rgData[6] = 2.13f;
+            rgData[7] = 2.14f;
 
             // timestep 3, batch 1
-            rgData[16] = 3.11f;
-            rgData[17] = 3.12f;
-            rgData[18] = 3.13f;
-            rgData[19] = 3.14f;
-            // timestep 3, batch 2
-            rgData[20] = 3.21f;
-            rgData[21] = 3.22f;
-            rgData[22] = 3.23f;
-            rgData[23] = 3.24f;
+            rgData[8] = 3.11f;
+            rgData[9] = 3.12f;
+            rgData[10] = 3.13f;
+            rgData[11] = 3.14f;
 
             m_blob_bottom.mutable_cpu_data = convert(rgData);
-            m_blobState.Reshape(new List<int>() { 2, (int)p.dim });
+            m_blobState.Reshape(new List<int>() { 1, (int)p.dim });
 
             List<int> rgShape = Utility.Clone<int>(m_blob_bottom.shape());
             while (rgShape.Count > 2)
@@ -298,6 +286,19 @@ namespace MyCaffe.test
             return convertF(m_blobC.mutable_cpu_data);
         }
 
+        private float[] axpy(int nM, int nN, int nK, float[] rgBias, float[] rgA)
+        {
+            m_blobA.Reshape(nM, nK, 1, 1);
+            m_blobB.Reshape(nN, 1, 1, 1);
+
+            m_blobA.mutable_cpu_data = convert(rgA);
+            m_blobB.mutable_cpu_data = convert(rgBias);
+
+            m_cuda.axpy(nN, 1.0, m_blobB.gpu_data, m_blobA.mutable_gpu_data);
+
+            return convertF(m_blobA.mutable_cpu_data);
+        }
+
         private float[] expand(float[] rg, int n, float fScale = 1.0f)
         {
             float[] rgDst = new float[rg.Length * n];
@@ -338,14 +339,14 @@ namespace MyCaffe.test
             return rgB;
         }
 
-        private void create_weights(ref float[] rg, int n)
+        private void create_weights(ref float[] rg, int n, float fVal = 1.0f)
         {
             if (rg == null)
                 rg = new float[n];
 
             for (int i = 0; i < n; i++)
             {
-                rg[i] = 1;
+                rg[i] = fVal;
             }
         }
 
@@ -518,13 +519,24 @@ namespace MyCaffe.test
 
             // IP input data with rgUa wts.
             create_weights(ref m_rgUa, nN * nK);
+            create_weights(ref m_rgUab, nN, 0.1f);
+            create_weights(ref m_rgBiasMult, nM, 1.0f);
+
             float[] rgUh = gemm(false, false, nM, nN, nK, 1.0f, rgDataT, m_rgUa, 0.0f);
+            float[] rgUhb = gemm(false, false, nM, nN, 1, 1.0f, m_rgBiasMult, m_rgUab, 0.0f);
+            rgUh = add(rgUh, rgUhb);
 
             // IP rgFullState with rgWa wts.
             nM = nB;
             nK = (int)p.dim;
             create_weights(ref m_rgWa, nN * nK);
+            create_weights(ref m_rgWab, nN, 0.1f);
+            m_rgBiasMult = null;
+            create_weights(ref m_rgBiasMult, nM, 1.0f);
+
             float[] rgWc = gemm(false, false, nM, nN, nK, 1.0f, rgState, m_rgWa, 0.0f);
+            float[] rgWcb = gemm(false, false, nM, nN, 1, 1.0f, m_rgBiasMult, m_rgWab, 0.0f);
+            rgWc = add(rgWc, rgWcb);
 
             // Copy rgWc across all T.
             float[] rgFullWc = expand(rgWc, nT);
