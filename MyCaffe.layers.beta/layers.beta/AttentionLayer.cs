@@ -293,6 +293,8 @@ namespace MyCaffe.layers
             Blob<T> blobCy = colBottom[1];
             Blob<T> blobClip = colBottom[2];
 
+            m_log.CHECK_EQ(blobX.shape(1), 1, "Currently, only batch size = 1 is supported.");
+
             m_rgbParamPropagateDown = new DictionaryMap<bool>(m_colBlobs.Count, true);
 
             List<int> rgDimX = new List<int>() { 1, 0 };
@@ -563,14 +565,14 @@ namespace MyCaffe.layers
             // Force values to 1 or 0.
             m_cuda.sign(blobClip.count(), blobClip.gpu_data, blobClip.mutable_gpu_data);
 
-            // Apply the clip.
-            apply_clip(blobX, blobClip, m_blobX);
-
             addInternal(blobX, m_blobX);
             m_transposeX.Forward(m_colInternalBottom, m_colInternalTop);
 
             addInternal(blobClip, m_blobClip);
             m_transposeClip.Forward(m_colInternalBottom, m_colInternalTop);
+
+            // Apply the clip.
+            apply_clip(m_blobX, blobClip, m_blobX);
 
             // No need to transpose for state T = 1.
             m_cuda.copy(blobCy.count(), blobCy.gpu_data, m_blobState.mutable_gpu_data);
