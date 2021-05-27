@@ -442,8 +442,10 @@ namespace MyCaffe.layers
 
             m_cuda.copy(nCount, hBottomData, hTopData);
 
-            // Apply clip.
-            m_cuda.channel_scale(nCount, nOuterNum, nChannels, nInnerNum, hTopData, blobClip.gpu_data, hTopData);
+            // Mask all values pass the valid ones specified in the clip, to -1 billion.
+            int nValidValues = (int)convertF(blobClip.asum_data());
+            if (nValidValues < nCount)
+                blobTop.SetData(-1000000000.0, nValidValues, nCount - nValidValues);
 
             // We need to subtract the max to avoid numerical issues, compute the exp
             // and then normalize.
@@ -455,9 +457,6 @@ namespace MyCaffe.layers
 
             // exponentiate
             m_cuda.exp(nCount, hTopData, hTopData);
-
-            // Apply clip.
-            m_cuda.channel_scale(nCount, nOuterNum, nChannels, nInnerNum, hTopData, blobClip.gpu_data, hTopData);
 
             // Sum after exp
             m_cuda.channel_sum(nOuterNum * nInnerNum, nOuterNum, nChannels, nInnerNum, hTopData, hScaleData);
