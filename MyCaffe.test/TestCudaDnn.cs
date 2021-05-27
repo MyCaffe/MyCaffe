@@ -2366,7 +2366,6 @@ namespace MyCaffe.test
             TestMath_channel_scale(nT, nB, nI, rgdfInput, rgdfClip, rgdfOutput);
         }
 
-
         public void TestMath_channel_scale(int nT, int nB, int nI, double[] rgdfSrc, double[] rgdfClip, double[] rgdfExpected)
         {
             CudaDnnTest test = new CudaDnnTest();
@@ -2416,6 +2415,149 @@ namespace MyCaffe.test
                         {
                             t.Cuda.FreeMemory(hClip);
                             hClip = 0;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestMath_channel_mulv()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+            Log log = new Log("Test Channel Mulv");
+            long hScaleVector = 0;
+            long hDataMatrix = 0;
+            long hDstMatrix = 0;
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    try
+                    {
+                        int nNum = 4;
+                        int nDim = 3;
+                        int nCount = nNum * nDim;
+
+                        // Scale vector contains 'nDim' items
+                        List<double> rgScaleVector = new List<double>() { 0.1, 0.2, 0.3 };
+                        // Data matrix is an nNum x nDim matrix.  Dst matrix is the same size.
+                        List<double> rgDataMatrix = new List<double>() { 1.0, 1.1, 1.2, 2.0, 2.1, 2.2, 3.0, 3.1, 3.2, 4.0, 4.1, 4.2 };
+                        hScaleVector = t.Cuda.AllocMemory(rgScaleVector);
+                        hDataMatrix = t.Cuda.AllocMemory(rgDataMatrix);
+                        hDstMatrix = t.Cuda.AllocMemory(nCount);
+
+                        t.Cuda.channel_mulv(nCount, 1, nNum, nDim, hDataMatrix, hScaleVector, hDstMatrix);
+                        double[] rgDst = t.Cuda.GetMemoryDouble(hDstMatrix);
+
+                        double[] rgExpected = new double[nCount];
+                        for (int i = 0; i < nNum; i++)
+                        {
+                            for (int j = 0; j < nDim; j++)
+                            {
+                                int nIdxData = (i * nDim) + j;
+                                rgExpected[nIdxData] = rgDataMatrix[nIdxData] * rgScaleVector[j];
+                            }
+                        }
+
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            double dfExpected = rgExpected[i];
+                            double dfActual = rgDst[i];
+
+                            log.EXPECT_EQUAL<float>(dfExpected, dfActual, "The values do not match!");
+                        }
+                    }
+                    finally
+                    {
+                        if (hScaleVector != 0)
+                        {
+                            t.Cuda.FreeMemory(hScaleVector);
+                            hScaleVector = 0;
+                        }
+
+                        if (hDataMatrix != 0)
+                        {
+                            t.Cuda.FreeMemory(hDataMatrix);
+                            hDataMatrix = 0;
+                        }
+
+                        if (hDstMatrix != 0)
+                        {
+                            t.Cuda.FreeMemory(hDstMatrix);
+                            hDstMatrix = 0;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestMath_channel_sum()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+            Log log = new Log("Test Channel Sum across channels");
+            long hDataMatrix = 0;
+            long hDstVector = 0;
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    try
+                    {
+                        int nNum = 4;
+                        int nDim = 3;
+                        int nCount = nNum * nDim;
+
+                        // Data matrix is an nNum x nDim matrix.  Dst matrix is the same size.
+                        List<double> rgDataMatrix = new List<double>() { 1.0, 1.1, 1.2, 2.0, 2.1, 2.2, 3.0, 3.1, 3.2, 4.0, 4.1, 4.2 };
+                        hDataMatrix = t.Cuda.AllocMemory(rgDataMatrix);
+                        hDstVector = t.Cuda.AllocMemory(nNum);
+
+                        t.Cuda.channel_sum(nCount, nNum, nDim, 1, hDataMatrix, hDstVector);
+
+                        double[] rgDst = t.Cuda.GetMemoryDouble(hDstVector);
+
+                        double[] rgExpected = new double[nNum];
+                        for (int i = 0; i < nDim; i++)
+                        {
+                            for (int j = 0; j < nNum; j++)
+                            {
+                                int nIdxData = j * nDim + i;
+                                rgExpected[j] += rgDataMatrix[nIdxData];
+                            }
+                        }
+
+                        for (int i = 0; i < nNum; i++)
+                        {
+                            double dfExpected = rgExpected[i];
+                            double dfActual = rgDst[i];
+
+                            log.EXPECT_EQUAL<float>(dfExpected, dfActual, "The values do not match!");
+                        }
+                    }
+                    finally
+                    {
+                        if (hDataMatrix != 0)
+                        {
+                            t.Cuda.FreeMemory(hDataMatrix);
+                            hDataMatrix = 0;
+                        }
+
+                        if (hDstVector != 0)
+                        {
+                            t.Cuda.FreeMemory(hDstVector);
+                            hDstVector = 0;
                         }
                     }
                 }
