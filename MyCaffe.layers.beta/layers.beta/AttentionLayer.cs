@@ -81,6 +81,12 @@ namespace MyCaffe.layers
             ipUaParam.inner_product_param.weight_filler = m_param.attention_param.weight_filler;            
             ipUaParam.inner_product_param.bias_filler = m_param.attention_param.bias_filler;
 
+            if (m_param is LayerParameterEx<T>)
+            {
+                LayerParameterEx<T> pEx = m_param as LayerParameterEx<T>;
+                ipUaParam = new LayerParameterEx<T>(ipUaParam, pEx.SharedBlobs, pEx.SharedLayerBlobs, pEx.SharedLayer);
+            }
+
             m_ipUa = new InnerProductLayer<T>(cuda, log, ipUaParam);
 
             LayerParameter ipWaParam = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
@@ -89,6 +95,12 @@ namespace MyCaffe.layers
             ipWaParam.inner_product_param.num_output = m_param.attention_param.dim;
             ipWaParam.inner_product_param.weight_filler = m_param.attention_param.weight_filler;
             ipWaParam.inner_product_param.bias_filler = m_param.attention_param.bias_filler;
+
+            if (m_param is LayerParameterEx<T>)
+            {
+                LayerParameterEx<T> pEx = m_param as LayerParameterEx<T>;
+                ipWaParam = new LayerParameterEx<T>(ipWaParam, pEx.SharedBlobs, pEx.SharedLayerBlobs, pEx.SharedLayer);
+            }
 
             m_ipWa = new InnerProductLayer<T>(cuda, log, ipWaParam);
 
@@ -110,6 +122,12 @@ namespace MyCaffe.layers
             ipVParam.inner_product_param.num_output = 1;
             ipVParam.inner_product_param.bias_term = false;
             ipVParam.inner_product_param.weight_filler = m_param.attention_param.weight_filler;
+
+            if (m_param is LayerParameterEx<T>)
+            {
+                LayerParameterEx<T> pEx = m_param as LayerParameterEx<T>;
+                ipVParam = new LayerParameterEx<T>(ipVParam, pEx.SharedBlobs, pEx.SharedLayerBlobs, pEx.SharedLayer);
+            }
 
             m_ipV = new InnerProductLayer<T>(cuda, log, ipVParam);
 

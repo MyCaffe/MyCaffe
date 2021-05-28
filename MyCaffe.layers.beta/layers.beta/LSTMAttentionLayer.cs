@@ -441,6 +441,12 @@ namespace MyCaffe.layers
                 attentionParam.attention_param.weight_filler = m_param.lstm_attention_param.weight_filler;
                 attentionParam.attention_param.bias_filler = m_param.lstm_attention_param.bias_filler;
 
+                if (m_param is LayerParameterEx<T>)
+                {
+                    LayerParameterEx<T> pEx = m_param as LayerParameterEx<T>;
+                    attentionParam = new LayerParameterEx<T>(attentionParam, pEx.SharedBlobs, pEx.SharedLayerBlobs, pEx.SharedLayer);
+                }
+
                 m_attention = new AttentionLayer<T>(m_cuda, m_log, attentionParam);
 
                 Blob<T> blobEncoding = colBottom[2];
