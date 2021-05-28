@@ -720,6 +720,7 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.LSTM_ATTENTION);
             p.lstm_attention_param.num_output = 1;
+            p.lstm_attention_param.num_output_ip = 0;
             p.lstm_attention_param.weight_filler = new FillerParameter("uniform");
             p.lstm_attention_param.weight_filler.min = -0.01;
             p.lstm_attention_param.weight_filler.max = 0.01;
@@ -728,9 +729,9 @@ namespace MyCaffe.test
 
             BottomVec.Clear();
             // Decoder blobs
-            Fill(BottomVec, m_blob_bottom, m_blob_bottom2, 1, 1, 1, true);
+            Fill(BottomVec, m_blob_bottom, m_blob_bottom2, 1, 1, 1, false);
             // Encoder blobs
-            Fill(BottomVec, m_blobEncoding, m_blobEncodingClip, 1, 1, 1, false);
+            Fill(BottomVec, m_blobEncoding, m_blobEncodingClip, 1, 1, 1, true);
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
@@ -742,6 +743,7 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.LSTM_ATTENTION);
             p.lstm_attention_param.num_output = 1;
+            p.lstm_attention_param.num_output_ip = 0;
             p.lstm_attention_param.weight_filler = new FillerParameter("uniform");
             p.lstm_attention_param.weight_filler.min = -0.01;
             p.lstm_attention_param.weight_filler.max = 0.01;
@@ -750,9 +752,9 @@ namespace MyCaffe.test
 
             BottomVec.Clear();
             // Decoder blobs
-            Fill(BottomVec, m_blob_bottom, m_blob_bottom2, 3, 1, 1, true);
+            Fill(BottomVec, m_blob_bottom, m_blob_bottom2, 1, 1, 1, false);
             // Encoder blobs
-            Fill(BottomVec, m_blobEncoding, m_blobEncodingClip, 2, 1, 1, false);
+            Fill(BottomVec, m_blobEncoding, m_blobEncodingClip, 3, 1, 1, true);
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
