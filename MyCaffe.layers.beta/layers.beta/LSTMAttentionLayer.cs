@@ -561,6 +561,7 @@ namespace MyCaffe.layers
             long hClipData = 0;
             int nMaxT = m_nT;
             int nInitialClip = 0;
+            double dfOriginalClip = 0;
 
             if (colBottom.Count > 1)
             {
@@ -603,7 +604,8 @@ namespace MyCaffe.layers
                     m_blobPrevCt.SetData(0);
 
                 // Reset the clip for we want to use the initial context.
-                colBottom[1].SetData(1, 0);
+                dfOriginalClip = convertD(colBottom[1].GetData(0));
+                colBottom[1].SetData(1.0, 0);
             }
 
             // Compute recurrent forward propagation                
@@ -690,6 +692,12 @@ namespace MyCaffe.layers
                 m_cuda.gemm(false, false, nM, nN, nK, Blob<T>.One, hTopData, m_colBlobs[m_nWeightWhdidx].gpu_data, Blob<T>.Zero, m_blobEOutputWhd.mutable_gpu_data);
                 m_cuda.add(colTop[0].count(), m_blobEOutputWhd.gpu_data, m_colBlobs[m_nWeightWhdbidx].gpu_data, m_blobEOutputWhd.mutable_gpu_data);
                 colTop[0].CopyFrom(m_blobEOutputWhd);
+            }
+
+            if (m_param.lstm_attention_param.enable_attention)
+            {
+                // Reset the clip to original value.
+                colBottom[1].SetData(dfOriginalClip, 0);
             }
         }
 
@@ -850,8 +858,7 @@ namespace MyCaffe.layers
             if (m_rgbParamPropagateDown[1])
             {
                 // Gradient w.r.t. hidden-to-hidden weight
-                if (m_nT > 1)
-                    m_cuda.gemm(true, false, 4 * m_nH, m_nH, (m_nT - 1) * m_nN, m_tOne, hPreGateDiff, hTopData, m_tOne, m_colBlobs[m_nWeightHtoHidx].mutable_gpu_diff, m_blobPreGate.offset(1));
+                m_cuda.gemm(true, false, 4 * m_nH, m_nH, (m_nT - 1) * m_nN, m_tOne, hPreGateDiff, hTopData, m_tOne, m_colBlobs[m_nWeightHtoHidx].mutable_gpu_diff, m_blobPreGate.offset(1));
 
                 // Add gradient from previous time-step.
                 m_cuda.gemm(true, false, 4 * m_nH, m_nH, 1, m_tOne, hPreGateDiff, m_blob_H_0.gpu_data, m_tOne, m_colBlobs[m_nWeightHtoHidx].mutable_gpu_diff);
