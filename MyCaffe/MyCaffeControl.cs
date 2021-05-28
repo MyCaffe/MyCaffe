@@ -2600,10 +2600,10 @@ namespace MyCaffe
                 phase = Phase.RUN;
 
             if (phase == Phase.TEST)
-                return m_solver.TestingNet;
+                return (m_solver != null) ? m_solver.TestingNet : null;
 
             else if (phase == Phase.TRAIN)
-                return m_solver.TrainingNet;
+                return (m_solver != null) ? m_solver.TrainingNet : null;
 
             return m_net;
         }
