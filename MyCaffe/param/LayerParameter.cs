@@ -438,6 +438,10 @@ namespace MyCaffe.param
             /// </summary>
             SWISH,
             /// <summary>
+            /// Initializes a parameter for the TextDataLayer.
+            /// </summary>
+            TEXT_DATA,
+            /// <summary>
             /// Initializes a parameter for the TVLossLayer (used with Neural Style).
             /// </summary>
             TV_LOSS,
@@ -1378,6 +1382,13 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new TanhParameter();
                     break;
 
+                case LayerType.TEXT_DATA:
+                    expected_top.Add("data");
+                    expected_top.Add("datar");
+                    expected_top.Add("decinput");
+                    m_rgLayerParameters[LayerType.TEXT_DATA] = new TextDataParameter();
+                    break;
+
                 case LayerType.THRESHOLD:
                     expected_bottom.Add("input");
                     expected_top.Add("thresh");
@@ -2222,6 +2233,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.TEXT_DATA
+        /// </summary>
+        public TextDataParameter text_data_param
+        {
+            get { return (TextDataParameter)m_rgLayerParameters[LayerType.TEXT_DATA]; }
+            set { m_rgLayerParameters[LayerType.TEXT_DATA] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.THRESHOLD
         /// </summary>
         public ThresholdParameter threshold_param
@@ -2709,6 +2729,9 @@ namespace MyCaffe.param
 
                 case LayerType.TANH:
                     return "TanH";
+
+                case LayerType.TEXT_DATA:
+                    return "TextData";
 
                 case LayerType.THRESHOLD:
                     return "Threshold";
@@ -3563,6 +3586,10 @@ namespace MyCaffe.param
 
                 case "tanh":
                     return LayerType.TANH;
+
+                case "textdata":
+                case "text_data":
+                    return LayerType.TEXT_DATA;
 
                 case "threshold":
                     return LayerType.THRESHOLD;

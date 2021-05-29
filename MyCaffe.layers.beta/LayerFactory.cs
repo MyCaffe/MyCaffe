@@ -67,6 +67,9 @@ namespace MyCaffe.layers.beta
                 case LayerParameter.LayerType.NORMALIZATION1:
                     return new Normalization1Layer<double>(cuda, log, p);
 
+                case LayerParameter.LayerType.TEXT_DATA:
+                    return new TextDataLayer<double>(cuda, log, p);
+
                 case LayerParameter.LayerType.TRANSPOSE:
                     return new TransposeLayer<double>(cuda, log, p);
 
@@ -138,6 +141,9 @@ namespace MyCaffe.layers.beta
 
                 case LayerParameter.LayerType.NORMALIZATION1:
                     return new Normalization1Layer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.TEXT_DATA:
+                    return new TextDataLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.TRANSPOSE:
                     return new TransposeLayer<float>(cuda, log, p);

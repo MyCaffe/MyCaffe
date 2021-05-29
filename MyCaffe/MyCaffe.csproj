@@ -200,6 +200,7 @@
       <DependentUpon>MyCaffeControl.cs</DependentUpon>
     </Compile>
     <Compile Include="param.beta\AttentionParameter.cs" />
+    <Compile Include="param.beta\TextDataParameter.cs" />
     <Compile Include="param.beta\LSTMAttentionParameter.cs" />
     <Compile Include="param.beta\MergeParameter.cs" />
     <Compile Include="param.beta\DecodeParameter.cs" />
