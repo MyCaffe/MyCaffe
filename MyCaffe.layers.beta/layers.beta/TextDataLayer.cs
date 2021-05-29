@@ -214,7 +214,7 @@ namespace MyCaffe.layers.beta
 
             // Reshape and set the vocabulary count variable.
             colTop[nTopIdx].Reshape(1, 1, 1, 1);
-            colTop[nTopIdx].SetData(m_vocab.VocabularCount, 0);
+            colTop[nTopIdx].SetData(m_vocab.VocabularCount + 2, 0);
         }
 
         /// <summary>
