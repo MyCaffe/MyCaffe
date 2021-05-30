@@ -335,6 +335,8 @@ namespace MyCaffe.layers
 
             addInternal(blobClip, m_blobClip);
             m_transposeClip.Setup(m_colInternalBottom, m_colInternalTop);
+            // Make sure the first item is set to 1.
+            m_blobClip.SetData(1, 0);
 
             m_blobState.ReshapeLike(blobCy);
 
@@ -405,6 +407,8 @@ namespace MyCaffe.layers
 
             addInternal(blobClip, m_blobClip);
             m_transposeClip.Reshape(m_colInternalBottom, m_colInternalTop);
+            // Make sure the first item is set to 1.
+            m_blobClip.SetData(1, 0);
 
             m_blobState.ReshapeLike(blobCy);
 
@@ -588,6 +592,8 @@ namespace MyCaffe.layers
 
             addInternal(blobClip, m_blobClip);
             m_transposeClip.Forward(m_colInternalBottom, m_colInternalTop);
+            // Make sure the first item is set to 1.
+            m_blobClip.SetData(1, 0);
 
             // Apply the clip.
             apply_clip(m_blobX, blobClip, m_blobX);
