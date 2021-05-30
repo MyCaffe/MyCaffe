@@ -53,6 +53,12 @@ namespace MyCaffe.layers
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             m_bConvertBottom = false;
+
+            // Copy data during setup through
+            // forward pass to ensure variables
+            // are passed through.
+            Reshape(colBottom, colTop);
+            forward(colBottom, colTop);
         }
 
         /// <summary>
