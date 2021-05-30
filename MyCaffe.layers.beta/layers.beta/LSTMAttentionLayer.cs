@@ -230,11 +230,16 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Returns the maximum number of required bottom (input) Blobs: input, inputClip, encoding, encodingClip (used when enable_attention = true).
+        /// Returns the maximum number of required bottom (input) Blobs: 
+        ///     input, 
+        ///     inputClip, 
+        ///     encoding,     (used when enable_attention = true).
+        ///     encodingClip, (used when enable_attention = true).
+        ///     vocabcount (optional)
         /// </summary>
         public override int MaxBottomBlobs
         {
-            get { return 4; }
+            get { return 5; }
         }
 
         /// <summary>
@@ -277,7 +282,16 @@ namespace MyCaffe.layers
             LSTMAttentionParameter p = m_param.lstm_attention_param;
 
             if (m_param.lstm_attention_param.enable_attention)
-                m_log.CHECK_EQ(colBottom.Count, 4, "When using attention, four bottoms are required: x, xClip, encoding, encodingClip.");
+            {
+                m_log.CHECK_GE(colBottom.Count, 4, "When using attention, four bottoms are required: x, xClip, encoding, encodingClip.");
+                m_log.CHECK_LE(colBottom.Count, 5, "When using attention, four bottoms are required: x, xClip, encoding, encodingClip, vocabcount (optional).");
+
+                if (colBottom.Count == 5)
+                {
+                    if (p.num_output_ip != 0)
+                        p.num_output_ip = (uint)convertF(colBottom[4].GetData(0));
+                }
+            }
             else
             {
                 m_log.CHECK_GE(colBottom.Count, 1, "When not using attention, at least one bottom is required: x.");
