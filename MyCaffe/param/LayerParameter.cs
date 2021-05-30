@@ -2891,6 +2891,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(merge_param, "merge_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(normalization1_param, "normalization_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(squeeze_param, "squeeze_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(text_data_param, "text_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(triplet_loss_param, "triplet_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(unpooling_param, "unpooling_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(transpose_param, "transpose_param"));
@@ -3194,6 +3195,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("squeeze_param")) != null)
                 p.squeeze_param = SqueezeParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("text_data_param")) != null)
+                p.text_data_param = TextDataParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("triplet_loss_param")) != null)
                 p.triplet_loss_param = TripletLossParameter.FromProto(rpp);
