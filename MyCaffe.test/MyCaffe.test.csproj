@@ -114,6 +114,7 @@
     <Compile Include="TestDatasetFactory.cs" />
     <Compile Include="TestCryptoRandom.cs" />
     <Compile Include="TestConstantLayer.cs" />
+    <Compile Include="TestTextDataLayer.cs" />
     <Compile Include="TestLSTMAttentionLayer.cs" />
     <Compile Include="TestLSTMSimpleLayer.cs" />
     <Compile Include="TestMAELossLayer.cs" />
