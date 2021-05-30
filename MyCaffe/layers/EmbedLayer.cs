@@ -80,9 +80,20 @@ namespace MyCaffe.layers
         /// <summary>
         /// Returns the exact number of required bottom (intput) Blobs: input.
         /// </summary>
-        public override int ExactNumBottomBlobs
+        public override int MinBottomBlobs
         {
             get { return 1; }
+        }
+
+        /// <summary>
+        /// Returns the exact number of required bottom (intput) Blobs: input, input_dim.
+        /// </summary>
+        /// <remarks>
+        /// When specified, the input_dim overrides the m_param.embed_param.input_dim.
+        /// </remarks>
+        public override int MaxBottomBlobs
+        {
+            get { return 2; }
         }
 
         /// <summary>
@@ -124,6 +135,9 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            if (colBottom.Count > 1)
+                m_param.embed_param.input_dim = (uint)convertF(colBottom[1].GetData(0));
+
             m_nN = (int)m_param.embed_param.num_output;
             m_log.CHECK_GT(m_nN, 0, "EmbedLayer num_output must be positive.");
 
@@ -189,7 +203,12 @@ namespace MyCaffe.layers
             // Figure out the dimensions
             m_nM = colBottom[0].count();
             List<int> rgTopShape = Utility.Clone<int>(colBottom[0].shape());
-            rgTopShape.Add(m_nN);
+            
+            if (rgTopShape.Count < 4)
+                rgTopShape.Add(m_nN);
+            else
+                rgTopShape[3] = m_nN;
+
             colTop[0].Reshape(rgTopShape);
 
             // Set up the bias multiplier
