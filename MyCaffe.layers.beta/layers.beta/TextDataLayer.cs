@@ -29,6 +29,11 @@ namespace MyCaffe.layers.beta
         float[] m_rgDecTarget;
 
         /// <summary>
+        /// The OnGetTrainingData is called during each forward pass after getting the training data for the pass.
+        /// </summary>
+        public event EventHandler<OnGetDataArgs> OnGetData;
+
+        /// <summary>
         /// The TextDataLayer constructor.
         /// </summary>
         /// <param name="cuda">Specifies the CudaDnn connection to Cuda.</param>
@@ -54,27 +59,37 @@ namespace MyCaffe.layers.beta
         }
 
         /// <summary>
-        /// Returns 0 for data layers have no bottom (input) Blobs.
+        /// When running in TRAIN or TEST phase, returns 0 for data layers have no bottom (input) Blobs.
+        /// When running in RUN phase, returns 3 Blobs: dec_input, enc_input | enc_inputr, enc_clip.
         /// </summary>
-        public override int ExactNumBottomBlobs
+        public override int MinBottomBlobs
         {
-            get { return 0; }
+            get { return (m_phase == Phase.RUN) ? 3 : 0; }
         }
 
         /// <summary>
-        /// Returns the minimum number of required top (output) Blobs: dec, dclip, label, enc, eclip, vocabcount
+        /// When running in TRAIN or TEST phase, returns 0 for data layers have no bottom (input) Blobs.
+        /// When running in RUN phase, returns 4 Blobs: dec_input, enc_input, enc_inputr, enc_clip.
+        /// </summary>
+        public override int MaxBottomBlobs
+        {
+            get { return (m_phase == Phase.RUN) ? 4 : 0; }
+        }
+
+        /// <summary>
+        /// Returns the minimum number of required top (output) Blobs: dec, dclip, enc, eclip, vocabcount, label (on TRAIN or TEST)
         /// </summary>
         public override int MinTopBlobs
         {
-            get { return 6; }
+            get { return (m_phase == Phase.RUN) ? 5 : 6; }
         }
 
         /// <summary>
-        /// Returns the maximum number of required top (output) Blobs: dec, dclip, label, enc, encr, eclip, vocabcount
+        /// Returns the maximum number of required top (output) Blobs: dec, dclip, enc, encr, eclip, vocabcount, label (on TRAIN or TEST)
         /// </summary>
         public override int MaxTopBlobs
         {
-            get { return 7; }
+            get { return (m_phase == Phase.RUN) ? 6 : 7; }
         }
 
         /// <summary>
@@ -85,7 +100,15 @@ namespace MyCaffe.layers.beta
             get { return m_vocab; }
         }
 
-        private string clean(string str)
+        /// <summary>
+        /// Returns information on the current iteration.
+        /// </summary>
+        public IterationInfo IterationInfo
+        {
+            get { return (m_currentData == null) ? new IterationInfo(true, true, 0) : m_currentData.IterationInfo; }
+        }
+
+        private static string clean(string str)
         {
             string strOut = "";
 
@@ -118,7 +141,7 @@ namespace MyCaffe.layers.beta
             return strOut;
         }
 
-        private List<string> preprocess(string str, int nMaxLen = 0)
+        private static List<string> preprocess(string str, int nMaxLen = 0)
         {
             string strInput = clean(str);
             List<string> rgstr = strInput.ToLower().Trim().Split(' ').ToList();
@@ -149,11 +172,8 @@ namespace MyCaffe.layers.beta
 
             for (int i = 0; i < p.sample_size; i++)
             {
-                int nMaxLenInput = 0;
-                int nMaxLenTarget = 0;
-
-                List<string> rgstrInput1 = preprocess(rgstrInput[i], nMaxLenInput);
-                List<string> rgstrTarget1 = preprocess(rgstrTarget[i], nMaxLenTarget);
+                List<string> rgstrInput1 = preprocess(rgstrInput[i]);
+                List<string> rgstrTarget1 = preprocess(rgstrTarget[i]);
 
                 if (rgstrInput1 != null && rgstrTarget1 != null)
                 {
@@ -167,6 +187,96 @@ namespace MyCaffe.layers.beta
             m_data = new Data(rgrgstrInput, rgrgstrTarget, m_vocab);
         }
 
+        /// <summary>
+        /// Preprocess the input data for the RUN phase.
+        /// </summary>
+        /// <param name="strEncInput">Specifies the encoder input.</param>
+        /// <param name="nDecInput">Specifies the decoder input.</param>
+        /// <param name="colBottom">Specifies the bottom blob where the preprocessed data is placed where
+        /// colBottom[0] contains the preprocessed decoder input.</param>
+        /// colBottom[1] contains the preprocessed encoder input (depending on param settings),
+        /// colBottom[2] contains the preprocessed encoder input reversed (depending on param settings), 
+        /// <remarks>
+        /// NOTE: the LayerSetup must be called before preprocessing input, for during LayerSetup the vocabulary is loaded.
+        /// </remarks>
+        public void PreProcessInput(string strEncInput, int? nDecInput, BlobCollection<T> colBottom)
+        {
+            List<string> rgstrInput = preprocess(strEncInput);
+            DataItem data = Data.GetInputData(m_vocab, rgstrInput, nDecInput);
+
+            if (m_param.text_data_param.enable_normal_encoder_output && m_param.text_data_param.enable_reverse_encoder_output)
+                m_log.CHECK_EQ(colBottom.Count, 4, "The bottom collection must have 3 items: dec_input, enc_input, enc_inputr, enc_clip");
+            else
+                m_log.CHECK_EQ(colBottom.Count, 3, "The bottom collection must have 3 items: dec_input, enc_input | enc_inputr, enc_clip");
+
+            int nT = (int)m_param.text_data_param.time_steps;
+            int nBtmIdx = 0;
+
+            colBottom[nBtmIdx].Reshape(1, 1, 1, 1);
+            nBtmIdx++;
+
+            if (m_param.text_data_param.enable_normal_encoder_output)
+            {
+                colBottom[nBtmIdx].Reshape(nT, 1, 1, 1);
+                nBtmIdx++;
+            }
+
+            if (m_param.text_data_param.enable_reverse_encoder_output)
+            {
+                colBottom[nBtmIdx].Reshape(nT, 1, 1, 1);
+                nBtmIdx++;
+            }
+
+            colBottom[nBtmIdx].Reshape(new List<int>() { nT, 1 });
+
+            float[] rgEncInput = new float[nT];
+            float[] rgEncInputR = new float[nT];
+            float[] rgEncClip = new float[nT];
+            float[] rgDecInput = new float[1];
+
+            for (int i = 0; i < nT && i < data.EncoderInput.Count; i++)
+            {
+                rgEncInput[i] = data.EncoderInput[i];
+                rgEncInputR[i] = data.EncoderInputReverse[i];
+                rgEncClip[i] = (i == 0) ? 0 : 1;
+            }
+
+            rgDecInput[0] = data.DecoderInput;
+
+            nBtmIdx = 0;
+            colBottom[nBtmIdx].mutable_cpu_data = convert(rgDecInput);
+            nBtmIdx++;
+
+            if (m_param.text_data_param.enable_normal_encoder_output)
+            {
+                colBottom[nBtmIdx].mutable_cpu_data = convert(rgEncInput);
+                nBtmIdx++;
+            }
+
+            if (m_param.text_data_param.enable_reverse_encoder_output)
+            {
+                colBottom[nBtmIdx].mutable_cpu_data = convert(rgEncInputR);
+                nBtmIdx++;
+            }
+
+            colBottom[nBtmIdx].mutable_cpu_data = convert(rgEncClip);
+        }
+
+        /// <summary>
+        /// Convert the maximum index within the softmax into the word index, then convert
+        /// the word index back into the word and return the word string.
+        /// </summary>
+        /// <param name="blobSoftmax">Specifies the softmax output.</param>
+        /// <returns>The word string and word index corresponding to the softmax output is returned.</returns>
+        public Tuple<string, int> PostProcessOutput(Blob<T> blobSoftmax)
+        {
+            m_log.CHECK_EQ(blobSoftmax.channels, 1, "Currently, only batch size = 1 supported.");
+
+            long lPos;
+            blobSoftmax.GetMaxData(out lPos);
+
+            return new Tuple<string, int>(m_vocab.IndexToWord((int)lPos), (int)lPos);
+        }
 
         /// <summary>
         /// Setup the layer.
@@ -181,40 +291,38 @@ namespace MyCaffe.layers.beta
 
             m_log.CHECK_EQ(m_param.text_data_param.batch_size, 1, "Currently, only batch_size = 1 supported.");
 
-            if (m_param.text_data_param.enable_normal_encoder_output && m_param.text_data_param.enable_reverse_encoder_output)
-                m_log.CHECK_EQ(colTop.Count, 7, "When normal and reverse encoder output used, there must be 5 tops: dec, dclip, enc, encr, eclip, vocabcount");
-            else if (m_param.text_data_param.enable_normal_encoder_output || m_param.text_data_param.enable_reverse_encoder_output)
-                m_log.CHECK_EQ(colTop.Count, 6, "When normal or reverse encoder output used, there must be 4 tops: dec, dclip, enc | encr, eclip, vocabcount");
+            if (m_phase != Phase.RUN)
+            {
+                if (m_param.text_data_param.enable_normal_encoder_output && m_param.text_data_param.enable_reverse_encoder_output)
+                    m_log.CHECK_EQ(colTop.Count, 7, "When normal and reverse encoder output used, there must be 7 tops: dec, dclip, enc, encr, eclip, vocabcount, dectgt");
+                else if (m_param.text_data_param.enable_normal_encoder_output || m_param.text_data_param.enable_reverse_encoder_output)
+                    m_log.CHECK_EQ(colTop.Count, 6, "When normal or reverse encoder output used, there must be 6 tops: dec, dclip, enc | encr, eclip, vocabcount, dectgt");
+                else
+                    m_log.FAIL("You must specify to enable either normal, reverse or both encoder inputs.");
+            }
             else
-                m_log.FAIL("You must specify to enable either normal, reverse or both encoder inputs.");
+            {
+                if (m_param.text_data_param.enable_normal_encoder_output && m_param.text_data_param.enable_reverse_encoder_output)
+                    m_log.CHECK_EQ(colTop.Count, 6, "When normal and reverse encoder output used, there must be 6 tops: dec, dclip, enc, encr, eclip, vocabcount");
+                else if (m_param.text_data_param.enable_normal_encoder_output || m_param.text_data_param.enable_reverse_encoder_output)
+                    m_log.CHECK_EQ(colTop.Count, 5, "When normal or reverse encoder output used, there must be 5 tops: dec, dclip, enc | encr, eclip, vocabcount");
+                else
+                    m_log.FAIL("You must specify to enable either normal, reverse or both encoder inputs.");
+            }
 
             // Load the encoder and decoder input files into the Data and Vocabulary.
             PreProcessInputFiles(m_param.text_data_param);
 
             m_rgDecInput = new float[m_param.text_data_param.batch_size];
             m_rgDecClip = new float[m_param.text_data_param.batch_size];
-            m_rgDecTarget = new float[m_param.text_data_param.batch_size];
             m_rgEncInput1 = new float[m_param.text_data_param.batch_size * m_param.text_data_param.time_steps];
             m_rgEncInput2 = new float[m_param.text_data_param.batch_size * m_param.text_data_param.time_steps];
             m_rgEncClip = new float[m_param.text_data_param.batch_size * m_param.text_data_param.time_steps];
 
-            int nTopIdx = 0;
+            if (m_phase != Phase.RUN)
+                m_rgDecTarget = new float[m_param.text_data_param.batch_size];
 
-            nTopIdx++;
-            nTopIdx++;
-            nTopIdx++;
-
-            if (m_param.text_data_param.enable_normal_encoder_output || m_param.text_data_param.enable_reverse_encoder_output)
-                nTopIdx++;
-
-            if (m_param.text_data_param.enable_normal_encoder_output && m_param.text_data_param.enable_reverse_encoder_output)
-                nTopIdx++;
-
-            nTopIdx++;
-
-            // Reshape and set the vocabulary count variable.
-            colTop[nTopIdx].Reshape(1, 1, 1, 1);
-            colTop[nTopIdx].SetData(m_vocab.VocabularCount + 2, 0);
+            reshape(colTop, true);
         }
 
         /// <summary>
@@ -246,41 +354,59 @@ namespace MyCaffe.layers.beta
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            reshape(colTop, false);
+        }
+
+        private void reshape(BlobCollection<T> colTop, bool bSetup)
+        {
             int nBatchSize = (int)m_param.text_data_param.batch_size;
             int nT = (int)m_param.text_data_param.time_steps;
-            int nTopSize = m_param.top.Count;
             List<int> rgTopShape = new List<int>() { nT, nBatchSize, 1, 1 };
             int nTopIdx = 0;
-            
+
             // Reshape the decoder input.
-            colTop[nTopIdx].Reshape(1, nBatchSize, 1, 1);
+            if (!bSetup)
+                colTop[nTopIdx].Reshape(1, nBatchSize, 1, 1);
             nTopIdx++;
 
             // Reshape the decoder clip.
-            colTop[nTopIdx].Reshape(1, nBatchSize, 1, 1);
-            nTopIdx++;
-
-            // Reshape the decoder target.
-            colTop[nTopIdx].Reshape(1, nBatchSize, 1, 1);
+            if (!bSetup)
+                colTop[nTopIdx].Reshape(new List<int>() { 1, nBatchSize });
             nTopIdx++;
 
             // Reshape the encoder data | data reverse.
             if (m_param.text_data_param.enable_normal_encoder_output || m_param.text_data_param.enable_reverse_encoder_output)
             {
-                colTop[nTopIdx].Reshape(rgTopShape);
+                if (!bSetup)
+                    colTop[nTopIdx].Reshape(rgTopShape);
                 nTopIdx++;
             }
 
             // Reshape the encoder data reverse.
             if (m_param.text_data_param.enable_normal_encoder_output && m_param.text_data_param.enable_reverse_encoder_output)
             {
-                colTop[nTopIdx].Reshape(rgTopShape);
+                if (!bSetup)
+                    colTop[nTopIdx].Reshape(rgTopShape);
                 nTopIdx++;
             }
 
             // Reshape the encoder clip for attention.
-            colTop[nTopIdx].Reshape(rgTopShape);
+            if (!bSetup)
+                colTop[nTopIdx].Reshape(new List<int>() { nT, nBatchSize });
             nTopIdx++;
+
+            // Reshape the vocab count.
+            colTop[nTopIdx].Reshape(1, 1, 1, 1);
+            if (bSetup)
+                colTop[nTopIdx].SetData(m_vocab.VocabularCount + 2, 0);
+            nTopIdx++;
+
+            // Reshape the decoder target.
+            if (m_phase != Phase.RUN)
+            {
+                if (!bSetup)
+                    colTop[nTopIdx].Reshape(1, nBatchSize, 1, 1);
+            }
         }
 
         /// <summary>
@@ -297,57 +423,101 @@ namespace MyCaffe.layers.beta
             int nT = (int)m_param.text_data_param.time_steps;
 
             Array.Clear(m_rgDecInput, 0, m_rgDecInput.Length);
-            Array.Clear(m_rgDecTarget, 0, m_rgDecTarget.Length);
+            if (m_phase != Phase.RUN)
+                Array.Clear(m_rgDecTarget, 0, m_rgDecTarget.Length);
             Array.Clear(m_rgDecClip, 0, m_rgDecClip.Length);
             Array.Clear(m_rgEncInput1, 0, m_rgEncInput1.Length);
             Array.Clear(m_rgEncInput2, 0, m_rgEncInput2.Length);
             Array.Clear(m_rgEncClip, 0, m_rgEncClip.Length);
 
-            for (int i = 0; i < nBatch; i++)
-            {
-                while (Skip())
-                    Next();
-
-                Next();
-
-                int nIdx = i * nT;
-
-                for (int j = 0; j < m_currentData.EncoderInput.Count; j++)
-                {
-                    m_rgEncInput1[nIdx + j] = m_currentData.EncoderInput[j];
-                    m_rgEncInput2[nIdx + j] = m_currentData.EncoderInputReverse[j];
-                    m_rgEncClip[nIdx + j] = (j == 0) ? 0 : 1;
-                }
-
-                m_rgDecClip[i] = m_currentData.DecoderClip;
-                m_rgDecInput[i] = m_currentData.DecoderInput;
-                m_rgDecTarget[i] = m_currentData.DecoderTarget;
-            }
-
             int nTopIdx = 0;
 
-            colTop[nTopIdx].mutable_cpu_data = convert(m_rgDecInput);
-            nTopIdx++;
-
-            colTop[nTopIdx].mutable_cpu_data = convert(m_rgDecClip);
-            nTopIdx++;
-
-            colTop[nTopIdx].mutable_cpu_data = convert(m_rgDecTarget);
-            nTopIdx++;
-
-            if (m_param.text_data_param.enable_normal_encoder_output)
+            if (m_phase != Phase.RUN)
             {
-                colTop[nTopIdx].mutable_cpu_data = convert(m_rgEncInput1);
+                for (int i = 0; i < nBatch; i++)
+                {
+                    while (Skip())
+                        Next();
+
+                    Next();
+
+                    if (OnGetData != null)
+                        OnGetData(this, new OnGetDataArgs(Vocabulary, IterationInfo));
+
+                    int nIdx = i * nT;
+
+                    for (int j = 0; j < nT && j < m_currentData.EncoderInput.Count; j++)
+                    {
+                        m_rgEncInput1[nIdx + j] = m_currentData.EncoderInput[j];
+                        m_rgEncInput2[nIdx + j] = m_currentData.EncoderInputReverse[j];
+                        m_rgEncClip[nIdx + j] = (j == 0) ? 0 : 1;
+                    }
+
+                    m_rgDecClip[i] = m_currentData.DecoderClip;
+                    m_rgDecInput[i] = m_currentData.DecoderInput;
+                    m_rgDecTarget[i] = m_currentData.DecoderTarget;
+                }
+
+                colTop[nTopIdx].mutable_cpu_data = convert(m_rgDecInput);
+                nTopIdx++;
+
+                colTop[nTopIdx].mutable_cpu_data = convert(m_rgDecClip);
+                nTopIdx++;
+
+                if (m_param.text_data_param.enable_normal_encoder_output)
+                {
+                    colTop[nTopIdx].mutable_cpu_data = convert(m_rgEncInput1);
+                    nTopIdx++;
+                }
+
+                if (m_param.text_data_param.enable_normal_encoder_output)
+                {
+                    colTop[nTopIdx].mutable_cpu_data = convert(m_rgEncInput2);
+                    nTopIdx++;
+                }
+
+                colTop[nTopIdx].mutable_cpu_data = convert(m_rgEncClip);
+                nTopIdx++;
+
+                nTopIdx++; // vocab count.
+
+                colTop[nTopIdx].mutable_cpu_data = convert(m_rgDecTarget);
                 nTopIdx++;
             }
-
-            if (m_param.text_data_param.enable_normal_encoder_output)
+            else
             {
-                colTop[nTopIdx].mutable_cpu_data = convert(m_rgEncInput2);
-                nTopIdx++;
-            }
+                int nBtmIdx = 0;
+                float fDecInput = convertF(colBottom[nBtmIdx].GetData(0));
+                if (fDecInput < 0)
+                    fDecInput = 1;
 
-            colTop[nTopIdx].mutable_cpu_data = convert(m_rgEncClip);
+                nBtmIdx++;
+
+                // Decoder input.
+                colTop[nTopIdx].SetData(fDecInput, 0);
+                nTopIdx++;
+
+                // Decoder clip.
+                colTop[nTopIdx].SetData((fDecInput == 1) ? 0 : 1, 0);
+                nTopIdx++;
+
+                if (m_param.text_data_param.enable_normal_encoder_output)
+                {
+                    colTop[nTopIdx].CopyFrom(colBottom[nBtmIdx]);
+                    nTopIdx++;
+                    nBtmIdx++;
+                }
+
+                if (m_param.text_data_param.enable_reverse_encoder_output)
+                {
+                    colTop[nTopIdx].CopyFrom(colBottom[nBtmIdx]);
+                    nTopIdx++;
+                    nBtmIdx++;
+                }
+
+                // Encoder clip.
+                colTop[nTopIdx].CopyFrom(colBottom[nBtmIdx]);
+            }
         }
 
         /// @brief Not implemented - data Layers do not perform backward..
@@ -366,6 +536,7 @@ namespace MyCaffe.layers.beta
         List<List<string>> m_rgOutput;
         int m_nCurrentSequence = -1;
         int m_nCurrentOutputIdx = 0;
+        int m_nSequenceIdx = 0;
         int m_nIxInput = 1;
         int m_nIterations = 0;
         int m_nOutputCount = 0;
@@ -388,15 +559,23 @@ namespace MyCaffe.layers.beta
             get { return m_vocab.VocabularCount; }
         }
 
-        public Tuple<List<int>, int> GetInputData()
+        public static DataItem GetInputData(Vocabulary vocab, List<string> rgstrInput, int? nDecInput = null)
         {
             List<int> rgInput = new List<int>();
-            foreach (string str in m_rgInput[0])
+            foreach (string str in rgstrInput)
             {
-                rgInput.Add(m_vocab.WordToIndex(str));
+                rgInput.Add(vocab.WordToIndex(str));
             }
 
-            return new Tuple<List<int>, int>(rgInput, 1);
+            int nClip = 1;
+
+            if (!nDecInput.HasValue)
+            {
+                nClip = 0;
+                nDecInput = 1;
+            }
+
+            return new DataItem(rgInput, nDecInput.Value, -1, nClip, false, true, rgInput.Count);
         }
 
         public DataItem GetNextData(bool bShuffle)
@@ -417,9 +596,10 @@ namespace MyCaffe.layers.beta
                 }
                 else
                 {
-                    m_nCurrentSequence++;
-                    if (m_nCurrentSequence == m_rgOutput.Count)
-                        m_nCurrentSequence = 0;
+                    m_nCurrentSequence = m_nSequenceIdx;
+                    m_nSequenceIdx++;
+                    if (m_nSequenceIdx == m_rgOutput.Count)
+                        m_nSequenceIdx = 0;
                 }
 
                 m_nOutputCount = m_rgOutput[m_nCurrentSequence].Count;
@@ -465,9 +645,7 @@ namespace MyCaffe.layers.beta
 
     class DataItem /** @private */
     {
-        bool m_bNewEpoch;
-        bool m_bNewSequence;
-        int m_nOutputCount;
+        IterationInfo m_iter;
         List<int> m_rgInput;
         List<int> m_rgInputReverse;
         int m_nIxInput;
@@ -480,9 +658,7 @@ namespace MyCaffe.layers.beta
             m_nIxInput = nIxInput;
             m_nIxTarget = nIxTarget;
             m_nDecClip = nDecClip;
-            m_bNewEpoch = bNewEpoch;
-            m_bNewSequence = bNewSequence;
-            m_nOutputCount = nOutputCount;
+            m_iter = new IterationInfo(bNewEpoch, bNewSequence, nOutputCount);
             m_rgInputReverse = new List<int>();
 
             for (int i = rgInput.Count - 1; i >= 0; i--)
@@ -516,23 +692,60 @@ namespace MyCaffe.layers.beta
             get { return m_nDecClip; }
         }
 
+        public IterationInfo IterationInfo
+        {
+            get { return m_iter; }
+        }
+    }
+
+#pragma warning restore 1591 
+
+    /// <summary>
+    /// The IterationInfo class contains information about each iteration.
+    /// </summary>
+    public class IterationInfo
+    {
+        bool m_bNewEpoch;
+        bool m_bNewSequence;
+        int m_nOutputCount;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="bNewEpoch">Specifies whether or not the current iteration is in a new epoch.</param>
+        /// <param name="bNewSequence">Specifies whether or not the current iteration is in a new sequence.</param>
+        /// <param name="nOutputCount">Specifies the output count of the current sequence.</param>
+        public IterationInfo(bool bNewEpoch, bool bNewSequence, int nOutputCount)
+        {
+            m_bNewEpoch = bNewEpoch;
+            m_bNewSequence = bNewSequence;
+            m_nOutputCount = nOutputCount;
+        }
+
+        /// <summary>
+        /// Returns whether or not the current iteration is in a new epoch.
+        /// </summary>
         public bool NewEpoch
         {
             get { return m_bNewEpoch; }
         }
 
+        /// <summary>
+        /// Returns whether or not the current iteration is in a new sequence.
+        /// </summary>
         public bool NewSequence
         {
             get { return m_bNewSequence; }
         }
 
+        /// <summary>
+        /// Returns the output count of the current sequence.
+        /// </summary>
         public int OutputCount
         {
             get { return m_nOutputCount; }
         }
     }
-
-#pragma warning restore 1591 
 
     /// <summary>
     /// The Vocabulary object manages the overall word dictionary and word to index and index to word mappings.
@@ -633,6 +846,42 @@ namespace MyCaffe.layers.beta
                     nIdx++;
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Defines the arguments passed to the OnGetData event.
+    /// </summary>
+    public class OnGetDataArgs : EventArgs
+    {
+        Vocabulary m_vocab;
+        IterationInfo m_iter;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="vocab">Specifies the vocabulary.</param>
+        /// <param name="iter">Specifies the iteration info.</param>
+        public OnGetDataArgs(Vocabulary vocab, IterationInfo iter)
+        {
+            m_vocab = vocab;
+            m_iter = iter;
+        }
+
+        /// <summary>
+        /// Returns the vocabulary.
+        /// </summary>
+        public Vocabulary Vocabulary
+        {
+            get { return m_vocab; }
+        }
+
+        /// <summary>
+        /// Returns the iteration information.
+        /// </summary>
+        public IterationInfo IterationInfo
+        {
+            get { return m_iter; }
         }
     }
 }
