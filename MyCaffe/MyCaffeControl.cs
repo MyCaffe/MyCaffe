@@ -1554,7 +1554,7 @@ namespace MyCaffe
                 }
 
                 m_log.WriteLine("Creating run net...", true);
-                m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, null);
+                m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, null, Phase.RUN);
 
                 m_log.WriteLine("Loading weights...", true);
                 loadWeights(m_net, rgWeights);
