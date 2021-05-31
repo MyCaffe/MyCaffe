@@ -212,18 +212,18 @@ namespace MyCaffe.layers.beta
             int nT = (int)m_param.text_data_param.time_steps;
             int nBtmIdx = 0;
 
-            colBottom[nBtmIdx].Reshape(1, 1, 1, 1);
+            colBottom[nBtmIdx].Reshape(new List<int>() { 1, 1, 1 });
             nBtmIdx++;
 
             if (m_param.text_data_param.enable_normal_encoder_output)
             {
-                colBottom[nBtmIdx].Reshape(nT, 1, 1, 1);
+                colBottom[nBtmIdx].Reshape(new List<int>() { nT, 1, 1 });
                 nBtmIdx++;
             }
 
             if (m_param.text_data_param.enable_reverse_encoder_output)
             {
-                colBottom[nBtmIdx].Reshape(nT, 1, 1, 1);
+                colBottom[nBtmIdx].Reshape(new List<int>() { nT, 1, 1 });
                 nBtmIdx++;
             }
 
@@ -361,12 +361,12 @@ namespace MyCaffe.layers.beta
         {
             int nBatchSize = (int)m_param.text_data_param.batch_size;
             int nT = (int)m_param.text_data_param.time_steps;
-            List<int> rgTopShape = new List<int>() { nT, nBatchSize, 1, 1 };
+            List<int> rgTopShape = new List<int>() { nT, nBatchSize, 1 };
             int nTopIdx = 0;
 
             // Reshape the decoder input.
             if (!bSetup)
-                colTop[nTopIdx].Reshape(1, nBatchSize, 1, 1);
+                colTop[nTopIdx].Reshape(new List<int>() { 1, nBatchSize, 1 });
             nTopIdx++;
 
             // Reshape the decoder clip.
@@ -396,7 +396,7 @@ namespace MyCaffe.layers.beta
             nTopIdx++;
 
             // Reshape the vocab count.
-            colTop[nTopIdx].Reshape(1, 1, 1, 1);
+            colTop[nTopIdx].Reshape(new List<int>() { 1 });
             if (bSetup)
                 colTop[nTopIdx].SetData(m_vocab.VocabularCount + 2, 0);
             nTopIdx++;
@@ -405,7 +405,7 @@ namespace MyCaffe.layers.beta
             if (m_phase != Phase.RUN)
             {
                 if (!bSetup)
-                    colTop[nTopIdx].Reshape(1, nBatchSize, 1, 1);
+                    colTop[nTopIdx].Reshape(new List<int>() { 1, nBatchSize, 1 });
             }
         }
 

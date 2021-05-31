@@ -221,13 +221,13 @@ namespace MyCaffe.test
             int nT = (int)p.text_data_param.time_steps;
             int nN = (int)p.text_data_param.batch_size;
 
-            verify_shape(TopVec[0], new List<int>() { 1, nN, 1, 1 });   // dec input
+            verify_shape(TopVec[0], new List<int>() { 1, nN, 1 });   // dec input
             verify_shape(TopVec[1], new List<int>() { 1, nN });         // dec clip
-            verify_shape(TopVec[2], new List<int>() { nT, nN, 1, 1 });  // enc input1
-            verify_shape(TopVec[3], new List<int>() { nT, nN, 1, 1 });  // enc input2
+            verify_shape(TopVec[2], new List<int>() { nT, nN, 1 });  // enc input1
+            verify_shape(TopVec[3], new List<int>() { nT, nN, 1 });  // enc input2
             verify_shape(TopVec[4], new List<int>() { nT, nN });        // enc clip
-            verify_shape(TopVec[5], new List<int>() { 1, 1, 1, 1 });    // vocab count
-            verify_shape(TopVec[6], new List<int>() { 1, nN, 1, 1 });   // dec target
+            verify_shape(TopVec[5], new List<int>() { 1 });    // vocab count
+            verify_shape(TopVec[6], new List<int>() { 1, nN, 1 });   // dec target
         }
 
         private List<string> preprocess(string str, int nMaxLen = 0)
