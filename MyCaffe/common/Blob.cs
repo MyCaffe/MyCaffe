@@ -773,15 +773,20 @@ namespace MyCaffe.common
         /// <returns>The flat offset is returned.</returns>
         public int offset(int n, int c = 0, int h = 0, int w = 0)
         {
+            int c1 = channels;
+            int h1 = height;
+            int w1 = width;
+
             m_log.CHECK_GE(n, 0, "n must be >= 0.");
             m_log.CHECK_LE(n, num, "n must be <= num.");
-            m_log.CHECK_GE(channels, 0, "channels must be >= 0.");
-            m_log.CHECK_LE(c, channels, "c must be <= channels.");
-            m_log.CHECK_GE(height, 0, "height must be >= 0.");
-            m_log.CHECK_LE(h, height, "w must be <= height.");
-            m_log.CHECK_GE(width, 0, "width must be >= 0.");
-            m_log.CHECK_LE(w, width, "w must be <= width.");
-            return ((n * channels + c) * height + h) * width + w;
+            m_log.CHECK_GE(c1, 0, "channels must be >= 0.");
+            m_log.CHECK_LE(c, c1, "c must be <= channels.");
+            m_log.CHECK_GE(h1, 0, "height must be >= 0.");
+            m_log.CHECK_LE(h, h1, "w must be <= height.");
+            m_log.CHECK_GE(w1, 0, "width must be >= 0.");
+            m_log.CHECK_LE(w, w1, "w must be <= width.");
+
+            return ((n * c1 + c) * h1 + h) * w1 + w;
         }
 
         /// <summary>
