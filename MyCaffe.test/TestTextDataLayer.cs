@@ -328,6 +328,8 @@ namespace MyCaffe.test
             int nVocabCount1 = (int)convert(m_blobVocabCount.GetData(0));
             m_log.CHECK_EQ(nVocabCount + 2, nVocabCount1, "The vocab count is not as expected!");
 
+            int nSeqIdx = 1;
+
             for (int i = 0; i < 10; i++)
             {
                 layer.Forward(BottomVec, TopVec);
@@ -341,6 +343,12 @@ namespace MyCaffe.test
                     nDataIdx++;
                     bRes = verify_top_data(TopVec, nN, nT, nDataIdx, rgEncInput, rgEncInputR, rgDecInput, nVocabCount + 2);
                 }
+
+                rgEncInput = getInput(nSeqIdx, ((TextDataLayer<T>)layer).Vocabulary, strEncSrc);
+                rgEncInputR = new List<int>(rgEncInput);
+                rgEncInputR.Reverse();
+                rgDecInput = getInput(nSeqIdx, ((TextDataLayer<T>)layer).Vocabulary, strDecSrc);
+                nSeqIdx++;
             }
         }
 
