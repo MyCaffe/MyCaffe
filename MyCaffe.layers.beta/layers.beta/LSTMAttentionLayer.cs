@@ -488,6 +488,11 @@ namespace MyCaffe.layers
                 m_nN = colBottom[0].channels;
                 m_bNetReshapeRequest = false;
             }
+            else
+            {
+                if (!reshapeNeeded(colBottom, colTop))
+                    return;
+            }
 
             // Figure out the dimensions.
             m_nT = colBottom[0].num;  // length of sequence.
@@ -546,18 +551,23 @@ namespace MyCaffe.layers
         // Find the longest clip length.
         private int calculate_maxT(Blob<T> blob, out int nInitialClip)
         {
-            m_blobMaxT.SetData(0);
+            int nMax = 1;
 
-            for (int t = 0; t < blob.num; t++)
+            if (blob.count() > 1)
             {
-                int nSrcIdx = t * blob.channels;
-                m_cuda.add(m_blobMaxT.count(), blob.gpu_data, m_blobMaxT.gpu_data, m_blobMaxT.mutable_gpu_data, 1.0, 1.0, nSrcIdx, 0, 0);
-            }
+                m_blobMaxT.SetData(0);
 
-            long lPos;
-            int nMax = (int)m_cuda.max(m_blobMaxT.count(), m_blobMaxT.gpu_data, out lPos);
-            if (convertF(blob.GetData(0)) ==0)
-                nMax++;
+                for (int t = 0; t < blob.num; t++)
+                {
+                    int nSrcIdx = t * blob.channels;
+                    m_cuda.add(m_blobMaxT.count(), blob.gpu_data, m_blobMaxT.gpu_data, m_blobMaxT.mutable_gpu_data, 1.0, 1.0, nSrcIdx, 0, 0);
+                }
+
+                long lPos;
+                nMax = (int)m_cuda.max(m_blobMaxT.count(), m_blobMaxT.gpu_data, out lPos);
+                if (convertF(blob.GetData(0)) == 0)
+                    nMax++;
+            }
 
             nInitialClip = (int)convertF(blob.GetData(0));
 
