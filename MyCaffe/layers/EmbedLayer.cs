@@ -204,11 +204,7 @@ namespace MyCaffe.layers
             m_nM = colBottom[0].count();
             List<int> rgTopShape = Utility.Clone<int>(colBottom[0].shape());
             
-            if (rgTopShape.Count < 4)
-                rgTopShape.Add(m_nN);
-            else
-                rgTopShape[3] = m_nN;
-
+            rgTopShape.Add(m_nN);
             colTop[0].Reshape(rgTopShape);
 
             // Set up the bias multiplier
