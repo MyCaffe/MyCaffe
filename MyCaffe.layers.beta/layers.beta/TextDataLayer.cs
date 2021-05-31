@@ -77,19 +77,19 @@ namespace MyCaffe.layers.beta
         }
 
         /// <summary>
-        /// Returns the minimum number of required top (output) Blobs: dec, dclip, enc, eclip, vocabcount, label (on TRAIN or TEST)
+        /// Returns the minimum number of required top (output) Blobs: dec, dclip, enc, eclip, vocabcount, label (only valid on TRAIN or TEST)
         /// </summary>
         public override int MinTopBlobs
         {
-            get { return (m_phase == Phase.RUN) ? 5 : 6; }
+            get { return 6; }
         }
 
         /// <summary>
-        /// Returns the maximum number of required top (output) Blobs: dec, dclip, enc, encr, eclip, vocabcount, label (on TRAIN or TEST)
+        /// Returns the maximum number of required top (output) Blobs: dec, dclip, enc, encr, eclip, vocabcount, label (only valid on TRAIN or TEST)
         /// </summary>
         public override int MaxTopBlobs
         {
-            get { return (m_phase == Phase.RUN) ? 6 : 7; }
+            get { return 7; }
         }
 
         /// <summary>
@@ -291,24 +291,12 @@ namespace MyCaffe.layers.beta
 
             m_log.CHECK_EQ(m_param.text_data_param.batch_size, 1, "Currently, only batch_size = 1 supported.");
 
-            if (m_phase != Phase.RUN)
-            {
-                if (m_param.text_data_param.enable_normal_encoder_output && m_param.text_data_param.enable_reverse_encoder_output)
-                    m_log.CHECK_EQ(colTop.Count, 7, "When normal and reverse encoder output used, there must be 7 tops: dec, dclip, enc, encr, eclip, vocabcount, dectgt");
-                else if (m_param.text_data_param.enable_normal_encoder_output || m_param.text_data_param.enable_reverse_encoder_output)
-                    m_log.CHECK_EQ(colTop.Count, 6, "When normal or reverse encoder output used, there must be 6 tops: dec, dclip, enc | encr, eclip, vocabcount, dectgt");
-                else
-                    m_log.FAIL("You must specify to enable either normal, reverse or both encoder inputs.");
-            }
+            if (m_param.text_data_param.enable_normal_encoder_output && m_param.text_data_param.enable_reverse_encoder_output)
+                m_log.CHECK_EQ(colTop.Count, 7, "When normal and reverse encoder output used, there must be 7 tops: dec, dclip, enc, encr, eclip, vocabcount, dectgt (only valid on TEST | TRAIN)");
+            else if (m_param.text_data_param.enable_normal_encoder_output || m_param.text_data_param.enable_reverse_encoder_output)
+                m_log.CHECK_EQ(colTop.Count, 6, "When normal or reverse encoder output used, there must be 6 tops: dec, dclip, enc | encr, eclip, vocabcount, dectgt (only valid on TEST | TRAIN)");
             else
-            {
-                if (m_param.text_data_param.enable_normal_encoder_output && m_param.text_data_param.enable_reverse_encoder_output)
-                    m_log.CHECK_EQ(colTop.Count, 6, "When normal and reverse encoder output used, there must be 6 tops: dec, dclip, enc, encr, eclip, vocabcount");
-                else if (m_param.text_data_param.enable_normal_encoder_output || m_param.text_data_param.enable_reverse_encoder_output)
-                    m_log.CHECK_EQ(colTop.Count, 5, "When normal or reverse encoder output used, there must be 5 tops: dec, dclip, enc | encr, eclip, vocabcount");
-                else
-                    m_log.FAIL("You must specify to enable either normal, reverse or both encoder inputs.");
-            }
+                m_log.FAIL("You must specify to enable either normal, reverse or both encoder inputs.");
 
             // Load the encoder and decoder input files into the Data and Vocabulary.
             PreProcessInputFiles(m_param.text_data_param);
@@ -402,11 +390,8 @@ namespace MyCaffe.layers.beta
             nTopIdx++;
 
             // Reshape the decoder target.
-            if (m_phase != Phase.RUN)
-            {
-                if (!bSetup)
-                    colTop[nTopIdx].Reshape(new List<int>() { 1, nBatchSize, 1 });
-            }
+            if (!bSetup)
+                colTop[nTopIdx].Reshape(new List<int>() { 1, nBatchSize, 1 });
         }
 
         /// <summary>
