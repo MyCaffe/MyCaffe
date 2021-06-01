@@ -112,9 +112,20 @@ namespace MyCaffe.layers
         /// <summary>
         /// Returns the exact number of required bottom (input) Blobs: input.
         /// </summary>
-        public override int ExactNumBottomBlobs
+        public override int MinBottomBlobs
         {
             get { return 1; }
+        }
+
+        /// <summary>
+        /// Returns the exact number of required bottom (input) Blobs: input, num_output.
+        /// </summary>
+        /// <remarks>
+        /// When specified, the input_dim overrides the m_param.inner_product_param.num_output.
+        /// </remarks>
+        public override int MaxBottomBlobs
+        {
+            get { return 2; }
         }
 
         /// <summary>
@@ -156,6 +167,9 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            if (colBottom.Count > 1)
+                m_param.inner_product_param.num_output = (uint)convertF(colBottom[1].GetData(0));
+
             int nNumOutput = (int)m_param.inner_product_param.num_output;
             m_bBiasTerm = m_param.inner_product_param.bias_term;
             m_bTranspose = m_param.inner_product_param.transpose;
