@@ -882,10 +882,10 @@ namespace MyCaffe.layers
                 m_log.CHECK_EQ(ExactNumTopBlobs, colTop.Count, type.ToString() + " Layer takes " + ExactNumTopBlobs.ToString() + " top blob(s) as output.");
 
             if (MinTopBlobs >= 0)
-                m_log.CHECK_LE(MinTopBlobs, colTop.Count, type.ToString() + " Layer takes at least " + MinTopBlobs.ToString() + " top blob(s) as input.");
+                m_log.CHECK_LE(MinTopBlobs, colTop.Count, type.ToString() + " Layer takes at least " + MinTopBlobs.ToString() + " top blob(s) as output.");
 
             if (MaxTopBlobs >= 0)
-                m_log.CHECK_GE(MaxTopBlobs, colTop.Count, type.ToString() + " Layer takes at most " + MaxTopBlobs.ToString() + " bottom blob(s) as input.");
+                m_log.CHECK_GE(MaxTopBlobs, colTop.Count, type.ToString() + " Layer takes at most " + MaxTopBlobs.ToString() + " top blob(s) as output.");
 
             if (EqualNumBottomTopBlobs)
                 m_log.CHECK_EQ(colBottom.Count, colTop.Count, type.ToString() + " Layer produces one top blob as output for each bottom blob input.");
