@@ -17,6 +17,7 @@ namespace MyCaffe.layers
     {
         SoftmaxLayer<T> m_softmaxLayer;
         Blob<T> m_blobSoftmaxOutput;
+        Blob<T> m_blobTarget = null;
         Blob<T> m_blobLoss;
         BlobCollection<T> m_colSoftmaxBottomVec = new BlobCollection<T>();
         BlobCollection<T> m_colSoftmaxTopVec = new BlobCollection<T>();
@@ -52,6 +53,10 @@ namespace MyCaffe.layers
             m_blobSoftmaxOutput.Dispose();
             m_softmaxLayer.Dispose();
             m_blobLoss.Dispose();
+
+            if (m_blobTarget != null)
+                m_blobTarget.Dispose();
+
             base.dispose();
         }
 
@@ -105,7 +110,22 @@ namespace MyCaffe.layers
             base.Reshape(colBottom, colTop);
             m_nOuterNum = colBottom[0].shape(0); // batch size
             m_nInnerNum = colBottom[0].count(1); // instance size: |output| == |target|
-            m_log.CHECK_EQ(colBottom[0].count(), colBottom[1].count(), "SOFTMAX_CROSS_ENTROPY_LOSS layer inputs must have the same count.");
+
+            if (colBottom[0].count() != colBottom[1].count())
+            {
+                if (colBottom[1].count() != colBottom[0].num)
+                    m_log.FAIL("SOFTMAX_CROSS_ENTROPY_LOSS layer inputs must have the same count, or the target must have 'num' items of indexes.");
+
+                // Set the label at the target index = 1.0
+                if (m_blobTarget == null)
+                {
+                    m_blobTarget = new Blob<T>(m_cuda, m_log);
+                    m_blobTarget.Name = "full_label";
+                }
+
+                m_blobTarget.ReshapeLike(colBottom[0]);
+            }
+
             m_softmaxLayer.Reshape(m_colSoftmaxBottomVec, m_colSoftmaxTopVec);
             m_blobLoss.ReshapeLike(colBottom[0]);
         }
@@ -133,6 +153,20 @@ namespace MyCaffe.layers
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            // Set the target data.
+            if (m_blobTarget != null)
+            {
+                m_log.CHECK_EQ(colBottom[0].num, colBottom[1].count(), "SOFTMAX_CROSS_ENTROPY_LOSS layer inputs must have the same count, or the target must have 'num' items of indexes.");
+                m_blobTarget.SetData(0);
+
+                float[] rgfTarget = convertF(colBottom[1].mutable_cpu_data);
+                for (int i = 0; i < colBottom[1].num; i++)
+                {
+                    int nTargetIdx = (int)rgfTarget[i];
+                    m_blobTarget.SetData(1.0, m_nInnerNum * i + nTargetIdx);
+                }
+            }
+
             // The forward pass computes the softmax outputs.
             m_colSoftmaxBottomVec[0] = colBottom[0];
             m_softmaxLayer.Forward(m_colSoftmaxBottomVec, m_colSoftmaxTopVec);
@@ -142,12 +176,12 @@ namespace MyCaffe.layers
 
             // Stable version of loss computation for input data.
             long hInputData = colBottom[0].gpu_data;
-            long hTarget = colBottom[1].gpu_data;
+            long hTarget = (m_blobTarget != null) ? m_blobTarget.gpu_data : colBottom[1].gpu_data;
 
             // Since this memory is not used for anything, we use it here to avoid having
             // to allocate the GPU memory to accumulate intermediate results.
             long hLossData = colBottom[0].mutable_gpu_diff;
-            long hCountData = colBottom[1].mutable_gpu_diff;
+            long hCountData = (m_blobTarget != null) ? m_blobTarget.mutable_gpu_diff : colBottom[1].mutable_gpu_diff;
 
             m_cuda.cross_entropy_fwd(nCount, hInputData, hTarget, hLossData, false, -1, hCountData);
 
@@ -167,6 +201,9 @@ namespace MyCaffe.layers
             // Clear scratch memory to prevent interfering with the backward pass (see #6202)
             colBottom[0].SetDiff(0);
             colBottom[1].SetDiff(0);
+
+            if (m_blobTarget != null)
+                m_blobTarget.SetDiff(0);
         }
 
         /// <summary>
@@ -211,7 +248,7 @@ namespace MyCaffe.layers
                 // First, compute the diff.
                 int nCount = colBottom[0].count();
                 long hSoftmaxOutputData = m_blobSoftmaxOutput.gpu_data;
-                long hTarget = colBottom[1].gpu_data;
+                long hTarget = (m_blobTarget != null) ? m_blobTarget.gpu_data : colBottom[1].gpu_data;
                 long hBottomDiff = colBottom[0].mutable_gpu_diff;
 
                 m_cuda.copy(nCount, hSoftmaxOutputData, hBottomDiff);
