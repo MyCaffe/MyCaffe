@@ -69,6 +69,7 @@ namespace MyCaffe.param
         bool m_bOutputAverageResults = false;
         bool m_bSnapshotIncludeWeights = true;
         bool m_bSnapshotIncludeState = true;
+        int m_nAverageAccuracyWindow = 0;
 
         // SSD Parameters
         EvaluationType m_evalType = EvaluationType.CLASSIFICATION;
@@ -899,6 +900,16 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Specifies the window over which to average the accuracies (default = 0 which ignores averaging).
+        /// </summary>
+        [Description("Specifies the window over which to average the accuracies (default = 0, which ignores the averaging).")]
+        public int accuracy_average_window
+        {
+            get { return m_nAverageAccuracyWindow; }
+            set { m_nAverageAccuracyWindow = value; }
+        }
+
+        /// <summary>
         /// Converts the SolverParameter into a RawProto.
         /// </summary>
         /// <param name="strName">Specifies a name given to the RawProto.</param>
@@ -1014,6 +1025,7 @@ namespace MyCaffe.param
                 rgChildren.Add("ap_version", ap_version.ToString().ToLower());
 
             rgChildren.Add("show_per_class_result", show_per_class_result.ToString());
+            rgChildren.Add("accuracy_average_window", accuracy_average_window.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -1252,6 +1264,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("show_per_class_result")) != null)
                 p.show_per_class_result = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("accuracy_average_window")) != null)
+                p.accuracy_average_window = int.Parse(strVal);
 
             return p;
         }

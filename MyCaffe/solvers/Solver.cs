@@ -102,6 +102,7 @@ namespace MyCaffe.solvers
         long m_hWorkspaceData = 0;  // shared among the layers and nets, only grows in size.
         ulong m_lWorkspaceSize = 0;
         bool m_bFirstNanError = true;
+        List<double> m_rgAverageAccuracyWindow = null;
 
         /// <summary>
         /// The OnStart event fires at the start of each training iteration.
@@ -190,6 +191,15 @@ namespace MyCaffe.solvers
 
             if (setws != null)
                 OnSetWorkspace += new EventHandler<WorkspaceArgs>(setws);
+
+            if (p.accuracy_average_window > 0)
+            {
+                m_rgAverageAccuracyWindow = new List<double>();
+                for (int i = 0; i < p.accuracy_average_window; i++)
+                {
+                    m_rgAverageAccuracyWindow.Add(0);
+                }
+            }
 
             Init(p, shareNet);
         }
@@ -1308,6 +1318,13 @@ namespace MyCaffe.solvers
             }
 
             double dfAccuracy = (m_rgTestNets.Count > 0) ? dfTotalAccuracy / m_rgTestNets.Count : 0;
+
+            if (m_rgAverageAccuracyWindow != null)
+            {
+                m_rgAverageAccuracyWindow.Add(dfAccuracy);
+                m_rgAverageAccuracyWindow.RemoveAt(0);
+                dfAccuracy = m_rgAverageAccuracyWindow.Average();
+            }
 
             if (OnTestingIteration != null)
             {
