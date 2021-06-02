@@ -188,6 +188,42 @@ namespace MyCaffe.layers.beta
         }
 
         /// <summary>
+        /// The PreprocessInput allows derivative data layers to convert a property set of input
+        /// data into the bottom blob collection used as intput.
+        /// </summary>
+        /// <param name="customInput">Specifies the custom input data.</param>
+        /// <param name="colBottom">Optionally, specifies the bottom data to fill.</param>
+        /// <returns>The bottom data is returned.</returns>
+        /// <remarks>The blobs returned should match the blob descriptions returned in the LayerParameter's
+        /// overrides for 'PrepareRunModelInputs' and 'PrepareRunModel'.</remarks>
+        public override BlobCollection<T> PreProcessInput(PropertySet customInput, BlobCollection<T> colBottom = null)
+        {
+            if (colBottom == null)
+            {
+                string strInput = m_param.PrepareRunModelInputs();
+                RawProto proto = RawProto.Parse(strInput);
+                Dictionary<string, BlobShape> rgInput = NetParameter.InputFromProto(proto);
+                colBottom = new BlobCollection<T>();
+
+                foreach (KeyValuePair<string, BlobShape> kv in rgInput)
+                {
+                    Blob<T> blob = new Blob<T>(m_cuda, m_log);
+                    blob.Name = kv.Key;
+                    blob.Reshape(kv.Value);
+                    colBottom.Add(blob);
+                }
+            }
+
+            string strEncInput = customInput.GetProperty("InputData");
+            if (strEncInput == null)
+                throw new Exception("Could not find the expected input property 'InputData'!");
+
+            PreProcessInput(strEncInput, null, colBottom);
+
+            return colBottom;
+        }
+
+        /// <summary>
         /// Preprocess the input data for the RUN phase.
         /// </summary>
         /// <param name="strEncInput">Specifies the encoder input.</param>
@@ -199,9 +235,12 @@ namespace MyCaffe.layers.beta
         /// <remarks>
         /// NOTE: the LayerSetup must be called before preprocessing input, for during LayerSetup the vocabulary is loaded.
         /// </remarks>
-        public void PreProcessInput(string strEncInput, int? nDecInput, BlobCollection<T> colBottom)
+        public override void PreProcessInput(string strEncInput, int? nDecInput, BlobCollection<T> colBottom)
         {
-            List<string> rgstrInput = preprocess(strEncInput);
+            List<string> rgstrInput = null;
+            if (strEncInput != null)
+                rgstrInput = preprocess(strEncInput);
+
             DataItem data = Data.GetInputData(m_vocab, rgstrInput, nDecInput);
 
             if (m_param.text_data_param.enable_normal_encoder_output && m_param.text_data_param.enable_reverse_encoder_output)
@@ -229,16 +268,23 @@ namespace MyCaffe.layers.beta
 
             colBottom[nBtmIdx].Reshape(new List<int>() { nT, 1 });
 
-            float[] rgEncInput = new float[nT];
-            float[] rgEncInputR = new float[nT];
-            float[] rgEncClip = new float[nT];
+            float[] rgEncInput = null;
+            float[] rgEncInputR = null;
+            float[] rgEncClip = null;
             float[] rgDecInput = new float[1];
 
-            for (int i = 0; i < nT && i < data.EncoderInput.Count; i++)
+            if (data.EncoderInput != null)
             {
-                rgEncInput[i] = data.EncoderInput[i];
-                rgEncInputR[i] = data.EncoderInputReverse[i];
-                rgEncClip[i] = (i == 0) ? 0 : 1;
+                rgEncInput = new float[nT];
+                rgEncInputR = new float[nT];
+                rgEncClip = new float[nT];
+
+                for (int i = 0; i < nT && i < data.EncoderInput.Count; i++)
+                {
+                    rgEncInput[i] = data.EncoderInput[i];
+                    rgEncInputR[i] = data.EncoderInputReverse[i];
+                    rgEncClip[i] = (i == 0) ? 0 : 1;
+                }
             }
 
             rgDecInput[0] = data.DecoderInput;
@@ -249,17 +295,20 @@ namespace MyCaffe.layers.beta
 
             if (m_param.text_data_param.enable_normal_encoder_output)
             {
-                colBottom[nBtmIdx].mutable_cpu_data = convert(rgEncInput);
+                if (rgEncInput != null)
+                    colBottom[nBtmIdx].mutable_cpu_data = convert(rgEncInput);
                 nBtmIdx++;
             }
 
             if (m_param.text_data_param.enable_reverse_encoder_output)
             {
-                colBottom[nBtmIdx].mutable_cpu_data = convert(rgEncInputR);
+                if (rgEncInputR != null)
+                    colBottom[nBtmIdx].mutable_cpu_data = convert(rgEncInputR);
                 nBtmIdx++;
             }
 
-            colBottom[nBtmIdx].mutable_cpu_data = convert(rgEncClip);
+            if (rgEncClip != null)
+                colBottom[nBtmIdx].mutable_cpu_data = convert(rgEncClip);
         }
 
         /// <summary>
@@ -268,7 +317,7 @@ namespace MyCaffe.layers.beta
         /// </summary>
         /// <param name="blobSoftmax">Specifies the softmax output.</param>
         /// <returns>The word string and word index corresponding to the softmax output is returned.</returns>
-        public Tuple<string, int> PostProcessOutput(Blob<T> blobSoftmax)
+        public override Tuple<string, int> PostProcessOutput(Blob<T> blobSoftmax)
         {
             m_log.CHECK_EQ(blobSoftmax.channels, 1, "Currently, only batch size = 1 supported.");
 
@@ -546,10 +595,15 @@ namespace MyCaffe.layers.beta
 
         public static DataItem GetInputData(Vocabulary vocab, List<string> rgstrInput, int? nDecInput = null)
         {
-            List<int> rgInput = new List<int>();
-            foreach (string str in rgstrInput)
+            List<int> rgInput = null;
+
+            if (rgstrInput != null)
             {
-                rgInput.Add(vocab.WordToIndex(str));
+                rgInput = new List<int>();
+                foreach (string str in rgstrInput)
+                {
+                    rgInput.Add(vocab.WordToIndex(str));
+                }
             }
 
             int nClip = 1;
@@ -560,7 +614,7 @@ namespace MyCaffe.layers.beta
                 nDecInput = 1;
             }
 
-            return new DataItem(rgInput, nDecInput.Value, -1, nClip, false, true, rgInput.Count);
+            return new DataItem(rgInput, nDecInput.Value, -1, nClip, false, true, 0);
         }
 
         public DataItem GetNextData(bool bShuffle)
@@ -646,9 +700,16 @@ namespace MyCaffe.layers.beta
             m_iter = new IterationInfo(bNewEpoch, bNewSequence, nOutputCount);
             m_rgInputReverse = new List<int>();
 
-            for (int i = rgInput.Count - 1; i >= 0; i--)
+            if (rgInput != null)
             {
-                m_rgInputReverse.Add(rgInput[i]);
+                for (int i = rgInput.Count - 1; i >= 0; i--)
+                {
+                    m_rgInputReverse.Add(rgInput[i]);
+                }
+            }
+            else
+            {
+                m_rgInputReverse = null;
             }
         }
 
