@@ -43,6 +43,24 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// This method gives derivative classes a chance specify model inputs required
+        /// by the run model.
+        /// </summary>
+        /// <returns>The model inputs required by the layer (if any) or null.</returns>
+        public virtual string PrepareRunModelInputs()
+        {
+            return null;
+        }
+
+        /// <summary>
+        /// This method gives derivative classes a chance to prepare the layer for a run-model.
+        /// </summary>
+        /// <param name="p">Specifies the full layer parameter.</param>
+        public virtual void PrepareRunModel(LayerParameter p)
+        {
+        }
+
+        /// <summary>
         /// Creates a new copy of this instance of the parameter.
         /// </summary>
         /// <returns>A new instance of this parameter is returned.</returns>

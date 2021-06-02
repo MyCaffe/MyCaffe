@@ -182,6 +182,48 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// The PreprocessInput allows derivative data layers to convert a property set of input
+        /// data into the bottom blob collection used as intput.
+        /// </summary>
+        /// <param name="customInput">Specifies the custom input data.</param>
+        /// <param name="colBottom">Optionally, specifies the bottom data to fill.</param>
+        /// <returns>The bottom data is returned.</returns>
+        /// <remarks>The blobs returned should match the blob descriptions returned in the LayerParameter's
+        /// overrides for 'PrepareRunModelInputs' and 'PrepareRunModel'.</remarks>
+        public virtual BlobCollection<T> PreProcessInput(PropertySet customInput, BlobCollection<T> colBottom = null)
+        {
+            return colBottom;
+        }
+
+        /// <summary>
+        /// Preprocess the input data for the RUN phase.
+        /// </summary>
+        /// <param name="strEncInput">Specifies the encoder input.</param>
+        /// <param name="nDecInput">Specifies the decoder input.</param>
+        /// <param name="colBottom">Specifies the bottom blob where the preprocessed data is placed where
+        /// colBottom[0] contains the preprocessed decoder input.</param>
+        /// colBottom[1] contains the preprocessed encoder input (depending on param settings),
+        /// colBottom[2] contains the preprocessed encoder input reversed (depending on param settings), 
+        /// <remarks>
+        /// NOTE: the LayerSetup must be called before preprocessing input, for during LayerSetup the vocabulary is loaded.
+        /// </remarks>
+        public virtual void PreProcessInput(string strEncInput, int? nDecInput, BlobCollection<T> colBottom)
+        {
+            return;
+        }
+
+        /// <summary>
+        /// The PostprocessOutput allows derivative data layers to post-process the results,
+        /// converting them back into text results.
+        /// </summary>
+        /// <param name="blobSofmtax">Specifies the softmax blob output by the network.</param>
+        /// <returns>A tuple of the string representation of the output and its corresponding value are returned.</returns>
+        public virtual Tuple<string, int> PostProcessOutput(Blob<T> blobSofmtax)
+        {
+            return null;
+        }
+
+        /// <summary>
         /// Set the OnDebug event.
         /// </summary>
         /// <param name="fn">Specifies the event function to call when the OnDebug event fires.</param>

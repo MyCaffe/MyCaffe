@@ -594,6 +594,29 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Prepare model inputs for the run-net (if any are needed for the layer).
+        /// </summary>
+        /// <returns>The model input description or null is returned.</returns>
+        public string PrepareRunModelInputs()
+        {
+            if (m_rgLayerParameters[m_type] == null)
+                return null;
+
+            return m_rgLayerParameters[m_type].PrepareRunModelInputs();
+        }
+
+        /// <summary>
+        /// Prepare the layer settings for a run model.
+        /// </summary>
+        public void PrepareRunModel()
+        {
+            if (m_rgLayerParameters[m_type] == null)
+                return;
+
+            m_rgLayerParameters[m_type].PrepareRunModel(this);
+        }
+
+        /// <summary>
         /// Returns the number of ParamSpec parameters used by the layer.
         /// </summary>
         /// <returns>The ParamSpec count is returned.</returns>

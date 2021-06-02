@@ -34,6 +34,42 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// This method gives derivative classes a chance specify model inputs required
+        /// by the run model.
+        /// </summary>
+        /// <returns>The model inputs required by the layer (if any) or null.</returns>
+        public override string PrepareRunModelInputs()
+        {
+            string strInput = "";
+            int nBatch = (int)m_nBatchSize;
+
+            strInput += "input: \"idec\"" + Environment.NewLine;
+            strInput += "input_shape { dim: 1 dim: " + nBatch.ToString() + " dim: 1 } " + Environment.NewLine;
+
+            strInput += "input: \"ienc\"" + Environment.NewLine;
+            strInput += "input_shape { dim: " + m_nTimeSteps.ToString() + " dim: " + nBatch.ToString() + " dim: 1 } " + Environment.NewLine;
+
+            strInput += "input: \"iencr\"" + Environment.NewLine;
+            strInput += "input_shape { dim: " + m_nTimeSteps.ToString() + " dim: " + nBatch.ToString() + " dim: 1 } " + Environment.NewLine;
+
+            strInput += "input: \"iencc\"" + Environment.NewLine;
+            strInput += "input_shape { dim: " + m_nTimeSteps.ToString() + " dim: " + nBatch.ToString() + " } " + Environment.NewLine;
+
+            return strInput;
+        }
+
+        /// <summary>
+        /// This method gives derivative classes a chance modify the layer parameter for a run model.
+        /// </summary>
+        public override void PrepareRunModel(LayerParameter p)
+        {
+            p.bottom.Add("idec");
+            p.bottom.Add("ienc");
+            p.bottom.Add("iencr");
+            p.bottom.Add("iencc");
+        }
+
+        /// <summary>
         /// Specifies the encoder data source.
         /// </summary>
         [Description("Specifies the encoder data source.")]

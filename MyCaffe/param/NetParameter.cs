@@ -275,6 +275,34 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Collect the inputs from the RawProto.
+        /// </summary>
+        /// <param name="rp">Specifies the raw proto.</param>
+        /// <returns>A dictionary of the inputs and their shapes is returned.</returns>
+        public static Dictionary<string, BlobShape> InputFromProto(RawProto rp)
+        {
+            List<string> rgstrInput = rp.FindArray<string>("input");
+            List<BlobShape> rgShape = new List<BlobShape>();
+
+            RawProtoCollection rgp = rp.FindChildren("input_shape");
+            foreach (RawProto rpChild in rgp)
+            {
+                rgShape.Add(BlobShape.FromProto(rpChild));
+            }
+
+            if (rgstrInput.Count != rgShape.Count)
+                throw new Exception("The input array and shape array must have the same count!");
+
+            Dictionary<string, BlobShape> rgInput = new Dictionary<string, BlobShape>();
+            for (int i = 0; i < rgstrInput.Count; i++)
+            {
+                rgInput.Add(rgstrInput[i], rgShape[i]);
+            }
+
+            return rgInput;
+        }
+
+        /// <summary>
         /// Creates a new copy of this instance of the parameter.
         /// </summary>
         /// <param name="bCloneLayers">When <i>true</i>, each layer is cloned as well.</param>
