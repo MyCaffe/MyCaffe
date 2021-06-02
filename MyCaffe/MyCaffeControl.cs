@@ -897,6 +897,36 @@ namespace MyCaffe
 
             NetParameter np = NetParameter.FromProto(protoModel);
 
+            string strInput = "";
+            foreach (LayerParameter layer in np.layer)
+            {
+                layer.PrepareRunModel();
+
+                string strInput1 = layer.PrepareRunModelInputs();
+                if (!string.IsNullOrEmpty(strInput1))
+                    strInput += strInput1;
+            }
+
+            if (!string.IsNullOrEmpty(strInput))
+            {
+                RawProto proto = RawProto.Parse(strInput);
+                Dictionary<string, BlobShape> rgInput = NetParameter.InputFromProto(proto);
+
+                if (rgInput.Count > 0)
+                {
+                    np.input = new List<string>();
+                    np.input_dim = new List<int>();
+                    np.input_shape = new List<BlobShape>();
+
+                    foreach (KeyValuePair<string, BlobShape> kv in rgInput)
+                    {
+                        np.input.Add(kv.Key);
+                        np.input_shape.Add(kv.Value);
+                    }
+                }
+            }
+            
+
             np.ProjectID = 0;
             np.state.phase = Phase.RUN;
 
@@ -905,9 +935,17 @@ namespace MyCaffe
 
         private BlobShape datasetToShape(DatasetDescriptor ds)
         {
-            int nH = ds.TestingSource.ImageHeight;
-            int nW = ds.TestingSource.ImageWidth;
-            int nC = ds.TestingSource.ImageChannels;
+            int nH = 1;
+            int nW = 1;
+            int nC = 1;
+
+            if (!ds.IsModelData)
+            {
+                nH = ds.TestingSource.ImageHeight;
+                nW = ds.TestingSource.ImageWidth;
+                nC = ds.TestingSource.ImageChannels;
+            }
+
             List<int> rgShape = new List<int>() { 1, nC, nH, nW };
             return new BlobShape(rgShape);
         }
@@ -944,6 +982,9 @@ namespace MyCaffe
         /// <param name="prj">Specifies the project whos image mean is to be prepared.</param>
         public void PrepareImageMeans(ProjectEx prj)
         {
+            if (prj.Dataset.IsModelData || prj.Dataset.IsGym)
+                return;
+
             DatasetFactory factory = new DatasetFactory();
 
             // Copy the training image mean to the testing source if it does not have a mean.
@@ -1114,7 +1155,7 @@ namespace MyCaffe
 
                 m_dataTransformer = null;
 
-                if (tp != null)
+                if (tp != null && !p.Dataset.IsModelData && !p.Dataset.IsGym)
                 {
                     SimpleDatum sdMean = (m_imgDb == null) ? null : m_imgDb.QueryImageMean(m_dataSet.TrainingSource.ID);
                     int nC = m_project.Dataset.TrainingSource.ImageChannels;
@@ -1765,6 +1806,25 @@ namespace MyCaffe
         }
 
         /// <summary>
+        /// Test on custom input data.
+        /// </summary>
+        /// <param name="customInput">Specifies the custom input data separated by ';' characters.</param>
+        /// <returns>A property set containing the results is returned.</returns>
+        /// <remarks>Running test many on custom data requires a MODEL dataset, where the data is queried from the model itself.
+        /// </remarks>
+        public PropertySet TestMany(PropertySet customInput)
+        {
+            if (!m_project.Dataset.IsModelData)
+                throw new Exception("Custom input is only supported by MODEL based datasets!");
+
+            m_lastPhaseRun = Phase.RUN;
+
+            UpdateRunWeights(false);
+
+            return Run(customInput);
+        }
+
+        /// <summary>
         /// Test on a number of images by selecting random images from the database, running them through the Run network, and then comparing the results with the 
         /// expected results.
         /// </summary>
@@ -1778,6 +1838,8 @@ namespace MyCaffe
         public List<Tuple<SimpleDatum, ResultCollection>> TestMany(int nCount, bool bOnTrainingSet, bool bOnTargetSet = false, IMGDB_IMAGE_SELECTION_METHOD imgSelMethod = IMGDB_IMAGE_SELECTION_METHOD.RANDOM, int nImageStartIdx = 0, DateTime? dtImageStartTime = null)
         {
             m_lastPhaseRun = Phase.RUN;
+
+            UpdateRunWeights(false);
 
             m_log.CHECK_GT(nCount, 0, "You must select at least 1 image to train on!");
 
@@ -1833,8 +1895,6 @@ namespace MyCaffe
                 if (nCount == 0)
                     throw new Exception("No images found after time '" + dtImageStartTime.Value.ToString() + "'.  Make sure to use the LOAD_ALL image loading method when running TestMany after a specified time.");
             }
-
-            UpdateRunWeights(false);
 
             List<Tuple<SimpleDatum, ResultCollection>> rgrgResults = new List<Tuple<SimpleDatum, ResultCollection>>();
             int nTotalCount = 0;
@@ -2372,6 +2432,63 @@ namespace MyCaffe
             return Run(d, bSort, false);
         }
 
+        /// <summary>
+        /// Run the model on custom input data.
+        /// </summary>
+        /// <param name="customInput">Specifies the custom input data.</param>
+        /// <param name="nMax">Specifies the maximum number of runs.</param>
+        /// <returns>The results are returned as in a property set.</returns>
+        public PropertySet Run(PropertySet customInput, int nMax = 80)
+        {
+            BlobCollection<T> colBottom = null;
+            Layer<T> layerInput = null;
+            string strInput = customInput.GetProperty("InputData");
+            string[] rgstrInput = strInput.Split('|');
+            List<string> rgstrOutput = new List<string>();
+
+            foreach (string strInput1 in rgstrInput)
+            {
+                foreach (Layer<T> layer in m_net.layers)
+                {
+                    colBottom = layer.PreProcessInput(new PropertySet("InputData=" + strInput1), colBottom);
+                    if (colBottom != null)
+                    {
+                        layerInput = layer;
+                        break;
+                    }
+                }
+
+                if (colBottom == null)
+                    throw new Exception("At least one layer must support the 'PreprocessInput' method!");
+
+                double dfLoss;
+                BlobCollection<T> colTop = m_net.Forward(colBottom, out dfLoss);
+                Tuple<string, int> res = layerInput.PostProcessOutput(colTop[0]);
+                string strOut = "";
+
+                int nCount = 0;
+                while (res.Item1.Length > 0 && nCount < nMax)
+                {
+                    strOut += res.Item1 + " ";
+                    layerInput.PreProcessInput(null, res.Item2, colBottom);
+                    colTop = m_net.Forward(colBottom, out dfLoss);
+                    res = layerInput.PostProcessOutput(colTop[0]);
+                    nCount++;
+                }
+
+                rgstrOutput.Add(strOut);
+            }
+
+            colBottom.Dispose();
+
+            string strFinal = "";
+            foreach (string str in rgstrOutput)
+            {
+                strFinal += str + "|";
+            }
+
+            return new PropertySet("Results=" + strFinal);
+        }
 
         /// <summary>
         /// Retrieves a random image from either the training or test set depending on the Phase specified.

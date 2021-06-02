@@ -453,6 +453,12 @@ namespace MyCaffe.common
         /// <returns>The accuracy value from the test is returned.</returns>
         double Test(int nIterationOverride = -1);
         /// <summary>
+        /// Runs test many on a set of custom input data.
+        /// </summary>
+        /// <param name="customInput">Specifies the custom input data, each separated by ';'.</param>
+        /// <returns>A property set is returned with the results.</returns>
+        PropertySet TestMany(PropertySet customInput);
+        /// <summary>
         /// Test on a number of images by selecting random images from the database, running them through the Run network, and then comparing the results with the 
         /// expected results.
         /// </summary>
