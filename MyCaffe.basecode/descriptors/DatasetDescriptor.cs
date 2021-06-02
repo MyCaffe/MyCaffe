@@ -151,6 +151,14 @@ namespace MyCaffe.basecode.descriptors
         }
 
         /// <summary>
+        /// Returns whether or not this dataset is from the model itself.
+        /// </summary>
+        public bool IsModelData
+        {
+            get { return (Name == "MODEL") ? true : false; }
+        }
+
+        /// <summary>
         /// Returns the full name which returns 'GYM:Name:Type' when using a gym based dataset, otherwise just 'Name' is returned.
         /// </summary>
         public string FullName
@@ -166,6 +174,19 @@ namespace MyCaffe.basecode.descriptors
         public static bool IsGymName(string str)
         {
             if (str.IndexOf("GYM:") == 0)
+                return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Returns whether or not the name directs to use data from the model itself.
+        /// </summary>
+        /// <param name="str">Specifies the name.</param>
+        /// <returns>If the name is from a model, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        public static bool IsModelDataName(string str)
+        {
+            if (str == "MODEL")
                 return true;
 
             return false;

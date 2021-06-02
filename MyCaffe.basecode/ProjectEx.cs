@@ -1783,6 +1783,9 @@ namespace MyCaffe.basecode
             if (dataset == null)
                 return null;
 
+            if (dataset.Name == "MODEL")
+                return strModelDesc;
+            
             string strTypeLast = null;
             RawProto protoLast = null;
             RawProto proto = RawProto.Parse(strModelDesc);
