@@ -383,6 +383,7 @@ namespace MyCaffe.test
             TopVec.Add(m_blobEncInput2);
             TopVec.Add(m_blobEncClip);
             TopVec.Add(m_blobVocabCount);
+            TopVec.Add(m_blobDecTarget); // place holder.
 
             BottomVec.Clear();
             BottomVec.Add(m_blobBtmDecInput);
@@ -409,7 +410,7 @@ namespace MyCaffe.test
                 layer.Forward(BottomVec, TopVec);
 
                 int nDataIdx = 0;
-                bool bRes = verify_top_data(TopVec, nN, nT, nDataIdx, rgBtmEncInput, rgBtmEncInputR, rgDecInput, nVocabCount + 2);
+                bool bRes = verify_top_data(TopVec, nN, nT, nDataIdx, rgBtmEncInput, rgBtmEncInputR, rgDecInput, nVocabCount + 2, true);
 
                 while (bRes)
                 {
@@ -421,7 +422,7 @@ namespace MyCaffe.test
                     layer.Forward(BottomVec, TopVec);
 
                     rgDecInput[0] = nDecInput.Value;
-                    bRes = verify_top_data(TopVec, nN, nT, nDataIdx, rgBtmEncInput, rgBtmEncInputR, rgDecInput, nVocabCount + 2);
+                    bRes = verify_top_data(TopVec, nN, nT, nDataIdx, rgBtmEncInput, rgBtmEncInputR, rgDecInput, nVocabCount + 2, true);
                 }
             }
         }
@@ -461,7 +462,7 @@ namespace MyCaffe.test
             }
         }
 
-        private bool verify_top_data(BlobCollection<T> colTop, int nN, int nT, int nDataIdx, List<int> rgEncInput, List<int> rgEncInputR, List<int> rgDecInput, int nVocabCount)
+        private bool verify_top_data(BlobCollection<T> colTop, int nN, int nT, int nDataIdx, List<int> rgEncInput, List<int> rgEncInputR, List<int> rgDecInput, int nVocabCount, bool bIgnoreTarget = false)
         {
             m_log.CHECK_EQ(nN, 1, "Currently, only batch = 1 is supported!");
 
@@ -497,7 +498,7 @@ namespace MyCaffe.test
 
             m_log.CHECK_EQ(rgfDecInput[0], fDecInput, "The dec input is incorrect!");
             m_log.CHECK_EQ(rgfDecClip[0], fDecClip, "The dec clip is incorrect!");
-            if (rgfDecTarget != null)
+            if (rgfDecTarget != null && !bIgnoreTarget)
                 m_log.CHECK_EQ(rgfDecTarget[0], fDecTarget, "The dec target is incorrect!");
 
             for (int i = 0; i < nT; i++)
