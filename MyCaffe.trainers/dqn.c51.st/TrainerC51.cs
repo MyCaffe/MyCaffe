@@ -498,6 +498,14 @@ namespace MyCaffe.trainers.dqn.c51.st
             m_random = random;
 
             m_transformer = m_mycaffe.DataTransformer;
+            if (m_transformer == null)
+            {
+                TransformationParameter trans_param = new TransformationParameter();
+                int nC = m_mycaffe.CurrentProject.Dataset.TrainingSource.ImageChannels;
+                int nH = m_mycaffe.CurrentProject.Dataset.TrainingSource.ImageHeight;
+                int nW = m_mycaffe.CurrentProject.Dataset.TrainingSource.ImageWidth;
+                m_transformer = new DataTransformer<T>(m_mycaffe.Cuda, m_mycaffe.Log, trans_param, phase, nC, nH, nW);
+            }
             m_transformer.param.mean_value.Add(255 / 2); // center
             m_transformer.param.mean_value.Add(255 / 2);
             m_transformer.param.mean_value.Add(255 / 2);

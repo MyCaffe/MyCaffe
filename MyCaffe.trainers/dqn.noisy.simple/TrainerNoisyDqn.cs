@@ -458,6 +458,14 @@ namespace MyCaffe.trainers.dqn.noisy.simple
             m_nActionCount = logits.channels;
 
             m_transformer = m_mycaffe.DataTransformer;
+            if (m_transformer == null)
+            {
+                TransformationParameter trans_param = new TransformationParameter();
+                int nC = m_mycaffe.CurrentProject.Dataset.TrainingSource.ImageChannels;
+                int nH = m_mycaffe.CurrentProject.Dataset.TrainingSource.ImageHeight;
+                int nW = m_mycaffe.CurrentProject.Dataset.TrainingSource.ImageWidth;
+                m_transformer = new DataTransformer<T>(m_mycaffe.Cuda, m_mycaffe.Log, trans_param, phase, nC, nH, nW);
+            }
             m_blobActions = new Blob<T>(m_mycaffe.Cuda, m_mycaffe.Log, false);
             m_blobQValue = new Blob<T>(m_mycaffe.Cuda, m_mycaffe.Log);
             m_blobNextQValue = new Blob<T>(m_mycaffe.Cuda, m_mycaffe.Log);
