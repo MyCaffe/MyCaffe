@@ -182,6 +182,22 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Should return true when pre processing methods are overriden.
+        /// </summary>
+        public virtual bool SupportsPreProcessing
+        {
+            get { return false; }
+        }
+
+        /// <summary>
+        /// Should return true when pre postprocessing methods are overriden.
+        /// </summary>
+        public virtual bool SupportsPostProcessing
+        {
+            get { return false; }
+        }
+
+        /// <summary>
         /// The PreprocessInput allows derivative data layers to convert a property set of input
         /// data into the bottom blob collection used as intput.
         /// </summary>
@@ -217,8 +233,19 @@ namespace MyCaffe.layers
         /// converting them back into text results.
         /// </summary>
         /// <param name="blobSofmtax">Specifies the softmax blob output by the network.</param>
-        /// <returns>A tuple of the string representation of the output and its corresponding value are returned.</returns>
-        public virtual Tuple<string, int> PostProcessOutput(Blob<T> blobSofmtax)
+        /// <param name="nK">Optionally, specifies the K top items to return (default = 1).</param>
+        /// <returns>The array of word string, index and propabilities corresponding to the softmax output is returned.</returns>
+        public virtual List<Tuple<string, int, double>> PostProcessOutput(Blob<T> blobSofmtax, int nK = 1)
+        {
+            return null;
+        }
+
+        /// <summary>
+        /// Convert the index to the word.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index to convert.</param>
+        /// <returns>The corresponding word is returned.</returns>
+        public virtual string PostProcessOutput(int nIdx)
         {
             return null;
         }
