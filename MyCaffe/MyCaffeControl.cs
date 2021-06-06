@@ -1821,7 +1821,10 @@ namespace MyCaffe
 
             UpdateRunWeights(false);
 
-            return Run(customInput);
+            int nMax = customInput.GetPropertyAsInt("Max", 80);
+            int nK = customInput.GetPropertyAsInt("K", 1);
+
+            return Run(customInput, nMax, nK);
         }
 
         /// <summary>
@@ -2436,10 +2439,13 @@ namespace MyCaffe
         /// Run the model on custom input data.
         /// </summary>
         /// <param name="customInput">Specifies the custom input data.</param>
-        /// <param name="nMax">Specifies the maximum number of runs.</param>
+        /// <param name="nMax">Optionally, specifies the maximum number of outputs (default = 80).</param>
+        /// <param name="nK">Optionally, specifies the number of items to use in the search where nK=1 runs a greedy search and any values > 1 run a beam search with that width.</param>
         /// <returns>The results are returned as in a property set.</returns>
-        public PropertySet Run(PropertySet customInput, int nMax = 80)
+        public PropertySet Run(PropertySet customInput, int nMax = 80, int nK = 1)
         {
+            m_log.CHECK_GE(nK, 1, "The K must be >= 1!");
+
             BlobCollection<T> colBottom = null;
             Layer<T> layerInput = null;
             string strInput = customInput.GetProperty("InputData");
@@ -2448,38 +2454,56 @@ namespace MyCaffe
 
             foreach (string strInput1 in rgstrInput)
             {
-                foreach (Layer<T> layer in m_net.layers)
-                {
-                    colBottom = layer.PreProcessInput(new PropertySet("InputData=" + strInput1), colBottom);
-                    if (colBottom != null)
-                    {
-                        layerInput = layer;
-                        break;
-                    }
-                }
-
-                if (colBottom == null)
-                    throw new Exception("At least one layer must support the 'PreprocessInput' method!");
-
-                double dfLoss;
-                BlobCollection<T> colTop = m_net.Forward(colBottom, out dfLoss);
-                Tuple<string, int> res = layerInput.PostProcessOutput(colTop[0]);
+                PropertySet input = new PropertySet("InputData=" + strInput1);
                 string strOut = "";
 
-                int nCount = 0;
-                while (res.Item1.Length > 0 && nCount < nMax)
+                if (nK == 1)
                 {
-                    strOut += res.Item1 + " ";
-                    layerInput.PreProcessInput(null, res.Item2, colBottom);
-                    colTop = m_net.Forward(colBottom, out dfLoss);
-                    res = layerInput.PostProcessOutput(colTop[0]);
-                    nCount++;
+                    foreach (Layer<T> layer in m_net.layers)
+                    {
+                        colBottom = layer.PreProcessInput(input, colBottom);
+                        if (colBottom != null)
+                        {
+                            layerInput = layer;
+                            break;
+                        }
+                    }
+
+                    if (colBottom == null)
+                        throw new Exception("At least one layer must support the 'PreprocessInput' method!");
+
+                    double dfLoss;
+                    BlobCollection<T> colTop = m_net.Forward(colBottom, out dfLoss);
+                    List<Tuple<string, int, double>> res = layerInput.PostProcessOutput(colTop[0]);
+
+                    int nCount = 0;
+                    while (res[0].Item1.Length > 0 && nCount < nMax)
+                    {
+                        strOut += res[0].Item1 + " ";
+                        layerInput.PreProcessInput(null, res[0].Item2, colBottom);
+                        colTop = m_net.Forward(colBottom, out dfLoss);
+                        res = layerInput.PostProcessOutput(colTop[0]);
+                        nCount++;
+                    }
+
+                    colBottom.Dispose();
+                }
+                else
+                {
+                    BeamSearch<T> search = new BeamSearch<T>(m_net);
+
+                    List<Tuple<double, List<Tuple<string, int, double>>>> res = search.Search(input, nK);
+
+                    for (int i = 0; i < res.Count; i++)
+                    {
+                        strOut += res[i].Item1 + " ";
+                    }
+
+                    strOut = strOut.Trim();
                 }
 
                 rgstrOutput.Add(strOut);
             }
-
-            colBottom.Dispose();
 
             string strFinal = "";
             foreach (string str in rgstrOutput)
@@ -2553,7 +2577,6 @@ namespace MyCaffe
 
             return new Bitmap(ImageData.GetImage(new Datum(sd), null));
         }
-
 
         /// <summary>
         /// Retrives the image with a given ID.
