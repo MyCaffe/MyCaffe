@@ -141,6 +141,22 @@ namespace MyCaffe.layers.beta
             return strOut;
         }
 
+        /// <summary>
+        /// Should return true when pre processing methods are overriden.
+        /// </summary>
+        public virtual bool SupportsPreProcessing
+        {
+            get { return true; }
+        }
+
+        /// <summary>
+        /// Should return true when pre postprocessing methods are overriden.
+        /// </summary>
+        public virtual bool SupportsPostProcessing
+        {
+            get { return true; }
+        }
+
         private static List<string> preprocess(string str, int nMaxLen = 0)
         {
             string strInput = clean(str);
@@ -316,15 +332,48 @@ namespace MyCaffe.layers.beta
         /// the word index back into the word and return the word string.
         /// </summary>
         /// <param name="blobSoftmax">Specifies the softmax output.</param>
-        /// <returns>The word string and word index corresponding to the softmax output is returned.</returns>
-        public override Tuple<string, int> PostProcessOutput(Blob<T> blobSoftmax)
+        /// <param name="nK">Optionally, specifies the K top items to return (default = 1).</param>
+        /// <returns>The array of word string, index and probabilities corresponding to the softmax output is returned.</returns>
+        public override List<Tuple<string, int, double>> PostProcessOutput(Blob<T> blobSoftmax, int nK = 1)
         {
             m_log.CHECK_EQ(blobSoftmax.channels, 1, "Currently, only batch size = 1 supported.");
 
-            long lPos;
-            blobSoftmax.GetMaxData(out lPos);
+            List<Tuple<string, int, double>> rgRes = new List<Tuple<string, int, double>>();
 
-            return new Tuple<string, int>(m_vocab.IndexToWord((int)lPos), (int)lPos);
+            long lPos;
+            double dfProb = blobSoftmax.GetMaxData(out lPos);
+
+            rgRes.Add(new Tuple<string, int, double>(m_vocab.IndexToWord((int)lPos), (int)lPos, dfProb));
+
+            if (nK > 1)
+            {
+                m_cuda.copy(blobSoftmax.count(), blobSoftmax.gpu_data, blobSoftmax.mutable_gpu_diff);
+
+                for (int i = 1; i < nK; i++)
+                {
+                    blobSoftmax.SetData(-1000000000, (int)lPos);
+                    dfProb = blobSoftmax.GetMaxData(out lPos);
+
+                    string strWord = m_vocab.IndexToWord((int)lPos);
+                    if (strWord.Length > 0)
+                        rgRes.Add(new Tuple<string, int, double>(strWord, (int)lPos, dfProb));
+                }
+
+                m_cuda.copy(blobSoftmax.count(), blobSoftmax.gpu_diff, blobSoftmax.mutable_gpu_data);
+                blobSoftmax.SetDiff(0);
+            }
+
+            return rgRes;
+        }
+
+        /// <summary>
+        /// Convert the index to the word.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index to convert.</param>
+        /// <returns>The corresponding word is returned.</returns>
+        public override string PostProcessOutput(int nIdx)
+        {
+            return m_vocab.IndexToWord(nIdx);
         }
 
         /// <summary>
