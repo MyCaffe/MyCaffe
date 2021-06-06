@@ -1821,10 +1821,11 @@ namespace MyCaffe
 
             UpdateRunWeights(false);
 
+            double dfThreshold = customInput.GetPropertyAsDouble("Threshold", 0.2);
             int nMax = customInput.GetPropertyAsInt("Max", 80);
             int nK = customInput.GetPropertyAsInt("K", 1);
 
-            return Run(customInput, nMax, nK);
+            return Run(customInput, nK, dfThreshold, nMax);
         }
 
         /// <summary>
@@ -2439,10 +2440,11 @@ namespace MyCaffe
         /// Run the model on custom input data.
         /// </summary>
         /// <param name="customInput">Specifies the custom input data.</param>
-        /// <param name="nMax">Optionally, specifies the maximum number of outputs (default = 80).</param>
         /// <param name="nK">Optionally, specifies the number of items to use in the search where nK=1 runs a greedy search and any values > 1 run a beam search with that width.</param>
+        /// <param name="dfThreshold">Specifies the threshold where detected items with probabilities less than the threshold are ignored (default = 0.2).</param>
+        /// <param name="nMax">Optionally, specifies the maximum number of outputs (default = 80).</param>
         /// <returns>The results are returned as in a property set.</returns>
-        public PropertySet Run(PropertySet customInput, int nMax = 80, int nK = 1)
+        public PropertySet Run(PropertySet customInput, int nK = 1, double dfThreshold = 0.2, int nMax = 80)
         {
             m_log.CHECK_GE(nK, 1, "The K must be >= 1!");
 
@@ -2492,11 +2494,14 @@ namespace MyCaffe
                 {
                     BeamSearch<T> search = new BeamSearch<T>(m_net);
 
-                    List<Tuple<double, List<Tuple<string, int, double>>>> res = search.Search(input, nK);
+                    List<Tuple<double, List<Tuple<string, int, double>>>> res = search.Search(input, nK, dfThreshold, nMax);
 
-                    for (int i = 0; i < res.Count; i++)
+                    if (res.Count > 0)
                     {
-                        strOut += res[i].Item1 + " ";
+                        for (int i = 0; i < res[0].Item2.Count; i++)
+                        {
+                            strOut += res[0].Item2[i].Item1.ToString() + " ";
+                        }
                     }
 
                     strOut = strOut.Trim();

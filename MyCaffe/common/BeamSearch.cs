@@ -2,6 +2,7 @@
 using MyCaffe.layers;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -45,12 +46,14 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="input">Specifies the input data (e.g. the encoder input)</param>
         /// <param name="nK">Specifies the beam width for the search.</param>
+        /// <param name="dfThreshold">Specifies the threshold where detected items with probabilities less than the threshold are ignored (default = 0.2).</param>
+        /// <param name="nMax">Specifies the maximum length to process (default = 80)</param>
         /// <returns>The list of top sequences is returned.</returns>
         /// <remarks>
         /// The beam-search algorithm is inspired by the article
         /// @see [How to Implement a Beam Search Decoder for Natural Language Processing](https://machinelearningmastery.com/beam-search-decoder-natural-language-processing/) by Jason Brownlee, "Machine Learning Mastery", 2018
         /// </remarks>
-        public List<Tuple<double, List<Tuple<string, int, double>>>> Search(PropertySet input, int nK)
+        public List<Tuple<double, List<Tuple<string, int, double>>>> Search(PropertySet input, int nK, double dfThreshold = 0.2, int nMax = 80)
         {
             List<Tuple<double, List<Tuple<string, int, double>>>> rgSequences = new List<Tuple<double, List<Tuple<string, int, double>>>>();
             rgSequences.Add(new Tuple<double, List<Tuple<string, int, double>>>(0, new List<Tuple<string, int, double>>()));
@@ -64,11 +67,12 @@ namespace MyCaffe.common
 
             BlobCollection<T> colTop = m_net.Forward(colBottom, out dfLoss);
             List<Tuple<string, int, double>> rgRes = m_layer.PostProcessOutput(colTop[0], nK);
+            rgRes = rgRes.Where(p => p.Item3 >= dfThreshold).ToList();
             List<List<Tuple<string, int, double>>> rgrgRes = new List<List<Tuple<string, int, double>>>();
 
             rgrgRes.Add(rgRes);
 
-            while (!bDone)
+            while (!bDone && nMax > 0)
             {
                 int nProcessedCount = 0;
 
@@ -115,11 +119,14 @@ namespace MyCaffe.common
                             m_layer.PreProcessInput(strInput, nIdx, colBottom);
                             colTop = m_net.Forward(colBottom, out dfLoss, true);
                             List<Tuple<string, int, double>> rgRes1 = m_layer.PostProcessOutput(colTop[0], nK);
+                            rgRes1 = rgRes1.Where(p => p.Item3 >= dfThreshold).ToList();
 
                             for (int j = 0; j < rgRes1.Count; j++)
                             {
                                 if (rgRes1[j].Item1.Length > 0)
                                     rgRes.Add(rgRes1[j]);
+                                else
+                                    Trace.WriteLine("EOS");
                             }
 
                             rgrgRes.Add(rgRes);
@@ -134,6 +141,8 @@ namespace MyCaffe.common
                 {
                     bDone = true;
                 }
+
+                nMax--;
             }
 
             return rgSequences;
