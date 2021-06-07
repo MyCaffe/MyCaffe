@@ -144,7 +144,7 @@ namespace MyCaffe.layers.beta
         /// <summary>
         /// Should return true when pre processing methods are overriden.
         /// </summary>
-        public virtual bool SupportsPreProcessing
+        public override bool SupportsPreProcessing
         {
             get { return true; }
         }
@@ -152,7 +152,7 @@ namespace MyCaffe.layers.beta
         /// <summary>
         /// Should return true when pre postprocessing methods are overriden.
         /// </summary>
-        public virtual bool SupportsPostProcessing
+        public override bool SupportsPostProcessing
         {
             get { return true; }
         }
