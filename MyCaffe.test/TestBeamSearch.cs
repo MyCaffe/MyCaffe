@@ -247,7 +247,7 @@ namespace MyCaffe.test
             // Test the beam-search
             BeamSearch<T> search = new BeamSearch<T>(m_net);
 
-            List<Tuple<double, List<Tuple<string, int, double>>>> rgSequences = search.Search(new PropertySet("InputData=what is your name"), 3);
+            List<Tuple<double, bool, List<Tuple<string, int, double>>>> rgSequences = search.Search(new PropertySet("InputData=what is your name"), 3);
 
             m_log.EnableTrace = true;
 
@@ -262,9 +262,9 @@ namespace MyCaffe.test
                 string strActual = "";
                 strOut += " '";
 
-                for (int j = 0; j < rgSequences[i].Item2.Count; j++)
+                for (int j = 0; j < rgSequences[i].Item3.Count; j++)
                 {
-                    strActual += rgSequences[i].Item2[j].Item1;
+                    strActual += rgSequences[i].Item3[j].Item1;
                     strActual += " ";
                 }
 
