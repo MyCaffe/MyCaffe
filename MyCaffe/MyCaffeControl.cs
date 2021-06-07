@@ -2441,10 +2441,10 @@ namespace MyCaffe
         /// </summary>
         /// <param name="customInput">Specifies the custom input data.</param>
         /// <param name="nK">Optionally, specifies the number of items to use in the search where nK=1 runs a greedy search and any values > 1 run a beam search with that width.</param>
-        /// <param name="dfThreshold">Specifies the threshold where detected items with probabilities less than the threshold are ignored (default = 0.2).</param>
+        /// <param name="dfThreshold">Specifies the threshold where detected items with probabilities less than the threshold are ignored (default = 0.01).</param>
         /// <param name="nMax">Optionally, specifies the maximum number of outputs (default = 80).</param>
         /// <returns>The results are returned as in a property set.</returns>
-        public PropertySet Run(PropertySet customInput, int nK = 1, double dfThreshold = 0.2, int nMax = 80)
+        public PropertySet Run(PropertySet customInput, int nK = 1, double dfThreshold = 0.01, int nMax = 80)
         {
             m_log.CHECK_GE(nK, 1, "The K must be >= 1!");
 
@@ -2494,13 +2494,13 @@ namespace MyCaffe
                 {
                     BeamSearch<T> search = new BeamSearch<T>(m_net);
 
-                    List<Tuple<double, List<Tuple<string, int, double>>>> res = search.Search(input, nK, dfThreshold, nMax);
+                    List<Tuple<double, bool, List<Tuple<string, int, double>>>> res = search.Search(input, nK, dfThreshold, nMax);
 
                     if (res.Count > 0)
                     {
-                        for (int i = 0; i < res[0].Item2.Count; i++)
+                        for (int i = 0; i < res[0].Item3.Count; i++)
                         {
-                            strOut += res[0].Item2[i].Item1.ToString() + " ";
+                            strOut += res[0].Item3[i].Item1.ToString() + " ";
                         }
                     }
 
