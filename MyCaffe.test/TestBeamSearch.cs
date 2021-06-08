@@ -62,7 +62,6 @@ namespace MyCaffe.test
         Net<T> m_net = null;
         List<string> m_rgTestSequences = new List<string>();
         List<List<int>> m_rgrgTestSequenceIndexes = new List<List<int>>();
-        int m_nDataIdx = 0;
 
         public BeamSearchTest2(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, new List<int>() { 3, 2, 4, 1 }, nDeviceID)
@@ -116,111 +115,68 @@ namespace MyCaffe.test
 
             e.Data.SetData(0);
 
-            switch (m_nDataIdx)
+            if (e.Input == 1)
             {
-                case 0:
-                    nIdx = e.Vocabulary.WordToIndex("rdany");
-                    e.Data.SetData(0.3, nIdx);
-                    nIdx = e.Vocabulary.WordToIndex("my");
-                    e.Data.SetData(0.25, nIdx);
-                    nIdx = e.Vocabulary.WordToIndex("call");
-                    e.Data.SetData(0.2, nIdx);
-                    break;
-
-                case 1:
-                    nIdx = e.Vocabulary.WordToIndex("but");  // rdany but
-                    e.Data.SetData(0.3, nIdx);
-                    nIdx = e.Vocabulary.WordToIndex("call"); // rdany call
-                    e.Data.SetData(0.25, nIdx);
-                    nIdx = e.Vocabulary.WordToIndex("you");  // rdany you
-                    e.Data.SetData(0.2, nIdx);
-                    break;
-
-                case 2:
-                    nIdx = e.Vocabulary.WordToIndex("name");  // my name
-                    e.Data.SetData(0.3, nIdx);
-                    break;
-
-                case 3:
-                    nIdx = e.Vocabulary.WordToIndex("me");  // call me
-                    e.Data.SetData(0.3, nIdx);
-                    break;
-
-                case 4:
-                    nIdx = e.Vocabulary.WordToIndex("you");  // rdany but you
-                    e.Data.SetData(0.3, nIdx);
-                    break;
-
-                case 5:
-                    nIdx = e.Vocabulary.WordToIndex("me");  // rdany call me
-                    e.Data.SetData(0.3, nIdx);
-                    break;
-
-                case 6:
-                    nIdx = e.Vocabulary.WordToIndex("is");  // my name is
-                    e.Data.SetData(0.3, nIdx);
-                    break;
-
-                case 7:
-                    nIdx = e.Vocabulary.WordToIndex("can");  // rdany but you can
-                    e.Data.SetData(0.3, nIdx);
-                    break;
-
-                case 8:
-                    nIdx = e.Vocabulary.WordToIndex("dany"); // rdany call me dany
-                    e.Data.SetData(0.3, nIdx);
-                    break;
-
-                case 9:
-                    nIdx = e.Vocabulary.WordToIndex("dany"); // my name is dany
-                    e.Data.SetData(0.3, nIdx);
-                    break;
-
-                case 10:
-                    nIdx = e.Vocabulary.WordToIndex("call"); // rdany but you can call
-                    e.Data.SetData(0.3, nIdx);
-                    break;
-
-                case 11:
-                    e.Data.SetData(0.3, 2); // rdany call me dany EOS
-                    break;
-
-                case 12:
-                    e.Data.SetData(0.3, 2); // my name is dany EOS
-                    break;
-
-                case 13:
-                    e.Data.SetData(0.3, 2); // rdany call me dany EOS
-                    break;
-
-                case 14:
-                    e.Data.SetData(0.3, 2); // my name is dany EOS
-                    break;
-
-                case 15:
-                    nIdx = e.Vocabulary.WordToIndex("me"); // rdany but you can call me
-                    e.Data.SetData(0.3, nIdx);
-                    break;
-
-                case 16:
-                    e.Data.SetData(0.3, 2); // rdany call me dany EOS
-                    break;
-
-                case 17:
-                    e.Data.SetData(0.3, 2); // my name is dany EOS
-                    break;
-
-                case 18:
-                    nIdx = e.Vocabulary.WordToIndex("dany"); // rdany but you can call me dany
-                    e.Data.SetData(0.3, nIdx);
-                    break;
-
-                default:
-                    e.Data.SetData(2); // EOS
-                    break;
+                nIdx = e.Vocabulary.WordToIndex("rdany");
+                e.Data.SetData(0.3, nIdx);
+                nIdx = e.Vocabulary.WordToIndex("my");
+                e.Data.SetData(0.25, nIdx);
+                nIdx = e.Vocabulary.WordToIndex("call");
+                e.Data.SetData(0.2, nIdx);
             }
-
-            m_nDataIdx++;
+            else if (e.Input == e.Vocabulary.WordToIndex("rdany"))
+            {
+                nIdx = e.Vocabulary.WordToIndex("but");
+                e.Data.SetData(0.3, nIdx);
+                nIdx = e.Vocabulary.WordToIndex("call");
+                e.Data.SetData(0.25, nIdx);
+                nIdx = e.Vocabulary.WordToIndex("you");
+                e.Data.SetData(0.2, nIdx);
+            }
+            else if (e.Input == e.Vocabulary.WordToIndex("my"))
+            {
+                nIdx = e.Vocabulary.WordToIndex("name");
+                e.Data.SetData(0.3, nIdx);
+            }
+            else if (e.Input == e.Vocabulary.WordToIndex("but"))
+            {
+                nIdx = e.Vocabulary.WordToIndex("you");
+                e.Data.SetData(0.3, nIdx);
+            }
+            else if (e.Input == e.Vocabulary.WordToIndex("can"))
+            {
+                nIdx = e.Vocabulary.WordToIndex("call");
+                e.Data.SetData(0.3, nIdx);
+            }
+            else if (e.Input == e.Vocabulary.WordToIndex("call"))
+            {
+                nIdx = e.Vocabulary.WordToIndex("me");
+                e.Data.SetData(0.3, nIdx);
+            }
+            else if (e.Input == e.Vocabulary.WordToIndex("you"))
+            {
+                nIdx = e.Vocabulary.WordToIndex("can");
+                e.Data.SetData(0.3, nIdx);
+            }
+            else if (e.Input == e.Vocabulary.WordToIndex("me"))
+            {
+                nIdx = e.Vocabulary.WordToIndex("dany");
+                e.Data.SetData(0.3, nIdx);
+            }
+            else if (e.Input == e.Vocabulary.WordToIndex("name"))
+            {
+                nIdx = e.Vocabulary.WordToIndex("is");
+                e.Data.SetData(0.3, nIdx);
+            }
+            else if (e.Input == e.Vocabulary.WordToIndex("is"))
+            {
+                nIdx = e.Vocabulary.WordToIndex("dany");
+                e.Data.SetData(0.3, nIdx);
+            }
+            else
+            {
+                e.Data.SetData(2); // EOS
+            }
         }
 
         protected override FillerParameter getFillerParam()
@@ -332,6 +288,11 @@ namespace MyCaffe.test
         public override BlobCollection<T> PreProcessInput(PropertySet customInput, BlobCollection<T> colBottom = null)
         {
             return m_dataLayer.PreProcessInput(customInput, colBottom);
+        }
+
+        public override void PreProcessInput(string strEncInput, int? nDecInput, BlobCollection<T> colBottom)
+        {
+            m_dataLayer.PreProcessInput(strEncInput, nDecInput, colBottom);
         }
 
         public override List<Tuple<string, int, double>> PostProcessOutput(Blob<T> blobSoftmax, int nK = 1)
