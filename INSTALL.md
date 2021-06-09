@@ -1,12 +1,12 @@
 <H2>Installation Instructions</H2>
-To install and run <b>MyCaffe</b> you will need to do the following steps.  As a side note, we are using (and recommend) CUDA 11.3.0 with cuDNN 8.2.0 and Visual Studio 2019 on Windows 10 Pro for all of our testing.
+To install and run <b>MyCaffe</b> you will need to do the following steps.  As a side note, we are using (and recommend) CUDA 11.3.1 with cuDNN 8.2.1 and Visual Studio 2019 on Windows 10 Pro for all of our testing.
 </br>
 <H3>I. CUDA - Install NVIDIA CUDA and cuDNN Libraries</H3>
-Install CUDA 11.3.0 as shown below (note CUDA 11.3.0 compiler currently used).
-<H4>A. CUDA 11.3.0 - Install NVIDIA CUDA and cuDNN Libraries</H4>
-1.) Install the NVIDIA CUDA 11.3.0 Toolkit for Windows 10 from https://developer.nvidia.com/cuda-downloads. 
-</br>2.) Install the NVIDIA cuDNN 8.2.0 Accelerated Libraries for CUDA 11.3.0 on Windows 10 from https://developer.nvidia.com/cuDNN.
-</br>3.) Create a new directory off your <b><i>$(CUDA_PATH_V11_3)</i></b> installation location named <b><i>cudann_11.3-win-v8.2.0.53</i></b> and copy the cuDNN <b><i>cudnn.h</i></b> and <b><i>cudnn.lib</i></b> files into it.
+Install CUDA 11.3.1 as shown below (note CUDA 11.3.1 compiler currently used).
+<H4>A. CUDA 11.3.1 - Install NVIDIA CUDA and cuDNN Libraries</H4>
+1.) Install the NVIDIA CUDA 11.3.1 Toolkit for Windows 10 from https://developer.nvidia.com/cuda-downloads. 
+</br>2.) Install the NVIDIA cuDNN 8.2.1 Accelerated Libraries for CUDA 11.3.1 on Windows 10 from https://developer.nvidia.com/cuDNN.
+</br>3.) Create a new directory off your <b><i>$(CUDA_PATH_V11_3)</i></b> installation location named <b><i>cudann_11.3-win-v8.2.1.32</i></b> and copy the cuDNN <b><i>cudnn.h</i></b> and <b><i>cudnn.lib</i></b> files into it.
 </br>4.) Copy the <b><i>cudnn64_8.dll</i></b> and associated DLL files into the <b><i>$(CUDA_PATH_V11_3)\bin</i></b> directory.
 </br>5.) Install the NVIDIA NVAPI (r465) from https://developer.nvidia.com/nvapi.
 </br>6.) Create a new directory off your <b><i>$(CUDA_PATH_V11_3)</i></b> installation location named <b><i>nvapi_465</i></b> and copy the NVAPI header and library files into it.
