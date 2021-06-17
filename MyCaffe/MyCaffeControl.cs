@@ -190,7 +190,7 @@ namespace MyCaffe
 
             m_evtSyncMain.Set();
 
-            try
+            try            
             {
                 if (m_evtCancel != null)
                     m_evtCancel.Set();
@@ -1698,6 +1698,53 @@ namespace MyCaffe
             net.LoadWeights(rgWeights, m_persist);
         }
 
+        private bool compareWeights(Net<T> net1, Net<T> net2)
+        {
+            if (net1.learnable_parameters.Count != net2.learnable_parameters.Count)
+            {
+                m_log.WriteLine("WARNING: The number of learnable parameters differs between the two nets!");
+                return false;
+            }
+
+            Blob<T> blobWork = new Blob<T>(m_cuda, m_log, false);
+
+            try
+            {
+                for (int i = 0; i < net1.learnable_parameters.Count; i++)
+                {
+                    Blob<T> blob1 = net1.learnable_parameters[i];
+                    Blob<T> blob2 = net2.learnable_parameters[i];
+
+                    if (blob1.Name != blob2.Name)
+                    {
+                        m_log.WriteLine("WARNING: The name of the blobs at index " + i.ToString() + " differ: net1 - " + blob1.Name + " vs. net2 - " + blob2.Name);
+                        return false;
+                    }
+
+                    if (blob1.shape_string != blob2.shape_string)
+                    {
+                        m_log.WriteLine("WARNING: The shape of the blobs at index " + i.ToString() + " differ: net1 - " + blob1.Name + " " + blob1.shape_string + " vs. net2 - " + blob2.Name + " " + blob2.shape_string);
+                        return false;
+                    }
+
+                    blobWork.ReshapeLike(blob1);
+                    m_cuda.sub(blob1.count(), blob1.gpu_data, blob2.gpu_data, blobWork.mutable_gpu_data);
+                    double dfSum = Utility.ConvertVal<T>(blobWork.asum_data());
+                    if (dfSum != 0)
+                    {
+                        m_log.WriteLine("WARNING: The data of the blobs at index " + i.ToString() + " differ: net1 - " + blob1.Name + " " + blob1.shape_string + " vs. net2 - " + blob2.Name + " " + blob2.shape_string);
+                        return false;
+                    }
+                }
+            }
+            finally
+            {
+                blobWork.Dispose();
+            }
+
+            return true;
+        }
+
         void m_solver_OnTestingIteration(object sender, TestingIterationArgs<T> e)
         {
             if (OnTestingIteration != null)
@@ -2659,7 +2706,8 @@ namespace MyCaffe
         /// Loads the weights from the training net into the Net used for running.
         /// </summary>
         /// <param name="bOutputStatus">Optionally, specifies to output status as the weights are updated (default = false).</param>
-        public void UpdateRunWeights(bool bOutputStatus = false)
+        /// <param name="bVerifyWeights">Optionally, specifies to verify the run weights copied (default = true).</param>
+        public void UpdateRunWeights(bool bOutputStatus = false, bool bVerifyWeights = true)
         {
             bool? bLogEnabled = null;
 
@@ -2672,7 +2720,15 @@ namespace MyCaffe
                 }
 
                 if (m_net != null && m_bOwnRunNet)
+                {
                     loadWeights(m_net, m_solver.net.SaveWeights(m_persist));
+
+                    if (bVerifyWeights)
+                    {
+                        if (!compareWeights(m_net, m_solver.net))
+                            m_log.WriteLine("WARNING: The run weights differ from the training weights!");
+                    }
+                }
             }
             finally
             {
