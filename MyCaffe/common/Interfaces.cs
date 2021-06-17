@@ -565,8 +565,9 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="d">Specifies the datum to load into the blob.</param>
         /// <param name="blob">Optionally, specifies a blob to use instead of creating a new one.</param>
+        /// <param name="bPad">Optionally, pad the blob with an extra dummy item (default = false).</param>
         /// <returns>The data blob containing the transformed data is returned.</returns>
-        Blob<T> CreateDataBlob(SimpleDatum d, Blob<T> blob = null);
+        Blob<T> CreateDataBlob(SimpleDatum d, Blob<T> blob = null, bool bPad = false);
         /// <summary>
         /// Run on a given bitmap image.
         /// </summary>
@@ -582,8 +583,9 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="d">Specifies the Datum to run.</param>
         /// <param name="bSort">Optionally, specifies whether or not to sort the results.</param>
+        /// <param name="bPad">Optionally, specifies to pad the data with a dummy item and reshape the net (default = false).</param>
         /// <returns>The results of the run are returned.</returns>
-        ResultCollection Run(SimpleDatum d, bool bSort = true);
+        ResultCollection Run(SimpleDatum d, bool bSort = true, bool bPad = false);
     }
 
     /// <summary>

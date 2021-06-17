@@ -100,6 +100,7 @@ namespace MyCaffe
         ManualResetEvent m_evtSyncMain = new ManualResetEvent(false);
         ConnectInfo m_dsCi = null;
         bool m_bEnableVerboseStatus = false;
+        T[] m_rgRunData = null;
 
         /// <summary>
         /// The OnSnapshot event fires each time a snap-shot is taken.
@@ -1951,120 +1952,134 @@ namespace MyCaffe
             int nTotalCount = 0;
             int nMidPoint = 0;
 
-            for (int i = 0; i < nCount; i++)
+            Blob<T> blobData = null;
+
+            try
             {
-                if (m_evtCancel.WaitOne(0))
+                for (int i = 0; i < nCount; i++)
                 {
-                    m_log.WriteLine("Test Many aborted!");
-                    return null;
-                }
-
-                SimpleDatum sd = (rgImg != null) ? rgImg[i] : m_imgDb.QueryImage(nSrcId, nImageStartIdx + i, lblSelMethod, imgSelMethod, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
-                m_dataTransformer.TransformLabel(sd);
-
-                if (!sd.GetDataValid(false))
-                {
-                    Trace.WriteLine("You should not be here.");
-                    throw new Exception("NO DATA!");
-                }
-
-                ResultCollection rgResults = Run(sd);
-                rgrgResults.Add(new Tuple<SimpleDatum, ResultCollection>(sd, rgResults));
-
-                if (rgResults.ResultType == ResultCollection.RESULT_TYPE.MULTIBOX)
-                {
-                    Dictionary<int, List<Result>> rgLabeledResults = new Dictionary<int, List<Result>>();
-                    Dictionary<int, int> rgLabeledOrder = new Dictionary<int, int>();
-
-                    int nIdx = 0;
-                    foreach (Result result in rgResults.ResultsSorted)
+                    if (m_evtCancel.WaitOne(0))
                     {
-                        if (!rgLabeledResults.ContainsKey(result.Label))
-                        {
-                            rgLabeledResults.Add(result.Label, new List<Result>());
-                            rgLabeledOrder.Add(result.Label, nIdx);
-                            nIdx++;
-                        }
-
-                        rgLabeledResults[result.Label].Add(result);
+                        m_log.WriteLine("Test Many aborted!");
+                        return null;
                     }
 
-                    List<Tuple<int, List<Result>>> rgBestResults = new List<Tuple<int, List<Result>>>();
-                    List<int> rgDetectedLabels = rgLabeledOrder.OrderBy(p => p.Value).Select(p => p.Key).ToList();
 
-                    if (sd.annotation_group != null)
+                    SimpleDatum sd = (rgImg != null) ? rgImg[i] : m_imgDb.QueryImage(nSrcId, nImageStartIdx + i, lblSelMethod, imgSelMethod, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+                    m_dataTransformer.TransformLabel(sd);
+
+                    if (!sd.GetDataValid(false))
                     {
-                        rgDetectedLabels = rgDetectedLabels.Take(sd.annotation_group.Count).ToList();
+                        Trace.WriteLine("You should not be here.");
+                        throw new Exception("NO DATA!");
+                    }
 
-                        for (int j = 0; j < sd.annotation_group.Count; j++)
+                    blobData = CreateDataBlob(sd, blobData, true);
+                    List<ResultCollection> rgrgResults1 = Run(blobData, false);
+                    ResultCollection rgResults = rgrgResults1[0];
+
+                    rgrgResults.Add(new Tuple<SimpleDatum, ResultCollection>(sd, rgResults));
+
+                    if (rgResults.ResultType == ResultCollection.RESULT_TYPE.MULTIBOX)
+                    {
+                        Dictionary<int, List<Result>> rgLabeledResults = new Dictionary<int, List<Result>>();
+                        Dictionary<int, int> rgLabeledOrder = new Dictionary<int, int>();
+
+                        int nIdx = 0;
+                        foreach (Result result in rgResults.ResultsSorted)
                         {
-                            int nExpectedLabel = sd.annotation_group[j].group_label;
-
-                            if (!rgCorrectCounts.ContainsKey(nExpectedLabel))
-                                rgCorrectCounts.Add(nExpectedLabel, 0);
-
-                            if (!rgLabelTotals.ContainsKey(nExpectedLabel))
-                                rgLabelTotals.Add(nExpectedLabel, 1);
-                            else
-                                rgLabelTotals[nExpectedLabel]++;
-
-                            if (rgDetectedLabels.Contains(nExpectedLabel))
+                            if (!rgLabeledResults.ContainsKey(result.Label))
                             {
-                                rgCorrectCounts[nExpectedLabel]++;
-                                nCorrectCount++;
+                                rgLabeledResults.Add(result.Label, new List<Result>());
+                                rgLabeledOrder.Add(result.Label, nIdx);
+                                nIdx++;
                             }
 
-                            nTotalCount++;
+                            rgLabeledResults[result.Label].Add(result);
+                        }
+
+                        List<Tuple<int, List<Result>>> rgBestResults = new List<Tuple<int, List<Result>>>();
+                        List<int> rgDetectedLabels = rgLabeledOrder.OrderBy(p => p.Value).Select(p => p.Key).ToList();
+
+                        if (sd.annotation_group != null)
+                        {
+                            rgDetectedLabels = rgDetectedLabels.Take(sd.annotation_group.Count).ToList();
+
+                            for (int j = 0; j < sd.annotation_group.Count; j++)
+                            {
+                                int nExpectedLabel = sd.annotation_group[j].group_label;
+
+                                if (!rgCorrectCounts.ContainsKey(nExpectedLabel))
+                                    rgCorrectCounts.Add(nExpectedLabel, 0);
+
+                                if (!rgLabelTotals.ContainsKey(nExpectedLabel))
+                                    rgLabelTotals.Add(nExpectedLabel, 1);
+                                else
+                                    rgLabelTotals[nExpectedLabel]++;
+
+                                if (rgDetectedLabels.Contains(nExpectedLabel))
+                                {
+                                    rgCorrectCounts[nExpectedLabel]++;
+                                    nCorrectCount++;
+                                }
+
+                                nTotalCount++;
+                            }
+                        }
+                        else
+                        {
+                            m_log.WriteLine("WARNING: No annotation data found in image with ID = " + sd.ImageID.ToString());
                         }
                     }
                     else
                     {
-                        m_log.WriteLine("WARNING: No annotation data found in image with ID = " + sd.ImageID.ToString());
+                        if (rgResults.ResultsOriginal.Count % 2 != 0)
+                            nMidPoint = (int)Math.Floor(rgResults.ResultsOriginal.Count / 2.0);
+
+                        int nDetectedLabel = rgResults.DetectedLabel;
+                        int nExpectedLabel = sd.Label;
+
+                        if (labelMapping != null)
+                        {
+                            if (m_dataTransformer.param.label_mapping.Active)
+                                m_log.FAIL("You can use either the LabelMappingLayer or the DataTransformer label_mapping, but not both!");
+
+                            nExpectedLabel = labelMapping.MapLabel(nExpectedLabel);
+                        }
+
+                        if (!rgCorrectCounts.ContainsKey(nExpectedLabel))
+                            rgCorrectCounts.Add(nExpectedLabel, 0);
+
+                        if (!rgLabelTotals.ContainsKey(nExpectedLabel))
+                            rgLabelTotals.Add(nExpectedLabel, 1);
+                        else
+                            rgLabelTotals[nExpectedLabel]++;
+
+                        if (nExpectedLabel == nDetectedLabel)
+                        {
+                            nCorrectCount++;
+                            rgCorrectCounts[nExpectedLabel]++;
+                        }
+
+                        nTotalCount++;
                     }
-                }
-                else
-                {
-                    if (rgResults.ResultsOriginal.Count % 2 != 0)
-                        nMidPoint = (int)Math.Floor(rgResults.ResultsOriginal.Count / 2.0);
 
-                    int nDetectedLabel = rgResults.DetectedLabel;
-                    int nExpectedLabel = sd.Label;
+                    double dfPct = ((double)i / (double)nCount);
+                    m_log.Progress = dfPct;
 
-                    if (labelMapping != null)
+                    if (sw.ElapsedMilliseconds > 1000)
                     {
-                        if (m_dataTransformer.param.label_mapping.Active)
-                            m_log.FAIL("You can use either the LabelMappingLayer or the DataTransformer label_mapping, but not both!");
-
-                        nExpectedLabel = labelMapping.MapLabel(nExpectedLabel);
+                        m_log.WriteLine("processing test many at " + dfPct.ToString("P"));
+                        sw.Stop();
+                        sw.Reset();
+                        sw.Start();
                     }
-
-                    if (!rgCorrectCounts.ContainsKey(nExpectedLabel))
-                        rgCorrectCounts.Add(nExpectedLabel, 0);
-
-                    if (!rgLabelTotals.ContainsKey(nExpectedLabel))
-                        rgLabelTotals.Add(nExpectedLabel, 1);
-                    else
-                        rgLabelTotals[nExpectedLabel]++;
-
-                    if (nExpectedLabel == nDetectedLabel)
-                    {
-                        nCorrectCount++;
-                        rgCorrectCounts[nExpectedLabel]++;
-                    }
-
-                    nTotalCount++;
                 }
-
-                double dfPct = ((double)i / (double)nCount);
-                m_log.Progress = dfPct;
-
-                if (sw.ElapsedMilliseconds > 1000)
-                {
-                    m_log.WriteLine("processing test many at " + dfPct.ToString("P"));
-                    sw.Stop();
-                    sw.Reset();
-                    sw.Start();
-                }
+            }
+            finally
+            {
+                if (blobData != null)
+                    blobData.Dispose();
             }
 
             double dfCorrectPct = ((double)nCorrectCount / (double)nTotalCount);
@@ -2194,13 +2209,26 @@ namespace MyCaffe
             return rgRes;
         }
 
+        private int getCount(List<int> rg)
+        {
+            int nCount = 1;
+
+            foreach (int nDim in rg)
+            {
+                nCount *= nDim;
+            }
+
+            return nCount;
+        }
+
         /// <summary>
         /// Create a data blob from a SimpleDatum by transforming the data and placing the results in the blob returned.
         /// </summary>
         /// <param name="d">Specifies the datum to load into the blob.</param>
         /// <param name="blob">Optionally, specifies a blob to use instead of creating a new one.</param>
+        /// <param name="bPad">Optionally, pad the blob with an extra item (default = false).</param>
         /// <returns>The data blob containing the transformed data is returned.</returns>
-        public Blob<T> CreateDataBlob(SimpleDatum d, Blob<T> blob = null)
+        public Blob<T> CreateDataBlob(SimpleDatum d, Blob<T> blob = null, bool bPad = false)
         {
             if (m_dataTransformer == null)
             {
@@ -2218,8 +2246,22 @@ namespace MyCaffe
 
                 m_dataTransformer.MaskImage(datum);
                 List<int> rgShape = m_dataTransformer.InferBlobShape(datum);
+
+                if (bPad)
+                    rgShape[0] = 2;
+
+                int nCount = getCount(rgShape);
                 blob.Reshape(rgShape);
-                blob.SetData(m_dataTransformer.Transform(datum));
+                blob.Padded = bPad;
+
+                if (m_rgRunData == null || m_rgRunData.Length != nCount)
+                    m_rgRunData = new T[nCount];
+
+                T[] rgData = m_dataTransformer.Transform(datum);
+                Array.Copy(rgData, 0, m_rgRunData, 0, rgData.Length);
+
+                blob.mutable_cpu_data = m_rgRunData;
+
                 m_dataTransformer.SetRange(blob);
             }
 
@@ -2232,13 +2274,14 @@ namespace MyCaffe
         /// <param name="d">Specifies the Datum to run.</param>
         /// <param name="bSort">Specifies whether or not to sor the results.</param>
         /// <param name="bUseSolverNet">Optionally, specifies whether or not to use the training net vs. the run net.</param>
+        /// <param name="bPad">Optionally, specifies to pad the data with a dummy trailing item (default = false).</param>
         /// <returns>The results of the run are returned.</returns>
-        public ResultCollection Run(SimpleDatum d, bool bSort, bool bUseSolverNet)
+        public ResultCollection Run(SimpleDatum d, bool bSort, bool bUseSolverNet, bool bPad = false)
         {
             if (m_net == null)
                 throw new Exception("The Run net has not been created!");
 
-            Blob<T> blob = CreateDataBlob(d);
+            Blob<T> blob = CreateDataBlob(d, null, bPad);
             BlobCollection<T> colBottom = new BlobCollection<T>() { blob };
             double dfLoss = 0;
 
@@ -2248,12 +2291,21 @@ namespace MyCaffe
             if (bUseSolverNet)
             {
                 lastLayerType = m_solver.TrainingNet.layers[m_solver.TrainingNet.layers.Count - 1].type;
-                colResults = m_solver.TrainingNet.Forward(colBottom, out dfLoss);
+                colResults = m_solver.TrainingNet.Forward(colBottom, out dfLoss, bPad);
             }
             else
             {
                 lastLayerType = m_net.layers[m_net.layers.Count - 1].type;
-                colResults = m_net.Forward(colBottom, out dfLoss);
+                colResults = m_net.Forward(colBottom, out dfLoss, bPad);
+            }
+
+            if (blob.Padded)
+            {
+                List<int> rgShape = Utility.Clone<int>(colResults[0].shape());
+                rgShape[0]--;
+                if (rgShape[0] <= 0)
+                    rgShape[0] = 1;
+                colResults[0].Reshape(rgShape);
             }
 
             List<Result> rgResults = new List<Result>();
@@ -2430,7 +2482,11 @@ namespace MyCaffe
             T[] rgDataOutput = colResults[0].update_cpu_data();
             int nOutputCount = rgDataOutput.Length / blob.num;
 
-            for (int i = 0; i < blob.num && i < nMax; i++)
+            int nNum = blob.num;
+            if (blob.Padded)
+                nNum--;
+
+            for (int i = 0; i < nNum && i < nMax; i++)
             {
                 List<Result> rgResults = new List<Result>();
 
@@ -2477,10 +2533,11 @@ namespace MyCaffe
         /// </summary>
         /// <param name="d">Specifies the Datum to run.</param>
         /// <param name="bSort">Specifies whether or not to sort the results.</param>
+        /// <param name="bPad">Optionally, specifies to pad the data with a dummy item and reshape the net (default = false).</param>
         /// <returns>The results of the run are returned.</returns>
-        public ResultCollection Run(SimpleDatum d, bool bSort = true)
+        public ResultCollection Run(SimpleDatum d, bool bSort = true, bool bPad = false)
         {
-            return Run(d, bSort, false);
+            return Run(d, bSort, false, bPad);
         }
 
         /// <summary>
