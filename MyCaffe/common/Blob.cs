@@ -44,6 +44,7 @@ namespace MyCaffe.common
         bool m_bCpuDataReadyForPush = false;
         bool m_bReshapeWhenSharing = false;
         bool m_bSnapshotRequested = false;
+        bool m_bPadded = false;
 
         /// <summary>
         /// Defines the maximum number of Axes supported by the Blob.
@@ -212,6 +213,15 @@ namespace MyCaffe.common
         public static T MinusOne
         {
             get { return (T)Convert.ChangeType(-1, typeof(T)); }
+        }
+
+        /// <summary>
+        /// Get/set the padding state of the blob.
+        /// </summary>
+        public bool Padded
+        {
+            get { return m_bPadded; }
+            set { m_bPadded = value; }
         }
 
         /// <summary>
