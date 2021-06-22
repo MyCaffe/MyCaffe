@@ -743,6 +743,20 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Save the time-synchronized batch of results of a Run as a RawImageResult.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the ID of the data source.</param>
+        /// <param name="nIdx">Specifies the index of the result.</param>
+        /// <param name="nLabel">Specifies the expected label of the result.</param>
+        /// <param name="dt">Specifies the time-stamp of the result.</param>
+        /// <param name="rgrgResults">Specifies the time-synchronized batch of results of the run as a list of (int nLabel, double dfReult) values.</param>
+        /// <returns></returns>
+        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<List<Result>> rgrgResults)
+        {
+            return m_db.PutRawImageResults(nSrcId, nIdx, nLabel, dt, rgrgResults);
+        }
+
+        /// <summary>
         /// Adds a new RawImage group to the database.
         /// </summary>
         /// <param name="img">Specifies an image associated with the group.</param>

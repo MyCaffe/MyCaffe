@@ -336,6 +336,7 @@ END</value>
 	[SourceID] [int] NULL,
 	[TimeStamp] [datetime] NULL,
 	[ExtraData] [image] NULL,
+	[BatchCount] [int] NULL,
  CONSTRAINT [PK_RawImageResults] PRIMARY KEY CLUSTERED 
 (
 	[ID] ASC
@@ -418,6 +419,13 @@ SELECT(0)</value>
 BEGIN
     ALTER TABLE [dbo].[RawImageResults] ADD 
 	    [ExtraData] [image] NULL
+END</value>
+  </data>
+  <data name="UpdateRawImageResultsTable2" xml:space="preserve">
+    <value>IF COL_LENGTH('dbo.RawImageResults', 'BatchCount') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[RawImageResults] ADD 
+	    [BatchCount] [int] NULL
 END</value>
   </data>
 </root>

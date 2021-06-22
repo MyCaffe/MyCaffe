@@ -135,6 +135,7 @@
           <Property Name="SourceID" Type="int" />
           <Property Name="TimeStamp" Type="datetime" />
           <Property Name="ExtraData" Type="image" />
+          <Property Name="BatchCount" Type="int" />
         </EntityType>
         <EntityType Name="RawImages">
           <Key>
@@ -279,6 +280,7 @@
           <Property Name="SourceID" Type="Int32" />
           <Property Name="TimeStamp" Type="DateTime" Precision="3" />
           <Property Name="ExtraData" Type="Binary" MaxLength="Max" FixedLength="false" />
+          <Property Name="BatchCount" Type="Int32" />
         </EntityType>
         <EntityType Name="SourceParameter">
           <Key>
@@ -481,6 +483,7 @@
           <EntitySetMapping Name="RawImageResults">
             <EntityTypeMapping TypeName="DNNModel.RawImageResult">
               <MappingFragment StoreEntitySet="RawImageResults">
+                <ScalarProperty Name="BatchCount" ColumnName="BatchCount" />
                 <ScalarProperty Name="ExtraData" ColumnName="ExtraData" />
                 <ScalarProperty Name="ID" ColumnName="ID" />
                 <ScalarProperty Name="Idx" ColumnName="Idx" />

@@ -22,5 +22,6 @@ namespace MyCaffe.db.image
         public Nullable<int> SourceID { get; set; }
         public Nullable<System.DateTime> TimeStamp { get; set; }
         public byte[] ExtraData { get; set; }
+        public Nullable<int> BatchCount { get; set; }
     }
 }

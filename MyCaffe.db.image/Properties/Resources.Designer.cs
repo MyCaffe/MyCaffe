@@ -325,11 +325,12 @@ namespace MyCaffe.db.image.Properties {
         ///	[SourceID] [int] NULL,
         ///	[TimeStamp] [datetime] NULL,
         ///	[ExtraData] [image] NULL,
+        ///	[BatchCount] [int] NULL,
         /// CONSTRAINT [PK_RawImageResults] PRIMARY KEY CLUSTERED 
         ///(
         ///	[ID] ASC
         ///)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-        ///) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY].
+        ///) ON [PRIMARY] TEXTIMAG [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string CreateRawImageResultsTable {
             get {
@@ -430,6 +431,19 @@ namespace MyCaffe.db.image.Properties {
         internal static string UpdateRawImageResultsTable {
             get {
                 return ResourceManager.GetString("UpdateRawImageResultsTable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.RawImageResults&apos;, &apos;BatchCount&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[RawImageResults] ADD 
+        ///	    [BatchCount] [int] NULL
+        ///END.
+        /// </summary>
+        internal static string UpdateRawImageResultsTable2 {
+            get {
+                return ResourceManager.GetString("UpdateRawImageResultsTable2", resourceCulture);
             }
         }
     }

@@ -241,6 +241,10 @@ namespace MyCaffe.db.image
             cmdCreate = new SqlCommand(Properties.Resources.UpdateRawImageResultsTable, connection);
             cmdCreate.ExecuteNonQuery();
             cmdCreate.Dispose();
+
+            cmdCreate = new SqlCommand(Properties.Resources.UpdateRawImageResultsTable2, connection);
+            cmdCreate.ExecuteNonQuery();
+            cmdCreate.Dispose();
         }
 
         /// <summary>

@@ -3121,6 +3121,52 @@ namespace MyCaffe.db.image
                 r.ResultCount = rgResults.Count;
                 r.Results = ResultDescriptor.CreateResults(rgResults, bInvert);
                 r.TimeStamp = dt;
+                r.BatchCount = 0;
+               
+                if (rg.Count == 0)
+                    entities.RawImageResults.Add(r);
+
+                entities.SaveChanges();
+
+                return r.ID;
+            }
+        }
+
+        /// <summary>
+        /// Save the results of a Run as a RawImageResult.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the ID of the data source.</param>
+        /// <param name="nIdx">Specifies the index of the result.</param>
+        /// <param name="nLabel">Specifies the expected label of the result.</param>
+        /// <param name="dt">Specifies the time-stamp of the result.</param>
+        /// <param name="rgrgResults">Specifies the time-synchronized batch of results of the run as a list of (int nLabel, double dfReult) values.</param>
+        /// <returns></returns>
+        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<List<Result>> rgrgResults)
+        {
+            if (rgrgResults.Count == 0 || rgrgResults[0].Count == 0)
+                throw new Exception("You must have at least one result!");
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<RawImageResult> rg = entities.RawImageResults.Where(p => p.SourceID == nSrcId && p.Idx == nIdx).ToList();
+                RawImageResult r;
+
+                if (rg.Count == 0)
+                {
+                    r = new RawImageResult();
+                    r.Idx = nIdx;
+                    r.SourceID = nSrcId;
+                }
+                else
+                {
+                    r = rg[0];
+                }
+
+                r.Label = nLabel;
+                r.ResultCount = rgrgResults[0].Count;
+                r.Results = ResultDescriptor.CreateResults(rgrgResults);
+                r.TimeStamp = dt;
+                r.BatchCount = rgrgResults.Count;
 
                 if (rg.Count == 0)
                     entities.RawImageResults.Add(r);
