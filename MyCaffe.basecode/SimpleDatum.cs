@@ -1928,7 +1928,16 @@ namespace MyCaffe.basecode
         /// </summary>
         public int ImageID
         {
-            get { return m_nImageID; }
+            get { return m_nImageID; }            
+        }
+
+        /// <summary>
+        /// Set the image ID.
+        /// </summary>
+        /// <param name="nID">Specifies the image ID.</param>
+        public void SetImageID(int nID)
+        {
+            m_nImageID = nID;
         }
 
         /// <summary>
