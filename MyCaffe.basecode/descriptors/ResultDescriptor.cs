@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -124,6 +125,28 @@ namespace MyCaffe.basecode.descriptors
             }
 
             return rgData.ToArray();
+        }
+
+        /// <summary>
+        /// The CreateResults function converts the batch of lists of (int nLabel, double dfResult) pairs into a array of <i>bytes</i>.
+        /// </summary>
+        /// <param name="rgrgResults">Specifies the batch of lists of (int nLabel, double dfResult) result data.</param>
+        /// <returns>A <i>byte</i> array containing the result data is returned.</returns>
+        public static byte[] CreateResults(List<List<Result>> rgrgResults)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            using (BinaryWriter bw = new BinaryWriter(ms))
+            {
+                bw.Write(rgrgResults.Count);
+
+                for (int i = 0; i < rgrgResults.Count; i++)
+                {
+                    bw.Write(CreateResults(rgrgResults[i], false));
+                }
+
+                ms.Flush();
+                return ms.ToArray();
+            }
         }
 
         private List<KeyValuePair<int, double>> createResults(int nCount, byte[] rgData)
