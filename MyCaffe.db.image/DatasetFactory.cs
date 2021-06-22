@@ -751,9 +751,20 @@ namespace MyCaffe.db.image
         /// <param name="dt">Specifies the time-stamp of the result.</param>
         /// <param name="rgrgResults">Specifies the time-synchronized batch of results of the run as a list of (int nLabel, double dfReult) values.</param>
         /// <returns></returns>
-        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<List<Result>> rgrgResults)
+        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<Tuple<SimpleDatum, List<Result>>> rgrgResults)
         {
             return m_db.PutRawImageResults(nSrcId, nIdx, nLabel, dt, rgrgResults);
+        }
+
+        /// <summary>
+        /// Extracts the raw image result batch from the result binary data.
+        /// </summary>
+        /// <param name="nBatchCount">Specifies the number of results in the batch.</param>
+        /// <param name="rgResults">Specifies the binary batch data.</param>
+        /// <returns>An array of tuples containing SimpleDatum/Result pairs is returned.</returns>
+        public List<Tuple<SimpleDatum, List<Result>>> GetRawImageResultBatch(int nBatchCount, byte[] rgResults)
+        {
+            return m_db.GetRawImageResultBatch(nBatchCount, rgResults);
         }
 
         /// <summary>

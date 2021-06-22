@@ -3141,9 +3141,9 @@ namespace MyCaffe.db.image
         /// <param name="dt">Specifies the time-stamp of the result.</param>
         /// <param name="rgrgResults">Specifies the time-synchronized batch of results of the run as a list of (int nLabel, double dfReult) values.</param>
         /// <returns></returns>
-        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<List<Result>> rgrgResults)
+        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<Tuple<SimpleDatum, List<Result>>> rgrgResults)
         {
-            if (rgrgResults.Count == 0 || rgrgResults[0].Count == 0)
+            if (rgrgResults.Count == 0 || rgrgResults[0].Item2.Count == 0)
                 throw new Exception("You must have at least one result!");
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
@@ -3163,7 +3163,7 @@ namespace MyCaffe.db.image
                 }
 
                 r.Label = nLabel;
-                r.ResultCount = rgrgResults[0].Count;
+                r.ResultCount = rgrgResults[0].Item2.Count;
                 r.Results = ResultDescriptor.CreateResults(rgrgResults);
                 r.TimeStamp = dt;
                 r.BatchCount = rgrgResults.Count;
@@ -3175,6 +3175,20 @@ namespace MyCaffe.db.image
 
                 return r.ID;
             }
+        }
+
+        /// <summary>
+        /// Extracts the raw image result batch from the result binary data.
+        /// </summary>
+        /// <param name="nBatchCount">Specifies the number of results in the batch.</param>
+        /// <param name="rgResults">Specifies the binary batch data.</param>
+        /// <returns>An array of tuples containing SimpleDatum/Result pairs is returned.</returns>
+        public List<Tuple<SimpleDatum, List<Result>>> GetRawImageResultBatch(int nBatchCount, byte[] rgResults)
+        {
+            if (nBatchCount <= 0)
+                throw new Exception("The batch count must be 1 or greater!");
+
+            return ResultDescriptor.GetResults(nBatchCount, rgResults);
         }
 
         /// <summary>
