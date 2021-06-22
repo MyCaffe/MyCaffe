@@ -113,18 +113,65 @@ namespace MyCaffe.basecode.descriptors
                 }
             }
 
-            foreach (Result kv in rgResults)
+            using (MemoryStream ms = new MemoryStream())
+            using (BinaryWriter bw = new BinaryWriter(ms))
             {
-                rgData.AddRange(BitConverter.GetBytes(kv.Label));
-                double dfValue = kv.Score;
+                bw.Write(rgResults.Count);
 
-                if (bInvert)
-                    dfValue = dfMax - dfValue;
+                foreach (Result kv in rgResults)
+                {
+                    bw.Write(kv.Label);
 
-                rgData.AddRange(BitConverter.GetBytes(dfValue));
+                    double dfValue = kv.Score;
+
+                    if (bInvert)
+                        dfValue = dfMax - dfValue;
+
+                    bw.Write(dfValue);
+                }
+
+                ms.Flush();
+                return ms.ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Extract the results from the binary data.
+        /// </summary>
+        /// <param name="rgData">Specifies the binary data holding the results.</param>
+        /// <returns>The list of results is returned.</returns>
+        public static List<Result> GetResults(byte[] rgData)
+        {
+            List<Result> rgRes = new List<Result>();
+
+            using (MemoryStream ms = new MemoryStream(rgData))
+            using (BinaryReader br = new BinaryReader(ms))
+            {
+                return GetResults(br);
+            }
+        }
+
+        /// <summary>
+        /// Extract the results from the binary data.
+        /// </summary>
+        /// <param name="br">Specifies the binary reader.</param>
+        /// <returns>The list of results is returned.</returns>
+        public static List<Result> GetResults(BinaryReader br)
+        {
+            List<Result> rgRes = new List<Result>();
+
+            int nCount = br.ReadInt32();
+
+            for (int i = 0; i < nCount; i++)
+            {
+                int nLabel = br.ReadInt32();
+                double dfVal = br.ReadDouble();
+
+                Result r = new Result(nLabel, dfVal);
+                rgRes.Add(r);
             }
 
-            return rgData.ToArray();
+            return rgRes;
         }
 
         /// <summary>
@@ -132,7 +179,7 @@ namespace MyCaffe.basecode.descriptors
         /// </summary>
         /// <param name="rgrgResults">Specifies the batch of lists of (int nLabel, double dfResult) result data.</param>
         /// <returns>A <i>byte</i> array containing the result data is returned.</returns>
-        public static byte[] CreateResults(List<List<Result>> rgrgResults)
+        public static byte[] CreateResults(List<Tuple<SimpleDatum, List<Result>>> rgrgResults)
         {
             using (MemoryStream ms = new MemoryStream())
             using (BinaryWriter bw = new BinaryWriter(ms))
@@ -141,12 +188,55 @@ namespace MyCaffe.basecode.descriptors
 
                 for (int i = 0; i < rgrgResults.Count; i++)
                 {
-                    bw.Write(CreateResults(rgrgResults[i], false));
+                    bw.Write(rgrgResults[i].Item1.ImageID);
+                    bw.Write(rgrgResults[i].Item1.Index);
+                    bw.Write(rgrgResults[i].Item1.TimeStamp.ToFileTimeUtc());
+                    bw.Write(CreateResults(rgrgResults[i].Item2, false));
                 }
 
                 ms.Flush();
                 return ms.ToArray();
             }
+        }
+
+        /// <summary>
+        /// Extracts the raw image result batch from the result binary data.
+        /// </summary>
+        /// <param name="nBatchCount">Specifies the number of results in the batch.</param>
+        /// <param name="rgData">Specifies the binary batch data.</param>
+        /// <returns>An array of tuples containing SimpleDatum/Result pairs is returned.</returns>
+        public static List<Tuple<SimpleDatum, List<Result>>> GetResults(int nBatchCount, byte[] rgData)
+        {
+            if (nBatchCount <= 0)
+                throw new Exception("The batch count must be >= 1!");
+
+            List<Tuple<SimpleDatum, List<Result>>> rgRes1 = new List<Tuple<SimpleDatum, List<Result>>>();
+
+            using (MemoryStream ms = new MemoryStream(rgData))
+            using (BinaryReader br = new BinaryReader(ms))
+            {
+                int nCount = br.ReadInt32();
+                if (nCount != nBatchCount)
+                    throw new Exception("The batch count does not match the expected count of " + nCount.ToString());
+
+                for (int i = 0; i < nCount; i++)
+                {
+                    int nImageID = br.ReadInt32();
+                    int nIdx = br.ReadInt32();
+                    long lTime = br.ReadInt64();
+                    DateTime dt = DateTime.FromFileTimeUtc(lTime);
+                    List<Result> rgRes = GetResults(br);
+
+                    SimpleDatum sd = new SimpleDatum();
+                    sd.SetImageID(nImageID);
+                    sd.Index = nIdx;
+                    sd.TimeStamp = dt;
+
+                    rgRes1.Add(new Tuple<SimpleDatum, List<Result>>(sd, rgRes));
+                }
+            }
+
+            return rgRes1;
         }
 
         private List<KeyValuePair<int, double>> createResults(int nCount, byte[] rgData)
