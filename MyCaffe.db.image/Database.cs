@@ -2300,7 +2300,7 @@ namespace MyCaffe.db.image
                         rip.Name = param.Name;
                         rip.SourceID = param.SourceID;
                         rip.TextValue = param.Value;
-                        rip.NumericValue2 = param.NumericValue;
+                        rip.NumericValue2 = (float)param.NumericValue;
                         rip.Value = param.Data;
                         entities.RawImageParameters.Add(rip);
                     }
@@ -2310,7 +2310,7 @@ namespace MyCaffe.db.image
                         {
                             List<RawImageParameter> rg = iquery.ToList();
                             rg[0].TextValue = param.Value;
-                            rg[0].NumericValue2 = param.NumericValue;
+                            rg[0].NumericValue2 = (float)param.NumericValue;
                             rg[0].Value = param.Data;
                         }
                     }
@@ -3132,6 +3132,27 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Set the raw image result extra data field.
+        /// </summary>
+        /// <param name="nRawImageResultID">Specifies the ID of the raw image result to update.</param>
+        /// <param name="rgExtraData">Specifies the extra data to set.</param>
+        /// <returns>The raw image result ID is returned, or 0 is returned if not found.</returns>
+        public int PutRawImageResultExtraData(int nRawImageResultID, byte[] rgExtraData)
+        {
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<RawImageResult> rg = entities.RawImageResults.Where(p => p.ID == nRawImageResultID).ToList();
+                if (rg.Count == 0)
+                    return 0;
+
+                rg[0].ExtraData = rgExtraData;
+                entities.SaveChanges();
+
+                return rg[0].ID;
+            }
+        }
+
+        /// <summary>
         /// Returns the RawImageResults for a data source.
         /// </summary>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
@@ -3351,7 +3372,7 @@ namespace MyCaffe.db.image
                 }
 
                 riP.TextValue = strValue;
-                riP.NumericValue2 = dfVal;
+                riP.NumericValue2 = (float)dfVal;
                 riP.Value = setImageByteData(rgData, "param_" + strName);
 
                 if (rgP.Count == 0)

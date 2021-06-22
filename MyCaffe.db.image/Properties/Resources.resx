@@ -335,10 +335,11 @@ END</value>
 	[Results] [image] NULL,
 	[SourceID] [int] NULL,
 	[TimeStamp] [datetime] NULL,
+	[ExtraData] [image] NULL,
  CONSTRAINT [PK_RawImageResults] PRIMARY KEY CLUSTERED 
 (
 	[ID] ASC
-)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]</value>
   </data>
   <data name="CreateRawImagesTable" xml:space="preserve">
@@ -411,5 +412,12 @@ OR name = '%DBNAME%')))
 SELECT(1)
 ELSE
 SELECT(0)</value>
+  </data>
+  <data name="UpdateRawImageResultsTable" xml:space="preserve">
+    <value>IF COL_LENGTH('dbo.RawImageResults', 'ExtraData') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[RawImageResults] ADD 
+	    [ExtraData] [image] NULL
+END</value>
   </data>
 </root>

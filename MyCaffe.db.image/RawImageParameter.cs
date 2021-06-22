@@ -21,6 +21,6 @@ namespace MyCaffe.db.image
         public Nullable<int> RawImageID { get; set; }
         public string TextValue { get; set; }
         public Nullable<decimal> NumericValue { get; set; }
-        public Nullable<double> NumericValue2 { get; set; }
+        public Nullable<float> NumericValue2 { get; set; }
     }
 }

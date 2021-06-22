@@ -121,7 +121,7 @@
           <Property Name="RawImageID" Type="int" />
           <Property Name="TextValue" Type="nvarchar" MaxLength="1024" />
           <Property Name="NumericValue" Type="numeric" Precision="12" Scale="5" />
-          <Property Name="NumericValue2" Type="float" />
+          <Property Name="NumericValue2" Type="real" />
         </EntityType>
         <EntityType Name="RawImageResults">
           <Key>
@@ -134,6 +134,7 @@
           <Property Name="Results" Type="image" />
           <Property Name="SourceID" Type="int" />
           <Property Name="TimeStamp" Type="datetime" />
+          <Property Name="ExtraData" Type="image" />
         </EntityType>
         <EntityType Name="RawImages">
           <Key>
@@ -277,6 +278,7 @@
           <Property Name="Results" Type="Binary" MaxLength="Max" FixedLength="false" />
           <Property Name="SourceID" Type="Int32" />
           <Property Name="TimeStamp" Type="DateTime" Precision="3" />
+          <Property Name="ExtraData" Type="Binary" MaxLength="Max" FixedLength="false" />
         </EntityType>
         <EntityType Name="SourceParameter">
           <Key>
@@ -405,7 +407,7 @@
           <Property Name="RawImageID" Type="Int32" />
           <Property Name="TextValue" Type="String" MaxLength="1024" FixedLength="false" Unicode="true" />
           <Property Name="NumericValue" Type="Decimal" Precision="12" Scale="5" />
-          <Property Name="NumericValue2" Type="Double" />
+          <Property Name="NumericValue2" Type="Single" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -479,6 +481,7 @@
           <EntitySetMapping Name="RawImageResults">
             <EntityTypeMapping TypeName="DNNModel.RawImageResult">
               <MappingFragment StoreEntitySet="RawImageResults">
+                <ScalarProperty Name="ExtraData" ColumnName="ExtraData" />
                 <ScalarProperty Name="ID" ColumnName="ID" />
                 <ScalarProperty Name="Idx" ColumnName="Idx" />
                 <ScalarProperty Name="Label" ColumnName="Label" />

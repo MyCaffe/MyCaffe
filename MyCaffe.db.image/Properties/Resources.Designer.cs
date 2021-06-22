@@ -324,10 +324,11 @@ namespace MyCaffe.db.image.Properties {
         ///	[Results] [image] NULL,
         ///	[SourceID] [int] NULL,
         ///	[TimeStamp] [datetime] NULL,
+        ///	[ExtraData] [image] NULL,
         /// CONSTRAINT [PK_RawImageResults] PRIMARY KEY CLUSTERED 
         ///(
         ///	[ID] ASC
-        ///)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
+        ///)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
         ///) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY].
         /// </summary>
         internal static string CreateRawImageResultsTable {
@@ -416,6 +417,19 @@ namespace MyCaffe.db.image.Properties {
         internal static string QueryDatabaseExists {
             get {
                 return ResourceManager.GetString("QueryDatabaseExists", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.RawImageResults&apos;, &apos;ExtraData&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[RawImageResults] ADD 
+        ///	    [ExtraData] [image] NULL
+        ///END.
+        /// </summary>
+        internal static string UpdateRawImageResultsTable {
+            get {
+                return ResourceManager.GetString("UpdateRawImageResultsTable", resourceCulture);
             }
         }
     }
