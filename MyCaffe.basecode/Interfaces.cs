@@ -1420,7 +1420,12 @@ namespace MyCaffe.basecode
 
         #region Results
 
-        List<SimpleResult> GetAllResults(string strSrc);
+        /// <summary>
+        /// Query all results for a given data source.
+        /// </summary>
+        /// <param name="strSource">Specifies the data source who's results are to be returned.</param>
+        /// <returns>Each result is returned in a SimpleResult object.</returns>
+        List<SimpleResult> GetAllResults(string strSource);
 
         #endregion
     }
