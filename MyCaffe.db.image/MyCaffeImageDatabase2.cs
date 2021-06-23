@@ -1955,10 +1955,11 @@ namespace MyCaffe.db.image
         /// Query all results for a given data source.
         /// </summary>
         /// <param name="strSource">Specifies the data source who's results are to be returned.</param>
+        /// <param name="bRequireExtraData">specifies whether or not the Extra 'target' data is required or not.</param>
         /// <returns>Each result is returned in a SimpleResult object.</returns>
-        public List<SimpleResult> GetAllResults(string strSource)
+        public List<SimpleResult> GetAllResults(string strSource, bool bRequireExtraData)
         {
-            return m_colDatasets[m_nStrIDHashCode].FindImageset(strSource).GetAllResults();
+            return m_colDatasets[m_nStrIDHashCode].FindImageset(strSource).GetAllResults(bRequireExtraData);
         }
 
         #endregion // Results

@@ -1792,16 +1792,18 @@ namespace MyCaffe.db.image
         /// Load all results for a given data source.
         /// </summary>
         /// <param name="nSrcID">Specifies the source ID.</param>
+        /// <param name="bRequireExtraData">Optionally, specifies whether or not the Extra 'target' data is required or not.</param>
         /// <returns>A list of SimpleResult objects is returned.</returns>
-        public List<SimpleResult> QueryAllResults(int nSrcID)
+        public List<SimpleResult> QueryAllResults(int nSrcID, bool bRequireExtraData = false)
         {
             List<RawImageResult> rgRes1 = m_db.GetRawImageResults(nSrcID);
             List<SimpleResult> rgRes = new List<SimpleResult>();
 
             foreach (RawImageResult res1 in rgRes1)
             {
-                SimpleResult res = LoadResult(res1);
-                rgRes.Add(res);
+                SimpleResult res = LoadResult(res1, bRequireExtraData);
+                if (res != null)
+                    rgRes.Add(res);
             }
 
             return rgRes;
@@ -2149,8 +2151,9 @@ namespace MyCaffe.db.image
         /// Load the simple results from a RawImageResult row.
         /// </summary>
         /// <param name="res">Specifies the RawImageResult to load.</param>
+        /// <param name="bRequireExtraData">Optionally, specifies whether or not the Extra 'target' data is required or not.</param>
         /// <returns>A new SimpleResult is returned.</returns>
-        public SimpleResult LoadResult(RawImageResult res)
+        public SimpleResult LoadResult(RawImageResult res, bool bRequireExtraData = false)
         {
             int nSrcID = res.SourceID.GetValueOrDefault();
             DateTime dt = res.TimeStamp.GetValueOrDefault();
@@ -2173,16 +2176,24 @@ namespace MyCaffe.db.image
             int[] rgTarget1 = null;
             int nTargetCount;
 
-            using (MemoryStream ms = new MemoryStream(res.ExtraData))
-            using (BinaryReader br = new BinaryReader(ms))
+            if (res.ExtraData != null)
             {
-                nTargetCount = br.ReadInt32();
-                rgTarget1 = new int[nTargetCount];
-
-                for (int i = 0; i < nTargetCount; i++)
+                using (MemoryStream ms = new MemoryStream(res.ExtraData))
+                using (BinaryReader br = new BinaryReader(ms))
                 {
-                    rgTarget1[i] = br.ReadInt32();
+                    nTargetCount = br.ReadInt32();
+                    rgTarget1 = new int[nTargetCount];
+
+                    for (int i = 0; i < nTargetCount; i++)
+                    {
+                        rgTarget1[i] = br.ReadInt32();
+                    }
                 }
+            }
+            else
+            {
+                if (bRequireExtraData)
+                    return null;
             }
 
             return new SimpleResult(nSrcID, nIdx, dt, nBatchCount, nResCount, rgResult1, rgTarget1);

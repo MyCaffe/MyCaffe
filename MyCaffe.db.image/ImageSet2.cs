@@ -463,8 +463,9 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Returns all results from the RawImageResults table.
         /// </summary>
+        /// <param name="bRequireExtraData">Specifies whether or not the Extra 'target' data is required or not.</param>
         /// <returns>The results are returned as a list of SimpleResult objects.</returns>
-        public List<SimpleResult> GetAllResults()
+        public List<SimpleResult> GetAllResults(bool bRequireExtraData)
         {
             return m_factory.QueryAllResults(m_src.ID);
         }

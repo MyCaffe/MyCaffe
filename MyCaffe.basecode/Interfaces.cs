@@ -1424,8 +1424,9 @@ namespace MyCaffe.basecode
         /// Query all results for a given data source.
         /// </summary>
         /// <param name="strSource">Specifies the data source who's results are to be returned.</param>
+        /// <param name="bRequireExtraData">Specifies whether or not the Extra 'target' data is required or not.</param>
         /// <returns>Each result is returned in a SimpleResult object.</returns>
-        List<SimpleResult> GetAllResults(string strSource);
+        List<SimpleResult> GetAllResults(string strSource, bool bRequireExtraData);
 
         #endregion
     }

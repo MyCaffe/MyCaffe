@@ -2334,7 +2334,7 @@ namespace MyCaffe.test
             factory.Close();
 
             // Test GetAllResults by first loading all results previously stored.
-            m_rgRes = db.GetAllResults(ds.TrainingSourceName);
+            m_rgRes = db.GetAllResults(ds.TrainingSourceName, true);
 
             // Now verify the data.
             foreach (SimpleResult res in m_rgRes)
