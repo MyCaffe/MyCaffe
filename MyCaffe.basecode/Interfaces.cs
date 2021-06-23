@@ -1425,8 +1425,9 @@ namespace MyCaffe.basecode
         /// </summary>
         /// <param name="strSource">Specifies the data source who's results are to be returned.</param>
         /// <param name="bRequireExtraData">Specifies whether or not the Extra 'target' data is required or not.</param>
+        /// <param name="nMax">Optionally, specifies the maximum number of items to load.</param>
         /// <returns>Each result is returned in a SimpleResult object.</returns>
-        List<SimpleResult> GetAllResults(string strSource, bool bRequireExtraData);
+        List<SimpleResult> GetAllResults(string strSource, bool bRequireExtraData, int nMax = -1);
 
         #endregion
     }
