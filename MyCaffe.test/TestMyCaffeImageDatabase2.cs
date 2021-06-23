@@ -2268,6 +2268,113 @@ namespace MyCaffe.test
             factory.Close();
         }
 
+        [TestMethod]
+        public void TestGetAllResults()
+        {
+            PreTest.Init();
+
+            Log log = new Log("Test Get All Results");
+            log.EnableTrace = true;
+            log.OnProgress += Log_OnProgress;
+
+            string strDs = "MNIST";
+            IXImageDatabase2 db = new MyCaffeImageDatabase2(log);
+
+            SettingsCaffe settings = new SettingsCaffe();
+            settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
+
+            long lQueryState = db.InitializeWithDsName(settings, strDs);
+            db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+            DatasetDescriptor ds = db.GetDatasetByName(strDs);
+
+            DatasetFactory factory = new DatasetFactory();
+            factory.Open(ds.TrainingSource.ID);
+            factory.DeleteRawImageResults(ds.TrainingSource.ID);
+
+            int nCount = 100;
+
+            Dictionary<int, Tuple<SimpleDatum, List<int>, List<Tuple<SimpleDatum, List<Result>>>>> rgFullSet = new Dictionary<int, Tuple<SimpleDatum, List<int>, List<Tuple<SimpleDatum, List<Result>>>>>();
+            List<Tuple<SimpleDatum, List<Result>>> rgSd = new List<Tuple<SimpleDatum, List<Result>>>();
+            Random random = new Random();
+
+            // Save sample extra data for the first 100 items in the MNIST dataset.
+            for (int i = 0; i < nCount; i++)
+            {
+                SimpleDatum d = db.QueryImage(lQueryState, ds.TrainingSource.ID, i);
+
+                List<Result> rgRes = new List<Result>();
+
+                for (int j = 0; j < 3; j++)
+                {
+                    rgRes.Add(new Result(j, random.NextDouble()));
+                }
+
+                rgSd.Add(new Tuple<SimpleDatum, List<Result>>(d, rgRes));
+
+                if (i >= 3)
+                {
+                    List<int> rgExtra = new List<int>();
+                    rgExtra.Add(random.Next(3));
+                    rgExtra.Add(random.Next(3));
+
+                    // Save results with a 4 item history, with 3 random items per result and 2 random extra targets.
+                    int nResId = factory.PutRawImageResults(ds.TrainingSource.ID, d.Index, d.Label, d.TimeStamp, rgSd, rgExtra);
+
+                    rgFullSet.Add(d.Index, new Tuple<SimpleDatum, List<int>, List<Tuple<SimpleDatum, List<Result>>>>(d, rgExtra, new List<Tuple<SimpleDatum, List<Result>>>(rgSd)));
+                    rgSd.RemoveAt(0);
+                }
+            }
+
+            factory.Close();
+
+            // Test GetAllResults by first loading all results previously stored.
+            List<SimpleResult> rgRes1 = db.GetAllResults(ds.TrainingSourceName);
+
+            // Now verify the data.
+            foreach (SimpleResult res in rgRes1)
+            {
+                if (!rgFullSet.ContainsKey(res.Index))
+                    log.FAIL("Could not find the image index '" + res.Index.ToString() + "' in the full set!");
+
+                Tuple<SimpleDatum, List<int>, List<Tuple<SimpleDatum, List<Result>>>> item = rgFullSet[res.Index];
+                SimpleDatum sd1 = item.Item1;
+                List<int> rgTarget = item.Item2;
+                List<Tuple<SimpleDatum, List<Result>>> rgSd1 = item.Item3;
+
+                if (sd1.Index != res.Index)
+                    log.FAIL("The image indexes do not match!");
+
+                if (sd1.TimeStamp != res.TimeStamp)
+                    log.FAIL("The image timestamps do not match!");
+
+                if (rgSd1.Count != res.BatchCount)
+                    log.FAIL("The result counts do not match!");
+
+                for (int i = 0; i < rgSd1.Count; i++)
+                {
+                    for (int j = 0; j < rgSd1[i].Item2.Count; j++)
+                    {
+                        int nIdx = i * rgSd1[i].Item2.Count + j;
+                        float fExpected = (float)rgSd1[i].Item2[j].Score;
+                        float fActual = res.Result[nIdx];
+
+                        log.CHECK_EQ(fExpected, fActual, "The expected and actual values do not match!");
+                    }
+                }
+
+                if (rgTarget.Count != res.Target.Length)
+                    log.FAIL("The target counts do not match!");
+
+                for (int i = 0; i < rgTarget.Count; i++)
+                {
+                    int nExpected = rgTarget[i];
+                    int nActual = res.Target[i];
+
+                    log.CHECK_EQ(nExpected, nActual, "The expected and actual values do not match!");
+                }
+            }
+        }
+
         // ONLY UNCOMMENT WHEN USING, but do not leave in the Test Cycle.
         //[TestMethod]
         //public void ConvertAllRawImagesToFileBased()
