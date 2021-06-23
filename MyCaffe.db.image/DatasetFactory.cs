@@ -1793,10 +1793,11 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="nSrcID">Specifies the source ID.</param>
         /// <param name="bRequireExtraData">Optionally, specifies whether or not the Extra 'target' data is required or not.</param>
+        /// <param name="nMax">Optionally, specifies the maximum number of items to load.</param>
         /// <returns>A list of SimpleResult objects is returned.</returns>
-        public List<SimpleResult> QueryAllResults(int nSrcID, bool bRequireExtraData = false)
+        public List<SimpleResult> QueryAllResults(int nSrcID, bool bRequireExtraData = false, int nMax = -1)
         {
-            List<RawImageResult> rgRes1 = m_db.GetRawImageResults(nSrcID);
+            List<RawImageResult> rgRes1 = m_db.GetRawImageResults(nSrcID, bRequireExtraData, nMax);
             List<SimpleResult> rgRes = new List<SimpleResult>();
 
             foreach (RawImageResult res1 in rgRes1)
@@ -2173,7 +2174,7 @@ namespace MyCaffe.db.image
             }
 
             float[] rgResult1 = rgResults.ToArray();
-            int[] rgTarget1 = null;
+            List<Tuple<DateTime, int>> rgTarget1 = new List<Tuple<DateTime, int>>();
             int nTargetCount;
 
             if (res.ExtraData != null)
@@ -2182,11 +2183,13 @@ namespace MyCaffe.db.image
                 using (BinaryReader br = new BinaryReader(ms))
                 {
                     nTargetCount = br.ReadInt32();
-                    rgTarget1 = new int[nTargetCount];
 
                     for (int i = 0; i < nTargetCount; i++)
                     {
-                        rgTarget1[i] = br.ReadInt32();
+                        long lTime = br.ReadInt64();
+                        int nLabel = br.ReadInt32();
+
+                        rgTarget1.Add(new Tuple<DateTime, int>(DateTime.FromFileTimeUtc(lTime), nLabel));
                     }
                 }
             }

@@ -464,10 +464,11 @@ namespace MyCaffe.db.image
         /// Returns all results from the RawImageResults table.
         /// </summary>
         /// <param name="bRequireExtraData">Specifies whether or not the Extra 'target' data is required or not.</param>
+        /// <param name="nMax">Optionally, specifies the maximum number of items to load.</param>
         /// <returns>The results are returned as a list of SimpleResult objects.</returns>
-        public List<SimpleResult> GetAllResults(bool bRequireExtraData)
+        public List<SimpleResult> GetAllResults(bool bRequireExtraData, int nMax)
         {
-            return m_factory.QueryAllResults(m_src.ID);
+            return m_factory.QueryAllResults(m_src.ID, bRequireExtraData, nMax);
         }
     }
 }

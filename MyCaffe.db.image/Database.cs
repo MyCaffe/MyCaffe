@@ -3224,15 +3224,25 @@ namespace MyCaffe.db.image
         /// Returns the RawImageResults for a data source.
         /// </summary>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="bRequireExtraData">Optionally, specifies whether or not the Extra 'target' data is required or not.</param>
+        /// <param name="nMax">Optionally, specifies the maximum number of items to load.</param>
         /// <returns>The list of RawImageResults is returned.</returns>
-        public List<RawImageResult> GetRawImageResults(int nSrcId = 0)
+        public List<RawImageResult> GetRawImageResults(int nSrcId = 0, bool bRequireExtraData = false, int nMax = -1)
         {
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
 
             using (DNNEntities entities = MyCaffe.db.image.EntitiesConnection.CreateEntities())
             {
-                return entities.RawImageResults.AsNoTracking().Where(p => p.SourceID == nSrcId).OrderBy(p => p.TimeStamp).ToList();
+                IQueryable<RawImageResult> iQry = entities.RawImageResults.AsNoTracking().Where(p => p.SourceID == nSrcId).OrderBy(p => p.TimeStamp);
+
+                if (bRequireExtraData)
+                    iQry = iQry.Where(p => p.ExtraData != null);
+
+                if (nMax > 0)
+                    iQry = iQry.Take(nMax);
+
+                return iQry.ToList();
             }
         }
 
