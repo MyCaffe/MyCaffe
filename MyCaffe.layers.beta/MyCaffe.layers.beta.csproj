@@ -58,6 +58,7 @@
     <Compile Include="layers.beta\AttentionLayer.cs" />
     <Compile Include="layers.beta\DecodeLayer.cs" />
     <Compile Include="layers.beta\AccuracyEncodingLayer.cs" />
+    <Compile Include="layers.beta\ModelDataLayer.cs" />
     <Compile Include="layers.beta\TextDataLayer.cs" />
     <Compile Include="layers.beta\LSTMAttentionLayer.cs" />
     <Compile Include="layers.beta\MergeLayer.cs" />
