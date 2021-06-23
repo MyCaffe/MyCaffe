@@ -117,6 +117,14 @@ namespace MyCaffe.layers.beta
         }
 
         /// <summary>
+        /// Returns the decoder vocabulary count.
+        /// </summary>
+        public int DecoderVocabularyCount
+        {
+            get { return (m_data == null) ? 0 : m_data.DecoderVocabCount; }
+        }
+
+        /// <summary>
         /// Should return true when pre processing methods are overriden.
         /// </summary>
         public override bool SupportsPreProcessing
@@ -146,7 +154,7 @@ namespace MyCaffe.layers.beta
                 rgFullList.AddRange(rgRes);
             }
 
-            rgFullList = rgFullList.OrderBy(p1 => p1.TimeStamp).ToList();
+            rgFullList = rgFullList.OrderBy(p1 => p1.TimeStamp).ThenBy(p1 => p1.Index).ToList();
             m_data = new Data(rgFullList);
         }
 
@@ -157,11 +165,11 @@ namespace MyCaffe.layers.beta
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            // Refuse transformation parameters since HDF5 is totally generic.
+            // Refuse transformation parameters since ModelData is totally generic.
             if (m_param.transform_param != null)
                 m_log.WriteLine("WARNING: " + m_type.ToString() + " does not transform data.");
 
-            m_log.CHECK_EQ(m_param.text_data_param.batch_size, 1, "Currently, only batch_size = 1 supported.");
+            m_log.CHECK_EQ(m_param.model_data_param.batch_size, 1, "Currently, only batch_size = 1 supported.");
             m_log.CHECK_EQ(colTop.Count, 6, "When normal or reverse encoder output used, there must be 6 tops: dec, dclip, enc | encr, eclip, vocabcount, dectgt (only valid on TEST | TRAIN)");
 
             // Load the encoder and decoder input data into the Data.
@@ -197,7 +205,7 @@ namespace MyCaffe.layers.beta
         /// </summary>
         protected void Next()
         {
-            m_currentData = m_data.GetNextData(m_param.text_data_param.shuffle);
+            m_currentData = m_data.GetNextData(m_param.model_data_param.shuffle);
         }
 
         /// <summary>
@@ -212,9 +220,10 @@ namespace MyCaffe.layers.beta
 
         private void reshape(BlobCollection<T> colTop, bool bSetup)
         {
-            int nBatchSize = (int)m_param.text_data_param.batch_size;
-            int nT = (int)m_param.text_data_param.time_steps;
-            List<int> rgTopShape = new List<int>() { nT, nBatchSize, 1 };
+            int nBatchSize = (int)m_param.model_data_param.batch_size;
+            int nT = (int)m_param.model_data_param.time_steps;
+            int nI = (int)m_param.model_data_param.input_dim;
+            List<int> rgTopShape = new List<int>() { nT, nBatchSize, nI };
             int nTopIdx = 0;
 
             // Reshape the decoder input.
@@ -260,8 +269,8 @@ namespace MyCaffe.layers.beta
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            int nBatch = (int)m_param.text_data_param.batch_size;
-            int nT = (int)m_param.text_data_param.time_steps;
+            int nBatch = (int)m_param.model_data_param.batch_size;
+            int nT = (int)m_param.model_data_param.time_steps;
 
             Array.Clear(m_rgDecInput, 0, m_rgDecInput.Length);
             if (m_phase != Phase.RUN)
