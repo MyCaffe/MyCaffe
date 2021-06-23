@@ -64,22 +64,61 @@ namespace MyCaffe.test
 
     class ModelDataLayerTest : TestBase
     {
+        SettingsCaffe m_settings;
+        IXImageDatabaseBase m_db;
+        CancelEvent m_evtCancel = new CancelEvent();
+
         public ModelDataLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
             : base("Text Model Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
         {
+            m_settings = new SettingsCaffe();
+            m_settings.EnableLabelBalancing = false;
+            m_settings.EnableLabelBoosting = false;
+            m_settings.EnablePairInputSelection = false;
+            m_settings.EnableRandomInputSelection = false;
+
+            m_db = createImageDb(null);
+            m_db.InitializeWithDsName1(m_settings, "MNIST");
         }
 
         protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
         {
             if (dt == common.DataType.DOUBLE)
-                return new ModelDataLayerTest<double>(strName, nDeviceID, engine);
+                return new ModelDataLayerTest<double>(strName, nDeviceID, engine, this);
             else
-                return new ModelDataLayerTest<float>(strName, nDeviceID, engine);
+                return new ModelDataLayerTest<float>(strName, nDeviceID, engine, this);
+        }
+
+        protected override void dispose()
+        {
+            if (m_db != null)
+            {
+                ((IDisposable)m_db).Dispose();
+                m_db = null;
+            }
+
+            base.dispose();
+        }
+
+        public IXImageDatabaseBase db
+        {
+            get { return m_db; }
+        }
+
+        public SettingsCaffe Settings
+        {
+            get { return m_settings; }
+        }
+
+        public CancelEvent CancelEvent
+        {
+            get { return m_evtCancel; }
         }
     }
 
     class ModelDataLayerTest<T> : TestEx<T>, IModelDataLayerTest
     {
+        ModelDataLayerTest m_parent;
         Blob<T> m_blobDecInput;
         Blob<T> m_blobDecClip;
         Blob<T> m_blobDecTarget;
@@ -91,9 +130,10 @@ namespace MyCaffe.test
         Blob<T> m_blobBtmEncInput1;
         Blob<T> m_blobBtmEncClip;
 
-        public ModelDataLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
+        public ModelDataLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine, ModelDataLayerTest parent)
             : base(strName, new List<int>() { 2, 3, 4, 5 }, nDeviceID)
         {
+            m_parent = parent;
             m_engine = engine;
 
             m_blobDecInput = new Blob<T>(m_cuda, m_log, false);
@@ -169,13 +209,16 @@ namespace MyCaffe.test
         {
             Stopwatch sw = new Stopwatch();
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.MODEL_DATA);
+            p.model_data_param.source.Add("MNIST.training");
+            p.model_data_param.source.Add("MNIST.testing");
             p.model_data_param.batch_size = 1;
             p.model_data_param.time_steps = 80;
+            p.model_data_param.input_dim = 3;
             p.model_data_param.shuffle = false;
             p.model_data_param.sample_size = 1000;
 
-            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-            m_log.CHECK_EQ((int)layer.type, (int)LayerParameter.LayerType.TEXT_DATA, "The layer type should be TEXT_DATA!");
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
+            m_log.CHECK_EQ((int)layer.type, (int)LayerParameter.LayerType.MODEL_DATA, "The layer type should be MODEL_DATA!");
 
             TopVec.Clear();
             TopVec.Add(m_blobDecInput);
@@ -186,6 +229,8 @@ namespace MyCaffe.test
             TopVec.Add(m_blobDecTarget);
 
             BottomVec.Clear();
+
+            List<SimpleResult> rgRes = FillDummyData();
 
             layer.Setup(BottomVec, TopVec);
 
@@ -206,8 +251,11 @@ namespace MyCaffe.test
             Stopwatch sw = new Stopwatch();
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TEXT_DATA);
+            p.model_data_param.source.Add("MNIST.training");
+            p.model_data_param.source.Add("MNIST.testing");
             p.model_data_param.batch_size = 1;
             p.model_data_param.time_steps = 80;
+            p.model_data_param.input_dim = 3;
             p.model_data_param.shuffle = false;
             p.model_data_param.sample_size = 1000;
 
@@ -215,8 +263,8 @@ namespace MyCaffe.test
             int nN = (int)p.model_data_param.batch_size;
             int nI = (int)p.model_data_param.input_dim;
 
-            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-            m_log.CHECK_EQ((int)layer.type, (int)LayerParameter.LayerType.TEXT_DATA, "The layer type should be TEXT_DATA!");
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
+            m_log.CHECK_EQ((int)layer.type, (int)LayerParameter.LayerType.MODEL_DATA, "The layer type should be MODEL_DATA!");
 
             TopVec.Clear();
             TopVec.Add(m_blobDecInput);
@@ -228,9 +276,9 @@ namespace MyCaffe.test
 
             BottomVec.Clear();
 
-            layer.Setup(BottomVec, TopVec);
-
             List<SimpleResult> rgRes = FillDummyData();
+
+            layer.Setup(BottomVec, TopVec);
 
             int nVocabCount = ((ModelDataLayer<T>)layer).DecoderVocabularyCount;
             int nVocabCount1 = (int)convert(m_blobVocabCount.GetData(0));
