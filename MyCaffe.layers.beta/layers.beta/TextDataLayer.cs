@@ -396,7 +396,7 @@ namespace MyCaffe.layers.beta
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            // Refuse transformation parameters since HDF5 is totally generic.
+            // Refuse transformation parameters since TextData is totally generic.
             if (m_param.transform_param != null)
                 m_log.WriteLine("WARNING: " + m_type.ToString() + " does not transform data.");
 
