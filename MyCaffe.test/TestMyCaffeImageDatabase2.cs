@@ -18,6 +18,12 @@ namespace MyCaffe.test
     public class TestMyCaffeImageDatabase2
     {
         TestingProgressSet m_set = new TestingProgressSet();
+        List<SimpleResult> m_rgRes = null;
+
+        public List<SimpleResult> Results
+        {
+            get { return m_rgRes; }
+        }
 
         public void TestInitialization(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
@@ -2328,10 +2334,10 @@ namespace MyCaffe.test
             factory.Close();
 
             // Test GetAllResults by first loading all results previously stored.
-            List<SimpleResult> rgRes1 = db.GetAllResults(ds.TrainingSourceName);
+            m_rgRes = db.GetAllResults(ds.TrainingSourceName);
 
             // Now verify the data.
-            foreach (SimpleResult res in rgRes1)
+            foreach (SimpleResult res in m_rgRes)
             {
                 if (!rgFullSet.ContainsKey(res.Index))
                     log.FAIL("Could not find the image index '" + res.Index.ToString() + "' in the full set!");
