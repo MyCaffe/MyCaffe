@@ -147,10 +147,15 @@ namespace MyCaffe.layers.beta
         private void PreProcessData(ModelDataParameter p)
         {
             List<SimpleResult> rgFullList = new List<SimpleResult>();
+            int nMax = -1;
+
+            if (m_phase == Phase.RUN)
+                nMax = 1;
 
             foreach (string strSrc in p.source)
             {
-                List<SimpleResult> rgRes = m_db.GetAllResults(strSrc);
+                m_log.WriteLine("Loading source '" + strSrc + "'...");
+                List<SimpleResult> rgRes = m_db.GetAllResults(strSrc, true, nMax);
                 rgFullList.AddRange(rgRes);
             }
 
