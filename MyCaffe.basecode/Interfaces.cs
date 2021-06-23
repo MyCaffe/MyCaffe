@@ -1417,6 +1417,12 @@ namespace MyCaffe.basecode
         bool GetScheduledAutoRefreshInformation(int nDsID, out int nPeriodInMs, out double dfReplacementPct, out int nTrainingRefreshCount, out int nTestingRefreshCount);
 
         #endregion
+
+        #region Results
+
+        List<SimpleResult> GetAllResults(string strSrc);
+
+        #endregion
     }
 
 #pragma warning disable 1591

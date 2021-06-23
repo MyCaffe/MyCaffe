@@ -1948,5 +1948,19 @@ namespace MyCaffe.db.image
         }
 
         #endregion // Boosts
+
+        #region Results
+
+        /// <summary>
+        /// Query all results for a given data source.
+        /// </summary>
+        /// <param name="strSource">Specifies the data source who's results are to be returned.</param>
+        /// <returns>Each result is returned in a SimpleResult object.</returns>
+        public List<SimpleResult> GetAllResults(string strSource)
+        {
+            return m_colDatasets[m_nStrIDHashCode].FindImageset(strSource).GetAllResults();
+        }
+
+        #endregion // Results
     }
 }

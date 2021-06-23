@@ -459,5 +459,14 @@ namespace MyCaffe.db.image
         {
             return m_masterList.GetImages(bSuperboostOnly, strFilterVal, nBoostVal, rgIdx);
         }
+
+        /// <summary>
+        /// Returns all results from the RawImageResults table.
+        /// </summary>
+        /// <returns>The results are returned as a list of SimpleResult objects.</returns>
+        public List<SimpleResult> GetAllResults()
+        {
+            return m_factory.QueryAllResults(m_src.ID);
+        }
     }
 }

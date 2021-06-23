@@ -3095,8 +3095,9 @@ namespace MyCaffe.db.image
         /// <param name="dt">Specifies the time-stamp of the result.</param>
         /// <param name="rgResults">Specifies the results of the run as a list of (int nLabel, double dfReult) values.</param>
         /// <param name="bInvert">Specifies whether or not the results are inverted.</param>
+        /// <param name="rgExtra">Optionally, specifies the extra target data.</param>
         /// <returns></returns>
-        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<Result> rgResults, bool bInvert)
+        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<Result> rgResults, bool bInvert, List<int> rgExtra = null)
         {
             if (rgResults.Count == 0)
                 throw new Exception("You must have at least one result!");
@@ -3122,7 +3123,10 @@ namespace MyCaffe.db.image
                 r.Results = ResultDescriptor.CreateResults(rgResults, bInvert);
                 r.TimeStamp = dt;
                 r.BatchCount = 0;
-               
+
+                if (rgExtra != null && rgExtra.Count > 0)
+                    r.ExtraData = PackExtraData(rgExtra);
+
                 if (rg.Count == 0)
                     entities.RawImageResults.Add(r);
 
@@ -3140,8 +3144,9 @@ namespace MyCaffe.db.image
         /// <param name="nLabel">Specifies the expected label of the result.</param>
         /// <param name="dt">Specifies the time-stamp of the result.</param>
         /// <param name="rgrgResults">Specifies the time-synchronized batch of results of the run as a list of (int nLabel, double dfReult) values.</param>
+        /// <param name="rgExtra">Optionally, specifies the extra target data.</param>
         /// <returns></returns>
-        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<Tuple<SimpleDatum, List<Result>>> rgrgResults)
+        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<Tuple<SimpleDatum, List<Result>>> rgrgResults, List<int> rgExtra = null)
         {
             if (rgrgResults.Count == 0 || rgrgResults[0].Item2.Count == 0)
                 throw new Exception("You must have at least one result!");
@@ -3167,6 +3172,9 @@ namespace MyCaffe.db.image
                 r.Results = ResultDescriptor.CreateResults(rgrgResults);
                 r.TimeStamp = dt;
                 r.BatchCount = rgrgResults.Count;
+
+                if (rgExtra != null && rgExtra.Count > 0)
+                    r.ExtraData = PackExtraData(rgExtra);
 
                 if (rg.Count == 0)
                     entities.RawImageResults.Add(r);
@@ -3226,6 +3234,51 @@ namespace MyCaffe.db.image
             {
                 return entities.RawImageResults.AsNoTracking().Where(p => p.SourceID == nSrcId).OrderBy(p => p.TimeStamp).ToList();
             }
+        }
+
+        /// <summary>
+        /// Pack the extra data into a byte array.
+        /// </summary>
+        /// <param name="rg">Specifies the extra data.</param>
+        /// <returns>The byte array containing the extra data is returned.</returns>
+        public static byte[] PackExtraData(List<int> rg)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            using (BinaryWriter bw = new BinaryWriter(ms))
+            {
+                bw.Write(rg.Count);
+
+                for (int i = 0; i < rg.Count; i++)
+                {
+                    bw.Write(rg[i]);
+                }
+
+                ms.Flush();
+                return ms.ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Unpack the extra data from a byte array.
+        /// </summary>
+        /// <param name="rg">Specifies the byte array containing the extra data.</param>
+        /// <returns>The array of extra data is returned.</returns>
+        public static List<int> UnpackExtraData(byte[] rg)
+        {
+            List<int> rgExtra = new List<int>();
+
+            using (MemoryStream ms = new MemoryStream(rg))
+            using (BinaryReader br = new BinaryReader(ms))
+            {
+                int nCount = br.ReadInt32();
+
+                for (int i = 0; i < nCount; i++)
+                {
+                    rgExtra.Add(br.ReadInt32());
+                }
+            }
+
+            return rgExtra;
         }
 
         #endregion

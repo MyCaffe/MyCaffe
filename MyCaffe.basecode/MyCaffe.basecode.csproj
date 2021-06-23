@@ -73,6 +73,7 @@
     <Compile Include="NormalizedBBox.cs" />
     <Compile Include="param\BaseParameter.cs" />
     <Compile Include="Result.cs" />
+    <Compile Include="SimpleResult.cs" />
     <Compile Include="TarFile.cs" />
     <Compile Include="Valuemap.cs" />
     <Compile Include="Bytemap.cs" />

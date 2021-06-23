@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -736,10 +737,11 @@ namespace MyCaffe.db.image
         /// <param name="dt">Specifies the time-stamp of the result.</param>
         /// <param name="rgResults">Specifies the results of the run as a list of (int nLabel, double dfReult) values.</param>
         /// <param name="bInvert">Specifies whether or not the results are inverted.</param>
+        /// <param name="rgExtra">Optionally, specifies the extra target data.</param>
         /// <returns></returns>
-        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<Result> rgResults, bool bInvert)
+        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<Result> rgResults, bool bInvert, List<int> rgExtra = null)
         {
-            return m_db.PutRawImageResults(nSrcId, nIdx, nLabel, dt, rgResults, bInvert);
+            return m_db.PutRawImageResults(nSrcId, nIdx, nLabel, dt, rgResults, bInvert, rgExtra);
         }
 
         /// <summary>
@@ -750,10 +752,11 @@ namespace MyCaffe.db.image
         /// <param name="nLabel">Specifies the expected label of the result.</param>
         /// <param name="dt">Specifies the time-stamp of the result.</param>
         /// <param name="rgrgResults">Specifies the time-synchronized batch of results of the run as a list of (int nLabel, double dfReult) values.</param>
+        /// <param name="rgExtra">Optionally, specifies the extra target data.</param>
         /// <returns></returns>
-        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<Tuple<SimpleDatum, List<Result>>> rgrgResults)
+        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<Tuple<SimpleDatum, List<Result>>> rgrgResults, List<int> rgExtra = null)
         {
-            return m_db.PutRawImageResults(nSrcId, nIdx, nLabel, dt, rgrgResults);
+            return m_db.PutRawImageResults(nSrcId, nIdx, nLabel, dt, rgrgResults, rgExtra);
         }
 
         /// <summary>
@@ -1780,6 +1783,32 @@ namespace MyCaffe.db.image
 
         #endregion
 
+        //---------------------------------------------------------------------
+        //  Results
+        //---------------------------------------------------------------------
+        #region Results
+
+        /// <summary>
+        /// Load all results for a given data source.
+        /// </summary>
+        /// <param name="nSrcID">Specifies the source ID.</param>
+        /// <returns>A list of SimpleResult objects is returned.</returns>
+        public List<SimpleResult> QueryAllResults(int nSrcID)
+        {
+            List<RawImageResult> rgRes1 = m_db.GetRawImageResults(nSrcID);
+            List<SimpleResult> rgRes = new List<SimpleResult>();
+
+            foreach (RawImageResult res1 in rgRes1)
+            {
+                SimpleResult res = LoadResult(res1);
+                rgRes.Add(res);
+            }
+
+            return rgRes;
+        }
+
+        #endregion // Results
+
 
         //---------------------------------------------------------------------
         //  Loading Descriptors
@@ -2114,6 +2143,49 @@ namespace MyCaffe.db.image
                 img.DebugData = m_db.GetRawImageDebugData(img.DebugData);
 
             return LoadDatum(img, nPadW, nPadH);
+        }
+
+        /// <summary>
+        /// Load the simple results from a RawImageResult row.
+        /// </summary>
+        /// <param name="res">Specifies the RawImageResult to load.</param>
+        /// <returns>A new SimpleResult is returned.</returns>
+        public SimpleResult LoadResult(RawImageResult res)
+        {
+            int nSrcID = res.SourceID.GetValueOrDefault();
+            DateTime dt = res.TimeStamp.GetValueOrDefault();
+            int nIdx = res.Idx.GetValueOrDefault();
+
+            int nResCount = res.ResultCount.GetValueOrDefault();
+            int nBatchCount = res.BatchCount.GetValueOrDefault();
+            List<Tuple<SimpleDatum, List<Result>>> rgRes = ResultDescriptor.GetResults(nBatchCount, res.Results);
+            List<float> rgResults = new List<float>();
+
+            for (int i = 0; i < rgRes.Count; i++)
+            {
+                for (int j = 0; j < rgRes[i].Item2.Count; j++)
+                {
+                    rgResults.Add((float)rgRes[i].Item2[j].Score);
+                }
+            }
+
+            float[] rgResult1 = rgResults.ToArray();
+            int[] rgTarget1 = null;
+            int nTargetCount;
+
+            using (MemoryStream ms = new MemoryStream(res.ExtraData))
+            using (BinaryReader br = new BinaryReader(ms))
+            {
+                nTargetCount = br.ReadInt32();
+                rgTarget1 = new int[nTargetCount];
+
+                for (int i = 0; i < nTargetCount; i++)
+                {
+                    rgTarget1[i] = br.ReadInt32();
+                }
+            }
+
+            return new SimpleResult(nSrcID, nIdx, dt, nBatchCount, nResCount, rgResult1, rgTarget1);
         }
 
         /// <summary>
