@@ -7,6 +7,7 @@ using MyCaffe.common;
 using MyCaffe.param;
 using MyCaffe.fillers;
 using System.IO;
+using MyCaffe.layers.beta.TextData;
 
 namespace MyCaffe.layers.beta
 {
@@ -39,10 +40,22 @@ namespace MyCaffe.layers.beta
         /// <param name="cuda">Specifies the CudaDnn connection to Cuda.</param>
         /// <param name="log">Specifies the Log for output.</param>
         /// <param name="p">
-        /// Provides DummyDataParameter hdf5_data_param with options:
-        ///  - data_filler. A list of Fillers to use.
+        /// Provides TextDataParameter text_data_param with options:
+        ///  - encoder_source.  The encoder data source.
         ///  
-        ///  - shape.  A list of shapes to use.
+        ///  - decoder_source.  The decoder data source.
+        ///  
+        ///  - batch_size.  The batch size (currently only 1 supported).
+        ///  
+        ///  - time_steps.  The maximum number of time steps.
+        ///  
+        ///  - sample_size.  The number of samples to load for training.
+        ///  
+        ///  - shuffle.  Whether or not to shuffle the data.
+        ///  
+        ///  - enable_normal_encoder_output.  Whether or not to enable the encoder input with normal ordering.
+        ///  
+        ///  - enable_reverse_encoder_output.  Whether or not to enable the encoder input with reverse ordering.
         /// </param>
         public TextDataLayer(CudaDnn<T> cuda, Log log, LayerParameter p)
             : base(cuda, log, p)
@@ -610,373 +623,376 @@ namespace MyCaffe.layers.beta
     }
 
 
+    namespace TextData
+    {
 #pragma warning disable 1591
 
-    class Data /** @private */
-    {
-        Random m_random = new Random((int)DateTime.Now.Ticks);
-        List<List<string>> m_rgInput;
-        List<List<string>> m_rgOutput;
-        int m_nCurrentSequence = -1;
-        int m_nCurrentOutputIdx = 0;
-        int m_nSequenceIdx = 0;
-        int m_nIxInput = 1;
-        int m_nIterations = 0;
-        int m_nOutputCount = 0;
-        Vocabulary m_vocab;
-
-        public Data(List<List<string>> rgInput, List<List<string>> rgOutput, Vocabulary vocab)
+        class Data /** @private */
         {
-            m_vocab = vocab;
-            m_rgInput = rgInput;
-            m_rgOutput = rgOutput;
-        }
+            Random m_random = new Random((int)DateTime.Now.Ticks);
+            List<List<string>> m_rgInput;
+            List<List<string>> m_rgOutput;
+            int m_nCurrentSequence = -1;
+            int m_nCurrentOutputIdx = 0;
+            int m_nSequenceIdx = 0;
+            int m_nIxInput = 1;
+            int m_nIterations = 0;
+            int m_nOutputCount = 0;
+            Vocabulary m_vocab;
 
-        public Vocabulary Vocabulary
-        {
-            get { return m_vocab; }
-        }
-
-        public int VocabularyCount
-        {
-            get { return m_vocab.VocabularCount; }
-        }
-
-        public static DataItem GetInputData(Vocabulary vocab, List<string> rgstrInput, int? nDecInput = null)
-        {
-            List<int> rgInput = null;
-
-            if (rgstrInput != null)
+            public Data(List<List<string>> rgInput, List<List<string>> rgOutput, Vocabulary vocab)
             {
-                rgInput = new List<int>();
+                m_vocab = vocab;
+                m_rgInput = rgInput;
+                m_rgOutput = rgOutput;
+            }
+
+            public Vocabulary Vocabulary
+            {
+                get { return m_vocab; }
+            }
+
+            public int VocabularyCount
+            {
+                get { return m_vocab.VocabularCount; }
+            }
+
+            public static DataItem GetInputData(Vocabulary vocab, List<string> rgstrInput, int? nDecInput = null)
+            {
+                List<int> rgInput = null;
+
+                if (rgstrInput != null)
+                {
+                    rgInput = new List<int>();
+                    foreach (string str in rgstrInput)
+                    {
+                        rgInput.Add(vocab.WordToIndex(str));
+                    }
+                }
+
+                int nClip = 1;
+
+                if (!nDecInput.HasValue)
+                {
+                    nClip = 0;
+                    nDecInput = 1;
+                }
+
+                return new DataItem(rgInput, nDecInput.Value, -1, nClip, false, true, 0);
+            }
+
+            public DataItem GetNextData(bool bShuffle)
+            {
+                int nDecClip = 1;
+
+                bool bNewSequence = false;
+                bool bNewEpoch = false;
+
+                if (m_nCurrentSequence == -1)
+                {
+                    m_nIterations++;
+                    bNewSequence = true;
+
+                    if (bShuffle)
+                    {
+                        m_nCurrentSequence = m_random.Next(m_rgInput.Count);
+                    }
+                    else
+                    {
+                        m_nCurrentSequence = m_nSequenceIdx;
+                        m_nSequenceIdx++;
+                        if (m_nSequenceIdx == m_rgOutput.Count)
+                            m_nSequenceIdx = 0;
+                    }
+
+                    m_nOutputCount = m_rgOutput[m_nCurrentSequence].Count;
+                    nDecClip = 0;
+
+                    if (m_nIterations == m_rgOutput.Count)
+                    {
+                        bNewEpoch = true;
+                        m_nIterations = 0;
+                    }
+                }
+
+                List<string> rgstrInput = m_rgInput[m_nCurrentSequence];
+                List<int> rgInput = new List<int>();
                 foreach (string str in rgstrInput)
                 {
-                    rgInput.Add(vocab.WordToIndex(str));
+                    rgInput.Add(m_vocab.WordToIndex(str));
                 }
+
+                int nIxTarget = 0;
+
+                if (m_nCurrentOutputIdx < m_rgOutput[m_nCurrentSequence].Count)
+                {
+                    string strTarget = m_rgOutput[m_nCurrentSequence][m_nCurrentOutputIdx];
+                    nIxTarget = m_vocab.WordToIndex(strTarget);
+                }
+
+                DataItem data = new DataItem(rgInput, m_nIxInput, nIxTarget, nDecClip, bNewEpoch, bNewSequence, m_nOutputCount);
+                m_nIxInput = nIxTarget;
+
+                m_nCurrentOutputIdx++;
+
+                if (m_nCurrentOutputIdx == m_rgOutput[m_nCurrentSequence].Count)
+                {
+                    m_nCurrentSequence = -1;
+                    m_nCurrentOutputIdx = 0;
+                    m_nIxInput = 1;
+                }
+
+                return data;
             }
-
-            int nClip = 1;
-
-            if (!nDecInput.HasValue)
-            {
-                nClip = 0;
-                nDecInput = 1;
-            }
-
-            return new DataItem(rgInput, nDecInput.Value, -1, nClip, false, true, 0);
         }
 
-        public DataItem GetNextData(bool bShuffle)
+        class DataItem /** @private */
         {
-            int nDecClip = 1;
+            IterationInfo m_iter;
+            List<int> m_rgInput;
+            List<int> m_rgInputReverse;
+            int m_nIxInput;
+            int m_nIxTarget;
+            int m_nDecClip;
 
-            bool bNewSequence = false;
-            bool bNewEpoch = false;
-
-            if (m_nCurrentSequence == -1)
+            public DataItem(List<int> rgInput, int nIxInput, int nIxTarget, int nDecClip, bool bNewEpoch, bool bNewSequence, int nOutputCount)
             {
-                m_nIterations++;
-                bNewSequence = true;
+                m_rgInput = rgInput;
+                m_nIxInput = nIxInput;
+                m_nIxTarget = nIxTarget;
+                m_nDecClip = nDecClip;
+                m_iter = new IterationInfo(bNewEpoch, bNewSequence, nOutputCount);
+                m_rgInputReverse = new List<int>();
 
-                if (bShuffle)
+                if (rgInput != null)
                 {
-                    m_nCurrentSequence = m_random.Next(m_rgInput.Count);
+                    for (int i = rgInput.Count - 1; i >= 0; i--)
+                    {
+                        m_rgInputReverse.Add(rgInput[i]);
+                    }
                 }
                 else
                 {
-                    m_nCurrentSequence = m_nSequenceIdx;
-                    m_nSequenceIdx++;
-                    if (m_nSequenceIdx == m_rgOutput.Count)
-                        m_nSequenceIdx = 0;
+                    m_rgInputReverse = null;
                 }
+            }
 
-                m_nOutputCount = m_rgOutput[m_nCurrentSequence].Count;
-                nDecClip = 0;
+            public List<int> EncoderInput
+            {
+                get { return m_rgInput; }
+            }
 
-                if (m_nIterations == m_rgOutput.Count)
+            public List<int> EncoderInputReverse
+            {
+                get { return m_rgInputReverse; }
+            }
+
+            public int DecoderInput
+            {
+                get { return m_nIxInput; }
+            }
+
+            public int DecoderTarget
+            {
+                get { return m_nIxTarget; }
+            }
+
+            public int DecoderClip
+            {
+                get { return m_nDecClip; }
+            }
+
+            public IterationInfo IterationInfo
+            {
+                get { return m_iter; }
+            }
+        }
+
+#pragma warning restore 1591
+
+        /// <summary>
+        /// The IterationInfo class contains information about each iteration.
+        /// </summary>
+        public class IterationInfo
+        {
+            bool m_bNewEpoch;
+            bool m_bNewSequence;
+            int m_nOutputCount;
+
+            /// <summary>
+            /// The constructor.
+            /// </summary>
+            /// <param name="bNewEpoch">Specifies whether or not the current iteration is in a new epoch.</param>
+            /// <param name="bNewSequence">Specifies whether or not the current iteration is in a new sequence.</param>
+            /// <param name="nOutputCount">Specifies the output count of the current sequence.</param>
+            public IterationInfo(bool bNewEpoch, bool bNewSequence, int nOutputCount)
+            {
+                m_bNewEpoch = bNewEpoch;
+                m_bNewSequence = bNewSequence;
+                m_nOutputCount = nOutputCount;
+            }
+
+            /// <summary>
+            /// Returns whether or not the current iteration is in a new epoch.
+            /// </summary>
+            public bool NewEpoch
+            {
+                get { return m_bNewEpoch; }
+            }
+
+            /// <summary>
+            /// Returns whether or not the current iteration is in a new sequence.
+            /// </summary>
+            public bool NewSequence
+            {
+                get { return m_bNewSequence; }
+            }
+
+            /// <summary>
+            /// Returns the output count of the current sequence.
+            /// </summary>
+            public int OutputCount
+            {
+                get { return m_nOutputCount; }
+            }
+        }
+
+        /// <summary>
+        /// The Vocabulary object manages the overall word dictionary and word to index and index to word mappings.
+        /// </summary>
+        public class Vocabulary
+        {
+            Dictionary<string, int> m_rgDictionary = new Dictionary<string, int>();
+            Dictionary<string, int> m_rgWordToIndex = new Dictionary<string, int>();
+            Dictionary<int, string> m_rgIndexToWord = new Dictionary<int, string>();
+            List<string> m_rgstrVocabulary = new List<string>();
+
+            /// <summary>
+            /// The constructor.
+            /// </summary>
+            public Vocabulary()
+            {
+            }
+
+            /// <summary>
+            /// The WordToIndex method maps a word to its corresponding index value.
+            /// </summary>
+            /// <param name="strWord">Specifies the word to map.</param>
+            /// <returns>The word index is returned.</returns>
+            public int WordToIndex(string strWord)
+            {
+                if (!m_rgWordToIndex.ContainsKey(strWord))
+                    throw new Exception("I do not know the word '" + strWord + "'!");
+
+                return m_rgWordToIndex[strWord];
+            }
+
+            /// <summary>
+            /// The IndexToWord method maps an index value to its corresponding word.
+            /// </summary>
+            /// <param name="nIdx">Specifies the index value.</param>
+            /// <returns>The word corresponding to the index is returned.</returns>
+            public string IndexToWord(int nIdx)
+            {
+                if (!m_rgIndexToWord.ContainsKey(nIdx))
+                    return "";
+
+                return m_rgIndexToWord[nIdx];
+            }
+
+            /// <summary>
+            /// Returns the number of words in the vocabulary.
+            /// </summary>
+            public int VocabularCount
+            {
+                get { return m_rgstrVocabulary.Count; }
+            }
+
+            /// <summary>
+            /// Loads the word to index mappings.
+            /// </summary>
+            /// <param name="rgrgstrInput">Specifies the input sentences where each inner array is one sentence of words.</param>
+            /// <param name="rgrgstrTarget">Specifies the target sentences where each inner array is one sentence of words.</param>
+            public void Load(List<List<string>> rgrgstrInput, List<List<string>> rgrgstrTarget)
+            {
+                m_rgDictionary = new Dictionary<string, int>();
+
+                // Count up all words.
+                for (int i = 0; i < rgrgstrInput.Count; i++)
                 {
-                    bNewEpoch = true;
-                    m_nIterations = 0;
+                    for (int j = 0; j < rgrgstrInput[i].Count; j++)
+                    {
+                        string strWord = rgrgstrInput[i][j];
+
+                        if (!m_rgDictionary.ContainsKey(strWord))
+                            m_rgDictionary.Add(strWord, 1);
+                        else
+                            m_rgDictionary[strWord]++;
+                    }
+
+                    for (int j = 0; j < rgrgstrTarget[i].Count; j++)
+                    {
+                        string strWord = rgrgstrTarget[i][j];
+
+                        if (!m_rgDictionary.ContainsKey(strWord))
+                            m_rgDictionary.Add(strWord, 1);
+                        else
+                            m_rgDictionary[strWord]++;
+                    }
                 }
-            }
 
-            List<string> rgstrInput = m_rgInput[m_nCurrentSequence];
-            List<int> rgInput = new List<int>();
-            foreach (string str in rgstrInput)
-            {
-                rgInput.Add(m_vocab.WordToIndex(str));
-            }
-
-            int nIxTarget = 0;
-
-            if (m_nCurrentOutputIdx < m_rgOutput[m_nCurrentSequence].Count)
-            {
-                string strTarget = m_rgOutput[m_nCurrentSequence][m_nCurrentOutputIdx];
-                nIxTarget = m_vocab.WordToIndex(strTarget);
-            }
-
-            DataItem data = new DataItem(rgInput, m_nIxInput, nIxTarget, nDecClip, bNewEpoch, bNewSequence, m_nOutputCount);
-            m_nIxInput = nIxTarget;
-
-            m_nCurrentOutputIdx++;
-
-            if (m_nCurrentOutputIdx == m_rgOutput[m_nCurrentSequence].Count)
-            {
-                m_nCurrentSequence = -1;
-                m_nCurrentOutputIdx = 0;
-                m_nIxInput = 1;
-            }
-
-            return data;
-        }
-    }
-
-    class DataItem /** @private */
-    {
-        IterationInfo m_iter;
-        List<int> m_rgInput;
-        List<int> m_rgInputReverse;
-        int m_nIxInput;
-        int m_nIxTarget;
-        int m_nDecClip;
-
-        public DataItem(List<int> rgInput, int nIxInput, int nIxTarget, int nDecClip, bool bNewEpoch, bool bNewSequence, int nOutputCount)
-        {
-            m_rgInput = rgInput;
-            m_nIxInput = nIxInput;
-            m_nIxTarget = nIxTarget;
-            m_nDecClip = nDecClip;
-            m_iter = new IterationInfo(bNewEpoch, bNewSequence, nOutputCount);
-            m_rgInputReverse = new List<int>();
-
-            if (rgInput != null)
-            {
-                for (int i = rgInput.Count - 1; i >= 0; i--)
+                // NOTE: Start at one to save room for START and END tokens where
+                // START = 0 in the model word vectors and 
+                // END = 0 in the next word softmax.
+                int nIdx = 2;
+                foreach (KeyValuePair<string, int> kv in m_rgDictionary)
                 {
-                    m_rgInputReverse.Add(rgInput[i]);
+                    if (kv.Value > 0)
+                    {
+                        // Add word to vocabulary.
+                        m_rgWordToIndex[kv.Key] = nIdx;
+                        m_rgIndexToWord[nIdx] = kv.Key;
+                        m_rgstrVocabulary.Add(kv.Key);
+                        nIdx++;
+                    }
                 }
             }
-            else
+        }
+
+        /// <summary>
+        /// Defines the arguments passed to the OnGetData event.
+        /// </summary>
+        public class OnGetDataArgs : EventArgs
+        {
+            Vocabulary m_vocab;
+            IterationInfo m_iter;
+
+            /// <summary>
+            /// The constructor.
+            /// </summary>
+            /// <param name="vocab">Specifies the vocabulary.</param>
+            /// <param name="iter">Specifies the iteration info.</param>
+            public OnGetDataArgs(Vocabulary vocab, IterationInfo iter)
             {
-                m_rgInputReverse = null;
+                m_vocab = vocab;
+                m_iter = iter;
             }
-        }
 
-        public List<int> EncoderInput
-        {
-            get { return m_rgInput; }
-        }
-
-        public List<int> EncoderInputReverse
-        {
-            get { return m_rgInputReverse; }
-        }
-
-        public int DecoderInput
-        {
-            get { return m_nIxInput; }
-        }
-
-        public int DecoderTarget
-        {
-            get { return m_nIxTarget; }
-        }
-
-        public int DecoderClip
-        {
-            get { return m_nDecClip; }
-        }
-
-        public IterationInfo IterationInfo
-        {
-            get { return m_iter; }
-        }
-    }
-
-#pragma warning restore 1591 
-
-    /// <summary>
-    /// The IterationInfo class contains information about each iteration.
-    /// </summary>
-    public class IterationInfo
-    {
-        bool m_bNewEpoch;
-        bool m_bNewSequence;
-        int m_nOutputCount;
-
-        /// <summary>
-        /// The constructor.
-        /// </summary>
-        /// <param name="bNewEpoch">Specifies whether or not the current iteration is in a new epoch.</param>
-        /// <param name="bNewSequence">Specifies whether or not the current iteration is in a new sequence.</param>
-        /// <param name="nOutputCount">Specifies the output count of the current sequence.</param>
-        public IterationInfo(bool bNewEpoch, bool bNewSequence, int nOutputCount)
-        {
-            m_bNewEpoch = bNewEpoch;
-            m_bNewSequence = bNewSequence;
-            m_nOutputCount = nOutputCount;
-        }
-
-        /// <summary>
-        /// Returns whether or not the current iteration is in a new epoch.
-        /// </summary>
-        public bool NewEpoch
-        {
-            get { return m_bNewEpoch; }
-        }
-
-        /// <summary>
-        /// Returns whether or not the current iteration is in a new sequence.
-        /// </summary>
-        public bool NewSequence
-        {
-            get { return m_bNewSequence; }
-        }
-
-        /// <summary>
-        /// Returns the output count of the current sequence.
-        /// </summary>
-        public int OutputCount
-        {
-            get { return m_nOutputCount; }
-        }
-    }
-
-    /// <summary>
-    /// The Vocabulary object manages the overall word dictionary and word to index and index to word mappings.
-    /// </summary>
-    public class Vocabulary 
-    {
-        Dictionary<string, int> m_rgDictionary = new Dictionary<string, int>();
-        Dictionary<string, int> m_rgWordToIndex = new Dictionary<string, int>();
-        Dictionary<int, string> m_rgIndexToWord = new Dictionary<int, string>();
-        List<string> m_rgstrVocabulary = new List<string>();
-
-        /// <summary>
-        /// The constructor.
-        /// </summary>
-        public Vocabulary()
-        {
-        }
-
-        /// <summary>
-        /// The WordToIndex method maps a word to its corresponding index value.
-        /// </summary>
-        /// <param name="strWord">Specifies the word to map.</param>
-        /// <returns>The word index is returned.</returns>
-        public int WordToIndex(string strWord)
-        {
-            if (!m_rgWordToIndex.ContainsKey(strWord))
-                throw new Exception("I do not know the word '" + strWord + "'!");
-
-            return m_rgWordToIndex[strWord];
-        }
-
-        /// <summary>
-        /// The IndexToWord method maps an index value to its corresponding word.
-        /// </summary>
-        /// <param name="nIdx">Specifies the index value.</param>
-        /// <returns>The word corresponding to the index is returned.</returns>
-        public string IndexToWord(int nIdx)
-        {
-            if (!m_rgIndexToWord.ContainsKey(nIdx))
-                return "";
-
-            return m_rgIndexToWord[nIdx];
-        }
-
-        /// <summary>
-        /// Returns the number of words in the vocabulary.
-        /// </summary>
-        public int VocabularCount
-        {
-            get { return m_rgstrVocabulary.Count; }
-        }
-
-        /// <summary>
-        /// Loads the word to index mappings.
-        /// </summary>
-        /// <param name="rgrgstrInput">Specifies the input sentences where each inner array is one sentence of words.</param>
-        /// <param name="rgrgstrTarget">Specifies the target sentences where each inner array is one sentence of words.</param>
-        public void Load(List<List<string>> rgrgstrInput, List<List<string>> rgrgstrTarget)
-        {
-            m_rgDictionary = new Dictionary<string, int>();
-
-            // Count up all words.
-            for (int i = 0; i < rgrgstrInput.Count; i++)
+            /// <summary>
+            /// Returns the vocabulary.
+            /// </summary>
+            public Vocabulary Vocabulary
             {
-                for (int j = 0; j < rgrgstrInput[i].Count; j++)
-                {
-                    string strWord = rgrgstrInput[i][j];
-
-                    if (!m_rgDictionary.ContainsKey(strWord))
-                        m_rgDictionary.Add(strWord, 1);
-                    else
-                        m_rgDictionary[strWord]++;
-                }
-
-                for (int j = 0; j < rgrgstrTarget[i].Count; j++)
-                {
-                    string strWord = rgrgstrTarget[i][j];
-
-                    if (!m_rgDictionary.ContainsKey(strWord))
-                        m_rgDictionary.Add(strWord, 1);
-                    else
-                        m_rgDictionary[strWord]++;
-                }
+                get { return m_vocab; }
             }
 
-            // NOTE: Start at one to save room for START and END tokens where
-            // START = 0 in the model word vectors and 
-            // END = 0 in the next word softmax.
-            int nIdx = 2;
-            foreach (KeyValuePair<string, int> kv in m_rgDictionary)
+            /// <summary>
+            /// Returns the iteration information.
+            /// </summary>
+            public IterationInfo IterationInfo
             {
-                if (kv.Value > 0)
-                {
-                    // Add word to vocabulary.
-                    m_rgWordToIndex[kv.Key] = nIdx;
-                    m_rgIndexToWord[nIdx] = kv.Key;
-                    m_rgstrVocabulary.Add(kv.Key);
-                    nIdx++;
-                }
+                get { return m_iter; }
             }
-        }
-    }
-
-    /// <summary>
-    /// Defines the arguments passed to the OnGetData event.
-    /// </summary>
-    public class OnGetDataArgs : EventArgs
-    {
-        Vocabulary m_vocab;
-        IterationInfo m_iter;
-
-        /// <summary>
-        /// The constructor.
-        /// </summary>
-        /// <param name="vocab">Specifies the vocabulary.</param>
-        /// <param name="iter">Specifies the iteration info.</param>
-        public OnGetDataArgs(Vocabulary vocab, IterationInfo iter)
-        {
-            m_vocab = vocab;
-            m_iter = iter;
-        }
-
-        /// <summary>
-        /// Returns the vocabulary.
-        /// </summary>
-        public Vocabulary Vocabulary
-        {
-            get { return m_vocab; }
-        }
-
-        /// <summary>
-        /// Returns the iteration information.
-        /// </summary>
-        public IterationInfo IterationInfo
-        {
-            get { return m_iter; }
         }
     }
 }

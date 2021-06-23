@@ -32,10 +32,14 @@ namespace MyCaffe.layers.hdf5
         /// <param name="cuda">Specifies the CudaDnn connection to Cuda.</param>
         /// <param name="log">Specifies the Log for output.</param>
         /// <param name="p">
-        /// Provides DummyDataParameter hdf5_data_param with options:
-        ///  - data_filler. A list of Fillers to use.
+        /// Provides HDF5DataParameter hdf5_data_param with options:
+        ///  - source.  The data source (e.g. HDF5 filename).
         ///  
-        ///  - shape.  A list of shapes to use.
+        ///  - batch_size.  The number of images to load for training and testing.
+        ///  
+        ///  - expected_top_shapes.  The top shapes expected in the source.
+        ///  
+        ///  - shuffle.  Whether or not to shuffle the data.
         /// </param>
         public HDF5DataLayer(CudaDnn<T> cuda, Log log, LayerParameter p)
             : base(cuda, log, p)
