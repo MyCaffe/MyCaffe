@@ -19,6 +19,7 @@ namespace MyCaffe.basecode
         int m_nResultCount;
         float[] m_rgResult;
         int[] m_rgTarget;
+        List<Tuple<DateTime, int>> m_rgFullTarget;
 
         /// <summary>
         /// The constructor.
@@ -29,8 +30,8 @@ namespace MyCaffe.basecode
         /// <param name="nBatchCount">Specifies the number of result data sets.</param>
         /// <param name="nResultCount">Specifies the number of results in the packed rgResult data.</param>
         /// <param name="rgResult">Specifies the results.</param>
-        /// <param name="rgTarget">Specifies the target.</param>
-        public SimpleResult(int nSrcID, int nIdx, DateTime dt, int nBatchCount, int nResultCount, float[] rgResult, int[] rgTarget)
+        /// <param name="rgTarget">Specifies the target data.</param>
+        public SimpleResult(int nSrcID, int nIdx, DateTime dt, int nBatchCount, int nResultCount, float[] rgResult, List<Tuple<DateTime, int>> rgTarget)
         {
             m_nSourceID = nSrcID;
             m_nIdx = nIdx;
@@ -38,7 +39,8 @@ namespace MyCaffe.basecode
             m_nBatchCount = nBatchCount;
             m_nResultCount = nResultCount;
             m_rgResult = rgResult;
-            m_rgTarget = rgTarget;
+            m_rgFullTarget = rgTarget;
+            m_rgTarget = rgTarget.Select(p => p.Item2).ToArray();
         }
 
         /// <summary>
@@ -95,6 +97,14 @@ namespace MyCaffe.basecode
         public int[] Target
         {
             get { return m_rgTarget; }
+        }
+
+        /// <summary>
+        /// Returns the full target data.
+        /// </summary>
+        public List<Tuple<DateTime, int>> FullTarget
+        {
+            get { return m_rgFullTarget; }
         }
     }
 }
