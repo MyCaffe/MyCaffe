@@ -238,10 +238,8 @@ namespace MyCaffe.layers.beta
 
             // Reshape the encoder data
             if (!bSetup)
-            {
                 colTop[nTopIdx].Reshape(rgTopShape);
-                nTopIdx++;
-            }
+            nTopIdx++;
 
             // Reshape the encoder clip for attention.
             if (!bSetup)
