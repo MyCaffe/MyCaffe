@@ -250,7 +250,7 @@ namespace MyCaffe.test
         {
             Stopwatch sw = new Stopwatch();
 
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.TEXT_DATA);
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.MODEL_DATA);
             p.model_data_param.source.Add("MNIST.training");
             p.model_data_param.source.Add("MNIST.testing");
             p.model_data_param.batch_size = 1;
@@ -391,7 +391,8 @@ namespace MyCaffe.test
                 {
                     for (int j = 0; j < nI; j++)
                     {
-                        m_log.CHECK_EQ(rgfEncInput1[i], 0, "The encoder input1 is incorrect!");
+                        int nIdx = i * nI + j;
+                        m_log.CHECK_EQ(rgfEncInput1[nIdx], 0, "The encoder input1 is incorrect!");
                     }
                     m_log.CHECK_EQ(rgfEncClip[i], 0, "The encoder input1 is incorrect!");
                 }
