@@ -12,6 +12,7 @@ using MyCaffe.layers.hdf5;
 using System.Diagnostics;
 using System.IO;
 using MyCaffe.layers.beta;
+using MyCaffe.layers.beta.TextData;
 
 namespace MyCaffe.test
 {

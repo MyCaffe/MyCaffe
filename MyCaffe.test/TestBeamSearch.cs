@@ -11,6 +11,7 @@ using MyCaffe.layers;
 using System.Diagnostics;
 using MyCaffe.layers.beta;
 using System.IO;
+using MyCaffe.layers.beta.TextData;
 
 namespace MyCaffe.test
 {
