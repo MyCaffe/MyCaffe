@@ -438,6 +438,10 @@ namespace MyCaffe.param
             /// </summary>
             SWISH,
             /// <summary>
+            /// Initializes a parameter for the ModelDataLayer.
+            /// </summary>
+            MODEL_DATA,
+            /// <summary>
             /// Initializes a parameter for the TextDataLayer.
             /// </summary>
             TEXT_DATA,
@@ -1405,6 +1409,12 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new TanhParameter();
                     break;
 
+                case LayerType.MODEL_DATA:
+                    expected_top.Add("data");
+                    expected_top.Add("decinput");
+                    m_rgLayerParameters[LayerType.MODEL_DATA] = new ModelDataParameter();
+                    break;
+
                 case LayerType.TEXT_DATA:
                     expected_top.Add("data");
                     expected_top.Add("datar");
@@ -2256,6 +2266,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.MODEL_DATA
+        /// </summary>
+        public ModelDataParameter model_data_param
+        {
+            get { return (ModelDataParameter)m_rgLayerParameters[LayerType.MODEL_DATA]; }
+            set { m_rgLayerParameters[LayerType.MODEL_DATA] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.TEXT_DATA
         /// </summary>
         public TextDataParameter text_data_param
@@ -2753,6 +2772,9 @@ namespace MyCaffe.param
                 case LayerType.TANH:
                     return "TanH";
 
+                case LayerType.MODEL_DATA:
+                    return "ModelData";
+
                 case LayerType.TEXT_DATA:
                     return "TextData";
 
@@ -2914,6 +2936,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(merge_param, "merge_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(normalization1_param, "normalization_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(squeeze_param, "squeeze_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(model_data_param, "model_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(text_data_param, "text_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(triplet_loss_param, "triplet_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(unpooling_param, "unpooling_param"));
@@ -3218,6 +3241,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("squeeze_param")) != null)
                 p.squeeze_param = SqueezeParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("model_data_param")) != null)
+                p.model_data_param = ModelDataParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("text_data_param")) != null)
                 p.text_data_param = TextDataParameter.FromProto(rpp);
@@ -3613,6 +3639,10 @@ namespace MyCaffe.param
 
                 case "tanh":
                     return LayerType.TANH;
+
+                case "modeldata":
+                case "model_data":
+                    return LayerType.MODEL_DATA;
 
                 case "textdata":
                 case "text_data":
