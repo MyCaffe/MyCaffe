@@ -739,7 +739,7 @@ namespace MyCaffe.db.image
         /// <param name="bInvert">Specifies whether or not the results are inverted.</param>
         /// <param name="rgExtra">Optionally, specifies the extra target data.</param>
         /// <returns></returns>
-        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<Result> rgResults, bool bInvert, List<int> rgExtra = null)
+        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<Result> rgResults, bool bInvert, List<Tuple<DateTime, int>> rgExtra = null)
         {
             return m_db.PutRawImageResults(nSrcId, nIdx, nLabel, dt, rgResults, bInvert, rgExtra);
         }
@@ -754,7 +754,7 @@ namespace MyCaffe.db.image
         /// <param name="rgrgResults">Specifies the time-synchronized batch of results of the run as a list of (int nLabel, double dfReult) values.</param>
         /// <param name="rgExtra">Optionally, specifies the extra target data.</param>
         /// <returns></returns>
-        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<Tuple<SimpleDatum, List<Result>>> rgrgResults, List<int> rgExtra = null)
+        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<Tuple<SimpleDatum, List<Result>>> rgrgResults, List<Tuple<DateTime, int>> rgExtra = null)
         {
             return m_db.PutRawImageResults(nSrcId, nIdx, nLabel, dt, rgrgResults, rgExtra);
         }
@@ -2175,29 +2175,11 @@ namespace MyCaffe.db.image
 
             float[] rgResult1 = rgResults.ToArray();
             List<Tuple<DateTime, int>> rgTarget1 = new List<Tuple<DateTime, int>>();
-            int nTargetCount;
 
-            if (res.ExtraData != null)
-            {
-                using (MemoryStream ms = new MemoryStream(res.ExtraData))
-                using (BinaryReader br = new BinaryReader(ms))
-                {
-                    nTargetCount = br.ReadInt32();
+            if (res.ExtraData == null && bRequireExtraData)
+                return null;
 
-                    for (int i = 0; i < nTargetCount; i++)
-                    {
-                        long lTime = br.ReadInt64();
-                        int nLabel = br.ReadInt32();
-
-                        rgTarget1.Add(new Tuple<DateTime, int>(DateTime.FromFileTimeUtc(lTime), nLabel));
-                    }
-                }
-            }
-            else
-            {
-                if (bRequireExtraData)
-                    return null;
-            }
+            rgTarget1 = Database.UnpackExtraData(res.ExtraData);
 
             return new SimpleResult(nSrcID, nIdx, dt, nBatchCount, nResCount, rgResult1, rgTarget1);
         }

@@ -3097,7 +3097,7 @@ namespace MyCaffe.db.image
         /// <param name="bInvert">Specifies whether or not the results are inverted.</param>
         /// <param name="rgExtra">Optionally, specifies the extra target data.</param>
         /// <returns></returns>
-        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<Result> rgResults, bool bInvert, List<int> rgExtra = null)
+        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<Result> rgResults, bool bInvert, List<Tuple<DateTime, int>> rgExtra = null)
         {
             if (rgResults.Count == 0)
                 throw new Exception("You must have at least one result!");
@@ -3146,7 +3146,7 @@ namespace MyCaffe.db.image
         /// <param name="rgrgResults">Specifies the time-synchronized batch of results of the run as a list of (int nLabel, double dfReult) values.</param>
         /// <param name="rgExtra">Optionally, specifies the extra target data.</param>
         /// <returns></returns>
-        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<Tuple<SimpleDatum, List<Result>>> rgrgResults, List<int> rgExtra = null)
+        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<Tuple<SimpleDatum, List<Result>>> rgrgResults, List<Tuple<DateTime, int>> rgExtra = null)
         {
             if (rgrgResults.Count == 0 || rgrgResults[0].Item2.Count == 0)
                 throw new Exception("You must have at least one result!");
@@ -3251,7 +3251,7 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="rg">Specifies the extra data.</param>
         /// <returns>The byte array containing the extra data is returned.</returns>
-        public static byte[] PackExtraData(List<int> rg)
+        public static byte[] PackExtraData(List<Tuple<DateTime, int>> rg)
         {
             using (MemoryStream ms = new MemoryStream())
             using (BinaryWriter bw = new BinaryWriter(ms))
@@ -3260,7 +3260,8 @@ namespace MyCaffe.db.image
 
                 for (int i = 0; i < rg.Count; i++)
                 {
-                    bw.Write(rg[i]);
+                    bw.Write(rg[i].Item1.ToFileTimeUtc());
+                    bw.Write(rg[i].Item2);
                 }
 
                 ms.Flush();
@@ -3273,9 +3274,9 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="rg">Specifies the byte array containing the extra data.</param>
         /// <returns>The array of extra data is returned.</returns>
-        public static List<int> UnpackExtraData(byte[] rg)
+        public static List<Tuple<DateTime, int>> UnpackExtraData(byte[] rg)
         {
-            List<int> rgExtra = new List<int>();
+            List<Tuple<DateTime, int>> rgExtra = new List<Tuple<DateTime, int>>();
 
             using (MemoryStream ms = new MemoryStream(rg))
             using (BinaryReader br = new BinaryReader(ms))
@@ -3284,7 +3285,11 @@ namespace MyCaffe.db.image
 
                 for (int i = 0; i < nCount; i++)
                 {
-                    rgExtra.Add(br.ReadInt32());
+                    long lTime = br.ReadInt64();
+                    int nLabel = br.ReadInt32();
+                    DateTime dt = DateTime.FromFileTimeUtc(lTime);
+
+                    rgExtra.Add(new Tuple<DateTime, int>(dt, nLabel));
                 }
             }
 
