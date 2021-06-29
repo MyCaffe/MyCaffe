@@ -2299,7 +2299,7 @@ namespace MyCaffe.test
 
             int nCount = 100;
 
-            Dictionary<int, Tuple<SimpleDatum, List<int>, List<Tuple<SimpleDatum, List<Result>>>>> rgFullSet = new Dictionary<int, Tuple<SimpleDatum, List<int>, List<Tuple<SimpleDatum, List<Result>>>>>();
+            Dictionary<int, Tuple<SimpleDatum, List<Tuple<DateTime, int>>, List<Tuple<SimpleDatum, List<Result>>>>> rgFullSet = new Dictionary<int, Tuple<SimpleDatum, List<Tuple<DateTime, int>>, List<Tuple<SimpleDatum, List<Result>>>>>();
             List<Tuple<SimpleDatum, List<Result>>> rgSd = new List<Tuple<SimpleDatum, List<Result>>>();
             Random random = new Random();
 
@@ -2319,14 +2319,14 @@ namespace MyCaffe.test
 
                 if (i >= 3)
                 {
-                    List<int> rgExtra = new List<int>();
-                    rgExtra.Add(random.Next(3));
-                    rgExtra.Add(random.Next(3));
+                    List<Tuple<DateTime, int>> rgExtra = new List<Tuple<DateTime, int>>();
+                    rgExtra.Add(new Tuple<DateTime, int>(DateTime.Now, random.Next(3)));
+                    rgExtra.Add(new Tuple<DateTime, int>(DateTime.Now, random.Next(3)));
 
                     // Save results with a 4 item history, with 3 random items per result and 2 random extra targets.
                     int nResId = factory.PutRawImageResults(ds.TrainingSource.ID, d.Index, d.Label, d.TimeStamp, rgSd, rgExtra);
 
-                    rgFullSet.Add(d.Index, new Tuple<SimpleDatum, List<int>, List<Tuple<SimpleDatum, List<Result>>>>(d, rgExtra, new List<Tuple<SimpleDatum, List<Result>>>(rgSd)));
+                    rgFullSet.Add(d.Index, new Tuple<SimpleDatum, List<Tuple<DateTime, int>>, List<Tuple<SimpleDatum, List<Result>>>>(d, rgExtra, new List<Tuple<SimpleDatum, List<Result>>>(rgSd)));
                     rgSd.RemoveAt(0);
                 }
             }
@@ -2342,9 +2342,9 @@ namespace MyCaffe.test
                 if (!rgFullSet.ContainsKey(res.Index))
                     log.FAIL("Could not find the image index '" + res.Index.ToString() + "' in the full set!");
 
-                Tuple<SimpleDatum, List<int>, List<Tuple<SimpleDatum, List<Result>>>> item = rgFullSet[res.Index];
+                Tuple<SimpleDatum, List<Tuple<DateTime, int>>, List<Tuple<SimpleDatum, List<Result>>>> item = rgFullSet[res.Index];
                 SimpleDatum sd1 = item.Item1;
-                List<int> rgTarget = item.Item2;
+                List<Tuple<DateTime, int>> rgTarget = item.Item2;
                 List<Tuple<SimpleDatum, List<Result>>> rgSd1 = item.Item3;
 
                 if (sd1.Index != res.Index)
@@ -2373,7 +2373,7 @@ namespace MyCaffe.test
 
                 for (int i = 0; i < rgTarget.Count; i++)
                 {
-                    int nExpected = rgTarget[i];
+                    int nExpected = rgTarget[i].Item2;
                     int nActual = res.Target[i];
 
                     log.CHECK_EQ(nExpected, nActual, "The expected and actual values do not match!");
