@@ -81,7 +81,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MyCaffe.basecode\MyCaffe.basecode.csproj">
-      <Project>{D168418C-CDCC-4F5B-BF55-292A38CC2429}</Project>
+      <Project>{d168418c-cdcc-4f5b-bf55-292a38cc2429}</Project>
       <Name>MyCaffe.basecode</Name>
     </ProjectReference>
   </ItemGroup>

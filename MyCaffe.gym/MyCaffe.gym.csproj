@@ -47,7 +47,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="AleControlLib, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f59a5464a77ea1ad, processorArchitecture=MSIL">
-      <HintPath>..\packages\AleControl.0.11.3.25-beta1\lib\net40\AleControlLib.dll</HintPath>
+      <HintPath>..\packages\AleControl.0.11.4.2-beta1\lib\net40\AleControlLib.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="System" />
@@ -134,7 +134,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MyCaffe.basecode\MyCaffe.basecode.csproj">
-      <Project>{D168418C-CDCC-4F5B-BF55-292A38CC2429}</Project>
+      <Project>{d168418c-cdcc-4f5b-bf55-292a38cc2429}</Project>
       <Name>MyCaffe.basecode</Name>
     </ProjectReference>
     <ProjectReference Include="..\MyCaffe.db.image\MyCaffe.db.image.csproj">
