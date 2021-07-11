@@ -12,6 +12,7 @@ using MyCaffe.param.ssd;
 using System.Net;
 using System.IO;
 using System.Drawing;
+using System.Threading;
 
 namespace MyCaffe.test
 {
@@ -182,53 +183,80 @@ namespace MyCaffe.test
             base.dispose();
         }
 
-        private string downloadLenna()
+        private Bitmap downloadLenna(out string strFile)
         {
             string strDir = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\downloads\\";
             if (!Directory.Exists(strDir))
                 Directory.CreateDirectory(strDir);
 
-            string strFile = strDir + "lenna.png";
+            strFile = strDir + "lenna.png";
+            Bitmap bmp = null;
 
             if (File.Exists(strFile))
-                return strFile;
+            {
+                bmp = getBitmap(strFile);
+                if (bmp != null)
+                    return bmp;
+
+                File.Delete(strFile);
+            }
 
             string strUrl = "https://upload.wikimedia.org/wikipedia/en/7/7d/Lenna_%28test_image%29.png";
             WebClient webClient = new WebClient();
+            Thread.Sleep(10000);
             webClient.DownloadFile(strUrl, strFile);
 
-            return strFile;
+            return getBitmap(strFile);
         }
 
-        private string downloadMandrill()
+        private Bitmap getBitmap(string strFile)
+        {
+            try
+            {
+                return new Bitmap(strFile);
+            }
+            catch (Exception excpt)
+            {
+                return null;
+            }
+        }
+
+        private Bitmap downloadMandrill(out string strFile)
         {
             string strDir = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\downloads\\";
             if (!Directory.Exists(strDir))
                 Directory.CreateDirectory(strDir);
 
-            string strFile = strDir + "mandrill.png";
+            strFile = strDir + "mandrill.png";
+            Bitmap bmp = null;
 
             if (File.Exists(strFile))
-                return strFile;
+            {
+                bmp = getBitmap(strFile);
+                if (bmp != null)
+                    return bmp;
+
+                File.Delete(strFile);
+            }
 
             string strUrl = "https://upload.wikimedia.org/wikipedia/commons/c/c1/Wikipedia-sipi-image-db-mandrill-4.2.03.png";
             WebClient webClient = new WebClient();
+            Thread.Sleep(10000);
             webClient.DownloadFile(strUrl, strFile);
 
-            return strFile;
+            return getBitmap(strFile);
         }
 
         public void TestAdjustContrast()
         {
-            string strLennaFile = downloadLenna();
-            string strMandrillFile = downloadMandrill();
+            string strFile;
+            string strLennaFile;
+            Bitmap bmpMandrill = downloadMandrill(out strFile);
+            Bitmap bmpLenna = downloadLenna(out strLennaFile);
             string strDir = Path.GetDirectoryName(strLennaFile) + "\\tests\\";
 
             if (!Directory.Exists(strDir))
                 Directory.CreateDirectory(strDir);
-
-            Bitmap bmpLenna = new Bitmap(strLennaFile);
-            Bitmap bmpMandrill = new Bitmap(strMandrillFile);
 
             SimpleDatum sdLenna = ImageData.GetImageData(bmpLenna, new SimpleDatum(3, bmpLenna.Width, bmpLenna.Height));
             SimpleDatum sdMandrill = ImageData.GetImageData(bmpMandrill, new SimpleDatum(3, bmpMandrill.Width, bmpMandrill.Height));
@@ -279,15 +307,14 @@ namespace MyCaffe.test
 
         public void TestAdjustContrastGpu(bool bOrder, bool bBrightness, bool bContrast, bool bSaturation)
         {
-            string strLennaFile = downloadLenna();
-            string strMandrillFile = downloadMandrill();
+            string strFile;
+            string strLennaFile;
+            Bitmap bmpMandrill = downloadMandrill(out strFile);
+            Bitmap bmpLenna = downloadLenna(out strLennaFile);
             string strDir = Path.GetDirectoryName(strLennaFile) + "\\tests\\";
 
             if (!Directory.Exists(strDir))
                 Directory.CreateDirectory(strDir);
-
-            Bitmap bmpLenna = new Bitmap(strLennaFile);
-            Bitmap bmpMandrill = new Bitmap(strMandrillFile);
 
             SimpleDatum sdLenna = ImageData.GetImageData(bmpLenna, new SimpleDatum(3, bmpLenna.Width, bmpLenna.Height));
             SimpleDatum sdMandrill = ImageData.GetImageData(bmpMandrill, new SimpleDatum(3, bmpMandrill.Width, bmpMandrill.Height));
