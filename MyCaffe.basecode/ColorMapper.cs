@@ -14,12 +14,17 @@ namespace MyCaffe.basecode
     {
         double m_dfMin = 0;
         double m_dfMax = 0;
+        double m_dfMid = 0;
+        int m_nMidIdx = 0;
+        List<Tuple<double, int>> m_rgQuads0 = new List<Tuple<double, int>>();
+        List<Tuple<double, int>> m_rgQuads1 = new List<Tuple<double, int>>();
         int m_nResolution;
         List<KeyValuePair<Color, SizeF>> m_rgColorMappings = new List<KeyValuePair<Color, SizeF>>();
         List<List<double>> m_rgrgColors = new List<List<double>>();
         Color m_clrDefault;
         Color m_clrError;
         Color m_clrNoMinMax = Color.HotPink;
+
 
         /// <summary>
         /// Defines the color scheme to use.
@@ -81,6 +86,11 @@ namespace MyCaffe.basecode
                 dfMin = dfMax;
                 dfMax += dfInc;
             }
+
+            m_dfMid = dfRange / 2;
+            m_nMidIdx = m_rgColorMappings.Count / 2;
+            m_rgQuads0 = createSearchQuads(0, 0, m_rgColorMappings.Count, dfRange);
+            m_rgQuads1 = createSearchQuads(m_dfMid, m_nMidIdx, m_rgColorMappings.Count, dfRange);
         }
 
         /// <summary>
@@ -116,6 +126,30 @@ namespace MyCaffe.basecode
                 dfMin = dfMax;
                 dfMax += dfInc;
             }
+
+            m_dfMid = dfRange / 2;
+            m_nMidIdx = m_rgColorMappings.Count / 2;
+            m_rgQuads0 = createSearchQuads(0, 0, m_rgColorMappings.Count, dfRange);
+            m_rgQuads1 = createSearchQuads(m_dfMid, m_nMidIdx, m_rgColorMappings.Count, dfRange);
+        }
+
+        private List<Tuple<double, int>> createSearchQuads(double dfStart, int nIdxStart, int nItemCount, double dfRange)
+        {
+            List<Tuple<double, int>> rgQuads = new List<Tuple<double, int>>();
+            int nCount = (nItemCount < 160) ? 2 : 4;
+            double dfStep = 0.5 / nCount;
+            double dfPortion = dfStep;
+
+            for (int i = 1; i < nCount; i++)
+            {
+                double dfQuad = dfStart + dfRange * dfPortion;
+                int nIdx = nIdxStart + (int)(nItemCount * dfPortion);
+                rgQuads.Add(new Tuple<double, int>(dfQuad, nIdx));
+
+                dfPortion += dfStep;
+            }
+
+            return rgQuads;
         }
 
         /// <summary>
@@ -140,7 +174,7 @@ namespace MyCaffe.basecode
         /// </summary>
         /// <param name="dfVal">Specifies the value.</param>
         /// <returns>The color associated with the value is returned.</returns>
-        public Color GetColor(double dfVal)
+        public Color GetColorOld(double dfVal)
         {
             if (double.IsNaN(dfVal) || double.IsInfinity(dfVal))
                 return m_clrError;
@@ -149,7 +183,42 @@ namespace MyCaffe.basecode
             {
                 if (m_rgColorMappings.Count > 0)
                 {
-                    for (int i = 0; i < m_rgColorMappings.Count; i++)
+                    int nStart = 0;
+                    int nEnd = m_rgColorMappings.Count;
+                    List<Tuple<double, int>> rgQuads;
+
+                    if (dfVal < m_dfMid)
+                    {
+                        nEnd = m_nMidIdx + 1;
+                        rgQuads = m_rgQuads0;
+                    }
+                    else
+                    {
+                        nStart = m_nMidIdx - 1;
+                        rgQuads = m_rgQuads1;
+                    }
+
+                    for (int i = 0; i < rgQuads.Count; i++)
+                    {
+                        if (dfVal < rgQuads[i].Item1)
+                        {
+                            if (i > 0)
+                                nStart = rgQuads[i].Item2 - 1;
+
+                            if (i < rgQuads.Count - 1)
+                                nEnd = rgQuads[i].Item2 + 1;
+
+                            break;
+                        }
+                    }
+
+                    if (nStart < 0)
+                        nStart = 0;
+
+                    if (nEnd > m_rgColorMappings.Count)
+                        nEnd = m_rgColorMappings.Count;
+
+                    for (int i = nStart; i < nEnd; i++)
                     {
                         if (dfVal < m_rgColorMappings[i].Value.Height && dfVal >= m_rgColorMappings[i].Value.Width)
                             return m_rgColorMappings[i].Key;
@@ -258,6 +327,54 @@ namespace MyCaffe.basecode
             int nB = (int)(dfB * 255);
 
             return Color.FromArgb(nR, nG, nB);
+        }
+
+        /// <summary>
+        /// Find the color using a binary search algorithm.
+        /// </summary>
+        /// <remarks>
+        /// @see[Binary Search Implementation Using C#](https://www.c-sharpcorner.com/blogs/binary-search-implementation-using-c-sharp1)
+        /// </remarks>
+        /// <param name="dfVal">Specifies the value to search for.</param>
+        /// <returns>The matching color is returned.</returns>
+        public Color GetColor(double dfVal)
+        {
+            if (double.IsNaN(dfVal) || double.IsInfinity(dfVal))
+                return m_clrError;
+
+            else if (m_dfMin == m_dfMax && m_dfMin == 0)
+                return m_clrNoMinMax;
+
+            else if (dfVal >= m_rgColorMappings[m_rgColorMappings.Count - 1].Value.Width)
+                return m_rgColorMappings[m_rgColorMappings.Count - 1].Key;
+
+            else if (dfVal < m_rgColorMappings[0].Value.Height)
+                return m_rgColorMappings[0].Key;
+
+            int nMinNum = 0;
+            int nMaxNum = m_rgColorMappings.Count - 1;
+
+            while (nMinNum <= nMaxNum)
+            {
+                int nMid = (nMinNum + nMaxNum) / 2;
+
+                if (dfVal < m_rgColorMappings[nMid].Value.Height && dfVal >= m_rgColorMappings[nMid].Value.Width)
+                    return m_rgColorMappings[nMid].Key;
+
+                else if (dfVal == m_rgColorMappings[nMid].Value.Height)
+                    return m_rgColorMappings[nMid + 1].Key;
+
+                else if (dfVal < m_rgColorMappings[nMid].Value.Width)
+                    nMaxNum = nMid - 1;
+
+                else if (dfVal >= m_rgColorMappings[nMid].Value.Height)
+                    nMinNum = nMid + 1;
+
+                else
+                    break;
+            }
+
+            return m_clrDefault;
         }
     }
 }
