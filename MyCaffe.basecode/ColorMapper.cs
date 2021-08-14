@@ -174,7 +174,7 @@ namespace MyCaffe.basecode
         /// </summary>
         /// <param name="dfVal">Specifies the value.</param>
         /// <returns>The color associated with the value is returned.</returns>
-        public Color GetColorOld(double dfVal)
+        public Color GetColorLegacy(double dfVal)
         {
             if (double.IsNaN(dfVal) || double.IsInfinity(dfVal))
                 return m_clrError;
