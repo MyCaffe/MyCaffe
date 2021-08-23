@@ -123,7 +123,7 @@ namespace MyCaffe.basecode
         /// <returns>The string representation is returned.</returns>
         public override string ToString()
         {
-            return "[" + m_fMin.ToString() + "," + m_fMax.ToString() + "]-> " + m_nCount.ToString("N0");
+            return "[" + m_fMin.ToString("N10") + "," + m_fMax.ToString("N10") + "]-> " + m_nCount.ToString("N0");
         }
 
         /// <summary>
