@@ -4894,7 +4894,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                List<DatasetParameter> rgP = entities.DatasetParameters.AsNoTracking().Where(p => p.DatasetID == nDsId && p.Name == strName).ToList();
+                List<DatasetParameter> rgP = entities.DatasetParameters.Where(p => p.DatasetID == nDsId && p.Name == strName).ToList();
                 DatasetParameter dsP = null;
 
                 if (rgP.Count == 0)
