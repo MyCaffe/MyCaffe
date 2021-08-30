@@ -101,6 +101,7 @@ namespace MyCaffe
         ConnectInfo m_dsCi = null;
         bool m_bEnableVerboseStatus = false;
         T[] m_rgRunData = null;
+        BlobShape m_loadToRunShape = null;
 
         /// <summary>
         /// The OnSnapshot event fires each time a snap-shot is taken.
@@ -1550,6 +1551,7 @@ namespace MyCaffe
                 m_log.Enable = m_bEnableVerboseStatus;
                 m_dataSet = null;
                 m_project = null;
+                m_loadToRunShape = shape;
 
                 if (m_cuda != null)
                     m_cuda.Dispose();
@@ -2444,17 +2446,20 @@ namespace MyCaffe
             if (m_net == null)
                 throw new Exception("The Run net has not been created!");
 
+            if (m_dataSet == null && (m_loadToRunShape == null || m_loadToRunShape.dim.Count < 4))
+                throw new Exception("Cannot determine the blob shape, you must either load with a database, or use LoadToRun before calling Run with a Blob.  When using LoadToRun, the shape must have at least 4 dimensions.");
+
             List<ResultCollection> rgFinalResults = new List<ResultCollection>();
             int nBatchSize = blob.num;
-            int nChannels = m_dataSet.TestingSource.ImageChannels;
+            int nChannels = (m_dataSet != null) ? m_dataSet.TestingSource.ImageChannels : m_loadToRunShape.dim[1];
             if (blob.channels != nChannels)
                 throw new Exception("The blob channels must match those of the testing dataset which has channels = " + m_dataSet.TestingSource.ImageChannels.ToString());
 
-            int nHeight = m_dataSet.TestingSource.ImageHeight;
+            int nHeight = (m_dataSet != null) ? m_dataSet.TestingSource.ImageHeight : m_loadToRunShape.dim[2];
             if (blob.height != nHeight)
                 throw new Exception("The blob height must match those of the testing dataset which has height = " + m_dataSet.TestingSource.ImageHeight.ToString());
 
-            int nWidth = m_dataSet.TestingSource.ImageWidth;
+            int nWidth = (m_dataSet != null) ? m_dataSet.TestingSource.ImageWidth : m_loadToRunShape.dim[3];
             if (blob.width != nWidth)
                 throw new Exception("The blob width must match those of the testing dataset which as width = " + m_dataSet.TestingSource.ImageWidth.ToString());
 
@@ -2479,26 +2484,43 @@ namespace MyCaffe
                 colResults = m_net.Forward(colBottom, out dfLoss, true);
             }
 
-            T[] rgDataOutput = colResults[0].update_cpu_data();
-            int nOutputCount = rgDataOutput.Length / blob.num;
+            float[] rgData = Utility.ConvertVecF<T>(colResults[0].update_cpu_data());
+            int nOutputCount = rgData.Length / blob.num;
 
             int nNum = blob.num;
             if (blob.Padded)
                 nNum--;
 
-            for (int i = 0; i < nNum && i < nMax; i++)
+            for (int n = 0; n < nNum && n < nMax; n++)
             {
                 List<Result> rgResults = new List<Result>();
 
-                for (int j = 0; j < nOutputCount; j++)
+                if (colResults[0].type == BLOB_TYPE.MULTIBBOX)
                 {
-                    int nIdx = i * nOutputCount + j;
-                    double dfProb = (double)Convert.ChangeType(rgDataOutput[nIdx], typeof(double));
-                    rgResults.Add(new Result(j, dfProb));
+                    int i = (int)rgData[(n * 7)];
+                    int nLabel = (int)rgData[(n * 7) + 1];
+                    double dfScore = rgData[(n * 7) + 2];
+                    double[] rgExtra = new double[4];
+                    rgExtra[0] = rgData[(n * 7) + 3]; // xmin
+                    rgExtra[1] = rgData[(n * 7) + 4]; // ymin
+                    rgExtra[2] = rgData[(n * 7) + 5]; // xmax
+                    rgExtra[3] = rgData[(n * 7) + 6]; // ymax
+
+                    rgResults.Add(new Result(nLabel, dfScore, rgExtra));
+                }
+                else
+                {
+                    for (int j = 0; j < nOutputCount; j++)
+                    {
+                        int nIdx = n * nOutputCount + j;
+                        double dfProb = rgData[nIdx];
+                        rgResults.Add(new Result(j, dfProb));
+                    }
                 }
 
                 ResultCollection result = new ResultCollection(rgResults, lastLayerType);
-                result.SetLabels(m_imgDb.GetLabels(m_dataSet.TrainingSource.ID));
+                if (m_imgDb != null)
+                    result.SetLabels(m_imgDb.GetLabels(m_dataSet.TrainingSource.ID));
 
                 rgFinalResults.Add(result);
             }
