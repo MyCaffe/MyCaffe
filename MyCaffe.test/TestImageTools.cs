@@ -201,9 +201,11 @@ namespace MyCaffe.test
                 File.Delete(strFile);
             }
 
-            string strUrl = "https://upload.wikimedia.org/wikipedia/en/7/7d/Lenna_%28test_image%29.png";
+            // Source (licensed under CC 4.0): https://commons.wikimedia.org/wiki/File:A_Iranian_woman_Modern_modeling_photography_1.jpg
+            //string strUrl = "https://upload.wikimedia.org/wikipedia/en/7/7d/Lenna_%28test_image%29.png";        
+            string strUrl = "https://signalpop.blob.core.windows.net/mycaffe/512x512-A_Iranian_woman_Modern_modeling_photography_1.jpg";
             WebClient webClient = new WebClient();
-            Thread.Sleep(10000);
+            Thread.Sleep(1000);
             webClient.DownloadFile(strUrl, strFile);
 
             return getBitmap(strFile);
@@ -239,9 +241,11 @@ namespace MyCaffe.test
                 File.Delete(strFile);
             }
 
-            string strUrl = "https://upload.wikimedia.org/wikipedia/commons/c/c1/Wikipedia-sipi-image-db-mandrill-4.2.03.png";
+            // Source (public domain): https://en.m.wikipedia.org/wiki/File:Mandrill-k-means.png 
+            //string strUrl = "https://upload.wikimedia.org/wikipedia/commons/c/c1/Wikipedia-sipi-image-db-mandrill-4.2.03.png";
+            string strUrl = "https://signalpop.blob.core.windows.net/mycaffe/Mandrill-k-means.png";
             WebClient webClient = new WebClient();
-            Thread.Sleep(10000);
+            Thread.Sleep(1000);
             webClient.DownloadFile(strUrl, strFile);
 
             return getBitmap(strFile);
