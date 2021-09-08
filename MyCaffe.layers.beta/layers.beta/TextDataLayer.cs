@@ -185,6 +185,21 @@ namespace MyCaffe.layers.beta
             return rgstr;
         }
 
+        private string getPath(string strPath)
+        {
+            string strTarget = "$ProgramData$";
+
+            if (!strPath.StartsWith(strTarget))
+                return strPath;
+
+            string strProgData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+            strProgData = strProgData.TrimEnd('\\');
+
+            strPath = strProgData + strPath.Substring(strTarget.Length);
+
+            return strPath;
+        }
+
         /// <summary>
         /// Load the input and target files and convert each into a list of lines each containing a list of words per line.
         /// </summary>
@@ -193,8 +208,11 @@ namespace MyCaffe.layers.beta
             List<List<string>> rgrgstrInput = new List<List<string>>();
             List<List<string>> rgrgstrTarget = new List<List<string>>();
 
-            string[] rgstrInput = File.ReadAllLines(p.encoder_source);
-            string[] rgstrTarget = File.ReadAllLines(p.decoder_source);
+            string strEncoderSrc = getPath(p.encoder_source);
+            string strDecoderSrc = getPath(p.decoder_source);
+
+            string[] rgstrInput = File.ReadAllLines(strEncoderSrc);
+            string[] rgstrTarget = File.ReadAllLines(strDecoderSrc);
 
             if (rgstrInput.Length != rgstrTarget.Length)
                 throw new Exception("Both the input and target files must contains the same number of lines!");
