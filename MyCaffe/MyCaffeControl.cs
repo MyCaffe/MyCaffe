@@ -2926,7 +2926,7 @@ namespace MyCaffe
         /// <returns></returns>
         public static string GetLicenseTextEx(string strOtherLicenses)
         {
-            string str = Properties.Resources.LICENSETXT;
+            string str = Properties.Resources.LICENSE;
             int nYear = DateTime.Now.Year;
 
             if (nYear > 2016)

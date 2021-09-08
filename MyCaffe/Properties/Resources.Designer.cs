@@ -61,7 +61,7 @@ namespace MyCaffe.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Apache License
+        ///   Looks up a localized string similar to                                  Apache License
         ///                           Version 2.0, January 2004
         ///                        http://www.apache.org/licenses/
         ///
@@ -73,13 +73,11 @@ namespace MyCaffe.Properties {
         ///      and distribution as defined by Sections 1 through 9 of this document.
         ///
         ///      &quot;Licensor&quot; shall mean the copyright owner or entity authorized by
-        ///      the copyright owner that is granting the License.
-        ///
-        ///      &quot; [rest of string was truncated]&quot;;.
+        ///      the copyright owner that is [rest of string was truncated]&quot;;.
         /// </summary>
-        internal static string LICENSETXT {
+        internal static string LICENSE {
             get {
-                return ResourceManager.GetString("LICENSETXT", resourceCulture);
+                return ResourceManager.GetString("LICENSE", resourceCulture);
             }
         }
     }
