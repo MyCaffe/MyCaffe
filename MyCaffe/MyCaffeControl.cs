@@ -2615,6 +2615,7 @@ namespace MyCaffe
                     }
 
                     colBottom.Dispose();
+                    colBottom = null;
                 }
                 else
                 {
