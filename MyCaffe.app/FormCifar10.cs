@@ -86,7 +86,7 @@ namespace MyCaffe.app
 
         private void lblDownloadSite_Click(object sender, EventArgs e)
         {
-            string strUrl = "http://" + lblDownloadSite.Text;
+            string strUrl = "https://" + lblDownloadSite.Text;
 
             Process p = new Process();
             p.StartInfo = new ProcessStartInfo(strUrl);
@@ -192,7 +192,7 @@ namespace MyCaffe.app
             m_webClient.DownloadProgressChanged += WebClient_DownloadProgressChanged;
             btnDownload.Enabled = false;
             lblDownloadPct.Enabled = false;
-            m_webClient.DownloadFileAsync(new Uri("http://" + strUrl), strFileName, new Tuple<Label, Button, string>(lblDownloadPct, btnDownload, strFileName));
+            m_webClient.DownloadFileAsync(new Uri("https://" + strUrl), strFileName, new Tuple<Label, Button, string>(lblDownloadPct, btnDownload, strFileName));
         }
 
         private void WebClient_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)

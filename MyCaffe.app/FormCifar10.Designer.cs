@@ -72,7 +72,7 @@
             this.lblDownloadSite.ForeColor = System.Drawing.Color.Blue;
             this.lblDownloadSite.Location = new System.Drawing.Point(456, 13);
             this.lblDownloadSite.Name = "lblDownloadSite";
-            this.lblDownloadSite.Size = new System.Drawing.Size(272, 16);
+            this.lblDownloadSite.Size = new System.Drawing.Size(234, 16);
             this.lblDownloadSite.TabIndex = 1;
             this.lblDownloadSite.Text = "www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz";
             this.lblDownloadSite.Click += new System.EventHandler(this.lblDownloadSite_Click);
