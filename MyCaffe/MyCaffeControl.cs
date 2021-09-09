@@ -1926,7 +1926,11 @@ namespace MyCaffe
             m_log.WriteHeader("Test Many (" + nCount.ToString() + ") - on " + strSet + " '" + strSrc + "'");
 
             LabelMappingParameter labelMapping = null;
-            foreach (Layer<T> layer in m_solver.TestingNet.layers)
+            Net<T> net = m_solver.TestingNet;
+            if (net == null)
+                net = m_solver.TrainingNet;
+
+            foreach (Layer<T> layer in net.layers)
             {
                 if (layer.type == LayerParameter.LayerType.LABELMAPPING)
                 {
