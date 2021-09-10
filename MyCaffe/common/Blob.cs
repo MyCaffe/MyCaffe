@@ -518,7 +518,7 @@ namespace MyCaffe.common
         {
             reshapeShape(rgShape);
 
-            if (m_nCount > m_nCapacity || m_nCount > m_data.Capacity || (m_diff != null && m_nCount > m_diff.Capacity) || (m_data != null && bUseHalfSize.HasValue && m_data.HalfSize != bUseHalfSize.Value))
+            if (m_nCount > m_nCapacity || (m_data != null && m_nCount > m_data.Capacity) || (m_diff != null && m_nCount > m_diff.Capacity) || (m_data != null && bUseHalfSize.HasValue && m_data.HalfSize != bUseHalfSize.Value))
             {
                 if (m_data != null)
                     m_data.Dispose();
