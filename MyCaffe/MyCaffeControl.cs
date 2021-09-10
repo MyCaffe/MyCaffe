@@ -1127,7 +1127,10 @@ namespace MyCaffe
                         if (param != null && param.Value == "True")
                             strSkipBlobType = BLOB_TYPE.IP_WEIGHT.ToString();
 
-                        m_solver.Restore(p.WeightsState, p.SolverState, strSkipBlobType);
+                        if (p.SolverState != null)
+                            m_solver.Restore(p.WeightsState, p.SolverState, strSkipBlobType);
+                        else
+                            m_solver.TrainingNet.LoadWeights(p.WeightsState, m_persist);
                     }
 
                     m_solver.OnSnapshot += new EventHandler<SnapshotArgs>(m_solver_OnSnapshot);
@@ -1701,7 +1704,7 @@ namespace MyCaffe
             net.LoadWeights(rgWeights, m_persist);
         }
 
-        private bool compareWeights(Net<T> net1, Net<T> net2)
+        public bool CompareWeights(Net<T> net1, Net<T> net2)
         {
             if (net1.learnable_parameters.Count != net2.learnable_parameters.Count)
             {
@@ -2838,7 +2841,7 @@ namespace MyCaffe
 
                     if (bVerifyWeights)
                     {
-                        if (!compareWeights(m_net, m_solver.net))
+                        if (!CompareWeights(m_net, m_solver.net))
                             m_log.WriteLine("WARNING: The run weights differ from the training weights!");
                     }
                 }
