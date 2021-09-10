@@ -1704,6 +1704,12 @@ namespace MyCaffe
             net.LoadWeights(rgWeights, m_persist);
         }
 
+        /// <summary>
+        /// The CompareWeights method compares the weights held in two different Net objects.
+        /// </summary>
+        /// <param name="net1">Specifies the first Net to compare.</param>
+        /// <param name="net2">Specifies the second Net to compare.</param>
+        /// <returns>If the weights are identical, <i>true</i> is returned, otherwise <i>false</i>.</returns>
         public bool CompareWeights(Net<T> net1, Net<T> net2)
         {
             if (net1.learnable_parameters.Count != net2.learnable_parameters.Count)
