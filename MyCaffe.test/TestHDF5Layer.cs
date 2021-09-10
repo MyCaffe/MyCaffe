@@ -10,6 +10,10 @@ using MyCaffe.fillers;
 using MyCaffe.layers;
 using MyCaffe.layers.hdf5;
 using System.Diagnostics;
+using System.IO;
+using System.Net;
+using System.IO.Compression;
+using System.Threading;
 
 namespace MyCaffe.test
 {
@@ -104,6 +108,9 @@ namespace MyCaffe.test
         Blob<T> m_blobFrameFc7;
         Blob<T> m_blobTopLabel;
         Blob<T> m_blobTopLabel2;
+        double m_dfLastProgress = -1;
+        Stopwatch m_swUpdateTimer = new Stopwatch();
+        AutoResetEvent m_evtDownloadDone = new AutoResetEvent(false);
 
         public HDF5LayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, new List<int>() { 2, 3, 4, 5 }, nDeviceID)
@@ -277,10 +284,77 @@ namespace MyCaffe.test
             }
         }
 
+        private void getHdf5Data(string strPath)
+        {
+            string strUrl = "https://signalpop.blob.core.windows.net/mycaffe/batch_hdf5.zip";
+            string strFile1 = "batch_hdf5.zip";
+            string strFile = strPath + strFile1;
+
+            try
+            {
+                m_swUpdateTimer.Restart();
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
+                if (File.Exists(strFile))
+                    File.Delete(strFile);
+
+                using (WebClient webClient = new WebClient())
+                {
+                    webClient.DownloadProgressChanged += WebClient_DownloadProgressChanged;
+                    webClient.DownloadFileCompleted += WebClient_DownloadFileCompleted;
+                    webClient.DownloadFileAsync(new Uri(strUrl), strFile, strFile1);
+                }
+
+                m_evtDownloadDone.WaitOne(5 * 60 * 1000);
+                if (!File.Exists(strFile))
+                    throw new Exception("Failed to download '" + strFile1 + "'!");
+
+                ZipFile.ExtractToDirectory(strFile, strPath);
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+        }
+
+        private void WebClient_DownloadFileCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
+        {
+            bool bTraceEnabled = m_log.EnableTrace;
+            m_log.EnableTrace = true;
+            m_log.WriteLine("Downloading done.");
+            m_log.EnableTrace = bTraceEnabled;
+
+            m_evtDownloadDone.Set();
+        }
+
+        private void WebClient_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+        {
+            if (m_swUpdateTimer.Elapsed.TotalMilliseconds >= 1000)
+            {
+                if (m_dfLastProgress != e.ProgressPercentage)
+                {
+                    m_dfLastProgress = e.ProgressPercentage;
+                    string strFile = e.UserState.ToString();
+                    bool bTraceEnabled = m_log.EnableTrace;
+                    m_log.EnableTrace = true;
+
+                    m_log.Progress = e.ProgressPercentage / 100.0;
+                    m_log.WriteLine("Downloading '" + strFile + "' at " + m_log.Progress.ToString("P") + "...");
+                    m_log.EnableTrace = bTraceEnabled;
+                }
+
+                m_swUpdateTimer.Restart();
+            }
+        }
+
         public void TestHDF5()
         {
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\hdf5\\";
             string strFile = strPath + "batch_0.h5";
+
+            if (!File.Exists(strFile))
+                getHdf5Data(strPath);
+
             HDF5<T> hdf5 = new HDF5<T>(m_cuda, m_log, strFile);
 
             hdf5.load_nd_dataset(m_blobCont, "cont", true);
