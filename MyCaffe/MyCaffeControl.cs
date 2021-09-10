@@ -1962,6 +1962,12 @@ namespace MyCaffe
 
             try
             {
+                SimpleDatum sd = null;
+                List<int> rgOriginalRunNetInputShape = null;
+
+                if (m_net.input_blobs != null && m_net.input_blobs.Count > 0)
+                    rgOriginalRunNetInputShape = Utility.Clone<int>(m_net.input_blobs[0].shape());
+
                 for (int i = 0; i < nCount; i++)
                 {
                     if (m_evtCancel.WaitOne(0))
@@ -1971,7 +1977,7 @@ namespace MyCaffe
                     }
 
 
-                    SimpleDatum sd = (rgImg != null) ? rgImg[i] : m_imgDb.QueryImage(nSrcId, nImageStartIdx + i, lblSelMethod, imgSelMethod, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+                    sd = (rgImg != null) ? rgImg[i] : m_imgDb.QueryImage(nSrcId, nImageStartIdx + i, lblSelMethod, imgSelMethod, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
                     m_dataTransformer.TransformLabel(sd);
 
                     if (!sd.GetDataValid(false))
@@ -2081,11 +2087,21 @@ namespace MyCaffe
                         sw.Start();
                     }
                 }
+
+                // Resize inputs back to unpaded.
+                if (rgOriginalRunNetInputShape != null)
+                {
+                    if (m_net.input_blobs != null && m_net.input_blobs.Count > 0)
+                        m_net.input_blobs[0].Reshape(rgOriginalRunNetInputShape);
+                }
             }
             finally
             {
                 if (blobData != null)
+                {
                     blobData.Dispose();
+                    blobData = null;
+                }
             }
 
             double dfCorrectPct = ((double)nCorrectCount / (double)nTotalCount);
@@ -2287,69 +2303,81 @@ namespace MyCaffe
             if (m_net == null)
                 throw new Exception("The Run net has not been created!");
 
-            Blob<T> blob = CreateDataBlob(d, null, bPad);
-            BlobCollection<T> colBottom = new BlobCollection<T>() { blob };
-            double dfLoss = 0;
+            ResultCollection result = null;
+            Blob<T> blob = null;
 
-            BlobCollection<T> colResults;
-            LayerParameter.LayerType lastLayerType;
-
-            if (bUseSolverNet)
+            try
             {
-                lastLayerType = m_solver.TrainingNet.layers[m_solver.TrainingNet.layers.Count - 1].type;
-                colResults = m_solver.TrainingNet.Forward(colBottom, out dfLoss, bPad);
-            }
-            else
-            {
-                lastLayerType = m_net.layers[m_net.layers.Count - 1].type;
-                colResults = m_net.Forward(colBottom, out dfLoss, bPad);
-            }
+                blob = CreateDataBlob(d, null, bPad);
+                BlobCollection<T> colBottom = new BlobCollection<T>() { blob };
+                double dfLoss = 0;
 
-            if (blob.Padded)
-            {
-                List<int> rgShape = Utility.Clone<int>(colResults[0].shape());
-                rgShape[0]--;
-                if (rgShape[0] <= 0)
-                    rgShape[0] = 1;
-                colResults[0].Reshape(rgShape);
-            }
+                BlobCollection<T> colResults;
+                LayerParameter.LayerType lastLayerType;
 
-            List<Result> rgResults = new List<Result>();
-            float[] rgData = Utility.ConvertVecF<T>(colResults[0].update_cpu_data());
-
-            if (colResults[0].type == BLOB_TYPE.MULTIBBOX)
-            {
-                int nNum = rgData.Length / 7;
-
-                for (int n = 0; n < nNum; n++)
+                if (bUseSolverNet)
                 {
-                    int i = (int)rgData[(n * 7)];
-                    int nLabel = (int)rgData[(n * 7) + 1];
-                    double dfScore = rgData[(n * 7) + 2];
-                    double[] rgExtra = new double[4];
-                    rgExtra[0] = rgData[(n * 7) + 3]; // xmin
-                    rgExtra[1] = rgData[(n * 7) + 4]; // ymin
-                    rgExtra[2] = rgData[(n * 7) + 5]; // xmax
-                    rgExtra[3] = rgData[(n * 7) + 6]; // ymax
-
-                    rgResults.Add(new Result(nLabel, dfScore, rgExtra));
+                    lastLayerType = m_solver.TrainingNet.layers[m_solver.TrainingNet.layers.Count - 1].type;
+                    colResults = m_solver.TrainingNet.Forward(colBottom, out dfLoss, bPad);
                 }
-            }
-            else
-            {
-                for (int i = 0; i < rgData.Length; i++)
+                else
                 {
-                    double dfProb = rgData[i];
-                    rgResults.Add(new Result(i, dfProb));
+                    lastLayerType = m_net.layers[m_net.layers.Count - 1].type;
+                    colResults = m_net.Forward(colBottom, out dfLoss, bPad);
                 }
+
+                if (blob.Padded)
+                {
+                    List<int> rgShape = Utility.Clone<int>(colResults[0].shape());
+                    rgShape[0]--;
+                    if (rgShape[0] <= 0)
+                        rgShape[0] = 1;
+                    colResults[0].Reshape(rgShape);
+                }
+
+                List<Result> rgResults = new List<Result>();
+                float[] rgData = Utility.ConvertVecF<T>(colResults[0].update_cpu_data());
+
+                if (colResults[0].type == BLOB_TYPE.MULTIBBOX)
+                {
+                    int nNum = rgData.Length / 7;
+
+                    for (int n = 0; n < nNum; n++)
+                    {
+                        int i = (int)rgData[(n * 7)];
+                        int nLabel = (int)rgData[(n * 7) + 1];
+                        double dfScore = rgData[(n * 7) + 2];
+                        double[] rgExtra = new double[4];
+                        rgExtra[0] = rgData[(n * 7) + 3]; // xmin
+                        rgExtra[1] = rgData[(n * 7) + 4]; // ymin
+                        rgExtra[2] = rgData[(n * 7) + 5]; // xmax
+                        rgExtra[3] = rgData[(n * 7) + 6]; // ymax
+
+                        rgResults.Add(new Result(nLabel, dfScore, rgExtra));
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < rgData.Length; i++)
+                    {
+                        double dfProb = rgData[i];
+                        rgResults.Add(new Result(i, dfProb));
+                    }
+                }
+
+                result = new ResultCollection(rgResults, lastLayerType);
+                if (m_imgDb != null)
+                    result.SetLabels(m_imgDb.GetLabels(m_dataSet.TrainingSource.ID));
             }
-
-            blob.Dispose();
-
-            ResultCollection result = new ResultCollection(rgResults, lastLayerType);
-
-            if (m_imgDb != null)
-                result.SetLabels(m_imgDb.GetLabels(m_dataSet.TrainingSource.ID));
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                if (blob != null)
+                    blob.Dispose();
+            }
 
             return result;
         }
@@ -2540,8 +2568,9 @@ namespace MyCaffe
         /// </remarks>
         /// <param name="img">Specifies the input image.</param>
         /// <param name="bSort">Specifies whether or not to sort the results.</param>
+        /// <param name="bPad">Optionally, specifies to pad the input by 1.</param>
         /// <returns>The results of the run are returned.</returns>
-        public ResultCollection Run(Bitmap img, bool bSort = true)
+        public ResultCollection Run(Bitmap img, bool bSort = true, bool bPad = false)
         {
             if (m_net == null)
                 throw new Exception("The Run net has not been created!");
@@ -2549,9 +2578,9 @@ namespace MyCaffe
             int nChannels = m_inputShape.dim[1];
 
             if (typeof(T) == typeof(double))
-                return Run(ImageData.GetImageDataD(img, nChannels, false, -1), bSort, false);
+                return Run(ImageData.GetImageDataD(img, nChannels, false, -1), bSort, bPad);
             else
-                return Run(ImageData.GetImageDataF(img, nChannels, false, -1), bSort, false);
+                return Run(ImageData.GetImageDataF(img, nChannels, false, -1), bSort, bPad);
         }
 
         /// <summary>
