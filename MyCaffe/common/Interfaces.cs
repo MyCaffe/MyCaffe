@@ -576,8 +576,9 @@ namespace MyCaffe.common
         /// </remarks>
         /// <param name="img">Specifies the input image.</param>
         /// <param name="bSort">Specifies whether or not to sort the results.</param>
+        /// <param name="bPad">Optionally, pad the blob with an extra dummy item (default = false).</param>
         /// <returns>The results of the run are returned.</returns>
-        ResultCollection Run(Bitmap img, bool bSort = true);
+        ResultCollection Run(Bitmap img, bool bSort = true, bool bPad = false);
         /// <summary>
         /// Run on a given Datum. 
         /// </summary>
