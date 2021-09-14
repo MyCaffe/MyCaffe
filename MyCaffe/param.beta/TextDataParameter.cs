@@ -133,7 +133,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Specifies the whether to shuffle the data or now.
         /// </summary>
-        [Description("Specifies whether to shuffle the data or now.")]
+        [Description("Specifies whether to shuffle the data or not.")]
         public bool shuffle
         {
             get { return m_bShuffle; }
