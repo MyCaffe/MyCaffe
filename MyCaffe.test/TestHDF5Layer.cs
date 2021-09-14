@@ -129,6 +129,12 @@ namespace MyCaffe.test
             m_strFileName = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
             m_strFileName += "\\MyCaffe\\test_data\\data\\hdf5\\sample_data_list.txt";
             m_log.WriteLine("Using sample HDF5 data file '" + m_strFileName + "'");
+
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\hdf5\\";
+            string strFile = strPath + "batch_0.h5";
+
+            if (!File.Exists(strFile))
+                getHdf5Data(strPath);
         }
 
         protected override FillerParameter getFillerParam()
