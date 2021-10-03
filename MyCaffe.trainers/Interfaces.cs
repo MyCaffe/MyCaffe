@@ -10,6 +10,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+/// <summary>
+/// The MyCaffe.trainers namespace contains all reinforcement and recurrent learning trainers.
+/// </summary>
 namespace MyCaffe.trainers
 {
     /// <summary>

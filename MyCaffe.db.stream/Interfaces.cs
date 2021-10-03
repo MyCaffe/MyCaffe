@@ -8,6 +8,9 @@ using System.ServiceModel;
 using System.Text;
 using System.Threading.Tasks;
 
+/// <summary>
+/// The MyCaffe.db.stream namespace contains all data streaming related classes.
+/// </summary>
 namespace MyCaffe.db.stream
 {
 #pragma warning disable 1591

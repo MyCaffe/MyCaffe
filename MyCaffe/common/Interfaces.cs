@@ -12,6 +12,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+/// <summary>
+/// The MyCaffe.common namespace contains common MyCaffe classes.
+/// </summary>
 namespace MyCaffe.common
 {
     /// <summary>

@@ -6,6 +6,9 @@ using System.IO;
 using MyCaffe.basecode;
 using MyCaffe.common;
 
+/// <summary>
+/// The MyCaffe.param namespace contains parameters used to create models.
+/// </summary>
 namespace MyCaffe.param
 {
     /// <summary>
