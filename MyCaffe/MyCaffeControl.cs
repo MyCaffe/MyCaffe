@@ -1987,6 +1987,13 @@ namespace MyCaffe
 
 
                     sd = (rgImg != null) ? rgImg[i] : m_imgDb.QueryImage(nSrcId, nImageStartIdx + i, lblSelMethod, imgSelMethod, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+
+                    if (sd.Height != m_dataSet.TrainingSource.ImageHeight || sd.Width != m_dataSet.TestingSource.ImageWidth)
+                    {
+                        m_log.WriteLine("Image size mismatch!  Current image size " + sd.Width.ToString() + " x " + sd.Height.ToString() + " does not match the dataset image size " + m_dataSet.TrainingSource.ImageWidth.ToString() + " x " + m_dataSet.TrainingSource.ImageHeight.ToString() + "!");
+                        continue;
+                    }
+
                     m_dataTransformer.TransformLabel(sd);
 
                     if (!sd.GetDataValid(false))
