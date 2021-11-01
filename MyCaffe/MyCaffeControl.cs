@@ -1990,7 +1990,7 @@ namespace MyCaffe
 
                     if (sd.Height != m_dataSet.TrainingSource.ImageHeight || sd.Width != m_dataSet.TestingSource.ImageWidth)
                     {
-                        m_log.WriteLine("Image size mismatch!  Current image size " + sd.Width.ToString() + " x " + sd.Height.ToString() + " does not match the dataset image size " + m_dataSet.TrainingSource.ImageWidth.ToString() + " x " + m_dataSet.TrainingSource.ImageHeight.ToString() + "!");
+                        m_log.WriteLine("WARNING: Image size mismatch!  Current image size " + sd.Width.ToString() + " x " + sd.Height.ToString() + " does not match the dataset image size " + m_dataSet.TrainingSource.ImageWidth.ToString() + " x " + m_dataSet.TrainingSource.ImageHeight.ToString() + "!");
                         continue;
                     }
 
