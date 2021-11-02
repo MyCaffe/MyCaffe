@@ -153,8 +153,8 @@ class Math
 		long copy_sequence(int n, long hSrc, int nSrcStep, int nSrcStartIdx, int nCopyCount, int nCopyDim, long hDst, int nDstStep, int nDstStartIdx, int nSrcSpatialDim, int nDstSpatialDim, int nSrcSpatialDimStartIdx, int nDstSpatialDimStartIdx,  int nSpatialDimCount);
 		long copy_expand(int n, int nNum, int nDim, long hX, long hA);
 
-		long gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, __half* a, __half* b, T fBeta, __half* c, bool bSync = true);
-		long gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, T* a, T* b, T fBeta, T* c, bool bSync = true);
+		long gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, __half* a, __half* b, T fBeta, __half* c, cudaStream_t stream = NULL);
+		long gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, T* a, T* b, T fBeta, T* c, cudaStream_t stream = NULL);
 		long geam(bool bTransA, bool bTransB, int m, int n, T fAlpha, __half* a, __half* b, T fBeta, __half* c);
 		long geam(bool bTransA, bool bTransB, int m, int n, T fAlpha, T* a, T* b, T fBeta, T* c);
 		long gemv(bool bTransA, int m, int n, T fAlpha, T* a, T* x, T fBeta, T* y);

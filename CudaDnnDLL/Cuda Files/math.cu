@@ -1264,7 +1264,7 @@ long Math<float>::ger(int m, int n, float fAlpha, long hA, long hB, long hC, int
 
 
 template <> 
-long Math<double>::gemm(bool bTransA, bool bTransB, int m, int n, int k, double fAlpha, double* a, double* b, double fBeta, double* c, bool bSync)
+long Math<double>::gemm(bool bTransA, bool bTransB, int m, int n, int k, double fAlpha, double* a, double* b, double fBeta, double* c, cudaStream_t stream)
 {
 	LONG lErr;
 
@@ -1279,8 +1279,7 @@ long Math<double>::gemm(bool bTransA, bool bTransB, int m, int n, int k, double 
 	cublasOperation_t cuTransA = (!bTransA) ? CUBLAS_OP_N : CUBLAS_OP_T;
 	cublasOperation_t cuTransB = (!bTransB) ? CUBLAS_OP_N : CUBLAS_OP_T;
 
-	cudaStream_t stream;
-	if (bSync)
+	if (stream == NULL)
 	{
 		if (lErr = cublasGetStream(m_cublas, &stream))
 			return lErr | ERROR_CUBLAS_OFFSET;
@@ -1289,14 +1288,11 @@ long Math<double>::gemm(bool bTransA, bool bTransB, int m, int n, int k, double 
 	if (lErr = cublasDgemm(m_cublas, cuTransB, cuTransA, n, m, k, &fAlpha, b, ldb, a, lda, &fBeta, c, n))
 		return lErr | ERROR_CUBLAS_OFFSET;
 
-	if (!bSync)
-		return CUDA_SUCCESS;
-
 	return cudaStreamSynchronize(stream);
 }
 
 template <> 
-long Math<float>::gemm(bool bTransA, bool bTransB, int m, int n, int k, float fAlpha, float* a, float *b, float fBeta, float* c, bool bSync)
+long Math<float>::gemm(bool bTransA, bool bTransB, int m, int n, int k, float fAlpha, float* a, float *b, float fBeta, float* c, cudaStream_t stream)
 {
 	LONG lErr;
 
@@ -1309,8 +1305,7 @@ long Math<float>::gemm(bool bTransA, bool bTransB, int m, int n, int k, float fA
 	cublasOperation_t cuTransA = (!bTransA) ? CUBLAS_OP_N : CUBLAS_OP_T;
 	cublasOperation_t cuTransB = (!bTransB) ? CUBLAS_OP_N : CUBLAS_OP_T;
 
-	cudaStream_t stream;
-	if (bSync)
+	if (stream == NULL)
 	{
 		if (lErr = cublasGetStream(m_cublas, &stream))
 			return lErr | ERROR_CUBLAS_OFFSET;
@@ -1319,15 +1314,12 @@ long Math<float>::gemm(bool bTransA, bool bTransB, int m, int n, int k, float fA
 	if (lErr = cublasSgemm(m_cublas, cuTransB, cuTransA, n, m, k, &fAlpha, b, ldb, a, lda, &fBeta, c, n))
 		return lErr | ERROR_CUBLAS_OFFSET;
 
-	if (!bSync)
-		return CUDA_SUCCESS;
-
 	return cudaStreamSynchronize(stream);
 }
 
 
 template <>
-long Math<double>::gemm(bool bTransA, bool bTransB, int m, int n, int k, double dfAlpha, __half* a, __half *b, double dfBeta, __half* c, bool bSync)
+long Math<double>::gemm(bool bTransA, bool bTransB, int m, int n, int k, double dfAlpha, __half* a, __half *b, double dfBeta, __half* c, cudaStream_t stream)
 {
 	LONG lErr;
 
@@ -1340,8 +1332,7 @@ long Math<double>::gemm(bool bTransA, bool bTransB, int m, int n, int k, double 
 	cublasOperation_t cuTransA = (!bTransA) ? CUBLAS_OP_N : CUBLAS_OP_T;
 	cublasOperation_t cuTransB = (!bTransB) ? CUBLAS_OP_N : CUBLAS_OP_T;
 
-	cudaStream_t stream;
-	if (bSync)
+	if (stream == NULL)
 	{
 		if (lErr = cublasGetStream(m_cublas, &stream))
 			return lErr | ERROR_CUBLAS_OFFSET;
@@ -1353,14 +1344,11 @@ long Math<double>::gemm(bool bTransA, bool bTransB, int m, int n, int k, double 
 	if (lErr = cublasGemmEx(m_cublas, cuTransB, cuTransA, n, m, k, &fAlpha, b, CUDA_R_16F, ldb, a, CUDA_R_16F, lda, &fBeta, c, CUDA_R_16F, n, CUDA_R_32F, CUBLAS_GEMM_DEFAULT))
 		return lErr | ERROR_CUBLAS_OFFSET;
 
-	if (!bSync)
-		return CUDA_SUCCESS;
-
 	return cudaStreamSynchronize(stream);
 }
 
 template <>
-long Math<float>::gemm(bool bTransA, bool bTransB, int m, int n, int k, float fAlpha, __half* a, __half *b, float fBeta, __half* c, bool bSync)
+long Math<float>::gemm(bool bTransA, bool bTransB, int m, int n, int k, float fAlpha, __half* a, __half *b, float fBeta, __half* c, cudaStream_t stream)
 {
 	LONG lErr;
 
@@ -1373,8 +1361,7 @@ long Math<float>::gemm(bool bTransA, bool bTransB, int m, int n, int k, float fA
 	cublasOperation_t cuTransA = (!bTransA) ? CUBLAS_OP_N : CUBLAS_OP_T;
 	cublasOperation_t cuTransB = (!bTransB) ? CUBLAS_OP_N : CUBLAS_OP_T;
 
-	cudaStream_t stream;
-	if (bSync)
+	if (stream == NULL)
 	{
 		if (lErr = cublasGetStream(m_cublas, &stream))
 			return lErr | ERROR_CUBLAS_OFFSET;
@@ -1382,9 +1369,6 @@ long Math<float>::gemm(bool bTransA, bool bTransB, int m, int n, int k, float fA
 
 	if (lErr = cublasGemmEx(m_cublas, cuTransB, cuTransA, n, m, k, &fAlpha, b, CUDA_R_16F, ldb, a, CUDA_R_16F, lda, &fBeta, c, CUDA_R_16F, n, CUDA_R_32F, CUBLAS_GEMM_DEFAULT))
 		return lErr | ERROR_CUBLAS_OFFSET;
-
-	if (!bSync)
-		return CUDA_SUCCESS;
 
 	return cudaStreamSynchronize(stream);
 }
@@ -1431,7 +1415,7 @@ long Math<double>::gemm(bool bTransA, bool bTransB, int m, int n, int k, double 
 			if (nCOff > 0 || nGroupCOff > 0)
 				c += (nCOff + nGroupCOff * g);
 
-			if (lErr = gemm(bTransA, bTransB, m, n, k, fAlpha, a, b, fBeta, c, false))
+			if (lErr = gemm(bTransA, bTransB, m, n, k, fAlpha, a, b, fBeta, c, stream))
 				return lErr;
 		}
 		else
@@ -1452,12 +1436,12 @@ long Math<double>::gemm(bool bTransA, bool bTransB, int m, int n, int k, double 
 			if (nCOff > 0 || nGroupCOff > 0)
 				c += (nCOff + nGroupCOff * g);
 
-			if (lErr = gemm(bTransA, bTransB, m, n, k, fAlpha, a, b, fBeta, c, false))
+			if (lErr = gemm(bTransA, bTransB, m, n, k, fAlpha, a, b, fBeta, c, stream))
 				return lErr;
 		}
 	}
 
-	return cudaStreamSynchronize(stream);
+	return CUDA_SUCCESS;
 }
 
 template <>
@@ -1501,7 +1485,7 @@ long Math<float>::gemm(bool bTransA, bool bTransB, int m, int n, int k, float fA
 			if (nCOff > 0 || nGroupCOff > 0)
 				c += (nCOff + nGroupCOff * g);
 
-			if (lErr = gemm(bTransA, bTransB, m, n, k, fAlpha, a, b, fBeta, c, true))
+			if (lErr = gemm(bTransA, bTransB, m, n, k, fAlpha, a, b, fBeta, c, stream))
 				return lErr;
 		}
 		else
@@ -1522,12 +1506,12 @@ long Math<float>::gemm(bool bTransA, bool bTransB, int m, int n, int k, float fA
 			if (nCOff > 0 || nGroupCOff > 0)
 				c += (nCOff + nGroupCOff * g);
 
-			if (lErr = gemm(bTransA, bTransB, m, n, k, fAlpha, a, b, fBeta, c, true))
+			if (lErr = gemm(bTransA, bTransB, m, n, k, fAlpha, a, b, fBeta, c, stream))
 				return lErr;
 		}
 	}
 
-	return cudaStreamSynchronize(stream);
+	return CUDA_SUCCESS;
 }
 
 
