@@ -906,7 +906,6 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Reset all active labels within the open source.
         /// </summary>
-        /// <param name="nSrcId">Specifies the source ID.</param>
         public void ResetAllActiveLabels()
         {
             m_db.ResetAllActiveLabels(m_openSource.ID);
