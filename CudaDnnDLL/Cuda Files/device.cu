@@ -1337,7 +1337,7 @@ long Device<T>::cuda_gemm(long lInput, T* pfInput, long* plOutput, T** ppfOutput
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 10, 13))
+	if (lErr = verifyInput(lInput, pfInput, 10, 17))
 		return lErr;
 
 	bool bTransA = (pfInput[0] == 0.0) ? false : true;
@@ -1353,6 +1353,10 @@ long Device<T>::cuda_gemm(long lInput, T* pfInput, long* plOutput, T** ppfOutput
 	int nAOff = 0;
 	int nBOff = 0;
 	int nCOff = 0;
+	int nGroups = 1;
+	int nGroupAOff = 0;
+	int nGroupBOff = 0;
+	int nGroupCOff = 0;
 
 	if (lInput > 10)
 		nAOff = (int)pfInput[10];
@@ -1363,7 +1367,19 @@ long Device<T>::cuda_gemm(long lInput, T* pfInput, long* plOutput, T** ppfOutput
 	if (lInput > 12)
 		nCOff = (int)pfInput[12];
 
-	return m_math.gemm(bTransA, bTransB, m, n, k, fAlpha, hA, hB, fBeta, hC, nAOff, nBOff, nCOff);
+	if (lInput > 13)
+		nGroups = (int)pfInput[13];
+
+	if (lInput > 14)
+		nGroupAOff = (int)pfInput[14];
+
+	if (lInput > 15)
+		nGroupBOff = (int)pfInput[15];
+
+	if (lInput > 16)
+		nGroupCOff = (int)pfInput[16];
+
+	return m_math.gemm(bTransA, bTransB, m, n, k, fAlpha, hA, hB, fBeta, hC, nAOff, nBOff, nCOff, nGroups, nGroupAOff, nGroupBOff, nGroupCOff);
 }
 
 template long Device<double>::cuda_gemm(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
@@ -1390,6 +1406,7 @@ long Device<T>::cuda_gemm2(long lInput, T* pfInput, long* plOutput, T** ppfOutpu
 	int lda = (int)pfInput[10];
 	int ldb = (int)pfInput[11];
 	int ldc = (int)pfInput[12];
+	int nGroups = 1;
 
 	return m_math.gemm2(bTransA, bTransB, m, n, k, fAlpha, hA, hB, fBeta, hC, lda, ldb, ldc);
 }

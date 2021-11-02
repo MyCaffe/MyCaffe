@@ -739,10 +739,8 @@ namespace MyCaffe.layers
                 nColBuffOffset = 0;
             }
 
-            for (int g = 0; g < m_nGroup; g++)
-            {
-                m_cuda.gemm(false, false, m_nConvOutChannels / m_nGroup, m_nConvOutSpatialDim, m_nKernelDim, m_tOne, hWeights, hColBuff, m_tZero, hOutput, m_nWeightOffset * g, nColBuffOffset + m_nColOffset * g, nOutputOffset + m_nOutputOffset * g); 
-            }
+            //m_cuda.gemm(false, false, m_nConvOutChannels / m_nGroup, m_nConvOutSpatialDim, m_nKernelDim, m_tOne, hWeights, hColBuff, m_tZero, hOutput, m_nWeightOffset * g, nColBuffOffset + m_nColOffset * g, nOutputOffset + m_nOutputOffset * g); 
+            m_cuda.gemm(false, false, m_nConvOutChannels / m_nGroup, m_nConvOutSpatialDim, m_nKernelDim, m_tOne, hWeights, hColBuff, m_tZero, hOutput, 0, nColBuffOffset, nOutputOffset, m_nGroup, m_nWeightOffset, m_nColOffset, m_nOutputOffset); 
         }
 
         /// <summary>
@@ -781,10 +779,12 @@ namespace MyCaffe.layers
                 nColBuffOffset = nInputOffset;
             }
 
-            for (int g = 0; g < m_nGroup; g++)
-            {
-                m_cuda.gemm(true, false, m_nKernelDim, m_nConvOutSpatialDim, m_nConvOutChannels / m_nGroup, m_tOne, hWeights, hOutput, m_tZero, hColBuff, m_nWeightOffset * g, nOutputOffset + m_nOutputOffset * g, nColBuffOffset + m_nColOffset * g);
-            }
+            //for (int g = 0; g < m_nGroup; g++)
+            //{
+            //    m_cuda.gemm(true, false, m_nKernelDim, m_nConvOutSpatialDim, m_nConvOutChannels / m_nGroup, m_tOne, hWeights, hOutput, m_tZero, hColBuff, m_nWeightOffset * g, nOutputOffset + m_nOutputOffset * g, nColBuffOffset + m_nColOffset * g);
+            //}
+
+            m_cuda.gemm(true, false, m_nKernelDim, m_nConvOutSpatialDim, m_nConvOutChannels / m_nGroup, m_tOne, hWeights, hOutput, m_tZero, hColBuff, 0, nOutputOffset, nColBuffOffset, m_nGroup, m_nWeightOffset, m_nOutputOffset, m_nColOffset);
 
             if (!m_bIs1x1)
                 conv_col2im(hColBuff, nColBuffOffset, hInput, nInputOffset);
@@ -813,10 +813,12 @@ namespace MyCaffe.layers
                 nColBuffOffset = 0;
             }
 
-            for (int g = 0; g < m_nGroup; g++)
-            {
-                m_cuda.gemm(false, true, m_nConvOutChannels / m_nGroup, m_nKernelDim, m_nConvOutSpatialDim, m_tOne, hOutput, hColBuff, m_tOne, hWeights, nOutputOffset + m_nOutputOffset * g, nColBuffOffset + m_nColOffset * g, m_nWeightOffset * g);
-            }
+            //for (int g = 0; g < m_nGroup; g++)
+            //{
+            //    m_cuda.gemm(false, true, m_nConvOutChannels / m_nGroup, m_nKernelDim, m_nConvOutSpatialDim, m_tOne, hOutput, hColBuff, m_tOne, hWeights, nOutputOffset + m_nOutputOffset * g, nColBuffOffset + m_nColOffset * g, m_nWeightOffset * g);
+            //}
+
+            m_cuda.gemm(false, true, m_nConvOutChannels / m_nGroup, m_nKernelDim, m_nConvOutSpatialDim, m_tOne, hOutput, hColBuff, m_tOne, hWeights, nOutputOffset, nColBuffOffset, 0, m_nGroup, m_nOutputOffset, m_nColOffset, m_nWeightOffset);
         }
 
         /// <summary>

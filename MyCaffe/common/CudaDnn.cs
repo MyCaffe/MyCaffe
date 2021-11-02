@@ -5639,12 +5639,16 @@ namespace MyCaffe.common
         /// <param name="nAOffset">Specifies an offset (in items, not bytes) into the memory of A.</param>
         /// <param name="nBOffset">Specifies an offset (in items, not bytes) into the memory of B.</param>
         /// <param name="nCOffset">Specifies an offset (in items, not bytes) into the memory of C.</param>
-        public void gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, long hA, long hB, T fBeta, long hC, int nAOffset = 0, int nBOffset = 0, int nCOffset = 0)
+        /// <param name="nGroups">Optionally, specifies the number of groups (default = 1).</param>
+        /// <param name="nGroupOffsetA">Optionally, specifies an offset multiplied by the current group 'g' and added to the AOffset (default = 0).</param>
+        /// <param name="nGroupOffsetB">Optionally, specifies an offset multiplied by the current group 'g' and added to the BOffset (default = 0).</param>
+        /// <param name="nGroupOffsetC">Optionally, specifies an offset multiplied by the current group 'g' and added to the COffset (default = 0).</param>
+        public void gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, long hA, long hB, T fBeta, long hC, int nAOffset = 0, int nBOffset = 0, int nCOffset = 0, int nGroups = 1, int nGroupOffsetA = 0, int nGroupOffsetB = 0, int nGroupOffsetC = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GEMM, m_param.AsDouble((bTransA) ? 1.0 : 0.0, (bTransB) ? 1.0 : 0.0, m, n, k, convertD(fAlpha), hA, hB, convertD(fBeta), hC, nAOffset, nBOffset, nCOffset));
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GEMM, m_param.AsDouble((bTransA) ? 1.0 : 0.0, (bTransB) ? 1.0 : 0.0, m, n, k, convertD(fAlpha), hA, hB, convertD(fBeta), hC, nAOffset, nBOffset, nCOffset, nGroups, nGroupOffsetA, nGroupOffsetB, nGroupOffsetC));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GEMM, m_param.AsFloat((bTransA) ? 1.0f : 0.0f, (bTransB) ? 1.0f : 0.0f, m, n, k, convertF(fAlpha), hA, hB, convertF(fBeta), hC, nAOffset, nBOffset, nCOffset));
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GEMM, m_param.AsFloat((bTransA) ? 1.0f : 0.0f, (bTransB) ? 1.0f : 0.0f, m, n, k, convertF(fAlpha), hA, hB, convertF(fBeta), hC, nAOffset, nBOffset, nCOffset, nGroups, nGroupOffsetA, nGroupOffsetB, nGroupOffsetC));
         }
 
         /// <summary>

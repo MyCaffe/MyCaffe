@@ -153,8 +153,8 @@ class Math
 		long copy_sequence(int n, long hSrc, int nSrcStep, int nSrcStartIdx, int nCopyCount, int nCopyDim, long hDst, int nDstStep, int nDstStartIdx, int nSrcSpatialDim, int nDstSpatialDim, int nSrcSpatialDimStartIdx, int nDstSpatialDimStartIdx,  int nSpatialDimCount);
 		long copy_expand(int n, int nNum, int nDim, long hX, long hA);
 
-		long gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, __half* a, __half* b, T fBeta, __half* c);
-		long gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, T* a, T* b, T fBeta, T* c);
+		long gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, __half* a, __half* b, T fBeta, __half* c, bool bSync = true);
+		long gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, T* a, T* b, T fBeta, T* c, bool bSync = true);
 		long geam(bool bTransA, bool bTransB, int m, int n, T fAlpha, __half* a, __half* b, T fBeta, __half* c);
 		long geam(bool bTransA, bool bTransB, int m, int n, T fAlpha, T* a, T* b, T fBeta, T* c);
 		long gemv(bool bTransA, int m, int n, T fAlpha, T* a, T* x, T fBeta, T* y);
@@ -162,7 +162,7 @@ class Math
 		long nrm2(int n, long hA, int nAOff, T* pfResult);
 		long ger(int m, int n, T fAlpha, long hA, long hB, long hC, int nAoff = 0, int nBoff = 0, int nCoff = 0);
 
-		long gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, long hA, long hB, T fBeta, long hC, int nAOff, int nBOff, int nCOff);
+		long gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, long hA, long hB, T fBeta, long hC, int nAOff, int nBOff, int nCOff, int nGroups, int nGroupAOff, int nGroupBOff, int nGroupCOff);
 		long gemm2(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, long hA, long hB, T fBeta, long hC, int lda, int ldb, int ldc);
 		long geam(bool bTransA, bool bTransB, int m, int n, T fAlpha, long hA, long hB, T fBeta, long hC, int nAOff, int nBOff, int nCOff);
 		long gemv(bool bTransA, int m, int n, T fAlpha, long hA, long hX, T fBeta, long hY, int nAOff, int nXOff, int nYOff);
