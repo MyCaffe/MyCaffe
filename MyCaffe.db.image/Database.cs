@@ -1768,11 +1768,56 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="nSrcId">Specifies the source ID.</param>
         /// <param name="nLabel">Specifies the new label value.</param>
-        public void UpdateAllActiveLabels(int nSrcId, int nLabel)
+        /// <param name="nOriginalLabel">Optionally, specifies the original label to relabel.</param>
+        public void UpdateAllActiveLabels(int nSrcId, int nLabel, int? nOriginalLabel)
         {
             string strCmd = "UPDATE [dbo].[RawImages] SET [ActiveLabel] = " + nLabel.ToString() + ",[Active] = 1";
             strCmd += " WHERE ([SourceID] = " + nSrcId.ToString() + ")";
 
+            if (nOriginalLabel.HasValue)
+                strCmd += " AND ([OriginalLabel] = " + nOriginalLabel.Value.ToString() + ")";
+
+            m_entities.Database.ExecuteSqlCommand(strCmd);
+        }
+
+        /// <summary>
+        /// Reset the all active labels to their original label within a source.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the source ID.</param>
+        public void ResetAllActiveLabels(int nSrcId)
+        {
+            string strCmd = "UPDATE [dbo].[RawImages] SET [ActiveLabel] = [OriginalLabel], [Active] = 1";
+            strCmd += " WHERE ([SourceID] = " + nSrcId.ToString() + ")";
+            m_entities.Database.ExecuteSqlCommand(strCmd);
+        }
+
+        /// <summary>
+        /// Disable a set of labels within the source specified by the ID.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the source ID.</param>
+        /// <param name="nLabel">Specifies the label to disable.</param>
+        /// <param name="bOriginalLabel">Specifies whether the label is the original label (true) or the active label (false).</param>
+        public void DisableLabel(int nSrcId, int nLabel, bool bOriginalLabel = false)
+        {
+            string strCmd = "UPDATE [dbo].[RawImages] SET [Active] = 0";
+            strCmd += " WHERE ([SourceID] = " + nSrcId.ToString() + ")";
+
+            if (bOriginalLabel)
+                strCmd += " AND ([OriginalLabel] = " + nLabel.ToString() + ")";
+            else
+                strCmd += " AND ([ActiveLabel] = " + nLabel.ToString() + ")";
+
+            m_entities.Database.ExecuteSqlCommand(strCmd);
+        }
+
+        /// <summary>
+        /// Disable all labels within the source specified by the ID.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the source ID.</param>
+        public void DisableAllLabels(int nSrcId)
+        {
+            string strCmd = "UPDATE [dbo].[RawImages] SET [Active] = 0";
+            strCmd += " WHERE ([SourceID] = " + nSrcId.ToString() + ")";
             m_entities.Database.ExecuteSqlCommand(strCmd);
         }
 

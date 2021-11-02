@@ -868,9 +868,37 @@ namespace MyCaffe.db.image
         /// Directly update all active labels and activate all of the images for the open Source ID.
         /// </summary>
         /// <param name="nLabel">Specifies the new active label.</param>
-        public void UpdateAllActiveLabelsDirect(int nLabel)
+        /// <param name="nOriginalLabel">Optionally, specifies an original label to replace.</param>
+        public void UpdateAllActiveLabelsDirect(int nLabel, int? nOriginalLabel = null)
         {
-            m_db.UpdateAllActiveLabels(m_openSource.ID, nLabel);
+            m_db.UpdateAllActiveLabels(m_openSource.ID, nLabel, nOriginalLabel);
+        }
+
+        /// <summary>
+        /// Disable a set of labels within the open source.
+        /// </summary>
+        /// <param name="nLabel">Specifies the label to disable.</param>
+        /// <param name="bOriginalLabel">Specifies whether the label is the original label (true) or the active label (false).</param>
+        public void DisableLabel(int nLabel, bool bOriginalLabel = false)
+        {
+            m_db.DisableLabel(m_openSource.ID, nLabel, bOriginalLabel);
+        }
+
+        /// <summary>
+        /// Disable all labels within the open source.
+        /// </summary>
+        public void DisableAllLabels()
+        {
+            m_db.DisableAllLabels(m_openSource.ID);
+        }
+
+        /// <summary>
+        /// Reset all active labels within the open source.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the source ID.</param>
+        public void ResetAllActiveLabels()
+        {
+            m_db.ResetAllActiveLabels(m_openSource.ID);
         }
 
         /// <summary>
