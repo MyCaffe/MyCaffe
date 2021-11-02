@@ -893,6 +893,17 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Disable all images that do not have a matching widxht size.
+        /// </summary>
+        /// <param name="nWidth">Specifies the expected image width.</param>
+        /// <param name="nHeight">Specifies the expected image height.</param>
+        /// <returns>The number of images disabled is returned.</returns>
+        public int DisableAllNonMatchingImages(int nWidth, int nHeight)
+        {
+            return m_db.DisableAllNonMatchingImages(m_openSource.ID, nWidth, nHeight);
+        }
+
+        /// <summary>
         /// Reset all active labels within the open source.
         /// </summary>
         /// <param name="nSrcId">Specifies the source ID.</param>

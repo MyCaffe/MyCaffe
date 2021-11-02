@@ -1822,6 +1822,26 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Disable all images that do not have a matching widxht size.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the source ID.</param>
+        /// <param name="nWidth">Specifies the expected image width.</param>
+        /// <param name="nHeight">Specifies the expected image height.</param>
+        /// <returns>The number of images disabled is returned.</returns>
+        public int DisableAllNonMatchingImages(int nSrcId, int nWidth, int nHeight)
+        {
+            string strCmd = "SELECT COUNT([ID]) FROM[DNN].[dbo].[RawImages] WHERE(SourceID = " + nSrcId.ToString() + ") AND (Width != " + nWidth.ToString() + " OR Height != " + nHeight.ToString() + ")";
+            DbRawSqlQuery<int> qry = m_entities.Database.SqlQuery<int>(strCmd);
+            List<int> rgVal = qry.ToList();
+            int nCount = rgVal[0];
+
+            strCmd = "UPDATE [dbo].[RawImages] SET [Active] = 0 WHERE(SourceID = " + nSrcId.ToString() + ") AND (Width != " + nWidth.ToString() + " OR Height != " + nHeight.ToString() + ")";
+            m_entities.Database.ExecuteSqlCommand(strCmd);
+
+            return nCount;
+        }
+
+        /// <summary>
         /// Activate/deactivate a raw image based on its index.
         /// </summary>
         /// <param name="nSrcId">Specifies the source ID.</param>
