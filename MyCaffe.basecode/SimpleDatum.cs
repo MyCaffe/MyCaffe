@@ -477,7 +477,9 @@ namespace MyCaffe.basecode
             {
                 m_bIsRealData = true;
                 m_rgRealDataF = new float[nCount];
-                Array.Copy(rgf, nOffset, m_rgRealDataF, 0, nCount);
+
+                if (rgf != null)    
+                    Array.Copy(rgf, nOffset, m_rgRealDataF, 0, nCount);
             }
             else
             {
