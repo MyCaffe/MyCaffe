@@ -1035,6 +1035,52 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Scale the values by the scaling factor.
+        /// </summary>
+        /// <param name="dfScale">Specifies the scaling factor.</param>
+        /// <param name="dfMin">Optionally, specifies a minimum cutoff value.</param>
+        /// <param name="dfMax">Optionally, specifies a maximum cutoff value.</param>
+        public void Scale(double dfScale, double dfMin = -double.MaxValue, double dfMax = double.MaxValue)
+        {
+            if (m_rgByteData != null)
+            {
+                for (int i = 0; i < m_rgByteData.Length; i++)
+                {
+                    int nVal = (int)(m_rgByteData[i] * dfScale);
+                    if (nVal < (int)dfMin)
+                        nVal = (int)dfMin;
+                    else if (nVal > (int)dfMax)
+                        nVal = (int)dfMax;
+                    m_rgByteData[i] = (byte)nVal;
+                }
+            }
+
+            if (m_rgRealDataD != null)
+            {
+                for (int i = 0; i < m_rgRealDataD.Length; i++)
+                {
+                    m_rgRealDataD[i] *= dfScale;
+                    if (m_rgRealDataD[i] < dfMin)
+                        m_rgRealDataD[i] = dfMin;
+                    else if (m_rgRealDataD[i] > dfMax)
+                        m_rgRealDataD[i] = dfMax;
+                }
+            }
+
+            if (m_rgRealDataF != null)
+            {
+                for (int i = 0; i < m_rgRealDataF.Length; i++)
+                {
+                    m_rgRealDataF[i] *= (float)dfScale;
+                    if (m_rgRealDataF[i] < dfMin)
+                        m_rgRealDataF[i] = (float)dfMin;
+                    else if (m_rgRealDataF[i] > dfMax)
+                        m_rgRealDataF[i] = (float)dfMax;
+                }
+            }
+        }
+
+        /// <summary>
         /// Copy another SimpleDatum into this one.
         /// </summary>
         /// <param name="d">Specifies the SimpleDatum to copy.</param>
