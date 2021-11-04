@@ -912,12 +912,17 @@ namespace MyCaffe.basecode
 
             if (m_rgByteData != null)
             {
-                if (sd.m_rgByteData == null)
-                    throw new Exception("Both simple datums must have the same type of data!");
-
                 for (int i = 0; i < m_rgByteData.Length; i++)
                 {
-                    int nVal = m_rgByteData[i] - sd.m_rgByteData[i];
+                    int nVal = 0;
+
+                    if (sd.m_rgByteData != null)
+                        nVal = m_rgByteData[i] - sd.m_rgByteData[i];
+                    else if (sd.m_rgRealDataD != null)
+                        nVal = (int)m_rgByteData[i] - (int)sd.m_rgRealDataD[i];
+                    else if (sd.m_rgRealDataF != null)
+                        nVal = (int)m_rgByteData[i] - (int)sd.m_rgRealDataF[i];
+
                     if (nVal != 0)
                     {
                         bDifferent = true;
@@ -932,12 +937,15 @@ namespace MyCaffe.basecode
 
             if (m_rgRealDataD != null)
             {
-                if (sd.m_rgRealDataD == null)
-                    throw new Exception("Both simple datums must have the same type of data!");
-
                 for (int i = 0; i < m_rgRealDataD.Length; i++)
                 {
-                    m_rgRealDataD[i] -= sd.m_rgRealDataD[i];
+                    if (sd.m_rgRealDataD != null)
+                        m_rgRealDataD[i] -= sd.m_rgRealDataD[i];
+                    else if (sd.m_rgRealDataF != null)
+                        m_rgRealDataD[i] -= sd.m_rgRealDataF[i];
+                    else if (sd.m_rgByteData != null)
+                        m_rgRealDataD[i] -= sd.m_rgByteData[i];
+
                     if (m_rgRealDataD[i] != 0)
                     {
                         bDifferent = true;
@@ -950,12 +958,15 @@ namespace MyCaffe.basecode
 
             if (m_rgRealDataF != null)
             {
-                if (sd.m_rgRealDataF == null)
-                    throw new Exception("Both simple datums must have the same type of data!");
-
                 for (int i = 0; i < m_rgRealDataF.Length; i++)
                 {
-                    m_rgRealDataF[i] -= sd.m_rgRealDataF[i];
+                    if (sd.m_rgRealDataD != null)
+                        m_rgRealDataD[i] -= sd.m_rgRealDataD[i];
+                    else if (sd.m_rgRealDataF != null)
+                        m_rgRealDataD[i] -= sd.m_rgRealDataF[i];
+                    else if (sd.m_rgByteData != null)
+                        m_rgRealDataD[i] -= sd.m_rgByteData[i];
+
                     if (m_rgRealDataF[i] != 0)
                     {
                         bDifferent = true;
