@@ -901,8 +901,9 @@ namespace MyCaffe.basecode
         /// Subtract the data of another SimpleDatum from this one, so this = this - sd.
         /// </summary>
         /// <param name="sd">Specifies the other SimpleDatum to subtract.</param>
+        /// <param name="bSetNegativeToZero">Optionally, specifies to zero out any negative values (default = false).</param>
         /// <returns>If both data values are different <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
-        public bool Sub(SimpleDatum sd)
+        public bool Sub(SimpleDatum sd, bool bSetNegativeToZero = false)
         {
             bool bDifferent = false;
 
@@ -916,9 +917,16 @@ namespace MyCaffe.basecode
 
                 for (int i = 0; i < m_rgByteData.Length; i++)
                 {
-                    m_rgByteData[i] -= sd.m_rgByteData[i];
-                    if (m_rgByteData[i] != 0)
+                    int nVal = m_rgByteData[i] - sd.m_rgByteData[i];
+                    if (nVal != 0)
+                    {
                         bDifferent = true;
+
+                        if (bSetNegativeToZero && nVal < 0)
+                            nVal = 0;
+                    }
+
+                    m_rgByteData[i] = (byte)nVal;
                 }
             }
 
@@ -931,7 +939,12 @@ namespace MyCaffe.basecode
                 {
                     m_rgRealDataD[i] -= sd.m_rgRealDataD[i];
                     if (m_rgRealDataD[i] != 0)
+                    {
                         bDifferent = true;
+
+                        if (bSetNegativeToZero && m_rgRealDataD[i] < 0)
+                            m_rgRealDataD[i] = 0;
+                    }
                 }
             }
 
@@ -944,7 +957,12 @@ namespace MyCaffe.basecode
                 {
                     m_rgRealDataF[i] -= sd.m_rgRealDataF[i];
                     if (m_rgRealDataF[i] != 0)
+                    {
                         bDifferent = true;
+
+                        if (bSetNegativeToZero && m_rgRealDataF[i] < 0)
+                            m_rgRealDataF[i] = 0;
+                    }
                 }
             }
 
