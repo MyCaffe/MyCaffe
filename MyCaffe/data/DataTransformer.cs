@@ -545,6 +545,11 @@ namespace MyCaffe.data
             int nWidth = ((nCropSize != 0 && nCropSize < nDatumWidth) ? nCropSize : nDatumWidth);
 
             float fScale = (float)m_param.scale;
+            TransformationParameter.SCALE_OPERATOR? scaleOp = m_param.scale_operator;
+
+            if (scaleOp.HasValue && scaleOp == TransformationParameter.SCALE_OPERATOR.NONE)
+                fScale = 1.0f;
+
             bool bDoMirror = m_param.mirror && (Rand(2) == 1) ? true : false;
             bool bUseMeanImage = m_param.use_imagedb_mean;
             List<float> rgMeanValues = null;
@@ -647,15 +652,28 @@ namespace MyCaffe.data
 
                         if (bUseMeanImage)
                         {
-                            fTransformedElement = (fDataElement - rgMean[nDataIdx]) * fScale;
+                            float fVal = fDataElement - rgMean[nDataIdx];
+
+                            if (scaleOp.HasValue && scaleOp == TransformationParameter.SCALE_OPERATOR.POW)
+                                fTransformedElement = (fVal < 0) ? fVal : (float)Math.Pow(fVal, fScale);
+                            else
+                                fTransformedElement = fVal * fScale;
                         }
                         else if (rgMeanValues != null && rgMeanValues.Count > 0)
                         {
-                            fTransformedElement = (fDataElement - rgMeanValues[c]) * fScale;
+                            float fVal = fDataElement - rgMeanValues[c];
+
+                            if (scaleOp.HasValue && scaleOp == TransformationParameter.SCALE_OPERATOR.POW)
+                                fTransformedElement = (fVal < 0) ? fVal : (float)Math.Pow(fVal, fScale);
+                            else
+                                fTransformedElement = fVal * fScale;
                         }
                         else
                         {
-                            fTransformedElement = fDataElement * fScale;
+                            if (scaleOp.HasValue && scaleOp == TransformationParameter.SCALE_OPERATOR.POW)
+                                fTransformedElement = (fDataElement < 0) ? fDataElement : (float)Math.Pow(fDataElement, fScale);
+                            else
+                                fTransformedElement = fDataElement * fScale;
                         }
 
                         if (m_dfLastMax < fTransformedElement)
@@ -694,6 +712,11 @@ namespace MyCaffe.data
             int nWidth = ((nCropSize != 0 && nCropSize < nDatumWidth) ? nCropSize : nDatumWidth);
 
             double dfScale = m_param.scale;
+            TransformationParameter.SCALE_OPERATOR? scaleOp = m_param.scale_operator;
+
+            if (scaleOp.HasValue && scaleOp == TransformationParameter.SCALE_OPERATOR.NONE)
+                dfScale = 1.0;
+
             bool bDoMirror = m_param.mirror && (Rand(2) == 1) ? true : false;
             bool bUseMeanImage = m_param.use_imagedb_mean;
             List<double> rgMeanValues = null;
@@ -790,15 +813,28 @@ namespace MyCaffe.data
 
                         if (bUseMeanImage)
                         {
-                            dfTransformedElement = (dfDataElement - rgMean[nDataIdx]) * dfScale;
+                            double dfVal = dfDataElement - rgMean[nDataIdx];
+
+                            if (scaleOp.HasValue && scaleOp == TransformationParameter.SCALE_OPERATOR.POW)
+                                dfTransformedElement = (dfVal < 0) ? dfVal : Math.Pow(dfVal, dfScale);
+                            else
+                                dfTransformedElement = (dfDataElement - rgMean[nDataIdx]) * dfScale;
                         }
                         else if (rgMeanValues != null && rgMeanValues.Count > 0)
                         {
-                            dfTransformedElement = (dfDataElement - rgMeanValues[c]) * dfScale;
+                            double dfVal = dfDataElement - rgMeanValues[c];
+
+                            if (scaleOp.HasValue && scaleOp == TransformationParameter.SCALE_OPERATOR.POW)
+                                dfTransformedElement = (dfVal < 0) ? dfVal : Math.Pow(dfVal, dfScale);
+                            else
+                                dfTransformedElement = dfVal * dfScale;
                         }
                         else
                         {
-                            dfTransformedElement = dfDataElement * dfScale;
+                            if (scaleOp.HasValue && scaleOp == TransformationParameter.SCALE_OPERATOR.POW)
+                                dfTransformedElement = (dfDataElement < 0) ? dfDataElement : Math.Pow(dfDataElement, dfScale);
+                            else
+                                dfTransformedElement = dfDataElement * dfScale;
                         }
 
                         if (m_dfLastMax < dfTransformedElement)

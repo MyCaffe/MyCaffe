@@ -18,6 +18,7 @@ namespace MyCaffe.param
     public class TransformationParameter : LayerParameterBase 
     {
         double m_dfScale = 1;
+        SCALE_OPERATOR? m_scaleOperator = null;
         bool m_bMirror = false;
         uint m_nCropSize = 0;
         bool m_bUseImageDbMean = false;
@@ -35,6 +36,25 @@ namespace MyCaffe.param
         EmitConstraint m_emitConstraint = new EmitConstraint(false);
         MaskParameter m_mask = new MaskParameter(false);
         DataLabelMappingParameter m_labelMapping = new DataLabelMappingParameter(false);
+
+        /// <summary>
+        /// Defines the type of scale operator to use (if any).
+        /// </summary>
+        public enum SCALE_OPERATOR
+        {
+            /// <summary>
+            /// Specifies to not scale the data.
+            /// </summary>
+            NONE,
+            /// <summary>
+            /// Specifies to use the multiplication operator where the scale is multiplied by the result of the data-mean.
+            /// </summary>
+            MUL,
+            /// <summary>
+            /// Specifies to use the power operator where the data-mean is raised to the power of the scale value.
+            /// </summary>
+            POW
+        }
 
         /// <summary>
         /// Defines the color ordering used to tranform the input data.
@@ -79,6 +99,15 @@ namespace MyCaffe.param
         {
             get { return m_dfScale; }
             set { m_dfScale = value; }
+        }
+
+        /// <summary>
+        /// Get/set the scale operator used to apply the scale value to the data-mean or data result.
+        /// </summary>
+        public SCALE_OPERATOR? scale_operator
+        {
+            get { return m_scaleOperator; }
+            set { m_scaleOperator = value; }
         }
 
         /// <summary>
@@ -298,6 +327,7 @@ namespace MyCaffe.param
             m_bForceGray = p.m_bForceGray;
             m_bMirror = p.m_bMirror;
             m_dfScale = p.m_dfScale;
+            m_scaleOperator = p.m_scaleOperator;
             m_nCropSize = p.m_nCropSize;
             m_rgMeanValue = Utility.Clone<double>(p.m_rgMeanValue);
             m_dfForcedPositiveRangeMax = p.m_dfForcedPositiveRangeMax;
@@ -337,6 +367,9 @@ namespace MyCaffe.param
 
             if (scale != 1.0)
                 rgChildren.Add("scale", scale.ToString());
+
+            if (scale_operator.HasValue)
+                rgChildren.Add("scale_operator", scale_operator.Value.ToString());
 
             if (mirror != false)
                 rgChildren.Add("mirror", mirror.ToString());
@@ -399,6 +432,20 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("scale")) != null)
                 p.scale = ParseDouble(strVal);
+
+            if ((strVal = rp.FindValue("scale_operator")) != null)
+            {
+                if (strVal == SCALE_OPERATOR.MUL.ToString())
+                    p.scale_operator = SCALE_OPERATOR.MUL;
+                else if (strVal == SCALE_OPERATOR.POW.ToString())
+                    p.scale_operator = SCALE_OPERATOR.POW;
+                else
+                    p.scale_operator = SCALE_OPERATOR.NONE;
+            }
+            else
+            {
+                p.scale_operator = null;
+            }
 
             if ((strVal = rp.FindValue("mirror")) != null)
                 p.mirror = bool.Parse(strVal);
