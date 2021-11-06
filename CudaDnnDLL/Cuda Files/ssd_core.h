@@ -163,7 +163,7 @@ class SsdBbox : public SsdMemory<T>
 	int m_nTotal = 4;
 
 public:
-	SsdBbox(Memory<T>* pMem, int nGpuID, bool bFull = false) : SsdMemory(pMem, nGpuID)
+	SsdBbox(Memory<T>* pMem, int nGpuID, bool bFull = false) : SsdMemory<T>(pMem, nGpuID)
 	{
 		m_bFull = bFull;
 
