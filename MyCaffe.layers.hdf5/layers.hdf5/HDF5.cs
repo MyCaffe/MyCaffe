@@ -9,6 +9,10 @@ using MyCaffe.common;
 
 namespace MyCaffe.layers.hdf5
 {
+    /// <summary>
+    /// The HDF5 object provides HDF5 dataset support to the HDF5DataLayer.
+    /// </summary>
+    /// <typeparam name="T">Specifies the base type.</typeparam>
     public class HDF5<T> : IDisposable
     {
         Log m_log;
@@ -16,6 +20,12 @@ namespace MyCaffe.layers.hdf5
         H5FileId m_file;
         string m_strFile;
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="cuda">Specifies the CudaDnn connection to Cuda.</param>
+        /// <param name="log">Specifies the Log for output.</param>
+        /// <param name="strFile">Specifies the HDF5 file to load.</param>
         public HDF5(CudaDnn<T> cuda, Log log, string strFile)
         {
             m_strFile = strFile;
@@ -102,6 +112,14 @@ namespace MyCaffe.layers.hdf5
             return ds;
         }
 
+        /// <summary>
+        /// Creates a new dataset from an HDF5 data file.
+        /// </summary>
+        /// <param name="blob">The input blob is reshaped to the dataset item shape.</param>
+        /// <param name="strDatasetName">Specifies the new dataset name.</param>
+        /// <param name="bReshape">Specifies whether to reshape the 'blob' parameter.</param>
+        /// <param name="nMinDim">Specifies the minimum dimension.</param>
+        /// <param name="nMaxDim">Specifies the maximum dimension.</param>
         public void load_nd_dataset(Blob<T> blob, string strDatasetName, bool bReshape = false, int nMinDim = 1, int nMaxDim = int.MaxValue)
         {
             H5DataSetId ds = null;
@@ -153,6 +171,9 @@ namespace MyCaffe.layers.hdf5
             }
         }
       
+        /// <summary>
+        /// Release all resources uses.
+        /// </summary>
         public void Dispose()
         {
             if (m_file != null)
