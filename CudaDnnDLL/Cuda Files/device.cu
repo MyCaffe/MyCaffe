@@ -1406,7 +1406,6 @@ long Device<T>::cuda_gemm2(long lInput, T* pfInput, long* plOutput, T** ppfOutpu
 	int lda = (int)pfInput[10];
 	int ldb = (int)pfInput[11];
 	int ldc = (int)pfInput[12];
-	int nGroups = 1;
 
 	return m_math.gemm2(bTransA, bTransB, m, n, k, fAlpha, hA, hB, fBeta, hC, lda, ldb, ldc);
 }
