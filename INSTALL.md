@@ -1,23 +1,24 @@
 <H2>Installation Instructions</H2>
-To install and run <b>MyCaffe</b> you will need to do the following steps.  As a side note, we are using (and recommend) CUDA 11.4.2 with cuDNN 8.2.4 and Visual Studio 2019 on Windows 10 Pro for all of our testing.
+To install and run <b>MyCaffe</b> you will need to do the following steps.  As a side note, we are using (and recommend) CUDA 11.5.0 with cuDNN 8.3.0 and Visual Studio 2019 on Windows 10 Pro for all of our testing.
 </br>
 <H3>I. CUDA - Install NVIDIA CUDA and cuDNN Libraries</H3>
-Install CUDA 11.4.2 as shown below (note CUDA 11.4.2 compiler currently used).
-<H4>A. CUDA 11.4.2 - Install NVIDIA CUDA and cuDNN Libraries</H4>
-1.) Install the NVIDIA CUDA 11.4.2 Toolkit for Windows 10 from https://developer.nvidia.com/cuda-downloads. 
-</br>2.) Install the NVIDIA cuDNN 8.2.4 Accelerated Libraries for CUDA 11.4.2 on Windows 10 from https://developer.nvidia.com/cuDNN.
-</br>3.) Create a new directory off your <b><i>$(CUDA_PATH_V11_4)</i></b> installation location named <b><i>cudann_11.4-win-v8.2.4.26</i></b> and copy the cuDNN <b><i>cudnn.h</i></b> and <b><i>cudnn.lib</i></b> files into it.
-</br>4.) Copy the <b><i>cudnn64_8.dll</i></b> and associated DLL files into the <b><i>$(CUDA_PATH_V11_4)\bin</i></b> directory.
+Install CUDA 11.5.0 as shown below (note CUDA 11.5.0 compiler currently used).
+<H4>A. CUDA 11.5.0 - Install NVIDIA CUDA and cuDNN Libraries</H4>
+1.) Install the NVIDIA CUDA 11.5.0 Toolkit for Windows 10 from https://developer.nvidia.com/cuda-downloads. 
+</br>2.) Install the NVIDIA cuDNN 8.3.0 Accelerated Libraries for CUDA 11.5.0 on Windows 10 from https://developer.nvidia.com/cuDNN.
+</br>3.) Create a new directory off your <b><i>$(CUDA_PATH_V11_5)</i></b> installation location named <b><i>cudann_11.5-win-v8.3.0.98</i></b> and copy the cuDNN <b><i>cudnn.h</i></b> and <b><i>cudnn.lib</i></b> files into it.
+</br>4.) Copy the <b><i>cudnn64_8.dll</i></b> and associated DLL files into the <b><i>$(CUDA_PATH_V11_5)\bin</i></b> directory.
 </br>5.) Install the NVIDIA NVAPI (r465) from https://developer.nvidia.com/nvapi.
-</br>6.) Create a new directory off your <b><i>$(CUDA_PATH_V11_4)</i></b> installation location named <b><i>nvapi_465</i></b> and copy the NVAPI header and library files into it.
+</br>6.) Create a new directory off your <b><i>$(CUDA_PATH_V11_5)</i></b> installation location named <b><i>nvapi_495</i></b> and copy the NVAPI header and library files into it.
 </br>
+</br>NOTE: Currently, the CUDA 11.1 compiler is used to build the CudaDnnDLL using CUDA 11.1.props.
 </br>NOTE: The CudaDnnDLL project points to the file directories noted above for the cuDNN include and library files.  
 
 <H3>II. Setup Strong Names and Signing</H3>
 The <b><i>MyCaffe</i></b> project, uses the following strong name key files:
-</br>The <b>CudaControl</b> uses the <b><i>CudaControl.pfx</i></b> located in the <b><i>packages\CudaControl.0.11.4.x\lib\Net40\</i></b> directory.  
+</br>The <b>CudaControl</b> uses the <b><i>CudaControl.pfx</i></b> located in the <b><i>packages\CudaControl.0.11.5.x\lib\Net40\</i></b> directory.  
 If you download, build the <b>CudaControl</b> repository and create a new <b><i>CudaControl.pfx</i></b> file, you should also copy it into the 
-<b><i>packages\CudaControl.0.11.4.x\lib\Net40\</i></b> directory, replacing the pfx file there.  Alternatively, you can just install 
+<b><i>packages\CudaControl.0.11.5.x\lib\Net40\</i></b> directory, replacing the pfx file there.  Alternatively, you can just install 
 the <b>CudaControl</b> package from NuGet.
 </p>
 The <b><i>MyCaffe</i></b> projects use key files for assembly signing. <b>Before building either disable signing, or replace the *.pfx files with your own.</b>
@@ -37,9 +38,9 @@ assembly signing altogether.
 </br>IMPORTANT - You must install the full SQL or SQL Express from the link above which is different that the 'lightweight' version of SQL installed
 with Visual Studio.
 </br>
-</br>c.) nccl64_134.11.4.dll - If you plan on running multi-GPU training sessions, you will need the <b><i>nccl64_134.11.4.dll</i></b>, which must be placed
+</br>c.) nccl64_134.11.5.dll - If you plan on running multi-GPU training sessions, you will need the <b><i>nccl64_134.11.5.dll</i></b>, which must be placed
 in a directory that is visible by your executable files.  This library can be built from the MyCaffe\NCCL repository.  Alternatively, it is installed
-by the <b>CudaControl</b> NuGet package and placed in the <i>packages\CudaControl.0.11.4.x\lib\Net40</i> directory.  You should copy the library into
+by the <b>CudaControl</b> NuGet package and placed in the <i>packages\CudaControl.0.11.5.x\lib\Net40</i> directory.  You should copy the library into
 a directory that is visible by your executable files.  NOTE: The automated multi-GPU tests use GPU's 1-4 where the monitor is plugged into GPU 0.
 </br>
 <H3>IV. Create The Database</H3>
@@ -66,7 +67,7 @@ To install data used by the Automated Tests, you will need to install the follow
 </br>Both of these models are used by the <b><i>TestPersistCaffe.cs</i></b> auto tests.
 
 <H2>Debugging Instructions</H2>
-Before debugging, you will need to copy the CUDA files into your output target directory.  To do this, copy the '\Program Files\SignalPop\MyCaffe\cuda_11.4' folder to the 
+Before debugging, you will need to copy the CUDA files into your output target directory.  To do this, copy the '\Program Files\SignalPop\MyCaffe\cuda_11.5' folder to the 
 target output directory of your application (e.g. ..\Temp\MyApp\bin\Debug).  
 
 Next, from within your Debug settings for your application, set the debug Working Directory to this same target output directory (e.g. ..\Temp\MyApp\bin\Debug).
