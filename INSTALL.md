@@ -3,7 +3,7 @@ To install and run <b>MyCaffe</b> you will need to do the following steps.  As a
 CUDA 11.5.0/cuDNN 8.3.0 are currently under evaluation.
 </br>
 <H3>I. CUDA - Install NVIDIA CUDA and cuDNN Libraries</H3>
-Install CUDA 11.4.2 as shown below (Note CUDA 11.1 compiler used).
+Install CUDA 11.4.2 as shown below.
 <H4>A. CUDA 11.4.2 - Install NVIDIA CUDA and cuDNN Libraries</H4>
 1.) Install the NVIDIA CUDA 11.4.2 Toolkit for Windows 10 from https://developer.nvidia.com/cuda-downloads. 
 </br>2.) Install the NVIDIA cuDNN 8.2.4 Accelerated Libraries for CUDA 11.4.2 on Windows 10 from https://developer.nvidia.com/cuDNN.
@@ -12,7 +12,6 @@ Install CUDA 11.4.2 as shown below (Note CUDA 11.1 compiler used).
 </br>5.) Install the NVIDIA NVAPI (r465) from https://developer.nvidia.com/nvapi.
 </br>6.) Create a new directory off your <b><i>$(CUDA_PATH_V11_4)</i></b> installation location named <b><i>nvapi_495</i></b> and copy the NVAPI header and library files into it.
 </br>
-</br>NOTE: Currently, the CUDA 11.1 compiler is used to build the CudaDnnDLL using CUDA 11.1.props.
 </br>NOTE: The CudaDnnDLL project points to the file directories noted above for the cuDNN include and library files.  
 
 <H3>II. Setup Strong Names and Signing</H3>
