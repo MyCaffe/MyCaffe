@@ -1242,11 +1242,11 @@ inline long Memory<T>::SetRnnDesc(long hHandle, long hRnnDesc, int nHiddenCount,
 	if (hDropoutDesc != 0)
 		descDropout = (cudnnDropoutDescriptor_t)m_dropoutDesc.GetData(hDropoutDesc);
 	
-#ifdef CUDA11_0
-	if (lErr = cudnnSetRNNDescriptor_v6(cudnn, desc, nHiddenCount, nNumLayers, descDropout, CUDNN_LINEAR_INPUT, (cudnnDirectionMode_t)direction, (cudnnRNNMode_t)mode, CUDNN_RNN_ALGO_STANDARD, computeType))
+#ifdef CUDA10_2
+	if (lErr = cudnnSetRNNDescriptor(cudnn, desc, nHiddenCount, nNumLayers, descDropout, CUDNN_LINEAR_INPUT, (cudnnDirectionMode_t)direction, (cudnnRNNMode_t)mode, CUDNN_RNN_ALGO_STANDARD, computeType))
 		return lErr | ERROR_CUDNN_OFFSET;
 #else
-	if (lErr = cudnnSetRNNDescriptor(cudnn, desc, nHiddenCount, nNumLayers, descDropout, CUDNN_LINEAR_INPUT, (cudnnDirectionMode_t)direction, (cudnnRNNMode_t)mode, CUDNN_RNN_ALGO_STANDARD, computeType))
+	if (lErr = cudnnSetRNNDescriptor_v6(cudnn, desc, nHiddenCount, nNumLayers, descDropout, CUDNN_LINEAR_INPUT, (cudnnDirectionMode_t)direction, (cudnnRNNMode_t)mode, CUDNN_RNN_ALGO_STANDARD, computeType))
 		return lErr | ERROR_CUDNN_OFFSET;
 #endif
 

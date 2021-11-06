@@ -756,7 +756,30 @@ long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterD
 
 	// Choose forward algorithm for convolution.
 	cudnnConvolutionFwdAlgo_t algoFwd;
-#ifdef CUDA11_0
+#ifdef CUDA10_2
+	// Setup the algorithm preference.
+	cudnnConvolutionFwdPreference_t fwdPref = CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT;
+	cudnnConvolutionBwdFilterPreference_t bwdFltPref = CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT;
+	cudnnConvolutionBwdDataPreference_t bwdDataPref = CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT;
+
+	if (lWsLimitInBytes == (((size_t)-1) / 2 + 1) || lWsLimitInBytes >= (SIZE_MAX - 10))
+	{
+		lWsLimitInBytes = 0;
+		fwdPref = CUDNN_CONVOLUTION_FWD_PREFER_FASTEST;
+		bwdFltPref = CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST;
+		bwdDataPref = CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST;
+	}
+	else if (lWsLimitInBytes == 0)
+	{
+		lWsLimitInBytes = 0;
+		fwdPref = CUDNN_CONVOLUTION_FWD_NO_WORKSPACE;
+		bwdFltPref = CUDNN_CONVOLUTION_BWD_FILTER_NO_WORKSPACE;
+		bwdDataPref = CUDNN_CONVOLUTION_BWD_DATA_NO_WORKSPACE;
+	}
+
+	if (lErr = cudnnGetConvolutionForwardAlgorithm(cudnn, bottom, filter, conv, top, fwdPref, lWsLimitInBytes, &algoFwd))
+		return lErr | ERROR_CUDNN_OFFSET;
+#else
 	int nAlgCount;
 	cudnnConvolutionFwdAlgoPerf_t fwdPref[10];
 	if (lErr = cudnnGetConvolutionForwardAlgorithm_v7(cudnn, bottom, filter, conv, top, 10, &nAlgCount, fwdPref))
@@ -779,29 +802,6 @@ long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterD
 
 		algoFwd = fwdPref[nIdx].algo;
 	}
-#else
-	// Setup the algorithm preference.
-	cudnnConvolutionFwdPreference_t fwdPref = CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT;
-	cudnnConvolutionBwdFilterPreference_t bwdFltPref = CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT;
-	cudnnConvolutionBwdDataPreference_t bwdDataPref = CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT;
-
-	if (lWsLimitInBytes == (((size_t)-1)/2 + 1) || lWsLimitInBytes >= (SIZE_MAX - 10))
-	{
-		lWsLimitInBytes = 0;
-		fwdPref = CUDNN_CONVOLUTION_FWD_PREFER_FASTEST;
-		bwdFltPref = CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST;
-		bwdDataPref = CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST;
-	}
-	else if (lWsLimitInBytes == 0)
-	{
-		lWsLimitInBytes = 0;
-		fwdPref = CUDNN_CONVOLUTION_FWD_NO_WORKSPACE;
-		bwdFltPref = CUDNN_CONVOLUTION_BWD_FILTER_NO_WORKSPACE;
-		bwdDataPref = CUDNN_CONVOLUTION_BWD_DATA_NO_WORKSPACE;
-	}
-
-	if (lErr = cudnnGetConvolutionForwardAlgorithm(cudnn, bottom, filter, conv, top, fwdPref, lWsLimitInBytes, &algoFwd))
-		return lErr | ERROR_CUDNN_OFFSET;
 #endif
 
 	// Get workspace size for forward algorithm.
@@ -833,7 +833,10 @@ long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterD
 
 	// Choose backward filter algorithm.
 	cudnnConvolutionBwdFilterAlgo_t algoBwdFilter;
-#ifdef CUDA11_0
+#ifdef CUDA10_2
+	if (lErr = cudnnGetConvolutionBackwardFilterAlgorithm(cudnn, bottom, top, conv, filter, bwdFltPref, lWsLimitInBytes, &algoBwdFilter))
+		return lErr | ERROR_CUDNN_OFFSET;
+#else
 	cudnnConvolutionBwdFilterAlgoPerf_t bwdFltPref[10];
 	if (lErr = cudnnGetConvolutionBackwardFilterAlgorithm_v7(cudnn, bottom, top, conv, filter, 10, &nAlgCount, bwdFltPref))
 		return lErr;
@@ -855,9 +858,6 @@ long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterD
 
 		algoBwdFilter = bwdFltPref[nIdx].algo;
 	}
-#else
-	if (lErr = cudnnGetConvolutionBackwardFilterAlgorithm(cudnn, bottom, top, conv, filter, bwdFltPref, lWsLimitInBytes, &algoBwdFilter))
-		return lErr | ERROR_CUDNN_OFFSET;
 #endif
 
 	// Get workspace size for backward filter algorithm.
@@ -867,7 +867,10 @@ long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterD
 
 	// Choose backward data algorithm.
 	cudnnConvolutionBwdDataAlgo_t algoBwdData;
-#ifdef CUDA11_0
+#ifdef CUDA10_2
+	if (lErr = cudnnGetConvolutionBackwardDataAlgorithm(cudnn, filter, top, conv, bottom, bwdDataPref, lWsLimitInBytes, &algoBwdData))
+		return lErr | ERROR_CUDNN_OFFSET;
+#else
 	cudnnConvolutionBwdDataAlgoPerf_t bwdDataPref[10];
 	if (lErr = cudnnGetConvolutionBackwardDataAlgorithm_v7(cudnn, filter, top, conv, bottom, 5, &nAlgCount, bwdDataPref))
 		return lErr;
@@ -889,9 +892,6 @@ long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterD
 
 		algoBwdData = bwdDataPref[nIdx].algo;
 	}
-#else
-	if (lErr = cudnnGetConvolutionBackwardDataAlgorithm(cudnn, filter, top, conv, bottom, bwdDataPref, lWsLimitInBytes, &algoBwdData))
-		return lErr | ERROR_CUDNN_OFFSET;
 #endif
 
 	// Get workspace size for backward data algorithm.

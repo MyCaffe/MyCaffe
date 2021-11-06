@@ -7387,12 +7387,7 @@ __global__ void ceil_fwd_kernel(int n, T* in, T* out)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
-//#ifdef CUDA11_0
-#pragma message(Reminder "Currently Visual Studio 2019 16.9.1 causes a compiler error with 'ceil' which appears to have a conflict with CUDA 11.x.")
-		out[i] = ceilf((float)in[i]);
-//#else
-//		out[i] = ceil(in[i]);
-//#endif
+		out[i] = ceil(in[i]);
 	}
 }
 
@@ -7401,12 +7396,7 @@ __global__ void floor_fwd_kernel(int n, T* in, T* out)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
-//#ifdef CUDA11_0
-#pragma message(Reminder "Currently Visual Studio 2019 16.9.1 causes a compiler error with 'floor' which appears to have a conflict with CUDA 11.x.")
-		out[i] = floorf((float)in[i]);
-//#else
-//		out[i] = floor(in[i]);
-//#endif
+		out[i] = floor(in[i]);
 	}
 }
 
