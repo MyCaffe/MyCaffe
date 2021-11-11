@@ -1747,6 +1747,38 @@ template long Device<float>::cuda_scale_to_range(long lInput, float* pfInput, lo
 
 
 template <class T>
+long Device<T>::cuda_interp2(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 16, 16))
+		return lErr;
+
+	int nC = (int)pfInput[0];
+	long hX = (long)pfInput[1];
+	int nX1 = (int)pfInput[2];
+	int nY1 = (int)pfInput[3];
+	int nH1 = (int)pfInput[4];
+	int nW1 = (int)pfInput[5];
+	int nH1A = (int)pfInput[6];
+	int nW1A = (int)pfInput[7];
+	long hY = (long)pfInput[8];
+	int nX2 = (int)pfInput[9];
+	int nY2 = (int)pfInput[10];
+	int nH2 = (int)pfInput[11];
+	int nW2 = (int)pfInput[12];
+	int nH2B = (int)pfInput[13];
+	int nW2B = (int)pfInput[14];
+	bool bBwd = (pfInput[15] == 0) ? false : true;
+
+	return m_math.interp2(nC, hX, nX1, nY1, nH1, nW1, nH1A, nW1A, hY, nX2, nY2, nH2, nW2, nH2B, nW2B, bBwd);
+}
+
+template long Device<double>::cuda_interp2(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_interp2(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::cuda_add_scalar(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;

@@ -2568,6 +2568,179 @@ template long Math<double>::scale_to_range(int n, long hX, long hY, double dfMin
 template long Math<float>::scale_to_range(int n, long hX, long hY, float fMin, float fMax);
 
 
+// Bi-linear interpolation
+// input:  [channels height1 width1] cropped from a bigger [Height1 Width1] image
+// output: [channels height2 width2] cropped from a bigger [Height2 Width2] image
+template <typename T>
+__global__ void interp2_fwd_kernel(const int n, const T rheight, const T rwidth, const int channels,
+	                               const T* data1, const int x1, const int y1, const int height1, const int width1, const int Height1, const int Width1,
+	                                     T* data2, const int x2, const int y2, const int height2, const int width2, const int Height2, const int Width2)
+{
+	int index = threadIdx.x + blockIdx.x * blockDim.x;
+	if (index < n)
+	{
+		const int w2 = index % width2; // 0:width2 - 1
+		const int h2 = index % height2; // 0:height2 - 1
+		
+		// special case: just copy
+		if (height1 == height2 && width1 == width2)
+		{
+			const int h1 = h2;
+			const int w1 = w2;
+
+			// Unpacked only.
+			{
+				const T* pos1 = &data1[(y1 + h1) * Width1 + (x1 + w1)];
+				T* pos2 = &data2[(y2 + h2) * Width2 + (x2 + w2)];
+
+				for (int c = 0; c < channels; c++)
+				{
+					pos2[0] = pos1[0];
+					pos1 += Width1 * Height1;
+					pos2 += Width2 * Height2;
+				}
+			}
+
+			return;
+		}
+		//
+		const float h1r = rheight * h2;
+		const int h1 = h1r;
+		const int h1p = (h1 < height1 - 1) ? 1 : 0;
+		const T h1lambda = h1r - h1;
+		const T h0lambda = T(1.0) - h1lambda;
+		//
+		const float w1r = rwidth * w2;
+		const int w1 = w1r;
+		const int w1p = (w1 < width1 - 1) ? 1 : 0;
+		const T w1lambda = w1r - w1;
+		const T w0lambda = T(1.0) - w1lambda;
+		// 
+		// Unpacked only.
+		{
+			const T* pos1 = &data1[(y1 + h1) * Width1 + (x1 + w1)];
+			T* pos2 = &data2[(y2 + h2) * Width2 + (x2 + w2)];
+
+			for (int c = 0; c < channels; c++)
+			{
+				pos2[0] =
+					h0lambda * (w0lambda * pos1[0]            + w1lambda * pos1[w1p]) +
+					h1lambda * (w0lambda * pos1[h1p * Width1] + w1lambda * pos1[h1p * Width1 + w1p]);
+				pos1 += Width1 * Height1;
+				pos2 += Width2 * Height2;
+			}
+		}
+	}
+}
+
+// Backward (adjoint) operation 1 <- 2 (accumulates)
+template <typename T>
+__global__ void interp2_bwd_kernel(const int n, const T rheight, const T rwidth, const int channels,
+	      T* data1, const int x1, const int y1, const int height1, const int width1, const int Height1, const int Width1,
+	const T* data2, const int x2, const int y2, const int height2, const int width2, const int Height2, const int Width2)
+{
+	int index = threadIdx.x + blockIdx.x * blockDim.x;
+	if (index < n)
+	{
+		const int w2 = index % width2; // 0:width2 - 1
+		const int h2 = index % height2; // 0:height2 - 1
+
+		// special case: just copy
+		if (height1 == height2 && width1 == width2)
+		{
+			const int h1 = h2;
+			const int w1 = w2;
+
+			// Unpacked only.
+			{
+				T* pos1 = &data1[(y1 + h1) * Width1 + (x1 + w1)];
+				const T* pos2 = &data2[(y2 + h2) * Width2 + (x2 + w2)];
+
+				for (int c = 0; c < channels; c++)
+				{
+					pos1[0] += pos2[0];
+					pos1 += Width1 * Height1;
+					pos2 += Width2 * Height2;
+				}
+			}
+
+			return;
+		}
+		//
+		const float h1r = rheight * h2;
+		const int h1 = h1r;
+		const int h1p = (h1 < height1 - 1) ? 1 : 0;
+		const T h1lambda = h1r - h1;
+		const T h0lambda = T(1.0) - h1lambda;
+		//
+		const float w1r = rwidth * w2;
+		const int w1 = w1r;
+		const int w1p = (w1 < width1 - 1) ? 1 : 0;
+		const T w1lambda = w1r - w1;
+		const T w0lambda = T(1.0) - w1lambda;
+		// 
+		// Unpacked only.
+		{
+			T* pos1 = &data1[(y1 + h1) * Width1 + (x1 + w1)];
+			const T* pos2 = &data2[(y2 + h2) * Width2 + (x2 + w2)];
+
+			for (int c = 0; c < channels; c++)
+			{
+				math_atomic_add(h0lambda * w0lambda * pos2[0], &pos1[0]);
+				math_atomic_add(h0lambda * w1lambda * pos2[0], &pos1[w1p]);
+				math_atomic_add(h1lambda * w0lambda * pos2[0], &pos1[h1p * Width1]);
+				math_atomic_add(h1lambda * w1lambda * pos2[0], &pos1[h1p * Width1 + w1p]);
+
+				pos1 += Width1 * Height1;
+				pos2 += Width2 * Height2;
+			}
+		}
+	}
+}
+
+
+template <class T>
+long Math<T>::interp2(int nC, long hX, int nX1, int nY1, int nH1, int nW1, int nH1B, int nW1B, long hY, int nX2, int nY2, int nH2, int nW2, int nH2B, int nW2B, bool bBwd)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	T* x = (T*)pX->Data();
+	T* y = (T*)pY->Data();
+
+	const T rheight = (nH2 > 1) ? (T)(nH1 - 1) / (nH2 - 1) : T(0.0);
+	const T rwidth = (nW2 > 1) ? (T)(nW1 - 1) / (nW2 - 1) : T(0.0);
+	const int n = nH2 * nW2;
+
+	if (bBwd)
+	{
+		interp2_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, rheight, rwidth, nC,
+			x, nX1, nY1, nH1, nW1, nH1B, nW1B,
+			y, nX2, nY2, nH2, nW2, nH2B, nW2B);
+
+	}
+	else
+	{		
+		interp2_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, rheight, rwidth, nC,
+			x, nX1, nY1, nH1, nW1, nH1B, nW1B,
+			y, nX2, nY2, nH2, nW2, nH2B, nW2B);
+	}
+
+	return cudaStreamSynchronize(0);
+
+}
+
+template long Math<double>::interp2(int nC, long hX, int nX1, int nY1, int nH1, int nW1, int nH1B, int nW1B, long hY, int nX2, int nY2, int nH2, int nW2, int nH2B, int nW2B, bool bBwd);
+template long Math<float>::interp2(int nC, long hX, int nX1, int nY1, int nH1, int nW1, int nH1B, int nW1B, long hY, int nX2, int nY2, int nH2, int nW2, int nH2B, int nW2B, bool bBwd);
+
+
 template <typename T>
 __global__ void add_scalar_kernel(const int n, const T alpha, T* y)
 {

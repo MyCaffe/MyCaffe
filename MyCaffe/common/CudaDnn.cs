@@ -1065,6 +1065,8 @@ namespace MyCaffe.common
             CUDA_TRANSPOSE = 261,
             CUDA_SCALE_TO_RANGE = 262,
 
+            CUDA_INTERP2 = 265,
+
             CUDA_MULBSX = 270,
             CUDA_DIVBSX = 271,
 
@@ -6270,6 +6272,39 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SCALE_TO_RANGE, m_param.AsDouble(n, hX, hY, fMin, fMax));
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SCALE_TO_RANGE, m_param.AsFloat(n, hX, hY, (float)fMin, (float)fMax));
+        }
+
+        /// <summary>
+        /// Interpolates between two sizes within the spatial dimensions.
+        /// </summary>
+        /// <param name="nChannels">Specifies the channels (usually num * channels)</param>
+        /// <param name="hData1">Specifies the input data when bBwd=false and the output data when bBwd=true.</param>
+        /// <param name="nX1">Specifies the offset along the x axis for data1.</param>
+        /// <param name="nY1">Specifies the offset along the y axis for data1.</param>
+        /// <param name="nHeight1">Specifies the effective height for data1.</param>
+        /// <param name="nWidth1">Specifies the effective width for data1.</param>
+        /// <param name="nHeight1A">Specifies the input height for data1.</param>
+        /// <param name="nWidth1A">Specifies the input width for data1.</param>
+        /// <param name="hData2">Specifies the output data when bBwd=false and the input data when bBwd=true.</param>
+        /// <param name="nX2">Specifies the offset along the x axis for data2.</param>
+        /// <param name="nY2">Specifies the offset along the y axis for data2.</param>
+        /// <param name="nHeight2">Specifies the effective height for data2.</param>
+        /// <param name="nWidth2">Specifies the effective width for data2.</param>
+        /// <param name="nHeight2B">Specifies the output height for data2.</param>
+        /// <param name="nWidth2B">Specifies the output width for data2.</param>
+        /// <param name="bBwd">Optionally, specifies to perform the backward operation from data2 to data1, otherwise the operation performs on data1 to data2. (default = false).</param>
+        public void interp2(int nChannels, long hData1, int nX1, int nY1, int nHeight1, int nWidth1, int nHeight1A, int nWidth1A, long hData2, int nX2, int nY2, int nHeight2, int nWidth2, int nHeight2B, int nWidth2B, bool bBwd = false)
+        {
+            if (!(nX1 >= 0 && nY1 >= 0 && nHeight1 > 0 && nWidth1 > 0 && nX2 >= 0 && nY2 >= 0 && nHeight2 > 0 && nWidth2 > 0))
+                throw new ArgumentOutOfRangeException("interp2: Invalid arguments found.");
+
+            if (!(nWidth1A >= nWidth1 + nX1 && nHeight1A >= nHeight1 + nY1 && nWidth2B >= nWidth2 + nX2 && nHeight2B >= nHeight2 + nY2))
+                throw new ArgumentOutOfRangeException("interp2: Invalid arguments found.");
+
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_INTERP2, m_param.AsDouble(nChannels, hData1, nX1, nY1, nHeight1, nWidth1, nHeight1A, nWidth1A, hData2, nX2, nY2, nHeight2, nWidth2, nHeight2B, nWidth2B, (bBwd) ? 1 : 0));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_INTERP2, m_param.AsFloat(nChannels, hData1, nX1, nY1, nHeight1, nWidth1, nHeight1A, nWidth1A, hData2, nX2, nY2, nHeight2, nWidth2, nHeight2B, nWidth2B, (bBwd) ? 1 : 0));
         }
 
         /// <summary>
