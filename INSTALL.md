@@ -9,8 +9,8 @@ Install CUDA 11.5.0 as shown below.
 </br>2.) Install the NVIDIA cuDNN 8.5.0 Accelerated Libraries for CUDA 11.5.0 on Windows 10 from https://developer.nvidia.com/cuDNN.
 </br>3.) Create a new directory off your <b><i>$(CUDA_PATH_V11_5)</i></b> installation location named <b><i>cudann_11.5-win-v8.3.0.98</i></b> and copy the cuDNN <b><i>cudnn.h</i></b> and <b><i>cudnn.lib</i></b> files into it.
 </br>4.) Copy the <b><i>cudnn64_8.dll</i></b> and associated DLL files into the <b><i>$(CUDA_PATH_V11_5)\bin</i></b> directory.
-</br>5.) Install the NVIDIA NVAPI (r470) from https://developer.nvidia.com/nvapi.
-</br>6.) Create a new directory off your <b><i>$(CUDA_PATH_V11_5)</i></b> installation location named <b><i>nvapi_470</i></b> and copy the NVAPI header and library files into it.
+</br>5.) Install the NVIDIA NVAPI (r495) from https://developer.nvidia.com/nvapi.
+</br>6.) Create a new directory off your <b><i>$(CUDA_PATH_V11_5)</i></b> installation location named <b><i>nvapi_495</i></b> and copy the NVAPI header and library files into it.
 </br>
 </br>NOTE: The CudaDnnDLL project points to the file directories noted above for the cuDNN include and library files.  
 
