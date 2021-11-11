@@ -25,6 +25,7 @@ available under the Apache 2.0 License.
 </br>
 
 NOTE: Compute 5.3 and above required for CUDA 11.4.2/cuDNN 8.2.3 when using __half sized memory.
+NOTE: Only compute 5.2 and above are supported in CUDA 11.5.0/cuDNN 8.3.0 due to CUDA 11.5 phase-out.
 
 <b>For detailed notes on building MyCaffe, please see the <a href="https://github.com/MyCaffe/MyCaffe/blob/master/INSTALL.md">INSTALL.md</a> file.</b>
 
