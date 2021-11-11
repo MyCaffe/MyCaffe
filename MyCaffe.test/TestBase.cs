@@ -95,6 +95,7 @@ namespace MyCaffe.test
 
             string strPath = CudaPath;
             CudaDnn<float>.SetDefaultCudaPath(strPath);
+            CudaDnn<double>.SetDefaultCudaPath(strPath);
 
             m_strName = strName;
 
