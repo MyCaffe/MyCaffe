@@ -286,6 +286,10 @@ namespace MyCaffe.param
             /// </summary>
             INPUT,
             /// <summary>
+            /// Initializes a parameter for the InterpLayer.
+            /// </summary>
+            INTERP,
+            /// <summary>
             /// Initializes a parameter for the LabelMappingLayer.
             /// </summary>
             LABELMAPPING,
@@ -1118,6 +1122,12 @@ namespace MyCaffe.param
                     expected_top.Add("data");
                     expected_top.Add("label");
                     m_rgLayerParameters[LayerType.INPUT] = new InputParameter();
+                    break;
+
+                case LayerType.INTERP:
+                    expected_top.Add("input");
+                    expected_top.Add("interp");
+                    m_rgLayerParameters[lt] = new InterpParameter();
                     break;
 
                 case LayerType.LABELMAPPING:
@@ -1968,6 +1978,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initializing the LayerType.INTERP
+        /// </summary>
+        public InterpParameter interp_param
+        {
+            get { return (InterpParameter)m_rgLayerParameters[LayerType.INTERP]; }
+            set { m_rgLayerParameters[LayerType.INTERP] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.KNN
         /// </summary>
         public KnnParameter knn_param
@@ -2640,6 +2659,9 @@ namespace MyCaffe.param
                 case LayerType.INPUT:
                     return "Input";
 
+                case LayerType.INTERP:
+                    return "Interp";
+
                 case LayerType.KNN:
                     return "Knn";
 
@@ -2931,6 +2953,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(data_sequence_param, "data_sequence_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(decode_param, "decode_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gather_param, "gather_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(interp_param, "interp_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(knn_param, "knn_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(lstm_attention_param, "lstm_attention_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(merge_param, "merge_param"));
@@ -3227,6 +3250,9 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("gather_param")) != null)
                 p.gather_param = GatherParameter.FromProto(rpp);
 
+            if ((rpp = rp.FindChild("interp_param")) != null)
+                p.interp_param = InterpParameter.FromProto(rpp);
+
             if ((rpp = rp.FindChild("knn_param")) != null)
                 p.knn_param = KnnParameter.FromProto(rpp);
 
@@ -3500,6 +3526,9 @@ namespace MyCaffe.param
 
                 case "input":
                     return LayerType.INPUT;
+
+                case "interp":
+                    return LayerType.INTERP;
 
                 case "knn":
                     return LayerType.KNN;

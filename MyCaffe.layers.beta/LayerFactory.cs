@@ -55,6 +55,9 @@ namespace MyCaffe.layers.beta
                 case LayerParameter.LayerType.GRN:
                     return new GRNLayer<double>(cuda, log, p);
 
+                case LayerParameter.LayerType.INTERP:
+                    return new InterpLayer<double>(cuda, log, p);
+
                 case LayerParameter.LayerType.KNN:
                     return new KnnLayer<double>(cuda, log, p);
 
@@ -132,6 +135,9 @@ namespace MyCaffe.layers.beta
 
                 case LayerParameter.LayerType.GRN:
                     return new GRNLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.INTERP:
+                    return new InterpLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.KNN:
                     return new KnnLayer<float>(cuda, log, p);
