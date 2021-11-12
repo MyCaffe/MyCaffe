@@ -311,6 +311,21 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Add a new or Set an existing RawImage parameter.
+        /// </summary>
+        /// <param name="nSrcID">Specifies the source ID.</param>
+        /// <param name="nRawImageID">Specifies the ID of the RawImage.</param>
+        /// <param name="strName">Specifies the name of the parameter.</param>
+        /// <param name="strValue">Specifies the value of the parameter.</param>
+        /// <param name="dfVal">Specifies the numeric value of the parameter (default = null).</param>
+        /// <param name="rgData">Optionally, specifies raw data to associate with the RawImage (default = null).</param>
+        /// <returns>The ID of the parameter is returned.</returns>
+        public int SetRawImageParameter(int nSrcID, int nRawImageID, string strName, string strValue, double? dfVal = null, byte[] rgData = null)
+        {
+            return m_db.SetRawImageParameter(nSrcID, nRawImageID, strName, strValue, dfVal, rgData);
+        }
+
+        /// <summary>
         /// Set the RawImage parameter for all RawImages with the given time-stamp in the data source.
         /// </summary>
         /// <param name="dt">Specifies the time-stamp.</param>
