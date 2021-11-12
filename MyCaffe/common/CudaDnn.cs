@@ -9675,12 +9675,12 @@ namespace MyCaffe.common
         {
         }
 
-        public double[] AsDouble(params double[] rg)
+        public double[] AsDouble(params double[] rg) /** @private */
         {
             return rg;
         }
 
-        public float[] AsFloat(params float[] rg)
+        public float[] AsFloat(params float[] rg) /** @private */
         {
             return rg;
         }
