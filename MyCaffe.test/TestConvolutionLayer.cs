@@ -965,7 +965,7 @@ namespace MyCaffe.test
             get { return m_ref_blob_top; }
         }
 
-        public void caffe_conv(Blob<T> blobIn, ConvolutionParameter cp, BlobCollection<T> colBlobWeights, Blob<T> blobOut)
+        public static void caffe_conv(Log log, Blob<T> blobIn, ConvolutionParameter cp, BlobCollection<T> colBlobWeights, Blob<T> blobOut)
         {
             bool bHasDepth = (blobOut.num_axes == 5) ? true : false;
             int nHasDepth = 1;
@@ -973,7 +973,7 @@ namespace MyCaffe.test
             if (!bHasDepth)
             {
                 nHasDepth = 0;
-                m_log.CHECK_EQ(4.0, blobOut.num_axes, "Without depth the blobOut must have 4 axes.");
+                log.CHECK_EQ(4.0, blobOut.num_axes, "Without depth the blobOut must have 4 axes.");
             }
 
             // Kernel size
@@ -1276,7 +1276,7 @@ namespace MyCaffe.test
             }
 
             // Check against reference convolution;
-            caffe_conv(Bottom, p.convolution_param, colWeights1, MakeReferenceTop(Top));
+            caffe_conv(m_log, Bottom, p.convolution_param, colWeights1, MakeReferenceTop(Top));
             T[] rgRefTopData = TopRef.update_cpu_data();
             T[] rgTopData = Top.update_cpu_data();
 
@@ -1288,7 +1288,7 @@ namespace MyCaffe.test
                 EXPECT_NEAR(dfTop, dfTopRef, dfErr);
             }
 
-            caffe_conv(Bottom2, p.convolution_param, colWeights1, MakeReferenceTop(Top2));
+            caffe_conv(m_log, Bottom2, p.convolution_param, colWeights1, MakeReferenceTop(Top2));
             rgTopData = Top2.update_cpu_data();
             rgRefTopData = TopRef.update_cpu_data();
 
@@ -1347,7 +1347,7 @@ namespace MyCaffe.test
             layer.Forward(BottomVec, TopVec);
 
             // Check against reference convolution;
-            caffe_conv(Bottom, p.convolution_param, layer.blobs, MakeReferenceTop(Top));
+            caffe_conv(m_log, Bottom, p.convolution_param, layer.blobs, MakeReferenceTop(Top));
             T[] rgTopData = Top.update_cpu_data();
             T[] rgRefTopData = TopRef.update_cpu_data();
 
@@ -1576,7 +1576,7 @@ namespace MyCaffe.test
             layer.Forward(BottomVec, TopVec);
 
             // Check against reference convolution;
-            caffe_conv(Bottom, p.convolution_param, layer.blobs, MakeReferenceTop(Top));
+            caffe_conv(m_log, Bottom, p.convolution_param, layer.blobs, MakeReferenceTop(Top));
             T[] rgTopData = Top.update_cpu_data();
             T[] rgRefTopData = TopRef.update_cpu_data();
 
@@ -1587,7 +1587,7 @@ namespace MyCaffe.test
                 EXPECT_NEAR(dfTop, dfTopRef, 1e-4);
             }
 
-            caffe_conv(Bottom2, p.convolution_param, layer.blobs, MakeReferenceTop(Top2));
+            caffe_conv(m_log, Bottom2, p.convolution_param, layer.blobs, MakeReferenceTop(Top2));
             rgTopData = Top2.update_cpu_data();
             rgRefTopData = TopRef.update_cpu_data();
 
@@ -1697,7 +1697,7 @@ namespace MyCaffe.test
             layer.Forward(BottomVec, TopVec);
 
             // Check against reference convolution;
-            caffe_conv(Bottom, p.convolution_param, layer.blobs, MakeReferenceTop(Top));
+            caffe_conv(m_log, Bottom, p.convolution_param, layer.blobs, MakeReferenceTop(Top));
             T[] rgTopData = Top.update_cpu_data();
             T[] rgRefTopData = TopRef.update_cpu_data();
 
@@ -1709,7 +1709,7 @@ namespace MyCaffe.test
                 EXPECT_NEAR(dfTop, dfTopRef, 1e-4);
             }
 
-            caffe_conv(Bottom2, p.convolution_param, layer.blobs, MakeReferenceTop(Top2));
+            caffe_conv(m_log, Bottom2, p.convolution_param, layer.blobs, MakeReferenceTop(Top2));
             rgTopData = Top2.update_cpu_data();
             rgRefTopData = TopRef.update_cpu_data();
 
@@ -1756,7 +1756,7 @@ namespace MyCaffe.test
             layer.Forward(BottomVec, TopVec);
 
             // Check against reference convolution;
-            caffe_conv(Bottom, p.convolution_param, layer.blobs, MakeReferenceTop(Top));
+            caffe_conv(m_log, Bottom, p.convolution_param, layer.blobs, MakeReferenceTop(Top));
             T[] rgTopData = Top.update_cpu_data();
             T[] rgRefTopData = TopRef.update_cpu_data();
 
@@ -1768,7 +1768,7 @@ namespace MyCaffe.test
                 EXPECT_NEAR(dfTop, dfTopRef, 1e-4);
             }
 
-            caffe_conv(Bottom2, p.convolution_param, layer.blobs, MakeReferenceTop(Top2));
+            caffe_conv(m_log, Bottom2, p.convolution_param, layer.blobs, MakeReferenceTop(Top2));
             rgTopData = Top2.update_cpu_data();
             rgRefTopData = TopRef.update_cpu_data();
 
@@ -1804,7 +1804,7 @@ namespace MyCaffe.test
             layer.Forward(BottomVec, TopVec);
 
             // Check against reference convolution;
-            caffe_conv(Bottom, p.convolution_param, layer.blobs, MakeReferenceTop(Top));
+            caffe_conv(m_log, Bottom, p.convolution_param, layer.blobs, MakeReferenceTop(Top));
             T[] rgTopData = Top.update_cpu_data();
             T[] rgRefTopData = TopRef.update_cpu_data();
 
