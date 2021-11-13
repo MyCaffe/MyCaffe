@@ -1027,6 +1027,11 @@ license and copyright terms herein.
 
   ** end DeepLab-Context license **
 
+  The MyCaffe ConvolutionOctaveLayer was inspired by implentation provided by
+  the GitHub project d-li14/octconv.pytorch located at https://github.com/d-li14/octconv.pytorch 
+  and licensed under the Apache 2.0 license located at 
+  (https://github.com/d-li14/octconv.pytorch/blob/master/LICENSE).
+
   The sample WAV file(s) 'How_I_Feel.x.wav' is distributed with permission from 
   CLOV15 Tunes LLC.  For more information on CLOV15, see https://soundcloud.com/clov15.
 
