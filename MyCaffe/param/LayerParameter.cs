@@ -166,6 +166,10 @@ namespace MyCaffe.param
             /// </summary>
             CONVOLUTION,
             /// <summary>
+            /// Initializes a parameter for the ConvolutionOctaveLayer.
+            /// </summary>
+            CONVOLUTION_OCTAVE,
+            /// <summary>
             /// Initializes a parameter for the CopyLayer.
             /// </summary>
             COPY,
@@ -912,6 +916,14 @@ namespace MyCaffe.param
                     expected_top.Add("label");
                     m_rgLayerParameters[LayerType.CONVOLUTION] = new ConvolutionParameter();
                     m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE_AND_TRAINING;
+                    break;
+
+                case LayerType.CONVOLUTION_OCTAVE:
+                    expected_bottom.Add("in_h");
+                    expected_bottom.Add("in_l");
+                    expected_top.Add("x_h");
+                    expected_top.Add("x_l");
+                    m_rgLayerParameters[LayerType.CONVOLUTION_OCTAVE] = new ConvolutionOctaveParameter();
                     break;
 
                 case LayerType.CROP:
@@ -1752,6 +1764,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.CONVOLUTION_OCTAVE
+        /// </summary>
+        public ConvolutionOctaveParameter convolution_octave_param
+        {
+            get { return (ConvolutionOctaveParameter)m_rgLayerParameters[LayerType.CONVOLUTION_OCTAVE]; }
+            set { m_rgLayerParameters[LayerType.CONVOLUTION_OCTAVE] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.CROP
         /// </summary>
         public CropParameter crop_param
@@ -2566,6 +2587,9 @@ namespace MyCaffe.param
                 case LayerType.CONVOLUTION:
                     return "Convolution";
 
+                case LayerType.CONVOLUTION_OCTAVE:
+                    return "ConvolutionOctave";
+
                 case LayerType.CROP:
                     return "Crop";
 
@@ -2950,6 +2974,7 @@ namespace MyCaffe.param
 
             // Beta layers.
             rgParam.Add(new KeyValuePair<BaseParameter, string>(attention_param, "attention_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(convolution_octave_param, "convolution_octave_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(data_sequence_param, "data_sequence_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(decode_param, "decode_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gather_param, "gather_param"));
@@ -3110,6 +3135,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("convolution_param")) != null)
                 p.convolution_param = ConvolutionParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("convolution_octave_param")) != null)
+                p.convolution_octave_param = ConvolutionOctaveParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("crop_param")) != null)
                 p.crop_param = CropParameter.FromProto(rpp);
@@ -3422,6 +3450,10 @@ namespace MyCaffe.param
 
                 case "convolution":
                     return LayerType.CONVOLUTION;
+
+                case "convolutionoctave":
+                case "convolution_octave":
+                    return LayerType.CONVOLUTION_OCTAVE;
 
                 case "crop":
                     return LayerType.CROP;
