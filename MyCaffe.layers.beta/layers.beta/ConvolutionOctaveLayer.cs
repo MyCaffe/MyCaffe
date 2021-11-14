@@ -40,6 +40,8 @@ namespace MyCaffe.layers.beta
         Blob<T> m_blob_x_l2h_us = null;
         BlobCollection<T> m_rgTop = new BlobCollection<T>();
         BlobCollection<T> m_rgBtm = new BlobCollection<T>();
+        long m_hWorkspaceData = 0;
+        ulong m_lWorkspaceSize = 0;
 
         /// <summary>
         /// The ConvolutionOctaveLayer constructor.
@@ -155,6 +157,12 @@ namespace MyCaffe.layers.beta
                 m_blob_x_l2h_us = null;
             }
 
+            if (m_hWorkspaceData != 0)
+            {
+                m_cuda.FreeMemory(m_hWorkspaceData);
+                m_hWorkspaceData = 0;
+            }
+
             base.dispose();
         }
 
@@ -242,6 +250,8 @@ namespace MyCaffe.layers.beta
                 nGroupTmp = (uint)Math.Ceiling(m_dfAlphaIn * nGroup);
                 convParam.convolution_param.group = (convParam.convolution_param.num_output % nGroupTmp == 0) ? nGroupTmp : 1;
                 m_conv_l2l = Layer<T>.Create(m_cuda, m_log, convParam, null);
+                m_conv_l2l.OnGetWorkspace += layer_OnGetWorkspace;
+                m_conv_l2l.OnSetWorkspace += layer_OnSetWorkspace;
             }
 
             // l2h Layer
@@ -252,6 +262,8 @@ namespace MyCaffe.layers.beta
                 convParam.convolution_param.num_output = nOutChannels - (uint)(m_dfAlphaOut * nOutChannels);
                 convParam.convolution_param.group = (convParam.convolution_param.num_output % nGroup == 0) ? nGroup : 1;
                 m_conv_l2h = Layer<T>.Create(m_cuda, m_log, convParam, null);
+                m_conv_l2h.OnGetWorkspace += layer_OnGetWorkspace;
+                m_conv_l2h.OnSetWorkspace += layer_OnSetWorkspace;
             }
 
             // h2l Layer
@@ -262,6 +274,8 @@ namespace MyCaffe.layers.beta
                 convParam.convolution_param.num_output = (uint)(m_dfAlphaOut * nOutChannels);
                 convParam.convolution_param.group = (convParam.convolution_param.num_output % nGroup == 0) ? nGroup : 1;
                 m_conv_h2l = Layer<T>.Create(m_cuda, m_log, convParam, null);
+                m_conv_h2l.OnGetWorkspace += layer_OnGetWorkspace;
+                m_conv_h2l.OnSetWorkspace += layer_OnSetWorkspace;
             }
 
             // h2h Layer
@@ -272,6 +286,8 @@ namespace MyCaffe.layers.beta
                 nGroupTmp = (uint)Math.Ceiling(nGroup - m_dfAlphaIn * nGroup);
                 convParam.convolution_param.group = (convParam.convolution_param.num_output % nGroupTmp == 0) ? nGroupTmp : 1;
                 m_conv_h2h = Layer<T>.Create(m_cuda, m_log, convParam, null);
+                m_conv_h2h.OnGetWorkspace += layer_OnGetWorkspace;
+                m_conv_h2h.OnSetWorkspace += layer_OnSetWorkspace;
             }
 
             if (colBottom.Count > 1)
@@ -312,6 +328,27 @@ namespace MyCaffe.layers.beta
             }
 
             setup(colBottom, colTop);
+        }
+
+        private void layer_OnSetWorkspace(object sender, WorkspaceArgs e)
+        {
+            if (e.Size < m_lWorkspaceSize)
+                return;
+
+            m_lWorkspaceSize = e.Size;
+            m_cuda.DisableGhostMemory();
+
+            if (m_hWorkspaceData != 0)
+                m_cuda.FreeMemory(m_hWorkspaceData);
+
+            m_hWorkspaceData = m_cuda.AllocMemory((long)m_lWorkspaceSize);
+            m_cuda.ResetGhostMemory();
+        }
+
+        private void layer_OnGetWorkspace(object sender, WorkspaceArgs e)
+        {
+            e.Data = m_hWorkspaceData;
+            e.Size = m_lWorkspaceSize;
         }
 
         private void setupBtmTop(Blob<T> btm, Blob<T> top)
