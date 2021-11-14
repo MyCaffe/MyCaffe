@@ -14,7 +14,10 @@ namespace MyCaffe.layers.beta
     /// </summary>
     /// <remarks>
     /// The target size is specified in terms of pixels where the start and end pixels of the
-    /// input are mapped to the start and end pixels of the output.</remarks>
+    /// input are mapped to the start and end pixels of the output.
+    /// 
+    /// @see [TheLegendAli/DeepLab-Context](https://github.com/TheLegendAli/DeepLab-Context) GitHub
+    /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class InterpLayer<T> : Layer<T>
     {
@@ -97,8 +100,8 @@ namespace MyCaffe.layers.beta
             {
                 int nZoomFactor = m_param.interp_param.zoom_factor.Value;
                 m_log.CHECK_GE(nZoomFactor, 1, "The zoom factor must be positive.");
-                m_nHeightOut = m_nHeightInEff + (m_nHeightInEff - 1) * (nZoomFactor - 1);
-                m_nWidthOut = m_nWidthInEff + (m_nWidthInEff - 1) * (nZoomFactor - 1);
+                m_nHeightOut = m_nHeightInEff + (m_nHeightInEff /*- 1*/) * (nZoomFactor - 1);
+                m_nWidthOut = m_nWidthInEff + (m_nWidthInEff /*- 1*/) * (nZoomFactor - 1);
             }
             else if (m_param.interp_param.shrink_factor.HasValue)
             {
