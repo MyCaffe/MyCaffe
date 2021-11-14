@@ -380,7 +380,7 @@ namespace MyCaffe.layers.beta
                 {
                     setupBtmTop(m_blob_x_l_ds, m_blob_x_l2l);
                     m_conv_l2l.LayerSetUp(m_rgBtm, m_rgTop);
-                    m_conv_l2l.LayerSetUp(m_rgBtm, m_rgTop);
+                    m_conv_l2l.Reshape(m_rgBtm, m_rgTop);
                     m_colBlobs.Add(m_conv_l2l.blobs);
                 }
 
@@ -611,7 +611,7 @@ namespace MyCaffe.layers.beta
                     m_blob_x_l2h.CopyFrom(m_blob_x_l2h_us, true);
                 }
 
-                setupBtmTop(m_blob_x_l, m_blob_x_l2h);
+                setupBtmTop(m_blob_x_l_ds, m_blob_x_l2h);
                 m_conv_l2h.Backward(m_rgTop, rgbPropagateDown, m_rgBtm);
 
                 if (m_dfAlphaOut > 0)
