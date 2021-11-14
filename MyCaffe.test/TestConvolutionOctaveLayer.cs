@@ -475,6 +475,8 @@ namespace MyCaffe.test
     {
         Blob<T> m_blob_bottom2;
         Blob<T> m_blob_top2;
+        long m_hWorkspaceData = 0;
+        ulong m_lWorkspaceSize = 0;
 
         public ConvolutionOctaveLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, new List<int>() { 2, 3, 24, 24 }, nDeviceID)
@@ -492,6 +494,12 @@ namespace MyCaffe.test
         {
             m_blob_bottom2.Dispose();
             m_blob_top2.Dispose();
+
+            if (m_hWorkspaceData != 0)
+            {
+                m_cuda.FreeMemory(m_hWorkspaceData);
+                m_hWorkspaceData = 0;
+            }
 
             base.dispose();
         }
@@ -639,19 +647,42 @@ namespace MyCaffe.test
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION_OCTAVE);
             p.convolution_octave_param.engine = m_engine;
-            p.convolution_octave_param.kernel_size.Add(3);
-            p.convolution_octave_param.stride.Add(2);
+            p.convolution_octave_param.kernel_size.Add(1);
+            p.convolution_octave_param.stride.Add(1);
+            p.convolution_octave_param.pad.Add(0);
             p.convolution_octave_param.num_output = 10;
             p.convolution_octave_param.alpha_out = dfAlpha;
             p.convolution_octave_param.cudnn_enable_tensor_cores = false;
             p.convolution_octave_param.bias_term = false;
 
             ConvolutionOctaveLayer<T> layer = new ConvolutionOctaveLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
+            layer.OnGetWorkspace += layer_OnGetWorkspace;
+            layer.OnSetWorkspace += layer_OnSetWorkspace;
 
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
             checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
             layer.Dispose();
+        }
+
+        private void layer_OnSetWorkspace(object sender, WorkspaceArgs e)
+        {
+            if (e.Size < m_lWorkspaceSize)
+                return;
+
+            m_lWorkspaceSize = e.Size;
+            m_cuda.DisableGhostMemory();
+
+            if (m_hWorkspaceData != 0)
+                m_cuda.FreeMemory(m_hWorkspaceData);
+
+            m_hWorkspaceData = m_cuda.AllocMemory((long)m_lWorkspaceSize);
+            m_cuda.ResetGhostMemory();
+        }
+
+        private void layer_OnGetWorkspace(object sender, WorkspaceArgs e)
+        {
+            e.Data = m_hWorkspaceData;
+            e.Size = m_lWorkspaceSize;
         }
     }
 }
