@@ -3213,6 +3213,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestInterp2()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+
+            try
+            {
+                foreach (ITestCudaDnn t in test.Tests)
+                {
+                    t.TestInterp2();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestHammingDistance()
         {
             CudaDnnTest test = new CudaDnnTest();
@@ -3456,6 +3474,7 @@ namespace MyCaffe.test
         void TestGemv();
         void TestSum();
         void TestSum2();
+        void TestInterp2();
         void TestMemoryTestByBlock();
         void TestMemoryTestAll();
         void TestMemoryPointers();
@@ -3938,6 +3957,36 @@ namespace MyCaffe.test
             double dfExpected = rgData.Sum();
 
             m_log.EXPECT_NEAR_FLOAT(dfExpected, rgResult[0], 0.002, "The values to not match!");
+        }
+
+        public void TestInterp2()
+        {
+            double[] rgData = new double[]
+            {
+                1, 2, 3, 4, 5,
+
+                1.1, 2.1, 3.1, 4.1, 5.1,
+
+                1.2, 2.2, 3.2, 4.2, 5.2,
+            };
+
+            int nH = 2;
+            int nW = 10;
+            int nH1 = 1;
+            int nW1 = 5;
+            int nNum = 1;
+            int nChannels = 3;
+
+            m_B.Reshape(nNum, nChannels, nH, nW);
+            m_A.Reshape(nNum, nChannels, nH1, nW1);
+            m_A.mutable_cpu_data = convert(rgData);
+
+            m_cuda.interp2(nNum * nChannels, m_B.gpu_data, 0, 0, nH, nW, nH, nW, m_A.mutable_gpu_data, 0, 0, nH1, nW1, nH1, nW1, true);
+            m_cuda.interp2(nNum * nChannels, m_B.gpu_data, 0, 0, nH1, nW1, nH1, nW1, m_A.mutable_gpu_diff, 0, 0, nH, nW, nH, nW, false);
+
+            double[] rgB = convert(m_B.mutable_cpu_data);
+            double[] rgA1 = convert(m_A.mutable_cpu_data);
+            double[] rgA2 = convert(m_A.mutable_cpu_diff);
         }
 
         public void TestMemoryTestByBlock()
