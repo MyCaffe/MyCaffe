@@ -364,6 +364,10 @@ namespace MyCaffe.layers
                 int nInputDim = input_shape(i + 1);
                 int nKernelExtent = nDilation * (nKernel - 1) + 1;
                 int nOutputDim = (nInputDim + 2 * nPad - nKernelExtent) / nStride + 1;
+
+                if (nOutputDim == 0)
+                    nOutputDim = 1;
+
                 m_rgOutputShape.Add(nOutputDim);
             }
         }
