@@ -54,6 +54,9 @@ namespace MyCaffe.layers.beta
             m_type = LayerParameter.LayerType.CONVOLUTION_OCTAVE;
         }
 
+        /// <summary>
+        /// Release all resources used.
+        /// </summary>
         protected override void dispose()
         {
             if (m_downsampleLayer != null)
@@ -217,7 +220,6 @@ namespace MyCaffe.layers.beta
             interpParam.interp_param.zoom_factor = 2;
             m_upsampleLayer = Layer<T>.Create(m_cuda, m_log, interpParam, null);
 
-
             LayerParameter convParamBase = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
             convParamBase.convolution_param.engine = m_param.convolution_octave_param.engine;
             convParamBase.convolution_param.kernel_size = m_param.convolution_octave_param.kernel_size;
@@ -235,6 +237,7 @@ namespace MyCaffe.layers.beta
             if (colBottom.Count > 1 && m_dfAlphaOut > 0)
             {
                 LayerParameter convParam = convParamBase.Clone(false);
+                convParam.name = "l2l conv";
                 convParam.convolution_param.num_output = (uint)(m_dfAlphaOut * nOutChannels);
                 nGroupTmp = (uint)Math.Ceiling(m_dfAlphaIn * nGroup);
                 convParam.convolution_param.group = (convParam.convolution_param.num_output % nGroupTmp == 0) ? nGroupTmp : 1;
@@ -245,6 +248,7 @@ namespace MyCaffe.layers.beta
             if (colBottom.Count > 1)
             {
                 LayerParameter convParam = convParamBase.Clone(false);
+                convParam.name = "l2h conv";
                 convParam.convolution_param.num_output = nOutChannels - (uint)(m_dfAlphaOut * nOutChannels);
                 convParam.convolution_param.group = (convParam.convolution_param.num_output % nGroup == 0) ? nGroup : 1;
                 m_conv_l2h = Layer<T>.Create(m_cuda, m_log, convParam, null);
@@ -254,6 +258,7 @@ namespace MyCaffe.layers.beta
             if (m_dfAlphaOut > 0)
             {
                 LayerParameter convParam = convParamBase.Clone(false);
+                convParam.name = "h2l conv";
                 convParam.convolution_param.num_output = (uint)(m_dfAlphaOut * nOutChannels);
                 convParam.convolution_param.group = (convParam.convolution_param.num_output % nGroup == 0) ? nGroup : 1;
                 m_conv_h2l = Layer<T>.Create(m_cuda, m_log, convParam, null);
@@ -262,6 +267,7 @@ namespace MyCaffe.layers.beta
             // h2h Layer
             {
                 LayerParameter convParam = convParamBase.Clone(false);
+                convParam.name = "h2h conv";
                 convParam.convolution_param.num_output = nOutChannels - (uint)(m_dfAlphaOut * nOutChannels);
                 nGroupTmp = (uint)Math.Ceiling(nGroup - m_dfAlphaIn * nGroup);
                 convParam.convolution_param.group = (convParam.convolution_param.num_output % nGroupTmp == 0) ? nGroupTmp : 1;
@@ -271,28 +277,38 @@ namespace MyCaffe.layers.beta
             if (colBottom.Count > 1)
             {
                 LayerParameter eltAdd = new LayerParameter(LayerParameter.LayerType.ELTWISE);
+                eltAdd.name = "eltadd";
                 eltAdd.eltwise_param.operation = EltwiseParameter.EltwiseOp.SUM;
                 m_add = Layer<T>.Create(m_cuda, m_log, eltAdd, null);
             }
 
             // process high frequency.
             m_blob_x_h = new Blob<T>(m_cuda, m_log);
+            m_blob_x_h.Name = "x_h";
             m_blob_x_h2h = new Blob<T>(m_cuda, m_log);
+            m_blob_x_h2h.Name = "x_h2h";
 
             if (m_dfAlphaOut > 0)
             {
                 m_blob_x_h_ds = new Blob<T>(m_cuda, m_log);
+                m_blob_x_h_ds.Name = "x_h_ds";
                 m_blob_x_h2l = new Blob<T>(m_cuda, m_log);
+                m_blob_x_h2l.Name = "x_h2l";
             }
 
             // process low frequency.
             if (colBottom.Count > 1)
             {
                 m_blob_x_l = new Blob<T>(m_cuda, m_log);
+                m_blob_x_l.Name = "x_l";
                 m_blob_x_l_ds = new Blob<T>(m_cuda, m_log);
+                m_blob_x_l_ds.Name = "x_l_ds";
                 m_blob_x_l2h = new Blob<T>(m_cuda, m_log);
+                m_blob_x_l2h.Name = "x_l2h";
                 m_blob_x_l2h_us = new Blob<T>(m_cuda, m_log);
+                m_blob_x_l2h_us.Name = "x_l2h_us";
                 m_blob_x_l2l = new Blob<T>(m_cuda, m_log);
+                m_blob_x_l2l.Name = "x_l2l";
             }
 
             setup(colBottom, colTop);
@@ -331,6 +347,7 @@ namespace MyCaffe.layers.beta
             setupBtmTop(m_blob_x_h, m_blob_x_h2h);
             m_conv_h2h.LayerSetUp(m_rgBtm, m_rgTop);
             m_conv_h2h.Reshape(m_rgBtm, m_rgTop);
+            m_colBlobs.Add(m_conv_h2h.blobs);
 
             if (m_dfAlphaOut > 0)
             {
@@ -341,6 +358,7 @@ namespace MyCaffe.layers.beta
                 setupBtmTop(m_blob_x_h_ds, m_blob_x_h2l);
                 m_conv_h2l.LayerSetUp(m_rgBtm, m_rgTop);
                 m_conv_h2l.Reshape(m_rgBtm, m_rgTop);
+                m_colBlobs.Add(m_conv_h2l.blobs);
             }
 
             if (colBottom.Count > 1)
@@ -363,11 +381,13 @@ namespace MyCaffe.layers.beta
                     setupBtmTop(m_blob_x_l_ds, m_blob_x_l2l);
                     m_conv_l2l.LayerSetUp(m_rgBtm, m_rgTop);
                     m_conv_l2l.LayerSetUp(m_rgBtm, m_rgTop);
+                    m_colBlobs.Add(m_conv_l2l.blobs);
                 }
 
                 setupBtmTop(m_blob_x_l, m_blob_x_l2h);
                 m_conv_l2h.LayerSetUp(m_rgBtm, m_rgTop);
                 m_conv_l2h.Reshape(m_rgBtm, m_rgTop);
+                m_colBlobs.Add(m_conv_l2h.blobs);
 
                 if (m_nStride == 1)
                 {
@@ -378,6 +398,16 @@ namespace MyCaffe.layers.beta
                 else
                 {
                     m_blob_x_l2h_us.ReshapeLike(m_blob_x_l2h);
+                }
+
+                setupBtmTop(m_blob_x_l2h_us, m_blob_x_h2h, colTop[0]);
+                m_add.LayerSetUp(m_rgBtm, m_rgTop);
+                m_add.Reshape(m_rgBtm, m_rgTop);
+
+                if (m_dfAlphaOut > 0)
+                {
+                    setupBtmTop(m_blob_x_h2l, m_blob_x_l2l, colTop[1]);
+                    m_add.Reshape(m_rgBtm, m_rgTop);
                 }
             }
         }
@@ -442,12 +472,23 @@ namespace MyCaffe.layers.beta
                 {
                     m_blob_x_l2h_us.ReshapeLike(m_blob_x_l2h);
                 }
+
+                setupBtmTop(m_blob_x_l2h_us, m_blob_x_h2h, colTop[0]);
+                m_add.Reshape(m_rgBtm, m_rgTop);
+
+                if (m_dfAlphaOut > 0)
+                {
+                    setupBtmTop(m_blob_x_h2l, m_blob_x_l2l, colTop[1]);
+                    m_add.Reshape(m_rgBtm, m_rgTop);
+                }
             }
+            else
+            {
+                colTop[0].ReshapeLike(m_blob_x_h2h);
 
-            colTop[0].ReshapeLike(m_blob_x_h2h);
-
-            if (m_dfAlphaOut > 0)
-                colTop[1].ReshapeLike(m_blob_x_l2l);
+                if (m_dfAlphaOut > 0)
+                    colTop[1].ReshapeLike(m_blob_x_h2l);
+            }
         }
 
         /// <summary>
@@ -463,7 +504,7 @@ namespace MyCaffe.layers.beta
         {
             if (m_nStride == 2)
             {
-                setupBtmTop(colBottom[0], m_blob_x_h);
+                setupBtmTop(colBottom[0], m_blob_x_h);              // x_h = self.downsample(bottom)
                 m_downsampleLayer.Forward(m_rgBtm, m_rgTop);
             }
             else
@@ -471,14 +512,14 @@ namespace MyCaffe.layers.beta
                 m_blob_x_h.CopyFrom(colBottom[0]);
             }
 
-            setupBtmTop(m_blob_x_h, m_blob_x_h2h);
+            setupBtmTop(m_blob_x_h, m_blob_x_h2h);                  // x_h2h = self_conv_h2h(x_h)      x_h2h -> x_h
             m_conv_h2h.Forward(m_rgBtm, m_rgTop);
 
             if (m_dfAlphaOut > 0)
             {
-                setupBtmTop(m_blob_x_h, m_blob_x_h_ds);
+                setupBtmTop(m_blob_x_h, m_blob_x_h_ds);             // tmp = self.downsample(x_h)       bwd tmp -> x_h
                 m_downsampleLayer.Forward(m_rgBtm, m_rgTop);
-                setupBtmTop(m_blob_x_h_ds, m_blob_x_h2l);
+                setupBtmTop(m_blob_x_h_ds, m_blob_x_h2l);           // m_h2l = self.conv_h2l(tmp)       bwd m_h2l -> tmp
                 m_conv_h2l.Forward(m_rgBtm, m_rgTop);
             }
 
@@ -533,6 +574,7 @@ namespace MyCaffe.layers.beta
                 if (m_dfAlphaOut > 0)
                     colTop[1].CopyFrom(m_blob_x_h2l);
             }
+
         }
 
         /// <summary>
@@ -593,7 +635,9 @@ namespace MyCaffe.layers.beta
             else
             {
                 m_blob_x_h2h.CopyFrom(colTop[0], true);
-                m_blob_x_h2l.CopyFrom(colTop[1], true);
+
+                if (m_dfAlphaOut > 0)
+                    m_blob_x_h2l.CopyFrom(colTop[1], true);
             }
 
             if (m_dfAlphaOut > 0)
