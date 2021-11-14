@@ -2580,7 +2580,7 @@ __global__ void interp2_fwd_kernel(const int n, const T rheight, const T rwidth,
 	if (index < n)
 	{
 		const int w2 = index % width2; // 0:width2 - 1
-		const int h2 = index % height2; // 0:height2 - 1
+		const int h2 = index / width2; // 0:height2 - 1
 		
 		// special case: just copy
 		if (height1 == height2 && width1 == width2)
@@ -2643,7 +2643,7 @@ __global__ void interp2_bwd_kernel(const int n, const T rheight, const T rwidth,
 	if (index < n)
 	{
 		const int w2 = index % width2; // 0:width2 - 1
-		const int h2 = index % height2; // 0:height2 - 1
+		const int h2 = index / width2; // 0:height2 - 1
 
 		// special case: just copy
 		if (height1 == height2 && width1 == width2)
