@@ -94,6 +94,18 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Add another BlobCollection to this one.
+        /// </summary>
+        /// <param name="rg">Specifies the blob collection to add.</param>
+        public void Add(BlobCollection<T> rg)
+        {
+            foreach (Blob<T> b in rg)
+            {
+                m_rgBlobs.Add(b);
+            }
+        }
+
+        /// <summary>
         /// If it exists, remove a Blob from the collection.
         /// </summary>
         /// <param name="b">Specifies the Blob.</param>
