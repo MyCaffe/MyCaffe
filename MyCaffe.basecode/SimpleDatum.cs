@@ -1081,6 +1081,52 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Scale the values by the scaling factor that raises each value by the specified power.
+        /// </summary>
+        /// <param name="dfScalePow">Specifies the scaling factor.</param>
+        /// <param name="dfMin">Optionally, specifies a minimum cutoff value.</param>
+        /// <param name="dfMax">Optionally, specifies a maximum cutoff value.</param>
+        public void ScalePow(double dfScalePow, double dfMin = -double.MaxValue, double dfMax = double.MaxValue)
+        {
+            if (m_rgByteData != null)
+            {
+                for (int i = 0; i < m_rgByteData.Length; i++)
+                {
+                    int nVal = (int)((double)Math.Pow(m_rgByteData[i], dfScalePow));
+                    if (nVal < (int)dfMin)
+                        nVal = (int)dfMin;
+                    else if (nVal > (int)dfMax)
+                        nVal = (int)dfMax;
+                    m_rgByteData[i] = (byte)nVal;
+                }
+            }
+
+            if (m_rgRealDataD != null)
+            {
+                for (int i = 0; i < m_rgRealDataD.Length; i++)
+                {
+                    m_rgRealDataD[i] = Math.Pow(m_rgRealDataD[i], dfScalePow);
+                    if (m_rgRealDataD[i] < dfMin)
+                        m_rgRealDataD[i] = dfMin;
+                    else if (m_rgRealDataD[i] > dfMax)
+                        m_rgRealDataD[i] = dfMax;
+                }
+            }
+
+            if (m_rgRealDataF != null)
+            {
+                for (int i = 0; i < m_rgRealDataF.Length; i++)
+                {
+                    m_rgRealDataF[i] = (float)(Math.Pow(m_rgRealDataF[i], dfScalePow));
+                    if (m_rgRealDataF[i] < dfMin)
+                        m_rgRealDataF[i] = (float)dfMin;
+                    else if (m_rgRealDataF[i] > dfMax)
+                        m_rgRealDataF[i] = (float)dfMax;
+                }
+            }
+        }
+
+        /// <summary>
         /// Copy another SimpleDatum into this one.
         /// </summary>
         /// <param name="d">Specifies the SimpleDatum to copy.</param>
@@ -2383,10 +2429,22 @@ namespace MyCaffe.basecode
             {
                 sw.Start();
 
+                int nCount = 0;
+                int nHeight = 0;
+                int nWidth = 0;
+                for (int i = 0; i < rgImg.Length && i < 100; i++)
+                {
+                    nHeight = Math.Max(nHeight, rgImg[i].Height);
+                    nWidth = Math.Max(nWidth, rgImg[i].Width);
+                }
+
                 for (int i = 0; i < rgImg.Length; i++)
                 {
                     if (rgImg[i] != null)
                     {
+                        if (rgImg[i].Height != nHeight || rgImg[i].Width != nWidth)
+                            continue;
+
                         if (rgImg[i].ByteData != null)
                         {
                             for (int n = 0; n < rgSums.Length; n++)
@@ -2413,6 +2471,8 @@ namespace MyCaffe.basecode
                             throw new Exception("No data in rgImg[" + i.ToString() + "]!");
                         }
 
+                        nCount++;
+
                         if (sw.Elapsed.TotalMilliseconds > 2000)
                         {
                             double dfPct = (double)i / (double)rgImg.Length;
@@ -2434,7 +2494,7 @@ namespace MyCaffe.basecode
 
                     for (int n = 0; n < rgSums.Length; n++)
                     {
-                        rgbMean[n] = (byte)(rgSums[n] / (float)rgImg.Length);
+                        rgbMean[n] = (byte)(rgSums[n] / (float)nCount);
                     }
 
                     SimpleDatum d = new SimpleDatum(rgImg[0], false);
@@ -2447,7 +2507,7 @@ namespace MyCaffe.basecode
 
                     for (int n = 0; n < rgSums.Length; n++)
                     {
-                        rgdfMean[n] = (double)rgSums[n] / rgImg.Length;
+                        rgdfMean[n] = (double)rgSums[n] / nCount;
                     }
 
                     SimpleDatum d = new SimpleDatum(rgImg[0], false);
@@ -2460,7 +2520,7 @@ namespace MyCaffe.basecode
 
                     for (int n = 0; n < rgSums.Length; n++)
                     {
-                        rgfMean[n] = (float)rgSums[n] / rgImg.Length;
+                        rgfMean[n] = (float)rgSums[n] / nCount;
                     }
 
                     SimpleDatum d = new SimpleDatum(rgImg[0], false);
