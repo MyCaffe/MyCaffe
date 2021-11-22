@@ -530,7 +530,7 @@ namespace MyCaffe.test
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION_OCTAVE);
             p.convolution_octave_param.engine = m_engine;
-            p.convolution_octave_param.kernel_size.Add(3);
+            p.convolution_octave_param.kernel_size.Add(1);
             p.convolution_octave_param.stride.Add(2);
             p.convolution_octave_param.num_output = 10;
             p.convolution_octave_param.alpha_out = dfAlpha;
@@ -547,8 +547,8 @@ namespace MyCaffe.test
             // h2h
             m_log.CHECK_EQ(2, TopVec[0].num, "The top[0] Blob<T> should have num = 2.");
             m_log.CHECK_EQ(nChannels, TopVec[0].channels, "The top[0] Blob<T> should have channels = " + nChannels.ToString() + ".");
-            m_log.CHECK_EQ(2, TopVec[0].height, "The top[0] Blob<T> should have height = 2.");
-            m_log.CHECK_EQ(2, TopVec[0].width, "The top[0] Blob<T> should have width = 2.");
+            m_log.CHECK_EQ(4, TopVec[0].height, "The top[0] Blob<T> should have height = 4.");
+            m_log.CHECK_EQ(4, TopVec[0].width, "The top[0] Blob<T> should have width = 4.");
 
             // h2l
             if (dfAlpha > 0)
@@ -556,8 +556,8 @@ namespace MyCaffe.test
                 m_log.CHECK_EQ(2, TopVec.Count, "The top vector should have 2 items.");
                 m_log.CHECK_EQ(2, TopVec[1].num, "The top[0] Blob<T> should have num = 2.");
                 m_log.CHECK_EQ(5, TopVec[1].channels, "The top[0] Blob<T> should have channels = 5.");
-                m_log.CHECK_EQ(1, TopVec[1].height, "The top[0] Blob<T> should have height = 4.");
-                m_log.CHECK_EQ(1, TopVec[1].width, "The top[0] Blob<T> should have width = 4.");
+                m_log.CHECK_EQ(2, TopVec[1].height, "The top[0] Blob<T> should have height = 2.");
+                m_log.CHECK_EQ(2, TopVec[1].width, "The top[0] Blob<T> should have width = 2.");
             }
 
             layer.Dispose();
@@ -570,8 +570,8 @@ namespace MyCaffe.test
             // h2h
             m_log.CHECK_EQ(2, TopVec[0].num, "The top[0] Blob<T> should have num = 2.");
             m_log.CHECK_EQ(nChannels, TopVec[0].channels, "The top[0] Blob<T> should have channels = " + nChannels.ToString() + ".");
-            m_log.CHECK_EQ(2, TopVec[0].height, "The top[0] Blob<T> should have height = 2.");
-            m_log.CHECK_EQ(2, TopVec[0].width, "The top[0] Blob<T> should have width = 2.");
+            m_log.CHECK_EQ(4, TopVec[0].height, "The top[0] Blob<T> should have height = 4.");
+            m_log.CHECK_EQ(4, TopVec[0].width, "The top[0] Blob<T> should have width = 4.");
 
             // h2l
             if (dfAlpha > 0)
@@ -579,8 +579,8 @@ namespace MyCaffe.test
                 m_log.CHECK_EQ(2, TopVec.Count, "The top vector should have 2 items.");
                 m_log.CHECK_EQ(2, TopVec[1].num, "The top[0] Blob<T> should have num = 2.");
                 m_log.CHECK_EQ(5, TopVec[1].channels, "The top[0] Blob<T> should have channels = 5.");
-                m_log.CHECK_EQ(1, TopVec[1].height, "The top[0] Blob<T> should have height = 4.");
-                m_log.CHECK_EQ(1, TopVec[1].width, "The top[0] Blob<T> should have width = 4.");
+                m_log.CHECK_EQ(2, TopVec[1].height, "The top[0] Blob<T> should have height = 2.");
+                m_log.CHECK_EQ(2, TopVec[1].width, "The top[0] Blob<T> should have width = 2.");
             }
         }
 
@@ -600,7 +600,7 @@ namespace MyCaffe.test
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION_OCTAVE);
             p.convolution_octave_param.engine = m_engine;
-            p.convolution_octave_param.kernel_size.Add(3);
+            p.convolution_octave_param.kernel_size.Add(1);
             p.convolution_octave_param.stride.Add(2);
             p.convolution_octave_param.num_output = 10;
             p.convolution_octave_param.alpha_out = dfAlpha;
@@ -619,8 +619,8 @@ namespace MyCaffe.test
             // h2h
             m_log.CHECK_EQ(2, TopVec[0].num, "The top[0] Blob<T> should have num = 2.");
             m_log.CHECK_EQ(nChannels, TopVec[0].channels, "The top[0] Blob<T> should have channels = " + nChannels.ToString() + ".");
-            m_log.CHECK_EQ(2, TopVec[0].height, "The top[0] Blob<T> should have height = 2.");
-            m_log.CHECK_EQ(2, TopVec[0].width, "The top[0] Blob<T> should have width = 2.");
+            m_log.CHECK_EQ(4, TopVec[0].height, "The top[0] Blob<T> should have height = 4.");
+            m_log.CHECK_EQ(4, TopVec[0].width, "The top[0] Blob<T> should have width = 4.");
 
             // h2l
             if (dfAlpha > 0)
@@ -628,8 +628,8 @@ namespace MyCaffe.test
                 m_log.CHECK_EQ(2, TopVec.Count, "The top vector should have 2 items.");
                 m_log.CHECK_EQ(2, TopVec[1].num, "The top[0] Blob<T> should have num = 2.");
                 m_log.CHECK_EQ(5, TopVec[1].channels, "The top[0] Blob<T> should have channels = 5.");
-                m_log.CHECK_EQ(1, TopVec[1].height, "The top[0] Blob<T> should have height = 4.");
-                m_log.CHECK_EQ(1, TopVec[1].width, "The top[0] Blob<T> should have width = 4.");
+                m_log.CHECK_EQ(2, TopVec[1].height, "The top[0] Blob<T> should have height = 2.");
+                m_log.CHECK_EQ(2, TopVec[1].width, "The top[0] Blob<T> should have width = 2.");
             }
         }
 
