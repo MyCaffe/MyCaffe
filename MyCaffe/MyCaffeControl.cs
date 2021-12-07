@@ -2504,12 +2504,20 @@ namespace MyCaffe
                 throw new Exception("The blob channels must match those of the testing dataset which has channels = " + m_dataSet.TestingSource.ImageChannels.ToString());
 
             int nHeight = (m_dataSet != null) ? m_dataSet.TestingSource.ImageHeight : m_loadToRunShape.dim[2];
-            if (blob.height != nHeight)
-                throw new Exception("The blob height must match those of the testing dataset which has height = " + m_dataSet.TestingSource.ImageHeight.ToString());
-
             int nWidth = (m_dataSet != null) ? m_dataSet.TestingSource.ImageWidth : m_loadToRunShape.dim[3];
+
+            if (m_dataTransformer.param.resize_param.Active)
+            {
+                List<int> rgShape = m_dataTransformer.InferBlobShape(nChannels, nWidth, nHeight);
+                nHeight = rgShape[2];
+                nWidth = rgShape[3];
+            }
+
+            if (blob.height != nHeight)
+                throw new Exception("The blob height must match those of the testing dataset which has height = " + nHeight.ToString());
+
             if (blob.width != nWidth)
-                throw new Exception("The blob width must match those of the testing dataset which as width = " + m_dataSet.TestingSource.ImageWidth.ToString());
+                throw new Exception("The blob width must match those of the testing dataset which as width = " + nWidth.ToString());
 
             m_dataTransformer.SetRange(blob);
 
