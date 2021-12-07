@@ -3098,22 +3098,33 @@ namespace MyCaffe.db.image
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
         /// <param name="nImageId">Specifies the ID of the RawImage to update.</param>
         /// <param name="annotations">Specifies the new annotations to update.</param>
-        public void UpdateDatasetImageAnnotations(int nSrcId, int nImageId, AnnotationGroupCollection annotations)
+        /// <param name="bSetLabelOnly">Specifies to only set the label.</param>
+        public void UpdateDatasetImageAnnotations(int nSrcId, int nImageId, AnnotationGroupCollection annotations, bool bSetLabelOnly)
         {
             using (DNNEntities entities = MyCaffe.db.image.EntitiesConnection.CreateEntities())
             {
                 List<RawImage> rgImg = entities.RawImages.Where(p => p.ID == nImageId).ToList();
                 if (rgImg.Count > 0)
                 {
-                    if (annotations.Count > 0)
+                    if (bSetLabelOnly)
                     {
-                        rgImg[0].DataCriteria = SimpleDatum.SaveAnnotationDataToDataCriteriaByteArray(SimpleDatum.ANNOTATION_TYPE.BBOX, annotations);
-                        rgImg[0].DataCriteriaFormatID = (int)SimpleDatum.DATA_FORMAT.ANNOTATION_DATA;
+                        if (annotations.Count > 0)
+                            rgImg[0].ActiveLabel = annotations[0].group_label;
+                        else
+                            rgImg[0].ActiveLabel = 0;
                     }
                     else
                     {
-                        rgImg[0].DataCriteria = null;
-                        rgImg[0].DataCriteriaFormatID = (int)SimpleDatum.DATA_FORMAT.NONE;
+                        if (annotations.Count > 0)
+                        {
+                            rgImg[0].DataCriteria = SimpleDatum.SaveAnnotationDataToDataCriteriaByteArray(SimpleDatum.ANNOTATION_TYPE.BBOX, annotations);
+                            rgImg[0].DataCriteriaFormatID = (int)SimpleDatum.DATA_FORMAT.ANNOTATION_DATA;
+                        }
+                        else
+                        {
+                            rgImg[0].DataCriteria = null;
+                            rgImg[0].DataCriteriaFormatID = (int)SimpleDatum.DATA_FORMAT.NONE;
+                        }
                     }
 
                     entities.SaveChanges();
