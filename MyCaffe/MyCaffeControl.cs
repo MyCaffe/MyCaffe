@@ -1966,6 +1966,7 @@ namespace MyCaffe
             List<Tuple<SimpleDatum, ResultCollection>> rgrgResults = new List<Tuple<SimpleDatum, ResultCollection>>();
             int nTotalCount = 0;
             int nMidPoint = 0;
+            bool bPad = true;
 
             Blob<T> blobData = null;
 
@@ -2002,7 +2003,7 @@ namespace MyCaffe
                         throw new Exception("NO DATA!");
                     }
 
-                    blobData = CreateDataBlob(sd, blobData, true);
+                    blobData = CreateDataBlob(sd, blobData, bPad);
                     List<ResultCollection> rgrgResults1 = Run(blobData, false);
                     ResultCollection rgResults = rgrgResults1[0];
 
@@ -2506,7 +2507,7 @@ namespace MyCaffe
             int nHeight = (m_dataSet != null) ? m_dataSet.TestingSource.ImageHeight : m_loadToRunShape.dim[2];
             int nWidth = (m_dataSet != null) ? m_dataSet.TestingSource.ImageWidth : m_loadToRunShape.dim[3];
 
-            if (m_dataTransformer.param.resize_param.Active)
+            if (m_dataTransformer.param.resize_param != null && m_dataTransformer.param.resize_param.Active)
             {
                 List<int> rgShape = m_dataTransformer.InferBlobShape(nChannels, nWidth, nHeight);
                 nHeight = rgShape[2];
