@@ -457,7 +457,7 @@ long Device<T>::GetDeviceInfo(int nDevice, LPTSTR* pszDevice, bool bVerbose)
 			fDriverVer = (float)v / 100.0f;
 
 		char szBuffer[1024];
-		_snprintf(szBuffer, 1023, "\r\n Major: %d, Minor: %d, Compute Mode: %d\r\n Max Grid: { %d, %d, %d }, Max Thread Dim: { %d, %d, %d }\r\n Shared Memory/Block: %zd\r\n Driver Version: %.2f", prop.major, prop.minor, prop.computeMode, prop.maxGridSize[0], prop.maxGridSize[1], prop.maxGridSize[2], prop.maxThreadsDim[0], prop.maxThreadsDim[1], prop.maxThreadsDim[2], prop.sharedMemPerBlock, fDriverVer);
+		_snprintf(szBuffer, 1023, ",\r\n Major: %d, Minor: %d, Compute Mode: %d,\r\n Max Grid: { %d, %d, %d }, Max Thread Dim: { %d, %d, %d },\r\n Shared Memory/Block: %zd,\r\n Driver Version: %.2f", prop.major, prop.minor, prop.computeMode, prop.maxGridSize[0], prop.maxGridSize[1], prop.maxGridSize[2], prop.maxThreadsDim[0], prop.maxThreadsDim[1], prop.maxThreadsDim[2], prop.sharedMemPerBlock, fDriverVer);
 		_tcsncat(pDst, A2T(szBuffer), 2047);
 	}
 
