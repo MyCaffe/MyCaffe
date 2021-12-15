@@ -2003,10 +2003,13 @@ namespace MyCaffe
                         throw new Exception("NO DATA!");
                     }
 
+                    // Create blob masks images (when enabled) during the data transform.
                     blobData = CreateDataBlob(sd, blobData, bPad);
                     List<ResultCollection> rgrgResults1 = Run(blobData, false);
                     ResultCollection rgResults = rgrgResults1[0];
 
+                    // If masked, mask the sd to match the actual input in the blobData.
+                    m_dataTransformer.MaskImage(sd);
                     rgrgResults.Add(new Tuple<SimpleDatum, ResultCollection>(sd, rgResults));
 
                     if (rgResults.ResultType == ResultCollection.RESULT_TYPE.MULTIBOX)
