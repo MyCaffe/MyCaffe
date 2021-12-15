@@ -676,6 +676,13 @@ namespace MyCaffe.data
                                 fTransformedElement = fDataElement * fScale;
                         }
 
+                        if (m_param.mask_param != null && m_param.mask_param.Active)
+                        {
+                            if (h >= m_param.mask_param.boundary_top && h <= m_param.mask_param.boundary_bottom &&
+                                w >= m_param.mask_param.boundary_left && w <= m_param.mask_param.boundary_right)
+                                fTransformedElement = 0;
+                        }
+
                         if (m_dfLastMax < fTransformedElement)
                             m_dfLastMax = fTransformedElement;
 
@@ -835,6 +842,13 @@ namespace MyCaffe.data
                                 dfTransformedElement = (dfDataElement < 0) ? dfDataElement : Math.Pow(dfDataElement, dfScale);
                             else
                                 dfTransformedElement = dfDataElement * dfScale;
+                        }
+
+                        if (m_param.mask_param != null && m_param.mask_param.Active)
+                        {
+                            if (h >= m_param.mask_param.boundary_top && h <= m_param.mask_param.boundary_bottom &&
+                                w >= m_param.mask_param.boundary_left && w <= m_param.mask_param.boundary_right)
+                                dfTransformedElement = 0;
                         }
 
                         if (m_dfLastMax < dfTransformedElement)
