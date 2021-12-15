@@ -2283,7 +2283,6 @@ namespace MyCaffe
 
                 Datum datum = new Datum(d);
 
-                m_dataTransformer.MaskImage(datum);
                 List<int> rgShape = m_dataTransformer.InferBlobShape(datum);
 
                 if (bPad)
@@ -2427,7 +2426,6 @@ namespace MyCaffe
             int nCount = 0;
             for (int i=0; i<rgSd.Count && i < nMax; i++)
             {
-                m_dataTransformer.MaskImage(rgSd[i]);
                 rgDataInput.AddRange(m_dataTransformer.Transform(rgSd[i]));
                 nCount++;
             }
