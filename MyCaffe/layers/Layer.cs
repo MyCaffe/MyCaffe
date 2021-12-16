@@ -1430,9 +1430,6 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.MEMORY_LOSS:
                     return new MemoryLossLayer<T>(cuda, log, p);
 
-                case LayerParameter.LayerType.MISH:
-                    return new MishLayer<T>(cuda, log, p);
-
                 case LayerParameter.LayerType.MULTINOMIALLOGISTIC_LOSS:
                     return new MultinomialLogisticLossLayer<T>(cuda, log, p);
 
