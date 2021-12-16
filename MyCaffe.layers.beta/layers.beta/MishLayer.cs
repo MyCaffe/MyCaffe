@@ -6,7 +6,7 @@ using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
 
-namespace MyCaffe.layers
+namespace MyCaffe.layers.beta
 {
     /// <summary>
     /// The MishLayer provides a novel activation function that tends to work better than ReLU.
