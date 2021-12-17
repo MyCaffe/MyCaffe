@@ -1172,6 +1172,9 @@ namespace MyCaffe.common
             CUDA_SMOOTHL1_FWD = 470,
             CUDA_SMOOTHL1_BWD = 471,
 
+            CUDA_SERF_FWD = 472,
+            CUDA_SERF_BWD = 473,
+
             CUDA_PERMUTE = 474,
 
             CUDA_GATHER_FWD = 476,
@@ -7878,6 +7881,46 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MISH_BWD, m_param.AsDouble(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, dfThreshold, nMethod));
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MISH_BWD, m_param.AsFloat(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, (float)dfThreshold, nMethod));
+        }
+
+        /// <summary>
+        /// Performs a Serf forward pass in Cuda.
+        /// </summary>
+        /// <remarks>
+        /// Computes the serf non-linearity @f$ f(x) = x erf(\ln( 1 + \exp(x) )) @f$.
+        /// 
+        /// @see [Serf: Towards better training of deep neural networks using log-Softplus ERror activation Function](https://arxiv.org/pdf/2108.09598.pdf) by Sayan Nag and Mayukh Bhattacharyya, 2021.
+        /// </remarks>
+        /// <param name="nCount">Specifies the number of items in the bottom and top data.</param>
+        /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
+        /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
+        public void serf_fwd(int nCount, long hBottomData, long hTopData)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SERF_FWD, m_param.AsDouble(nCount, hBottomData, hTopData));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SERF_FWD, m_param.AsFloat(nCount, hBottomData, hTopData));
+        }
+
+        /// <summary>
+        /// Performs a Serf backward pass in Cuda.
+        /// </summary>
+        /// <remarks>
+        /// Computes the serf gradient @f$ f(x)' = \text{erf}\left(\log \left(e^x+1\right)\right)+\frac{2 x e^{x-\log^ 2\left(e ^ x + 1\right)}}{\sqrt{ \pi } \left(e^ x + 1\right)} @f$
+        /// 
+        /// @see [Serf: Towards better training of deep neural networks using log-Softplus ERror activation Function](https://arxiv.org/pdf/2108.09598.pdf) by Sayan Nag and Mayukh Bhattacharyya, 2021.
+        /// </remarks>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="hTopDiff">Specifies a handle to the top diff in GPU memory.</param>
+        /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
+        /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
+        /// <param name="hBottomData">Specifies a handle tot he bottom data in GPU memory.</param>
+        public void serf_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SERF_BWD, m_param.AsDouble(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SERF_BWD, m_param.AsFloat(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData));
         }
 
         /// <summary>

@@ -8282,6 +8282,126 @@ template long Math<double>::mish_bwd(int nCount, long hTopDiff, long hTopData, l
 template long Math<float>::mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, float fThreshold, int nMethod);
 
 
+/// Computes the serf non-linearity @f$ f(x) = x erf(\ln( 1 + \exp(x) )) @f$.
+/// @see [Serf: Towards better training of deep neural networks using log-Softplus ERror activation Function](https://arxiv.org/pdf/2108.09598.pdf) by Sayan Nag and Mayukh Bhattacharyya, 2021.
+/// Also note, log1p(x) = log(1 + x)                                         
+__global__ void serf_fwd_kernel(int n, const double* in, double* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		out[i] = in[i] * erf(log1p(exp(in[i])));
+	}
+}
+
+/// Computes the serf non-linearity @f$ f(x) = x erf(\ln( 1 + \exp(x) )) @f$.
+/// @see [Serf: Towards better training of deep neural networks using log-Softplus ERror activation Function](https://arxiv.org/pdf/2108.09598.pdf) by Sayan Nag and Mayukh Bhattacharyya, 2021.
+/// Also note, log1p(x) = log(1 + x)                                         
+__global__ void serf_fwd_kernel(int n, const float* in, float* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		out[i] = in[i] * erff(log1pf(expf(in[i])));
+	}
+}
+
+template <class T>
+long Math<T>::serf_fwd(int n, long hBottomData, long hTopData)
+{
+	LONG lErr;
+	MemoryItem* pBottomData;
+	MemoryItem* pTopData;
+
+	if (lErr = m_pMemCol->GetData(hBottomData, &pBottomData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hTopData, &pTopData))
+		return lErr;
+
+	T* bottom_data = (T*)pBottomData->Data();
+	T* top_data = (T*)pTopData->Data();
+
+	serf_fwd_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::serf_fwd(int nCount, long hBottomData, long hTopData);
+template long Math<float>::serf_fwd(int nCount, long hBottomData, long hTopData);
+
+
+/// Computes the serf gradient @f$ f(x)' = \text{erf}\left(\log \left(e^x+1\right)\right)+\frac{2 x e^{x-\log^ 2\left(e ^ x + 1\right)}}{\sqrt{ \pi } \left(e^ x + 1\right)} @f$
+/// @see [Serf: Towards better training of deep neural networks using log-Softplus ERror activation Function](https://arxiv.org/pdf/2108.09598.pdf) by Sayan Nag and Mayukh Bhattacharyya, 2021.
+__global__ void serf_bwd_kernel(const int n, const double* in_diff, double* out_data, double* out_diff, const double* in_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const double x = in_data[i];
+		const double fx = out_data[i];
+		const double expX = exp(x);
+		const double log1pexpX = log1p(expX);
+		const double log1pexpXsq = log1pexpX * log1pexpX;
+		const double num = 2 * exp(x - log1pexpXsq) * x;
+		const double den = 1 + expX * sqrt(CR_CUDART_PI);
+		const double grad = num / den;
+			
+		out_diff[i] = in_diff[i] * grad + fx;
+	}
+}
+
+/// Computes the serf gradient @f$ f(x)' = \frac{2 \sigma  x^2 e^{-\left(e^x+1\right)^2 \ln }}{\sqrt{\pi }} + \frac{f(x)}{x} @f$
+/// @see [Serf: Towards better training of deep neural networks using log-Softplus ERror activation Function](https://arxiv.org/pdf/2108.09598.pdf) by Sayan Nag and Mayukh Bhattacharyya, 2021.
+__global__ void serf_bwd_kernel(const int n, const float* in_diff, float* out_data, float* out_diff, const float* in_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const float x = in_data[i];
+		const float fx = out_data[i];
+		const float expX = expf(x);
+		const float log1pexpX = log1pf(expX);
+		const float log1pexpXsq = log1pexpX * log1pexpX;
+		const float num = 2 * expf(x - log1pexpXsq) * x;
+		const float den = 1 + expX * sqrtf(CR_CUDART_PI);
+		const float grad = num / den;
+
+		out_diff[i] = in_diff[i] * grad + fx;
+	}
+}
+
+template <class T>
+long Math<T>::serf_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData)
+{
+	LONG lErr;
+	MemoryItem* pTopDiff;
+	MemoryItem* pTopData;
+	MemoryItem* pBottomDiff;
+	MemoryItem* pBottomData;
+
+	if (lErr = m_pMemCol->GetData(hTopDiff, &pTopDiff))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hTopData, &pTopData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBottomDiff, &pBottomDiff))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBottomData, &pBottomData))
+		return lErr;
+
+	T* top_diff = (T*)pTopDiff->Data();
+	T* top_data = (T*)pTopData->Data();
+	T* bottom_diff = (T*)pBottomDiff->Data();
+	T* bottom_data = (T*)pBottomData->Data();
+
+	serf_bwd_kernel<< <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::serf_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
+template long Math<float>::serf_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
+
+
 template<typename T>
 __global__ void sigmoid_fwd_kernel(int n, T* in, T* out)
 {

@@ -794,6 +794,12 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_SMOOTHL1_BWD:
 			return m_device.cuda_smoothl1_bwd(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_SERF_FWD:
+			return m_device.cuda_serf_fwd(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_SERF_BWD:
+			return m_device.cuda_serf_bwd(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_PERMUTE:
 			return m_device.cuda_permute(lCount, pfInput, plCount, ppfOutput);
 
@@ -1751,6 +1757,12 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_SMOOTHL1_BWD:
 		return "CUDA_FN_SMOOTHL1_BWD";
+
+	case CUDA_FN_SERF_FWD:
+		return "CUDA_FN_SERF_FWD";
+
+	case CUDA_FN_SERF_BWD:
+		return "CUDA_FN_SERF_BWD";
 
 	case CUDA_FN_PERMUTE:
 		return "CUDA_FN_PERMUTE";

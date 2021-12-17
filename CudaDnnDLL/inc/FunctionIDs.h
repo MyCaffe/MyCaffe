@@ -343,6 +343,9 @@ const int CUDA_FN_LRN_COMPUTEDIFF = 467;
 const int CUDA_FN_SMOOTHL1_FWD = 470;
 const int CUDA_FN_SMOOTHL1_BWD = 471;
 
+const int CUDA_FN_SERF_FWD = 472;
+const int CUDA_FN_SERF_BWD = 473;
+
 const int CUDA_FN_PERMUTE = 474;
 
 const int CUDA_FN_GATHER_FWD = 476;

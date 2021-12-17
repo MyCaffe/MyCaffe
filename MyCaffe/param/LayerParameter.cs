@@ -394,6 +394,10 @@ namespace MyCaffe.param
             /// </summary>
             SCALE,
             /// <summary>
+            /// Initializes a parameter for the SerfLayer.
+            /// </summary>
+            SERF,
+            /// <summary>
             /// Initializes a parameter for the SigmoidLayer.
             /// </summary>
             SIGMOID,
@@ -1348,6 +1352,11 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("scale");
                     m_rgLayerParameters[lt] = new ScaleParameter();
+                    break;
+
+                case LayerType.SERF:
+                    expected_bottom.Add("input");
+                    expected_top.Add("serf");
                     break;
 
                 case LayerType.SIGMOID:

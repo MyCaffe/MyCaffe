@@ -79,6 +79,9 @@ namespace MyCaffe.layers.beta
                 case LayerParameter.LayerType.MODEL_DATA:
                     return new ModelDataLayer<double>(cuda, log, p, imgDb, evtCancel);
 
+                case LayerParameter.LayerType.SERF:
+                    return new SerfLayer<double>(cuda, log, p);
+
                 case LayerParameter.LayerType.TEXT_DATA:
                     return new TextDataLayer<double>(cuda, log, p);
 
@@ -162,6 +165,9 @@ namespace MyCaffe.layers.beta
 
                 case LayerParameter.LayerType.MODEL_DATA:
                     return new ModelDataLayer<float>(cuda, log, p, imgDb, evtCancel);
+
+                case LayerParameter.LayerType.SERF:
+                    return new SerfLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.TEXT_DATA:
                     return new TextDataLayer<float>(cuda, log, p);
