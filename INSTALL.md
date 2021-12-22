@@ -1,5 +1,5 @@
 <H2>Installation Instructions</H2>
-To install and run <b>MyCaffe</b> you will need to do the following steps.  As a side note, we are using (and recommend) CUDA 11.5.1 with cuDNN 8.3.1 and Visual Studio 2019 on Windows 10 Pro for all of our testing.
+To install and run <b>MyCaffe</b> you will need to do the following steps.  As a side note, we are using (and recommend) CUDA 11.5.1 with cuDNN 8.3.1 and Visual Studio 2019 on Windows 10 Pro and Windows 11 for all of our testing.
 (NOTE: Only compute 5.2 and above are supported in CUDA 11.5.1/cuDNN 8.3.1 due to 5.1 and lower compute phase-out in CUDA 11.5.)
 </br>
 <H3>I. CUDA - Install NVIDIA CUDA and cuDNN Libraries</H3>
