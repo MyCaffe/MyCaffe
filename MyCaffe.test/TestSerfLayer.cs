@@ -50,12 +50,31 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestGradient2()
+        {
+            SerfLayerTest2 test = new SerfLayerTest2(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ISerfLayerTest2 t in test.Tests)
+                {
+                    t.TestGradient2();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface ISerfLayerTest2 : ITest
     {
         void TestForward();
         void TestGradient();
+        void TestGradient2();
     }
 
     class SerfLayerTest2 : TestBase
@@ -92,49 +111,26 @@ namespace MyCaffe.test
             base.dispose();
         }
 
-        protected double Erf(double x)
+        protected double serf_native1(double x)
         {
-            // constants
-            double a1 = 0.254829592;
-            double a2 = -0.284496736;
-            double a3 = 1.421413741;
-            double a4 = -1.453152027;
-            double a5 = 1.061405429;
-            double p = 0.3275911;
-
-            // Save the sign of x
-            int sign = 1;
-            if (x < 0)
-                sign = -1;
-            x = Math.Abs(x);
-
-            // A&S formula 7.1.26
-            double t = 1.0 / (1.0 + p * x);
-            double y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.Exp(-x * x);
-
-            return sign * y;
+            double dfVal = Math.Log(1 + Math.Exp(x));
+            double dfErf = m_cuda.erf(dfVal);
+            return dfErf;
         }
 
         /// <summary>
-        /// Calculate the native MISH
+        /// Calculate the native SERF
         /// </summary>
         /// <param name="x">Specifies the input.</param>
         /// <returns>The calculated Mish value is returned.</returns>
         /// <remarks>
         /// Computes the serf non-linearity @f$ y  = x erf(\ln( 1 + \exp(x) )) @f$.
-        /// with                            @f$ f(x)' = \text{erf}\left(\log \left(e^x+1\right)\right)+\frac{2 x e^{x-\log^ 2\left(e ^ x + 1\right)}}{\sqrt{ \pi } \left(e^ x + 1\right)} @f$
+        /// with                            @f$ f(x)' = \text{erf}\left(\log \left(e^x+1\right)\right)+\frac{2 x e^x \log (e) e^{-\log^ 2\left(e ^ x + 1\right)}}{\sqrt{ \pi } \left(e^ x + 1\right)} @f$
         /// @see [Serf: Towards better training of deep neural networks using log-Softplus ERror activation Function](https://arxiv.org/pdf/2108.09598.pdf) by Sayan Nag and Mayukh Bhattacharyya, 2021.
         /// </remarks>
         protected double serf_native(double x)
         {
-            return x * Erf(Math.Log(1 + Math.Exp(x)));
-        }
-
-        protected double sigmoid(double x)
-        {
-            if (x < -45.0) return 0.0;
-            else if (x > 45.0) return 1.0;
-            else return 1.0 / (1.0 + Math.Exp(-x));
+            return x * serf_native1(x);
         }
 
         /// <summary>
@@ -144,18 +140,22 @@ namespace MyCaffe.test
         /// <returns>The calculated Serf value is returned.</returns>
         /// <remarks>
         /// Computes the serf non-linearity @f$ y  = x erf(\ln( 1 + \exp(x) )) @f$.
-        /// with                            @f$ f(x)' = \text{erf}\left(\log \left(e^x+1\right)\right)+\frac{2 x e^{x-\log^ 2\left(e ^ x + 1\right)}}{\sqrt{ \pi } \left(e^ x + 1\right)} @f$
+        /// with                            @f$ f(x)' = \text{erf}\left(\log \left(e^x+1\right)\right)+\frac{2 x e^x \log (e) e^{-\log^ 2\left(e ^ x + 1\right)}}{\sqrt{ \pi } \left(e^ x + 1\right)} @f$
         /// @see [Serf: Towards better training of deep neural networks using log-Softplus ERror activation Function](https://arxiv.org/pdf/2108.09598.pdf) by Sayan Nag and Mayukh Bhattacharyya, 2021.
-        protected double serf_native_grad(double x, double fx)
+        protected double serf_native_grad(double x)
         {
-            double dfTwoOverSqrtPi = 2 / Math.Sqrt(Math.PI);
+            double dfVal = Math.Log(1 + Math.Exp(x));
+            double dfFx = m_cuda.erf(dfVal);
+
             double dfExpX = Math.Exp(x);
             double dfLog1PExpX = Math.Log(1 + dfExpX);
             double dfLog1PExpXSq = dfLog1PExpX * dfLog1PExpX;
-            double dfExpLog = Math.Exp(-dfLog1PExpXSq);
-            double dfFxX = (x == 0) ? 0 : fx / x;
 
-            return dfTwoOverSqrtPi * dfExpLog * x * sigmoid(x) + dfFxX;
+            double dfNum = 2 * dfExpX * Math.Exp(-dfLog1PExpXSq) * x;
+            double dfDen = 1 + dfExpX * Math.Sqrt(Math.PI);
+            double dfGrad = dfNum / dfDen;
+
+            return dfFx + dfGrad;
         }
 
         public void TestForward(double dfFillerStd)
@@ -200,9 +200,33 @@ namespace MyCaffe.test
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             m_log.CHECK(layer.type == LayerParameter.LayerType.SERF, "The layer type is incorrect!");
-                
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+
+            layer.Setup(BottomVec, TopVec);
+            m_cuda.debug();
+            layer.Forward(BottomVec, TopVec);
+
+            TopVec[0].SetDiff(1);
+            layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
+
+            // Now, check values
+            double[] rgBottomDiff = convert(Bottom.update_cpu_diff());
+            double[] rgBottomData = convert(Bottom.update_cpu_data());
+            double[] rgTopDiff = convert(Top.update_cpu_diff());
+            double[] rgTopData = convert(Top.update_cpu_data());
+            double dfMinPrecision = 1e-5;
+
+            for (int i = 0; i < Bottom.count(); i++)
+            {
+                double dfGrad = serf_native_grad(rgBottomData[i]);
+                double dfExpectedValue = rgTopDiff[i] * dfGrad;
+
+                double dfPrecision = Math.Max(Math.Abs(dfExpectedValue * 1e-4), dfMinPrecision);
+                m_log.EXPECT_NEAR(dfExpectedValue, rgBottomDiff[i], dfPrecision);
+            }
+
+
+            //GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+            //checker.CheckGradientEltwise(layer, BottomVec, TopVec);
         }
 
         public void TestForward()
@@ -213,6 +237,23 @@ namespace MyCaffe.test
         public void TestGradient()
         {
             TestBackward(1.0);
+        }
+
+        public void TestGradient2()
+        {
+            FillerParameter fp = new FillerParameter("gaussian");
+            fp.std = 1.0;
+            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
+
+            filler.Fill(Bottom);
+
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.SERF);
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+
+            m_log.CHECK(layer.type == LayerParameter.LayerType.SERF, "The layer type is incorrect!");
+
+            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
         }
     }
 }
