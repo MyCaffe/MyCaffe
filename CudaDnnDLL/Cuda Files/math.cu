@@ -2568,6 +2568,19 @@ template long Math<double>::scale_to_range(int n, long hX, long hY, double dfMin
 template long Math<float>::scale_to_range(int n, long hX, long hY, float fMin, float fMax);
 
 
+long Math<double>::erf(double dfVal, double* pdfResult)
+{
+	*pdfResult = ::erf(dfVal);
+	return CUDA_SUCCESS;
+}
+
+long Math<float>::erf(float dfVal, float* pdfResult)
+{
+	*pdfResult = ::erff(dfVal);
+	return CUDA_SUCCESS;
+}
+
+
 // Bi-linear interpolation
 // input:  [channels height1 width1] cropped from a bigger [Height1 Width1] image
 // output: [channels height2 width2] cropped from a bigger [Height2 Width2] image
@@ -8329,18 +8342,19 @@ template long Math<double>::serf_fwd(int nCount, long hBottomData, long hTopData
 template long Math<float>::serf_fwd(int nCount, long hBottomData, long hTopData);
 
 
-/// Computes the serf gradient @f$ f(x)' = \text{erf}\left(\log \left(e^x+1\right)\right)+\frac{2 x e^{x-\log^ 2\left(e ^ x + 1\right)}}{\sqrt{ \pi } \left(e^ x + 1\right)} @f$
+/// Computes the serf gradient @f$ f(x)' = \text{erf}\left(\log \left(e^x+1\right)\right)+\frac{2 x e^x \log (e) e^{-\log^ 2\left(e ^ x + 1\right)}}{\sqrt{ \pi } \left(e^ x + 1\right)} @f$
 /// @see [Serf: Towards better training of deep neural networks using log-Softplus ERror activation Function](https://arxiv.org/pdf/2108.09598.pdf) by Sayan Nag and Mayukh Bhattacharyya, 2021.
 __global__ void serf_bwd_kernel(const int n, const double* in_diff, double* out_data, double* out_diff, const double* in_data)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
 		const double x = in_data[i];
-		const double fx = out_data[i];
+		const double fx = erf(log1p(expf(x)));
 		const double expX = exp(x);
 		const double log1pexpX = log1p(expX);
+
 		const double log1pexpXsq = log1pexpX * log1pexpX;
-		const double num = 2 * exp(x - log1pexpXsq) * x;
+		const double num = 2 * expX * exp(-log1pexpXsq) * x;
 		const double den = 1 + expX * sqrt(CR_CUDART_PI);
 		const double grad = num / den;
 			
@@ -8348,19 +8362,20 @@ __global__ void serf_bwd_kernel(const int n, const double* in_diff, double* out_
 	}
 }
 
-/// Computes the serf gradient @f$ f(x)' = \frac{2 \sigma  x^2 e^{-\left(e^x+1\right)^2 \ln }}{\sqrt{\pi }} + \frac{f(x)}{x} @f$
+/// Computes the serf gradient @f$ f(x)' = \text{erf}\left(\log \left(e^x+1\right)\right)+\frac{2 x e^x \log (e) e^{-\log^ 2\left(e ^ x + 1\right)}}{\sqrt{ \pi } \left(e^ x + 1\right)} @f$
 /// @see [Serf: Towards better training of deep neural networks using log-Softplus ERror activation Function](https://arxiv.org/pdf/2108.09598.pdf) by Sayan Nag and Mayukh Bhattacharyya, 2021.
 __global__ void serf_bwd_kernel(const int n, const float* in_diff, float* out_data, float* out_diff, const float* in_data)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
 		const float x = in_data[i];
-		const float fx = out_data[i];
-		const float expX = expf(x);
-		const float log1pexpX = log1pf(expX);
+		const float fx = erf(log1p(expf(x)));
+		const float expX = exp(x);
+		const float log1pexpX = log1p(expX);
+
 		const float log1pexpXsq = log1pexpX * log1pexpX;
-		const float num = 2 * expf(x - log1pexpXsq) * x;
-		const float den = 1 + expX * sqrtf(CR_CUDART_PI);
+		const float num = 2 * expX * exp(-log1pexpXsq) * x;
+		const float den = 1 + expX * sqrt(CR_CUDART_PI);
 		const float grad = num / den;
 
 		out_diff[i] = in_diff[i] * grad + fx;

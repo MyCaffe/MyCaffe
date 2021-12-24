@@ -235,6 +235,7 @@ const int CUDA_FN_SET_BOUNDS = 259;
 const int CUDA_FN_MINMAXVEC = 260;
 const int CUDA_FN_TRANSPOSE = 261;
 const int CUDA_FN_SCALE_TO_RANGE = 262;
+const int CUDA_FN_ERF = 263;
 
 const int CUDA_FN_INTERP2 = 265;
 

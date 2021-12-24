@@ -1752,6 +1752,27 @@ long Device<T>::cuda_scale_to_range(long lInput, T* pfInput, long* plOutput, T**
 template long Device<double>::cuda_scale_to_range(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
 template long Device<float>::cuda_scale_to_range(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
 
+template <class T>
+long Device<T>::cuda_erf(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+
+	T fVal = pfInput[0];
+	T fResult;
+
+	if (lErr = m_math.erf(fVal, &fResult))
+		return lErr;
+
+	return setOutput(fResult, plOutput, ppfOutput);
+}
+
+template long Device<double>::cuda_erf(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_erf(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
 
 template <class T>
 long Device<T>::cuda_interp2(long lInput, T* pfInput, long* plOutput, T** ppfOutput)

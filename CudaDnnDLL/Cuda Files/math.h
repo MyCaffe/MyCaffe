@@ -174,6 +174,7 @@ class Math
 		long asum(int n, T* x, T* pOut);
 		long scale(int n, T fAlpha, long hX, long hY, int nXOff = 0, int nYOff = 0);
 		long scale_to_range(int n, long hX, long hY, T fMin, T fMax);
+		long erf(T fVal, T* fResult);
 		long interp2(int nC, long hX, int nX1, int nY1, int nH1, int nW1, int nH1B, int nW1B, long hY, int nX2, int nY2, int nH2, int nW2, int nH2B, int nW2B, bool bBwd);
 		long add_scalar(int n, T fAlpha, long hY, int nYOff = 0);
 		long add(int n, long hA, long hB, long hY, T fAlpha);

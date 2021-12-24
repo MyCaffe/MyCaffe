@@ -1064,6 +1064,7 @@ namespace MyCaffe.common
             CUDA_MINMAXVEC = 260,
             CUDA_TRANSPOSE = 261,
             CUDA_SCALE_TO_RANGE = 262,
+            CUDA_ERF = 263,
 
             CUDA_INTERP2 = 265,
 
@@ -6275,6 +6276,30 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SCALE_TO_RANGE, m_param.AsDouble(n, hX, hY, fMin, fMax));
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SCALE_TO_RANGE, m_param.AsFloat(n, hX, hY, (float)fMin, (float)fMax));
+        }
+
+        public double erf(double dfVal)
+        {
+            return convertD(erf(convertD1(dfVal)));
+        }
+
+        public float erf(float fVal)
+        {
+            return convertF(erf(convertF1(fVal)));
+        }
+
+        public T erf(T fVal)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ERF, m_param.AsDouble(convertD(fVal)));
+                return convert(rg)[0];
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ERF, m_param.AsFloat(convertF(fVal)));
+                return convert(rg)[0];
+            }
         }
 
         /// <summary>

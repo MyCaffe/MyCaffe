@@ -491,6 +491,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_SCALE_TO_RANGE:
 			return m_device.cuda_scale_to_range(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_ERF:
+			return m_device.cuda_erf(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_INTERP2:
 			return m_device.cuda_interp2(lCount, pfInput, plCount, ppfOutput);
 
@@ -1463,6 +1466,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_SCALE_TO_RANGE:
 		return "CUDA_FN_SCALE_TO_RANGE";
+
+	case CUDA_FN_ERF:
+		return "CUDA_FN_ERF";
 
 	case CUDA_FN_INTERP2:
 		return "CUDA_FN_INTERP2";
