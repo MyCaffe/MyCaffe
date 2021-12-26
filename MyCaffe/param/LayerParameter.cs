@@ -1357,6 +1357,7 @@ namespace MyCaffe.param
                 case LayerType.SERF:
                     expected_bottom.Add("input");
                     expected_top.Add("serf");
+                    m_rgLayerParameters[lt] = new SerfParameter();
                     break;
 
                 case LayerType.SIGMOID:
@@ -2260,6 +2261,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.SERF
+        /// </summary>
+        public SerfParameter serf_param
+        {
+            get { return (SerfParameter)m_rgLayerParameters[LayerType.SERF]; }
+            set { m_rgLayerParameters[LayerType.SERF] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.SIGMOID
         /// </summary>
         public SigmoidParameter sigmoid_param
@@ -2791,6 +2801,9 @@ namespace MyCaffe.param
                 case LayerType.SCALE:
                     return "Scale";
 
+                case LayerType.SERF:
+                    return "Serf";
+
                 case LayerType.SIGMOID:
                     return "Sigmoid";
 
@@ -2958,7 +2971,6 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(lrn_param, "lrn_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(mae_loss_param, "mae_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(memory_data_param, "memory_data_param"));
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(mish_param, "mish_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(mvn_param, "mvn_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(pooling_param, "pooling_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(parameter_param, "parameter_param"));
@@ -2991,7 +3003,9 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(knn_param, "knn_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(lstm_attention_param, "lstm_attention_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(merge_param, "merge_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(mish_param, "mish_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(normalization1_param, "normalization_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(serf_param, "serf_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(squeeze_param, "squeeze_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(model_data_param, "model_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(text_data_param, "text_data_param"));
@@ -3211,9 +3225,6 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("memory_data_param")) != null)
                 p.memory_data_param = MemoryDataParameter.FromProto(rpp);
 
-            if ((rpp = rp.FindChild("mish_param")) != null)
-                p.mish_param = MishParameter.FromProto(rpp);
-
             if ((rpp = rp.FindChild("mvn_param")) != null)
                 p.mvn_param = MVNParameter.FromProto(rpp);
 
@@ -3299,8 +3310,14 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("merge_param")) != null)
                 p.merge_param = MergeParameter.FromProto(rpp);
 
+            if ((rpp = rp.FindChild("mish_param")) != null)
+                p.mish_param = MishParameter.FromProto(rpp);
+
             if ((rpp = rp.FindChild("normalization_param")) != null)
                 p.normalization1_param = Normalization1Parameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("serf_param")) != null)
+                p.serf_param = SerfParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("squeeze_param")) != null)
                 p.squeeze_param = SqueezeParameter.FromProto(rpp);
@@ -3668,6 +3685,9 @@ namespace MyCaffe.param
 
                 case "scale":
                     return LayerType.SCALE;
+
+                case "serf":
+                    return LayerType.SERF;
 
                 case "sigmoid":
                     return LayerType.SIGMOID;
