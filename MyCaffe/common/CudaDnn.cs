@@ -7931,7 +7931,7 @@ namespace MyCaffe.common
         /// Performs a Serf backward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// Computes the serf gradient @f$ f(x)' = \text{erf}\left(\log \left(e^x+1\right)\right)+\frac{2 x e^{x-\log^ 2\left(e ^ x + 1\right)}}{\sqrt{ \pi } \left(e^ x + 1\right)} @f$
+        /// Computes the serf gradient @f$ f(x)' = \text{erf}\left(\log \left(e^x+1\right)\right)+\frac{2 x e^{x-\log^2\left(e^x+1\right)}}{\sqrt{\pi } \left(e^x+1\right)} @f$
         /// 
         /// @see [Serf: Towards better training of deep neural networks using log-Softplus ERror activation Function](https://arxiv.org/pdf/2108.09598.pdf) by Sayan Nag and Mayukh Bhattacharyya, 2021.
         /// </remarks>
