@@ -125,7 +125,7 @@ namespace MyCaffe.test
         /// <returns>The calculated Mish value is returned.</returns>
         /// <remarks>
         /// Computes the serf non-linearity @f$ y  = x erf(\ln( 1 + \exp(x) )) @f$.
-        /// with                            @f$ f(x)' = \text{erf}\left(\log \left(e^x+1\right)\right)+\frac{2 x e^x \log (e) e^{-\log^ 2\left(e ^ x + 1\right)}}{\sqrt{ \pi } \left(e^ x + 1\right)} @f$
+        /// with                            @f$ f(x)' = \text{erf}\left(\log \left(e^x+1\right)\right)+\frac{2 x e^{x-\log^2\left(e^x+1\right)}}{\sqrt{\pi } \left(e^x+1\right)} @f$
         /// @see [Serf: Towards better training of deep neural networks using log-Softplus ERror activation Function](https://arxiv.org/pdf/2108.09598.pdf) by Sayan Nag and Mayukh Bhattacharyya, 2021.
         /// </remarks>
         protected double serf_native(double x)
@@ -140,22 +140,20 @@ namespace MyCaffe.test
         /// <returns>The calculated Serf value is returned.</returns>
         /// <remarks>
         /// Computes the serf non-linearity @f$ y  = x erf(\ln( 1 + \exp(x) )) @f$.
-        /// with                            @f$ f(x)' = \text{erf}\left(\log \left(e^x+1\right)\right)+\frac{2 x e^x \log (e) e^{-\log^ 2\left(e ^ x + 1\right)}}{\sqrt{ \pi } \left(e^ x + 1\right)} @f$
+        /// with                            @f$ f(x)' = \text{erf}\left(\log \left(e^x+1\right)\right)+\frac{2 x e^{x-\log^2\left(e^x+1\right)}}{\sqrt{\pi } \left(e^x+1\right)} @f$
         /// @see [Serf: Towards better training of deep neural networks using log-Softplus ERror activation Function](https://arxiv.org/pdf/2108.09598.pdf) by Sayan Nag and Mayukh Bhattacharyya, 2021.
         protected double serf_native_grad(double x)
         {
-            double dfVal = Math.Log(1 + Math.Exp(x));
-            double dfFx = m_cuda.erf(dfVal);
+            double dfSerf = serf_native1(x);
 
             double dfExpX = Math.Exp(x);
-            double dfLog1PExpX = Math.Log(1 + dfExpX);
-            double dfLog1PExpXSq = dfLog1PExpX * dfLog1PExpX;
+            double dfLogP = Math.Log(1 + dfExpX);
+            double dfLogPSq = dfLogP * dfLogP;
 
-            double dfNum = 2 * dfExpX * Math.Exp(-dfLog1PExpXSq) * x;
-            double dfDen = 1 + dfExpX * Math.Sqrt(Math.PI);
-            double dfGrad = dfNum / dfDen;
+            double dfNum = 2 * Math.Exp(x - dfLogPSq) * x;
+            double dfDen = (1 + dfExpX)  * Math.Sqrt(Math.PI);
 
-            return dfFx + dfGrad;
+            return (dfNum / dfDen) + dfSerf;
         }
 
         public void TestForward(double dfFillerStd)
@@ -223,10 +221,6 @@ namespace MyCaffe.test
                 double dfPrecision = Math.Max(Math.Abs(dfExpectedValue * 1e-4), dfMinPrecision);
                 m_log.EXPECT_NEAR(dfExpectedValue, rgBottomDiff[i], dfPrecision);
             }
-
-
-            //GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            //checker.CheckGradientEltwise(layer, BottomVec, TopVec);
         }
 
         public void TestForward()
