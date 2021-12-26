@@ -12,8 +12,8 @@ namespace MyCaffe.layers.beta
     /// The SerfLayer provides a novel activation function that tends to work better than ReLU.
     /// </summary>
     /// <remarks>
-    /// Computes the serf non-linearity @f$ y  = x erf(\ln( 1 + \exp(x) )) @f$.
-    /// with                            @f$ f(x)' = \text{erf}\left(\log \left(e^x+1\right)\right)+\frac{2 x e^{x-\log^ 2\left(e ^ x + 1\right)}}{\sqrt{ \pi } \left(e^ x + 1\right)} @f$
+    /// Computes the serf non-linearity @f$ y  = x erf(\log( 1 + \exp(x) )) @f$.
+    /// with                            @f$ f(x)' = \text{erf}\left(\log \left(e^x+1\right)\right)+\frac{2 x e^{x-\log^2\left(e^x+1\right)}}{\sqrt{\pi } \left(e^x+1\right)} @f$
     /// 
     /// @see [Serf: Towards better training of deep neural networks using log-Softplus ERror activation Function](https://arxiv.org/pdf/2108.09598.pdf) by Sayan Nag and Mayukh Bhattacharyya, 2021.
     /// </remarks>
@@ -70,7 +70,7 @@ namespace MyCaffe.layers.beta
         ///     the inputs @f$ x @f$; Backward fills their diff with 
         ///     gradients @f$
         ///         \frac{\partial E}{\partial x}
-        ///             = \text{erf}\left(\log \left(e^x+1\right)\right)+\frac{2 x e^{x-\log^ 2\left(e ^ x + 1\right)}}{\sqrt{ \pi } \left(e^ x + 1\right)} @f$
+        ///             = \text{erf}\left(\log \left(e^x+1\right)\right)+\frac{2 x e^{x-\log^2\left(e^x+1\right)}}{\sqrt{\pi } \left(e^x+1\right)} @f$
         ///     @f$ if propagate_down[0]
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
