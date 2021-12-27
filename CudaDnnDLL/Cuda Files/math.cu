@@ -8298,27 +8298,27 @@ template long Math<float>::mish_bwd(int nCount, long hTopDiff, long hTopData, lo
 /// Computes the serf non-linearity @f$ f(x) = x erf(\ln( 1 + \exp(x) )) @f$.
 /// @see [Serf: Towards better training of deep neural networks using log-Softplus ERror activation Function](https://arxiv.org/pdf/2108.09598.pdf) by Sayan Nag and Mayukh Bhattacharyya, 2021.
 /// Also note, log1p(x) = log(1 + x)                                         
-__global__ void serf_fwd_kernel(int n, const double* in, double* out)
+__global__ void serf_fwd_kernel(int n, const double* in, double* out, const double dfThreshold)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		out[i] = in[i] * erf(log1p(exp(in[i])));
+		out[i] = in[i] * erf((in[i] < dfThreshold) ? log1p(exp(in[i])) : in[i]);
 	}
 }
 
 /// Computes the serf non-linearity @f$ f(x) = x erf(\ln( 1 + \exp(x) )) @f$.
 /// @see [Serf: Towards better training of deep neural networks using log-Softplus ERror activation Function](https://arxiv.org/pdf/2108.09598.pdf) by Sayan Nag and Mayukh Bhattacharyya, 2021.
 /// Also note, log1p(x) = log(1 + x)                                         
-__global__ void serf_fwd_kernel(int n, const float* in, float* out)
+__global__ void serf_fwd_kernel(int n, const float* in, float* out, const float fThreshold)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		out[i] = in[i] * erff(log1pf(expf(in[i])));
+		out[i] = in[i] * erff((in[i] < fThreshold) ? log1pf(expf(in[i])) : in[i]);
 	}
 }
 
 template <class T>
-long Math<T>::serf_fwd(int n, long hBottomData, long hTopData)
+long Math<T>::serf_fwd(int n, long hBottomData, long hTopData, T fThreshold)
 {
 	LONG lErr;
 	MemoryItem* pBottomData;
@@ -8333,23 +8333,23 @@ long Math<T>::serf_fwd(int n, long hBottomData, long hTopData)
 	T* bottom_data = (T*)pBottomData->Data();
 	T* top_data = (T*)pTopData->Data();
 
-	serf_fwd_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+	serf_fwd_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data, fThreshold);
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::serf_fwd(int nCount, long hBottomData, long hTopData);
-template long Math<float>::serf_fwd(int nCount, long hBottomData, long hTopData);
+template long Math<double>::serf_fwd(int nCount, long hBottomData, long hTopData, double dfThreshold);
+template long Math<float>::serf_fwd(int nCount, long hBottomData, long hTopData, float fThreshold);
 
 
 /// Computes the serf gradient @f$ f(x)' = \text{erf}\left(\log \left(e^x+1\right)\right)+\frac{2 x e^{x-\log^2\left(e^x+1\right)}}{\sqrt{\pi } \left(e^x+1\right)} @f$
 /// @see [Serf: Towards better training of deep neural networks using log-Softplus ERror activation Function](https://arxiv.org/pdf/2108.09598.pdf) by Sayan Nag and Mayukh Bhattacharyya, 2021.
-__global__ void serf_bwd_kernel(const int n, const double* in_diff, double* out_data, double* out_diff, const double* in_data)
+__global__ void serf_bwd_kernel(const int n, const double* in_diff, double* out_data, double* out_diff, const double* in_data, const double dfThreshold)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
 		const double x = in_data[i];
-		const double expX = exp(x);
+		const double expX = (x < dfThreshold) ? exp(x) : x;
 		const double log1pexpX = log1p(expX);
 		const double fx = erf(log1pexpX);
 		const double log1pexpXsq = log1pexpX * log1pexpX;
@@ -8364,12 +8364,12 @@ __global__ void serf_bwd_kernel(const int n, const double* in_diff, double* out_
 
 /// Computes the serf gradient @f$ f(x)' = \text{erf}\left(\log \left(e^x+1\right)\right)+\frac{2 x e^{x-\log^2\left(e^x+1\right)}}{\sqrt{\pi } \left(e^x+1\right)} @f$
 /// @see [Serf: Towards better training of deep neural networks using log-Softplus ERror activation Function](https://arxiv.org/pdf/2108.09598.pdf) by Sayan Nag and Mayukh Bhattacharyya, 2021.
-__global__ void serf_bwd_kernel(const int n, const float* in_diff, float* out_data, float* out_diff, const float* in_data)
+__global__ void serf_bwd_kernel(const int n, const float* in_diff, float* out_data, float* out_diff, const float* in_data, const float fThreshold)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
 		const float x = in_data[i];
-		const float expX = expf(x);
+		const float expX = (x < fThreshold) ? expf(x) : x;
 		const float log1pexpX = log1pf(expX);
 		const float fx = erff(log1pexpX);					// erf(log(1 + exp(x)))
 		const float log1pexpXsq = log1pexpX * log1pexpX;	// 
@@ -8383,7 +8383,7 @@ __global__ void serf_bwd_kernel(const int n, const float* in_diff, float* out_da
 }
 
 template <class T>
-long Math<T>::serf_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData)
+long Math<T>::serf_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, T fThreshold)
 {
 	LONG lErr;
 	MemoryItem* pTopDiff;
@@ -8408,13 +8408,13 @@ long Math<T>::serf_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff, lo
 	T* bottom_diff = (T*)pBottomDiff->Data();
 	T* bottom_data = (T*)pBottomData->Data();
 
-	serf_bwd_kernel<< <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+	serf_bwd_kernel<< <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data, fThreshold);
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::serf_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
-template long Math<float>::serf_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
+template long Math<double>::serf_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, double dfThreshold);
+template long Math<float>::serf_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, float fThreshold);
 
 
 template<typename T>

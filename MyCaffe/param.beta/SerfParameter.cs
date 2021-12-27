@@ -14,6 +14,8 @@ namespace MyCaffe.param.beta
     /// </remarks>
     public class SerfParameter : EngineParameter
     {
+        double m_dfThreshold = 20;
+
         /** @copydoc LayerParameterBase */
         public SerfParameter()
             : base()
@@ -39,6 +41,19 @@ namespace MyCaffe.param.beta
             return false;
         }
 
+        /// <summary>
+        /// Specifies the max threshold value used in exp functions.
+        /// </summary>
+        /// <remarks>
+        /// @see [thomasbrandon/mish-cuda](https://github.com/thomasbrandon/mish-cuda/blob/master/csrc/mish.h) by thomasbrandon, 2019 MIT License.
+        /// </remarks>
+        [Description("Specifies the max threshold value used in exp functions.")]
+        public double threshold
+        {
+            get { return m_dfThreshold; }
+            set { m_dfThreshold = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -59,6 +74,7 @@ namespace MyCaffe.param.beta
             if (src is SerfParameter)
             {
                 SerfParameter p = (SerfParameter)src;
+                m_dfThreshold = p.m_dfThreshold;
             }
         }
 
@@ -78,6 +94,9 @@ namespace MyCaffe.param.beta
 
             rgChildren.Add(rpBase.Children);
 
+            if (threshold != 0)
+                rgChildren.Add("threshold", threshold.ToString());
+
             return new RawProto(strName, "", rgChildren);
         }
 
@@ -88,9 +107,13 @@ namespace MyCaffe.param.beta
         /// <returns>A new instance of the parameter is returned.</returns>
         public static new SerfParameter FromProto(RawProto rp)
         {
+            string strVal;
             SerfParameter p = new SerfParameter();
 
             ((EngineParameter)p).Copy(EngineParameter.FromProto(rp));
+
+            if ((strVal = rp.FindValue("threshold")) != null)
+                p.threshold = ParseDouble(strVal);
 
             return p;
         }

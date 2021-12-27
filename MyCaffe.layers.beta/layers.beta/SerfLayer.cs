@@ -52,7 +52,7 @@ namespace MyCaffe.layers.beta
             long hTopData = colTop[0].mutable_gpu_data;
             int nCount = colBottom[0].count();
 
-            m_cuda.serf_fwd(nCount, hBottomData, hTopData);
+            m_cuda.serf_fwd(nCount, hBottomData, hTopData, m_param.serf_param.threshold);
         }
 
         /// <summary>
@@ -81,7 +81,7 @@ namespace MyCaffe.layers.beta
             long hBottomData = colBottom[0].gpu_data;
             int nCount = colBottom[0].count();
 
-            m_cuda.serf_bwd(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData);
+            m_cuda.serf_bwd(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, m_param.serf_param.threshold);
         }
     }
 }
