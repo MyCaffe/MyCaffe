@@ -160,6 +160,9 @@ namespace MyCaffe.layers.beta
                 case LayerParameter.LayerType.MERGE:
                     return new MergeLayer<float>(cuda, log, p);
 
+                case LayerParameter.LayerType.MISH:
+                    return new MishLayer<float>(cuda, log, p);
+
                 case LayerParameter.LayerType.NORMALIZATION1:
                     return new Normalization1Layer<float>(cuda, log, p);
 
