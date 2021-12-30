@@ -3849,6 +3849,27 @@ template long Device<float>::cuda_guassian_blur(long lInput, float* pfInput, lon
 
 
 template <class T>
+long Device<T>::cuda_calc_dft(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 4, 4))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	int hX = (long)pfInput[1];
+	int m = (int)pfInput[2];
+	int hY = (long)pfInput[3];
+
+	return m_math.calc_dft(n, hX, m, hY);
+}
+
+template long Device<double>::cuda_calc_dft(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_calc_dft(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+
+template <class T>
 long Device<T>::cuda_hamming_diff(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;

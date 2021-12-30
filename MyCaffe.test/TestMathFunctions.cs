@@ -248,6 +248,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestDft()
+        {
+            MathFunctionsTest test = new MathFunctionsTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IMathFunctionsTest t in test.Tests)
+                {
+                    t.TestDft();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -265,6 +283,7 @@ namespace MyCaffe.test
         void TestNanInfOneElm();
         void TestSort();
         void TestSort2();
+        void TestDft();
     }
 
     class MathFunctionsTest : TestBase
@@ -798,6 +817,48 @@ namespace MyCaffe.test
 
             m_log.EXPECT_EQUAL<float>(dfMin, rgData[0]);
             m_log.EXPECT_EQUAL<float>(dfMax, rgData[rgData.Length - 1]);
+        }
+
+        public void TestDft()
+        {
+            Random random = new Random(1701);
+
+            long hX = m_cuda.AllocHostBuffer(20);
+            long hY = m_cuda.AllocHostBuffer(10);
+
+            double[] rg = new double[]
+            {
+                0.04023949, 0.44980767, 0.75230958, 0.39725397, 0.43134038, 0.65840191,
+                0.52605578, 0.85092843, 0.2815492,  0.18814408, 0.8351871,  0.00241182,
+                0.16967556, 0.90294133, 0.55740858, 0.24055457, 0.11118761, 0.52160971,
+                0.00794725, 0.65772107
+            };
+
+            List<float> rgf = new List<float>();
+            for (int i = 0; i < rg.Length; i++)
+            {
+                rgf.Add((float)rg[i]);
+            }
+
+            m_cuda.SetHostMemory(hX, Utility.ConvertVec<T>(rgf.ToArray()));
+            m_cuda.calc_dft_coefficients(20, hX, 10, hY);
+
+            float[] rgY = m_cuda.GetHostMemoryFloat(hY);
+
+            double[] rgExpected = new double[]
+            {
+                0.858267509, 0.10973072326178214, 0.0897866325447027, 0.08937217338746029, 0.05498685297408046, 0.17415431887596447, 0.1312989315427436, 0.21160113507156073, 0.12646402960644504, 0.1206324517782738
+            };
+
+            m_cuda.FreeHostBuffer(hX);
+            m_cuda.FreeHostBuffer(hY);
+
+            m_log.CHECK_EQ(rgY.Length, rgExpected.Length, "The lengths should be the same!");
+
+            for (int i = 0; i < rgY.Length; i++)
+            {
+                m_log.EXPECT_NEAR_FLOAT(rgY[i], rgExpected[i], 0.0001, "The values do not match!");
+            }
         }
     }
 }

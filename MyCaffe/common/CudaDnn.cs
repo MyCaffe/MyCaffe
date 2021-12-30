@@ -1250,6 +1250,7 @@ namespace MyCaffe.common
             CUDA_GUASSIAN_BLUR = 900,
             CUDA_HAMMING_DIFF = 901,
             CUDA_CALC_BATCH_DIST = 902,
+            CUDA_CALC_DFT = 903,
 
             CUDA_CREATE_SSD = 950,
             CUDA_FREE_SSD = 951,
@@ -9540,6 +9541,26 @@ namespace MyCaffe.common
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_HAMMING_DIFF, m_param.AsFloat( n, (float)dfThreshold, hA, hB, hY, nOffA, nOffB, nOffY));
 
             return asum_double(n, hY);
+        }
+
+        /// <summary>
+        /// Calculates the discrete Fourier Transform (DFT) coefficients across the frequencies 1...n/2 (Nyquest Limit)
+        /// for the array of values in host memory referred to by hA.  Return values are placed in the host memory
+        /// referenced by hY.
+        /// </summary>
+        /// <param name="n">Specifies the number of items.</param>
+        /// <param name="hX">Specifies a handle to the host memory holding the input values.</param>
+        /// <param name="m">Specifies the number of items in hY, must = n/2 (Nyquest Limit)</param>
+        /// <param name="hY">Specifies a handle to the host memory holding the n/2 output values (Nyquest Limit)</param>
+        /// <remarks>
+        /// @see [Implement the Spectrogram from scratch in python](https://fairyonice.github.io/implement-the-spectrogram-from-scratch-in-python.html) by Yumi, Yumi's Blog, 2018
+        /// </remarks>
+        public void calc_dft_coefficients(int n, long hX, int m, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CALC_DFT, m_param.AsDouble(n, hX, m, hY));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CALC_DFT, m_param.AsFloat(n, hX, m, hY));
         }
 
         /// <summary>

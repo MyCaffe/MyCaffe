@@ -418,6 +418,7 @@ const int CUDA_FN_TSNE_COMPUTE_ERROR1 = 878;
 const int CUDA_FN_GUASSIAN_BLUR = 900;
 const int CUDA_FN_HAMMING_DIFF = 901;
 const int CUDA_FN_CALC_BATCH_DIST = 902;
+const int CUDA_FN_CALC_DFT = 903;
 
 const int CUDA_FN_CREATE_SSD = 950;
 const int CUDA_FN_FREE_SSD = 951;

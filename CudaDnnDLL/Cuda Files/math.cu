@@ -34,6 +34,7 @@
 #include <vector>
 #include <utility>
 #include <algorithm>
+#include <complex>
 #include <math.h>
 
 //=============================================================================
@@ -13089,6 +13090,97 @@ long Math<T>::gaussian_blur(int n, int nChannels, int h, int w, T fSigma, long h
 
 template long Math<double>::gaussian_blur(int n, int c, int h, int w, double dfSigma, long hX, long hY);
 template long Math<float>::gaussian_blur(int n, int c, int h, int w, float fSigma, long hX, long hY);
+
+
+template<>
+long Math<float>::calc_dft(int n, long hX, int m, long hY)
+{
+	HostBuffer<float>* pX = m_pMem->GetHostBuffer(hX);
+	if (pX == NULL)
+		return ERROR_MEMORY_OUT;
+
+	HostBuffer<float>* pY = m_pMem->GetHostBuffer(hY);
+	if (pY == NULL)
+		return ERROR_MEMORY_OUT;
+
+	if (pY->Count() < n / 2)
+		return ERROR_MEMORY_TOO_SMALL;
+
+	memset(pY->Data(), 0, pY->Count() * sizeof(float));
+
+	int nL = n;
+	int nN = nL / 2; // Nyquest Limit
+	
+	float* pData = pY->Data();
+	for (int i = 0; i < nN; i++)
+	{	
+		std::complex<float> sum(0, 0);
+
+		for (int j = 0; j < nL; j++)
+		{
+			std::complex<float> cpx(0, 1);
+
+			cpx *= 2 * M_PI * j * i;
+			cpx /= nL;
+			
+			cpx = std::exp(cpx);
+			cpx *= pX->Data()[j];
+
+			sum += cpx;
+		}
+
+		sum /= nL;
+		*pData = std::abs(sum) * 2;
+		pData++;
+	}
+
+	return 0;
+}
+
+template<>
+long Math<double>::calc_dft(int n, long hX, int m, long hY)
+{
+	HostBuffer<double>* pX = m_pMem->GetHostBuffer(hX);
+	if (pX == NULL)
+		return ERROR_MEMORY_OUT;
+
+	HostBuffer<double>* pY = m_pMem->GetHostBuffer(hY);
+	if (pY == NULL)
+		return ERROR_MEMORY_OUT;
+
+	if (pY->Count() < n / 2)
+		return ERROR_MEMORY_TOO_SMALL;
+
+	memset(pY->Data(), 0, pY->Count() * sizeof(double));
+
+	int nL = n;
+	int nN = nL / 2; // Nyquest Limit
+
+	double* pData = pY->Data();
+	for (int i = 0; i < nN; i++)
+	{
+		std::complex<double> sum(0, 0);
+
+		for (int j = 0; j < nL; j++)
+		{
+			std::complex<double> cpx(0, 1);
+
+			cpx *= 2 * M_PI * j * i;
+			cpx /= nL;
+
+			cpx = std::exp(cpx);
+			cpx *= pX->Data()[j];
+
+			sum += cpx;
+		}
+
+		sum /= nL;
+		*pData = std::abs(sum) * 2;
+		pData++;
+	}
+
+	return 0;
+}
 
 
 template <typename T>

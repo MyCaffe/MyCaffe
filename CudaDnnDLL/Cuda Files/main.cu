@@ -944,6 +944,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_GUASSIAN_BLUR:
 			return m_device.cuda_guassian_blur(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_CALC_DFT:
+			return m_device.cuda_calc_dft(lCount, pfInput, plCount, ppfOutput);
+	
 		case CUDA_FN_HAMMING_DIFF:
 			return m_device.cuda_hamming_diff(lCount, pfInput, plCount, ppfOutput);
 
