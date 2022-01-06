@@ -1574,7 +1574,7 @@ namespace MyCaffe.layers
 
                 return null;
             }
-            catch (Exception excpt)
+            catch (Exception)
             {
                 return null;
             }
