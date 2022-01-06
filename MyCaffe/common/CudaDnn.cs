@@ -6279,16 +6279,31 @@ namespace MyCaffe.common
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SCALE_TO_RANGE, m_param.AsFloat(n, hX, hY, (float)fMin, (float)fMax));
         }
 
+        /// <summary>
+        /// Calculates the erf() function.
+        /// </summary>
+        /// <param name="dfVal">Specifies the input value.</param>
+        /// <returns>The erf result is returned.</returns>
         public double erf(double dfVal)
         {
             return convertD(erf(convertD1(dfVal)));
         }
 
+        /// <summary>
+        /// Calculates the erf() function.
+        /// </summary>
+        /// <param name="fVal">Specifies the input value.</param>
+        /// <returns>The erf result is returned.</returns>
         public float erf(float fVal)
         {
             return convertF(erf(convertF1(fVal)));
         }
 
+        /// <summary>
+        /// Calculates the erf() function.
+        /// </summary>
+        /// <param name="fVal">Specifies the input value.</param>
+        /// <returns>The erf result is returned.</returns>
         public T erf(T fVal)
         {
             if (m_dt == DataType.DOUBLE)
