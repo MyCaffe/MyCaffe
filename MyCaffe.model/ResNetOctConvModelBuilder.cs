@@ -374,7 +374,7 @@ namespace MyCaffe.model
                 connectAndAddLayer(lastLayer2, reluLayer, true, true);
             }
 
-            return lastLayer1;
+            return convLayer;
         }
 
 
