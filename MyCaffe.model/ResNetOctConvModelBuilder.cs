@@ -11,6 +11,10 @@ namespace MyCaffe.model
     /// <summary>
     /// The ResNetOctConvModelBuilder is used to build Octave Convolution based RESNET models.
     /// </summary>
+    /// <remarks>
+    /// @see [octconv.pytorch](https://github.com/d-li14/octconv.pytorch) by d-li14 on GitHub, 2020, distributed
+    /// under Apache 2.0 License https://github.com/d-li14/octconv.pytorch/blob/master/LICENSE
+    /// </remarks>
     public class ResNetOctConvModelBuilder : ModelBuilder
     {
         int m_nGpuID = 0;
