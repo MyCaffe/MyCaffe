@@ -56,6 +56,7 @@
     <Compile Include="ModelBuilder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ResNetModelBuilder.cs" />
+    <Compile Include="ResNetOctConvModelBuilder.cs" />
     <Compile Include="SsdPascalModelBuilder.cs" />
   </ItemGroup>
   <ItemGroup>

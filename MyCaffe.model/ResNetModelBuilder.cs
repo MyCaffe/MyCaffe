@@ -154,8 +154,9 @@ namespace MyCaffe.model
 
 
         /// <summary>
-        /// Create the training SSD model for the pascal dataset.
+        /// Create the training model.
         /// </summary>
+        /// <param name="bDeploy">Optionally, specifies to create a deployment model (default = false).</param>
         public override NetParameter CreateModel(bool bDeploy = false)
         {
             LayerParameter lastLayer = null;

@@ -30,6 +30,13 @@ namespace MyCaffe.model
         /// </summary>
         protected SolverParameter m_solver = new SolverParameter();
 
+        public enum SCALE_BIAS
+        {
+            NONE,
+            SCALE,
+            BIAS
+        }
+
         /// <summary>
         /// The constructor.
         /// </summary>
@@ -210,7 +217,7 @@ namespace MyCaffe.model
         /// <param name="bUseObjectness">Optionally, specifies whether or not to use objectness (default = false).</param>
         /// <param name="bUseBatchNorm">Optionally, specifies whether or not to use batch-norm layers (default = true).</param>
         /// <param name="dfLrMult">Optionally, specifies the learning multiplier (default = 1.0).</param>
-        /// <param name="bUseScale">Optionally, specifies whether or not to use scale layers (default = true).</param>
+        /// <param name="useScale">Optionally, specifies whether or not to use scale layers (default = true).</param>
         /// <param name="nImageHt">Optionally, specifies the image height (default = 0, ignore).</param>
         /// <param name="nImageWd">Optionally, specifies the image width (default = 0, ignore).</param>
         /// <param name="bShareLocation">Optionally, specifies whether or not to share the location (default = true).</param>
@@ -222,7 +229,7 @@ namespace MyCaffe.model
         /// <param name="strConfPostfix">Optionally, specifies the confidence postfix (default = "").</param>
         /// <param name="strLocPostfix">Optionally, specifies the location postifix (default = "").</param>
         /// <returns></returns>
-        protected List<LayerParameter> createMultiBoxHead(LayerParameter data, int nNumClasses, List<MultiBoxHeadInfo> rgInfo, List<float> rgPriorVariance, bool bUseObjectness = false, bool bUseBatchNorm = true, double dfLrMult = 1.0, bool bUseScale = true, int nImageHt = 0, int nImageWd = 0, bool bShareLocation = true, bool bFlip = true, bool bClip = true, double dfOffset = 0.5, int nKernelSize = 1, int nPad = 0, string strConfPostfix = "", string strLocPostfix = "")
+        protected List<LayerParameter> createMultiBoxHead(LayerParameter data, int nNumClasses, List<MultiBoxHeadInfo> rgInfo, List<float> rgPriorVariance, bool bUseObjectness = false, bool bUseBatchNorm = true, double dfLrMult = 1.0, bool useScale = true, int nImageHt = 0, int nImageWd = 0, bool bShareLocation = true, bool bFlip = true, bool bClip = true, double dfOffset = 0.5, int nKernelSize = 1, int nPad = 0, string strConfPostfix = "", string strLocPostfix = "")
         {
             LayerParameter lastLayer;
             string strName;
@@ -456,7 +463,7 @@ namespace MyCaffe.model
         /// <param name="nStride">Specifies the stride.</param>
         /// <param name="dfLrMult">Optionally, specifies the default learning rate multiplier (default = 1.0).</param>
         /// <param name="nDilation">Optionally, specifies the dilation (default = 1).</param>
-        /// <param name="bUseScale">Optionally, specifies whether or not to use a ScaleLayer (default = true).</param>
+        /// <param name="useScale">Optionally, specifies whether or not to use a ScaleLayer or BiasLayer (default = SCALE).</param>
         /// <param name="strConvPrefix">Optionally, specifies the convolution layer name prefix (default = "").</param>
         /// <param name="strConvPostfix">Optionally, specifies the convolution layer name postfix (default = "").</param>
         /// <param name="strBnPrefix">Optionally, specifies the batch-norm layer name prefix (default = "").</param>
@@ -469,12 +476,13 @@ namespace MyCaffe.model
         /// <param name="strLayerPostfix">Optionally, specifies a layer name postfix (default = "").</param>
         /// <param name="phaseExclude">Optionally, specifies a phase to exclude (default = NONE).</param>
         /// <returns>The last layer added is returned.</returns>
-        protected LayerParameter addConvBNLayer(string strInputLayer, string strOutputLayer, bool bUseBatchNorm, bool bUseRelU, int nNumOutput, int nKernelSize, int nPad, int nStride, double dfLrMult = 1.0, int nDilation = 1, bool bUseScale = true, string strConvPrefix = "", string strConvPostfix = "", string strBnPrefix = "", string strBnPostfix = "_bn", string strScalePrefix = "", string strScalePostFix = "_scale", string strBiasPrefix = "", string strBiasPostfix = "_bias", bool bNamedParams = false, string strLayerPostfix = "", Phase phaseExclude = Phase.NONE)
+        protected LayerParameter addConvBNLayer(string strInputLayer, string strOutputLayer, bool bUseBatchNorm, bool bUseRelU, int nNumOutput, int nKernelSize, int nPad, int nStride, double dfLrMult = 1.0, int nDilation = 1, SCALE_BIAS useScale = SCALE_BIAS.SCALE, string strConvPrefix = "", string strConvPostfix = "", string strBnPrefix = "", string strBnPostfix = "_bn", string strScalePrefix = "", string strScalePostFix = "_scale", string strBiasPrefix = "", string strBiasPostfix = "_bias", bool bNamedParams = false, string strLayerPostfix = "", Phase phaseExclude = Phase.NONE)
         {
             LayerParameter lastLayer = findLayer(strInputLayer);
             string strName = strConvPrefix + strOutputLayer + strConvPostfix;
 
-            LayerParameter convLayer = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
+            LayerParameter.LayerType type = LayerParameter.LayerType.CONVOLUTION;
+            LayerParameter convLayer = new LayerParameter(type);
             convLayer.convolution_param.weight_filler = new FillerParameter("xavier");
             convLayer.convolution_param.bias_filler = new FillerParameter("constant", 0);
             convLayer.convolution_param.bias_term = true;
@@ -485,9 +493,11 @@ namespace MyCaffe.model
             convLayer.convolution_param.dilation.Add((uint)nDilation);
             convLayer.convolution_param.num_output = (uint)nNumOutput;
             convLayer.top.Add(convLayer.name);
+
             addExclusion(convLayer, phaseExclude);
 
             LayerParameter bnLayer = null;
+            LayerParameter bnLayerL = null;
             LayerParameter scaleLayer = null;
             LayerParameter biasLayer = null;
             LayerParameter reluLayer = null;
@@ -518,7 +528,7 @@ namespace MyCaffe.model
                     dfBnLrMult = 0;
 
                 // Parameters for scale bias layer after batchnorm.
-                if (bUseScale)
+                if (useScale == SCALE_BIAS.SCALE)
                 {
                     scaleLayer = new LayerParameter(LayerParameter.LayerType.SCALE);
                     strName = strScalePrefix + strOutputLayer + strScalePostFix;
@@ -531,7 +541,7 @@ namespace MyCaffe.model
                     scaleLayer.top.Add(scaleLayer.name);
                     addExclusion(scaleLayer, phaseExclude);
                 }
-                else
+                else if (useScale == SCALE_BIAS.BIAS)
                 {
                     biasLayer = new LayerParameter(LayerParameter.LayerType.BIAS);
                     strName = strBiasPrefix + strOutputLayer + strBiasPostfix;
@@ -575,11 +585,15 @@ namespace MyCaffe.model
         /// </summary>
         /// <param name="fromLayer">Specifies the layer bottom to connect to the toLayer's top.</param>
         /// <param name="toLayer">Specifies the layer who's top is connected to the from layer's bottom.</param>
+        /// <param name="fromLayer2">Optionally, specifies a second input layer.</param>
         /// <returns>The toLayer is returned as the next layer.</returns>
-        protected LayerParameter connectAndAddLayer(string fromLayer, LayerParameter toLayer)
+        protected LayerParameter connectAndAddLayer(string fromLayer, LayerParameter toLayer, string fromLayer2 = null)
         {
             toLayer.bottom.Clear();
             toLayer.bottom.Add(fromLayer);
+
+            if (fromLayer2 != null)
+                toLayer.bottom.Add(fromLayer2);
 
             m_net.layer.Add(toLayer);
 
@@ -938,7 +952,7 @@ namespace MyCaffe.model
             string strBnPostfix = "";
             string strScalePrefix = "scale_" + strBlockName;
             string strScalePostfix = "";
-            bool bUseScale = true;
+            SCALE_BIAS useScale = SCALE_BIAS.SCALE;
             string strBranch1 = lastLayer.name;
             string strBranch2;
             string strBranchName;
@@ -947,31 +961,31 @@ namespace MyCaffe.model
             if (bUseBranch1)
             {
                 strBranchName = "_br1";
-                lastLayer = addConvBNLayer(lastLayer.name, strBranchName, true, false, nOut2C, 1, 0, nStride, 1, nDilation, bUseScale, strConvPrefix, strConvPostfix, strBnPrefix, strBnPostfix, strScalePrefix, strScalePostfix, "", "_bias", bNamedParams, strLayerPostfix, phaseExclude);
+                lastLayer = addConvBNLayer(lastLayer.name, strBranchName, true, false, nOut2C, 1, 0, nStride, 1, nDilation, useScale, strConvPrefix, strConvPostfix, strBnPrefix, strBnPostfix, strScalePrefix, strScalePostfix, "", "_bias", bNamedParams, strLayerPostfix, phaseExclude);
                 strBranch1 = lastLayer.top[0];
                 strOutName = strBranch1;
                 nStride = 1;
             }
 
             strBranchName = "_br2a";
-            lastLayer = addConvBNLayer(strOutName, strBranchName, true, true, nOut2A, 1, 0, nStride, 1, nDilation, bUseScale, strConvPrefix, strConvPostfix, strBnPrefix, strBnPostfix, strScalePrefix, strScalePostfix, "", "_bias", bNamedParams, strLayerPostfix, phaseExclude);        
+            lastLayer = addConvBNLayer(strOutName, strBranchName, true, true, nOut2A, 1, 0, nStride, 1, nDilation, useScale, strConvPrefix, strConvPostfix, strBnPrefix, strBnPostfix, strScalePrefix, strScalePostfix, "", "_bias", bNamedParams, strLayerPostfix, phaseExclude);        
             strOutName = strConvPrefix + strBranchName + strLayerPostfix;
             strBranchName = "_br2b";
 
             if (nDilation == 1)
             {
-                lastLayer = addConvBNLayer(strOutName, strBranchName, true, true, nOut2B, 3, 1, 1, 1, nDilation, bUseScale, strConvPrefix, strConvPostfix, strBnPrefix, strBnPostfix, strScalePrefix, strScalePostfix, "", "_bias", bNamedParams, strLayerPostfix, phaseExclude);
+                lastLayer = addConvBNLayer(strOutName, strBranchName, true, true, nOut2B, 3, 1, 1, 1, nDilation, useScale, strConvPrefix, strConvPostfix, strBnPrefix, strBnPostfix, strScalePrefix, strScalePostfix, "", "_bias", bNamedParams, strLayerPostfix, phaseExclude);
             }
             else
             {
                 int nPad = (int)(((3 + (nDilation - 1) * 2) - 1) / 2);
-                lastLayer = addConvBNLayer(strOutName, strBranchName, true, true, nOut2B, 3, nPad, 1, 1, nDilation, bUseScale, strConvPrefix, strConvPostfix, strBnPrefix, strBnPostfix, strScalePrefix, strScalePostfix, "", "_bias", bNamedParams, strLayerPostfix, phaseExclude);
+                lastLayer = addConvBNLayer(strOutName, strBranchName, true, true, nOut2B, 3, nPad, 1, 1, nDilation, useScale, strConvPrefix, strConvPostfix, strBnPrefix, strBnPostfix, strScalePrefix, strScalePostfix, "", "_bias", bNamedParams, strLayerPostfix, phaseExclude);
             }
 
             strOutName = strConvPrefix + strBranchName + strLayerPostfix;
             strBranchName = "_br2c";
 
-            lastLayer = addConvBNLayer(strOutName, strBranchName, true, false, nOut2C, 1, 0, 1, 1, 1, bUseScale, strConvPrefix, strConvPostfix, strBnPrefix, strBnPostfix, strScalePrefix, strScalePostfix, "", "_bias", bNamedParams, strLayerPostfix, phaseExclude);
+            lastLayer = addConvBNLayer(strOutName, strBranchName, true, false, nOut2C, 1, 0, 1, 1, 1, useScale, strConvPrefix, strConvPostfix, strBnPrefix, strBnPostfix, strScalePrefix, strScalePostfix, "", "_bias", bNamedParams, strLayerPostfix, phaseExclude);
             strBranch2 = lastLayer.top[0];
 
             LayerParameter eltwise = new LayerParameter(LayerParameter.LayerType.ELTWISE);
@@ -1028,7 +1042,7 @@ namespace MyCaffe.model
             string strScalePrefix = "scale_";
             string strScalePostfix = "";
 
-            LayerParameter lastLayer = addConvBNLayer(strDataName, "conv1", true, true, 64, 7, 3, 2, 1, 1, true, strConvPrefix, strConvPostfix, strBnPrefix, strBnPostfix, strScalePrefix, strScalePostfix, "", "_bias", bNamedParams, strLayerPostfix, phaseExclude);
+            LayerParameter lastLayer = addConvBNLayer(strDataName, "conv1", true, true, 64, 7, 3, 2, 1, 1, SCALE_BIAS.SCALE, strConvPrefix, strConvPostfix, strBnPrefix, strBnPostfix, strScalePrefix, strScalePostfix, "", "_bias", bNamedParams, strLayerPostfix, phaseExclude);
 
             LayerParameter pool = createPooling("pool1" + strLayerPostfix, PoolingParameter.PoolingMethod.MAX, 3, 0, 2);
             addExclusion(pool, phaseExclude);
