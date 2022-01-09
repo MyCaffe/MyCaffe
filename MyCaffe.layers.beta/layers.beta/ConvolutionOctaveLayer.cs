@@ -227,7 +227,7 @@ namespace MyCaffe.layers.beta
             m_log.CHECK_GE(m_dfAlphaOut, 0, "The alpha out must be >= 0.");
             m_log.CHECK_LT(m_dfAlphaOut, 1, "The alpha out must be < 1.");
 
-            m_nStride = (int)m_param.convolution_octave_param.stride[0];
+            m_nStride = (int)m_param.convolution_param.stride[0];
             m_log.CHECK_GE(m_nStride, 1, "The stride should be >= 1.");
             m_log.CHECK_LE(m_nStride, 2, "The stride should be <= 2.");
 
@@ -273,7 +273,7 @@ namespace MyCaffe.layers.beta
             poolParam.pooling_param.kernel_size.Add(2);
             poolParam.pooling_param.stride.Add(2);
             poolParam.pooling_param.pool = PoolingParameter.PoolingMethod.AVE;
-            poolParam.pooling_param.engine = m_param.convolution_octave_param.engine;
+            poolParam.pooling_param.engine = m_param.convolution_param.engine;
 
             if (m_nStride == 2)
             {
@@ -288,17 +288,17 @@ namespace MyCaffe.layers.beta
             }
 
             LayerParameter convParamBase = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
-            convParamBase.convolution_param.engine = m_param.convolution_octave_param.engine;
-            convParamBase.convolution_param.kernel_size = m_param.convolution_octave_param.kernel_size;
+            convParamBase.convolution_param.engine = m_param.convolution_param.engine;
+            convParamBase.convolution_param.kernel_size = m_param.convolution_param.kernel_size;
             convParamBase.convolution_param.stride.Add(1);
-            convParamBase.convolution_param.pad = m_param.convolution_octave_param.pad;
-            convParamBase.convolution_param.dilation = m_param.convolution_octave_param.dilation;
-            convParamBase.convolution_param.bias_filler = m_param.convolution_octave_param.bias_filler;
-            convParamBase.convolution_param.bias_term = m_param.convolution_octave_param.bias_term;
+            convParamBase.convolution_param.pad = m_param.convolution_param.pad;
+            convParamBase.convolution_param.dilation = m_param.convolution_param.dilation;
+            convParamBase.convolution_param.bias_filler = m_param.convolution_param.bias_filler;
+            convParamBase.convolution_param.bias_term = m_param.convolution_param.bias_term;
 
             int nInChannels = colBottom[0].channels;
-            uint nOutChannels = m_param.convolution_octave_param.num_output;
-            uint nGroup = m_param.convolution_octave_param.group;
+            uint nOutChannels = m_param.convolution_param.num_output;
+            uint nGroup = m_param.convolution_param.group;
             uint nGroupTmp;
 
             // h2h Layer

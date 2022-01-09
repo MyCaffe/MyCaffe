@@ -927,6 +927,7 @@ namespace MyCaffe.param
                     expected_bottom.Add("in_l");
                     expected_top.Add("x_h");
                     expected_top.Add("x_l");
+                    m_rgLayerParameters[LayerType.CONVOLUTION] = new ConvolutionParameter();
                     m_rgLayerParameters[LayerType.CONVOLUTION_OCTAVE] = new ConvolutionOctaveParameter();
                     break;
 

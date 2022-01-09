@@ -12,7 +12,7 @@ namespace MyCaffe.param
     /// </summary>
     /// <remarks>
     /// </remarks>
-    public class ConvolutionOctaveParameter : ConvolutionParameter
+    public class ConvolutionOctaveParameter : LayerParameterBase
     {
         double m_dfAlphaIn = 0.5;
         double m_dfAlphaOut = 0.5;
@@ -57,8 +57,6 @@ namespace MyCaffe.param
         /** @copydoc LayerParameterBase::Copy */
         public override void Copy(LayerParameterBase src)
         {
-            base.Copy(src);
-
             if (src is ConvolutionOctaveParameter)
             {
                 ConvolutionOctaveParameter p = (ConvolutionOctaveParameter)src;
@@ -82,10 +80,8 @@ namespace MyCaffe.param
         /// <returns>The new RawProto is returned.</returns>
         public override RawProto ToProto(string strName)
         {
-            RawProto rpBase = base.ToProto("convolution");
             RawProtoCollection rgChildren = new RawProtoCollection();
 
-            rgChildren.Add(rpBase.Children);
             rgChildren.Add("alpha_in", alpha_in.ToString());
             rgChildren.Add("alpha_out", alpha_out.ToString());
 
@@ -97,12 +93,10 @@ namespace MyCaffe.param
         /// </summary>
         /// <param name="rp">Specifies the RawProto to parse.</param>
         /// <returns>A new instance of the parameter is returned.</returns>
-        public static new ConvolutionOctaveParameter FromProto(RawProto rp)
+        public static ConvolutionOctaveParameter FromProto(RawProto rp)
         {
             string strVal;
             ConvolutionOctaveParameter p = new ConvolutionOctaveParameter();
-
-            ((ConvolutionParameter)p).Copy(ConvolutionParameter.FromProto(rp));
 
             if ((strVal = rp.FindValue("alpha_in")) != null)
                 p.alpha_in = double.Parse(strVal);

@@ -529,13 +529,13 @@ namespace MyCaffe.test
                 TopVec.Add(Top2);
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION_OCTAVE);
-            p.convolution_octave_param.engine = m_engine;
-            p.convolution_octave_param.kernel_size.Add(1);
-            p.convolution_octave_param.stride.Add(2);
-            p.convolution_octave_param.num_output = 10;
+            p.convolution_param.engine = m_engine;
+            p.convolution_param.kernel_size.Add(1);
+            p.convolution_param.stride.Add(2);
+            p.convolution_param.num_output = 10;
+            p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
+            p.convolution_param.bias_term = false;
             p.convolution_octave_param.alpha_out = dfAlpha;
-            p.convolution_octave_param.cudnn_enable_tensor_cores = bUseTensorCores;
-            p.convolution_octave_param.bias_term = false;
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
@@ -563,7 +563,7 @@ namespace MyCaffe.test
             layer.Dispose();
 
             // setting group should not change the shape
-            p.convolution_octave_param.group = 3;
+            p.convolution_param.group = 3;
             layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
             layer.Setup(BottomVec, TopVec);
 
@@ -599,13 +599,13 @@ namespace MyCaffe.test
                 TopVec.Add(Top2);
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION_OCTAVE);
-            p.convolution_octave_param.engine = m_engine;
-            p.convolution_octave_param.kernel_size.Add(1);
-            p.convolution_octave_param.stride.Add(2);
-            p.convolution_octave_param.num_output = 10;
+            p.convolution_param.engine = m_engine;
+            p.convolution_param.kernel_size.Add(1);
+            p.convolution_param.stride.Add(2);
+            p.convolution_param.num_output = 10;
+            p.convolution_param.cudnn_enable_tensor_cores = false;
+            p.convolution_param.bias_term = false;
             p.convolution_octave_param.alpha_out = dfAlpha;
-            p.convolution_octave_param.cudnn_enable_tensor_cores = false;
-            p.convolution_octave_param.bias_term = false;
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
@@ -648,14 +648,14 @@ namespace MyCaffe.test
                 TopVec.Add(Top2);
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION_OCTAVE);
-            p.convolution_octave_param.engine = m_engine;
-            p.convolution_octave_param.kernel_size.Add(1);
-            p.convolution_octave_param.stride.Add(1);
-            p.convolution_octave_param.pad.Add(0);
-            p.convolution_octave_param.num_output = 10;
+            p.convolution_param.engine = m_engine;
+            p.convolution_param.kernel_size.Add(1);
+            p.convolution_param.stride.Add(1);
+            p.convolution_param.pad.Add(0);
+            p.convolution_param.num_output = 10;
+            p.convolution_param.cudnn_enable_tensor_cores = false;
+            p.convolution_param.bias_term = false;
             p.convolution_octave_param.alpha_out = dfAlpha;
-            p.convolution_octave_param.cudnn_enable_tensor_cores = false;
-            p.convolution_octave_param.bias_term = false;
 
             ConvolutionOctaveLayer<T> layer = new ConvolutionOctaveLayer<T>(m_cuda, m_log, p);
             layer.OnGetWorkspace += layer_OnGetWorkspace;
