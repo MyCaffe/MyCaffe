@@ -1,0 +1,9 @@
+LIBRARY	"CudaPreProcDLL.11.6.dll"
+
+STACKSIZE 8000000
+
+EXPORTS
+	DLL_InitFloatCustomExtension @1
+	DLL_InvokeFloatCustomExtension @2
+	DLL_InitDoubleCustomExtension @3
+	DLL_InvokeDoubleCustomExtension @4
