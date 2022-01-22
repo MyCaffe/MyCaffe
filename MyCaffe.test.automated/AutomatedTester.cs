@@ -59,6 +59,23 @@ namespace MyCaffe.test.automated
             AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
         }
 
+        private void dispose()
+        {
+            if (m_activeGpu != null)
+            {
+                m_activeGpu.Dispose();
+                m_activeGpu = null;
+            }
+
+            if (m_activeKernelHandle != null)
+            {
+                m_activeKernelHandle.Dispose();
+                m_activeKernelHandle = null;
+            }
+
+            Close();
+        }
+
         private Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
         {
             if (args.Name.Contains(".resources"))
@@ -86,6 +103,12 @@ namespace MyCaffe.test.automated
             m_lstSorter.SortColumn = 2;
             m_lstSorter.Order = SortOrder.Ascending;
             lstTests.Sort();
+            timerUI.Enabled = true;
+        }
+
+        public void Close()
+        {
+            timerUI.Enabled = false;
         }
 
         public string TestName

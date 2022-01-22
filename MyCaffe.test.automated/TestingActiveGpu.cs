@@ -9,13 +9,30 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.test.automated
 {
-    public class TestingActiveGpuGet
+    public class TestingActiveGpuGet : IDisposable
     {
         EventWaitHandle m_evtEnabled = null;
+        MemoryMappedFile m_mmf = null;
+        MemoryMappedViewStream m_mmvStrm = null;
 
         public TestingActiveGpuGet()
         {
             EventWaitHandle.TryOpenExisting("__TestingActiveGpuEnabled__", out m_evtEnabled);
+        }
+
+        public void Dispose()
+        {
+            if (m_mmvStrm != null)
+            {
+                m_mmvStrm.Dispose();
+                m_mmvStrm = null;
+            }
+
+            if (m_mmf != null)
+            {
+                m_mmf.Dispose();
+                m_mmf = null;
+            }
         }
 
         public void Initialize()
@@ -28,16 +45,18 @@ namespace MyCaffe.test.automated
             if (m_evtEnabled != null && !m_evtEnabled.WaitOne(0))
                 return null;
 
-            MemoryMappedFile mmf = null;
-            MemoryMappedViewStream mmvStrm = null;
 
             try
             {
-                mmf = MemoryMappedFile.CreateOrOpen("__TestActiveGpu__", 4);
-                mmvStrm = mmf.CreateViewStream(0, 4);
+                if (m_mmf == null)
+                {
+                    m_mmf = MemoryMappedFile.CreateOrOpen("__TestActiveGpu__", 4);
+                    m_mmvStrm = m_mmf.CreateViewStream(0, 4);
+                }
+
                 byte[] rgBuffer = new byte[4];
 
-                mmvStrm.Read(rgBuffer, 0, 4);
+                m_mmvStrm.Read(rgBuffer, 0, 4);
 
                 using (MemoryStream ms = new MemoryStream(rgBuffer))
                 using (BinaryReader br = new BinaryReader(ms))
@@ -54,11 +73,6 @@ namespace MyCaffe.test.automated
             }
             finally
             {
-                if (mmvStrm != null)
-                    mmvStrm.Dispose();
-
-                if (mmf != null)
-                    mmf.Dispose();
             }
         }
     }

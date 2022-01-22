@@ -41,7 +41,8 @@ namespace MyCaffe.test.automated
 
         private void FormAutomatedTests_FormClosing(object sender, FormClosingEventArgs e)
         {
-            automatedTester1.SaveToDatabase();            
+            automatedTester1.SaveToDatabase();
+            automatedTester1.Dispose();
         }
     }
 }
