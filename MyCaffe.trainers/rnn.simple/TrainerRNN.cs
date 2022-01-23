@@ -946,8 +946,8 @@ namespace MyCaffe.trainers.rnn.simple
                     float[] rgf = e.State.Data.GetData<float>();
                     int nDim = e.State.Data.Height * e.State.Data.Width;
 
-                    if (e.State.Data.Channels != rgCorrectLengthSequence.Length)
-                        throw new Exception("The data length received is incorrect!");
+                    //if (e.State.Data.Channels != rgCorrectLengthSequence.Length)
+                    //    throw new Exception("The data length received is incorrect!");
 
                     for (int i = 0; i < rgCorrectLengthSequence.Length; i++)
                     {
