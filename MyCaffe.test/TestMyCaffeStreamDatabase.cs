@@ -680,7 +680,8 @@ namespace MyCaffe.test
                 log.CHECK_EQ(rgSize.Length, 3, "The query size should have 3 items.");
                 log.CHECK_EQ(rgSize[0], 1, "The query size item 1 should be 1 for the number of files.");
                 log.CHECK_EQ(rgSize[1], 1, "The query size item 0 should be 1.");
-                log.CHECK_EQ(rgSize[2], 4572882, "The query size item 2 should be 4572882 for the maximum number of characters in each of the the files.");
+                //log.CHECK_EQ(rgSize[2], 4572882, "The query size item 2 should be 4572882 for the maximum number of characters in each of the the files.");
+                log.CHECK_EQ(rgSize[2], 4740059, "The query size item 2 should be 4740059 for the maximum number of characters in each of the the files.");
 
                 int nH = rgSize[1];
                 int nW = rgSize[2];
@@ -700,7 +701,8 @@ namespace MyCaffe.test
                 log.WriteLine("Total Time = " + dfMs.ToString() + " ms.");
 
                 log.CHECK(sdEnd == null, "The last query should be null to show no more data exists.");
-                log.CHECK_EQ(sd.ItemCount, 4572882, "There should be more than one item in the data.");
+                //log.CHECK_EQ(sd.ItemCount, 4572882, "There should be more than one item in the data.");
+                log.CHECK_EQ(sd.ItemCount, 4740059, "There should be more than one item in the data.");
                 log.CHECK(!sd.IsRealData, "The data should be byte data, not real.");
             }
             finally
