@@ -7,6 +7,7 @@
 
 #include "device.h"
 #include <nvapi.h>
+#include <nvml.h>
 #include <string>
 
 #define USES_CONVERSION_SIMPLE int _convert; UINT _acp = ATL::_AtlGetConversionACP() /*CP_THREAD_ACP*/; LPCSTR _lpa;
@@ -280,6 +281,17 @@ long Device<T>::GetDeviceInfo(int nDevice, LPTSTR* pszDevice, bool bVerbose)
 	int nCudaBusID = std::stoul(str, nullptr, 16);
 
 	NvAPI_Status status;
+	nvmlReturn_t res;
+	nvmlDevice_t device;
+	BOOL bNvmlInit = FALSE;
+
+	if ((res = nvmlInit_v2()) == 0)
+	{
+		if ((res = nvmlDeviceGetHandleByIndex_v2(nDevice, &device)) != NVML_SUCCESS)
+			nvmlShutdown();
+		else
+			bNvmlInit = TRUE;
+	}
 
 	if ((status = NvAPI_Initialize()) != NVAPI_OK)
 	{
@@ -384,51 +396,75 @@ long Device<T>::GetDeviceInfo(int nDevice, LPTSTR* pszDevice, bool bVerbose)
 
 	NV_GPU_THERMAL_SETTINGS thermal;
 	thermal.version = NV_GPU_THERMAL_SETTINGS_VER;
+	int nTemp = 0;
 
 	if (nIdx >= 0)
 		status = NvAPI_GPU_GetThermalSettings(gpuHandles[nIdx], 0, &thermal);
 	else
 		status = NvAPI_GPU_GetThermalSettings(gpuTccHandles[nIdxTcc], 0, &thermal);
 
-	if (status != NVAPI_OK)
+	if (status == NVAPI_OK)
 	{
-		LPCSTR pszErr = "NvAPI Getting Thermal Settings...";
-		ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-		NvAPI_ShortString szErr;
-		NvAPI_GetErrorMessage(status, szErr);
-		ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-		return status;
+		if (thermal.count > 0)
+			nTemp = (int)thermal.sensor[0].currentTemp;
+	}
+	else
+	{
+		if ((res = nvmlDeviceGetTemperature(device, NVML_TEMPERATURE_GPU, (unsigned int*)&nTemp)) != NVML_SUCCESS)
+		{
+			LPCSTR pszErr = "NvAPI Getting Thermal Settings...";
+			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+			NvAPI_ShortString szErr;
+			NvAPI_GetErrorMessage(status, szErr);
+			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+			return status;
+		}
 	}
 
 	NV_GPU_DYNAMIC_PSTATES_INFO_EX states;
 	states.version = NV_GPU_DYNAMIC_PSTATES_INFO_EX_VER;
+	int nUtilization = 0;
 
 	if (nIdx >= 0)
 		status = NvAPI_GPU_GetDynamicPstatesInfoEx(gpuHandles[nIdx], &states);
 	else
 		status = NvAPI_GPU_GetDynamicPstatesInfoEx(gpuTccHandles[nIdxTcc], &states);
 
-	if (status != NVAPI_OK)
+	if (status == NVAPI_OK)
 	{
-		LPCSTR pszErr = "NvAPI Getting Dynamic Pstates...";
-		ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-		NvAPI_ShortString szErr;
-		NvAPI_GetErrorMessage(status, szErr);
-		ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-		return status;
+		if (states.utilization[0].bIsPresent)
+		{
+			double dfUtilization = (double)states.utilization[0].percentage;
+			nUtilization = (int)dfUtilization;
+		}
 	}
-
-	double dfUtilization = 0;
-	int nUtilization = 0;
-
-	if (states.utilization[0].bIsPresent)
+	else
 	{
-		dfUtilization = (double)states.utilization[0].percentage;
-		nUtilization = (int)dfUtilization;
-	}
+		unsigned int nPower;
+		if ((res = nvmlDeviceGetPowerUsage(device, &nPower)) != NVML_SUCCESS)
+		{
+			LPCSTR pszErr = "NvAPI Getting Dynamic PStates Info...";
+			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+			NvAPI_ShortString szErr;
+			NvAPI_GetErrorMessage(status, szErr);
+			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+			return status;
+		}
 
-	double dfC = (double)thermal.sensor[0].currentTemp;
-	int nTemp = (int)dfC;
+		unsigned int nLimit;
+		if ((res = nvmlDeviceGetEnforcedPowerLimit(device, &nLimit)) != NVML_SUCCESS)
+		{
+			LPCSTR pszErr = "NvAPI Getting Dynamic PStates Info...";
+			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+			NvAPI_ShortString szErr;
+			NvAPI_GetErrorMessage(status, szErr);
+			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+			return status;
+		}
+
+		double dfPct = (double)nPower / (double)nLimit;
+		nUtilization = (unsigned int)(dfPct * 100);
+	}
 
 	LPTSTR pDst = (LPTSTR)malloc(sizeof(TCHAR) * 2048);
 	if (pDst == NULL)
@@ -460,6 +496,9 @@ long Device<T>::GetDeviceInfo(int nDevice, LPTSTR* pszDevice, bool bVerbose)
 		_snprintf(szBuffer, 1023, ",\r\n Major: %d, Minor: %d, Compute Mode: %d,\r\n Max Grid: { %d, %d, %d }, Max Thread Dim: { %d, %d, %d },\r\n Shared Memory/Block: %zd,\r\n Driver Version: %.2f", prop.major, prop.minor, prop.computeMode, prop.maxGridSize[0], prop.maxGridSize[1], prop.maxGridSize[2], prop.maxThreadsDim[0], prop.maxThreadsDim[1], prop.maxThreadsDim[2], prop.sharedMemPerBlock, fDriverVer);
 		_tcsncat(pDst, A2T(szBuffer), 2047);
 	}
+
+	if (bNvmlInit)
+		nvmlShutdown();
 
 	*pszDevice = pDst;
 
