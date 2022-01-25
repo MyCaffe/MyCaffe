@@ -31,6 +31,61 @@ const int MAX_DIM = 4096 * 10;
 
 const long INITIAL_SET_MEM_BUFFER = 4096;
 
+//-----------------------------------------------------------------------------
+//	HwInfo Class
+//
+//	The HwInfo class implements the NVAPI and NVML wrapper functionality
+//-----------------------------------------------------------------------------
+template <class T>
+class HwInfo
+{
+protected:
+	BOOL m_bInitializedNvApi;
+	BOOL m_bInitializedNvml;
+	void* m_device;
+	void* m_gpuWdmHandles;
+	void* m_gpuTccHandles;
+	int m_nIdxWdm;
+	int m_nIdxTcc;
+	HANDLE m_hEventSrc;
+
+public:
+	HwInfo()
+	{
+		m_bInitializedNvApi = FALSE;
+		m_bInitializedNvml = FALSE;
+		m_device = NULL;
+		m_gpuWdmHandles = NULL;
+		m_gpuTccHandles = NULL;
+		m_nIdxWdm = -1;
+		m_nIdxTcc = -1;
+		m_hEventSrc = NULL;
+	}
+
+	~HwInfo()
+	{
+		m_device = NULL;
+
+		if (m_gpuWdmHandles != NULL)
+		{
+			free(m_gpuWdmHandles);
+			m_gpuWdmHandles = NULL;
+		}
+
+		if (m_gpuTccHandles != NULL)
+		{
+			free(m_gpuTccHandles);
+			m_gpuTccHandles = NULL;
+		}
+	}
+
+	long Initialize(int nDevice, HANDLE hEvtSrc);
+	long CleanUp();
+	long FindDevice(int nDevice);
+	long GetConnectedDisplays(int* pnDisplayCount);
+	long GetDeviceTemperature(int* pnTemp);
+	long GetDeviceUtilization(int* pnUtilization);
+};
 
 //-----------------------------------------------------------------------------
 //	Device Class
@@ -43,6 +98,7 @@ class Device
 	protected:
 		Memory<T> m_memory;
 		Math<T> m_math;
+		HwInfo<T> m_hwInfo;
 		cublasHandle_t m_cublas;
 		curandGenerator_t m_curand;
 		long m_lSeed;
@@ -581,9 +637,8 @@ inline long Device<T>::setOutput(T fVal, long* plOutput, T** ppfOutput)
 //=============================================================================
 //	Device Methods
 //=============================================================================
-
 template <class T>
-inline Device<T>::Device() : m_memory(), m_math()
+inline Device<T>::Device() : m_memory(), m_math(), m_hwInfo()
 {
 	m_hSetMemHost = 0;
 	m_math.Connect(&m_memory);
@@ -625,6 +680,8 @@ inline Device<T>::~Device()
 		cublasDestroy(m_cublas);
 		m_cublas = NULL;
 	}
+
+	m_hwInfo.CleanUp();
 
 	DeleteCriticalSection(&m_MemHostLock);
 }

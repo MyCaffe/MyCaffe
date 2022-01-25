@@ -40,6 +40,371 @@ public:
 //=============================================================================
 
 template <class T>
+long HwInfo<T>::Initialize(int nDevice, HANDLE hEvtSrc)
+{
+	nvmlReturn_t res;
+	NvAPI_Status status;
+
+	m_hEventSrc = hEvtSrc;
+
+	if (!m_bInitializedNvml)
+	{
+		if ((res = nvmlInit_v2()) != NVML_SUCCESS)
+		{
+			LPCSTR pszErr = "NVML Initializing...";
+			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+			NvAPI_ShortString szErr;
+			NvAPI_GetErrorMessage(status, szErr);
+			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+			return status;
+		}
+
+		m_bInitializedNvml = TRUE;
+	}
+
+	if ((res = nvmlDeviceGetHandleByIndex_v2(nDevice, (nvmlDevice_t*)&m_device)) != NVML_SUCCESS)
+	{
+		LPCSTR pszErr = "NVML DeviceGetHandleByIndex...";
+		ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+		NvAPI_ShortString szErr;
+		NvAPI_GetErrorMessage(status, szErr);
+		ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+		return status;
+	}
+
+	if (!m_bInitializedNvApi)
+	{
+		if ((status = NvAPI_Initialize()) != NVAPI_OK)
+		{
+			LPCSTR pszErr = "NvAPI Initializing...";
+			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+			NvAPI_ShortString szErr;
+			NvAPI_GetErrorMessage(status, szErr);
+			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+			return status;
+		}
+
+		m_bInitializedNvApi = TRUE;
+	}
+
+	return 0;
+}
+
+template <>
+long HwInfo<float>::CleanUp()
+{
+	if (m_bInitializedNvml)
+	{
+		nvmlShutdown();
+		m_bInitializedNvml = FALSE;
+	}
+
+	if (m_bInitializedNvApi)
+	{
+		NvAPI_Unload();
+		m_bInitializedNvml = FALSE;
+	}
+
+	return 0;
+}
+
+template <>
+long HwInfo<double>::CleanUp()
+{
+	if (m_bInitializedNvml)
+	{
+		nvmlShutdown();
+		m_bInitializedNvml = FALSE;
+	}
+
+	if (m_bInitializedNvApi)
+	{
+		NvAPI_Unload();
+		m_bInitializedNvml = FALSE;
+	}
+
+	return 0;
+}
+
+template <class T>
+long HwInfo<T>::FindDevice(int nDevice)
+{
+	USES_CONVERSION_SIMPLE;
+	NvAPI_Status status;
+	LONG lErr;
+
+	if (!m_bInitializedNvApi)
+		return NVAPI_NOT_SUPPORTED;
+
+	if (m_gpuWdmHandles == NULL)
+	{
+		if ((m_gpuWdmHandles = malloc(sizeof(NvPhysicalGpuHandle) * 256)) == NULL)
+			return ERROR_MEMORY_OUT;
+	}
+
+	if (m_gpuTccHandles == NULL)
+	{
+		if ((m_gpuTccHandles = malloc(sizeof(NvPhysicalGpuHandle) * 256)) == NULL)
+			return ERROR_MEMORY_OUT;
+	}
+
+	NvU32 numOfWdmGPUs;
+	if ((status = NvAPI_EnumPhysicalGPUs((NvPhysicalGpuHandle*)m_gpuWdmHandles, &numOfWdmGPUs)) != NVAPI_OK)
+	{
+		LPCSTR pszErr = "NvAPI Enumerating Physical GPUs...";
+		ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+		NvAPI_ShortString szErr;
+		NvAPI_GetErrorMessage(status, szErr);
+		ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+		return status;
+	}
+
+	NvU32 numOfTccGPUs;
+	if ((status = NvAPI_EnumTCCPhysicalGPUs((NvPhysicalGpuHandle*)m_gpuTccHandles, &numOfTccGPUs)) != NVAPI_OK)
+	{
+		LPCSTR pszErr = "NvAPI Enumerating Physical GPUs...";
+		ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+		NvAPI_ShortString szErr;
+		NvAPI_GetErrorMessage(status, szErr);
+		ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+		return status;
+	}
+
+	char rgID[256];
+	if (lErr = cudaDeviceGetPCIBusId(rgID, 255, nDevice))
+		return lErr;
+
+	char* psz = strtok(rgID, ":");
+	if (psz == NULL)
+	{
+		LPCSTR pszErr = "Could not find the Cuda PCI Bus Id.";
+		ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+		return ERROR_NOT_IMPLEMENTED;
+	}
+
+	psz = strtok(NULL, ":");
+	if (psz == NULL)
+	{
+		LPCSTR pszErr = "Could not find the Cuda PCI Bus Id.";
+		ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+		return ERROR_NOT_IMPLEMENTED;
+	}
+
+	std::string str = "0x";
+	str += psz;
+	int nCudaBusID = std::stoul(str, nullptr, 16);
+
+	int nIdxWdm = -1;
+	int nIdxTcc = -1;
+
+	for (int i = 0; i < (int)numOfWdmGPUs; i++)
+	{
+		NvU32 busID = 0;
+
+		if ((status = NvAPI_GPU_GetBusId(((NvPhysicalGpuHandle*)m_gpuWdmHandles)[i], &busID)) != NVAPI_OK)
+		{
+			LPCSTR pszErr = "NvAPI Getting BusId...";
+			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+			NvAPI_ShortString szErr;
+			NvAPI_GetErrorMessage(status, szErr);
+			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+			return status;
+		}
+
+		if (nCudaBusID == (int)busID)
+		{
+			nIdxWdm = i;
+			break;
+		}
+	}
+
+	if (nIdxWdm == -1)
+	{
+		for (int i = 0; i < (int)numOfTccGPUs; i++)
+		{
+			NvU32 busID = 0;
+
+			if ((status = NvAPI_GPU_GetBusId(((NvPhysicalGpuHandle*)m_gpuTccHandles)[i], &busID)) != NVAPI_OK)
+			{
+				LPCSTR pszErr = "NvAPI Getting BusId...";
+				ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+				NvAPI_ShortString szErr;
+				NvAPI_GetErrorMessage(status, szErr);
+				ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+				return status;
+			}
+
+			if (nCudaBusID == (int)busID)
+			{
+				nIdxTcc = i;
+				break;
+			}
+		}
+	}
+
+	if (nIdxWdm == -1 && nIdxTcc == -1)
+		return ERROR_NOT_IMPLEMENTED;
+
+	m_nIdxWdm = nIdxWdm;
+	m_nIdxTcc = nIdxTcc;
+
+	return 0;
+}
+
+template <class T>
+long HwInfo<T>::GetConnectedDisplays(int* pnDisplayCount)
+{
+	NvU32 connectedDisplays = 0;
+	NvAPI_Status status;
+
+	if (m_nIdxWdm >= 0 && m_bInitializedNvApi)
+	{
+		if (m_gpuWdmHandles == NULL)
+			return NVAPI_API_NOT_INITIALIZED;
+
+		if ((status = NvAPI_GPU_GetConnectedDisplayIds(((NvPhysicalGpuHandle*)m_gpuWdmHandles)[m_nIdxWdm], NULL, &connectedDisplays, NULL)) != NVAPI_OK)
+		{
+			LPCSTR pszErr = "NvAPI Getting Connected Display Ids...";
+			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+			NvAPI_ShortString szErr;
+			NvAPI_GetErrorMessage(status, szErr);
+			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+			return status;
+		}
+	}
+
+	if (m_bInitializedNvml && connectedDisplays == 0)
+	{
+		nvmlReturn_t res;
+		nvmlEnableState_t active;
+
+		if ((res = nvmlDeviceGetDisplayMode((nvmlDevice_t)m_device, &active)) == NVML_SUCCESS)
+		{
+			if (active == NVML_FEATURE_ENABLED)
+				connectedDisplays = 1;
+		}
+	}
+
+	*pnDisplayCount = (int)connectedDisplays;
+	return 0;
+}
+
+template <class T>
+long HwInfo<T>::GetDeviceTemperature(int* pnTemp)
+{
+	NvAPI_Status status = NVAPI_API_NOT_INITIALIZED;
+	int nTemp = -1;
+
+	if (m_bInitializedNvApi)
+	{
+		if (m_gpuWdmHandles == NULL)
+			return NVAPI_API_NOT_INITIALIZED;
+
+		if (m_gpuTccHandles == NULL)
+			return NVAPI_API_NOT_INITIALIZED;
+
+		NV_GPU_THERMAL_SETTINGS thermal;
+		thermal.version = NV_GPU_THERMAL_SETTINGS_VER;
+
+		if (m_nIdxWdm >= 0)
+			status = NvAPI_GPU_GetThermalSettings(((NvPhysicalGpuHandle*)m_gpuWdmHandles)[m_nIdxWdm], 0, &thermal);
+		else if (m_nIdxTcc >= 0)
+			status = NvAPI_GPU_GetThermalSettings(((NvPhysicalGpuHandle*)m_gpuTccHandles)[m_nIdxTcc], 0, &thermal);
+
+		if (status == NVAPI_OK)
+		{
+			if (thermal.count > 0)
+				nTemp = (int)thermal.sensor[0].currentTemp;
+		}
+	}
+
+	if (m_bInitializedNvml && m_device != NULL && status != NVAPI_OK)
+	{
+		nvmlReturn_t res;
+
+		if ((res = nvmlDeviceGetTemperature((nvmlDevice_t)m_device, NVML_TEMPERATURE_GPU, (unsigned int*)&nTemp)) != NVML_SUCCESS)
+		{
+			LPCSTR pszErr = "NvAPI Getting Thermal Settings...";
+			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+			NvAPI_ShortString szErr;
+			NvAPI_GetErrorMessage(status, szErr);
+			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+			return status;
+		}
+	}
+
+	*pnTemp = nTemp;
+
+	return 0;
+}
+
+template <class T>
+long HwInfo<T>::GetDeviceUtilization(int* pnUtilization)
+{
+	NvAPI_Status status = NVAPI_API_NOT_INITIALIZED;
+	int nUtilization = -1;
+
+	if (m_bInitializedNvApi)
+	{
+		if (m_gpuWdmHandles == NULL)
+			return NVAPI_API_NOT_INITIALIZED;
+
+		if (m_gpuTccHandles == NULL)
+			return NVAPI_API_NOT_INITIALIZED;
+
+		NV_GPU_DYNAMIC_PSTATES_INFO_EX states;
+		states.version = NV_GPU_DYNAMIC_PSTATES_INFO_EX_VER;
+
+		if (m_nIdxWdm >= 0)
+			status = NvAPI_GPU_GetDynamicPstatesInfoEx(((NvPhysicalGpuHandle*)m_gpuWdmHandles)[m_nIdxWdm], &states);
+		else if (m_nIdxTcc >= 0)
+			status = NvAPI_GPU_GetDynamicPstatesInfoEx(((NvPhysicalGpuHandle*)m_gpuTccHandles)[m_nIdxTcc], &states);
+
+		if (status == NVAPI_OK)
+		{
+			if (states.utilization[0].bIsPresent)
+			{
+				double dfUtilization = (double)states.utilization[0].percentage;
+				nUtilization = (int)dfUtilization;
+			}
+		}
+	}
+
+	if (m_bInitializedNvml && m_device != NULL && status != NVAPI_OK)
+	{
+		nvmlReturn_t res;
+
+		unsigned int nPower;
+		if ((res = nvmlDeviceGetPowerUsage((nvmlDevice_t)m_device, &nPower)) != NVML_SUCCESS)
+		{
+			LPCSTR pszErr = "NvAPI Getting Dynamic PStates Info...";
+			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+			NvAPI_ShortString szErr;
+			NvAPI_GetErrorMessage(status, szErr);
+			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+			return status;
+		}
+
+		unsigned int nLimit;
+		if ((res = nvmlDeviceGetEnforcedPowerLimit((nvmlDevice_t)m_device, &nLimit)) != NVML_SUCCESS)
+		{
+			LPCSTR pszErr = "NvAPI Getting Dynamic PStates Info...";
+			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+			NvAPI_ShortString szErr;
+			NvAPI_GetErrorMessage(status, szErr);
+			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+			return status;
+		}
+
+		double dfPct = (double)nPower / (double)nLimit;
+		nUtilization = (unsigned int)(dfPct * 100);
+	}
+
+	*pnUtilization = nUtilization;
+	return 0;
+}
+
+template <class T>
 long Device<T>::CanAccessPeer(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	long lErr;
@@ -256,215 +621,26 @@ long Device<T>::GetDeviceInfo(int nDevice, LPTSTR* pszDevice, bool bVerbose)
 	USES_CONVERSION_SIMPLE;
 	LONG lErr;
 
-	char rgID[256];
-	if (lErr = cudaDeviceGetPCIBusId(rgID, 255, nDevice))
+
+	if (lErr = m_hwInfo.Initialize(nDevice, m_hEventSrc))
 		return lErr;
 
-	char* psz = strtok(rgID, ":");
-	if (psz == NULL)
-	{
-		LPCSTR pszErr = "Could not find the Cuda PCI Bus Id.";
-		ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-		return ERROR_NOT_IMPLEMENTED;
-	}
+	int nIdxWdm;
+	int nIdxTcc;
+	if (lErr = m_hwInfo.FindDevice(nDevice))
+		return lErr;
 
-	psz = strtok(NULL, ":");
-	if (psz == NULL)
-	{
-		LPCSTR pszErr = "Could not find the Cuda PCI Bus Id.";
-		ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-		return ERROR_NOT_IMPLEMENTED;
-	}
+	int nConnectedDisplays;
+	if (lErr = m_hwInfo.GetConnectedDisplays(&nConnectedDisplays))
+		return lErr;
 
-	std::string str = "0x";
-	str += psz;
-	int nCudaBusID = std::stoul(str, nullptr, 16);
+	int nTemp;
+	if (lErr = m_hwInfo.GetDeviceTemperature(&nTemp))
+		return lErr;
 
-	NvAPI_Status status;
-	nvmlReturn_t res;
-	nvmlDevice_t device;
-	BOOL bNvmlInit = FALSE;
-
-	if ((res = nvmlInit_v2()) == 0)
-	{
-		if ((res = nvmlDeviceGetHandleByIndex_v2(nDevice, &device)) != NVML_SUCCESS)
-			nvmlShutdown();
-		else
-			bNvmlInit = TRUE;
-	}
-
-	if ((status = NvAPI_Initialize()) != NVAPI_OK)
-	{
-		LPCSTR pszErr = "NvAPI Initializing...";
-		ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-		NvAPI_ShortString szErr;
-		NvAPI_GetErrorMessage(status, szErr);
-		ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-		return status;
-	}
-
-	NvPhysicalGpuHandle gpuHandles[256];
-	NvPhysicalGpuHandle gpuTccHandles[256];
-	NvU32 numOfGPUs;
-	NvU32 numOfTccGPUs;
-
-	if ((status = NvAPI_EnumPhysicalGPUs(gpuHandles, &numOfGPUs)) != NVAPI_OK)
-	{
-		LPCSTR pszErr = "NvAPI Enumerating Physical GPUs...";
-		ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-		NvAPI_ShortString szErr;
-		NvAPI_GetErrorMessage(status, szErr);
-		ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-		return status;
-	}
-
-	if ((status = NvAPI_EnumTCCPhysicalGPUs(gpuTccHandles, &numOfTccGPUs)) != NVAPI_OK)
-	{
-		LPCSTR pszErr = "NvAPI Enumerating Physical GPUs...";
-		ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-		NvAPI_ShortString szErr;
-		NvAPI_GetErrorMessage(status, szErr);
-		ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-		return status;
-	}
-
-	int nIdx = -1;
-	int nIdxTcc = -1;
-
-	for (int i = 0; i < (int)numOfGPUs; i++)
-	{
-		NvU32 busID = 0;
-
-		if ((status = NvAPI_GPU_GetBusId(gpuHandles[i], &busID)) != NVAPI_OK)
-		{
-			LPCSTR pszErr = "NvAPI Getting BusId...";
-			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-			NvAPI_ShortString szErr;
-			NvAPI_GetErrorMessage(status, szErr);
-			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-			return status;
-		}
-
-		if (nCudaBusID == (int)busID)
-		{
-			nIdx = i;
-			break;
-		}
-	}
-
-	if (nIdx == -1)
-	{
-		for (int i = 0; i < (int)numOfTccGPUs; i++)
-		{
-			NvU32 busID = 0;
-
-			if ((status = NvAPI_GPU_GetBusId(gpuTccHandles[i], &busID)) != NVAPI_OK)
-			{
-				LPCSTR pszErr = "NvAPI Getting BusId...";
-				ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-				NvAPI_ShortString szErr;
-				NvAPI_GetErrorMessage(status, szErr);
-				ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-				return status;
-			}
-
-			if (nCudaBusID == (int)busID)
-			{
-				nIdxTcc = i;
-				break;
-			}
-		}
-	}
-
-	if (nIdx == -1 && nIdxTcc == -1)
-		return ERROR_NOT_IMPLEMENTED;
-
-	NvU32 connectedDisplays = 0;
-
-	if (nIdx >= 0)
-	{
-		if ((status = NvAPI_GPU_GetConnectedDisplayIds(gpuHandles[nIdx], NULL, &connectedDisplays, NULL)) != NVAPI_OK)
-		{
-			LPCSTR pszErr = "NvAPI Getting Connected Display Ids...";
-			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-			NvAPI_ShortString szErr;
-			NvAPI_GetErrorMessage(status, szErr);
-			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-			return status;
-		}
-	}
-
-	NV_GPU_THERMAL_SETTINGS thermal;
-	thermal.version = NV_GPU_THERMAL_SETTINGS_VER;
-	int nTemp = 0;
-
-	if (nIdx >= 0)
-		status = NvAPI_GPU_GetThermalSettings(gpuHandles[nIdx], 0, &thermal);
-	else
-		status = NvAPI_GPU_GetThermalSettings(gpuTccHandles[nIdxTcc], 0, &thermal);
-
-	if (status == NVAPI_OK)
-	{
-		if (thermal.count > 0)
-			nTemp = (int)thermal.sensor[0].currentTemp;
-	}
-	else
-	{
-		if ((res = nvmlDeviceGetTemperature(device, NVML_TEMPERATURE_GPU, (unsigned int*)&nTemp)) != NVML_SUCCESS)
-		{
-			LPCSTR pszErr = "NvAPI Getting Thermal Settings...";
-			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-			NvAPI_ShortString szErr;
-			NvAPI_GetErrorMessage(status, szErr);
-			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-			return status;
-		}
-	}
-
-	NV_GPU_DYNAMIC_PSTATES_INFO_EX states;
-	states.version = NV_GPU_DYNAMIC_PSTATES_INFO_EX_VER;
-	int nUtilization = 0;
-
-	if (nIdx >= 0)
-		status = NvAPI_GPU_GetDynamicPstatesInfoEx(gpuHandles[nIdx], &states);
-	else
-		status = NvAPI_GPU_GetDynamicPstatesInfoEx(gpuTccHandles[nIdxTcc], &states);
-
-	if (status == NVAPI_OK)
-	{
-		if (states.utilization[0].bIsPresent)
-		{
-			double dfUtilization = (double)states.utilization[0].percentage;
-			nUtilization = (int)dfUtilization;
-		}
-	}
-	else
-	{
-		unsigned int nPower;
-		if ((res = nvmlDeviceGetPowerUsage(device, &nPower)) != NVML_SUCCESS)
-		{
-			LPCSTR pszErr = "NvAPI Getting Dynamic PStates Info...";
-			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-			NvAPI_ShortString szErr;
-			NvAPI_GetErrorMessage(status, szErr);
-			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-			return status;
-		}
-
-		unsigned int nLimit;
-		if ((res = nvmlDeviceGetEnforcedPowerLimit(device, &nLimit)) != NVML_SUCCESS)
-		{
-			LPCSTR pszErr = "NvAPI Getting Dynamic PStates Info...";
-			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-			NvAPI_ShortString szErr;
-			NvAPI_GetErrorMessage(status, szErr);
-			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-			return status;
-		}
-
-		double dfPct = (double)nPower / (double)nLimit;
-		nUtilization = (unsigned int)(dfPct * 100);
-	}
+	int nUtilization;
+	if (lErr = m_hwInfo.GetDeviceUtilization(&nUtilization))
+		return lErr;
 
 	LPTSTR pDst = (LPTSTR)malloc(sizeof(TCHAR) * 2048);
 	if (pDst == NULL)
@@ -473,7 +649,7 @@ long Device<T>::GetDeviceInfo(int nDevice, LPTSTR* pszDevice, bool bVerbose)
 	memset(pDst, 0, sizeof(TCHAR) * 2048);
 	char szTmp[16];
 	_snprintf(szTmp, 16, "%c", (char)176);
-	_sntprintf(pDst, 2047, _T(" GPU = %d, MonitorOn = %s, GPU_Temp = %d C%s, GPU_Use = %d%%"), nDevice, (connectedDisplays == 0) ? _T("NO") : _T("YES"), nTemp, A2T(szTmp), nUtilization);
+	_sntprintf(pDst, 2047, _T(" GPU = %d, MonitorOn = %s, GPU_Temp = %d C%s, GPU_Use = %d%%"), nDevice, (nConnectedDisplays == 0) ? _T("NO") : _T("YES"), nTemp, A2T(szTmp), nUtilization);
 	*pszDevice = pDst;
 
 	if (bVerbose)
@@ -488,6 +664,7 @@ long Device<T>::GetDeviceInfo(int nDevice, LPTSTR* pszDevice, bool bVerbose)
 		float fDriverVer = 0;
 		NvU32 v;
 		NvAPI_ShortString bVer;
+		NvAPI_Status status;
 		status = NvAPI_SYS_GetDriverAndBranchVersion(&v, bVer);
 		if (status == NVAPI_OK)
 			fDriverVer = (float)v / 100.0f;
@@ -496,9 +673,6 @@ long Device<T>::GetDeviceInfo(int nDevice, LPTSTR* pszDevice, bool bVerbose)
 		_snprintf(szBuffer, 1023, ",\r\n Major: %d, Minor: %d, Compute Mode: %d,\r\n Max Grid: { %d, %d, %d }, Max Thread Dim: { %d, %d, %d },\r\n Shared Memory/Block: %zd,\r\n Driver Version: %.2f", prop.major, prop.minor, prop.computeMode, prop.maxGridSize[0], prop.maxGridSize[1], prop.maxGridSize[2], prop.maxThreadsDim[0], prop.maxThreadsDim[1], prop.maxThreadsDim[2], prop.sharedMemPerBlock, fDriverVer);
 		_tcsncat(pDst, A2T(szBuffer), 2047);
 	}
-
-	if (bNvmlInit)
-		nvmlShutdown();
 
 	*pszDevice = pDst;
 
