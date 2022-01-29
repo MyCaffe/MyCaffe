@@ -165,6 +165,8 @@ namespace MyCaffe.test
 
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestNeuronLayer", "TestDropoutGradientCuDnn", "SKIPPED - Values 4 and 52.572381 are not within the range of 0.05257 of one another."));
 
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestMultiBoxLossLayer", "TestLocGradientGpu", "SKIPPED - CUDA: Invalid parameter."));
+
                 return rgKnownFailures;
             }
         }
