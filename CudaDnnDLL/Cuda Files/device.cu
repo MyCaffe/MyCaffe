@@ -306,10 +306,11 @@ long HwInfo<T>::GetDeviceTemperature(int* pnTemp)
 		NV_GPU_THERMAL_SETTINGS thermal;
 		thermal.version = NV_GPU_THERMAL_SETTINGS_VER;
 
+		status = NVAPI_ACCESS_DENIED;
 		if (m_nIdxWdm >= 0)
 			status = NvAPI_GPU_GetThermalSettings(((NvPhysicalGpuHandle*)m_gpuWdmHandles)[m_nIdxWdm], 0, &thermal);
-		else if (m_nIdxTcc >= 0)
-			status = NvAPI_GPU_GetThermalSettings(((NvPhysicalGpuHandle*)m_gpuTccHandles)[m_nIdxTcc], 0, &thermal);
+//		else if (m_nIdxTcc >= 0)
+//			status = NvAPI_GPU_GetThermalSettings(((NvPhysicalGpuHandle*)m_gpuTccHandles)[m_nIdxTcc], 0, &thermal);
 
 		if (status == NVAPI_OK)
 		{
@@ -355,10 +356,11 @@ long HwInfo<T>::GetDeviceUtilization(int* pnUtilization)
 		NV_GPU_DYNAMIC_PSTATES_INFO_EX states;
 		states.version = NV_GPU_DYNAMIC_PSTATES_INFO_EX_VER;
 
+		status = NVAPI_ACCESS_DENIED;
 		if (m_nIdxWdm >= 0)
 			status = NvAPI_GPU_GetDynamicPstatesInfoEx(((NvPhysicalGpuHandle*)m_gpuWdmHandles)[m_nIdxWdm], &states);
-		else if (m_nIdxTcc >= 0)
-			status = NvAPI_GPU_GetDynamicPstatesInfoEx(((NvPhysicalGpuHandle*)m_gpuTccHandles)[m_nIdxTcc], &states);
+//		else if (m_nIdxTcc >= 0)
+//			status = NvAPI_GPU_GetDynamicPstatesInfoEx(((NvPhysicalGpuHandle*)m_gpuTccHandles)[m_nIdxTcc], &states);
 
 		if (status == NVAPI_OK)
 		{
