@@ -523,6 +523,7 @@ namespace MyCaffe.test
 
         public void TestRead()
         {
+            Layer<T> layer = null;
             initDb(m_strDs);
 
             try
@@ -537,7 +538,7 @@ namespace MyCaffe.test
                 double dfScale = 3;
                 p.transform_param.scale = dfScale;
 
-                Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
+                layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
                 layer.Setup(BottomVec, TopVec);
 
                 m_log.CHECK_EQ(Top.num, m_nNum, "The top num is incorrect.");
@@ -634,8 +635,9 @@ namespace MyCaffe.test
                         }
                     }
                 }
-
+                
                 layer.Dispose();
+                layer = null;
             }
             catch (Exception excpt)
             {
@@ -643,6 +645,9 @@ namespace MyCaffe.test
             }
             finally
             {
+                if (layer != null)
+                    layer.Dispose();
+
                 cleanupDb();
             }
         }
@@ -728,6 +733,8 @@ namespace MyCaffe.test
 
             initDb(m_strDs);
 
+            Layer<T> layer = null;
+
             try
             {
                 // Load and check data of various shapes.
@@ -738,7 +745,7 @@ namespace MyCaffe.test
                 p.data_param.backend = DataParameter.DB.IMAGEDB;
                 p.data_param.enable_random_selection = false;
 
-                Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
+                layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
                 layer.Setup(BottomVec, TopVec);
 
                 m_log.CHECK_EQ(Top.num, 1, "The top should have a num = 1.");
@@ -856,6 +863,7 @@ namespace MyCaffe.test
                 }
 
                 layer.Dispose();
+                layer = null;
             }
             catch (Exception excpt)
             {
@@ -863,6 +871,9 @@ namespace MyCaffe.test
             }
             finally
             {
+                if (layer != null)
+                    layer.Dispose();
+
                 cleanupDb();
             }
         }
@@ -870,6 +881,8 @@ namespace MyCaffe.test
         public void TestReadCrop(Phase phase, bool bUseRichAnnotation)
         {
             initDb(m_strDs);
+
+            Layer<T> layer = null;
 
             try
             {
@@ -884,7 +897,7 @@ namespace MyCaffe.test
                 p.transform_param.scale = dfScale;
                 p.transform_param.crop_size = 1;
 
-                Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
+                layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
                 layer.Setup(BottomVec, TopVec);
 
                 m_log.CHECK_EQ(Top.num, m_nNum, "The top num is incorrect.");
@@ -957,6 +970,9 @@ namespace MyCaffe.test
             }
             finally
             {
+                if (layer != null)
+                    layer.Dispose();
+
                 cleanupDb();
             }
         }
@@ -964,6 +980,9 @@ namespace MyCaffe.test
         public void TestReadCropTrainSequenceSeeded(bool bUseRichAnnotation)
         {
             initDb(m_strDs);
+
+            Layer<T> layer1 = null;
+            Layer<T> layer2 = null;
 
             try
             {
@@ -984,7 +1003,7 @@ namespace MyCaffe.test
                 // Get crop sequence.
                 List<List<double>> rgrgCropSequence = new List<List<double>>();
                 {
-                    Layer<T> layer1 = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
+                    layer1 = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
                     layer1.Setup(BottomVec, TopVec);
 
                     for (int iter = 0; iter < 2; iter++)
@@ -1020,10 +1039,11 @@ namespace MyCaffe.test
                     }
 
                     layer1.Dispose();
+                    layer1 = null;
                 }
 
                 // Get crop sequence after reseeding.
-                Layer<T> layer2 = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
+                layer2 = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
                 layer2.Setup(BottomVec, TopVec);
 
                 for (int iter = 0; iter < 2; iter++)
@@ -1056,6 +1076,7 @@ namespace MyCaffe.test
                 }
 
                 layer2.Dispose();
+                layer2 = null;
             }
             catch (Exception excpt)
             {
@@ -1063,6 +1084,12 @@ namespace MyCaffe.test
             }
             finally
             {
+                if (layer1 != null)
+                    layer1.Dispose();
+
+                if (layer2 != null)
+                    layer2.Dispose();
+
                 cleanupDb();
             }
         }
@@ -1070,6 +1097,9 @@ namespace MyCaffe.test
         public void TestReadCropTrainSequenceUnseeded(bool bUseRichAnnotation)
         {
             initDb(m_strDs);
+
+            Layer<T> layer1 = null;
+            Layer<T> layer2 = null;
 
             try
             {
@@ -1086,7 +1116,7 @@ namespace MyCaffe.test
                 // Get crop sequence.
                 List<List<double>> rgrgCropSequence = new List<List<double>>();
                 {
-                    Layer<T> layer1 = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
+                    layer1 = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
                     layer1.Setup(BottomVec, TopVec);
 
                     for (int iter = 0; iter < 2; iter++)
@@ -1122,11 +1152,12 @@ namespace MyCaffe.test
                     }
 
                     layer1.Dispose();
+                    layer1 = null;
                 }
 
                 // Get crop sequence continuing from prevous RNG state; 
                 // Check that the sequence differs from the original.
-                Layer<T> layer2 = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
+                layer2 = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
                 layer2.Setup(BottomVec, TopVec);
 
                 for (int iter = 0; iter < 2; iter++)
@@ -1163,6 +1194,7 @@ namespace MyCaffe.test
                 }
 
                 layer2.Dispose();
+                layer2 = null;
             }
             catch (Exception excpt)
             {
@@ -1170,6 +1202,12 @@ namespace MyCaffe.test
             }
             finally
             {
+                if (layer1 != null)
+                    layer1.Dispose();
+
+                if (layer2 != null)
+                    layer2.Dispose();
+
                 cleanupDb();
             }
         }
