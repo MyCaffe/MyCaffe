@@ -4122,7 +4122,12 @@ namespace MyCaffe.db.image
             string strCmd;
 
             if (nSrcId == 0)
+            {
+                if (m_src == null)
+                    return;
+
                 nSrcId = m_src.ID;
+            }
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
