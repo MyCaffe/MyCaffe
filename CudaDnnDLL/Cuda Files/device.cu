@@ -627,8 +627,6 @@ long Device<T>::GetDeviceInfo(int nDevice, LPTSTR* pszDevice, bool bVerbose)
 	if (lErr = m_hwInfo.Initialize(nDevice, m_hEventSrc))
 		return lErr;
 
-	int nIdxWdm;
-	int nIdxTcc;
 	if (lErr = m_hwInfo.FindDevice(nDevice))
 		return lErr;
 
