@@ -319,8 +319,10 @@ namespace MyCaffe.test
 
             int nId = factory.GetSourceID(m_strSrc1);
             factory.DeleteSourceData(nId);
+            db.DeleteSource(nId);
             nId = factory.GetSourceID(m_strSrc2);
             factory.DeleteSourceData(nId);
+            db.DeleteSource(nId);
 
             db.DeleteDataset(m_strDs, false, m_log, m_parent.CancelEvent);
         }
@@ -1255,6 +1257,7 @@ namespace MyCaffe.test
                             continue;
 
                         bool bUniqueAnnotation = m_rgkBoolChoices[a];
+                        Fill(DataParameter.DB.IMAGEDB, bUniquePixel, bUniqueAnnotation, bUseRichAnnotation, type);
                         TestReshape(bUniquePixel, bUniqueAnnotation, bUseRichAnnotation, type);
                     }
                 }
