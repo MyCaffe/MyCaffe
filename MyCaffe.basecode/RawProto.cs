@@ -319,6 +319,9 @@ namespace MyCaffe.basecode
 
         private static string strip_comments(string str)
         {
+            if (string.IsNullOrEmpty(str))
+                return str;
+
             if (!str.Contains('#'))
                 return str;
 
