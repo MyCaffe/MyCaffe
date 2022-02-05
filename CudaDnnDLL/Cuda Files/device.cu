@@ -255,33 +255,46 @@ template <class T>
 long HwInfo<T>::GetConnectedDisplays(int* pnDisplayCount)
 {
 	NvU32 connectedDisplays = 0;
-	NvAPI_Status status;
+	NvAPI_Status status;	
+	bool bHandled = false;
 
-	if (m_nIdxWdm >= 0 && m_bInitializedNvApi)
+	if (m_bInitializedNvApi)
 	{
 		if (m_gpuWdmHandles == NULL)
 			return NVAPI_API_NOT_INITIALIZED;
 
-		if ((status = NvAPI_GPU_GetConnectedDisplayIds(((NvPhysicalGpuHandle*)m_gpuWdmHandles)[m_nIdxWdm], NULL, &connectedDisplays, NULL)) != NVAPI_OK)
+		if (m_nIdxWdm >= 0)
 		{
-			LPCSTR pszErr = "NvAPI Getting Connected Display Ids...";
-			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-			NvAPI_ShortString szErr;
-			NvAPI_GetErrorMessage(status, szErr);
-			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-			return status;
+			if ((status = NvAPI_GPU_GetConnectedDisplayIds(((NvPhysicalGpuHandle*)m_gpuWdmHandles)[m_nIdxWdm], NULL, &connectedDisplays, NULL)) != NVAPI_OK)
+			{
+				LPCSTR pszErr = "NvAPI Getting Connected Display Ids...";
+				ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+				NvAPI_ShortString szErr;
+				NvAPI_GetErrorMessage(status, szErr);
+				ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
+				return status;
+			}
+
+			bHandled = true;
+		}
+		else if (m_nIdxTcc >= 0)
+		{
+			bHandled = true;
 		}
 	}
 
-	if (m_bInitializedNvml && connectedDisplays == 0)
+	if (!bHandled)
 	{
-		nvmlReturn_t res;
-		nvmlEnableState_t active;
-
-		if ((res = nvmlDeviceGetDisplayMode((nvmlDevice_t)m_device, &active)) == NVML_SUCCESS)
+		if (m_bInitializedNvml && connectedDisplays == 0)
 		{
-			if (active == NVML_FEATURE_ENABLED)
-				connectedDisplays = 1;
+			nvmlReturn_t res;
+			nvmlEnableState_t active;
+
+			if ((res = nvmlDeviceGetDisplayMode((nvmlDevice_t)m_device, &active)) == NVML_SUCCESS)
+			{
+				if (active == NVML_FEATURE_ENABLED)
+					connectedDisplays = 1;
+			}
 		}
 	}
 
