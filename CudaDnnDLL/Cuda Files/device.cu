@@ -53,23 +53,15 @@ long HwInfo<T>::Initialize(int nDevice, HANDLE hEvtSrc)
 		{
 			LPCSTR pszErr = "NVML Initializing...";
 			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-			NvAPI_ShortString szErr;
-			NvAPI_GetErrorMessage(status, szErr);
-			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-			return status;
+			return res;
 		}
-
-		m_bInitializedNvml = TRUE;
 	}
 
 	if ((res = nvmlDeviceGetHandleByIndex_v2(nDevice, (nvmlDevice_t*)&m_device)) != NVML_SUCCESS)
 	{
 		LPCSTR pszErr = "NVML DeviceGetHandleByIndex...";
 		ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-		NvAPI_ShortString szErr;
-		NvAPI_GetErrorMessage(status, szErr);
-		ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-		return status;
+		return res;
 	}
 
 	if (!m_bInitializedNvApi)
@@ -340,10 +332,7 @@ long HwInfo<T>::GetDeviceTemperature(int* pnTemp)
 		{
 			LPCSTR pszErr = "NvAPI Getting Thermal Settings...";
 			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-			NvAPI_ShortString szErr;
-			NvAPI_GetErrorMessage(status, szErr);
-			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-			return status;
+			return res;
 		}
 	}
 
@@ -394,10 +383,7 @@ long HwInfo<T>::GetDeviceUtilization(int* pnUtilization)
 		{
 			LPCSTR pszErr = "NvAPI Getting Dynamic PStates Info...";
 			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-			NvAPI_ShortString szErr;
-			NvAPI_GetErrorMessage(status, szErr);
-			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-			return status;
+			return res;
 		}
 
 		unsigned int nLimit;
@@ -405,10 +391,7 @@ long HwInfo<T>::GetDeviceUtilization(int* pnUtilization)
 		{
 			LPCSTR pszErr = "NvAPI Getting Dynamic PStates Info...";
 			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-			NvAPI_ShortString szErr;
-			NvAPI_GetErrorMessage(status, szErr);
-			ReportEventA(m_hEventSrc, EVENTLOG_ERROR_TYPE, 0, ERROR_NOT_IMPLEMENTED, NULL, 1, 0, &pszErr, NULL);
-			return status;
+			return res;
 		}
 
 		double dfPct = (double)nPower / (double)nLimit;
