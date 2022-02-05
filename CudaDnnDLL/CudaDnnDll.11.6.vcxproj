@@ -198,6 +198,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
       <Include>$(CUDA_PATH_V11_6)\cudann_11.6-win-v8.3.2.44</Include>
       <AdditionalOptions>--default-stream per-thread %(AdditionalOptions)</AdditionalOptions>
       <CudaRuntime>Shared</CudaRuntime>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </CudaCompile>
     <PostBuildEvent>
       <Command>if not exist $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)\cuda_11.6 md $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)\cuda_11.6
