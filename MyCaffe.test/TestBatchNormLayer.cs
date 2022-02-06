@@ -165,117 +165,147 @@ namespace MyCaffe.test
 
         public void TestForward()
         {
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.BATCHNORM);
-            p.batch_norm_param.engine = m_engine;
-            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+            Layer<T> layer = null;
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Test mean
-            int nNum = Bottom.num;
-            int nChannels = Bottom.channels;
-            int nHeight = Bottom.height;
-            int nWidth = Bottom.width;
-
-            for (int j = 0; j < nChannels; j++)
+            try
             {
-                double dfSum = 0;
-                double dfVar = 0;
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.BATCHNORM);
+                p.batch_norm_param.engine = m_engine;
+                layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
-                for (int i = 0; i < nNum; i++)
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // Test mean
+                int nNum = Bottom.num;
+                int nChannels = Bottom.channels;
+                int nHeight = Bottom.height;
+                int nWidth = Bottom.width;
+
+                for (int j = 0; j < nChannels; j++)
                 {
-                    for (int k=0; k<nHeight; k++)
-                    {
-                        for (int l=0; l<nWidth; l++)
-                        {
-                            T fData = Top.data_at(i, j, k, l);
-                            double dfData = convert(fData);
+                    double dfSum = 0;
+                    double dfVar = 0;
 
-                            dfSum += dfData;
-                            dfVar += dfData * dfData;
+                    for (int i = 0; i < nNum; i++)
+                    {
+                        for (int k = 0; k < nHeight; k++)
+                        {
+                            for (int l = 0; l < nWidth; l++)
+                            {
+                                T fData = Top.data_at(i, j, k, l);
+                                double dfData = convert(fData);
+
+                                dfSum += dfData;
+                                dfVar += dfData * dfData;
+                            }
                         }
                     }
+
+                    dfSum /= nHeight * nWidth * nNum;
+                    dfVar /= nHeight * nWidth * nNum;
+
+                    double dfKErrorBound = 0.001;
+
+                    // expect zero mean
+                    m_log.EXPECT_NEAR(0.0, dfSum, dfKErrorBound);
+                    // expect unit variance
+                    m_log.EXPECT_NEAR(1.0, dfVar, dfKErrorBound);
                 }
-
-                dfSum /= nHeight * nWidth * nNum;
-                dfVar /= nHeight * nWidth * nNum;
-
-                double dfKErrorBound = 0.001;
-
-                // expect zero mean
-                m_log.EXPECT_NEAR(0.0, dfSum, dfKErrorBound);
-                // expect unit variance
-                m_log.EXPECT_NEAR(1.0, dfVar, dfKErrorBound);
+            }
+            finally
+            {
+                if (layer != null)
+                    layer.Dispose();
             }
         }
 
         public void TestForwardInplace()
         {
-            Blob<T> blobInPlace = new Blob<T>(m_cuda, m_log, 5, 2, 3, 4);
-            BlobCollection<T> colBottom = new BlobCollection<T>();
-            BlobCollection<T> colTop = new BlobCollection<T>();
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.BATCHNORM);
-            p.batch_norm_param.engine = m_engine;
-            FillerParameter fp = new FillerParameter("gaussian");
-            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
-            filler.Fill(blobInPlace);
+            Layer<T> layer = null;
 
-            colBottom.Add(blobInPlace);
-            colTop.Add(blobInPlace);
-
-            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-            layer.Setup(colBottom, colTop);
-            layer.Forward(colBottom, colTop);
-
-            // Test mean
-            int nNum = blobInPlace.num;
-            int nChannels = blobInPlace.channels;
-            int nHeight = blobInPlace.height;
-            int nWidth = blobInPlace.width;
-
-            for (int j = 0; j < nChannels; j++)
+            try
             {
-                double dfSum = 0;
-                double dfVar = 0;
+                Blob<T> blobInPlace = new Blob<T>(m_cuda, m_log, 5, 2, 3, 4);
+                BlobCollection<T> colBottom = new BlobCollection<T>();
+                BlobCollection<T> colTop = new BlobCollection<T>();
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.BATCHNORM);
+                p.batch_norm_param.engine = m_engine;
+                FillerParameter fp = new FillerParameter("gaussian");
+                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
+                filler.Fill(blobInPlace);
 
-                for (int i = 0; i < nNum; i++)
+                colBottom.Add(blobInPlace);
+                colTop.Add(blobInPlace);
+
+                layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+                layer.Setup(colBottom, colTop);
+                layer.Forward(colBottom, colTop);
+
+                // Test mean
+                int nNum = blobInPlace.num;
+                int nChannels = blobInPlace.channels;
+                int nHeight = blobInPlace.height;
+                int nWidth = blobInPlace.width;
+
+                for (int j = 0; j < nChannels; j++)
                 {
-                    for (int k = 0; k < nHeight; k++)
-                    {
-                        for (int l = 0; l < nWidth; l++)
-                        {
-                            T fData = blobInPlace.data_at(i, j, k, l);
-                            double dfData = convert(fData);
+                    double dfSum = 0;
+                    double dfVar = 0;
 
-                            dfSum += dfData;
-                            dfVar += dfData * dfData;
+                    for (int i = 0; i < nNum; i++)
+                    {
+                        for (int k = 0; k < nHeight; k++)
+                        {
+                            for (int l = 0; l < nWidth; l++)
+                            {
+                                T fData = blobInPlace.data_at(i, j, k, l);
+                                double dfData = convert(fData);
+
+                                dfSum += dfData;
+                                dfVar += dfData * dfData;
+                            }
                         }
                     }
+
+                    dfSum /= nHeight * nWidth * nNum;
+                    dfVar /= nHeight * nWidth * nNum;
+
+                    double dfKErrorBound = 0.001;
+
+                    // expect zero mean
+                    m_log.EXPECT_NEAR(0.0, dfSum, dfKErrorBound);
+                    // expect unit variance
+                    m_log.EXPECT_NEAR(1.0, dfVar, dfKErrorBound);
                 }
 
-                dfSum /= nHeight * nWidth * nNum;
-                dfVar /= nHeight * nWidth * nNum;
-
-                double dfKErrorBound = 0.001;
-
-                // expect zero mean
-                m_log.EXPECT_NEAR(0.0, dfSum, dfKErrorBound);
-                // expect unit variance
-                m_log.EXPECT_NEAR(1.0, dfVar, dfKErrorBound);
+                blobInPlace.Dispose();
             }
-
-            blobInPlace.Dispose();
+            finally
+            {
+                if (layer != null)
+                    layer.Dispose();
+            }
         }
 
         public void TestGradient()
         {
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.BATCHNORM);
-            p.batch_norm_param.engine = m_engine;
-            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-4);
+            Layer<T> layer = null;
 
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            try
+            {
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.BATCHNORM);
+                p.batch_norm_param.engine = m_engine;
+                layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-4);
+
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                if (layer != null)
+                    layer.Dispose();
+            }
         }
     }
 }
