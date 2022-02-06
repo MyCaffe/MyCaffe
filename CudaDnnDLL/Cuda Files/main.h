@@ -64,11 +64,17 @@ public:
 
 	long Initialize(T* pfInput, long lCount)
 	{
+		LONG lErr;
+		
+		if (lErr = m_device.Initialize())
+			return lErr;
+
 		return Run(CUDA_FN_SETDEVICE, pfInput, lCount, NULL, NULL);
 	}
 
 	void CleanUp()
 	{
+		m_device.CleanUp();
 	}
 
 	int GetDevice()

@@ -43,29 +43,32 @@ protected:
 	BOOL m_bInitializedNvApi;
 	BOOL m_bInitializedNvml;
 	void* m_device;
+	int m_nNumWdmGpus;
+	int m_nNumTccGpus;
 	void* m_gpuWdmHandles;
 	void* m_gpuTccHandles;
+	HANDLE m_hEventSrc;
 	int m_nIdxWdm;
 	int m_nIdxTcc;
-	HANDLE m_hEventSrc;
 
 public:
 	HwInfo()
 	{
+		m_device = NULL;
 		m_bInitializedNvApi = FALSE;
 		m_bInitializedNvml = FALSE;
-		m_device = NULL;
 		m_gpuWdmHandles = NULL;
 		m_gpuTccHandles = NULL;
+		m_hEventSrc = NULL;
+		m_nNumWdmGpus = 0;
+		m_nNumTccGpus = 0;
 		m_nIdxWdm = -1;
 		m_nIdxTcc = -1;
-		m_hEventSrc = NULL;
 	}
 
 	~HwInfo()
 	{
 		m_device = NULL;
-
 		if (m_gpuWdmHandles != NULL)
 		{
 			free(m_gpuWdmHandles);
@@ -79,7 +82,7 @@ public:
 		}
 	}
 
-	long Initialize(int nDevice, HANDLE hEvtSrc);
+	long Initialize(HANDLE hEvtSrc);
 	long CleanUp();
 	long FindDevice(int nDevice);
 	long GetConnectedDisplays(int* pnDisplayCount);
@@ -117,6 +120,9 @@ class Device
 	public:
 		Device();
 		~Device();
+
+		long Initialize();
+		long CleanUp();
 
 		long GetDeviceName(int nDevice, LPTSTR* pszDevice);
 		long GetDeviceP2PInfo(int nDevice, LPTSTR* pszDevice);
@@ -681,7 +687,7 @@ inline Device<T>::~Device()
 		m_cublas = NULL;
 	}
 
-	m_hwInfo.CleanUp();
+	CleanUp();
 
 	DeleteCriticalSection(&m_MemHostLock);
 }
