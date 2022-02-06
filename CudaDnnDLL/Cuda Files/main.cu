@@ -54,6 +54,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 #endif
 #endif
 
+	if (!m_device.IsInitialized())
+		return ERROR_DEVICE_NOT_INITIALIZED;
+
 	switch (lfnIdx)
 	{
 		case CUDA_FN_SETDEVICE:

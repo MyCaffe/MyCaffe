@@ -111,6 +111,7 @@ class Device
 		int m_nMinor = 0;
 		long m_hSetMemHost = 0;
 		CRITICAL_SECTION m_MemHostLock;
+		bool m_bInitialized = FALSE;
 
 		long verifyInput(long lInput, T* pfInput, long lMin, long lMax, bool bExact = false);
 		long verifyOutput(long* plOutput, T** ppfOutput);
@@ -123,6 +124,11 @@ class Device
 
 		long Initialize();
 		long CleanUp();
+
+		bool IsInitialized()
+		{
+			return m_bInitialized;
+		}
 
 		long GetDeviceName(int nDevice, LPTSTR* pszDevice);
 		long GetDeviceP2PInfo(int nDevice, LPTSTR* pszDevice);

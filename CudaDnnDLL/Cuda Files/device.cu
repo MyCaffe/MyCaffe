@@ -402,6 +402,8 @@ long Device<T>::Initialize()
 	if ((lErr = m_hwInfo.Initialize(m_hEventSrc)) != 0)
 		return lErr;
 
+	m_bInitialized = TRUE;
+
 	return NOERROR;
 }
 
@@ -413,6 +415,7 @@ template <class T>
 long Device<T>::CleanUp()
 {
 	m_hwInfo.CleanUp();
+	m_bInitialized = FALSE;
 	return NOERROR;
 }
 
