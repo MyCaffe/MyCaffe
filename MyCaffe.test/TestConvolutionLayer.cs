@@ -1194,114 +1194,136 @@ namespace MyCaffe.test
 
         public void TestSetup(bool bUseTensorCores)
         {
-            ConvolutionLayerTest test = new ConvolutionLayerTest();
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
-            p.convolution_param.engine = m_engine;
-            p.convolution_param.kernel_size.Add(3);
-            p.convolution_param.stride.Add(2);
-            p.convolution_param.num_output = 4;
-            p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
-            ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
+            ConvolutionLayer<T> layer = null;
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            {
+                ConvolutionLayerTest test = new ConvolutionLayerTest();
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
+                p.convolution_param.engine = m_engine;
+                p.convolution_param.kernel_size.Add(3);
+                p.convolution_param.stride.Add(2);
+                p.convolution_param.num_output = 4;
+                p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
+                layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
 
-            m_log.CHECK_EQ(2, Top.num, "The top[0] Blob<T> should have num = 2.");
-            m_log.CHECK_EQ(4, Top.channels, "The top[0] Blob<T> should have channels = 4.");
-            m_log.CHECK_EQ(2, Top.height, "The top[0] Blob<T> should have height = 2.");
-            m_log.CHECK_EQ(1, Top.width, "The top[0] Blob<T> should have width = 1.");
-            m_log.CHECK_EQ(2, Top2.num, "The top[1] Blob<T> should have num = 2.");
-            m_log.CHECK_EQ(4, Top2.channels, "The top[1] Blob<T> should have channels = 4.");
-            m_log.CHECK_EQ(2, Top2.height, "The top[1] Blob<T> should have height = 2.");
-            m_log.CHECK_EQ(1, Top2.width, "The top[1] Blob<T> should have width = 1.");
+                layer.Setup(BottomVec, TopVec);
 
-            // setting group should not change the shape
-            p.convolution_param.num_output = 3;
-            p.convolution_param.group = 3;
-            layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
+                m_log.CHECK_EQ(2, Top.num, "The top[0] Blob<T> should have num = 2.");
+                m_log.CHECK_EQ(4, Top.channels, "The top[0] Blob<T> should have channels = 4.");
+                m_log.CHECK_EQ(2, Top.height, "The top[0] Blob<T> should have height = 2.");
+                m_log.CHECK_EQ(1, Top.width, "The top[0] Blob<T> should have width = 1.");
+                m_log.CHECK_EQ(2, Top2.num, "The top[1] Blob<T> should have num = 2.");
+                m_log.CHECK_EQ(4, Top2.channels, "The top[1] Blob<T> should have channels = 4.");
+                m_log.CHECK_EQ(2, Top2.height, "The top[1] Blob<T> should have height = 2.");
+                m_log.CHECK_EQ(1, Top2.width, "The top[1] Blob<T> should have width = 1.");
 
-            m_log.CHECK_EQ(2, Top.num, "The top[0] Blob<T> should have num = 2.");
-            m_log.CHECK_EQ(3, Top.channels, "The top[0] Blob<T> should have channels = 3.");
-            m_log.CHECK_EQ(2, Top.height, "The top[0] Blob<T> should have height = 2.");
-            m_log.CHECK_EQ(1, Top.width, "The top[0] Blob<T> should have width = 1.");
-            m_log.CHECK_EQ(2, Top2.num, "The top[1] Blob<T> should have num = 2.");
-            m_log.CHECK_EQ(3, Top2.channels, "The top[1] Blob<T> should have channels = 3.");
-            m_log.CHECK_EQ(2, Top2.height, "The top[1] Blob<T> should have height = 2.");
-            m_log.CHECK_EQ(1, Top2.width, "The top[1] Blob<T> should have width = 1.");
+                // setting group should not change the shape
+                p.convolution_param.num_output = 3;
+                p.convolution_param.group = 3;
+
+                layer.Dispose();
+                layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
+                layer.Setup(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(2, Top.num, "The top[0] Blob<T> should have num = 2.");
+                m_log.CHECK_EQ(3, Top.channels, "The top[0] Blob<T> should have channels = 3.");
+                m_log.CHECK_EQ(2, Top.height, "The top[0] Blob<T> should have height = 2.");
+                m_log.CHECK_EQ(1, Top.width, "The top[0] Blob<T> should have width = 1.");
+                m_log.CHECK_EQ(2, Top2.num, "The top[1] Blob<T> should have num = 2.");
+                m_log.CHECK_EQ(3, Top2.channels, "The top[1] Blob<T> should have channels = 3.");
+                m_log.CHECK_EQ(2, Top2.height, "The top[1] Blob<T> should have height = 2.");
+                m_log.CHECK_EQ(1, Top2.width, "The top[1] Blob<T> should have width = 1.");
+            }
+            finally
+            {
+                if (layer != null)
+                    layer.Dispose();
+            }
         }
 
         public void TestSimpleConvolution(bool bUseTensorCores)
         {
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
-            p.convolution_param.engine = m_engine;
-            p.convolution_param.kernel_size.Add(3);
-            p.convolution_param.stride.Add(2);
-            p.convolution_param.num_output = 4;
-            p.use_halfsize = m_bHalf;
-            p.convolution_param.weight_filler = new FillerParameter("gaussian");
-            p.convolution_param.bias_filler = new FillerParameter("constant");
-            p.convolution_param.bias_filler.value = 0.1;
-            p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
-            ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
-            layer.OnGetWorkspace += layer_OnGetWorkspace;
-            layer.OnSetWorkspace += layer_OnSetWorkspace;
+            ConvolutionLayer<T> layer = null;
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            BlobCollection<T> colWeights1 = layer.blobs;
-            double dfErr = 1e-4;
-
-            if (m_bHalf)
+            try
             {
-                colWeights1 = new BlobCollection<T>();
-                for (int i = 0; i < layer.blobs.Count; i++)
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
+                p.convolution_param.engine = m_engine;
+                p.convolution_param.kernel_size.Add(3);
+                p.convolution_param.stride.Add(2);
+                p.convolution_param.num_output = 4;
+                p.use_halfsize = m_bHalf;
+                p.convolution_param.weight_filler = new FillerParameter("gaussian");
+                p.convolution_param.bias_filler = new FillerParameter("constant");
+                p.convolution_param.bias_filler.value = 0.1;
+                p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
+                layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
+                layer.OnGetWorkspace += layer_OnGetWorkspace;
+                layer.OnSetWorkspace += layer_OnSetWorkspace;
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                BlobCollection<T> colWeights1 = layer.blobs;
+                double dfErr = 1e-4;
+
+                if (m_bHalf)
                 {
-                    colWeights1.Add(new Blob<T>(m_cuda, m_log, false, false));
-                    colWeights1[i].ReshapeLike(layer.blobs[i]);
-                    colWeights1[i].CopyFrom(layer.blobs[i]);
+                    colWeights1 = new BlobCollection<T>();
+                    for (int i = 0; i < layer.blobs.Count; i++)
+                    {
+                        colWeights1.Add(new Blob<T>(m_cuda, m_log, false, false));
+                        colWeights1[i].ReshapeLike(layer.blobs[i]);
+                        colWeights1[i].CopyFrom(layer.blobs[i]);
+                    }
+
+                    ulong lWorkSize = Math.Max(Bottom.GetConversionWorkSize(false), Top.GetConversionWorkSize(false));
+                    long hWorkMem = m_cuda.AllocMemory((long)lWorkSize);
+
+                    Bottom.ConvertToBase(hWorkMem, lWorkSize, true, false);
+                    Top.ConvertToBase(hWorkMem, lWorkSize, true, false);
+                    Bottom2.ConvertToBase(hWorkMem, lWorkSize, true, false);
+                    Top2.ConvertToBase(hWorkMem, lWorkSize, true, false);
+
+                    m_cuda.FreeMemory(hWorkMem);
+
+                    dfErr = 0.01;
                 }
 
-                ulong lWorkSize = Math.Max(Bottom.GetConversionWorkSize(false), Top.GetConversionWorkSize(false));
-                long hWorkMem = m_cuda.AllocMemory((long)lWorkSize);
+                // Check against reference convolution;
+                caffe_conv(m_log, Bottom, p.convolution_param, colWeights1, MakeReferenceTop(Top));
+                T[] rgRefTopData = TopRef.update_cpu_data();
+                T[] rgTopData = Top.update_cpu_data();
 
-                Bottom.ConvertToBase(hWorkMem, lWorkSize, true, false);
-                Top.ConvertToBase(hWorkMem, lWorkSize, true, false);
-                Bottom2.ConvertToBase(hWorkMem, lWorkSize, true, false);
-                Top2.ConvertToBase(hWorkMem, lWorkSize, true, false);
+                for (int i = 0; i < Top.count(); i++)
+                {
+                    T dfTop = rgTopData[i];
+                    T dfTopRef = rgRefTopData[i];
 
-                m_cuda.FreeMemory(hWorkMem);
+                    EXPECT_NEAR(dfTop, dfTopRef, dfErr);
+                }
 
-                dfErr = 0.01;
+                caffe_conv(m_log, Bottom2, p.convolution_param, colWeights1, MakeReferenceTop(Top2));
+                rgTopData = Top2.update_cpu_data();
+                rgRefTopData = TopRef.update_cpu_data();
+
+                for (int i = 0; i < Top.count(); i++)
+                {
+                    T dfTop = rgTopData[i];
+                    T dfTopRef = rgRefTopData[i];
+
+                    EXPECT_NEAR(dfTop, dfTopRef, dfErr);
+                }
+
+                if (m_bHalf)
+                    colWeights1.Dispose();
             }
-
-            // Check against reference convolution;
-            caffe_conv(m_log, Bottom, p.convolution_param, colWeights1, MakeReferenceTop(Top));
-            T[] rgRefTopData = TopRef.update_cpu_data();
-            T[] rgTopData = Top.update_cpu_data();
-
-            for (int i = 0; i < Top.count(); i++)
+            finally
             {
-                T dfTop = rgTopData[i];
-                T dfTopRef = rgRefTopData[i];
-
-                EXPECT_NEAR(dfTop, dfTopRef, dfErr);
+                if (layer != null)
+                    layer.Dispose();
             }
-
-            caffe_conv(m_log, Bottom2, p.convolution_param, colWeights1, MakeReferenceTop(Top2));
-            rgTopData = Top2.update_cpu_data();
-            rgRefTopData = TopRef.update_cpu_data();
-
-            for (int i = 0; i < Top.count(); i++)
-            {
-                T dfTop = rgTopData[i];
-                T dfTopRef = rgRefTopData[i];
-
-                EXPECT_NEAR(dfTop, dfTopRef, dfErr);
-            }
-
-            if (m_bHalf)
-                colWeights1.Dispose();
         }
 
         private void layer_OnSetWorkspace(object sender, WorkspaceArgs e)
@@ -1327,36 +1349,46 @@ namespace MyCaffe.test
 
         public void TestSimpleConvolutionGroup(bool bUseTensorCores)
         {
-            ConvolutionLayerTest test = new ConvolutionLayerTest();
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
-            p.convolution_param.engine = m_engine;
-            p.convolution_param.kernel_size.Add(3);
-            p.convolution_param.stride.Add(2);
-            p.convolution_param.num_output = 3;
-            p.convolution_param.group = 3;
-            p.convolution_param.weight_filler = new FillerParameter("gaussian");
-            p.convolution_param.bias_filler = new FillerParameter("constant");
-            p.convolution_param.bias_filler.value = 0.1;
-            p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
-            ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
+            ConvolutionLayer<T> layer = null;
 
-            BottomVec.RemoveAt(1);
-            TopVec.RemoveAt(1);
-
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Check against reference convolution;
-            caffe_conv(m_log, Bottom, p.convolution_param, layer.blobs, MakeReferenceTop(Top));
-            T[] rgTopData = Top.update_cpu_data();
-            T[] rgRefTopData = TopRef.update_cpu_data();
-
-            for (int i = 0; i < Top.count(); i++)
+            try
             {
-                T dfTop = rgTopData[i];
-                T dfTopRef = rgRefTopData[i];
+                ConvolutionLayerTest test = new ConvolutionLayerTest();
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
+                p.convolution_param.engine = m_engine;
+                p.convolution_param.kernel_size.Add(3);
+                p.convolution_param.stride.Add(2);
+                p.convolution_param.num_output = 3;
+                p.convolution_param.group = 3;
+                p.convolution_param.weight_filler = new FillerParameter("gaussian");
+                p.convolution_param.bias_filler = new FillerParameter("constant");
+                p.convolution_param.bias_filler.value = 0.1;
+                p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
+                layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
 
-                EXPECT_NEAR(dfTop, dfTopRef, 1e-4);
+                BottomVec.RemoveAt(1);
+                TopVec.RemoveAt(1);
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // Check against reference convolution;
+                caffe_conv(m_log, Bottom, p.convolution_param, layer.blobs, MakeReferenceTop(Top));
+                T[] rgTopData = Top.update_cpu_data();
+                T[] rgRefTopData = TopRef.update_cpu_data();
+
+                for (int i = 0; i < Top.count(); i++)
+                {
+                    T dfTop = rgTopData[i];
+                    T dfTopRef = rgRefTopData[i];
+
+                    EXPECT_NEAR(dfTop, dfTopRef, 1e-4);
+                }
+            }
+            finally
+            {
+                if (layer != null)
+                    layer.Dispose();
             }
         }
 
@@ -1367,236 +1399,288 @@ namespace MyCaffe.test
         /// </summary>
         public void TestSobelConvolution(bool bUseTensorCores)
         {
-            ConvolutionLayerTest test = new ConvolutionLayerTest();
+            ConvolutionLayer<T> layer = null;
 
-            // Fill bottoms with identical Gaussian noise.
-            FillerParameter fp = new FillerParameter("gaussian");
-            fp.value = 1;
-            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
-            filler.Fill(Bottom);
-            Bottom2.CopyFrom(Bottom);
-
-            // Compute Sobel G_x operator as 3 x 3 convolution.
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
-            p.convolution_param.engine = m_engine;
-            p.convolution_param.kernel_size.Add(3);
-            p.convolution_param.stride.Add(2);
-            p.convolution_param.num_output = 1;
-            p.convolution_param.bias_term = false;
-            p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
-            ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
-
-            BottomVec.RemoveAt(1);
-            TopVec.RemoveAt(1);
-
-            layer.blobs.Clear();
-            layer.blobs.Add(new Blob<T>(m_cuda, m_log, 1, 3, 3, 3));
-            T[] rgWeights = layer.blobs[0].mutable_cpu_data;
-
-            for (int c = 0; c < 3; c++)
+            try
             {
-                int i = c * 9; // 3 x 3 filter
-                rgWeights[i + 0] = (T)Convert.ChangeType(-1, typeof(T));
-                rgWeights[i + 1] = (T)Convert.ChangeType(0, typeof(T));
-                rgWeights[i + 2] = (T)Convert.ChangeType(1, typeof(T));
-                rgWeights[i + 3] = (T)Convert.ChangeType(-2, typeof(T));
-                rgWeights[i + 4] = (T)Convert.ChangeType(0, typeof(T));
-                rgWeights[i + 5] = (T)Convert.ChangeType(2, typeof(T));
-                rgWeights[i + 6] = (T)Convert.ChangeType(-1, typeof(T));
-                rgWeights[i + 7] = (T)Convert.ChangeType(0, typeof(T));
-                rgWeights[i + 8] = (T)Convert.ChangeType(1, typeof(T));
+                ConvolutionLayerTest test = new ConvolutionLayerTest();
+
+                // Fill bottoms with identical Gaussian noise.
+                FillerParameter fp = new FillerParameter("gaussian");
+                fp.value = 1;
+                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
+                filler.Fill(Bottom);
+                Bottom2.CopyFrom(Bottom);
+
+                // Compute Sobel G_x operator as 3 x 3 convolution.
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
+                p.convolution_param.engine = m_engine;
+                p.convolution_param.kernel_size.Add(3);
+                p.convolution_param.stride.Add(2);
+                p.convolution_param.num_output = 1;
+                p.convolution_param.bias_term = false;
+                p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
+                layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
+
+                BottomVec.RemoveAt(1);
+                TopVec.RemoveAt(1);
+
+                layer.blobs.Clear();
+                layer.blobs.Add(new Blob<T>(m_cuda, m_log, 1, 3, 3, 3));
+                T[] rgWeights = layer.blobs[0].mutable_cpu_data;
+
+                for (int c = 0; c < 3; c++)
+                {
+                    int i = c * 9; // 3 x 3 filter
+                    rgWeights[i + 0] = (T)Convert.ChangeType(-1, typeof(T));
+                    rgWeights[i + 1] = (T)Convert.ChangeType(0, typeof(T));
+                    rgWeights[i + 2] = (T)Convert.ChangeType(1, typeof(T));
+                    rgWeights[i + 3] = (T)Convert.ChangeType(-2, typeof(T));
+                    rgWeights[i + 4] = (T)Convert.ChangeType(0, typeof(T));
+                    rgWeights[i + 5] = (T)Convert.ChangeType(2, typeof(T));
+                    rgWeights[i + 6] = (T)Convert.ChangeType(-1, typeof(T));
+                    rgWeights[i + 7] = (T)Convert.ChangeType(0, typeof(T));
+                    rgWeights[i + 8] = (T)Convert.ChangeType(1, typeof(T));
+                }
+
+                layer.blobs[0].mutable_cpu_data = rgWeights;
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // Compute Sobel G_x operator as separable 3x1 and 1x3 convolutions.
+                // (1) the [1 2 1] column filter.
+                BlobCollection<T> sep_blob_bottom_vec = new BlobCollection<T>();
+                BlobCollection<T> sep_blob_top_vec = new BlobCollection<T>();
+                sep_blob_bottom_vec.Add(Bottom2);
+                sep_blob_top_vec.Add(Top2);
+                p.convolution_param.kernel_size = new List<uint>();
+                p.convolution_param.kernel_h = 3;
+                p.convolution_param.kernel_w = 1;
+                p.convolution_param.stride = new List<uint>();
+                p.convolution_param.stride_h = 2;
+                p.convolution_param.stride_w = 1;
+                p.convolution_param.num_output = 1;
+                p.convolution_param.bias_term = false;
+
+                layer.Dispose();
+                layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
+                layer.blobs.Clear();
+                layer.blobs.Add(new Blob<T>(m_cuda, m_log, 1, 3, 3, 1));
+                T[] rgWeights1 = layer.blobs[0].mutable_cpu_data;
+
+                for (int c = 0; c < 3; c++)
+                {
+                    int i = c * 3; // 3 x 1 filter
+                    rgWeights1[i + 0] = (T)Convert.ChangeType(1, typeof(T));
+                    rgWeights1[i + 1] = (T)Convert.ChangeType(2, typeof(T));
+                    rgWeights1[i + 2] = (T)Convert.ChangeType(1, typeof(T));
+                }
+
+                layer.blobs[0].mutable_cpu_data = rgWeights1;
+
+                layer.Setup(sep_blob_bottom_vec, sep_blob_top_vec);
+                layer.Forward(sep_blob_bottom_vec, sep_blob_top_vec);
+
+                // (2) the [-1 0 1] row filter
+                Blob<T> blob_sep = new Blob<T>(m_cuda, m_log);
+                blob_sep.CopyFrom(Top2, false, true);
+                sep_blob_bottom_vec = new BlobCollection<T>();
+                sep_blob_bottom_vec.Add(blob_sep);
+
+                p.convolution_param.kernel_h = 1;
+                p.convolution_param.kernel_w = 3;
+                p.convolution_param.stride_h = 1;
+                p.convolution_param.stride_w = 2;
+                p.convolution_param.num_output = 1;
+                p.convolution_param.bias_term = false;
+
+                layer.Dispose();
+                layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
+                layer.blobs.Clear();
+                layer.blobs.Add(new Blob<T>(m_cuda, m_log, 1, 1, 1, 3));
+                T[] rgWeights2 = layer.blobs[0].mutable_cpu_data;
+
+                rgWeights2[0] = (T)Convert.ChangeType(-1, typeof(T));
+                rgWeights2[1] = (T)Convert.ChangeType(0, typeof(T));
+                rgWeights2[2] = (T)Convert.ChangeType(1, typeof(T));
+
+                layer.blobs[0].mutable_cpu_data = rgWeights2;
+
+                layer.Setup(sep_blob_bottom_vec, sep_blob_top_vec);
+                layer.Forward(sep_blob_bottom_vec, sep_blob_top_vec);
+
+                // Test equivalence of full and separate filters.
+                T[] rgTop1Data = Top.update_cpu_data();
+                T[] rgTop2Data = Top2.update_cpu_data();
+
+                for (int i = 0; i < Top.count(); i++)
+                {
+                    T dfTop1 = rgTop1Data[i];
+                    T dfTop2 = rgTop2Data[i];
+
+                    EXPECT_NEAR(dfTop1, dfTop2, 1e-4);
+                }
             }
-
-            layer.blobs[0].mutable_cpu_data = rgWeights;
-
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Compute Sobel G_x operator as separable 3x1 and 1x3 convolutions.
-            // (1) the [1 2 1] column filter.
-            BlobCollection<T> sep_blob_bottom_vec = new BlobCollection<T>();
-            BlobCollection<T> sep_blob_top_vec = new BlobCollection<T>();
-            sep_blob_bottom_vec.Add(Bottom2);
-            sep_blob_top_vec.Add(Top2);
-            p.convolution_param.kernel_size = new List<uint>();
-            p.convolution_param.kernel_h = 3;
-            p.convolution_param.kernel_w = 1;
-            p.convolution_param.stride = new List<uint>();
-            p.convolution_param.stride_h = 2;
-            p.convolution_param.stride_w = 1;
-            p.convolution_param.num_output = 1;
-            p.convolution_param.bias_term = false;
-
-            layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
-            layer.blobs.Clear();
-            layer.blobs.Add(new Blob<T>(m_cuda, m_log, 1, 3, 3, 1));
-            T[] rgWeights1 = layer.blobs[0].mutable_cpu_data;
-
-            for (int c = 0; c < 3; c++)
+            finally
             {
-                int i = c * 3; // 3 x 1 filter
-                rgWeights1[i + 0] = (T)Convert.ChangeType(1, typeof(T));
-                rgWeights1[i + 1] = (T)Convert.ChangeType(2, typeof(T));
-                rgWeights1[i + 2] = (T)Convert.ChangeType(1, typeof(T));
-            }
-
-            layer.blobs[0].mutable_cpu_data = rgWeights1;
-
-            layer.Setup(sep_blob_bottom_vec, sep_blob_top_vec);
-            layer.Forward(sep_blob_bottom_vec, sep_blob_top_vec);
-
-            // (2) the [-1 0 1] row filter
-            Blob<T> blob_sep = new Blob<T>(m_cuda, m_log);
-            blob_sep.CopyFrom(Top2, false, true);
-            sep_blob_bottom_vec = new BlobCollection<T>();
-            sep_blob_bottom_vec.Add(blob_sep);
-
-            p.convolution_param.kernel_h = 1;
-            p.convolution_param.kernel_w = 3;
-            p.convolution_param.stride_h = 1;
-            p.convolution_param.stride_w = 2;
-            p.convolution_param.num_output = 1;
-            p.convolution_param.bias_term = false;
-
-            layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
-            layer.blobs.Clear();
-            layer.blobs.Add(new Blob<T>(m_cuda, m_log, 1, 1, 1, 3));
-            T[] rgWeights2 = layer.blobs[0].mutable_cpu_data;
-
-            rgWeights2[0] = (T)Convert.ChangeType(-1, typeof(T));
-            rgWeights2[1] = (T)Convert.ChangeType(0, typeof(T));
-            rgWeights2[2] = (T)Convert.ChangeType(1, typeof(T));
-
-            layer.blobs[0].mutable_cpu_data = rgWeights2;
-
-            layer.Setup(sep_blob_bottom_vec, sep_blob_top_vec);
-            layer.Forward(sep_blob_bottom_vec, sep_blob_top_vec);
-
-            // Test equivalence of full and separate filters.
-            T[] rgTop1Data = Top.update_cpu_data();
-            T[] rgTop2Data = Top2.update_cpu_data();
-
-            for (int i = 0; i < Top.count(); i++)
-            {
-                T dfTop1 = rgTop1Data[i];
-                T dfTop2 = rgTop2Data[i];
-
-                EXPECT_NEAR(dfTop1, dfTop2, 1e-4);
+                if (layer != null)
+                    layer.Dispose();
             }
         }
 
         public void TestGradient(bool bUseTensorCores)
         {
-            ConvolutionLayerTest test = new ConvolutionLayerTest();
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
-            p.convolution_param.engine = m_engine;
-            p.convolution_param.kernel_size.Add(3);
-            p.convolution_param.stride.Add(2);
-            p.convolution_param.num_output = 2;
-            p.use_halfsize = m_bHalf;
-            p.convolution_param.weight_filler = new FillerParameter("gaussian");
-            p.convolution_param.bias_filler = new FillerParameter("gaussian");
-            p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
-            ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
-            layer.OnGetWorkspace += layer_OnGetWorkspace;
-            layer.OnSetWorkspace += layer_OnSetWorkspace;
+            ConvolutionLayer<T> layer = null;
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            try
+            {
+                ConvolutionLayerTest test = new ConvolutionLayerTest();
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
+                p.convolution_param.engine = m_engine;
+                p.convolution_param.kernel_size.Add(3);
+                p.convolution_param.stride.Add(2);
+                p.convolution_param.num_output = 2;
+                p.use_halfsize = m_bHalf;
+                p.convolution_param.weight_filler = new FillerParameter("gaussian");
+                p.convolution_param.bias_filler = new FillerParameter("gaussian");
+                p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
+                layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
+                layer.OnGetWorkspace += layer_OnGetWorkspace;
+                layer.OnSetWorkspace += layer_OnSetWorkspace;
+
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                if (layer != null)
+                    layer.Dispose();
+            }
         }
 
         public void TestDilatedGradient(bool bUseTensorCores)
         {
-            ConvolutionLayerTest test = new ConvolutionLayerTest();
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
-            List<int> rgBottomShape = new List<int>() { 2, 3, 5, 6 };
+            ConvolutionLayer<T> layer = null;
 
-            for (int i = 0; i < BottomVec.Count; i++)
+            try
             {
-                BottomVec[i].Reshape(rgBottomShape);
+                ConvolutionLayerTest test = new ConvolutionLayerTest();
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
+                List<int> rgBottomShape = new List<int>() { 2, 3, 5, 6 };
+
+                for (int i = 0; i < BottomVec.Count; i++)
+                {
+                    BottomVec[i].Reshape(rgBottomShape);
+                }
+
+                p.convolution_param.engine = m_engine;
+                p.convolution_param.kernel_size.Add(3);
+                p.convolution_param.dilation.Add(2);
+                p.convolution_param.num_output = 2;
+                p.convolution_param.weight_filler = new FillerParameter("gaussian");
+                p.convolution_param.bias_filler = new FillerParameter("gaussian");
+                p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
+                layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
+
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
             }
-
-            p.convolution_param.engine = m_engine;
-            p.convolution_param.kernel_size.Add(3);
-            p.convolution_param.dilation.Add(2);
-            p.convolution_param.num_output = 2;
-            p.convolution_param.weight_filler = new FillerParameter("gaussian");
-            p.convolution_param.bias_filler = new FillerParameter("gaussian");
-            p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
-            ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
-
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            finally
+            {
+                if (layer != null)
+                    layer.Dispose();
+            }
         }
 
         public void TestGradientGroup(bool bUseTensorCores)
         {
-            ConvolutionLayerTest test = new ConvolutionLayerTest();
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
-            List<int> rgBottomShape = new List<int>();
-            p.convolution_param.engine = m_engine;
-            p.convolution_param.kernel_size.Add(3);
-            p.convolution_param.stride.Add(2);
-            p.convolution_param.num_output = 3;
-            p.convolution_param.group = 3;
-            p.use_halfsize = m_bHalf;
-            p.convolution_param.weight_filler = new FillerParameter("gaussian");
-            p.convolution_param.bias_filler = new FillerParameter("gaussian");
-            p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
-            ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
-            layer.OnGetWorkspace += layer_OnGetWorkspace;
-            layer.OnSetWorkspace += layer_OnSetWorkspace;
+            ConvolutionLayer<T> layer = null;
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            try
+            {
+                ConvolutionLayerTest test = new ConvolutionLayerTest();
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
+                List<int> rgBottomShape = new List<int>();
+                p.convolution_param.engine = m_engine;
+                p.convolution_param.kernel_size.Add(3);
+                p.convolution_param.stride.Add(2);
+                p.convolution_param.num_output = 3;
+                p.convolution_param.group = 3;
+                p.use_halfsize = m_bHalf;
+                p.convolution_param.weight_filler = new FillerParameter("gaussian");
+                p.convolution_param.bias_filler = new FillerParameter("gaussian");
+                p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
+                layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
+                layer.OnGetWorkspace += layer_OnGetWorkspace;
+                layer.OnSetWorkspace += layer_OnSetWorkspace;
+
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                if (layer != null)
+                    layer.Dispose();
+            }
         }
 
         public void TestDilatedConvolution(bool bUseTensorCores)
         {
-            ConvolutionLayerTest test = new ConvolutionLayerTest();
-            List<int> rgBottomShape = new List<int>() { 2, 3, 8, 7 };
+            ConvolutionLayer<T> layer = null;
 
-            for (int i = 0; i < BottomVec.Count; i++)
+            try
             {
-                BottomVec[i].Reshape(rgBottomShape);
+                ConvolutionLayerTest test = new ConvolutionLayerTest();
+                List<int> rgBottomShape = new List<int>() { 2, 3, 8, 7 };
+
+                for (int i = 0; i < BottomVec.Count; i++)
+                {
+                    BottomVec[i].Reshape(rgBottomShape);
+                }
+
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
+                p.convolution_param.engine = m_engine;
+                p.convolution_param.kernel_size.Add(3);
+                p.convolution_param.dilation.Add(2);
+                p.convolution_param.num_output = 4;
+                p.convolution_param.weight_filler = new FillerParameter("gaussian");
+                p.convolution_param.bias_filler = new FillerParameter("constant");
+                p.convolution_param.bias_filler.value = 0.1;
+                p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
+                layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // Check against reference convolution;
+                caffe_conv(m_log, Bottom, p.convolution_param, layer.blobs, MakeReferenceTop(Top));
+                T[] rgTopData = Top.update_cpu_data();
+                T[] rgRefTopData = TopRef.update_cpu_data();
+
+                for (int i = 0; i < Top.count(); i++)
+                {
+                    T dfTop = rgTopData[i];
+                    T dfTopRef = rgRefTopData[i];
+                    EXPECT_NEAR(dfTop, dfTopRef, 1e-4);
+                }
+
+                caffe_conv(m_log, Bottom2, p.convolution_param, layer.blobs, MakeReferenceTop(Top2));
+                rgTopData = Top2.update_cpu_data();
+                rgRefTopData = TopRef.update_cpu_data();
+
+                for (int i = 0; i < Top.count(); i++)
+                {
+                    T dfTop = rgTopData[i];
+                    T dfTopRef = rgRefTopData[i];
+
+                    EXPECT_NEAR(dfTop, dfTopRef, 1e-4);
+                }
             }
-
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
-            p.convolution_param.engine = m_engine;
-            p.convolution_param.kernel_size.Add(3);
-            p.convolution_param.dilation.Add(2);
-            p.convolution_param.num_output = 4;
-            p.convolution_param.weight_filler = new FillerParameter("gaussian");
-            p.convolution_param.bias_filler = new FillerParameter("constant");
-            p.convolution_param.bias_filler.value = 0.1;
-            p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
-            ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
-
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Check against reference convolution;
-            caffe_conv(m_log, Bottom, p.convolution_param, layer.blobs, MakeReferenceTop(Top));
-            T[] rgTopData = Top.update_cpu_data();
-            T[] rgRefTopData = TopRef.update_cpu_data();
-
-            for (int i = 0; i < Top.count(); i++)
+            finally
             {
-                T dfTop = rgTopData[i];
-                T dfTopRef = rgRefTopData[i];
-                EXPECT_NEAR(dfTop, dfTopRef, 1e-4);
-            }
-
-            caffe_conv(m_log, Bottom2, p.convolution_param, layer.blobs, MakeReferenceTop(Top2));
-            rgTopData = Top2.update_cpu_data();
-            rgRefTopData = TopRef.update_cpu_data();
-
-            for (int i = 0; i < Top.count(); i++)
-            {
-                T dfTop = rgTopData[i];
-                T dfTopRef = rgRefTopData[i];
-
-                EXPECT_NEAR(dfTop, dfTopRef, 1e-4);
+                if (layer != null)
+                    layer.Dispose();
             }
         }
 
@@ -1606,214 +1690,254 @@ namespace MyCaffe.test
 
         public void Test0DConvolution()
         {
-            if (m_engine != EngineParameter.Engine.CAFFE)
-                return;
+            ConvolutionLayer<T> layer = null;
 
-            BottomVec.RemoveAt(1);
-            TopVec.RemoveAt(1);
-
-            ConvolutionLayerTest test = new ConvolutionLayerTest();
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
-            int nNumOutput = 3;
-            p.convolution_param.engine = m_engine;
-            p.convolution_param.num_output = (uint)nNumOutput;
-            p.convolution_param.axis = 3;
-            p.convolution_param.weight_filler = new FillerParameter("gaussian");
-            p.convolution_param.bias_filler = new FillerParameter("gaussian");
-            ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
-            List<int> rgTopShape = Bottom.shape();
-            rgTopShape[3] = nNumOutput;
-
-            layer.Setup(BottomVec, TopVec);
-            m_log.CHECK(Utility.Compare<int>(rgTopShape, Bottom.shape()), "The bottom shape was not changed as expected!");
-
-            layer.Forward(BottomVec, TopVec);
-
-            // Check against reference convolution;
-            List<int> rgWeightOffset = new List<int>() { 0, 0 };
-            Blob<T> weight = layer.blobs[0];
-            Blob<T> bias = layer.blobs[1];
-            int nNum = Top.count(3);
-            int nDim = Top.shape(3);
-            int nBottomDim = Bottom.shape(3);
-
-            for (int n = 0; n < nNum; n++)
+            try
             {
-                for (int d = 0; d < nDim; d++)
+                if (m_engine != EngineParameter.Engine.CAFFE)
+                    return;
+
+                BottomVec.RemoveAt(1);
+                TopVec.RemoveAt(1);
+
+                ConvolutionLayerTest test = new ConvolutionLayerTest();
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
+                int nNumOutput = 3;
+                p.convolution_param.engine = m_engine;
+                p.convolution_param.num_output = (uint)nNumOutput;
+                p.convolution_param.axis = 3;
+                p.convolution_param.weight_filler = new FillerParameter("gaussian");
+                p.convolution_param.bias_filler = new FillerParameter("gaussian");
+                layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
+                List<int> rgTopShape = Bottom.shape();
+                rgTopShape[3] = nNumOutput;
+
+                layer.Setup(BottomVec, TopVec);
+                m_log.CHECK(Utility.Compare<int>(rgTopShape, Bottom.shape()), "The bottom shape was not changed as expected!");
+
+                layer.Forward(BottomVec, TopVec);
+
+                // Check against reference convolution;
+                List<int> rgWeightOffset = new List<int>() { 0, 0 };
+                Blob<T> weight = layer.blobs[0];
+                Blob<T> bias = layer.blobs[1];
+                int nNum = Top.count(3);
+                int nDim = Top.shape(3);
+                int nBottomDim = Bottom.shape(3);
+
+                for (int n = 0; n < nNum; n++)
                 {
-                    rgWeightOffset[0] = d;
-                    T dfVal = bias.GetData(d);
-
-                    for (int nBottomD = 0; nBottomD < nBottomDim; nBottomD++)
+                    for (int d = 0; d < nDim; d++)
                     {
-                        rgWeightOffset[1] = nBottomD;
+                        rgWeightOffset[0] = d;
+                        T dfVal = bias.GetData(d);
 
-                        double dfWt = (double)Convert.ChangeType(weight.data_at(rgWeightOffset), typeof(double));
-                        double dfBtm = (double)Convert.ChangeType(Bottom.GetData(n * nBottomDim + nBottomD), typeof(double));
-                        double dfVal1 = (double)Convert.ChangeType(dfVal, typeof(double));
-                        dfVal1 += dfWt * dfBtm;
+                        for (int nBottomD = 0; nBottomD < nBottomDim; nBottomD++)
+                        {
+                            rgWeightOffset[1] = nBottomD;
 
-                        dfVal = (T)Convert.ChangeType(dfVal1, typeof(T));
+                            double dfWt = (double)Convert.ChangeType(weight.data_at(rgWeightOffset), typeof(double));
+                            double dfBtm = (double)Convert.ChangeType(Bottom.GetData(n * nBottomDim + nBottomD), typeof(double));
+                            double dfVal1 = (double)Convert.ChangeType(dfVal, typeof(double));
+                            dfVal1 += dfWt * dfBtm;
+
+                            dfVal = (T)Convert.ChangeType(dfVal1, typeof(T));
+                        }
+
+                        T dfTopData = Top.GetData(n * nDim + d);
+
+                        EXPECT_NEAR(dfVal, dfTopData, 1e-4);
                     }
-
-                    T dfTopData = Top.GetData(n * nDim + d);
-
-                    EXPECT_NEAR(dfVal, dfTopData, 1e-4);
                 }
+            }
+            finally
+            {
+                if (layer != null)
+                    layer.Dispose();
             }
         }
 
         public void TestSimple3DConvolution()
         {
-            if (m_engine != EngineParameter.Engine.CAFFE)
-                return;
+            ConvolutionLayer<T> layer = null;
 
-            ConvolutionLayerTest test = new ConvolutionLayerTest();
-            List<int> rgBottomShape = new List<int>();
-            rgBottomShape.Add(BottomVec[0].shape(0));
-            rgBottomShape.Add(BottomVec[0].shape(1));
-            rgBottomShape.Add(5);
-            rgBottomShape.Add(BottomVec[0].shape(2));
-            rgBottomShape.Add(BottomVec[0].shape(3));
-            FillerParameter pf = new FillerParameter("gaussian");
-            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, pf);
-
-            for (int i = 0; i < BottomVec.Count; i++)
+            try
             {
-                BottomVec[i].Reshape(rgBottomShape);
-                filler.Fill(BottomVec[i]);
+                if (m_engine != EngineParameter.Engine.CAFFE)
+                    return;
+
+                ConvolutionLayerTest test = new ConvolutionLayerTest();
+                List<int> rgBottomShape = new List<int>();
+                rgBottomShape.Add(BottomVec[0].shape(0));
+                rgBottomShape.Add(BottomVec[0].shape(1));
+                rgBottomShape.Add(5);
+                rgBottomShape.Add(BottomVec[0].shape(2));
+                rgBottomShape.Add(BottomVec[0].shape(3));
+                FillerParameter pf = new FillerParameter("gaussian");
+                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, pf);
+
+                for (int i = 0; i < BottomVec.Count; i++)
+                {
+                    BottomVec[i].Reshape(rgBottomShape);
+                    filler.Fill(BottomVec[i]);
+                }
+
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
+                p.convolution_param.engine = m_engine;
+                p.convolution_param.kernel_size.Add(3);
+                p.convolution_param.stride.Add(2);
+                p.convolution_param.num_output = 4;
+                p.convolution_param.weight_filler = new FillerParameter("gaussian");
+                p.convolution_param.bias_filler = new FillerParameter("gaussian");
+                layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // Check against reference convolution;
+                caffe_conv(m_log, Bottom, p.convolution_param, layer.blobs, MakeReferenceTop(Top));
+                T[] rgTopData = Top.update_cpu_data();
+                T[] rgRefTopData = TopRef.update_cpu_data();
+
+                for (int i = 0; i < Top.count(); i++)
+                {
+                    T dfTop = rgTopData[i];
+                    T dfTopRef = rgRefTopData[i];
+
+                    EXPECT_NEAR(dfTop, dfTopRef, 1e-4);
+                }
+
+                caffe_conv(m_log, Bottom2, p.convolution_param, layer.blobs, MakeReferenceTop(Top2));
+                rgTopData = Top2.update_cpu_data();
+                rgRefTopData = TopRef.update_cpu_data();
+
+                for (int i = 0; i < Top.count(); i++)
+                {
+                    T dfTop = rgTopData[i];
+                    T dfTopRef = rgRefTopData[i];
+
+                    EXPECT_NEAR(dfTop, dfTopRef, 1e-4);
+                }
             }
-
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
-            p.convolution_param.engine = m_engine;
-            p.convolution_param.kernel_size.Add(3);
-            p.convolution_param.stride.Add(2);
-            p.convolution_param.num_output = 4;
-            p.convolution_param.weight_filler = new FillerParameter("gaussian");
-            p.convolution_param.bias_filler = new FillerParameter("gaussian");
-            ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
-
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Check against reference convolution;
-            caffe_conv(m_log, Bottom, p.convolution_param, layer.blobs, MakeReferenceTop(Top));
-            T[] rgTopData = Top.update_cpu_data();
-            T[] rgRefTopData = TopRef.update_cpu_data();
-
-            for (int i = 0; i < Top.count(); i++)
+            finally
             {
-                T dfTop = rgTopData[i];
-                T dfTopRef = rgRefTopData[i];
-
-                EXPECT_NEAR(dfTop, dfTopRef, 1e-4);
-            }
-
-            caffe_conv(m_log, Bottom2, p.convolution_param, layer.blobs, MakeReferenceTop(Top2));
-            rgTopData = Top2.update_cpu_data();
-            rgRefTopData = TopRef.update_cpu_data();
-
-            for (int i = 0; i < Top.count(); i++)
-            {
-                T dfTop = rgTopData[i];
-                T dfTopRef = rgRefTopData[i];
-
-                EXPECT_NEAR(dfTop, dfTopRef, 1e-4);
+                if (layer != null)
+                    layer.Dispose();
             }
         }
 
         public void TestDilated3DConvolution()
         {
-            if (m_engine != EngineParameter.Engine.CAFFE)
-                return;
+            ConvolutionLayer<T> layer = null;
 
-            ConvolutionLayerTest test = new ConvolutionLayerTest();
-            List<int> rgBottomShape = new List<int>();
-            rgBottomShape.Add(BottomVec[0].shape(0));
-            rgBottomShape.Add(BottomVec[0].shape(1));
-            rgBottomShape.Add(6);
-            rgBottomShape.Add(7);
-            rgBottomShape.Add(8);
-            FillerParameter pf = new FillerParameter("gaussian");
-            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, pf);
-
-            for (int i = 0; i < BottomVec.Count; i++)
+            try
             {
-                BottomVec[i].Reshape(rgBottomShape);
-                filler.Fill(BottomVec[i]);
+                if (m_engine != EngineParameter.Engine.CAFFE)
+                    return;
+
+                ConvolutionLayerTest test = new ConvolutionLayerTest();
+                List<int> rgBottomShape = new List<int>();
+                rgBottomShape.Add(BottomVec[0].shape(0));
+                rgBottomShape.Add(BottomVec[0].shape(1));
+                rgBottomShape.Add(6);
+                rgBottomShape.Add(7);
+                rgBottomShape.Add(8);
+                FillerParameter pf = new FillerParameter("gaussian");
+                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, pf);
+
+                for (int i = 0; i < BottomVec.Count; i++)
+                {
+                    BottomVec[i].Reshape(rgBottomShape);
+                    filler.Fill(BottomVec[i]);
+                }
+
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
+                p.convolution_param.engine = m_engine;
+                p.convolution_param.kernel_size.Add(3);
+                p.convolution_param.dilation.Add(2);
+                p.convolution_param.num_output = 4;
+                p.convolution_param.weight_filler = new FillerParameter("gaussian");
+                p.convolution_param.bias_filler = new FillerParameter("gaussian");
+                layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // Check against reference convolution;
+                caffe_conv(m_log, Bottom, p.convolution_param, layer.blobs, MakeReferenceTop(Top));
+                T[] rgTopData = Top.update_cpu_data();
+                T[] rgRefTopData = TopRef.update_cpu_data();
+
+                for (int i = 0; i < Top.count(); i++)
+                {
+                    T dfTop = rgTopData[i];
+                    T dfTopRef = rgRefTopData[i];
+
+                    EXPECT_NEAR(dfTop, dfTopRef, 1e-4);
+                }
+
+                caffe_conv(m_log, Bottom2, p.convolution_param, layer.blobs, MakeReferenceTop(Top2));
+                rgTopData = Top2.update_cpu_data();
+                rgRefTopData = TopRef.update_cpu_data();
+
+                for (int i = 0; i < Top.count(); i++)
+                {
+                    T dfTop = rgTopData[i];
+                    T dfTopRef = rgRefTopData[i];
+
+                    EXPECT_NEAR(dfTop, dfTopRef, 1e-4);
+                }
             }
-
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
-            p.convolution_param.engine = m_engine;
-            p.convolution_param.kernel_size.Add(3);
-            p.convolution_param.dilation.Add(2);
-            p.convolution_param.num_output = 4;
-            p.convolution_param.weight_filler = new FillerParameter("gaussian");
-            p.convolution_param.bias_filler = new FillerParameter("gaussian");
-            ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
-
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Check against reference convolution;
-            caffe_conv(m_log, Bottom, p.convolution_param, layer.blobs, MakeReferenceTop(Top));
-            T[] rgTopData = Top.update_cpu_data();
-            T[] rgRefTopData = TopRef.update_cpu_data();
-
-            for (int i = 0; i < Top.count(); i++)
+            finally
             {
-                T dfTop = rgTopData[i];
-                T dfTopRef = rgRefTopData[i];
-
-                EXPECT_NEAR(dfTop, dfTopRef, 1e-4);
-            }
-
-            caffe_conv(m_log, Bottom2, p.convolution_param, layer.blobs, MakeReferenceTop(Top2));
-            rgTopData = Top2.update_cpu_data();
-            rgRefTopData = TopRef.update_cpu_data();
-
-            for (int i = 0; i < Top.count(); i++)
-            {
-                T dfTop = rgTopData[i];
-                T dfTopRef = rgRefTopData[i];
-
-                EXPECT_NEAR(dfTop, dfTopRef, 1e-4);
+                if (layer != null)
+                    layer.Dispose();
             }
         }
 
         public void Test1x1Convolution()
         {
-            if (m_engine != EngineParameter.Engine.CAFFE)
-                return;
+            ConvolutionLayer<T> layer = null;
 
-            ConvolutionLayerTest test = new ConvolutionLayerTest();
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
-            p.convolution_param.engine = m_engine;
-            p.convolution_param.kernel_size.Add(1);
-            p.convolution_param.stride.Add(1);
-            p.convolution_param.num_output = 4;
-            p.convolution_param.weight_filler = new FillerParameter("gaussian");
-            p.convolution_param.bias_filler = new FillerParameter("constant");
-            p.convolution_param.bias_filler.value = 0.1;
-            ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
-
-            BottomVec.RemoveAt(1);
-            TopVec.RemoveAt(1);
-
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Check against reference convolution;
-            caffe_conv(m_log, Bottom, p.convolution_param, layer.blobs, MakeReferenceTop(Top));
-            T[] rgTopData = Top.update_cpu_data();
-            T[] rgRefTopData = TopRef.update_cpu_data();
-
-            for (int i = 0; i < Top.count(); i++)
+            try
             {
-                T dfTop = rgTopData[i];
-                T dfTopRef = rgRefTopData[i];
+                if (m_engine != EngineParameter.Engine.CAFFE)
+                    return;
 
-                EXPECT_NEAR(dfTop, dfTopRef, 1e-4);
+                ConvolutionLayerTest test = new ConvolutionLayerTest();
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
+                p.convolution_param.engine = m_engine;
+                p.convolution_param.kernel_size.Add(1);
+                p.convolution_param.stride.Add(1);
+                p.convolution_param.num_output = 4;
+                p.convolution_param.weight_filler = new FillerParameter("gaussian");
+                p.convolution_param.bias_filler = new FillerParameter("constant");
+                p.convolution_param.bias_filler.value = 0.1;
+                layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
+
+                BottomVec.RemoveAt(1);
+                TopVec.RemoveAt(1);
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // Check against reference convolution;
+                caffe_conv(m_log, Bottom, p.convolution_param, layer.blobs, MakeReferenceTop(Top));
+                T[] rgTopData = Top.update_cpu_data();
+                T[] rgRefTopData = TopRef.update_cpu_data();
+
+                for (int i = 0; i < Top.count(); i++)
+                {
+                    T dfTop = rgTopData[i];
+                    T dfTopRef = rgRefTopData[i];
+
+                    EXPECT_NEAR(dfTop, dfTopRef, 1e-4);
+                }
+            }
+            finally
+            {
+                if (layer != null)
+                    layer.Dispose();
             }
         }
 
@@ -1822,211 +1946,249 @@ namespace MyCaffe.test
         /// </summary>
         public void TestNDAgainst2D()
         {
-            if (m_engine != EngineParameter.Engine.CAFFE)
-                return;
+            ConvolutionLayer<T> layer = null;
+            ConvolutionLayer<T> layer_2d = null;
+            ConvolutionLayer<T> layer_nd = null;
 
-            BottomVec.RemoveAt(1);
-            TopVec.RemoveAt(1);
-
-            int nKernelH = 11;
-            int nKernelW = 13;
-            List<int> rgBottomShape = new List<int>() { 15, 18, nKernelH * 2, nKernelW * 2 };
-            FillerParameter fp = new FillerParameter("gaussian");
-            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
-
-            for (int i = 0; i < BottomVec.Count; i++)
+            try
             {
-                BottomVec[i].Reshape(rgBottomShape);
-                filler.Fill(BottomVec[i]);
+                if (m_engine != EngineParameter.Engine.CAFFE)
+                    return;
+
+                BottomVec.RemoveAt(1);
+                TopVec.RemoveAt(1);
+
+                int nKernelH = 11;
+                int nKernelW = 13;
+                List<int> rgBottomShape = new List<int>() { 15, 18, nKernelH * 2, nKernelW * 2 };
+                FillerParameter fp = new FillerParameter("gaussian");
+                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
+
+                for (int i = 0; i < BottomVec.Count; i++)
+                {
+                    BottomVec[i].Reshape(rgBottomShape);
+                    filler.Fill(BottomVec[i]);
+                }
+
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
+                p.convolution_param.engine = m_engine;
+                p.convolution_param.num_output = 12;
+                p.convolution_param.bias_term = false;
+                p.convolution_param.group = 6;
+                p.convolution_param.kernel_h = (uint)nKernelH;
+                p.convolution_param.kernel_w = (uint)nKernelW;
+                p.convolution_param.weight_filler = new FillerParameter("gaussian");
+                Blob<T> weights = new Blob<T>(m_cuda, m_log);
+                Blob<T> top_diff = new Blob<T>(m_cuda, m_log);
+                bool bCopyDiff = false;
+                bool bReshape = false;
+
+                {
+                    layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
+                    layer.Setup(BottomVec, TopVec);
+                    top_diff.ReshapeLike(Top);
+                    filler.Fill(top_diff);
+
+                    m_log.CHECK_EQ(1, layer.blobs.Count, "There should be 1 Blob<T> in the layer.");
+                    bCopyDiff = false;
+                    bReshape = true;
+                    weights.CopyFrom(layer.blobs[0], bCopyDiff, bReshape);
+                }
+
+                List<bool> rgPropagateDown = new List<bool>() { true };
+                Blob<T> result_2d = new Blob<T>(m_cuda, m_log);
+                Blob<T> backward_result_2d = new Blob<T>(m_cuda, m_log);
+                Blob<T> backward_weight_result_2d = new Blob<T>(m_cuda, m_log);
+
+                // Test with 2D im2col
+                {
+                    Top.SetData(0);
+                    Bottom.SetDiff(0);
+                    weights.SetDiff(0);
+
+                    // Do Setup and Forward; save Forward result in result_2d.
+                    p.convolution_param.force_nd_im2col = false;
+                    layer_2d = new ConvolutionLayer<T>(m_cuda, m_log, p);
+                    layer_2d.Setup(BottomVec, TopVec);
+                    m_log.CHECK_EQ(1, layer_2d.blobs.Count, "There must be one Blob<T> in layer_2d.");
+
+                    bCopyDiff = false;
+                    bReshape = false;
+                    layer_2d.blobs[0].CopyFrom(weights, bCopyDiff, bReshape);
+                    layer_2d.Forward(BottomVec, TopVec);
+
+                    bCopyDiff = false;
+                    bReshape = true;
+                    result_2d.CopyFrom(Top, bCopyDiff, bReshape);
+
+                    // Copy pre-generated top diff into actual top diff;
+                    // do Backward and save result in backward_result_2d.
+                    m_log.CHECK(Utility.Compare<int>(Top.shape(), top_diff.shape()), "Top shape should be equal to top_diff shape.");
+                    m_cuda.copy(top_diff.count(), top_diff.gpu_data, Top.mutable_gpu_diff);
+                    layer_2d.Backward(TopVec, rgPropagateDown, BottomVec);
+
+                    bCopyDiff = true;
+                    bReshape = true;
+                    backward_result_2d.CopyFrom(Bottom, bCopyDiff, bReshape);
+                    backward_weight_result_2d.CopyFrom(weights, bCopyDiff, bReshape);
+                }
+
+                Blob<T> result_nd = new Blob<T>(m_cuda, m_log);
+                Blob<T> backward_result_nd = new Blob<T>(m_cuda, m_log);
+                Blob<T> backward_weight_result_nd = new Blob<T>(m_cuda, m_log);
+
+                // Test with ND im2col
+                {
+                    Top.SetData(0);
+                    Bottom.SetDiff(0);
+                    weights.SetDiff(0);
+
+                    // Do Setup and Forward; save Forward result in result_nd.
+                    p.convolution_param.force_nd_im2col = true;
+                    layer_nd = new ConvolutionLayer<T>(m_cuda, m_log, p);
+                    layer_nd.Setup(BottomVec, TopVec);
+                    m_log.CHECK_EQ(1, layer_nd.blobs.Count, "There must be one Blob<T> in layer_2d.");
+
+                    bCopyDiff = false;
+                    bReshape = false;
+                    layer_nd.blobs[0].CopyFrom(weights, bCopyDiff, bReshape);
+                    layer_nd.Forward(BottomVec, TopVec);
+
+                    bCopyDiff = false;
+                    bReshape = true;
+                    result_nd.CopyFrom(Top, bCopyDiff, bReshape);
+
+                    // Copy pre-generated top diff into actual top diff;
+                    // do Backward and save result in backward_result_nd.
+                    m_log.CHECK(Utility.Compare<int>(Top.shape(), top_diff.shape()), "Top shape should be equal to top_diff shape.");
+                    m_cuda.copy(top_diff.count(), top_diff.gpu_data, Top.mutable_gpu_diff);
+                    layer_nd.Backward(TopVec, rgPropagateDown, BottomVec);
+
+                    bCopyDiff = true;
+                    bReshape = true;
+                    backward_result_nd.CopyFrom(Bottom, bCopyDiff, bReshape);
+                    backward_weight_result_nd.CopyFrom(weights, bCopyDiff, bReshape);
+                }
+
+                m_log.CHECK_EQ(result_nd.count(), result_2d.count(), "The nd and 2d results must have the same counts.");
+
+                for (int i = 0; i < result_2d.count(); i++)
+                {
+                    T dfNd = result_nd.GetData(i);
+                    T df2d = result_2d.GetData(i);
+
+                    CHECK_EQ(df2d, dfNd, "The 2d and ND results are not the same at " + i.ToString());
+                }
+
+                m_log.CHECK_EQ(backward_result_nd.count(), backward_result_2d.count(), "the nd and 2d backward results must have the same count.");
+
+                for (int i = 0; i < backward_result_2d.count(); i++)
+                {
+                    T dfNd = backward_result_nd.GetDiff(i);
+                    T df2d = backward_result_2d.GetDiff(i);
+
+                    m_log.EXPECT_EQUAL<float>(convert(df2d), convert(dfNd), "The 2d and ND backward results are not the same at " + i.ToString());
+                }
+
+                m_log.CHECK_EQ(backward_weight_result_nd.count(), backward_weight_result_2d.count(), "the nd and 2d backward weight results must have the same count.");
+
+                for (int i = 0; i < backward_weight_result_2d.count(); i++)
+                {
+                    T dfNd = backward_weight_result_nd.GetDiff(i);
+                    T df2d = backward_weight_result_2d.GetDiff(i);
+
+                    CHECK_EQ(df2d, dfNd, "The 2d and ND backward weight results are not the same at " + i.ToString());
+                }
             }
-
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
-            p.convolution_param.engine = m_engine;
-            p.convolution_param.num_output = 12;
-            p.convolution_param.bias_term = false;
-            p.convolution_param.group = 6;
-            p.convolution_param.kernel_h = (uint)nKernelH;
-            p.convolution_param.kernel_w = (uint)nKernelW;
-            p.convolution_param.weight_filler = new FillerParameter("gaussian");
-            Blob<T> weights = new Blob<T>(m_cuda, m_log);
-            Blob<T> top_diff = new Blob<T>(m_cuda, m_log);
-            bool bCopyDiff = false;
-            bool bReshape = false;
-
+            finally
             {
-                ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
-                layer.Setup(BottomVec, TopVec);
-                top_diff.ReshapeLike(Top);
-                filler.Fill(top_diff);
+                if (layer != null)
+                    layer.Dispose();
 
-                m_log.CHECK_EQ(1, layer.blobs.Count, "There should be 1 Blob<T> in the layer.");
-                bCopyDiff = false;
-                bReshape = true;
-                weights.CopyFrom(layer.blobs[0], bCopyDiff, bReshape);
-            }
+                if (layer_2d != null)
+                    layer_2d.Dispose();
 
-            List<bool> rgPropagateDown = new List<bool>() { true };
-            Blob<T> result_2d = new Blob<T>(m_cuda, m_log);
-            Blob<T> backward_result_2d = new Blob<T>(m_cuda, m_log);
-            Blob<T> backward_weight_result_2d = new Blob<T>(m_cuda, m_log);
-
-            // Test with 2D im2col
-            {
-                Top.SetData(0);
-                Bottom.SetDiff(0);
-                weights.SetDiff(0);
-
-                // Do Setup and Forward; save Forward result in result_2d.
-                p.convolution_param.force_nd_im2col = false;
-                ConvolutionLayer<T> layer_2d = new ConvolutionLayer<T>(m_cuda, m_log, p);
-                layer_2d.Setup(BottomVec, TopVec);
-                m_log.CHECK_EQ(1, layer_2d.blobs.Count, "There must be one Blob<T> in layer_2d.");
-
-                bCopyDiff = false;
-                bReshape = false;
-                layer_2d.blobs[0].CopyFrom(weights, bCopyDiff, bReshape);
-                layer_2d.Forward(BottomVec, TopVec);
-
-                bCopyDiff = false;
-                bReshape = true;
-                result_2d.CopyFrom(Top, bCopyDiff, bReshape);
-
-                // Copy pre-generated top diff into actual top diff;
-                // do Backward and save result in backward_result_2d.
-                m_log.CHECK(Utility.Compare<int>(Top.shape(), top_diff.shape()), "Top shape should be equal to top_diff shape.");
-                m_cuda.copy(top_diff.count(), top_diff.gpu_data, Top.mutable_gpu_diff);
-                layer_2d.Backward(TopVec, rgPropagateDown, BottomVec);
-
-                bCopyDiff = true;
-                bReshape = true;
-                backward_result_2d.CopyFrom(Bottom, bCopyDiff, bReshape);
-                backward_weight_result_2d.CopyFrom(weights, bCopyDiff, bReshape);
-            }
-
-            Blob<T> result_nd = new Blob<T>(m_cuda, m_log);
-            Blob<T> backward_result_nd = new Blob<T>(m_cuda, m_log);
-            Blob<T> backward_weight_result_nd = new Blob<T>(m_cuda, m_log);
-
-            // Test with ND im2col
-            {
-                Top.SetData(0);
-                Bottom.SetDiff(0);
-                weights.SetDiff(0);
-
-                // Do Setup and Forward; save Forward result in result_nd.
-                p.convolution_param.force_nd_im2col = true;
-                ConvolutionLayer<T> layer_nd = new ConvolutionLayer<T>(m_cuda, m_log, p);
-                layer_nd.Setup(BottomVec, TopVec);
-                m_log.CHECK_EQ(1, layer_nd.blobs.Count, "There must be one Blob<T> in layer_2d.");
-
-                bCopyDiff = false;
-                bReshape = false;
-                layer_nd.blobs[0].CopyFrom(weights, bCopyDiff, bReshape);
-                layer_nd.Forward(BottomVec, TopVec);
-
-                bCopyDiff = false;
-                bReshape = true;
-                result_nd.CopyFrom(Top, bCopyDiff, bReshape);
-
-                // Copy pre-generated top diff into actual top diff;
-                // do Backward and save result in backward_result_nd.
-                m_log.CHECK(Utility.Compare<int>(Top.shape(), top_diff.shape()), "Top shape should be equal to top_diff shape.");
-                m_cuda.copy(top_diff.count(), top_diff.gpu_data, Top.mutable_gpu_diff);
-                layer_nd.Backward(TopVec, rgPropagateDown, BottomVec);
-
-                bCopyDiff = true;
-                bReshape = true;
-                backward_result_nd.CopyFrom(Bottom, bCopyDiff, bReshape);
-                backward_weight_result_nd.CopyFrom(weights, bCopyDiff, bReshape);
-            }
-
-            m_log.CHECK_EQ(result_nd.count(), result_2d.count(), "The nd and 2d results must have the same counts.");
-
-            for (int i = 0; i < result_2d.count(); i++)
-            {
-                T dfNd = result_nd.GetData(i);
-                T df2d = result_2d.GetData(i);
-
-                CHECK_EQ(df2d, dfNd, "The 2d and ND results are not the same at " + i.ToString());
-            }
-
-            m_log.CHECK_EQ(backward_result_nd.count(), backward_result_2d.count(), "the nd and 2d backward results must have the same count.");
-
-            for (int i = 0; i < backward_result_2d.count(); i++)
-            {
-                T dfNd = backward_result_nd.GetDiff(i);
-                T df2d = backward_result_2d.GetDiff(i);
-
-                m_log.EXPECT_EQUAL<float>(convert(df2d), convert(dfNd), "The 2d and ND backward results are not the same at " + i.ToString());
-            }
-
-            m_log.CHECK_EQ(backward_weight_result_nd.count(), backward_weight_result_2d.count(), "the nd and 2d backward weight results must have the same count.");
-
-            for (int i = 0; i < backward_weight_result_2d.count(); i++)
-            {
-                T dfNd = backward_weight_result_nd.GetDiff(i);
-                T df2d = backward_weight_result_2d.GetDiff(i);
-
-                CHECK_EQ(df2d, dfNd, "The 2d and ND backward weight results are not the same at " + i.ToString());
+                if (layer_nd != null)
+                    layer_nd.Dispose();
             }
         }
 
         public void TestGradient3D()
         {
-            if (m_engine != EngineParameter.Engine.CAFFE)
-                return;
+            ConvolutionLayer<T> layer = null;
 
-            BottomVec.RemoveAt(1);
-            TopVec.RemoveAt(1);
-
-            ConvolutionLayerTest test = new ConvolutionLayerTest();
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
-            List<int> rgBottomShape = new List<int>();
-            rgBottomShape.Add(BottomVec[0].shape(0));
-            rgBottomShape.Add(BottomVec[0].shape(1));
-            rgBottomShape.Add(5);
-            rgBottomShape.Add(BottomVec[0].shape(2));
-            rgBottomShape.Add(BottomVec[0].shape(3));
-            FillerParameter fp = new FillerParameter("gaussian");
-            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
-
-            for (int i = 0; i < BottomVec.Count; i++)
+            try
             {
-                BottomVec[i].Reshape(rgBottomShape);
-                filler.Fill(BottomVec[i]);
-            }
+                if (m_engine != EngineParameter.Engine.CAFFE)
+                    return;
 
-            p.convolution_param.engine = m_engine;
-            p.convolution_param.kernel_size.Add(3);
-            p.convolution_param.stride.Add(2);
-            p.convolution_param.num_output = 2;
-            p.convolution_param.weight_filler = new FillerParameter("gaussian");
-            p.convolution_param.bias_filler = new FillerParameter("gaussian");
-            ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
+                BottomVec.RemoveAt(1);
+                TopVec.RemoveAt(1);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                ConvolutionLayerTest test = new ConvolutionLayerTest();
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
+                List<int> rgBottomShape = new List<int>();
+                rgBottomShape.Add(BottomVec[0].shape(0));
+                rgBottomShape.Add(BottomVec[0].shape(1));
+                rgBottomShape.Add(5);
+                rgBottomShape.Add(BottomVec[0].shape(2));
+                rgBottomShape.Add(BottomVec[0].shape(3));
+                FillerParameter fp = new FillerParameter("gaussian");
+                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
+
+                for (int i = 0; i < BottomVec.Count; i++)
+                {
+                    BottomVec[i].Reshape(rgBottomShape);
+                    filler.Fill(BottomVec[i]);
+                }
+
+                p.convolution_param.engine = m_engine;
+                p.convolution_param.kernel_size.Add(3);
+                p.convolution_param.stride.Add(2);
+                p.convolution_param.num_output = 2;
+                p.convolution_param.weight_filler = new FillerParameter("gaussian");
+                p.convolution_param.bias_filler = new FillerParameter("gaussian");
+                layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
+
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
 #warning Convolution:Caffe:TestGradient3D test fails.
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                if (layer != null)
+                    layer.Dispose();
+            }
         }
 
         public void Test1x1Gradient()
         {
-            if (m_engine != EngineParameter.Engine.CAFFE)
-                return;
+            ConvolutionLayer<T> layer = null;
 
-            ConvolutionLayerTest test = new ConvolutionLayerTest();
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
-            List<int> rgBottomShape = new List<int>();
-            p.convolution_param.engine = m_engine;
-            p.convolution_param.kernel_size.Add(1);
-            p.convolution_param.stride.Add(1);
-            p.convolution_param.num_output = 2;
-            p.convolution_param.weight_filler = new FillerParameter("gaussian");
-            p.convolution_param.bias_filler = new FillerParameter("gaussian");
-            ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
+            try
+            {
+                if (m_engine != EngineParameter.Engine.CAFFE)
+                    return;
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+                ConvolutionLayerTest test = new ConvolutionLayerTest();
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
+                List<int> rgBottomShape = new List<int>();
+                p.convolution_param.engine = m_engine;
+                p.convolution_param.kernel_size.Add(1);
+                p.convolution_param.stride.Add(1);
+                p.convolution_param.num_output = 2;
+                p.convolution_param.weight_filler = new FillerParameter("gaussian");
+                p.convolution_param.bias_filler = new FillerParameter("gaussian");
+                layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
+
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                if (layer != null)
+                    layer.Dispose();
+            }
         }
 
         #endregion
