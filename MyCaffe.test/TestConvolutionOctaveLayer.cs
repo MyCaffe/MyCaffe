@@ -516,154 +516,183 @@ namespace MyCaffe.test
 
         public void TestSetup(int nBottoms, double dfAlpha, bool bUseTensorCores)
         {
-            BottomVec.Clear();
-            BottomVec.Add(Bottom);
+            Layer<T> layer = null;
 
-            if (nBottoms == 2)
-                BottomVec.Add(Bottom2);
-
-            TopVec.Clear();
-            TopVec.Add(Top);
-
-            if (dfAlpha > 0)
-                TopVec.Add(Top2);
-
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION_OCTAVE);
-            p.convolution_param.engine = m_engine;
-            p.convolution_param.kernel_size.Add(1);
-            p.convolution_param.stride.Add(2);
-            p.convolution_param.num_output = 10;
-            p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
-            p.convolution_param.bias_term = false;
-            p.convolution_octave_param.alpha_out = dfAlpha;
-
-            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-
-            m_log.CHECK(layer.type == LayerParameter.LayerType.CONVOLUTION_OCTAVE, "The layer type is not correct for ConvolutionOctaveLayer!");
-            layer.Setup(BottomVec, TopVec);
-
-            int nChannels = (dfAlpha == 0) ? 10 : (int)(dfAlpha * 10);
-
-            // h2h
-            m_log.CHECK_EQ(2, TopVec[0].num, "The top[0] Blob<T> should have num = 2.");
-            m_log.CHECK_EQ(nChannels, TopVec[0].channels, "The top[0] Blob<T> should have channels = " + nChannels.ToString() + ".");
-            m_log.CHECK_EQ(4, TopVec[0].height, "The top[0] Blob<T> should have height = 4.");
-            m_log.CHECK_EQ(4, TopVec[0].width, "The top[0] Blob<T> should have width = 4.");
-
-            // h2l
-            if (dfAlpha > 0)
+            try
             {
-                m_log.CHECK_EQ(2, TopVec.Count, "The top vector should have 2 items.");
-                m_log.CHECK_EQ(2, TopVec[1].num, "The top[0] Blob<T> should have num = 2.");
-                m_log.CHECK_EQ(5, TopVec[1].channels, "The top[0] Blob<T> should have channels = 5.");
-                m_log.CHECK_EQ(2, TopVec[1].height, "The top[0] Blob<T> should have height = 2.");
-                m_log.CHECK_EQ(2, TopVec[1].width, "The top[0] Blob<T> should have width = 2.");
+                BottomVec.Clear();
+                BottomVec.Add(Bottom);
+
+                if (nBottoms == 2)
+                    BottomVec.Add(Bottom2);
+
+                TopVec.Clear();
+                TopVec.Add(Top);
+
+                if (dfAlpha > 0)
+                    TopVec.Add(Top2);
+
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION_OCTAVE);
+                p.convolution_param.engine = m_engine;
+                p.convolution_param.kernel_size.Add(1);
+                p.convolution_param.stride.Add(2);
+                p.convolution_param.num_output = 10;
+                p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
+                p.convolution_param.bias_term = false;
+                p.convolution_octave_param.alpha_out = dfAlpha;
+
+                layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+
+                m_log.CHECK(layer.type == LayerParameter.LayerType.CONVOLUTION_OCTAVE, "The layer type is not correct for ConvolutionOctaveLayer!");
+                layer.Setup(BottomVec, TopVec);
+
+                int nChannels = (dfAlpha == 0) ? 10 : (int)(dfAlpha * 10);
+
+                // h2h
+                m_log.CHECK_EQ(2, TopVec[0].num, "The top[0] Blob<T> should have num = 2.");
+                m_log.CHECK_EQ(nChannels, TopVec[0].channels, "The top[0] Blob<T> should have channels = " + nChannels.ToString() + ".");
+                m_log.CHECK_EQ(4, TopVec[0].height, "The top[0] Blob<T> should have height = 4.");
+                m_log.CHECK_EQ(4, TopVec[0].width, "The top[0] Blob<T> should have width = 4.");
+
+                // h2l
+                if (dfAlpha > 0)
+                {
+                    m_log.CHECK_EQ(2, TopVec.Count, "The top vector should have 2 items.");
+                    m_log.CHECK_EQ(2, TopVec[1].num, "The top[0] Blob<T> should have num = 2.");
+                    m_log.CHECK_EQ(5, TopVec[1].channels, "The top[0] Blob<T> should have channels = 5.");
+                    m_log.CHECK_EQ(2, TopVec[1].height, "The top[0] Blob<T> should have height = 2.");
+                    m_log.CHECK_EQ(2, TopVec[1].width, "The top[0] Blob<T> should have width = 2.");
+                }
+
+                layer.Dispose();
+
+                // setting group should not change the shape
+                p.convolution_param.group = 3;
+                layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+                layer.Setup(BottomVec, TopVec);
+
+                // h2h
+                m_log.CHECK_EQ(2, TopVec[0].num, "The top[0] Blob<T> should have num = 2.");
+                m_log.CHECK_EQ(nChannels, TopVec[0].channels, "The top[0] Blob<T> should have channels = " + nChannels.ToString() + ".");
+                m_log.CHECK_EQ(4, TopVec[0].height, "The top[0] Blob<T> should have height = 4.");
+                m_log.CHECK_EQ(4, TopVec[0].width, "The top[0] Blob<T> should have width = 4.");
+
+                // h2l
+                if (dfAlpha > 0)
+                {
+                    m_log.CHECK_EQ(2, TopVec.Count, "The top vector should have 2 items.");
+                    m_log.CHECK_EQ(2, TopVec[1].num, "The top[0] Blob<T> should have num = 2.");
+                    m_log.CHECK_EQ(5, TopVec[1].channels, "The top[0] Blob<T> should have channels = 5.");
+                    m_log.CHECK_EQ(2, TopVec[1].height, "The top[0] Blob<T> should have height = 2.");
+                    m_log.CHECK_EQ(2, TopVec[1].width, "The top[0] Blob<T> should have width = 2.");
+                }
             }
-
-            layer.Dispose();
-
-            // setting group should not change the shape
-            p.convolution_param.group = 3;
-            layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-            layer.Setup(BottomVec, TopVec);
-
-            // h2h
-            m_log.CHECK_EQ(2, TopVec[0].num, "The top[0] Blob<T> should have num = 2.");
-            m_log.CHECK_EQ(nChannels, TopVec[0].channels, "The top[0] Blob<T> should have channels = " + nChannels.ToString() + ".");
-            m_log.CHECK_EQ(4, TopVec[0].height, "The top[0] Blob<T> should have height = 4.");
-            m_log.CHECK_EQ(4, TopVec[0].width, "The top[0] Blob<T> should have width = 4.");
-
-            // h2l
-            if (dfAlpha > 0)
+            finally
             {
-                m_log.CHECK_EQ(2, TopVec.Count, "The top vector should have 2 items.");
-                m_log.CHECK_EQ(2, TopVec[1].num, "The top[0] Blob<T> should have num = 2.");
-                m_log.CHECK_EQ(5, TopVec[1].channels, "The top[0] Blob<T> should have channels = 5.");
-                m_log.CHECK_EQ(2, TopVec[1].height, "The top[0] Blob<T> should have height = 2.");
-                m_log.CHECK_EQ(2, TopVec[1].width, "The top[0] Blob<T> should have width = 2.");
+                if (layer != null)
+                    layer.Dispose();
             }
         }
 
         public void TestForward(int nBottoms, double dfAlpha)
         {
-            BottomVec.Clear();
-            BottomVec.Add(Bottom);
+            Layer<T> layer = null;
 
-            if (nBottoms == 2)
-                BottomVec.Add(Bottom2);
-
-            TopVec.Clear();
-            TopVec.Add(Top);
-
-            if (dfAlpha > 0)
-                TopVec.Add(Top2);
-
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION_OCTAVE);
-            p.convolution_param.engine = m_engine;
-            p.convolution_param.kernel_size.Add(1);
-            p.convolution_param.stride.Add(2);
-            p.convolution_param.num_output = 10;
-            p.convolution_param.cudnn_enable_tensor_cores = false;
-            p.convolution_param.bias_term = false;
-            p.convolution_octave_param.alpha_out = dfAlpha;
-
-            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-
-            m_log.CHECK(layer.type == LayerParameter.LayerType.CONVOLUTION_OCTAVE, "The layer type is not correct for ConvolutionOctaveLayer!");
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-            layer.Dispose();
-
-            int nChannels = (dfAlpha == 0) ? 10 : (int)(dfAlpha * 10);
-
-            // h2h
-            m_log.CHECK_EQ(2, TopVec[0].num, "The top[0] Blob<T> should have num = 2.");
-            m_log.CHECK_EQ(nChannels, TopVec[0].channels, "The top[0] Blob<T> should have channels = " + nChannels.ToString() + ".");
-            m_log.CHECK_EQ(4, TopVec[0].height, "The top[0] Blob<T> should have height = 4.");
-            m_log.CHECK_EQ(4, TopVec[0].width, "The top[0] Blob<T> should have width = 4.");
-
-            // h2l
-            if (dfAlpha > 0)
+            try
             {
-                m_log.CHECK_EQ(2, TopVec.Count, "The top vector should have 2 items.");
-                m_log.CHECK_EQ(2, TopVec[1].num, "The top[0] Blob<T> should have num = 2.");
-                m_log.CHECK_EQ(5, TopVec[1].channels, "The top[0] Blob<T> should have channels = 5.");
-                m_log.CHECK_EQ(2, TopVec[1].height, "The top[0] Blob<T> should have height = 2.");
-                m_log.CHECK_EQ(2, TopVec[1].width, "The top[0] Blob<T> should have width = 2.");
+                BottomVec.Clear();
+                BottomVec.Add(Bottom);
+
+                if (nBottoms == 2)
+                    BottomVec.Add(Bottom2);
+
+                TopVec.Clear();
+                TopVec.Add(Top);
+
+                if (dfAlpha > 0)
+                    TopVec.Add(Top2);
+
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION_OCTAVE);
+                p.convolution_param.engine = m_engine;
+                p.convolution_param.kernel_size.Add(1);
+                p.convolution_param.stride.Add(2);
+                p.convolution_param.num_output = 10;
+                p.convolution_param.cudnn_enable_tensor_cores = false;
+                p.convolution_param.bias_term = false;
+                p.convolution_octave_param.alpha_out = dfAlpha;
+
+                layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+
+                m_log.CHECK(layer.type == LayerParameter.LayerType.CONVOLUTION_OCTAVE, "The layer type is not correct for ConvolutionOctaveLayer!");
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+                layer.Dispose();
+
+                int nChannels = (dfAlpha == 0) ? 10 : (int)(dfAlpha * 10);
+
+                // h2h
+                m_log.CHECK_EQ(2, TopVec[0].num, "The top[0] Blob<T> should have num = 2.");
+                m_log.CHECK_EQ(nChannels, TopVec[0].channels, "The top[0] Blob<T> should have channels = " + nChannels.ToString() + ".");
+                m_log.CHECK_EQ(4, TopVec[0].height, "The top[0] Blob<T> should have height = 4.");
+                m_log.CHECK_EQ(4, TopVec[0].width, "The top[0] Blob<T> should have width = 4.");
+
+                // h2l
+                if (dfAlpha > 0)
+                {
+                    m_log.CHECK_EQ(2, TopVec.Count, "The top vector should have 2 items.");
+                    m_log.CHECK_EQ(2, TopVec[1].num, "The top[0] Blob<T> should have num = 2.");
+                    m_log.CHECK_EQ(5, TopVec[1].channels, "The top[0] Blob<T> should have channels = 5.");
+                    m_log.CHECK_EQ(2, TopVec[1].height, "The top[0] Blob<T> should have height = 2.");
+                    m_log.CHECK_EQ(2, TopVec[1].width, "The top[0] Blob<T> should have width = 2.");
+                }
+            }
+            finally
+            {
+                if (layer != null)
+                    layer.Dispose();
             }
         }
 
         public void TestGradient(int nBottoms, double dfAlpha)
         {
-            BottomVec.Clear();
-            BottomVec.Add(Bottom);
+            ConvolutionOctaveLayer<T> layer = null;
 
-            if (nBottoms == 2)
-                BottomVec.Add(Bottom2);
+            try
+            {
+                BottomVec.Clear();
+                BottomVec.Add(Bottom);
 
-            TopVec.Clear();
-            TopVec.Add(Top);
+                if (nBottoms == 2)
+                    BottomVec.Add(Bottom2);
 
-            if (dfAlpha > 0)
-                TopVec.Add(Top2);
+                TopVec.Clear();
+                TopVec.Add(Top);
 
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION_OCTAVE);
-            p.convolution_param.engine = m_engine;
-            p.convolution_param.kernel_size.Add(1);
-            p.convolution_param.stride.Add(1);
-            p.convolution_param.pad.Add(0);
-            p.convolution_param.num_output = 10;
-            p.convolution_param.cudnn_enable_tensor_cores = false;
-            p.convolution_param.bias_term = false;
-            p.convolution_octave_param.alpha_out = dfAlpha;
+                if (dfAlpha > 0)
+                    TopVec.Add(Top2);
 
-            ConvolutionOctaveLayer<T> layer = new ConvolutionOctaveLayer<T>(m_cuda, m_log, p);
-            layer.OnGetWorkspace += layer_OnGetWorkspace;
-            layer.OnSetWorkspace += layer_OnSetWorkspace;
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION_OCTAVE);
+                p.convolution_param.engine = m_engine;
+                p.convolution_param.kernel_size.Add(1);
+                p.convolution_param.stride.Add(1);
+                p.convolution_param.pad.Add(0);
+                p.convolution_param.num_output = 10;
+                p.convolution_param.cudnn_enable_tensor_cores = false;
+                p.convolution_param.bias_term = false;
+                p.convolution_octave_param.alpha_out = dfAlpha;
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
-            layer.Dispose();
+                layer = new ConvolutionOctaveLayer<T>(m_cuda, m_log, p);
+                layer.OnGetWorkspace += layer_OnGetWorkspace;
+                layer.OnSetWorkspace += layer_OnSetWorkspace;
+
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                if (layer != null)
+                    layer.Dispose();
+            }
         }
 
         private void layer_OnSetWorkspace(object sender, WorkspaceArgs e)
