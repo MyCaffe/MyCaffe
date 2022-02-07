@@ -106,35 +106,51 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.THRESHOLD);
             ThresholdLayer<T> layer = new ThresholdLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(Top.num, Bottom.num, "The top and bottom should have an equal num.");
-            m_log.CHECK_EQ(Top.channels, Bottom.channels, "The top and bottom should have equal channels.");
-            m_log.CHECK_EQ(Top.height, Bottom.height, "The top and bottom should have an equal height.");
-            m_log.CHECK_EQ(Top.width, Bottom.width, "The top and bottom should have an equal width.");
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(Top.num, Bottom.num, "The top and bottom should have an equal num.");
+                m_log.CHECK_EQ(Top.channels, Bottom.channels, "The top and bottom should have equal channels.");
+                m_log.CHECK_EQ(Top.height, Bottom.height, "The top and bottom should have an equal height.");
+                m_log.CHECK_EQ(Top.width, Bottom.width, "The top and bottom should have an equal width.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void Test()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.THRESHOLD);
             ThresholdLayer<T> layer = new ThresholdLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            // Now, check values
-            double[] rgBtm = convert(Bottom.update_cpu_data());
-            double[] rgTop = convert(Top.update_cpu_data());
-            double dfThreshold = p.threshold_param.threshold;
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                m_log.CHECK_GE(rgTop[i], 0.0, "The top value should be greater than or equal to 0.0");
-                m_log.CHECK_LE(rgTop[i], 1.0, "The top value should be less than or equal to 1.0");
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                if (rgTop[i] == 0.0)
-                    m_log.CHECK_LE(rgBtm[i], dfThreshold, "The bottom at " + i.ToString() + " should be less than or equal to the threshold of " + dfThreshold.ToString());
-                else
-                    m_log.CHECK_GT(rgBtm[i], dfThreshold, "The bottom at " + i.ToString() + " should be greater than the threshold of " + dfThreshold.ToString());
+                // Now, check values
+                double[] rgBtm = convert(Bottom.update_cpu_data());
+                double[] rgTop = convert(Top.update_cpu_data());
+                double dfThreshold = p.threshold_param.threshold;
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    m_log.CHECK_GE(rgTop[i], 0.0, "The top value should be greater than or equal to 0.0");
+                    m_log.CHECK_LE(rgTop[i], 1.0, "The top value should be less than or equal to 1.0");
+
+                    if (rgTop[i] == 0.0)
+                        m_log.CHECK_LE(rgBtm[i], dfThreshold, "The bottom at " + i.ToString() + " should be less than or equal to the threshold of " + dfThreshold.ToString());
+                    else
+                        m_log.CHECK_GT(rgBtm[i], dfThreshold, "The bottom at " + i.ToString() + " should be greater than the threshold of " + dfThreshold.ToString());
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -143,25 +159,33 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.THRESHOLD);
             p.threshold_param.threshold = 0.5;
             ThresholdLayer<T> layer = new ThresholdLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            // Now, check values
-            double[] rgBtm = convert(Bottom.update_cpu_data());
-            double[] rgTop = convert(Top.update_cpu_data());
-            double dfThreshold = p.threshold_param.threshold;
-
-            m_log.CHECK_EQ(dfThreshold, 0.5, "The threshold should equal 0.5");
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                m_log.CHECK_GE(rgTop[i], 0.0, "The top value should be greater than or equal to 0.0");
-                m_log.CHECK_LE(rgTop[i], 1.0, "The top value should be less than or equal to 1.0");
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                if (rgTop[i] == 0.0)
-                    m_log.CHECK_LE(rgBtm[i], dfThreshold, "The bottom at " + i.ToString() + " should be less than or equal to the threshold of " + dfThreshold.ToString());
-                else
-                    m_log.CHECK_GT(rgBtm[i], dfThreshold, "The bottom at " + i.ToString() + " should be greater than the threshold of " + dfThreshold.ToString());
+                // Now, check values
+                double[] rgBtm = convert(Bottom.update_cpu_data());
+                double[] rgTop = convert(Top.update_cpu_data());
+                double dfThreshold = p.threshold_param.threshold;
+
+                m_log.CHECK_EQ(dfThreshold, 0.5, "The threshold should equal 0.5");
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    m_log.CHECK_GE(rgTop[i], 0.0, "The top value should be greater than or equal to 0.0");
+                    m_log.CHECK_LE(rgTop[i], 1.0, "The top value should be less than or equal to 1.0");
+
+                    if (rgTop[i] == 0.0)
+                        m_log.CHECK_LE(rgBtm[i], dfThreshold, "The bottom at " + i.ToString() + " should be less than or equal to the threshold of " + dfThreshold.ToString());
+                    else
+                        m_log.CHECK_GT(rgBtm[i], dfThreshold, "The bottom at " + i.ToString() + " should be greater than the threshold of " + dfThreshold.ToString());
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
     }

@@ -419,12 +419,19 @@ namespace MyCaffe.test
             p.eltwise_param.operation = EltwiseParameter.EltwiseOp.PROD;
             EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(2, Top.num, "Top num should equal 2.");
-            m_log.CHECK_EQ(3, Top.channels, "Top channels should equal 3.");
-            m_log.CHECK_EQ(4, Top.height, "Top height should equal 4.");
-            m_log.CHECK_EQ(5, Top.width, "Top width should equal 5.");
+                m_log.CHECK_EQ(2, Top.num, "Top num should equal 2.");
+                m_log.CHECK_EQ(3, Top.channels, "Top channels should equal 3.");
+                m_log.CHECK_EQ(4, Top.height, "Top height should equal 4.");
+                m_log.CHECK_EQ(5, Top.width, "Top width should equal 5.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestProd()
@@ -433,24 +440,31 @@ namespace MyCaffe.test
             p.eltwise_param.operation = EltwiseParameter.EltwiseOp.PROD;
             EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            double[] rgTop = convert(Top.update_cpu_data());
-            int nCount = Top.count();
-            double[] rgBottomA = convert(Bottom.update_cpu_data());
-            double[] rgBottomB = convert(BottomB.update_cpu_data());
-            double[] rgBottomC = convert(BottomC.update_cpu_data());
-
-            for (int i = 0; i < nCount; i++)
+            try
             {
-                double dfTop = rgTop[i];
-                double dfBottomA = rgBottomA[i];
-                double dfBottomB = rgBottomB[i];
-                double dfBottomC = rgBottomC[i];
-                double dfExpected = dfBottomA * dfBottomB * dfBottomC;
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+                double[] rgTop = convert(Top.update_cpu_data());
+                int nCount = Top.count();
+                double[] rgBottomA = convert(Bottom.update_cpu_data());
+                double[] rgBottomB = convert(BottomB.update_cpu_data());
+                double[] rgBottomC = convert(BottomC.update_cpu_data());
+
+                for (int i = 0; i < nCount; i++)
+                {
+                    double dfTop = rgTop[i];
+                    double dfBottomA = rgBottomA[i];
+                    double dfBottomB = rgBottomB[i];
+                    double dfBottomC = rgBottomC[i];
+                    double dfExpected = dfBottomA * dfBottomB * dfBottomC;
+
+                    m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -460,24 +474,31 @@ namespace MyCaffe.test
             p.eltwise_param.operation = EltwiseParameter.EltwiseOp.DIV;
             EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            double[] rgTop = convert(Top.update_cpu_data());
-            int nCount = Top.count();
-            double[] rgBottomA = convert(Bottom.update_cpu_data());
-            double[] rgBottomB = convert(BottomB.update_cpu_data());
-            double[] rgBottomC = convert(BottomC.update_cpu_data());
-
-            for (int i = 0; i < nCount; i++)
+            try
             {
-                double dfTop = rgTop[i];
-                double dfBottomA = rgBottomA[i];
-                double dfBottomB = rgBottomB[i];
-                double dfBottomC = rgBottomC[i];
-                double dfExpected = dfBottomA / dfBottomB / dfBottomC;
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+                double[] rgTop = convert(Top.update_cpu_data());
+                int nCount = Top.count();
+                double[] rgBottomA = convert(Bottom.update_cpu_data());
+                double[] rgBottomB = convert(BottomB.update_cpu_data());
+                double[] rgBottomC = convert(BottomC.update_cpu_data());
+
+                for (int i = 0; i < nCount; i++)
+                {
+                    double dfTop = rgTop[i];
+                    double dfBottomA = rgBottomA[i];
+                    double dfBottomB = rgBottomB[i];
+                    double dfBottomC = rgBottomC[i];
+                    double dfExpected = dfBottomA / dfBottomB / dfBottomC;
+
+                    m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -487,24 +508,31 @@ namespace MyCaffe.test
             p.eltwise_param.operation = EltwiseParameter.EltwiseOp.SUM;
             EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            double[] rgTop = convert(Top.update_cpu_data());
-            int nCount = Top.count();
-            double[] rgBottomA = convert(Bottom.update_cpu_data());
-            double[] rgBottomB = convert(BottomB.update_cpu_data());
-            double[] rgBottomC = convert(BottomC.update_cpu_data());
-
-            for (int i = 0; i < nCount; i++)
+            try
             {
-                double dfTop = rgTop[i];
-                double dfBottomA = rgBottomA[i];
-                double dfBottomB = rgBottomB[i];
-                double dfBottomC = rgBottomC[i];
-                double dfExpected = dfBottomA + dfBottomB + dfBottomC;
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+                double[] rgTop = convert(Top.update_cpu_data());
+                int nCount = Top.count();
+                double[] rgBottomA = convert(Bottom.update_cpu_data());
+                double[] rgBottomB = convert(BottomB.update_cpu_data());
+                double[] rgBottomC = convert(BottomC.update_cpu_data());
+
+                for (int i = 0; i < nCount; i++)
+                {
+                    double dfTop = rgTop[i];
+                    double dfBottomA = rgBottomA[i];
+                    double dfBottomB = rgBottomB[i];
+                    double dfBottomC = rgBottomC[i];
+                    double dfExpected = dfBottomA + dfBottomB + dfBottomC;
+
+                    m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -517,24 +545,31 @@ namespace MyCaffe.test
             p.eltwise_param.coeff.Add(2);
             EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            double[] rgTop = convert(Top.update_cpu_data());
-            int nCount = Top.count();
-            double[] rgBottomA = convert(Bottom.update_cpu_data());
-            double[] rgBottomB = convert(BottomB.update_cpu_data());
-            double[] rgBottomC = convert(BottomC.update_cpu_data());
-
-            for (int i = 0; i < nCount; i++)
+            try
             {
-                double dfTop = rgTop[i];
-                double dfBottomA = rgBottomA[i];
-                double dfBottomB = rgBottomB[i];
-                double dfBottomC = rgBottomC[i];
-                double dfExpected = (1.0 * dfBottomA) + (-0.5 * dfBottomB) + (2.0 * dfBottomC);
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+                double[] rgTop = convert(Top.update_cpu_data());
+                int nCount = Top.count();
+                double[] rgBottomA = convert(Bottom.update_cpu_data());
+                double[] rgBottomB = convert(BottomB.update_cpu_data());
+                double[] rgBottomC = convert(BottomC.update_cpu_data());
+
+                for (int i = 0; i < nCount; i++)
+                {
+                    double dfTop = rgTop[i];
+                    double dfBottomA = rgBottomA[i];
+                    double dfBottomB = rgBottomB[i];
+                    double dfBottomC = rgBottomC[i];
+                    double dfExpected = (1.0 * dfBottomA) + (-0.5 * dfBottomB) + (2.0 * dfBottomC);
+
+                    m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -544,24 +579,31 @@ namespace MyCaffe.test
             p.eltwise_param.operation = EltwiseParameter.EltwiseOp.SUB;
             EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            double[] rgTop = convert(Top.update_cpu_data());
-            int nCount = Top.count();
-            double[] rgBottomA = convert(Bottom.update_cpu_data());
-            double[] rgBottomB = convert(BottomB.update_cpu_data());
-            double[] rgBottomC = convert(BottomC.update_cpu_data());
-
-            for (int i = 0; i < nCount; i++)
+            try
             {
-                double dfTop = rgTop[i];
-                double dfBottomA = rgBottomA[i];
-                double dfBottomB = rgBottomB[i];
-                double dfBottomC = rgBottomC[i];
-                double dfExpected = dfBottomA - dfBottomB - dfBottomC;
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+                double[] rgTop = convert(Top.update_cpu_data());
+                int nCount = Top.count();
+                double[] rgBottomA = convert(Bottom.update_cpu_data());
+                double[] rgBottomB = convert(BottomB.update_cpu_data());
+                double[] rgBottomC = convert(BottomC.update_cpu_data());
+
+                for (int i = 0; i < nCount; i++)
+                {
+                    double dfTop = rgTop[i];
+                    double dfBottomA = rgBottomA[i];
+                    double dfBottomB = rgBottomB[i];
+                    double dfBottomC = rgBottomC[i];
+                    double dfExpected = dfBottomA - dfBottomB - dfBottomC;
+
+                    m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -574,24 +616,31 @@ namespace MyCaffe.test
             p.eltwise_param.coeff.Add(2);
             EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            double[] rgTop = convert(Top.update_cpu_data());
-            int nCount = Top.count();
-            double[] rgBottomA = convert(Bottom.update_cpu_data());
-            double[] rgBottomB = convert(BottomB.update_cpu_data());
-            double[] rgBottomC = convert(BottomC.update_cpu_data());
-
-            for (int i = 0; i < nCount; i++)
+            try
             {
-                double dfTop = rgTop[i];
-                double dfBottomA = rgBottomA[i];
-                double dfBottomB = rgBottomB[i];
-                double dfBottomC = rgBottomC[i];
-                double dfExpected = (1.0 * dfBottomA) - (-0.5 * dfBottomB) - (2.0 * dfBottomC);
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+                double[] rgTop = convert(Top.update_cpu_data());
+                int nCount = Top.count();
+                double[] rgBottomA = convert(Bottom.update_cpu_data());
+                double[] rgBottomB = convert(BottomB.update_cpu_data());
+                double[] rgBottomC = convert(BottomC.update_cpu_data());
+
+                for (int i = 0; i < nCount; i++)
+                {
+                    double dfTop = rgTop[i];
+                    double dfBottomA = rgBottomA[i];
+                    double dfBottomB = rgBottomB[i];
+                    double dfBottomC = rgBottomC[i];
+                    double dfExpected = (1.0 * dfBottomA) - (-0.5 * dfBottomB) - (2.0 * dfBottomC);
+
+                    m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -602,8 +651,15 @@ namespace MyCaffe.test
             p.eltwise_param.stable_prod_grad = true;
             EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestUnstableProdGradient()
@@ -613,8 +669,15 @@ namespace MyCaffe.test
             p.eltwise_param.stable_prod_grad = false;
             EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestDivGradient()
@@ -623,8 +686,15 @@ namespace MyCaffe.test
             p.eltwise_param.operation = EltwiseParameter.EltwiseOp.DIV;
             EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestSumGradient()
@@ -633,8 +703,15 @@ namespace MyCaffe.test
             p.eltwise_param.operation = EltwiseParameter.EltwiseOp.SUM;
             EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestSumCoeffGradient()
@@ -646,8 +723,15 @@ namespace MyCaffe.test
             p.eltwise_param.coeff.Add(2);
             EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestSubGradient()
@@ -656,8 +740,15 @@ namespace MyCaffe.test
             p.eltwise_param.operation = EltwiseParameter.EltwiseOp.SUB;
             EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestSubCoeffGradient()
@@ -669,8 +760,15 @@ namespace MyCaffe.test
             p.eltwise_param.coeff.Add(2);
             EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestMax()
@@ -679,24 +777,31 @@ namespace MyCaffe.test
             p.eltwise_param.operation = EltwiseParameter.EltwiseOp.MAX;
             EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            double[] rgTop = convert(Top.update_cpu_data());
-            int nCount = Top.count();
-            double[] rgBottomA = convert(Bottom.update_cpu_data());
-            double[] rgBottomB = convert(BottomB.update_cpu_data());
-            double[] rgBottomC = convert(BottomC.update_cpu_data());
-
-            for (int i = 0; i < nCount; i++)
+            try
             {
-                double dfTop = rgTop[i];
-                double dfBottomA = rgBottomA[i];
-                double dfBottomB = rgBottomB[i];
-                double dfBottomC = rgBottomC[i];
-                double dfExpected = Math.Max(dfBottomA, Math.Max(dfBottomB, dfBottomC));
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+                double[] rgTop = convert(Top.update_cpu_data());
+                int nCount = Top.count();
+                double[] rgBottomA = convert(Bottom.update_cpu_data());
+                double[] rgBottomB = convert(BottomB.update_cpu_data());
+                double[] rgBottomC = convert(BottomC.update_cpu_data());
+
+                for (int i = 0; i < nCount; i++)
+                {
+                    double dfTop = rgTop[i];
+                    double dfBottomA = rgBottomA[i];
+                    double dfBottomB = rgBottomB[i];
+                    double dfBottomC = rgBottomC[i];
+                    double dfExpected = Math.Max(dfBottomA, Math.Max(dfBottomB, dfBottomC));
+
+                    m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -706,8 +811,15 @@ namespace MyCaffe.test
             p.eltwise_param.operation = EltwiseParameter.EltwiseOp.MAX;
             EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-4);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-4);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestMin()
@@ -716,24 +828,31 @@ namespace MyCaffe.test
             p.eltwise_param.operation = EltwiseParameter.EltwiseOp.MIN;
             EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            double[] rgTop = convert(Top.update_cpu_data());
-            int nCount = Top.count();
-            double[] rgBottomA = convert(Bottom.update_cpu_data());
-            double[] rgBottomB = convert(BottomB.update_cpu_data());
-            double[] rgBottomC = convert(BottomC.update_cpu_data());
-
-            for (int i = 0; i < nCount; i++)
+            try
             {
-                double dfTop = rgTop[i];
-                double dfBottomA = rgBottomA[i];
-                double dfBottomB = rgBottomB[i];
-                double dfBottomC = rgBottomC[i];
-                double dfExpected = Math.Min(dfBottomA, Math.Min(dfBottomB, dfBottomC));
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+                double[] rgTop = convert(Top.update_cpu_data());
+                int nCount = Top.count();
+                double[] rgBottomA = convert(Bottom.update_cpu_data());
+                double[] rgBottomB = convert(BottomB.update_cpu_data());
+                double[] rgBottomC = convert(BottomC.update_cpu_data());
+
+                for (int i = 0; i < nCount; i++)
+                {
+                    double dfTop = rgTop[i];
+                    double dfBottomA = rgBottomA[i];
+                    double dfBottomB = rgBottomB[i];
+                    double dfBottomC = rgBottomC[i];
+                    double dfExpected = Math.Min(dfBottomA, Math.Min(dfBottomB, dfBottomC));
+
+                    m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -743,8 +862,15 @@ namespace MyCaffe.test
             p.eltwise_param.operation = EltwiseParameter.EltwiseOp.MIN;
             EltwiseLayer<T> layer = new EltwiseLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-4);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-4);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

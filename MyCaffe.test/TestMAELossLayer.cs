@@ -103,26 +103,33 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.MAE_LOSS);
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
-            layer.Setup(BottomVec, TopVec);
-            double dfLoss1 = layer.Forward(BottomVec, TopVec);
-            double dfLoss = convert(TopVec[0].GetData(0));
-
-            m_log.CHECK_EQ(dfLoss1, dfLoss, "The loss is incorrect!");
-
-            double[] rgPredicted = convert(m_blob_bottom.mutable_cpu_data);
-            double[] rgTarget = convert(m_blob_bottom_target.mutable_cpu_data);
-            double dfSum = 0;
-
-            for (int i = 0; i < rgPredicted.Length; i++)
+            try
             {
-                double dfDiff = Math.Abs(rgTarget[i] - rgPredicted[i]);
-                dfSum += dfDiff;
+                layer.Setup(BottomVec, TopVec);
+                double dfLoss1 = layer.Forward(BottomVec, TopVec);
+                double dfLoss = convert(TopVec[0].GetData(0));
+
+                m_log.CHECK_EQ(dfLoss1, dfLoss, "The loss is incorrect!");
+
+                double[] rgPredicted = convert(m_blob_bottom.mutable_cpu_data);
+                double[] rgTarget = convert(m_blob_bottom_target.mutable_cpu_data);
+                double dfSum = 0;
+
+                for (int i = 0; i < rgPredicted.Length; i++)
+                {
+                    double dfDiff = Math.Abs(rgTarget[i] - rgPredicted[i]);
+                    dfSum += dfDiff;
+                }
+
+                int nNum = m_blob_bottom.shape()[p.mae_loss_param.axis];
+                double dfExpectedLoss = dfSum / nNum;
+
+                m_log.EXPECT_NEAR_FLOAT(dfExpectedLoss, dfLoss, 0.000001, "The loss is incorrect!");
             }
-
-            int nNum = m_blob_bottom.shape()[p.mae_loss_param.axis];
-            double dfExpectedLoss = dfSum / nNum;
-
-            m_log.EXPECT_NEAR_FLOAT(dfExpectedLoss, dfLoss, 0.000001, "The loss is incorrect!");
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradient()
@@ -131,10 +138,18 @@ namespace MyCaffe.test
             double kLossWeight = 3.7;
             p.loss_weight.Add(kLossWeight);
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-            layer.Setup(BottomVec, TopVec);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2, 1701);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2, 1701);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

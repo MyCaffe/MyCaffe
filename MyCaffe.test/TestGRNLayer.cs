@@ -97,49 +97,56 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.GRN);
             GRNLayer<T> layer = new GRNLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
+            try
+            { 
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            // Test sum
-            for (int i = 0; i < Bottom.num; i++)
-            {
-                for (int k = 0; k < Bottom.height; k++)
+                // Test sum
+                for (int i = 0; i < Bottom.num; i++)
                 {
-                    for (int l=0; l<Bottom.width; l++)
+                    for (int k = 0; k < Bottom.height; k++)
                     {
-                        double dfSum = 0;
-
-                        for (int j=0; j<Top.channels; j++)
+                        for (int l=0; l<Bottom.width; l++)
                         {
-                            T fVal = Top.data_at(i, j, k, l);
-                            double dfVal = convert(fVal);
-                            dfSum += Math.Pow(dfVal, 2.0);
-                        }
+                            double dfSum = 0;
 
-                        m_log.CHECK_GE(dfSum, 0.999, "The sum should be greater than or equal to 0.999.");
-                        m_log.CHECK_LE(dfSum, 1.001, "The sum should be less than or equal to 1.001.");
+                            for (int j=0; j<Top.channels; j++)
+                            {
+                                T fVal = Top.data_at(i, j, k, l);
+                                double dfVal = convert(fVal);
+                                dfSum += Math.Pow(dfVal, 2.0);
+                            }
 
-                        // Test exact values
-                        double dfScale = 0;
-                        for (int j=0; j<Bottom.channels; j++)
-                        {
-                            T fVal = Bottom.data_at(i, j, k, l);
-                            double dfVal = convert(fVal);
-                            dfScale += Math.Pow(dfVal, 2.0);
-                        }
+                            m_log.CHECK_GE(dfSum, 0.999, "The sum should be greater than or equal to 0.999.");
+                            m_log.CHECK_LE(dfSum, 1.001, "The sum should be less than or equal to 1.001.");
 
-                        for (int j=0; j<Bottom.channels; j++)
-                        {
-                            T fTop = Top.data_at(i, j, k, l);
-                            T fBtm = Bottom.data_at(i, j, k, l);
-                            double dfTop = convert(fTop);
-                            double dfBtm = convert(fBtm);
+                            // Test exact values
+                            double dfScale = 0;
+                            for (int j=0; j<Bottom.channels; j++)
+                            {
+                                T fVal = Bottom.data_at(i, j, k, l);
+                                double dfVal = convert(fVal);
+                                dfScale += Math.Pow(dfVal, 2.0);
+                            }
 
-                            m_log.CHECK_GE(dfTop + 1e-4, dfBtm / Math.Sqrt(dfScale), "The top and bottom at {" + i.ToString() + "," + j.ToString() + "," + k.ToString() + "," + l.ToString() + "} are not as expected.");
-                            m_log.CHECK_LE(dfTop - 1e-4, dfBtm / Math.Sqrt(dfScale), "The top and bottom at {" + i.ToString() + "," + j.ToString() + "," + k.ToString() + "," + l.ToString() + "} are not as expected.");
+                            for (int j=0; j<Bottom.channels; j++)
+                            {
+                                T fTop = Top.data_at(i, j, k, l);
+                                T fBtm = Bottom.data_at(i, j, k, l);
+                                double dfTop = convert(fTop);
+                                double dfBtm = convert(fBtm);
+
+                                m_log.CHECK_GE(dfTop + 1e-4, dfBtm / Math.Sqrt(dfScale), "The top and bottom at {" + i.ToString() + "," + j.ToString() + "," + k.ToString() + "," + l.ToString() + "} are not as expected.");
+                                m_log.CHECK_LE(dfTop - 1e-4, dfBtm / Math.Sqrt(dfScale), "The top and bottom at {" + i.ToString() + "," + j.ToString() + "," + k.ToString() + "," + l.ToString() + "} are not as expected.");
+                            }
                         }
                     }
                 }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -147,8 +154,16 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.GRN);
             GRNLayer<T> layer = new GRNLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+
+            try
+            { 
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

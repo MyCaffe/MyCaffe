@@ -261,26 +261,34 @@ namespace MyCaffe.test
             m_blob_bottom.mutable_cpu_data = convert(rgData.ToArray());
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(m_blob_bottom.count(), m_blob_top.count(), "The top and bottom should have the same count!");
-            m_log.CHECK_EQ(m_blob_top.num_axes, 4, "The top should have 4 axes.");
-
-            List<int> rgExpectedShape = new List<int>() { 1, 2, 3, 1 };
-
-            for (int i = 0; i < m_blob_top.shape().Count; i++)
+            try
             {
-                int nDim = m_blob_top.shape()[i];
-                m_log.CHECK_EQ(nDim, rgExpectedShape[i], "The dimension is not as expected.");
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(m_blob_bottom.count(), m_blob_top.count(), "The top and bottom should have the same count!");
+                m_log.CHECK_EQ(m_blob_top.num_axes, 4, "The top should have 4 axes.");
+
+                List<int> rgExpectedShape = new List<int>() { 1, 2, 3, 1 };
+
+                for (int i = 0; i < m_blob_top.shape().Count; i++)
+                {
+                    int nDim = m_blob_top.shape()[i];
+                    m_log.CHECK_EQ(nDim, rgExpectedShape[i], "The dimension is not as expected.");
+                }
+
+                float[] rgF = convertF(m_blob_top.mutable_cpu_data);
+                m_log.CHECK_EQ(rgF.Length, rgData.Count, "The data counts do not match.");
+
+                for (int i = 0; i < rgF.Length; i++)
+                {
+                    m_log.CHECK_EQ(rgF[i], rgData[i], "The data items do not match!");
+                }
             }
-
-            float[] rgF = convertF(m_blob_top.mutable_cpu_data);
-            m_log.CHECK_EQ(rgF.Length, rgData.Count, "The data counts do not match.");
-
-            for (int i = 0; i < rgF.Length; i++)
+            finally
             {
-                m_log.CHECK_EQ(rgF[i], rgData[i], "The data items do not match!");
+                layer.Dispose();
             }
         }
 
@@ -297,44 +305,52 @@ namespace MyCaffe.test
             m_blob_bottom.mutable_cpu_data = convert(rgData.ToArray());
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(m_blob_bottom.count(), m_blob_top.count(), "The top and bottom should have the same count!");
-            m_log.CHECK_EQ(m_blob_top.num_axes, 4, "The top should have 4 axes.");
-
-            List<int> rgExpectedShape = new List<int>() { 1, 2, 3, 1 };
-
-            for (int i = 0; i < m_blob_top.shape().Count; i++)
+            try
             {
-                int nDim = m_blob_top.shape()[i];
-                m_log.CHECK_EQ(nDim, rgExpectedShape[i], "The dimension is not as expected.");
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(m_blob_bottom.count(), m_blob_top.count(), "The top and bottom should have the same count!");
+                m_log.CHECK_EQ(m_blob_top.num_axes, 4, "The top should have 4 axes.");
+
+                List<int> rgExpectedShape = new List<int>() { 1, 2, 3, 1 };
+
+                for (int i = 0; i < m_blob_top.shape().Count; i++)
+                {
+                    int nDim = m_blob_top.shape()[i];
+                    m_log.CHECK_EQ(nDim, rgExpectedShape[i], "The dimension is not as expected.");
+                }
+
+                float[] rgF = convertF(m_blob_top.mutable_cpu_data);
+                m_log.CHECK_EQ(rgF.Length, rgData.Count, "The data counts do not match.");
+
+                for (int i = 0; i < rgF.Length; i++)
+                {
+                    m_log.CHECK_EQ(rgF[i], rgData[i], "The data items do not match!");
+                }
+
+                m_cuda.copy(m_blob_top.count(), m_blob_top.gpu_data, m_blob_top.mutable_gpu_diff);
+
+                layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
+
+                m_log.CHECK_EQ(BottomVec[0].num_axes, rgShape.Count, "The number of axes does not match!");
+
+                for (int i = 0; i < rgShape.Count; i++)
+                {
+                    m_log.CHECK_EQ(BottomVec[0].shape()[i], rgShape[i], "The dimension at the axis does not match!");
+                }
+
+                rgF = convertF(m_blob_bottom.mutable_cpu_diff);
+
+                for (int i = 0; i < rgF.Length; i++)
+                {
+                    m_log.CHECK_EQ(rgF[i], rgData[i], "The data items do not match!");
+                }
             }
-
-            float[] rgF = convertF(m_blob_top.mutable_cpu_data);
-            m_log.CHECK_EQ(rgF.Length, rgData.Count, "The data counts do not match.");
-
-            for (int i = 0; i < rgF.Length; i++)
+            finally
             {
-                m_log.CHECK_EQ(rgF[i], rgData[i], "The data items do not match!");
-            }
-
-            m_cuda.copy(m_blob_top.count(), m_blob_top.gpu_data, m_blob_top.mutable_gpu_diff);
-
-            layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
-
-            m_log.CHECK_EQ(BottomVec[0].num_axes, rgShape.Count, "The number of axes does not match!");
-
-            for (int i = 0; i < rgShape.Count; i++)
-            {
-                m_log.CHECK_EQ(BottomVec[0].shape()[i], rgShape[i], "The dimension at the axis does not match!");
-            }
-
-            rgF = convertF(m_blob_bottom.mutable_cpu_diff);
-
-            for (int i = 0; i < rgF.Length; i++)
-            {
-                m_log.CHECK_EQ(rgF[i], rgData[i], "The data items do not match!");
+                layer.Dispose();
             }
         }
     }

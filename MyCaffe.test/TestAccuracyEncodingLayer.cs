@@ -169,16 +169,23 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ACCURACY_ENCODING);
             AccuracyEncodingLayer<T> layer = new AccuracyEncodingLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-
-            // repeat the forward
-            for (int iter = 0; iter < 3; iter++)
+            try
             {
-                FillBottoms();
-                layer.Forward(BottomVec, TopVec);
+                layer.Setup(BottomVec, TopVec);
 
-                double dfAccuracy = convert(TopVec[0].GetData(0));
-                m_log.EXPECT_NEAR(dfAccuracy, 1.0, 1e-3, "Accuracy is not accurate.");
+                // repeat the forward
+                for (int iter = 0; iter < 3; iter++)
+                {
+                    FillBottoms();
+                    layer.Forward(BottomVec, TopVec);
+
+                    double dfAccuracy = convert(TopVec[0].GetData(0));
+                    m_log.EXPECT_NEAR(dfAccuracy, 1.0, 1e-3, "Accuracy is not accurate.");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
     }

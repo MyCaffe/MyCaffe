@@ -608,51 +608,58 @@ namespace MyCaffe.test
 
             ReductionLayer<T> layer = new ReductionLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            double[] rgTopData = convert(m_blob_top.update_cpu_data());
-            double[] rgInData = convert(m_blob_bottom.update_cpu_data());
-            int nNum = m_blob_bottom.count(0, nAxis);
-            int nDim = m_blob_bottom.count(nAxis);
-            int nIdx = 0;
-
-            for (int n = 0; n < nNum; n++)
+            try
             {
-                double dfExpectedResult = 0;
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                for (int d = 0; d < nDim; d++)
+                double[] rgTopData = convert(m_blob_top.update_cpu_data());
+                double[] rgInData = convert(m_blob_bottom.update_cpu_data());
+                int nNum = m_blob_bottom.count(0, nAxis);
+                int nDim = m_blob_bottom.count(nAxis);
+                int nIdx = 0;
+
+                for (int n = 0; n < nNum; n++)
                 {
-                    switch (op)
+                    double dfExpectedResult = 0;
+
+                    for (int d = 0; d < nDim; d++)
                     {
-                        case ReductionParameter.ReductionOp.SUM:
-                            dfExpectedResult += rgInData[nIdx];
-                            break;
+                        switch (op)
+                        {
+                            case ReductionParameter.ReductionOp.SUM:
+                                dfExpectedResult += rgInData[nIdx];
+                                break;
 
-                        case ReductionParameter.ReductionOp.MEAN:
-                            dfExpectedResult += rgInData[nIdx] / nDim;
-                            break;
+                            case ReductionParameter.ReductionOp.MEAN:
+                                dfExpectedResult += rgInData[nIdx] / nDim;
+                                break;
 
-                        case ReductionParameter.ReductionOp.ASUM:
-                            dfExpectedResult += Math.Abs(rgInData[nIdx]);
-                            break;
+                            case ReductionParameter.ReductionOp.ASUM:
+                                dfExpectedResult += Math.Abs(rgInData[nIdx]);
+                                break;
 
-                        case ReductionParameter.ReductionOp.SUMSQ:
-                            dfExpectedResult += (rgInData[nIdx] * rgInData[nIdx]);
-                            break;
+                            case ReductionParameter.ReductionOp.SUMSQ:
+                                dfExpectedResult += (rgInData[nIdx] * rgInData[nIdx]);
+                                break;
 
-                        default:
-                            m_log.FAIL("Unknown reduction op: " + op.ToString());
-                            break;
+                            default:
+                                m_log.FAIL("Unknown reduction op: " + op.ToString());
+                                break;
+                        }
+
+                        nIdx++;
                     }
 
-                    nIdx++;
+                    dfExpectedResult *= dfCoeff;
+                    double dfComputedResult = rgTopData[n];
+
+                    m_log.EXPECT_EQUAL<float>(dfExpectedResult, dfComputedResult, "Incorrect result computed with op " + op.ToString() + ", coeff " + dfCoeff.ToString() + " at n = " + n.ToString());
                 }
-
-                dfExpectedResult *= dfCoeff;
-                double dfComputedResult = rgTopData[n];
-
-                m_log.EXPECT_EQUAL<float>(dfExpectedResult, dfComputedResult, "Incorrect result computed with op " + op.ToString() + ", coeff " + dfCoeff.ToString() + " at n = " + n.ToString());
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -663,9 +670,16 @@ namespace MyCaffe.test
             p.reduction_param.coeff = dfCoeff;
             p.reduction_param.axis = nAxis;
             ReductionLayer<T> layer = new ReductionLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 2e-3);
 
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 2e-3);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

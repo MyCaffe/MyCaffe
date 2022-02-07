@@ -539,21 +539,28 @@ namespace MyCaffe.test
             p.scale_param.axis = 0;
             ScaleLayer<T> layer = new ScaleLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            m_log.CHECK(Utility.Compare<int>(Bottom.shape(), Top.shape()), "The top and bottom should have the same shape.");
-            layer.Forward(BottomVec, TopVec);
-
-            double[] rgTopData = convert(Top.update_cpu_data());
-            int nCount = Top.count();
-            double[] rgInDataA = convert(Bottom.update_cpu_data());
-            double[] rgInDataB = convert(BottomEltwise.update_cpu_data());
-
-            for (int i = 0; i < nCount; i++)
+            try
             {
-                double dfData = rgTopData[i];
-                double dfInData = rgInDataA[i] * rgInDataB[i];
+                layer.Setup(BottomVec, TopVec);
+                m_log.CHECK(Utility.Compare<int>(Bottom.shape(), Top.shape()), "The top and bottom should have the same shape.");
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.EXPECT_NEAR(dfData, dfInData, 1e-5);
+                double[] rgTopData = convert(Top.update_cpu_data());
+                int nCount = Top.count();
+                double[] rgInDataA = convert(Bottom.update_cpu_data());
+                double[] rgInDataB = convert(BottomEltwise.update_cpu_data());
+
+                for (int i = 0; i < nCount; i++)
+                {
+                    double dfData = rgTopData[i];
+                    double dfInData = rgInDataA[i] * rgInDataB[i];
+
+                    m_log.EXPECT_NEAR(dfData, dfInData, 1e-5);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -568,20 +575,27 @@ namespace MyCaffe.test
             p.scale_param.axis = 0;
             ScaleLayer<T> layer = new ScaleLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            double[] rgTopData = convert(Bottom.update_cpu_data());
-            int nCount = Bottom.count();
-            double[] rgInDataA = convert(blobOriginalBottom.update_cpu_data());
-            double[] rgInDataB = convert(BottomEltwise.update_cpu_data());
-
-            for (int i = 0; i < nCount; i++)
+            try
             {
-                double dfData = rgTopData[i];
-                double dfInData = rgInDataA[i] * rgInDataB[i];
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.EXPECT_NEAR(dfData, dfInData, 1e-5);
+                double[] rgTopData = convert(Bottom.update_cpu_data());
+                int nCount = Bottom.count();
+                double[] rgInDataA = convert(blobOriginalBottom.update_cpu_data());
+                double[] rgInDataB = convert(BottomEltwise.update_cpu_data());
+
+                for (int i = 0; i < nCount; i++)
+                {
+                    double dfData = rgTopData[i];
+                    double dfInData = rgInDataA[i] * rgInDataB[i];
+
+                    m_log.EXPECT_NEAR(dfData, dfInData, 1e-5);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -595,55 +609,78 @@ namespace MyCaffe.test
             p.scale_param.axis = 0;
             ScaleLayer<T> layer = new ScaleLayer<T>(m_cuda, m_log, p);
 
-            Blob<T> blobTopDiff = new Blob<T>(m_cuda, m_log, Bottom.shape());
-            FillerParameter fp = new FillerParameter("gaussian");
-            fp.std = 1.0;
-            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
-            filler.Fill(blobTopDiff);
+            Blob<T> blobTopDiff = null;
+            Blob<T> blobOriginalBottomDiff = null;
+            Blob<T> blobOriginalScaleDiff = null;
 
-            List<bool> rgPropagateDown = Utility.Create<bool>(2, true);
-            // Run forward + backward without in-place computation;
-            // save resulting bottom diffs.
-
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-            m_cuda.copy(blobTopDiff.count(), blobTopDiff.gpu_data, Top.mutable_gpu_diff);
-            layer.Backward(TopVec, rgPropagateDown, BottomVec);
-
-            bool kReshape = true;
-            bool kCopyDiff = true;
-            Blob<T> blobOriginalBottomDiff = new Blob<T>(m_cuda, m_log);
-            blobOriginalBottomDiff.CopyFrom(Bottom, kCopyDiff, kReshape);
-            Blob<T> blobOriginalScaleDiff = new Blob<T>(m_cuda, m_log);
-            blobOriginalScaleDiff.CopyFrom(BottomEltwise, kCopyDiff, kReshape);
-
-            // Rerun forward + backward with in-place computation;
-            // check that resulting bottom diffs are the same.
-            TopVec[0] = Bottom; // in-place computation.
-            layer.Forward(BottomVec, TopVec);
-            m_cuda.copy(blobTopDiff.count(), blobTopDiff.gpu_data, Bottom.mutable_gpu_diff);
-            layer.Backward(TopVec, rgPropagateDown, BottomVec);
-
-            double[] rgOriginalBottomDiff = convert(blobOriginalBottomDiff.update_cpu_diff());
-            double[] rgBottomDiff = convert(Bottom.update_cpu_diff());
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                double dfOriginalBottomDiff = rgOriginalBottomDiff[i];
-                double dfBottomDiff = rgBottomDiff[i];
+                blobTopDiff = new Blob<T>(m_cuda, m_log, Bottom.shape());
+                FillerParameter fp = new FillerParameter("gaussian");
+                fp.std = 1.0;
+                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
+                filler.Fill(blobTopDiff);
 
-                m_log.EXPECT_NEAR(dfOriginalBottomDiff, dfBottomDiff, 1e-5);
+                List<bool> rgPropagateDown = Utility.Create<bool>(2, true);
+                // Run forward + backward without in-place computation;
+                // save resulting bottom diffs.
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+                m_cuda.copy(blobTopDiff.count(), blobTopDiff.gpu_data, Top.mutable_gpu_diff);
+                layer.Backward(TopVec, rgPropagateDown, BottomVec);
+
+                bool kReshape = true;
+                bool kCopyDiff = true;
+                blobOriginalBottomDiff = new Blob<T>(m_cuda, m_log);
+                blobOriginalBottomDiff.CopyFrom(Bottom, kCopyDiff, kReshape);
+                blobOriginalScaleDiff = new Blob<T>(m_cuda, m_log);
+                blobOriginalScaleDiff.CopyFrom(BottomEltwise, kCopyDiff, kReshape);
+
+                // Rerun forward + backward with in-place computation;
+                // check that resulting bottom diffs are the same.
+                TopVec[0] = Bottom; // in-place computation.
+                layer.Forward(BottomVec, TopVec);
+                m_cuda.copy(blobTopDiff.count(), blobTopDiff.gpu_data, Bottom.mutable_gpu_diff);
+                layer.Backward(TopVec, rgPropagateDown, BottomVec);
+
+                double[] rgOriginalBottomDiff = convert(blobOriginalBottomDiff.update_cpu_diff());
+                double[] rgBottomDiff = convert(Bottom.update_cpu_diff());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfOriginalBottomDiff = rgOriginalBottomDiff[i];
+                    double dfBottomDiff = rgBottomDiff[i];
+
+                    m_log.EXPECT_NEAR(dfOriginalBottomDiff, dfBottomDiff, 1e-5);
+                }
+
+                double[] rgOriginalScaleDiff = convert(blobOriginalScaleDiff.update_cpu_diff());
+                double[] rgBottomScaleDiff = convert(BottomEltwise.update_cpu_diff());
+
+                for (int i = 0; i < BottomEltwise.count(); i++)
+                {
+                    double dfOriginalScaleDiff = rgOriginalScaleDiff[i];
+                    double dfBottomScaleDiff = rgBottomScaleDiff[i];
+
+                    m_log.EXPECT_NEAR(dfOriginalScaleDiff, dfBottomScaleDiff, 1e-5);
+                }
             }
-
-            double[] rgOriginalScaleDiff = convert(blobOriginalScaleDiff.update_cpu_diff());
-            double[] rgBottomScaleDiff = convert(BottomEltwise.update_cpu_diff());
-
-            for (int i = 0; i < BottomEltwise.count(); i++)
+            finally
             {
-                double dfOriginalScaleDiff = rgOriginalScaleDiff[i];
-                double dfBottomScaleDiff = rgBottomScaleDiff[i];
+                layer.Dispose();
 
-                m_log.EXPECT_NEAR(dfOriginalScaleDiff, dfBottomScaleDiff, 1e-5);
+                if (blobTopDiff != null)
+                    blobTopDiff.Dispose();
+
+                if (blobOriginalBottomDiff != null)
+                    blobOriginalBottomDiff.Dispose();
+
+                if (blobOriginalScaleDiff != null)
+                    blobOriginalScaleDiff.Dispose();
+
+                if (blobOriginalBottom != null)
+                    blobOriginalBottom.Dispose();
             }
         }
 
@@ -655,21 +692,28 @@ namespace MyCaffe.test
             p.scale_param.filler = new FillerParameter("gaussian");
             ScaleLayer<T> layer = new ScaleLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            m_log.CHECK(Utility.Compare<int>(Bottom.shape(), Top.shape()), "The top and bottom should have the same shape.");
-            layer.Forward(BottomVec, TopVec);
-
-            double[] rgTopData = convert(Top.update_cpu_data());
-            int nCount = Top.count();
-            double[] rgInDataA = convert(Bottom.update_cpu_data());
-            double[] rgInDataB = convert(layer.blobs[0].update_cpu_data());
-
-            for (int i = 0; i < nCount; i++)
+            try
             {
-                double dfData = rgTopData[i];
-                double dfInData = rgInDataA[i] * rgInDataB[i];
+                layer.Setup(BottomVec, TopVec);
+                m_log.CHECK(Utility.Compare<int>(Bottom.shape(), Top.shape()), "The top and bottom should have the same shape.");
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.EXPECT_NEAR(dfData, dfInData, 1e-5);
+                double[] rgTopData = convert(Top.update_cpu_data());
+                int nCount = Top.count();
+                double[] rgInDataA = convert(Bottom.update_cpu_data());
+                double[] rgInDataB = convert(layer.blobs[0].update_cpu_data());
+
+                for (int i = 0; i < nCount; i++)
+                {
+                    double dfData = rgTopData[i];
+                    double dfInData = rgInDataA[i] * rgInDataB[i];
+
+                    m_log.EXPECT_NEAR(dfData, dfInData, 1e-5);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -681,26 +725,33 @@ namespace MyCaffe.test
             p.scale_param.axis = 0;
             ScaleLayer<T> layer = new ScaleLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            m_log.CHECK(Utility.Compare<int>(Bottom.shape(), Top.shape()), "The top and bottom should have the same shape.");
-            layer.Forward(BottomVec, TopVec);
-
-            for (int n = 0; n < Bottom.num; n++)
+            try
             {
-                for (int c = 0; c < Bottom.channels; c++)
-                {
-                    for (int h = 0; h < Bottom.height; h++)
-                    {
-                        for (int w = 0; w < Bottom.width; w++)
-                        {
-                            double dfTop = convert(Top.data_at(n, c, h, w));
-                            double dfBottom = convert(Bottom.data_at(n, c, h, w));
-                            double dfBroadcast = convert(BottomBroadcast0.data_at(n, c, 0, 0));
+                layer.Setup(BottomVec, TopVec);
+                m_log.CHECK(Utility.Compare<int>(Bottom.shape(), Top.shape()), "The top and bottom should have the same shape.");
+                layer.Forward(BottomVec, TopVec);
 
-                            m_log.EXPECT_NEAR(dfTop, dfBottom * dfBroadcast, 1e-5);
+                for (int n = 0; n < Bottom.num; n++)
+                {
+                    for (int c = 0; c < Bottom.channels; c++)
+                    {
+                        for (int h = 0; h < Bottom.height; h++)
+                        {
+                            for (int w = 0; w < Bottom.width; w++)
+                            {
+                                double dfTop = convert(Top.data_at(n, c, h, w));
+                                double dfBottom = convert(Bottom.data_at(n, c, h, w));
+                                double dfBroadcast = convert(BottomBroadcast0.data_at(n, c, 0, 0));
+
+                                m_log.EXPECT_NEAR(dfTop, dfBottom * dfBroadcast, 1e-5);
+                            }
                         }
                     }
                 }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -712,26 +763,33 @@ namespace MyCaffe.test
             p.scale_param.axis = 1;
             ScaleLayer<T> layer = new ScaleLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            m_log.CHECK(Utility.Compare<int>(Bottom.shape(), Top.shape()), "The top and bottom should have the same shape.");
-            layer.Forward(BottomVec, TopVec);
-
-            for (int n = 0; n < Bottom.num; n++)
+            try
             {
-                for (int c = 0; c < Bottom.channels; c++)
-                {
-                    for (int h = 0; h < Bottom.height; h++)
-                    {
-                        for (int w = 0; w < Bottom.width; w++)
-                        {
-                            double dfTop = convert(Top.data_at(n, c, h, w));
-                            double dfBottom = convert(Bottom.data_at(n, c, h, w));
-                            double dfBroadcast = convert(BottomBroadcast1.data_at(c, h, 0, 0));
+                layer.Setup(BottomVec, TopVec);
+                m_log.CHECK(Utility.Compare<int>(Bottom.shape(), Top.shape()), "The top and bottom should have the same shape.");
+                layer.Forward(BottomVec, TopVec);
 
-                            m_log.EXPECT_NEAR(dfTop, dfBottom * dfBroadcast, 1e-5);
+                for (int n = 0; n < Bottom.num; n++)
+                {
+                    for (int c = 0; c < Bottom.channels; c++)
+                    {
+                        for (int h = 0; h < Bottom.height; h++)
+                        {
+                            for (int w = 0; w < Bottom.width; w++)
+                            {
+                                double dfTop = convert(Top.data_at(n, c, h, w));
+                                double dfBottom = convert(Bottom.data_at(n, c, h, w));
+                                double dfBroadcast = convert(BottomBroadcast1.data_at(c, h, 0, 0));
+
+                                m_log.EXPECT_NEAR(dfTop, dfBottom * dfBroadcast, 1e-5);
+                            }
                         }
                     }
                 }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -747,25 +805,32 @@ namespace MyCaffe.test
             p.scale_param.axis = 1;
             ScaleLayer<T> layer = new ScaleLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            for (int n = 0; n < Bottom.num; n++)
+            try
             {
-                for (int c = 0; c < Bottom.channels; c++)
-                {
-                    for (int h = 0; h < Bottom.height; h++)
-                    {
-                        for (int w = 0; w < Bottom.width; w++)
-                        {
-                            double dfTop = convert(Bottom.data_at(n, c, h, w));
-                            double dfBottom = convert(blobOriginalBottom.data_at(n, c, h, w));
-                            double dfBroadcast = convert(BottomBroadcast1.data_at(c, h, 0, 0));
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                            m_log.EXPECT_NEAR(dfTop, dfBottom * dfBroadcast, 1e-5);
+                for (int n = 0; n < Bottom.num; n++)
+                {
+                    for (int c = 0; c < Bottom.channels; c++)
+                    {
+                        for (int h = 0; h < Bottom.height; h++)
+                        {
+                            for (int w = 0; w < Bottom.width; w++)
+                            {
+                                double dfTop = convert(Bottom.data_at(n, c, h, w));
+                                double dfBottom = convert(blobOriginalBottom.data_at(n, c, h, w));
+                                double dfBroadcast = convert(BottomBroadcast1.data_at(c, h, 0, 0));
+
+                                m_log.EXPECT_NEAR(dfTop, dfBottom * dfBroadcast, 1e-5);
+                            }
                         }
                     }
                 }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -778,56 +843,78 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.SCALE);
             p.scale_param.axis = 1;
             ScaleLayer<T> layer = new ScaleLayer<T>(m_cuda, m_log, p);
+            Blob<T> blobTopDiff = null;
+            Blob<T> blobOriginalBottomDiff = null;
+            Blob<T> blobOriginalScaleDiff = null;
 
-            Blob<T> blobTopDiff = new Blob<T>(m_cuda, m_log, Bottom.shape());
-            FillerParameter fp = new FillerParameter("gaussian");
-            fp.std = 1.0;
-            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
-            filler.Fill(blobTopDiff);
-
-            List<bool> rgPropagateDown = Utility.Create<bool>(2, true);
-            // Run forward + backward without in-place computation;
-            // save resulting bottom diffs.
-
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-            m_cuda.copy(blobTopDiff.count(), blobTopDiff.gpu_data, Top.mutable_gpu_diff);
-            layer.Backward(TopVec, rgPropagateDown, BottomVec);
-
-            bool kReshape = true;
-            bool kCopyDiff = true;
-            Blob<T> blobOriginalBottomDiff = new Blob<T>(m_cuda, m_log);
-            blobOriginalBottomDiff.CopyFrom(Bottom, kCopyDiff, kReshape);
-            Blob<T> blobOriginalScaleDiff = new Blob<T>(m_cuda, m_log);
-            blobOriginalScaleDiff.CopyFrom(BottomBroadcast1, kCopyDiff, kReshape);
-
-            // Rerun forward + backward with in-place computation;
-            // check that resulting bottom diffs are the same.
-            TopVec[0] = Bottom; // in-place computation.
-            layer.Forward(BottomVec, TopVec);
-            m_cuda.copy(blobTopDiff.count(), blobTopDiff.gpu_data, Bottom.mutable_gpu_diff);
-            layer.Backward(TopVec, rgPropagateDown, BottomVec);
-
-            double[] rgOriginalBottomDiff = convert(blobOriginalBottomDiff.update_cpu_diff());
-            double[] rgBottomDiff = convert(Bottom.update_cpu_diff());
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                double dfOriginalBottomDiff = rgOriginalBottomDiff[i];
-                double dfBottomDiff = rgBottomDiff[i];
+                blobTopDiff = new Blob<T>(m_cuda, m_log, Bottom.shape());
+                FillerParameter fp = new FillerParameter("gaussian");
+                fp.std = 1.0;
+                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
+                filler.Fill(blobTopDiff);
 
-                m_log.EXPECT_NEAR(dfOriginalBottomDiff, dfBottomDiff, 1e-5);
+                List<bool> rgPropagateDown = Utility.Create<bool>(2, true);
+                // Run forward + backward without in-place computation;
+                // save resulting bottom diffs.
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+                m_cuda.copy(blobTopDiff.count(), blobTopDiff.gpu_data, Top.mutable_gpu_diff);
+                layer.Backward(TopVec, rgPropagateDown, BottomVec);
+
+                bool kReshape = true;
+                bool kCopyDiff = true;
+                blobOriginalBottomDiff = new Blob<T>(m_cuda, m_log);
+                blobOriginalBottomDiff.CopyFrom(Bottom, kCopyDiff, kReshape);
+                blobOriginalScaleDiff = new Blob<T>(m_cuda, m_log);
+                blobOriginalScaleDiff.CopyFrom(BottomBroadcast1, kCopyDiff, kReshape);
+
+                // Rerun forward + backward with in-place computation;
+                // check that resulting bottom diffs are the same.
+                TopVec[0] = Bottom; // in-place computation.
+                layer.Forward(BottomVec, TopVec);
+                m_cuda.copy(blobTopDiff.count(), blobTopDiff.gpu_data, Bottom.mutable_gpu_diff);
+                layer.Backward(TopVec, rgPropagateDown, BottomVec);
+
+                double[] rgOriginalBottomDiff = convert(blobOriginalBottomDiff.update_cpu_diff());
+                double[] rgBottomDiff = convert(Bottom.update_cpu_diff());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfOriginalBottomDiff = rgOriginalBottomDiff[i];
+                    double dfBottomDiff = rgBottomDiff[i];
+
+                    m_log.EXPECT_NEAR(dfOriginalBottomDiff, dfBottomDiff, 1e-5);
+                }
+
+                double[] rgOriginalScaleDiff = convert(blobOriginalScaleDiff.update_cpu_diff());
+                double[] rgBottomBroadcastDiff = convert(BottomBroadcast1.update_cpu_diff());
+
+                for (int i = 0; i < BottomBroadcast1.count(); i++)
+                {
+                    double dfOriginalScaleDiff = rgOriginalScaleDiff[i];
+                    double dfBottomBroadcastDiff = rgBottomBroadcastDiff[i];
+
+                    m_log.EXPECT_NEAR(dfOriginalScaleDiff, dfBottomBroadcastDiff, 1e-5);
+                }
             }
-
-            double[] rgOriginalScaleDiff = convert(blobOriginalScaleDiff.update_cpu_diff());
-            double[] rgBottomBroadcastDiff = convert(BottomBroadcast1.update_cpu_diff());
-
-            for (int i = 0; i < BottomBroadcast1.count(); i++)
+            finally
             {
-                double dfOriginalScaleDiff = rgOriginalScaleDiff[i];
-                double dfBottomBroadcastDiff = rgBottomBroadcastDiff[i];
+                layer.Dispose();
 
-                m_log.EXPECT_NEAR(dfOriginalScaleDiff, dfBottomBroadcastDiff, 1e-5);
+                if (blobTopDiff != null)
+                    blobTopDiff.Dispose();
+
+                if (blobOriginalBottomDiff != null)
+                    blobOriginalBottomDiff.Dispose();
+
+                if (blobOriginalScaleDiff != null)
+                    blobOriginalScaleDiff.Dispose();
+
+                if (blobOriginalBottom != null)
+                    blobOriginalBottom.Dispose();
             }
         }
 
@@ -839,28 +926,36 @@ namespace MyCaffe.test
             p.scale_param.filler = new FillerParameter("gaussian");
             ScaleLayer<T> layer = new ScaleLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            m_log.CHECK(Utility.Compare<int>(Bottom.shape(), Top.shape()), "The top and bottom should have the same shape.");
-            layer.Forward(BottomVec, TopVec);
-
-            for (int n = 0; n < Bottom.num; n++)
+            try
             {
-                for (int c = 0; c < Bottom.channels; c++)
-                {
-                    for (int h = 0; h < Bottom.height; h++)
-                    {
-                        for (int w = 0; w < Bottom.width; w++)
-                        {
-                            double dfTop = convert(Top.data_at(n, c, h, w));
-                            double dfBottom = convert(Bottom.data_at(n, c, h, w));
-                            double dfParam = convert(layer.blobs[0].data_at(c, h, 0, 0));
+                layer.Setup(BottomVec, TopVec);
+                m_log.CHECK(Utility.Compare<int>(Bottom.shape(), Top.shape()), "The top and bottom should have the same shape.");
+                layer.Forward(BottomVec, TopVec);
 
-                            m_log.EXPECT_NEAR(dfTop, dfBottom * dfParam, 1e-5);
+                for (int n = 0; n < Bottom.num; n++)
+                {
+                    for (int c = 0; c < Bottom.channels; c++)
+                    {
+                        for (int h = 0; h < Bottom.height; h++)
+                        {
+                            for (int w = 0; w < Bottom.width; w++)
+                            {
+                                double dfTop = convert(Top.data_at(n, c, h, w));
+                                double dfBottom = convert(Bottom.data_at(n, c, h, w));
+                                double dfParam = convert(layer.blobs[0].data_at(c, h, 0, 0));
+
+                                m_log.EXPECT_NEAR(dfTop, dfBottom * dfParam, 1e-5);
+                            }
                         }
                     }
                 }
             }
+            finally
+            {
+                layer.Dispose();
+            }
         }
+
         public void TestForwardBroadcastMiddleWithParamAndBias()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.SCALE);
@@ -871,27 +966,34 @@ namespace MyCaffe.test
             p.scale_param.bias_filler = new FillerParameter("gaussian");
             ScaleLayer<T> layer = new ScaleLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            m_log.CHECK(Utility.Compare<int>(Bottom.shape(), Top.shape()), "The top and bottom should have the same shape.");
-            layer.Forward(BottomVec, TopVec);
-
-            for (int n = 0; n < Bottom.num; n++)
+            try
             {
-                for (int c = 0; c < Bottom.channels; c++)
-                {
-                    for (int h = 0; h < Bottom.height; h++)
-                    {
-                        for (int w = 0; w < Bottom.width; w++)
-                        {
-                            double dfTop = convert(Top.data_at(n, c, h, w));
-                            double dfBottom = convert(Bottom.data_at(n, c, h, w));
-                            double dfParam1 = convert(layer.blobs[0].data_at(c, h, 0, 0));
-                            double dfParam2 = convert(layer.blobs[1].data_at(c, h, 0, 0));
+                layer.Setup(BottomVec, TopVec);
+                m_log.CHECK(Utility.Compare<int>(Bottom.shape(), Top.shape()), "The top and bottom should have the same shape.");
+                layer.Forward(BottomVec, TopVec);
 
-                            m_log.EXPECT_NEAR(dfTop, dfBottom * dfParam1 + dfParam2, 1e-5);
+                for (int n = 0; n < Bottom.num; n++)
+                {
+                    for (int c = 0; c < Bottom.channels; c++)
+                    {
+                        for (int h = 0; h < Bottom.height; h++)
+                        {
+                            for (int w = 0; w < Bottom.width; w++)
+                            {
+                                double dfTop = convert(Top.data_at(n, c, h, w));
+                                double dfBottom = convert(Bottom.data_at(n, c, h, w));
+                                double dfParam1 = convert(layer.blobs[0].data_at(c, h, 0, 0));
+                                double dfParam2 = convert(layer.blobs[1].data_at(c, h, 0, 0));
+
+                                m_log.EXPECT_NEAR(dfTop, dfBottom * dfParam1 + dfParam2, 1e-5);
+                            }
                         }
                     }
                 }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -903,26 +1005,33 @@ namespace MyCaffe.test
             p.scale_param.axis = 2;
             ScaleLayer<T> layer = new ScaleLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            m_log.CHECK(Utility.Compare<int>(Bottom.shape(), Top.shape()), "The top and bottom should have the same shape.");
-            layer.Forward(BottomVec, TopVec);
-
-            for (int n = 0; n < Bottom.num; n++)
+            try
             {
-                for (int c = 0; c < Bottom.channels; c++)
-                {
-                    for (int h = 0; h < Bottom.height; h++)
-                    {
-                        for (int w = 0; w < Bottom.width; w++)
-                        {
-                            double dfTop = convert(Top.data_at(n, c, h, w));
-                            double dfBottom = convert(Bottom.data_at(n, c, h, w));
-                            double dfBroadcast = convert(BottomBroadcast2.data_at(h, w, 0, 0));
+                layer.Setup(BottomVec, TopVec);
+                m_log.CHECK(Utility.Compare<int>(Bottom.shape(), Top.shape()), "The top and bottom should have the same shape.");
+                layer.Forward(BottomVec, TopVec);
 
-                            m_log.EXPECT_NEAR(dfTop, dfBottom * dfBroadcast, 1e-5);
+                for (int n = 0; n < Bottom.num; n++)
+                {
+                    for (int c = 0; c < Bottom.channels; c++)
+                    {
+                        for (int h = 0; h < Bottom.height; h++)
+                        {
+                            for (int w = 0; w < Bottom.width; w++)
+                            {
+                                double dfTop = convert(Top.data_at(n, c, h, w));
+                                double dfBottom = convert(Bottom.data_at(n, c, h, w));
+                                double dfBroadcast = convert(BottomBroadcast2.data_at(h, w, 0, 0));
+
+                                m_log.EXPECT_NEAR(dfTop, dfBottom * dfBroadcast, 1e-5);
+                            }
                         }
                     }
                 }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -933,21 +1042,28 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.SCALE);
             ScaleLayer<T> layer = new ScaleLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            m_log.CHECK(Utility.Compare<int>(Bottom.shape(), Top.shape()), "The top and bottom should have the same shape.");
-            layer.Forward(BottomVec, TopVec);
-
-            double[] rgTopData = convert(Top.update_cpu_data());
-            int nCount = Top.count();
-            double[] rgInDataA = convert(Bottom.update_cpu_data());
-            double[] rgScale = convert(BottomScale.update_cpu_data());
-
-            for (int i = 0; i < nCount; i++)
+            try
             {
-                double dfData = rgTopData[i];
-                double dfInData = rgInDataA[i] * rgScale[0];
+                layer.Setup(BottomVec, TopVec);
+                m_log.CHECK(Utility.Compare<int>(Bottom.shape(), Top.shape()), "The top and bottom should have the same shape.");
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.EXPECT_NEAR(dfData, dfInData, 1e-5);
+                double[] rgTopData = convert(Top.update_cpu_data());
+                int nCount = Top.count();
+                double[] rgInDataA = convert(Bottom.update_cpu_data());
+                double[] rgScale = convert(BottomScale.update_cpu_data());
+
+                for (int i = 0; i < nCount; i++)
+                {
+                    double dfData = rgTopData[i];
+                    double dfInData = rgInDataA[i] * rgScale[0];
+
+                    m_log.EXPECT_NEAR(dfData, dfInData, 1e-5);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -959,21 +1075,28 @@ namespace MyCaffe.test
             p.scale_param.axis = 2;
             ScaleLayer<T> layer = new ScaleLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            m_log.CHECK(Utility.Compare<int>(Bottom.shape(), Top.shape()), "The top and bottom should have the same shape.");
-            layer.Forward(BottomVec, TopVec);
-
-            double[] rgTopData = convert(Top.update_cpu_data());
-            int nCount = Top.count();
-            double[] rgInDataA = convert(Bottom.update_cpu_data());
-            double[] rgScale = convert(BottomScale.update_cpu_data());
-
-            for (int i = 0; i < nCount; i++)
+            try
             {
-                double dfData = rgTopData[i];
-                double dfInData = rgInDataA[i] * rgScale[0];
+                layer.Setup(BottomVec, TopVec);
+                m_log.CHECK(Utility.Compare<int>(Bottom.shape(), Top.shape()), "The top and bottom should have the same shape.");
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.EXPECT_NEAR(dfData, dfInData, 1e-5);
+                double[] rgTopData = convert(Top.update_cpu_data());
+                int nCount = Top.count();
+                double[] rgInDataA = convert(Bottom.update_cpu_data());
+                double[] rgScale = convert(BottomScale.update_cpu_data());
+
+                for (int i = 0; i < nCount; i++)
+                {
+                    double dfData = rgTopData[i];
+                    double dfInData = rgInDataA[i] * rgScale[0];
+
+                    m_log.EXPECT_NEAR(dfData, dfInData, 1e-5);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -985,8 +1108,15 @@ namespace MyCaffe.test
             p.scale_param.axis = 0;
             ScaleLayer<T> layer = new ScaleLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientEltwiseWithParam()
@@ -997,8 +1127,15 @@ namespace MyCaffe.test
             p.scale_param.filler = new FillerParameter("gaussian");
             ScaleLayer<T> layer = new ScaleLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientBroadcastBegin()
@@ -1009,8 +1146,15 @@ namespace MyCaffe.test
             p.scale_param.axis = 0;
             ScaleLayer<T> layer = new ScaleLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientBroadcastMiddle()
@@ -1021,8 +1165,15 @@ namespace MyCaffe.test
             p.scale_param.axis = 1;
             ScaleLayer<T> layer = new ScaleLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientBroadcastMiddleWithParam()
@@ -1035,8 +1186,15 @@ namespace MyCaffe.test
             p.scale_param.filler = new FillerParameter("gaussian");
             ScaleLayer<T> layer = new ScaleLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientBroadcastEnd()
@@ -1047,8 +1205,15 @@ namespace MyCaffe.test
             p.scale_param.axis = 2;
             ScaleLayer<T> layer = new ScaleLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientScale()
@@ -1058,8 +1223,15 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.SCALE);
             ScaleLayer<T> layer = new ScaleLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientScaleAndBias()
@@ -1071,8 +1243,15 @@ namespace MyCaffe.test
             p.scale_param.bias_filler = new FillerParameter("gaussian");
             ScaleLayer<T> layer = new ScaleLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientScaleAxis2()
@@ -1083,8 +1262,15 @@ namespace MyCaffe.test
             p.scale_param.axis = 2;
             ScaleLayer<T> layer = new ScaleLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

@@ -116,11 +116,18 @@ namespace MyCaffe.test
             p.tv_loss_param.beta = 2.5f;
             TVLossLayer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null) as TVLossLayer<T>;
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            double dfLoss = convert(m_blob_top.GetData(0));
-            m_log.EXPECT_EQUAL<float>(dfLoss, 82.0137624747, "The loss value is incorrect.");
+                double dfLoss = convert(m_blob_top.GetData(0));
+                m_log.EXPECT_EQUAL<float>(dfLoss, 82.0137624747, "The loss value is incorrect.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradient()
@@ -128,9 +135,17 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TV_LOSS);
             p.tv_loss_param.beta = 2.5f;
             TVLossLayer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null) as TVLossLayer<T>;
-            layer.Setup(BottomVec, TopVec);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+
+            try
+            { 
+                layer.Setup(BottomVec, TopVec);
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

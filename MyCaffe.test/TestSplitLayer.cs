@@ -1182,17 +1182,24 @@ namespace MyCaffe.test
             // output_param_string.
             Net<T> net = new Net<T>(m_cuda, m_log, new NetParameter(), new CancelEvent(), null);
 
-            RawProto proto1 = RawProto.Parse(input_param_string);
-            NetParameter input_param = NetParameter.FromProto(proto1);
-            RawProto proto2 = RawProto.Parse(output_param_string);
-            NetParameter expected_output_param = NetParameter.FromProto(proto2);
-            NetParameter actual_output_param = net.InsertSplits(input_param);
+            try
+            {
+                RawProto proto1 = RawProto.Parse(input_param_string);
+                NetParameter input_param = NetParameter.FromProto(proto1);
+                RawProto proto2 = RawProto.Parse(output_param_string);
+                NetParameter expected_output_param = NetParameter.FromProto(proto2);
+                NetParameter actual_output_param = net.InsertSplits(input_param);
 
-            m_log.CHECK(expected_output_param.Compare(actual_output_param), "The expected and actual protos are not equal!");
+                m_log.CHECK(expected_output_param.Compare(actual_output_param), "The expected and actual protos are not equal!");
 
-            // Also test idempotence.
-            NetParameter double_split_insert_param = net.InsertSplits(actual_output_param);
-            m_log.CHECK(actual_output_param.Compare(double_split_insert_param), "The double and acutal protos are not equal!");
+                // Also test idempotence.
+                NetParameter double_split_insert_param = net.InsertSplits(actual_output_param);
+                m_log.CHECK(actual_output_param.Compare(double_split_insert_param), "The double and acutal protos are not equal!");
+            }
+            finally
+            {
+                net.Dispose();
+            }
         }
 
         public void TestSetup()
@@ -1200,16 +1207,23 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.SPLIT);
             SplitLayer<T> layer = new SplitLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(2, Top.num, "Top num should be 2.");
-            m_log.CHECK_EQ(3, Top.channels, "Top channels should be 3.");
-            m_log.CHECK_EQ(6, Top.height, "Top height should be 6.");
-            m_log.CHECK_EQ(5, Top.width, "Top width should be 5.");
-            m_log.CHECK_EQ(2, TopB.num, "TopB num should be 2.");
-            m_log.CHECK_EQ(3, TopB.channels, "TopB channels should be 3.");
-            m_log.CHECK_EQ(6, TopB.height, "TopB height should be 6.");
-            m_log.CHECK_EQ(5, TopB.width, "TopB width should be 5.");
+                m_log.CHECK_EQ(2, Top.num, "Top num should be 2.");
+                m_log.CHECK_EQ(3, Top.channels, "Top channels should be 3.");
+                m_log.CHECK_EQ(6, Top.height, "Top height should be 6.");
+                m_log.CHECK_EQ(5, Top.width, "Top width should be 5.");
+                m_log.CHECK_EQ(2, TopB.num, "TopB num should be 2.");
+                m_log.CHECK_EQ(3, TopB.channels, "TopB channels should be 3.");
+                m_log.CHECK_EQ(6, TopB.height, "TopB height should be 6.");
+                m_log.CHECK_EQ(5, TopB.width, "TopB width should be 5.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForward()
@@ -1217,18 +1231,25 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.SPLIT);
             SplitLayer<T> layer = new SplitLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            double[] rgBottom = convert(Bottom.update_cpu_data());
-            double[] rgTopA = convert(Top.update_cpu_data());
-            double[] rgTopB = convert(TopB.update_cpu_data());
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                double dfBottom = rgBottom[i];
-                m_log.CHECK_EQ(dfBottom, rgTopA[i], "The bottom value should equal the TopA value at " + i.ToString());
-                m_log.CHECK_EQ(dfBottom, rgTopB[i], "The bottom value should equal the TopB value at " + i.ToString());
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                double[] rgBottom = convert(Bottom.update_cpu_data());
+                double[] rgTopA = convert(Top.update_cpu_data());
+                double[] rgTopB = convert(TopB.update_cpu_data());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfBottom = rgBottom[i];
+                    m_log.CHECK_EQ(dfBottom, rgTopA[i], "The bottom value should equal the TopA value at " + i.ToString());
+                    m_log.CHECK_EQ(dfBottom, rgTopB[i], "The bottom value should equal the TopB value at " + i.ToString());
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -1236,8 +1257,16 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.SPLIT);
             SplitLayer<T> layer = new SplitLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

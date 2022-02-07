@@ -131,44 +131,51 @@ namespace MyCaffe.test
             p.softmax_param.engine = m_engine;
             SoftmaxLayer<T> layer = new SoftmaxLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Test sum
-            for (int i = 0; i < Bottom.num; i++)
+            try
             {
-                for (int k = 0; k < Bottom.height; k++)
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // Test sum
+                for (int i = 0; i < Bottom.num; i++)
                 {
-                    for (int l = 0; l < Bottom.width; l++)
+                    for (int k = 0; k < Bottom.height; k++)
                     {
-                        double dfSum = 0;
-
-                        for (int j = 0; j < Top.channels; j++)
+                        for (int l = 0; l < Bottom.width; l++)
                         {
-                            dfSum += convert(Top.data_at(i, j, k, l));
-                        }
+                            double dfSum = 0;
 
-                        m_log.CHECK_GE(dfSum, 0.999, "The sum should be greater than equal to 0.999");
-                        m_log.CHECK_LE(dfSum, 1.001, "The sum should be less than or equal to 1.001");
+                            for (int j = 0; j < Top.channels; j++)
+                            {
+                                dfSum += convert(Top.data_at(i, j, k, l));
+                            }
 
-                        // Test exact values
-                        double dfScale = 0;
+                            m_log.CHECK_GE(dfSum, 0.999, "The sum should be greater than equal to 0.999");
+                            m_log.CHECK_LE(dfSum, 1.001, "The sum should be less than or equal to 1.001");
 
-                        for (int j = 0; j < Bottom.channels; j++)
-                        {
-                            dfScale += Math.Exp(convert(Bottom.data_at(i, j, k, l)));
-                        }
+                            // Test exact values
+                            double dfScale = 0;
 
-                        for (int j = 0; j < Bottom.channels; j++)
-                        {
-                            double dfTop = convert(Top.data_at(i, j, k, l));
-                            double dfBottom = convert(Bottom.data_at(i, j, k, l));
+                            for (int j = 0; j < Bottom.channels; j++)
+                            {
+                                dfScale += Math.Exp(convert(Bottom.data_at(i, j, k, l)));
+                            }
 
-                            m_log.CHECK_GE(dfTop + 1e-4, Math.Exp(dfBottom) / dfScale, "The value is out of range at " + i.ToString() + ", " + j.ToString());
-                            m_log.CHECK_LE(dfTop - 1e-4, Math.Exp(dfBottom) / dfScale, "The value is out of range at " + i.ToString() + ", " + j.ToString());
+                            for (int j = 0; j < Bottom.channels; j++)
+                            {
+                                double dfTop = convert(Top.data_at(i, j, k, l));
+                                double dfBottom = convert(Bottom.data_at(i, j, k, l));
+
+                                m_log.CHECK_GE(dfTop + 1e-4, Math.Exp(dfBottom) / dfScale, "The value is out of range at " + i.ToString() + ", " + j.ToString());
+                                m_log.CHECK_LE(dfTop - 1e-4, Math.Exp(dfBottom) / dfScale, "The value is out of range at " + i.ToString() + ", " + j.ToString());
+                            }
                         }
                     }
                 }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -178,8 +185,15 @@ namespace MyCaffe.test
             p.softmax_param.engine = m_engine;
             SoftmaxLayer<T> layer = new SoftmaxLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

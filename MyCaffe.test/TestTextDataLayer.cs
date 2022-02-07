@@ -204,31 +204,39 @@ namespace MyCaffe.test
             p.text_data_param.sample_size = 1000;
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-            m_log.CHECK_EQ((int)layer.type, (int)LayerParameter.LayerType.TEXT_DATA, "The layer type should be TEXT_DATA!");
 
-            TopVec.Clear();
-            TopVec.Add(m_blobDecInput);
-            TopVec.Add(m_blobDecClip);
-            TopVec.Add(m_blobEncInput1);
-            TopVec.Add(m_blobEncInput2);
-            TopVec.Add(m_blobEncClip);
-            TopVec.Add(m_blobVocabCount);
-            TopVec.Add(m_blobDecTarget);
+            try
+            {
+                m_log.CHECK_EQ((int)layer.type, (int)LayerParameter.LayerType.TEXT_DATA, "The layer type should be TEXT_DATA!");
 
-            BottomVec.Clear();
+                TopVec.Clear();
+                TopVec.Add(m_blobDecInput);
+                TopVec.Add(m_blobDecClip);
+                TopVec.Add(m_blobEncInput1);
+                TopVec.Add(m_blobEncInput2);
+                TopVec.Add(m_blobEncClip);
+                TopVec.Add(m_blobVocabCount);
+                TopVec.Add(m_blobDecTarget);
 
-            layer.Setup(BottomVec, TopVec);
+                BottomVec.Clear();
 
-            int nT = (int)p.text_data_param.time_steps;
-            int nN = (int)p.text_data_param.batch_size;
+                layer.Setup(BottomVec, TopVec);
 
-            verify_shape(TopVec[0], new List<int>() { 1, nN, 1 });   // dec input
-            verify_shape(TopVec[1], new List<int>() { 1, nN });         // dec clip
-            verify_shape(TopVec[2], new List<int>() { nT, nN, 1 });  // enc input1
-            verify_shape(TopVec[3], new List<int>() { nT, nN, 1 });  // enc input2
-            verify_shape(TopVec[4], new List<int>() { nT, nN });        // enc clip
-            verify_shape(TopVec[5], new List<int>() { 1 });    // vocab count
-            verify_shape(TopVec[6], new List<int>() { 1, nN, 1 });   // dec target
+                int nT = (int)p.text_data_param.time_steps;
+                int nN = (int)p.text_data_param.batch_size;
+
+                verify_shape(TopVec[0], new List<int>() { 1, nN, 1 });   // dec input
+                verify_shape(TopVec[1], new List<int>() { 1, nN });         // dec clip
+                verify_shape(TopVec[2], new List<int>() { nT, nN, 1 });  // enc input1
+                verify_shape(TopVec[3], new List<int>() { nT, nN, 1 });  // enc input2
+                verify_shape(TopVec[4], new List<int>() { nT, nN });        // enc clip
+                verify_shape(TopVec[5], new List<int>() { 1 });    // vocab count
+                verify_shape(TopVec[6], new List<int>() { 1, nN, 1 });   // dec target
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         private List<string> preprocess(string str, int nMaxLen = 0)
@@ -305,51 +313,59 @@ namespace MyCaffe.test
             int nN = (int)p.text_data_param.batch_size;
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-            m_log.CHECK_EQ((int)layer.type, (int)LayerParameter.LayerType.TEXT_DATA, "The layer type should be TEXT_DATA!");
 
-            TopVec.Clear();
-            TopVec.Add(m_blobDecInput);
-            TopVec.Add(m_blobDecClip);
-            TopVec.Add(m_blobEncInput1);
-            TopVec.Add(m_blobEncInput2);
-            TopVec.Add(m_blobEncClip);
-            TopVec.Add(m_blobVocabCount);
-            TopVec.Add(m_blobDecTarget);
-
-            BottomVec.Clear();
-
-            layer.Setup(BottomVec, TopVec);
-
-            List<int> rgEncInput = getInput(0, ((TextDataLayer<T>)layer).Vocabulary, strEncSrc);
-            List<int> rgEncInputR = new List<int>(rgEncInput);
-            rgEncInputR.Reverse();
-            List<int> rgDecInput = getInput(0, ((TextDataLayer<T>)layer).Vocabulary, strDecSrc);
-
-            int nVocabCount = ((TextDataLayer<T>)layer).Vocabulary.VocabularCount;
-            int nVocabCount1 = (int)convert(m_blobVocabCount.GetData(0));
-            m_log.CHECK_EQ(nVocabCount + 2, nVocabCount1, "The vocab count is not as expected!");
-
-            int nSeqIdx = 1;
-
-            for (int i = 0; i < 10; i++)
+            try
             {
-                layer.Forward(BottomVec, TopVec);
+                m_log.CHECK_EQ((int)layer.type, (int)LayerParameter.LayerType.TEXT_DATA, "The layer type should be TEXT_DATA!");
 
-                int nDataIdx = 0;
-                bool bRes = verify_top_data(TopVec, nN, nT, nDataIdx, rgEncInput, rgEncInputR, rgDecInput, nVocabCount + 2);
+                TopVec.Clear();
+                TopVec.Add(m_blobDecInput);
+                TopVec.Add(m_blobDecClip);
+                TopVec.Add(m_blobEncInput1);
+                TopVec.Add(m_blobEncInput2);
+                TopVec.Add(m_blobEncClip);
+                TopVec.Add(m_blobVocabCount);
+                TopVec.Add(m_blobDecTarget);
 
-                while (bRes)
+                BottomVec.Clear();
+
+                layer.Setup(BottomVec, TopVec);
+
+                List<int> rgEncInput = getInput(0, ((TextDataLayer<T>)layer).Vocabulary, strEncSrc);
+                List<int> rgEncInputR = new List<int>(rgEncInput);
+                rgEncInputR.Reverse();
+                List<int> rgDecInput = getInput(0, ((TextDataLayer<T>)layer).Vocabulary, strDecSrc);
+
+                int nVocabCount = ((TextDataLayer<T>)layer).Vocabulary.VocabularCount;
+                int nVocabCount1 = (int)convert(m_blobVocabCount.GetData(0));
+                m_log.CHECK_EQ(nVocabCount + 2, nVocabCount1, "The vocab count is not as expected!");
+
+                int nSeqIdx = 1;
+
+                for (int i = 0; i < 10; i++)
                 {
                     layer.Forward(BottomVec, TopVec);
-                    nDataIdx++;
-                    bRes = verify_top_data(TopVec, nN, nT, nDataIdx, rgEncInput, rgEncInputR, rgDecInput, nVocabCount + 2);
-                }
 
-                rgEncInput = getInput(nSeqIdx, ((TextDataLayer<T>)layer).Vocabulary, strEncSrc);
-                rgEncInputR = new List<int>(rgEncInput);
-                rgEncInputR.Reverse();
-                rgDecInput = getInput(nSeqIdx, ((TextDataLayer<T>)layer).Vocabulary, strDecSrc);
-                nSeqIdx++;
+                    int nDataIdx = 0;
+                    bool bRes = verify_top_data(TopVec, nN, nT, nDataIdx, rgEncInput, rgEncInputR, rgDecInput, nVocabCount + 2);
+
+                    while (bRes)
+                    {
+                        layer.Forward(BottomVec, TopVec);
+                        nDataIdx++;
+                        bRes = verify_top_data(TopVec, nN, nT, nDataIdx, rgEncInput, rgEncInputR, rgDecInput, nVocabCount + 2);
+                    }
+
+                    rgEncInput = getInput(nSeqIdx, ((TextDataLayer<T>)layer).Vocabulary, strEncSrc);
+                    rgEncInputR = new List<int>(rgEncInput);
+                    rgEncInputR.Reverse();
+                    rgDecInput = getInput(nSeqIdx, ((TextDataLayer<T>)layer).Vocabulary, strDecSrc);
+                    nSeqIdx++;
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -375,56 +391,64 @@ namespace MyCaffe.test
             int nN = (int)p.text_data_param.batch_size;
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-            m_log.CHECK_EQ((int)layer.type, (int)LayerParameter.LayerType.TEXT_DATA, "The layer type should be TEXT_DATA!");
 
-            TopVec.Clear();
-            TopVec.Add(m_blobDecInput);
-            TopVec.Add(m_blobDecClip);
-            TopVec.Add(m_blobEncInput1);
-            TopVec.Add(m_blobEncInput2);
-            TopVec.Add(m_blobEncClip);
-            TopVec.Add(m_blobVocabCount);
-            TopVec.Add(m_blobDecTarget); // place holder.
-
-            BottomVec.Clear();
-            BottomVec.Add(m_blobBtmDecInput);
-            BottomVec.Add(m_blobBtmEncInput1);
-            BottomVec.Add(m_blobBtmEncInput2);
-            BottomVec.Add(m_blobBtmEncClip);
-
-            layer.Setup(BottomVec, TopVec);
-
-
-            // Verify the bottom data.
-            List<int> rgBtmEncInput = getInput(((TextDataLayer<T>)layer).Vocabulary, "what is your name");
-            List<int> rgBtmEncInputR = getInput(((TextDataLayer<T>)layer).Vocabulary, "what is your name", true);
-            List<int> rgDecInput = new List<int>() { 1 };
-
-            int nVocabCount = ((TextDataLayer<T>)layer).Vocabulary.VocabularCount;
-
-            int? nDecInput = null;
-            for (int i = 0; i < 10; i++)
+            try
             {
-                ((TextDataLayer<T>)layer).PreProcessInput("what is your name", nDecInput, BottomVec);
-                verify_btm_data(BottomVec, nN, nT, rgBtmEncInput, rgBtmEncInputR, nDecInput.GetValueOrDefault(1));
+                m_log.CHECK_EQ((int)layer.type, (int)LayerParameter.LayerType.TEXT_DATA, "The layer type should be TEXT_DATA!");
 
-                layer.Forward(BottomVec, TopVec);
+                TopVec.Clear();
+                TopVec.Add(m_blobDecInput);
+                TopVec.Add(m_blobDecClip);
+                TopVec.Add(m_blobEncInput1);
+                TopVec.Add(m_blobEncInput2);
+                TopVec.Add(m_blobEncClip);
+                TopVec.Add(m_blobVocabCount);
+                TopVec.Add(m_blobDecTarget); // place holder.
 
-                int nDataIdx = 0;
-                bool bRes = verify_top_data(TopVec, nN, nT, nDataIdx, rgBtmEncInput, rgBtmEncInputR, rgDecInput, nVocabCount + 2, true);
+                BottomVec.Clear();
+                BottomVec.Add(m_blobBtmDecInput);
+                BottomVec.Add(m_blobBtmEncInput1);
+                BottomVec.Add(m_blobBtmEncInput2);
+                BottomVec.Add(m_blobBtmEncClip);
 
-                while (bRes)
+                layer.Setup(BottomVec, TopVec);
+
+
+                // Verify the bottom data.
+                List<int> rgBtmEncInput = getInput(((TextDataLayer<T>)layer).Vocabulary, "what is your name");
+                List<int> rgBtmEncInputR = getInput(((TextDataLayer<T>)layer).Vocabulary, "what is your name", true);
+                List<int> rgDecInput = new List<int>() { 1 };
+
+                int nVocabCount = ((TextDataLayer<T>)layer).Vocabulary.VocabularCount;
+
+                int? nDecInput = null;
+                for (int i = 0; i < 10; i++)
                 {
-                    nDecInput = nDecInput.GetValueOrDefault(1) + 1;
-
                     ((TextDataLayer<T>)layer).PreProcessInput("what is your name", nDecInput, BottomVec);
-                    verify_btm_data(BottomVec, nN, nT, rgBtmEncInput, rgBtmEncInputR, nDecInput);
+                    verify_btm_data(BottomVec, nN, nT, rgBtmEncInput, rgBtmEncInputR, nDecInput.GetValueOrDefault(1));
 
                     layer.Forward(BottomVec, TopVec);
 
-                    rgDecInput[0] = nDecInput.Value;
-                    bRes = verify_top_data(TopVec, nN, nT, nDataIdx, rgBtmEncInput, rgBtmEncInputR, rgDecInput, nVocabCount + 2, true);
+                    int nDataIdx = 0;
+                    bool bRes = verify_top_data(TopVec, nN, nT, nDataIdx, rgBtmEncInput, rgBtmEncInputR, rgDecInput, nVocabCount + 2, true);
+
+                    while (bRes)
+                    {
+                        nDecInput = nDecInput.GetValueOrDefault(1) + 1;
+
+                        ((TextDataLayer<T>)layer).PreProcessInput("what is your name", nDecInput, BottomVec);
+                        verify_btm_data(BottomVec, nN, nT, rgBtmEncInput, rgBtmEncInputR, nDecInput);
+
+                        layer.Forward(BottomVec, TopVec);
+
+                        rgDecInput[0] = nDecInput.Value;
+                        bRes = verify_top_data(TopVec, nN, nT, nDataIdx, rgBtmEncInput, rgBtmEncInputR, rgDecInput, nVocabCount + 2, true);
+                    }
                 }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 

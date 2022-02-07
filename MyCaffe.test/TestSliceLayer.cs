@@ -271,14 +271,21 @@ namespace MyCaffe.test
             p.slice_param.axis = 0;
             SliceLayer<T> layer = new SliceLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec1);
+            try
+            {
+                layer.Setup(BottomVec, TopVec1);
 
-            m_log.CHECK_EQ(3 * Top.num, Bottom.num, "The bottom num should equal 3 * the top num.");
-            m_log.CHECK_EQ(Top.num, Top1.num, "The top0 and top1 should have the same num.");
-            m_log.CHECK_EQ(Top.num, Top2.num, "The top0 and top2 should have the same num.");
-            m_log.CHECK_EQ(Top.channels, Bottom.channels, "The top and bottom should have the same number of channels.");
-            m_log.CHECK_EQ(Top.height, Bottom.height, "The top and bottom should have the same height.");
-            m_log.CHECK_EQ(Top.width, Bottom.width, "The top and bottom should have the same width.");
+                m_log.CHECK_EQ(3 * Top.num, Bottom.num, "The bottom num should equal 3 * the top num.");
+                m_log.CHECK_EQ(Top.num, Top1.num, "The top0 and top1 should have the same num.");
+                m_log.CHECK_EQ(Top.num, Top2.num, "The top0 and top2 should have the same num.");
+                m_log.CHECK_EQ(Top.channels, Bottom.channels, "The top and bottom should have the same number of channels.");
+                m_log.CHECK_EQ(Top.height, Bottom.height, "The top and bottom should have the same height.");
+                m_log.CHECK_EQ(Top.width, Bottom.width, "The top and bottom should have the same width.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestSetupChannels()
@@ -287,14 +294,21 @@ namespace MyCaffe.test
             p.slice_param.slice_point.Add(3);
             SliceLayer<T> layer = new SliceLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(Top.num, Bottom.num, "The bottom num should equal the top num.");
-            m_log.CHECK_EQ(3, Top.channels, "The top0 should have 3 channels.");
-            m_log.CHECK_EQ(9, Top1.channels, "The top0 should have 9 channels.");
-            m_log.CHECK_EQ(Bottom.channels, Top.channels + Top1.channels, "The bottom channels should equal the top0 + top1 channels.");
-            m_log.CHECK_EQ(Top.height, Bottom.height, "The top and bottom should have the same height.");
-            m_log.CHECK_EQ(Top.width, Bottom.width, "The top and bottom should have the same width.");
+                m_log.CHECK_EQ(Top.num, Bottom.num, "The bottom num should equal the top num.");
+                m_log.CHECK_EQ(3, Top.channels, "The top0 should have 3 channels.");
+                m_log.CHECK_EQ(9, Top1.channels, "The top0 should have 9 channels.");
+                m_log.CHECK_EQ(Bottom.channels, Top.channels + Top1.channels, "The bottom channels should equal the top0 + top1 channels.");
+                m_log.CHECK_EQ(Top.height, Bottom.height, "The top and bottom should have the same height.");
+                m_log.CHECK_EQ(Top.width, Bottom.width, "The top and bottom should have the same width.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         /// <summary>
@@ -306,21 +320,28 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.SLICE);
             SliceLayer<T> layer = new SliceLayer<T>(m_cuda, m_log, p);
 
-            TopVec.RemoveAt(1);
-
-            layer.Setup(BottomVec, TopVec);
-
-            m_log.CHECK(Utility.Compare<int>(Bottom.shape(), Top.shape()), "The top and bottom should hav the same shape.");
-
-            double[] rgBottom = convert(Bottom.update_cpu_data());
-            double[] rgTop = convert(Top.update_cpu_data());
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                double dfBottom = rgBottom[i];
-                double dfTop = rgTop[i];
+                TopVec.RemoveAt(1);
 
-                m_log.CHECK_EQ(dfBottom, dfTop, "The top and bottom values at " + i.ToString() + " should be the same.");
+                layer.Setup(BottomVec, TopVec);
+
+                m_log.CHECK(Utility.Compare<int>(Bottom.shape(), Top.shape()), "The top and bottom should hav the same shape.");
+
+                double[] rgBottom = convert(Bottom.update_cpu_data());
+                double[] rgTop = convert(Top.update_cpu_data());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfBottom = rgBottom[i];
+                    double dfTop = rgTop[i];
+
+                    m_log.CHECK_EQ(dfBottom, dfTop, "The top and bottom values at " + i.ToString() + " should be the same.");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -330,44 +351,51 @@ namespace MyCaffe.test
             p.slice_param.axis = 0;
             SliceLayer<T> layer = new SliceLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-
-            int nTopNum = Bottom.num / 2;
-
-            m_log.CHECK_EQ(nTopNum, Top.num, "The top nums should match.");
-            m_log.CHECK_EQ(nTopNum, Top1.num, "The top nums should match.");
-
-            layer.Forward(BottomVec, TopVec);
-
-            for (int n = 0; n < nTopNum; n++)
+            try
             {
-                for (int c = 0; c < Top.channels; c++)
-                {
-                    for (int h = 0; h < Bottom.height; h++)
-                    {
-                        for (int w = 0; w < Bottom.width; w++)
-                        {
-                            double dfBottom = convert(Bottom.data_at(n, c, h, w));
-                            double dfTop = convert(Top.data_at(n, c, h, w));
+                layer.Setup(BottomVec, TopVec);
 
-                            m_log.CHECK_EQ(dfBottom, dfTop, "The top and bottom values should be equal.");
+                int nTopNum = Bottom.num / 2;
+
+                m_log.CHECK_EQ(nTopNum, Top.num, "The top nums should match.");
+                m_log.CHECK_EQ(nTopNum, Top1.num, "The top nums should match.");
+
+                layer.Forward(BottomVec, TopVec);
+
+                for (int n = 0; n < nTopNum; n++)
+                {
+                    for (int c = 0; c < Top.channels; c++)
+                    {
+                        for (int h = 0; h < Bottom.height; h++)
+                        {
+                            for (int w = 0; w < Bottom.width; w++)
+                            {
+                                double dfBottom = convert(Bottom.data_at(n, c, h, w));
+                                double dfTop = convert(Top.data_at(n, c, h, w));
+
+                                m_log.CHECK_EQ(dfBottom, dfTop, "The top and bottom values should be equal.");
+                            }
+                        }
+                    }
+
+                    for (int c = 0; c < Top1.channels; c++)
+                    {
+                        for (int h = 0; h < Bottom.height; h++)
+                        {
+                            for (int w = 0; w < Bottom.width; w++)
+                            {
+                                double dfBottom = convert(Bottom.data_at(n + 3, c, h, w));
+                                double dfTop = convert(Top1.data_at(n, c, h, w));
+
+                                m_log.CHECK_EQ(dfBottom, dfTop, "The top and bottom values should be equal.");
+                            }
                         }
                     }
                 }
-
-                for (int c = 0; c < Top1.channels; c++)
-                {
-                    for (int h = 0; h < Bottom.height; h++)
-                    {
-                        for (int w = 0; w < Bottom.width; w++)
-                        {
-                            double dfBottom = convert(Bottom.data_at(n + 3, c, h, w));
-                            double dfTop = convert(Top1.data_at(n, c, h, w));
-
-                            m_log.CHECK_EQ(dfBottom, dfTop, "The top and bottom values should be equal.");
-                        }
-                    }
-                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -380,57 +408,64 @@ namespace MyCaffe.test
             p.slice_param.slice_point.Add((uint)nSlicePoint1);
             SliceLayer<T> layer = new SliceLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec1);
-
-            m_log.CHECK_EQ(nSlicePoint0, Top.channels, "The top should have 2 channels.");
-            m_log.CHECK_EQ(nSlicePoint1 - nSlicePoint0, Top1.channels, "The top1 should have 6 channels.");
-            m_log.CHECK_EQ(Bottom.channels - nSlicePoint1, Top2.channels, "The bottom channels - 8 should equal the top2 channels.");
-
-            layer.Forward(BottomVec, TopVec1);
-
-            for (int n = 0; n < Bottom.num; n++)
+            try
             {
-                for (int c = 0; c < Top.channels; c++)
-                {
-                    for (int h = 0; h < Bottom.height; h++)
-                    {
-                        for (int w = 0; w < Bottom.width; w++)
-                        {
-                            double dfBottom = convert(Bottom.data_at(n, c, h, w));
-                            double dfTop = convert(Top.data_at(n, c, h, w));
+                layer.Setup(BottomVec, TopVec1);
 
-                            m_log.CHECK_EQ(dfBottom, dfTop, "The top and bottom values should be equal.");
+                m_log.CHECK_EQ(nSlicePoint0, Top.channels, "The top should have 2 channels.");
+                m_log.CHECK_EQ(nSlicePoint1 - nSlicePoint0, Top1.channels, "The top1 should have 6 channels.");
+                m_log.CHECK_EQ(Bottom.channels - nSlicePoint1, Top2.channels, "The bottom channels - 8 should equal the top2 channels.");
+
+                layer.Forward(BottomVec, TopVec1);
+
+                for (int n = 0; n < Bottom.num; n++)
+                {
+                    for (int c = 0; c < Top.channels; c++)
+                    {
+                        for (int h = 0; h < Bottom.height; h++)
+                        {
+                            for (int w = 0; w < Bottom.width; w++)
+                            {
+                                double dfBottom = convert(Bottom.data_at(n, c, h, w));
+                                double dfTop = convert(Top.data_at(n, c, h, w));
+
+                                m_log.CHECK_EQ(dfBottom, dfTop, "The top and bottom values should be equal.");
+                            }
+                        }
+                    }
+
+                    for (int c = 0; c < Top1.channels; c++)
+                    {
+                        for (int h = 0; h < Bottom.height; h++)
+                        {
+                            for (int w = 0; w < Bottom.width; w++)
+                            {
+                                double dfBottom = convert(Bottom.data_at(n, c + nSlicePoint0, h, w));
+                                double dfTop = convert(Top1.data_at(n, c, h, w));
+
+                                m_log.CHECK_EQ(dfBottom, dfTop, "The top and bottom values should be equal.");
+                            }
+                        }
+                    }
+
+                    for (int c = 0; c < Top2.channels; c++)
+                    {
+                        for (int h = 0; h < Bottom.height; h++)
+                        {
+                            for (int w = 0; w < Bottom.width; w++)
+                            {
+                                double dfBottom = convert(Bottom.data_at(n, c + nSlicePoint1, h, w));
+                                double dfTop = convert(Top2.data_at(n, c, h, w));
+
+                                m_log.CHECK_EQ(dfBottom, dfTop, "The top and bottom values should be equal.");
+                            }
                         }
                     }
                 }
-
-                for (int c = 0; c < Top1.channels; c++)
-                {
-                    for (int h = 0; h < Bottom.height; h++)
-                    {
-                        for (int w = 0; w < Bottom.width; w++)
-                        {
-                            double dfBottom = convert(Bottom.data_at(n, c + nSlicePoint0, h, w));
-                            double dfTop = convert(Top1.data_at(n, c, h, w));
-
-                            m_log.CHECK_EQ(dfBottom, dfTop, "The top and bottom values should be equal.");
-                        }
-                    }
-                }
-
-                for (int c = 0; c < Top2.channels; c++)
-                {
-                    for (int h = 0; h < Bottom.height; h++)
-                    {
-                        for (int w = 0; w < Bottom.width; w++)
-                        {
-                            double dfBottom = convert(Bottom.data_at(n, c + nSlicePoint1, h, w));
-                            double dfTop = convert(Top2.data_at(n, c, h, w));
-
-                            m_log.CHECK_EQ(dfBottom, dfTop, "The top and bottom values should be equal.");
-                        }
-                    }
-                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -440,52 +475,59 @@ namespace MyCaffe.test
             p.slice_param.axis = 0;
             SliceLayer<T> layer = new SliceLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec1);
-            layer.Forward(BottomVec, TopVec1);
-
-            for (int n = 0; n < Top.num; n++)
+            try
             {
-                for (int c = 0; c < Top.channels; c++)
-                {
-                    for (int h = 0; h < Bottom.height; h++)
-                    {
-                        for (int w = 0; w < Bottom.width; w++)
-                        {
-                            double dfBottom = convert(Bottom.data_at(n + 0, c, h, w));
-                            double dfTop = convert(Top.data_at(n, c, h, w));
+                layer.Setup(BottomVec, TopVec1);
+                layer.Forward(BottomVec, TopVec1);
 
-                            m_log.CHECK_EQ(dfBottom, dfTop, "The top and bottom values should be equal.");
+                for (int n = 0; n < Top.num; n++)
+                {
+                    for (int c = 0; c < Top.channels; c++)
+                    {
+                        for (int h = 0; h < Bottom.height; h++)
+                        {
+                            for (int w = 0; w < Bottom.width; w++)
+                            {
+                                double dfBottom = convert(Bottom.data_at(n + 0, c, h, w));
+                                double dfTop = convert(Top.data_at(n, c, h, w));
+
+                                m_log.CHECK_EQ(dfBottom, dfTop, "The top and bottom values should be equal.");
+                            }
+                        }
+                    }
+
+                    for (int c = 0; c < Top1.channels; c++)
+                    {
+                        for (int h = 0; h < Bottom.height; h++)
+                        {
+                            for (int w = 0; w < Bottom.width; w++)
+                            {
+                                double dfBottom = convert(Bottom.data_at(n + 2, c, h, w));
+                                double dfTop = convert(Top1.data_at(n, c, h, w));
+
+                                m_log.CHECK_EQ(dfBottom, dfTop, "The top and bottom values should be equal.");
+                            }
+                        }
+                    }
+
+                    for (int c = 0; c < Top2.channels; c++)
+                    {
+                        for (int h = 0; h < Bottom.height; h++)
+                        {
+                            for (int w = 0; w < Bottom.width; w++)
+                            {
+                                double dfBottom = convert(Bottom.data_at(n + 4, c, h, w));
+                                double dfTop = convert(Top2.data_at(n, c, h, w));
+
+                                m_log.CHECK_EQ(dfBottom, dfTop, "The top and bottom values should be equal.");
+                            }
                         }
                     }
                 }
-
-                for (int c = 0; c < Top1.channels; c++)
-                {
-                    for (int h = 0; h < Bottom.height; h++)
-                    {
-                        for (int w = 0; w < Bottom.width; w++)
-                        {
-                            double dfBottom = convert(Bottom.data_at(n + 2, c, h, w));
-                            double dfTop = convert(Top1.data_at(n, c, h, w));
-
-                            m_log.CHECK_EQ(dfBottom, dfTop, "The top and bottom values should be equal.");
-                        }
-                    }
-                }
-
-                for (int c = 0; c < Top2.channels; c++)
-                {
-                    for (int h = 0; h < Bottom.height; h++)
-                    {
-                        for (int w = 0; w < Bottom.width; w++)
-                        {
-                            double dfBottom = convert(Bottom.data_at(n + 4, c, h, w));
-                            double dfTop = convert(Top2.data_at(n, c, h, w));
-
-                            m_log.CHECK_EQ(dfBottom, dfTop, "The top and bottom values should be equal.");
-                        }
-                    }
-                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -498,10 +540,17 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.SLICE);
             SliceLayer<T> layer = new SliceLayer<T>(m_cuda, m_log, p);
 
-            TopVec.RemoveAt(1);
+            try
+            {
+                TopVec.RemoveAt(1);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientAcrossNum()
@@ -512,8 +561,15 @@ namespace MyCaffe.test
             p.slice_param.axis = 0;
             SliceLayer<T> layer = new SliceLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientAcrossChannels()
@@ -525,8 +581,15 @@ namespace MyCaffe.test
             p.slice_param.slice_point.Add((uint)nSlicePoint);
             SliceLayer<T> layer = new SliceLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

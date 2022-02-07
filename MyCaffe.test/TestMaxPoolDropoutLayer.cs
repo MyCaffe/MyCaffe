@@ -114,20 +114,32 @@ namespace MyCaffe.test
             p.pooling_param.kernel_size.Add(3);
             p.pooling_param.stride.Add(2);
             PoolingLayer<T> max_layer = new PoolingLayer<T>(m_cuda, m_log, p);
-            max_layer.Setup(BottomVec, TopVec);
-            LayerParameter pd = new LayerParameter(LayerParameter.LayerType.DROPOUT);
-            DropoutLayer<T> dropout_layer = new DropoutLayer<T>(m_cuda, m_log, pd);
-            dropout_layer.Setup(TopVec, TopVec);
+            DropoutLayer<T> dropout_layer = null;
 
-            m_log.CHECK_EQ(Top.num, Bottom.num, "The top and bottom should have the same num.");
-            m_log.CHECK_EQ(Top.channels, Bottom.channels, "The top and bottom should have the same channels.");
+            try
+            {
+                max_layer.Setup(BottomVec, TopVec);
+                LayerParameter pd = new LayerParameter(LayerParameter.LayerType.DROPOUT);
+                dropout_layer = new DropoutLayer<T>(m_cuda, m_log, pd);
+                dropout_layer.Setup(TopVec, TopVec);
 
-            if (p.pooling_param.reshape_algorithm == PoolingParameter.PoolingReshapeAlgorithm.ONNX)
-                m_log.CHECK_EQ(Top.height, 2, "The top should have height = 2.");
-            else
-                m_log.CHECK_EQ(Top.height, 3, "The top should have height = 3.");
+                m_log.CHECK_EQ(Top.num, Bottom.num, "The top and bottom should have the same num.");
+                m_log.CHECK_EQ(Top.channels, Bottom.channels, "The top and bottom should have the same channels.");
 
-            m_log.CHECK_EQ(Top.width, 2, "The top should have width = 2.");
+                if (p.pooling_param.reshape_algorithm == PoolingParameter.PoolingReshapeAlgorithm.ONNX)
+                    m_log.CHECK_EQ(Top.height, 2, "The top should have height = 2.");
+                else
+                    m_log.CHECK_EQ(Top.height, 3, "The top should have height = 3.");
+
+                m_log.CHECK_EQ(Top.width, 2, "The top should have width = 2.");
+            }
+            finally
+            {
+                max_layer.Dispose();
+
+                if (dropout_layer != null)
+                    dropout_layer.Dispose();
+            }
         }
 
 
@@ -137,24 +149,36 @@ namespace MyCaffe.test
             p.pooling_param.kernel_size.Add(3);
             p.pooling_param.stride.Add(2);
             PoolingLayer<T> layer = new PoolingLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
+            DropoutLayer<T> dropout_layer = null;
 
-            double dfSum = convert(Top.asum_data());
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(dfSum, Top.count(), "The sum of values should equal the count.");
+                double dfSum = convert(Top.asum_data());
 
-            // Dropout in-place.
-            LayerParameter pd = new LayerParameter(LayerParameter.LayerType.DROPOUT);
-            DropoutLayer<T> dropout_layer = new DropoutLayer<T>(m_cuda, m_log, pd);
-            dropout_layer.Setup(TopVec, TopVec);
-            dropout_layer.Forward(TopVec, TopVec);
+                m_log.CHECK_EQ(dfSum, Top.count(), "The sum of values should equal the count.");
 
-            dfSum = convert(Top.asum_data());
-            double dfScale = 1.0 / (1.0 - pd.dropout_param.dropout_ratio);
+                // Dropout in-place.
+                LayerParameter pd = new LayerParameter(LayerParameter.LayerType.DROPOUT);
+                dropout_layer = new DropoutLayer<T>(m_cuda, m_log, pd);
+                dropout_layer.Setup(TopVec, TopVec);
+                dropout_layer.Forward(TopVec, TopVec);
 
-            m_log.CHECK_GE(dfSum, 0, "The asum should be positive.");
-            m_log.CHECK_LE(dfSum, Top.count() * dfScale, "The asum should be less than or equal to the top count * " + dfScale.ToString());
+                dfSum = convert(Top.asum_data());
+                double dfScale = 1.0 / (1.0 - pd.dropout_param.dropout_ratio);
+
+                m_log.CHECK_GE(dfSum, 0, "The asum should be positive.");
+                m_log.CHECK_LE(dfSum, Top.count() * dfScale, "The asum should be less than or equal to the top count * " + dfScale.ToString());
+            }
+            finally
+            {
+                layer.Dispose();
+
+                if (dropout_layer != null)
+                    dropout_layer.Dispose();
+            }
         }
 
         public void TestBackward()
@@ -164,28 +188,40 @@ namespace MyCaffe.test
             p.pooling_param.kernel_size.Add(3);
             p.pooling_param.stride.Add(2);
             PoolingLayer<T> layer = new PoolingLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
+            DropoutLayer<T> dropout_layer = null;
 
-            Top.SetDiff(1.0);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            List<bool> rgbPropagateDown = Utility.Create<bool>(BottomVec.Count, true);
-            layer.Backward(TopVec, rgbPropagateDown, BottomVec);
+                Top.SetDiff(1.0);
 
-            double dfSum = convert(Bottom.asum_diff());
- 
-            m_log.CHECK_EQ(dfSum, Top.count(), "The sum of values should equal the count.");
+                List<bool> rgbPropagateDown = Utility.Create<bool>(BottomVec.Count, true);
+                layer.Backward(TopVec, rgbPropagateDown, BottomVec);
 
-            // Dropout in-place.
-            LayerParameter pd = new LayerParameter(LayerParameter.LayerType.DROPOUT);
-            DropoutLayer<T> dropout_layer = new DropoutLayer<T>(m_cuda, m_log, pd);
-            dropout_layer.Setup(TopVec, TopVec);
-            dropout_layer.Forward(TopVec, TopVec);
-            layer.Backward(TopVec, rgbPropagateDown, BottomVec);
+                double dfSum = convert(Bottom.asum_diff());
 
-            double dfSumWithDropout = convert(Bottom.asum_diff());
+                m_log.CHECK_EQ(dfSum, Top.count(), "The sum of values should equal the count.");
 
-            m_log.CHECK_GE(dfSumWithDropout, dfSum, "The sum with dropout should be >= the sum without.");
+                // Dropout in-place.
+                LayerParameter pd = new LayerParameter(LayerParameter.LayerType.DROPOUT);
+                dropout_layer = new DropoutLayer<T>(m_cuda, m_log, pd);
+                dropout_layer.Setup(TopVec, TopVec);
+                dropout_layer.Forward(TopVec, TopVec);
+                layer.Backward(TopVec, rgbPropagateDown, BottomVec);
+
+                double dfSumWithDropout = convert(Bottom.asum_diff());
+
+                m_log.CHECK_GE(dfSumWithDropout, dfSum, "The sum with dropout should be >= the sum without.");
+            }
+            finally
+            {
+                layer.Dispose();
+
+                if (dropout_layer != null)
+                    dropout_layer.Dispose();
+            }
         }
     }
 }

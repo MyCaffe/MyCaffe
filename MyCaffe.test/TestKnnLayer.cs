@@ -197,11 +197,17 @@ namespace MyCaffe.test
             p.knn_param.num_output = m_nNumOutput;
             KnnLayer<T> layer = new KnnLayer<T>(m_cuda, m_log, p);
 
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
 
-            layer.Setup(BottomVec, TopVec);
-
-            TestForwardTrain(layer);
-            TestForwardTest(layer);
+                TestForwardTrain(layer);
+                TestForwardTest(layer);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForwardTrain(KnnLayer<T> layer)

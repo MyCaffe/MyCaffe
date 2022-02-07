@@ -1425,24 +1425,31 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.SIGMOID);
             SigmoidLayer<T> layer = new SigmoidLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Now, check values
-            double[] rgBottom = convert(Bottom.update_cpu_data());
-            double[] rgTop = convert(Top.update_cpu_data());
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                double dfTop = rgTop[i];
-                double dfBottom = rgBottom[i];
-                double dfExpected = 1.0 / (1.0 + Math.Exp(-dfBottom));
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.EXPECT_NEAR(dfTop, dfExpected, (m_dt == common.DataType.DOUBLE) ? 1e-15 : 1e-7);
+                // Now, check values
+                double[] rgBottom = convert(Bottom.update_cpu_data());
+                double[] rgTop = convert(Top.update_cpu_data());
 
-                // check that we squashed the value between 0 and 1.
-                m_log.CHECK(dfTop >= 0.0, "The top value at " + i.ToString() + " should be greater than or equal to 0.");
-                m_log.CHECK(dfTop <= 1.0, "The top value at " + i.ToString() + " should be less than or equal to 1.");
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfTop = rgTop[i];
+                    double dfBottom = rgBottom[i];
+                    double dfExpected = 1.0 / (1.0 + Math.Exp(-dfBottom));
+
+                    m_log.EXPECT_NEAR(dfTop, dfExpected, (m_dt == common.DataType.DOUBLE) ? 1e-15 : 1e-7);
+
+                    // check that we squashed the value between 0 and 1.
+                    m_log.CHECK(dfTop >= 0.0, "The top value at " + i.ToString() + " should be greater than or equal to 0.");
+                    m_log.CHECK(dfTop <= 1.0, "The top value at " + i.ToString() + " should be less than or equal to 1.");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -1450,8 +1457,16 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.SIGMOID);
             SigmoidLayer<T> layer = new SigmoidLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 
@@ -1495,20 +1510,27 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.SWISH);
             SwishLayer<T> layer = new SwishLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Now, check values
-            double[] rgBottom = convert(Bottom.update_cpu_data());
-            double[] rgTop = convert(Top.update_cpu_data());
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                double dfTop = rgTop[i];
-                double dfBottom = rgBottom[i];
-                double dfExpected = dfBottom / (1.0 + Math.Exp(-dfBottom));
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.EXPECT_EQUAL<float>(dfTop, dfExpected);
+                // Now, check values
+                double[] rgBottom = convert(Bottom.update_cpu_data());
+                double[] rgTop = convert(Top.update_cpu_data());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfTop = rgTop[i];
+                    double dfBottom = rgBottom[i];
+                    double dfExpected = dfBottom / (1.0 + Math.Exp(-dfBottom));
+
+                    m_log.EXPECT_EQUAL<float>(dfTop, dfExpected);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -1516,8 +1538,16 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.SWISH);
             SwishLayer<T> layer = new SwishLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 
@@ -1562,20 +1592,27 @@ namespace MyCaffe.test
             LayerParameter p = LayerParameter.FromProto(rp);
             SwishLayer<T> layer = new SwishLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Now, check values
-            double[] rgBottom = convert(Bottom.update_cpu_data());
-            double[] rgTop = convert(Top.update_cpu_data());
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                double dfTop = rgTop[i];
-                double dfBottom = rgBottom[i];
-                double dfExpected = dfBottom / (1.0 + Math.Exp(-1.5 * dfBottom));
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.EXPECT_EQUAL<float>(dfTop, dfExpected);
+                // Now, check values
+                double[] rgBottom = convert(Bottom.update_cpu_data());
+                double[] rgTop = convert(Top.update_cpu_data());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfTop = rgTop[i];
+                    double dfBottom = rgBottom[i];
+                    double dfExpected = dfBottom / (1.0 + Math.Exp(-1.5 * dfBottom));
+
+                    m_log.EXPECT_EQUAL<float>(dfTop, dfExpected);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -1584,8 +1621,16 @@ namespace MyCaffe.test
             RawProto rp = RawProto.Parse("type: \"Swish\" swish_param { beta: 1.5 }");
             LayerParameter p = LayerParameter.FromProto(rp);
             SwishLayer<T> layer = new SwishLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 
@@ -1630,20 +1675,27 @@ namespace MyCaffe.test
             LayerParameter p = LayerParameter.FromProto(rp);
             SwishLayer<T> layer = new SwishLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Now, check values
-            double[] rgBottom = convert(Bottom.update_cpu_data());
-            double[] rgTop = convert(Top.update_cpu_data());
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                double dfTop = rgTop[i];
-                double dfBottom = rgBottom[i];
-                double dfExpected = dfBottom / 2.0;
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.EXPECT_EQUAL<float>(dfTop, dfExpected);
+                // Now, check values
+                double[] rgBottom = convert(Bottom.update_cpu_data());
+                double[] rgTop = convert(Top.update_cpu_data());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfTop = rgTop[i];
+                    double dfBottom = rgBottom[i];
+                    double dfExpected = dfBottom / 2.0;
+
+                    m_log.EXPECT_EQUAL<float>(dfTop, dfExpected);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -1652,8 +1704,16 @@ namespace MyCaffe.test
             RawProto rp = RawProto.Parse("type: \"Swish\" swish_param { beta: 0.0 }");
             LayerParameter p = LayerParameter.FromProto(rp);
             SwishLayer<T> layer = new SwishLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 
@@ -1699,20 +1759,27 @@ namespace MyCaffe.test
             p.clip_param.max = 2;
             ClipLayer<T> layer = new ClipLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Now, check values
-            double[] rgBottomData = convert(Bottom.update_cpu_data());
-            double[] rgTopData = convert(Top.update_cpu_data());
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                m_log.CHECK_GE(rgTopData[i], -1, "The top data should be >= -1");
-                m_log.CHECK_LE(rgTopData[i], 2, "The top data should be <= 2");
-                m_log.CHECK(rgBottomData[i] > -1 || rgTopData[i] == -1, "The data is incorrect.");
-                m_log.CHECK(rgBottomData[i] < 2 || rgTopData[i] == 2, "The data is incorrect.");
-                m_log.CHECK(!(rgBottomData[i] >= -1 && rgBottomData[i] <= 2) || rgTopData[i] == rgBottomData[i], "The data is incorrect.");
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // Now, check values
+                double[] rgBottomData = convert(Bottom.update_cpu_data());
+                double[] rgTopData = convert(Top.update_cpu_data());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    m_log.CHECK_GE(rgTopData[i], -1, "The top data should be >= -1");
+                    m_log.CHECK_LE(rgTopData[i], 2, "The top data should be <= 2");
+                    m_log.CHECK(rgBottomData[i] > -1 || rgTopData[i] == -1, "The data is incorrect.");
+                    m_log.CHECK(rgBottomData[i] < 2 || rgTopData[i] == 2, "The data is incorrect.");
+                    m_log.CHECK(!(rgBottomData[i] >= -1 && rgBottomData[i] <= 2) || rgTopData[i] == rgBottomData[i], "The data is incorrect.");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -1723,42 +1790,49 @@ namespace MyCaffe.test
             p.clip_param.max = 2;
             ClipLayer<T> layer = new ClipLayer<T>(m_cuda, m_log, p);
 
-            // Unfortunately, it might happen that an input value lands exactly within
-            // the discontinuity region of the Clip function.  In this case the numeric
-            // gradient is likely to differ significantly (i.e. by a value larger than
-            // checker tolerance) from the computed gradient.  To handle such cases, we
-            // eliminate such values from the input blob before the gradient check.
-            double dfEpsilon = 1e-2;
-            double dfMinRangeStart = p.clip_param.min - dfEpsilon;
-            double dfMinRangeEnd = p.clip_param.min + dfEpsilon;
-            double dfMaxRangeStart = p.clip_param.max - dfEpsilon;
-            double dfMaxRangeEnd = p.clip_param.max + dfEpsilon;
-
-            // The input blob is owned by the TestBase object, so we begin with
-            // creating a temporary blob and copying the input data there.
-            Blob<T> temp_bottom = new Blob<T>(m_cuda, m_log);
-            temp_bottom.CopyFrom(Bottom, false, true);
-            double[] rgBottomData = convert(Bottom.update_cpu_data());
-            double[] rgTempData = convert(temp_bottom.mutable_cpu_data);
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                if (rgBottomData[i] >= dfMinRangeStart && rgBottomData[i] <= dfMinRangeEnd)
+                // Unfortunately, it might happen that an input value lands exactly within
+                // the discontinuity region of the Clip function.  In this case the numeric
+                // gradient is likely to differ significantly (i.e. by a value larger than
+                // checker tolerance) from the computed gradient.  To handle such cases, we
+                // eliminate such values from the input blob before the gradient check.
+                double dfEpsilon = 1e-2;
+                double dfMinRangeStart = p.clip_param.min - dfEpsilon;
+                double dfMinRangeEnd = p.clip_param.min + dfEpsilon;
+                double dfMaxRangeStart = p.clip_param.max - dfEpsilon;
+                double dfMaxRangeEnd = p.clip_param.max + dfEpsilon;
+
+                // The input blob is owned by the TestBase object, so we begin with
+                // creating a temporary blob and copying the input data there.
+                Blob<T> temp_bottom = new Blob<T>(m_cuda, m_log);
+                temp_bottom.CopyFrom(Bottom, false, true);
+                double[] rgBottomData = convert(Bottom.update_cpu_data());
+                double[] rgTempData = convert(temp_bottom.mutable_cpu_data);
+
+                for (int i = 0; i < Bottom.count(); i++)
                 {
-                    rgTempData[i] = rgBottomData[i] - dfEpsilon;
+                    if (rgBottomData[i] >= dfMinRangeStart && rgBottomData[i] <= dfMinRangeEnd)
+                    {
+                        rgTempData[i] = rgBottomData[i] - dfEpsilon;
+                    }
+                    else if (rgBottomData[i] >= dfMaxRangeStart && rgBottomData[i] <= dfMaxRangeEnd)
+                    {
+                        rgTempData[i] = rgBottomData[i] + dfEpsilon;
+                    }
                 }
-                else if (rgBottomData[i] >= dfMaxRangeStart && rgBottomData[i] <= dfMaxRangeEnd)
-                {
-                    rgTempData[i] = rgBottomData[i] + dfEpsilon;
-                }
+                temp_bottom.mutable_cpu_data = convert(rgTempData);
+
+                BlobCollection<T> TempBottomVec = new BlobCollection<T>();
+                TempBottomVec.Add(temp_bottom);
+
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, dfEpsilon, 1e-3);
+                checker.CheckGradientEltwise(layer, TempBottomVec, TopVec);
             }
-            temp_bottom.mutable_cpu_data = convert(rgTempData);
-
-            BlobCollection<T> TempBottomVec = new BlobCollection<T>();
-            TempBottomVec.Add(temp_bottom);
-
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, dfEpsilon, 1e-3);
-            checker.CheckGradientEltwise(layer, TempBottomVec, TopVec);
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 
@@ -1803,28 +1877,35 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TANH);
             TanhLayer<T> layer = new TanhLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Test exact values
-            for (int i = 0; i < Bottom.num; i++)
+            try
             {
-                for (int j = 0; j < Bottom.channels; j++)
-                {
-                    for (int k = 0; k < Bottom.height; k++)
-                    {
-                        for (int l = 0; l < Bottom.width; l++)
-                        {
-                            double dfTop = convert(Top.data_at(i, j, k, l));
-                            double dfBottom = convert(Bottom.data_at(i, j, k, l));
-                            double dfVal = Math.Exp(2 * dfBottom);
-                            double dfExpected = (dfVal - 1) / (dfVal + 1);
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                            m_log.CHECK(dfTop + 1e-4 >= dfExpected, "The top value should be greater than or equal to " + dfExpected.ToString());
-                            m_log.CHECK(dfTop - 1e-4 <= dfExpected, "The top value should be less than or equal to " + dfExpected.ToString());
+                // Test exact values
+                for (int i = 0; i < Bottom.num; i++)
+                {
+                    for (int j = 0; j < Bottom.channels; j++)
+                    {
+                        for (int k = 0; k < Bottom.height; k++)
+                        {
+                            for (int l = 0; l < Bottom.width; l++)
+                            {
+                                double dfTop = convert(Top.data_at(i, j, k, l));
+                                double dfBottom = convert(Bottom.data_at(i, j, k, l));
+                                double dfVal = Math.Exp(2 * dfBottom);
+                                double dfExpected = (dfVal - 1) / (dfVal + 1);
+
+                                m_log.CHECK(dfTop + 1e-4 >= dfExpected, "The top value should be greater than or equal to " + dfExpected.ToString());
+                                m_log.CHECK(dfTop - 1e-4 <= dfExpected, "The top value should be less than or equal to " + dfExpected.ToString());
+                            }
                         }
                     }
                 }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -1832,8 +1913,16 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TANH);
             TanhLayer<T> layer = new TanhLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 
@@ -1885,20 +1974,27 @@ namespace MyCaffe.test
             p.relu_param.engine = m_engine;
             ReLULayer<T> layer = new ReLULayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Now, check values
-            double[] rgBottomData = convert(Bottom.update_cpu_data());
-            double[] rgTopData = convert(Top.update_cpu_data());
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                double dfTopVal = rgTopData[i];
-                double dfBottomVal = rgBottomData[i];
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.CHECK_GE(dfTopVal, 0.0, "The top value at " + i.ToString() + " should be greater than or equal to 0.");
-                m_log.CHECK(dfTopVal == 0 || dfTopVal == dfBottomVal, "The top value should either be equal to zero or to the bottom value at " + i.ToString());
+                // Now, check values
+                double[] rgBottomData = convert(Bottom.update_cpu_data());
+                double[] rgTopData = convert(Top.update_cpu_data());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfTopVal = rgTopData[i];
+                    double dfBottomVal = rgBottomData[i];
+
+                    m_log.CHECK_GE(dfTopVal, 0.0, "The top value at " + i.ToString() + " should be greater than or equal to 0.");
+                    m_log.CHECK(dfTopVal == 0 || dfTopVal == dfBottomVal, "The top value should either be equal to zero or to the bottom value at " + i.ToString());
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -1908,8 +2004,15 @@ namespace MyCaffe.test
             p.relu_param.engine = m_engine;
             ReLULayer<T> layer = new ReLULayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForwardWithNegativeSlope()
@@ -1919,22 +2022,29 @@ namespace MyCaffe.test
             p.relu_param.negative_slope = 0.01;
             ReLULayer<T> layer = new ReLULayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Now, check values
-            double[] rgBottomData = convert(Bottom.update_cpu_data());
-            double[] rgTopData = convert(Top.update_cpu_data());
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                double dfTopVal = rgTopData[i];
-                double dfBottomVal = rgBottomData[i];
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                if (dfTopVal >= 0)
-                    m_log.CHECK_EQ(dfTopVal, dfBottomVal, "Top and bottom should be equal at index " + i.ToString() + ".");
-                else
-                    m_log.CHECK_EQ(dfTopVal, dfBottomVal * 0.01, "Top value should equal Bottom value * 0.01, or " + (dfBottomVal * 0.01).ToString());
+                // Now, check values
+                double[] rgBottomData = convert(Bottom.update_cpu_data());
+                double[] rgTopData = convert(Top.update_cpu_data());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfTopVal = rgTopData[i];
+                    double dfBottomVal = rgBottomData[i];
+
+                    if (dfTopVal >= 0)
+                        m_log.CHECK_EQ(dfTopVal, dfBottomVal, "Top and bottom should be equal at index " + i.ToString() + ".");
+                    else
+                        m_log.CHECK_EQ(dfTopVal, dfBottomVal * 0.01, "Top value should equal Bottom value * 0.01, or " + (dfBottomVal * 0.01).ToString());
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -1945,8 +2055,15 @@ namespace MyCaffe.test
             p.relu_param.negative_slope = 0.01;
             ReLULayer<T> layer = new ReLULayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 
@@ -1997,23 +2114,30 @@ namespace MyCaffe.test
             LayerParameter p = LayerParameter.FromProto(proto);
             ELULayer<T> layer = new ELULayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Now, check values
-            double kDelta = 2e-4;
-            double[] rgBottomData = convert(Bottom.update_cpu_data());
-            double[] rgTopData = convert(Top.update_cpu_data());
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                double dfTopVal = rgTopData[i];
-                double dfBottomVal = rgBottomData[i];
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                if (dfBottomVal > 0)
-                    m_log.EXPECT_EQUAL<float>(dfTopVal, dfBottomVal);
-                else
-                    m_log.EXPECT_NEAR(dfTopVal, 0.5 * (Math.Exp(dfBottomVal) - 1), kDelta);
+                // Now, check values
+                double kDelta = 2e-4;
+                double[] rgBottomData = convert(Bottom.update_cpu_data());
+                double[] rgTopData = convert(Top.update_cpu_data());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfTopVal = rgTopData[i];
+                    double dfBottomVal = rgBottomData[i];
+
+                    if (dfBottomVal > 0)
+                        m_log.EXPECT_EQUAL<float>(dfTopVal, dfBottomVal);
+                    else
+                        m_log.EXPECT_NEAR(dfTopVal, 0.5 * (Math.Exp(dfBottomVal) - 1), kDelta);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -2023,20 +2147,27 @@ namespace MyCaffe.test
             LayerParameter p = LayerParameter.FromProto(proto);
             ELULayer<T> layer = new ELULayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Now, check values
-            double[] rgBottomData = convert(Bottom.update_cpu_data());
-            double[] rgTopData = convert(Top.update_cpu_data());
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                double dfTopVal = rgTopData[i];
-                double dfBottomVal = rgBottomData[i];
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.CHECK_GE(dfTopVal, 0.0, "The top value should be >= 0.0");
-                m_log.CHECK(dfTopVal == 0 || dfTopVal == dfBottomVal, "The top should be 0 or equal to the bottom val");
+                // Now, check values
+                double[] rgBottomData = convert(Bottom.update_cpu_data());
+                double[] rgTopData = convert(Top.update_cpu_data());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfTopVal = rgTopData[i];
+                    double dfBottomVal = rgBottomData[i];
+
+                    m_log.CHECK_GE(dfTopVal, 0.0, "The top value should be >= 0.0");
+                    m_log.CHECK(dfTopVal == 0 || dfTopVal == dfBottomVal, "The top should be 0 or equal to the bottom val");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -2045,8 +2176,15 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ELU);
             ELULayer<T> layer = new ELULayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientAsReLU()
@@ -2055,8 +2193,15 @@ namespace MyCaffe.test
             LayerParameter p = LayerParameter.FromProto(proto);
             ELULayer<T> layer = new ELULayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 
@@ -2100,19 +2245,26 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ABSVAL);
             AbsValLayer<T> layer = new AbsValLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Now, check values
-            double[] rgBottomData = convert(Bottom.update_cpu_data());
-            double[] rgTopData = convert(Top.update_cpu_data());
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                double dfTopVal = rgTopData[i];
-                double dfBottomVal = rgBottomData[i];
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.CHECK_EQ(dfTopVal, Math.Abs(dfBottomVal), "The top value does not equal the abs val of the bottom value at " + i.ToString());
+                // Now, check values
+                double[] rgBottomData = convert(Bottom.update_cpu_data());
+                double[] rgTopData = convert(Top.update_cpu_data());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfTopVal = rgTopData[i];
+                    double dfBottomVal = rgBottomData[i];
+
+                    m_log.CHECK_EQ(dfTopVal, Math.Abs(dfBottomVal), "The top value does not equal the abs val of the bottom value at " + i.ToString());
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -2121,8 +2273,15 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ABSVAL);
             AbsValLayer<T> layer = new AbsValLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 
@@ -2175,22 +2334,29 @@ namespace MyCaffe.test
             layer_param.exp_param.shift = dfShift;
             ExpLayer<T> layer = new ExpLayer<T>(m_cuda, m_log, layer_param);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            double dfDelta = 2e-4;
-            double[] rgBottomData = convert(Bottom.update_cpu_data());
-            double[] rgTopData = convert(Top.update_cpu_data());
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                double dfBottomVal = rgBottomData[i];
-                double dfTopVal = rgTopData[i];
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                if (dfBase == -1)
-                    m_log.EXPECT_NEAR(dfTopVal, Math.Exp(dfShift + dfScale * dfBottomVal), dfDelta);
-                else
-                    m_log.EXPECT_NEAR(dfTopVal, Math.Pow(dfBase, dfShift + dfScale * dfBottomVal), dfDelta);
+                double dfDelta = 2e-4;
+                double[] rgBottomData = convert(Bottom.update_cpu_data());
+                double[] rgTopData = convert(Top.update_cpu_data());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfBottomVal = rgBottomData[i];
+                    double dfTopVal = rgTopData[i];
+
+                    if (dfBase == -1)
+                        m_log.EXPECT_NEAR(dfTopVal, Math.Exp(dfShift + dfScale * dfBottomVal), dfDelta);
+                    else
+                        m_log.EXPECT_NEAR(dfTopVal, Math.Pow(dfBase, dfShift + dfScale * dfBottomVal), dfDelta);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -2201,9 +2367,16 @@ namespace MyCaffe.test
             layer_param.exp_param.scale = dfScale;
             layer_param.exp_param.shift = dfShift;
             ExpLayer<T> layer = new ExpLayer<T>(m_cuda, m_log, layer_param);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
 
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForward()
@@ -2258,14 +2431,21 @@ namespace MyCaffe.test
             layer_param.labelmapping_param.mapping.Add(new LabelMapping(2, 30, null, null));
             LabelMappingLayer<T> layer = new LabelMappingLayer<T>(m_cuda, m_log, layer_param, null);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            double[] rgTopData = convert(Top.update_cpu_data());
+                double[] rgTopData = convert(Top.update_cpu_data());
 
-            m_log.CHECK_EQ(10, (int)rgTopData[0], "The top[0] item should be 10.");
-            m_log.CHECK_EQ(1, (int)rgTopData[1], "The top[1] item should be 1.");
-            m_log.CHECK_EQ(30, (int)rgTopData[2], "The top[2] item should be 30.");
+                m_log.CHECK_EQ(10, (int)rgTopData[0], "The top[0] item should be 10.");
+                m_log.CHECK_EQ(1, (int)rgTopData[1], "The top[1] item should be 1.");
+                m_log.CHECK_EQ(30, (int)rgTopData[2], "The top[2] item should be 30.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradient()
@@ -2320,22 +2500,29 @@ namespace MyCaffe.test
             layer_param.log_param.shift = dfShift;
             LogLayer<T> layer = new LogLayer<T>(m_cuda, m_log, layer_param);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            double dfDelta = 2e-4;
-            double[] rgBottomData = convert(Bottom.update_cpu_data());
-            double[] rgTopData = convert(Top.update_cpu_data());
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                double dfBottomVal = rgBottomData[i];
-                double dfTopVal = rgTopData[i];
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                if (dfBase == -1)
-                    m_log.EXPECT_NEAR(dfTopVal, Math.Log(dfShift + dfScale * dfBottomVal), dfDelta);
-                else
-                    m_log.EXPECT_NEAR(dfTopVal, Math.Log(dfShift + dfScale * dfBottomVal) / Math.Log(dfBase), dfDelta);
+                double dfDelta = 2e-4;
+                double[] rgBottomData = convert(Bottom.update_cpu_data());
+                double[] rgTopData = convert(Top.update_cpu_data());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfBottomVal = rgBottomData[i];
+                    double dfTopVal = rgTopData[i];
+
+                    if (dfBase == -1)
+                        m_log.EXPECT_NEAR(dfTopVal, Math.Log(dfShift + dfScale * dfBottomVal), dfDelta);
+                    else
+                        m_log.EXPECT_NEAR(dfTopVal, Math.Log(dfShift + dfScale * dfBottomVal) / Math.Log(dfBase), dfDelta);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -2348,8 +2535,15 @@ namespace MyCaffe.test
             layer_param.log_param.shift = dfShift;
             LogLayer<T> layer = new LogLayer<T>(m_cuda, m_log, layer_param);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 0.012);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 0.012);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForward()
@@ -2422,35 +2616,42 @@ namespace MyCaffe.test
             layer_param.phase = Phase.TRAIN;
             DropoutLayer<T> layer = new DropoutLayer<T>(m_cuda, m_log, layer_param);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Now, check values
-            double[] rgBottomData = convert(Bottom.update_cpu_data());
-            double[] rgTopData = convert(Top.update_cpu_data());
-            double dfScale = 1.0 / (1.0 - layer_param.dropout_param.dropout_ratio);
-            int nCount = Bottom.count();
-
-            // Initialize num_kept to count the number of inputs NOT dropped out.
-            int nNumKept = 0;
-
-            for (int i = 0; i < nCount; i++)
+            try
             {
-                if (rgTopData[i] != 0)
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // Now, check values
+                double[] rgBottomData = convert(Bottom.update_cpu_data());
+                double[] rgTopData = convert(Top.update_cpu_data());
+                double dfScale = 1.0 / (1.0 - layer_param.dropout_param.dropout_ratio);
+                int nCount = Bottom.count();
+
+                // Initialize num_kept to count the number of inputs NOT dropped out.
+                int nNumKept = 0;
+
+                for (int i = 0; i < nCount; i++)
                 {
-                    nNumKept++;
-                    m_log.CHECK_EQ(rgTopData[i], rgBottomData[i] * dfScale, "The top data must equal the bottom * dfScale");
+                    if (rgTopData[i] != 0)
+                    {
+                        nNumKept++;
+                        m_log.CHECK_EQ(rgTopData[i], rgBottomData[i] * dfScale, "The top data must equal the bottom * dfScale");
+                    }
                 }
+
+                double dfStdError = Math.Sqrt(dfDropoutRatio * (1 - dfDropoutRatio) / nCount);
+
+                // Fail if the number dropped was more than 1.96 * dfStdError away from the
+                // expected number -- requires 95% confidence that the dropout layer is not
+                // obeying the given dropout ratio for test failure.
+                double dfEmpericalDroputRatio = 1 - nNumKept / (double)nCount;
+
+                m_log.EXPECT_NEAR(dfEmpericalDroputRatio, dfDropoutRatio, (m_dt == common.DataType.DOUBLE) ? (1.96 * dfStdError) : ((1.96 * 1.2) * dfStdError));
             }
-
-            double dfStdError = Math.Sqrt(dfDropoutRatio * (1 - dfDropoutRatio) / nCount);
-
-            // Fail if the number dropped was more than 1.96 * dfStdError away from the
-            // expected number -- requires 95% confidence that the dropout layer is not
-            // obeying the given dropout ratio for test failure.
-            double dfEmpericalDroputRatio = 1 - nNumKept / (double)nCount;
-          
-            m_log.EXPECT_NEAR(dfEmpericalDroputRatio, dfDropoutRatio, (m_dt == common.DataType.DOUBLE) ? (1.96 * dfStdError) : ((1.96 * 1.2) * dfStdError));
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForward()
@@ -2465,9 +2666,16 @@ namespace MyCaffe.test
             p.phase = Phase.TRAIN;
             DropoutLayer<T> layer = new DropoutLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
 #warning DropoutLayer.TestGradient test fails with ENGINE = cuDnn.
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestDropoutThreeQuarters()
@@ -2482,20 +2690,27 @@ namespace MyCaffe.test
             p.phase = Phase.TEST;
             DropoutLayer<T> layer = new DropoutLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Now, check values
-            double[] rgBottom = convert(Bottom.update_cpu_data());
-            double[] rgTop = convert(Top.update_cpu_data());
-
-            for (int i = 0; i < Top.count(); i++)
+            try
             {
-                double dfBottom = rgBottom[i];
-                double dfTop = rgTop[i];
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                if (dfTop != 0)
-                    m_log.CHECK_EQ(dfTop, dfBottom, "If the values are not zero, they should be equal and they are not at " + i.ToString());
+                // Now, check values
+                double[] rgBottom = convert(Bottom.update_cpu_data());
+                double[] rgTop = convert(Top.update_cpu_data());
+
+                for (int i = 0; i < Top.count(); i++)
+                {
+                    double dfBottom = rgBottom[i];
+                    double dfTop = rgTop[i];
+
+                    if (dfTop != 0)
+                        m_log.CHECK_EQ(dfTop, dfBottom, "If the values are not zero, they should be equal and they are not at " + i.ToString());
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -2506,8 +2721,15 @@ namespace MyCaffe.test
             p.phase = Phase.TEST;
             DropoutLayer<T> layer = new DropoutLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 
@@ -2552,20 +2774,27 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.BNLL);
             BNLLLayer<T> layer = new BNLLLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Now, check values
-            double[] rgBottom = convert(Bottom.update_cpu_data());
-            double[] rgTop = convert(Top.update_cpu_data());
-
-            for (int i = 0; i < Top.count(); i++)
+            try
             {
-                double dfBottom = rgBottom[i];
-                double dfTop = rgTop[i];
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.CHECK_GE(dfTop, 0.0, "The top value at " + i.ToString() + " must be greater than or equal to zero.");
-                m_log.CHECK_GE(dfTop, dfBottom, "The top value at " + i.ToString() + " must be greater than or equal to the bottom value.");
+                // Now, check values
+                double[] rgBottom = convert(Bottom.update_cpu_data());
+                double[] rgTop = convert(Top.update_cpu_data());
+
+                for (int i = 0; i < Top.count(); i++)
+                {
+                    double dfBottom = rgBottom[i];
+                    double dfTop = rgTop[i];
+
+                    m_log.CHECK_GE(dfTop, 0.0, "The top value at " + i.ToString() + " must be greater than or equal to zero.");
+                    m_log.CHECK_GE(dfTop, dfBottom, "The top value at " + i.ToString() + " must be greater than or equal to the bottom value.");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -2573,8 +2802,16 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.BNLL);
             BNLLLayer<T> layer = new BNLLLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 
@@ -2643,13 +2880,20 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.PRELU);
             PReLULayer<T> layer = new PReLULayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
 
-            FillerParameter filler_param = new FillerParameter();
-            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, filler_param);
-            filler.Fill(layer.blobs[0]);
+                FillerParameter filler_param = new FillerParameter();
+                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, filler_param);
+                filler.Fill(layer.blobs[0]);
 
-            TestPReLU(layer);
+                TestPReLU(layer);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradient()
@@ -2657,13 +2901,20 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.PRELU);
             PReLULayer<T> layer = new PReLULayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            FillerParameter filler_param = new FillerParameter();
-            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, filler_param);
-            filler.Fill(layer.blobs[0]);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+                FillerParameter filler_param = new FillerParameter();
+                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, filler_param);
+                filler.Fill(layer.blobs[0]);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestPReLUParam()
@@ -2671,16 +2922,23 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.PRELU);
             PReLULayer<T> layer = new PReLULayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-
-            double[] rgSlopeData = convert(layer.blobs[0].update_cpu_data());
-            int nCount = layer.blobs[0].count();
-
-            for (int i = 0; i < nCount; i++)
+            try
             {
-                double dfVal = rgSlopeData[i];
+                layer.Setup(BottomVec, TopVec);
 
-                m_log.CHECK_EQ(dfVal, 0.25, "The slope value at " + i.ToString() + " is expected to be 0.25.");
+                double[] rgSlopeData = convert(layer.blobs[0].update_cpu_data());
+                int nCount = layer.blobs[0].count();
+
+                for (int i = 0; i < nCount; i++)
+                {
+                    double dfVal = rgSlopeData[i];
+
+                    m_log.CHECK_EQ(dfVal, 0.25, "The slope value at " + i.ToString() + " is expected to be 0.25.");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -2690,8 +2948,15 @@ namespace MyCaffe.test
             p.prelu_param.channel_shared = true;
             PReLULayer<T> layer = new PReLULayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            TestPReLU(layer);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+                TestPReLU(layer);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientChannelShared()
@@ -2700,9 +2965,16 @@ namespace MyCaffe.test
             p.prelu_param.channel_shared = true;
             PReLULayer<T> layer = new PReLULayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestConsistencyReLU()
@@ -2714,57 +2986,65 @@ namespace MyCaffe.test
             PReLULayer<T> prelu = new PReLULayer<T>(m_cuda, m_log, prelu_layer_param);
             ReLULayer<T> relu = new ReLULayer<T>(m_cuda, m_log, relu_layer_param);
 
-            // Setup blobs
-            BlobCollection<T> colBottomVec2 = new BlobCollection<T>();
-            BlobCollection<T> colTopVec2 = new BlobCollection<T>();
-            Blob<T> blob_bottom2 = new Blob<T>(m_cuda, m_log);
-            Blob<T> blob_top2 = new Blob<T>(m_cuda, m_log);
-            colBottomVec2.Add(blob_bottom2);
-            colTopVec2.Add(blob_top2);
-            blob_bottom2.CopyFrom(Bottom, false, true);
-
-            // Setup layers
-            prelu.Setup(BottomVec, TopVec);
-            relu.Setup(colBottomVec2, colTopVec2);
-
-            // Check forward
-            prelu.Forward(BottomVec, TopVec);
-            relu.Forward(colBottomVec2, colTopVec2);
-
-            double[] rgTopData1 = convert(Top.update_cpu_data());
-            double[] rgTopData2 = convert(blob_top2.update_cpu_data());
-
-            for (int i = 0; i < blob_top2.count(); i++)
+            try
             {
-                double dfTop1 = rgTopData1[i];
-                double dfTop2 = rgTopData2[i];
+                // Setup blobs
+                BlobCollection<T> colBottomVec2 = new BlobCollection<T>();
+                BlobCollection<T> colTopVec2 = new BlobCollection<T>();
+                Blob<T> blob_bottom2 = new Blob<T>(m_cuda, m_log);
+                Blob<T> blob_top2 = new Blob<T>(m_cuda, m_log);
+                colBottomVec2.Add(blob_bottom2);
+                colTopVec2.Add(blob_top2);
+                blob_bottom2.CopyFrom(Bottom, false, true);
 
-                m_log.CHECK_EQ(dfTop1, dfTop2, "The top values do not match at " + i.ToString());
+                // Setup layers
+                prelu.Setup(BottomVec, TopVec);
+                relu.Setup(colBottomVec2, colTopVec2);
+
+                // Check forward
+                prelu.Forward(BottomVec, TopVec);
+                relu.Forward(colBottomVec2, colTopVec2);
+
+                double[] rgTopData1 = convert(Top.update_cpu_data());
+                double[] rgTopData2 = convert(blob_top2.update_cpu_data());
+
+                for (int i = 0; i < blob_top2.count(); i++)
+                {
+                    double dfTop1 = rgTopData1[i];
+                    double dfTop2 = rgTopData2[i];
+
+                    m_log.CHECK_EQ(dfTop1, dfTop2, "The top values do not match at " + i.ToString());
+                }
+
+                // Check backward
+                Blob<T> tmp_blob = new Blob<T>(m_cuda, m_log, blob_top2);
+                FillerParameter fillerParam = new FillerParameter();
+                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fillerParam);
+
+                filler.Fill(tmp_blob);
+                m_cuda.copy(blob_top2.count(), tmp_blob.gpu_data, Top.mutable_gpu_diff);
+                m_cuda.copy(blob_top2.count(), tmp_blob.gpu_data, blob_top2.mutable_gpu_diff);
+
+                List<bool> rgPropagateDown = new List<bool>() { true };
+
+                prelu.Backward(TopVec, rgPropagateDown, BottomVec);
+                relu.Backward(colTopVec2, rgPropagateDown, colBottomVec2);
+
+                double[] rgBottomDiff1 = convert(Bottom.update_cpu_diff());
+                double[] rgBottomDiff2 = convert(blob_bottom2.update_cpu_diff());
+
+                for (int i = 0; i < blob_bottom2.count(); i++)
+                {
+                    double dfBottom1 = rgBottomDiff1[i];
+                    double dfBottom2 = rgBottomDiff2[i];
+
+                    m_log.CHECK_EQ(dfBottom1, dfBottom2, "The bottom diff values do not match at " + i.ToString());
+                }
             }
-
-            // Check backward
-            Blob<T> tmp_blob = new Blob<T>(m_cuda, m_log, blob_top2);
-            FillerParameter fillerParam = new FillerParameter();
-            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fillerParam);
-
-            filler.Fill(tmp_blob);
-            m_cuda.copy(blob_top2.count(), tmp_blob.gpu_data, Top.mutable_gpu_diff);
-            m_cuda.copy(blob_top2.count(), tmp_blob.gpu_data, blob_top2.mutable_gpu_diff);
-
-            List<bool> rgPropagateDown = new List<bool>() { true };
-
-            prelu.Backward(TopVec, rgPropagateDown, BottomVec);
-            relu.Backward(colTopVec2, rgPropagateDown, colBottomVec2);
-
-            double[] rgBottomDiff1 = convert(Bottom.update_cpu_diff());
-            double[] rgBottomDiff2 = convert(blob_bottom2.update_cpu_diff());
-
-            for (int i = 0; i < blob_bottom2.count(); i++)
+            finally
             {
-                double dfBottom1 = rgBottomDiff1[i];
-                double dfBottom2 = rgBottomDiff2[i];
-
-                m_log.CHECK_EQ(dfBottom1, dfBottom2, "The bottom diff values do not match at " + i.ToString());
+                prelu.Dispose();
+                relu.Dispose();
             }
         }
 
@@ -2784,99 +3064,109 @@ namespace MyCaffe.test
             InnerProductLayer<T> ip2 = new InnerProductLayer<T>(m_cuda, m_log, ip_layer_param);
             PReLULayer<T> prelu2 = new PReLULayer<T>(m_cuda, m_log, prelu_layer_param);
 
-            // Setup blobs
-            BlobCollection<T> colBottomVec2 = new BlobCollection<T>();
-            BlobCollection<T> colMiddleVec2 = new BlobCollection<T>();
-            BlobCollection<T> colTopVec2 = new BlobCollection<T>();
-            Blob<T> blob_bottom2 = new Blob<T>(m_cuda, m_log);
-            Blob<T> blob_middle2 = new Blob<T>(m_cuda, m_log);
-            Blob<T> blob_top2 = new Blob<T>(m_cuda, m_log);
-
-            colBottomVec2.Add(blob_bottom2);
-            colMiddleVec2.Add(blob_middle2);
-            colTopVec2.Add(blob_top2);
-            blob_bottom2.CopyFrom(Bottom, false, true);
-
-            // Setup layers
-            ip.Setup(BottomVec, TopVec);
-            prelu.Setup(BottomVec, TopVec);
-            ip2.Setup(colBottomVec2, colMiddleVec2);
-            prelu2.Setup(colMiddleVec2, colTopVec2);
-            m_cuda.copy(ip2.blobs[0].count(), ip.blobs[0].gpu_data, ip2.blobs[0].mutable_gpu_data);
-
-            // Forward in-place
-            ip.Forward(BottomVec, TopVec);
-            prelu.Forward(TopVec, TopVec);
-
-            // Forward non-in-place
-            ip2.Forward(colBottomVec2, colMiddleVec2);
-            prelu2.Forward(colMiddleVec2, colTopVec2);
-
-            // Check numbers
-            double[] rgTopData1 = convert(Top.update_cpu_data());
-            double[] rgTopData2 = convert(blob_top2.update_cpu_data());
-
-            for (int i = 0; i < blob_top2.count(); i++)
+            try
             {
-                double dfTop1 = rgTopData1[i];
-                double dfTop2 = rgTopData2[i];
+                // Setup blobs
+                BlobCollection<T> colBottomVec2 = new BlobCollection<T>();
+                BlobCollection<T> colMiddleVec2 = new BlobCollection<T>();
+                BlobCollection<T> colTopVec2 = new BlobCollection<T>();
+                Blob<T> blob_bottom2 = new Blob<T>(m_cuda, m_log);
+                Blob<T> blob_middle2 = new Blob<T>(m_cuda, m_log);
+                Blob<T> blob_top2 = new Blob<T>(m_cuda, m_log);
 
-                m_log.CHECK_EQ(dfTop1, dfTop2, "The two top values at " + i.ToString() + " do not match!");
-            }
+                colBottomVec2.Add(blob_bottom2);
+                colMiddleVec2.Add(blob_middle2);
+                colTopVec2.Add(blob_top2);
+                blob_bottom2.CopyFrom(Bottom, false, true);
 
-            // Fill top diff with random numbers.
-            Blob<T> tmp_blob = new Blob<T>(m_cuda, m_log, blob_top2);
-            FillerParameter fillerParam = new FillerParameter();
-            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fillerParam);
+                // Setup layers
+                ip.Setup(BottomVec, TopVec);
+                prelu.Setup(BottomVec, TopVec);
+                ip2.Setup(colBottomVec2, colMiddleVec2);
+                prelu2.Setup(colMiddleVec2, colTopVec2);
+                m_cuda.copy(ip2.blobs[0].count(), ip.blobs[0].gpu_data, ip2.blobs[0].mutable_gpu_data);
 
-            filler.Fill(tmp_blob);
-            m_cuda.copy(blob_top2.count(), tmp_blob.gpu_data, Top.mutable_gpu_diff);
-            m_cuda.copy(blob_top2.count(), tmp_blob.gpu_data, blob_top2.mutable_gpu_diff);
+                // Forward in-place
+                ip.Forward(BottomVec, TopVec);
+                prelu.Forward(TopVec, TopVec);
 
-            // Backward in-place;
-            List<bool> rgPropagateDown = new List<bool>() { true };
-            prelu.Backward(TopVec, rgPropagateDown, TopVec);
-            ip.Backward(TopVec, rgPropagateDown, BottomVec);
+                // Forward non-in-place
+                ip2.Forward(colBottomVec2, colMiddleVec2);
+                prelu2.Forward(colMiddleVec2, colTopVec2);
 
-            // Backward non-in-place
-            prelu2.Backward(colTopVec2, rgPropagateDown, colMiddleVec2);
-            ip2.Backward(colMiddleVec2, rgPropagateDown, colBottomVec2);
+                // Check numbers
+                double[] rgTopData1 = convert(Top.update_cpu_data());
+                double[] rgTopData2 = convert(blob_top2.update_cpu_data());
 
-            // Check numbers
-            double[] rgBottomDiff1 = convert(Bottom.update_cpu_diff());
-            double[] rgBottomDiff2 = convert(blob_bottom2.update_cpu_diff());
-
-            for (int i = 0; i < blob_bottom2.count(); i++)
-            {
-                double dfBottomDiff1 = rgBottomDiff1[i];
-                double dfBottomDiff2 = rgBottomDiff2[i];
-
-                m_log.EXPECT_EQUAL<float>(dfBottomDiff1, dfBottomDiff2, "The bottom diffs do not match at " + i.ToString());
-            }
-
-            for (int j = 0; j < 2; j++)
-            {
-                double[] rgIPDiff1 = convert(ip.blobs[j].update_cpu_diff());
-                double[] rgIPDiff2 = convert(ip2.blobs[j].update_cpu_diff());
-
-                for (int i = 0; i < ip.blobs[j].count(); i++)
+                for (int i = 0; i < blob_top2.count(); i++)
                 {
-                    double dfIPDiff1 = rgIPDiff1[i];
-                    double dfIPDiff2 = rgIPDiff2[i];
+                    double dfTop1 = rgTopData1[i];
+                    double dfTop2 = rgTopData2[i];
 
-                    m_log.EXPECT_EQUAL<float>(dfIPDiff1, dfIPDiff2, "The IP diffs at blob[" + j.ToString() + "] do not match at " + i.ToString());
+                    m_log.CHECK_EQ(dfTop1, dfTop2, "The two top values at " + i.ToString() + " do not match!");
+                }
+
+                // Fill top diff with random numbers.
+                Blob<T> tmp_blob = new Blob<T>(m_cuda, m_log, blob_top2);
+                FillerParameter fillerParam = new FillerParameter();
+                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fillerParam);
+
+                filler.Fill(tmp_blob);
+                m_cuda.copy(blob_top2.count(), tmp_blob.gpu_data, Top.mutable_gpu_diff);
+                m_cuda.copy(blob_top2.count(), tmp_blob.gpu_data, blob_top2.mutable_gpu_diff);
+
+                // Backward in-place;
+                List<bool> rgPropagateDown = new List<bool>() { true };
+                prelu.Backward(TopVec, rgPropagateDown, TopVec);
+                ip.Backward(TopVec, rgPropagateDown, BottomVec);
+
+                // Backward non-in-place
+                prelu2.Backward(colTopVec2, rgPropagateDown, colMiddleVec2);
+                ip2.Backward(colMiddleVec2, rgPropagateDown, colBottomVec2);
+
+                // Check numbers
+                double[] rgBottomDiff1 = convert(Bottom.update_cpu_diff());
+                double[] rgBottomDiff2 = convert(blob_bottom2.update_cpu_diff());
+
+                for (int i = 0; i < blob_bottom2.count(); i++)
+                {
+                    double dfBottomDiff1 = rgBottomDiff1[i];
+                    double dfBottomDiff2 = rgBottomDiff2[i];
+
+                    m_log.EXPECT_EQUAL<float>(dfBottomDiff1, dfBottomDiff2, "The bottom diffs do not match at " + i.ToString());
+                }
+
+                for (int j = 0; j < 2; j++)
+                {
+                    double[] rgIPDiff1 = convert(ip.blobs[j].update_cpu_diff());
+                    double[] rgIPDiff2 = convert(ip2.blobs[j].update_cpu_diff());
+
+                    for (int i = 0; i < ip.blobs[j].count(); i++)
+                    {
+                        double dfIPDiff1 = rgIPDiff1[i];
+                        double dfIPDiff2 = rgIPDiff2[i];
+
+                        m_log.EXPECT_EQUAL<float>(dfIPDiff1, dfIPDiff2, "The IP diffs at blob[" + j.ToString() + "] do not match at " + i.ToString());
+                    }
+                }
+
+                double[] rgPreluDiff1 = convert(prelu.blobs[0].update_cpu_diff());
+                double[] rgPreluDiff2 = convert(prelu2.blobs[0].update_cpu_diff());
+
+                for (int i = 0; i < prelu.blobs[0].count(); i++)
+                {
+                    double dfPreluDiff1 = rgPreluDiff1[i];
+                    double dfPreluDiff2 = rgPreluDiff2[i];
+
+                    m_log.EXPECT_EQUAL<float>(dfPreluDiff1, dfPreluDiff2, "The prelu diffs do not match at " + i.ToString());
                 }
             }
-
-            double[] rgPreluDiff1 = convert(prelu.blobs[0].update_cpu_diff());
-            double[] rgPreluDiff2 = convert(prelu2.blobs[0].update_cpu_diff());
-
-            for (int i = 0; i < prelu.blobs[0].count(); i++)
+            finally
             {
-                double dfPreluDiff1 = rgPreluDiff1[i];
-                double dfPreluDiff2 = rgPreluDiff2[i];
-
-                m_log.EXPECT_EQUAL<float>(dfPreluDiff1, dfPreluDiff2, "The prelu diffs do not match at " + i.ToString());
+                prelu.Dispose();
+                prelu2.Dispose();
+                ip.Dispose();
+                ip2.Dispose();
             }
         }
     }
@@ -2938,21 +3228,29 @@ namespace MyCaffe.test
             m_log.CHECK_EQ(p.gradient_scale_param.max_iter, 1, "The gradient scale layer max iter should be 1");
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_evtCancel);
-            layer.OnGetIteration += Layer_OnGetIteration;
 
-            m_log.CHECK(layer.type == LayerParameter.LayerType.GRADIENTSCALER, "Wrong type in layer, expected GRADIENTSCALER");
-            p = layer.layer_param;
+            try
+            {
+                layer.OnGetIteration += Layer_OnGetIteration;
 
-            m_log.CHECK(p.type == LayerParameter.LayerType.GRADIENTSCALER, "Wrong type in parameter, expected GRADIENTSCALER");
-            m_log.CHECK(p.gradient_scale_param != null, "The gradient_scale_param should not be null.");
-            m_log.CHECK_EQ(p.gradient_scale_param.lower_bound, 0, "The gradient scale layer lower bound should be 0");
-            m_log.CHECK_EQ(p.gradient_scale_param.upper_bound, 1, "The gradient scale layer upper bound should be 1");
-            m_log.CHECK_EQ(p.gradient_scale_param.alpha, 10, "The gradient scale layer alpha should be 10");
-            m_log.CHECK_EQ(p.gradient_scale_param.max_iter, 1, "The gradient scale layer max iter should be 1");
+                m_log.CHECK(layer.type == LayerParameter.LayerType.GRADIENTSCALER, "Wrong type in layer, expected GRADIENTSCALER");
+                p = layer.layer_param;
 
-            m_bGetIterationHit = false;
-            layer.Setup(BottomVec, TopVec);
-            m_log.CHECK(m_bGetIterationHit == true, "The OnGetIteration event was not fired!");
+                m_log.CHECK(p.type == LayerParameter.LayerType.GRADIENTSCALER, "Wrong type in parameter, expected GRADIENTSCALER");
+                m_log.CHECK(p.gradient_scale_param != null, "The gradient_scale_param should not be null.");
+                m_log.CHECK_EQ(p.gradient_scale_param.lower_bound, 0, "The gradient scale layer lower bound should be 0");
+                m_log.CHECK_EQ(p.gradient_scale_param.upper_bound, 1, "The gradient scale layer upper bound should be 1");
+                m_log.CHECK_EQ(p.gradient_scale_param.alpha, 10, "The gradient scale layer alpha should be 10");
+                m_log.CHECK_EQ(p.gradient_scale_param.max_iter, 1, "The gradient scale layer max iter should be 1");
+
+                m_bGetIterationHit = false;
+                layer.Setup(BottomVec, TopVec);
+                m_log.CHECK(m_bGetIterationHit == true, "The OnGetIteration event was not fired!");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForward()
@@ -2962,25 +3260,33 @@ namespace MyCaffe.test
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.GRADIENTSCALER);
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_evtCancel);
-            layer.OnGetIteration += Layer_OnGetIteration;
 
-            m_bGetIterationHit = false;
-            layer.Setup(BottomVec, TopVec);
-            m_log.CHECK(m_bGetIterationHit == true, "The OnGetIteration event was not fired!");
+            try
+            {
+                layer.OnGetIteration += Layer_OnGetIteration;
 
-            layer.Forward(BottomVec, TopVec);
+                m_bGetIterationHit = false;
+                layer.Setup(BottomVec, TopVec);
+                m_log.CHECK(m_bGetIterationHit == true, "The OnGetIteration event was not fired!");
 
-            int nCount = m_blobTemp.count();
-            m_cuda.sub(nCount, m_blob_top.gpu_data, m_blobTemp.gpu_data, m_blobCompare.mutable_gpu_data);
-            m_cuda.sub(nCount, m_blob_top.gpu_diff, m_blobTemp.gpu_diff, m_blobCompare.mutable_gpu_diff);
+                layer.Forward(BottomVec, TopVec);
 
-            // There should be no change as the gradient scalar performs an 
-            // identity transform on the forward pass.
-            double dfDiff1 = convert(m_blobCompare.asum_data());
-            m_log.CHECK_EQ(dfDiff1, 0, "The data asum should be 0.0");
+                int nCount = m_blobTemp.count();
+                m_cuda.sub(nCount, m_blob_top.gpu_data, m_blobTemp.gpu_data, m_blobCompare.mutable_gpu_data);
+                m_cuda.sub(nCount, m_blob_top.gpu_diff, m_blobTemp.gpu_diff, m_blobCompare.mutable_gpu_diff);
 
-            double dfDiff2 = convert(m_blobCompare.asum_diff());
-            m_log.CHECK_EQ(dfDiff2, 0, "The data asum should be 0.0");
+                // There should be no change as the gradient scalar performs an 
+                // identity transform on the forward pass.
+                double dfDiff1 = convert(m_blobCompare.asum_data());
+                m_log.CHECK_EQ(dfDiff1, 0, "The data asum should be 0.0");
+
+                double dfDiff2 = convert(m_blobCompare.asum_diff());
+                m_log.CHECK_EQ(dfDiff2, 0, "The data asum should be 0.0");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         private void Layer_OnGetIteration(object sender, GetIterationArgs e)
@@ -2999,28 +3305,36 @@ namespace MyCaffe.test
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.GRADIENTSCALER);
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_evtCancel);
-            layer.OnGetIteration += Layer_OnGetIteration;
 
-            m_bGetIterationHit = false;
-            layer.Setup(BottomVec, TopVec);
-            m_log.CHECK(m_bGetIterationHit == true, "The OnGetIteration event was not fired!");
+            try
+            {
+                layer.OnGetIteration += Layer_OnGetIteration;
 
-            layer.Forward(BottomVec, TopVec);
-            layer.Backward(TopVec, new List<bool> { true }, BottomVec);
+                m_bGetIterationHit = false;
+                layer.Setup(BottomVec, TopVec);
+                m_log.CHECK(m_bGetIterationHit == true, "The OnGetIteration event was not fired!");
 
-            // Check values.
-            double dfLowerBound = p.gradient_scale_param.lower_bound;
-            double dfHeight = p.gradient_scale_param.upper_bound - dfLowerBound;
-            double dfAlpha = p.gradient_scale_param.alpha;
-            double dfProgress = Math.Min(1, (double)m_nIteration / p.gradient_scale_param.max_iter);
-            double dfCoeff = 2.0 * dfHeight / (1.0 + Math.Exp(-dfAlpha * dfProgress)) - dfHeight + dfLowerBound;
+                layer.Forward(BottomVec, TopVec);
+                layer.Backward(TopVec, new List<bool> { true }, BottomVec);
 
-            int nCount = m_blobTemp.count();
-            // The diff should have been scaled by the -dfCoeff value.
-            m_blobTemp.scale_diff(-dfCoeff);
-            m_cuda.sub(nCount, m_blob_bottom.gpu_diff, m_blobTemp.gpu_diff, m_blobCompare.mutable_gpu_diff);
-            double dfDiff2 = convert(m_blobCompare.asum_diff());
-            m_log.CHECK_EQ(dfDiff2, 0, "The data asum should be 0.0");
+                // Check values.
+                double dfLowerBound = p.gradient_scale_param.lower_bound;
+                double dfHeight = p.gradient_scale_param.upper_bound - dfLowerBound;
+                double dfAlpha = p.gradient_scale_param.alpha;
+                double dfProgress = Math.Min(1, (double)m_nIteration / p.gradient_scale_param.max_iter);
+                double dfCoeff = 2.0 * dfHeight / (1.0 + Math.Exp(-dfAlpha * dfProgress)) - dfHeight + dfLowerBound;
+
+                int nCount = m_blobTemp.count();
+                // The diff should have been scaled by the -dfCoeff value.
+                m_blobTemp.scale_diff(-dfCoeff);
+                m_cuda.sub(nCount, m_blob_bottom.gpu_diff, m_blobTemp.gpu_diff, m_blobCompare.mutable_gpu_diff);
+                double dfDiff2 = convert(m_blobCompare.asum_diff());
+                m_log.CHECK_EQ(dfDiff2, 0, "The data asum should be 0.0");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

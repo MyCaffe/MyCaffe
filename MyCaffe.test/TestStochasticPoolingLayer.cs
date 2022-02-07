@@ -166,18 +166,25 @@ namespace MyCaffe.test
             p.pooling_param.pool = PoolingParameter.PoolingMethod.STOCHASTIC;
             PoolingLayer<T> layer = new PoolingLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(BottomVec.Count, TopVec.Count, "The top and bottom vecs should have the same count.");
-            m_log.CHECK_EQ(Bottom.num, Top.num, "The top and bottom should have the same num.");
-            m_log.CHECK_EQ(Bottom.channels, Top.channels, "The top and bottom should have the same channels.");
+                m_log.CHECK_EQ(BottomVec.Count, TopVec.Count, "The top and bottom vecs should have the same count.");
+                m_log.CHECK_EQ(Bottom.num, Top.num, "The top and bottom should have the same num.");
+                m_log.CHECK_EQ(Bottom.channels, Top.channels, "The top and bottom should have the same channels.");
 
-            if (p.pooling_param.reshape_algorithm == PoolingParameter.PoolingReshapeAlgorithm.ONNX)
-                m_log.CHECK_EQ(2, Top.height, "The top height should = 2.");
-            else
-                m_log.CHECK_EQ(3, Top.height, "The top height should = 3.");
+                if (p.pooling_param.reshape_algorithm == PoolingParameter.PoolingReshapeAlgorithm.ONNX)
+                    m_log.CHECK_EQ(2, Top.height, "The top height should = 2.");
+                else
+                    m_log.CHECK_EQ(3, Top.height, "The top height should = 3.");
 
-            m_log.CHECK_EQ(2, Top.width, "The top and bottom should have the same width.");
+                m_log.CHECK_EQ(2, Top.width, "The top and bottom should have the same width.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestStochastic()
@@ -190,54 +197,61 @@ namespace MyCaffe.test
             p.pooling_param.pool = PoolingParameter.PoolingMethod.STOCHASTIC;
             PoolingLayer<T> layer = new PoolingLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Check if the output is correct - it should do random sampling.
-            double[] rgBottom = convert(Bottom.update_cpu_data());
-            double[] rgTop = convert(Top.update_cpu_data());
-            double dfTotal = 0;
-
-            for (int n = 0; n < Top.num; n++)
+            try
             {
-                for (int c = 0; c < Top.channels; c++)
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // Check if the output is correct - it should do random sampling.
+                double[] rgBottom = convert(Bottom.update_cpu_data());
+                double[] rgTop = convert(Top.update_cpu_data());
+                double dfTotal = 0;
+
+                for (int n = 0; n < Top.num; n++)
                 {
-                    for (int ph = 0; ph < Top.height; ph++)
+                    for (int c = 0; c < Top.channels; c++)
                     {
-                        for (int pw = 0; pw < Top.width; pw++)
+                        for (int ph = 0; ph < Top.height; ph++)
                         {
-                            double dfPooled = rgTop[Top.offset(n, c, ph, pw)];
-                            dfTotal += dfPooled;
-                            int hStart = ph * 2;
-                            int hEnd = Math.Min(hStart + 3, Bottom.height);
-                            int wStart = pw * 2;
-                            int wEnd = Math.Min(wStart + 3, Bottom.width);
-                            bool bHasEqual = false;
-
-                            for (int h = hStart; h < hEnd; h++)
+                            for (int pw = 0; pw < Top.width; pw++)
                             {
-                                for (int w = wStart; w < wEnd; w++)
+                                double dfPooled = rgTop[Top.offset(n, c, ph, pw)];
+                                dfTotal += dfPooled;
+                                int hStart = ph * 2;
+                                int hEnd = Math.Min(hStart + 3, Bottom.height);
+                                int wStart = pw * 2;
+                                int wEnd = Math.Min(wStart + 3, Bottom.width);
+                                bool bHasEqual = false;
+
+                                for (int h = hStart; h < hEnd; h++)
                                 {
-                                    int nIdx = Bottom.offset(n, c, h, w);
-                                    double dfBottom = rgBottom[nIdx];
-                                    float fBottom = (float)dfBottom;
-                                    float fPooled = (float)dfPooled;
+                                    for (int w = wStart; w < wEnd; w++)
+                                    {
+                                        int nIdx = Bottom.offset(n, c, h, w);
+                                        double dfBottom = rgBottom[nIdx];
+                                        float fBottom = (float)dfBottom;
+                                        float fPooled = (float)dfPooled;
 
-                                    if (fPooled == fBottom)
-                                        bHasEqual = true;
+                                        if (fPooled == fBottom)
+                                            bHasEqual = true;
+                                    }
                                 }
-                            }
 
-                            m_log.CHECK(bHasEqual, "Expected there to be an equal value.");
+                                m_log.CHECK(bHasEqual, "Expected there to be an equal value.");
+                            }
                         }
                     }
                 }
-            }
 
-            // When we are doing stochastic pooling, the average we get should be higher
-            // than the simple data average since we are weighting more on higher-valued
-            // ones.
-            m_log.CHECK_GE(dfTotal / Top.count(), 0.55, "The average should be greater than 0.55");
+                // When we are doing stochastic pooling, the average we get should be higher
+                // than the simple data average since we are weighting more on higher-valued
+                // ones.
+                m_log.CHECK_GE(dfTotal / Top.count(), 0.55, "The average should be greater than 0.55");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestStochasticTestPhase()
@@ -250,46 +264,53 @@ namespace MyCaffe.test
             p.pooling_param.pool = PoolingParameter.PoolingMethod.STOCHASTIC;
             PoolingLayer<T> layer = new PoolingLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Check if the output is correct - it should do random sampling.
-            double[] rgBottom = convert(Bottom.update_cpu_data());
-            double[] rgTop = convert(Top.update_cpu_data());
-            double dfTotal = 0;
-
-            for (int n = 0; n < Top.num; n++)
+            try
             {
-                for (int c = 0; c < Top.channels; c++)
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // Check if the output is correct - it should do random sampling.
+                double[] rgBottom = convert(Bottom.update_cpu_data());
+                double[] rgTop = convert(Top.update_cpu_data());
+                double dfTotal = 0;
+
+                for (int n = 0; n < Top.num; n++)
                 {
-                    for (int ph = 0; ph < Top.height; ph++)
+                    for (int c = 0; c < Top.channels; c++)
                     {
-                        for (int pw = 0; pw < Top.width; pw++)
+                        for (int ph = 0; ph < Top.height; ph++)
                         {
-                            double dfPooled = rgTop[Top.offset(n, c, ph, pw)];
-                            dfTotal += dfPooled;
-                            int hStart = ph * 2;
-                            int hEnd = Math.Min(hStart + 3, Bottom.height);
-                            int wStart = pw * 2;
-                            int wEnd = Math.Min(wStart + 3, Bottom.width);
-                            bool bSmallerThanMax = false;
-
-                            for (int h = hStart; h < hEnd; h++)
+                            for (int pw = 0; pw < Top.width; pw++)
                             {
-                                for (int w = wStart; w < wEnd; w++)
+                                double dfPooled = rgTop[Top.offset(n, c, ph, pw)];
+                                dfTotal += dfPooled;
+                                int hStart = ph * 2;
+                                int hEnd = Math.Min(hStart + 3, Bottom.height);
+                                int wStart = pw * 2;
+                                int wEnd = Math.Min(wStart + 3, Bottom.width);
+                                bool bSmallerThanMax = false;
+
+                                for (int h = hStart; h < hEnd; h++)
                                 {
-                                    int nIdx = Bottom.offset(n, c, h, w);
-                                    double dfBottom = rgBottom[nIdx];
+                                    for (int w = wStart; w < wEnd; w++)
+                                    {
+                                        int nIdx = Bottom.offset(n, c, h, w);
+                                        double dfBottom = rgBottom[nIdx];
 
-                                    if (dfPooled <= dfBottom)
-                                        bSmallerThanMax = true;
+                                        if (dfPooled <= dfBottom)
+                                            bSmallerThanMax = true;
+                                    }
                                 }
-                            }
 
-                            m_log.CHECK(bSmallerThanMax, "Expected there to be at least one smaller than max.");
+                                m_log.CHECK(bSmallerThanMax, "Expected there to be at least one smaller than max.");
+                            }
                         }
                     }
                 }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -306,8 +327,15 @@ namespace MyCaffe.test
             p.pooling_param.pool = PoolingParameter.PoolingMethod.STOCHASTIC;
             PoolingLayer<T> layer = new PoolingLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-4, 1e-2);
-            checker.CheckGradient(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-4, 1e-2);
+                checker.CheckGradient(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

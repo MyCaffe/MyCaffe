@@ -83,19 +83,26 @@ namespace MyCaffe.test
             p.constant_param.values_f.Add(33.5f);
             ConstantLayer<T> layer = new ConstantLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            m_log.CHECK_EQ(Top.num, 1, "The top num should = 1");
-            m_log.CHECK_EQ(Top.channels, 3, "The top num should = 3");
-            m_log.CHECK_EQ(Top.height, 28, "The top num should = 28");
-            m_log.CHECK_EQ(Top.width, 28, "The top num should = 28");
-
-            double[] rgData = convert(Top.mutable_cpu_data);
-
-            foreach (double df in rgData)
+            try
             {
-                m_log.EXPECT_NEAR_FLOAT(df, 33.5, 0.000001);
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(Top.num, 1, "The top num should = 1");
+                m_log.CHECK_EQ(Top.channels, 3, "The top num should = 3");
+                m_log.CHECK_EQ(Top.height, 28, "The top num should = 28");
+                m_log.CHECK_EQ(Top.width, 28, "The top num should = 28");
+
+                double[] rgData = convert(Top.mutable_cpu_data);
+
+                foreach (double df in rgData)
+                {
+                    m_log.EXPECT_NEAR_FLOAT(df, 33.5, 0.000001);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
     }

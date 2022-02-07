@@ -575,24 +575,31 @@ namespace MyCaffe.test
             p.attention_param.weight_filler = new FillerParameter("constant", 1);
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
-            m_log.CHECK(layer.type == LayerParameter.LayerType.ATTENTION, "The layer type is incorrect!");
-
-            float[] rgData = Fill(p.attention_param);
-
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Now, check values
-            float[] rgExpected = calculateAttention(p.attention_param, rgData, convertF(m_blobState.mutable_cpu_data), m_blob_bottom.num, m_blob_bottom.channels, m_blob_bottom.count(2), m_blobState.count(1));
-            float[] rgActual = convertF(m_blob_top.mutable_cpu_data);
-
-            for (int i = 0; i < rgExpected.Length; i++)
+            try
             {
-                float fExpected = rgExpected[i];
-                float fActual = rgActual[i];
-                float fErr = 0.0004f;
+                m_log.CHECK(layer.type == LayerParameter.LayerType.ATTENTION, "The layer type is incorrect!");
 
-                m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, fErr, "The values are not as expected!");
+                float[] rgData = Fill(p.attention_param);
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // Now, check values
+                float[] rgExpected = calculateAttention(p.attention_param, rgData, convertF(m_blobState.mutable_cpu_data), m_blob_bottom.num, m_blob_bottom.channels, m_blob_bottom.count(2), m_blobState.count(1));
+                float[] rgActual = convertF(m_blob_top.mutable_cpu_data);
+
+                for (int i = 0; i < rgExpected.Length; i++)
+                {
+                    float fExpected = rgExpected[i];
+                    float fActual = rgActual[i];
+                    float fErr = 0.0004f;
+
+                    m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, fErr, "The values are not as expected!");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -604,24 +611,31 @@ namespace MyCaffe.test
             p.attention_param.weight_filler = new FillerParameter("constant", 1);
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
-            m_log.CHECK(layer.type == LayerParameter.LayerType.ATTENTION, "The layer type is incorrect!");
-
-            float[] rgData = Fill2(p.attention_param);
-
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Now, check values
-            float[] rgExpected = calculateAttention(p.attention_param, rgData, convertF(m_blobState.mutable_cpu_data), m_blob_bottom.num, m_blob_bottom.channels, m_blob_bottom.count(2), m_blobState.count(1));
-            float[] rgActual = convertF(m_blob_top.mutable_cpu_data);
-
-            for (int i = 0; i < rgExpected.Length; i++)
+            try
             {
-                float fExpected = rgExpected[i];
-                float fActual = rgActual[i];
-                float fErr = 0.0004f;
+                m_log.CHECK(layer.type == LayerParameter.LayerType.ATTENTION, "The layer type is incorrect!");
 
-                m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, fErr, "The values are not as expected!");
+                float[] rgData = Fill2(p.attention_param);
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // Now, check values
+                float[] rgExpected = calculateAttention(p.attention_param, rgData, convertF(m_blobState.mutable_cpu_data), m_blob_bottom.num, m_blob_bottom.channels, m_blob_bottom.count(2), m_blobState.count(1));
+                float[] rgActual = convertF(m_blob_top.mutable_cpu_data);
+
+                for (int i = 0; i < rgExpected.Length; i++)
+                {
+                    float fExpected = rgExpected[i];
+                    float fActual = rgActual[i];
+                    float fErr = 0.0004f;
+
+                    m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, fErr, "The values are not as expected!");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -633,12 +647,19 @@ namespace MyCaffe.test
             p.attention_param.weight_filler = new FillerParameter("constant", 1);
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
-            m_log.CHECK(layer.type == LayerParameter.LayerType.ATTENTION, "The layer type is incorrect!");
+            try
+            {
+                m_log.CHECK(layer.type == LayerParameter.LayerType.ATTENTION, "The layer type is incorrect!");
 
-            Fill(p.attention_param);
+                Fill(p.attention_param);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.01);
-            checker.CheckGradient(layer, BottomVec, TopVec);
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.01);
+                checker.CheckGradient(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradient2()
@@ -649,12 +670,19 @@ namespace MyCaffe.test
             p.attention_param.weight_filler = new FillerParameter("constant", 1);
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
-            m_log.CHECK(layer.type == LayerParameter.LayerType.ATTENTION, "The layer type is incorrect!");
+            try
+            {
+                m_log.CHECK(layer.type == LayerParameter.LayerType.ATTENTION, "The layer type is incorrect!");
 
-            float[] rgData = FillSmall(p.attention_param);
+                float[] rgData = FillSmall(p.attention_param);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.01);
-            checker.CheckGradient(layer, BottomVec, TopVec);
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.01);
+                checker.CheckGradient(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

@@ -310,12 +310,19 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONCAT);
             ConcatLayer<T> layer = new ConcatLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(Top.num, Bottom.num, "The top num should equal bottom num.");
-            m_log.CHECK_EQ(Top.channels, Bottom.channels + Bottom1.channels, "The top channels should equal the bottom0.channels + bottom1.channels.");
-            m_log.CHECK_EQ(Top.height, Bottom.height, "The top height should equal the bottom height.");
-            m_log.CHECK_EQ(Top.width, Bottom.width, "The top width should equal the bottom width.");
+                m_log.CHECK_EQ(Top.num, Bottom.num, "The top num should equal bottom num.");
+                m_log.CHECK_EQ(Top.channels, Bottom.channels + Bottom1.channels, "The top channels should equal the bottom0.channels + bottom1.channels.");
+                m_log.CHECK_EQ(Top.height, Bottom.height, "The top height should equal the bottom height.");
+                m_log.CHECK_EQ(Top.width, Bottom.width, "The top width should equal the bottom width.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestSetupChannelsNegativeIndexing()
@@ -327,12 +334,19 @@ namespace MyCaffe.test
             p.concat_param.axis = -3;
             ConcatLayer<T> layer = new ConcatLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(Top.num, Bottom.num, "The top num should equal bottom num.");
-            m_log.CHECK_EQ(Top.channels, Bottom.channels + Bottom1.channels, "The top channels should equal the bottom0.channels + bottom1.channels.");
-            m_log.CHECK_EQ(Top.height, Bottom.height, "The top height should equal the bottom height.");
-            m_log.CHECK_EQ(Top.width, Bottom.width, "The top width should equal the bottom width.");
+                m_log.CHECK_EQ(Top.num, Bottom.num, "The top num should equal bottom num.");
+                m_log.CHECK_EQ(Top.channels, Bottom.channels + Bottom1.channels, "The top channels should equal the bottom0.channels + bottom1.channels.");
+                m_log.CHECK_EQ(Top.height, Bottom.height, "The top height should equal the bottom height.");
+                m_log.CHECK_EQ(Top.width, Bottom.width, "The top width should equal the bottom width.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForwardTrivial()
@@ -340,18 +354,25 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONCAT);
             ConcatLayer<T> layer = new ConcatLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            double[] rgTop = convert(Top.update_cpu_data());
-            double[] rgBottom = convert(Bottom.update_cpu_data());
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                double dfTop = rgTop[i];
-                double dfBottom = rgBottom[i];
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.CHECK_EQ(dfTop, dfTop, "The top and bottom should be equal.");
+                double[] rgTop = convert(Top.update_cpu_data());
+                double[] rgBottom = convert(Bottom.update_cpu_data());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfTop = rgTop[i];
+                    double dfBottom = rgBottom[i];
+
+                    m_log.CHECK_EQ(dfTop, dfTop, "The top and bottom should be equal.");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -361,41 +382,48 @@ namespace MyCaffe.test
             p.concat_param.axis = 0;
             ConcatLayer<T> layer = new ConcatLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec1, TopVec);
-            layer.Forward(BottomVec1, TopVec);
-
-            for (int n = 0; n < BottomVec1[0].num; n++)
+            try
             {
-                for (int c = 0; c < Top.channels; c++)
-                {
-                    for (int h = 0; h < Top.height; h++)
-                    {
-                        for (int w = 0; w < Top.width; w++)
-                        {
-                            double dfTop = convert(Top.data_at(n, c, h, w));
-                            double dfBottom = convert(BottomVec1[0].data_at(n, c, h, w));
+                layer.Setup(BottomVec1, TopVec);
+                layer.Forward(BottomVec1, TopVec);
 
-                            m_log.CHECK_EQ(dfTop, dfBottom, "The top and bottom should be equal at: " + n.ToString() + "," + c.ToString() + "," + h.ToString() + "," + w.ToString());
+                for (int n = 0; n < BottomVec1[0].num; n++)
+                {
+                    for (int c = 0; c < Top.channels; c++)
+                    {
+                        for (int h = 0; h < Top.height; h++)
+                        {
+                            for (int w = 0; w < Top.width; w++)
+                            {
+                                double dfTop = convert(Top.data_at(n, c, h, w));
+                                double dfBottom = convert(BottomVec1[0].data_at(n, c, h, w));
+
+                                m_log.CHECK_EQ(dfTop, dfBottom, "The top and bottom should be equal at: " + n.ToString() + "," + c.ToString() + "," + h.ToString() + "," + w.ToString());
+                            }
+                        }
+                    }
+                }
+
+                for (int n = 0; n < BottomVec1[1].num; n++)
+                {
+                    for (int c = 0; c < Top.channels; c++)
+                    {
+                        for (int h = 0; h < Top.height; h++)
+                        {
+                            for (int w = 0; w < Top.width; w++)
+                            {
+                                double dfTop = convert(Top.data_at(n + 2, c, h, w));
+                                double dfBottom = convert(BottomVec1[1].data_at(n, c, h, w));
+
+                                m_log.CHECK_EQ(dfTop, dfBottom, "The top and bottom should be equal at: " + n.ToString() + "," + c.ToString() + "," + h.ToString() + "," + w.ToString());
+                            }
                         }
                     }
                 }
             }
-
-            for (int n = 0; n < BottomVec1[1].num; n++)
+            finally
             {
-                for (int c = 0; c < Top.channels; c++)
-                {
-                    for (int h = 0; h < Top.height; h++)
-                    {
-                        for (int w = 0; w < Top.width; w++)
-                        {
-                            double dfTop = convert(Top.data_at(n + 2, c, h, w));
-                            double dfBottom = convert(BottomVec1[1].data_at(n, c, h, w));
-
-                            m_log.CHECK_EQ(dfTop, dfBottom, "The top and bottom should be equal at: " + n.ToString() + "," + c.ToString() + "," + h.ToString() + "," + w.ToString());
-                        }
-                    }
-                }
+                layer.Dispose();
             }
         }
 
@@ -404,37 +432,44 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONCAT);
             ConcatLayer<T> layer = new ConcatLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            for (int n = 0; n < Top.num; n++)
+            try
             {
-                for (int c = 0; c < Bottom.channels; c++)
-                {
-                    for (int h = 0; h < Top.height; h++)
-                    {
-                        for (int w = 0; w < Top.width; w++)
-                        {
-                            double dfTop = convert(Top.data_at(n, c, h, w));
-                            double dfBottom = convert(BottomVec[0].data_at(n, c, h, w));
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                            m_log.CHECK_EQ(dfTop, dfBottom, "The top and bottom should be equal at: " + n.ToString() + "," + c.ToString() + "," + h.ToString() + "," + w.ToString());
+                for (int n = 0; n < Top.num; n++)
+                {
+                    for (int c = 0; c < Bottom.channels; c++)
+                    {
+                        for (int h = 0; h < Top.height; h++)
+                        {
+                            for (int w = 0; w < Top.width; w++)
+                            {
+                                double dfTop = convert(Top.data_at(n, c, h, w));
+                                double dfBottom = convert(BottomVec[0].data_at(n, c, h, w));
+
+                                m_log.CHECK_EQ(dfTop, dfBottom, "The top and bottom should be equal at: " + n.ToString() + "," + c.ToString() + "," + h.ToString() + "," + w.ToString());
+                            }
+                        }
+                    }
+                    for (int c = 0; c < Bottom1.channels; c++)
+                    {
+                        for (int h = 0; h < Top.height; h++)
+                        {
+                            for (int w = 0; w < Top.width; w++)
+                            {
+                                double dfTop = convert(Top.data_at(n, c + 3, h, w));
+                                double dfBottom = convert(BottomVec[1].data_at(n, c, h, w));
+
+                                m_log.CHECK_EQ(dfTop, dfBottom, "The top and bottom should be equal at: " + n.ToString() + "," + c.ToString() + "," + h.ToString() + "," + w.ToString());
+                            }
                         }
                     }
                 }
-                for (int c = 0; c < Bottom1.channels; c++)
-                {
-                    for (int h = 0; h < Top.height; h++)
-                    {
-                        for (int w = 0; w < Top.width; w++)
-                        {
-                            double dfTop = convert(Top.data_at(n, c + 3, h, w));
-                            double dfBottom = convert(BottomVec[1].data_at(n, c, h, w));
-
-                            m_log.CHECK_EQ(dfTop, dfBottom, "The top and bottom should be equal at: " + n.ToString() + "," + c.ToString() + "," + h.ToString() + "," + w.ToString());
-                        }
-                    }
-                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -443,10 +478,17 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONCAT);
             ConcatLayer<T> layer = new ConcatLayer<T>(m_cuda, m_log, p);
 
-            BottomVec.RemoveAt(1);
+            try
+            {
+                BottomVec.RemoveAt(1);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         /// <summary>
@@ -458,8 +500,15 @@ namespace MyCaffe.test
             p.concat_param.axis = 0;
             ConcatLayer<T> layer = new ConcatLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
-            checker.CheckGradient(layer, BottomVec1, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
+                checker.CheckGradient(layer, BottomVec1, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         /// <summary>
@@ -470,8 +519,15 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONCAT);
             ConcatLayer<T> layer = new ConcatLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
-            checker.CheckGradient(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
+                checker.CheckGradient(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         /// <summary>
@@ -482,8 +538,15 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONCAT);
             ConcatLayer<T> layer = new ConcatLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
-            checker.CheckGradient(layer, BottomVec, TopVec, 1);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
+                checker.CheckGradient(layer, BottomVec, TopVec, 1);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

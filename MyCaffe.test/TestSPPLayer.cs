@@ -194,17 +194,24 @@ namespace MyCaffe.test
             p.spp_param.pyramid_height = 3;
             SPPLayer<T> layer = new SPPLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
 
-            // expected number of pool results is geometric sum
-            // (1 - r ** n)/(1 - r) where r = 4 and n = pyramid_height;
-            // (1 - 4 ** 3)/(1 - 4) = 21
-            // multiply bottom num_chyannels * expected_pool_results
-            // to get expected num_channels (3 * 21 = 63)
-            m_log.CHECK_EQ(Top.num, 2, "The top should have num = 2");
-            m_log.CHECK_EQ(Top.channels, 63, "The top channels should equal 63");
-            m_log.CHECK_EQ(Top.height, 1, "The top height should equal 1");
-            m_log.CHECK_EQ(Top.width, 1, "The top width should equal 1");
+                // expected number of pool results is geometric sum
+                // (1 - r ** n)/(1 - r) where r = 4 and n = pyramid_height;
+                // (1 - 4 ** 3)/(1 - 4) = 21
+                // multiply bottom num_chyannels * expected_pool_results
+                // to get expected num_channels (3 * 21 = 63)
+                m_log.CHECK_EQ(Top.num, 2, "The top should have num = 2");
+                m_log.CHECK_EQ(Top.channels, 63, "The top channels should equal 63");
+                m_log.CHECK_EQ(Top.height, 1, "The top height should equal 1");
+                m_log.CHECK_EQ(Top.width, 1, "The top width should equal 1");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestEqualOutputDims()
@@ -213,17 +220,24 @@ namespace MyCaffe.test
             p.spp_param.pyramid_height = 5;
             SPPLayer<T> layer = new SPPLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec2, TopVec);
+            try
+            {
+                layer.Setup(BottomVec2, TopVec);
 
-            // expected number of pool results is geometric sum
-            // (1 - r ** n)/(1 - r) where r = 4 and n = pyramid_height;
-            // (1 - 4 ** 5)/(1 - 4) = 341
-            // multiply bottom num_chyannels * expected_pool_results
-            // to get expected num_channels (3 * 341 = 1023)
-            m_log.CHECK_EQ(Top.num, 4, "The top should have num = 4");
-            m_log.CHECK_EQ(Top.channels, 1023, "The top channels should equal 1023");
-            m_log.CHECK_EQ(Top.height, 1, "The top height should equal 1");
-            m_log.CHECK_EQ(Top.width, 1, "The top width should equal 1");
+                // expected number of pool results is geometric sum
+                // (1 - r ** n)/(1 - r) where r = 4 and n = pyramid_height;
+                // (1 - 4 ** 5)/(1 - 4) = 341
+                // multiply bottom num_chyannels * expected_pool_results
+                // to get expected num_channels (3 * 341 = 1023)
+                m_log.CHECK_EQ(Top.num, 4, "The top should have num = 4");
+                m_log.CHECK_EQ(Top.channels, 1023, "The top channels should equal 1023");
+                m_log.CHECK_EQ(Top.height, 1, "The top height should equal 1");
+                m_log.CHECK_EQ(Top.width, 1, "The top width should equal 1");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestEqualOutputDims2()
@@ -232,17 +246,24 @@ namespace MyCaffe.test
             p.spp_param.pyramid_height = 3;
             SPPLayer<T> layer = new SPPLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec3, TopVec);
+            try
+            {
+                layer.Setup(BottomVec3, TopVec);
 
-            // expected number of pool results is geometric sum
-            // (1 - r ** n)/(1 - r) where r = 4 and n = pyramid_height;
-            // (1 - 4 ** 3)/(1 - 4) = 21
-            // multiply bottom num_chyannels * expected_pool_results
-            // to get expected num_channels (3 * 21 = 63)
-            m_log.CHECK_EQ(Top.num, 10, "The top should have num = 10");
-            m_log.CHECK_EQ(Top.channels, 63, "The top channels should equal 63");
-            m_log.CHECK_EQ(Top.height, 1, "The top height should equal 1");
-            m_log.CHECK_EQ(Top.width, 1, "The top width should equal 1");
+                // expected number of pool results is geometric sum
+                // (1 - r ** n)/(1 - r) where r = 4 and n = pyramid_height;
+                // (1 - 4 ** 3)/(1 - 4) = 21
+                // multiply bottom num_chyannels * expected_pool_results
+                // to get expected num_channels (3 * 21 = 63)
+                m_log.CHECK_EQ(Top.num, 10, "The top should have num = 10");
+                m_log.CHECK_EQ(Top.channels, 63, "The top channels should equal 63");
+                m_log.CHECK_EQ(Top.height, 1, "The top height should equal 1");
+                m_log.CHECK_EQ(Top.width, 1, "The top width should equal 1");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForwardBackward()
@@ -251,10 +272,17 @@ namespace MyCaffe.test
             p.spp_param.pyramid_height = 3;
             SPPLayer<T> layer = new SPPLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-            List<bool> rgbPopagateDown = Utility.Create<bool>(BottomVec.Count, true);
-            layer.Backward(BottomVec, rgbPopagateDown, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+                List<bool> rgbPopagateDown = Utility.Create<bool>(BottomVec.Count, true);
+                layer.Backward(BottomVec, rgbPopagateDown, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradient()
@@ -262,9 +290,17 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.SPP);
             p.spp_param.pyramid_height = 3;
             SPPLayer<T> layer = new SPPLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new test.GradientChecker<T>(m_cuda, m_log, 1e-4, 1e-2);
-            layer.Setup(BottomVec, TopVec);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+
+            try
+            {
+                GradientChecker<T> checker = new test.GradientChecker<T>(m_cuda, m_log, 1e-4, 1e-2);
+                layer.Setup(BottomVec, TopVec);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

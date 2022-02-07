@@ -371,12 +371,19 @@ namespace MyCaffe.test
             p.prior_box_param.max_size.Add(m_nMaxSize);
             PriorBoxLayer<T> layer = new PriorBoxLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(m_blob_top.num, 1, "The top should have num = 1.");
-            m_log.CHECK_EQ(m_blob_top.channels, 2, "The top should have channels = 2.");
-            m_log.CHECK_EQ(m_blob_top.height, 100 * 2 * 4, "The top should have height = " + (100 * 2 * 4).ToString() + ".");
-            m_log.CHECK_EQ(m_blob_top.width, 1, "The top should have width = 1.");
+                m_log.CHECK_EQ(m_blob_top.num, 1, "The top should have num = 1.");
+                m_log.CHECK_EQ(m_blob_top.channels, 2, "The top should have channels = 2.");
+                m_log.CHECK_EQ(m_blob_top.height, 100 * 2 * 4, "The top should have height = " + (100 * 2 * 4).ToString() + ".");
+                m_log.CHECK_EQ(m_blob_top.width, 1, "The top should have width = 1.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestSetupMultiSize()
@@ -388,12 +395,19 @@ namespace MyCaffe.test
             p.prior_box_param.max_size.Add(m_nMaxSize + 10);
             PriorBoxLayer<T> layer = new PriorBoxLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            { 
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(m_blob_top.num, 1, "The top should have num = 1.");
-            m_log.CHECK_EQ(m_blob_top.channels, 2, "The top should have channels = 2.");
-            m_log.CHECK_EQ(m_blob_top.height, 100 * 4 * 4, "The top should have height = " + (100 * 1 * 4).ToString() + ".");
-            m_log.CHECK_EQ(m_blob_top.width, 1, "The top should have width = 1.");
+                m_log.CHECK_EQ(m_blob_top.num, 1, "The top should have num = 1.");
+                m_log.CHECK_EQ(m_blob_top.channels, 2, "The top should have channels = 2.");
+                m_log.CHECK_EQ(m_blob_top.height, 100 * 4 * 4, "The top should have height = " + (100 * 1 * 4).ToString() + ".");
+                m_log.CHECK_EQ(m_blob_top.width, 1, "The top should have width = 1.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestSetupNoMaxSize()
@@ -402,12 +416,19 @@ namespace MyCaffe.test
             p.prior_box_param.min_size.Add(m_nMinSize);
             PriorBoxLayer<T> layer = new PriorBoxLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            { 
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(m_blob_top.num, 1, "The top should have num = 1.");
-            m_log.CHECK_EQ(m_blob_top.channels, 2, "The top should have channels = 2.");
-            m_log.CHECK_EQ(m_blob_top.height, 100 * 1 * 4, "The top should have height = " + (100 * 4 * 4).ToString() + ".");
-            m_log.CHECK_EQ(m_blob_top.width, 1, "The top should have width = 1.");
+                m_log.CHECK_EQ(m_blob_top.num, 1, "The top should have num = 1.");
+                m_log.CHECK_EQ(m_blob_top.channels, 2, "The top should have channels = 2.");
+                m_log.CHECK_EQ(m_blob_top.height, 100 * 1 * 4, "The top should have height = " + (100 * 4 * 4).ToString() + ".");
+                m_log.CHECK_EQ(m_blob_top.width, 1, "The top should have width = 1.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestSetupMultiSizeNoMaxSize()
@@ -417,12 +438,19 @@ namespace MyCaffe.test
             p.prior_box_param.min_size.Add(m_nMinSize + 10);
             PriorBoxLayer<T> layer = new PriorBoxLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            { 
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(m_blob_top.num, 1, "The top should have num = 1.");
-            m_log.CHECK_EQ(m_blob_top.channels, 2, "The top should have channels = 2.");
-            m_log.CHECK_EQ(m_blob_top.height, 100 * 2 * 4, "The top should have height = " + (100 * 2 * 4).ToString() + ".");
-            m_log.CHECK_EQ(m_blob_top.width, 1, "The top should have width = 1.");
+                m_log.CHECK_EQ(m_blob_top.num, 1, "The top should have num = 1.");
+                m_log.CHECK_EQ(m_blob_top.channels, 2, "The top should have channels = 2.");
+                m_log.CHECK_EQ(m_blob_top.height, 100 * 2 * 4, "The top should have height = " + (100 * 2 * 4).ToString() + ".");
+                m_log.CHECK_EQ(m_blob_top.width, 1, "The top should have width = 1.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestSetupAspectRatio1()
@@ -436,12 +464,19 @@ namespace MyCaffe.test
 
             PriorBoxLayer<T> layer = new PriorBoxLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            { 
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(m_blob_top.num, 1, "The top should have num = 1.");
-            m_log.CHECK_EQ(m_blob_top.channels, 2, "The top should have channels = 2.");
-            m_log.CHECK_EQ(m_blob_top.height, 100 * 3 * 4, "The top should have height = " + (100 * 3 * 4).ToString() + ".");
-            m_log.CHECK_EQ(m_blob_top.width, 1, "The top should have width = 1.");
+                m_log.CHECK_EQ(m_blob_top.num, 1, "The top should have num = 1.");
+                m_log.CHECK_EQ(m_blob_top.channels, 2, "The top should have channels = 2.");
+                m_log.CHECK_EQ(m_blob_top.height, 100 * 3 * 4, "The top should have height = " + (100 * 3 * 4).ToString() + ".");
+                m_log.CHECK_EQ(m_blob_top.width, 1, "The top should have width = 1.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestSetupAspectRatioNoFlip()
@@ -455,12 +490,19 @@ namespace MyCaffe.test
 
             PriorBoxLayer<T> layer = new PriorBoxLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            { 
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(m_blob_top.num, 1, "The top should have num = 1.");
-            m_log.CHECK_EQ(m_blob_top.channels, 2, "The top should have channels = 2.");
-            m_log.CHECK_EQ(m_blob_top.height, 100 * 4 * 4, "The top should have height = " + (100 * 4 * 4).ToString() + ".");
-            m_log.CHECK_EQ(m_blob_top.width, 1, "The top should have width = 1.");
+                m_log.CHECK_EQ(m_blob_top.num, 1, "The top should have num = 1.");
+                m_log.CHECK_EQ(m_blob_top.channels, 2, "The top should have channels = 2.");
+                m_log.CHECK_EQ(m_blob_top.height, 100 * 4 * 4, "The top should have height = " + (100 * 4 * 4).ToString() + ".");
+                m_log.CHECK_EQ(m_blob_top.width, 1, "The top should have width = 1.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestSetupAspectRatio()
@@ -473,12 +515,19 @@ namespace MyCaffe.test
 
             PriorBoxLayer<T> layer = new PriorBoxLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            { 
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(m_blob_top.num, 1, "The top should have num = 1.");
-            m_log.CHECK_EQ(m_blob_top.channels, 2, "The top should have channels = 2.");
-            m_log.CHECK_EQ(m_blob_top.height, 100 * 6 * 4, "The top should have height = " + (100 * 6 * 4).ToString() + ".");
-            m_log.CHECK_EQ(m_blob_top.width, 1, "The top should have width = 1.");
+                m_log.CHECK_EQ(m_blob_top.num, 1, "The top should have num = 1.");
+                m_log.CHECK_EQ(m_blob_top.channels, 2, "The top should have channels = 2.");
+                m_log.CHECK_EQ(m_blob_top.height, 100 * 6 * 4, "The top should have height = " + (100 * 6 * 4).ToString() + ".");
+                m_log.CHECK_EQ(m_blob_top.width, 1, "The top should have width = 1.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestSetupAspectRatioMultiSize()
@@ -493,12 +542,19 @@ namespace MyCaffe.test
 
             PriorBoxLayer<T> layer = new PriorBoxLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            { 
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(m_blob_top.num, 1, "The top should have num = 1.");
-            m_log.CHECK_EQ(m_blob_top.channels, 2, "The top should have channels = 2.");
-            m_log.CHECK_EQ(m_blob_top.height, 100 * 12 * 4, "The top should have height = " + (100 * 12 * 4).ToString() + ".");
-            m_log.CHECK_EQ(m_blob_top.width, 1, "The top should have width = 1.");
+                m_log.CHECK_EQ(m_blob_top.num, 1, "The top should have num = 1.");
+                m_log.CHECK_EQ(m_blob_top.channels, 2, "The top should have channels = 2.");
+                m_log.CHECK_EQ(m_blob_top.height, 100 * 12 * 4, "The top should have height = " + (100 * 12 * 4).ToString() + ".");
+                m_log.CHECK_EQ(m_blob_top.width, 1, "The top should have width = 1.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestCpu()
@@ -510,38 +566,45 @@ namespace MyCaffe.test
 
             PriorBoxLayer<T> layer = new PriorBoxLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
+            try
+            { 
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            // Now, check values
-            double[] rgdfTopData = convert(m_blob_top.mutable_cpu_data);
-            int nTopDataOffset = 0;
-            int nDim = m_blob_top.height;
+                // Now, check values
+                double[] rgdfTopData = convert(m_blob_top.mutable_cpu_data);
+                int nTopDataOffset = 0;
+                int nDim = m_blob_top.height;
 
-            // Pick a few generated priors and compare against expected number.
-            // first prior
-            m_log.EXPECT_NEAR(rgdfTopData[0], 0.03, dfEps, "The value at 0 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[1], 0.03, dfEps, "The value at 1 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[2], 0.07, dfEps, "The value at 2 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[3], 0.07, dfEps, "The value at 3 is incorrect.");
+                // Pick a few generated priors and compare against expected number.
+                // first prior
+                m_log.EXPECT_NEAR(rgdfTopData[0], 0.03, dfEps, "The value at 0 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[1], 0.03, dfEps, "The value at 1 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[2], 0.07, dfEps, "The value at 2 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[3], 0.07, dfEps, "The value at 3 is incorrect.");
 
-            // second prior
-            m_log.EXPECT_NEAR(rgdfTopData[4], 0.02, dfEps, "The value at 4 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[5], 0.02, dfEps, "The value at 5 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[6], 0.08, dfEps, "The value at 6 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[7], 0.08, dfEps, "The value at 7 is incorrect.");
+                // second prior
+                m_log.EXPECT_NEAR(rgdfTopData[4], 0.02, dfEps, "The value at 4 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[5], 0.02, dfEps, "The value at 5 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[6], 0.08, dfEps, "The value at 6 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[7], 0.08, dfEps, "The value at 7 is incorrect.");
 
-            // prior in the 5-th row and 5-th col
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 0], 0.43, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 1], 0.43, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 2], 0.47, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 3], 0.47, dfEps, "The value at is incorrect.");
+                // prior in the 5-th row and 5-th col
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 0], 0.43, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 1], 0.43, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 2], 0.47, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 3], 0.47, dfEps, "The value at is incorrect.");
 
-            // Check variance.
-            nTopDataOffset += nDim;
-            for (int d = 0; d < nDim; d++)
+                // Check variance.
+                nTopDataOffset += nDim;
+                for (int d = 0; d < nDim; d++)
+                {
+                    m_log.EXPECT_NEAR(rgdfTopData[nTopDataOffset + d], 0.1, dfEps, "The variance at " + d.ToString() + " is incorrect.");
+                }
+            }
+            finally
             {
-                m_log.EXPECT_NEAR(rgdfTopData[nTopDataOffset + d], 0.1, dfEps, "The variance at " + d.ToString() + " is incorrect.");
+                layer.Dispose();
             }
         }
 
@@ -553,32 +616,39 @@ namespace MyCaffe.test
 
             PriorBoxLayer<T> layer = new PriorBoxLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Now, check values
-            double[] rgdfTopData = convert(m_blob_top.mutable_cpu_data);
-            int nTopDataOffset = 0;
-            int nDim = m_blob_top.height;
-
-            // Pick a few generated priors and compare against expected number.
-            // first prior
-            m_log.EXPECT_NEAR(rgdfTopData[0], 0.03, dfEps, "The value at 0 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[1], 0.03, dfEps, "The value at 1 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[2], 0.07, dfEps, "The value at 2 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[3], 0.07, dfEps, "The value at 3 is incorrect.");
-
-            // prior in the 5-th row and 5-th col
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 1 * 4 + 4 * 1 * 4 + 0], 0.43, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 1 * 4 + 4 * 1 * 4 + 1], 0.43, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 1 * 4 + 4 * 1 * 4 + 2], 0.47, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 1 * 4 + 4 * 1 * 4 + 3], 0.47, dfEps, "The value at is incorrect.");
-
-            // Check variance.
-            nTopDataOffset += nDim;
-            for (int d = 0; d < nDim; d++)
+            try
             {
-                m_log.EXPECT_NEAR(rgdfTopData[nTopDataOffset + d], 0.1, dfEps, "The variance at " + d.ToString() + " is incorrect.");
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // Now, check values
+                double[] rgdfTopData = convert(m_blob_top.mutable_cpu_data);
+                int nTopDataOffset = 0;
+                int nDim = m_blob_top.height;
+
+                // Pick a few generated priors and compare against expected number.
+                // first prior
+                m_log.EXPECT_NEAR(rgdfTopData[0], 0.03, dfEps, "The value at 0 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[1], 0.03, dfEps, "The value at 1 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[2], 0.07, dfEps, "The value at 2 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[3], 0.07, dfEps, "The value at 3 is incorrect.");
+
+                // prior in the 5-th row and 5-th col
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 1 * 4 + 4 * 1 * 4 + 0], 0.43, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 1 * 4 + 4 * 1 * 4 + 1], 0.43, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 1 * 4 + 4 * 1 * 4 + 2], 0.47, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 1 * 4 + 4 * 1 * 4 + 3], 0.47, dfEps, "The value at is incorrect.");
+
+                // Check variance.
+                nTopDataOffset += nDim;
+                for (int d = 0; d < nDim; d++)
+                {
+                    m_log.EXPECT_NEAR(rgdfTopData[nTopDataOffset + d], 0.1, dfEps, "The variance at " + d.ToString() + " is incorrect.");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -592,38 +662,45 @@ namespace MyCaffe.test
 
             PriorBoxLayer<T> layer = new PriorBoxLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
+            try
+            { 
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            // Now, check values
-            double[] rgdfTopData = convert(m_blob_top.mutable_cpu_data);
-            int nTopDataOffset = 0;
-            int nDim = m_blob_top.height;
+                // Now, check values
+                double[] rgdfTopData = convert(m_blob_top.mutable_cpu_data);
+                int nTopDataOffset = 0;
+                int nDim = m_blob_top.height;
 
-            // Pick a few generated priors and compare against expected number.
-            // first prior
-            m_log.EXPECT_NEAR(rgdfTopData[0], 0.03, dfEps, "The value at 0 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[1], 0.03, dfEps, "The value at 1 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[2], 0.07, dfEps, "The value at 2 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[3], 0.07, dfEps, "The value at 3 is incorrect.");
+                // Pick a few generated priors and compare against expected number.
+                // first prior
+                m_log.EXPECT_NEAR(rgdfTopData[0], 0.03, dfEps, "The value at 0 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[1], 0.03, dfEps, "The value at 1 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[2], 0.07, dfEps, "The value at 2 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[3], 0.07, dfEps, "The value at 3 is incorrect.");
 
-            // second prior
-            m_log.EXPECT_NEAR(rgdfTopData[4], 0.02, dfEps, "The value at 4 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[5], 0.02, dfEps, "The value at 5 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[6], 0.08, dfEps, "The value at 6 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[7], 0.08, dfEps, "The value at 7 is incorrect.");
+                // second prior
+                m_log.EXPECT_NEAR(rgdfTopData[4], 0.02, dfEps, "The value at 4 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[5], 0.02, dfEps, "The value at 5 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[6], 0.08, dfEps, "The value at 6 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[7], 0.08, dfEps, "The value at 7 is incorrect.");
 
-            // prior in the 5-th row and 5-th col
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 0], 0.43, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 1], 0.43, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 2], 0.47, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 3], 0.47, dfEps, "The value at is incorrect.");
+                // prior in the 5-th row and 5-th col
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 0], 0.43, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 1], 0.43, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 2], 0.47, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 3], 0.47, dfEps, "The value at is incorrect.");
 
-            // Check variance.
-            nTopDataOffset += nDim;
-            for (int d = 0; d < nDim; d++)
+                // Check variance.
+                nTopDataOffset += nDim;
+                for (int d = 0; d < nDim; d++)
+                {
+                    m_log.EXPECT_NEAR(rgdfTopData[nTopDataOffset + d], 1.0, dfEps, "The variance at " + d.ToString() + " is incorrect.");
+                }
+            }
+            finally
             {
-                m_log.EXPECT_NEAR(rgdfTopData[nTopDataOffset + d], 1.0, dfEps, "The variance at " + d.ToString() + " is incorrect.");
+                layer.Dispose();
             }
         }
 
@@ -640,38 +717,45 @@ namespace MyCaffe.test
 
             PriorBoxLayer<T> layer = new PriorBoxLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
+            try
+            { 
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            // Now, check values
-            double[] rgdfTopData = convert(m_blob_top.mutable_cpu_data);
-            int nTopDataOffset = 0;
-            int nDim = m_blob_top.height;
+                // Now, check values
+                double[] rgdfTopData = convert(m_blob_top.mutable_cpu_data);
+                int nTopDataOffset = 0;
+                int nDim = m_blob_top.height;
 
-            // Pick a few generated priors and compare against expected number.
-            // first prior
-            m_log.EXPECT_NEAR(rgdfTopData[0], 0.03, dfEps, "The value at 0 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[1], 0.03, dfEps, "The value at 1 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[2], 0.07, dfEps, "The value at 2 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[3], 0.07, dfEps, "The value at 3 is incorrect.");
+                // Pick a few generated priors and compare against expected number.
+                // first prior
+                m_log.EXPECT_NEAR(rgdfTopData[0], 0.03, dfEps, "The value at 0 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[1], 0.03, dfEps, "The value at 1 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[2], 0.07, dfEps, "The value at 2 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[3], 0.07, dfEps, "The value at 3 is incorrect.");
 
-            // second prior
-            m_log.EXPECT_NEAR(rgdfTopData[4], 0.02, dfEps, "The value at 4 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[5], 0.02, dfEps, "The value at 5 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[6], 0.08, dfEps, "The value at 6 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[7], 0.08, dfEps, "The value at 7 is incorrect.");
+                // second prior
+                m_log.EXPECT_NEAR(rgdfTopData[4], 0.02, dfEps, "The value at 4 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[5], 0.02, dfEps, "The value at 5 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[6], 0.08, dfEps, "The value at 6 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[7], 0.08, dfEps, "The value at 7 is incorrect.");
 
-            // prior in the 5-th row and 5-th col
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 0], 0.43, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 1], 0.43, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 2], 0.47, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 3], 0.47, dfEps, "The value at is incorrect.");
+                // prior in the 5-th row and 5-th col
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 0], 0.43, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 1], 0.43, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 2], 0.47, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 2 * 4 + 4 * 2 * 4 + 3], 0.47, dfEps, "The value at is incorrect.");
 
-            // Check variance.
-            nTopDataOffset += nDim;
-            for (int d = 0; d < nDim; d++)
+                // Check variance.
+                nTopDataOffset += nDim;
+                for (int d = 0; d < nDim; d++)
+                {
+                    m_log.EXPECT_NEAR(rgdfTopData[nTopDataOffset + d], 0.1 * (d % 4 + 1), dfEps, "The variance at " + d.ToString() + " is incorrect.");
+                }
+            }
+            finally
             {
-                m_log.EXPECT_NEAR(rgdfTopData[nTopDataOffset + d], 0.1 * (d % 4 + 1), dfEps, "The variance at " + d.ToString() + " is incorrect.");
+                layer.Dispose();
             }
         }
 
@@ -686,50 +770,57 @@ namespace MyCaffe.test
 
             PriorBoxLayer<T> layer = new PriorBoxLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
+            try
+            { 
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            // Now, check values
-            double[] rgdfTopData = convert(m_blob_top.mutable_cpu_data);
-            int nTopDataOffset = 0;
-            int nDim = m_blob_top.height;
+                // Now, check values
+                double[] rgdfTopData = convert(m_blob_top.mutable_cpu_data);
+                int nTopDataOffset = 0;
+                int nDim = m_blob_top.height;
 
-            // Pick a few generated priors and compare against expected number.
-            // first prior
-            m_log.EXPECT_NEAR(rgdfTopData[0], 0.03, dfEps, "The value at 0 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[1], 0.03, dfEps, "The value at 1 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[2], 0.07, dfEps, "The value at 2 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[3], 0.07, dfEps, "The value at 3 is incorrect.");
+                // Pick a few generated priors and compare against expected number.
+                // first prior
+                m_log.EXPECT_NEAR(rgdfTopData[0], 0.03, dfEps, "The value at 0 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[1], 0.03, dfEps, "The value at 1 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[2], 0.07, dfEps, "The value at 2 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[3], 0.07, dfEps, "The value at 3 is incorrect.");
 
-            // second prior
-            m_log.EXPECT_NEAR(rgdfTopData[4], 0.02, dfEps, "The value at 4 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[5], 0.02, dfEps, "The value at 5 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[6], 0.08, dfEps, "The value at 6 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[7], 0.08, dfEps, "The value at 7 is incorrect.");
+                // second prior
+                m_log.EXPECT_NEAR(rgdfTopData[4], 0.02, dfEps, "The value at 4 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[5], 0.02, dfEps, "The value at 5 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[6], 0.08, dfEps, "The value at 6 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[7], 0.08, dfEps, "The value at 7 is incorrect.");
 
-            // third prior
-            m_log.EXPECT_NEAR(rgdfTopData[8], 0.05 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at 8 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[9], 0.05 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at 9 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[10], 0.05 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at 10 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[11], 0.05 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at 11 is incorrect.");
+                // third prior
+                m_log.EXPECT_NEAR(rgdfTopData[8], 0.05 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at 8 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[9], 0.05 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at 9 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[10], 0.05 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at 10 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[11], 0.05 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at 11 is incorrect.");
 
-            // prior in the 5-th row and 5-th col
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 3 * 4 + 4 * 3 * 4 + 0], 0.43, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 3 * 4 + 4 * 3 * 4 + 1], 0.43, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 3 * 4 + 4 * 3 * 4 + 2], 0.47, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 3 * 4 + 4 * 3 * 4 + 3], 0.47, dfEps, "The value at is incorrect.");
+                // prior in the 5-th row and 5-th col
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 3 * 4 + 4 * 3 * 4 + 0], 0.43, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 3 * 4 + 4 * 3 * 4 + 1], 0.43, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 3 * 4 + 4 * 3 * 4 + 2], 0.47, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 3 * 4 + 4 * 3 * 4 + 3], 0.47, dfEps, "The value at is incorrect.");
 
-            // prior with ratio 1:2 in the 5-th row and 5-th col
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 3 * 4 + 4 * 3 * 4 + 8], 0.45 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 3 * 4 + 4 * 3 * 4 + 9], 0.45 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 3 * 4 + 4 * 3 * 4 + 10], 0.45 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 3 * 4 + 4 * 3 * 4 + 11], 0.45 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                // prior with ratio 1:2 in the 5-th row and 5-th col
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 3 * 4 + 4 * 3 * 4 + 8], 0.45 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 3 * 4 + 4 * 3 * 4 + 9], 0.45 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 3 * 4 + 4 * 3 * 4 + 10], 0.45 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 3 * 4 + 4 * 3 * 4 + 11], 0.45 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
 
-            // Check variance.
-            nTopDataOffset += nDim;
-            for (int d = 0; d < nDim; d++)
+                // Check variance.
+                nTopDataOffset += nDim;
+                for (int d = 0; d < nDim; d++)
+                {
+                    m_log.EXPECT_NEAR(rgdfTopData[nTopDataOffset + d], 0.1, dfEps, "The variance at " + d.ToString() + " is incorrect.");
+                }
+            }
+            finally
             {
-                m_log.EXPECT_NEAR(rgdfTopData[nTopDataOffset + d], 0.1, dfEps, "The variance at " + d.ToString() + " is incorrect.");
+                layer.Dispose();
             }
         }
 
@@ -743,62 +834,69 @@ namespace MyCaffe.test
 
             PriorBoxLayer<T> layer = new PriorBoxLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
+            try
+            { 
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            // Now, check values
-            double[] rgdfTopData = convert(m_blob_top.mutable_cpu_data);
-            int nTopDataOffset = 0;
-            int nDim = m_blob_top.height;
+                // Now, check values
+                double[] rgdfTopData = convert(m_blob_top.mutable_cpu_data);
+                int nTopDataOffset = 0;
+                int nDim = m_blob_top.height;
 
-            // Pick a few generated priors and compare against expected number.
-            // first prior
-            m_log.EXPECT_NEAR(rgdfTopData[0], 0.03, dfEps, "The value at 0 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[1], 0.03, dfEps, "The value at 1 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[2], 0.07, dfEps, "The value at 2 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[3], 0.07, dfEps, "The value at 3 is incorrect.");
+                // Pick a few generated priors and compare against expected number.
+                // first prior
+                m_log.EXPECT_NEAR(rgdfTopData[0], 0.03, dfEps, "The value at 0 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[1], 0.03, dfEps, "The value at 1 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[2], 0.07, dfEps, "The value at 2 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[3], 0.07, dfEps, "The value at 3 is incorrect.");
 
-            // second prior
-            m_log.EXPECT_NEAR(rgdfTopData[4], 0.02, dfEps, "The value at 4 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[5], 0.02, dfEps, "The value at 5 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[6], 0.08, dfEps, "The value at 6 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[7], 0.08, dfEps, "The value at 7 is incorrect.");
+                // second prior
+                m_log.EXPECT_NEAR(rgdfTopData[4], 0.02, dfEps, "The value at 4 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[5], 0.02, dfEps, "The value at 5 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[6], 0.08, dfEps, "The value at 6 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[7], 0.08, dfEps, "The value at 7 is incorrect.");
 
-            // third prior
-            m_log.EXPECT_NEAR(rgdfTopData[8], 0.05 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at 8 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[9], 0.05 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at 9 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[10], 0.05 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at 10 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[11], 0.05 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at 11 is incorrect.");
+                // third prior
+                m_log.EXPECT_NEAR(rgdfTopData[8], 0.05 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at 8 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[9], 0.05 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at 9 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[10], 0.05 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at 10 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[11], 0.05 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at 11 is incorrect.");
 
-            // fourth prior
-            m_log.EXPECT_NEAR(rgdfTopData[12], 0.05 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at 12 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[13], 0.05 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at 13 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[14], 0.05 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at 14 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[15], 0.05 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at 15 is incorrect.");
+                // fourth prior
+                m_log.EXPECT_NEAR(rgdfTopData[12], 0.05 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at 12 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[13], 0.05 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at 13 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[14], 0.05 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at 14 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[15], 0.05 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at 15 is incorrect.");
 
-            // prior in the 5-th row and 5-th col
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 0], 0.43, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 1], 0.43, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 2], 0.47, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 3], 0.47, dfEps, "The value at is incorrect.");
+                // prior in the 5-th row and 5-th col
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 0], 0.43, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 1], 0.43, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 2], 0.47, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 3], 0.47, dfEps, "The value at is incorrect.");
 
-            // prior with ratio 1:2 in the 5-th row and 5-th col
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 8], 0.45 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 9], 0.45 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 10], 0.45 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 11], 0.45 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                // prior with ratio 1:2 in the 5-th row and 5-th col
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 8], 0.45 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 9], 0.45 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 10], 0.45 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 11], 0.45 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
 
-            // prior with ratio 2:1 in the 5-th row and 5-th col
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 12], 0.45 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 13], 0.45 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 14], 0.45 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 15], 0.45 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                // prior with ratio 2:1 in the 5-th row and 5-th col
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 12], 0.45 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 13], 0.45 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 14], 0.45 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[4 * 10 * 4 * 4 + 4 * 4 * 4 + 15], 0.45 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
 
-            // Check variance.
-            nTopDataOffset += nDim;
-            for (int d = 0; d < nDim; d++)
+                // Check variance.
+                nTopDataOffset += nDim;
+                for (int d = 0; d < nDim; d++)
+                {
+                    m_log.EXPECT_NEAR(rgdfTopData[nTopDataOffset + d], 0.1, dfEps, "The variance at " + d.ToString() + " is incorrect.");
+                }
+            }
+            finally
             {
-                m_log.EXPECT_NEAR(rgdfTopData[nTopDataOffset + d], 0.1, dfEps, "The variance at " + d.ToString() + " is incorrect.");
+                layer.Dispose();
             }
         }
 
@@ -815,86 +913,93 @@ namespace MyCaffe.test
 
             PriorBoxLayer<T> layer = new PriorBoxLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
+            try
+            { 
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            // Now, check values
-            double[] rgdfTopData = convert(m_blob_top.mutable_cpu_data);
-            int nTopDataOffset = 0;
-            int nDim = m_blob_top.height;
+                // Now, check values
+                double[] rgdfTopData = convert(m_blob_top.mutable_cpu_data);
+                int nTopDataOffset = 0;
+                int nDim = m_blob_top.height;
 
-            // Pick a few generated priors and compare against expected number.
-            // first prior
-            m_log.EXPECT_NEAR(rgdfTopData[0], 0.03, dfEps, "The value at 0 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[1], 0.03, dfEps, "The value at 1 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[2], 0.07, dfEps, "The value at 2 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[3], 0.07, dfEps, "The value at 3 is incorrect.");
+                // Pick a few generated priors and compare against expected number.
+                // first prior
+                m_log.EXPECT_NEAR(rgdfTopData[0], 0.03, dfEps, "The value at 0 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[1], 0.03, dfEps, "The value at 1 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[2], 0.07, dfEps, "The value at 2 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[3], 0.07, dfEps, "The value at 3 is incorrect.");
 
-            // second prior
-            m_log.EXPECT_NEAR(rgdfTopData[4], 0.02, dfEps, "The value at 4 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[5], 0.02, dfEps, "The value at 5 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[6], 0.08, dfEps, "The value at 6 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[7], 0.08, dfEps, "The value at 7 is incorrect.");
+                // second prior
+                m_log.EXPECT_NEAR(rgdfTopData[4], 0.02, dfEps, "The value at 4 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[5], 0.02, dfEps, "The value at 5 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[6], 0.08, dfEps, "The value at 6 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[7], 0.08, dfEps, "The value at 7 is incorrect.");
 
-            // third prior
-            m_log.EXPECT_NEAR(rgdfTopData[8], 0.05 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at 8 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[9], 0.05 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at 9 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[10], 0.05 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at 10 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[11], 0.05 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at 11 is incorrect.");
+                // third prior
+                m_log.EXPECT_NEAR(rgdfTopData[8], 0.05 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at 8 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[9], 0.05 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at 9 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[10], 0.05 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at 10 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[11], 0.05 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at 11 is incorrect.");
 
-            // fourth prior
-            m_log.EXPECT_NEAR(rgdfTopData[12], 0.05 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at 4 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[13], 0.05 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at 5 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[14], 0.05 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at 6 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[15], 0.05 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at 7 is incorrect.");
+                // fourth prior
+                m_log.EXPECT_NEAR(rgdfTopData[12], 0.05 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at 4 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[13], 0.05 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at 5 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[14], 0.05 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at 6 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[15], 0.05 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at 7 is incorrect.");
 
-            // fifth prior
-            m_log.EXPECT_NEAR(rgdfTopData[16], 0.01, dfEps, "The value at 16 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[17], 0.01, dfEps, "The value at 17 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[18], 0.09, dfEps, "The value at 18 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[19], 0.09, dfEps, "The value at 19 is incorrect.");
+                // fifth prior
+                m_log.EXPECT_NEAR(rgdfTopData[16], 0.01, dfEps, "The value at 16 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[17], 0.01, dfEps, "The value at 17 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[18], 0.09, dfEps, "The value at 18 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[19], 0.09, dfEps, "The value at 19 is incorrect.");
 
-            // sixth prior
-            m_log.EXPECT_NEAR(rgdfTopData[20], 0.00, dfEps, "The value at 20 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[21], 0.00, dfEps, "The value at 21 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[22], 0.11, dfEps, "The value at 22 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[23], 0.11, dfEps, "The value at 23 is incorrect.");
+                // sixth prior
+                m_log.EXPECT_NEAR(rgdfTopData[20], 0.00, dfEps, "The value at 20 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[21], 0.00, dfEps, "The value at 21 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[22], 0.11, dfEps, "The value at 22 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[23], 0.11, dfEps, "The value at 23 is incorrect.");
 
-            // seventh prior
-            m_log.EXPECT_NEAR(rgdfTopData[24], 0.00, dfEps, "The value at 24 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[25], 0.05 - 0.04/Math.Sqrt(2.0), dfEps, "The value at 25 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[26], 0.05 + 0.04*Math.Sqrt(2.0), dfEps, "The value at 26 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[27], 0.05 + 0.04/Math.Sqrt(2.0), dfEps, "The value at 27 is incorrect.");
+                // seventh prior
+                m_log.EXPECT_NEAR(rgdfTopData[24], 0.00, dfEps, "The value at 24 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[25], 0.05 - 0.04/Math.Sqrt(2.0), dfEps, "The value at 25 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[26], 0.05 + 0.04*Math.Sqrt(2.0), dfEps, "The value at 26 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[27], 0.05 + 0.04/Math.Sqrt(2.0), dfEps, "The value at 27 is incorrect.");
 
-            // eight prior
-            m_log.EXPECT_NEAR(rgdfTopData[28], 0.05 - 0.04 / Math.Sqrt(2.0), dfEps, "The value at 28 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[29], 0.00, dfEps, "The value at 29 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[30], 0.05 + 0.04 / Math.Sqrt(2.0), dfEps, "The value at 30 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[31], 0.05 + 0.04 * Math.Sqrt(2.0), dfEps, "The value at 31 is incorrect.");
+                // eight prior
+                m_log.EXPECT_NEAR(rgdfTopData[28], 0.05 - 0.04 / Math.Sqrt(2.0), dfEps, "The value at 28 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[29], 0.00, dfEps, "The value at 29 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[30], 0.05 + 0.04 / Math.Sqrt(2.0), dfEps, "The value at 30 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[31], 0.05 + 0.04 * Math.Sqrt(2.0), dfEps, "The value at 31 is incorrect.");
 
-            // prior in the 5-th row and 5-th col
-            m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 0], 0.43, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 1], 0.43, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 2], 0.47, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 3], 0.47, dfEps, "The value at is incorrect.");
+                // prior in the 5-th row and 5-th col
+                m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 0], 0.43, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 1], 0.43, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 2], 0.47, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 3], 0.47, dfEps, "The value at is incorrect.");
 
-            // prior with ratio 1:2 in the 5-th row and 5-th col
-            m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 8], 0.45 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 9], 0.45 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 10], 0.45 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 11], 0.45 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                // prior with ratio 1:2 in the 5-th row and 5-th col
+                m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 8], 0.45 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 9], 0.45 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 10], 0.45 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 11], 0.45 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
 
-            // prior with ratio 2:1 in the 5-th row and 5-th col
-            m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 12], 0.45 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 13], 0.45 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 14], 0.45 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 15], 0.45 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                // prior with ratio 2:1 in the 5-th row and 5-th col
+                m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 12], 0.45 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 13], 0.45 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 14], 0.45 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[8 * 10 * 4 * 4 + 8 * 4 * 4 + 15], 0.45 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
 
-            // Check variance.
-            nTopDataOffset += nDim;
-            for (int d = 0; d < nDim; d++)
+                // Check variance.
+                nTopDataOffset += nDim;
+                for (int d = 0; d < nDim; d++)
+                {
+                    m_log.EXPECT_NEAR(rgdfTopData[nTopDataOffset + d], 0.1, dfEps, "The variance at " + d.ToString() + " is incorrect.");
+                }
+            }
+            finally
             {
-                m_log.EXPECT_NEAR(rgdfTopData[nTopDataOffset + d], 0.1, dfEps, "The variance at " + d.ToString() + " is incorrect.");
+                layer.Dispose();
             }
         }
 
@@ -920,66 +1025,73 @@ namespace MyCaffe.test
 
             PriorBoxLayer<T> layer = new PriorBoxLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
+            try
+            { 
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            // Now, check values
-            double[] rgdfTopData = convert(m_blob_top.mutable_cpu_data);
-            int nTopDataOffset = 0;
-            int nDim = m_blob_top.height;
+                // Now, check values
+                double[] rgdfTopData = convert(m_blob_top.mutable_cpu_data);
+                int nTopDataOffset = 0;
+                int nDim = m_blob_top.height;
 
-            // Pick a few generated priors and compare against expected number.
-            // first prior
-            m_log.EXPECT_NEAR(rgdfTopData[0], 0.03, dfEps, "The value at 0 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[1], 0.03, dfEps, "The value at 1 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[2], 0.07, dfEps, "The value at 2 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[3], 0.07, dfEps, "The value at 3 is incorrect.");
+                // Pick a few generated priors and compare against expected number.
+                // first prior
+                m_log.EXPECT_NEAR(rgdfTopData[0], 0.03, dfEps, "The value at 0 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[1], 0.03, dfEps, "The value at 1 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[2], 0.07, dfEps, "The value at 2 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[3], 0.07, dfEps, "The value at 3 is incorrect.");
 
-            // second prior
-            m_log.EXPECT_NEAR(rgdfTopData[4], 0.02, dfEps, "The value at 4 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[5], 0.02, dfEps, "The value at 5 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[6], 0.08, dfEps, "The value at 6 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[7], 0.08, dfEps, "The value at 7 is incorrect.");
+                // second prior
+                m_log.EXPECT_NEAR(rgdfTopData[4], 0.02, dfEps, "The value at 4 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[5], 0.02, dfEps, "The value at 5 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[6], 0.08, dfEps, "The value at 6 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[7], 0.08, dfEps, "The value at 7 is incorrect.");
 
-            // third prior
-            m_log.EXPECT_NEAR(rgdfTopData[8], 0.05 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at 8 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[9], 0.05 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at 9 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[10], 0.05 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at 10 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[11], 0.05 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at 11 is incorrect.");
+                // third prior
+                m_log.EXPECT_NEAR(rgdfTopData[8], 0.05 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at 8 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[9], 0.05 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at 9 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[10], 0.05 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at 10 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[11], 0.05 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at 11 is incorrect.");
 
-            // fourth prior
-            m_log.EXPECT_NEAR(rgdfTopData[12], 0.05 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at 4 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[13], 0.05 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at 5 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[14], 0.05 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at 6 is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[15], 0.05 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at 7 is incorrect.");
+                // fourth prior
+                m_log.EXPECT_NEAR(rgdfTopData[12], 0.05 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at 4 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[13], 0.05 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at 5 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[14], 0.05 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at 6 is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[15], 0.05 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at 7 is incorrect.");
 
-            // prior in the 5-th row and 5-th col
-            m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 0], 0.43, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 1], 1.43, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 2], 0.47, dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 3], 1.47, dfEps, "The value at is incorrect.");
+                // prior in the 5-th row and 5-th col
+                m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 0], 0.43, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 1], 1.43, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 2], 0.47, dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 3], 1.47, dfEps, "The value at is incorrect.");
 
-            // prior with ratio 1:2 in the 5-th row and 5-th col
-            m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 8], 0.45 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 9], 1.45 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 10], 0.45 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 11], 1.45 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                // prior with ratio 1:2 in the 5-th row and 5-th col
+                m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 8], 0.45 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 9], 1.45 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 10], 0.45 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 11], 1.45 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
 
-            // prior with ratio 2:1 in the 5-th row and 5-th col
-            m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 12], 0.45 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 13], 1.45 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 14], 0.45 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
-            m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 15], 1.45 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                // prior with ratio 2:1 in the 5-th row and 5-th col
+                m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 12], 0.45 - 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 13], 1.45 - 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 14], 0.45 + 0.01 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
+                m_log.EXPECT_NEAR(rgdfTopData[14 * 10 * 4 * 4 + 4 * 4 * 4 + 15], 1.45 + 0.02 * Math.Sqrt(2.0), dfEps, "The value at is incorrect.");
 
-            // Check variance.
-            nTopDataOffset += nDim;
-            for (int d = 0; d < nDim; d++)
-            {
-                m_log.EXPECT_NEAR(rgdfTopData[nTopDataOffset + d], 0.1, dfEps, "The variance at " + d.ToString() + " is incorrect.");
+                // Check variance.
+                nTopDataOffset += nDim;
+                for (int d = 0; d < nDim; d++)
+                {
+                    m_log.EXPECT_NEAR(rgdfTopData[nTopDataOffset + d], 0.1, dfEps, "The variance at " + d.ToString() + " is incorrect.");
+                }
+
+                m_blobData.Reshape(rgOriginaDataShape);
+                m_blob_bottom.Reshape(rgOriginalBottomShape);
             }
-
-            m_blobData.Reshape(rgOriginaDataShape);
-            m_blob_bottom.Reshape(rgOriginalBottomShape);
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

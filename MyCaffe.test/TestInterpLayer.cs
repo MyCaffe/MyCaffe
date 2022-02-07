@@ -90,13 +90,20 @@ namespace MyCaffe.test
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
-            m_log.CHECK(layer.type == LayerParameter.LayerType.INTERP, "The layer type is not correct for InterpLayer!");
-            layer.Setup(BottomVec, TopVec);
+            try
+            {
+                m_log.CHECK(layer.type == LayerParameter.LayerType.INTERP, "The layer type is not correct for InterpLayer!");
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(m_blob_top.num, 2, "The top(0) should have num = 2.");
-            m_log.CHECK_EQ(m_blob_top.channels, 3, "The top(0) should have channels = 3.");
-            m_log.CHECK_EQ(m_blob_top.height, 13, "The top(0) should have height = 13.");
-            m_log.CHECK_EQ(m_blob_top.width, 11, "The top(0) should have width = 11.");
+                m_log.CHECK_EQ(m_blob_top.num, 2, "The top(0) should have num = 2.");
+                m_log.CHECK_EQ(m_blob_top.channels, 3, "The top(0) should have channels = 3.");
+                m_log.CHECK_EQ(m_blob_top.height, 13, "The top(0) should have height = 13.");
+                m_log.CHECK_EQ(m_blob_top.width, 11, "The top(0) should have width = 11.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradient()
@@ -107,8 +114,15 @@ namespace MyCaffe.test
 
             InterpLayer<T> layer = new InterpLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

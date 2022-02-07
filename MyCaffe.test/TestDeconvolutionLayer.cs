@@ -390,31 +390,38 @@ namespace MyCaffe.test
             TopVec.Add(Top2);
             DeconvolutionLayer<T> layer = new DeconvolutionLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(2, Top.num, "The top num should equal 2.");
-            m_log.CHECK_EQ(4, Top.channels, "The top channels should equal 4.");
-            m_log.CHECK_EQ(13, Top.height, "The top height should equal 13.");
-            m_log.CHECK_EQ(9, Top.width, "The top width should equal 9.");
-            m_log.CHECK_EQ(2, Top2.num, "The top2 num should equal 2.");
-            m_log.CHECK_EQ(4, Top2.channels, "The top2 channels should equal 4.");
-            m_log.CHECK_EQ(13, Top2.height, "The top2 height should equal 13.");
-            m_log.CHECK_EQ(9, Top2.width, "The top2 width should equal 9.");
+                m_log.CHECK_EQ(2, Top.num, "The top num should equal 2.");
+                m_log.CHECK_EQ(4, Top.channels, "The top channels should equal 4.");
+                m_log.CHECK_EQ(13, Top.height, "The top height should equal 13.");
+                m_log.CHECK_EQ(9, Top.width, "The top width should equal 9.");
+                m_log.CHECK_EQ(2, Top2.num, "The top2 num should equal 2.");
+                m_log.CHECK_EQ(4, Top2.channels, "The top2 channels should equal 4.");
+                m_log.CHECK_EQ(13, Top2.height, "The top2 height should equal 13.");
+                m_log.CHECK_EQ(9, Top2.width, "The top2 width should equal 9.");
 
-            // setting group should not change the shape.
-            p.convolution_param.num_output = 3;
-            p.convolution_param.group = 3;
-            layer = new DeconvolutionLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
+                // setting group should not change the shape.
+                p.convolution_param.num_output = 3;
+                p.convolution_param.group = 3;
+                layer = new DeconvolutionLayer<T>(m_cuda, m_log, p);
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(2, Top.num, "The top num should equal 2.");
-            m_log.CHECK_EQ(3, Top.channels, "The top channels should equal 3.");
-            m_log.CHECK_EQ(13, Top.height, "The top height should equal 13.");
-            m_log.CHECK_EQ(9, Top.width, "The top width should equal 9.");
-            m_log.CHECK_EQ(2, Top2.num, "The top2 num should equal 2.");
-            m_log.CHECK_EQ(3, Top2.channels, "The top2 channels should equal 3.");
-            m_log.CHECK_EQ(13, Top2.height, "The top2 height should equal 13.");
-            m_log.CHECK_EQ(9, Top2.width, "The top2 width should equal 9.");
+                m_log.CHECK_EQ(2, Top.num, "The top num should equal 2.");
+                m_log.CHECK_EQ(3, Top.channels, "The top channels should equal 3.");
+                m_log.CHECK_EQ(13, Top.height, "The top height should equal 13.");
+                m_log.CHECK_EQ(9, Top.width, "The top width should equal 9.");
+                m_log.CHECK_EQ(2, Top2.num, "The top2 num should equal 2.");
+                m_log.CHECK_EQ(3, Top2.channels, "The top2 channels should equal 3.");
+                m_log.CHECK_EQ(13, Top2.height, "The top2 height should equal 13.");
+                m_log.CHECK_EQ(9, Top2.width, "The top2 width should equal 9.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestSimpleDeconvolution(bool bUseTensorCores)
@@ -433,45 +440,52 @@ namespace MyCaffe.test
             p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
             DeconvolutionLayer<T> layer = new DeconvolutionLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-
-            // constant-fill the bottom Blob<T>s.
-            FillerParameter fp = new FillerParameter("constant");
-            fp.value = 1.0;
-            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
-
-            filler.Fill(Bottom);
-            filler.Fill(Bottom2);
-
-            layer.Forward(BottomVec, TopVec);
-
-            // simple check that accumulation works with overlapping filters
-            double[] rgTopData = convert(Top.update_cpu_data());
-
-            for (int n = 0; n < Top.num; n++)
+            try
             {
-                for (int c = 0; c < Top.channels; c++)
+                layer.Setup(BottomVec, TopVec);
+
+                // constant-fill the bottom Blob<T>s.
+                FillerParameter fp = new FillerParameter("constant");
+                fp.value = 1.0;
+                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
+
+                filler.Fill(Bottom);
+                filler.Fill(Bottom2);
+
+                layer.Forward(BottomVec, TopVec);
+
+                // simple check that accumulation works with overlapping filters
+                double[] rgTopData = convert(Top.update_cpu_data());
+
+                for (int n = 0; n < Top.num; n++)
                 {
-                    for (int h = 0; h < Top.height; h++)
+                    for (int c = 0; c < Top.channels; c++)
                     {
-                        for (int w = 0; w < Top.width; w++)
+                        for (int h = 0; h < Top.height; h++)
                         {
-                            double dfExpected = 3.1;
-                            bool h_overlap = h % 2 == 0 && h > 0 && h < Top.height - 1;
-                            bool w_overlap = w % 2 == 0 && w > 0 && w < Top.width - 1;
+                            for (int w = 0; w < Top.width; w++)
+                            {
+                                double dfExpected = 3.1;
+                                bool h_overlap = h % 2 == 0 && h > 0 && h < Top.height - 1;
+                                bool w_overlap = w % 2 == 0 && w > 0 && w < Top.width - 1;
 
-                            if (h_overlap && w_overlap)
-                                dfExpected += 9;
-                            else if (h_overlap || w_overlap)
-                                dfExpected += 3;
+                                if (h_overlap && w_overlap)
+                                    dfExpected += 9;
+                                else if (h_overlap || w_overlap)
+                                    dfExpected += 3;
 
-                            int nOffset = Top.offset(n, c, h, w);
-                            double dfTop = rgTopData[nOffset];
+                                int nOffset = Top.offset(n, c, h, w);
+                                double dfTop = rgTopData[nOffset];
 
-                            m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+                                m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+                            }
                         }
                     }
                 }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -489,8 +503,15 @@ namespace MyCaffe.test
             p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
             DeconvolutionLayer<T> layer = new DeconvolutionLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         /// <summary>
@@ -528,13 +549,21 @@ namespace MyCaffe.test
             bool bReshape;
             {
                 DeconvolutionLayer<T> layer = new DeconvolutionLayer<T>(m_cuda, m_log, p);
-                layer.Setup(BottomVec, TopVec);
-                top_diff.ReshapeLike(Top);
-                filler.Fill(top_diff);
-                m_log.CHECK_EQ(1, layer.blobs.Count, "There should only be 1 Blob<T> in layer.");
-                bCopyDiff = false;
-                bReshape = true;
-                weights.CopyFrom(layer.blobs[0], bCopyDiff, bReshape);
+
+                try
+                { 
+                    layer.Setup(BottomVec, TopVec);
+                    top_diff.ReshapeLike(Top);
+                    filler.Fill(top_diff);
+                    m_log.CHECK_EQ(1, layer.blobs.Count, "There should only be 1 Blob<T> in layer.");
+                    bCopyDiff = false;
+                    bReshape = true;
+                    weights.CopyFrom(layer.blobs[0], bCopyDiff, bReshape);
+                }
+                finally
+                {
+                    layer.Dispose();
+                }
             }
 
             List<bool> rgbPropagateDown = new List<bool>() { true };
@@ -551,28 +580,36 @@ namespace MyCaffe.test
                 // Do Setup and Forward; save Forward result in result_2d.
                 p.convolution_param.force_nd_im2col = false;
                 DeconvolutionLayer<T> layer_2d = new DeconvolutionLayer<T>(m_cuda, m_log, p);
-                layer_2d.Setup(BottomVec, TopVec);
-                m_log.CHECK_EQ(1, layer_2d.blobs.Count, "The layer_2d should only have 1 Blob<T>.");
 
-                bCopyDiff = false;
-                bReshape = false;
-                layer_2d.blobs[0].CopyFrom(weights, bCopyDiff, bReshape);
-                layer_2d.Forward(BottomVec, TopVec);
+                try
+                { 
+                    layer_2d.Setup(BottomVec, TopVec);
+                    m_log.CHECK_EQ(1, layer_2d.blobs.Count, "The layer_2d should only have 1 Blob<T>.");
 
-                bCopyDiff = false;
-                bReshape = true;
-                result_2d.CopyFrom(Top, bCopyDiff, bReshape);
+                    bCopyDiff = false;
+                    bReshape = false;
+                    layer_2d.blobs[0].CopyFrom(weights, bCopyDiff, bReshape);
+                    layer_2d.Forward(BottomVec, TopVec);
 
-                // Copy pre-generated top diff into actual top diff;
-                // do Backward and save result in backward_result_2d.
-                m_log.CHECK(Utility.Compare<int>(Top.shape(), top_diff.shape()), "The top and top_diff should have the same shape!");
-                m_cuda.copy(top_diff.count(), top_diff.gpu_data, Top.mutable_gpu_diff);
-                layer_2d.Backward(TopVec, rgbPropagateDown, BottomVec);
+                    bCopyDiff = false;
+                    bReshape = true;
+                    result_2d.CopyFrom(Top, bCopyDiff, bReshape);
 
-                bCopyDiff = true;
-                bReshape = true;
-                backward_result_2d.CopyFrom(Bottom, bCopyDiff, bReshape);
-                backward_weight_result_2d.CopyFrom(weights, bCopyDiff, bReshape);
+                    // Copy pre-generated top diff into actual top diff;
+                    // do Backward and save result in backward_result_2d.
+                    m_log.CHECK(Utility.Compare<int>(Top.shape(), top_diff.shape()), "The top and top_diff should have the same shape!");
+                    m_cuda.copy(top_diff.count(), top_diff.gpu_data, Top.mutable_gpu_diff);
+                    layer_2d.Backward(TopVec, rgbPropagateDown, BottomVec);
+
+                    bCopyDiff = true;
+                    bReshape = true;
+                    backward_result_2d.CopyFrom(Bottom, bCopyDiff, bReshape);
+                    backward_weight_result_2d.CopyFrom(weights, bCopyDiff, bReshape);
+                }
+                finally
+                {
+                    layer_2d.Dispose();
+                }
             }
 
             Blob<T> result_nd = new Blob<T>(m_cuda, m_log);
@@ -588,28 +625,36 @@ namespace MyCaffe.test
                 // Do Setup and Forward; save Forward result in result_nd.
                 p.convolution_param.force_nd_im2col = true;
                 DeconvolutionLayer<T> layer_nd = new DeconvolutionLayer<T>(m_cuda, m_log, p);
-                layer_nd.Setup(BottomVec, TopVec);
-                m_log.CHECK_EQ(1, layer_nd.blobs.Count, "The layer_nd should only have 1 Blob<T>.");
 
-                bCopyDiff = false;
-                bReshape = false;
-                layer_nd.blobs[0].CopyFrom(weights, bCopyDiff, bReshape);
-                layer_nd.Forward(BottomVec, TopVec);
+                try
+                {
+                    layer_nd.Setup(BottomVec, TopVec);
+                    m_log.CHECK_EQ(1, layer_nd.blobs.Count, "The layer_nd should only have 1 Blob<T>.");
 
-                bCopyDiff = false;
-                bReshape = true;
-                result_nd.CopyFrom(Top, bCopyDiff, bReshape);
+                    bCopyDiff = false;
+                    bReshape = false;
+                    layer_nd.blobs[0].CopyFrom(weights, bCopyDiff, bReshape);
+                    layer_nd.Forward(BottomVec, TopVec);
 
-                // Copy pre-generated top diff into actual top diff;
-                // do Backward and save result in backward_result_nd.
-                m_log.CHECK(Utility.Compare<int>(Top.shape(), top_diff.shape()), "The top and top_diff should have the same shape!");
-                m_cuda.copy(top_diff.count(), top_diff.gpu_data, Top.mutable_gpu_diff);
-                layer_nd.Backward(TopVec, rgbPropagateDown, BottomVec);
+                    bCopyDiff = false;
+                    bReshape = true;
+                    result_nd.CopyFrom(Top, bCopyDiff, bReshape);
 
-                bCopyDiff = true;
-                bReshape = true;
-                backward_result_nd.CopyFrom(Bottom, bCopyDiff, bReshape);
-                backward_weight_result_nd.CopyFrom(weights, bCopyDiff, bReshape);
+                    // Copy pre-generated top diff into actual top diff;
+                    // do Backward and save result in backward_result_nd.
+                    m_log.CHECK(Utility.Compare<int>(Top.shape(), top_diff.shape()), "The top and top_diff should have the same shape!");
+                    m_cuda.copy(top_diff.count(), top_diff.gpu_data, Top.mutable_gpu_diff);
+                    layer_nd.Backward(TopVec, rgbPropagateDown, BottomVec);
+
+                    bCopyDiff = true;
+                    bReshape = true;
+                    backward_result_nd.CopyFrom(Bottom, bCopyDiff, bReshape);
+                    backward_weight_result_nd.CopyFrom(weights, bCopyDiff, bReshape);
+                }
+                finally
+                {
+                    layer_nd.Dispose();
+                }
             }
 
             m_log.CHECK_EQ(result_nd.count(), result_2d.count(), "The result_2d and result_nd should have the same count().");
@@ -684,9 +729,16 @@ namespace MyCaffe.test
             p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
             DeconvolutionLayer<T> layer = new DeconvolutionLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
 #warning TestDeconvolutionLayer<T>.TestGradient3D test fails.
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         #endregion

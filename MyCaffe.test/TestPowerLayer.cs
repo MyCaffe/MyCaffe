@@ -271,32 +271,39 @@ namespace MyCaffe.test
             p.power_param.shift = dfShift;
             PowerLayer<T> layer = new PowerLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Now, check values
-            double[] rgBottom = convert(Bottom.update_cpu_data());
-            double[] rgTop = convert(Top.update_cpu_data());
-            double dfMinPrecision = 1e-5;
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                double dfBottom = rgBottom[i];
-                double dfTop = rgTop[i];
-                double dfExpected = Math.Pow(dfShift + dfScale * dfBottom, dfPower);
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                if (dfPower == 0 || dfPower == 1 || dfPower == 2)
-                    m_log.CHECK(!double.IsNaN(dfTop), "The top value is NAN!");
+                // Now, check values
+                double[] rgBottom = convert(Bottom.update_cpu_data());
+                double[] rgTop = convert(Top.update_cpu_data());
+                double dfMinPrecision = 1e-5;
 
-                if (double.IsNaN(dfExpected))
+                for (int i = 0; i < Bottom.count(); i++)
                 {
-                    m_log.CHECK(double.IsNaN(dfTop), "The top value is not NAN when it should be!");
+                    double dfBottom = rgBottom[i];
+                    double dfTop = rgTop[i];
+                    double dfExpected = Math.Pow(dfShift + dfScale * dfBottom, dfPower);
+
+                    if (dfPower == 0 || dfPower == 1 || dfPower == 2)
+                        m_log.CHECK(!double.IsNaN(dfTop), "The top value is NAN!");
+
+                    if (double.IsNaN(dfExpected))
+                    {
+                        m_log.CHECK(double.IsNaN(dfTop), "The top value is not NAN when it should be!");
+                    }
+                    else
+                    {
+                        double dfPrecision = Math.Min(Math.Abs(dfExpected * 1e-4), dfMinPrecision);
+                        m_log.EXPECT_NEAR(dfExpected, dfTop, dfPrecision);
+                    }
                 }
-                else
-                {
-                    double dfPrecision = Math.Min(Math.Abs(dfExpected * 1e-4), dfMinPrecision);
-                    m_log.EXPECT_NEAR(dfExpected, dfTop, dfPrecision);
-                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -308,23 +315,30 @@ namespace MyCaffe.test
             p.power_param.shift = dfShift;
             PowerLayer<T> layer = new PowerLayer<T>(m_cuda, m_log, p);
 
-            if (dfPower != 0 && dfPower != 1 && dfPower != 2)
+            try
             {
-                // Avoid NaNs by forcing (dfShift + dfScale * x) >= 0
-                double[] rgBottom = convert(Bottom.mutable_cpu_data);
-                double dfMinVal = -dfShift / dfScale;
-
-                for (int i = 0; i < Bottom.count(); i++)
+                if (dfPower != 0 && dfPower != 1 && dfPower != 2)
                 {
-                    if (rgBottom[i] < dfMinVal)
-                        rgBottom[i] = dfMinVal + (dfMinVal - rgBottom[i]);
+                    // Avoid NaNs by forcing (dfShift + dfScale * x) >= 0
+                    double[] rgBottom = convert(Bottom.mutable_cpu_data);
+                    double dfMinVal = -dfShift / dfScale;
+
+                    for (int i = 0; i < Bottom.count(); i++)
+                    {
+                        if (rgBottom[i] < dfMinVal)
+                            rgBottom[i] = dfMinVal + (dfMinVal - rgBottom[i]);
+                    }
+
+                    Bottom.mutable_cpu_data = convert(rgBottom);
                 }
 
-                Bottom.mutable_cpu_data = convert(rgBottom);
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
             }
-
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

@@ -133,43 +133,49 @@ namespace MyCaffe.test
             p.debug_param.max_stored_batches = 5;
             DebugLayer<T> layer = new DebugLayer<T>(m_cuda, m_log, p);
 
-
-            layer.Setup(BottomVec, TopVec);
-
-            for (int i = 0; i < m_colData.Count; i++)
+            try
             {
-                m_cuda.copy(m_blob_bottom.count(), m_colData[i].gpu_data, m_blob_bottom.mutable_gpu_data);
-                m_cuda.copy(m_blobBottomLabels.count(), m_colLabels[i].gpu_data, m_blobBottomLabels.mutable_gpu_data);
+                layer.Setup(BottomVec, TopVec);
 
-                layer.Forward(BottomVec, TopVec);
+                for (int i = 0; i < m_colData.Count; i++)
+                {
+                    m_cuda.copy(m_blob_bottom.count(), m_colData[i].gpu_data, m_blob_bottom.mutable_gpu_data);
+                    m_cuda.copy(m_blobBottomLabels.count(), m_colLabels[i].gpu_data, m_blobBottomLabels.mutable_gpu_data);
+
+                    layer.Forward(BottomVec, TopVec);
+                }
+
+                m_log.CHECK_EQ(p.debug_param.max_stored_batches, layer.data.Count, "The data collection count should equal the 'max_stored_batches'");
+                m_log.CHECK_EQ(p.debug_param.max_stored_batches, layer.labels.Count, "The label collection count should equal the 'max_stored_batches'");
+
+                // Verify that the last 'max_stored_batches' are the last items.                        
+                int nIdx = 0;
+                for (int i = m_colData.Count - p.debug_param.max_stored_batches; i < m_colData.Count; i++)
+                {
+                    double[] rgData1 = convert(m_colData[i].update_cpu_data());
+                    double[] rgLabel1 = convert(m_colLabels[i].update_cpu_data());
+                    double[] rgData2 = convert(layer.data[nIdx].update_cpu_data());
+                    double[] rgLabel2 = convert(layer.labels[nIdx].update_cpu_data());
+
+                    m_log.CHECK_EQ(rgData1.Length, rgData2.Length, "The data counts don't match.");
+                    m_log.CHECK_EQ(rgLabel1.Length, rgLabel2.Length, "The label counts don't match.");
+
+                    for (int j = 0; j < rgData1.Length; j++)
+                    {
+                        m_log.CHECK_EQ(rgData1[j], rgData2[j], "The data elements don't match.");
+                    }
+
+                    for (int j = 0; j < rgLabel1.Length; j++)
+                    {
+                        m_log.CHECK_EQ(rgLabel1[j], rgLabel2[j], "The label elements don't match.");
+                    }
+
+                    nIdx++;
+                }
             }
-
-            m_log.CHECK_EQ(p.debug_param.max_stored_batches, layer.data.Count, "The data collection count should equal the 'max_stored_batches'");
-            m_log.CHECK_EQ(p.debug_param.max_stored_batches, layer.labels.Count, "The label collection count should equal the 'max_stored_batches'");
-
-            // Verify that the last 'max_stored_batches' are the last items.                        
-            int nIdx = 0;
-            for (int i = m_colData.Count - p.debug_param.max_stored_batches; i < m_colData.Count; i++)
+            finally
             {
-                double[] rgData1 = convert(m_colData[i].update_cpu_data());
-                double[] rgLabel1 = convert(m_colLabels[i].update_cpu_data());
-                double[] rgData2 = convert(layer.data[nIdx].update_cpu_data());
-                double[] rgLabel2 = convert(layer.labels[nIdx].update_cpu_data());
-
-                m_log.CHECK_EQ(rgData1.Length, rgData2.Length, "The data counts don't match.");
-                m_log.CHECK_EQ(rgLabel1.Length, rgLabel2.Length, "The label counts don't match.");
-
-                for (int j = 0; j < rgData1.Length; j++)
-                {
-                    m_log.CHECK_EQ(rgData1[j], rgData2[j], "The data elements don't match.");
-                }
-
-                for (int j = 0; j < rgLabel1.Length; j++)
-                {
-                    m_log.CHECK_EQ(rgLabel1[j], rgLabel2[j], "The label elements don't match.");
-                }
-
-                nIdx++;
+                layer.Dispose();
             }
         }
     }

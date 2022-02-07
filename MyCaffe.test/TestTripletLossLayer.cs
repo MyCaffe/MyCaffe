@@ -200,33 +200,49 @@ namespace MyCaffe.test
             // equivalent to explicitly specifying a weight of 1.
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRIPLET_LOSS);
             TripletLossLayer<T> layer_weight_1 = new TripletLossLayer<T>(m_cuda, m_log, p);
-            layer_weight_1.Setup(BottomVec, TopVec);
-            double dfLossWeight1 = layer_weight_1.Forward(BottomVec, TopVec);
+            TripletLossLayer<T> layer_weight_2 = null;
+            TripletLossLayer<T> layer_weight_2_alpha = null;
 
-            // Make sure the loss is not trivial
-            double kNonTrivialAbsThreshold = 1e-1;
-            m_log.CHECK_GE(Math.Abs(dfLossWeight1), kNonTrivialAbsThreshold, "The loss is trivial.");
+            try
+            {
+                layer_weight_1.Setup(BottomVec, TopVec);
+                double dfLossWeight1 = layer_weight_1.Forward(BottomVec, TopVec);
 
-            // Get the loss again with a different objective weight; check that it is
-            // scaled appropriately.
-            double kLossWeight = 3.7;
-            p.loss_weight.Add(kLossWeight);
-            TripletLossLayer<T> layer_weight_2 = new TripletLossLayer<T>(m_cuda, m_log, p);
-            layer_weight_2.Setup(BottomVec, TopVec);
-            double dfLossWeight2 = layer_weight_2.Forward(BottomVec, TopVec);
+                // Make sure the loss is not trivial
+                double kNonTrivialAbsThreshold = 1e-1;
+                m_log.CHECK_GE(Math.Abs(dfLossWeight1), kNonTrivialAbsThreshold, "The loss is trivial.");
 
-            double kErrorMargin = 1e-5;
-            m_log.EXPECT_NEAR(dfLossWeight1 * kLossWeight, dfLossWeight2, kErrorMargin);
+                // Get the loss again with a different objective weight; check that it is
+                // scaled appropriately.
+                double kLossWeight = 3.7;
+                p.loss_weight.Add(kLossWeight);
+                layer_weight_2 = new TripletLossLayer<T>(m_cuda, m_log, p);
+                layer_weight_2.Setup(BottomVec, TopVec);
+                double dfLossWeight2 = layer_weight_2.Forward(BottomVec, TopVec);
 
-            // Get the loss again with a different alpha; check that it is changed
-            // appropriately.
-            double dfAlpha = 0.314;
-            p.triplet_loss_param.alpha = dfAlpha;
-            TripletLossLayer<T> layer_weight_2_alpha = new TripletLossLayer<T>(m_cuda, m_log, p);
-            layer_weight_2_alpha.Setup(BottomVec, TopVec);
-            double dfLossWeight2Alpha = layer_weight_2_alpha.Forward(BottomVec, TopVec);
+                double kErrorMargin = 1e-5;
+                m_log.EXPECT_NEAR(dfLossWeight1 * kLossWeight, dfLossWeight2, kErrorMargin);
 
-            m_log.CHECK_GE(dfLossWeight2, dfLossWeight2, "Alpha is not being accounted for.");
+                // Get the loss again with a different alpha; check that it is changed
+                // appropriately.
+                double dfAlpha = 0.314;
+                p.triplet_loss_param.alpha = dfAlpha;
+                layer_weight_2_alpha = new TripletLossLayer<T>(m_cuda, m_log, p);
+                layer_weight_2_alpha.Setup(BottomVec, TopVec);
+                double dfLossWeight2Alpha = layer_weight_2_alpha.Forward(BottomVec, TopVec);
+
+                m_log.CHECK_GE(dfLossWeight2, dfLossWeight2, "Alpha is not being accounted for.");
+            }
+            finally
+            {
+                layer_weight_1.Dispose();
+
+                if (layer_weight_2 != null)
+                    layer_weight_2.Dispose();
+
+                if (layer_weight_2_alpha != null)
+                    layer_weight_2_alpha.Dispose();
+            }
         }
 
         public void TestPreGen()
@@ -241,96 +257,105 @@ namespace MyCaffe.test
             p.triplet_loss_param.pregen_label_start = 0;
 
             TripletLossLayer<T> layerTriplet = new TripletLossLayer<T>(m_cuda, m_log, p);
+            DecodeLayer<T> layerDecode = null;
 
-            BlobCollection<T> colBottomTriplet = new BlobCollection<T>();
-            colBottomTriplet.Add(m_blobBottomAnchor);
-            colBottomTriplet.Add(m_blobBottomPositive);
-            colBottomTriplet.Add(m_blobBottomNegative);
-            colBottomTriplet.Add(m_blobLabel);
-            colBottomTriplet.Add(m_blobCentroids);
-
-            layerTriplet.Setup(colBottomTriplet, TopVec);
-            layerTriplet.Reshape(colBottomTriplet, TopVec);
-
-            p = new LayerParameter(LayerParameter.LayerType.DECODE);
-            p.decode_param.pregen_alpha = dfDist;
-            p.decode_param.pregen_label_count = nLabelNum;
-            p.decode_param.output_centroids = true;
-            p.decode_param.target = param.beta.DecodeParameter.TARGET.PREGEN;
-
-            DecodeLayer<T> layerDecode = new DecodeLayer<T>(m_cuda, m_log, p);
-
-            BlobCollection<T> colBottomDecode = new BlobCollection<T>();
-            colBottomDecode.Add(m_blobBottomAnchor);
-            colBottomDecode.Add(m_blobLabel);
-
-            layerDecode.Setup(colBottomDecode, TopVec);
-            layerDecode.Reshape(colBottomDecode, TopVec);
-
-            Blob<T> blobTargets = new Blob<T>(m_cuda, m_log, nLabelNum, nDim, 1, 1);
-            Blob<T> blobTargetsPos = new Blob<T>(m_cuda, m_log, nNum, nDim, 1, 1);
-            Blob<T> blobTargetsNeg = new Blob<T>(m_cuda, m_log, nNum, nDim, 1, 1);
-            Blob<T> blobLabels = new Blob<T>(m_cuda, m_log, nNum, nLabelDim, 1, 1);
-            Blob<T> blobWork = new Blob<T>(m_cuda, m_log, nDim, 1, 1, 1);
-
-            float[] rgLabels = new float[] { 0, 2, 1, 2, 0, 1, 2, 0, 1, 2 };
-            blobLabels.mutable_cpu_data = convert(rgLabels);
-
-            // Create the pregen targets.
-            layerDecode.createPreGenTargets(blobTargets, dfDist * 2);
-
-            // Verify the targets
-            m_log.CHECK_EQ(blobTargets.num, nLabelNum, "The target num is incorrect!");
-            m_log.CHECK_EQ(blobTargets.count(1), nDim, "The target dim is incorrect!");
-            float[] rgTarget = convertF(blobTargets.update_cpu_data());
-            float fMinDist = float.MaxValue;
-
-            for (int i = 0; i < nLabelNum; i++)
+            try
             {
-                for (int j = 0; j < nLabelNum; j++)
+                BlobCollection<T> colBottomTriplet = new BlobCollection<T>();
+                colBottomTriplet.Add(m_blobBottomAnchor);
+                colBottomTriplet.Add(m_blobBottomPositive);
+                colBottomTriplet.Add(m_blobBottomNegative);
+                colBottomTriplet.Add(m_blobLabel);
+                colBottomTriplet.Add(m_blobCentroids);
+
+                layerTriplet.Setup(colBottomTriplet, TopVec);
+                layerTriplet.Reshape(colBottomTriplet, TopVec);
+
+                p = new LayerParameter(LayerParameter.LayerType.DECODE);
+                p.decode_param.pregen_alpha = dfDist;
+                p.decode_param.pregen_label_count = nLabelNum;
+                p.decode_param.output_centroids = true;
+                p.decode_param.target = param.beta.DecodeParameter.TARGET.PREGEN;
+
+                layerDecode = new DecodeLayer<T>(m_cuda, m_log, p);
+
+                BlobCollection<T> colBottomDecode = new BlobCollection<T>();
+                colBottomDecode.Add(m_blobBottomAnchor);
+                colBottomDecode.Add(m_blobLabel);
+
+                layerDecode.Setup(colBottomDecode, TopVec);
+                layerDecode.Reshape(colBottomDecode, TopVec);
+
+                Blob<T> blobTargets = new Blob<T>(m_cuda, m_log, nLabelNum, nDim, 1, 1);
+                Blob<T> blobTargetsPos = new Blob<T>(m_cuda, m_log, nNum, nDim, 1, 1);
+                Blob<T> blobTargetsNeg = new Blob<T>(m_cuda, m_log, nNum, nDim, 1, 1);
+                Blob<T> blobLabels = new Blob<T>(m_cuda, m_log, nNum, nLabelDim, 1, 1);
+                Blob<T> blobWork = new Blob<T>(m_cuda, m_log, nDim, 1, 1, 1);
+
+                float[] rgLabels = new float[] { 0, 2, 1, 2, 0, 1, 2, 0, 1, 2 };
+                blobLabels.mutable_cpu_data = convert(rgLabels);
+
+                // Create the pregen targets.
+                layerDecode.createPreGenTargets(blobTargets, dfDist * 2);
+
+                // Verify the targets
+                m_log.CHECK_EQ(blobTargets.num, nLabelNum, "The target num is incorrect!");
+                m_log.CHECK_EQ(blobTargets.count(1), nDim, "The target dim is incorrect!");
+                float[] rgTarget = convertF(blobTargets.update_cpu_data());
+                float fMinDist = float.MaxValue;
+
+                for (int i = 0; i < nLabelNum; i++)
                 {
-                    if (i != j)
+                    for (int j = 0; j < nLabelNum; j++)
                     {
-                        float fDist = 0;
-
-                        for (int k = 0; k < nDim; k++)
+                        if (i != j)
                         {
-                            float fDiff = rgTarget[i * nDim + k] - rgTarget[j * nDim + k];
-                            fDist += (fDiff * fDiff);
-                        }
+                            float fDist = 0;
 
-                        fMinDist = Math.Min(fMinDist, fDist);
+                            for (int k = 0; k < nDim; k++)
+                            {
+                                float fDiff = rgTarget[i * nDim + k] - rgTarget[j * nDim + k];
+                                fDist += (fDiff * fDiff);
+                            }
+
+                            fMinDist = Math.Min(fMinDist, fDist);
+                        }
                     }
                 }
+
+                m_log.CHECK_GE(fMinDist, dfDist, "The minimum distance is less than the distance threshold!");
+
+                // Load the pregenerated targets
+                layerTriplet.loadPreGenTargets(blobLabels, blobTargets, blobTargetsNeg, blobTargetsPos);
+
+                // Verify the pos/neg targets.
+                for (int i = 0; i < nNum; i++)
+                {
+                    int nLabel = (int)rgLabels[i];
+
+                    m_cuda.sub(nDim, blobTargets.gpu_data, blobTargetsPos.gpu_data, blobWork.mutable_gpu_data, nLabel * nDim, i * nDim);
+                    double dfSumP = m_cuda.asum_double(nDim, blobWork.gpu_data);
+                    m_log.CHECK_EQ(dfSumP, 0, "The positive target should equal the target!");
+
+                    m_cuda.sub(nDim, blobTargets.gpu_data, blobTargetsNeg.gpu_data, blobWork.mutable_gpu_data, nLabel * nDim, i * nDim);
+                    double dfSumN = m_cuda.asum_double(nDim, blobWork.gpu_data);
+                    m_log.CHECK_NE(dfSumN, 0, "The negative target should NOT equal the target!");
+                }
+
+                // Clean-up
+                blobTargets.Dispose();
+                blobTargetsPos.Dispose();
+                blobTargetsNeg.Dispose();
+                blobLabels.Dispose();
+                blobWork.Dispose();
             }
-
-            m_log.CHECK_GE(fMinDist, dfDist, "The minimum distance is less than the distance threshold!");
-
-            // Load the pregenerated targets
-            layerTriplet.loadPreGenTargets(blobLabels, blobTargets, blobTargetsNeg, blobTargetsPos);
-
-            // Verify the pos/neg targets.
-            for (int i = 0; i < nNum; i++)
+            finally
             {
-                int nLabel = (int)rgLabels[i];
+                layerTriplet.Dispose();
 
-                m_cuda.sub(nDim, blobTargets.gpu_data, blobTargetsPos.gpu_data, blobWork.mutable_gpu_data, nLabel * nDim, i * nDim);
-                double dfSumP = m_cuda.asum_double(nDim, blobWork.gpu_data);
-                m_log.CHECK_EQ(dfSumP, 0, "The positive target should equal the target!");
-
-                m_cuda.sub(nDim, blobTargets.gpu_data, blobTargetsNeg.gpu_data, blobWork.mutable_gpu_data, nLabel * nDim, i * nDim);
-                double dfSumN = m_cuda.asum_double(nDim, blobWork.gpu_data);
-                m_log.CHECK_NE(dfSumN, 0, "The negative target should NOT equal the target!");
+                if (layerDecode != null)
+                    layerDecode.Dispose();
             }
-
-            // Clean-up
-            layerTriplet.Dispose();
-            layerDecode.Dispose();
-            blobTargets.Dispose();
-            blobTargetsPos.Dispose();
-            blobTargetsNeg.Dispose();
-            blobLabels.Dispose();
-            blobWork.Dispose();
         }
 
         public void TestPreGen2()
@@ -345,105 +370,114 @@ namespace MyCaffe.test
             p.triplet_loss_param.pregen_label_start = 0;
 
             TripletLossLayer<T> layerTriplet = new TripletLossLayer<T>(m_cuda, m_log, p);
+            DecodeLayer<T> layerDecode = null;
 
-            BlobCollection<T> colBottomTriplet = new BlobCollection<T>();
-
-            colBottomTriplet.Add(m_blobBottomAnchor);
-            colBottomTriplet.Add(m_blobBottomPositive);
-            colBottomTriplet.Add(m_blobBottomNegative);
-            colBottomTriplet.Add(m_blobLabel);
-            colBottomTriplet.Add(m_blobCentroids);
-
-            layerTriplet.Setup(colBottomTriplet, TopVec);
-            layerTriplet.Reshape(colBottomTriplet, TopVec);
-
-            p = new LayerParameter(LayerParameter.LayerType.DECODE);
-            p.decode_param.pregen_alpha = dfDist;
-            p.decode_param.pregen_label_count = nLabelNum;
-            p.decode_param.output_centroids = true;
-            p.decode_param.target = param.beta.DecodeParameter.TARGET.PREGEN;
-            p.phase = Phase.TRAIN;
-
-            DecodeLayer<T> layerDecode = new DecodeLayer<T>(m_cuda, m_log, p);
-
-            BlobCollection<T> colBottomDecode = new BlobCollection<T>();
-            colBottomDecode.Add(m_blobBottomAnchor);
-            colBottomDecode.Add(m_blobLabel);
-
-            BlobCollection<T> colTopDecode = new BlobCollection<T>();
-            colTopDecode.Add(TopVec[0]);
-
-            Blob<T> blobTopCentroids = new Blob<T>(m_cuda, m_log);
-            colTopDecode.Add(blobTopCentroids);
-
-            layerDecode.Setup(colBottomDecode, colTopDecode);
-            layerDecode.Reshape(colBottomDecode, colTopDecode);
-
-            Blob<T> blobTargets = new Blob<T>(m_cuda, m_log, nLabelNum, nDim, 1, 1);
-            Blob<T> blobTargetsPos = new Blob<T>(m_cuda, m_log, nNum, nDim, 1, 1);
-            Blob<T> blobTargetsNeg = new Blob<T>(m_cuda, m_log, nNum, nDim, 1, 1);
-            Blob<T> blobLabels = new Blob<T>(m_cuda, m_log, nNum, nLabelDim, 1, 1);
-            Blob<T> blobWork = new Blob<T>(m_cuda, m_log, nDim, 1, 1, 1);
-
-            float[] rgLabels = new float[] { 0, 2, 1, 2, 0, 1, 2, 0, 1, 2 };
-            blobLabels.mutable_cpu_data = convert(rgLabels);
-
-            // Layer decode outputs the pregen targets as the centroids.
-            layerDecode.Forward(colBottomDecode, colTopDecode);
-            blobTargets.CopyFrom(colTopDecode[1]);
-
-            // Verify the targets
-            m_log.CHECK_EQ(blobTargets.num, nLabelNum, "The target num is incorrect!");
-            m_log.CHECK_EQ(blobTargets.count(1), nDim, "The target dim is incorrect!");
-            float[] rgTarget = convertF(blobTargets.update_cpu_data());
-            float fMinDist = float.MaxValue;
-
-            for (int i = 0; i < nLabelNum; i++)
+            try
             {
-                for (int j = 0; j < nLabelNum; j++)
+                BlobCollection<T> colBottomTriplet = new BlobCollection<T>();
+
+                colBottomTriplet.Add(m_blobBottomAnchor);
+                colBottomTriplet.Add(m_blobBottomPositive);
+                colBottomTriplet.Add(m_blobBottomNegative);
+                colBottomTriplet.Add(m_blobLabel);
+                colBottomTriplet.Add(m_blobCentroids);
+
+                layerTriplet.Setup(colBottomTriplet, TopVec);
+                layerTriplet.Reshape(colBottomTriplet, TopVec);
+
+                p = new LayerParameter(LayerParameter.LayerType.DECODE);
+                p.decode_param.pregen_alpha = dfDist;
+                p.decode_param.pregen_label_count = nLabelNum;
+                p.decode_param.output_centroids = true;
+                p.decode_param.target = param.beta.DecodeParameter.TARGET.PREGEN;
+                p.phase = Phase.TRAIN;
+
+                layerDecode = new DecodeLayer<T>(m_cuda, m_log, p);
+
+                BlobCollection<T> colBottomDecode = new BlobCollection<T>();
+                colBottomDecode.Add(m_blobBottomAnchor);
+                colBottomDecode.Add(m_blobLabel);
+
+                BlobCollection<T> colTopDecode = new BlobCollection<T>();
+                colTopDecode.Add(TopVec[0]);
+
+                Blob<T> blobTopCentroids = new Blob<T>(m_cuda, m_log);
+                colTopDecode.Add(blobTopCentroids);
+
+                layerDecode.Setup(colBottomDecode, colTopDecode);
+                layerDecode.Reshape(colBottomDecode, colTopDecode);
+
+                Blob<T> blobTargets = new Blob<T>(m_cuda, m_log, nLabelNum, nDim, 1, 1);
+                Blob<T> blobTargetsPos = new Blob<T>(m_cuda, m_log, nNum, nDim, 1, 1);
+                Blob<T> blobTargetsNeg = new Blob<T>(m_cuda, m_log, nNum, nDim, 1, 1);
+                Blob<T> blobLabels = new Blob<T>(m_cuda, m_log, nNum, nLabelDim, 1, 1);
+                Blob<T> blobWork = new Blob<T>(m_cuda, m_log, nDim, 1, 1, 1);
+
+                float[] rgLabels = new float[] { 0, 2, 1, 2, 0, 1, 2, 0, 1, 2 };
+                blobLabels.mutable_cpu_data = convert(rgLabels);
+
+                // Layer decode outputs the pregen targets as the centroids.
+                layerDecode.Forward(colBottomDecode, colTopDecode);
+                blobTargets.CopyFrom(colTopDecode[1]);
+
+                // Verify the targets
+                m_log.CHECK_EQ(blobTargets.num, nLabelNum, "The target num is incorrect!");
+                m_log.CHECK_EQ(blobTargets.count(1), nDim, "The target dim is incorrect!");
+                float[] rgTarget = convertF(blobTargets.update_cpu_data());
+                float fMinDist = float.MaxValue;
+
+                for (int i = 0; i < nLabelNum; i++)
                 {
-                    if (i != j)
+                    for (int j = 0; j < nLabelNum; j++)
                     {
-                        float fDist = 0;
-
-                        for (int k = 0; k < nDim; k++)
+                        if (i != j)
                         {
-                            float fDiff = rgTarget[i * nDim + k] - rgTarget[j * nDim + k];
-                            fDist += (fDiff * fDiff);
-                        }
+                            float fDist = 0;
 
-                        fMinDist = Math.Min(fMinDist, fDist);
+                            for (int k = 0; k < nDim; k++)
+                            {
+                                float fDiff = rgTarget[i * nDim + k] - rgTarget[j * nDim + k];
+                                fDist += (fDiff * fDiff);
+                            }
+
+                            fMinDist = Math.Min(fMinDist, fDist);
+                        }
                     }
                 }
+
+                m_log.CHECK_GE(fMinDist, dfDist, "The minimum distance is less than the distance threshold!");
+
+                // Load the pregenerated targets
+                layerTriplet.loadPreGenTargets(blobLabels, blobTargets, blobTargetsNeg, blobTargetsPos);
+
+                // Verify the pos/neg targets.
+                for (int i = 0; i < nNum; i++)
+                {
+                    int nLabel = (int)rgLabels[i];
+
+                    m_cuda.sub(nDim, blobTargets.gpu_data, blobTargetsPos.gpu_data, blobWork.mutable_gpu_data, nLabel * nDim, i * nDim);
+                    double dfSumP = m_cuda.asum_double(nDim, blobWork.gpu_data);
+                    m_log.CHECK_EQ(dfSumP, 0, "The positive target should equal the target!");
+
+                    m_cuda.sub(nDim, blobTargets.gpu_data, blobTargetsNeg.gpu_data, blobWork.mutable_gpu_data, nLabel * nDim, i * nDim);
+                    double dfSumN = m_cuda.asum_double(nDim, blobWork.gpu_data);
+                    m_log.CHECK_NE(dfSumN, 0, "The negative target should NOT equal the target!");
+                }
+
+                // Clean-up
+                blobTargets.Dispose();
+                blobTargetsPos.Dispose();
+                blobTargetsNeg.Dispose();
+                blobLabels.Dispose();
+                blobWork.Dispose();
             }
-
-            m_log.CHECK_GE(fMinDist, dfDist, "The minimum distance is less than the distance threshold!");
-
-            // Load the pregenerated targets
-            layerTriplet.loadPreGenTargets(blobLabels, blobTargets, blobTargetsNeg, blobTargetsPos);
-
-            // Verify the pos/neg targets.
-            for (int i = 0; i < nNum; i++)
+            finally
             {
-                int nLabel = (int)rgLabels[i];
+                layerTriplet.Dispose();
 
-                m_cuda.sub(nDim, blobTargets.gpu_data, blobTargetsPos.gpu_data, blobWork.mutable_gpu_data, nLabel * nDim, i * nDim);
-                double dfSumP = m_cuda.asum_double(nDim, blobWork.gpu_data);
-                m_log.CHECK_EQ(dfSumP, 0, "The positive target should equal the target!");
-
-                m_cuda.sub(nDim, blobTargets.gpu_data, blobTargetsNeg.gpu_data, blobWork.mutable_gpu_data, nLabel * nDim, i * nDim);
-                double dfSumN = m_cuda.asum_double(nDim, blobWork.gpu_data);
-                m_log.CHECK_NE(dfSumN, 0, "The negative target should NOT equal the target!");
+                if (layerDecode != null)
+                    layerDecode.Dispose();
             }
-
-            // Clean-up
-            layerTriplet.Dispose();
-            layerDecode.Dispose();
-            blobTargets.Dispose();
-            blobTargetsPos.Dispose();
-            blobTargetsNeg.Dispose();
-            blobLabels.Dispose();
-            blobWork.Dispose();
         }
 
         public void TestGradient()
@@ -452,9 +486,17 @@ namespace MyCaffe.test
             double dfLossWeight = 3.7;
             p.loss_weight.Add(dfLossWeight);
             TripletLossLayer<T> layer = new TripletLossLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-1, 1701);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-1, 1701);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

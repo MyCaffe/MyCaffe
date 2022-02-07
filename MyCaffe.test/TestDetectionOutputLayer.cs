@@ -353,12 +353,20 @@ namespace MyCaffe.test
             p.detection_output_param.num_classes = (uint)m_nNumClasses;
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
-            layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(Top.num, 1, "The top num should = 1.");
-            m_log.CHECK_EQ(Top.channels, 1, "The top channels should = 1.");
-            m_log.CHECK_EQ(Top.height, 1, "The top height should = 1.");
-            m_log.CHECK_EQ(Top.width, 7, "The top width should = 7.");
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(Top.num, 1, "The top num should = 1.");
+                m_log.CHECK_EQ(Top.channels, 1, "The top channels should = 1.");
+                m_log.CHECK_EQ(Top.height, 1, "The top height should = 1.");
+                m_log.CHECK_EQ(Top.width, 7, "The top width should = 7.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForwardSharedLocation()
@@ -370,22 +378,29 @@ namespace MyCaffe.test
             p.detection_output_param.nms_param.nms_threshold = m_fNmsTheshold;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
 
-            FillLocData(true);
+            try
+            {
+                FillLocData(true);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(Top.num, 1, "The top num should = 1.");
-            m_log.CHECK_EQ(Top.channels, 1, "The top channels should = 1.");
-            m_log.CHECK_EQ(Top.height, 6, "The top height should = 6.");
-            m_log.CHECK_EQ(Top.width, 7, "The top width should = 7.");
+                m_log.CHECK_EQ(Top.num, 1, "The top num should = 1.");
+                m_log.CHECK_EQ(Top.channels, 1, "The top channels should = 1.");
+                m_log.CHECK_EQ(Top.height, 6, "The top height should = 6.");
+                m_log.CHECK_EQ(Top.width, 7, "The top width should = 7.");
 
-            CheckEqual(Top, 0, "0 1 1.0 0.15 0.15 0.45 0.45");
-            CheckEqual(Top, 1, "0 1 0.8 0.55 0.15 0.85 0.45");
-            CheckEqual(Top, 2, "0 1 0.6 0.15 0.55 0.45 0.85");
-            CheckEqual(Top, 3, "0 1 0.4 0.55 0.55 0.85 0.85");
-            CheckEqual(Top, 4, "1 1 0.6 0.45 0.45 0.75 0.75");
-            CheckEqual(Top, 5, "1 1 0.0 0.25 0.25 0.55 0.55");
+                CheckEqual(Top, 0, "0 1 1.0 0.15 0.15 0.45 0.45");
+                CheckEqual(Top, 1, "0 1 0.8 0.55 0.15 0.85 0.45");
+                CheckEqual(Top, 2, "0 1 0.6 0.15 0.55 0.45 0.85");
+                CheckEqual(Top, 3, "0 1 0.4 0.55 0.55 0.85 0.85");
+                CheckEqual(Top, 4, "1 1 0.6 0.45 0.45 0.75 0.75");
+                CheckEqual(Top, 5, "1 1 0.0 0.25 0.25 0.55 0.55");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForwardSharedLocationTopK()
@@ -398,19 +413,26 @@ namespace MyCaffe.test
             p.detection_output_param.nms_param.top_k = m_nTopK;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
 
-            FillLocData(true);
+            try
+            {
+                FillLocData(true);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(Top.num, 1, "The top num should = 1.");
-            m_log.CHECK_EQ(Top.channels, 1, "The top channels should = 1.");
-            m_log.CHECK_EQ(Top.height, 3, "The top height should = 3.");
-            m_log.CHECK_EQ(Top.width, 7, "The top width should = 7.");
+                m_log.CHECK_EQ(Top.num, 1, "The top num should = 1.");
+                m_log.CHECK_EQ(Top.channels, 1, "The top channels should = 1.");
+                m_log.CHECK_EQ(Top.height, 3, "The top height should = 3.");
+                m_log.CHECK_EQ(Top.width, 7, "The top width should = 7.");
 
-            CheckEqual(Top, 0, "0 1 1.0 0.15 0.15 0.45 0.45");
-            CheckEqual(Top, 1, "0 1 0.8 0.55 0.15 0.85 0.45");
-            CheckEqual(Top, 2, "1 1 0.6 0.45 0.45 0.75 0.75");
+                CheckEqual(Top, 0, "0 1 1.0 0.15 0.15 0.45 0.45");
+                CheckEqual(Top, 1, "0 1 0.8 0.55 0.15 0.85 0.45");
+                CheckEqual(Top, 2, "1 1 0.6 0.45 0.45 0.75 0.75");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForwardNoSharedLocation()
@@ -422,27 +444,34 @@ namespace MyCaffe.test
             p.detection_output_param.nms_param.nms_threshold = m_fNmsTheshold;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
 
-            FillLocData(false);
+            try
+            {
+                FillLocData(false);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(Top.num, 1, "The top num should = 1.");
-            m_log.CHECK_EQ(Top.channels, 1, "The top channels should = 1.");
-            m_log.CHECK_EQ(Top.height, 11, "The top height should = 11.");
-            m_log.CHECK_EQ(Top.width, 7, "The top width should = 7.");
+                m_log.CHECK_EQ(Top.num, 1, "The top num should = 1.");
+                m_log.CHECK_EQ(Top.channels, 1, "The top channels should = 1.");
+                m_log.CHECK_EQ(Top.height, 11, "The top height should = 11.");
+                m_log.CHECK_EQ(Top.width, 7, "The top width should = 7.");
 
-            CheckEqual(Top, 0, "0 0 0.6 0.55 0.55 0.85 0.85");
-            CheckEqual(Top, 1, "0 0 0.4 0.15 0.55 0.45 0.85");
-            CheckEqual(Top, 2, "0 0 0.2 0.55 0.15 0.85 0.45");
-            CheckEqual(Top, 3, "0 0 0.0 0.15 0.15 0.45 0.45");
-            CheckEqual(Top, 4, "0 1 1.0 0.20 0.20 0.50 0.50");
-            CheckEqual(Top, 5, "0 1 0.8 0.50 0.20 0.80 0.50");
-            CheckEqual(Top, 6, "0 1 0.6 0.20 0.50 0.50 0.80");
-            CheckEqual(Top, 7, "0 1 0.4 0.50 0.50 0.80 0.80");
-            CheckEqual(Top, 8, "1 0 1.0 0.25 0.25 0.55 0.55");
-            CheckEqual(Top, 9, "1 0 0.4 0.45 0.45 0.75 0.75");
-            CheckEqual(Top, 10, "1 1 0.6 0.40 0.40 0.70 0.70");
+                CheckEqual(Top, 0, "0 0 0.6 0.55 0.55 0.85 0.85");
+                CheckEqual(Top, 1, "0 0 0.4 0.15 0.55 0.45 0.85");
+                CheckEqual(Top, 2, "0 0 0.2 0.55 0.15 0.85 0.45");
+                CheckEqual(Top, 3, "0 0 0.0 0.15 0.15 0.45 0.45");
+                CheckEqual(Top, 4, "0 1 1.0 0.20 0.20 0.50 0.50");
+                CheckEqual(Top, 5, "0 1 0.8 0.50 0.20 0.80 0.50");
+                CheckEqual(Top, 6, "0 1 0.6 0.20 0.50 0.50 0.80");
+                CheckEqual(Top, 7, "0 1 0.4 0.50 0.50 0.80 0.80");
+                CheckEqual(Top, 8, "1 0 1.0 0.25 0.25 0.55 0.55");
+                CheckEqual(Top, 9, "1 0 0.4 0.45 0.45 0.75 0.75");
+                CheckEqual(Top, 10, "1 1 0.6 0.40 0.40 0.70 0.70");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForwardNoSharedLocationTopK()
@@ -455,22 +484,29 @@ namespace MyCaffe.test
             p.detection_output_param.nms_param.top_k = m_nTopK;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
 
-            FillLocData(false);
+            try
+            {
+                FillLocData(false);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(Top.num, 1, "The top num should = 1.");
-            m_log.CHECK_EQ(Top.channels, 1, "The top channels should = 1.");
-            m_log.CHECK_EQ(Top.height, 6, "The top height should = 6.");
-            m_log.CHECK_EQ(Top.width, 7, "The top width should = 7.");
+                m_log.CHECK_EQ(Top.num, 1, "The top num should = 1.");
+                m_log.CHECK_EQ(Top.channels, 1, "The top channels should = 1.");
+                m_log.CHECK_EQ(Top.height, 6, "The top height should = 6.");
+                m_log.CHECK_EQ(Top.width, 7, "The top width should = 7.");
 
-            CheckEqual(Top, 0, "0 0 0.6 0.55 0.55 0.85 0.85");
-            CheckEqual(Top, 1, "0 0 0.4 0.15 0.55 0.45 0.85");
-            CheckEqual(Top, 2, "0 1 1.0 0.20 0.20 0.50 0.50");
-            CheckEqual(Top, 3, "0 1 0.8 0.50 0.20 0.80 0.50");
-            CheckEqual(Top, 4, "1 0 1.0 0.25 0.25 0.55 0.55");
-            CheckEqual(Top, 5, "1 1 0.6 0.40 0.40 0.70 0.70");
+                CheckEqual(Top, 0, "0 0 0.6 0.55 0.55 0.85 0.85");
+                CheckEqual(Top, 1, "0 0 0.4 0.15 0.55 0.45 0.85");
+                CheckEqual(Top, 2, "0 1 1.0 0.20 0.20 0.50 0.50");
+                CheckEqual(Top, 3, "0 1 0.8 0.50 0.20 0.80 0.50");
+                CheckEqual(Top, 4, "1 0 1.0 0.25 0.25 0.55 0.55");
+                CheckEqual(Top, 5, "1 1 0.6 0.40 0.40 0.70 0.70");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForwardNoSharedLocationNeg0()
@@ -482,21 +518,28 @@ namespace MyCaffe.test
             p.detection_output_param.nms_param.nms_threshold = m_fNmsTheshold;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
 
-            FillLocData(false);
+            try
+            {
+                FillLocData(false);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(Top.num, 1, "The top num should = 1.");
-            m_log.CHECK_EQ(Top.channels, 1, "The top channels should = 1.");
-            m_log.CHECK_EQ(Top.height, 5, "The top height should = 5.");
-            m_log.CHECK_EQ(Top.width, 7, "The top width should = 7.");
+                m_log.CHECK_EQ(Top.num, 1, "The top num should = 1.");
+                m_log.CHECK_EQ(Top.channels, 1, "The top channels should = 1.");
+                m_log.CHECK_EQ(Top.height, 5, "The top height should = 5.");
+                m_log.CHECK_EQ(Top.width, 7, "The top width should = 7.");
 
-            CheckEqual(Top, 0, "0 1 1.0 0.20 0.20 0.50 0.50");
-            CheckEqual(Top, 1, "0 1 0.8 0.50 0.20 0.80 0.50");
-            CheckEqual(Top, 2, "0 1 0.6 0.20 0.50 0.50 0.80");
-            CheckEqual(Top, 3, "0 1 0.4 0.50 0.50 0.80 0.80");
-            CheckEqual(Top, 4, "1 1 0.6 0.40 0.40 0.70 0.70");
+                CheckEqual(Top, 0, "0 1 1.0 0.20 0.20 0.50 0.50");
+                CheckEqual(Top, 1, "0 1 0.8 0.50 0.20 0.80 0.50");
+                CheckEqual(Top, 2, "0 1 0.6 0.20 0.50 0.50 0.80");
+                CheckEqual(Top, 3, "0 1 0.4 0.50 0.50 0.80 0.80");
+                CheckEqual(Top, 4, "1 1 0.6 0.40 0.40 0.70 0.70");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForwardNoSharedLocationNeg0TopK()
@@ -509,19 +552,26 @@ namespace MyCaffe.test
             p.detection_output_param.nms_param.top_k = m_nTopK;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
 
-            FillLocData(false);
+            try
+            {
+                FillLocData(false);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(Top.num, 1, "The top num should = 1.");
-            m_log.CHECK_EQ(Top.channels, 1, "The top channels should = 1.");
-            m_log.CHECK_EQ(Top.height, 3, "The top height should = 3.");
-            m_log.CHECK_EQ(Top.width, 7, "The top width should = 7.");
+                m_log.CHECK_EQ(Top.num, 1, "The top num should = 1.");
+                m_log.CHECK_EQ(Top.channels, 1, "The top channels should = 1.");
+                m_log.CHECK_EQ(Top.height, 3, "The top height should = 3.");
+                m_log.CHECK_EQ(Top.width, 7, "The top width should = 7.");
 
-            CheckEqual(Top, 0, "0 1 1.0 0.20 0.20 0.50 0.50");
-            CheckEqual(Top, 1, "0 1 0.8 0.50 0.20 0.80 0.50");
-            CheckEqual(Top, 2, "1 1 0.6 0.40 0.40 0.70 0.70");
+                CheckEqual(Top, 0, "0 1 1.0 0.20 0.20 0.50 0.50");
+                CheckEqual(Top, 1, "0 1 0.8 0.50 0.20 0.80 0.50");
+                CheckEqual(Top, 2, "1 1 0.6 0.40 0.40 0.70 0.70");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

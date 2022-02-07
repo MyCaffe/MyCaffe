@@ -220,17 +220,24 @@ namespace MyCaffe.test
             p.memory_data_param.width = (uint)m_nWidth;
             MemoryDataLayer<T> layer = new MemoryDataLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(m_dataBlob.num, m_nBatchSize, "The bottom[0] num should equal the batch size.");
-            m_log.CHECK_EQ(m_dataBlob.channels, m_nChannels, "The bottom[0] channels is not correct.");
-            m_log.CHECK_EQ(m_dataBlob.height, m_nHeight, "The bottom[0] height is not correct.");
-            m_log.CHECK_EQ(m_dataBlob.width, m_nWidth, "The bottom[0] width is not correct.");
+                m_log.CHECK_EQ(m_dataBlob.num, m_nBatchSize, "The bottom[0] num should equal the batch size.");
+                m_log.CHECK_EQ(m_dataBlob.channels, m_nChannels, "The bottom[0] channels is not correct.");
+                m_log.CHECK_EQ(m_dataBlob.height, m_nHeight, "The bottom[0] height is not correct.");
+                m_log.CHECK_EQ(m_dataBlob.width, m_nWidth, "The bottom[0] width is not correct.");
 
-            m_log.CHECK_EQ(m_labelBlob.num, m_nBatchSize, "The bottom[1] num should equal the batch size.");
-            m_log.CHECK_EQ(m_labelBlob.channels, 1, "The bottom[1] channels is not correct.");
-            m_log.CHECK_EQ(m_labelBlob.height, 1, "The bottom[1] height is not correct.");
-            m_log.CHECK_EQ(m_labelBlob.width, 1, "The bottom[1] width is not correct.");
+                m_log.CHECK_EQ(m_labelBlob.num, m_nBatchSize, "The bottom[1] num should equal the batch size.");
+                m_log.CHECK_EQ(m_labelBlob.channels, 1, "The bottom[1] channels is not correct.");
+                m_log.CHECK_EQ(m_labelBlob.height, 1, "The bottom[1] height is not correct.");
+                m_log.CHECK_EQ(m_labelBlob.width, 1, "The bottom[1] width is not correct.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForward()
@@ -242,39 +249,46 @@ namespace MyCaffe.test
             p.memory_data_param.width = (uint)m_nWidth;
             MemoryDataLayer<T> layer = new MemoryDataLayer<T>(m_cuda, m_log, p);
 
-            layer.LayerSetUp(BottomVec, TopVec);
-            layer.Reset(m_data, m_labels, m_data.num);
-
-            double[] rgData = convert(m_data.update_cpu_data());
-
-            for (int i = 0; i < m_nBatches * 6; i++)
+            try
             {
-                int nBatchNum = i % m_nBatches;
+                layer.LayerSetUp(BottomVec, TopVec);
+                layer.Reset(m_data, m_labels, m_data.num);
 
-                layer.Forward(BottomVec, TopVec);
+                double[] rgData = convert(m_data.update_cpu_data());
 
-                double[] rgDataBlob = convert(m_dataBlob.update_cpu_data());
-
-                for (int j = 0; j < m_dataBlob.count(); j++)
+                for (int i = 0; i < m_nBatches * 6; i++)
                 {
-                    double df1 = rgDataBlob[j];
-                    int nIdx = m_data.offset(1) * m_nBatchSize * nBatchNum + j;
-                    double df2 = rgData[nIdx];
+                    int nBatchNum = i % m_nBatches;
 
-                    m_log.CHECK_EQ(df1, df2, "The data items should match.");
+                    layer.Forward(BottomVec, TopVec);
+
+                    double[] rgDataBlob = convert(m_dataBlob.update_cpu_data());
+
+                    for (int j = 0; j < m_dataBlob.count(); j++)
+                    {
+                        double df1 = rgDataBlob[j];
+                        int nIdx = m_data.offset(1) * m_nBatchSize * nBatchNum + j;
+                        double df2 = rgData[nIdx];
+
+                        m_log.CHECK_EQ(df1, df2, "The data items should match.");
+                    }
+
+                    for (int j = 0; j < m_labelBlob.count(); j++)
+                    {
+                        double df1 = convert(m_labelBlob.GetData(j));
+                        int nIdx = m_nBatchSize * nBatchNum + j;
+                        double df2 = convert(m_labels.GetData(nIdx));
+
+                        m_log.CHECK_EQ(df1, df2, "The label items should match.");
+                    }
+
+                    double dfPct = (double)i / (double)(m_nBatches * 6);
+                    Trace.WriteLine("testing at " + dfPct.ToString("P"));
                 }
-
-                for (int j = 0; j < m_labelBlob.count(); j++)
-                {
-                    double df1 = convert(m_labelBlob.GetData(j));
-                    int nIdx = m_nBatchSize * nBatchNum + j;
-                    double df2 = convert(m_labels.GetData(nIdx));
-
-                    m_log.CHECK_EQ(df1, df2, "The label items should match.");
-                }
-
-                double dfPct = (double)i / (double)(m_nBatches * 6);
-                Trace.WriteLine("testing at " + dfPct.ToString("P"));
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -295,40 +309,48 @@ namespace MyCaffe.test
             p.memory_data_param.height = (uint)ds.TrainingSource.ImageHeight;
             p.memory_data_param.width = (uint)ds.TrainingSource.ImageWidth;
             MemoryDataLayer<T> layer = new MemoryDataLayer<T>(m_cuda, m_log, p);
-            layer.OnGetData += MemoryDataLayer_OnGetDataSingleLabel;
 
-            layer.LayerSetUp(BottomVec, TopVec);
-
-            double[] rgData = convert(m_data.update_cpu_data());
-
-            for (int i = 0; i < m_nBatches * 6; i++)
+            try
             {
-                int nBatchNum = i % m_nBatches;
+                layer.OnGetData += MemoryDataLayer_OnGetDataSingleLabel;
 
-                layer.Forward(BottomVec, TopVec);
+                layer.LayerSetUp(BottomVec, TopVec);
 
-                double[] rgDataBlob = convert(m_dataBlob.update_cpu_data());
+                double[] rgData = convert(m_data.update_cpu_data());
 
-                for (int j = 0; j < m_dataBlob.count(); j++)
+                for (int i = 0; i < m_nBatches * 6; i++)
                 {
-                    double df1 = rgDataBlob[j];
-                    int nIdx = m_data.offset(1) * m_nBatchSize * nBatchNum + j;
-                    double df2 = rgData[nIdx];
+                    int nBatchNum = i % m_nBatches;
 
-                    m_log.CHECK_EQ(df1, df2, "The data items should match.");
+                    layer.Forward(BottomVec, TopVec);
+
+                    double[] rgDataBlob = convert(m_dataBlob.update_cpu_data());
+
+                    for (int j = 0; j < m_dataBlob.count(); j++)
+                    {
+                        double df1 = rgDataBlob[j];
+                        int nIdx = m_data.offset(1) * m_nBatchSize * nBatchNum + j;
+                        double df2 = rgData[nIdx];
+
+                        m_log.CHECK_EQ(df1, df2, "The data items should match.");
+                    }
+
+                    for (int j = 0; j < m_labelBlob.count(); j++)
+                    {
+                        double df1 = convert(m_labelBlob.GetData(j));
+                        int nIdx = m_labels.offset(1) * m_nBatchSize * nBatchNum + j;
+                        double df2 = convert(m_labels.GetData(nIdx));
+
+                        m_log.CHECK_EQ(df1, df2, "The label items should match.");
+                    }
+
+                    double dfPct = (double)i / (double)(m_nBatches * 6);
+                    Trace.WriteLine("testing at " + dfPct.ToString("P"));
                 }
-
-                for (int j = 0; j < m_labelBlob.count(); j++)
-                {
-                    double df1 = convert(m_labelBlob.GetData(j));
-                    int nIdx = m_labels.offset(1) * m_nBatchSize * nBatchNum + j;
-                    double df2 = convert(m_labels.GetData(nIdx));
-
-                    m_log.CHECK_EQ(df1, df2, "The label items should match.");
-                }
-
-                double dfPct = (double)i / (double)(m_nBatches * 6);
-                Trace.WriteLine("testing at " + dfPct.ToString("P"));
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -346,21 +368,29 @@ namespace MyCaffe.test
             }
 
             MemoryDataLayer<T> layer = sender as MemoryDataLayer<T>;
-            layer.AddDatumVector(rgData);
 
-            m_data.Reshape(rgData.Count, rgData[0].channels, rgData[0].height, rgData[0].width);
-            m_labels.Reshape(rgData.Count, 1, 1, 1);
-
-            // Get the transformed data so that we can verify it later.
-            layer.Transformer.Transform(rgData, m_data, m_cuda, m_log);
-            List<T> rgLbl = new List<T>();
-
-            for (int i = 0; i < rgData.Count; i++)
+            try
             {
-                rgLbl.Add((T)Convert.ChangeType(rgData[i].Label, typeof(T)));
-            }
+                layer.AddDatumVector(rgData);
 
-            m_labels.mutable_cpu_data = rgLbl.ToArray();
+                m_data.Reshape(rgData.Count, rgData[0].channels, rgData[0].height, rgData[0].width);
+                m_labels.Reshape(rgData.Count, 1, 1, 1);
+
+                // Get the transformed data so that we can verify it later.
+                layer.Transformer.Transform(rgData, m_data, m_cuda, m_log);
+                List<T> rgLbl = new List<T>();
+
+                for (int i = 0; i < rgData.Count; i++)
+                {
+                    rgLbl.Add((T)Convert.ChangeType(rgData[i].Label, typeof(T)));
+                }
+
+                m_labels.mutable_cpu_data = rgLbl.ToArray();
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForwardAddVecMultiple()
@@ -384,40 +414,48 @@ namespace MyCaffe.test
             p.memory_data_param.label_width = 1;
             p.memory_data_param.label_type = LayerParameterBase.LABEL_TYPE.MULTIPLE;
             MemoryDataLayer<T> layer = new MemoryDataLayer<T>(m_cuda, m_log, p);
-            layer.OnGetData += MemoryDataLayer_OnGetDataMultipleLabel;
 
-            layer.LayerSetUp(BottomVec, TopVec);
-
-            double[] rgData = convert(m_data.update_cpu_data());
-
-            for (int i = 0; i < m_nBatches * 6; i++)
+            try
             {
-                int nBatchNum = i % m_nBatches;
+                layer.OnGetData += MemoryDataLayer_OnGetDataMultipleLabel;
 
-                layer.Forward(BottomVec, TopVec);
+                layer.LayerSetUp(BottomVec, TopVec);
 
-                double[] rgDataBlob = convert(m_dataBlob.update_cpu_data());
+                double[] rgData = convert(m_data.update_cpu_data());
 
-                for (int j = 0; j < m_dataBlob.count(); j++)
+                for (int i = 0; i < m_nBatches * 6; i++)
                 {
-                    double df1 = rgDataBlob[j];
-                    int nIdx = m_data.offset(1) * m_nBatchSize * nBatchNum + j;
-                    double df2 = rgData[nIdx];
+                    int nBatchNum = i % m_nBatches;
 
-                    m_log.CHECK_EQ(df1, df2, "The data items should match.");
+                    layer.Forward(BottomVec, TopVec);
+
+                    double[] rgDataBlob = convert(m_dataBlob.update_cpu_data());
+
+                    for (int j = 0; j < m_dataBlob.count(); j++)
+                    {
+                        double df1 = rgDataBlob[j];
+                        int nIdx = m_data.offset(1) * m_nBatchSize * nBatchNum + j;
+                        double df2 = rgData[nIdx];
+
+                        m_log.CHECK_EQ(df1, df2, "The data items should match.");
+                    }
+
+                    for (int j = 0; j < m_labelBlob.count(); j++)
+                    {
+                        double df1 = convert(m_labelBlob.GetData(j));
+                        int nIdx = m_labels.offset(1) * m_nBatchSize * nBatchNum + j;
+                        double df2 = convert(m_labels.GetData(nIdx));
+
+                        m_log.CHECK_EQ(df1, df2, "The label items should match.");
+                    }
+
+                    double dfPct = (double)i / (double)(m_nBatches * 6);
+                    Trace.WriteLine("testing at " + dfPct.ToString("P"));
                 }
-
-                for (int j = 0; j < m_labelBlob.count(); j++)
-                {
-                    double df1 = convert(m_labelBlob.GetData(j));
-                    int nIdx = m_labels.offset(1) * m_nBatchSize * nBatchNum + j;
-                    double df2 = convert(m_labels.GetData(nIdx));
-
-                    m_log.CHECK_EQ(df1, df2, "The label items should match.");
-                }
-
-                double dfPct = (double)i / (double)(m_nBatches * 6);
-                Trace.WriteLine("testing at " + dfPct.ToString("P"));
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -439,27 +477,35 @@ namespace MyCaffe.test
             }
 
             MemoryDataLayer<T> layer = sender as MemoryDataLayer<T>;
-            layer.AddDatumVector(rgData);
 
-            m_data.Reshape(rgData.Count, rgData[0].channels, rgData[0].height, rgData[0].width);
-            List<float> rgLbl1 = BinaryData.UnPackFloatList(rgData[0].DataCriteria, rgData[0].DataCriteriaFormat);
-            m_labels.Reshape(rgData.Count, rgLbl1.Count, 1, 1);
-
-            // Get the transformed data so that we can verify it later.
-            layer.Transformer.Transform(rgData, m_data, m_cuda, m_log);
-            List<T> rgLbl = new List<T>();
-
-            for (int i = 0; i < rgData.Count; i++)
+            try
             {
-                rgLbl1 = BinaryData.UnPackFloatList(rgData[i].DataCriteria, rgData[i].DataCriteriaFormat);
+                layer.AddDatumVector(rgData);
 
-                for (int j = 0; j < rgLbl1.Count; j++)
+                m_data.Reshape(rgData.Count, rgData[0].channels, rgData[0].height, rgData[0].width);
+                List<float> rgLbl1 = BinaryData.UnPackFloatList(rgData[0].DataCriteria, rgData[0].DataCriteriaFormat);
+                m_labels.Reshape(rgData.Count, rgLbl1.Count, 1, 1);
+
+                // Get the transformed data so that we can verify it later.
+                layer.Transformer.Transform(rgData, m_data, m_cuda, m_log);
+                List<T> rgLbl = new List<T>();
+
+                for (int i = 0; i < rgData.Count; i++)
                 {
-                    rgLbl.Add((T)Convert.ChangeType(rgLbl1[j], typeof(T)));
-                }
-            }
+                    rgLbl1 = BinaryData.UnPackFloatList(rgData[i].DataCriteria, rgData[i].DataCriteriaFormat);
 
-            m_labels.mutable_cpu_data = rgLbl.ToArray();
+                    for (int j = 0; j < rgLbl1.Count; j++)
+                    {
+                        rgLbl.Add((T)Convert.ChangeType(rgLbl1[j], typeof(T)));
+                    }
+                }
+
+                m_labels.mutable_cpu_data = rgLbl.ToArray();
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForwardAddVecMultiple2()
@@ -483,40 +529,48 @@ namespace MyCaffe.test
             p.memory_data_param.label_width = 1;
             p.memory_data_param.label_type = LayerParameterBase.LABEL_TYPE.MULTIPLE;
             MemoryDataLayer<T> layer = new MemoryDataLayer<T>(m_cuda, m_log, p);
-            layer.OnGetData += MemoryDataLayer_OnGetDataMultipleLabel2;
 
-            layer.LayerSetUp(BottomVec, TopVec);
-
-            double[] rgData = convert(m_data.update_cpu_data());
-
-            for (int i = 0; i < m_nBatches * 6; i++)
+            try
             {
-                int nBatchNum = i % m_nBatches;
+                layer.OnGetData += MemoryDataLayer_OnGetDataMultipleLabel2;
 
-                layer.Forward(BottomVec, TopVec);
+                layer.LayerSetUp(BottomVec, TopVec);
 
-                double[] rgDataBlob = convert(m_dataBlob.update_cpu_data());
+                double[] rgData = convert(m_data.update_cpu_data());
 
-                for (int j = 0; j < m_dataBlob.count(); j++)
+                for (int i = 0; i < m_nBatches * 6; i++)
                 {
-                    double df1 = rgDataBlob[j];
-                    int nIdx = m_data.offset(1) * m_nBatchSize * nBatchNum + j;
-                    double df2 = rgData[nIdx];
+                    int nBatchNum = i % m_nBatches;
 
-                    m_log.CHECK_EQ(df1, df2, "The data items should match.");
+                    layer.Forward(BottomVec, TopVec);
+
+                    double[] rgDataBlob = convert(m_dataBlob.update_cpu_data());
+
+                    for (int j = 0; j < m_dataBlob.count(); j++)
+                    {
+                        double df1 = rgDataBlob[j];
+                        int nIdx = m_data.offset(1) * m_nBatchSize * nBatchNum + j;
+                        double df2 = rgData[nIdx];
+
+                        m_log.CHECK_EQ(df1, df2, "The data items should match.");
+                    }
+
+                    for (int j = 0; j < m_labelBlob.count(); j++)
+                    {
+                        double df1 = convert(m_labelBlob.GetData(j));
+                        int nIdx = m_labels.offset(1) * m_nBatchSize * nBatchNum + j;
+                        double df2 = convert(m_labels.GetData(nIdx));
+
+                        m_log.CHECK_EQ(df1, df2, "The label items should match.");
+                    }
+
+                    double dfPct = (double)i / (double)(m_nBatches * 6);
+                    Trace.WriteLine("testing at " + dfPct.ToString("P"));
                 }
-
-                for (int j = 0; j < m_labelBlob.count(); j++)
-                {
-                    double df1 = convert(m_labelBlob.GetData(j));
-                    int nIdx = m_labels.offset(1) * m_nBatchSize * nBatchNum + j;
-                    double df2 = convert(m_labels.GetData(nIdx));
-
-                    m_log.CHECK_EQ(df1, df2, "The label items should match.");
-                }
-
-                double dfPct = (double)i / (double)(m_nBatches * 6);
-                Trace.WriteLine("testing at " + dfPct.ToString("P"));
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -538,27 +592,35 @@ namespace MyCaffe.test
             }
 
             MemoryDataLayer<T> layer = sender as MemoryDataLayer<T>;
-            layer.AddDatumVector(rgData, null, 2);
 
-            m_data.Reshape(rgData.Count, rgData[0].channels, rgData[0].height, rgData[0].width);
-            List<float> rgLbl1 = BinaryData.UnPackFloatList(rgData[0].DataCriteria, rgData[0].DataCriteriaFormat);
-            m_labels.Reshape(rgData.Count, 1, rgLbl1.Count, 1);
-
-            // Get the transformed data so that we can verify it later.
-            layer.Transformer.Transform(rgData, m_data, m_cuda, m_log);
-            List<T> rgLbl = new List<T>();
-
-            for (int i = 0; i < rgData.Count; i++)
+            try
             {
-                rgLbl1 = BinaryData.UnPackFloatList(rgData[i].DataCriteria, rgData[i].DataCriteriaFormat);
+                layer.AddDatumVector(rgData, null, 2);
 
-                for (int j = 0; j < rgLbl1.Count; j++)
+                m_data.Reshape(rgData.Count, rgData[0].channels, rgData[0].height, rgData[0].width);
+                List<float> rgLbl1 = BinaryData.UnPackFloatList(rgData[0].DataCriteria, rgData[0].DataCriteriaFormat);
+                m_labels.Reshape(rgData.Count, 1, rgLbl1.Count, 1);
+
+                // Get the transformed data so that we can verify it later.
+                layer.Transformer.Transform(rgData, m_data, m_cuda, m_log);
+                List<T> rgLbl = new List<T>();
+
+                for (int i = 0; i < rgData.Count; i++)
                 {
-                    rgLbl.Add((T)Convert.ChangeType(rgLbl1[j], typeof(T)));
-                }
-            }
+                    rgLbl1 = BinaryData.UnPackFloatList(rgData[i].DataCriteria, rgData[i].DataCriteriaFormat);
 
-            m_labels.mutable_cpu_data = rgLbl.ToArray();
+                    for (int j = 0; j < rgLbl1.Count; j++)
+                    {
+                        rgLbl.Add((T)Convert.ChangeType(rgLbl1[j], typeof(T)));
+                    }
+                }
+
+                m_labels.mutable_cpu_data = rgLbl.ToArray();
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForwardAddVecMultiple3()
@@ -582,40 +644,48 @@ namespace MyCaffe.test
             p.memory_data_param.label_width = 3;
             p.memory_data_param.label_type = LayerParameterBase.LABEL_TYPE.MULTIPLE;
             MemoryDataLayer<T> layer = new MemoryDataLayer<T>(m_cuda, m_log, p);
-            layer.OnGetData += MemoryDataLayer_OnGetDataMultipleLabel3;
 
-            layer.LayerSetUp(BottomVec, TopVec);
-
-            double[] rgData = convert(m_data.update_cpu_data());
-
-            for (int i = 0; i < m_nBatches * 6; i++)
+            try
             {
-                int nBatchNum = i % m_nBatches;
+                layer.OnGetData += MemoryDataLayer_OnGetDataMultipleLabel3;
 
-                layer.Forward(BottomVec, TopVec);
+                layer.LayerSetUp(BottomVec, TopVec);
 
-                double[] rgDataBlob = convert(m_dataBlob.update_cpu_data());
+                double[] rgData = convert(m_data.update_cpu_data());
 
-                for (int j = 0; j < m_dataBlob.count(); j++)
+                for (int i = 0; i < m_nBatches * 6; i++)
                 {
-                    double df1 = rgDataBlob[j];
-                    int nIdx = m_data.offset(1) * m_nBatchSize * nBatchNum + j;
-                    double df2 = rgData[nIdx];
+                    int nBatchNum = i % m_nBatches;
 
-                    m_log.CHECK_EQ(df1, df2, "The data items should match.");
+                    layer.Forward(BottomVec, TopVec);
+
+                    double[] rgDataBlob = convert(m_dataBlob.update_cpu_data());
+
+                    for (int j = 0; j < m_dataBlob.count(); j++)
+                    {
+                        double df1 = rgDataBlob[j];
+                        int nIdx = m_data.offset(1) * m_nBatchSize * nBatchNum + j;
+                        double df2 = rgData[nIdx];
+
+                        m_log.CHECK_EQ(df1, df2, "The data items should match.");
+                    }
+
+                    for (int j = 0; j < m_labelBlob.count(); j++)
+                    {
+                        double df1 = convert(m_labelBlob.GetData(j));
+                        int nIdx = m_labels.offset(1) * m_nBatchSize * nBatchNum + j;
+                        double df2 = convert(m_labels.GetData(nIdx));
+
+                        m_log.CHECK_EQ(df1, df2, "The label items should match.");
+                    }
+
+                    double dfPct = (double)i / (double)(m_nBatches * 6);
+                    Trace.WriteLine("testing at " + dfPct.ToString("P"));
                 }
-
-                for (int j = 0; j < m_labelBlob.count(); j++)
-                {
-                    double df1 = convert(m_labelBlob.GetData(j));
-                    int nIdx = m_labels.offset(1) * m_nBatchSize * nBatchNum + j;
-                    double df2 = convert(m_labels.GetData(nIdx));
-
-                    m_log.CHECK_EQ(df1, df2, "The label items should match.");
-                }
-
-                double dfPct = (double)i / (double)(m_nBatches * 6);
-                Trace.WriteLine("testing at " + dfPct.ToString("P"));
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -637,27 +707,35 @@ namespace MyCaffe.test
             }
 
             MemoryDataLayer<T> layer = sender as MemoryDataLayer<T>;
-            layer.AddDatumVector(rgData, null, 3);
 
-            m_data.Reshape(rgData.Count, rgData[0].channels, rgData[0].height, rgData[0].width);
-            List<float> rgLbl1 = BinaryData.UnPackFloatList(rgData[0].DataCriteria, rgData[0].DataCriteriaFormat);
-            m_labels.Reshape(rgData.Count, 1, 1, rgLbl1.Count);
-
-            // Get the transformed data so that we can verify it later.
-            layer.Transformer.Transform(rgData, m_data, m_cuda, m_log);
-            List<T> rgLbl = new List<T>();
-
-            for (int i = 0; i < rgData.Count; i++)
+            try
             {
-                rgLbl1 = BinaryData.UnPackFloatList(rgData[i].DataCriteria, rgData[i].DataCriteriaFormat);
+                layer.AddDatumVector(rgData, null, 3);
 
-                for (int j = 0; j < rgLbl1.Count; j++)
+                m_data.Reshape(rgData.Count, rgData[0].channels, rgData[0].height, rgData[0].width);
+                List<float> rgLbl1 = BinaryData.UnPackFloatList(rgData[0].DataCriteria, rgData[0].DataCriteriaFormat);
+                m_labels.Reshape(rgData.Count, 1, 1, rgLbl1.Count);
+
+                // Get the transformed data so that we can verify it later.
+                layer.Transformer.Transform(rgData, m_data, m_cuda, m_log);
+                List<T> rgLbl = new List<T>();
+
+                for (int i = 0; i < rgData.Count; i++)
                 {
-                    rgLbl.Add((T)Convert.ChangeType(rgLbl1[j], typeof(T)));
-                }
-            }
+                    rgLbl1 = BinaryData.UnPackFloatList(rgData[i].DataCriteria, rgData[i].DataCriteriaFormat);
 
-            m_labels.mutable_cpu_data = rgLbl.ToArray();
+                    for (int j = 0; j < rgLbl1.Count; j++)
+                    {
+                        rgLbl.Add((T)Convert.ChangeType(rgLbl1[j], typeof(T)));
+                    }
+                }
+
+                m_labels.mutable_cpu_data = rgLbl.ToArray();
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

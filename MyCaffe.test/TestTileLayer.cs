@@ -199,16 +199,22 @@ namespace MyCaffe.test
             {
                 p.tile_param.axis = i;
                 TileLayer<T> layer = new TileLayer<T>(m_cuda, m_log, p);
-                layer.Setup(BottomVec, TopVec);
 
-                m_log.CHECK_EQ(Top.num_axes, Bottom.num_axes, "The top and bottom should have the same number of axes.");
-
-                for (int j = 0; j < Bottom.num_axes; j++)
+                try
                 {
-                    m_log.CHECK_EQ(Top.shape(j), Bottom.shape(j), "The top and bottom should have the same shape at " + j.ToString());
-                }
+                    layer.Setup(BottomVec, TopVec);
 
-                layer.Dispose();
+                    m_log.CHECK_EQ(Top.num_axes, Bottom.num_axes, "The top and bottom should have the same number of axes.");
+
+                    for (int j = 0; j < Bottom.num_axes; j++)
+                    {
+                        m_log.CHECK_EQ(Top.shape(j), Bottom.shape(j), "The top and bottom should have the same shape at " + j.ToString());
+                    }
+                }
+                finally
+                {
+                    layer.Dispose();
+                }
             }
         }
 
@@ -223,17 +229,23 @@ namespace MyCaffe.test
             {
                 p.tile_param.axis = i;
                 TileLayer<T> layer = new TileLayer<T>(m_cuda, m_log, p);
-                layer.Setup(BottomVec, TopVec);
 
-                m_log.CHECK_EQ(Top.num_axes, Bottom.num_axes, "The top and bottom should have the same number of axes.");
-
-                for (int j = 0; j < Bottom.num_axes; j++)
+                try
                 {
-                    int nTopDim = ((i == j) ? kNumTiles : 1) * Bottom.shape(j);
-                    m_log.CHECK_EQ(nTopDim, Top.shape(j), "The top.shape(" + j.ToString() + ") should have shape = " + nTopDim.ToString());
-                }
+                    layer.Setup(BottomVec, TopVec);
 
-                layer.Dispose();
+                    m_log.CHECK_EQ(Top.num_axes, Bottom.num_axes, "The top and bottom should have the same number of axes.");
+
+                    for (int j = 0; j < Bottom.num_axes; j++)
+                    {
+                        int nTopDim = ((i == j) ? kNumTiles : 1) * Bottom.shape(j);
+                        m_log.CHECK_EQ(nTopDim, Top.shape(j), "The top.shape(" + j.ToString() + ") should have shape = " + nTopDim.ToString());
+                    }
+                }
+                finally
+                {
+                    layer.Dispose();
+                }
             }
         }
 
@@ -247,25 +259,33 @@ namespace MyCaffe.test
             p.tile_param.tiles = kNumTiles;
 
             TileLayer<T> layer = new TileLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            for (int n = 0; n < Top.num; n++)
+            try
             {
-                for (int c = 0; c < Top.channels; c++)
-                {
-                    for (int h = 0; h < Top.height; h++)
-                    {
-                        for (int w = 0; w < Top.width; w++)
-                        {
-                            int bottom_n = n % Bottom.num;
-                            double dfBtm = convert(Bottom.data_at(bottom_n, c, h, w));
-                            double dfTop = convert(Top.data_at(n, c, h, w));
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                            m_log.CHECK_EQ(dfBtm, dfTop, "the top and bottom values should be the same.");
+                for (int n = 0; n < Top.num; n++)
+                {
+                    for (int c = 0; c < Top.channels; c++)
+                    {
+                        for (int h = 0; h < Top.height; h++)
+                        {
+                            for (int w = 0; w < Top.width; w++)
+                            {
+                                int bottom_n = n % Bottom.num;
+                                double dfBtm = convert(Bottom.data_at(bottom_n, c, h, w));
+                                double dfTop = convert(Top.data_at(n, c, h, w));
+
+                                m_log.CHECK_EQ(dfBtm, dfTop, "the top and bottom values should be the same.");
+                            }
                         }
                     }
                 }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -277,25 +297,33 @@ namespace MyCaffe.test
             p.tile_param.tiles = kNumTiles;
 
             TileLayer<T> layer = new TileLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            for (int n = 0; n < Top.num; n++)
+            try
             {
-                for (int c = 0; c < Top.channels; c++)
-                {
-                    for (int h = 0; h < Top.height; h++)
-                    {
-                        for (int w = 0; w < Top.width; w++)
-                        {
-                            int bottom_c = c % Bottom.channels;
-                            double dfBtm = convert(Bottom.data_at(n, bottom_c, h, w));
-                            double dfTop = convert(Top.data_at(n, c, h, w));
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                            m_log.CHECK_EQ(dfBtm, dfTop, "the top and bottom values should be the same.");
+                for (int n = 0; n < Top.num; n++)
+                {
+                    for (int c = 0; c < Top.channels; c++)
+                    {
+                        for (int h = 0; h < Top.height; h++)
+                        {
+                            for (int w = 0; w < Top.width; w++)
+                            {
+                                int bottom_c = c % Bottom.channels;
+                                double dfBtm = convert(Bottom.data_at(n, bottom_c, h, w));
+                                double dfTop = convert(Top.data_at(n, c, h, w));
+
+                                m_log.CHECK_EQ(dfBtm, dfTop, "the top and bottom values should be the same.");
+                            }
                         }
                     }
                 }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -307,8 +335,16 @@ namespace MyCaffe.test
             p.tile_param.tiles = kNumTiles;
 
             TileLayer<T> layer = new TileLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new test.GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+
+            try
+            {
+                GradientChecker<T> checker = new test.GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientNum()
@@ -321,8 +357,16 @@ namespace MyCaffe.test
             p.tile_param.tiles = kNumTiles;
 
             TileLayer<T> layer = new TileLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new test.GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+
+            try
+            {
+                GradientChecker<T> checker = new test.GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientChannels()
@@ -335,8 +379,16 @@ namespace MyCaffe.test
             p.tile_param.tiles = kNumTiles;
 
             TileLayer<T> layer = new TileLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new test.GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+
+            try
+            {
+                GradientChecker<T> checker = new test.GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

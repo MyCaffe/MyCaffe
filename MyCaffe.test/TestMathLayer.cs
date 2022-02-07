@@ -676,93 +676,100 @@ namespace MyCaffe.test
             p.math_param.function = fn;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            double[] rgBtmData = convert(Bottom.mutable_cpu_data);
-            double[] rgTopData = convert(Top.mutable_cpu_data);
-
-            for (int i = 0; i < rgTopData.Length; i++)
+            try
             {
-                double dfBtm = rgBtmData[i];
-                double dfTop = rgTopData[i];
-                double dfExpected = 0;
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                switch (fn)
+                double[] rgBtmData = convert(Bottom.mutable_cpu_data);
+                double[] rgTopData = convert(Top.mutable_cpu_data);
+
+                for (int i = 0; i < rgTopData.Length; i++)
                 {
-                    case MATH_FUNCTION.ACOS:
-                        dfExpected = Math.Acos(dfBtm);
-                        break;
+                    double dfBtm = rgBtmData[i];
+                    double dfTop = rgTopData[i];
+                    double dfExpected = 0;
 
-                    case MATH_FUNCTION.ACOSH:
-                        dfExpected = MathHelper.HArccos(dfBtm);
-                        break;
+                    switch (fn)
+                    {
+                        case MATH_FUNCTION.ACOS:
+                            dfExpected = Math.Acos(dfBtm);
+                            break;
 
-                    case MATH_FUNCTION.COS:
-                        dfExpected = Math.Cos(dfBtm);
-                        break;
+                        case MATH_FUNCTION.ACOSH:
+                            dfExpected = MathHelper.HArccos(dfBtm);
+                            break;
 
-                    case MATH_FUNCTION.COSH:
-                        dfExpected = Math.Cosh(dfBtm);
-                        break;
+                        case MATH_FUNCTION.COS:
+                            dfExpected = Math.Cos(dfBtm);
+                            break;
 
-                    case MATH_FUNCTION.ASIN:
-                        dfExpected = Math.Asin(dfBtm);
-                        break;
+                        case MATH_FUNCTION.COSH:
+                            dfExpected = Math.Cosh(dfBtm);
+                            break;
 
-                    case MATH_FUNCTION.ASINH:
-                        dfExpected = MathHelper.HArcsin(dfBtm);
-                        break;
+                        case MATH_FUNCTION.ASIN:
+                            dfExpected = Math.Asin(dfBtm);
+                            break;
 
-                    case MATH_FUNCTION.SIN:
-                        dfExpected = Math.Sin(dfBtm);
-                        break;
+                        case MATH_FUNCTION.ASINH:
+                            dfExpected = MathHelper.HArcsin(dfBtm);
+                            break;
 
-                    case MATH_FUNCTION.SINH:
-                        dfExpected = Math.Sinh(dfBtm);
-                        break;
+                        case MATH_FUNCTION.SIN:
+                            dfExpected = Math.Sin(dfBtm);
+                            break;
 
-                    case MATH_FUNCTION.ATAN:
-                        dfExpected = Math.Atan(dfBtm);
-                        break;
+                        case MATH_FUNCTION.SINH:
+                            dfExpected = Math.Sinh(dfBtm);
+                            break;
 
-                    case MATH_FUNCTION.ATANH:
-                        dfExpected = MathHelper.HArctan(dfBtm);
-                        break;
+                        case MATH_FUNCTION.ATAN:
+                            dfExpected = Math.Atan(dfBtm);
+                            break;
 
-                    case MATH_FUNCTION.TAN:
-                        dfExpected = Math.Tan(dfBtm);
-                        break;
+                        case MATH_FUNCTION.ATANH:
+                            dfExpected = MathHelper.HArctan(dfBtm);
+                            break;
 
-                    case MATH_FUNCTION.TANH:
-                        dfExpected = Math.Tanh(dfBtm);
-                        break;
+                        case MATH_FUNCTION.TAN:
+                            dfExpected = Math.Tan(dfBtm);
+                            break;
 
-                    case MATH_FUNCTION.CEIL:
-                        dfExpected = Math.Ceiling(dfBtm);
-                        break;
+                        case MATH_FUNCTION.TANH:
+                            dfExpected = Math.Tanh(dfBtm);
+                            break;
 
-                    case MATH_FUNCTION.FLOOR:
-                        dfExpected = Math.Floor(dfBtm);
-                        break;
+                        case MATH_FUNCTION.CEIL:
+                            dfExpected = Math.Ceiling(dfBtm);
+                            break;
 
-                    case MATH_FUNCTION.NEG:
-                        dfExpected = dfBtm * -1;
-                        break;
+                        case MATH_FUNCTION.FLOOR:
+                            dfExpected = Math.Floor(dfBtm);
+                            break;
 
-                    case MATH_FUNCTION.SIGN:
-                        dfExpected = Math.Sign(dfBtm);
-                        break;
+                        case MATH_FUNCTION.NEG:
+                            dfExpected = dfBtm * -1;
+                            break;
 
-                    case MATH_FUNCTION.SQRT:
-                        dfExpected = Math.Sqrt(dfBtm);
-                        break;
+                        case MATH_FUNCTION.SIGN:
+                            dfExpected = Math.Sign(dfBtm);
+                            break;
+
+                        case MATH_FUNCTION.SQRT:
+                            dfExpected = Math.Sqrt(dfBtm);
+                            break;
+                    }
+
+                    if (double.IsNaN(dfExpected) || double.IsInfinity(dfExpected))
+                        dfExpected = 0;
+
+                    m_log.EXPECT_NEAR_FLOAT(dfTop, dfExpected, 1e-4, "The value is not as expected for fn = " + fn.ToString());
                 }
-
-                if (double.IsNaN(dfExpected) || double.IsInfinity(dfExpected))
-                    dfExpected = 0;
-
-                m_log.EXPECT_NEAR_FLOAT(dfTop, dfExpected, 1e-4, "The value is not as expected for fn = " + fn.ToString());
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -772,8 +779,15 @@ namespace MyCaffe.test
             p.math_param.function = fn;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.01);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.01);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 

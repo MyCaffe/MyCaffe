@@ -675,19 +675,30 @@ namespace MyCaffe.test
             }
         }
 
-        private void runTest(long hExtension, TEST tst, params int[] rg)
+        private void runTest(int nConfig, TEST tst, params int[] rg)
         {
-            List<double> rgdf = new List<double>() { (double)(int)tst };
+            long hExtension = m_cuda.CreateExtension(DllPath);
+            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
 
-            for (int i = 0; i < rg.Length; i++)
+            try
             {
-                rgdf.Add(rg[i]);
-            }
+                List<double> rgdf = new List<double>() { (double)(int)tst };
 
-            T[] rg1 = m_cuda.RunExtension(hExtension, 3, Utility.ConvertVec<T>(rgdf.ToArray()));
-            double[] rgdf1 = Utility.ConvertVec<T>(rg1);
-            long lErr = (long)rgdf1[0];
-            m_log.CHECK_EQ(lErr, 0, "The SSD test " + tst.ToString() + " failed with error " + lErr.ToString());
+                for (int i = 0; i < rg.Length; i++)
+                {
+                    rgdf.Add(rg[i]);
+                }
+
+                T[] rg1 = m_cuda.RunExtension(hExtension, 3, Utility.ConvertVec<T>(rgdf.ToArray()));
+                double[] rgdf1 = Utility.ConvertVec<T>(rg1);
+                long lErr = (long)rgdf1[0];
+                m_log.CHECK_EQ(lErr, 0, "The SSD test " + tst.ToString() + " failed with error " + lErr.ToString());
+            }
+            finally
+            {
+                if (hExtension != 0)
+                    m_cuda.FreeExtension(hExtension);
+            }
         }
 
         private string DllPath
@@ -707,8 +718,8 @@ namespace MyCaffe.test
                 string strPath;
                 if (strVersion.Length > 0)
                 {
-                    if (strVersion != "10.2" && strVersion.Contains("10.2"))
-                        strVersion = "10.2";
+                    if (strVersion != "11.6" && strVersion.Contains("11.6"))
+                        strVersion = "11.6";
 
                     strPath = AssemblyDirectory + "\\MyCaffe.test.extension." + strVersion + ".dll";
                 }
@@ -757,303 +768,152 @@ namespace MyCaffe.test
 
         public void TestCreate(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.CREATE, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.CREATE);
         }
 
         public void TestBBOX_Size(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.BBOX_SIZE, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.BBOX_SIZE);
         }
 
         public void TestBBOX_Bounds(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.BBOX_BOUNDS, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.BBOX_BOUNDS);
         }
 
         public void TestBBOX_DivBounds(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.BBOX_DIVBOUNDS, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.BBOX_DIVBOUNDS);
         }
 
         public void TestBBOX_Clip(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.BBOX_CLIP, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.BBOX_CLIP);
         }
 
         public void TestBBOX_Decode1_Corner(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.BBOX_DECODE1_CORNER, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.BBOX_DECODE1_CORNER);
         }
 
         public void TestBBOX_Decode1_CenterSize(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.BBOX_DECODE1_CENTER_SIZE, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.BBOX_DECODE1_CENTER_SIZE);
         }
 
         public void TestBBOX_DecodeN_Corner(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.BBOX_DECODEN_CORNER, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.BBOX_DECODEN_CORNER);
         }
 
         public void TestBBOX_DecodeN_CenterSize(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.BBOX_DECODEN_CENTER_SIZE, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.BBOX_DECODEN_CENTER_SIZE);
         }
 
         public void TestBBOX_Encode_Corner(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.BBOX_ENCODE_CORNER, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.BBOX_ENCODE_CORNER);
         }
 
         public void TestBBOX_Encode_CenterSize(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.BBOX_ENCODE_CENTER_SIZE, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.BBOX_ENCODE_CENTER_SIZE);
         }
-
 
         public void TestBBOX_Intersect(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.BBOX_INTERSECT, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.BBOX_INTERSECT);
         }
 
         public void TestBBOX_JaccardOverlap(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.BBOX_JACCARDOVERLAP, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.BBOX_JACCARDOVERLAP);
         }
 
         public void TestBBOX_Match_OneBipartite(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.BBOX_MATCH_ONEBIPARTITE, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.BBOX_MATCH_ONEBIPARTITE);
         }
 
         public void TestBBOX_Match_AllBipartite(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.BBOX_MATCH_ALLBIPARTITE, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.BBOX_MATCH_ALLBIPARTITE);
         }
 
         public void TestBBOX_Match_OnePerPrediction(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.BBOX_MATCH_ONEPERPREDICTION, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.BBOX_MATCH_ONEPERPREDICTION);
         }
 
         public void TestBBOX_Match_AllPerPrediction(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.BBOX_MATCH_ALLPERPREDICTION, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.BBOX_MATCH_ALLPERPREDICTION);
         }
 
         public void TestBBOX_Match_AllPerPredictionEx(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.BBOX_MATCH_ALLPERPREDICTIONEX, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.BBOX_MATCH_ALLPERPREDICTIONEX);
         }
 
         public void TestGetGt(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.GET_GT, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.GET_GT);
         }
 
         public void TestGetLocPredShared(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.GET_LOCPRED_SHARED, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.GET_LOCPRED_SHARED);
         }
 
         public void TestGetLocPredUnShared(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.GET_LOCPRED_UNSHARED, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.GET_LOCPRED_UNSHARED);
         }
 
         public void TestGetConfScores(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.GET_CONF_SCORES, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.GET_CONF_SCORES);
         }
 
         public void TestGetPriorBBoxes(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.GET_PRIOR_BBOXES, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.GET_PRIOR_BBOXES);
         }
 
         public void TestFindMatches(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.FINDMATCHES, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.FINDMATCHES);
         }
 
         public void TestCountMatches(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.COUNTMATCHES, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.COUNTMATCHES);
         }
 
         public void TestSoftmax(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.SOFTMAX, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.SOFTMAX);
         }
 
         public void TestComputeConfLoss(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.COMPUTE_CONF_LOSS, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.COMPUTE_CONF_LOSS);
         }
 
         public void TestComputeLocLoss(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.COMPUTE_LOC_LOSS, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.COMPUTE_LOC_LOSS);
         }
 
         public void TestApplyNMS(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.APPLYNMS, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.APPLYNMS);
         }
 
         public void TestMineHardExamples(int nConfig)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.MINE_HARD_EXAMPLES, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
+            runTest(nConfig, TEST.MINE_HARD_EXAMPLES);
         }
     }
 }

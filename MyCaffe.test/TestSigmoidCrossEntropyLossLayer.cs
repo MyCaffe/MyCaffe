@@ -184,18 +184,26 @@ namespace MyCaffe.test
                 target_filler.Fill(BottomTargets);
 
                 SigmoidCrossEntropyLossLayer<T> layer = new SigmoidCrossEntropyLossLayer<T>(m_cuda, m_log, p);
-                layer.Setup(BottomVec, TopVec);
 
-                double dfLayerLoss = layer.Forward(BottomVec, TopVec);
-                int nCount = Bottom.count();
-                int nNum = Bottom.num;
-                T[] rgBottomData = Bottom.update_cpu_data();
-                T[] rgBottomTargets = BottomTargets.update_cpu_data();
+                try
+                {
+                    layer.Setup(BottomVec, TopVec);
 
-                double dfReferenceLoss = SigmoidCrossEntropyLossReference(nCount, nNum, rgBottomData, rgBottomTargets);
-                dfReferenceLoss *= kLossWeight;
+                    double dfLayerLoss = layer.Forward(BottomVec, TopVec);
+                    int nCount = Bottom.count();
+                    int nNum = Bottom.num;
+                    T[] rgBottomData = Bottom.update_cpu_data();
+                    T[] rgBottomTargets = BottomTargets.update_cpu_data();
 
-                m_log.EXPECT_NEAR(dfReferenceLoss, dfLayerLoss, dfEps, "Sigmoid cross entropy loss Forward - Debug: trial #" + i.ToString());
+                    double dfReferenceLoss = SigmoidCrossEntropyLossReference(nCount, nNum, rgBottomData, rgBottomTargets);
+                    dfReferenceLoss *= kLossWeight;
+
+                    m_log.EXPECT_NEAR(dfReferenceLoss, dfLayerLoss, dfEps, "Sigmoid cross entropy loss Forward - Debug: trial #" + i.ToString());
+                }
+                finally
+                {
+                    layer.Dispose();
+                }
             }
         }
 
@@ -207,8 +215,15 @@ namespace MyCaffe.test
             SigmoidCrossEntropyLossLayer<T> layer = new SigmoidCrossEntropyLossLayer<T>(m_cuda, m_log, p);
             layer.Setup(BottomVec, TopVec);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2, 1701);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2, 1701);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestIgnoreGradient()
@@ -228,24 +243,32 @@ namespace MyCaffe.test
             m_cuda.set(nCount / 2, hTarget, -1);
 
             SigmoidCrossEntropyLossLayer<T> layer = new SigmoidCrossEntropyLossLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            List<bool> rgbPropagateDown = new List<bool>();
-            rgbPropagateDown.Add(true);
-            rgbPropagateDown.Add(false);
-
-            layer.Backward(TopVec, rgbPropagateDown, BottomVec);
-
-            double[] rgDiff = convert(Bottom.update_cpu_diff());
-
-            for (int i = 0; i < nCount / 2; i++)
+            try
             {
-                double dfVal1 = rgDiff[i];
-                double dfVal2 = rgDiff[i + nCount / 2];
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.EXPECT_EQUAL<float>(dfVal1, 0, "The " + i.ToString() + "th value of the first half should be zero.");
-                m_log.CHECK_NE(dfVal2, 0, "The " + i.ToString() + "th value of the second half should not be zero.");
+                List<bool> rgbPropagateDown = new List<bool>();
+                rgbPropagateDown.Add(true);
+                rgbPropagateDown.Add(false);
+
+                layer.Backward(TopVec, rgbPropagateDown, BottomVec);
+
+                double[] rgDiff = convert(Bottom.update_cpu_diff());
+
+                for (int i = 0; i < nCount / 2; i++)
+                {
+                    double dfVal1 = rgDiff[i];
+                    double dfVal2 = rgDiff[i + nCount / 2];
+
+                    m_log.EXPECT_EQUAL<float>(dfVal1, 0, "The " + i.ToString() + "th value of the first half should be zero.");
+                    m_log.CHECK_NE(dfVal2, 0, "The " + i.ToString() + "th value of the second half should not be zero.");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
     }

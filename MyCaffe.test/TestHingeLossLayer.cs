@@ -126,8 +126,16 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.HINGE_LOSS);
             HingeLossLayer<T> layer = new HingeLossLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2, 1701, 1, 0.01);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2, 1701, 1, 0.01);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradient2()
@@ -136,8 +144,16 @@ namespace MyCaffe.test
             // Set norm to L2
             p.hinge_loss_param.norm = HingeLossParameter.Norm.L2;
             HingeLossLayer<T> layer = new HingeLossLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2, 1701);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2, 1701);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

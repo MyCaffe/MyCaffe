@@ -190,19 +190,26 @@ namespace MyCaffe.test
             p.tanh_param.engine = m_engine;
             TanhLayer<T> layer = new TanhLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Now, check values
-            double[] rgBottomData = convert(Bottom.update_cpu_data());
-            double[] rgTopData = convert(Top.update_cpu_data());
-            double dfMinPrecision = 1e-5;
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                double dfExpectedValue = tanh_native(rgBottomData[i]);
-                double dfPrecision = Math.Max(Math.Abs(dfExpectedValue * 1e-4), dfMinPrecision);
-                m_log.EXPECT_NEAR(dfExpectedValue, rgTopData[i], dfPrecision);
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // Now, check values
+                double[] rgBottomData = convert(Bottom.update_cpu_data());
+                double[] rgTopData = convert(Top.update_cpu_data());
+                double dfMinPrecision = 1e-5;
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfExpectedValue = tanh_native(rgBottomData[i]);
+                    double dfPrecision = Math.Max(Math.Abs(dfExpectedValue * 1e-4), dfMinPrecision);
+                    m_log.EXPECT_NEAR(dfExpectedValue, rgTopData[i], dfPrecision);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -218,8 +225,15 @@ namespace MyCaffe.test
             p.tanh_param.engine = m_engine;
             TanhLayer<T> layer = new TanhLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForward()

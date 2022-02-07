@@ -168,29 +168,34 @@ namespace MyCaffe.test
             p.merge_param.copy_dim2 = 2;  // <---+ combined should = dst shape(0)
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
-            m_log.CHECK(layer.type == LayerParameter.LayerType.MERGE, "The layer type is incorrect!");
-
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            m_log.CHECK_EQ(TopVec[0].num, 3, "The top num should = 3!");
-            m_log.CHECK_EQ(TopVec[0].channels, 4, "The top num should = 4!");
-            m_log.CHECK_EQ(TopVec[0].height, 1, "The top height should = 1!");
-            m_log.CHECK_EQ(TopVec[0].width, 1, "The top width should = 1!");
-
-            // Now, check values
-            double[] rgBottomData1 = convert(Bottom.update_cpu_data());
-            double[] rgBottomData2 = convert(m_blobBottom2.update_cpu_data());
-            double[] rgTopData = convert(Top.update_cpu_data());
-
-            for (int i = 0; i < rgTopData.Length; i++)
+            try
             {
-                double dfExpected = rgExpected2[i];
-                double dfActual = rgTopData[i];
-                m_log.EXPECT_NEAR_FLOAT(dfExpected, dfActual, 0.000001, "The values are not as expected!");
-            }
+                m_log.CHECK(layer.type == LayerParameter.LayerType.MERGE, "The layer type is incorrect!");
 
-            layer.Dispose();
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(TopVec[0].num, 3, "The top num should = 3!");
+                m_log.CHECK_EQ(TopVec[0].channels, 4, "The top num should = 4!");
+                m_log.CHECK_EQ(TopVec[0].height, 1, "The top height should = 1!");
+                m_log.CHECK_EQ(TopVec[0].width, 1, "The top width should = 1!");
+
+                // Now, check values
+                double[] rgBottomData1 = convert(Bottom.update_cpu_data());
+                double[] rgBottomData2 = convert(m_blobBottom2.update_cpu_data());
+                double[] rgTopData = convert(Top.update_cpu_data());
+
+                for (int i = 0; i < rgTopData.Length; i++)
+                {
+                    double dfExpected = rgExpected2[i];
+                    double dfActual = rgTopData[i];
+                    m_log.EXPECT_NEAR_FLOAT(dfExpected, dfActual, 0.000001, "The values are not as expected!");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForwardNegativeIndexing()
@@ -220,29 +225,34 @@ namespace MyCaffe.test
             p.merge_param.copy_dim2 = 2;  // <---+ combined should = dst shape(0)
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
-            m_log.CHECK(layer.type == LayerParameter.LayerType.MERGE, "The layer type is incorrect!");
-
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            m_log.CHECK_EQ(TopVec[0].num, 3, "The top num should = 3!");
-            m_log.CHECK_EQ(TopVec[0].channels, 4, "The top num should = 4!");
-            m_log.CHECK_EQ(TopVec[0].height, 1, "The top height should = 1!");
-            m_log.CHECK_EQ(TopVec[0].width, 1, "The top width should = 1!");
-
-            // Now, check values
-            double[] rgBottomData1 = convert(Bottom.update_cpu_data());
-            double[] rgBottomData2 = convert(m_blobBottom2.update_cpu_data());
-            double[] rgTopData = convert(Top.update_cpu_data());
-
-            for (int i = 0; i < rgTopData.Length; i++)
+            try
             {
-                double dfExpected = rgExpected2[i];
-                double dfActual = rgTopData[i];
-                m_log.EXPECT_NEAR_FLOAT(dfExpected, dfActual, 0.000001, "The values are not as expected!");
-            }
+                m_log.CHECK(layer.type == LayerParameter.LayerType.MERGE, "The layer type is incorrect!");
 
-            layer.Dispose();
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(TopVec[0].num, 3, "The top num should = 3!");
+                m_log.CHECK_EQ(TopVec[0].channels, 4, "The top num should = 4!");
+                m_log.CHECK_EQ(TopVec[0].height, 1, "The top height should = 1!");
+                m_log.CHECK_EQ(TopVec[0].width, 1, "The top width should = 1!");
+
+                // Now, check values
+                double[] rgBottomData1 = convert(Bottom.update_cpu_data());
+                double[] rgBottomData2 = convert(m_blobBottom2.update_cpu_data());
+                double[] rgTopData = convert(Top.update_cpu_data());
+
+                for (int i = 0; i < rgTopData.Length; i++)
+                {
+                    double dfExpected = rgExpected2[i];
+                    double dfActual = rgTopData[i];
+                    m_log.EXPECT_NEAR_FLOAT(dfExpected, dfActual, 0.000001, "The values are not as expected!");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradient()
@@ -272,58 +282,63 @@ namespace MyCaffe.test
             p.merge_param.copy_dim2 = 2;  // <---+ combined should = dst shape(0)
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
-            m_log.CHECK(layer.type == LayerParameter.LayerType.MERGE, "The layer type is incorrect!");
-
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            m_log.CHECK_EQ(TopVec[0].num, 3, "The top num should = 3!");
-            m_log.CHECK_EQ(TopVec[0].channels, 4, "The top num should = 4!");
-            m_log.CHECK_EQ(TopVec[0].height, 1, "The top height should = 1!");
-            m_log.CHECK_EQ(TopVec[0].width, 1, "The top width should = 1!");
-
-            // Now, check values
-            double[] rgBottomData1 = convert(Bottom.update_cpu_data());
-            double[] rgBottomData2 = convert(m_blobBottom2.update_cpu_data());
-            double[] rgTopData = convert(TopVec[0].update_cpu_data());
-
-            for (int i = 0; i < rgTopData.Length; i++)
+            try
             {
-                double dfExpected = rgExpected2[i];
-                double dfActual = rgTopData[i];
-                m_log.EXPECT_NEAR_FLOAT(dfExpected, dfActual, 0.000001, "The values are not as expected!");
+                m_log.CHECK(layer.type == LayerParameter.LayerType.MERGE, "The layer type is incorrect!");
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(TopVec[0].num, 3, "The top num should = 3!");
+                m_log.CHECK_EQ(TopVec[0].channels, 4, "The top num should = 4!");
+                m_log.CHECK_EQ(TopVec[0].height, 1, "The top height should = 1!");
+                m_log.CHECK_EQ(TopVec[0].width, 1, "The top width should = 1!");
+
+                // Now, check values
+                double[] rgBottomData1 = convert(Bottom.update_cpu_data());
+                double[] rgBottomData2 = convert(m_blobBottom2.update_cpu_data());
+                double[] rgTopData = convert(TopVec[0].update_cpu_data());
+
+                for (int i = 0; i < rgTopData.Length; i++)
+                {
+                    double dfExpected = rgExpected2[i];
+                    double dfActual = rgTopData[i];
+                    m_log.EXPECT_NEAR_FLOAT(dfExpected, dfActual, 0.000001, "The values are not as expected!");
+                }
+
+                m_blobBottom2.SetDiff(0);
+                m_cuda.copy(m_blobBottom2.count(), m_blobBottom2.gpu_data, m_blobBottom2.mutable_gpu_diff);
+                m_blob_bottom.SetDiff(0);
+                m_cuda.copy(m_blob_bottom.count(), m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
+                m_cuda.copy(TopVec[0].count(), TopVec[0].gpu_data, TopVec[0].mutable_gpu_diff);
+
+                layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
+
+                double[] rgSrcExpected1 = new double[] { 0.0, 0.0, 0.0, 0.0, 5.1, 0.0, 0.0, 0.0, 0.0, 5.2, 0.0, 0.0, 0.0, 0.0, 5.3, 0.0, 0.0, 0.0, 0.0, 5.4 }; // 5 x 4 x 1 x 1
+                                                                                                                                                               // #. = sequence, max = 2; .# = batch, max = 4
+                double[] rgSrcExpected2 = new double[] { 10.11, 20.11, 10.22, 20.22, 10.33, 20.33, 10.44, 20.44 }; // 2 x 4 x 1 x 1
+
+                double[] rgActual1 = convert(m_blob_bottom.mutable_cpu_diff);
+                double[] rgActual2 = convert(m_blobBottom2.mutable_cpu_diff);
+
+                for (int i = 0; i < rgSrcExpected1.Length; i++)
+                {
+                    double dfExpected = rgSrcExpected1[i];
+                    double dfActual = rgActual1[i];
+                    m_log.EXPECT_NEAR_FLOAT(dfExpected, dfActual, 0.000001, "The values are not as expected!");
+                }
+
+                for (int i = 0; i < rgSrcExpected2.Length; i++)
+                {
+                    double dfExpected = rgSrcExpected2[i];
+                    double dfActual = rgActual2[i];
+                    m_log.EXPECT_NEAR_FLOAT(dfExpected, dfActual, 0.000001, "The values are not as expected!");
+                }
             }
-
-            m_blobBottom2.SetDiff(0);
-            m_cuda.copy(m_blobBottom2.count(), m_blobBottom2.gpu_data, m_blobBottom2.mutable_gpu_diff);
-            m_blob_bottom.SetDiff(0);
-            m_cuda.copy(m_blob_bottom.count(), m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
-            m_cuda.copy(TopVec[0].count(), TopVec[0].gpu_data, TopVec[0].mutable_gpu_diff);
-
-            layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
-
-            double[] rgSrcExpected1 = new double[] { 0.0, 0.0, 0.0, 0.0, 5.1, 0.0, 0.0, 0.0, 0.0, 5.2, 0.0, 0.0, 0.0, 0.0, 5.3, 0.0, 0.0, 0.0, 0.0, 5.4 }; // 5 x 4 x 1 x 1
-                                                                                                                                                       // #. = sequence, max = 2; .# = batch, max = 4
-            double[] rgSrcExpected2 = new double[] { 10.11, 20.11, 10.22, 20.22, 10.33, 20.33, 10.44, 20.44 }; // 2 x 4 x 1 x 1
-
-            double[] rgActual1 = convert(m_blob_bottom.mutable_cpu_diff);
-            double[] rgActual2 = convert(m_blobBottom2.mutable_cpu_diff);
-
-            for (int i = 0; i < rgSrcExpected1.Length; i++)
+            finally
             {
-                double dfExpected = rgSrcExpected1[i];
-                double dfActual = rgActual1[i];
-                m_log.EXPECT_NEAR_FLOAT(dfExpected, dfActual, 0.000001, "The values are not as expected!");
+                layer.Dispose();
             }
-
-            for (int i = 0; i < rgSrcExpected2.Length; i++)
-            {
-                double dfExpected = rgSrcExpected2[i];
-                double dfActual = rgActual2[i];
-                m_log.EXPECT_NEAR_FLOAT(dfExpected, dfActual, 0.000001, "The values are not as expected!");
-            }
-
-            layer.Dispose();
         }
 
         public void TestGradient2()
@@ -376,85 +391,90 @@ namespace MyCaffe.test
             p.merge_param.spatialdim_copy_count = 1;        // only copy 1 spatial item
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
-            m_log.CHECK(layer.type == LayerParameter.LayerType.MERGE, "The layer type is incorrect!");
-
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            m_log.CHECK_EQ(TopVec[0].num, nSeq3, "The top num should = " + nSeq3.ToString() + "!");
-            m_log.CHECK_EQ(TopVec[0].channels, nBatch, "The top num should = nBatch!");
-            m_log.CHECK_EQ(TopVec[0].height, 1, "The top height should = 1!");
-            m_log.CHECK_EQ(TopVec[0].width, 1, "The top width should = 1!");
-
-            // Now, check values
-            double[] rgBottomData1 = convert(Bottom.update_cpu_data());
-            double[] rgBottomData2 = convert(m_blobBottom2.update_cpu_data());
-            double[] rgTopData = convert(TopVec[0].update_cpu_data());
-            double[] rgExpected = new double[nSeq3 * nBatch];
-            
-            for (int i = 0; i < nBatch; i++)
+            try
             {
-                int nIdx1 = i * nSeq1 * nSrcSpatialDim1 + ((nSeq1 - 1) * nSrcSpatialDim1);
-                int nIdx2 = i * nSeq2 * nSrcSpatialDim2;
+                m_log.CHECK(layer.type == LayerParameter.LayerType.MERGE, "The layer type is incorrect!");
 
-                for (int j = 0; j < nSeq3; j++)
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(TopVec[0].num, nSeq3, "The top num should = " + nSeq3.ToString() + "!");
+                m_log.CHECK_EQ(TopVec[0].channels, nBatch, "The top num should = nBatch!");
+                m_log.CHECK_EQ(TopVec[0].height, 1, "The top height should = 1!");
+                m_log.CHECK_EQ(TopVec[0].width, 1, "The top width should = 1!");
+
+                // Now, check values
+                double[] rgBottomData1 = convert(Bottom.update_cpu_data());
+                double[] rgBottomData2 = convert(m_blobBottom2.update_cpu_data());
+                double[] rgTopData = convert(TopVec[0].update_cpu_data());
+                double[] rgExpected = new double[nSeq3 * nBatch];
+
+                for (int i = 0; i < nBatch; i++)
                 {
-                    if (j == 0)
-                        rgExpected[nIdx2 + j] = rgBottomData1[nIdx1 + nSrcSpatialDim1 - 1]; // last of spatial dim in the last of each seq in data 1
-                    else
-                        rgExpected[nIdx2 + j] = rgBottomData2[nIdx2 + j - 1]; // first up to last of seq in data 2 (spatial dim = 1)
+                    int nIdx1 = i * nSeq1 * nSrcSpatialDim1 + ((nSeq1 - 1) * nSrcSpatialDim1);
+                    int nIdx2 = i * nSeq2 * nSrcSpatialDim2;
+
+                    for (int j = 0; j < nSeq3; j++)
+                    {
+                        if (j == 0)
+                            rgExpected[nIdx2 + j] = rgBottomData1[nIdx1 + nSrcSpatialDim1 - 1]; // last of spatial dim in the last of each seq in data 1
+                        else
+                            rgExpected[nIdx2 + j] = rgBottomData2[nIdx2 + j - 1]; // first up to last of seq in data 2 (spatial dim = 1)
+                    }
+                }
+
+                for (int i = 0; i < rgTopData.Length; i++)
+                {
+                    double dfExpected = rgExpected[i];
+                    double dfActual = rgTopData[i];
+                    m_log.EXPECT_NEAR_FLOAT(dfExpected, dfActual, 0.000001, "The values are not as expected!");
+                }
+
+                m_blobBottom2.SetDiff(0);
+                m_blob_bottom.SetDiff(0);
+                m_cuda.copy(TopVec[0].count(), TopVec[0].gpu_data, TopVec[0].mutable_gpu_diff);
+
+                layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
+
+                double[] rgActual1 = convert(m_blob_bottom.mutable_cpu_diff);
+                double[] rgActual2 = convert(m_blobBottom2.mutable_cpu_diff);
+
+                double[] rgSrcExpected1 = new double[rgBottomData1.Length];
+                double[] rgSrcExpected2 = new double[rgBottomData2.Length];
+
+                int nSpatialDimIdx1 = Utility.CanonicalAxisIndex(p.merge_param.src_spatialdim_start_idx1, nSrcSpatialDim1);
+
+                for (int i = 0; i < nBatch; i++)
+                {
+                    int nIdx1 = i * nSeq1 * nSrcSpatialDim1 + ((nSeq1 - 1) * nSrcSpatialDim1);
+                    int nIdx2 = i * nSeq2 * nSrcSpatialDim2;
+
+                    rgSrcExpected1[nIdx1 + nSpatialDimIdx1] = rgTopData[nIdx2];
+
+                    for (int j = 1; j < nSeq3; j++)
+                    {
+                        rgSrcExpected2[nIdx2 + j - 1] = rgTopData[nIdx2 + j];     // first up to last of seq in data 2
+                    }
+                }
+
+                for (int i = 0; i < rgSrcExpected1.Length; i++)
+                {
+                    double dfExpected = rgSrcExpected1[i];
+                    double dfActual = rgActual1[i];
+                    m_log.EXPECT_NEAR_FLOAT(dfExpected, dfActual, 0.000001, "The values are not as expected!");
+                }
+
+                for (int i = 0; i < rgSrcExpected2.Length; i++)
+                {
+                    double dfExpected = rgSrcExpected2[i];
+                    double dfActual = rgActual2[i];
+                    m_log.EXPECT_NEAR_FLOAT(dfExpected, dfActual, 0.000001, "The values are not as expected!");
                 }
             }
-
-            for (int i = 0; i < rgTopData.Length; i++)
+            finally
             {
-                double dfExpected = rgExpected[i];
-                double dfActual = rgTopData[i];
-                m_log.EXPECT_NEAR_FLOAT(dfExpected, dfActual, 0.000001, "The values are not as expected!");
+                layer.Dispose();
             }
-
-            m_blobBottom2.SetDiff(0);
-            m_blob_bottom.SetDiff(0);
-            m_cuda.copy(TopVec[0].count(), TopVec[0].gpu_data, TopVec[0].mutable_gpu_diff);
-
-            layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
-
-            double[] rgActual1 = convert(m_blob_bottom.mutable_cpu_diff);
-            double[] rgActual2 = convert(m_blobBottom2.mutable_cpu_diff);
-
-            double[] rgSrcExpected1 = new double[rgBottomData1.Length];
-            double[] rgSrcExpected2 = new double[rgBottomData2.Length];
-
-            int nSpatialDimIdx1 = Utility.CanonicalAxisIndex(p.merge_param.src_spatialdim_start_idx1, nSrcSpatialDim1);
-
-            for (int i = 0; i < nBatch; i++)
-            {
-                int nIdx1 = i * nSeq1 * nSrcSpatialDim1 + ((nSeq1 - 1) * nSrcSpatialDim1);
-                int nIdx2 = i * nSeq2 * nSrcSpatialDim2;
-
-                rgSrcExpected1[nIdx1 + nSpatialDimIdx1] = rgTopData[nIdx2];
-                
-                for (int j = 1; j < nSeq3; j++)
-                {
-                    rgSrcExpected2[nIdx2 + j - 1] = rgTopData[nIdx2 + j];     // first up to last of seq in data 2
-                }
-            }
-
-            for (int i = 0; i < rgSrcExpected1.Length; i++)
-            {
-                double dfExpected = rgSrcExpected1[i];
-                double dfActual = rgActual1[i];
-                m_log.EXPECT_NEAR_FLOAT(dfExpected, dfActual, 0.000001, "The values are not as expected!");
-            }
-
-            for (int i = 0; i < rgSrcExpected2.Length; i++)
-            {
-                double dfExpected = rgSrcExpected2[i];
-                double dfActual = rgActual2[i];
-                m_log.EXPECT_NEAR_FLOAT(dfExpected, dfActual, 0.000001, "The values are not as expected!");
-            }
-
-            layer.Dispose();
         }
     }
 }

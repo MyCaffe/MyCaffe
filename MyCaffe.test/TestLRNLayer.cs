@@ -430,12 +430,19 @@ namespace MyCaffe.test
             p.lrn_param.engine = m_engine;
             LRNLayer<T> layer = new LRNLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(2, Top.num, "The top num should equal 2.");
-            m_log.CHECK_EQ(7, Top.channels, "The top channels should equal 7.");
-            m_log.CHECK_EQ(3, Top.height, "The top height should equal 3.");
-            m_log.CHECK_EQ(3, Top.width, "The top width should equal 3.");
+                m_log.CHECK_EQ(2, Top.num, "The top num should equal 2.");
+                m_log.CHECK_EQ(7, Top.channels, "The top channels should equal 7.");
+                m_log.CHECK_EQ(3, Top.height, "The top height should equal 3.");
+                m_log.CHECK_EQ(3, Top.width, "The top width should equal 3.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForwardAcrossChannels()
@@ -447,25 +454,34 @@ namespace MyCaffe.test
             p.lrn_param.beta = 0.75;
             p.lrn_param.k = 1.0;
             LRNLayer<T> layer = new LRNLayer<T>(m_cuda, m_log, p);
+            Blob<T> top = null;
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            Blob<T> top = new Blob<T>(m_cuda, m_log);
-            ReferenceLRNForward(Bottom, p, top);
-
-            double[] rgTop = convert(Top.update_cpu_data());
-            double[] rgTopRef = convert(top.update_cpu_data());
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                double dfTop = rgTop[i];
-                double dfTopRef = rgTopRef[i];
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.EXPECT_NEAR(dfTop, dfTopRef, Epsilon);
+                top = new Blob<T>(m_cuda, m_log);
+                ReferenceLRNForward(Bottom, p, top);
+
+                double[] rgTop = convert(Top.update_cpu_data());
+                double[] rgTopRef = convert(top.update_cpu_data());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfTop = rgTop[i];
+                    double dfTopRef = rgTopRef[i];
+
+                    m_log.EXPECT_NEAR(dfTop, dfTopRef, Epsilon);
+                }
             }
+            finally
+            {
+                layer.Dispose();
 
-            top.Dispose();
+                if (top != null)
+                    top.Dispose();
+            }
         }
 
         public void TestForwardAcrossChannelsLargeRegion()
@@ -478,25 +494,34 @@ namespace MyCaffe.test
             p.lrn_param.beta = 0.75;
             p.lrn_param.k = 1.0;
             LRNLayer<T> layer = new LRNLayer<T>(m_cuda, m_log, p);
+            Blob<T> top = null;
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            Blob<T> top = new Blob<T>(m_cuda, m_log);
-            ReferenceLRNForward(Bottom, p, top);
-
-            double[] rgTop = convert(Top.update_cpu_data());
-            double[] rgTopRef = convert(top.update_cpu_data());
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                double dfTop = rgTop[i];
-                double dfTopRef = rgTopRef[i];
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.EXPECT_NEAR(dfTop, dfTopRef, Epsilon);
+                top = new Blob<T>(m_cuda, m_log);
+                ReferenceLRNForward(Bottom, p, top);
+
+                double[] rgTop = convert(Top.update_cpu_data());
+                double[] rgTopRef = convert(top.update_cpu_data());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfTop = rgTop[i];
+                    double dfTopRef = rgTopRef[i];
+
+                    m_log.EXPECT_NEAR(dfTop, dfTopRef, Epsilon);
+                }
             }
+            finally
+            {
+                layer.Dispose();
 
-            top.Dispose();
+                if (top != null)
+                    top.Dispose();
+            }
         }
 
         public void TestGradientAcrossChannels()
@@ -508,22 +533,30 @@ namespace MyCaffe.test
             p.lrn_param.beta = 0.75;
             p.lrn_param.k = 1.0;
             LRNLayer<T> layer = new LRNLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            Top.SetDiff(1.0);
-
-            List<bool> rgbPropagateDown = new List<bool>();
-
-            for (int i = 0; i < BottomVec.Count; i++)
+            try
             {
-                rgbPropagateDown.Add(true);
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                Top.SetDiff(1.0);
+
+                List<bool> rgbPropagateDown = new List<bool>();
+
+                for (int i = 0; i < BottomVec.Count; i++)
+                {
+                    rgbPropagateDown.Add(true);
+                }
+
+                layer.Backward(TopVec, rgbPropagateDown, BottomVec);
+
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
             }
-
-            layer.Backward(TopVec, rgbPropagateDown, BottomVec);
-
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientAcrossChannelsLargeRegion()
@@ -536,22 +569,30 @@ namespace MyCaffe.test
             p.lrn_param.beta = 0.75;
             p.lrn_param.k = 1.0;
             LRNLayer<T> layer = new LRNLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            Top.SetDiff(1.0);
-
-            List<bool> rgbPropagateDown = new List<bool>();
-
-            for (int i = 0; i < BottomVec.Count; i++)
+            try
             {
-                rgbPropagateDown.Add(true);
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                Top.SetDiff(1.0);
+
+                List<bool> rgbPropagateDown = new List<bool>();
+
+                for (int i = 0; i < BottomVec.Count; i++)
+                {
+                    rgbPropagateDown.Add(true);
+                }
+
+                layer.Backward(TopVec, rgbPropagateDown, BottomVec);
+
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
             }
-
-            layer.Backward(TopVec, rgbPropagateDown, BottomVec);
-
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestSetupWithinChannels()
@@ -562,12 +603,19 @@ namespace MyCaffe.test
             p.lrn_param.local_size = 3;
             LRNLayer<T> layer = new LRNLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(2, Top.num, "The top num should equal 2.");
-            m_log.CHECK_EQ(7, Top.channels, "The top channels should equal 7.");
-            m_log.CHECK_EQ(3, Top.height, "The top height should equal 3.");
-            m_log.CHECK_EQ(3, Top.width, "The top width should equal 3.");
+                m_log.CHECK_EQ(2, Top.num, "The top num should equal 2.");
+                m_log.CHECK_EQ(7, Top.channels, "The top channels should equal 7.");
+                m_log.CHECK_EQ(3, Top.height, "The top height should equal 3.");
+                m_log.CHECK_EQ(3, Top.width, "The top width should equal 3.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForwardWithinChannels()
@@ -577,25 +625,34 @@ namespace MyCaffe.test
             p.lrn_param.norm_region = LRNParameter.NormRegion.WITHIN_CHANNEL;
             p.lrn_param.local_size = 3;
             LRNLayer<T> layer = new LRNLayer<T>(m_cuda, m_log, p);
+            Blob<T> top = null;
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            Blob<T> top = new Blob<T>(m_cuda, m_log);
-            ReferenceLRNForward(Bottom, p, top);
-
-            double[] rgTop = convert(Top.update_cpu_data());
-            double[] rgTopRef = convert(top.update_cpu_data());
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                double dfTop = rgTop[i];
-                double dfTopRef = rgTopRef[i];
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.EXPECT_NEAR(dfTop, dfTopRef, Epsilon);
+                top = new Blob<T>(m_cuda, m_log);
+                ReferenceLRNForward(Bottom, p, top);
+
+                double[] rgTop = convert(Top.update_cpu_data());
+                double[] rgTopRef = convert(top.update_cpu_data());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfTop = rgTop[i];
+                    double dfTopRef = rgTopRef[i];
+
+                    m_log.EXPECT_NEAR(dfTop, dfTopRef, Epsilon);
+                }
             }
+            finally
+            {
+                layer.Dispose();
 
-            top.Dispose();
+                if (top != null)
+                    top.Dispose();
+            }
         }
 
         /// <summary>
@@ -608,13 +665,21 @@ namespace MyCaffe.test
             p.lrn_param.norm_region = LRNParameter.NormRegion.WITHIN_CHANNEL;
             p.lrn_param.local_size = 3;
             LRNLayer<T> layer = new LRNLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            Top.SetDiff(1.0);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+                Top.SetDiff(1.0);
+
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

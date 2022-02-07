@@ -487,18 +487,25 @@ namespace MyCaffe.test
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
-            if (layer.type != LayerParameter.LayerType.LSTM_ATTENTION)
-                m_log.FAIL("Invalid layer type, expected LSTM_ATTENTION.");
+            try
+            {
+                if (layer.type != LayerParameter.LayerType.LSTM_ATTENTION)
+                    m_log.FAIL("Invalid layer type, expected LSTM_ATTENTION.");
 
-            LSTMAttentionLayer<T> lstm = (LSTMAttentionLayer<T>)layer;
+                LSTMAttentionLayer<T> lstm = (LSTMAttentionLayer<T>)layer;
 
-            Assert.AreEqual(lstm.layer_param.lstm_attention_param.num_output, (uint)5);
-            Assert.AreEqual(lstm.layer_param.lstm_attention_param.weight_filler.type, "uniform");
-            Assert.AreEqual(lstm.layer_param.lstm_attention_param.weight_filler.min, -0.01);
-            Assert.AreEqual(lstm.layer_param.lstm_attention_param.weight_filler.max, 0.01);
-            Assert.AreEqual(lstm.layer_param.lstm_attention_param.bias_filler.type, "constant");
-            Assert.AreEqual(lstm.layer_param.lstm_attention_param.bias_filler.value, 2);
-            Assert.AreEqual(lstm.layer_param.lstm_attention_param.clipping_threshold, 2.44);
+                Assert.AreEqual(lstm.layer_param.lstm_attention_param.num_output, (uint)5);
+                Assert.AreEqual(lstm.layer_param.lstm_attention_param.weight_filler.type, "uniform");
+                Assert.AreEqual(lstm.layer_param.lstm_attention_param.weight_filler.min, -0.01);
+                Assert.AreEqual(lstm.layer_param.lstm_attention_param.weight_filler.max, 0.01);
+                Assert.AreEqual(lstm.layer_param.lstm_attention_param.bias_filler.type, "constant");
+                Assert.AreEqual(lstm.layer_param.lstm_attention_param.bias_filler.value, 2);
+                Assert.AreEqual(lstm.layer_param.lstm_attention_param.clipping_threshold, 2.44);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForward()
@@ -512,82 +519,93 @@ namespace MyCaffe.test
             pLstm.recurrent_param.num_output = 16;
 
             Layer<T> lstmLayer = Layer<T>.Create(m_cuda, m_log, pLstm, m_evtCancel);
+            Layer<T> layer = null;
 
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.LSTM_ATTENTION);
-            p.lstm_attention_param.num_output = 16;
-            p.lstm_attention_param.bias_filler = new FillerParameter("constant", 0.0);
-            p.lstm_attention_param.weight_filler = new FillerParameter("constant", 0.1);
-
-            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-
-            Bottom.Reshape(4, 3, 2, 1);
-            double[] rgData = convert(Bottom.mutable_cpu_data);
-            // t = 0
-            rgData[0] = 0.01; rgData[1] = 0.02;  // b0
-            rgData[2] = 0.11; rgData[3] = 0.12;  // b1
-            rgData[4] = 0.21; rgData[5] = 0.22;  // b2
-            // t = 1
-            rgData[6] = 1.01; rgData[7] = 1.02;  // b0
-            rgData[8] = 1.11; rgData[9] = 1.12;  // b1
-            rgData[10] = 1.21; rgData[11] = 1.22; // b2
-            // t = 2
-            rgData[12] = 2.01; rgData[13] = 2.02; // b0
-            rgData[14] = 2.11; rgData[15] = 2.12; // b1
-            rgData[16] = 2.21; rgData[17] = 2.22; // b2
-            // t = 3
-            rgData[18] = 3.01; rgData[19] = 3.02; // b0
-            rgData[20] = 3.11; rgData[21] = 3.12; // b1
-            rgData[22] = 3.21; rgData[23] = 3.22; // b2
-            Bottom.mutable_cpu_data = convert(rgData);
-
-            Bottom2.Reshape(new List<int>() { 4, 3 });
-            double[] rgClip = convert(Bottom2.mutable_cpu_data);
-            // t = 0
-            rgClip[0] = 0;
-            rgClip[1] = 0;
-            rgClip[2] = 0;
-            // t = 1
-            rgClip[3] = 1;
-            rgClip[4] = 1;
-            rgClip[5] = 0;
-            // t = 2
-            rgClip[6] = 1;
-            rgClip[7] = 0;
-            rgClip[8] = 1;
-            // t = 3
-            rgClip[9] = 0;
-            rgClip[10] = 1;
-            rgClip[11] = 1;
-            Bottom2.mutable_cpu_data = convert(rgData);
-
-            BottomVec.Add(m_blob_bottom2);
-
-            lstmLayer.Setup(BottomVec, TopVec);
-            lstmLayer.Forward(BottomVec, TopVec);
-
-            double[] rgExpected = convert(m_blob_top.mutable_cpu_data);
-            List<int> rgExpectedShape = Utility.Clone<int>(m_blob_top.shape());
-            m_blob_top.Reshape(1, 1, 1, 1);
-
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            m_log.CHECK_EQ(rgExpectedShape[0], m_blob_top.num, "The num shape is not as expected!");
-            m_log.CHECK_EQ(rgExpectedShape[1], m_blob_top.channels, "The channels shape is not as expected!");
-            m_log.CHECK_EQ(rgExpectedShape[2], m_blob_top.height, "The height shape is not as expected!");
-            if (rgExpectedShape.Count > 3)
-                m_log.CHECK_EQ(rgExpectedShape[3], m_blob_top.width, "The width shape is not as expected!");
-
-            double[] rgActual = convert(m_blob_top.mutable_cpu_data);
-
-            m_log.CHECK_EQ(rgExpected.Length, rgActual.Length, "The data lengths differ!");
-
-            for (int i = 0; i < rgActual.Length; i++)
+            try
             {
-                double dfExpected = rgExpected[i];
-                double dfActual = rgActual[i];
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.LSTM_ATTENTION);
+                p.lstm_attention_param.num_output = 16;
+                p.lstm_attention_param.bias_filler = new FillerParameter("constant", 0.0);
+                p.lstm_attention_param.weight_filler = new FillerParameter("constant", 0.1);
 
-                m_log.EXPECT_NEAR(dfExpected, dfActual, 0.0000001, "The data values at " + i.ToString() + " do not match!");
+                layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+
+                Bottom.Reshape(4, 3, 2, 1);
+                double[] rgData = convert(Bottom.mutable_cpu_data);
+                // t = 0
+                rgData[0] = 0.01; rgData[1] = 0.02;  // b0
+                rgData[2] = 0.11; rgData[3] = 0.12;  // b1
+                rgData[4] = 0.21; rgData[5] = 0.22;  // b2
+                                                     // t = 1
+                rgData[6] = 1.01; rgData[7] = 1.02;  // b0
+                rgData[8] = 1.11; rgData[9] = 1.12;  // b1
+                rgData[10] = 1.21; rgData[11] = 1.22; // b2
+                                                      // t = 2
+                rgData[12] = 2.01; rgData[13] = 2.02; // b0
+                rgData[14] = 2.11; rgData[15] = 2.12; // b1
+                rgData[16] = 2.21; rgData[17] = 2.22; // b2
+                                                      // t = 3
+                rgData[18] = 3.01; rgData[19] = 3.02; // b0
+                rgData[20] = 3.11; rgData[21] = 3.12; // b1
+                rgData[22] = 3.21; rgData[23] = 3.22; // b2
+                Bottom.mutable_cpu_data = convert(rgData);
+
+                Bottom2.Reshape(new List<int>() { 4, 3 });
+                double[] rgClip = convert(Bottom2.mutable_cpu_data);
+                // t = 0
+                rgClip[0] = 0;
+                rgClip[1] = 0;
+                rgClip[2] = 0;
+                // t = 1
+                rgClip[3] = 1;
+                rgClip[4] = 1;
+                rgClip[5] = 0;
+                // t = 2
+                rgClip[6] = 1;
+                rgClip[7] = 0;
+                rgClip[8] = 1;
+                // t = 3
+                rgClip[9] = 0;
+                rgClip[10] = 1;
+                rgClip[11] = 1;
+                Bottom2.mutable_cpu_data = convert(rgData);
+
+                BottomVec.Add(m_blob_bottom2);
+
+                lstmLayer.Setup(BottomVec, TopVec);
+                lstmLayer.Forward(BottomVec, TopVec);
+
+                double[] rgExpected = convert(m_blob_top.mutable_cpu_data);
+                List<int> rgExpectedShape = Utility.Clone<int>(m_blob_top.shape());
+                m_blob_top.Reshape(1, 1, 1, 1);
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(rgExpectedShape[0], m_blob_top.num, "The num shape is not as expected!");
+                m_log.CHECK_EQ(rgExpectedShape[1], m_blob_top.channels, "The channels shape is not as expected!");
+                m_log.CHECK_EQ(rgExpectedShape[2], m_blob_top.height, "The height shape is not as expected!");
+                if (rgExpectedShape.Count > 3)
+                    m_log.CHECK_EQ(rgExpectedShape[3], m_blob_top.width, "The width shape is not as expected!");
+
+                double[] rgActual = convert(m_blob_top.mutable_cpu_data);
+
+                m_log.CHECK_EQ(rgExpected.Length, rgActual.Length, "The data lengths differ!");
+
+                for (int i = 0; i < rgActual.Length; i++)
+                {
+                    double dfExpected = rgExpected[i];
+                    double dfActual = rgActual[i];
+
+                    m_log.EXPECT_NEAR(dfExpected, dfActual, 0.0000001, "The data values at " + i.ToString() + " do not match!");
+                }
+            }
+            finally
+            {
+                lstmLayer.Dispose();
+
+                if (layer != null)
+                    layer.Dispose();
             }
         }
 
@@ -608,9 +626,16 @@ namespace MyCaffe.test
             Bottom.Reshape(12, 1, 2, 1);
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
 
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientBatchDefault()
@@ -630,9 +655,16 @@ namespace MyCaffe.test
             BottomVec.Add(Bottom);
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
 
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientClipMask()
@@ -669,9 +701,16 @@ namespace MyCaffe.test
             BottomVec.Add(Bottom2);
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
 
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientBatchClipMask()
@@ -711,9 +750,16 @@ namespace MyCaffe.test
             BottomVec.Add(Bottom2);
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
 
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientAttention()
@@ -734,9 +780,16 @@ namespace MyCaffe.test
             Fill(BottomVec, m_blobEncoding, m_blobEncodingClip, 1, 1, 1, true);
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
 
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientAttention2()
@@ -757,9 +810,16 @@ namespace MyCaffe.test
             Fill(BottomVec, m_blobEncoding, m_blobEncodingClip, 3, 1, 1, true);
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
 
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestTraining(int nTotalDataLength, int nNumOutput, int nBatch, bool bShortModel, int nMaxIter)

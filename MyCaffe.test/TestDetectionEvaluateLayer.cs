@@ -227,14 +227,19 @@ namespace MyCaffe.test
             p.detection_evaluate_param.overlap_threshold = m_fOverlapThreshold;
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
-            layer.Setup(BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(Top.num, 1, "The top num should = 1.");
-            m_log.CHECK_EQ(Top.channels, 1, "The top channels should = 1.");
-            m_log.CHECK_EQ(Top.height, m_blobBottomDet.height + 2, "The top height should = " + (m_blobBottomDet.height + 2).ToString() + "!");
-            m_log.CHECK_EQ(Top.width, 5, "The top width should = 5.");
-
-            layer.Dispose();
+                m_log.CHECK_EQ(Top.num, 1, "The top num should = 1.");
+                m_log.CHECK_EQ(Top.channels, 1, "The top channels should = 1.");
+                m_log.CHECK_EQ(Top.height, m_blobBottomDet.height + 2, "The top height should = " + (m_blobBottomDet.height + 2).ToString() + "!");
+                m_log.CHECK_EQ(Top.width, 5, "The top width should = 5.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForward()
@@ -246,27 +251,32 @@ namespace MyCaffe.test
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
 
-            FillData();
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
+            try
+            {
+                FillData();
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(Top.num, 1, "The top num should = 1.");
-            m_log.CHECK_EQ(Top.channels, 1, "The top channels should = 1.");
-            m_log.CHECK_EQ(Top.height, m_blobBottomDet.height + 2, "The top height should = " + (m_blobBottomDet.height + 2).ToString() + "!");
-            m_log.CHECK_EQ(Top.width, 5, "The top width should = 5.");
+                m_log.CHECK_EQ(Top.num, 1, "The top num should = 1.");
+                m_log.CHECK_EQ(Top.channels, 1, "The top channels should = 1.");
+                m_log.CHECK_EQ(Top.height, m_blobBottomDet.height + 2, "The top height should = " + (m_blobBottomDet.height + 2).ToString() + "!");
+                m_log.CHECK_EQ(Top.width, 5, "The top width should = 5.");
 
-            CheckEqual(Top, 0, "-1 1 3 -1 -1");
-            CheckEqual(Top, 1, "-1 2 1 -1 -1");
-            CheckEqual(Top, 2, "0 1 0.9 1 0");
-            CheckEqual(Top, 3, "0 1 0.7 1 0");
-            CheckEqual(Top, 4, "0 1 0.3 0 1");
-            CheckEqual(Top, 5, "1 1 0.2 1 0");
-            CheckEqual(Top, 6, "1 2 0.8 0 1");
-            CheckEqual(Top, 7, "1 2 0.1 1 0");
-            CheckEqual(Top, 8, "1 3 0.2 0 1");
-            CheckEqual(Top, 9, "2 1 0.2 0 1");
-
-            layer.Dispose();
+                CheckEqual(Top, 0, "-1 1 3 -1 -1");
+                CheckEqual(Top, 1, "-1 2 1 -1 -1");
+                CheckEqual(Top, 2, "0 1 0.9 1 0");
+                CheckEqual(Top, 3, "0 1 0.7 1 0");
+                CheckEqual(Top, 4, "0 1 0.3 0 1");
+                CheckEqual(Top, 5, "1 1 0.2 1 0");
+                CheckEqual(Top, 6, "1 2 0.8 0 1");
+                CheckEqual(Top, 7, "1 2 0.1 1 0");
+                CheckEqual(Top, 8, "1 3 0.2 0 1");
+                CheckEqual(Top, 9, "2 1 0.2 0 1");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForwardSkipDifficult()
@@ -279,27 +289,32 @@ namespace MyCaffe.test
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
 
-            FillData();
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
+            try
+            {
+                FillData();
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(Top.num, 1, "The top num should = 1.");
-            m_log.CHECK_EQ(Top.channels, 1, "The top channels should = 1.");
-            m_log.CHECK_EQ(Top.height, m_blobBottomDet.height + 2, "The top height should = " + (m_blobBottomDet.height + 2).ToString() + "!");
-            m_log.CHECK_EQ(Top.width, 5, "The top width should = 5.");
+                m_log.CHECK_EQ(Top.num, 1, "The top num should = 1.");
+                m_log.CHECK_EQ(Top.channels, 1, "The top channels should = 1.");
+                m_log.CHECK_EQ(Top.height, m_blobBottomDet.height + 2, "The top height should = " + (m_blobBottomDet.height + 2).ToString() + "!");
+                m_log.CHECK_EQ(Top.width, 5, "The top width should = 5.");
 
-            CheckEqual(Top, 0, "-1 1 2 -1 -1");
-            CheckEqual(Top, 1, "-1 2 1 -1 -1");
-            CheckEqual(Top, 2, "0 1 0.9 0 0");
-            CheckEqual(Top, 3, "0 1 0.7 1 0");
-            CheckEqual(Top, 4, "0 1 0.3 0 1");
-            CheckEqual(Top, 5, "1 1 0.2 1 0");
-            CheckEqual(Top, 6, "1 2 0.8 0 1");
-            CheckEqual(Top, 7, "1 2 0.1 1 0");
-            CheckEqual(Top, 8, "1 3 0.2 0 1");
-            CheckEqual(Top, 9, "2 1 0.2 0 1");
-
-            layer.Dispose();
+                CheckEqual(Top, 0, "-1 1 2 -1 -1");
+                CheckEqual(Top, 1, "-1 2 1 -1 -1");
+                CheckEqual(Top, 2, "0 1 0.9 0 0");
+                CheckEqual(Top, 3, "0 1 0.7 1 0");
+                CheckEqual(Top, 4, "0 1 0.3 0 1");
+                CheckEqual(Top, 5, "1 1 0.2 1 0");
+                CheckEqual(Top, 6, "1 2 0.8 0 1");
+                CheckEqual(Top, 7, "1 2 0.1 1 0");
+                CheckEqual(Top, 8, "1 3 0.2 0 1");
+                CheckEqual(Top, 9, "2 1 0.2 0 1");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

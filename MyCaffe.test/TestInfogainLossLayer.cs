@@ -145,66 +145,74 @@ namespace MyCaffe.test
             p.loss_weight.Add(1);
             p.loss_weight.Add(0);
             InfogainLossLayer<T> layer = new InfogainLossLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            // Now, check the values.
-            double[] rgData = convert(BottomVec[0].update_cpu_data());
-            double[] rgProb = convert(TopVec[1].update_cpu_data());
-            double[] rgLabels = convert(BottomVec[1].update_cpu_data());
-            double[] rgH = convert(BottomVec[2].update_cpu_data());
-
-            // first, test the prob top.
-            m_log.CHECK_EQ(BottomVec[0].num_axes, TopVec[1].num_axes, "The prob top shape does not match the bottom data shape.");
-            for (int ai = 0; ai < BottomVec[0].num; ai++)
+            try
             {
-                m_log.CHECK_EQ(BottomVec[0].shape(ai), TopVec[1].shape(ai), "The prob shape does not match the bottom data shape.");
-            }
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            List<double> rgEstProb = Utility.Create<double>(m_nNumLabels, 0);
-            for (int i = 0; i < m_nOuter; i++)
-            {
-                for (int j = 0; j < m_nInner; j++)
+                // Now, check the values.
+                double[] rgData = convert(BottomVec[0].update_cpu_data());
+                double[] rgProb = convert(TopVec[1].update_cpu_data());
+                double[] rgLabels = convert(BottomVec[1].update_cpu_data());
+                double[] rgH = convert(BottomVec[2].update_cpu_data());
+
+                // first, test the prob top.
+                m_log.CHECK_EQ(BottomVec[0].num_axes, TopVec[1].num_axes, "The prob top shape does not match the bottom data shape.");
+                for (int ai = 0; ai < BottomVec[0].num; ai++)
                 {
-                    double dfDen = 0;
-                    for (int l = 0; l < m_nNumLabels; l++)
-                    {
-                        double dfVal = rgData[i * m_nNumLabels * m_nInner + l * m_nInner + j];
-                        rgEstProb[l] = Math.Exp(dfVal);
-                        dfDen += rgEstProb[l];
-                    }
-                    for (int l = 0; l < m_nNumLabels; l++)
-                    {
-                        double dfActualP = rgProb[i * m_nNumLabels * m_nInner + l * m_nInner + j];
-                        double dfExpectedP = rgEstProb[l] / dfDen;
+                    m_log.CHECK_EQ(BottomVec[0].shape(ai), TopVec[1].shape(ai), "The prob shape does not match the bottom data shape.");
+                }
 
-                        m_log.EXPECT_NEAR(dfActualP, dfExpectedP, 1e-6);
+                List<double> rgEstProb = Utility.Create<double>(m_nNumLabels, 0);
+                for (int i = 0; i < m_nOuter; i++)
+                {
+                    for (int j = 0; j < m_nInner; j++)
+                    {
+                        double dfDen = 0;
+                        for (int l = 0; l < m_nNumLabels; l++)
+                        {
+                            double dfVal = rgData[i * m_nNumLabels * m_nInner + l * m_nInner + j];
+                            rgEstProb[l] = Math.Exp(dfVal);
+                            dfDen += rgEstProb[l];
+                        }
+                        for (int l = 0; l < m_nNumLabels; l++)
+                        {
+                            double dfActualP = rgProb[i * m_nNumLabels * m_nInner + l * m_nInner + j];
+                            double dfExpectedP = rgEstProb[l] / dfDen;
+
+                            m_log.EXPECT_NEAR(dfActualP, dfExpectedP, 1e-6);
+                        }
                     }
                 }
-            }
 
-            double dfLoss = 0; // loss from prob top.
-            for (int i = 0; i < m_nOuter; i++)
-            {
-                for (int j = 0; j < m_nInner; j++)
+                double dfLoss = 0; // loss from prob top.
+                for (int i = 0; i < m_nOuter; i++)
                 {
-                    int nGt = (int)rgLabels[i * m_nInner + j];
-
-                    for (int l = 0; l < m_nNumLabels; l++)
+                    for (int j = 0; j < m_nInner; j++)
                     {
-                        double dfH = rgH[nGt * m_nNumLabels + l];
-                        double dfProb = rgProb[i * m_nNumLabels * m_nInner + l * m_nInner + j];
-                        double dfProbLog = Math.Log(Math.Max(dfProb, InfogainLossLayer<T>.kLOG_THRESHOLD));
+                        int nGt = (int)rgLabels[i * m_nInner + j];
 
-                        dfLoss -= dfH * dfProbLog;
+                        for (int l = 0; l < m_nNumLabels; l++)
+                        {
+                            double dfH = rgH[nGt * m_nNumLabels + l];
+                            double dfProb = rgProb[i * m_nNumLabels * m_nInner + l * m_nInner + j];
+                            double dfProbLog = Math.Log(Math.Max(dfProb, InfogainLossLayer<T>.kLOG_THRESHOLD));
+
+                            dfLoss -= dfH * dfProbLog;
+                        }
                     }
                 }
+
+                double dfActual = convert(TopVec[0].GetData(0));
+                double dfExpected = dfLoss / (m_nOuter * m_nInner);
+
+                m_log.EXPECT_NEAR(dfActual, dfExpected, 1e-6);
             }
-
-            double dfActual = convert(TopVec[0].GetData(0));
-            double dfExpected = dfLoss / (m_nOuter * m_nInner);
-
-            m_log.EXPECT_NEAR(dfActual, dfExpected, 1e-6);
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradient()
@@ -212,10 +220,18 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.INFOGAIN_LOSS);
             p.infogain_loss_param.axis = 2;
             InfogainLossLayer<T> layer = new InfogainLossLayer<T>(m_cuda, m_log, p);
-            TopVec.Clear();
-            TopVec.Add(m_blob_top_loss); // ignore prob top.
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-4, 2e-2, 1701); // no 'kink'
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+
+            try
+            {
+                TopVec.Clear();
+                TopVec.Add(m_blob_top_loss); // ignore prob top.
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-4, 2e-2, 1701); // no 'kink'
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

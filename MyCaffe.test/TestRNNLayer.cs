@@ -315,13 +315,18 @@ namespace MyCaffe.test
         {
             RNNLayer<T> layer = new RNNLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
 
-            List<int> rgExpectedTopShape = Utility.Clone<int>(m_blob_bottom.shape(), 3);
-            rgExpectedTopShape[2] = m_nNumOutput;
-            m_log.CHECK(m_blob_top.CompareShape(rgExpectedTopShape), "The top shape is not as expected.");
-
-            layer.Dispose();
+                List<int> rgExpectedTopShape = Utility.Clone<int>(m_blob_bottom.shape(), 3);
+                rgExpectedTopShape[2] = m_nNumOutput;
+                m_log.CHECK(m_blob_top.CompareShape(rgExpectedTopShape), "The top shape is not as expected.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForward()
@@ -355,113 +360,138 @@ namespace MyCaffe.test
             sequence_filler.Fill(m_blob_bottom);
 
             RNNLayer<T> layer = new RNNLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
-            m_cuda.rng_setseed(1701);
-            layer.Setup(BottomVec, TopVec);
 
-            m_log.WriteLine("Calling forward for full sequence RNN");
-            layer.Forward(BottomVec, TopVec);
-
-            // Copy the inputs and outputs to reuse/check them later.
-            Blob<T> bottom_copy = new Blob<T>(m_cuda, m_log, m_blob_bottom.shape());
-            bottom_copy.CopyFrom(m_blob_bottom);
-            Blob<T> top_copy = new Blob<T>(m_cuda, m_log, m_blob_top.shape());
-            top_copy.CopyFrom(m_blob_top);
-
-            // Process the batch one step at a time;
-            //  check that we get the same result.
-            ReshapeBlobs(1, nNum);
-
-            layer = new RNNLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
-            m_cuda.rng_setseed(1701);
-            layer.Setup(BottomVec, TopVec);
-
-            int nBottomCount = m_blob_bottom.count();
-            int nTopCount = m_blob_top.count();
-            double kEpsilon = 1e-5;
-
-            for (int t = 0; t < kNumTimesteps; t++)
+            try
             {
-                m_cuda.copy(nBottomCount, bottom_copy.gpu_data, m_blob_bottom.mutable_gpu_data, t * nBottomCount);
+                m_cuda.rng_setseed(1701);
+                layer.Setup(BottomVec, TopVec);
 
-                double[] rgCont = convert(m_blob_bottom_cont.mutable_cpu_data);
-
-                for (int n = 0; n < nNum; n++)
-                {
-                    rgCont[n] = (t > 0) ? 1 : 0;
-                }
-
-                m_blob_bottom_cont.mutable_cpu_data = convert(rgCont);
-
-                m_log.WriteLine("Calling forward for RNN timestep " + t.ToString());
+                m_log.WriteLine("Calling forward for full sequence RNN");
                 layer.Forward(BottomVec, TopVec);
 
-                double[] rgTop = convert(m_blob_top.update_cpu_data());
-                double[] rgTopCopy = convert(top_copy.update_cpu_data());
+                // Copy the inputs and outputs to reuse/check them later.
+                Blob<T> bottom_copy = new Blob<T>(m_cuda, m_log, m_blob_bottom.shape());
+                bottom_copy.CopyFrom(m_blob_bottom);
+                Blob<T> top_copy = new Blob<T>(m_cuda, m_log, m_blob_top.shape());
+                top_copy.CopyFrom(m_blob_top);
 
-                for (int i = 0; i < nTopCount; i++)
+                // Process the batch one step at a time;
+                //  check that we get the same result.
+                ReshapeBlobs(1, nNum);
+
+                layer = new RNNLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
+                m_cuda.rng_setseed(1701);
+                layer.Setup(BottomVec, TopVec);
+
+                int nBottomCount = m_blob_bottom.count();
+                int nTopCount = m_blob_top.count();
+                double kEpsilon = 1e-5;
+
+                for (int t = 0; t < kNumTimesteps; t++)
                 {
-                    m_log.CHECK_LT(t * nTopCount + i, top_copy.count(), "The top count is incorrect.");
-                    m_log.EXPECT_NEAR(rgTop[i], rgTopCopy[t * nTopCount + i], kEpsilon, "t = " + t.ToString() + "; i = " + i.ToString());
+                    m_cuda.copy(nBottomCount, bottom_copy.gpu_data, m_blob_bottom.mutable_gpu_data, t * nBottomCount);
+
+                    double[] rgCont = convert(m_blob_bottom_cont.mutable_cpu_data);
+
+                    for (int n = 0; n < nNum; n++)
+                    {
+                        rgCont[n] = (t > 0) ? 1 : 0;
+                    }
+
+                    m_blob_bottom_cont.mutable_cpu_data = convert(rgCont);
+
+                    m_log.WriteLine("Calling forward for RNN timestep " + t.ToString());
+                    layer.Forward(BottomVec, TopVec);
+
+                    double[] rgTop = convert(m_blob_top.update_cpu_data());
+                    double[] rgTopCopy = convert(top_copy.update_cpu_data());
+
+                    for (int i = 0; i < nTopCount; i++)
+                    {
+                        m_log.CHECK_LT(t * nTopCount + i, top_copy.count(), "The top count is incorrect.");
+                        m_log.EXPECT_NEAR(rgTop[i], rgTopCopy[t * nTopCount + i], kEpsilon, "t = " + t.ToString() + "; i = " + i.ToString());
+                    }
+                }
+
+                // Process the batch one timestep at a time with all cont blobs set to 0.
+                //  Check that we get a different result, except in the first timestep.
+                m_cuda.rng_setseed(1701);
+                layer.Dispose();
+                layer = new RNNLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
+                layer.Setup(BottomVec, TopVec);
+
+                for (int t = 0; t < kNumTimesteps; t++)
+                {
+                    m_cuda.copy(nBottomCount, bottom_copy.gpu_data, m_blob_bottom.mutable_gpu_data, t * nBottomCount);
+
+                    double[] rgCont = convert(m_blob_bottom_cont.mutable_cpu_data);
+
+                    for (int n = 0; n < nNum; n++)
+                    {
+                        rgCont[n] = 0;
+                    }
+
+                    m_blob_bottom_cont.mutable_cpu_data = convert(rgCont);
+
+                    m_log.WriteLine("Calling forward for RNN timestep " + t.ToString());
+                    layer.Forward(BottomVec, TopVec);
+
+                    double[] rgTop = convert(m_blob_top.update_cpu_data());
+                    double[] rgTopCopy = convert(top_copy.update_cpu_data());
+
+                    for (int i = 0; i < nTopCount; i++)
+                    {
+                        if (t == 0)
+                            m_log.EXPECT_NEAR(rgTop[i], rgTopCopy[t * nTopCount + i], kEpsilon, "t = " + t.ToString() + "; i = " + i.ToString());
+                        else
+                            m_log.CHECK_NE(rgTop[i], rgTopCopy[t * nTopCount + i], "t = " + t.ToString() + "; i = " + i.ToString());
+                    }
                 }
             }
-
-            // Process the batch one timestep at a time with all cont blobs set to 0.
-            //  Check that we get a different result, except in the first timestep.
-            m_cuda.rng_setseed(1701);
-            layer = new RNNLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
-            layer.Setup(BottomVec, TopVec);
-
-            for (int t = 0; t < kNumTimesteps; t++)
+            finally
             {
-                m_cuda.copy(nBottomCount, bottom_copy.gpu_data, m_blob_bottom.mutable_gpu_data, t * nBottomCount);
-
-                double[] rgCont = convert(m_blob_bottom_cont.mutable_cpu_data);
-
-                for (int n = 0; n < nNum; n++)
-                {
-                    rgCont[n] = 0;
-                }
-
-                m_blob_bottom_cont.mutable_cpu_data = convert(rgCont);
-
-                m_log.WriteLine("Calling forward for RNN timestep " + t.ToString());
-                layer.Forward(BottomVec, TopVec);
-
-                double[] rgTop = convert(m_blob_top.update_cpu_data());
-                double[] rgTopCopy = convert(top_copy.update_cpu_data());
-
-                for (int i = 0; i < nTopCount; i++)
-                {
-                    if (t == 0)
-                        m_log.EXPECT_NEAR(rgTop[i], rgTopCopy[t * nTopCount + i], kEpsilon, "t = " + t.ToString() + "; i = " + i.ToString());
-                    else
-                        m_log.CHECK_NE(rgTop[i], rgTopCopy[t * nTopCount + i], "t = " + t.ToString() + "; i = " + i.ToString());
-                }
+                layer.Dispose();
             }
         }
 
         public void TestGradient()
         {
             RNNLayer<T> layer = new RNNLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientNonZeroCont()
         {
             RNNLayer<T> layer = new RNNLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
 
-            double[] rgCont = convert(m_blob_bottom_cont.mutable_cpu_data);
-
-            for (int i = 0; i < m_blob_bottom_cont.count(); i++)
+            try
             {
-                rgCont[i] = (i > 2) ? 1 : 0;
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
+
+                double[] rgCont = convert(m_blob_bottom_cont.mutable_cpu_data);
+
+                for (int i = 0; i < m_blob_bottom_cont.count(); i++)
+                {
+                    rgCont[i] = (i > 2) ? 1 : 0;
+                }
+
+                m_blob_bottom_cont.mutable_cpu_data = convert(rgCont);
+
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
             }
-
-            m_blob_bottom_cont.mutable_cpu_data = convert(rgCont);
-
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientNonZeroContBufferSize2()
@@ -474,18 +504,26 @@ namespace MyCaffe.test
             filler.Fill(m_blob_bottom);
 
             RNNLayer<T> layer = new RNNLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
 
-            double[] rgCont = convert(m_blob_bottom_cont.mutable_cpu_data);
-
-            for (int i = 0; i < m_blob_bottom_cont.count(); i++)
+            try
             {
-                rgCont[i] = (i > 2) ? 1 : 0;
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
+
+                double[] rgCont = convert(m_blob_bottom_cont.mutable_cpu_data);
+
+                for (int i = 0; i < m_blob_bottom_cont.count(); i++)
+                {
+                    rgCont[i] = (i > 2) ? 1 : 0;
+                }
+
+                m_blob_bottom_cont.mutable_cpu_data = convert(rgCont);
+
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
             }
-
-            m_blob_bottom_cont.mutable_cpu_data = convert(rgCont);
-
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientNonZeroContBufferSize2WithStaticInput()
@@ -501,19 +539,27 @@ namespace MyCaffe.test
             BottomVec.Add(m_blob_bottom_static);
 
             RNNLayer<T> layer = new RNNLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
 
-            double[] rgCont = convert(m_blob_bottom_cont.mutable_cpu_data);
-
-            for (int i = 0; i < m_blob_bottom_cont.count(); i++)
+            try
             {
-                rgCont[i] = (i > 2) ? 1 : 0;
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
+
+                double[] rgCont = convert(m_blob_bottom_cont.mutable_cpu_data);
+
+                for (int i = 0; i < m_blob_bottom_cont.count(); i++)
+                {
+                    rgCont[i] = (i > 2) ? 1 : 0;
+                }
+
+                m_blob_bottom_cont.mutable_cpu_data = convert(rgCont);
+
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 2);
             }
-
-            m_blob_bottom_cont.mutable_cpu_data = convert(rgCont);
-
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 2);
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

@@ -289,64 +289,71 @@ namespace MyCaffe.test
 
             Normalization2Layer<T> layer = new Normalization2Layer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Test norm
-            int nNum = m_blob_bottom.num;
-            int nChannels = m_blob_bottom.channels;
-            int nHeight = m_blob_bottom.height;
-            int nWidth = m_blob_bottom.width;
-
-            if (bAcrossSpatial)
+            try
             {
-                for (int i = 0; i < nNum; i++)
-                {
-                    double dfNorm = 0;
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                    for (int j = 0; j < nChannels; j++)
+                // Test norm
+                int nNum = m_blob_bottom.num;
+                int nChannels = m_blob_bottom.channels;
+                int nHeight = m_blob_bottom.height;
+                int nWidth = m_blob_bottom.width;
+
+                if (bAcrossSpatial)
+                {
+                    for (int i = 0; i < nNum; i++)
+                    {
+                        double dfNorm = 0;
+
+                        for (int j = 0; j < nChannels; j++)
+                        {
+                            for (int k = 0; k < nHeight; k++)
+                            {
+                                for (int l = 0; l < nWidth; l++)
+                                {
+                                    double dfData = Utility.ConvertVal<T>(m_blob_top.data_at(i, j, k, l));
+                                    dfNorm += dfData * dfData;
+                                }
+                            }
+                        }
+
+                        double kErrorBound = 1e-5;
+
+                        // Expect unit norm.
+                        double dfExpected = Math.Sqrt(dfNorm);
+                        m_log.EXPECT_NEAR(dfScale, dfExpected, kErrorBound, "The values are not as expected for the norm.");
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < nNum; i++)
                     {
                         for (int k = 0; k < nHeight; k++)
                         {
                             for (int l = 0; l < nWidth; l++)
                             {
-                                double dfData = Utility.ConvertVal<T>(m_blob_top.data_at(i, j, k, l));
-                                dfNorm += dfData * dfData;
+                                double dfNorm = 0;
+
+                                for (int j = 0; j < nChannels; j++)
+                                {
+                                    double dfData = Utility.ConvertVal<T>(m_blob_top.data_at(i, j, k, l));
+                                    dfNorm += dfData * dfData;
+                                }
+
+                                double kErrorBound = 1e-5;
+
+                                // Expect unit norm.
+                                double dfExpected = Math.Sqrt(dfNorm);
+                                m_log.EXPECT_NEAR(dfScale, dfExpected, kErrorBound, "The values are not as expected for the norm.");
                             }
                         }
                     }
-
-                    double kErrorBound = 1e-5;
-
-                    // Expect unit norm.
-                    double dfExpected = Math.Sqrt(dfNorm);
-                    m_log.EXPECT_NEAR(dfScale, dfExpected, kErrorBound, "The values are not as expected for the norm.");
                 }
             }
-            else
+            finally
             {
-                for (int i = 0; i < nNum; i++)
-                {
-                    for (int k = 0; k < nHeight; k++)
-                    {
-                        for (int l = 0; l < nWidth; l++)
-                        {
-                            double dfNorm = 0;
-
-                            for (int j = 0; j < nChannels; j++)
-                            {
-                                double dfData = Utility.ConvertVal<T>(m_blob_top.data_at(i, j, k, l));
-                                dfNorm += dfData * dfData;
-                            }
-
-                            double kErrorBound = 1e-5;
-
-                            // Expect unit norm.
-                            double dfExpected = Math.Sqrt(dfNorm);
-                            m_log.EXPECT_NEAR(dfScale, dfExpected, kErrorBound, "The values are not as expected for the norm.");
-                        }
-                    }
-                }
+                layer.Dispose();
             }
         }
 
@@ -361,8 +368,16 @@ namespace MyCaffe.test
             p.normalization2_param.across_spatial = bAcrossSpatial;
 
             Normalization2Layer<T> layer = new Normalization2Layer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

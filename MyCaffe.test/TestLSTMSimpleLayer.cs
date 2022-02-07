@@ -341,14 +341,21 @@ namespace MyCaffe.test
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
             LSTMSimpleLayer<T> lstm = (LSTMSimpleLayer<T>)layer;
 
-            Assert.AreEqual(lstm.layer_param.lstm_simple_param.num_output, (uint)5);
-            Assert.AreEqual(lstm.layer_param.lstm_simple_param.batch_size, (uint)8);
-            Assert.AreEqual(lstm.layer_param.lstm_simple_param.weight_filler.type, "uniform");
-            Assert.AreEqual(lstm.layer_param.lstm_simple_param.weight_filler.min, -0.01);
-            Assert.AreEqual(lstm.layer_param.lstm_simple_param.weight_filler.max, 0.01);
-            Assert.AreEqual(lstm.layer_param.lstm_simple_param.bias_filler.type, "constant");
-            Assert.AreEqual(lstm.layer_param.lstm_simple_param.bias_filler.value, 2);
-            Assert.AreEqual(lstm.layer_param.lstm_simple_param.clipping_threshold, 2.44);
+            try
+            {
+                Assert.AreEqual(lstm.layer_param.lstm_simple_param.num_output, (uint)5);
+                Assert.AreEqual(lstm.layer_param.lstm_simple_param.batch_size, (uint)8);
+                Assert.AreEqual(lstm.layer_param.lstm_simple_param.weight_filler.type, "uniform");
+                Assert.AreEqual(lstm.layer_param.lstm_simple_param.weight_filler.min, -0.01);
+                Assert.AreEqual(lstm.layer_param.lstm_simple_param.weight_filler.max, 0.01);
+                Assert.AreEqual(lstm.layer_param.lstm_simple_param.bias_filler.type, "constant");
+                Assert.AreEqual(lstm.layer_param.lstm_simple_param.bias_filler.value, 2);
+                Assert.AreEqual(lstm.layer_param.lstm_simple_param.clipping_threshold, 2.44);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientDefault()
@@ -365,9 +372,16 @@ namespace MyCaffe.test
             BottomVec.Add(Bottom);
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
 
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientBatchDefault()
@@ -385,9 +399,16 @@ namespace MyCaffe.test
             BottomVec.Add(Bottom);
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
 
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientClipMask()
@@ -420,9 +441,16 @@ namespace MyCaffe.test
             BottomVec.Add(Bottom2);
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
 
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientBatchClipMask()
@@ -460,9 +488,16 @@ namespace MyCaffe.test
             BottomVec.Add(Bottom2);
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
 
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestTraining(int nTotalDataLength, int nNumOutput, int nBatch, bool bShortModel, int nMaxIter)

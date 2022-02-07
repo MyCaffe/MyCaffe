@@ -164,31 +164,38 @@ namespace MyCaffe.test
             p.gather_param.axis = 0;
             GatherLayer<T> layer = new GatherLayer<T>(m_cuda, m_log, p);
 
-            Bottom.Reshape(3, 2, 1, 1);
-            float[] rgData = new float[] { 1.0f, 1.2f, 2.3f, 3.4f, 4.5f, 5.7f };
-            Bottom.mutable_cpu_data = convert(rgData);
-
-            m_blobIndices.Reshape(2, 2, 1, 1);
-            float[] rgIdx = new float[] { 0.0f, 1.0f, 1.0f, 2.0f };
-            m_blobIndices.mutable_cpu_data = convert(rgIdx);
-
-            BottomVec.Add(m_blobIndices);
-
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            m_log.CHECK_EQ(Top.num, 2, "The top should have num = 2");
-            m_log.CHECK_EQ(Top.channels, 2, "The top should have channels = 2");
-            m_log.CHECK_EQ(Top.height, 2, "The top should have height = 2");
-            m_log.CHECK_EQ(Top.width, 1, "The top should have width = 1");
-
-            float[] rgResult = convertF(Top.mutable_cpu_data);
-            float[] rgExpected = new float[] { 1.0f, 1.2f, 2.3f, 3.4f, 2.3f, 3.4f, 4.5f, 5.7f };
-            m_log.CHECK_EQ(rgResult.Length, rgExpected.Length, "The result length is not as expected!");
-
-            for (int i = 0; i < rgResult.Length; i++)
+            try
             {
-                m_log.CHECK_EQ(rgResult[i], rgExpected[i], "The item at index #" + i.ToString() + " is not as expected!");
+                Bottom.Reshape(3, 2, 1, 1);
+                float[] rgData = new float[] { 1.0f, 1.2f, 2.3f, 3.4f, 4.5f, 5.7f };
+                Bottom.mutable_cpu_data = convert(rgData);
+
+                m_blobIndices.Reshape(2, 2, 1, 1);
+                float[] rgIdx = new float[] { 0.0f, 1.0f, 1.0f, 2.0f };
+                m_blobIndices.mutable_cpu_data = convert(rgIdx);
+
+                BottomVec.Add(m_blobIndices);
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(Top.num, 2, "The top should have num = 2");
+                m_log.CHECK_EQ(Top.channels, 2, "The top should have channels = 2");
+                m_log.CHECK_EQ(Top.height, 2, "The top should have height = 2");
+                m_log.CHECK_EQ(Top.width, 1, "The top should have width = 1");
+
+                float[] rgResult = convertF(Top.mutable_cpu_data);
+                float[] rgExpected = new float[] { 1.0f, 1.2f, 2.3f, 3.4f, 2.3f, 3.4f, 4.5f, 5.7f };
+                m_log.CHECK_EQ(rgResult.Length, rgExpected.Length, "The result length is not as expected!");
+
+                for (int i = 0; i < rgResult.Length; i++)
+                {
+                    m_log.CHECK_EQ(rgResult[i], rgExpected[i], "The item at index #" + i.ToString() + " is not as expected!");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -204,31 +211,38 @@ namespace MyCaffe.test
             p.gather_param.axis = 1;
             GatherLayer<T> layer = new GatherLayer<T>(m_cuda, m_log, p);
 
-            Bottom.Reshape(3, 3, 1, 1);
-            float[] rgData = new float[] { 1.0f, 1.2f, 1.9f, 2.3f, 3.4f, 3.9f, 4.5f, 5.7f, 5.9f };
-            Bottom.mutable_cpu_data = convert(rgData);
-
-            m_blobIndices.Reshape(1, 2, 1, 1);
-            float[] rgIdx = new float[] { 0.0f, 2.0f };
-            m_blobIndices.mutable_cpu_data = convert(rgIdx);
-
-            BottomVec.Add(m_blobIndices);
-
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            m_log.CHECK_EQ(Top.num, 3, "The top should have num = 3");
-            m_log.CHECK_EQ(Top.channels, 1, "The top should have channels = 1");
-            m_log.CHECK_EQ(Top.height, 2, "The top should have height = 2");
-            m_log.CHECK_EQ(Top.width, 1, "The top should have width = 1");
-
-            float[] rgResult = convertF(Top.mutable_cpu_data);
-            float[] rgExpected = new float[] { 1.0f, 1.9f, 2.3f, 3.9f, 4.5f, 5.9f };
-            m_log.CHECK_EQ(rgResult.Length, rgExpected.Length, "The result length is not as expected!");
-
-            for (int i = 0; i < rgResult.Length; i++)
+            try
             {
-                m_log.CHECK_EQ(rgResult[i], rgExpected[i], "The item at index #" + i.ToString() + " is not as expected!");
+                Bottom.Reshape(3, 3, 1, 1);
+                float[] rgData = new float[] { 1.0f, 1.2f, 1.9f, 2.3f, 3.4f, 3.9f, 4.5f, 5.7f, 5.9f };
+                Bottom.mutable_cpu_data = convert(rgData);
+
+                m_blobIndices.Reshape(1, 2, 1, 1);
+                float[] rgIdx = new float[] { 0.0f, 2.0f };
+                m_blobIndices.mutable_cpu_data = convert(rgIdx);
+
+                BottomVec.Add(m_blobIndices);
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(Top.num, 3, "The top should have num = 3");
+                m_log.CHECK_EQ(Top.channels, 1, "The top should have channels = 1");
+                m_log.CHECK_EQ(Top.height, 2, "The top should have height = 2");
+                m_log.CHECK_EQ(Top.width, 1, "The top should have width = 1");
+
+                float[] rgResult = convertF(Top.mutable_cpu_data);
+                float[] rgExpected = new float[] { 1.0f, 1.9f, 2.3f, 3.9f, 4.5f, 5.9f };
+                m_log.CHECK_EQ(rgResult.Length, rgExpected.Length, "The result length is not as expected!");
+
+                for (int i = 0; i < rgResult.Length; i++)
+                {
+                    m_log.CHECK_EQ(rgResult[i], rgExpected[i], "The item at index #" + i.ToString() + " is not as expected!");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -238,58 +252,66 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.GATHER);
             p.gather_param.axis = nAxis;
             GatherLayer<T> layer = new GatherLayer<T>(m_cuda, m_log, p);
-            float[] rgInputData = null;
-            float[] rgIdxF = null;
 
-            if (nAxis == 0)
+            try
             {
-                Bottom.Reshape(3, 2, 1, 1);
-                rgInputData = new float[] { 1.0f, 1.2f, 2.3f, 3.4f, 4.5f, 5.7f };
-                Bottom.mutable_cpu_data = convert(rgInputData);
+                float[] rgInputData = null;
+                float[] rgIdxF = null;
 
-                m_blobIndices.Reshape(2, 2, 1, 1);
-                rgIdxF = new float[] { 0.0f, 1.0f, 1.0f, 2.0f };
-                m_blobIndices.mutable_cpu_data = convert(rgIdxF);
+                if (nAxis == 0)
+                {
+                    Bottom.Reshape(3, 2, 1, 1);
+                    rgInputData = new float[] { 1.0f, 1.2f, 2.3f, 3.4f, 4.5f, 5.7f };
+                    Bottom.mutable_cpu_data = convert(rgInputData);
 
-                BottomVec.Add(m_blobIndices);
-            }
-            else
-            {
-                Bottom.Reshape(3, 3, 1, 1);
-                rgInputData = new float[] { 1.0f, 1.2f, 1.9f, 2.3f, 3.4f, 3.9f, 4.5f, 5.7f, 5.9f };
-                Bottom.mutable_cpu_data = convert(rgInputData);
+                    m_blobIndices.Reshape(2, 2, 1, 1);
+                    rgIdxF = new float[] { 0.0f, 1.0f, 1.0f, 2.0f };
+                    m_blobIndices.mutable_cpu_data = convert(rgIdxF);
 
-                m_blobIndices.Reshape(1, 2, 1, 1);
-                rgIdxF = new float[] { 0.0f, 2.0f };
-                m_blobIndices.mutable_cpu_data = convert(rgIdxF);
-
-                BottomVec.Add(m_blobIndices);
-            }
-
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            m_cuda.copy(Top.count(), Top.gpu_data, Top.mutable_gpu_diff);
-
-            layer.Backward(TopVec, new List<bool> { true }, BottomVec);
-
-            float[] rgOutputData = convertF(Bottom.mutable_cpu_diff);
-
-            m_log.CHECK_EQ(rgOutputData.Length, rgInputData.Length, "The output and input data should have the same length.");
-
-            List<int> rgIdx = new List<int>();
-            foreach (float f in rgIdxF)
-            {
-                rgIdx.Add((int)f);
-            }
-
-            for (int i = 0; i < rgInputData.Length; i++)
-            {
-                int nIdx = i % Bottom.num;
-                if (!rgIdx.Contains(nIdx))
-                    m_log.CHECK_EQ(0, rgOutputData[i], "The data at index #" + i.ToString() + " is not as expected.");
+                    BottomVec.Add(m_blobIndices);
+                }
                 else
-                    m_log.CHECK_EQ(rgInputData[i], rgOutputData[i], "The data at index #" + i.ToString() + " is not as expected.");
+                {
+                    Bottom.Reshape(3, 3, 1, 1);
+                    rgInputData = new float[] { 1.0f, 1.2f, 1.9f, 2.3f, 3.4f, 3.9f, 4.5f, 5.7f, 5.9f };
+                    Bottom.mutable_cpu_data = convert(rgInputData);
+
+                    m_blobIndices.Reshape(1, 2, 1, 1);
+                    rgIdxF = new float[] { 0.0f, 2.0f };
+                    m_blobIndices.mutable_cpu_data = convert(rgIdxF);
+
+                    BottomVec.Add(m_blobIndices);
+                }
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                m_cuda.copy(Top.count(), Top.gpu_data, Top.mutable_gpu_diff);
+
+                layer.Backward(TopVec, new List<bool> { true }, BottomVec);
+
+                float[] rgOutputData = convertF(Bottom.mutable_cpu_diff);
+
+                m_log.CHECK_EQ(rgOutputData.Length, rgInputData.Length, "The output and input data should have the same length.");
+
+                List<int> rgIdx = new List<int>();
+                foreach (float f in rgIdxF)
+                {
+                    rgIdx.Add((int)f);
+                }
+
+                for (int i = 0; i < rgInputData.Length; i++)
+                {
+                    int nIdx = i % Bottom.num;
+                    if (!rgIdx.Contains(nIdx))
+                        m_log.CHECK_EQ(0, rgOutputData[i], "The data at index #" + i.ToString() + " is not as expected.");
+                    else
+                        m_log.CHECK_EQ(rgInputData[i], rgOutputData[i], "The data at index #" + i.ToString() + " is not as expected.");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
     }

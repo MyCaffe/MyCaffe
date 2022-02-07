@@ -131,29 +131,37 @@ namespace MyCaffe.test
             }
 
             BatchReindexLayer<T> layer = new BatchReindexLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(Top.num, BottomPermute.num, "The top num should equal the bottom permute num.");
-            m_log.CHECK_EQ(Top.channels, Bottom.channels, "The top channels should equal the bottom channels.");
-            m_log.CHECK_EQ(Top.height, Bottom.height, "The top height should equal the bottom height.");
-            m_log.CHECK_EQ(Top.width, Bottom.width, "The top width should equal the bottom width.");
-
-            layer.Forward(BottomVec, TopVec);
-
-            int nChannels = Top.channels;
-            int nHeight = Top.height;
-            int nWidth = Top.width;
-
-            for (int i = 0; i < Top.count(); i++)
+            try
             {
-                int n = i / (nChannels * nWidth * nHeight);
-                int inner_idx = (i % (nChannels * nWidth * nHeight));
+                layer.Setup(BottomVec, TopVec);
 
-                int nIdx = rgPerm[n] * nChannels * nWidth * nHeight + inner_idx;
-                double dfTop = convert(Top.GetData(i));
-                double dfBtm = convert(Bottom.GetData(nIdx));
+                m_log.CHECK_EQ(Top.num, BottomPermute.num, "The top num should equal the bottom permute num.");
+                m_log.CHECK_EQ(Top.channels, Bottom.channels, "The top channels should equal the bottom channels.");
+                m_log.CHECK_EQ(Top.height, Bottom.height, "The top height should equal the bottom height.");
+                m_log.CHECK_EQ(Top.width, Bottom.width, "The top width should equal the bottom width.");
 
-                m_log.CHECK_EQ(dfTop, dfBtm, "The top and bottom values should be equal.");
+                layer.Forward(BottomVec, TopVec);
+
+                int nChannels = Top.channels;
+                int nHeight = Top.height;
+                int nWidth = Top.width;
+
+                for (int i = 0; i < Top.count(); i++)
+                {
+                    int n = i / (nChannels * nWidth * nHeight);
+                    int inner_idx = (i % (nChannels * nWidth * nHeight));
+
+                    int nIdx = rgPerm[n] * nChannels * nWidth * nHeight + inner_idx;
+                    double dfTop = convert(Top.GetData(i));
+                    double dfBtm = convert(Bottom.GetData(nIdx));
+
+                    m_log.CHECK_EQ(dfTop, dfBtm, "The top and bottom values should be equal.");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -161,8 +169,16 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.BATCHREINDEX);
             BatchReindexLayer<T> layer = new BatchReindexLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new test.GradientChecker<T>(m_cuda, m_log, 1e-4, 1e-2);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+
+            try
+            {
+                GradientChecker<T> checker = new test.GradientChecker<T>(m_cuda, m_log, 1e-4, 1e-2);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

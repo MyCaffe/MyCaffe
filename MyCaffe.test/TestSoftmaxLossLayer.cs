@@ -233,8 +233,16 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.SOFTMAXWITH_LOSS);
             p.softmax_param.engine = m_engine;
             SoftmaxLossLayer<T> layer = new SoftmaxLossLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2, 1701);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2, 1701);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForwardIgnoreLabel()
@@ -245,32 +253,39 @@ namespace MyCaffe.test
             p.loss_param.normalization = LossParameter.NormalizationMode.NONE;
             SoftmaxLossLayer<T> layer = new SoftmaxLossLayer<T>(m_cuda, m_log, p);
 
-            // First compute the loss with all labels.
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            double dfFullLoss = convert(m_blob_top_loss.GetData(0));
-
-            // Now, accumulate the loss, ignoring each label in { 0, .., 4} in turn.
-            double dfAccumLoss = 0;
-            double dfLocalLoss = 0;
-
-            for (int nLabel = 0; nLabel < 5; nLabel++)
+            try
             {
-                p.loss_param.ignore_label = nLabel;
-                layer.Dispose();
-                layer = new SoftmaxLossLayer<T>(m_cuda, m_log, p);
+                // First compute the loss with all labels.
                 layer.Setup(BottomVec, TopVec);
                 layer.Forward(BottomVec, TopVec);
 
-                dfLocalLoss = convert(m_blob_top_loss.GetData(0));
-                dfAccumLoss += dfLocalLoss;
+                double dfFullLoss = convert(m_blob_top_loss.GetData(0));
 
+                // Now, accumulate the loss, ignoring each label in { 0, .., 4} in turn.
+                double dfAccumLoss = 0;
+                double dfLocalLoss = 0;
+
+                for (int nLabel = 0; nLabel < 5; nLabel++)
+                {
+                    p.loss_param.ignore_label = nLabel;
+                    layer.Dispose();
+                    layer = new SoftmaxLossLayer<T>(m_cuda, m_log, p);
+                    layer.Setup(BottomVec, TopVec);
+                    layer.Forward(BottomVec, TopVec);
+
+                    dfLocalLoss = convert(m_blob_top_loss.GetData(0));
+                    dfAccumLoss += dfLocalLoss;
+
+                    layer.Dispose();
+                }
+
+                // Check that each label was included all but once.
+                m_log.EXPECT_NEAR(4 * dfFullLoss, dfAccumLoss, 1e-4);
+            }
+            finally
+            {
                 layer.Dispose();
             }
-
-            // Check that each label was included all but once.
-            m_log.EXPECT_NEAR(4 * dfFullLoss, dfAccumLoss, 1e-4);
         }
 
         public void TestGradientIgnoreLabel()
@@ -280,8 +295,16 @@ namespace MyCaffe.test
             // lables are in {0, ..., 4}, so we'll ignore about a fifth of them.
             p.loss_param.ignore_label = 0;
             SoftmaxLossLayer<T> layer = new SoftmaxLossLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2, 1701);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2, 1701);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientUnnormalized()
@@ -290,8 +313,16 @@ namespace MyCaffe.test
             p.softmax_param.engine = m_engine;
             p.loss_param.normalize = false;
             SoftmaxLossLayer<T> layer = new SoftmaxLossLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2, 1701);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2, 1701);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

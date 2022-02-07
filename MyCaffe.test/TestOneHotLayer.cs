@@ -108,52 +108,60 @@ namespace MyCaffe.test
             p.onehot_param.max = 1;
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
-            layer.Setup(BottomVec, TopVec);
 
-            int nCount1 = TopVec[0].count(p.onehot_param.axis);
-            m_log.CHECK_EQ(nCount1, (int)p.onehot_param.num_output, "The top size is incorrect!");
-
-            layer.Forward(BottomVec, TopVec);
-
-            // Test values
-            List<double> rgBuckets = new List<double>();
-            double dfStep = (p.onehot_param.max - p.onehot_param.min) / p.onehot_param.num_output;
-            double dfTotal = p.onehot_param.min;
-
-            for (int i = 0; i < (int)p.onehot_param.num_output; i++)
+            try
             {
-                dfTotal += dfStep;
-                rgBuckets.Add(dfTotal);
-            }
+                layer.Setup(BottomVec, TopVec);
 
-            double[] rgOneHot = new double[rgBuckets.Count];
-            double[] rgTop = convert(TopVec[0].mutable_cpu_data);
-            double[] rgBottom = convert(BottomVec[0].mutable_cpu_data);
-            int nCount = BottomVec[0].count(0, p.onehot_param.axis + 1);
+                int nCount1 = TopVec[0].count(p.onehot_param.axis);
+                m_log.CHECK_EQ(nCount1, (int)p.onehot_param.num_output, "The top size is incorrect!");
 
-            for (int i = 0; i < nCount; i++)
-            {
-                double dfBottom = rgBottom[i];
-                int nExpectedIdx = rgBuckets.Count-1;
+                layer.Forward(BottomVec, TopVec);
 
-                for (int j = 0; j < rgBuckets.Count; j++)
+                // Test values
+                List<double> rgBuckets = new List<double>();
+                double dfStep = (p.onehot_param.max - p.onehot_param.min) / p.onehot_param.num_output;
+                double dfTotal = p.onehot_param.min;
+
+                for (int i = 0; i < (int)p.onehot_param.num_output; i++)
                 {
-                    if (dfBottom < rgBuckets[j])
+                    dfTotal += dfStep;
+                    rgBuckets.Add(dfTotal);
+                }
+
+                double[] rgOneHot = new double[rgBuckets.Count];
+                double[] rgTop = convert(TopVec[0].mutable_cpu_data);
+                double[] rgBottom = convert(BottomVec[0].mutable_cpu_data);
+                int nCount = BottomVec[0].count(0, p.onehot_param.axis + 1);
+
+                for (int i = 0; i < nCount; i++)
+                {
+                    double dfBottom = rgBottom[i];
+                    int nExpectedIdx = rgBuckets.Count - 1;
+
+                    for (int j = 0; j < rgBuckets.Count; j++)
                     {
-                        nExpectedIdx = j;
-                        break;
+                        if (dfBottom < rgBuckets[j])
+                        {
+                            nExpectedIdx = j;
+                            break;
+                        }
+                    }
+
+                    Array.Copy(rgTop, i * rgOneHot.Length, rgOneHot, 0, rgOneHot.Length);
+
+                    for (int j = 0; j < rgOneHot.Length; j++)
+                    {
+                        if (j == nExpectedIdx)
+                            m_log.CHECK_EQ(rgOneHot[j], 1, "The one hot expected index should be 1!");
+                        else
+                            m_log.CHECK_EQ(rgOneHot[j], 0, "The one hot expected index should be 0!");
                     }
                 }
-
-                Array.Copy(rgTop, i * rgOneHot.Length, rgOneHot, 0, rgOneHot.Length);
-
-                for (int j = 0; j < rgOneHot.Length; j++)
-                {
-                    if (j == nExpectedIdx)
-                        m_log.CHECK_EQ(rgOneHot[j], 1, "The one hot expected index should be 1!");
-                    else
-                        m_log.CHECK_EQ(rgOneHot[j], 0, "The one hot expected index should be 0!");
-                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -163,37 +171,44 @@ namespace MyCaffe.test
             LayerParameter p = LayerParameter.FromProto(proto);
             OneHotLayer<T> layer = new OneHotLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            Blob<T> b = new Blob<T>(m_cuda, m_log, TopVec[0]);
-            m_filler.Fill(b);
-            m_cuda.copy(b.count(), b.gpu_data, TopVec[0].mutable_gpu_diff);
-
-            layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
-
-            double[] rgBottomDiff = convert(BottomVec[0].mutable_cpu_diff);
-            double[] rgTopDiff = convert(TopVec[0].mutable_cpu_diff);
-            double[] rgTopData = convert(TopVec[0].mutable_cpu_data);
-
-            int nCount = BottomVec[0].count(0, p.onehot_param.axis);
-            int nItemCount = TopVec[0].count() / nCount;
-
-            for (int i = 0; i < nCount; i++)
+            try
             {
-                double dfDiffSum = 0;
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                for (int j = 0; j < nItemCount; j++)
+                Blob<T> b = new Blob<T>(m_cuda, m_log, TopVec[0]);
+                m_filler.Fill(b);
+                m_cuda.copy(b.count(), b.gpu_data, TopVec[0].mutable_gpu_diff);
+
+                layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
+
+                double[] rgBottomDiff = convert(BottomVec[0].mutable_cpu_diff);
+                double[] rgTopDiff = convert(TopVec[0].mutable_cpu_diff);
+                double[] rgTopData = convert(TopVec[0].mutable_cpu_data);
+
+                int nCount = BottomVec[0].count(0, p.onehot_param.axis);
+                int nItemCount = TopVec[0].count() / nCount;
+
+                for (int i = 0; i < nCount; i++)
                 {
-                    if (rgTopData[i * nItemCount + j] == 1.0)
-                        dfDiffSum += rgTopDiff[i * nItemCount + j];
-                    else
-                        dfDiffSum -= rgTopDiff[i * nItemCount + j];
+                    double dfDiffSum = 0;
+
+                    for (int j = 0; j < nItemCount; j++)
+                    {
+                        if (rgTopData[i * nItemCount + j] == 1.0)
+                            dfDiffSum += rgTopDiff[i * nItemCount + j];
+                        else
+                            dfDiffSum -= rgTopDiff[i * nItemCount + j];
+                    }
+
+                    dfDiffSum /= nItemCount;
+
+                    m_log.EXPECT_NEAR(dfDiffSum, rgBottomDiff[i], 0.001, "The bottom diff does not match the expected diff!");
                 }
-
-                dfDiffSum /= nItemCount;
-
-                m_log.EXPECT_NEAR(dfDiffSum, rgBottomDiff[i], 0.001, "The bottom diff does not match the expected diff!");
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
     }

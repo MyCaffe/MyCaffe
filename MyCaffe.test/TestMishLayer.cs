@@ -162,21 +162,28 @@ namespace MyCaffe.test
             p.mish_param.engine = m_engine;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
-            m_log.CHECK(layer.type == LayerParameter.LayerType.MISH, "The layer type is incorrect!");
-
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Now, check values
-            double[] rgBottomData = convert(Bottom.update_cpu_data());
-            double[] rgTopData = convert(Top.update_cpu_data());
-            double dfMinPrecision = 1e-5;
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                double dfExpectedValue = mish_native(rgBottomData[i]);
-                double dfPrecision = Math.Max(Math.Abs(dfExpectedValue * 1e-4), dfMinPrecision);
-                m_log.EXPECT_NEAR(dfExpectedValue, rgTopData[i], dfPrecision);
+                m_log.CHECK(layer.type == LayerParameter.LayerType.MISH, "The layer type is incorrect!");
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // Now, check values
+                double[] rgBottomData = convert(Bottom.update_cpu_data());
+                double[] rgTopData = convert(Top.update_cpu_data());
+                double dfMinPrecision = 1e-5;
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfExpectedValue = mish_native(rgBottomData[i]);
+                    double dfPrecision = Math.Max(Math.Abs(dfExpectedValue * 1e-4), dfMinPrecision);
+                    m_log.EXPECT_NEAR(dfExpectedValue, rgTopData[i], dfPrecision);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -193,10 +200,17 @@ namespace MyCaffe.test
             p.mish_param.method = nMethod;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
-            m_log.CHECK(layer.type == LayerParameter.LayerType.MISH, "The layer type is incorrect!");
-                
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            try
+            {
+                m_log.CHECK(layer.type == LayerParameter.LayerType.MISH, "The layer type is incorrect!");
+
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForward()

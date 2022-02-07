@@ -153,14 +153,22 @@ namespace MyCaffe.test
             p.embed_param.num_output = 10;
             p.embed_param.input_dim = 5;
             EmbedLayer<T> layer = new EmbedLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(Top.num_axes, 5, "The top should have num_axes = 5");
-            m_log.CHECK_EQ(Top.shape(0), 4, "The top.shape(0) should = 4");
-            m_log.CHECK_EQ(Top.shape(1), 1, "The top.shape(1) should = 1");
-            m_log.CHECK_EQ(Top.shape(2), 1, "The top.shape(2) should = 1");
-            m_log.CHECK_EQ(Top.shape(3), 1, "The top.shape(3) should = 1");
-            m_log.CHECK_EQ(Top.shape(4), 10, "The top.shape(4) should = 10");
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(Top.num_axes, 5, "The top should have num_axes = 5");
+                m_log.CHECK_EQ(Top.shape(0), 4, "The top.shape(0) should = 4");
+                m_log.CHECK_EQ(Top.shape(1), 1, "The top.shape(1) should = 1");
+                m_log.CHECK_EQ(Top.shape(2), 1, "The top.shape(2) should = 1");
+                m_log.CHECK_EQ(Top.shape(3), 1, "The top.shape(3) should = 1");
+                m_log.CHECK_EQ(Top.shape(4), 10, "The top.shape(4) should = 10");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForward()
@@ -176,42 +184,50 @@ namespace MyCaffe.test
             p.embed_param.weight_filler.max = 10;
             p.embed_param.bias_term = false;
             EmbedLayer<T> layer = new EmbedLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(1, layer.blobs.Count, layer.type.ToString() + " should have blobs.Count = 1");
-
-            List<int> rgWeightShape = new List<int>() { kInputDim, kNumOutput };
-            m_log.CHECK(Utility.Compare<int>(rgWeightShape, layer.blobs[0].shape()), "The weight shape is not correct!");
-
-            double[] rgBottomData = convert(Bottom.mutable_cpu_data);
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                rgBottomData[i] = rand.Next() % kInputDim;
-            }
-            Bottom.mutable_cpu_data = convert(rgBottomData);
+                layer.Setup(BottomVec, TopVec);
 
-            layer.Forward(BottomVec, TopVec);
+                m_log.CHECK_EQ(1, layer.blobs.Count, layer.type.ToString() + " should have blobs.Count = 1");
 
-            List<int> rgWeightOffset = Utility.Create<int>(2, 0);
-            List<int> rgTopOffset = Utility.Create<int>(5, 0);
+                List<int> rgWeightShape = new List<int>() { kInputDim, kNumOutput };
+                m_log.CHECK(Utility.Compare<int>(rgWeightShape, layer.blobs[0].shape()), "The weight shape is not correct!");
 
-            for (int i = 0; i < Bottom.count(); i++)
-            {
-                rgWeightOffset[0] = (int)convert(Bottom.GetData(i));
-                rgWeightOffset[1] = 0;
-                rgTopOffset[0] = i;
-                rgTopOffset[4] = 0;
-
-                for (int j = 0; j < kNumOutput; j++)
+                double[] rgBottomData = convert(Bottom.mutable_cpu_data);
+                for (int i = 0; i < Bottom.count(); i++)
                 {
-                    double dfWt = convert(layer.blobs[0].data_at(rgWeightOffset));
-                    double dfTop = convert(Top.data_at(rgTopOffset));
-
-                    m_log.CHECK_EQ(dfWt, dfTop, "The top and weight values are not as expected!");
-
-                    rgTopOffset[4]++;
-                    rgWeightOffset[1]++;
+                    rgBottomData[i] = rand.Next() % kInputDim;
                 }
+                Bottom.mutable_cpu_data = convert(rgBottomData);
+
+                layer.Forward(BottomVec, TopVec);
+
+                List<int> rgWeightOffset = Utility.Create<int>(2, 0);
+                List<int> rgTopOffset = Utility.Create<int>(5, 0);
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    rgWeightOffset[0] = (int)convert(Bottom.GetData(i));
+                    rgWeightOffset[1] = 0;
+                    rgTopOffset[0] = i;
+                    rgTopOffset[4] = 0;
+
+                    for (int j = 0; j < kNumOutput; j++)
+                    {
+                        double dfWt = convert(layer.blobs[0].data_at(rgWeightOffset));
+                        double dfTop = convert(Top.data_at(rgTopOffset));
+
+                        m_log.CHECK_EQ(dfWt, dfTop, "The top and weight values are not as expected!");
+
+                        rgTopOffset[4]++;
+                        rgWeightOffset[1]++;
+                    }
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -229,51 +245,59 @@ namespace MyCaffe.test
             p.embed_param.bias_term = true;
             p.embed_param.bias_filler = p.embed_param.weight_filler.Clone();
             EmbedLayer<T> layer = new EmbedLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(2, layer.blobs.Count, layer.type.ToString() + " should have blobs.Count = 2");
-
-            List<int> rgWeightShape = new List<int>() { kInputDim, kNumOutput };
-            m_log.CHECK(Utility.Compare<int>(rgWeightShape, layer.blobs[0].shape()), "The weight shape is not correct!");
-
-            double[] rgBottomData = convert(Bottom.mutable_cpu_data);
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                rgBottomData[i] = rand.Next() % kInputDim;
-            }
-            Bottom.mutable_cpu_data = convert(rgBottomData);
+                layer.Setup(BottomVec, TopVec);
 
-            layer.Forward(BottomVec, TopVec);
+                m_log.CHECK_EQ(2, layer.blobs.Count, layer.type.ToString() + " should have blobs.Count = 2");
 
-            List<int> rgBiasOffset = Utility.Create<int>(1, 0);
-            List<int> rgWeightOffset = Utility.Create<int>(2, 0);
-            List<int> rgTopOffset = Utility.Create<int>(5, 0);
+                List<int> rgWeightShape = new List<int>() { kInputDim, kNumOutput };
+                m_log.CHECK(Utility.Compare<int>(rgWeightShape, layer.blobs[0].shape()), "The weight shape is not correct!");
 
-            for (int i = 0; i < Bottom.count(); i++)
-            {
-                rgWeightOffset[0] = (int)convert(Bottom.GetData(i));
-                rgWeightOffset[1] = 0;
-
-                rgTopOffset[0] = i;
-                rgTopOffset[4] = 0;
-
-                rgBiasOffset[0] = 0;
-
-                for (int j = 0; j < kNumOutput; j++)
+                double[] rgBottomData = convert(Bottom.mutable_cpu_data);
+                for (int i = 0; i < Bottom.count(); i++)
                 {
-                    double dfWt = convert(layer.blobs[0].data_at(rgWeightOffset));
-                    double dfBias = convert(layer.blobs[1].data_at(rgBiasOffset));
-
-                    dfWt += dfBias;
-
-                    double dfTop = convert(Top.data_at(rgTopOffset));
-
-                    m_log.EXPECT_EQUAL<float>(dfWt, dfTop, "The top and weight values are not as expected!");
-
-                    rgTopOffset[4]++;
-                    rgWeightOffset[1]++;
-                    rgBiasOffset[0]++;
+                    rgBottomData[i] = rand.Next() % kInputDim;
                 }
+                Bottom.mutable_cpu_data = convert(rgBottomData);
+
+                layer.Forward(BottomVec, TopVec);
+
+                List<int> rgBiasOffset = Utility.Create<int>(1, 0);
+                List<int> rgWeightOffset = Utility.Create<int>(2, 0);
+                List<int> rgTopOffset = Utility.Create<int>(5, 0);
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    rgWeightOffset[0] = (int)convert(Bottom.GetData(i));
+                    rgWeightOffset[1] = 0;
+
+                    rgTopOffset[0] = i;
+                    rgTopOffset[4] = 0;
+
+                    rgBiasOffset[0] = 0;
+
+                    for (int j = 0; j < kNumOutput; j++)
+                    {
+                        double dfWt = convert(layer.blobs[0].data_at(rgWeightOffset));
+                        double dfBias = convert(layer.blobs[1].data_at(rgBiasOffset));
+
+                        dfWt += dfBias;
+
+                        double dfTop = convert(Top.data_at(rgTopOffset));
+
+                        m_log.EXPECT_EQUAL<float>(dfWt, dfTop, "The top and weight values are not as expected!");
+
+                        rgTopOffset[4]++;
+                        rgWeightOffset[1]++;
+                        rgBiasOffset[0]++;
+                    }
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -289,16 +313,24 @@ namespace MyCaffe.test
             p.embed_param.weight_filler.min = -10;
             p.embed_param.weight_filler.max = 10;
             EmbedLayer<T> layer = new EmbedLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
 
-            double[] rgBottomData = convert(Bottom.mutable_cpu_data);
-            rgBottomData[0] = 4;
-            rgBottomData[1] = 2;
-            rgBottomData[2] = 2;
-            rgBottomData[3] = 3;
-            Bottom.mutable_cpu_data = convert(rgBottomData);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
 
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, -2);
+                double[] rgBottomData = convert(Bottom.mutable_cpu_data);
+                rgBottomData[0] = 4;
+                rgBottomData[1] = 2;
+                rgBottomData[2] = 2;
+                rgBottomData[3] = 3;
+                Bottom.mutable_cpu_data = convert(rgBottomData);
+
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, -2);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientWithBias()
@@ -314,16 +346,24 @@ namespace MyCaffe.test
             p.embed_param.weight_filler.max = 10;
             p.embed_param.bias_filler = p.embed_param.weight_filler.Clone();
             EmbedLayer<T> layer = new EmbedLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
 
-            double[] rgBottomData = convert(Bottom.mutable_cpu_data);
-            rgBottomData[0] = 4;
-            rgBottomData[1] = 2;
-            rgBottomData[2] = 2;
-            rgBottomData[3] = 3;
-            Bottom.mutable_cpu_data = convert(rgBottomData);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
 
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, -2);
+                double[] rgBottomData = convert(Bottom.mutable_cpu_data);
+                rgBottomData[0] = 4;
+                rgBottomData[1] = 2;
+                rgBottomData[2] = 2;
+                rgBottomData[3] = 3;
+                Bottom.mutable_cpu_data = convert(rgBottomData);
+
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, -2);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

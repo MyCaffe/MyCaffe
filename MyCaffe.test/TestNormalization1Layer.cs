@@ -98,45 +98,52 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.NORMALIZATION1);
             Normalization1Layer<T> layer = new Normalization1Layer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            for (int i1 = 0; i1 < Bottom.num; i1++)
+            try
             {
-                double dfNormSqrBottom = 0;
-                double dfNormSqrTop = 0;
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                for (int i2 = 0; i2 < Top.channels; i2++)
+                for (int i1 = 0; i1 < Bottom.num; i1++)
                 {
-                    for (int i3 = 0; i3 < Top.height; i3++)
-                    {
-                        for (int i4 = 0; i4 < Top.width; i4++)
-                        {
-                            double dfTop = convert(Top.data_at(i1, i2, i3, i4));
-                            double dfBtm = convert(Bottom.data_at(i1, i2, i3, i4));
+                    double dfNormSqrBottom = 0;
+                    double dfNormSqrTop = 0;
 
-                            dfNormSqrTop += Math.Pow(dfTop, 2.0);
-                            dfNormSqrBottom += Math.Pow(dfBtm, 2.0);
+                    for (int i2 = 0; i2 < Top.channels; i2++)
+                    {
+                        for (int i3 = 0; i3 < Top.height; i3++)
+                        {
+                            for (int i4 = 0; i4 < Top.width; i4++)
+                            {
+                                double dfTop = convert(Top.data_at(i1, i2, i3, i4));
+                                double dfBtm = convert(Bottom.data_at(i1, i2, i3, i4));
+
+                                dfNormSqrTop += Math.Pow(dfTop, 2.0);
+                                dfNormSqrBottom += Math.Pow(dfBtm, 2.0);
+                            }
+                        }
+                    }
+
+                    m_log.EXPECT_NEAR(dfNormSqrTop, 1, dfPrecision);
+                    double dfC = Math.Pow(dfNormSqrBottom, -0.5);
+
+                    for (int i2 = 0; i2 < Top.channels; i2++)
+                    {
+                        for (int i3 = 0; i3 < Top.height; i3++)
+                        {
+                            for (int i4 = 0; i4 < Top.width; i4++)
+                            {
+                                double dfTop = convert(Top.data_at(i1, i2, i3, i4));
+                                double dfBtm = convert(Bottom.data_at(i1, i2, i3, i4)) * dfC;
+
+                                m_log.EXPECT_NEAR(dfTop, dfBtm, dfPrecision);
+                            }
                         }
                     }
                 }
-
-                m_log.EXPECT_NEAR(dfNormSqrTop, 1, dfPrecision);
-                double dfC = Math.Pow(dfNormSqrBottom, -0.5);
-
-                for (int i2 = 0; i2 < Top.channels; i2++)
-                {
-                    for (int i3 = 0; i3 < Top.height; i3++)
-                    {
-                        for (int i4 = 0; i4 < Top.width; i4++)
-                        {
-                            double dfTop = convert(Top.data_at(i1, i2, i3, i4));
-                            double dfBtm = convert(Bottom.data_at(i1, i2, i3, i4)) * dfC;
-
-                            m_log.EXPECT_NEAR(dfTop, dfBtm, dfPrecision);
-                        }
-                    }
-                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -144,8 +151,16 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.NORMALIZATION1);
             Normalization1Layer<T> layer = new Normalization1Layer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

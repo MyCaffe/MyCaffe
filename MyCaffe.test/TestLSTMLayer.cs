@@ -710,17 +710,22 @@ namespace MyCaffe.test
             m_param.recurrent_param.engine = m_engine;
             LSTMLayer<T> layer = new LSTMLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
 
-            List<int> rgExpectedTopShape = Utility.Clone<int>(m_blob_bottom.shape(), 3);
-            rgExpectedTopShape[2] = m_nNumOutput;
+                List<int> rgExpectedTopShape = Utility.Clone<int>(m_blob_bottom.shape(), 3);
+                rgExpectedTopShape[2] = m_nNumOutput;
 
-            if (m_blob_top.num_axes == 4 && m_blob_top.shape(3) == 1 && rgExpectedTopShape.Count == 3)
-                rgExpectedTopShape.Add(1);
+                if (m_blob_top.num_axes == 4 && m_blob_top.shape(3) == 1 && rgExpectedTopShape.Count == 3)
+                    rgExpectedTopShape.Add(1);
 
-            m_log.CHECK(Utility.Compare<int>(m_blob_top.shape(), rgExpectedTopShape), "The top shape is not as expected.");
-
-            layer.Dispose();
+                m_log.CHECK(Utility.Compare<int>(m_blob_top.shape(), rgExpectedTopShape), "The top shape is not as expected.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForward(Phase phase)
@@ -760,95 +765,114 @@ namespace MyCaffe.test
                 m_param.phase = phase;
 
             LSTMLayer<T> layer = new LSTMLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
-            m_cuda.rng_setseed(1701);
-            layer.Setup(BottomVec, TopVec);
+            Blob<T> bottom_copy = null;
+            Blob<T> top_copy = null;
 
-            m_log.WriteLine("Calling forward for full sequence LSTM");
-            layer.Forward(BottomVec, TopVec);
-
-            // Copy the inputs and outputs to reuse/check them later.
-            Blob<T> bottom_copy = new Blob<T>(m_cuda, m_log, m_blob_bottom.shape());
-            bottom_copy.CopyFrom(m_blob_bottom);
-            Blob<T> top_copy = new Blob<T>(m_cuda, m_log, m_blob_top.shape());
-            top_copy.CopyFrom(m_blob_top);
-
-            // Process the batch one step at a time;
-            //  check that we get the same result.
-            ReshapeBlobs(1, nNum);
-
-            layer = new LSTMLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
-            m_cuda.rng_setseed(1701);
-            layer.Setup(BottomVec, TopVec);
-
-            int nBottomCount = m_blob_bottom.count();
-            int nTopCount = m_blob_top.count();
-            double kEpsilon = 1e-5;
-
-            for (int t = 0; t < kNumTimesteps; t++)
+            try
             {
-                m_cuda.copy(nBottomCount, bottom_copy.gpu_data, m_blob_bottom.mutable_gpu_data, t * nBottomCount);
+                m_cuda.rng_setseed(1701);
+                layer.Setup(BottomVec, TopVec);
 
-                double[] rgCont = convert(m_blob_bottom_cont.mutable_cpu_data);
-
-                for (int n = 0; n < nNum; n++)
-                {
-                    rgCont[n] = (t > 0) ? 1 : 0;
-                }
-
-                m_blob_bottom_cont.mutable_cpu_data = convert(rgCont);
-
-                m_log.WriteLine("Calling forward for LSTM timestep " + t.ToString());
+                m_log.WriteLine("Calling forward for full sequence LSTM");
                 layer.Forward(BottomVec, TopVec);
 
-                double[] rgTop = convert(m_blob_top.update_cpu_data());
-                double[] rgTopCopy = convert(top_copy.update_cpu_data());
+                // Copy the inputs and outputs to reuse/check them later.
+                bottom_copy = new Blob<T>(m_cuda, m_log, m_blob_bottom.shape());
+                bottom_copy.CopyFrom(m_blob_bottom);
+                top_copy = new Blob<T>(m_cuda, m_log, m_blob_top.shape());
+                top_copy.CopyFrom(m_blob_top);
 
-                for (int i = 0; i < nTopCount; i++)
+                // Process the batch one step at a time;
+                //  check that we get the same result.
+                ReshapeBlobs(1, nNum);
+
+                layer.Dispose();
+                layer = new LSTMLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
+                m_cuda.rng_setseed(1701);
+                layer.Setup(BottomVec, TopVec);
+
+                int nBottomCount = m_blob_bottom.count();
+                int nTopCount = m_blob_top.count();
+                double kEpsilon = 1e-5;
+
+                for (int t = 0; t < kNumTimesteps; t++)
                 {
-                    m_log.CHECK_LT(t * nTopCount + i, top_copy.count(), "The top count is incorrect.");
+                    m_cuda.copy(nBottomCount, bottom_copy.gpu_data, m_blob_bottom.mutable_gpu_data, t * nBottomCount);
 
-                    double dfTop1 = rgTop[i];
-                    double dfTop0 = rgTopCopy[t * nTopCount + i];
+                    double[] rgCont = convert(m_blob_bottom_cont.mutable_cpu_data);
 
-                    m_log.EXPECT_NEAR(dfTop1, dfTop0, kEpsilon, "t = " + t.ToString() + "; i = " + i.ToString());
+                    for (int n = 0; n < nNum; n++)
+                    {
+                        rgCont[n] = (t > 0) ? 1 : 0;
+                    }
+
+                    m_blob_bottom_cont.mutable_cpu_data = convert(rgCont);
+
+                    m_log.WriteLine("Calling forward for LSTM timestep " + t.ToString());
+                    layer.Forward(BottomVec, TopVec);
+
+                    double[] rgTop = convert(m_blob_top.update_cpu_data());
+                    double[] rgTopCopy = convert(top_copy.update_cpu_data());
+
+                    for (int i = 0; i < nTopCount; i++)
+                    {
+                        m_log.CHECK_LT(t * nTopCount + i, top_copy.count(), "The top count is incorrect.");
+
+                        double dfTop1 = rgTop[i];
+                        double dfTop0 = rgTopCopy[t * nTopCount + i];
+
+                        m_log.EXPECT_NEAR(dfTop1, dfTop0, kEpsilon, "t = " + t.ToString() + "; i = " + i.ToString());
+                    }
+                }
+
+                // Process the batch one timestep at a time with all cont blobs set to 0.
+                //  Check that we get a different result, except in the first timestep.
+                m_cuda.rng_setseed(1701);
+
+                layer.Dispose();
+                layer = new LSTMLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
+                layer.Setup(BottomVec, TopVec);
+
+                for (int t = 0; t < kNumTimesteps; t++)
+                {
+                    m_cuda.copy(nBottomCount, bottom_copy.gpu_data, m_blob_bottom.mutable_gpu_data, t * nBottomCount);
+
+                    double[] rgCont = convert(m_blob_bottom_cont.mutable_cpu_data);
+
+                    for (int n = 0; n < nNum; n++)
+                    {
+                        rgCont[n] = 0;
+                    }
+
+                    m_blob_bottom_cont.mutable_cpu_data = convert(rgCont);
+
+                    m_log.WriteLine("Calling forward for LSTM timestep " + t.ToString());
+                    layer.Forward(BottomVec, TopVec);
+
+                    double[] rgTop = convert(m_blob_top.update_cpu_data());
+                    double[] rgTopCopy = convert(top_copy.update_cpu_data());
+
+                    for (int i = 0; i < nTopCount; i++)
+                    {
+                        double dfTop1 = rgTop[i];
+                        double dfTop0 = rgTopCopy[t * nTopCount + i];
+
+                        if (t == 0)
+                            m_log.EXPECT_NEAR(dfTop1, dfTop0, kEpsilon, "t = " + t.ToString() + "; i = " + i.ToString());
+                        else
+                            m_log.CHECK_NE(dfTop1, dfTop0, "t = " + t.ToString() + "; i = " + i.ToString());
+                    }
                 }
             }
-
-            // Process the batch one timestep at a time with all cont blobs set to 0.
-            //  Check that we get a different result, except in the first timestep.
-            m_cuda.rng_setseed(1701);
-            layer = new LSTMLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
-            layer.Setup(BottomVec, TopVec);
-
-            for (int t = 0; t < kNumTimesteps; t++)
+            finally
             {
-                m_cuda.copy(nBottomCount, bottom_copy.gpu_data, m_blob_bottom.mutable_gpu_data, t * nBottomCount);
+                layer.Dispose();
 
-                double[] rgCont = convert(m_blob_bottom_cont.mutable_cpu_data);
+                if (bottom_copy != null)
+                    bottom_copy.Dispose();
 
-                for (int n = 0; n < nNum; n++)
-                {
-                    rgCont[n] = 0;
-                }
-
-                m_blob_bottom_cont.mutable_cpu_data = convert(rgCont);
-
-                m_log.WriteLine("Calling forward for LSTM timestep " + t.ToString());
-                layer.Forward(BottomVec, TopVec);
-
-                double[] rgTop = convert(m_blob_top.update_cpu_data());
-                double[] rgTopCopy = convert(top_copy.update_cpu_data());
-
-                for (int i = 0; i < nTopCount; i++)
-                {
-                    double dfTop1 = rgTop[i];
-                    double dfTop0 = rgTopCopy[t * nTopCount + i];
-
-                    if (t == 0)
-                        m_log.EXPECT_NEAR(dfTop1, dfTop0, kEpsilon, "t = " + t.ToString() + "; i = " + i.ToString());
-                    else
-                        m_log.CHECK_NE(dfTop1, dfTop0, "t = " + t.ToString() + "; i = " + i.ToString());
-                }
+                if (top_copy != null)
+                    top_copy.Dispose();
             }
         }
 
@@ -856,16 +880,24 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.LSTM_UNIT);
             LSTMUnitLayer<T> layer = new LSTMUnitLayer<T>(m_cuda, m_log, p);
-            layer.Setup(m_colUnitBottomVec, m_colUnitTopVec);
-            int nNumAxes = m_blobUnit_bottom_c_prev.num_axes;
 
-            m_log.CHECK_EQ(nNumAxes, m_blobUnit_top_c.num_axes, "The blobUnit_bottom_c_prev must have the same axes as blobUnit_top_c.");
-            m_log.CHECK_EQ(nNumAxes, m_blobUnit_top_h.num_axes, "The blobUnit_bottom_c_prev must have the same axes as blobUnit_top_h.");
-
-            for (int i = 0; i < nNumAxes; i++)
+            try
             {
-                m_log.CHECK_EQ(m_blobUnit_bottom_c_prev.shape(i), m_blobUnit_top_c.shape(i), "The blobUnit_bottom_c.shape(" + i.ToString() + ") must have the same shape as blobUnit_top_c.shape(" + i.ToString() + ")");
-                m_log.CHECK_EQ(m_blobUnit_bottom_c_prev.shape(i), m_blobUnit_top_h.shape(i), "The blobUnit_bottom_c.shape(" + i.ToString() + ") must have the same shape as blobUnit_top_h.shape(" + i.ToString() + ")");
+                layer.Setup(m_colUnitBottomVec, m_colUnitTopVec);
+                int nNumAxes = m_blobUnit_bottom_c_prev.num_axes;
+
+                m_log.CHECK_EQ(nNumAxes, m_blobUnit_top_c.num_axes, "The blobUnit_bottom_c_prev must have the same axes as blobUnit_top_c.");
+                m_log.CHECK_EQ(nNumAxes, m_blobUnit_top_h.num_axes, "The blobUnit_bottom_c_prev must have the same axes as blobUnit_top_h.");
+
+                for (int i = 0; i < nNumAxes; i++)
+                {
+                    m_log.CHECK_EQ(m_blobUnit_bottom_c_prev.shape(i), m_blobUnit_top_c.shape(i), "The blobUnit_bottom_c.shape(" + i.ToString() + ") must have the same shape as blobUnit_top_c.shape(" + i.ToString() + ")");
+                    m_log.CHECK_EQ(m_blobUnit_bottom_c_prev.shape(i), m_blobUnit_top_h.shape(i), "The blobUnit_bottom_c.shape(" + i.ToString() + ") must have the same shape as blobUnit_top_h.shape(" + i.ToString() + ")");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -873,32 +905,48 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.LSTM_UNIT);
             LSTMUnitLayer<T> layer = new LSTMUnitLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new test.GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
 
-            double[] rgContData = convert(m_blobUnit_bottom_cont.mutable_cpu_data);
-            rgContData[0] = 0;
-            rgContData[1] = 0;
-            rgContData[2] = 0;
-            m_blobUnit_bottom_cont.mutable_cpu_data = convert(rgContData);
+            try
+            {
+                GradientChecker<T> checker = new test.GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
 
-            checker.CheckGradientExhaustive(layer, m_colUnitBottomVec, m_colUnitTopVec, 0);
-            checker.CheckGradientExhaustive(layer, m_colUnitBottomVec, m_colUnitTopVec, 1);
+                double[] rgContData = convert(m_blobUnit_bottom_cont.mutable_cpu_data);
+                rgContData[0] = 0;
+                rgContData[1] = 0;
+                rgContData[2] = 0;
+                m_blobUnit_bottom_cont.mutable_cpu_data = convert(rgContData);
+
+                checker.CheckGradientExhaustive(layer, m_colUnitBottomVec, m_colUnitTopVec, 0);
+                checker.CheckGradientExhaustive(layer, m_colUnitBottomVec, m_colUnitTopVec, 1);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestLSTMUnitGradientNonZeroCont()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.LSTM_UNIT);
             LSTMUnitLayer<T> layer = new LSTMUnitLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new test.GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
 
-            double[] rgContData = convert(m_blobUnit_bottom_cont.mutable_cpu_data);
-            rgContData[0] = 1;
-            rgContData[1] = 0;
-            rgContData[2] = 1;
-            m_blobUnit_bottom_cont.mutable_cpu_data = convert(rgContData);
+            try
+            {
+                GradientChecker<T> checker = new test.GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
 
-            checker.CheckGradientExhaustive(layer, m_colUnitBottomVec, m_colUnitTopVec, 0);
-            checker.CheckGradientExhaustive(layer, m_colUnitBottomVec, m_colUnitTopVec, 1);
+                double[] rgContData = convert(m_blobUnit_bottom_cont.mutable_cpu_data);
+                rgContData[0] = 1;
+                rgContData[1] = 0;
+                rgContData[2] = 1;
+                m_blobUnit_bottom_cont.mutable_cpu_data = convert(rgContData);
+
+                checker.CheckGradientExhaustive(layer, m_colUnitBottomVec, m_colUnitTopVec, 0);
+                checker.CheckGradientExhaustive(layer, m_colUnitBottomVec, m_colUnitTopVec, 1);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradient()
@@ -906,23 +954,39 @@ namespace MyCaffe.test
             m_param.recurrent_param.engine = m_engine;
             m_param.phase = Phase.TRAIN;
             LSTMLayer<T> layer = new LSTMLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientNonZeroCont()
         {
             LSTMLayer<T> layer = new LSTMLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
 
-            double[] rgCont = convert(m_blob_bottom_cont.mutable_cpu_data);
-            for (int i = 0; i < m_blob_bottom_cont.count(); i++)
+            try
             {
-                rgCont[i] = (i > 2) ? 1 : 0;
-            }
-            m_blob_bottom_cont.mutable_cpu_data = convert(rgCont);
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
 
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+                double[] rgCont = convert(m_blob_bottom_cont.mutable_cpu_data);
+                for (int i = 0; i < m_blob_bottom_cont.count(); i++)
+                {
+                    rgCont[i] = (i > 2) ? 1 : 0;
+                }
+                m_blob_bottom_cont.mutable_cpu_data = convert(rgCont);
+
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientNonZeroContBufferSize2()
@@ -935,18 +999,26 @@ namespace MyCaffe.test
             filler.Fill(m_blob_bottom);
 
             LSTMLayer<T> layer = new LSTMLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
 
-            double[] rgCont = convert(m_blob_bottom_cont.mutable_cpu_data);
-
-            for (int i = 0; i < m_blob_bottom_cont.count(); i++)
+            try
             {
-                rgCont[i] = (i > 2) ? 1 : 0;
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
+
+                double[] rgCont = convert(m_blob_bottom_cont.mutable_cpu_data);
+
+                for (int i = 0; i < m_blob_bottom_cont.count(); i++)
+                {
+                    rgCont[i] = (i > 2) ? 1 : 0;
+                }
+
+                m_blob_bottom_cont.mutable_cpu_data = convert(rgCont);
+
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
             }
-
-            m_blob_bottom_cont.mutable_cpu_data = convert(rgCont);
-
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientNonZeroContBufferSize2WithStaticInput()
@@ -962,19 +1034,27 @@ namespace MyCaffe.test
             BottomVec.Add(m_blob_bottom_static);
 
             LSTMLayer<T> layer = new LSTMLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
 
-            double[] rgCont = convert(m_blob_bottom_cont.mutable_cpu_data);
-
-            for (int i = 0; i < m_blob_bottom_cont.count(); i++)
+            try
             {
-                rgCont[i] = (i > 2) ? 1 : 0;
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
+
+                double[] rgCont = convert(m_blob_bottom_cont.mutable_cpu_data);
+
+                for (int i = 0; i < m_blob_bottom_cont.count(); i++)
+                {
+                    rgCont[i] = (i > 2) ? 1 : 0;
+                }
+
+                m_blob_bottom_cont.mutable_cpu_data = convert(rgCont);
+
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 2);
             }
-
-            m_blob_bottom_cont.mutable_cpu_data = convert(rgCont);
-
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 2);
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestCuDnn(bool bUseTensorCores)

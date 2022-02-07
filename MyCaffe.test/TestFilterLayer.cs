@@ -184,19 +184,26 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.FILTER);
             FilterLayer<T> layer = new FilterLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Reshape(BottomVec, TopVec);
-
-            // In the test first and last items should have been filtered
-            // so we just expect 2 remaining items.
-            m_log.CHECK_EQ(Top.shape(0), 2, "The top data should have shape(0) = 2.");
-            m_log.CHECK_EQ(TopLabels.shape(0), 2, "The top labels should have shape(0) = 2");
-            m_log.CHECK_GT(Bottom.shape(0), Top.shape(0), "The bottom.shape(0) should be greater than the top.shape(0).");
-            m_log.CHECK_GT(BottomLabels.shape(0), TopLabels.shape(0), "The bottom_labels.shape(0) should be greater than the top_labels.shape(0).");
-
-            for (int i = 1; i < BottomLabels.num_axes; i++)
+            try
             {
-                m_log.CHECK_EQ(BottomLabels.shape(i), TopLabels.shape(i), "The bottomLabels.shape(" + i.ToString() + ") should be equal to the topLabels.shape(" + i.ToString() + ").");
+                layer.Setup(BottomVec, TopVec);
+                layer.Reshape(BottomVec, TopVec);
+
+                // In the test first and last items should have been filtered
+                // so we just expect 2 remaining items.
+                m_log.CHECK_EQ(Top.shape(0), 2, "The top data should have shape(0) = 2.");
+                m_log.CHECK_EQ(TopLabels.shape(0), 2, "The top labels should have shape(0) = 2");
+                m_log.CHECK_GT(Bottom.shape(0), Top.shape(0), "The bottom.shape(0) should be greater than the top.shape(0).");
+                m_log.CHECK_GT(BottomLabels.shape(0), TopLabels.shape(0), "The bottom_labels.shape(0) should be greater than the top_labels.shape(0).");
+
+                for (int i = 1; i < BottomLabels.num_axes; i++)
+                {
+                    m_log.CHECK_EQ(BottomLabels.shape(i), TopLabels.shape(i), "The bottomLabels.shape(" + i.ToString() + ") should be equal to the topLabels.shape(" + i.ToString() + ").");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -205,41 +212,48 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.FILTER);
             FilterLayer<T> layer = new FilterLayer<T>(m_cuda, m_log, p);
-            
-            layer.Setup(BottomVec, TopVec);
-            layer.Reshape(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            double fTop = convert(TopLabels.data_at(0, 0, 0, 0));
-            double fBtm = convert(BottomLabels.data_at(1, 0, 0, 0));
-
-            m_log.CHECK_EQ(fTop, fBtm, "The top data_at(0, 0, 0, 0) should equal bottom data_at(1, 0, 0, 0).");
-
-            fTop = convert(TopLabels.data_at(1, 0, 0, 0));
-            fBtm = convert(BottomLabels.data_at(2, 0, 0, 0));
-
-            m_log.CHECK_EQ(fTop, fBtm, "The top data_at(1, 0, 0, 0) should equal bottom data_at(2, 0, 0, 0).");
-
-            int nDim = Top.count() / Top.shape(0);
-            int nTopOffset = 0;
-            int nBtmOffset = 0;
-            double[] rgTopData = convert(Top.update_cpu_data());
-            double[] rgBtmData = convert(Bottom.update_cpu_data());
-
-            // selector is 0 1 1 0, so we need to compare bottom(1, c, h, w)
-            // with top(0, c, h, w), and bottom(2, c, h, w) with top(1, c, h, w)
-
-            nBtmOffset += nDim; // bottom(1, c, h, w)
-            for (int n = 0; n < nDim; n++)
+            try
             {
-                m_log.CHECK_EQ(rgTopData[n + nTopOffset], rgBtmData[n + nBtmOffset], "The top and bottom values should be the same.");
+                layer.Setup(BottomVec, TopVec);
+                layer.Reshape(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                double fTop = convert(TopLabels.data_at(0, 0, 0, 0));
+                double fBtm = convert(BottomLabels.data_at(1, 0, 0, 0));
+
+                m_log.CHECK_EQ(fTop, fBtm, "The top data_at(0, 0, 0, 0) should equal bottom data_at(1, 0, 0, 0).");
+
+                fTop = convert(TopLabels.data_at(1, 0, 0, 0));
+                fBtm = convert(BottomLabels.data_at(2, 0, 0, 0));
+
+                m_log.CHECK_EQ(fTop, fBtm, "The top data_at(1, 0, 0, 0) should equal bottom data_at(2, 0, 0, 0).");
+
+                int nDim = Top.count() / Top.shape(0);
+                int nTopOffset = 0;
+                int nBtmOffset = 0;
+                double[] rgTopData = convert(Top.update_cpu_data());
+                double[] rgBtmData = convert(Bottom.update_cpu_data());
+
+                // selector is 0 1 1 0, so we need to compare bottom(1, c, h, w)
+                // with top(0, c, h, w), and bottom(2, c, h, w) with top(1, c, h, w)
+
+                nBtmOffset += nDim; // bottom(1, c, h, w)
+                for (int n = 0; n < nDim; n++)
+                {
+                    m_log.CHECK_EQ(rgTopData[n + nTopOffset], rgBtmData[n + nBtmOffset], "The top and bottom values should be the same.");
+                }
+
+                nBtmOffset += nDim; // bottom(2, c, h, w)
+                nTopOffset += nDim; // top(1, c, h, w)
+                for (int n = 0; n < nDim; n++)
+                {
+                    m_log.CHECK_EQ(rgTopData[n + nTopOffset], rgBtmData[n + nBtmOffset], "The top and bottom values should be the same.");
+                }
             }
-
-            nBtmOffset += nDim; // bottom(2, c, h, w)
-            nTopOffset += nDim; // top(1, c, h, w)
-            for (int n = 0; n < nDim; n++)
+            finally
             {
-                m_log.CHECK_EQ(rgTopData[n + nTopOffset], rgBtmData[n + nBtmOffset], "The top and bottom values should be the same.");
+                layer.Dispose();
             }
         }
 
@@ -248,10 +262,17 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.FILTER);
             FilterLayer<T> layer = new FilterLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
-            // check only input 0 (data) because labels and selector
-            // don't need backpropagation
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
+                // check only input 0 (data) because labels and selector
+                // don't need backpropagation
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

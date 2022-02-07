@@ -102,8 +102,8 @@ namespace MyCaffe.test
                 string strPath;
                 if (strVersion.Length > 0)
                 {
-                    if (strVersion != "10.2" && strVersion.Contains("10.2"))
-                        strVersion = "10.2";
+                    if (strVersion != "11.6" && strVersion.Contains("11.6"))
+                        strVersion = "11.6";
 
                     strPath = AssemblyDirectory + "\\MyCaffe.test.extension." + strVersion + ".dll";
                 }
@@ -153,30 +153,35 @@ namespace MyCaffe.test
         public void TestRun()
         {
             long hExtension = m_cuda.CreateExtension(DllPath);
-
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
 
-            List<double> rgdf = new List<double>() { 1, 2, 3 };
-            T[] rg1 = m_cuda.RunExtension(hExtension, 1, Utility.ConvertVec<T>(rgdf.ToArray()));
-            double[] rgdf1 = Utility.ConvertVec<T>(rg1);
-
-            m_log.CHECK_EQ(rgdf1.Length, 3, "There should be three items returned.");
-            for (int i = 0; i < rgdf1.Length; i++)
+            try
             {
-                m_log.CHECK_EQ(rgdf[i] * rgdf[i], rgdf1[i], "The item at index #" + i.ToString() + " is incorrect.");
+                List<double> rgdf = new List<double>() { 1, 2, 3 };
+                T[] rg1 = m_cuda.RunExtension(hExtension, 1, Utility.ConvertVec<T>(rgdf.ToArray()));
+                double[] rgdf1 = Utility.ConvertVec<T>(rg1);
+
+                m_log.CHECK_EQ(rgdf1.Length, 3, "There should be three items returned.");
+                for (int i = 0; i < rgdf1.Length; i++)
+                {
+                    m_log.CHECK_EQ(rgdf[i] * rgdf[i], rgdf1[i], "The item at index #" + i.ToString() + " is incorrect.");
+                }
+
+                List<float> rgf = new List<float>() { 1, 2, 3 };
+                T[] rg2 = m_cuda.RunExtension(hExtension, 2, Utility.ConvertVec<T>(rgf.ToArray()));
+                double[] rgdf2 = Utility.ConvertVec<T>(rg2);
+
+                m_log.CHECK_EQ(rgdf1.Length, 3, "There should be three items returned.");
+                for (int i = 0; i < rgdf2.Length; i++)
+                {
+                    m_log.CHECK_EQ(rgf[i] * rgf[i] * rgf[i], rgdf2[i], "The item at index #" + i.ToString() + " is incorrect.");
+                }
             }
-
-            List<float> rgf = new List<float>() { 1, 2, 3 };
-            T[] rg2 = m_cuda.RunExtension(hExtension, 2, Utility.ConvertVec<T>(rgf.ToArray()));
-            double[] rgdf2 = Utility.ConvertVec<T>(rg2);
-
-            m_log.CHECK_EQ(rgdf1.Length, 3, "There should be three items returned.");
-            for (int i = 0; i < rgdf2.Length; i++)
+            finally
             {
-                m_log.CHECK_EQ(rgf[i] * rgf[i] * rgf[i], rgdf2[i], "The item at index #" + i.ToString() + " is incorrect.");
+                if (hExtension != 0)
+                    m_cuda.FreeExtension(hExtension);
             }
-
-            m_cuda.FreeExtension(hExtension);
         }
     }
 }

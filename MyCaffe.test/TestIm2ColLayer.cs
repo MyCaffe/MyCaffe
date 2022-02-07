@@ -208,12 +208,20 @@ namespace MyCaffe.test
             p.convolution_param.dilation.Add(3);
 
             Im2colLayer<T> layer = new Im2colLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(2, Top.num, "The top should have num = 2.");
-            m_log.CHECK_EQ(27, Top.channels, "The top should have channels = 27.");
-            m_log.CHECK_EQ(2, Top.height, "The top should have height = 2.");
-            m_log.CHECK_EQ(3, Top.width, "The top should have width = 3.");
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(2, Top.num, "The top should have num = 2.");
+                m_log.CHECK_EQ(27, Top.channels, "The top should have channels = 27.");
+                m_log.CHECK_EQ(2, Top.height, "The top should have height = 2.");
+                m_log.CHECK_EQ(3, Top.width, "The top should have width = 3.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForward()
@@ -224,21 +232,29 @@ namespace MyCaffe.test
             p.convolution_param.stride.Add(2);
 
             Im2colLayer<T> layer = new Im2colLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            T[] rgBottom = Bottom.update_cpu_data();
-            T[] rgTop = Top.update_cpu_data();
-
-            // We are lazy and will only check the top abnd left block.
-            for (int c = 0; c < 27; c++)
+            try
             {
-                T fBottom = Bottom.data_at(0, (c / 9), (c / 3) % 3, c % 3);
-                double dfBottom = (double)Convert.ChangeType(fBottom, typeof(double));
-                T fTop = Top.data_at(0, c, 0, 0);
-                double dfTop = (double)Convert.ChangeType(fTop, typeof(double));
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.CHECK_EQ(dfBottom, dfTop, "The top and bottom at c = " + c.ToString() + " are not equal.");
+                T[] rgBottom = Bottom.update_cpu_data();
+                T[] rgTop = Top.update_cpu_data();
+
+                // We are lazy and will only check the top abnd left block.
+                for (int c = 0; c < 27; c++)
+                {
+                    T fBottom = Bottom.data_at(0, (c / 9), (c / 3) % 3, c % 3);
+                    double dfBottom = (double)Convert.ChangeType(fBottom, typeof(double));
+                    T fTop = Top.data_at(0, c, 0, 0);
+                    double dfTop = (double)Convert.ChangeType(fTop, typeof(double));
+
+                    m_log.CHECK_EQ(dfBottom, dfTop, "The top and bottom at c = " + c.ToString() + " are not equal.");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -250,8 +266,16 @@ namespace MyCaffe.test
             p.convolution_param.stride.Add(2);
 
             Im2colLayer<T> layer = new Im2colLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestDilatedGradient()
@@ -266,8 +290,16 @@ namespace MyCaffe.test
             p.convolution_param.dilation.Add(3);
 
             Im2colLayer<T> layer = new Im2colLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientForceND()
@@ -278,8 +310,16 @@ namespace MyCaffe.test
             p.convolution_param.force_nd_im2col = true;
 
             Im2colLayer<T> layer = new Im2colLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestDilatedGradientForceND()
@@ -291,8 +331,16 @@ namespace MyCaffe.test
             p.convolution_param.force_nd_im2col = true;
 
             Im2colLayer<T> layer = new Im2colLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestRect()
@@ -303,22 +351,30 @@ namespace MyCaffe.test
             p.convolution_param.stride.Add(2);
 
             Im2colLayer<T> layer = new Im2colLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-
-            T[] rgBottom = Bottom.update_cpu_data();
-            T[] rgTop = Top.update_cpu_data();
-
-            // We are lazy and will only check the top abnd left block.
-            for (int c = 0; c < 45; c++)
+            try
             {
-                T fBottom = Bottom.data_at(0, (c / 15), (c / 3) % 5, c % 3);
-                double dfBottom = (double)Convert.ChangeType(fBottom, typeof(double));
-                T fTop = Top.data_at(0, c, 0, 0);
-                double dfTop = (double)Convert.ChangeType(fTop, typeof(double));
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.CHECK_EQ(dfBottom, dfTop, "The top and bottom at c = " + c.ToString() + " are not equal.");
+
+                T[] rgBottom = Bottom.update_cpu_data();
+                T[] rgTop = Top.update_cpu_data();
+
+                // We are lazy and will only check the top abnd left block.
+                for (int c = 0; c < 45; c++)
+                {
+                    T fBottom = Bottom.data_at(0, (c / 15), (c / 3) % 5, c % 3);
+                    double dfBottom = (double)Convert.ChangeType(fBottom, typeof(double));
+                    T fTop = Top.data_at(0, c, 0, 0);
+                    double dfTop = (double)Convert.ChangeType(fTop, typeof(double));
+
+                    m_log.CHECK_EQ(dfBottom, dfTop, "The top and bottom at c = " + c.ToString() + " are not equal.");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -330,8 +386,16 @@ namespace MyCaffe.test
             p.convolution_param.stride.Add(2);
 
             Im2colLayer<T> layer = new Im2colLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

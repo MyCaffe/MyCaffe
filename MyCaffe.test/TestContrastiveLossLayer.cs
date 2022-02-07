@@ -295,45 +295,52 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONTRASTIVE_LOSS);
             ContrastiveLossLayer<T> layer = new ContrastiveLossLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // manually compute to compare.
-            double dfMargin = p.contrastive_loss_param.margin;
-            int nNum = m_blob_bottom_data_i.num;
-            int nChannels = m_blob_bottom_data_i.channels;
-            double dfLoss = 0;
-
-            double[] rgData_i = convert(m_blob_bottom_data_i.update_cpu_data());
-            double[] rgData_j = convert(m_blob_bottom_data_j.update_cpu_data());
-            double[] rgY = convert(m_blob_bottom_y.update_cpu_data());
-
-            for (int i = 0; i < nNum; i++)
+            try
             {
-                double dfDistSq = 0;
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                for (int j = 0; j < nChannels; j++)
+                // manually compute to compare.
+                double dfMargin = p.contrastive_loss_param.margin;
+                int nNum = m_blob_bottom_data_i.num;
+                int nChannels = m_blob_bottom_data_i.channels;
+                double dfLoss = 0;
+
+                double[] rgData_i = convert(m_blob_bottom_data_i.update_cpu_data());
+                double[] rgData_j = convert(m_blob_bottom_data_j.update_cpu_data());
+                double[] rgY = convert(m_blob_bottom_y.update_cpu_data());
+
+                for (int i = 0; i < nNum; i++)
                 {
-                    int nIdx = i * nChannels + j;
-                    double dfDiff = rgData_i[nIdx] - rgData_j[nIdx];
-                    dfDistSq += dfDiff * dfDiff;
+                    double dfDistSq = 0;
+
+                    for (int j = 0; j < nChannels; j++)
+                    {
+                        int nIdx = i * nChannels + j;
+                        double dfDiff = rgData_i[nIdx] - rgData_j[nIdx];
+                        dfDistSq += dfDiff * dfDiff;
+                    }
+
+                    if (rgY[i] != 0)    // similar pairs
+                    {
+                        dfLoss += dfDistSq;
+                    }
+                    else
+                    {
+                        double dfDist = Math.Max(dfMargin - Math.Sqrt(dfDistSq), 0.0);
+                        dfLoss += dfDist * dfDist;
+                    }
                 }
 
-                if (rgY[i] != 0)    // similar pairs
-                {
-                    dfLoss += dfDistSq;
-                }
-                else
-                {
-                    double dfDist = Math.Max(dfMargin - Math.Sqrt(dfDistSq), 0.0);
-                    dfLoss += dfDist * dfDist;
-                }
+                dfLoss /= nNum * 2.0;
+                double dfTop = convert(m_blob_top_loss.GetData(0));
+
+                m_log.EXPECT_NEAR(dfTop, dfLoss, 1e-6);
             }
-
-            dfLoss /= nNum * 2.0;
-            double dfTop = convert(m_blob_top_loss.GetData(0));
-
-            m_log.EXPECT_NEAR(dfTop, dfLoss, 1e-6);
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForwardLabels()
@@ -342,45 +349,52 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONTRASTIVE_LOSS);
             ContrastiveLossLayer<T> layer = new ContrastiveLossLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // manually compute to compare.
-            double dfMargin = p.contrastive_loss_param.margin;
-            int nNum = m_blob_bottom_data_i.num;
-            int nChannels = m_blob_bottom_data_i.channels;
-            double dfLoss = 0;
-
-            double[] rgData_i = convert(m_blob_bottom_data_i.update_cpu_data());
-            double[] rgData_j = convert(m_blob_bottom_data_j.update_cpu_data());
-            double[] rgY = convert(m_blob_bottom_y.update_cpu_data());
-
-            for (int i = 0; i < nNum; i++)
+            try
             {
-                double dfDistSq = 0;
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                for (int j = 0; j < nChannels; j++)
+                // manually compute to compare.
+                double dfMargin = p.contrastive_loss_param.margin;
+                int nNum = m_blob_bottom_data_i.num;
+                int nChannels = m_blob_bottom_data_i.channels;
+                double dfLoss = 0;
+
+                double[] rgData_i = convert(m_blob_bottom_data_i.update_cpu_data());
+                double[] rgData_j = convert(m_blob_bottom_data_j.update_cpu_data());
+                double[] rgY = convert(m_blob_bottom_y.update_cpu_data());
+
+                for (int i = 0; i < nNum; i++)
                 {
-                    int nIdx = i * nChannels + j;
-                    double dfDiff = rgData_i[nIdx] - rgData_j[nIdx];
-                    dfDistSq += dfDiff * dfDiff;
+                    double dfDistSq = 0;
+
+                    for (int j = 0; j < nChannels; j++)
+                    {
+                        int nIdx = i * nChannels + j;
+                        double dfDiff = rgData_i[nIdx] - rgData_j[nIdx];
+                        dfDistSq += dfDiff * dfDiff;
+                    }
+
+                    if (rgY[i * 2] == rgY[i * 2 + 1])    // similar pairs
+                    {
+                        dfLoss += dfDistSq;
+                    }
+                    else
+                    {
+                        double dfDist = Math.Max(dfMargin - Math.Sqrt(dfDistSq), 0.0);
+                        dfLoss += dfDist * dfDist;
+                    }
                 }
 
-                if (rgY[i*2] == rgY[i*2 + 1])    // similar pairs
-                {
-                    dfLoss += dfDistSq;
-                }
-                else
-                {
-                    double dfDist = Math.Max(dfMargin - Math.Sqrt(dfDistSq), 0.0);
-                    dfLoss += dfDist * dfDist;
-                }
+                dfLoss /= nNum * 2.0;
+                double dfTop = convert(m_blob_top_loss.GetData(0));
+
+                m_log.EXPECT_NEAR(dfTop, dfLoss, 1e-6);
             }
-
-            dfLoss /= nNum * 2.0;
-            double dfTop = convert(m_blob_top_loss.GetData(0));
-
-            m_log.EXPECT_NEAR(dfTop, dfLoss, 1e-6);
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradient()
@@ -388,13 +402,21 @@ namespace MyCaffe.test
             FillYsim();
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONTRASTIVE_LOSS);
             ContrastiveLossLayer<T> layer = new ContrastiveLossLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2, 1701);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
 
-            // check the gradient for the first two bottom layers
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 1);
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2, 1701);
+
+                // check the gradient for the first two bottom layers
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 1);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForwardLegacy()
@@ -404,40 +426,47 @@ namespace MyCaffe.test
             p.contrastive_loss_param.legacy_version = true;
             ContrastiveLossLayer<T> layer = new ContrastiveLossLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // manually compute to compare.
-            double dfMargin = p.contrastive_loss_param.margin;
-            int nNum = m_blob_bottom_data_i.num;
-            int nChannels = m_blob_bottom_data_i.channels;
-            double dfLoss = 0;
-
-            double[] rgData_i = convert(m_blob_bottom_data_i.update_cpu_data());
-            double[] rgData_j = convert(m_blob_bottom_data_j.update_cpu_data());
-            double[] rgY = convert(m_blob_bottom_y.update_cpu_data());
-
-            for (int i = 0; i < nNum; i++)
+            try
             {
-                double dfDistSq = 0;
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                for (int j = 0; j < nChannels; j++)
+                // manually compute to compare.
+                double dfMargin = p.contrastive_loss_param.margin;
+                int nNum = m_blob_bottom_data_i.num;
+                int nChannels = m_blob_bottom_data_i.channels;
+                double dfLoss = 0;
+
+                double[] rgData_i = convert(m_blob_bottom_data_i.update_cpu_data());
+                double[] rgData_j = convert(m_blob_bottom_data_j.update_cpu_data());
+                double[] rgY = convert(m_blob_bottom_y.update_cpu_data());
+
+                for (int i = 0; i < nNum; i++)
                 {
-                    int nIdx = i * nChannels + j;
-                    double dfDiff = rgData_i[nIdx] - rgData_j[nIdx];
-                    dfDistSq += dfDiff * dfDiff;
+                    double dfDistSq = 0;
+
+                    for (int j = 0; j < nChannels; j++)
+                    {
+                        int nIdx = i * nChannels + j;
+                        double dfDiff = rgData_i[nIdx] - rgData_j[nIdx];
+                        dfDistSq += dfDiff * dfDiff;
+                    }
+
+                    if (rgY[i] != 0)    // similar pairs
+                        dfLoss += dfDistSq;
+                    else
+                        dfLoss += Math.Max(dfMargin - dfDistSq, 0.0);
                 }
 
-                if (rgY[i] != 0)    // similar pairs
-                    dfLoss += dfDistSq;
-                else
-                    dfLoss += Math.Max(dfMargin - dfDistSq, 0.0);
+                dfLoss /= (double)(nNum * 2.0);
+
+                double dfTop = convert(m_blob_top_loss.GetData(0));
+                m_log.EXPECT_NEAR(dfTop, dfLoss, 1e-6);
             }
-
-            dfLoss /= (double)(nNum * 2.0);
-
-            double dfTop = convert(m_blob_top_loss.GetData(0));
-            m_log.EXPECT_NEAR(dfTop, dfLoss, 1e-6);
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientLegacy()
@@ -446,13 +475,21 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONTRASTIVE_LOSS);
             p.contrastive_loss_param.legacy_version = true;
             ContrastiveLossLayer<T> layer = new ContrastiveLossLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2, 1701);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
 
-            // check the gradient for the first two bottom layers
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 1);
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2, 1701);
+
+                // check the gradient for the first two bottom layers
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 1);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         private byte getVal(int nVal, bool bUseRandomData)

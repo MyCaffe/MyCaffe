@@ -272,37 +272,45 @@ namespace MyCaffe.test
             BottomMask.mutable_cpu_data = convert(rgBottomMask);
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new basecode.CancelEvent());
-            layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(nNum, Top.num, "The top num should equal " + nNum.ToString());
-            m_log.CHECK_EQ(nChannels, Top.channels, "The top channels should equal " + nChannels.ToString());
-            m_log.CHECK_EQ(3, Top.height, "The top height should equal 3.");
-            m_log.CHECK_EQ(5, Top.width, "The top width should equal 5.");
-
-            layer.Forward(BottomVec, TopVec);
-
-            // Expected output: 2x2 channels of:
-            //  [0 0 5 0 0]
-            //  [9 0 0 0 8]
-            //  [0 0 5 0 0]
-            double[] rgTop = convert(Top.update_cpu_data());
-            for (int i = 0; i < 15 * nNum * nChannels; i += 15)
+            try
             {
-                m_log.CHECK_EQ(rgTop[i +  0], 0, "The top element at " + (i +  0).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i +  1], 0, "The top element at " + (i +  1).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i +  2], 5, "The top element at " + (i +  2).ToString() + " should be 5");
-                m_log.CHECK_EQ(rgTop[i +  3], 0, "The top element at " + (i +  3).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i +  4], 0, "The top element at " + (i +  4).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i +  5], 9, "The top element at " + (i +  5).ToString() + " should be 9");
-                m_log.CHECK_EQ(rgTop[i +  6], 0, "The top element at " + (i +  6).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i +  7], 0, "The top element at " + (i +  7).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i +  8], 0, "The top element at " + (i +  8).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i +  9], 8, "The top element at " + (i +  9).ToString() + " should be 8");
-                m_log.CHECK_EQ(rgTop[i + 10], 0, "The top element at " + (i + 10).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 11], 0, "The top element at " + (i + 11).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 12], 5, "The top element at " + (i + 12).ToString() + " should be 5");
-                m_log.CHECK_EQ(rgTop[i + 13], 0, "The top element at " + (i + 13).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 14], 0, "The top element at " + (i + 14).ToString() + " should be 0");
+                layer.Setup(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(nNum, Top.num, "The top num should equal " + nNum.ToString());
+                m_log.CHECK_EQ(nChannels, Top.channels, "The top channels should equal " + nChannels.ToString());
+                m_log.CHECK_EQ(3, Top.height, "The top height should equal 3.");
+                m_log.CHECK_EQ(5, Top.width, "The top width should equal 5.");
+
+                layer.Forward(BottomVec, TopVec);
+
+                // Expected output: 2x2 channels of:
+                //  [0 0 5 0 0]
+                //  [9 0 0 0 8]
+                //  [0 0 5 0 0]
+                double[] rgTop = convert(Top.update_cpu_data());
+                for (int i = 0; i < 15 * nNum * nChannels; i += 15)
+                {
+                    m_log.CHECK_EQ(rgTop[i + 0], 0, "The top element at " + (i + 0).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 1], 0, "The top element at " + (i + 1).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 2], 5, "The top element at " + (i + 2).ToString() + " should be 5");
+                    m_log.CHECK_EQ(rgTop[i + 3], 0, "The top element at " + (i + 3).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 4], 0, "The top element at " + (i + 4).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 5], 9, "The top element at " + (i + 5).ToString() + " should be 9");
+                    m_log.CHECK_EQ(rgTop[i + 6], 0, "The top element at " + (i + 6).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 7], 0, "The top element at " + (i + 7).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 8], 0, "The top element at " + (i + 8).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 9], 8, "The top element at " + (i + 9).ToString() + " should be 8");
+                    m_log.CHECK_EQ(rgTop[i + 10], 0, "The top element at " + (i + 10).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 11], 0, "The top element at " + (i + 11).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 12], 5, "The top element at " + (i + 12).ToString() + " should be 5");
+                    m_log.CHECK_EQ(rgTop[i + 13], 0, "The top element at " + (i + 13).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 14], 0, "The top element at " + (i + 14).ToString() + " should be 0");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -382,63 +390,71 @@ namespace MyCaffe.test
             BottomMask.mutable_cpu_data = convert(rgBottomMask);
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new basecode.CancelEvent());
-            layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(nNum, Top.num, "The top num should equal " + nNum.ToString());
-            m_log.CHECK_EQ(nChannels, Top.channels, "The top channels should equal " + nChannels.ToString());
-            m_log.CHECK_EQ(6, Top.height, "The top height should equal 4.");
-            m_log.CHECK_EQ(6, Top.width, "The top width should equal 5.");
-
-            layer.Forward(BottomVec, TopVec);
-
-            // Expected output: 2x2 channels of:
-            //  [35  0  0 26  0  0]
-            //  [ 0 32  0  0  0  0]
-            //  [31  0  0  0 27  0]
-            //  [ 0  0 33  0  0  0]
-            //  [ 0  0 34  0  0  0]
-            //  [ 0 36  0  0 18  0]
-            // (this is generated by magic(6) in MATLAB)
-
-            double[] rgTop = convert(Top.update_cpu_data());
-            for (int i = 0; i < 36 * nNum * nChannels; i += 36)
+            try
             {
-                m_log.CHECK_EQ(rgTop[i + 0], 35, "The top element at " + (i + 0).ToString() + " should be 35");
-                m_log.CHECK_EQ(rgTop[i + 1],  0, "The top element at " + (i + 1).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 2],  0, "The top element at " + (i + 2).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 3], 26, "The top element at " + (i + 3).ToString() + " should be 26");
-                m_log.CHECK_EQ(rgTop[i + 4],  0, "The top element at " + (i + 4).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 5],  0, "The top element at " + (i + 5).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 6],  0, "The top element at " + (i + 6).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 7], 32, "The top element at " + (i + 7).ToString() + " should be 32");
-                m_log.CHECK_EQ(rgTop[i + 8],  0, "The top element at " + (i + 8).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 9],  0, "The top element at " + (i + 9).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 10],  0, "The top element at " + (i + 10).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 11],  0, "The top element at " + (i + 11).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 12], 31, "The top element at " + (i + 12).ToString() + " should be 31");
-                m_log.CHECK_EQ(rgTop[i + 13],  0, "The top element at " + (i + 13).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 14],  0, "The top element at " + (i + 14).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 15],  0, "The top element at " + (i + 15).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 16], 27, "The top element at " + (i + 16).ToString() + " should be 27");
-                m_log.CHECK_EQ(rgTop[i + 17],  0, "The top element at " + (i + 17).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 18],  0, "The top element at " + (i + 18).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 19],  0, "The top element at " + (i + 19).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 20], 33, "The top element at " + (i + 20).ToString() + " should be 33");
-                m_log.CHECK_EQ(rgTop[i + 21],  0, "The top element at " + (i + 21).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 22],  0, "The top element at " + (i + 22).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 23],  0, "The top element at " + (i + 23).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 24],  0, "The top element at " + (i + 24).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 25],  0, "The top element at " + (i + 25).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 26], 34, "The top element at " + (i + 26).ToString() + " should be 34");
-                m_log.CHECK_EQ(rgTop[i + 27],  0, "The top element at " + (i + 27).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 28],  0, "The top element at " + (i + 28).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 29],  0, "The top element at " + (i + 29).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 30],  0, "The top element at " + (i + 30).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 31], 36, "The top element at " + (i + 31).ToString() + " should be 36");
-                m_log.CHECK_EQ(rgTop[i + 32],  0, "The top element at " + (i + 32).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 33],  0, "The top element at " + (i + 33).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 34], 18, "The top element at " + (i + 34).ToString() + " should be 18");
-                m_log.CHECK_EQ(rgTop[i + 35],  0, "The top element at " + (i + 35).ToString() + " should be 0");
+                layer.Setup(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(nNum, Top.num, "The top num should equal " + nNum.ToString());
+                m_log.CHECK_EQ(nChannels, Top.channels, "The top channels should equal " + nChannels.ToString());
+                m_log.CHECK_EQ(6, Top.height, "The top height should equal 4.");
+                m_log.CHECK_EQ(6, Top.width, "The top width should equal 5.");
+
+                layer.Forward(BottomVec, TopVec);
+
+                // Expected output: 2x2 channels of:
+                //  [35  0  0 26  0  0]
+                //  [ 0 32  0  0  0  0]
+                //  [31  0  0  0 27  0]
+                //  [ 0  0 33  0  0  0]
+                //  [ 0  0 34  0  0  0]
+                //  [ 0 36  0  0 18  0]
+                // (this is generated by magic(6) in MATLAB)
+
+                double[] rgTop = convert(Top.update_cpu_data());
+                for (int i = 0; i < 36 * nNum * nChannels; i += 36)
+                {
+                    m_log.CHECK_EQ(rgTop[i + 0], 35, "The top element at " + (i + 0).ToString() + " should be 35");
+                    m_log.CHECK_EQ(rgTop[i + 1], 0, "The top element at " + (i + 1).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 2], 0, "The top element at " + (i + 2).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 3], 26, "The top element at " + (i + 3).ToString() + " should be 26");
+                    m_log.CHECK_EQ(rgTop[i + 4], 0, "The top element at " + (i + 4).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 5], 0, "The top element at " + (i + 5).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 6], 0, "The top element at " + (i + 6).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 7], 32, "The top element at " + (i + 7).ToString() + " should be 32");
+                    m_log.CHECK_EQ(rgTop[i + 8], 0, "The top element at " + (i + 8).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 9], 0, "The top element at " + (i + 9).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 10], 0, "The top element at " + (i + 10).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 11], 0, "The top element at " + (i + 11).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 12], 31, "The top element at " + (i + 12).ToString() + " should be 31");
+                    m_log.CHECK_EQ(rgTop[i + 13], 0, "The top element at " + (i + 13).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 14], 0, "The top element at " + (i + 14).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 15], 0, "The top element at " + (i + 15).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 16], 27, "The top element at " + (i + 16).ToString() + " should be 27");
+                    m_log.CHECK_EQ(rgTop[i + 17], 0, "The top element at " + (i + 17).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 18], 0, "The top element at " + (i + 18).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 19], 0, "The top element at " + (i + 19).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 20], 33, "The top element at " + (i + 20).ToString() + " should be 33");
+                    m_log.CHECK_EQ(rgTop[i + 21], 0, "The top element at " + (i + 21).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 22], 0, "The top element at " + (i + 22).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 23], 0, "The top element at " + (i + 23).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 24], 0, "The top element at " + (i + 24).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 25], 0, "The top element at " + (i + 25).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 26], 34, "The top element at " + (i + 26).ToString() + " should be 34");
+                    m_log.CHECK_EQ(rgTop[i + 27], 0, "The top element at " + (i + 27).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 28], 0, "The top element at " + (i + 28).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 29], 0, "The top element at " + (i + 29).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 30], 0, "The top element at " + (i + 30).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 31], 36, "The top element at " + (i + 31).ToString() + " should be 36");
+                    m_log.CHECK_EQ(rgTop[i + 32], 0, "The top element at " + (i + 32).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 33], 0, "The top element at " + (i + 33).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 34], 18, "The top element at " + (i + 34).ToString() + " should be 18");
+                    m_log.CHECK_EQ(rgTop[i + 35], 0, "The top element at " + (i + 35).ToString() + " should be 0");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -491,62 +507,70 @@ namespace MyCaffe.test
             BottomMask.mutable_cpu_data = convert(rgBottomMask);
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new basecode.CancelEvent());
-            layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(nNum, Top.num, "The top num should equal " + nNum.ToString());
-            m_log.CHECK_EQ(nChannels, Top.channels, "The top channels should equal " + nChannels.ToString());
-            m_log.CHECK_EQ(4, Top.height, "The top height should equal 4.");
-            m_log.CHECK_EQ(8, Top.width, "The top width should equal 8.");
-
-            layer.Forward(BottomVec, TopVec);
-
-            // Expected output: 2x2 channels of:
-            //  [ 0  0  0  0  0  0  0  0 ]
-            //  [ 9  0  0  5  0  0  8  0 ]
-            //  [ 0  0  0  0  0  0  0  0 ]
-            //  [ 0  0  0  0  0  0  0  0 ]
-            double[] rgTop = convert(Top.update_cpu_data());
-            for (int i = 0; i < 32 * nNum * nChannels; i += 32)
+            try
             {
-                int l = 0;
-                m_log.CHECK_EQ(rgTop[i + l + 0], 0, "The top element at " + (i + l + 0).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 1], 0, "The top element at " + (i + l + 1).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 2], 0, "The top element at " + (i + l + 2).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 3], 0, "The top element at " + (i + l + 3).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 4], 0, "The top element at " + (i + l + 4).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 5], 0, "The top element at " + (i + l + 5).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 6], 0, "The top element at " + (i + l + 6).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 7], 0, "The top element at " + (i + l + 7).ToString() + " should be 0");
+                layer.Setup(BottomVec, TopVec);
 
-                l += 8;
-                m_log.CHECK_EQ(rgTop[i + l + 0], 9, "The top element at " + (i + l + 0).ToString() + " should be 9");
-                m_log.CHECK_EQ(rgTop[i + l + 1], 0, "The top element at " + (i + l + 1).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 2], 0, "The top element at " + (i + l + 2).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 3], 5, "The top element at " + (i + l + 3).ToString() + " should be 5");
-                m_log.CHECK_EQ(rgTop[i + l + 4], 0, "The top element at " + (i + l + 4).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 5], 0, "The top element at " + (i + l + 5).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 6], 8, "The top element at " + (i + l + 6).ToString() + " should be 8");
-                m_log.CHECK_EQ(rgTop[i + l + 7], 0, "The top element at " + (i + l + 7).ToString() + " should be 0");
+                m_log.CHECK_EQ(nNum, Top.num, "The top num should equal " + nNum.ToString());
+                m_log.CHECK_EQ(nChannels, Top.channels, "The top channels should equal " + nChannels.ToString());
+                m_log.CHECK_EQ(4, Top.height, "The top height should equal 4.");
+                m_log.CHECK_EQ(8, Top.width, "The top width should equal 8.");
 
-                l += 8;
-                m_log.CHECK_EQ(rgTop[i + l + 0], 0, "The top element at " + (i + l + 0).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 1], 0, "The top element at " + (i + l + 1).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 2], 0, "The top element at " + (i + l + 2).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 3], 0, "The top element at " + (i + l + 3).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 4], 0, "The top element at " + (i + l + 4).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 5], 0, "The top element at " + (i + l + 5).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 6], 0, "The top element at " + (i + l + 6).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 7], 0, "The top element at " + (i + l + 7).ToString() + " should be 0");
+                layer.Forward(BottomVec, TopVec);
 
-                l += 8;
-                m_log.CHECK_EQ(rgTop[i + l + 0], 0, "The top element at " + (i + l + 0).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 1], 0, "The top element at " + (i + l + 1).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 2], 0, "The top element at " + (i + l + 2).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 3], 0, "The top element at " + (i + l + 3).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 4], 0, "The top element at " + (i + l + 4).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 5], 0, "The top element at " + (i + l + 5).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 6], 0, "The top element at " + (i + l + 6).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + l + 7], 0, "The top element at " + (i + l + 7).ToString() + " should be 0");
+                // Expected output: 2x2 channels of:
+                //  [ 0  0  0  0  0  0  0  0 ]
+                //  [ 9  0  0  5  0  0  8  0 ]
+                //  [ 0  0  0  0  0  0  0  0 ]
+                //  [ 0  0  0  0  0  0  0  0 ]
+                double[] rgTop = convert(Top.update_cpu_data());
+                for (int i = 0; i < 32 * nNum * nChannels; i += 32)
+                {
+                    int l = 0;
+                    m_log.CHECK_EQ(rgTop[i + l + 0], 0, "The top element at " + (i + l + 0).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 1], 0, "The top element at " + (i + l + 1).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 2], 0, "The top element at " + (i + l + 2).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 3], 0, "The top element at " + (i + l + 3).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 4], 0, "The top element at " + (i + l + 4).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 5], 0, "The top element at " + (i + l + 5).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 6], 0, "The top element at " + (i + l + 6).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 7], 0, "The top element at " + (i + l + 7).ToString() + " should be 0");
+
+                    l += 8;
+                    m_log.CHECK_EQ(rgTop[i + l + 0], 9, "The top element at " + (i + l + 0).ToString() + " should be 9");
+                    m_log.CHECK_EQ(rgTop[i + l + 1], 0, "The top element at " + (i + l + 1).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 2], 0, "The top element at " + (i + l + 2).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 3], 5, "The top element at " + (i + l + 3).ToString() + " should be 5");
+                    m_log.CHECK_EQ(rgTop[i + l + 4], 0, "The top element at " + (i + l + 4).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 5], 0, "The top element at " + (i + l + 5).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 6], 8, "The top element at " + (i + l + 6).ToString() + " should be 8");
+                    m_log.CHECK_EQ(rgTop[i + l + 7], 0, "The top element at " + (i + l + 7).ToString() + " should be 0");
+
+                    l += 8;
+                    m_log.CHECK_EQ(rgTop[i + l + 0], 0, "The top element at " + (i + l + 0).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 1], 0, "The top element at " + (i + l + 1).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 2], 0, "The top element at " + (i + l + 2).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 3], 0, "The top element at " + (i + l + 3).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 4], 0, "The top element at " + (i + l + 4).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 5], 0, "The top element at " + (i + l + 5).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 6], 0, "The top element at " + (i + l + 6).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 7], 0, "The top element at " + (i + l + 7).ToString() + " should be 0");
+
+                    l += 8;
+                    m_log.CHECK_EQ(rgTop[i + l + 0], 0, "The top element at " + (i + l + 0).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 1], 0, "The top element at " + (i + l + 1).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 2], 0, "The top element at " + (i + l + 2).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 3], 0, "The top element at " + (i + l + 3).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 4], 0, "The top element at " + (i + l + 4).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 5], 0, "The top element at " + (i + l + 5).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 6], 0, "The top element at " + (i + l + 6).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + l + 7], 0, "The top element at " + (i + l + 7).ToString() + " should be 0");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -603,69 +627,77 @@ namespace MyCaffe.test
             BottomMask.mutable_cpu_data = convert(rgBottomMask);
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new basecode.CancelEvent());
-            layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(nNum, Top.num, "The top num should equal " + nNum.ToString());
-            m_log.CHECK_EQ(nChannels, Top.channels, "The top channels should equal " + nChannels.ToString());
-            m_log.CHECK_EQ(6, Top.height, "The top height should equal 6.");
-            m_log.CHECK_EQ(6, Top.width, "The top width should equal 6.");
-
-            layer.Forward(BottomVec, TopVec);
-
-            // Expected output: 2x2 channels of:                        (   index values   )
-            //  [.  .  .  .  .  .  . .]
-            //  [.  3  0  0 12  0  0 .]   eg  [ 3  0][ 0 12][ 0  0]   [ 0  1][ 2  3][ 4  5]
-            //  [.  0  0  0  0  5  0 .]      _[ 0  0][ 0  0][ 5  0]_ _[ 6  7][ 8  9][10 11]_
-            //  [.  0  0  9  0  2  0 .]       [ 0  0][ 9  0][ 2  0]   [12 13][14 15][16 17]
-            //  [.  0  8  0  0  0  0 .]      _[ 0  8][ 0  0][ 0  0]_ _[18 19][20 21][22 23]_
-            //  [.  0  5  0  0  0  3 .]       [ 0  5][ 0  0][ 0  3]   [24 25][26 27][28 29]
-            //  [.  0  0  0  8  0  0 .]      _[ 0  0][ 0  8][ 0  0]_ _[30 31][32 33][34 35]_
-            //  [.  .  .  .  .  .  . .]       [ .  .][ .  .][ .  .]   [ .  .][ .  .][ .  .]
-
-            double[] rgTop = convert(Top.update_cpu_data());
-            for (int i = 0; i < 36 * nNum * nChannels; i += 36)
+            try
             {
-                m_log.CHECK_EQ(rgTop[i + 0], 3, "The top element at " + (i + 0).ToString() + " should be 3");
-                m_log.CHECK_EQ(rgTop[i + 1], 0, "The top element at " + (i + 1).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 2], 0, "The top element at " + (i + 2).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 3], 12, "The top element at " + (i + 3).ToString() + " should be 12");
-                m_log.CHECK_EQ(rgTop[i + 4], 0, "The top element at " + (i + 4).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 5], 0, "The top element at " + (i + 5).ToString() + " should be 0");
+                layer.Setup(BottomVec, TopVec);
 
-                m_log.CHECK_EQ(rgTop[i + 6], 0, "The top element at " + (i + 6).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 7], 0, "The top element at " + (i + 7).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 8], 0, "The top element at " + (i + 8).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 9],  0, "The top element at " + (i + 9).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 10], 5, "The top element at " + (i + 10).ToString() + " should be 5");
-                m_log.CHECK_EQ(rgTop[i + 11], 0, "The top element at " + (i + 11).ToString() + " should be 0");
+                m_log.CHECK_EQ(nNum, Top.num, "The top num should equal " + nNum.ToString());
+                m_log.CHECK_EQ(nChannels, Top.channels, "The top channels should equal " + nChannels.ToString());
+                m_log.CHECK_EQ(6, Top.height, "The top height should equal 6.");
+                m_log.CHECK_EQ(6, Top.width, "The top width should equal 6.");
 
-                m_log.CHECK_EQ(rgTop[i + 12], 0, "The top element at " + (i + 12).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 13], 0, "The top element at " + (i + 13).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 14], 9, "The top element at " + (i + 14).ToString() + " should be 9");
-                m_log.CHECK_EQ(rgTop[i + 15], 0, "The top element at " + (i + 15).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 16], 2, "The top element at " + (i + 16).ToString() + " should be 2");
-                m_log.CHECK_EQ(rgTop[i + 17], 0, "The top element at " + (i + 17).ToString() + " should be 0");
+                layer.Forward(BottomVec, TopVec);
 
-                m_log.CHECK_EQ(rgTop[i + 18], 0, "The top element at " + (i + 18).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 19], 8, "The top element at " + (i + 19).ToString() + " should be 8");
-                m_log.CHECK_EQ(rgTop[i + 20], 0, "The top element at " + (i + 20).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 21], 0, "The top element at " + (i + 21).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 22], 0, "The top element at " + (i + 22).ToString() + " should be 9");
-                m_log.CHECK_EQ(rgTop[i + 23], 0, "The top element at " + (i + 23).ToString() + " should be 0");
+                // Expected output: 2x2 channels of:                        (   index values   )
+                //  [.  .  .  .  .  .  . .]
+                //  [.  3  0  0 12  0  0 .]   eg  [ 3  0][ 0 12][ 0  0]   [ 0  1][ 2  3][ 4  5]
+                //  [.  0  0  0  0  5  0 .]      _[ 0  0][ 0  0][ 5  0]_ _[ 6  7][ 8  9][10 11]_
+                //  [.  0  0  9  0  2  0 .]       [ 0  0][ 9  0][ 2  0]   [12 13][14 15][16 17]
+                //  [.  0  8  0  0  0  0 .]      _[ 0  8][ 0  0][ 0  0]_ _[18 19][20 21][22 23]_
+                //  [.  0  5  0  0  0  3 .]       [ 0  5][ 0  0][ 0  3]   [24 25][26 27][28 29]
+                //  [.  0  0  0  8  0  0 .]      _[ 0  0][ 0  8][ 0  0]_ _[30 31][32 33][34 35]_
+                //  [.  .  .  .  .  .  . .]       [ .  .][ .  .][ .  .]   [ .  .][ .  .][ .  .]
 
-                m_log.CHECK_EQ(rgTop[i + 24], 0, "The top element at " + (i + 24).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 25], 5, "The top element at " + (i + 25).ToString() + " should be 5");
-                m_log.CHECK_EQ(rgTop[i + 26], 0, "The top element at " + (i + 26).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 27], 0, "The top element at " + (i + 27).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 28], 0, "The top element at " + (i + 28).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 29], 3, "The top element at " + (i + 29).ToString() + " should be 3");
+                double[] rgTop = convert(Top.update_cpu_data());
+                for (int i = 0; i < 36 * nNum * nChannels; i += 36)
+                {
+                    m_log.CHECK_EQ(rgTop[i + 0], 3, "The top element at " + (i + 0).ToString() + " should be 3");
+                    m_log.CHECK_EQ(rgTop[i + 1], 0, "The top element at " + (i + 1).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 2], 0, "The top element at " + (i + 2).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 3], 12, "The top element at " + (i + 3).ToString() + " should be 12");
+                    m_log.CHECK_EQ(rgTop[i + 4], 0, "The top element at " + (i + 4).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 5], 0, "The top element at " + (i + 5).ToString() + " should be 0");
 
-                m_log.CHECK_EQ(rgTop[i + 30], 0, "The top element at " + (i + 30).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 31], 0, "The top element at " + (i + 31).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 32], 0, "The top element at " + (i + 32).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 33], 8, "The top element at " + (i + 33).ToString() + " should be 8");
-                m_log.CHECK_EQ(rgTop[i + 34], 0, "The top element at " + (i + 34).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 35], 0, "The top element at " + (i + 35).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 6], 0, "The top element at " + (i + 6).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 7], 0, "The top element at " + (i + 7).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 8], 0, "The top element at " + (i + 8).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 9], 0, "The top element at " + (i + 9).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 10], 5, "The top element at " + (i + 10).ToString() + " should be 5");
+                    m_log.CHECK_EQ(rgTop[i + 11], 0, "The top element at " + (i + 11).ToString() + " should be 0");
+
+                    m_log.CHECK_EQ(rgTop[i + 12], 0, "The top element at " + (i + 12).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 13], 0, "The top element at " + (i + 13).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 14], 9, "The top element at " + (i + 14).ToString() + " should be 9");
+                    m_log.CHECK_EQ(rgTop[i + 15], 0, "The top element at " + (i + 15).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 16], 2, "The top element at " + (i + 16).ToString() + " should be 2");
+                    m_log.CHECK_EQ(rgTop[i + 17], 0, "The top element at " + (i + 17).ToString() + " should be 0");
+
+                    m_log.CHECK_EQ(rgTop[i + 18], 0, "The top element at " + (i + 18).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 19], 8, "The top element at " + (i + 19).ToString() + " should be 8");
+                    m_log.CHECK_EQ(rgTop[i + 20], 0, "The top element at " + (i + 20).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 21], 0, "The top element at " + (i + 21).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 22], 0, "The top element at " + (i + 22).ToString() + " should be 9");
+                    m_log.CHECK_EQ(rgTop[i + 23], 0, "The top element at " + (i + 23).ToString() + " should be 0");
+
+                    m_log.CHECK_EQ(rgTop[i + 24], 0, "The top element at " + (i + 24).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 25], 5, "The top element at " + (i + 25).ToString() + " should be 5");
+                    m_log.CHECK_EQ(rgTop[i + 26], 0, "The top element at " + (i + 26).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 27], 0, "The top element at " + (i + 27).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 28], 0, "The top element at " + (i + 28).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 29], 3, "The top element at " + (i + 29).ToString() + " should be 3");
+
+                    m_log.CHECK_EQ(rgTop[i + 30], 0, "The top element at " + (i + 30).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 31], 0, "The top element at " + (i + 31).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 32], 0, "The top element at " + (i + 32).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 33], 8, "The top element at " + (i + 33).ToString() + " should be 8");
+                    m_log.CHECK_EQ(rgTop[i + 34], 0, "The top element at " + (i + 34).ToString() + " should be 0");
+                    m_log.CHECK_EQ(rgTop[i + 35], 0, "The top element at " + (i + 35).ToString() + " should be 0");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
     }

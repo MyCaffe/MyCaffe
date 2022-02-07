@@ -144,12 +144,19 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.GRAM);
             GramLayer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null) as GramLayer<T>;
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            { 
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(m_blob_top.shape().Count, 3, "The top should have 3 items in its shape.");
-            m_log.CHECK_EQ(m_blob_top.shape(0), 2, "The top(0) should be 2");
-            m_log.CHECK_EQ(m_blob_top.shape(1), 3, "The top(1) should be 3");
-            m_log.CHECK_EQ(m_blob_top.shape(2), 3, "The top(2) should be 3");
+                m_log.CHECK_EQ(m_blob_top.shape().Count, 3, "The top should have 3 items in its shape.");
+                m_log.CHECK_EQ(m_blob_top.shape(0), 2, "The top(0) should be 2");
+                m_log.CHECK_EQ(m_blob_top.shape(1), 3, "The top(1) should be 3");
+                m_log.CHECK_EQ(m_blob_top.shape(2), 3, "The top(2) should be 3");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForward()
@@ -157,14 +164,21 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.GRAM);
             GramLayer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null) as GramLayer<T>;
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
+            try
+            { 
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            double[] rgTop = convert(m_blob_top.update_cpu_data());
+                double[] rgTop = convert(m_blob_top.update_cpu_data());
 
-            for (int i = 0; i < rgTop.Length; i++)
+                for (int i = 0; i < rgTop.Length; i++)
+                {
+                    m_log.EXPECT_EQUAL<float>(rgTop[i], kGramTopData[i], "The top value at index " + i.ToString() + " is not as expected.");
+                }
+            }
+            finally
             {
-                m_log.EXPECT_EQUAL<float>(rgTop[i], kGramTopData[i], "The top value at index " + i.ToString() + " is not as expected.");
+                layer.Dispose();
             }
         }
 
@@ -172,8 +186,16 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.GRAM);
             GramLayer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null) as GramLayer<T>;
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+
+            try
+            { 
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

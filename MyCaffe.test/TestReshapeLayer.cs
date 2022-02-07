@@ -282,12 +282,20 @@ namespace MyCaffe.test
             blob_shape.dim.Add(1);
 
             ReshapeLayer<T> layer = new ReshapeLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(2, Top.num, "The top should have num = 2.");
-            m_log.CHECK_EQ(3 * 6 * 5, Top.channels, "The top channels should equal 3 * 6 * 5 = " + (3 * 6 * 5).ToString() + ".");
-            m_log.CHECK_EQ(1, Top.height, "The top height should equal 1.");
-            m_log.CHECK_EQ(1, Top.width, "The top height should equal 1.");
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(2, Top.num, "The top should have num = 2.");
+                m_log.CHECK_EQ(3 * 6 * 5, Top.channels, "The top channels should equal 3 * 6 * 5 = " + (3 * 6 * 5).ToString() + ".");
+                m_log.CHECK_EQ(1, Top.height, "The top height should equal 1.");
+                m_log.CHECK_EQ(1, Top.width, "The top height should equal 1.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestFlattenValues()
@@ -300,18 +308,26 @@ namespace MyCaffe.test
             blob_shape.dim.Add(1);
 
             ReshapeLayer<T> layer = new ReshapeLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            for (int c = 0; c < 3 * 6 * 5; c++)
+            try
             {
-                double dfTop0 = convert(Top.data_at(0, c, 0, 0));
-                double dfBtm0 = convert(Bottom.data_at(0, c / (6 * 5), (c / 5) % 6, c % 5));
-                m_log.CHECK_EQ(dfTop0, dfBtm0, "The top and bottom at 0 should be equal.");
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                double dfTop1 = convert(Top.data_at(1, c, 0, 0));
-                double dfBtm1 = convert(Bottom.data_at(1, c / (6 * 5), (c / 5) % 6, c % 5));
-                m_log.CHECK_EQ(dfTop0, dfBtm0, "The top and bottom at 1 should be equal.");
+                for (int c = 0; c < 3 * 6 * 5; c++)
+                {
+                    double dfTop0 = convert(Top.data_at(0, c, 0, 0));
+                    double dfBtm0 = convert(Bottom.data_at(0, c / (6 * 5), (c / 5) % 6, c % 5));
+                    m_log.CHECK_EQ(dfTop0, dfBtm0, "The top and bottom at 0 should be equal.");
+
+                    double dfTop1 = convert(Top.data_at(1, c, 0, 0));
+                    double dfBtm1 = convert(Bottom.data_at(1, c / (6 * 5), (c / 5) % 6, c % 5));
+                    m_log.CHECK_EQ(dfTop0, dfBtm0, "The top and bottom at 1 should be equal.");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -327,12 +343,20 @@ namespace MyCaffe.test
             blob_shape.dim.Add(0);
 
             ReshapeLayer<T> layer = new ReshapeLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(2, Top.num, "The top should have num = 2.");
-            m_log.CHECK_EQ(3, Top.channels, "The top channels should equal 3.");
-            m_log.CHECK_EQ(6, Top.height, "The top height should equal 6.");
-            m_log.CHECK_EQ(5, Top.width, "The top height should equal 7.");
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(2, Top.num, "The top should have num = 2.");
+                m_log.CHECK_EQ(3, Top.channels, "The top channels should equal 3.");
+                m_log.CHECK_EQ(6, Top.height, "The top height should equal 6.");
+                m_log.CHECK_EQ(5, Top.width, "The top height should equal 7.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
 
@@ -350,12 +374,20 @@ namespace MyCaffe.test
             // Count is 180, this height should be 180 / (2*3*10) = 3.
 
             ReshapeLayer<T> layer = new ReshapeLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(2, Top.num, "The top should have num = 2.");
-            m_log.CHECK_EQ(3, Top.channels, "The top channels should equal 3.");
-            m_log.CHECK_EQ(10, Top.height, "The top height should equal 10.");
-            m_log.CHECK_EQ(3, Top.width, "The top height should equal 3.");
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(2, Top.num, "The top should have num = 2.");
+                m_log.CHECK_EQ(3, Top.channels, "The top channels should equal 3.");
+                m_log.CHECK_EQ(10, Top.height, "The top height should equal 10.");
+                m_log.CHECK_EQ(3, Top.width, "The top height should equal 3.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestInferenceOfUnspecifiedWithStartAxis()
@@ -368,13 +400,21 @@ namespace MyCaffe.test
             blob_shape.dim.Add(-1);
 
             ReshapeLayer<T> layer = new ReshapeLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(4, Top.num_axes, "The top should have num_axes = 4.");
-            m_log.CHECK_EQ(2, Top.num, "The top should have num = 2.");
-            m_log.CHECK_EQ(3, Top.channels, "The top channels should equal 3.");
-            m_log.CHECK_EQ(10, Top.height, "The top height should equal 10.");
-            m_log.CHECK_EQ(3, Top.width, "The top height should equal 3.");
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(4, Top.num_axes, "The top should have num_axes = 4.");
+                m_log.CHECK_EQ(2, Top.num, "The top should have num = 2.");
+                m_log.CHECK_EQ(3, Top.channels, "The top channels should equal 3.");
+                m_log.CHECK_EQ(10, Top.height, "The top height should equal 10.");
+                m_log.CHECK_EQ(3, Top.width, "The top height should equal 3.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestInsertSingletonAxisStart()
@@ -388,16 +428,24 @@ namespace MyCaffe.test
             blob_shape.dim.Add(1);
 
             ReshapeLayer<T> layer = new ReshapeLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(7, Top.num_axes, "The top should have num_axes = 7.");
-            m_log.CHECK_EQ(1, Top.shape(0), "The top shape(0) should equal 1.");
-            m_log.CHECK_EQ(1, Top.shape(1), "The top shape(1) should equal 1.");
-            m_log.CHECK_EQ(1, Top.shape(2), "The top shape(2) should equal 1.");
-            m_log.CHECK_EQ(2, Top.shape(3), "The top shape(3) should equal 2.");
-            m_log.CHECK_EQ(3, Top.shape(4), "The top shape(4) should equal 3.");
-            m_log.CHECK_EQ(6, Top.shape(5), "The top shape(5) should equal 6.");
-            m_log.CHECK_EQ(5, Top.shape(6), "The top shape(6) should equal 5.");
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(7, Top.num_axes, "The top should have num_axes = 7.");
+                m_log.CHECK_EQ(1, Top.shape(0), "The top shape(0) should equal 1.");
+                m_log.CHECK_EQ(1, Top.shape(1), "The top shape(1) should equal 1.");
+                m_log.CHECK_EQ(1, Top.shape(2), "The top shape(2) should equal 1.");
+                m_log.CHECK_EQ(2, Top.shape(3), "The top shape(3) should equal 2.");
+                m_log.CHECK_EQ(3, Top.shape(4), "The top shape(4) should equal 3.");
+                m_log.CHECK_EQ(6, Top.shape(5), "The top shape(5) should equal 6.");
+                m_log.CHECK_EQ(5, Top.shape(6), "The top shape(6) should equal 5.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestInsertSingletonAxisMiddle()
@@ -411,16 +459,24 @@ namespace MyCaffe.test
             blob_shape.dim.Add(1);
 
             ReshapeLayer<T> layer = new ReshapeLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(7, Top.num_axes, "The top should have num_axes = 7.");
-            m_log.CHECK_EQ(2, Top.shape(0), "The top shape(0) should equal 2.");
-            m_log.CHECK_EQ(3, Top.shape(1), "The top shape(1) should equal 3.");
-            m_log.CHECK_EQ(1, Top.shape(2), "The top shape(2) should equal 1.");
-            m_log.CHECK_EQ(1, Top.shape(3), "The top shape(3) should equal 1.");
-            m_log.CHECK_EQ(1, Top.shape(4), "The top shape(4) should equal 1.");
-            m_log.CHECK_EQ(6, Top.shape(5), "The top shape(5) should equal 6.");
-            m_log.CHECK_EQ(5, Top.shape(6), "The top shape(6) should equal 5.");
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(7, Top.num_axes, "The top should have num_axes = 7.");
+                m_log.CHECK_EQ(2, Top.shape(0), "The top shape(0) should equal 2.");
+                m_log.CHECK_EQ(3, Top.shape(1), "The top shape(1) should equal 3.");
+                m_log.CHECK_EQ(1, Top.shape(2), "The top shape(2) should equal 1.");
+                m_log.CHECK_EQ(1, Top.shape(3), "The top shape(3) should equal 1.");
+                m_log.CHECK_EQ(1, Top.shape(4), "The top shape(4) should equal 1.");
+                m_log.CHECK_EQ(6, Top.shape(5), "The top shape(5) should equal 6.");
+                m_log.CHECK_EQ(5, Top.shape(6), "The top shape(6) should equal 5.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestInsertSingletonAxisEnd()
@@ -434,16 +490,24 @@ namespace MyCaffe.test
             blob_shape.dim.Add(1);
 
             ReshapeLayer<T> layer = new ReshapeLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(7, Top.num_axes, "The top should have num_axes = 7.");
-            m_log.CHECK_EQ(2, Top.shape(0), "The top shape(0) should equal 2.");
-            m_log.CHECK_EQ(3, Top.shape(1), "The top shape(1) should equal 3.");
-            m_log.CHECK_EQ(6, Top.shape(2), "The top shape(2) should equal 6.");
-            m_log.CHECK_EQ(5, Top.shape(3), "The top shape(3) should equal 5.");
-            m_log.CHECK_EQ(1, Top.shape(4), "The top shape(4) should equal 1.");
-            m_log.CHECK_EQ(1, Top.shape(5), "The top shape(5) should equal 1.");
-            m_log.CHECK_EQ(1, Top.shape(6), "The top shape(6) should equal 1.");
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(7, Top.num_axes, "The top should have num_axes = 7.");
+                m_log.CHECK_EQ(2, Top.shape(0), "The top shape(0) should equal 2.");
+                m_log.CHECK_EQ(3, Top.shape(1), "The top shape(1) should equal 3.");
+                m_log.CHECK_EQ(6, Top.shape(2), "The top shape(2) should equal 6.");
+                m_log.CHECK_EQ(5, Top.shape(3), "The top shape(3) should equal 5.");
+                m_log.CHECK_EQ(1, Top.shape(4), "The top shape(4) should equal 1.");
+                m_log.CHECK_EQ(1, Top.shape(5), "The top shape(5) should equal 1.");
+                m_log.CHECK_EQ(1, Top.shape(6), "The top shape(6) should equal 1.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestFlattenMiddle()
@@ -455,12 +519,20 @@ namespace MyCaffe.test
             blob_shape.dim.Add(-1);
 
             ReshapeLayer<T> layer = new ReshapeLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(3, Top.num_axes, "The top should have num_axes = 7.");
-            m_log.CHECK_EQ(2, Top.shape(0), "The top shape(0) should equal 2.");
-            m_log.CHECK_EQ(3 * 6, Top.shape(1), "The top shape(1) should equal 3 * 6 = 18.");
-            m_log.CHECK_EQ(5, Top.shape(2), "The top shape(3) should equal 5.");
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(3, Top.num_axes, "The top should have num_axes = 7.");
+                m_log.CHECK_EQ(2, Top.shape(0), "The top shape(0) should equal 2.");
+                m_log.CHECK_EQ(3 * 6, Top.shape(1), "The top shape(1) should equal 3 * 6 = 18.");
+                m_log.CHECK_EQ(5, Top.shape(2), "The top shape(3) should equal 5.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForward()
@@ -473,15 +545,23 @@ namespace MyCaffe.test
             blob_shape.dim.Add(5);
 
             ReshapeLayer<T> layer = new ReshapeLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            double[] rgTop = convert(Top.update_cpu_data());
-            double[] rgBtm = convert(Bottom.update_cpu_data());
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                m_log.CHECK_EQ(rgTop[i], rgBtm[i], "The top and bottom values at " + i.ToString() + " should be equal.");
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                double[] rgTop = convert(Top.update_cpu_data());
+                double[] rgBtm = convert(Bottom.update_cpu_data());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    m_log.CHECK_EQ(rgTop[i], rgBtm[i], "The top and bottom values at " + i.ToString() + " should be equal.");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -495,27 +575,35 @@ namespace MyCaffe.test
             blob_shape.dim.Add(5);
 
             ReshapeLayer<T> layer = new ReshapeLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            // We know the above produced the corred result from TestForward.
-            // Reshape the bottom and call layer.Reshape, then try again.
-
-            List<int> rgNewBottomShape = new List<int>() { 2 * 3 * 6 * 5 };
-            Bottom.Reshape(rgNewBottomShape);
-
-            FillerParameter fp = new FillerParameter("gaussian");
-            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
-            filler.Fill(Bottom);
-
-            layer.Forward(BottomVec, TopVec);
-
-            double[] rgTop = convert(Top.update_cpu_data());
-            double[] rgBtm = convert(Bottom.update_cpu_data());
-
-            for (int i = 0; i < Bottom.count(); i++)
+            try
             {
-                m_log.CHECK_EQ(rgTop[i], rgBtm[i], "The top and bottom values at " + i.ToString() + " should be equal.");
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // We know the above produced the corred result from TestForward.
+                // Reshape the bottom and call layer.Reshape, then try again.
+
+                List<int> rgNewBottomShape = new List<int>() { 2 * 3 * 6 * 5 };
+                Bottom.Reshape(rgNewBottomShape);
+
+                FillerParameter fp = new FillerParameter("gaussian");
+                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
+                filler.Fill(Bottom);
+
+                layer.Forward(BottomVec, TopVec);
+
+                double[] rgTop = convert(Top.update_cpu_data());
+                double[] rgBtm = convert(Bottom.update_cpu_data());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    m_log.CHECK_EQ(rgTop[i], rgBtm[i], "The top and bottom values at " + i.ToString() + " should be equal.");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -529,8 +617,16 @@ namespace MyCaffe.test
             blob_shape.dim.Add(5);
 
             ReshapeLayer<T> layer = new ReshapeLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new test.GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+
+            try
+            {
+                GradientChecker<T> checker = new test.GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

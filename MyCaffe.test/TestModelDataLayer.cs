@@ -218,32 +218,40 @@ namespace MyCaffe.test
             p.model_data_param.sample_size = 1000;
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
-            m_log.CHECK_EQ((int)layer.type, (int)LayerParameter.LayerType.MODEL_DATA, "The layer type should be MODEL_DATA!");
 
-            TopVec.Clear();
-            TopVec.Add(m_blobDecInput);
-            TopVec.Add(m_blobDecClip);
-            TopVec.Add(m_blobEncInput1);
-            TopVec.Add(m_blobEncClip);
-            TopVec.Add(m_blobVocabCount);
-            TopVec.Add(m_blobDecTarget);
+            try
+            {
+                m_log.CHECK_EQ((int)layer.type, (int)LayerParameter.LayerType.MODEL_DATA, "The layer type should be MODEL_DATA!");
 
-            BottomVec.Clear();
+                TopVec.Clear();
+                TopVec.Add(m_blobDecInput);
+                TopVec.Add(m_blobDecClip);
+                TopVec.Add(m_blobEncInput1);
+                TopVec.Add(m_blobEncClip);
+                TopVec.Add(m_blobVocabCount);
+                TopVec.Add(m_blobDecTarget);
 
-            List<SimpleResult> rgRes = FillDummyData();
+                BottomVec.Clear();
 
-            layer.Setup(BottomVec, TopVec);
+                List<SimpleResult> rgRes = FillDummyData();
 
-            int nT = (int)p.model_data_param.time_steps;
-            int nN = (int)p.model_data_param.batch_size;
-            int nI = (int)p.model_data_param.input_dim;
+                layer.Setup(BottomVec, TopVec);
 
-            verify_shape(TopVec[0], new List<int>() { 1, nN, 1 });   // dec input
-            verify_shape(TopVec[1], new List<int>() { 1, nN });         // dec clip
-            verify_shape(TopVec[2], new List<int>() { nT, nN, nI });  // enc input1
-            verify_shape(TopVec[3], new List<int>() { nT, nN });        // enc clip
-            verify_shape(TopVec[4], new List<int>() { 1 });    // vocab count
-            verify_shape(TopVec[5], new List<int>() { 1, nN, 1 });   // dec target
+                int nT = (int)p.model_data_param.time_steps;
+                int nN = (int)p.model_data_param.batch_size;
+                int nI = (int)p.model_data_param.input_dim;
+
+                verify_shape(TopVec[0], new List<int>() { 1, nN, 1 });   // dec input
+                verify_shape(TopVec[1], new List<int>() { 1, nN });         // dec clip
+                verify_shape(TopVec[2], new List<int>() { nT, nN, nI });  // enc input1
+                verify_shape(TopVec[3], new List<int>() { nT, nN });        // enc clip
+                verify_shape(TopVec[4], new List<int>() { 1 });    // vocab count
+                verify_shape(TopVec[5], new List<int>() { 1, nN, 1 });   // dec target
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForward()
@@ -264,43 +272,51 @@ namespace MyCaffe.test
             int nI = (int)p.model_data_param.input_dim;
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
-            m_log.CHECK_EQ((int)layer.type, (int)LayerParameter.LayerType.MODEL_DATA, "The layer type should be MODEL_DATA!");
 
-            TopVec.Clear();
-            TopVec.Add(m_blobDecInput);
-            TopVec.Add(m_blobDecClip);
-            TopVec.Add(m_blobEncInput1);
-            TopVec.Add(m_blobEncClip);
-            TopVec.Add(m_blobVocabCount);
-            TopVec.Add(m_blobDecTarget);
-
-            BottomVec.Clear();
-
-            List<SimpleResult> rgRes = FillDummyData();
-
-            layer.Setup(BottomVec, TopVec);
-
-            int nVocabCount = ((ModelDataLayer<T>)layer).DecoderVocabularyCount;
-            int nVocabCount1 = (int)convert(m_blobVocabCount.GetData(0));
-            m_log.CHECK_EQ(nVocabCount + 2, nVocabCount1, "The vocab count is not as expected!");
-
-            int nSeqIdx = 1;
-
-            for (int i = 0; i < 10; i++)
+            try
             {
-                layer.Forward(BottomVec, TopVec);
+                m_log.CHECK_EQ((int)layer.type, (int)LayerParameter.LayerType.MODEL_DATA, "The layer type should be MODEL_DATA!");
 
-                int nDataIdx = 0;
-                bool bRes = verify_top_data(TopVec, nN, nT, nI, nDataIdx, rgRes[i], nVocabCount + 2);
+                TopVec.Clear();
+                TopVec.Add(m_blobDecInput);
+                TopVec.Add(m_blobDecClip);
+                TopVec.Add(m_blobEncInput1);
+                TopVec.Add(m_blobEncClip);
+                TopVec.Add(m_blobVocabCount);
+                TopVec.Add(m_blobDecTarget);
 
-                while (bRes)
+                BottomVec.Clear();
+
+                List<SimpleResult> rgRes = FillDummyData();
+
+                layer.Setup(BottomVec, TopVec);
+
+                int nVocabCount = ((ModelDataLayer<T>)layer).DecoderVocabularyCount;
+                int nVocabCount1 = (int)convert(m_blobVocabCount.GetData(0));
+                m_log.CHECK_EQ(nVocabCount + 2, nVocabCount1, "The vocab count is not as expected!");
+
+                int nSeqIdx = 1;
+
+                for (int i = 0; i < 10; i++)
                 {
                     layer.Forward(BottomVec, TopVec);
-                    nDataIdx++;
-                    bRes = verify_top_data(TopVec, nN, nT, nI, nDataIdx, rgRes[i], nVocabCount + 2);
-                }
 
-                nSeqIdx++;
+                    int nDataIdx = 0;
+                    bool bRes = verify_top_data(TopVec, nN, nT, nI, nDataIdx, rgRes[i], nVocabCount + 2);
+
+                    while (bRes)
+                    {
+                        layer.Forward(BottomVec, TopVec);
+                        nDataIdx++;
+                        bRes = verify_top_data(TopVec, nN, nT, nI, nDataIdx, rgRes[i], nVocabCount + 2);
+                    }
+
+                    nSeqIdx++;
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 

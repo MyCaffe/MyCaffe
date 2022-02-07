@@ -162,11 +162,18 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.FLATTEN);
             FlattenLayer<T> layer = new FlattenLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(2, Top.num_axes, "The top should have 2 axes.");
-            m_log.CHECK_EQ(2, Top.shape(0), "The top shape(0) should equal 2.");
-            m_log.CHECK_EQ(3 * 6 * 5, Top.shape(1), "The top shape(1) should equal 3 * 6 * 5 = " + (3 * 6 * 5).ToString() + ".");
+                m_log.CHECK_EQ(2, Top.num_axes, "The top should have 2 axes.");
+                m_log.CHECK_EQ(2, Top.shape(0), "The top shape(0) should equal 2.");
+                m_log.CHECK_EQ(3 * 6 * 5, Top.shape(1), "The top shape(1) should equal 3 * 6 * 5 = " + (3 * 6 * 5).ToString() + ".");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
 
@@ -175,13 +182,20 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.FLATTEN);
             p.flatten_param.axis = 2;
             FlattenLayer<T> layer = new FlattenLayer<T>(m_cuda, m_log, p);
-            
-            layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(3, Top.num_axes, "The top should have 3 axes.");
-            m_log.CHECK_EQ(2, Top.shape(0), "The top shape(0) should equal 2.");
-            m_log.CHECK_EQ(3, Top.shape(1), "The top shape(1) should equal 3.");
-            m_log.CHECK_EQ(6 * 5, Top.shape(2), "The top shape(2) should equal 6 * 5 = " + (6 * 5).ToString() + ".");
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(3, Top.num_axes, "The top should have 3 axes.");
+                m_log.CHECK_EQ(2, Top.shape(0), "The top shape(0) should equal 2.");
+                m_log.CHECK_EQ(3, Top.shape(1), "The top shape(1) should equal 3.");
+                m_log.CHECK_EQ(6 * 5, Top.shape(2), "The top shape(2) should equal 6 * 5 = " + (6 * 5).ToString() + ".");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestSetupWithEndAxis()
@@ -190,12 +204,19 @@ namespace MyCaffe.test
             p.flatten_param.end_axis = -2;
             FlattenLayer<T> layer = new FlattenLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(3, Top.num_axes, "The top should have 3 axes.");
-            m_log.CHECK_EQ(2, Top.shape(0), "The top shape(0) should equal 2.");
-            m_log.CHECK_EQ(3 * 6, Top.shape(1), "The top shape(1) should equal 3 * 6 =" + (3 * 6).ToString() + ".");
-            m_log.CHECK_EQ(5, Top.shape(2), "The top shape(2) should equal 5.");
+                m_log.CHECK_EQ(3, Top.num_axes, "The top should have 3 axes.");
+                m_log.CHECK_EQ(2, Top.shape(0), "The top shape(0) should equal 2.");
+                m_log.CHECK_EQ(3 * 6, Top.shape(1), "The top shape(1) should equal 3 * 6 =" + (3 * 6).ToString() + ".");
+                m_log.CHECK_EQ(5, Top.shape(2), "The top shape(2) should equal 5.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestSetupWithStartAndEndAxis()
@@ -205,11 +226,18 @@ namespace MyCaffe.test
             p.flatten_param.end_axis = -2;
             FlattenLayer<T> layer = new FlattenLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(2, Top.num_axes, "The top should have 2 axes.");
-            m_log.CHECK_EQ(2 * 3 * 6, Top.shape(0), "The top shape(1) should equal 2 * 3 * 6 =" + (2 * 3 * 6).ToString() + ".");
-            m_log.CHECK_EQ(5, Top.shape(1), "The top shape(2) should equal 5.");
+                m_log.CHECK_EQ(2, Top.num_axes, "The top should have 2 axes.");
+                m_log.CHECK_EQ(2 * 3 * 6, Top.shape(0), "The top shape(1) should equal 2 * 3 * 6 =" + (2 * 3 * 6).ToString() + ".");
+                m_log.CHECK_EQ(5, Top.shape(1), "The top shape(2) should equal 5.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
 
@@ -218,19 +246,26 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.FLATTEN);
             FlattenLayer<T> layer = new FlattenLayer<T>(m_cuda, m_log, p);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            // Now, check values
-            for (int c = 0; c < 3 * 6 * 5; c++)
+            try
             {
-                double dfTop0 = convert(Top.data_at(0, c, 0, 0));
-                double dfBtm0 = convert(Bottom.data_at(0, c / (6 * 5), (c / 5) % 6, c % 5));
-                m_log.CHECK_EQ(dfTop0, dfBtm0, "The top and bottom values should be the same.");
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                double dfTop1 = convert(Top.data_at(1, c, 0, 0));
-                double dfBtm1 = convert(Bottom.data_at(1, c / (6 * 5), (c / 5) % 6, c % 5));
-                m_log.CHECK_EQ(dfTop1, dfBtm1, "The top and bottom values should be the same.");
+                // Now, check values
+                for (int c = 0; c < 3 * 6 * 5; c++)
+                {
+                    double dfTop0 = convert(Top.data_at(0, c, 0, 0));
+                    double dfBtm0 = convert(Bottom.data_at(0, c / (6 * 5), (c / 5) % 6, c % 5));
+                    m_log.CHECK_EQ(dfTop0, dfBtm0, "The top and bottom values should be the same.");
+
+                    double dfTop1 = convert(Top.data_at(1, c, 0, 0));
+                    double dfBtm1 = convert(Bottom.data_at(1, c / (6 * 5), (c / 5) % 6, c % 5));
+                    m_log.CHECK_EQ(dfTop1, dfBtm1, "The top and bottom values should be the same.");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -239,8 +274,15 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.FLATTEN);
             FlattenLayer<T> layer = new FlattenLayer<T>(m_cuda, m_log, p);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
-            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

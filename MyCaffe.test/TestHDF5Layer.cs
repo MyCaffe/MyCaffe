@@ -170,35 +170,43 @@ namespace MyCaffe.test
             p.top.Add("frame_fc7");
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-            m_log.CHECK(layer.type == LayerParameter.LayerType.HDF5_DATA, "Incorrect layer type, expected " + LayerParameter.LayerType.HDF5_DATA.ToString());
 
-            BottomVec.Clear();
-            TopVec.Clear();
-
-            TopVec.Add(m_blobCont);
-            TopVec.Add(m_blobInput);
-            TopVec.Add(m_blobTarget);
-            TopVec.Add(m_blobStage);
-            TopVec.Add(m_blobFrameFc7);
-
-            layer.Setup(BottomVec, TopVec);
-            sw.Start();
-            layer.Forward(BottomVec, TopVec);
-            
-            for (int i = 0; i < 100; i++)
+            try
             {
+                m_log.CHECK(layer.type == LayerParameter.LayerType.HDF5_DATA, "Incorrect layer type, expected " + LayerParameter.LayerType.HDF5_DATA.ToString());
+
+                BottomVec.Clear();
+                TopVec.Clear();
+
+                TopVec.Add(m_blobCont);
+                TopVec.Add(m_blobInput);
+                TopVec.Add(m_blobTarget);
+                TopVec.Add(m_blobStage);
+                TopVec.Add(m_blobFrameFc7);
+
+                layer.Setup(BottomVec, TopVec);
+                sw.Start();
                 layer.Forward(BottomVec, TopVec);
+
+                for (int i = 0; i < 100; i++)
+                {
+                    layer.Forward(BottomVec, TopVec);
+                }
+
+                sw.Stop();
+                double dfTime = sw.Elapsed.TotalMilliseconds;
+                int nCount = 101;
+
+                double dfAvePerFwd = dfTime / nCount;
+                double dfAvePerItem = dfAvePerFwd / p.hdf5_data_param.batch_size;
+
+                Trace.WriteLine("Average time (ms) per Forward = " + dfAvePerFwd.ToString("N5"));
+                Trace.WriteLine("Average time (ms) per Item = " + dfAvePerItem.ToString("N5"));
             }
-
-            sw.Stop();
-            double dfTime = sw.Elapsed.TotalMilliseconds;
-            int nCount = 101;
-
-            double dfAvePerFwd = dfTime / nCount;
-            double dfAvePerItem = dfAvePerFwd / p.hdf5_data_param.batch_size;
-
-            Trace.WriteLine("Average time (ms) per Forward = " + dfAvePerFwd.ToString("N5"));
-            Trace.WriteLine("Average time (ms) per Item = " + dfAvePerItem.ToString("N5"));
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestRead()
@@ -219,74 +227,81 @@ namespace MyCaffe.test
             p.hdf5_data_param.source = m_strFileName;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
-            BottomVec.Clear();
-            TopVec.Clear();
-            TopVec.Add(m_blob_top);
-            TopVec.Add(m_blobTopLabel);
-            TopVec.Add(m_blobTopLabel2);
-
-            layer.Setup(BottomVec, TopVec);
-
-            m_log.CHECK_EQ(m_blob_top.num, nBatchSize, "The top 'num' is incorrect.");
-            m_log.CHECK_EQ(m_blob_top.channels, nNumCols, "The top 'channels' is incorrect.");
-            m_log.CHECK_EQ(m_blob_top.height, nHeight, "The top 'height' is incorrect.");
-            m_log.CHECK_EQ(m_blob_top.width, nWidth, "The top 'width' is incorrect.");
-
-            m_log.CHECK_EQ(m_blobTopLabel.num_axes, 2, "The top label 'num_axes' is incorrect.");
-            m_log.CHECK_EQ(m_blobTopLabel.shape(0), nBatchSize, "The top label 'shape(0)' is incorrect.");
-            m_log.CHECK_EQ(m_blobTopLabel.shape(1), 1, "The top label 'shape(1)' is incorrect.");
-
-            m_log.CHECK_EQ(m_blobTopLabel2.num_axes, 2, "The top label2 'num_axes' is incorrect.");
-            m_log.CHECK_EQ(m_blobTopLabel2.shape(0), nBatchSize, "The top label2 'shape(0)' is incorrect.");
-            m_log.CHECK_EQ(m_blobTopLabel2.shape(1), 1, "The top label2 'shape(1)' is incorrect.");
-
-            layer.Setup(BottomVec, TopVec);
-
-            // Go through the data 10 times (5 batches)
-            int nDataSize = nNumCols * nHeight * nWidth;
-
-            for (int iter = 0; iter < 10; iter++)
+            try
             {
-                layer.Forward(BottomVec, TopVec);
+                BottomVec.Clear();
+                TopVec.Clear();
+                TopVec.Add(m_blob_top);
+                TopVec.Add(m_blobTopLabel);
+                TopVec.Add(m_blobTopLabel2);
 
-                // On even iterations, we're reading the first half of the data.
-                // On odd iterations, we're reading the second half of the data.
-                // NB: label is 1- indexed
-                int nLabelOffset = 1 + ((iter % 2 == 0) ? 0 : nBatchSize);
-                int nLabel2Offset = 1 + nLabelOffset;
-                int nDataOffset = (iter % 2 == 0) ? 0 : nBatchSize * nDataSize;
+                layer.Setup(BottomVec, TopVec);
 
-                // Every two iterations we are reading the second file,
-                // which has the same labels, but data is offset by total data size,
-                // which is 2400 (see generate_sample_data).
-                int nFileOffset = (iter % 4 < 2) ? 0 : 2400;
-                double[] rgLabel = convert(m_blobTopLabel.mutable_cpu_data);
-                double[] rgLabel2 = convert(m_blobTopLabel2.mutable_cpu_data);
+                m_log.CHECK_EQ(m_blob_top.num, nBatchSize, "The top 'num' is incorrect.");
+                m_log.CHECK_EQ(m_blob_top.channels, nNumCols, "The top 'channels' is incorrect.");
+                m_log.CHECK_EQ(m_blob_top.height, nHeight, "The top 'height' is incorrect.");
+                m_log.CHECK_EQ(m_blob_top.width, nWidth, "The top 'width' is incorrect.");
 
-                for (int i=0; i<nBatchSize; i++)
+                m_log.CHECK_EQ(m_blobTopLabel.num_axes, 2, "The top label 'num_axes' is incorrect.");
+                m_log.CHECK_EQ(m_blobTopLabel.shape(0), nBatchSize, "The top label 'shape(0)' is incorrect.");
+                m_log.CHECK_EQ(m_blobTopLabel.shape(1), 1, "The top label 'shape(1)' is incorrect.");
+
+                m_log.CHECK_EQ(m_blobTopLabel2.num_axes, 2, "The top label2 'num_axes' is incorrect.");
+                m_log.CHECK_EQ(m_blobTopLabel2.shape(0), nBatchSize, "The top label2 'shape(0)' is incorrect.");
+                m_log.CHECK_EQ(m_blobTopLabel2.shape(1), 1, "The top label2 'shape(1)' is incorrect.");
+
+                layer.Setup(BottomVec, TopVec);
+
+                // Go through the data 10 times (5 batches)
+                int nDataSize = nNumCols * nHeight * nWidth;
+
+                for (int iter = 0; iter < 10; iter++)
                 {
-                    m_log.CHECK_EQ(nLabelOffset + i, rgLabel[i], "The label data is incorrect.");
-                    m_log.CHECK_EQ(nLabel2Offset + i, rgLabel2[i], "The label2 data is incorrect.");
-                }
+                    layer.Forward(BottomVec, TopVec);
 
-                double[] rgTopData = convert(m_blob_top.mutable_cpu_data);
-                for (int i = 0; i < nBatchSize; i++)
-                {
-                    for (int j = 0; j < nNumCols; j++)
+                    // On even iterations, we're reading the first half of the data.
+                    // On odd iterations, we're reading the second half of the data.
+                    // NB: label is 1- indexed
+                    int nLabelOffset = 1 + ((iter % 2 == 0) ? 0 : nBatchSize);
+                    int nLabel2Offset = 1 + nLabelOffset;
+                    int nDataOffset = (iter % 2 == 0) ? 0 : nBatchSize * nDataSize;
+
+                    // Every two iterations we are reading the second file,
+                    // which has the same labels, but data is offset by total data size,
+                    // which is 2400 (see generate_sample_data).
+                    int nFileOffset = (iter % 4 < 2) ? 0 : 2400;
+                    double[] rgLabel = convert(m_blobTopLabel.mutable_cpu_data);
+                    double[] rgLabel2 = convert(m_blobTopLabel2.mutable_cpu_data);
+
+                    for (int i = 0; i < nBatchSize; i++)
                     {
-                        for (int h = 0; h < nHeight; h++)
+                        m_log.CHECK_EQ(nLabelOffset + i, rgLabel[i], "The label data is incorrect.");
+                        m_log.CHECK_EQ(nLabel2Offset + i, rgLabel2[i], "The label2 data is incorrect.");
+                    }
+
+                    double[] rgTopData = convert(m_blob_top.mutable_cpu_data);
+                    for (int i = 0; i < nBatchSize; i++)
+                    {
+                        for (int j = 0; j < nNumCols; j++)
                         {
-                            for (int w = 0; w < nWidth; w++)
+                            for (int h = 0; h < nHeight; h++)
                             {
-                                int nIdx = i * nNumCols * nHeight * nWidth +
-                                           j * nHeight * nWidth +
-                                           h * nWidth +
-                                           w;
-                                m_log.CHECK_EQ(nFileOffset + nDataOffset + nIdx, rgTopData[nIdx], "debug: i " + i.ToString() + " j " + j.ToString() + " iter " + iter.ToString());
+                                for (int w = 0; w < nWidth; w++)
+                                {
+                                    int nIdx = i * nNumCols * nHeight * nWidth +
+                                               j * nHeight * nWidth +
+                                               h * nWidth +
+                                               w;
+                                    m_log.CHECK_EQ(nFileOffset + nDataOffset + nIdx, rgTopData[nIdx], "debug: i " + i.ToString() + " j " + j.ToString() + " iter " + iter.ToString());
+                                }
                             }
                         }
                     }
                 }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -363,53 +378,60 @@ namespace MyCaffe.test
 
             HDF5<T> hdf5 = new HDF5<T>(m_cuda, m_log, strFile);
 
-            hdf5.load_nd_dataset(m_blobCont, "cont", true);
-            m_log.CHECK_EQ(m_blobCont.num_axes, 2, "The 'cont_sentence' should have 2 axes.");
-            m_log.CHECK_EQ(m_blobCont.shape(0), 1000, "The 'cont_sentence' should have shape(0) = 1000");
-            m_log.CHECK_EQ(m_blobCont.shape(1), 16, "The 'cont_sentence' should have shape(1) = 16");
-
-            double[] rgData = convert(m_blobCont.mutable_cpu_data);
-            int nDim1 = 1000;
-            int nDim2 = 16;
-            for (int i = 0; i < nDim1; i++)
+            try
             {
-                int nIdx = i % 80;
+                hdf5.load_nd_dataset(m_blobCont, "cont", true);
+                m_log.CHECK_EQ(m_blobCont.num_axes, 2, "The 'cont_sentence' should have 2 axes.");
+                m_log.CHECK_EQ(m_blobCont.shape(0), 1000, "The 'cont_sentence' should have shape(0) = 1000");
+                m_log.CHECK_EQ(m_blobCont.shape(1), 16, "The 'cont_sentence' should have shape(1) = 16");
 
-                for (int j = 0; j < nDim2; j++)
+                double[] rgData = convert(m_blobCont.mutable_cpu_data);
+                int nDim1 = 1000;
+                int nDim2 = 16;
+                for (int i = 0; i < nDim1; i++)
                 {
-                    int nDataIdx = i * nDim2 + j;
+                    int nIdx = i % 80;
 
-                    double dfExpected = (nIdx == 0) ? 0 : 1;
-                    double dfActual = rgData[nDataIdx];
-                    m_log.CHECK_EQ(dfExpected, dfActual, "The data items are not as expected for 'cont'!");
+                    for (int j = 0; j < nDim2; j++)
+                    {
+                        int nDataIdx = i * nDim2 + j;
+
+                        double dfExpected = (nIdx == 0) ? 0 : 1;
+                        double dfActual = rgData[nDataIdx];
+                        m_log.CHECK_EQ(dfExpected, dfActual, "The data items are not as expected for 'cont'!");
+                    }
                 }
+
+                hdf5.load_nd_dataset(m_blobCont, "cont_sentence", true);
+                m_log.CHECK_EQ(m_blobCont.num_axes, 2, "The 'cont_sentence' should have 2 axes.");
+                m_log.CHECK_EQ(m_blobCont.shape(0), 1000, "The 'cont_sentence' should have shape(0) = 1000");
+                m_log.CHECK_EQ(m_blobCont.shape(1), 16, "The 'cont_sentence' should have shape(1) = 16");
+
+                hdf5.load_nd_dataset(m_blobInput, "input_sentence", true);
+                m_log.CHECK_EQ(m_blobInput.num_axes, 2, "The 'input_sentence' should have 2 axes.");
+                m_log.CHECK_EQ(m_blobInput.shape(0), 1000, "The 'input_sentence' should have shape(0) = 1000");
+                m_log.CHECK_EQ(m_blobInput.shape(1), 16, "The 'input_sentence' should have shape(1) = 16");
+
+                hdf5.load_nd_dataset(m_blobTarget, "target_sentence", true);
+                m_log.CHECK_EQ(m_blobTarget.num_axes, 2, "The 'target_sentence' should have 2 axes.");
+                m_log.CHECK_EQ(m_blobTarget.shape(0), 1000, "The 'target_sentence' should have shape(0) = 1000");
+                m_log.CHECK_EQ(m_blobTarget.shape(1), 16, "The 'target_sentence' should have shape(1) = 16");
+
+                hdf5.load_nd_dataset(m_blobStage, "stage_indicator", true);
+                m_log.CHECK_EQ(m_blobStage.num_axes, 2, "The 'stage_indicator' should have 2 axes.");
+                m_log.CHECK_EQ(m_blobStage.shape(0), 1000, "The 'stage_indicator' should have shape(0) = 1000");
+                m_log.CHECK_EQ(m_blobStage.shape(1), 16, "The 'stage_indicator' should have shape(1) = 16");
+
+                hdf5.load_nd_dataset(m_blob_bottom, "frame_fc7", true);
+                m_log.CHECK_EQ(m_blob_bottom.num_axes, 3, "The 'frame_fc7' should have 2 axes.");
+                m_log.CHECK_EQ(m_blob_bottom.shape(0), 1000, "The 'frame_fc7' should have shape(0) = 1000");
+                m_log.CHECK_EQ(m_blob_bottom.shape(1), 16, "The 'frame_fc7' should have shape(1) = 16");
+                m_log.CHECK_EQ(m_blob_bottom.shape(2), 4096, "The 'frame_fc7' should have shape(2) = 4096");
             }
-
-            hdf5.load_nd_dataset(m_blobCont, "cont_sentence", true);
-            m_log.CHECK_EQ(m_blobCont.num_axes, 2, "The 'cont_sentence' should have 2 axes.");
-            m_log.CHECK_EQ(m_blobCont.shape(0), 1000, "The 'cont_sentence' should have shape(0) = 1000");
-            m_log.CHECK_EQ(m_blobCont.shape(1), 16, "The 'cont_sentence' should have shape(1) = 16");
-
-            hdf5.load_nd_dataset(m_blobInput, "input_sentence", true);
-            m_log.CHECK_EQ(m_blobInput.num_axes, 2, "The 'input_sentence' should have 2 axes.");
-            m_log.CHECK_EQ(m_blobInput.shape(0), 1000, "The 'input_sentence' should have shape(0) = 1000");
-            m_log.CHECK_EQ(m_blobInput.shape(1), 16, "The 'input_sentence' should have shape(1) = 16");
-
-            hdf5.load_nd_dataset(m_blobTarget, "target_sentence", true);
-            m_log.CHECK_EQ(m_blobTarget.num_axes, 2, "The 'target_sentence' should have 2 axes.");
-            m_log.CHECK_EQ(m_blobTarget.shape(0), 1000, "The 'target_sentence' should have shape(0) = 1000");
-            m_log.CHECK_EQ(m_blobTarget.shape(1), 16, "The 'target_sentence' should have shape(1) = 16");
-
-            hdf5.load_nd_dataset(m_blobStage, "stage_indicator", true);
-            m_log.CHECK_EQ(m_blobStage.num_axes, 2, "The 'stage_indicator' should have 2 axes.");
-            m_log.CHECK_EQ(m_blobStage.shape(0), 1000, "The 'stage_indicator' should have shape(0) = 1000");
-            m_log.CHECK_EQ(m_blobStage.shape(1), 16, "The 'stage_indicator' should have shape(1) = 16");
-
-            hdf5.load_nd_dataset(m_blob_bottom, "frame_fc7", true);
-            m_log.CHECK_EQ(m_blob_bottom.num_axes, 3, "The 'frame_fc7' should have 2 axes.");
-            m_log.CHECK_EQ(m_blob_bottom.shape(0), 1000, "The 'frame_fc7' should have shape(0) = 1000");
-            m_log.CHECK_EQ(m_blob_bottom.shape(1), 16, "The 'frame_fc7' should have shape(1) = 16");
-            m_log.CHECK_EQ(m_blob_bottom.shape(2), 4096, "The 'frame_fc7' should have shape(2) = 4096");
+            finally
+            {
+                hdf5.Dispose();
+            }
         }
     }
 }

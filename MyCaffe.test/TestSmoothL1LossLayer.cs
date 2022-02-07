@@ -118,25 +118,36 @@ namespace MyCaffe.test
             // equivalent to explicitly specifying a weight of 1.
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.SMOOTHL1_LOSS);
             SmoothL1LossLayer<T> layerWeight1 = Layer<T>.Create(m_cuda, m_log, p, null) as SmoothL1LossLayer<T>;
+            SmoothL1LossLayer<T> layerWeight2 = null;
 
-            layerWeight1.Setup(BottomVec, TopVec);
-            double dfLoss1 = layerWeight1.Forward(BottomVec, TopVec);
+            try
+            {
+                layerWeight1.Setup(BottomVec, TopVec);
+                double dfLoss1 = layerWeight1.Forward(BottomVec, TopVec);
 
-            // Get the loss again with a different objective weight; check that it is
-            // scaled appropriately.
-            double kLossWeight = 3.7;
-            p.loss_weight.Add(kLossWeight);
-            SmoothL1LossLayer<T> layerWeight2 = Layer<T>.Create(m_cuda, m_log, p, null) as SmoothL1LossLayer<T>;
+                // Get the loss again with a different objective weight; check that it is
+                // scaled appropriately.
+                double kLossWeight = 3.7;
+                p.loss_weight.Add(kLossWeight);
+                layerWeight2 = Layer<T>.Create(m_cuda, m_log, p, null) as SmoothL1LossLayer<T>;
 
-            layerWeight2.Setup(BottomVec, TopVec);
-            double dfLoss2 = layerWeight2.Forward(BottomVec, TopVec);
+                layerWeight2.Setup(BottomVec, TopVec);
+                double dfLoss2 = layerWeight2.Forward(BottomVec, TopVec);
 
-            double kErrorMargin = 1e-5;
-            m_log.EXPECT_NEAR(dfLoss1 * kLossWeight, dfLoss2, kErrorMargin, "The two weights should be near one another.");
+                double kErrorMargin = 1e-5;
+                m_log.EXPECT_NEAR(dfLoss1 * kLossWeight, dfLoss2, kErrorMargin, "The two weights should be near one another.");
 
-            // Make sure the loss is non-trivial.
-            double kNonTrivialAbsThres = 1e-1;
-            m_log.CHECK_GE(Math.Abs(dfLoss1), kNonTrivialAbsThres, "The |loss1| should be >= the threshold.");
+                // Make sure the loss is non-trivial.
+                double kNonTrivialAbsThres = 1e-1;
+                m_log.CHECK_GE(Math.Abs(dfLoss1), kNonTrivialAbsThres, "The |loss1| should be >= the threshold.");
+            }
+            finally
+            {
+                layerWeight1.Dispose();
+
+                if (layerWeight2 != null)  
+                    layerWeight2.Dispose();
+            }
         }
 
         public void TestGradient()
@@ -145,10 +156,18 @@ namespace MyCaffe.test
             double kLossWeight = 3.7;
             p.loss_weight.Add(kLossWeight);
             SmoothL1LossLayer<T> layer = new SmoothL1LossLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
 
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2, 1701);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
+
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2, 1701);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }

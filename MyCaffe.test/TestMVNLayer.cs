@@ -171,42 +171,50 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.MVN);
             MVNLayer<T> layer = new MVNLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            // Test mean
-            int nNum = Bottom.num;
-            int nChannels = Bottom.channels;
-            int nHeight = Bottom.height;
-            int nWidth = Bottom.width;
-
-            for (int i=0; i<nNum; i++)
+            try
             {
-                for (int j=0; j<nChannels; j++)
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // Test mean
+                int nNum = Bottom.num;
+                int nChannels = Bottom.channels;
+                int nHeight = Bottom.height;
+                int nWidth = Bottom.width;
+
+                for (int i = 0; i < nNum; i++)
                 {
-                    double dfSum = 0;
-                    double dfVar = 0;
-
-                    for (int k = 0; k < nHeight; k++)
+                    for (int j = 0; j < nChannels; j++)
                     {
-                        for (int l = 0; l < nWidth; l++)
+                        double dfSum = 0;
+                        double dfVar = 0;
+
+                        for (int k = 0; k < nHeight; k++)
                         {
-                            T fVal = Top.data_at(i, j, k, l);
-                            double dfVal = convert(fVal);
-                            dfSum += dfVal;
-                            dfVar += dfVal * dfVal;
+                            for (int l = 0; l < nWidth; l++)
+                            {
+                                T fVal = Top.data_at(i, j, k, l);
+                                double dfVal = convert(fVal);
+                                dfSum += dfVal;
+                                dfVar += dfVal * dfVal;
+                            }
                         }
+
+                        dfSum /= nHeight * nWidth;
+                        dfVar /= nHeight * nWidth;
+
+                        double dfKErrorBound = 0.001;
+                        // expect zero mean
+                        m_log.EXPECT_NEAR(0, dfSum, dfKErrorBound);
+                        // expect unit variance
+                        m_log.EXPECT_NEAR(1, dfVar, dfKErrorBound);
                     }
-
-                    dfSum /= nHeight * nWidth;
-                    dfVar /= nHeight * nWidth;
-
-                    double dfKErrorBound = 0.001;
-                    // expect zero mean
-                    m_log.EXPECT_NEAR(0, dfSum, dfKErrorBound);
-                    // expect unit variance
-                    m_log.EXPECT_NEAR(1, dfVar, dfKErrorBound);
                 }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -215,39 +223,47 @@ namespace MyCaffe.test
             RawProto proto = RawProto.Parse("name: \"mvn\" type: \"MVN\" mvn_param { normalize_variance: false }");
             LayerParameter p = LayerParameter.FromProto(proto);
             MVNLayer<T> layer = new MVNLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            // Test mean
-            int nNum = Bottom.num;
-            int nChannels = Bottom.channels;
-            int nHeight = Bottom.height;
-            int nWidth = Bottom.width;
-
-            for (int i = 0; i < nNum; i++)
+            try
             {
-                for (int j = 0; j < nChannels; j++)
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // Test mean
+                int nNum = Bottom.num;
+                int nChannels = Bottom.channels;
+                int nHeight = Bottom.height;
+                int nWidth = Bottom.width;
+
+                for (int i = 0; i < nNum; i++)
                 {
-                    double dfSum = 0;
-                    double dfVar = 0;
-
-                    for (int k = 0; k < nHeight; k++)
+                    for (int j = 0; j < nChannels; j++)
                     {
-                        for (int l = 0; l < nWidth; l++)
+                        double dfSum = 0;
+                        double dfVar = 0;
+
+                        for (int k = 0; k < nHeight; k++)
                         {
-                            T fVal = Top.data_at(i, j, k, l);
-                            double dfVal = convert(fVal);
-                            dfSum += dfVal;
-                            dfVar += dfVal * dfVal;
+                            for (int l = 0; l < nWidth; l++)
+                            {
+                                T fVal = Top.data_at(i, j, k, l);
+                                double dfVal = convert(fVal);
+                                dfSum += dfVal;
+                                dfVar += dfVal * dfVal;
+                            }
                         }
+
+                        dfSum /= nHeight * nWidth;
+
+                        double dfKErrorBound = 0.001;
+                        // expect zero mean
+                        m_log.EXPECT_NEAR(0, dfSum, dfKErrorBound);
                     }
-
-                    dfSum /= nHeight * nWidth;
-
-                    double dfKErrorBound = 0.001;
-                    // expect zero mean
-                    m_log.EXPECT_NEAR(0, dfSum, dfKErrorBound);
                 }
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -256,42 +272,50 @@ namespace MyCaffe.test
             RawProto proto = RawProto.Parse("name: \"mvn\" type: \"MVN\" mvn_param { across_channels: true }");
             LayerParameter p = LayerParameter.FromProto(proto);
             MVNLayer<T> layer = new MVNLayer<T>(m_cuda, m_log, p);
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            // Test mean
-            int nNum = Bottom.num;
-            int nChannels = Bottom.channels;
-            int nHeight = Bottom.height;
-            int nWidth = Bottom.width;
-
-            for (int i = 0; i < nNum; i++)
+            try
             {
-                double dfSum = 0;
-                double dfVar = 0;
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                for (int j = 0; j < nChannels; j++)
+                // Test mean
+                int nNum = Bottom.num;
+                int nChannels = Bottom.channels;
+                int nHeight = Bottom.height;
+                int nWidth = Bottom.width;
+
+                for (int i = 0; i < nNum; i++)
                 {
-                    for (int k = 0; k < nHeight; k++)
+                    double dfSum = 0;
+                    double dfVar = 0;
+
+                    for (int j = 0; j < nChannels; j++)
                     {
-                        for (int l = 0; l < nWidth; l++)
+                        for (int k = 0; k < nHeight; k++)
                         {
-                            T fVal = Top.data_at(i, j, k, l);
-                            double dfVal = convert(fVal);
-                            dfSum += dfVal;
-                            dfVar += dfVal * dfVal;
+                            for (int l = 0; l < nWidth; l++)
+                            {
+                                T fVal = Top.data_at(i, j, k, l);
+                                double dfVal = convert(fVal);
+                                dfSum += dfVal;
+                                dfVar += dfVal * dfVal;
+                            }
                         }
                     }
+
+                    dfSum /= nHeight * nWidth * nChannels;
+                    dfVar /= nHeight * nWidth * nChannels;
+
+                    double dfKErrorBound = 0.001;
+                    // expect zero mean
+                    m_log.EXPECT_NEAR(0, dfSum, dfKErrorBound);
+                    // expect unit variance
+                    m_log.EXPECT_NEAR(1, dfVar, dfKErrorBound);
                 }
-
-                dfSum /= nHeight * nWidth * nChannels;
-                dfVar /= nHeight * nWidth * nChannels;
-
-                double dfKErrorBound = 0.001;
-                // expect zero mean
-                m_log.EXPECT_NEAR(0, dfSum, dfKErrorBound);
-                // expect unit variance
-                m_log.EXPECT_NEAR(1, dfVar, dfKErrorBound);
+            }
+            finally
+            {
+                layer.Dispose();
             }
         }
 
@@ -299,8 +323,16 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.MVN);
             MVNLayer<T> layer = new MVNLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientMeanOnly()
@@ -308,8 +340,16 @@ namespace MyCaffe.test
             RawProto proto = RawProto.Parse("name: \"mvn\" type: \"MVN\" mvn_param { normalize_variance: false }");
             LayerParameter p = LayerParameter.FromProto(proto);
             MVNLayer<T> layer = new MVNLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestGradientAcrossChannels()
@@ -317,8 +357,16 @@ namespace MyCaffe.test
             RawProto proto = RawProto.Parse("name: \"mvn\" type: \"MVN\" mvn_param { across_channels: true }");
             LayerParameter p = LayerParameter.FromProto(proto);
             MVNLayer<T> layer = new MVNLayer<T>(m_cuda, m_log, p);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
-            checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+
+            try
+            {
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }
