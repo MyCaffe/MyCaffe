@@ -1714,6 +1714,9 @@ namespace MyCaffe.common
         /// <param name="lSeed">Optionally, specifies the random number generator seed.</param>
         public void SetDeviceID(int nDeviceID = -1, DEVINIT flags = DEVINIT.NONE, long? lSeed = null)
         {
+            if (m_cuda == null || m_hKernel <= 0)
+                throw new Exception("CudaDnn has already nbeen disposed!");
+
             if (nDeviceID == -1)
                 nDeviceID = m_nDeviceId;
             else
@@ -1741,6 +1744,9 @@ namespace MyCaffe.common
         /// <param name="lSeed">Specifies the seed to set.</param>
         public void SetRandomSeed(long lSeed)
         {
+            if (m_cuda == null || m_hKernel <= 0)
+                throw new Exception("CudaDnn has already nbeen disposed!");
+
             if (m_dt == DataType.DOUBLE)
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SETRANDOMSEED, m_param.AsDouble(lSeed));
             else
@@ -1761,6 +1767,9 @@ namespace MyCaffe.common
         /// <returns>The device id.</returns>
         public int GetDeviceID()
         {
+            if (m_cuda == null || m_hKernel <= 0)
+                throw new Exception("CudaDnn has already nbeen disposed!");
+
             if (m_dt == DataType.DOUBLE)
             {
                 double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GETDEVICE, null);
@@ -1780,6 +1789,9 @@ namespace MyCaffe.common
         /// <returns>The name of the GPU at the device id is returned.</returns>
         public string GetDeviceName(int nDeviceID)
         {
+            if (m_cuda == null || m_hKernel <= 0)
+                throw new Exception("CudaDnn has already nbeen disposed!");
+
             string[] rgstr = m_cuda.QueryString((int)m_hKernel, (int)CUDAQRY.DEVICE_NAME, new int[] { nDeviceID });
             return rgstr[0];
         }
@@ -1791,6 +1803,9 @@ namespace MyCaffe.common
         /// <returns>The peer-to-per information of the GPU at the device id is returned.</returns>
         public string GetDeviceP2PInfo(int nDeviceID)
         {
+            if (m_cuda == null || m_hKernel <= 0)
+                throw new Exception("CudaDnn has already nbeen disposed!");
+
             string[] rgstr = m_cuda.QueryString((int)m_hKernel, (int)CUDAQRY.DEVICE_P2P_INFO, new int[] { nDeviceID });
             return rgstr[0];
         }
@@ -1803,6 +1818,9 @@ namespace MyCaffe.common
         /// <returns></returns>
         public string GetDeviceInfo(int nDeviceID, bool bVerbose = false)
         {
+            if (m_cuda == null || m_hKernel <= 0)
+                throw new Exception("CudaDnn has already nbeen disposed!");
+
             string[] rgstr = m_cuda.QueryString((int)m_hKernel, (int)CUDAQRY.DEVICE_INFO, new int[] { nDeviceID, (bVerbose) ? 1 : 0 });
             return rgstr[0];
         }
@@ -1815,6 +1833,9 @@ namespace MyCaffe.common
         /// this function when testing.</remarks>
         public void ResetDevice()
         {
+            if (m_cuda == null || m_hKernel <= 0)
+                throw new Exception("CudaDnn has already nbeen disposed!");
+
             if (m_dt == DataType.DOUBLE)
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.RESETDEVICE, null);
             else
@@ -1826,6 +1847,9 @@ namespace MyCaffe.common
         /// </summary>
         public void SynchronizeDevice()
         {
+            if (m_cuda == null || m_hKernel <= 0)
+                throw new Exception("CudaDnn has already nbeen disposed!");
+
             if (m_dt == DataType.DOUBLE)
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SYNCHRONIZEDEVICE, null);
             else
@@ -1857,6 +1881,9 @@ namespace MyCaffe.common
         /// <returns>The number of GPU's is returned.</returns>
         public int GetDeviceCount()
         {
+            if (m_cuda == null || m_hKernel <= 0)
+                return 0;
+
             try
             {
                 if (m_dt == DataType.DOUBLE)
@@ -2218,6 +2245,12 @@ namespace MyCaffe.common
         /// <param name="hMem">Specifies the handle to the GPU memory.</param>
         public void FreeMemory(long hMem)
         {
+            if (m_cuda == null || m_hKernel <= 0)
+            {
+                Trace.WriteLine("WARNING: CudaDnn has already been disposed, cannot free memory.");
+                return;
+            }
+
             lock (m_memSync)
             {
                 if (m_dt == DataType.DOUBLE)
@@ -2297,6 +2330,12 @@ namespace MyCaffe.common
         /// <param name="hMem">Specifies the handle to the host memory.</param>
         public void FreeHostBuffer(long hMem)
         {
+            if (m_cuda == null || m_hKernel <= 0)
+            {
+                Trace.WriteLine("WARNING: CudaDnn has already been disposed, cannot free memory.");
+                return;
+            }
+
             if (m_dt == DataType.DOUBLE)
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREEHOSTBUFFER, m_param.AsDouble(hMem));
             else
@@ -2727,6 +2766,12 @@ namespace MyCaffe.common
         /// <param name="hData">Specifies the handle to the memory pointer.</param>
         public void FreeMemoryPointer(long hData)
         {
+            if (m_cuda == null || m_hKernel <= 0)
+            {
+                Trace.WriteLine("WARNING: CudaDnn has already been disposed, cannot free memory pointer.");
+                return;
+            }
+
             if (m_dt == DataType.DOUBLE)
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_MEMORYPOINTER, m_param.AsDouble(hData));
             else
