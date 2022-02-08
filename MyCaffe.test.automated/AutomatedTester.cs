@@ -14,6 +14,7 @@ using System.IO;
 using System.IO.Pipes;
 using System.IO.MemoryMappedFiles;
 using MyCaffe.basecode;
+using System.Runtime.CompilerServices;
 
 namespace MyCaffe.test.automated
 {
@@ -1513,6 +1514,12 @@ namespace MyCaffe.test.automated
                 m_mi.Invoke(instance, null);
                 m_status = STATUS.Passed;
             }
+            catch (RuntimeWrappedException excpt)
+            {
+                string strErr = excpt.WrappedException.ToString();
+                m_status = STATUS.Failed;
+                m_errorInfo.SetError(new Exception("Non-CLS Compliant Exception: " + strErr));
+            }
             catch (Exception excpt)
             {
                 if (excpt.Message == "Aborted!" || (excpt.InnerException != null && excpt.InnerException.Message == "Aborted!"))
@@ -1524,6 +1531,11 @@ namespace MyCaffe.test.automated
                     m_status = STATUS.Failed;
                     m_errorInfo.SetError(excpt);
                 }
+            }
+            catch
+            {
+                m_status = STATUS.Failed;
+                m_errorInfo.SetError(new Exception("Unmanaged exception thrown."));
             }
             finally
             {
