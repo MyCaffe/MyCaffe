@@ -677,11 +677,12 @@ namespace MyCaffe.test
 
         private void runTest(int nConfig, TEST tst, params int[] rg)
         {
-            long hExtension = m_cuda.CreateExtension(DllPath);
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
+            long hExtension = 0;
 
             try
             {
+                hExtension = m_cuda.CreateExtension(DllPath);
+                m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
                 List<double> rgdf = new List<double>() { (double)(int)tst };
 
                 for (int i = 0; i < rg.Length; i++)
@@ -693,6 +694,14 @@ namespace MyCaffe.test
                 double[] rgdf1 = Utility.ConvertVec<T>(rg1);
                 long lErr = (long)rgdf1[0];
                 m_log.CHECK_EQ(lErr, 0, "The SSD test " + tst.ToString() + " failed with error " + lErr.ToString());
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            catch
+            {
+                throw new Exception("Non-CLS Exception thrown.");
             }
             finally
             {
