@@ -638,8 +638,6 @@ long Device<T>::GetDeviceInfo(int nDevice, LPTSTR* pszDevice, bool bVerbose)
 {
 	USES_CONVERSION_SIMPLE;
 	LONG lErr;
-	int nIdxWdm = -1;
-	int nIdxTcc = -1;
 
 	if (lErr = m_hwInfo.FindDevice(nDevice))
 		return lErr;
