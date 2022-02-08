@@ -34,6 +34,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestCleanup()
+        {
+            BlobSimpleTest test = new BlobSimpleTest();
+
+            try
+            {
+                foreach (IBlobSimpleTest t in test.Tests)
+                {
+                    t.TestCleanup();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestPointersCPUGPU()
         {
             BlobSimpleTest test = new BlobSimpleTest();
@@ -305,6 +323,7 @@ namespace MyCaffe.test
     interface IBlobSimpleTest 
     {
         void TestInitialization();
+        void TestCleanup();
         void TestPointersCPUGPU();
         void TestReshape();
         void TestLegacyBlobProtoShapeEquals();
@@ -368,6 +387,28 @@ namespace MyCaffe.test
             m_log.CHECK_EQ(120, m_blob_preshaped.count(), "The preshaped blob should have count() = 120.");
             m_log.CHECK_EQ(0, m_blob.num_axes, "The blob should have 0 axes.");
             m_log.CHECK_EQ(0, m_blob.count(), "The blob count() should be 0.");
+        }
+
+        public void TestCleanup()
+        {
+            CudaDnn<T> cuda = new CudaDnn<T>(0);
+            cuda.debug();
+
+            Blob<T> blob = new Blob<T>(cuda, m_log);
+
+            blob.Reshape(10, 10, 1000, 100);
+
+            cuda.Dispose();
+
+            try
+            {
+                // Dispose of blob AFTER disposing underlying CudaDnn.
+                blob.Dispose();
+            }
+            catch (Exception excpt)
+            {
+                // This exception is expected.
+            }
         }
 
         public void TestPointersCPUGPU()
