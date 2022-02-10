@@ -5,10 +5,31 @@
 //=============================================================================
 
 #include "memorycol.h"
+#include <mutex>
+
 
 //=============================================================================
 //	Class Methods
 //=============================================================================
+
+std::mutex g_mutex;
+
+long MemoryItem::Free()
+{
+	std::lock_guard<std::mutex> lock(g_mutex);
+
+	if (m_pData == NULL)
+		return 0;
+
+	if (m_bOwner)
+		cudaFree(m_pData);
+
+	m_pData = NULL;
+	m_lSize = 0;
+
+	return 0;
+}
+
 
 MemoryCollection::~MemoryCollection()
 {

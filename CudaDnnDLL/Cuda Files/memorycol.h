@@ -120,18 +120,7 @@ class MemoryItem
 			return 0;
 		}
 
-		long Free()
-		{
-			if (m_pData != NULL)
-			{
-				if (m_bOwner)
-					cudaFree(m_pData);
-				m_pData = NULL;
-				m_lSize = 0;
-			}
-
-			return 0;
-		}
+		long Free();
 
 		long GetData(size_t lSize, void* pDst)
 		{
