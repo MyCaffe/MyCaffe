@@ -1934,7 +1934,7 @@ namespace MyCaffe.test
             }
 
             var file = H5F.open(strFile, H5F.OpenMode.ACC_RDONLY);
-
+            
             var dataset_data = H5D.open(file, "data");
             var space_data = H5D.getSpace(dataset_data);
             long[] size_data = H5S.getSimpleExtentDims(space_data);
