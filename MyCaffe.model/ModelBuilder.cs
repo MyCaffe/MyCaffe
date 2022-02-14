@@ -30,10 +30,22 @@ namespace MyCaffe.model
         /// </summary>
         protected SolverParameter m_solver = new SolverParameter();
 
+        /// <summary>
+        /// Defines the scale bias type to use.
+        /// </summary>
         public enum SCALE_BIAS
         {
+            /// <summary>
+            /// Specifies to not use the scale or bias.
+            /// </summary>
             NONE,
+            /// <summary>
+            /// Specifies to use the scale.
+            /// </summary>
             SCALE,
+            /// <summary>
+            /// Specifies to use the bias.
+            /// </summary>
             BIAS
         }
 
