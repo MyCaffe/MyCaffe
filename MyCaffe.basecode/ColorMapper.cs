@@ -20,6 +20,7 @@ namespace MyCaffe.basecode
         List<Tuple<double, int>> m_rgQuads1 = new List<Tuple<double, int>>();
         int m_nResolution;
         List<KeyValuePair<Color, SizeF>> m_rgColorMappings = new List<KeyValuePair<Color, SizeF>>();
+        int m_nLastIdx = -1;
         List<List<double>> m_rgrgColors = new List<List<double>>();
         Color m_clrDefault;
         Color m_clrError;
@@ -345,6 +346,9 @@ namespace MyCaffe.basecode
             else if (m_dfMin == m_dfMax && m_dfMin == 0)
                 return m_clrNoMinMax;
 
+            else if (m_nLastIdx >= 0 && m_nLastIdx < m_rgColorMappings.Count && dfVal < m_rgColorMappings[m_nLastIdx].Value.Height && dfVal >= m_rgColorMappings[m_nLastIdx].Value.Width)
+                return m_rgColorMappings[m_nLastIdx].Key;
+
             else if (dfVal >= m_rgColorMappings[m_rgColorMappings.Count - 1].Value.Width)
                 return m_rgColorMappings[m_rgColorMappings.Count - 1].Key;
 
@@ -359,10 +363,16 @@ namespace MyCaffe.basecode
                 int nMid = (nMinNum + nMaxNum) / 2;
 
                 if (dfVal < m_rgColorMappings[nMid].Value.Height && dfVal >= m_rgColorMappings[nMid].Value.Width)
+                {
+                    m_nLastIdx = nMid;
                     return m_rgColorMappings[nMid].Key;
+                }
 
                 else if (dfVal == m_rgColorMappings[nMid].Value.Height)
+                {
+                    m_nLastIdx = nMid + 1;
                     return m_rgColorMappings[nMid + 1].Key;
+                }
 
                 else if (dfVal < m_rgColorMappings[nMid].Value.Width)
                     nMaxNum = nMid - 1;
