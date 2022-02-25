@@ -361,23 +361,24 @@ namespace MyCaffe.basecode
             while (nMinNum <= nMaxNum)
             {
                 int nMid = (nMinNum + nMaxNum) / 2;
+                SizeF sz = m_rgColorMappings[nMid].Value;
 
-                if (dfVal < m_rgColorMappings[nMid].Value.Height && dfVal >= m_rgColorMappings[nMid].Value.Width)
+                if (dfVal < sz.Height && dfVal >= sz.Width)
                 {
                     m_nLastIdx = nMid;
                     return m_rgColorMappings[nMid].Key;
                 }
 
-                else if (dfVal == m_rgColorMappings[nMid].Value.Height)
+                else if (dfVal == sz.Height)
                 {
                     m_nLastIdx = nMid + 1;
                     return m_rgColorMappings[nMid + 1].Key;
                 }
 
-                else if (dfVal < m_rgColorMappings[nMid].Value.Width)
+                else if (dfVal < sz.Width)
                     nMaxNum = nMid - 1;
 
-                else if (dfVal >= m_rgColorMappings[nMid].Value.Height)
+                else if (dfVal >= sz.Height)
                     nMinNum = nMid + 1;
 
                 else
