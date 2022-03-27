@@ -1,16 +1,16 @@
 <H2>Installation Instructions</H2>
-To install and run <b>MyCaffe</b> you will need to do the following steps.  As a side note, we are using (and recommend) CUDA 11.6 with cuDNN 8.3.2 and Visual Studio 2012 on Windows 10 Pro and Windows 11 for all of our testing.
-(NOTE: Only compute 5.2 and above are supported in CUDA 11.6/cuDNN 8.3.2 due to 5.1 and lower compute phase-out in CUDA 11.6)
+To install and run <b>MyCaffe</b> you will need to do the following steps.  As a side note, we are using (and recommend) CUDA 11.6.2 with cuDNN 8.3.3 and Visual Studio 2022 on Windows 10 Pro and Windows 11 for all of our testing.
+(NOTE: Only compute 5.2 and above are supported in CUDA 11.6.2/cuDNN 8.3.3 due to 5.1 and lower compute phase-out in CUDA 11.6)
 </br>
 <H3>I. CUDA - Install NVIDIA CUDA and cuDNN Libraries</H3>
-Install CUDA 11.6 as shown below.
-<H4>A. CUDA 11.6 - Install NVIDIA CUDA and cuDNN Libraries</H4>
-1.) Install the NVIDIA CUDA 11.6 Toolkit for Windows 10 from https://developer.nvidia.com/cuda-downloads. 
-</br>2.) Install the NVIDIA cuDNN 8.3.2 Accelerated Libraries for CUDA 11.6 on Windows 10 from https://developer.nvidia.com/cuDNN.
-</br>3.) Create a new directory off your <b><i>$(CUDA_PATH_V11_5)</i></b> installation location named <b><i>cudann_11.6-win-v8.3.2.22</i></b> and copy the cuDNN <b><i>cudnn.h</i></b> and <b><i>cudnn.lib</i></b> files into it.
-</br>4.) Copy the <b><i>cudnn64_8.dll</i></b> and associated DLL files into the <b><i>$(CUDA_PATH_V11_5)\bin</i></b> directory.
-</br>5.) Install the NVIDIA NVAPI (r495) from https://developer.nvidia.com/nvapi.
-</br>6.) Create a new directory off your <b><i>$(CUDA_PATH_V11_5)</i></b> installation location named <b><i>nvapi_495</i></b> and copy the NVAPI header and library files into it.
+Install CUDA 11.6.2 as shown below.
+<H4>A. CUDA 11.6.2 - Install NVIDIA CUDA and cuDNN Libraries</H4>
+1.) Install the NVIDIA CUDA 11.6.2 Toolkit for Windows 10 from https://developer.nvidia.com/cuda-downloads. 
+</br>2.) Install the NVIDIA cuDNN 8.3.3 Accelerated Libraries for CUDA 11.6.2 on Windows 10 from https://developer.nvidia.com/cuDNN.
+</br>3.) Create a new directory off your <b><i>$(CUDA_PATH_V11_6)</i></b> installation location named <b><i>cudann_11.6-win-v8.3.3.40</i></b> and copy the cuDNN <b><i>cudnn.h</i></b> and <b><i>cudnn.lib</i></b> files into it.
+</br>4.) Copy the <b><i>cudnn64_8.dll</i></b> and associated DLL files into the <b><i>$(CUDA_PATH_V11_6)\bin</i></b> directory.
+</br>5.) Install the NVIDIA NVAPI (r511) from https://developer.nvidia.com/nvapi.
+</br>6.) Create a new directory off your <b><i>$(CUDA_PATH_V11_6)</i></b> installation location named <b><i>nvapi_510</i></b> and copy the NVAPI header and library files into it.
 </br>
 </br>NOTE: The CudaDnnDLL project points to the file directories noted above for the cuDNN include and library files.  
 
@@ -32,7 +32,7 @@ assembly signing altogether.
 <H3>III. Required Software</H3>
 <b>MyCaffe</b> requires the following software.
 </br>
-</br>a.) Microsoft Visual Studio 2019 (recommended) or Microsoft Visual Studio 2017
+</br>a.) Microsoft Visual Studio 2022 (recommended) or Microsoft Visual Studio 2019
 </br>
 </br>b.) Microsoft SQL or Microsoft SQL Express from https://www.microsoft.com/en-us/sql-server/sql-server-downloads 
 </br>IMPORTANT - You must install the full SQL or SQL Express from the link above which is different that the 'lightweight' version of SQL installed
