@@ -14,6 +14,8 @@ Install CUDA 11.6.2 as shown below.
 </br>
 </br>NOTE: The CudaDnnDLL project points to the file directories noted above for the cuDNN include and library files.  
 
+<b>Note when building, select the Release/Debug and x64 configuration.</b>
+
 <H3>II. Setup Strong Names and Signing</H3>
 The <b><i>MyCaffe</i></b> project, uses the following strong name key files:
 </br>The <b>CudaControl</b> uses the <b><i>CudaControl.pfx</i></b> located in the <b><i>packages\CudaControl.0.11.6.x\lib\Net40\</i></b> directory.  
@@ -24,10 +26,38 @@ the <b>CudaControl</b> package from NuGet.
 The <b><i>MyCaffe</i></b> projects use key files for assembly signing. <b>Before building either disable signing, or replace the *.pfx files with your own.</b>
 If you do not, you will get the compiler error <i>Unable to get MD5 checksum for the key file '...'</i>.
 
-You may want to provide your own strong names for each of the other <b>MyCaffe</b> projects.  To do this just select the project <i>Properties | Signing</i> tab and
+You will need to provide your own strong names for each of the other <b>MyCaffe</b> projects.  To do this just select the project <i>Properties | Signing</i> tab and
 then <i>Sign the assembly</i> with your strong name keyfile.  You can also use this method to create a new <b><i>*.pfx</i></b> file mentioned above, or disable 
 assembly signing altogether.
 </br><b>If you change these, please do not check them in.  NOTE: The current .gitignore file ignores pfx files.</b>
+
+</br>Follow these specific steps to update strong names: 
+
+</br>1.) Right click the project (like MyCaffe.basecode) and select 'Properties'
+</br>2.) Select the 'Signing' tab.
+</br>3.) In the 'Choose a strong name key file:' open the drop-down and select '"
+</br>4.) Add your new key file name with your password. *Make sure the file name is different from the current one listed.
+</br>5.) Repeat this step for the following projects;
+
+</br>MyCaffe
+</br>MyCaffe.basecode
+</br>MyCaffe.converter.onnx
+</br>MyCaffe.data
+</br>MyCaffe.db.image
+</br>MyCaffe.db.stream
+</br>MyCaffe.extras
+</br>MyCaffe.gym
+</br>MyCaffe.gym.python
+</br>MyCaffe.layers.alpha
+</br>MyCaffe.layers.beta
+</br>MyCaffe.layers.nt
+</br>MyCaffe.layers.ssd
+</br>MyCaffe.layers.hdf5
+</br>MyCaffe.model
+</br>MyCaffe.preprocessor
+</br>MyCaffe.test
+</br>MyCaffe.test.automated
+</br>MyCaffe.trainers
 
 <H3>III. Required Software</H3>
 <b>MyCaffe</b> requires the following software.
