@@ -73,6 +73,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestHDF5LoadWts()
+        {
+            HDF5LayerTest test = new HDF5LayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IHDF5LayerTest t in test.Tests)
+                {
+                    t.TestHDF5LoadWts();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface IHDF5LayerTest : ITest
@@ -80,6 +98,7 @@ namespace MyCaffe.test
         void TestForward();
         void TestRead();
         void TestHDF5();
+        void TestHDF5LoadWts();
     }
 
     class HDF5LayerTest : TestBase
@@ -313,6 +332,7 @@ namespace MyCaffe.test
 
             try
             {
+                m_evtDownloadDone.Reset();
                 m_swUpdateTimer.Restart();
                 ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 
@@ -431,6 +451,121 @@ namespace MyCaffe.test
             finally
             {
                 hdf5.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// The AFFACT.prototxt file is used under the Creative Commons Attribution-NonCommercial 4.0 International Public License
+        /// specified here: https://github.com/BademiChetan/stylegan-encoder/blob/master/LICENSE.txt
+        /// </summary>
+        /// <param name="strPath">Specifies the path where the destination file is to be placed.</param>
+        /// <returns>The destination file path is returned.</returns>
+        private string getHdf5Data2_proto(string strPath)
+        {
+            string strUrl = "https://raw.githubusercontent.com/BademiChetan/stylegan-encoder/master/AFFACT.prototxt";
+            string strFile1 = "AFFACT.prototxt";
+            string strFile = strPath + strFile1;
+
+            try
+            {
+                m_evtDownloadDone.Reset();
+                m_swUpdateTimer.Restart();
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
+                if (!File.Exists(strFile))
+                {
+                    using (WebClient webClient = new WebClient())
+                    {
+                        webClient.DownloadProgressChanged += WebClient_DownloadProgressChanged;
+                        webClient.DownloadFileCompleted += WebClient_DownloadFileCompleted;
+                        webClient.DownloadFileAsync(new Uri(strUrl), strFile, strFile1);
+                    }
+
+                    m_evtDownloadDone.WaitOne(5 * 60 * 1000);
+                    if (!File.Exists(strFile))
+                        throw new Exception("Failed to download '" + strFile1 + "'!");
+                }
+                   
+                return strFile;
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+        }
+
+        /// <summary>
+        /// The AFFACT-S.caffemodel.h5 file is used under the Creative Commons Attribution-NonCommercial 4.0 International Public License
+        /// specified here: https://github.com/BademiChetan/stylegan-encoder/blob/master/LICENSE.txt
+        /// </summary>
+        /// <param name="strPath">Specifies the path where the destination file is to be placed.</param>
+        /// <returns>The destination file path is returned.</returns>
+        private string getHdf5Data2_wts(string strPath)
+        {
+            string strUrl = "https://github.com/BademiChetan/stylegan-encoder/raw/master/AFFACT-S.caffemodel.h5";
+            string strFile1 = "AFFACT-S.caffemodel.h5";
+            string strFile = strPath + strFile1;
+
+            try
+            {
+                m_evtDownloadDone.Reset();
+                m_swUpdateTimer.Restart();
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
+                if (!File.Exists(strFile))
+                {
+                    using (WebClient webClient = new WebClient())
+                    {
+                        webClient.DownloadProgressChanged += WebClient_DownloadProgressChanged;
+                        webClient.DownloadFileCompleted += WebClient_DownloadFileCompleted;
+                        webClient.DownloadFileAsync(new Uri(strUrl), strFile, strFile1);
+                    }
+
+                    m_evtDownloadDone.WaitOne(5 * 60 * 1000);
+                    if (!File.Exists(strFile))
+                        throw new Exception("Failed to download '" + strFile1 + "'!");
+                }
+
+                return strFile;
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+        }
+
+        public void TestHDF5LoadWts()
+        {
+            MyCaffeControl<T> mycaffe = null;
+            HDF5<T> hdf5 = null;
+
+            try
+            {
+                string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\hdf5\\";
+                string strFileProto = getHdf5Data2_proto(strPath);
+                string strFileWts = getHdf5Data2_wts(strPath);
+
+                SettingsCaffe s = new SettingsCaffe();
+                Log log = new Log("Test");
+                CancelEvent evtCancel = new CancelEvent();
+                mycaffe = new MyCaffeControl<T>(s, log, evtCancel);
+
+                string strProto = File.ReadAllText(strFileProto);
+                BlobShape shape = new BlobShape(new List<int>() { 1, 3, 224, 224 });
+                mycaffe.LoadToRun(strProto, null, shape);
+
+                hdf5 = new HDF5<T>();
+
+                Net<T> net = mycaffe.GetInternalNet(Phase.RUN);
+                hdf5.CopyTrainedLayersFromHDF5(net, log, strFileWts);
+            }
+            finally
+            {
+                if (mycaffe != null)
+                    mycaffe.Dispose();
+
+                if (hdf5 != null)
+                    hdf5.Dispose();
             }
         }
     }
