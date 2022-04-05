@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using HDF5DotNet;
@@ -10,10 +11,25 @@ using MyCaffe.common;
 namespace MyCaffe.layers.hdf5
 {
     /// <summary>
+    /// The HDF5Load interface is used to load weights into objects like a Net.
+    /// </summary>
+    /// <typeparam name="T">Specifies the base type of 'double' or 'float'.</typeparam>
+    public interface IHDF5Load<T>
+    {
+        /// <summary>
+        /// Copy the weights from an HDF5 file into a Net.
+        /// </summary>
+        /// <param name="net">Specifies the destination Net.</param>
+        /// <param name="log">Specifies the output log.</param>
+        /// <param name="strFile">Specifies the HDF5 file containing the source weights.</param>
+        void CopyTrainedLayersFromHDF5(Net<T> net, Log log, string strFile);
+    }
+
+    /// <summary>
     /// The HDF5 object provides HDF5 dataset support to the HDF5DataLayer.
     /// </summary>
     /// <typeparam name="T">Specifies the base type.</typeparam>
-    public class HDF5<T> : IDisposable
+    public class HDF5<T> : IDisposable, IHDF5Load<T>
     {
         Log m_log;
         CudaDnn<T> m_cuda;
@@ -37,13 +53,36 @@ namespace MyCaffe.layers.hdf5
                 m_log.FAIL("Failed opening HDF5 file: '" + strFile + "'!");
         }
 
-        private H5DataSetId load_nd_datasetEx(Blob<T> blob, string strDatasetName, bool bReshape, int nMinDim = 1, int nMaxDim = int.MaxValue)
+        /// <summary>
+        /// The constructor used when loading weights into a Net.
+        /// </summary>
+        public HDF5()
+        {
+        }
+
+        private int get_num_links(H5GroupId hG)
+        {
+            H5GInfo info = H5G.getInfo(hG);
+            return (int)info.nLinks;
+        }
+
+        private string get_name_by_idx(H5GroupId hg, int i)
+        {
+            return H5L.getNameByIndex(hg, ".", H5IndexType.NAME, H5IterationOrder.NATIVE, i);
+        }
+
+        private Tuple<H5DataSetId, int> load_nd_datasetEx(Blob<T> blob, string strDatasetName, bool bReshape, int nMinDim = 1, int nMaxDim = int.MaxValue, H5GroupId id = null, bool bAllowSingleItems = false)
         {
             H5DataSetId ds = null;
+            int nSingleItemSize = 0;
 
             try
             {
-                ds = H5D.open(m_file, strDatasetName);
+                if (id != null)
+                    ds = H5D.open(id, strDatasetName);
+                else
+                    ds = H5D.open(m_file, strDatasetName);
+
                 if (ds == null)
                     m_log.FAIL("Failed to find the dataset '" + strDatasetName + "'!");
 
@@ -93,8 +132,14 @@ namespace MyCaffe.layers.hdf5
                 {
                     if (!Utility.Compare<int>(rgBlobDims, blob.shape()))
                     {
-                        string strSrcShape = Utility.ToString<int>(rgBlobDims);
-                        m_log.FAIL("Cannot load blob from  hdf5; shape mismatch.  Source shape = " + strSrcShape + ", target shape = " + blob.shape_string);
+                        if (!bAllowSingleItems || (rgBlobDims.Count == 1 && rgBlobDims[0] != 1))
+                        {
+                            string strSrcShape = Utility.ToString<int>(rgBlobDims);
+                            m_log.FAIL("Cannot load blob from  hdf5; shape mismatch.  Source shape = " + strSrcShape + ", target shape = " + blob.shape_string);
+                        }
+
+                        if (rgBlobDims.Count == 1)
+                            nSingleItemSize = rgBlobDims[0];
                     }
                 }
             }
@@ -109,7 +154,7 @@ namespace MyCaffe.layers.hdf5
                 throw excpt;
             }
 
-            return ds;
+            return new Tuple<H5DataSetId, int>(ds, nSingleItemSize);
         }
 
         /// <summary>
@@ -120,13 +165,18 @@ namespace MyCaffe.layers.hdf5
         /// <param name="bReshape">Specifies whether to reshape the 'blob' parameter.</param>
         /// <param name="nMinDim">Specifies the minimum dimension.</param>
         /// <param name="nMaxDim">Specifies the maximum dimension.</param>
-        public void load_nd_dataset(Blob<T> blob, string strDatasetName, bool bReshape = false, int nMinDim = 1, int nMaxDim = int.MaxValue)
+        /// <param name="id">Optional, group ID to use instead of internal file (default = null).</param>
+        /// <param name="bAllowSingleItems">When true single item values are allowed and used to copy across entire blob.</param>
+        public void load_nd_dataset(Blob<T> blob, string strDatasetName, bool bReshape = false, int nMinDim = 1, int nMaxDim = int.MaxValue, H5GroupId id = null, bool bAllowSingleItems = false)
         {
             H5DataSetId ds = null;
+            int nSingleItemSize = 0;
 
             try
             {
-                ds = load_nd_datasetEx(blob, strDatasetName, bReshape, nMinDim, nMaxDim);
+                Tuple<H5DataSetId, int> ds1 = load_nd_datasetEx(blob, strDatasetName, bReshape, nMinDim, nMaxDim, id, bAllowSingleItems);
+                ds = ds1.Item1;
+                nSingleItemSize = ds1.Item2;
 
                 H5DataTypeId dsType = H5D.getType(ds);
                 int nSize = H5T.getSize(dsType);
@@ -137,7 +187,11 @@ namespace MyCaffe.layers.hdf5
                     H5Array<double> rgData = new H5Array<double>(rgBuffer);
 
                     H5D.read<double>(ds, dsType, rgData);
-                    blob.mutable_cpu_data = Utility.ConvertVec<T>(rgBuffer);
+
+                    if (!bAllowSingleItems || nSingleItemSize == 0)
+                        blob.mutable_cpu_data = Utility.ConvertVec<T>(rgBuffer);
+                    else
+                        blob.SetData(rgBuffer[0]);
                 }
                 else if (nSize == sizeof(float))
                 {
@@ -145,7 +199,11 @@ namespace MyCaffe.layers.hdf5
                     H5Array<float> rgData = new H5Array<float>(rgBuffer);
 
                     H5D.read<float>(ds, dsType, rgData);
-                    blob.mutable_cpu_data = Utility.ConvertVec<T>(rgBuffer);
+
+                    if (!bAllowSingleItems || nSingleItemSize == 0)
+                        blob.mutable_cpu_data = Utility.ConvertVec<T>(rgBuffer);
+                    else
+                        blob.SetData(rgBuffer[0]);
                 }
                 else if (nSize == sizeof(byte))
                 {
@@ -170,7 +228,97 @@ namespace MyCaffe.layers.hdf5
                     H5D.close(ds);
             }
         }
-      
+
+        /// <summary>
+        /// Copy the weights from an HDF5 file into a Net.
+        /// </summary>
+        /// <param name="net">Specifies the destination Net.</param>
+        /// <param name="log">Specifies the output log.</param>
+        /// <param name="strFile">Specifies the HDF5 file containing the source weights.</param>
+        public void CopyTrainedLayersFromHDF5(Net<T> net, Log log, string strFile)
+        {
+            m_log = log;
+
+            if (m_file == null)
+            {
+                m_file = H5F.open(strFile, H5F.OpenMode.ACC_RDONLY);
+                if (m_file == null)
+                    m_log.FAIL("Failed opening HDF5 weights file: '" + strFile + "'!");
+            }
+
+            H5GroupId hData = null;
+            H5GroupId hLayer = null;
+
+            try
+            {
+                hData = H5G.open(m_file, "data");
+                if (hData == null || hData.Id <= 0)
+                    m_log.FAIL("Failed to open the 'data' data stream within the HDF5 weights file: '" + strFile + "'!");
+
+                int nNumLayers = get_num_links(hData);
+
+                for (int i = 0; i < nNumLayers; i++)
+                {
+                    string strSrcLayerName = get_name_by_idx(hData, i);
+
+                    if (net.layer_index_by_name(strSrcLayerName) < 0)
+                    {
+                        m_log.WriteLine("Ignoring source layer '" + strSrcLayerName + "'.");
+                        continue;
+                    }
+
+                    int nTargetLayerId = net.layer_index_by_name(strSrcLayerName);
+                    m_log.WriteLine("Copying source layer '" + strSrcLayerName + "'.");
+
+                    BlobCollection<T> targetBlobs = net.layers[nTargetLayerId].blobs;
+
+                    hLayer = H5G.open(hData, strSrcLayerName);
+                    if (hLayer == null || hLayer.Id <= 0)
+                        m_log.FAIL("Failed to open '" + strSrcLayerName + "' layer in data stream within the HDF5 weights file: '" + strFile + "'!");
+
+                    // Check that source layer doesnt have more params than target layer.
+                    int nNumSourceParams = get_num_links(hLayer);
+                    m_log.CHECK_LE(nNumSourceParams, targetBlobs.Count, "Incompatible number of blobs for layer '" + strSrcLayerName + "'!");
+
+                    for (int j = 0; j < nNumSourceParams; j++)
+                    {
+                        string strDatasetName = j.ToString();
+
+                        if (!H5L.Exists(hLayer, strDatasetName))
+                        {
+                            // Target param doesnt exist in source weights...
+                            int nTargetNetParamId = net.param_names_index[strDatasetName];
+                            if (net.param_owners.Contains(nTargetNetParamId))
+                            {
+                                // ...but its weight-shared in target, thats fine.
+                                continue;
+                            }
+                            else
+                            {
+                                m_log.FAIL("Incompatible number of blobs for layer '" + strSrcLayerName + "'!");
+                            }
+                        }
+
+                        load_nd_dataset(targetBlobs[j], strDatasetName, false, 1, int.MaxValue, hLayer, true);
+                    }
+
+                    H5G.close(hLayer);
+                    hLayer = null;
+                }
+
+                H5G.close(hData);
+                hData = null;
+            }
+            finally
+            {
+                if (hLayer != null)
+                    H5G.close(hLayer);
+
+                if (hData != null)
+                    H5G.close(hData);
+            }
+        }
+
         /// <summary>
         /// Release all resources uses.
         /// </summary>
