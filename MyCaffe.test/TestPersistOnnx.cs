@@ -493,10 +493,8 @@ namespace MyCaffe.test
             if (!Directory.Exists(strTestPath))
                 Directory.CreateDirectory(strTestPath);
 
-            string strModelFileBig = strTestPath + "\\bvlcalexnet-9.onnx";
-            //string strDownloadPathBig = "https://github.com/onnx/models/raw/master/vision/classification/alexnet/model/bvlcalexnet-9.onnx";
             string strModelFileSmall = strTestPath + "\\mnist-1.onnx";
-            string strDownloadPathSmall = "https://github.com/onnx/models/raw/master/vision/classification/mnist/model/mnist-1.onnx";
+            string strDownloadPathSmall = "https://github.com/onnx/models/raw/main/vision/classification/mnist/model/mnist-1.onnx";
             string strDownloadPath = strDownloadPathSmall;
             string strModelFile = strModelFileSmall;
 
@@ -794,7 +792,7 @@ namespace MyCaffe.test
             // Download a small onnx model from https://github.com/onnx (dowload is 26mb)
             double dfSizeInMb = 26;
             string strModel = "mnist-" + nVersion.ToString() + ".onnx";
-            string strUrl = "https://github.com/onnx/models/raw/master/vision/classification/mnist/model/" + strModel;
+            string strUrl = "https://github.com/onnx/models/raw/main/vision/classification/mnist/model/" + strModel;
             return download(strModel, strUrl, dfSizeInMb);
         }
 
@@ -905,7 +903,7 @@ namespace MyCaffe.test
             // Download a small onnx model from https://github.com/onnx (dowload is 76.6mb)
             double dfSizeInMb = 76.6;
             string strModel = "ssd-10.onnx";
-            string strUrl = "https://github.com/onnx/models/raw/master/vision/object_detection_segmentation/ssd/model/" + strModel;
+            string strUrl = "https://github.com/onnx/models/raw/main/vision/object_detection_segmentation/ssd/model/" + strModel;
             return download(strModel, strUrl, dfSizeInMb);
         }
 
@@ -959,7 +957,7 @@ namespace MyCaffe.test
             // Download a small onnx model from https://github.com/onnx (dowload is 76.6mb)
             double dfSizeInMb = 51.9;
             string strModel = "efficientnet-lite4-11.onnx";
-            string strUrl = "https://github.com/onnx/models/raw/master/vision/classification/efficientnet-lite4/model/" + strModel;
+            string strUrl = "https://github.com/onnx/models/raw/main/vision/classification/efficientnet-lite4/model/" + strModel;
             return download(strModel, strUrl, dfSizeInMb);
         }
 
@@ -1009,7 +1007,7 @@ namespace MyCaffe.test
             // Download a small onnx model from https://github.com/onnx (dowload is 233mb)
             double dfSizeInMb = 233;
             string strModel = "bvlcalexnet-9.onnx";
-            string strUrl = "https://github.com/onnx/models/raw/master/vision/classification/alexnet/model/" + strModel;
+            string strUrl = "https://github.com/onnx/models/raw/main/vision/classification/alexnet/model/" + strModel;
             return download(strModel, strUrl, dfSizeInMb);
         }
 
@@ -1055,7 +1053,7 @@ namespace MyCaffe.test
             // Download a small onnx model from https://github.com/onnx (dowload is 26.7mb)
             double dfSizeInMb = 26.7;
             string strModel = "googlenet-9.onnx";
-            string strUrl = "https://github.com/onnx/models/raw/master/vision/classification/inception_and_googlenet/googlenet/model/" + strModel;
+            string strUrl = "https://github.com/onnx/models/raw/main/vision/classification/inception_and_googlenet/googlenet/model/" + strModel;
             return download(strModel, strUrl, dfSizeInMb);
         }
 
@@ -1101,7 +1099,7 @@ namespace MyCaffe.test
             // Download a small onnx model from https://github.com/onnx (dowload is 548mb)
             double dfSizeInMb = 548;
             string strModel = "vgg19-7.onnx";
-            string strUrl = "https://github.com/onnx/models/raw/master/vision/classification/vgg/model/" + strModel;
+            string strUrl = "https://github.com/onnx/models/raw/main/vision/classification/vgg/model/" + strModel;
             return download(strModel, strUrl, dfSizeInMb);
         }
 
@@ -1147,7 +1145,7 @@ namespace MyCaffe.test
             // Download a small onnx model from https://github.com/onnx (dowload is 548mb)
             double dfSizeInMb = 97.8;
             string strModel = "resnet50-v1-7.onnx";
-            string strUrl = "https://github.com/onnx/models/raw/master/vision/classification/resnet/model/" + strModel;
+            string strUrl = "https://github.com/onnx/models/raw/main/vision/classification/resnet/model/" + strModel;
             return download(strModel, strUrl, dfSizeInMb);
         }
 
@@ -1193,7 +1191,7 @@ namespace MyCaffe.test
             // Download a small onnx model from https://github.com/onnx (dowload is 26.7mb)
             double dfSizeInMb = 26.7;
             string strModel = "inception-v1-9.onnx";
-            string strUrl = "https://github.com/onnx/models/raw/master/vision/classification/inception_and_googlenet/inception_v1/model/" + strModel;
+            string strUrl = "https://github.com/onnx/models/raw/main/vision/classification/inception_and_googlenet/inception_v1/model/" + strModel;
             return download(strModel, strUrl, dfSizeInMb);
         }
 
@@ -1239,7 +1237,7 @@ namespace MyCaffe.test
             // Download a small onnx model from https://github.com/onnx (dowload is 26.7mb)
             double dfSizeInMb = 26.7;
             string strModel = "inception-v2-9.onnx";
-            string strUrl = "https://github.com/onnx/models/raw/master/vision/classification/inception_and_googlenet/inception_v2/model/" + strModel;
+            string strUrl = "https://github.com/onnx/models/raw/main/vision/classification/inception_and_googlenet/inception_v2/model/" + strModel;
             return download(strModel, strUrl, dfSizeInMb);
         }
 
