@@ -75,6 +75,9 @@ namespace MyCaffe.basecode
             }
 
 
+            double dfMin1 = dfMin;
+            double dfMax1 = dfMax;
+
             double dfRange = dfMax - dfMin;
             double dfInc = dfRange / m_nResolution;
 
@@ -87,6 +90,9 @@ namespace MyCaffe.basecode
                 dfMin = dfMax;
                 dfMax += dfInc;
             }
+
+            if (m_rgColorMappings.Count == 0)
+                m_rgColorMappings.Add(new KeyValuePair<Color, SizeF>(Color.Black, new SizeF((float)dfMin1, (float)dfMax1)));
 
             m_dfMid = dfRange / 2;
             m_nMidIdx = m_rgColorMappings.Count / 2;
