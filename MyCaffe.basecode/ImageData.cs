@@ -535,12 +535,7 @@ namespace MyCaffe.basecode
                             {
                                 if (dfMin >= 0 && dfMax <= 1.0)
                                 {
-                                    int nG = (int)(rgrgRealData[0][nIdx] * 255.0);
-                                    if (nG < 0)
-                                        nG = 0;
-                                    if (nG > 255)
-                                        nG = 255;
-
+                                    int nG = clip((int)(rgrgRealData[0][nIdx] * 255.0), 0, 255);
                                     clr = Color.FromArgb(nG, nG, nG);
                                 }
                                 else
@@ -553,21 +548,33 @@ namespace MyCaffe.basecode
                             }
                             else
                             {
-                                clr = Color.FromArgb((int)rgrgByteData[0][nIdx], (int)rgrgByteData[0][nIdx], (int)rgrgByteData[0][nIdx]);
+                                int nR = clip((int)rgrgByteData[0][nIdx], 0, 255);
+                                int nG = clip((int)rgrgByteData[0][nIdx], 0, 255);
+                                int nB = clip((int)rgrgByteData[0][nIdx], 0, 255);
+
+                                clr = Color.FromArgb(nR, nG, nB);
                             }
                         }
                         else
                         {
                             if (bDataIsReal)
                             {
-                                clr = Color.FromArgb((int)rgrgRealData[0][nIdx], (int)rgrgRealData[1][nIdx], (int)rgrgRealData[2][nIdx]);
+                                int nR = clip((int)rgrgRealData[0][nIdx], 0, 255);
+                                int nG = clip((int)rgrgRealData[1][nIdx], 0, 255);
+                                int nB = clip((int)rgrgRealData[2][nIdx], 0, 255);
+
+                                clr = Color.FromArgb(nR, nG, nB);
 
                                 if (clrMap != null)
                                     clr = clrMap.GetColor(clr.ToArgb());
                             }
                             else
                             {
-                                clr = Color.FromArgb((int)rgrgByteData[0][nIdx], (int)rgrgByteData[1][nIdx], (int)rgrgByteData[2][nIdx]);
+                                int nR = clip((int)rgrgByteData[0][nIdx], 0, 255);
+                                int nG = clip((int)rgrgByteData[1][nIdx], 0, 255);
+                                int nB = clip((int)rgrgByteData[2][nIdx], 0, 255);
+
+                                clr = Color.FromArgb(nR, nG, nB);
                             }
                         }
 
@@ -585,6 +592,17 @@ namespace MyCaffe.basecode
             }
 
             return bmp;
+        }
+
+        private static int clip(int n, int nMin, int nMax)
+        {
+            if (n < nMin)
+                return nMin;
+
+            if (n > nMax)
+                return nMax;
+
+            return n;
         }
 
         /// <summary>
