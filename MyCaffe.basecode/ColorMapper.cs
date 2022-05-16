@@ -352,14 +352,25 @@ namespace MyCaffe.basecode
             else if (m_dfMin == m_dfMax && m_dfMin == 0)
                 return m_clrNoMinMax;
 
-            else if (m_nLastIdx >= 0 && m_nLastIdx < m_rgColorMappings.Count && dfVal < m_rgColorMappings[m_nLastIdx].Value.Height && dfVal >= m_rgColorMappings[m_nLastIdx].Value.Width)
-                return m_rgColorMappings[m_nLastIdx].Key;
+            else
+            {
+                KeyValuePair<Color, SizeF> item;
 
-            else if (dfVal >= m_rgColorMappings[m_rgColorMappings.Count - 1].Value.Width)
-                return m_rgColorMappings[m_rgColorMappings.Count - 1].Key;
+                if (m_nLastIdx >= 0 && m_nLastIdx < m_rgColorMappings.Count)
+                {
+                    item = m_rgColorMappings[m_nLastIdx];
+                    if (dfVal < item.Value.Height && dfVal >= item.Value.Width)
+                        return item.Key;
+                }
 
-            else if (dfVal < m_rgColorMappings[0].Value.Height)
-                return m_rgColorMappings[0].Key;
+                item = m_rgColorMappings[m_rgColorMappings.Count - 1];
+                if (dfVal >= item.Value.Width)
+                    return item.Key;
+
+                item = m_rgColorMappings[0];
+                if (dfVal < item.Value.Height)
+                    return item.Key;
+            }
 
             int nMinNum = 0;
             int nMaxNum = m_rgColorMappings.Count - 1;
