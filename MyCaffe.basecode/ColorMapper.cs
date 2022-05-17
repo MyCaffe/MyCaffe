@@ -346,6 +346,8 @@ namespace MyCaffe.basecode
         /// <returns>The matching color is returned.</returns>
         public Color GetColor(double dfVal)
         {
+            KeyValuePair<Color, SizeF> item;
+
             if (double.IsNaN(dfVal) || double.IsInfinity(dfVal))
                 return m_clrError;
 
@@ -354,8 +356,6 @@ namespace MyCaffe.basecode
 
             else
             {
-                KeyValuePair<Color, SizeF> item;
-
                 if (m_nLastIdx >= 0 && m_nLastIdx < m_rgColorMappings.Count)
                 {
                     item = m_rgColorMappings[m_nLastIdx];
@@ -378,12 +378,13 @@ namespace MyCaffe.basecode
             while (nMinNum <= nMaxNum)
             {
                 int nMid = (nMinNum + nMaxNum) / 2;
-                SizeF sz = m_rgColorMappings[nMid].Value;
+                item = m_rgColorMappings[nMid];
+                SizeF sz = item.Value;
 
                 if (dfVal < sz.Height && dfVal >= sz.Width)
                 {
                     m_nLastIdx = nMid;
-                    return m_rgColorMappings[nMid].Key;
+                    return item.Key;
                 }
 
                 else if (dfVal == sz.Height)
