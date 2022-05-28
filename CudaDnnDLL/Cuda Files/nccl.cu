@@ -11,6 +11,7 @@
 #include "memory.h"
 #include "..\_nccl\nccl.h"
 #include <nvapi.h>
+#include <nvml.h>
 
 
 //=============================================================================
@@ -181,102 +182,28 @@ template <class T>
 long ncclHandle<T>::isDisplayConnectedToGpu(int nGpuID, bool* pbIsDisplayOn)
 {
 	LONG lErr;
+	nvmlReturn_t res;
+	void* device;
 
-	char rgID[256];
-	if (lErr = cudaDeviceGetPCIBusId(rgID, 255, nGpuID))
+	*pbIsDisplayOn = false;
+
+	char rgPciID[256];
+	if (lErr = cudaDeviceGetPCIBusId(rgPciID, 255, nGpuID))
 		return lErr;
 
-	char* psz = strtok(rgID, ":");
-	if (psz == NULL)
-		return ERROR_PARAM_OUT_OF_RANGE;
+	if ((res = nvmlDeviceGetHandleByPciBusId_v2(rgPciID, (nvmlDevice_t*)&device)) != NVML_SUCCESS)
+		return (int)res;
 
-	psz = strtok(NULL, ":");
-	if (psz == NULL)
-		return ERROR_PARAM_OUT_OF_RANGE;
-
-	int nCudaBusID = atoi(psz);
-
-	NvAPI_Status status;
-
-	if ((status = NvAPI_Initialize()) != NVAPI_OK)
-		return status;
-
-	NvPhysicalGpuHandle gpuHandles[256];
-	NvPhysicalGpuHandle gpuTccHandles[256];
-	NvU32 numOfGPUs;
-	NvU32 numOfTccGPUs;
-
-	if ((status = NvAPI_EnumPhysicalGPUs(gpuHandles, &numOfGPUs)) != NVAPI_OK)
+	nvmlEnableState_t active;
+	if ((res = nvmlDeviceGetDisplayMode((nvmlDevice_t)device, &active)) == NVML_SUCCESS)
 	{
-		NvAPI_Unload();
-		return status;
+		if (active == NVML_FEATURE_ENABLED)
+			*pbIsDisplayOn = true;
 	}
-
-	if ((status = NvAPI_EnumTCCPhysicalGPUs(gpuTccHandles, &numOfTccGPUs)) != NVAPI_OK)
-	{
-		NvAPI_Unload();
-		return status;
-	}
-
-	int nIdx = -1;
-	int nIdxTcc = -1;
-
-	for (int i = 0; i < (int)numOfGPUs; i++)
-	{
-		NvU32 busID = 0;
-
-		if ((status = NvAPI_GPU_GetBusId(gpuHandles[i], &busID)) != NVAPI_OK)
-		{
-			NvAPI_Unload();
-			return status;
-		}
-
-		if (nCudaBusID == (int)busID)
-		{
-			nIdx = i;
-			break;
-		}
-	}
-
-	if (nIdx == -1)
-	{
-		for (int i = 0; i < (int)numOfTccGPUs; i++)
-		{
-			NvU32 busID = 0;
-
-			if ((status = NvAPI_GPU_GetBusId(gpuTccHandles[i], &busID)) != NVAPI_OK)
-			{
-				NvAPI_Unload();
-				return status;
-			}
-
-			if (nCudaBusID == (int)busID)
-			{
-				nIdxTcc = i;
-				break;
-			}
-		}
-	}
-
-	if (nIdx == -1 && nIdxTcc == -1)
-		return ERROR_PARAM_OUT_OF_RANGE;
-
-	NvU32 connectedDisplays = 0;
-
-	if (nIdx > 0)
-	{
-		if ((status = NvAPI_GPU_GetConnectedDisplayIds(gpuHandles[nIdx], NULL, &connectedDisplays, NULL)) != NVAPI_OK)
-		{
-			NvAPI_Unload();
-			return status;
-		}
-	}
-
-	*pbIsDisplayOn = (connectedDisplays > 0) ? true : false;
-	NvAPI_Unload();
 
 	return 0;
 }
+
 
 template <class T>
 void ncclHandle<T>::setBufferSize(long lBufferCount)
@@ -307,6 +234,15 @@ long ncclHandle<T>::Initialize(Memory<T>* pMem, Math<T>* pMath, int nGpuID, int 
 
 	if (nGpuID < 0 || nGpuID >= nDevCount)
 		return ERROR_PARAM_OUT_OF_RANGE;
+
+	if (!m_bNvmlInit)
+	{
+		nvmlReturn_t res;
+		if ((res = nvmlInit_v2()) != NVML_SUCCESS)
+			return (int)res;
+
+		m_bNvmlInit = true;
+	}
 
 	bool bDisplayOn = false;
 	if (lErr = isDisplayConnectedToGpu(nGpuID, &bDisplayOn))
@@ -355,6 +291,12 @@ long ncclHandle<T>::CleanUp()
 			delete m_pData;
 			m_pData = NULL;
 		}
+	}
+
+	if (m_bNvmlInit)
+	{
+		nvmlShutdown();
+		m_bNvmlInit = false;
 	}
 
 	return 0;

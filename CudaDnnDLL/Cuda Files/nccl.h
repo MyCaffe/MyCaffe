@@ -49,6 +49,7 @@ class ncclHandle
 	Math<T>* m_pMath;
 	Data* m_pData;
 	bool m_bOwner;
+	bool m_bNvmlInit;
 
 	long isDisplayConnectedToGpu(int nGpuID, bool* pbIsDisplayOn);
 	void setBufferSize(long lBufferCount);
@@ -59,6 +60,7 @@ public:
 	{
 		m_pData = NULL;
 		m_bOwner = true;
+		m_bNvmlInit = false;
 	}
 
 	int GpuID()
