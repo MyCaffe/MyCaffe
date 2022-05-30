@@ -70,7 +70,7 @@ namespace MyCaffe.layers.beta
         ///     the inputs @f$ x @f$; Backward fills their diff with 
         ///     gradients @f$
         ///         \frac{\partial E}{\partial x}
-        ///             = \text{erf}\left(\log \left(e^x+1\right)\right)+\frac{2 x e^{x-\log^2\left(e^x+1\right)}}{\sqrt{\pi } \left(e^x+1\right)} @f$
+        ///             = \text{erf}\left(\log \left(e^x+1\right)\right)+\frac{2 x e^{x-\log^2\left(e^x+1\right)}}{\sqrt{\pi } \left(e^x+1\right)}
         ///     @f$ if propagate_down[0]
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
