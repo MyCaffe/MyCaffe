@@ -471,8 +471,9 @@ namespace MyCaffe.common
         /// <param name="imgSelMethod">Optionally, specifies the image selection method (default = RANDOM).</param>
         /// <param name="nImageStartIdx">Optionally, specifies the image start index (default = 0).</param>
         /// <param name="dtImageStartTime">Optionally, specifies the image start time (default = null).  Note either the 'nImageStartIdx' or 'dtImageStartTime' may be used, but not both.</param>
+        /// <param name="dfThreshold">Optionally, specifies a threshold where the winning selection must also be above the threshold in score.</param>
         /// <returns>The list of SimpleDatum and their ResultCollections (after running the model on each) is returned.</returns>
-        List<Tuple<SimpleDatum, ResultCollection>> TestMany(int nCount, bool bOnTrainingSet, bool bOnTargetSet = false, IMGDB_IMAGE_SELECTION_METHOD imgSelMethod = IMGDB_IMAGE_SELECTION_METHOD.RANDOM, int nImageStartIdx = 0, DateTime? dtImageStartTime = null);
+        List<Tuple<SimpleDatum, ResultCollection>> TestMany(int nCount, bool bOnTrainingSet, bool bOnTargetSet = false, IMGDB_IMAGE_SELECTION_METHOD imgSelMethod = IMGDB_IMAGE_SELECTION_METHOD.RANDOM, int nImageStartIdx = 0, DateTime? dtImageStartTime = null, double? dfThreshold = null);
         /// <summary>
         /// Run on a given image in the MyCaffeImageDatabase based on its image index.
         /// </summary>

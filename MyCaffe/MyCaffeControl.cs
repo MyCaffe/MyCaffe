@@ -1897,9 +1897,12 @@ namespace MyCaffe
         /// <param name="imgSelMethod">Optionally, specifies the image selection method (default = RANDOM).</param>
         /// <param name="nImageStartIdx">Optionally, specifies the image start index (default = 0).</param>
         /// <param name="dtImageStartTime">Optionally, specifies the image start time (default = null).  Note either the 'nImageStartIdx' or 'dtImageStartTime' may be used, but not both.</param>
+        /// <param name="dfThreshold">Optionally, specifies a threshold where the winning selection must also be above the threshold in score.</param>
         /// <returns>The list of SimpleDatum and their ResultCollections (after running the model on each) is returned.</returns>
-        public List<Tuple<SimpleDatum, ResultCollection>> TestMany(int nCount, bool bOnTrainingSet, bool bOnTargetSet = false, IMGDB_IMAGE_SELECTION_METHOD imgSelMethod = IMGDB_IMAGE_SELECTION_METHOD.RANDOM, int nImageStartIdx = 0, DateTime? dtImageStartTime = null)
+        public List<Tuple<SimpleDatum, ResultCollection>> TestMany(int nCount, bool bOnTrainingSet, bool bOnTargetSet = false, IMGDB_IMAGE_SELECTION_METHOD imgSelMethod = IMGDB_IMAGE_SELECTION_METHOD.RANDOM, int nImageStartIdx = 0, DateTime? dtImageStartTime = null, double? dfThreshold = null)
         {
+            Dictionary<int, int> rgMissedThreshold = new Dictionary<int, int>();
+
             m_lastPhaseRun = Phase.RUN;
 
             UpdateRunWeights(false);
@@ -1967,6 +1970,7 @@ namespace MyCaffe
             int nTotalCount = 0;
             int nMidPoint = 0;
             bool bPad = true;
+            int nImgCount = nCount;
 
             Blob<T> blobData = null;
 
@@ -2065,35 +2069,46 @@ namespace MyCaffe
                     }
                     else
                     {
-                        if (rgResults.ResultsOriginal.Count % 2 != 0)
-                            nMidPoint = (int)Math.Floor(rgResults.ResultsOriginal.Count / 2.0);
-
                         int nDetectedLabel = rgResults.DetectedLabel;
                         int nExpectedLabel = sd.Label;
 
-                        if (labelMapping != null)
+                        if (!dfThreshold.HasValue || rgResults.DetectedLabelOutput >= dfThreshold.Value)
                         {
-                            if (m_dataTransformer.param.label_mapping.Active)
-                                m_log.FAIL("You can use either the LabelMappingLayer or the DataTransformer label_mapping, but not both!");
+                            if (rgResults.ResultsOriginal.Count % 2 != 0)
+                                nMidPoint = (int)Math.Floor(rgResults.ResultsOriginal.Count / 2.0);
 
-                            nExpectedLabel = labelMapping.MapLabel(nExpectedLabel);
+
+                            if (labelMapping != null)
+                            {
+                                if (m_dataTransformer.param.label_mapping.Active)
+                                    m_log.FAIL("You can use either the LabelMappingLayer or the DataTransformer label_mapping, but not both!");
+
+                                nExpectedLabel = labelMapping.MapLabel(nExpectedLabel);
+                            }
+
+                            if (!rgCorrectCounts.ContainsKey(nExpectedLabel))
+                                rgCorrectCounts.Add(nExpectedLabel, 0);
+
+                            if (!rgLabelTotals.ContainsKey(nExpectedLabel))
+                                rgLabelTotals.Add(nExpectedLabel, 1);
+                            else
+                                rgLabelTotals[nExpectedLabel]++;
+
+                            if (nExpectedLabel == nDetectedLabel)
+                            {
+                                nCorrectCount++;
+                                rgCorrectCounts[nExpectedLabel]++;
+                            }
+
+                            nTotalCount++;
                         }
-
-                        if (!rgCorrectCounts.ContainsKey(nExpectedLabel))
-                            rgCorrectCounts.Add(nExpectedLabel, 0);
-
-                        if (!rgLabelTotals.ContainsKey(nExpectedLabel))
-                            rgLabelTotals.Add(nExpectedLabel, 1);
                         else
-                            rgLabelTotals[nExpectedLabel]++;
-
-                        if (nExpectedLabel == nDetectedLabel)
                         {
-                            nCorrectCount++;
-                            rgCorrectCounts[nExpectedLabel]++;
-                        }
+                            if (!rgMissedThreshold.ContainsKey(nExpectedLabel))
+                                rgMissedThreshold.Add(nExpectedLabel, 0);
 
-                        nTotalCount++;
+                            rgMissedThreshold[nExpectedLabel]++;
+                        }
                     }
 
                     double dfPct = ((double)i / (double)nCount);
@@ -2186,6 +2201,20 @@ namespace MyCaffe
                 m_log.WriteLine("Correct above midpoint of " + nMidPoint.ToString() + " = " + dfCorrectPct.ToString("P"));
                 dfCorrectPct = (nTotalBelowAndAbove == 0) ? 0 : nCorrectBelowAndAbove / (double)nTotalBelowAndAbove;
                 m_log.WriteLine("Correct below and above midpoint of " + nMidPoint.ToString() + " = " + dfCorrectPct.ToString("P"));
+            }
+
+            if (rgMissedThreshold.Count > 0)
+            {
+                m_log.WriteLine("---Missed Threshold Items---");
+
+                int nTotal = 0;
+                foreach (KeyValuePair<int, int> kv in rgMissedThreshold)
+                {
+                    m_log.WriteLine("Expected Label " + kv.Key.ToString() + ": " + kv.Value.ToString() + " items missed threshold (" + ((double)kv.Value/nImgCount).ToString("P") + ").");
+                    nTotal += kv.Value;
+                }
+
+                m_log.WriteLine("A total of " + nTotal.ToString() + " items did not meet the threshold of " + dfThreshold.Value.ToString() + ", (" + ((double)nTotal / nImgCount).ToString("P") + ")");
             }
 
             return rgrgResults;
