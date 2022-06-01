@@ -160,21 +160,18 @@ namespace MyCaffe.test
                 List<Tuple<string, string, string>> rgKnownFailures = new List<Tuple<string, string, string>>();
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestContrastiveLossLayer", "TestGradientLegacy", "SKIPPED - Values -0.400000 and 0.158390 are NOT within the range 0.01 of one another."));
 
-                rgKnownFailures.Add(new Tuple<string, string, string>("TestSigmoidCrossEntropyLossLayer", "TestForward", "SKIPPED - Values 14.864425 and 3.398046 are NOT within the range 0.01 of one another."));
-                rgKnownFailures.Add(new Tuple<string, string, string>("TestSigmoidCrossEntropyLossLayer", "TestGradient", "SKIPPED - Values 0.0185186 and 0.0365138 are NOT within the range 0.01 of one another."));
-
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestNeuronLayer", "TestDropoutGradientCuDnn", "SKIPPED - Values 4 and 52.572381 are not within the range of 0.05257 of one another."));
 
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestMultiBoxLossLayer", "TestLocGradientGpu", "SKIPPED - CUDA: Invalid parameter."));
 
-                rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_1btmA0", "SKIPPED - Testing work in progress."));
-                rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_1btmAp5", "SKIPPED - Testing work in progress."));
-                rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_2btmA0", "SKIPPED - Testing work in progress."));
-                rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_2btmAp5", "SKIPPED - Testing work in progress."));
-                rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_1btmA0_CUDNN", "SKIPPED - Testing work in progress."));
-                rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_1btmAp5_CUDNN", "SKIPPED - Testing work in progress."));
-                rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_2btmA0_CUDNN", "SKIPPED - Testing work in progress."));
-                rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_2btmAp5_CUDNN", "SKIPPED - Testing work in progress."));
+                //rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_1btmA0", "SKIPPED - Testing work in progress."));
+                //rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_1btmAp5", "SKIPPED - Testing work in progress."));
+                //rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_2btmA0", "SKIPPED - Testing work in progress."));
+                //rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_2btmAp5", "SKIPPED - Testing work in progress."));
+                //rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_1btmA0_CUDNN", "SKIPPED - Testing work in progress."));
+                //rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_1btmAp5_CUDNN", "SKIPPED - Testing work in progress."));
+                //rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_2btmA0_CUDNN", "SKIPPED - Testing work in progress."));
+                //rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_2btmAp5_CUDNN", "SKIPPED - Testing work in progress."));
 
                 return rgKnownFailures;
             }
