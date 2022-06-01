@@ -11264,7 +11264,7 @@ __global__ void sigmoid_cross_entropy_kernel(const int nthreads, const T* input_
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
 	{
-		const int target_val = (int)target[i];
+		const T target_val = target[i];
 		const T input_val = input_data[i];
 		loss[i] = input_val * (target_val - (input_val >= 0)) -
 			log(1 + exp(input_val - 2 * input_val * (input_val >= 0)));
@@ -11277,9 +11277,9 @@ __global__ void sigmoid_cross_entropy_kernel_withignore(const int nthreads, cons
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
 	{
-		const int target_val = (int)target[i];
+		const T target_val = target[i];
 
-		if (target_val == ignore_label)
+		if ((int)target_val == ignore_label)
 		{
 			loss[i] = 0;
 			counts[i] = 0;
