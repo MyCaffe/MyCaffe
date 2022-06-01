@@ -106,9 +106,9 @@ namespace MyCaffe.layers
         {
             base.LayerSetUp(colBottom, colTop);
 
-            m_colSigmoidBottomVec = new BlobCollection<T>();
+            m_colSigmoidBottomVec.Clear();
             m_colSigmoidBottomVec.Add(colBottom[0]);
-            m_colSigmoidTopVec = new BlobCollection<T>();
+            m_colSigmoidTopVec.Clear();
             m_colSigmoidTopVec.Add(m_blobSigmoidOutput);
             m_sigmoidLayer.Setup(m_colSigmoidBottomVec, m_colSigmoidTopVec);
 
