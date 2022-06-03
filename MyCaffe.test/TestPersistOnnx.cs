@@ -563,9 +563,9 @@ namespace MyCaffe.test
                 Directory.CreateDirectory(strTestPath);
 
             string strModelFileBig = strTestPath + "\\bvlcalexnet-9.onnx";
-            //string strDownloadPathBig = "https://github.com/onnx/models/raw/master/vision/classification/alexnet/model/bvlcalexnet-9.onnx";
+            //string strDownloadPathBig = "https://github.com/onnx/models/raw/main/vision/classification/alexnet/model/bvlcalexnet-9.onnx";
             string strModelFileSmall = strTestPath + "\\mnist-1.onnx";
-            string strDownloadPathSmall = "https://github.com/onnx/models/raw/master/vision/classification/mnist/model/mnist-1.onnx";
+            string strDownloadPathSmall = "https://github.com/onnx/models/raw/main/vision/classification/mnist/model/mnist-1.onnx";
             string strDownloadPath = strDownloadPathSmall;
             string strModelFile = strModelFileSmall;
 
