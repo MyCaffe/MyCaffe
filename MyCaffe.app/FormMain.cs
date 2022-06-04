@@ -67,6 +67,7 @@ namespace MyCaffe.app
         Size m_szTestImageSize = new Size(28, 28);
         int m_nTestImageIdx = 0;
         string m_strTestImageFolder = "";
+        bool m_bFormClosing = false;
 
         delegate void fnVerifyGpu(int nGpuId);
         delegate void fnSetStatus(string strMsg, STATUS status, bool bBreath);
@@ -138,7 +139,7 @@ namespace MyCaffe.app
         {
             try
             {
-                // Initialize the GYM HOst
+                // Initialize the GYM Host
                 m_gymHost = new MyCaffeGymUiServiceHost();
 
                 try
@@ -541,6 +542,7 @@ namespace MyCaffe.app
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            m_evtCaffeCancel.Set();
             m_evtCancel.Set();
             m_evtThreadDone.WaitOne();
             Close();
@@ -823,8 +825,11 @@ namespace MyCaffe.app
                         else if (m_netType == NET_TYPE.TRIPLETNET)
                             strModel = System.Text.Encoding.UTF8.GetString(Properties.Resources.triplet_train_val);
 
-                        m_caffeRun.LoadToRun(strModel, m_rgTrainedWeights, new BlobShape(1, 1, 28, 28), m_sdImageMean);
-                        runTestImageToolStripMenuItem.Enabled = true;
+                        if (m_caffeRun != null)
+                        {
+                            m_caffeRun.LoadToRun(strModel, m_rgTrainedWeights, new BlobShape(1, 1, 28, 28), m_sdImageMean);
+                            runTestImageToolStripMenuItem.Enabled = true;
+                        }
                     }
                     else
                     {
@@ -1217,6 +1222,13 @@ namespace MyCaffe.app
 
         private void FormMain_FormClosing(object sender, FormClosingEventArgs e)
         {
+            m_evtCaffeCancel.Set();
+            m_evtCancel.Set();
+            m_evtThreadDone.WaitOne();
+
+            m_bFormClosing = true;
+            Hide();
+
             if (m_caffeRun != null)
             {
                 ((IDisposable)m_caffeRun).Dispose();
@@ -1230,6 +1242,15 @@ namespace MyCaffe.app
 
             m_evtCancelTraining.Set();
             m_evtCancelNs.Set();
+
+            if (m_trainerTask != null)
+                m_trainerTask.Wait();
+
+            if (m_nsTask != null)
+                m_nsTask.Wait();
+
+            if (m_gymHost != null)
+                m_gymHost.Close();
         }
 
         #region Server Based Autotesting
@@ -1743,6 +1764,9 @@ namespace MyCaffe.app
 
         private void Log_OnWriteLine1(object sender, LogArg e)
         {
+            if (m_bFormClosing)
+                return;
+
             if (e.Error)
                 m_log.WriteError(new Exception(e.Message));
             else
@@ -1857,7 +1881,8 @@ namespace MyCaffe.app
             test.Log.OnWriteLine -= log_OnWriteLine1;
             test.Dispose();
 
-            this.Invoke(new fnNsDone(nsDone));
+            if (!evtCancel.WaitOne(0))
+                this.Invoke(new fnNsDone(nsDone));
         }
 
         private void showGymUiToolStripMenuItem_Click(object sender, EventArgs e)
