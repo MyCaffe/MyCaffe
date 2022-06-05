@@ -1057,6 +1057,30 @@ namespace MyCaffe.test.automated
             }
         }
 
+        private void saveChanges(TestingEntities entities)
+        {
+            bool bDirSet = false;
+            string strCurDir = Directory.GetCurrentDirectory();
+
+            try
+            {
+                string strSqlTypesDir = AssemblyDirectory + "\\SqlServerTypes\\x64";
+
+                if (Directory.Exists(strSqlTypesDir))
+                {
+                    Directory.SetCurrentDirectory(strSqlTypesDir);
+                    bDirSet = true;
+                }
+
+                entities.SaveChanges();
+            }
+            finally
+            {
+                if (bDirSet)
+                    Directory.SetCurrentDirectory(strCurDir);
+            }
+        }
+
         public void SaveToDatabase(TestClass tc, MethodInfoEx mi, Exception err = null)
         {
             using (TestingEntities entities = TestEntitiesConnection.CreateEntities())
@@ -1093,26 +1117,8 @@ namespace MyCaffe.test.automated
                         rgTest[0].Success = (mi.Status == MethodInfoEx.STATUS.Passed) ? true : false;
                         decimal dTiming = Math.Min(9999999, (decimal)mi.TestTiming.TotalMilliseconds);
                         rgTest[0].TestTiming = dTiming;
-                        bool bDirSet = false;
-                        string strCurDir = Directory.GetCurrentDirectory();
 
-                        try
-                        {
-                            string strSqlTypesDir = AssemblyDirectory + "\\SqlServerTypes\\x64";
-
-                            if (Directory.Exists(strSqlTypesDir))
-                            {
-                                Directory.SetCurrentDirectory(strSqlTypesDir);
-                                bDirSet = true;
-                            }
-
-                            entities.SaveChanges();
-                        }
-                        finally
-                        {
-                            if (bDirSet)
-                                Directory.SetCurrentDirectory(strCurDir);
-                        }
+                        saveChanges(entities);
                     }
                 }
             }
@@ -1154,7 +1160,7 @@ namespace MyCaffe.test.automated
                 if (rgSessions.Count == 0)
                     entities.Sessions.AddObject(s);
 
-                entities.SaveChanges();
+                saveChanges(entities);
 
                 foreach (TestClass tc in m_rgClasses)
                 {
@@ -1190,7 +1196,7 @@ namespace MyCaffe.test.automated
                     }
                 }
 
-                entities.SaveChanges();
+                saveChanges(entities);
             }
         }
 
