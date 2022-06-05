@@ -731,6 +731,25 @@ namespace MyCaffe.test.automated
             return rgstr.ToArray();
         }
 
+        private Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
+        {
+            if (args.Name.Contains(".resources"))
+                return null;
+
+            int nPos = args.Name.IndexOf(',');
+            if (nPos >= 0)
+            {
+                string strName = args.Name.Substring(0, nPos) + ".dll";
+                string strPath = AssemblyDirectory + "\\" + strName;
+
+                Trace.WriteLine("Loading '" + strPath + "'.");
+
+                return Assembly.LoadFile(strPath);
+            }
+
+            return null;
+        }
+
         public void Run(AutoResetEvent evtCancel, bool bSkip, bool bServerMode = false, int nGpuId = 0, IMGDB_VERSION nImgDbVer = IMGDB_VERSION.DEFAULT, string strCudaPath = "", string strCulture = "en-US")
         {
             m_testTask = Task.Factory.StartNew(new Action<object>(testThread), new Tuple<AutoResetEvent, bool, bool, int, int, string, string>(evtCancel, bSkip, bServerMode, nGpuId, (int)nImgDbVer, strCudaPath, strCulture), TaskCreationOptions.LongRunning);
@@ -749,7 +768,8 @@ namespace MyCaffe.test.automated
             TestClass tcCurrent = null;
             MethodInfoEx miCurrent = null;
 
-            
+            AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+
             m_nCurrentTest = 0;
             m_swTiming.Reset();
             m_swTiming.Start();
@@ -1026,6 +1046,17 @@ namespace MyCaffe.test.automated
             m_rgClasses.Clear();
         }
 
+        public static string AssemblyDirectory
+        {
+            get
+            {
+                string codeBase = Assembly.GetExecutingAssembly().CodeBase;
+                UriBuilder uri = new UriBuilder(codeBase);
+                string path = Uri.UnescapeDataString(uri.Path);
+                return System.IO.Path.GetDirectoryName(path);
+            }
+        }
+
         public void SaveToDatabase(TestClass tc, MethodInfoEx mi, Exception err = null)
         {
             using (TestingEntities entities = TestEntitiesConnection.CreateEntities())
@@ -1062,8 +1093,26 @@ namespace MyCaffe.test.automated
                         rgTest[0].Success = (mi.Status == MethodInfoEx.STATUS.Passed) ? true : false;
                         decimal dTiming = Math.Min(9999999, (decimal)mi.TestTiming.TotalMilliseconds);
                         rgTest[0].TestTiming = dTiming;
+                        bool bDirSet = false;
+                        string strCurDir = Directory.GetCurrentDirectory();
 
-                        entities.SaveChanges();
+                        try
+                        {
+                            string strSqlTypesDir = AssemblyDirectory + "\\SqlServerTypes\\x64";
+
+                            if (Directory.Exists(strSqlTypesDir))
+                            {
+                                Directory.SetCurrentDirectory(strSqlTypesDir);
+                                bDirSet = true;
+                            }
+
+                            entities.SaveChanges();
+                        }
+                        finally
+                        {
+                            if (bDirSet)
+                                Directory.SetCurrentDirectory(strCurDir);
+                        }
                     }
                 }
             }
