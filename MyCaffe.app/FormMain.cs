@@ -1222,12 +1222,12 @@ namespace MyCaffe.app
 
         private void FormMain_FormClosing(object sender, FormClosingEventArgs e)
         {
+            Hide();
             m_evtCaffeCancel.Set();
             m_evtCancel.Set();
-            m_evtThreadDone.WaitOne();
+            m_evtThreadDone.WaitOne(5000);
 
             m_bFormClosing = true;
-            Hide();
 
             if (m_caffeRun != null)
             {
@@ -1244,13 +1244,10 @@ namespace MyCaffe.app
             m_evtCancelNs.Set();
 
             if (m_trainerTask != null)
-                m_trainerTask.Wait();
+                m_trainerTask.Wait(5000);
 
             if (m_nsTask != null)
-                m_nsTask.Wait();
-
-            if (m_gymHost != null)
-                m_gymHost.Close();
+                m_nsTask.Wait(5000);
         }
 
         #region Server Based Autotesting
