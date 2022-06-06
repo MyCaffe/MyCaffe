@@ -92,29 +92,55 @@ void freeKernelTables()
 	// Only delete the global kernel for the others
 	// are deleted by the respective owners.
 
-	for (DWORD dwIdx = 0; dwIdx<1; dwIdx++)
-	{	
-		if (g_rgdwDoubleKernelTable[dwIdx] != NULL)
+	try
+	{
+		for (DWORD dwIdx = 0; dwIdx < MAX_KERNELS; dwIdx++)
 		{
-			delete g_rgdwDoubleKernelTable[dwIdx];
-			g_rgdwDoubleKernelTable[dwIdx] = NULL;
+			if (g_rgdwDoubleKernelTable[dwIdx] != NULL)
+			{
+				delete g_rgdwDoubleKernelTable[dwIdx];
+				g_rgdwDoubleKernelTable[dwIdx] = NULL;
+			}
 		}
+	}
+	catch (...)
+	{
 	}
 
 	LeaveCriticalSection(&g_DoubleKernelTableLock);
-	DeleteCriticalSection(&g_DoubleKernelTableLock);
+
+	try
+	{
+		//DeleteCriticalSection(&g_DoubleKernelTableLock);
+	}
+	catch (...)
+	{
+	}
 
 	EnterCriticalSection(&g_FloatKernelTableLock);
 
-	for (DWORD dwIdx = 0; dwIdx<1; dwIdx++)
-	{	
-		if (g_rgdwFloatKernelTable[dwIdx] != NULL)
+	try
+	{
+		for (DWORD dwIdx = 0; dwIdx < MAX_KERNELS; dwIdx++)
 		{
-			delete g_rgdwFloatKernelTable[dwIdx];
-			g_rgdwFloatKernelTable[dwIdx] = NULL;
+			if (g_rgdwFloatKernelTable[dwIdx] != NULL)
+			{
+				delete g_rgdwFloatKernelTable[dwIdx];
+				g_rgdwFloatKernelTable[dwIdx] = NULL;
+			}
 		}
+	}
+	catch (...)
+	{
 	}
 
 	LeaveCriticalSection(&g_FloatKernelTableLock);
-	DeleteCriticalSection(&g_FloatKernelTableLock);
+
+	try
+	{
+		//DeleteCriticalSection(&g_FloatKernelTableLock);
+	}
+	catch (...)
+	{
+	}
 }
