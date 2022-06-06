@@ -36,6 +36,34 @@
 
 const int CAFFE_CUDA_NUM_THREADS	= 512;
 
+//=============================================================================
+//	Local Classes
+//=============================================================================
+
+class Lock
+{
+    CRITICAL_SECTION* m_plock;
+
+public:
+    Lock(CRITICAL_SECTION* plock)
+    {
+        m_plock = NULL;
+
+        if (plock->LockCount <= -1)
+        {
+            m_plock = plock;
+            EnterCriticalSection(m_plock);
+        }
+    }
+
+    ~Lock()
+    {
+        if (m_plock != NULL && m_plock->LockCount < -1)
+            LeaveCriticalSection(m_plock);
+        m_plock = NULL;
+    }
+};
+
 
 //-----------------------------------------------------------------------------
 //	Funtion Overrides
@@ -92,6 +120,7 @@ const int CAFFE_CUDA_NUM_THREADS	= 512;
 //-----------------------------------------------------------------------------
 
 const int ERROR_BASE							= 90000;
+const int ERROR_DLL_NOT_INIT = ERROR_BASE - 1;
 const int ERROR_PARAM							= ERROR_BASE;
 const int ERROR_PARAM_OUT_OF_RANGE				= ERROR_PARAM + 1;
 const int ERROR_PARAM_NULL						= ERROR_PARAM + 2;
@@ -108,7 +137,7 @@ const int ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED  = ERROR_PARAM + 12;
 const int ERROR_MEMORY_NOT_FOUND				= ERROR_PARAM + 14;
 const int ERROR_BATCH_TOO_SMALL					= ERROR_PARAM + 15;
 const int ERROR_MEMORY_TOO_SMALL                = ERROR_PARAM + 16;
-const int ERROR_DEVICE_NOT_INITIALIZED = ERROR_PARAM + 17;
+const int ERROR_DEVICE_NOT_INITIALIZED          = ERROR_PARAM + 17;
 
 const int ERROR_CUBLAS_NULL						= ERROR_PARAM + 18;
 

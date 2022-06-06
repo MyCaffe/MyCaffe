@@ -45,6 +45,10 @@ bool GetErrorString(long lKernel, long lErr, char* szErr, long lMaxErr)
 
 	switch (lErr)
 	{
+		case ERROR_DLL_NOT_INIT:
+			_snprintf(szErr, lMaxErr, "DLL: The DLL is not initialized (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
+
 		case ERROR_DEVICE_NOT_INITIALIZED:
 			_snprintf(szErr, lMaxErr, "DEVICE: The device is not initialized error (%ld), Kernel = %ld", lErr, lKernel);
 			return true;
