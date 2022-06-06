@@ -1208,7 +1208,10 @@ LONG getKernelDoubleIndex(LONG* plIdx)
 		}
 
 		if (g_dwLastKernelDoubleIndex == g_dwMaxKernelCount)
+		{
+			LeaveCriticalSection(&g_DoubleKernelTableLock);
 			return ERROR_MEMORY_OUT;
+		}
 	}
 
 	*plIdx = (LONG)g_dwLastKernelDoubleIndex;
@@ -1237,7 +1240,10 @@ LONG getKernelFloatIndex(LONG* plIdx)
 		}
 
 		if (g_dwLastKernelFloatIndex == g_dwMaxKernelCount)
+		{
+			LeaveCriticalSection(&g_FloatKernelTableLock);
 			return ERROR_MEMORY_OUT;
+		}
 	}
 
 	*plIdx = (LONG)g_dwLastKernelFloatIndex;
