@@ -13,29 +13,6 @@
 #define USES_CONVERSION_SIMPLE int _convert; UINT _acp = ATL::_AtlGetConversionACP() /*CP_THREAD_ACP*/; LPCSTR _lpa;
 
 //=============================================================================
-//	Local Classes
-//=============================================================================
-
-class Lock
-{
-	CRITICAL_SECTION* m_plock;
-
-public:
-	Lock(CRITICAL_SECTION* plock)
-	{
-		m_plock = plock;
-		EnterCriticalSection(m_plock);
-	}
-
-	~Lock()
-	{
-		LeaveCriticalSection(m_plock);	
-		m_plock = NULL;
-	}
-};
-
-
-//=============================================================================
 //	Class Methods - HwInfo
 //=============================================================================
 
@@ -126,7 +103,7 @@ long HwInfo<T>::CleanUp()
 	if (m_bInitializedNvApi)
 	{
 		NvAPI_Unload();
-		m_bInitializedNvml = FALSE;
+		m_bInitializedNvApi = FALSE;
 	}
 
 	return 0;
@@ -992,6 +969,9 @@ long Device<T>::SetMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput
 		return ERROR_PARAM_OUT_OF_RANGE;
 
 	// Lock in critical section from this point to end of function.
+	if (!m_bMemHostLockInit)
+		return ERROR_DLL_NOT_INIT;
+
 	Lock lock(&m_MemHostLock);
 
 	if (m_hSetMemHost == 0)

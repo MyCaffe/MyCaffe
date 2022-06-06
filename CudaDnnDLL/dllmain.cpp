@@ -9,7 +9,9 @@ DWORD g_dwMaxKernelCount = MAX_KERNELS;
 DWORD g_dwLastKernelDoubleIndex = 1;
 DWORD g_dwLastKernelFloatIndex = 1;
 CRITICAL_SECTION g_DoubleKernelTableLock;
+bool m_bDoubleKernelTableLockInit = false;
 CRITICAL_SECTION g_FloatKernelTableLock;
+bool m_bFloatKernelTableLockInit = false;
 
 void initializeKernelTables();
 void freeKernelTables();
@@ -58,6 +60,7 @@ void initializeKernelTables()
 	if (!InitializeCriticalSectionAndSpinCount(&g_DoubleKernelTableLock, 0x00000400))
 		return;
 
+	m_bDoubleKernelTableLockInit = true;
 	EnterCriticalSection(&g_DoubleKernelTableLock);
 
 	for (DWORD dwIdx = 0; dwIdx < MAX_KERNELS; dwIdx++)
@@ -75,6 +78,7 @@ void initializeKernelTables()
 	if (!InitializeCriticalSectionAndSpinCount(&g_FloatKernelTableLock, 0x00000400))
 		return;
 
+	m_bFloatKernelTableLockInit = true;
 	EnterCriticalSection(&g_FloatKernelTableLock);
 
 	for (DWORD dwIdx = 0; dwIdx < MAX_KERNELS; dwIdx++)
@@ -87,60 +91,82 @@ void initializeKernelTables()
 
 void freeKernelTables()
 {
-	EnterCriticalSection(&g_DoubleKernelTableLock);
-
-	// Only delete the global kernel for the others
-	// are deleted by the respective owners.
-
-	try
+	if (m_bDoubleKernelTableLockInit)
 	{
-		for (DWORD dwIdx = 0; dwIdx < MAX_KERNELS; dwIdx++)
+		EnterCriticalSection(&g_DoubleKernelTableLock);
+
+		// Only delete the global kernel for the others
+		// are deleted by the respective owners.
+
+		try
 		{
-			if (g_rgdwDoubleKernelTable[dwIdx] != NULL)
+			for (DWORD dwIdx = 0; dwIdx < MAX_KERNELS; dwIdx++)
 			{
-				delete g_rgdwDoubleKernelTable[dwIdx];
-				g_rgdwDoubleKernelTable[dwIdx] = NULL;
+				if (g_rgdwDoubleKernelTable[dwIdx] != NULL)
+				{
+					delete g_rgdwDoubleKernelTable[dwIdx];
+					g_rgdwDoubleKernelTable[dwIdx] = NULL;
+				}
 			}
 		}
-	}
-	catch (...)
-	{
-	}
-
-	LeaveCriticalSection(&g_DoubleKernelTableLock);
-
-	try
-	{
-		//DeleteCriticalSection(&g_DoubleKernelTableLock);
-	}
-	catch (...)
-	{
-	}
-
-	EnterCriticalSection(&g_FloatKernelTableLock);
-
-	try
-	{
-		for (DWORD dwIdx = 0; dwIdx < MAX_KERNELS; dwIdx++)
+		catch (...)
 		{
-			if (g_rgdwFloatKernelTable[dwIdx] != NULL)
-			{
-				delete g_rgdwFloatKernelTable[dwIdx];
-				g_rgdwFloatKernelTable[dwIdx] = NULL;
-			}
+		}
+
+		m_bDoubleKernelTableLockInit = false;
+		LeaveCriticalSection(&g_DoubleKernelTableLock);
+
+		try
+		{
+			if (g_DoubleKernelTableLock.LockCount == -1)
+				DeleteCriticalSection(&g_DoubleKernelTableLock);
+			else
+				OutputDebugStringA("CudaDnnDLL Double CS still locked.");
+		}
+		catch (...)
+		{
 		}
 	}
-	catch (...)
+	else
 	{
+		OutputDebugStringA("CudaDnnDLL Double CS NOT INIT!");
 	}
 
-	LeaveCriticalSection(&g_FloatKernelTableLock);
+	if (m_bFloatKernelTableLockInit)
+	{
+		EnterCriticalSection(&g_FloatKernelTableLock);
 
-	try
-	{
-		//DeleteCriticalSection(&g_FloatKernelTableLock);
+		try
+		{
+			for (DWORD dwIdx = 0; dwIdx < MAX_KERNELS; dwIdx++)
+			{
+				if (g_rgdwFloatKernelTable[dwIdx] != NULL)
+				{
+					delete g_rgdwFloatKernelTable[dwIdx];
+					g_rgdwFloatKernelTable[dwIdx] = NULL;
+				}
+			}
+		}
+		catch (...)
+		{
+		}
+
+		m_bFloatKernelTableLockInit = false;
+		LeaveCriticalSection(&g_FloatKernelTableLock);
+
+		try
+		{
+			if (g_FloatKernelTableLock.LockCount == -1)
+				DeleteCriticalSection(&g_FloatKernelTableLock);
+			else
+				OutputDebugStringA("CudaDnnDLL Float CS still locked.");
+		}
+		catch (...)
+		{
+		}
 	}
-	catch (...)
+	else
 	{
+		OutputDebugStringA("CudaDnnDLL Float CS NOT INIT!");
 	}
 }

@@ -24,8 +24,9 @@ extern DWORD g_dwMaxKernelCount;
 extern DWORD g_dwLastKernelDoubleIndex;
 extern DWORD g_dwLastKernelFloatIndex;
 extern CRITICAL_SECTION g_DoubleKernelTableLock;
+extern bool m_bDoubleKernelTableLockInit;
 extern CRITICAL_SECTION g_FloatKernelTableLock;
-
+extern bool m_bFloatKernelTableLockInit;
 
 //=============================================================================
 //	Cuda Objects
@@ -1191,7 +1192,10 @@ void getError(long lKernel, long lErr, LPTSTR szErr, LONG lszErrMax)
 
 LONG getKernelDoubleIndex(LONG* plIdx)
 {
-	EnterCriticalSection(&g_DoubleKernelTableLock);
+	if (!m_bDoubleKernelTableLockInit)
+		return ERROR_DLL_NOT_INIT;
+
+	Lock lock(&g_DoubleKernelTableLock);
 
 	while (g_rgdwDoubleKernelTable[g_dwLastKernelDoubleIndex] != NULL && g_dwLastKernelDoubleIndex < g_dwMaxKernelCount)
 	{
@@ -1208,22 +1212,20 @@ LONG getKernelDoubleIndex(LONG* plIdx)
 		}
 
 		if (g_dwLastKernelDoubleIndex == g_dwMaxKernelCount)
-		{
-			LeaveCriticalSection(&g_DoubleKernelTableLock);
 			return ERROR_MEMORY_OUT;
-		}
 	}
 
 	*plIdx = (LONG)g_dwLastKernelDoubleIndex;
-
-	LeaveCriticalSection(&g_DoubleKernelTableLock);
 
 	return 0;
 }
 
 LONG getKernelFloatIndex(LONG* plIdx)
 {
-	EnterCriticalSection(&g_FloatKernelTableLock);
+	if (!m_bFloatKernelTableLockInit)
+		return ERROR_DLL_NOT_INIT;
+
+	Lock lock(&g_FloatKernelTableLock);
 
 	while (g_rgdwFloatKernelTable[g_dwLastKernelFloatIndex] != NULL && g_dwLastKernelFloatIndex < g_dwMaxKernelCount)
 	{
@@ -1240,15 +1242,10 @@ LONG getKernelFloatIndex(LONG* plIdx)
 		}
 
 		if (g_dwLastKernelFloatIndex == g_dwMaxKernelCount)
-		{
-			LeaveCriticalSection(&g_FloatKernelTableLock);
 			return ERROR_MEMORY_OUT;
-		}
 	}
 
 	*plIdx = (LONG)g_dwLastKernelFloatIndex;
-
-	LeaveCriticalSection(&g_FloatKernelTableLock);
 
 	return 0;
 }

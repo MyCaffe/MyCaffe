@@ -111,6 +111,7 @@ class Device
 		int m_nMinor = 0;
 		long m_hSetMemHost = 0;
 		CRITICAL_SECTION m_MemHostLock;
+		bool m_bMemHostLockInit = FALSE;
 		bool m_bInitialized = FALSE;
 
 		long verifyInput(long lInput, T* pfInput, long lMin, long lMax, bool bExact = false);
@@ -662,6 +663,8 @@ inline Device<T>::Device() : m_memory(), m_math(), m_hwInfo()
 
 	if (!InitializeCriticalSectionAndSpinCount(&m_MemHostLock, 0x00000400))
 		return;
+
+	m_bMemHostLockInit = true;
 }
 
 template <class T>
@@ -669,10 +672,24 @@ inline Device<T>::~Device()
 {
 	if (m_hSetMemHost != 0)
 	{
-		EnterCriticalSection(&m_MemHostLock);
-		m_memory.FreeHostBuffer(m_hSetMemHost);
-		m_hSetMemHost = 0;
-		LeaveCriticalSection(&m_MemHostLock);
+		if (m_bMemHostLockInit)
+		{
+			try
+			{
+				EnterCriticalSection(&m_MemHostLock);
+				m_memory.FreeHostBuffer(m_hSetMemHost);
+				m_hSetMemHost = 0;
+				m_bMemHostLockInit = false;
+				LeaveCriticalSection(&m_MemHostLock);
+			}
+			catch (...)
+			{
+			}
+		}
+		else
+		{
+			m_hSetMemHost = 0;
+		}
 	}
 
 	if (m_curand != NULL)
@@ -695,7 +712,17 @@ inline Device<T>::~Device()
 
 	CleanUp();
 
-	DeleteCriticalSection(&m_MemHostLock);
+	if (m_MemHostLock.LockCount == -1)
+	{
+		try
+		{
+			m_bMemHostLockInit = false;
+			DeleteCriticalSection(&m_MemHostLock);
+		}
+		catch (...)
+		{
+		}
+	}
 }
 
 template <class T>
