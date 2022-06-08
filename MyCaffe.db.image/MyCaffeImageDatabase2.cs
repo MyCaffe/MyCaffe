@@ -332,7 +332,7 @@ namespace MyCaffe.db.image
         {
             lock (m_syncObject)
             {
-                if (m_evtInitializing.WaitOne(0))
+                if (m_evtInitializing != null && m_evtInitializing.WaitOne(0))
                 {
                     m_evtAbortInitialization.Set();
                     return;
