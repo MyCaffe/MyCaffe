@@ -961,11 +961,11 @@ namespace MyCaffe.basecode
                 for (int i = 0; i < m_rgRealDataF.Length; i++)
                 {
                     if (sd.m_rgRealDataD != null)
-                        m_rgRealDataD[i] -= sd.m_rgRealDataD[i];
+                        m_rgRealDataF[i] -= (float)sd.m_rgRealDataD[i];
                     else if (sd.m_rgRealDataF != null)
-                        m_rgRealDataD[i] -= sd.m_rgRealDataF[i];
+                        m_rgRealDataF[i] -= sd.m_rgRealDataF[i];
                     else if (sd.m_rgByteData != null)
-                        m_rgRealDataD[i] -= sd.m_rgByteData[i];
+                        m_rgRealDataF[i] -= sd.m_rgByteData[i];
 
                     if (m_rgRealDataF[i] != 0)
                     {
