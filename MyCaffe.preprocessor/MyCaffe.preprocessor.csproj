@@ -42,6 +42,9 @@
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>mycaffe.preprocessor.pfx</AssemblyOriginatorKeyFile>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>MainIcon.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -83,6 +86,9 @@
       <Project>{28E430DD-BD6C-4A4C-9454-1EEB4AD63A5C}</Project>
       <Name>MyCaffe</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="MainIcon.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

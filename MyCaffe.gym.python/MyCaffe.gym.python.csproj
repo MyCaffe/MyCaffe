@@ -42,6 +42,9 @@
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>mycaffe.gym.python.pfx</AssemblyOriginatorKeyFile>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>MainIcon.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -72,6 +75,9 @@
   <ItemGroup>
     <None Include="app.config" />
     <None Include="mycaffe.gym.python.pfx" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="MainIcon.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
