@@ -38,6 +38,8 @@
             this.loadMNISTToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.loadCIFAR10ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.loadVOC2007ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
+            this.getSQLExpressToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.testToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.runAutotestsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
@@ -62,6 +64,7 @@
             this.specialTestsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.alexNetToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.resNet56CifarAccuracyBugToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.testPythonInteropToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
             this.startCartPoleTrainerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.startAtariTrainerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -86,7 +89,7 @@
             this.m_bwLoadCiFar10Database = new System.ComponentModel.BackgroundWorker();
             this.m_bwInit = new System.ComponentModel.BackgroundWorker();
             this.m_bwUrlCheck = new System.ComponentModel.BackgroundWorker();
-            this.lvStatus = new ListViewEx();
+            this.lvStatus = new MyCaffe.app.ListViewEx();
             this.colStatus = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.lblGpu = new System.Windows.Forms.ToolStripStatusLabel();
@@ -94,8 +97,6 @@
             this.lblCudaPath = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
             this.m_bwLoadVOCDatabase = new System.ComponentModel.BackgroundWorker();
-            this.toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
-            this.getSQLExpressToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -147,30 +148,42 @@
             // createDatabaseToolStripMenuItem
             // 
             this.createDatabaseToolStripMenuItem.Name = "createDatabaseToolStripMenuItem";
-            this.createDatabaseToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.createDatabaseToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
             this.createDatabaseToolStripMenuItem.Text = "&Create Database";
             this.createDatabaseToolStripMenuItem.Click += new System.EventHandler(this.createDatabaseToolStripMenuItem_Click);
             // 
             // loadMNISTToolStripMenuItem
             // 
             this.loadMNISTToolStripMenuItem.Name = "loadMNISTToolStripMenuItem";
-            this.loadMNISTToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.loadMNISTToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
             this.loadMNISTToolStripMenuItem.Text = "Load MNIST...";
             this.loadMNISTToolStripMenuItem.Click += new System.EventHandler(this.loadMNISTToolStripMenuItem_Click);
             // 
             // loadCIFAR10ToolStripMenuItem
             // 
             this.loadCIFAR10ToolStripMenuItem.Name = "loadCIFAR10ToolStripMenuItem";
-            this.loadCIFAR10ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.loadCIFAR10ToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
             this.loadCIFAR10ToolStripMenuItem.Text = "Load CIFAR-10...";
             this.loadCIFAR10ToolStripMenuItem.Click += new System.EventHandler(this.loadCIFAR10ToolStripMenuItem_Click);
             // 
             // loadVOC2007ToolStripMenuItem
             // 
             this.loadVOC2007ToolStripMenuItem.Name = "loadVOC2007ToolStripMenuItem";
-            this.loadVOC2007ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.loadVOC2007ToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
             this.loadVOC2007ToolStripMenuItem.Text = "Load VOC0712...";
             this.loadVOC2007ToolStripMenuItem.Click += new System.EventHandler(this.loadVOC2007ToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator6
+            // 
+            this.toolStripSeparator6.Name = "toolStripSeparator6";
+            this.toolStripSeparator6.Size = new System.Drawing.Size(164, 6);
+            // 
+            // getSQLExpressToolStripMenuItem
+            // 
+            this.getSQLExpressToolStripMenuItem.Name = "getSQLExpressToolStripMenuItem";
+            this.getSQLExpressToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+            this.getSQLExpressToolStripMenuItem.Text = "Get SQL Express...";
+            this.getSQLExpressToolStripMenuItem.Click += new System.EventHandler(this.getSqlExpressMenuItem_Click);
             // 
             // testToolStripMenuItem
             // 
@@ -350,6 +363,7 @@
             this.specialTestsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.alexNetToolStripMenuItem,
             this.resNet56CifarAccuracyBugToolStripMenuItem,
+            this.testPythonInteropToolStripMenuItem,
             this.toolStripSeparator5,
             this.startCartPoleTrainerToolStripMenuItem,
             this.startAtariTrainerToolStripMenuItem,
@@ -373,6 +387,13 @@
             this.resNet56CifarAccuracyBugToolStripMenuItem.Size = new System.Drawing.Size(242, 22);
             this.resNet56CifarAccuracyBugToolStripMenuItem.Text = "ResNet56-Cifar Accuracy Bug";
             this.resNet56CifarAccuracyBugToolStripMenuItem.Click += new System.EventHandler(this.resNet56CifarAccuracyBugToolStripMenuItem_Click);
+            // 
+            // testPythonInteropToolStripMenuItem
+            // 
+            this.testPythonInteropToolStripMenuItem.Name = "testPythonInteropToolStripMenuItem";
+            this.testPythonInteropToolStripMenuItem.Size = new System.Drawing.Size(242, 22);
+            this.testPythonInteropToolStripMenuItem.Text = "Test Python Interop with GPT";
+            this.testPythonInteropToolStripMenuItem.Click += new System.EventHandler(this.testPythonInteropToolStripMenuItem_Click);
             // 
             // toolStripSeparator5
             // 
@@ -559,6 +580,7 @@
             this.lvStatus.HideSelection = false;
             this.lvStatus.Location = new System.Drawing.Point(0, 27);
             this.lvStatus.Name = "lvStatus";
+            this.lvStatus.RowHeight = 14;
             this.lvStatus.Size = new System.Drawing.Size(957, 403);
             this.lvStatus.TabIndex = 1;
             this.lvStatus.UseCompatibleStateImageBehavior = false;
@@ -609,18 +631,6 @@
             this.m_bwLoadVOCDatabase.DoWork += new System.ComponentModel.DoWorkEventHandler(this.m_bwLoadVOCDatabase_DoWork);
             this.m_bwLoadVOCDatabase.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.m_bw_ProgressChanged);
             this.m_bwLoadVOCDatabase.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bw_RunWorkerCompleted);
-            // 
-            // toolStripSeparator6
-            // 
-            this.toolStripSeparator6.Name = "toolStripSeparator6";
-            this.toolStripSeparator6.Size = new System.Drawing.Size(177, 6);
-            // 
-            // getSQLExpressToolStripMenuItem
-            // 
-            this.getSQLExpressToolStripMenuItem.Name = "getSQLExpressToolStripMenuItem";
-            this.getSQLExpressToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.getSQLExpressToolStripMenuItem.Text = "Get SQL Express...";
-            this.getSQLExpressToolStripMenuItem.Click += new System.EventHandler(this.getSqlExpressMenuItem_Click);
             // 
             // FormMain
             // 
@@ -686,7 +696,6 @@
         private System.Windows.Forms.ToolStripMenuItem specialTestsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem alexNetToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem resNet56CifarAccuracyBugToolStripMenuItem;
-        private System.Windows.Forms.ListView lvStatus;
         private System.Windows.Forms.ColumnHeader colStatus;
         private System.Windows.Forms.StatusStrip statusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel lblGpu;
@@ -714,6 +723,8 @@
         private System.Windows.Forms.ToolStripMenuItem defaultToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator6;
         private System.Windows.Forms.ToolStripMenuItem getSQLExpressToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem testPythonInteropToolStripMenuItem;
+        private ListViewEx lvStatus;
     }
 }
 

@@ -22,6 +22,7 @@ using System.Reflection;
 using MyCaffe.test;
 using MyCaffe.data;
 using System.ServiceProcess;
+using MyCaffe.python;
 
 namespace MyCaffe.app
 {
@@ -1947,6 +1948,12 @@ namespace MyCaffe.app
             Process p = new Process();
             p.StartInfo = new ProcessStartInfo(m_strSqlDownloadUrl);
             p.Start();
+        }
+
+        private void testPythonInteropToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            FormGptTest gptDlg = new FormGptTest();
+            gptDlg.ShowDialog();
         }
     }
 

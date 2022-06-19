@@ -85,6 +85,12 @@
     <Compile Include="FormError.Designer.cs">
       <DependentUpon>FormError.cs</DependentUpon>
     </Compile>
+    <Compile Include="FormGptTest.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormGptTest.Designer.cs">
+      <DependentUpon>FormGptTest.cs</DependentUpon>
+    </Compile>
     <Compile Include="FormSaveImage.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -161,6 +167,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormError.resx">
       <DependentUpon>FormError.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormGptTest.resx">
+      <DependentUpon>FormGptTest.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FormSaveImage.resx">
       <DependentUpon>FormSaveImage.cs</DependentUpon>
@@ -256,6 +265,10 @@
     <ProjectReference Include="..\MyCaffe.gym\MyCaffe.gym.csproj">
       <Project>{c14bedc8-ff66-4118-be66-675f26be7ee0}</Project>
       <Name>MyCaffe.gym</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.python\MyCaffe.python.csproj">
+      <Project>{0ED28C56-F959-44D0-8E99-DB6C0BE75C3A}</Project>
+      <Name>MyCaffe.python</Name>
     </ProjectReference>
     <ProjectReference Include="..\MyCaffe.test.automated\MyCaffe.test.automated.csproj">
       <Project>{d0da9b0f-9a50-496e-b6e9-cac5786bbed8}</Project>
