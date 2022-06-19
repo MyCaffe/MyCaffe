@@ -1,6 +1,7 @@
 ﻿using Python.Runtime;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,7 +17,7 @@ namespace MyCaffe.python
     /// <remarks>
     /// @see [Calling Python from C#:an Introduction to PythonNet](https://somegenericdev.medium.com/calling-python-from-c-an-introduction-to-pythonnet-c3d45f7d5232)
     /// </remarks>
-    public class PythonInterop
+    public class PythonInterop : IDisposable
     {
         /// <summary>
         /// The constructor.
@@ -24,12 +25,20 @@ namespace MyCaffe.python
         /// <param name="strPythonDllPath">Specifies the path to the Python DLL (e.g. Python39.dll) which is usually located
         /// at: @"C:\Users\" + strUserName + @"\AppData\Local\Programs\Python\Python39\python39.dll"</param>
         /// <remarks>
-        /// See https://github.com/MyCaffe/MyCaffe/blob/master/MyCaffe.test/TestPython.cs for an example that demonstrates how
-        /// to use the PythonInterop class to run the GPT2 pre-trained model from HuggingFace to generate text.
+        /// See https://github.com/MyCaffe/MyCaffe/blob/master/MyCaffe.app/FormGptTest.cs (dowork, line 85) for an example 
+        /// that demonstrates how to use the PythonInterop class to run the GPT2 pre-trained model from HuggingFace to generate text.
         /// </remarks>
         public PythonInterop(string strPythonDllPath)
         {
             Initialize(strPythonDllPath);
+        }
+
+        /// <summary>
+        /// Free all resources used.
+        /// </summary>
+        public void Dispose()
+        {
+            Shutdown();
         }
 
         /// <summary>
@@ -41,6 +50,14 @@ namespace MyCaffe.python
         {
             Environment.SetEnvironmentVariable("PYTHONNET_PYDLL", strPythonDllPath);
             PythonEngine.Initialize();
+        }
+
+        /// <summary>
+        /// Shutdown the Python engine.
+        /// </summary>
+        public void Shutdown()
+        {
+            PythonEngine.Shutdown();
         }
 
         /// <summary>
@@ -115,10 +132,12 @@ namespace MyCaffe.python
                     {
                         scope.Set(arg.Key, arg.Value.ToPython());
                     }
+
                     scope.Exec(pycode);
                     returnedVariable = scope.Get<object>(returnedVariableName);
                 }
             }
+
             return returnedVariable;
         }
     }
