@@ -1418,9 +1418,6 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.LRN:
                     return new LRNLayer<T>(cuda, log, p);
 
-                case LayerParameter.LayerType.MAE_LOSS:
-                    return new MAELossLayer<T>(cuda, log, p);
-
                 case LayerParameter.LayerType.MATH:
                     return new MathLayer<T>(cuda, log, p);
 
@@ -1527,7 +1524,7 @@ namespace MyCaffe.layers
         private static Layer<T> createDynamicLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXImageDatabaseBase imgDb, CancelEvent evtCancel)
         {
             string strDir = System.IO.Path.GetDirectoryName(new System.Uri(System.Reflection.Assembly.GetExecutingAssembly().CodeBase).LocalPath);
-            string[] rgstrFiles = Directory.GetFiles(strDir);
+            string[] rgstrFiles = Directory.GetFiles(strDir, "mycaffe.layers.*.dll");
 
             foreach (string strFile in rgstrFiles)
             {
