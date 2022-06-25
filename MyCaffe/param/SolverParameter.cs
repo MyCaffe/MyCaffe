@@ -70,6 +70,7 @@ namespace MyCaffe.param
         bool m_bSnapshotIncludeWeights = true;
         bool m_bSnapshotIncludeState = true;
         int m_nAverageAccuracyWindow = 0;
+        bool m_bEnableClipGradientOutput = false;
 
         // SSD Parameters
         EvaluationType m_evalType = EvaluationType.CLASSIFICATION;
@@ -387,7 +388,7 @@ namespace MyCaffe.param
             get { return m_dfBaseLR; }
             set { m_dfBaseLR = value; }
         }
-
+       
         /// <summary>
         /// The number of iterations between displaying info.  If display = 0, no info
         /// will be displayed.
@@ -686,6 +687,16 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Enable status output when gradients are clipped (default = true)
+        /// </summary>
+        [Description("Optionally, enable/disable output status when gradients are clipped (default = true).")]
+        public bool enable_clip_gradient_status
+        {
+            get { return m_bEnableClipGradientOutput; }
+            set { m_bEnableClipGradientOutput = value; }
+        }
+
+        /// <summary>
         /// The snapshot interval.
         /// </summary>
         [Category("Snapshot")]
@@ -968,8 +979,11 @@ namespace MyCaffe.param
                 rgChildren.Add<int>("stepvalue", stepvalue);
 
             if (clip_gradients >= 0)
+            {
                 rgChildren.Add("clip_gradients", clip_gradients.ToString());
-
+                rgChildren.Add("enable_clip_gradient_status", enable_clip_gradient_status.ToString());
+            }
+                
             rgChildren.Add("snapshot", snapshot.ToString());
 
             if (snapshot_prefix.Length > 0)
@@ -1115,6 +1129,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("clip_gradients")) != null)
                 p.clip_gradients = ParseDouble(strVal);
+
+            if ((strVal = rp.FindValue("enable_clip_gradient_status")) != null)
+                p.enable_clip_gradient_status = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("snapshot")) != null)
                 p.snapshot = int.Parse(strVal);

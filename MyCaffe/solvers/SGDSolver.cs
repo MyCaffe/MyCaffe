@@ -353,7 +353,8 @@ namespace MyCaffe.solvers
             {
                 double dfScaleFactor = dfClipGradients / dfL2NormDiff;
 
-                m_log.WriteLine("Gradient clipping: scaling down gradients (L2 norm " + dfL2NormDiff.ToString() + " > " + dfClipGradients.ToString() + ") by scale factor " + dfScaleFactor.ToString());
+                if (m_param.enable_clip_gradient_status)
+                    m_log.WriteLine("Gradient clipping: scaling down gradients (L2 norm " + dfL2NormDiff.ToString() + " > " + dfClipGradients.ToString() + ") by scale factor " + dfScaleFactor.ToString());
 
                 for (int i = 0; i < colNetParams.Count; i++)
                 {
