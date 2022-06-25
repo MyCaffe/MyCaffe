@@ -310,9 +310,9 @@ namespace MyCaffe.param
             /// </summary>
             LRN,
             /// <summary>
-            /// Initializes a parameter for the MAELossLayer, used with time series.
+            /// Initializes a parameter for the MeanErrorLossLayer, used with time series and other regression problems.
             /// </summary>
-            MAE_LOSS,
+            MEAN_ERROR_LOSS,
             /// <summary>
             /// Initializes a parameter for the MathLayer.
             /// </summary>
@@ -1175,12 +1175,12 @@ namespace MyCaffe.param
                     m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
                     break;
 
-                case LayerType.MAE_LOSS:
+                case LayerType.MEAN_ERROR_LOSS:
                     expected_bottom.Add("pred");
                     expected_bottom.Add("target");
                     expected_top.Add("loss");
                     m_rgLayerParameters[LayerType.LOSS] = new LossParameter();
-                    m_rgLayerParameters[lt] = new MAELossParameter();
+                    m_rgLayerParameters[lt] = new MeanErrorLossParameter();
                     break;
 
                 case LayerType.MATH:
@@ -2055,12 +2055,12 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Returns the parameter set when initialized with LayerType.MAE_LOSS
+        /// Returns the parameter set when initialized with LayerType.MEAN_ERROR_LOSS
         /// </summary>
-        public MAELossParameter mae_loss_param
+        public MeanErrorLossParameter mean_error_loss_param
         {
-            get { return (MAELossParameter)m_rgLayerParameters[LayerType.MAE_LOSS]; }
-            set { m_rgLayerParameters[LayerType.MAE_LOSS] = value; }
+            get { return (MeanErrorLossParameter)m_rgLayerParameters[LayerType.MEAN_ERROR_LOSS]; }
+            set { m_rgLayerParameters[LayerType.MEAN_ERROR_LOSS] = value; }
         }
 
         /// <summary>
@@ -2721,8 +2721,8 @@ namespace MyCaffe.param
                 case LayerType.LRN:
                     return "LRN";
 
-                case LayerType.MAE_LOSS:
-                    return "MAELoss";
+                case LayerType.MEAN_ERROR_LOSS:
+                    return "MeanErrorLoss";
 
                 case LayerType.MATH:
                     return "MATH";
@@ -2970,7 +2970,6 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(labelmapping_param, "labelmapping_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(log_param, "log_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(lrn_param, "lrn_param"));
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(mae_loss_param, "mae_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(memory_data_param, "memory_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(mvn_param, "mvn_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(pooling_param, "pooling_param"));
@@ -3003,6 +3002,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(interp_param, "interp_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(knn_param, "knn_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(lstm_attention_param, "lstm_attention_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(mean_error_loss_param, "mean_error_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(merge_param, "merge_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(mish_param, "mish_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(normalization1_param, "normalization_param"));
@@ -3220,8 +3220,8 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("lrn_param")) != null)
                 p.lrn_param = LRNParameter.FromProto(rpp);
 
-            if ((rpp = rp.FindChild("mae_loss_param")) != null)
-                p.mae_loss_param = MAELossParameter.FromProto(rpp);
+            if ((rpp = rp.FindChild("mean_error_loss_param")) != null)
+                p.mean_error_loss_param = MeanErrorLossParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("memory_data_param")) != null)
                 p.memory_data_param = MemoryDataParameter.FromProto(rpp);
@@ -3601,9 +3601,9 @@ namespace MyCaffe.param
                 case "lrn":
                     return LayerType.LRN;
 
-                case "maeloss":
-                case "mae_loss":
-                    return LayerType.MAE_LOSS;
+                case "mean_error_loss":
+                case "meanerrorloss":
+                    return LayerType.MEAN_ERROR_LOSS;
 
                 case "math":
                     return LayerType.MATH;
