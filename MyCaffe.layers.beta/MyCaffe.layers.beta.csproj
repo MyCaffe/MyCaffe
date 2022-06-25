@@ -63,6 +63,7 @@
     <Compile Include="layers.beta\AccuracyEncodingLayer.cs" />
     <Compile Include="layers.beta\ConvolutionOctaveLayer.cs" />
     <Compile Include="layers.beta\InterpLayer.cs" />
+    <Compile Include="layers.beta\MeanErrorLossLayer.cs" />
     <Compile Include="layers.beta\SerfLayer.cs" />
     <Compile Include="layers.beta\MishLayer.cs" />
     <Compile Include="layers.beta\ModelDataLayer.cs" />

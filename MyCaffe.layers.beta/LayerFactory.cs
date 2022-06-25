@@ -66,6 +66,9 @@ namespace MyCaffe.layers.beta
 
                 case LayerParameter.LayerType.LSTM_ATTENTION:
                     return new LSTMAttentionLayer<double>(cuda, log, p);
+                    
+                case LayerParameter.LayerType.MEAN_ERROR_LOSS:
+                    return new MeanErrorLossLayer<double>(cuda, log, p);
 
                 case LayerParameter.LayerType.MERGE:
                     return new MergeLayer<double>(cuda, log, p);
@@ -156,6 +159,9 @@ namespace MyCaffe.layers.beta
 
                 case LayerParameter.LayerType.LSTM_ATTENTION:
                     return new LSTMAttentionLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.MEAN_ERROR_LOSS:
+                    return new MeanErrorLossLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.MERGE:
                     return new MergeLayer<float>(cuda, log, p);
