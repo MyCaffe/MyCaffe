@@ -51,7 +51,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="CudaControlLib, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f59a5464a77ea1ad, processorArchitecture=MSIL">
-      <HintPath>..\packages\CudaControl.1.11.6.38\lib\net40\CudaControlLib.dll</HintPath>
+      <HintPath>..\packages\CudaControl.1.11.6.43\lib\net40\CudaControlLib.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Google.Protobuf, Version=3.21.1.0, Culture=neutral, PublicKeyToken=a7d26565bac4d604, processorArchitecture=MSIL">
@@ -129,7 +129,6 @@
     <Compile Include="layers\MemoryLossLayer.cs" />
     <Compile Include="layers\SoftmaxCrossEntropyLossLayer.cs" />
     <Compile Include="layers\ClipLayer.cs" />
-    <Compile Include="layers\MAELossLayer.cs" />
     <Compile Include="layers\SwishLayer.cs" />
     <Compile Include="layers\MemoryDataLayer.cs" />
     <Compile Include="layers\DebugLayer.cs" />
@@ -202,6 +201,7 @@
     <Compile Include="param.beta\ConvolutionOctaveParameter.cs" />
     <Compile Include="param.beta\InterpParameter.cs" />
     <Compile Include="param.beta\AttentionParameter.cs" />
+    <Compile Include="param.beta\MeanErrorLossParameter.cs" />
     <Compile Include="param.beta\ModelDataParameter.cs" />
     <Compile Include="param.beta\SerfParameter.cs" />
     <Compile Include="param.beta\TextDataParameter.cs" />
@@ -214,7 +214,6 @@
     <Compile Include="param.hdf5\HDF5DataParameter.cs" />
     <Compile Include="param\ConstantParameter.cs" />
     <Compile Include="param.beta\GatherParameter.cs" />
-    <Compile Include="param\MAELossLayer.cs" />
     <Compile Include="param\MathParameter.cs" />
     <Compile Include="param\ImageDataParameter.cs" />
     <Compile Include="param\DataLabelMappingParameter.cs" />
