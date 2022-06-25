@@ -9,8 +9,6 @@ using MyCaffe.param;
 namespace MyCaffe.layers.beta
 {
     /// <summary>
-    /// <H3>PRE ALPHA</H3>
-    /// 
     /// TripletLoss Layer - this is the triplet loss layer used to calculate the triplet loss and gradients using the
     /// triplet loss method of learning.  The triplet loss method involves image triplets using the following format:
     ///     Anchor (A), Positives (P) and Negatives (N)

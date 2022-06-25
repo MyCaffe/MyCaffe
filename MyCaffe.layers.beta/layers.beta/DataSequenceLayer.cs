@@ -10,8 +10,6 @@ using MyCaffe.param;
 namespace MyCaffe.layers.beta
 {
     /// <summary>
-    /// <H3>BETA</H3>
-    /// 
     /// DataSequence Layer - this caches inputs by label and then outputs data item tuplets that include
     /// an 'anchor', optionally a 'positive' match, and at least one 'negative' match.
     /// 
