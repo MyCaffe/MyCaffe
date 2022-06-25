@@ -57,6 +57,11 @@ const int MATH_NEG = 32;
 const int MATH_SIGN = 33;
 const int MATH_SQRT = 34;
 
+const int MEAN_ERROR_MSE = 1;
+const int MEAN_ERROR_MSLE = 2;
+const int MEAN_ERROR_RMSE = 3;
+const int MEAN_ERROR_MAE = 4;
+
 
 //=============================================================================
 //	Forward References
@@ -261,7 +266,7 @@ class Math
 		long tanh_fwd(int nCount, long hBottomData, long hTopData);
 		long tanh_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff);
 
-		long mae_loss_bwd(int nCount, long hPredicted, long hTarget, long hBottomDiff);
+		long mean_error_loss_bwd(int nCount, long hPredicted, long hTarget, long hBottomDiff, int nMeanErr);
 
 		long mish_fwd(int nCount, long hBottomData, long hTopData, T fThreshold);
 		long mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, T fThreshold, int nMethod);

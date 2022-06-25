@@ -472,7 +472,7 @@ class Device
 		long cuda_tanh_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_tanh_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
-		long cuda_mae_loss_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_mean_error_loss_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
 		long cuda_mish_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_mish_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -2668,19 +2668,20 @@ inline long Device<T>::cuda_math_bwd(long lInput, T* pfInput, long* plOutput, T*
 }
 
 template <class T>
-inline long Device<T>::cuda_mae_loss_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+inline long Device<T>::cuda_mean_error_loss_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, 4))
+	if (lErr = verifyInput(lInput, pfInput, 5, 5))
 		return lErr;
 
 	int nCount = (int)pfInput[0];
 	long hPredicted = (long)pfInput[1];
 	long hTarget = (long)pfInput[2];
 	long hBottomDiff = (long)pfInput[3];
+	int nMeanErr = (int)pfInput[4];
 
-	return m_math.mae_loss_bwd(nCount, hPredicted, hTarget, hBottomDiff);
+	return m_math.mean_error_loss_bwd(nCount, hPredicted, hTarget, hBottomDiff, nMeanErr);
 }
 
 template <class T>

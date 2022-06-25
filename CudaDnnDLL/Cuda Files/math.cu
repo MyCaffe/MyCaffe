@@ -8128,7 +8128,7 @@ __global__ void mae_loss_bwd_kernel(const int n, const T* predicted, const T* ta
 }
 
 template <class T>
-long Math<T>::mae_loss_bwd(int n, long hPredicted, long hTarget, long hBottomDiff)
+long Math<T>::mean_error_loss_bwd(int n, long hPredicted, long hTarget, long hBottomDiff, int nMeanErr)
 {
 	LONG lErr;
 	MemoryItem* pPredicted;
@@ -8148,13 +8148,21 @@ long Math<T>::mae_loss_bwd(int n, long hPredicted, long hTarget, long hBottomDif
 	T* target = (T*)pTarget->Data();
 	T* bottom_diff = (T*)pBottomDiff->Data();
 
-	mae_loss_bwd_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, predicted, target, bottom_diff);
+	switch (nMeanErr)
+	{
+		case MEAN_ERROR_MAE:
+			mae_loss_bwd_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, predicted, target, bottom_diff);
+			break;
+			
+		default:
+			return ERROR_CUDA_KERNEL_NOT_IMPLEMENTED;
+	}
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::mae_loss_bwd(int nCount, long hPredicted, long hTarget, long hBottomDiff);
-template long Math<float>::mae_loss_bwd(int nCount, long hPredicted, long hTarget, long hBottomDiff);
+template long Math<double>::mean_error_loss_bwd(int nCount, long hPredicted, long hTarget, long hBottomDiff, int nMeanErr);
+template long Math<float>::mean_error_loss_bwd(int nCount, long hPredicted, long hTarget, long hBottomDiff, int nMeanErr);
 
 
 /// Computes the mish non-linearity @f$ y  = x * tanh(log( 1 + exp(x) )) @f$.
