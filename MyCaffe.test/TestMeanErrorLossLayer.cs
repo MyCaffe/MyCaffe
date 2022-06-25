@@ -32,9 +32,6 @@ namespace MyCaffe.test
             }
         }
 
-        /// <summary>
-        /// This test fails.
-        /// </summary>
         [TestMethod]
         public void TestGradient_MAE()
         {
@@ -45,6 +42,42 @@ namespace MyCaffe.test
                 foreach (IMeanErrorLossLayerTest t in test.Tests)
                 {
                     t.TestGradient(MEAN_ERROR.MAE);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForward_MSE()
+        {
+            MeanErrorLossLayerTest test = new MeanErrorLossLayerTest();
+
+            try
+            {
+                foreach (IMeanErrorLossLayerTest t in test.Tests)
+                {
+                    t.TestForward(MEAN_ERROR.MSE);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradient_MSE()
+        {
+            MeanErrorLossLayerTest test = new MeanErrorLossLayerTest();
+
+            try
+            {
+                foreach (IMeanErrorLossLayerTest t in test.Tests)
+                {
+                    t.TestGradient(MEAN_ERROR.MSE);
                 }
             }
             finally
@@ -119,7 +152,19 @@ namespace MyCaffe.test
 
                 for (int i = 0; i < rgPredicted.Length; i++)
                 {
-                    double dfDiff = Math.Abs(rgTarget[i] - rgPredicted[i]);
+                    double dfDiff = 0;
+
+                    switch (merr)
+                    {
+                        case MEAN_ERROR.MSE:
+                            dfDiff = Math.Pow(rgTarget[i] - rgPredicted[i], 2.0);
+                            break;
+
+                        case MEAN_ERROR.MAE:
+                            dfDiff = Math.Abs(rgTarget[i] - rgPredicted[i]);
+                            break;
+                    }
+
                     dfSum += dfDiff;
                 }
                 
@@ -139,8 +184,8 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.MEAN_ERROR_LOSS);
             p.mean_error_loss_param.mean_error_type = merr;
             p.loss_param.normalization = LossParameter.NormalizationMode.BATCH_SIZE;
-            double kLossWeight = 3.7;
-            //p.loss_weight.Add(kLossWeight);
+            double kLossWeight = 1.0;// 3.7;
+            p.loss_weight.Add(kLossWeight);
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             try

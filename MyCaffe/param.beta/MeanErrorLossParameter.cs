@@ -110,17 +110,11 @@ namespace MyCaffe.param.beta
                     case "MSE":
                         p.mean_error_type = MEAN_ERROR.MSE;
                         break;
-                    case "MSLE":
-                        p.mean_error_type = MEAN_ERROR.MSLE;
-                        break;
-                    case "RMSE":
-                        p.mean_error_type = MEAN_ERROR.RMSE;
-                        break;
                     case "MAE":
                         p.mean_error_type = MEAN_ERROR.MAE;
                         break;
                     default:
-                        throw new Exception("The mean _error_type parameter must be one of the following: MSE, MSLE, RMSE, MAE");
+                        throw new Exception("The mean _error_type parameter must be one of the following: MSE, MAE");
                 }
             }
 

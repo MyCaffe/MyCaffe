@@ -58,9 +58,7 @@ const int MATH_SIGN = 33;
 const int MATH_SQRT = 34;
 
 const int MEAN_ERROR_MSE = 1;
-const int MEAN_ERROR_MSLE = 2;
-const int MEAN_ERROR_RMSE = 3;
-const int MEAN_ERROR_MAE = 4;
+const int MEAN_ERROR_MAE = 2;
 
 
 //=============================================================================

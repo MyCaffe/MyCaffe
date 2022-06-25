@@ -8127,6 +8127,21 @@ __global__ void mae_loss_bwd_kernel(const int n, const T* predicted, const T* ta
 	}
 }
 
+/// The gradient is set to:
+///     -2 * (target - predicted)
+/// if propagate_down[1] == true.
+/// 
+/// @see [Wolframe Alpha: derivative of (t - p)^2 = d/dp((t - p)^2) = -2 (t - p)](https://www.wolframalpha.com/input?i=derivative+of+%28t+-+p%29%5E2)
+template<typename T>
+__global__ void mse_loss_bwd_kernel(const int n, const T* predicted, const T* target, T* out_diff)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const T diff = (predicted[i] - target[i]);
+		out_diff[i] = 2 * diff;
+	}
+}
+
 template <class T>
 long Math<T>::mean_error_loss_bwd(int n, long hPredicted, long hTarget, long hBottomDiff, int nMeanErr)
 {
@@ -8150,6 +8165,10 @@ long Math<T>::mean_error_loss_bwd(int n, long hPredicted, long hTarget, long hBo
 
 	switch (nMeanErr)
 	{
+		case MEAN_ERROR_MSE:
+			mse_loss_bwd_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, predicted, target, bottom_diff);
+			break;
+
 		case MEAN_ERROR_MAE:
 			mae_loss_bwd_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, predicted, target, bottom_diff);
 			break;

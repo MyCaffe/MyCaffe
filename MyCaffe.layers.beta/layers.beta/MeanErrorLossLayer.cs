@@ -16,12 +16,6 @@ namespace MyCaffe.layers.beta
     /// Mean Squared Error (MSE)
     /// @f$ L(y, y\hat) = \frac{1}{N} \sum_{i=0}^{N} (y - \hat{y}{i})^2 @f$ where @f$ \hat{y} @f$ is the predicted value.
     /// 
-    /// Root Mean Squared Error (RMSE)
-    /// @f$ L(y, y\hat) = \sqrt{\frac{1}{N} \sum_{i=0}^{N} (y - \hat{y}{i})^2} @f$ where @f$ \hat{y} @f$ is the predicted value.
-    /// 
-    /// Mean Squared Logarithmic Error (MSLE)
-    /// @f$ L(y, y\hat) = \frac{1}{N} \sum_{i=0}^{N} (y - log(\hat{y}{i}))^2 @f$ where @f$ \hat{y} @f$ is the predicted value.
-    /// 
     /// Mean Absolute Error (MAE)
     /// @f$ L(y, y\hat) = \frac{1}{N} \sum_{i=0}^{N} |y - \hat{y}{i}| @f$ where @f$ \hat{y} @f$ is the predicted value.
     /// </summary>
@@ -35,6 +29,7 @@ namespace MyCaffe.layers.beta
     {
         int m_nAxis = 1;
         MEAN_ERROR m_meanType = MEAN_ERROR.MAE;
+        Blob<T> m_blobWork;
 
         /// <summary>
         /// Constructor.
@@ -58,11 +53,19 @@ namespace MyCaffe.layers.beta
             m_type = LayerParameter.LayerType.MEAN_ERROR_LOSS;
             m_nAxis = p.mean_error_loss_param.axis;
             m_meanType = p.mean_error_loss_param.mean_error_type;
+
+            m_blobWork = new Blob<T>(cuda, log);
         }
 
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
+            if (m_blobWork != null)
+            {
+                m_blobWork.Dispose();
+                m_blobWork = null;
+            }
+
             base.dispose();
         }
 
@@ -118,7 +121,9 @@ namespace MyCaffe.layers.beta
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             base.Reshape(colBottom, colTop);
-            
+
+            m_blobWork.ReshapeLike(colBottom[0]);
+
             if (m_nOuterNum == 0)
                 m_nOuterNum = (int)colBottom[0].count(0, m_nAxis);
 
@@ -141,12 +146,6 @@ namespace MyCaffe.layers.beta
         ///     MSE - the computed mean squared error loss: 
         ///     @f$ E = \frac{1}{N} \sum_{i=0}^{N} (y - \hat{y}{i})^2 @f$ where @f$ \hat{y} @f$ is the predicted value.
         ///     
-        ///     MSLE - the computed mean squared logarithmic error loss: 
-        ///     @f$ E = \frac{1}{N} \sum_{i=0}^{N} (y - log(\hat{y}{i})^2 @f$ where @f$ \hat{y} @f$ is the predicted value.
-        ///     
-        ///     RMSE - the computed root mean squared error loss: 
-        ///     @f$ E = \sqrt{\frac{1}{N} \sum_{i=0}^{N} (y - \hat{y}{i})^2} @f$ where @f$ \hat{y} @f$ is the predicted value.
-        ///     
         ///     MAE - the computed mean absolute error loss: 
         ///     @f$ E = \frac{1}{N} \sum_{i=0}^{N} |y - \hat{y}{i}| @f$ where @f$ \hat{y} @f$ is the predicted value.
         /// </param>
@@ -162,6 +161,12 @@ namespace MyCaffe.layers.beta
 
             switch (m_meanType)
             {
+                case MEAN_ERROR.MSE:
+                    m_cuda.sub(nCount, hTarget, hPredicted, colBottom[0].mutable_gpu_diff);
+                    m_cuda.powx(nCount, colBottom[0].gpu_diff, 2.0, colBottom[0].mutable_gpu_diff);
+                    dfLoss = m_cuda.asum_double(nCount, colBottom[0].gpu_diff);
+                    break;
+
                 case MEAN_ERROR.MAE:
                     m_cuda.sub(nCount, hTarget, hPredicted, colBottom[0].mutable_gpu_diff);
                     m_cuda.abs(nCount, colBottom[0].gpu_diff, colBottom[0].mutable_gpu_diff);
@@ -180,6 +185,10 @@ namespace MyCaffe.layers.beta
         /// Computes the softmax loss error gradient w.r.t the predictions.
         /// </summary>
         /// <remarks>
+        /// MSE Gradient
+        /// @see [Wolframe Alpha: derivative of (t - p)^2 = d/dp((t - p)^2) = -2 (t - p)](https://www.wolframalpha.com/input?i=derivative+of+%28t+-+p%29%5E2)
+        /// 
+        /// MAE Gradient
         /// The gradient is set to:
         ///     +1 when predicted greater than target,
         ///     -1 when predicted less than target,
