@@ -6,7 +6,7 @@ using System.ComponentModel;
 using MyCaffe.basecode;
 using MyCaffe.common;
 
-namespace MyCaffe.param.beta
+namespace MyCaffe.param
 {
     /// <summary>
     /// Specifies the parameters for the MeanErrorLossLayerParameter.
