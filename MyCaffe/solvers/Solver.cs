@@ -845,8 +845,8 @@ namespace MyCaffe.solvers
                     }
 
                     // on_start currently not used, so no event added.
-                    bool bDisplay = (is_root_solver && m_param.display > 0 && (m_nIter % m_param.display) == 0 && !bDisableOutput) ? true : false;
-                    m_net.set_debug_info(bDisplay && m_param.debug_info);
+                    bool bDisplay1 = (is_root_solver && m_param.display > 0 && (m_nIter % m_param.display) == 0 && !bDisableOutput) ? true : false;
+                    m_net.set_debug_info(bDisplay1 && m_param.debug_info);
 
                     // accumulate the loss and gradient
                     double dfLoss = 0;
@@ -902,14 +902,15 @@ namespace MyCaffe.solvers
                     // average the loss across iterations for smoothed reporting
                     UpdateSmoothedLoss(dfLoss, start_iter);
 
-                    if (!bDisplay && sw.ElapsedMilliseconds > 2000 && !bDisableOutput)
+                    bool bDisplay = false;
+                    if (!bDisplay1 && sw.ElapsedMilliseconds > 2000 && !bDisableOutput)
                     {
                         bDisplay = true;
                         m_bFirstNanError = true;
                         sw.Restart();
                     }
 
-                    if (bDisplay)
+                    if (bDisplay && bDisplay1)
                     {
                         m_log.WriteLine("Iteration " + m_nIter.ToString() + ", loss = " + m_dfSmoothedLoss.ToString());
 
@@ -1558,7 +1559,9 @@ namespace MyCaffe.solvers
         /// <returns>The accuracy of the test run is returned as a percentage in the range [0, 1].</returns>
         public double TestClassification(int nIterationOverride = -1, int nTestNetId = 0)
         {
-            if (is_root_solver)
+            bool bDisplay = (is_root_solver && m_param.display > 0 && (m_nIter % m_param.display) == 0) ? true : false;
+
+            if (bDisplay)
                 m_log.WriteLine("Iteration " + m_nIter.ToString() + ", Testing net (#" + nTestNetId.ToString() + ")");
 
             Net<T> test_net = m_net;
@@ -1668,7 +1671,7 @@ namespace MyCaffe.solvers
                 {
                     double dfPct = (double)i / (double)nIter;
 
-                    if (is_root_solver)
+                    if (bDisplay)
                     {
                         m_log.Progress = dfPct;
                         m_log.WriteLine("Testing '" + test_net.name + "' at " + dfPct.ToString("P"));
@@ -1711,10 +1714,13 @@ namespace MyCaffe.solvers
                     double dfMeanScore = test_score[i] / nIter;
                     string strOut = "";
 
-                    if (loss_weight != 0)
-                        strOut += " (* " + loss_weight.ToString() + " = " + (loss_weight * dfMeanScore).ToString() + " loss)";
+                    if (bDisplay)
+                    {
+                        if (loss_weight != 0)
+                            strOut += " (* " + loss_weight.ToString() + " = " + (loss_weight * dfMeanScore).ToString() + " loss)";
 
-                    m_log.WriteLine("   Test net output #" + i.ToString() + ": " + output_name + " = " + dfMeanScore.ToString() + strOut);
+                        m_log.WriteLine("   Test net output #" + i.ToString() + ": " + output_name + " = " + dfMeanScore.ToString() + strOut);
+                    }
 
                     if (i == nAccuracyIdx)
                         dfFinalScore = dfMeanScore;
