@@ -153,6 +153,10 @@ bool GetErrorString(long lKernel, long lErr, char* szErr, long lMaxErr)
 			_snprintf(szErr, lMaxErr, "CUDA: The 'nccl64' DLL is missing from the executable directory!  For example when using the version 134 for CUDA 10.0, the file 'nccl64_134.10.0.dll' should be in the same directory as the executable. (%ld), Kernel = %ld", lErr, lKernel);
 			return true;
 
+		case ERROR_CUDA_KERNEL_NOT_IMPLEMENTED:
+			_snprintf(szErr, lMaxErr, "CUDA: The kernel or specific function specified is not implemented yet! (%ld), Kernel = %ld", lErr, lKernel);
+			return true;	
+
 		case ERROR_TSNE:
 			_snprintf(szErr, lMaxErr, "TSNE: A general TSN-E error occurred. (%ld), Kernel = %ld", lErr, lKernel);
 			return true;
