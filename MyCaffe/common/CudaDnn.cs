@@ -21,15 +21,9 @@ namespace MyCaffe.common
         /// @f$ L(y, y\hat) = \frac{1}{N} \sum_{i=0}^{N} (y - \hat{y}{i})^2 @f$ where @f$ \hat{y} @f$ is the predicted value.
         /// </summary>
         MSE = 1,
-        /// Root Mean Squared Error (RMSE)
-        /// @f$ L(y, y\hat) = \sqrt{\frac{1}{N} \sum_{i=0}^{N} (y - \hat{y}{i})^2} @f$ where @f$ \hat{y} @f$ is the predicted value.
-        RMSE = 2,
-        /// Mean Squared Logarithmic Error (MSLE)
-        /// @f$ L(y, y\hat) = \frac{1}{N} \sum_{i=0}^{N} (y - log(\hat{y}{i}))^2 @f$ where @f$ \hat{y} @f$ is the predicted value.
-        MSLE = 3,
         /// Mean Absolute Error (MAE)
         /// @f$ L(y, y\hat) = \frac{1}{N} \sum_{i=0}^{N} |y - \hat{y}{i}| @f$ where @f$ \hat{y} @f$ is the predicted value.
-        MAE = 4
+        MAE = 2
     }
 
     /// <summary>
