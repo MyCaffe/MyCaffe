@@ -12,18 +12,18 @@ using MyCaffe.fillers;
 namespace MyCaffe.test
 {
     [TestClass]
-    public class TestMAELossLayer
+    public class TestMeanErrorLossLayer
     {
         [TestMethod]
-        public void TestForward()
+        public void TestForward_MAE()
         {
-            MAELossLayerTest test = new MAELossLayerTest();
+            MeanErrorLossLayerTest test = new MeanErrorLossLayerTest();
 
             try
             {
-                foreach (IMAELossLayerTest t in test.Tests)
+                foreach (IMeanErrorLossLayerTest t in test.Tests)
                 {
-                    t.TestForward();
+                    t.TestForward(MEAN_ERROR.MAE);
                 }
             }
             finally
@@ -36,15 +36,15 @@ namespace MyCaffe.test
         /// This test fails.
         /// </summary>
         [TestMethod]
-        public void TestGradient()
+        public void TestGradient_MAE()
         {
-            MAELossLayerTest test = new MAELossLayerTest();
+            MeanErrorLossLayerTest test = new MeanErrorLossLayerTest();
 
             try
             {
-                foreach (IMAELossLayerTest t in test.Tests)
+                foreach (IMeanErrorLossLayerTest t in test.Tests)
                 {
-                    t.TestGradient();
+                    t.TestGradient(MEAN_ERROR.MAE);
                 }
             }
             finally
@@ -54,15 +54,15 @@ namespace MyCaffe.test
         }
     }
 
-    interface IMAELossLayerTest : ITest
+    interface IMeanErrorLossLayerTest : ITest
     {
-        void TestForward();
-        void TestGradient();
+        void TestForward(MEAN_ERROR merr);
+        void TestGradient(MEAN_ERROR merr);
     }
 
-    class MAELossLayerTest : TestBase
+    class MeanErrorLossLayerTest : TestBase
     {
-        public MAELossLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
+        public MeanErrorLossLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
             : base("MAELoss Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
@@ -70,17 +70,17 @@ namespace MyCaffe.test
         protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
         {
             if (dt == common.DataType.DOUBLE)
-                return new MAELossLayerTest<double>(strName, nDeviceID, engine);
+                return new MeanErrorLossLayerTest<double>(strName, nDeviceID, engine);
             else
-                return new MAELossLayerTest<float>(strName, nDeviceID, engine);
+                return new MeanErrorLossLayerTest<float>(strName, nDeviceID, engine);
         }
     }
 
-    class MAELossLayerTest<T> : TestEx<T>, IMAELossLayerTest
+    class MeanErrorLossLayerTest<T> : TestEx<T>, IMeanErrorLossLayerTest
     {
         Blob<T> m_blob_bottom_target;
 
-        public MAELossLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
+        public MeanErrorLossLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, new List<int>() { 10, 5, 1, 1 }, nDeviceID)
         {
             m_engine = engine;
@@ -98,9 +98,11 @@ namespace MyCaffe.test
             base.dispose();
         }
 
-        public void TestForward()
+        public void TestForward(MEAN_ERROR merr)
         {
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.MAE_LOSS);
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.MEAN_ERROR_LOSS);
+            p.mean_error_loss_param.mean_error_type = merr;
+            p.loss_param.normalization = LossParameter.NormalizationMode.BATCH_SIZE;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             try
@@ -120,8 +122,8 @@ namespace MyCaffe.test
                     double dfDiff = Math.Abs(rgTarget[i] - rgPredicted[i]);
                     dfSum += dfDiff;
                 }
-
-                int nNum = m_blob_bottom.shape()[p.mae_loss_param.axis];
+                
+                int nNum = m_blob_bottom.num;
                 double dfExpectedLoss = dfSum / nNum;
 
                 m_log.EXPECT_NEAR_FLOAT(dfExpectedLoss, dfLoss, 0.000001, "The loss is incorrect!");
@@ -132,11 +134,13 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestGradient()
+        public void TestGradient(MEAN_ERROR merr)
         {
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.MAE_LOSS);
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.MEAN_ERROR_LOSS);
+            p.mean_error_loss_param.mean_error_type = merr;
+            p.loss_param.normalization = LossParameter.NormalizationMode.BATCH_SIZE;
             double kLossWeight = 3.7;
-            p.loss_weight.Add(kLossWeight);
+            //p.loss_weight.Add(kLossWeight);
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             try
