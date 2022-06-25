@@ -3598,7 +3598,7 @@ namespace MyCaffe.test
             filler.Fill(m_A);
             filler.Fill(m_B);
 
-            m_cuda.mae_loss_bwd(m_A.count(), m_A.gpu_data, m_B.gpu_data, m_A.mutable_gpu_diff);
+            m_cuda.mean_error_loss_bwd(m_A.count(), m_A.gpu_data, m_B.gpu_data, m_A.mutable_gpu_diff, MEAN_ERROR.MAE);
 
             double[] rgPredicted = convert(m_A.mutable_cpu_data);
             double[] rgTarget = convert(m_B.mutable_cpu_data);
