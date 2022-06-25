@@ -37,7 +37,7 @@ namespace MyCaffe.layers
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.MAE_LOSS;
-            m_nAxis = p.mae_loss_param.axis;
+            m_nAxis = p.mae_loss_param.axis;                                   
         }
 
         /** @copydoc Layer::dispose */
@@ -88,6 +88,9 @@ namespace MyCaffe.layers
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             base.LayerSetUp(colBottom, colTop);
+
+            if (m_normalization == LossParameter.NormalizationMode.VALID)
+                m_normalization = LossParameter.NormalizationMode.BATCH_SIZE;
         }
 
         /// <summary>
@@ -98,6 +101,12 @@ namespace MyCaffe.layers
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             base.Reshape(colBottom, colTop);
+            
+            if (m_nOuterNum == 0)
+                m_nOuterNum = (int)colBottom[0].num;
+
+            if (m_nInnerNum == 0)
+                m_nInnerNum = colBottom[0].count(1);
         }
 
         /// <summary>
@@ -126,10 +135,9 @@ namespace MyCaffe.layers
             m_cuda.sub(nCount, hTarget, hPredicted, colBottom[0].mutable_gpu_diff);
             m_cuda.abs(nCount, colBottom[0].gpu_diff, colBottom[0].mutable_gpu_diff);
             double dfLoss = m_cuda.asum_double(nCount, colBottom[0].gpu_diff);
+            double dfNormalizer = get_normalizer(m_normalization, -1);
 
-            dfLoss /= colBottom[0].shape(m_nAxis);
-
-            colTop[0].SetData(dfLoss, 0);
+            colTop[0].SetData(dfLoss / dfNormalizer, 0);
 
             // Clear scratch memory to prevent with interfering with backward pass (see #602)
             colBottom[0].SetDiff(0);
