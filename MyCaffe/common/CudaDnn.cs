@@ -12,6 +12,27 @@ using System.ComponentModel;
 namespace MyCaffe.common
 {
     /// <summary>
+    /// Defines the type of Mean Error to use.
+    /// </summary>
+    public enum MEAN_ERROR
+    {
+        /// <summary>
+        /// Mean Squared Error (MSE)
+        /// @f$ L(y, y\hat) = \frac{1}{N} \sum_{i=0}^{N} (y - \hat{y}{i})^2 @f$ where @f$ \hat{y} @f$ is the predicted value.
+        /// </summary>
+        MSE = 1,
+        /// Root Mean Squared Error (RMSE)
+        /// @f$ L(y, y\hat) = \sqrt{\frac{1}{N} \sum_{i=0}^{N} (y - \hat{y}{i})^2} @f$ where @f$ \hat{y} @f$ is the predicted value.
+        RMSE = 2,
+        /// Mean Squared Logarithmic Error (MSLE)
+        /// @f$ L(y, y\hat) = \frac{1}{N} \sum_{i=0}^{N} (y - log(\hat{y}{i}))^2 @f$ where @f$ \hat{y} @f$ is the predicted value.
+        MSLE = 3,
+        /// Mean Absolute Error (MAE)
+        /// @f$ L(y, y\hat) = \frac{1}{N} \sum_{i=0}^{N} |y - \hat{y}{i}| @f$ where @f$ \hat{y} @f$ is the predicted value.
+        MAE = 4
+    }
+
+    /// <summary>
     /// Defines the mathematical function to run.
     /// </summary>
     public enum MATH_FUNCTION
@@ -1196,7 +1217,7 @@ namespace MyCaffe.common
             CUDA_COEFF_SUB_FWD = 492,
             CUDA_COEFF_SUB_BWD = 493,
 
-            CUDA_MAE_LOSS_BWD = 495,
+            CUDA_MEAN_ERROR_LOSS_BWD = 495,
 
             CUDA_CROSS_ENTROPY_FWD = 496,
             CUDA_CROSS_ENTROPY_IGNORE = 497,
@@ -7910,7 +7931,7 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Performs a MAE Loss backward pass in Cuda.
+        /// Performs a Mean Error Loss backward pass in Cuda.
         /// </summary>
         /// <remarks>
         /// The gradient is set to:
@@ -7925,14 +7946,14 @@ namespace MyCaffe.common
         /// <param name="hPredicted">Specifies a handle to the predicted data in GPU memory.</param>
         /// <param name="hTarget">Specifies a handle to the target data in GPU memory.</param>
         /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
-        public void mae_loss_bwd(int nCount, long hPredicted, long hTarget, long hBottomDiff)
+        /// <param name="merr">Specifies the type of mean error to run.</param>
+        public void mean_error_loss_bwd(int nCount, long hPredicted, long hTarget, long hBottomDiff, MEAN_ERROR merr)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MAE_LOSS_BWD, m_param.AsDouble(nCount, hPredicted, hTarget, hBottomDiff));
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MEAN_ERROR_LOSS_BWD, m_param.AsDouble(nCount, hPredicted, hTarget, hBottomDiff, (int)merr));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MAE_LOSS_BWD, m_param.AsFloat(nCount, hPredicted, hTarget, hBottomDiff));
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MEAN_ERROR_LOSS_BWD, m_param.AsFloat(nCount, hPredicted, hTarget, hBottomDiff, (int)merr));
         }
-
 
         /// <summary>
         /// Performs a Mish forward pass in Cuda.
