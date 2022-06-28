@@ -53,6 +53,7 @@ namespace MyCaffe.param
         DataNoiseParameter m_dataNoiseParam = new DataNoiseParameter();
         bool m_bEnableDebugOutput = false;
         DataDebugParameter m_dataDebugParam = new DataDebugParameter();
+        int m_nOneHotLabelEncodingSize = 0; // Note when using OneHotLabelEncoding, m_labelType must = LABEL_TYPE.MULTIPLE
 
         /// <summary>
         /// This event is, optionally, called to verify the batch size of the DataParameter.
@@ -289,6 +290,16 @@ namespace MyCaffe.param
             set { m_dataDebugParam = value; }
         }
 
+        /// <summary>
+        /// When greater than 0 (default = 0), labels are one-hot encoded to a vector of the one-hot label size (e.g., when size = 4: 3 -> 0 1 1 0; 4 -> 1 0 0 0) 
+        /// </summary>
+        [Category("Labels"), Description("When greater than 0 (default = 0), labels are one-hot encoded to a vector of the one-hot label size (e.g., when size = 4: 3 -> 0 1 1 0; 4 -> 1 0 0 0)")]
+        public int one_hot_label_size
+        {
+            get { return m_nOneHotLabelEncodingSize; }
+            set { m_nOneHotLabelEncodingSize = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -325,6 +336,7 @@ namespace MyCaffe.param
             m_bEnableDebugOutput = p.m_bEnableDebugOutput;
             m_dataDebugParam.Copy(p.m_dataDebugParam);
             m_nForcedPrimaryLabel = p.m_nForcedPrimaryLabel;
+            m_nOneHotLabelEncodingSize = p.m_nOneHotLabelEncodingSize;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -395,6 +407,9 @@ namespace MyCaffe.param
 
             if (m_nForcedPrimaryLabel >= 0)
                 rgChildren.Add("forced_primary_label", m_nForcedPrimaryLabel.ToString());
+
+            if (one_hot_label_size > 0)
+                rgChildren.Add("one_hot_label_size", one_hot_label_size.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -504,6 +519,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("forced_primary_label")) != null)
                 p.forced_primary_label = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("one_hot_label_size")) != null)
+                p.one_hot_label_size = int.Parse(strVal);
 
             return p;
         }

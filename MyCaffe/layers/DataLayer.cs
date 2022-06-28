@@ -49,6 +49,7 @@ namespace MyCaffe.layers
         protected double m_dfTransTime;
         private T[] m_rgTopData = null;
         private T[] m_rgTopLabel = null;
+        private T[] m_rgOneHotLabel = null;
         private int[] m_rgTopShape = null;
         private bool m_bMatchingCycle = true;
         private Datum m_datumNoise = null;
@@ -269,36 +270,45 @@ namespace MyCaffe.layers
                 // labels per image.
                 if (m_param.data_param.label_type == DataParameter.LABEL_TYPE.MULTIPLE)
                 {
-                    if (m_param.data_param.images_per_blob > 1)
-                        m_log.FAIL("Image pairing per blob currently only supports the " + DataParameter.LABEL_TYPE.SINGLE.ToString() + " label type.");
-
-                    if (datum.DataCriteria == null || datum.DataCriteria.Length == 0)
-                        m_log.FAIL("Could not find the multi-label data.  The data source '" + m_param.data_param.source + "' does not appear to have any Image Criteria data.");
-
-                    if (datum.DataCriteriaFormat == SimpleDatum.DATA_FORMAT.LIST_DOUBLE)
+                    if (m_param.data_param.one_hot_label_size == 0)
                     {
-                        List<double> rg = BinaryData.UnPackDoubleList(datum.DataCriteria, datum.DataCriteriaFormat);
-                        int nLen = rg.Count;
-                        rgLabelShape.Add(nLen);
-                        rgLabelShape.Add(1);
-                        rgLabelShape.Add(1);
-                    }
-                    else if (datum.DataCriteriaFormat == SimpleDatum.DATA_FORMAT.LIST_FLOAT)
-                    {
-                        List<float> rg = BinaryData.UnPackFloatList(datum.DataCriteria, datum.DataCriteriaFormat);
-                        int nLen = rg.Count;
-                        rgLabelShape.Add(nLen);
-                        rgLabelShape.Add(1);
-                        rgLabelShape.Add(1);
+                        if (m_param.data_param.images_per_blob > 1)
+                            m_log.FAIL("Image pairing per blob currently only supports the " + DataParameter.LABEL_TYPE.SINGLE.ToString() + " label type.");
+
+                        if (datum.DataCriteria == null || datum.DataCriteria.Length == 0)
+                            m_log.FAIL("Could not find the multi-label data.  The data source '" + m_param.data_param.source + "' does not appear to have any Image Criteria data.");
+
+                        if (datum.DataCriteriaFormat == SimpleDatum.DATA_FORMAT.LIST_DOUBLE)
+                        {
+                            List<double> rg = BinaryData.UnPackDoubleList(datum.DataCriteria, datum.DataCriteriaFormat);
+                            int nLen = rg.Count;
+                            rgLabelShape.Add(nLen);
+                            rgLabelShape.Add(1);
+                            rgLabelShape.Add(1);
+                        }
+                        else if (datum.DataCriteriaFormat == SimpleDatum.DATA_FORMAT.LIST_FLOAT)
+                        {
+                            List<float> rg = BinaryData.UnPackFloatList(datum.DataCriteria, datum.DataCriteriaFormat);
+                            int nLen = rg.Count;
+                            rgLabelShape.Add(nLen);
+                            rgLabelShape.Add(1);
+                            rgLabelShape.Add(1);
+                        }
+                        else
+                        {
+                            // Get the number of items and the item size from the end of the data.
+                            int nLen = BitConverter.ToInt32(datum.DataCriteria, datum.DataCriteria.Length - (sizeof(int) * 4));
+                            int nItemSize = BitConverter.ToInt32(datum.DataCriteria, datum.DataCriteria.Length - (sizeof(int) * 3));
+
+                            rgLabelShape.Add(nLen);
+                            m_log.CHECK_EQ(nItemSize, 1, "Currently only byte sized labels are supported in multi-label scenarios.");
+                        }
                     }
                     else
                     {
-                        // Get the number of items and the item size from the end of the data.
-                        int nLen = BitConverter.ToInt32(datum.DataCriteria, datum.DataCriteria.Length - (sizeof(int) * 4));
-                        int nItemSize = BitConverter.ToInt32(datum.DataCriteria, datum.DataCriteria.Length - (sizeof(int) * 3));
-
-                        rgLabelShape.Add(nLen);
-                        m_log.CHECK_EQ(nItemSize, 1, "Currently only byte sized labels are supported in multi-label scenarios.");
+                        rgLabelShape.Add(m_param.data_param.one_hot_label_size);
+                        rgLabelShape.Add(1);
+                        rgLabelShape.Add(1);
                     }
                 }
                 else 
@@ -585,16 +595,31 @@ namespace MyCaffe.layers
             int nBatchSize = (int)m_param.data_param.batch_size;
             bool bLoadDataCriteria = false;
 
-            if (m_bOutputLabels && m_param.data_param.label_type == DataParameter.LABEL_TYPE.MULTIPLE)
+            if (m_bOutputLabels && m_param.data_param.one_hot_label_size == 0 && m_param.data_param.label_type == DataParameter.LABEL_TYPE.MULTIPLE)
                 bLoadDataCriteria = true;
 
             if (m_bOutputLabels)
             {
-                int nCount = batch.Label.count();
-                m_log.CHECK_GT(nCount, 0, "The label count cannot be zero!");
+                if (m_param.data_param.one_hot_label_size > 0 && m_param.data_param.label_type == DataParameter.LABEL_TYPE.MULTIPLE)
+                {
+                    int nCount = m_param.data_param.one_hot_label_size;
 
-                if (m_rgTopLabel == null || m_rgTopLabel.Length < nCount)
-                    m_rgTopLabel = new T[nCount];
+                    if (m_rgOneHotLabel == null || m_rgOneHotLabel.Length != nCount)
+                        m_rgOneHotLabel = new T[nCount];
+
+                    nCount = batch.Label.count();
+
+                    if (m_rgTopLabel == null || m_rgTopLabel.Length != nCount)
+                        m_rgTopLabel = new T[nCount];
+                }
+                else
+                {
+                    int nCount = batch.Label.count();
+                    m_log.CHECK_GT(nCount, 0, "The label count cannot be zero!");
+
+                    if (m_rgTopLabel == null || m_rgTopLabel.Length < nCount)
+                        m_rgTopLabel = new T[nCount];
+                }
             }
 
             if (m_param.data_param.display_timing)
@@ -759,22 +784,41 @@ namespace MyCaffe.layers
                 {
                     if (m_param.data_param.label_type == DataParameter.LABEL_TYPE.MULTIPLE)
                     {
-                        if (m_param.data_param.images_per_blob > 1)
-                            m_log.FAIL("Loading image pairs (images_per_blob > 1) currently only supports the " + DataParameter.LABEL_TYPE.SINGLE.ToString() + " label type.");
+                        if (m_param.data_param.one_hot_label_size > 0)
+                        {
+                            int nMask = 0x1;
 
-                        if (m_param.transform_param.label_mapping.Active)
-                            m_log.FAIL("Label mapping is not supported on labels of type 'MULTIPLE'.");
+                            for (int j = 0; j < m_rgOneHotLabel.Length; j++)
+                            {
+                                if ((datum.Label & nMask) == 0)
+                                    m_rgOneHotLabel[j] = m_tZero;
+                                else
+                                    m_rgOneHotLabel[j] = m_tOne;
 
-                        if (datum.DataCriteria == null || datum.DataCriteria.Length == 0)
-                            m_log.FAIL("Could not find the multi-label data.  The data source '" + m_param.data_param.source + "' does not appear to have any Image Criteria data.");
+                                nMask <<= 1;
+                            }
 
-                        // Get the number of items and the item size from the end of the data.
-                        int nLen = BitConverter.ToInt32(datum.DataCriteria, datum.DataCriteria.Length - (sizeof(int) * 4));
-                        int nItemSize = BitConverter.ToInt32(datum.DataCriteria, datum.DataCriteria.Length - (sizeof(int) * 3));
-                        int nDstIdx = i * nLen;
+                            Array.Copy(m_rgOneHotLabel, 0, m_rgTopLabel, i * m_rgOneHotLabel.Length, m_rgOneHotLabel.Length);
+                        }
+                        else
+                        {
+                            if (m_param.data_param.images_per_blob > 1)
+                                m_log.FAIL("Loading image pairs (images_per_blob > 1) currently only supports the " + DataParameter.LABEL_TYPE.SINGLE.ToString() + " label type.");
 
-                        m_log.CHECK_EQ(nItemSize, 1, "Currently only byte sized labels are supported in multi-label scenarios.");
-                        Array.Copy(datum.DataCriteria, 0, m_rgTopLabel, nDstIdx, nLen);
+                            if (m_param.transform_param.label_mapping.Active)
+                                m_log.FAIL("Label mapping is not supported on labels of type 'MULTIPLE'.");
+
+                            if (datum.DataCriteria == null || datum.DataCriteria.Length == 0)
+                                m_log.FAIL("Could not find the multi-label data.  The data source '" + m_param.data_param.source + "' does not appear to have any Image Criteria data.");
+
+                            // Get the number of items and the item size from the end of the data.
+                            int nLen = BitConverter.ToInt32(datum.DataCriteria, datum.DataCriteria.Length - (sizeof(int) * 4));
+                            int nItemSize = BitConverter.ToInt32(datum.DataCriteria, datum.DataCriteria.Length - (sizeof(int) * 3));
+                            int nDstIdx = i * nLen;
+
+                            m_log.CHECK_EQ(nItemSize, 1, "Currently only byte sized labels are supported in multi-label scenarios.");
+                            Array.Copy(datum.DataCriteria, 0, m_rgTopLabel, nDstIdx, nLen);
+                        }
                     }
                     else
                     {
