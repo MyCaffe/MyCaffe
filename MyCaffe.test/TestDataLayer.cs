@@ -146,6 +146,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestForward_OneHotLabelConversion()
+        {
+            DataLayerTest test = new DataLayerTest("MNIST");
+
+            try
+            {
+                foreach (IDataLayerTest t in test.Tests)
+                {
+                    t.TestForward_OneHotLabelConversion(test.SourceName);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestReadLoadAll()
         {
             DataLayerTest test = new DataLayerTest();
@@ -596,6 +614,7 @@ namespace MyCaffe.test
         void TestSetup(string strSrc);
         void TestForward(string strSrc);
         void TestForward2(string strSrc);
+        void TestForward_OneHotLabelConversion(string strSrc);
         void TestForwardPairs(string strSrc, int nImagesPerBlob);
         void TestForwardMask(string strSrc, int nImagesPerBlob);
         string Fill(bool unique_pixels, int nMaxLabel = -1);
@@ -1455,6 +1474,109 @@ namespace MyCaffe.test
                 {
                     progress.SetProgress((double)i / (double)nCount);
                     swProgress.Restart();
+                }
+            }
+
+            string str = (dfTotalTime / (double)nCount).ToString() + " ms.";
+            Trace.WriteLine("Average DataLayer Forward Time = " + str);
+
+            layer.Dispose();
+            m_parent.CancelEvent.Reset();
+
+            progress.SetProgress(0);
+            progress.Dispose();
+        }
+
+        public void TestForward_OneHotLabelConversion(string strSrc)
+        {
+            TestingProgressSet progress = new TestingProgressSet();
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.DATA);
+
+            m_log.CHECK(p.data_param != null, "The data_param is null!");
+            m_log.CHECK(p.transform_param != null, "The transform_para is null!");
+
+            int nBatch = 3;
+            p.data_param.batch_size = (uint)nBatch;
+            p.data_param.source = strSrc;
+            p.data_param.enable_random_selection = false;
+            p.data_param.enable_pair_selection = false;
+            p.data_param.one_hot_label_size = 16;
+            p.data_param.label_type = LayerParameterBase.LABEL_TYPE.MULTIPLE;
+            DataLayer<T> layer = new DataLayer<T>(m_cuda, m_log, p, m_parent.db, m_parent.CancelEvent);
+            int nSrcID = m_parent.db.GetSourceID(strSrc);
+
+            layer.LayerSetUp(BottomVec, TopVec);
+            layer.Reshape(BottomVec, TopVec);
+
+            int nCount = 1000;
+            Stopwatch sw = new Stopwatch();
+            Stopwatch swProgress = new Stopwatch();
+            double dfTotalTime = 0;
+
+            double[] rgOneHot = new double[p.data_param.one_hot_label_size];
+
+            for (int i = 0; i < nCount; i++)
+            {
+                sw.Start();
+                layer.Forward(BottomVec, TopVec);
+                dfTotalTime += sw.ElapsedMilliseconds;
+                sw.Stop();
+                sw.Reset();
+
+                m_log.CHECK_EQ(TopVec.Count, 2, "The top vec should have two elements: data and label.");
+                T[] rgData = TopVec[0].update_cpu_data();
+                int nDataDim = TopVec[0].count(1);
+
+                T[] rgLabel = TopVec[1].update_cpu_data();
+                int nLabelDim = TopVec[1].count(1);
+
+                for (int k = 0; k < nBatch; k++)
+                {
+                    SimpleDatum d = m_parent.db.QueryImage(nSrcID, i * nBatch + k, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    byte[] rgData2 = d.ByteData;
+                    
+                    m_log.CHECK_EQ(rgData2.Length, rgData.Length / nBatch, "The data from the data forward should have the same length as the first item in the database for the source = " + strSrc);
+
+                    int nMatches = 0;
+
+                    for (int j = 0; j < rgData2.Length; j++)
+                    {
+                        double dfVal1 = (double)Convert.ChangeType(rgData[k * nDataDim + j], typeof(double));
+                        double dfVal2 = (double)Convert.ChangeType(rgData2[j], typeof(double));
+
+                        if (dfVal1 != 0 || dfVal2 != 0)
+                        {
+                            if (dfVal1 == dfVal2)
+                                nMatches++;
+                        }
+                    }
+
+                    m_log.CHECK_LE(nMatches, rgData.Length, "The images at index " + i.ToString() + " in source = " + strSrc + " should not match!");
+
+                    int nMask = 0x1;
+                    for (int j = 0; j < p.data_param.one_hot_label_size; j++)
+                    {
+                        if ((d.Label & nMask) != 0)
+                            rgOneHot[j] = 1;
+                        else
+                            rgOneHot[j] = 0;
+                        nMask <<= 1;
+                    }
+
+                    m_log.CHECK_EQ(rgOneHot.Length, rgLabel.Length / nBatch, "The label from the data forward should have the same length as the first item in the database for the source = " + strSrc);
+                    
+                    for (int j = 0; j < rgOneHot.Length; j++)
+                    {
+                        double dfVal1 = (double)Convert.ChangeType(rgLabel[k * nLabelDim + j], typeof(double));
+                        if (dfVal1 != rgOneHot[j])
+                            m_log.FAIL("The label and expected one-hot vector do not match!");
+                    }
+
+                    if (swProgress.Elapsed.TotalMilliseconds > 1000)
+                    {
+                        progress.SetProgress((double)(i * nBatch + k) / (double)(nCount * nBatch));
+                        swProgress.Restart();
+                    }
                 }
             }
 
