@@ -12,7 +12,7 @@ using MyCaffe.param;
 namespace MyCaffe.solvers
 {
     /// <summary>
-    /// Use Adam Solver which uses gradient based optimization like SGD that includes 'adaptive momentum estimation' and can be thougth of as a generalization of AdaGrad.
+    /// Use Adam Solver which uses gradient based optimization like SGD that includes 'adaptive momentum estimation' and can be thought of as a generalization of AdaGrad.
     /// </summary>
     /// <remarks>
     /// @see [Adam: A Method for Stochastic Optimization](https://arxiv.org/abs/1412.6980v9) by Diederik P. Kingma, and Jimmy Ba, 2014.
