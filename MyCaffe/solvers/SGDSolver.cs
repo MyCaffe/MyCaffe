@@ -12,7 +12,7 @@ using MyCaffe.param;
 namespace MyCaffe.solvers
 {
     /// <summary>
-    /// Use Stochastic Gradient Descent solver with momentum updates weights by a linear combination of the negative gradient and the previous weight update.
+    /// Stochastic Gradient Descent solver with momentum updates weights by a linear combination of the negative gradient and the previous weight update.
     /// </summary>
     /// <remarks>
     /// @see [Stochastic Gradient Descent](https://en.wikipedia.org/wiki/Stochastic_gradient_descent) Wikipedia.
