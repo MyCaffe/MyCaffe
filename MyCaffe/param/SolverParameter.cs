@@ -575,10 +575,11 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// The momentum value.
+        /// Specifies the momentum value - used by all solvers EXCEPT the 'AdaGrad' and 'RMSProp' solvers.  For these latter solvers, 
+        /// momentum should = 0.
         /// </summary>
         [Category("Solver - Not AdaGrad or RMSProp")]
-        [Description("Specifies the momentum value - used by all solvers EXCEPT the 'AdaGrad' and 'RMSProp' solvers.")]
+        [Description("Specifies the momentum value - used by all solvers EXCEPT the 'AdaGrad' and 'RMSProp' solvers.  For these latter solvers, momentum should = 0.")]
         public double momentum
         {
             get { return m_dfMomentum; }
@@ -687,7 +688,7 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Enable status output when gradients are clipped (default = true)
+        /// Optionally, enable status output when gradients are clipped (default = true)
         /// </summary>
         [Description("Optionally, enable/disable output status when gradients are clipped (default = true).")]
         public bool enable_clip_gradient_status
@@ -697,7 +698,7 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// The snapshot interval.
+        /// Specifies the snapshot interval.
         /// </summary>
         [Category("Snapshot")]
         [Description("Sepcifies the snapshot interval.")]
@@ -808,7 +809,7 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Numerical stability for RMSProp, AdaGrad, AdaDelta and Adam
+        /// Numerical stability for RMSProp, AdaGrad, AdaDelta and Adam solvers.
         /// </summary>
         [Category("Solver - Ada and RMSProp")]
         [Description("Specifies the numerical stability for 'RMSProp', 'AdaGrad', 'AdaDelta' and 'Adam' solvers.")]
@@ -836,7 +837,7 @@ namespace MyCaffe.param
         /// MeanSquare(t) = rms_decay * MeanSquare(t-1) + (1 - rms_decay) * SquareGradient(t)
         /// </remarks>
         [Category("Solver - RMSProp")]
-        [Description("Specifies the 'RMSProp' decay value used by the 'RMSProp' solver.  MeanSquare(t) = 'rms_decay' * MeanSquare(t-1) + (1 - 'rms_decay') * SquareGradient(t).  The 'momentum2' is only used by the 'RMSProp' solver.")]
+        [Description("Specifies the 'RMSProp' decay value used by the 'RMSProp' solver.  MeanSquare(t) = 'rms_decay' * MeanSquare(t-1) + (1 - 'rms_decay') * SquareGradient(t).  The 'rms_decay' is only used by the 'RMSProp' solver.")]
         public double rms_decay
         {
             get { return m_dfRmsDecay; }
