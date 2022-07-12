@@ -56,6 +56,10 @@ namespace MyCaffe.layers.hdf5
             base.dispose();
         }
 
+        /// <summary>
+        /// Load the data from an HDF5 file.
+        /// </summary>
+        /// <param name="strFile">Specifies the name of the *.h5 file.</param>
         protected virtual void LoadHDF5FileData(string strFile)
         {
             m_log.WriteLine("Loading HDF5 file: '" + strFile + "'");
@@ -176,6 +180,10 @@ namespace MyCaffe.layers.hdf5
             }
         }
 
+        /// <summary>
+        /// Called to see if the current data item should be skipped.
+        /// </summary>
+        /// <returns>If the file should be skipped, 'true' is returned.</returns>
         protected bool Skip()
         {
             ulong nSize = (ulong)m_param.solver_count;
@@ -186,6 +194,9 @@ namespace MyCaffe.layers.hdf5
             return !bKeep;
         }
 
+        /// <summary>
+        /// Advanced to the next data item.
+        /// </summary>
         protected void Next()
         {
             m_nCurrentRow++;
