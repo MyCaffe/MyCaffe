@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Drawing;
+using System.IO;
 
 namespace MyCaffe.basecode
 {
@@ -17,16 +18,17 @@ namespace MyCaffe.basecode
         /// <param name="bmp">Specifies the Bitmap containing the image.</param>
         /// <param name="sd">Specifies the SimpleDatum that defines the channels, 'IsDataReal' and label settings.</param>
         /// <param name="bIsDataRealOverride">Optionally, specifies an override for the 'IsDataReal' setting.</param>
+        /// <param name="rgFocusMap">Specifies a focus map previously loaded with LoadFocusMap.</param>
         /// <returns>The Datum representing the image is returned.</returns>
-        public static Datum GetImageData(Bitmap bmp, SimpleDatum sd, bool? bIsDataRealOverride = null)
+        public static Datum GetImageData(Bitmap bmp, SimpleDatum sd, bool? bIsDataRealOverride = null, int[] rgFocusMap = null)
         {
             if (!bIsDataRealOverride.HasValue)
                 bIsDataRealOverride = sd.IsRealData;
 
             if (sd.RealDataD != null || sd.ByteData != null)
-                return GetImageDataD(bmp, sd.Channels, bIsDataRealOverride.Value, sd.Label);
+                return GetImageDataD(bmp, sd.Channels, bIsDataRealOverride.Value, sd.Label, true, rgFocusMap);
             else
-                return GetImageDataF(bmp, sd.Channels, bIsDataRealOverride.Value, sd.Label);
+                return GetImageDataF(bmp, sd.Channels, bIsDataRealOverride.Value, sd.Label, true, rgFocusMap);
         }
 
         /// <summary>
@@ -37,8 +39,9 @@ namespace MyCaffe.basecode
         /// <param name="bDataIsReal">Specifies whether or not to add each color to the List of <i>double</i> or to the list of <i>byte</i>.  Using the <i>byte</i> array is more common for it already separates a 3 color Bitmap into 3 channels of data.</param>
         /// <param name="nLabel">Specifies the known label.</param>
         /// <param name="bUseLockBitmap">Optionally, use the Lock Bitmap which is faster but may produce corrupted images in a few scenarios (default = true).</param>
+        /// <param name="rgFocusMap">Optionally, specifies a focus map where values = 1 are used, and all other values are masked out to 0.</param>
         /// <returns>The Datum representing the image is returned.</returns>
-        public static Datum GetImageDataD(Bitmap bmp, int nChannels, bool bDataIsReal, int nLabel, bool bUseLockBitmap = true)
+        public static Datum GetImageDataD(Bitmap bmp, int nChannels, bool bDataIsReal, int nLabel, bool bUseLockBitmap = true, int[] rgFocusMap = null)
         {
             if (nChannels != 1 && nChannels != 3)
                 throw new Exception("Images only support either 1 or 3 channels.");
@@ -63,7 +66,15 @@ namespace MyCaffe.basecode
                     {
                         for (int x = 0; x < bmp1.Width; x++)
                         {
-                            Color clr = bmp1.GetPixel(x, y);
+                            int nFocus = 1;
+
+                            if (rgFocusMap != null)
+                            {
+                                int nIdx = y * bmp1.Width + x;
+                                nFocus = rgFocusMap[nIdx];
+                            }
+
+                            Color clr = (nFocus == 1) ? bmp1.GetPixel(x, y) : Color.Black;
 
                             if (nChannels == 1)
                             {
@@ -106,7 +117,15 @@ namespace MyCaffe.basecode
                 {
                     for (int x = 0; x < bmp.Width; x++)
                     {
-                        Color clr = bmp.GetPixel(x, y);
+                        int nFocus = 1;
+
+                        if (rgFocusMap != null)
+                        {
+                            int nIdx = y * bmp.Width + x;
+                            nFocus = rgFocusMap[nIdx];
+                        }
+
+                        Color clr = (nFocus == 1) ? bmp.GetPixel(x, y) : Color.Black;
 
                         if (nChannels == 1)
                         {
@@ -157,8 +176,9 @@ namespace MyCaffe.basecode
         /// <param name="bDataIsReal">Specifies whether or not to add each color to the List of <i>double</i> or to the list of <i>byte</i>.  Using the <i>byte</i> array is more common for it already separates a 3 color Bitmap into 3 channels of data.</param>
         /// <param name="nLabel">Specifies the known label.</param>
         /// <param name="bUseLockBitmap">Optionally, use the Lock Bitmap which is faster but may produce corrupted images in a few scenarios (default = true).</param>
+        /// <param name="rgFocusMap">Optionally, specifies a focus map where values = 1 are used, and all other values are masked out to 0.</param>
         /// <returns>The Datum representing the image is returned.</returns>
-        public static Datum GetImageDataF(Bitmap bmp, int nChannels, bool bDataIsReal, int nLabel, bool bUseLockBitmap = true)
+        public static Datum GetImageDataF(Bitmap bmp, int nChannels, bool bDataIsReal, int nLabel, bool bUseLockBitmap = true, int[] rgFocusMap = null)
         {
             if (nChannels != 1 && nChannels != 3)
                 throw new Exception("Images only support either 1 or 3 channels.");
@@ -183,7 +203,15 @@ namespace MyCaffe.basecode
                     {
                         for (int x = 0; x < bmp1.Width; x++)
                         {
-                            Color clr = bmp1.GetPixel(x, y);
+                            int nFocus = 1;
+
+                            if (rgFocusMap != null)
+                            {
+                                int nIdx = y * bmp1.Width + x;
+                                nFocus = rgFocusMap[nIdx];
+                            }
+
+                            Color clr = (nFocus == 1) ? bmp1.GetPixel(x, y) : Color.Black;
 
                             if (nChannels == 1)
                             {
@@ -226,7 +254,15 @@ namespace MyCaffe.basecode
                 {
                     for (int x = 0; x < bmp.Width; x++)
                     {
-                        Color clr = bmp.GetPixel(x, y);
+                        int nFocus = 1;
+
+                        if (rgFocusMap != null)
+                        {
+                            int nIdx = y * bmp.Width + x;
+                            nFocus = rgFocusMap[nIdx];
+                        }
+
+                        Color clr = (nFocus == 1) ? bmp.GetPixel(x, y) : Color.Black;
 
                         if (nChannels == 1)
                         {
@@ -711,6 +747,37 @@ namespace MyCaffe.basecode
             }
 
             return rgrgData;
+        }
+
+        /// <summary>
+        /// Load a black/white image as a focus map where any area not colored black is attributed focus.  The resulting
+        /// map is used to mask out all other data in the actual data images.
+        /// </summary>
+        /// <param name="strImgFile">Specifies the black and white focus image.</param>
+        /// <returns>Returns a list of integers in the form WWWWW1 WWWWW2 ... WWWWWH</returns>
+        public static int[] LoadFocusMap(string strImgFile)
+        {
+            if (string.IsNullOrEmpty(strImgFile) || !File.Exists(strImgFile))
+                return null;
+
+            Bitmap bmpFocus = null;
+
+            bmpFocus = new Bitmap(strImgFile);
+            int[] rgnFocusMap = new int[bmpFocus.Width * bmpFocus.Height];
+
+            for (int y = 0; y < bmpFocus.Height; y++)
+            {
+                for (int x = 0; x < bmpFocus.Width; x++)
+                {
+                    Color clr = bmpFocus.GetPixel(x, y);
+                    if (clr.R != 0 || clr.G != 0 || clr.R != 0)
+                        rgnFocusMap[y * bmpFocus.Width + x] = 1;
+                }
+            }
+            
+            bmpFocus.Dispose();
+
+            return rgnFocusMap;
         }
     }
 }
