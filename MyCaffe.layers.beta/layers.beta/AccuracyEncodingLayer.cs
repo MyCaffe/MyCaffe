@@ -121,7 +121,7 @@ namespace MyCaffe.layers.beta
             m_log.CHECK_EQ((int)m_param.accuracy_param.top_k, 1, "Accuracy Encoding Layer only supports a topk = 1.");
             m_log.CHECK_EQ((int)m_param.accuracy_param.axis, 1, "Accuracy Encoding Layer expects axis to = 1.");
 
-            if (m_param.accuracy_param.ignore_label.HasValue)
+            if (m_param.accuracy_param.ignore_labels.Count > 0)
                 m_log.WriteLine("WARNING: The Accuracy Encoding Layer does not use the 'ignore_label' parameter.");
 
             m_nCacheSize = m_param.decode_param.cache_size;

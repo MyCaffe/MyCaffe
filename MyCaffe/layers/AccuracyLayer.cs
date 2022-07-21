@@ -84,7 +84,14 @@ namespace MyCaffe.layers
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             m_nTopK = (int)m_param.accuracy_param.top_k;
-            m_nIgnoreLabel = m_param.accuracy_param.ignore_label;
+            m_nIgnoreLabel = null;
+            if (m_param.accuracy_param.ignore_labels.Count > 0)
+            {
+                if (m_param.accuracy_param.ignore_labels.Count > 1)
+                    m_log.WriteLine("WARNING: The accuracy layer currently only supports a single ignore label.");
+                m_nIgnoreLabel = m_param.accuracy_param.ignore_labels[0];
+            }
+            
             m_bDirectLabels = false;
         }
 

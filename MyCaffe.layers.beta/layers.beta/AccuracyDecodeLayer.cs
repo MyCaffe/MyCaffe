@@ -63,9 +63,6 @@ namespace MyCaffe.layers.beta
         {
             m_log.CHECK_EQ((int)m_param.accuracy_param.top_k, 1, "Accuracy Encoding Layer only supports a topk = 1.");
             m_log.CHECK_EQ((int)m_param.accuracy_param.axis, 1, "Accuracy Encoding Layer expects axis to = 1.");
-
-            if (m_param.accuracy_param.ignore_label.HasValue)
-                m_log.WriteLine("WARNING: The Accuracy Encoding Layer does not use the 'ignore_label' parameter.");
         }
 
         /// <summary>
@@ -108,6 +105,7 @@ namespace MyCaffe.layers.beta
             float[] rgDecode = convertF(colBottom[0].update_cpu_data()); // num of items where each item contains a distance for each class.
             float[] rgLabel = convertF(colBottom[1].update_cpu_data());  // num of labels where labels are in pairs of label dim (we only use the first label).
             int nCorrectCount = 0;
+            int nTotal = 0;
 
             for (int i = 0; i < nNum; i++)
             {
@@ -125,11 +123,16 @@ namespace MyCaffe.layers.beta
                     }
                 }
 
+                if (m_param.accuracy_param.IgnoreLabel(nExpectedLabel))
+                    continue;
+                
                 if (nActualLabel == nExpectedLabel)
                     nCorrectCount++;
+
+                nTotal++;
             }
 
-            double dfAccuracy = (double)nCorrectCount / (double)nNum;
+            double dfAccuracy = (double)nCorrectCount / (double)nTotal;
 
             colTop[0].SetData(dfAccuracy, 0);
             colTop[0].Tag = m_param.accuracy_param.top_k;

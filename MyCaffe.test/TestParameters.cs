@@ -21,8 +21,29 @@ namespace MyCaffe.test
 
             Assert.AreEqual(p.top_k, (uint)1);
             Assert.AreEqual(p.axis, -1);
-            Assert.AreEqual(p.ignore_label.HasValue, true);
-            Assert.AreEqual(p.ignore_label.Value, 2);
+            Assert.AreEqual(p.ignore_labels.Count() > 0, true);
+            Assert.AreEqual(p.ignore_labels[0], 2);
+
+            RawProto proto2 = p.ToProto("accuracy_param");
+            string strProto2 = proto2.ToString();
+            string strProto1 = proto.ToString();
+
+            Assert.AreEqual(strProto1, strProto2);
+        }
+
+        [TestMethod]
+        public void TestAccuracyParameters()
+        {
+            string str = "accuracy_param { axis: -1 ignore_labels: {2,3,4} }";
+            RawProto proto = RawProto.Parse(str).FindChild("accuracy_param");
+            AccuracyParameter p = AccuracyParameter.FromProto(proto);
+
+            Assert.AreEqual(p.top_k, (uint)1);
+            Assert.AreEqual(p.axis, -1);
+            Assert.AreEqual(p.ignore_labels.Count() == 3, true);
+            Assert.AreEqual(p.ignore_labels[0], 2);
+            Assert.AreEqual(p.ignore_labels[1], 3);
+            Assert.AreEqual(p.ignore_labels[2], 4);
 
             RawProto proto2 = p.ToProto("accuracy_param");
             string strProto2 = proto2.ToString();

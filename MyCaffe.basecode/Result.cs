@@ -38,6 +38,15 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Change the score (typically done when ignoring a label).
+        /// </summary>
+        /// <param name="dfScore">Specifies the new score.</param>
+        public void SetScore(double dfScore)
+        {
+            m_dfScore = dfScore;
+        }
+
+        /// <summary>
         /// Returns the score of the run.
         /// </summary>
         public double Score

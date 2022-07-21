@@ -1942,12 +1942,19 @@ namespace MyCaffe
             if (net == null)
                 net = m_solver.TrainingNet;
 
+            AccuracyParameter accuracyParam = null;
             foreach (Layer<T> layer in net.layers)
             {
                 if (layer.type == LayerParameter.LayerType.LABELMAPPING)
                 {
                     labelMapping = layer.layer_param.labelmapping_param;
                     break;
+                }
+                else if (layer.type == LayerParameter.LayerType.ACCURACY ||
+                    layer.type == LayerParameter.LayerType.ACCURACY_DECODE ||
+                    layer.type == LayerParameter.LayerType.ACCURACY_ENCODING)
+                {
+                    accuracyParam = layer.layer_param.accuracy_param;
                 }
             }
 
@@ -2009,7 +2016,7 @@ namespace MyCaffe
 
                     // Create blob masks images (when enabled) during the data transform.
                     blobData = CreateDataBlob(sd, blobData, bPad);
-                    List<ResultCollection> rgrgResults1 = Run(blobData, false);
+                    List<ResultCollection> rgrgResults1 = Run(blobData, false, false, int.MaxValue, accuracyParam.ignore_labels);
                     ResultCollection rgResults = rgrgResults1[0];
 
                     // If masked, mask the sd to match the actual input in the blobData.
@@ -2517,8 +2524,9 @@ namespace MyCaffe
         /// <param name="bSort">Optionally, specifies whether or not to sor the results.</param>
         /// <param name="bUseSolverNet">Optionally, specifies whether or not to use the training net vs. the run net.</param>
         /// <param name="nMax">Optionally, specifies a maximum number of SimpleDatums to process (default = int.MaxValue).</param>
+        /// <param name="rgIgnoreLabels">Optionally, specifies a set of labels to ignore.</param>
         /// <returns>A list of results of the run are returned.</returns>
-        public List<ResultCollection> Run(Blob<T> blob, bool bSort = true, bool bUseSolverNet = false, int nMax = int.MaxValue)
+        public List<ResultCollection> Run(Blob<T> blob, bool bSort = true, bool bUseSolverNet = false, int nMax = int.MaxValue, List<int> rgIgnoreLabels = null)
         {
             m_log.CHECK(m_dataTransformer != null, "The data transformer is not initialized!");
 
@@ -2578,6 +2586,8 @@ namespace MyCaffe
             if (blob.Padded)
                 nNum--;
 
+            ResultCollection.RESULT_TYPE resType = ResultCollection.GetResultType(lastLayerType);
+
             for (int n = 0; n < nNum && n < nMax; n++)
             {
                 List<Result> rgResults = new List<Result>();
@@ -2601,6 +2611,15 @@ namespace MyCaffe
                     {
                         int nIdx = n * nOutputCount + j;
                         double dfProb = rgData[nIdx];
+
+                        if (rgIgnoreLabels != null && rgIgnoreLabels.Contains(j))
+                        {
+                            if (resType == ResultCollection.RESULT_TYPE.DISTANCES)
+                                dfProb = double.MaxValue;
+                            else
+                                dfProb = 0;
+                        }
+
                         rgResults.Add(new Result(j, dfProb));
                     }
                 }

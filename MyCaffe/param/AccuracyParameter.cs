@@ -17,7 +17,7 @@ namespace MyCaffe.param
     {
         uint m_nTopK = 1;
         int m_nAxis = 1;
-        int? m_nIgnoreLabel = null;
+        List<int> m_rgnIgnoreLabel = new List<int>();
 
         /** @copydoc LayerParameterBase */
         public AccuracyParameter()
@@ -51,13 +51,29 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// If specified, ignore instances with the given label.
+        /// If specified, ignore instances with the given label(s).
         /// </summary>
-        [Description("If specified, ignore instances with the given label.")]
-        public int? ignore_label
+        [Description("If specified, ignore instances with the given label(s).")]
+        public List<int> ignore_labels
         {
-            get { return m_nIgnoreLabel; }
-            set { m_nIgnoreLabel = value; }
+            get { return m_rgnIgnoreLabel; }
+            set
+            {
+                if (value == null)
+                    m_rgnIgnoreLabel.Clear();
+                else
+                    m_rgnIgnoreLabel = value;
+            }
+        }
+
+        /// <summary>
+        /// Returns 'true' if the label is to be ignored.
+        /// </summary>
+        /// <param name="nLabel">Specifies the label to test.</param>
+        /// <returns>Returns 'true' if the label is to be ignored.</returns>
+        public bool IgnoreLabel(int nLabel)
+        {
+            return m_rgnIgnoreLabel.Contains(nLabel);
         }
 
         /** @copydoc LayerParameterBase::Load */
@@ -78,7 +94,7 @@ namespace MyCaffe.param
             AccuracyParameter p = (AccuracyParameter)src;
             m_nTopK = p.m_nTopK;
             m_nAxis = p.m_nAxis;
-            m_nIgnoreLabel = p.m_nIgnoreLabel;
+            m_rgnIgnoreLabel = Utility.Clone<int>(p.m_rgnIgnoreLabel);
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -100,12 +116,17 @@ namespace MyCaffe.param
 
             if (top_k != 1)
                 rgChildren.Add("top_k", top_k.ToString());
-
+            
             if (axis != 1)
                 rgChildren.Add("axis", axis.ToString());
 
-            if (m_nIgnoreLabel.HasValue)
-                rgChildren.Add("ignore_label", m_nIgnoreLabel.Value);
+            if (m_rgnIgnoreLabel.Count > 0)
+            {
+                if (m_rgnIgnoreLabel.Count == 1)
+                    rgChildren.Add("ignore_label", m_rgnIgnoreLabel[0]);
+                else
+                    rgChildren.Add("ignore_labels", Utility.ToString<int>(m_rgnIgnoreLabel));
+            }
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -127,7 +148,23 @@ namespace MyCaffe.param
                 p.axis = int.Parse(strVal);
 
             if ((strVal = rp.FindValue("ignore_label")) != null)
-                p.ignore_label = int.Parse(strVal);
+            {
+                p.ignore_labels.Clear();
+                p.ignore_labels.Add(int.Parse(strVal));
+            }
+
+            if ((strVal = rp.FindValue("ignore_labels")) != null)
+            {
+                p.ignore_labels.Clear();
+                
+                string[] rgstr = strVal.Trim(' ', '{', '}').Split(',');
+
+                foreach (string str in rgstr)
+                {
+                    if (!string.IsNullOrEmpty(str))
+                        p.ignore_labels.Add(int.Parse(str));
+                }
+            }
 
             return p;
         }

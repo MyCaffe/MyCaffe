@@ -468,7 +468,7 @@ namespace MyCaffe.test
         {
             int kIgnoreLabelValue = -1;
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ACCURACY);
-            p.accuracy_param.ignore_label = kIgnoreLabelValue;
+            p.accuracy_param.ignore_labels.Add(kIgnoreLabelValue);
             AccuracyLayer<T> layer = new AccuracyLayer<T>(m_cuda, m_log, p);
 
             try
@@ -659,7 +659,7 @@ namespace MyCaffe.test
         {
             int kIgnoreLabelValue = -1;
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ACCURACY);
-            p.accuracy_param.ignore_label = kIgnoreLabelValue;
+            p.accuracy_param.ignore_labels.Add(kIgnoreLabelValue);
             AccuracyLayer<T> layer = new AccuracyLayer<T>(m_cuda, m_log, p);
 
             try
