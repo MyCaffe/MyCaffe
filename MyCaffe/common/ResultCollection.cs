@@ -50,7 +50,7 @@ namespace MyCaffe.common
         /// <param name="outputLayerType">Specifies the output layer type.</param>
         public ResultCollection(List<Result> rgResults, LayerParameter.LayerType outputLayerType)
         {
-            m_resultType = getResultType(outputLayerType);
+            m_resultType = GetResultType(outputLayerType);
             m_rgResultsOriginal = rgResults;
 
             foreach (Result item in rgResults)
@@ -61,7 +61,7 @@ namespace MyCaffe.common
             m_rgResultsSorted = m_rgResultsSorted.OrderByDescending(p => p.Score).ToList();
         }
 
-        private RESULT_TYPE getResultType(LayerParameter.LayerType type)
+        public static RESULT_TYPE GetResultType(LayerParameter.LayerType type)
         {
             switch (type)
             {
