@@ -929,6 +929,16 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Update the active label on a given raw image by its index.
         /// </summary>
+        /// <param name="nID">Specifies the raw image ID.</param>
+        /// <param name="nNewActiveLabel">Specifies the new active label.</param>
+        public void UpdateActiveLabelByID(int nID, int nNewActiveLabel)
+        {
+            m_db.UpdateActiveLabelByID(nID, nNewActiveLabel);
+        }
+
+        /// <summary>
+        /// Update the active label on a given raw image by its index.
+        /// </summary>
         /// <param name="nIdx">Specifies the raw image index.</param>
         /// <param name="nNewActiveLabel">Specifies the new active label.</param>
         public void UpdateActiveLabelByIndex(int nIdx, int nNewActiveLabel)
