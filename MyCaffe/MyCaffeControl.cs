@@ -1925,6 +1925,7 @@ namespace MyCaffe
             int nCorrectCount = 0;
             Dictionary<int, int> rgCorrectCounts = new Dictionary<int, int>();
             Dictionary<int, int> rgLabelTotals = new Dictionary<int, int>();
+            Dictionary<int, Dictionary<int, int>> rgDetectedCounts = new Dictionary<int, Dictionary<int, int>>();
 
             if (bOnTargetSet && m_project.DatasetTarget != null)
             {
@@ -2112,6 +2113,14 @@ namespace MyCaffe
                                 rgCorrectCounts[nExpectedLabel]++;
                             }
 
+                            if (!rgDetectedCounts.ContainsKey(nExpectedLabel))
+                                rgDetectedCounts.Add(nExpectedLabel, new Dictionary<int, int>());
+
+                            if (!rgDetectedCounts[nExpectedLabel].ContainsKey(nDetectedLabel))
+                                rgDetectedCounts[nExpectedLabel].Add(nDetectedLabel, 0);
+
+                            rgDetectedCounts[nExpectedLabel][nDetectedLabel]++;
+
                             nTotalCount++;
                         }
                         else
@@ -2151,7 +2160,7 @@ namespace MyCaffe
                 }
             }
 
-            double dfCorrectPct = ((double)nCorrectCount / (double)nTotalCount);
+            double dfCorrectPct = (nTotalCount == 0) ? 0 : ((double)nCorrectCount / (double)nTotalCount);
 
             m_log.WriteLine("Test Many Completed.");
             m_log.WriteLine(" " + dfCorrectPct.ToString("P") + " correct detections.");
@@ -2172,8 +2181,23 @@ namespace MyCaffe
 
                 if (nCount > 0)
                 {
+                    string strSecondDetection = "";
+                    if (rgDetectedCounts.ContainsKey(kv.Key))
+                    {
+                        List<KeyValuePair<int, int>> rgDetectedCountsSorted = rgDetectedCounts[kv.Key].OrderByDescending(p => p.Value).ToList();
+                        if (rgDetectedCountsSorted.Count > 1)
+                        {
+                            strSecondDetection = " (secondary detections: " + rgDetectedCountsSorted[1].Key.ToString();
+
+                            if (rgDetectedCountsSorted.Count > 2)
+                                strSecondDetection += " and " + rgDetectedCountsSorted[2].Key.ToString();
+
+                            strSecondDetection += ")";
+                        }
+                    }
+                    
                     dfCorrectPct = ((double)kv.Value / (double)nCount);
-                    m_log.WriteLine("Label #" + kv.Key.ToString() + " had " + dfCorrectPct.ToString("P") + " correct detections out of " + nCount.ToString("N0") + " items with this label.");
+                    m_log.WriteLine("Label #" + kv.Key.ToString() + " had " + dfCorrectPct.ToString("P") + " correct detections out of " + nCount.ToString("N0") + " items with this label." + strSecondDetection);
                 }
             }
 
