@@ -1994,6 +1994,9 @@ namespace MyCaffe.db.image
         /// <returns>The RawImage is returned.</returns>
         public RawImage CreateRawImage(int nIdx, SimpleDatum d, int nBackgroundWritingThreadCount, string strDescription = null, int? nOriginalSourceID = null, bool bActive = true)
         {
+            if (string.IsNullOrEmpty(strDescription))
+                strDescription = d.Description;
+
             DateTime dtMin = new DateTime(1980, 1, 1);
             RawImage img = new RawImage();
             bool bEncoded = false;
