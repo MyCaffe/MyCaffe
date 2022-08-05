@@ -521,6 +521,9 @@ namespace MyCaffe.db.image
             if (!nLabel.HasValue)
                 return null;
 
+            if (!m_rgLabelToIdxMap.ContainsKey(nLabel.Value))
+                return null;
+            
             int nIdx = m_rgLabelToIdxMap[nLabel.Value];
 
             return m_rgLabels[nIdx];
