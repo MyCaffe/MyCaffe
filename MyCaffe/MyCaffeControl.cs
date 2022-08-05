@@ -2260,12 +2260,13 @@ namespace MyCaffe
         /// Run on a given image in the MyCaffeImageDatabase based on its image index.
         /// </summary>
         /// <param name="nImageIdx">Specifies the image index.</param>
+        /// <param name="bPad">PAdd the input with an extra input image.</param>
         /// <returns>The result of the run is returned.</returns>
-        public ResultCollection Run(int nImageIdx)
+        public ResultCollection Run(int nImageIdx, bool bPad = true)
         {
             SimpleDatum sd = m_imgDb.QueryImage(m_dataSet.TrainingSource.ID, nImageIdx, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
             m_dataTransformer.TransformLabel(sd);
-            return Run(sd, true, false);
+            return Run(sd, true, bPad);
         }
 
         /// <summary>
@@ -2285,7 +2286,7 @@ namespace MyCaffe
                 rgSd.Add(sd);
             }
 
-            return Run(rgSd, ref blob);
+            return Run(rgSd, ref blob, false, int.MaxValue);
         }
 
         /// <summary>
@@ -2380,9 +2381,9 @@ namespace MyCaffe
         /// <param name="d">Specifies the Datum to run.</param>
         /// <param name="bSort">Specifies whether or not to sor the results.</param>
         /// <param name="bUseSolverNet">Optionally, specifies whether or not to use the training net vs. the run net.</param>
-        /// <param name="bPad">Optionally, specifies to pad the data with a dummy trailing item (default = false).</param>
+        /// <param name="bPad">Optionally, specifies to pad the data with a dummy trailing item (default = true).</param>
         /// <returns>The results of the run are returned.</returns>
-        public ResultCollection Run(SimpleDatum d, bool bSort, bool bUseSolverNet, bool bPad = false)
+        public ResultCollection Run(SimpleDatum d, bool bSort, bool bUseSolverNet, bool bPad = true)
         {
             if (m_net == null)
                 throw new Exception("The Run net has not been created!");

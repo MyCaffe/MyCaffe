@@ -478,8 +478,9 @@ namespace MyCaffe.common
         /// Run on a given image in the MyCaffeImageDatabase based on its image index.
         /// </summary>
         /// <param name="nImageIdx">Specifies the image index.</param>
+        /// <param name="bPad">Optionally, pad with an extra image (default = true).</param>
         /// <returns>The result of the run is returned.</returns>
-        ResultCollection Run(int nImageIdx);
+        ResultCollection Run(int nImageIdx, bool bPad = true);
         /// <summary>
         /// Run on a set of images in the MyCaffeImageDatabase based on their image indexes.
         /// </summary>
@@ -569,9 +570,9 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="d">Specifies the datum to load into the blob.</param>
         /// <param name="blob">Optionally, specifies a blob to use instead of creating a new one.</param>
-        /// <param name="bPad">Optionally, pad the blob with an extra dummy item (default = false).</param>
+        /// <param name="bPad">Optionally, pad the blob with an extra dummy item (default = true).</param>
         /// <returns>The data blob containing the transformed data is returned.</returns>
-        Blob<T> CreateDataBlob(SimpleDatum d, Blob<T> blob = null, bool bPad = false);
+        Blob<T> CreateDataBlob(SimpleDatum d, Blob<T> blob = null, bool bPad = true);
         /// <summary>
         /// Run on a given bitmap image.
         /// </summary>
@@ -580,17 +581,17 @@ namespace MyCaffe.common
         /// </remarks>
         /// <param name="img">Specifies the input image.</param>
         /// <param name="bSort">Specifies whether or not to sort the results.</param>
-        /// <param name="bPad">Optionally, pad the blob with an extra dummy item (default = false).</param>
+        /// <param name="bPad">Optionally, pad the blob with an extra dummy item (default = true).</param>
         /// <returns>The results of the run are returned.</returns>
-        ResultCollection Run(Bitmap img, bool bSort = true, bool bPad = false);
+        ResultCollection Run(Bitmap img, bool bSort = true, bool bPad = true);
         /// <summary>
         /// Run on a given Datum. 
         /// </summary>
         /// <param name="d">Specifies the Datum to run.</param>
         /// <param name="bSort">Optionally, specifies whether or not to sort the results.</param>
-        /// <param name="bPad">Optionally, specifies to pad the data with a dummy item and reshape the net (default = false).</param>
+        /// <param name="bPad">Optionally, specifies to pad the data with a dummy item and reshape the net (default = true).</param>
         /// <returns>The results of the run are returned.</returns>
-        ResultCollection Run(SimpleDatum d, bool bSort = true, bool bPad = false);
+        ResultCollection Run(SimpleDatum d, bool bSort = true, bool bPad = true);
     }
 
     /// <summary>
