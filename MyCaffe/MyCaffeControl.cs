@@ -2336,7 +2336,7 @@ namespace MyCaffe
         /// <param name="blob">Optionally, specifies a blob to use instead of creating a new one.</param>
         /// <param name="bPad">Optionally, pad the blob with an extra item (default = false).</param>
         /// <returns>The data blob containing the transformed data is returned.</returns>
-        public Blob<T> CreateDataBlob(SimpleDatum d, Blob<T> blob = null, bool bPad = false)
+        public Blob<T> CreateDataBlob(SimpleDatum d, Blob<T> blob = null, bool bPad = true)
         {
             if (m_dataTransformer == null)
             {
@@ -2674,7 +2674,7 @@ namespace MyCaffe
         /// <param name="bSort">Specifies whether or not to sort the results.</param>
         /// <param name="bPad">Optionally, specifies to pad the input by 1.</param>
         /// <returns>The results of the run are returned.</returns>
-        public ResultCollection Run(Bitmap img, bool bSort = true, bool bPad = false)
+        public ResultCollection Run(Bitmap img, bool bSort = true, bool bPad = true)
         {
             if (m_net == null)
                 throw new Exception("The Run net has not been created!");
@@ -2694,7 +2694,7 @@ namespace MyCaffe
         /// <param name="bSort">Specifies whether or not to sort the results.</param>
         /// <param name="bPad">Optionally, specifies to pad the data with a dummy item and reshape the net (default = false).</param>
         /// <returns>The results of the run are returned.</returns>
-        public ResultCollection Run(SimpleDatum d, bool bSort = true, bool bPad = false)
+        public ResultCollection Run(SimpleDatum d, bool bSort = true, bool bPad = true)
         {
             return Run(d, bSort, false, bPad);
         }
