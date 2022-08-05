@@ -61,6 +61,11 @@ namespace MyCaffe.common
             m_rgResultsSorted = m_rgResultsSorted.OrderByDescending(p => p.Score).ToList();
         }
 
+        /// <summary>
+        /// Get the result type based on the layer-type used.
+        /// </summary>
+        /// <param name="type">Specifies the layer-type used.</param>
+        /// <returns>The result type of: PROBABILITIES, DECODE or MULTIBOX is returned.</returns>
         public static RESULT_TYPE GetResultType(LayerParameter.LayerType type)
         {
             switch (type)
