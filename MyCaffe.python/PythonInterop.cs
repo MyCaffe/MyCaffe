@@ -23,7 +23,7 @@ namespace MyCaffe.python
         /// The constructor.
         /// </summary>
         /// <param name="strPythonDllPath">Specifies the path to the Python DLL (e.g. Python39.dll) which is usually located
-        /// at: @"C:\Users\" + strUserName + @"\AppData\Local\Programs\Python\Python39\python39.dll"</param>
+        /// at: @f$ @"C:\Users\" + strUserName + @"\AppData\Local\Programs\Python\Python39\python39.dll" @f$</param>
         /// <remarks>
         /// See https://github.com/MyCaffe/MyCaffe/blob/master/MyCaffe.app/FormGptTest.cs (dowork, line 85) for an example 
         /// that demonstrates how to use the PythonInterop class to run the GPT2 pre-trained model from HuggingFace to generate text.
