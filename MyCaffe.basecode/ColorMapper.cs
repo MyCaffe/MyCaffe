@@ -325,6 +325,9 @@ namespace MyCaffe.basecode
                 dfFraction = dfVal - (double)nIdx1; // distance between two indexes (0-1).
             }
 
+            if (nIdx1 < 0 || nIdx2 < 0)
+                return m_clrError;
+
             double dfR = (m_rgrgColors[nIdx2][0] - m_rgrgColors[nIdx1][0]) * dfFraction + m_rgrgColors[nIdx1][0];
             double dfG = (m_rgrgColors[nIdx2][1] - m_rgrgColors[nIdx1][1]) * dfFraction + m_rgrgColors[nIdx1][1];
             double dfB = (m_rgrgColors[nIdx2][2] - m_rgrgColors[nIdx1][2]) * dfFraction + m_rgrgColors[nIdx1][2];
