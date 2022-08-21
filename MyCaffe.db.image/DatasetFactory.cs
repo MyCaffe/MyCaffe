@@ -93,6 +93,14 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Returns the underlying Database object.
+        /// </summary>
+        public Database Database
+        {
+            get { return m_db; }
+        }
+
+        /// <summary>
         /// Returns the index of the last image added to the database.
         /// </summary>
         public int LastIndex
