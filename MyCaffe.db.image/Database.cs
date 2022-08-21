@@ -2971,7 +2971,11 @@ namespace MyCaffe.db.image
                 {
                     if (rgImg[0].SourceID != nSrcID)
                     {
+                        if (rgImg[0].OriginalSourceID == null)
+                            rgImg[0].OriginalSourceID = rgImg[0].SourceID;
+
                         rgImg[0].SourceID = nSrcID;
+                        
                         entities.SaveChanges();
                         return true;
                     }
