@@ -20,12 +20,12 @@ maintaining compatibility with CAFFE's solver descriptions, model descriptions a
 The C# based MyCaffe open-source project is independently maintained by <a href="http://www.signalpop.com">SignalPop LLC</a> and made 
 available under the Apache 2.0 License.
 <h3>Supported Development Environments:</h3>
-* Visual Studio 2022 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 11.7.1</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 8.5.0</a> (current test pass)</br>
-* Visual Studio 2019 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 11.4.2</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 8.2.4</a> </br>
+* Visual Studio 2022 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 11.8.0</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 8.6.0</a> (current test pass)</br>
+* Visual Studio 2022 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 11.7.1</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 8.5.0</a></br>
 </br>
 
-NOTE: Compute 5.3 and above required for CUDA 11.7.1/cuDNN 8.5.0 when using __half sized memory.
-NOTE: Only compute 5.2 and above are supported in CUDA 11.7.1/cuDNN 8.5.0 due to 5.1 and lower compute phase-out in CUDA 11.7.
+NOTE: Compute 5.3 and above required for CUDA 11.8.0/cuDNN 8.6.0 when using __half sized memory.
+NOTE: Only compute 5.2 and above are supported in CUDA 11.8.0/cuDNN 8.6.0 due to 5.1 and lower compute phase-out in CUDA 11.8.
 
 <b>For detailed notes on building MyCaffe, please see the <a href="https://github.com/MyCaffe/MyCaffe/blob/master/INSTALL.md">INSTALL.md</a> file.</b>
 
