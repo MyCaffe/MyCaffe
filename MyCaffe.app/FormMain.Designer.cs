@@ -97,6 +97,7 @@
             this.lblCudaPath = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
             this.m_bwLoadVOCDatabase = new System.ComponentModel.BackgroundWorker();
+            this.alexNetCifarCUDA8BugToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -361,6 +362,7 @@
             // specialTestsToolStripMenuItem
             // 
             this.specialTestsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.alexNetCifarCUDA8BugToolStripMenuItem,
             this.alexNetToolStripMenuItem,
             this.resNet56CifarAccuracyBugToolStripMenuItem,
             this.testPythonInteropToolStripMenuItem,
@@ -632,6 +634,13 @@
             this.m_bwLoadVOCDatabase.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.m_bw_ProgressChanged);
             this.m_bwLoadVOCDatabase.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bw_RunWorkerCompleted);
             // 
+            // alexNetCifarCUDA8BugToolStripMenuItem
+            // 
+            this.alexNetCifarCUDA8BugToolStripMenuItem.Name = "alexNetCifarCUDA8BugToolStripMenuItem";
+            this.alexNetCifarCUDA8BugToolStripMenuItem.Size = new System.Drawing.Size(242, 22);
+            this.alexNetCifarCUDA8BugToolStripMenuItem.Text = "AlexNet-Cifar CUDA 8 Bug";
+            this.alexNetCifarCUDA8BugToolStripMenuItem.Click += new System.EventHandler(this.alexNetCifarCUDA8BugToolStripMenuItem_Click);
+            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -725,6 +734,7 @@
         private System.Windows.Forms.ToolStripMenuItem getSQLExpressToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem testPythonInteropToolStripMenuItem;
         private ListViewEx lvStatus;
+        private System.Windows.Forms.ToolStripMenuItem alexNetCifarCUDA8BugToolStripMenuItem;
     }
 }
 

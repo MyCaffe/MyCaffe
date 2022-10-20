@@ -98,7 +98,8 @@ namespace MyCaffe.app
             TEST,
             DEVICEINFO,
             SPECIALTEST_ALEXNETCIFAR,
-            SPECIALTEST_RESNETCIFAR
+            SPECIALTEST_RESNETCIFAR,
+            SPECIALTEST_ALEXNETCIFAR_CUDA8,
         }
 
         enum MODE
@@ -1193,6 +1194,7 @@ namespace MyCaffe.app
                                 bw.ReportProgress(0, new ProgressInfo(0, 0, str1, null, true));
                                 break;
 
+                            case COMMAND.SPECIALTEST_ALEXNETCIFAR_CUDA8:
                             case COMMAND.SPECIALTEST_ALEXNETCIFAR:
                             case COMMAND.SPECIALTEST_RESNETCIFAR:
                                 bw.ReportProgress(0, new ProgressInfo(0, 0, "Starting special test " + m_Cmd.ToString(), null, true));
@@ -1356,6 +1358,28 @@ namespace MyCaffe.app
 
         #region Special Tests
 
+        private void alexNetCifarCUDA8BugToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            createMyCaffeToolStripMenuItem.Enabled = false;
+            destroyMyCaffeToolStripMenuItem.Enabled = false;
+            trainMNISTToolStripMenuItem.Enabled = false;
+            testMNISTToolStripMenuItem.Enabled = false;
+            loadMNISTToolStripMenuItem.Enabled = false;
+            loadCIFAR10ToolStripMenuItem.Enabled = false;
+            loadVOC2007ToolStripMenuItem.Enabled = false;
+            deviceInformationToolStripMenuItem.Enabled = false;
+            specialTestsToolStripMenuItem.Enabled = false;
+            abortToolStripMenuItem.Enabled = true;
+            m_evtCancel.Reset();
+            m_evtCaffeCancel.Reset();
+
+            if (!m_bwProcess.IsBusy)
+                m_bwProcess.RunWorkerAsync();
+
+            m_Cmd = COMMAND.SPECIALTEST_ALEXNETCIFAR_CUDA8;
+            m_evtCommandRead.Set();
+        }
+
         private void alexNetToolStripMenuItem_Click(object sender, EventArgs e)
         {
             createMyCaffeToolStripMenuItem.Enabled = false;
@@ -1410,6 +1434,9 @@ namespace MyCaffe.app
 
                 switch (cmd)
                 {
+                    case COMMAND.SPECIALTEST_ALEXNETCIFAR_CUDA8:
+                        return runTest_alexnetcifar_cuda8(log);
+                        
                     case COMMAND.SPECIALTEST_ALEXNETCIFAR:
                         return runTest_alexnetcifar(log);
 
@@ -1429,6 +1456,43 @@ namespace MyCaffe.app
             {
                 m_bTesting = false;
             }
+        }
+
+        private MyCaffeControl<float> runTest_alexnetcifar_cuda8(Log log)
+        {
+            CancelEvent evtCancel = new CancelEvent();
+            SettingsCaffe settings = new SettingsCaffe();
+            settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
+            settings.EnableRandomInputSelection = true;
+            settings.GpuIds = "0";
+
+            Trace.WriteLine("Running TestAlexNetCiFar on GPU " + settings.GpuIds);
+
+            ProjectEx p = new ProjectEx("AlexNet Project");
+
+            DatasetFactory factory = new DatasetFactory();
+            DatasetDescriptor ds = factory.LoadDataset("CIFAR-10");
+
+            p.SetDataset(ds);
+
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+            string strModelFile = strPath + "\\MyCaffe\\test_data\\models\\alexnet\\cifar\\alexnet_cifar_train_val.prototxt";
+            string strSolverFile = strPath + "\\MyCaffe\\test_data\\models\\alexnet\\cifar\\alexnet_cifar_solver.prototxt";
+
+            p.LoadModelFile(strModelFile);
+            RawProto proto = RawProtoFile.LoadFromFile(strSolverFile);
+
+            RawProto iter = proto.FindChild("max_iter");
+            iter.Value = "10";
+
+            p.SolverDescription = proto.ToString();
+
+            MyCaffeControl<float> mycaffe = createMyCaffe(settings, log, evtCancel);
+
+            mycaffe.Load(Phase.TRAIN, p);
+            mycaffe.Train();
+
+            return mycaffe;
         }
 
         private MyCaffeControl<float> runTest_alexnetcifar(Log log)
