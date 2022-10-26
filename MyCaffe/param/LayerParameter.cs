@@ -250,6 +250,10 @@ namespace MyCaffe.param
             /// </summary>
             GATHER,
             /// <summary>
+            /// Initializes a parameter for the GeluLayer.
+            /// </summary>
+            GELU,
+            /// <summary>
             /// Initializes a parameter for the GradScaleLayer (used for gradient reversal)
             /// </summary>
             GRADIENTSCALER,

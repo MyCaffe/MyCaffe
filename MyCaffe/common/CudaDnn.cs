@@ -1222,8 +1222,11 @@ namespace MyCaffe.common
             CUDA_ADADELTA_UPDATE = 503,
             CUDA_ADAM_UPDATE = 504,
             CUDA_RMSPROP_UPDATE = 505,
-
+            
             CUDA_COMBINE_DATA = 550,
+
+            CUDA_GELU_FWD = 600,
+            CUDA_GELU_BWD = 601,
 
             CUDA_MTX_SET_DIAGONAL = 700,
             CUDA_MTX_SET_DIAGONAL2 = 701,
@@ -8007,6 +8010,47 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MISH_BWD, m_param.AsDouble(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, dfThreshold, nMethod));
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MISH_BWD, m_param.AsFloat(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, (float)dfThreshold, nMethod));
+        }
+
+        /// <summary>
+        /// Performs a GELU forward pass in Cuda.
+        /// </summary>
+        /// <remarks>
+        /// Computes the GELU non-linearity @f$ f(x)  =y  = 0.5 * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$.
+        /// 
+        /// @see [Github - Karpathy: NewGELU, line 21](https://github.com/karpathy/minGPT/blob/master/mingpt/model.py) by Karpathy, 2022.
+        /// </remarks>
+        /// <param name="nCount">Specifies the number of items in the bottom and top data.</param>
+        /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
+        /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
+        public void gelu_fwd(int nCount, long hBottomData, long hTopData)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GELU_FWD, m_param.AsDouble(nCount, hBottomData, hTopData));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GELU_FWD, m_param.AsFloat(nCount, hBottomData, hTopData));
+        }
+
+        /// <summary>
+        /// Performs a GELU backward pass in Cuda.
+        /// </summary>
+        /// <remarks>
+        /// Computes the GELU gradient @f$ y' = \frac{0.107032 * (x^2 + 7.45462)}{cosh(0.0713548 * x^3 + 1.59577 * x) + 1} @f$
+        /// Note, see Wolfram Alpha with 'derivative of d/dx  = 0.5 * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3)))'                                         
+        /// 
+        /// @see [Github - Karpathy: NewGELU, line 21](https://github.com/karpathy/minGPT/blob/master/mingpt/model.py) by Karpathy, 2022.
+        /// </remarks>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="hTopDiff">Specifies a handle to the top diff in GPU memory.</param>
+        /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
+        /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
+        /// <param name="hBottomData">Specifies a handle tot he bottom data in GPU memory.</param>
+        public void gelu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GELU_BWD, m_param.AsDouble(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GELU_BWD, m_param.AsFloat(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData));
         }
 
         /// <summary>

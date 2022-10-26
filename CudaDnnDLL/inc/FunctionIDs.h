@@ -379,6 +379,9 @@ const int CUDA_FN_RMSPROP_UPDATE = 505;
 
 const int CUDA_FN_COMBINE_DATA = 550;
 
+const int CUDA_FN_GELU_FWD = 600;
+const int CUDA_FN_GELU_BWD = 601;
+
 const int CUDA_FN_MTX_SET_DIAGONAL = 700;
 const int CUDA_FN_MTX_SET_DIAGONAL2 = 701;
 const int CUDA_FN_MTX_ADD_VECTOR = 702;

@@ -8323,6 +8323,100 @@ template long Math<double>::mish_bwd(int nCount, long hTopDiff, long hTopData, l
 template long Math<float>::mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, float fThreshold, int nMethod);
 
 
+/// Computes the GELU non-linearity @f$ y  = 0.5 * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$.
+/// with                            @f$ y' = \frac{0.107032 * (x^2 + 7.45462)}{cosh(0.0713548 * x^3 + 1.59577 * x) + 1} @f$
+/// Note, see Wolfram Alpha with 'derivative of @f$ d/dx  = 0.5 * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$'                                        
+template<typename T>
+__global__ void gelu_fwd_kernel(int n, const T* in, T* out)
+{
+	const T fSqrt2xPi = sqrt(2.0 / M_PI);
+
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		out[i] = (T)0.5 * ((T)1.0 + tanh(fSqrt2xPi * (in[i] + (T)0.044715 * in[i] * in[i] * in[i])));
+	}
+}
+
+template <class T>
+long Math<T>::gelu_fwd(int n, long hBottomData, long hTopData)
+{
+	LONG lErr;
+	MemoryItem* pBottomData;
+	MemoryItem* pTopData;
+
+	if (lErr = m_pMemCol->GetData(hBottomData, &pBottomData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hTopData, &pTopData))
+		return lErr;
+
+	T* bottom_data = (T*)pBottomData->Data();
+	T* top_data = (T*)pTopData->Data();
+
+	gelu_fwd_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::gelu_fwd(int nCount, long hBottomData, long hTopData);
+template long Math<float>::gelu_fwd(int nCount, long hBottomData, long hTopData);
+
+
+/// Computes the GELU non-linearity @f$ y  = 0.5 * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$.
+/// with                            @f$ y' = \frac{0.107032 * (x^2 + 7.45462)}{cosh(0.0713548 * x^3 + 1.59577 * x) + 1} @f$
+/// Note, see Wolfram Alpha with 'derivative of @f$ d/dx  = 0.5 * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$'                                        
+template<typename T>
+__global__ void gelu_bwd_kernel(const int n, const T* in_diff, T* out_data, T* out_diff, const T* in_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const T x = in_data[i];
+		const T fNum = (T)0.107032 * (x * x + (T)7.45462);
+		const T fDiv = cosh((T)0.0713548 * x * x * x + (T)1.59577 * x) + (T)1;
+		T grad = 0;
+
+		if (fDiv != 0)
+			grad = fNum / fDiv;
+		
+		out_diff[i] = in_diff[i] * grad;
+	}
+}
+
+template <class T>
+long Math<T>::gelu_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData)
+{
+	LONG lErr;
+	MemoryItem* pTopDiff;
+	MemoryItem* pTopData;
+	MemoryItem* pBottomDiff;
+	MemoryItem* pBottomData;
+
+	if (lErr = m_pMemCol->GetData(hTopDiff, &pTopDiff))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hTopData, &pTopData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBottomDiff, &pBottomDiff))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBottomData, &pBottomData))
+		return lErr;
+
+	T* top_diff = (T*)pTopDiff->Data();
+	T* top_data = (T*)pTopData->Data();
+	T* bottom_diff = (T*)pBottomDiff->Data();
+	T* bottom_data = (T*)pBottomData->Data();
+
+	gelu_bwd_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::gelu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
+template long Math<float>::gelu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
+
+
 /// Computes the serf non-linearity @f$ f(x) = x erf(\ln( 1 + \exp(x) )) @f$.
 /// @see [Serf: Towards better training of deep neural networks using log-Softplus ERror activation Function](https://arxiv.org/pdf/2108.09598.pdf) by Sayan Nag and Mayukh Bhattacharyya, 2021.
 /// Also note, log1p(x) = log(1 + x)                                         

@@ -269,6 +269,9 @@ class Math
 		long mish_fwd(int nCount, long hBottomData, long hTopData, T fThreshold);
 		long mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, T fThreshold, int nMethod);
 
+		long gelu_fwd(int nCount, long hBottomData, long hTopData);
+		long gelu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
+
 		long serf_fwd(int nCount, long hBottomData, long hTopData, T fThreshold);
 		long serf_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, T fThreshold);
 
