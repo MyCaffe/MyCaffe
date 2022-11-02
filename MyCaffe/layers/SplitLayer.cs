@@ -84,7 +84,7 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Computes the forward calculation copying the bottom Blbos with all of the top Blobs.
+        /// Computes the forward calculation copying the bottom Blobs with all of the top Blobs.
         /// </summary>
         /// <param name="colBottom">bottom input Blob vector (Length 1)
         ///  -# @f$ (N \times C \times H \times W) @f$ the inputs.</param>
