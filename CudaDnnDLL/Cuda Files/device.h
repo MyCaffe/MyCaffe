@@ -438,6 +438,7 @@ class Device
 		long cuda_channel_dot(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_compare(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_fill(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_channel_copy(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
 		long cuda_im2col(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_im2col_nd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);

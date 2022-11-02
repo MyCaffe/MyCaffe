@@ -8,9 +8,25 @@ using System.Threading;
 using System.IO;
 using MyCaffe.basecode;
 using System.ComponentModel;
+using System.Runtime.Remoting.Channels;
 
 namespace MyCaffe.common
 {
+    /// <summary>
+    /// Defines the direction of data flow.
+    /// </summary>
+    public enum DIR
+    {
+        /// <summary>
+        /// Specifies data is moving forward.
+        /// </summary>
+        FWD = 0,
+        /// <summary>
+        /// Specifies data is moving backward.
+        /// </summary>
+        BWD = 1
+    }
+
     /// <summary>
     /// Defines the type of Mean Error to use.
     /// </summary>
@@ -737,6 +753,7 @@ namespace MyCaffe.common
         void channel_scale(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hA, long hY);
         void channel_mulv(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hA, long hX, long hC);
         void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
+        void channel_copy(int nCount, int nOuterNum, int nChannels, int nBlocks, int nInnerNum, int nOffset, long hX, long hY, DIR dir);
 
         void gemm(bool bTransA, bool bTransB, int m, int n, int k, double fAlpha, long hA, long hB, double fBeta, long hC);
         void gemm(bool bTransA, bool bTransB, int m, int n, int k, float fAlpha, long hA, long hB, float fBeta, long hC);
@@ -1104,6 +1121,7 @@ namespace MyCaffe.common
             CUDA_CHANNEL_FILL = 297,
             CUDA_CHANNEL_SCALE = 298,
             CUDA_CHANNEL_MULV = 299,
+            CUDA_CHANNEL_COPY = 300,
 
             CUDA_RNG_SETSEED = 349,
             CUDA_RNG_UNIFORM = 350,
@@ -7449,6 +7467,27 @@ namespace MyCaffe.common
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_DOT, m_param.AsFloat(nCount, nOuterNum, nChannels, nInnerNum, hX, hA, hY));
         }
+
+        /// <summary>
+        /// Copy data along channels similar to numpy split function.
+        /// </summary>
+        /// <param name="nCount">Specifies the total number of elements in Y which = count(X)/nBlocks in length.</param>
+        /// <param name="nOuterNum">Specifies the number of items.</param>
+        /// <param name="nChannels">Specifies the number of channels.</param>
+        /// <param name="nBlocks">Specifies the number of blocks in each channel.</param>
+        /// <param name="nInnerNum">Specifies the dimension of each inner dim within the channel.</param>
+        /// <param name="nOffset">Specifies the offset of the inner dim.</param>
+        /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
+        /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
+        /// <param name="dir">Specifies the direction of data flow (0 = fwd X->Y, 1 = bwd Y->X).</param>
+        public void channel_copy(int nCount, int nOuterNum, int nChannels, int nBlocks, int nInnerNum, int nOffset, long hX, long hY, DIR dir)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_COPY, m_param.AsDouble(nCount, nOuterNum, nChannels, nBlocks, nInnerNum, nOffset, hX, hY, (int)dir));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_COPY, m_param.AsFloat(nCount, nOuterNum, nChannels, nBlocks, nInnerNum, nOffset, hX, hY, (int)dir));
+        }
+
 
         /// <summary>
         /// Calculates the sum of inner values of X and places the result in Y.

@@ -5610,6 +5610,69 @@ template long Math<double>::channel_fill(int n, int nOutNum, int nChannels, int 
 template long Math<float>::channel_fill(int n, int nOutNum, int nChannels, int nInNum, long hX, int nLabelDim, long hLabels, long hY);
 
 
+template <typename T>
+__global__ void channel_copy_kernel_fwd(const int nYCount, const int num, const int channels, const int blocks, const int spatial_dim, const int offset, const T* x, T* y)
+{
+	const int nNSize = channels * blocks * spatial_dim;
+	const int nCSize = blocks * spatial_dim;
+
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nYCount && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const int nXi = i * blocks;
+		const int n = nXi / nNSize;
+		const int c = (nXi % nNSize) / nCSize;
+		const int b = ((nXi % nNSize) % nCSize) / spatial_dim;
+		const int nSrcIdx = n * channels * blocks * spatial_dim + c * blocks * spatial_dim + offset * spatial_dim + b;
+		y[i] = x[nSrcIdx];
+	}
+}
+
+template <typename T>
+__global__ void channel_copy_kernel_bwd(const int nYCount, const int num, const int channels, const int blocks, const int spatial_dim, const int offset, T* x, const T* y)
+{
+	const int nNSize = channels * blocks * spatial_dim;
+	const int nCSize = blocks * spatial_dim;
+	
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nYCount && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const int nXi = i * blocks;
+		const int n = nXi / nNSize;
+		const int c = (nXi % nNSize) / nCSize;
+		const int b = ((nXi % nNSize) % nCSize) / spatial_dim;
+		const int nDstIdx = n * channels * blocks * spatial_dim + c * blocks * spatial_dim + offset * spatial_dim + b;
+		x[nDstIdx] = y[i];
+	}
+}
+
+
+template <typename T>
+long Math<T>::channel_copy(int n, int nOutNum, int nChannels, int nBlocks, int nInNum, int nOffset, long hX, long hY, int nDir)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	T* x = (T*)pX->Data();
+	T* y = (T*)pY->Data();
+
+	if (nDir == 0) // X -> Y
+		channel_copy_kernel_fwd<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nOutNum, nChannels, nBlocks, nInNum, nOffset, x, y);
+	else // Y -> X
+		channel_copy_kernel_bwd<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nOutNum, nChannels, nBlocks, nInNum, nOffset, x, y);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::channel_copy(int n, int nOutNum, int nChannels, int nBlocks, int nInNum, int nOffset, long hX, long hY, int nDir);
+template long Math<float>::channel_copy(int n, int nOutNum, int nChannels, int nBlocks, int nInNum, int nOffset, long hX, long hY, int nDir);
+
+
 template<typename T>
 __global__ void im2col_kernel(int n, T* data_im, int height, int width, int kernel_h, int kernel_w, int pad_h, int pad_w, int stride_h, int stride_w, int dilation_h, int dilation_w, int height_col, int width_col, T* data_col)
 {

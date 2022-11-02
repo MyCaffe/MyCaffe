@@ -3114,6 +3114,31 @@ template long Device<float>::cuda_channel_fill(long lInput, float* pfInput, long
 
 
 template <class T>
+long Device<T>::cuda_channel_copy(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 9, 9))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	int nOutNum = (int)pfInput[1];
+	int nChannels = (int)pfInput[2];
+	int nBlocks = (int)pfInput[3];
+	int nInNum = (int)pfInput[4];
+	int nOffset = (int)pfInput[5];
+	long hX = (long)pfInput[6];
+	long hY = (long)pfInput[7];
+	int nDir = (int)pfInput[8];
+
+	return m_math.channel_copy(n, nOutNum, nChannels, nBlocks, nInNum, nOffset, hX, hY, nDir);
+}
+
+template long Device<double>::cuda_channel_copy(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_channel_copy(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::cuda_im2col(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
