@@ -393,6 +393,7 @@ class Device
 		long cuda_scale(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_scale_to_range(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_erf(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_mask(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_interp2(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_add_scalar(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_add(long lInput, T* pfInput, long* plOutput, T** ppfOutput);

@@ -1978,6 +1978,27 @@ template long Device<double>::cuda_erf(long lInput, double* pfInput, long* plOut
 template long Device<float>::cuda_erf(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
 
 
+template <class T>
+long Device<T>::cuda_mask(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	T fSearch = pfInput[1];
+	T fReplace = pfInput[2];
+	long hX = (long)pfInput[3];
+	long hMask = (long)pfInput[4];
+	long hY = (long)pfInput[5];
+
+	return m_math.mask(n, fSearch, fReplace, hX, hMask, hY);
+}
+
+template long Device<double>::cuda_mask(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mask(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
 
 template <class T>
 long Device<T>::cuda_interp2(long lInput, T* pfInput, long* plOutput, T** ppfOutput)

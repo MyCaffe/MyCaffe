@@ -497,6 +497,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_ERF:
 			return m_device.cuda_erf(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_MASK:
+			return m_device.cuda_mask(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_INTERP2:
 			return m_device.cuda_interp2(lCount, pfInput, plCount, ppfOutput);
 
@@ -1484,6 +1487,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_ERF:
 		return "CUDA_FN_ERF";
+
+	case CUDA_FN_MASK:
+		return "CUDA_FN_MASK";
 
 	case CUDA_FN_INTERP2:
 		return "CUDA_FN_INTERP2";

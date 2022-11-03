@@ -799,6 +799,9 @@ namespace MyCaffe.common
         void sqrt(int n, long hA, long hY);
         void sqrt_scale(int n, long hA, long hY);
 
+        void mask(int n, double fSearch, double fReplace, long hX, long hMask, long hY);
+        void mask(int n, float fSearch, float fReplace, long hX, long hMask, long hY);
+
         void im2col(long hDataIm, int nDataImOffset, int nChannels, int nHeight, int nWidth, int nKernelH, int nKernelW, int nPadH, int nPadW, int nStrideH, int nStrideW, int nDilationH, int nDilationW, long hDataCol, int nDataColOffset);
         void im2col_nd(long hDataIm, int nDataImOffset, int nNumSpatialAxes, int nColCount, int nChannelAxis, long hImShape, long hColShape, long hKernelShape, long hPad, long hStride, long hDilation, long hDataCol, int nDataColOffset);
         void col2im(long hDataCol, int nDataColOffset, int nChannels, int nHeight, int nWidth, int nKernelH, int nKernelW, int nPadH, int nPadW, int nStrideH, int nStrideW, int nDilationH, int nDilationW, long hDataIm, int nDataImOffset);
@@ -1097,6 +1100,7 @@ namespace MyCaffe.common
             CUDA_TRANSPOSE = 261,
             CUDA_SCALE_TO_RANGE = 262,
             CUDA_ERF = 263,
+            CUDA_MASK = 264,
 
             CUDA_INTERP2 = 265,
 
@@ -6422,6 +6426,51 @@ namespace MyCaffe.common
                 float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ERF, m_param.AsFloat(convertF(fVal)));
                 return convert(rg)[0];
             }
+        }
+        
+        /// <summary>
+        /// Mask the mask the data in the source with the mask by replacing all values 'fSearch' found in the mask with 'fReplace' in the destination.
+        /// </summary>
+        /// <param name="n">Specifies the number of items.</param>
+        /// <param name="fSearch">Specifies the value within the mask to replace.</param>
+        /// <param name="fReplace">Specifies the replacement value.</param>
+        /// <param name="hX">Specifies a handle to the GPU memory of the source.</param>
+        /// <param name="hMask">Specifies a handle to the GPU memory of the mask (containing the 'fSearch' values)</param>
+        /// <param name="hY">Specifies a handle to the GPU memory of the destination.</param>
+        public void mask(int n, T fSearch, T fReplace, long hX, long hMask, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MASK, m_param.AsDouble(n, convertD(fSearch), convertD(fReplace), hX, hMask, hY));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MASK, m_param.AsFloat(n, convertF(fSearch), convertF(fReplace), hX, hMask, hY));
+        }
+
+        /// <summary>
+        /// Mask the mask the data in the source with the mask by replacing all values 'fSearch' found in the mask with 'fReplace' in the destination.
+        /// </summary>
+        /// <param name="n">Specifies the number of items.</param>
+        /// <param name="fSearch">Specifies the value within the mask to replace.</param>
+        /// <param name="fReplace">Specifies the replacement value.</param>
+        /// <param name="hX">Specifies a handle to the GPU memory of the source.</param>
+        /// <param name="hMask">Specifies a handle to the GPU memory of the mask (containing the 'fSearch' values)</param>
+        /// <param name="hY">Specifies a handle to the GPU memory of the destination.</param>
+        public void mask(int n, double fSearch, double fReplace, long hX, long hMask, long hY)
+        {
+            mask(n, (T)Convert.ChangeType(fSearch, typeof(T)), (T)Convert.ChangeType(fReplace, typeof(T)), hX, hMask, hY);
+        }
+
+        /// <summary>
+        /// Mask the mask the data in the source with the mask by replacing all values 'fSearch' found in the mask with 'fReplace' in the destination.
+        /// </summary>
+        /// <param name="n">Specifies the number of items.</param>
+        /// <param name="fSearch">Specifies the value within the mask to replace.</param>
+        /// <param name="fReplace">Specifies the replacement value.</param>
+        /// <param name="hX">Specifies a handle to the GPU memory of the source.</param>
+        /// <param name="hMask">Specifies a handle to the GPU memory of the mask (containing the 'fSearch' values)</param>
+        /// <param name="hY">Specifies a handle to the GPU memory of the destination.</param>
+        public void mask(int n, float fSearch, float fReplace, long hX, long hMask, long hY)
+        {
+            mask(n, (T)Convert.ChangeType(fSearch, typeof(T)), (T)Convert.ChangeType(fReplace, typeof(T)), hX, hMask, hY);
         }
 
         /// <summary>

@@ -2582,6 +2582,46 @@ long Math<float>::erf(float dfVal, float* pdfResult)
 }
 
 
+template <typename T>
+__global__ void mask_kernel(const int n, const T* x, const T* mask, T* y, const T fSearch, const T fReplace)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		y[i] = (mask[i] == fSearch) ? fReplace : x[i];
+	}
+}
+
+
+template <class T>
+long Math<T>::mask(int n, T fSearch, T fReplace, long hX, long hMask, long hY)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pMask;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hMask, &pMask))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	T* x = (T*)pX->Data();
+	T* mask = (T*)pMask->Data();
+	T* y = (T*)pY->Data();
+
+	mask_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, mask, y, fSearch, fReplace);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::mask(int n, double dfSearch, double dfReplace, long hX, long hMask, long hY);
+template long Math<float>::mask(int n, float dfSearch, float dfReplace, long hX, long hMask, long hY);
+
+
 // Bi-linear interpolation
 // input:  [channels height1 width1] cropped from a bigger [Height1 Width1] image
 // output: [channels height2 width2] cropped from a bigger [Height2 Width2] image
@@ -5613,15 +5653,14 @@ template long Math<float>::channel_fill(int n, int nOutNum, int nChannels, int n
 template <typename T>
 __global__ void channel_copy_kernel_fwd(const int nYCount, const int num, const int channels, const int blocks, const int spatial_dim, const int offset, const T* x, T* y)
 {
-	const int nNSize = channels * blocks * spatial_dim;
-	const int nCSize = blocks * spatial_dim;
+	const int nNSize = channels * spatial_dim;
+	const int nCSize = spatial_dim;
 
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nYCount && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		const int nXi = i * blocks;
-		const int n = nXi / nNSize;
-		const int c = (nXi % nNSize) / nCSize;
-		const int b = ((nXi % nNSize) % nCSize) / spatial_dim;
+		const int n = i / nNSize;
+		const int c = (i % nNSize) / nCSize;
+		const int b = (i % nCSize);
 		const int nSrcIdx = n * channels * blocks * spatial_dim + c * blocks * spatial_dim + offset * spatial_dim + b;
 		y[i] = x[nSrcIdx];
 	}
@@ -5630,15 +5669,14 @@ __global__ void channel_copy_kernel_fwd(const int nYCount, const int num, const 
 template <typename T>
 __global__ void channel_copy_kernel_bwd(const int nYCount, const int num, const int channels, const int blocks, const int spatial_dim, const int offset, T* x, const T* y)
 {
-	const int nNSize = channels * blocks * spatial_dim;
-	const int nCSize = blocks * spatial_dim;
-	
+	const int nNSize = channels * spatial_dim;
+	const int nCSize = spatial_dim;
+
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nYCount && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		const int nXi = i * blocks;
-		const int n = nXi / nNSize;
-		const int c = (nXi % nNSize) / nCSize;
-		const int b = ((nXi % nNSize) % nCSize) / spatial_dim;
+		const int n = i / nNSize;
+		const int c = (i % nNSize) / nCSize;
+		const int b = (i % nCSize);
 		const int nDstIdx = n * channels * blocks * spatial_dim + c * blocks * spatial_dim + offset * spatial_dim + b;
 		x[nDstIdx] = y[i];
 	}

@@ -1569,6 +1569,86 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestMath_mask()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+            float[] rgf = new float[] { 1.1f, 2.2f, 0.0000099f, 999999.888f };
+            int nCount = rgf.Length;
+            float[] rgfMask = new float[nCount];
+            double[] rgfExpected = new double[nCount];
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    long hData = t.Cuda.AllocMemory(rgf);
+                    long hMask = t.Cuda.AllocMemory(nCount);
+                    long hDst = t.Cuda.AllocMemory(nCount);
+                    
+                    try
+                    {
+                        double dfReplacement = double.NegativeInfinity;
+
+                        for (int i = 0; i < rgf.Length; i++)
+                        {
+                            for (int j = 0; j < rgfMask.Length; j++)
+                            {
+                                rgfMask[j] = 1.0f;
+                                rgfExpected[j] = rgf[j];
+                            }
+
+                            for (int j = i; j < rgfMask.Length; j++)
+                            {
+                                rgfMask[j] = 0.0f;
+                                rgfExpected[j] = dfReplacement;
+                            }
+
+                            t.Cuda.SetMemory(hMask, rgfMask);
+                            t.Cuda.set(nCount, hDst, 0);
+                            t.Cuda.mask(nCount, 0.0, dfReplacement, hData, hMask, hDst);
+
+                            double[] rgfRes = t.Cuda.get_double(nCount, hDst);
+
+                            t.Log.CHECK_EQ(rgfRes.Length, nCount, "The data length returned is not correct!");
+
+                            for (int j = 0; j < rgfRes.Length; j++)
+                            {
+                                double dfExpected = rgfExpected[j];
+                                double dfActual = rgfRes[j];
+
+                                t.Log.EXPECT_NEAR(dfExpected, dfActual, 0.000001, "The expected and actual are not as expected!");
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        if (hData != 0)
+                        {
+                            t.Cuda.FreeMemory(hData);
+                            hData = 0;
+                        }
+                        
+                        if (hMask != 0)
+                        {
+                            t.Cuda.FreeMemory(hMask);
+                            hMask = 0;
+                        }
+
+                        if (hDst != 0)
+                        {
+                            t.Cuda.FreeMemory(hDst);
+                            hDst = 0;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestMath_copy()
         {
             CudaDnnTest test = new CudaDnnTest();
@@ -2223,6 +2303,122 @@ namespace MyCaffe.test
             {
                 test.Dispose();
             }
+        }
+
+        [TestMethod]
+        public void TestMath_channel_copy()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+            Log log = new Log("Test Channel Copy");
+            long hDataA = 0;
+            long hDataB = 0;
+            long hDataC = 0;
+            long hDataAll = 0;
+
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    try
+                    {
+                        int nNum = 2;
+                        int nChannels = 2;
+                        int nEmbed = 3;
+                        int nBlocks = 3;
+                        int nCount = nNum * nChannels * nEmbed;
+                        //                                              |-n0-------------------------------------|-n1--------------------------------------|
+                        //                                              |-c0-----------------|-c1----------------|-c0-----------------|-c1-----------------|
+                        List<double> rgdfExpectedA = new List<double>() { 00.01, 00.02, 00.03, 01.01, 01.02, 01.03, 10.01, 10.02, 10.03, 11.01, 11.02, 11.03 };
+                        List<double> rgdfExpectedB = new List<double>() { 00.11, 00.12, 00.13, 01.11, 01.12, 01.13, 10.11, 10.12, 10.13, 11.11, 11.12, 11.13 };
+                        List<double> rgdfExpectedC = new List<double>() { 00.21, 00.22, 00.23, 01.21, 01.22, 01.23, 10.21, 10.22, 10.23, 11.21, 11.22, 11.23 };
+                        List<double> rgdfAll = new List<double>() { 
+                        // |-blk0--------------|-blk1---------------|-blk2---------------|
+                            00.01, 00.02, 00.03, 00.11, 00.12, 00.13, 00.21, 00.22, 00.23, // n0, c0
+                            01.01, 01.02, 01.03, 01.11, 01.12, 01.13, 01.21, 01.22, 01.23, // n0, c1
+
+                            10.01, 10.02, 10.03, 10.11, 10.12, 10.13, 10.21, 10.22, 10.23, // n1, c0
+                            11.01, 11.02, 11.03, 11.11, 11.12, 11.13, 11.21, 11.22, 11.23, // n1, c1
+                        };
+
+                        hDataA = t.Cuda.AllocMemory(rgdfExpectedA.Count);
+                        hDataB = t.Cuda.AllocMemory(rgdfExpectedB.Count);
+                        hDataC = t.Cuda.AllocMemory(rgdfExpectedC.Count);
+                        hDataAll = t.Cuda.AllocMemory(rgdfAll);
+
+                        // Test FWD copy from X(3) -> Ya, Yb, Yc
+                        t.Cuda.channel_copy(nCount, nNum, nChannels, nBlocks, nEmbed, 0, hDataAll, hDataA, DIR.FWD);
+                        t.Cuda.channel_copy(nCount, nNum, nChannels, nBlocks, nEmbed, 1, hDataAll, hDataB, DIR.FWD);
+                        t.Cuda.channel_copy(nCount, nNum, nChannels, nBlocks, nEmbed, 2, hDataAll, hDataC, DIR.FWD);
+
+                        double[] rgDataA = t.Cuda.GetMemoryDouble(hDataA);
+                        double[] rgDataB = t.Cuda.GetMemoryDouble(hDataB);
+                        double[] rgDataC = t.Cuda.GetMemoryDouble(hDataC);
+
+                        verifyData(log, rgdfExpectedA, rgDataA);
+                        verifyData(log, rgdfExpectedB, rgDataB);
+                        verifyData(log, rgdfExpectedC, rgDataC);
+
+                        // Test BWD copy from Ya, Yb, Yc -> X(3)
+                        t.Cuda.FreeMemory(hDataAll);
+                        hDataAll = t.Cuda.AllocMemory(rgdfAll.Count);
+                        double[] rgDataAll1 = t.Cuda.GetMemoryDouble(hDataAll);
+
+                        t.Cuda.channel_copy(nCount, nNum, nChannels, nBlocks, nEmbed, 0, hDataAll, hDataA, DIR.BWD);
+                        t.Cuda.channel_copy(nCount, nNum, nChannels, nBlocks, nEmbed, 1, hDataAll, hDataB, DIR.BWD);
+                        t.Cuda.channel_copy(nCount, nNum, nChannels, nBlocks, nEmbed, 2, hDataAll, hDataC, DIR.BWD);
+
+                        double[] rgDataAll = t.Cuda.GetMemoryDouble(hDataAll);
+
+                        verifyData(log, rgdfAll, rgDataAll);
+                    }
+                    finally
+                    {
+                        if (hDataA != 0)
+                        {
+                            t.Cuda.FreeMemory(hDataA);
+                            hDataA = 0;
+                        }
+
+                        if (hDataB != 0)
+                        {
+                            t.Cuda.FreeMemory(hDataB);
+                            hDataB = 0;
+                        }
+
+                        if (hDataC != 0)
+                        {
+                            t.Cuda.FreeMemory(hDataC);
+                            hDataC = 0;
+                        }
+
+                        if (hDataAll != 0)
+                        {
+                            t.Cuda.FreeMemory(hDataAll);
+                            hDataAll = 0;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        private bool verifyData(Log log, List<double> rgdf, double[] rgData)
+        {
+            log.CHECK_EQ(rgdf.Count, rgData.Length, "The length of Data does not match the count of rgdf!");
+
+            for (int i = 0; i < rgdf.Count; i++)
+            {
+                double dfA1 = rgdf[i];
+                double dfA2 = rgData[i];
+
+                log.EXPECT_NEAR(dfA1, dfA2, 0.000001);
+            }
+
+            return true;
         }
 
         [TestMethod]
