@@ -2663,17 +2663,18 @@ long Math<float>::erf(float dfVal, float* pdfResult)
 
 
 template <typename T>
-__global__ void mask_kernel(const int n, const T* x, const T* mask, T* y, const T fSearch, const T fReplace)
+__global__ void mask_kernel(const int n, const int nMaskDim, const T* x, const T* mask, T* y, const T fSearch, const T fReplace)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		y[i] = (mask[i] == fSearch) ? fReplace : x[i];
+		const int nMaskIdx = i % nMaskDim;
+		y[i] = (mask[nMaskIdx] == fSearch) ? fReplace : x[i];
 	}
 }
 
 
 template <class T>
-long Math<T>::mask(int n, T fSearch, T fReplace, long hX, long hMask, long hY)
+long Math<T>::mask(int n, int nMaskDim, T fSearch, T fReplace, long hX, long hMask, long hY)
 {
 	LONG lErr;
 	MemoryItem* pX;
@@ -2693,13 +2694,13 @@ long Math<T>::mask(int n, T fSearch, T fReplace, long hX, long hMask, long hY)
 	T* mask = (T*)pMask->Data();
 	T* y = (T*)pY->Data();
 
-	mask_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, mask, y, fSearch, fReplace);
+	mask_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nMaskDim, x, mask, y, fSearch, fReplace);
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::mask(int n, double dfSearch, double dfReplace, long hX, long hMask, long hY);
-template long Math<float>::mask(int n, float dfSearch, float dfReplace, long hX, long hMask, long hY);
+template long Math<double>::mask(int n, int nMaskDim, double dfSearch, double dfReplace, long hX, long hMask, long hY);
+template long Math<float>::mask(int n, int nMaskDim, float dfSearch, float dfReplace, long hX, long hMask, long hY);
 
 
 // Bi-linear interpolation

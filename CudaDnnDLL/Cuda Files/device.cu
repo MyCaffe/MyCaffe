@@ -1994,17 +1994,18 @@ long Device<T>::cuda_mask(long lInput, T* pfInput, long* plOutput, T** ppfOutput
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+	if (lErr = verifyInput(lInput, pfInput, 7, 7))
 		return lErr;
 
 	int n = (int)pfInput[0];
-	T fSearch = pfInput[1];
-	T fReplace = pfInput[2];
-	long hX = (long)pfInput[3];
-	long hMask = (long)pfInput[4];
-	long hY = (long)pfInput[5];
+	int nMaskDim = (int)pfInput[1];
+	T fSearch = pfInput[2];
+	T fReplace = pfInput[3];
+	long hX = (long)pfInput[4];
+	long hMask = (long)pfInput[5];
+	long hY = (long)pfInput[6];
 
-	return m_math.mask(n, fSearch, fReplace, hX, hMask, hY);
+	return m_math.mask(n, nMaskDim, fSearch, fReplace, hX, hMask, hY);
 }
 
 template long Device<double>::cuda_mask(long lInput, double* pfInput, long* plOutput, double** ppfOutput);

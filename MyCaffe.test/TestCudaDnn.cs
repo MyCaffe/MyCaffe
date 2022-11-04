@@ -1605,7 +1605,7 @@ namespace MyCaffe.test
 
                             t.Cuda.SetMemory(hMask, rgfMask);
                             t.Cuda.set(nCount, hDst, 0);
-                            t.Cuda.mask(nCount, 0.0, dfReplacement, hData, hMask, hDst);
+                            t.Cuda.mask(nCount, nCount, 0.0, dfReplacement, hData, hMask, hDst);
 
                             double[] rgfRes = t.Cuda.get_double(nCount, hDst);
 
@@ -1628,6 +1628,92 @@ namespace MyCaffe.test
                             hData = 0;
                         }
                         
+                        if (hMask != 0)
+                        {
+                            t.Cuda.FreeMemory(hMask);
+                            hMask = 0;
+                        }
+
+                        if (hDst != 0)
+                        {
+                            t.Cuda.FreeMemory(hDst);
+                            hDst = 0;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestMath_mask2()
+        {
+            // Test masking over two sets of data (e.g., 2 * mask len)
+            CudaDnnTest test = new CudaDnnTest();
+            float[] rgf = new float[] { 1.1f, 2.2f, 0.0000099f, 999999.888f, 8.5f, 10.2f, -3.2f, 1.999f };
+            int nCount = rgf.Length;
+            int nMaskCount = nCount / 2;
+            float[] rgfMask = new float[nMaskCount];
+            double[] rgfExpected = new double[nCount];
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    long hData = t.Cuda.AllocMemory(rgf);
+                    long hMask = t.Cuda.AllocMemory(nMaskCount);
+                    long hDst = t.Cuda.AllocMemory(nCount);
+
+                    try
+                    {
+                        double dfReplacement = double.NegativeInfinity;
+
+                        for (int i = 0; i < rgf.Length; i++)
+                        {
+                            for (int j = 0; j < rgfExpected.Length; j++)
+                            {
+                                if (j < rgfMask.Length)
+                                    rgfMask[j] = 1.0f;
+                                rgfExpected[j] = rgf[j];
+                            }
+
+                            for (int j = i; j < rgfExpected.Length; j++)
+                            {
+                                if (j < rgfMask.Length)
+                                    rgfMask[j] = 0.0f;
+
+                                if (rgfMask[j % nMaskCount] == 0.0)
+                                    rgfExpected[j] = dfReplacement;
+                            }
+                            
+                            t.Cuda.SetMemory(hMask, rgfMask);
+                            t.Cuda.set(nCount, hDst, 0);
+                            t.Cuda.mask(nCount, nMaskCount, 0.0, dfReplacement, hData, hMask, hDst);
+
+                            double[] rgfRes = t.Cuda.get_double(nCount, hDst);
+
+                            t.Log.CHECK_EQ(rgfRes.Length, nCount, "The data length returned is not correct!");
+
+                            for (int j = 0; j < rgfRes.Length; j++)
+                            {
+                                double dfExpected = rgfExpected[j];
+                                double dfActual = rgfRes[j];
+
+                                t.Log.EXPECT_NEAR(dfExpected, dfActual, 0.000001, "The expected and actual are not as expected!");
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        if (hData != 0)
+                        {
+                            t.Cuda.FreeMemory(hData);
+                            hData = 0;
+                        }
+
                         if (hMask != 0)
                         {
                             t.Cuda.FreeMemory(hMask);
