@@ -1602,8 +1602,11 @@ long Device<T>::cuda_gemm2(long lInput, T* pfInput, long* plOutput, T** ppfOutpu
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 13, 13))
+	if (lErr = verifyInput(lInput, pfInput, 13, 17))
 		return lErr;
+
+	if (lInput != 13 && lInput != 17)
+		return ERROR_PARAM_OUT_OF_RANGE;
 
 	bool bTransA = (pfInput[0] == 0.0) ? false : true;
 	bool bTransB = (pfInput[1] == 0.0) ? false : true;
@@ -1619,7 +1622,15 @@ long Device<T>::cuda_gemm2(long lInput, T* pfInput, long* plOutput, T** ppfOutpu
 	int ldb = (int)pfInput[11];
 	int ldc = (int)pfInput[12];
 
-	return m_math.gemm2(bTransA, bTransB, m, n, k, fAlpha, hA, hB, fBeta, hC, lda, ldb, ldc);
+	if (lInput == 13)
+		return m_math.gemm2(bTransA, bTransB, m, n, k, fAlpha, hA, hB, fBeta, hC, lda, ldb, ldc);
+
+	int stridea = (int)pfInput[13];
+	int strideb = (int)pfInput[14];
+	int stridec = (int)pfInput[15];
+	int batch_count = (int)pfInput[16];
+	
+	return m_math.gemm2(bTransA, bTransB, m, n, k, fAlpha, hA, hB, fBeta, hC, lda, ldb, ldc, stridea, strideb, stridec, batch_count);
 }
 
 template long Device<double>::cuda_gemm2(long lInput, double* pfInput, long* plOutput, double** ppfOutput);

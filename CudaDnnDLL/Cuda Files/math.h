@@ -167,6 +167,7 @@ class Math
 
 		long gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, long hA, long hB, T fBeta, long hC, int nAOff, int nBOff, int nCOff, int nGroups, int nGroupAOff, int nGroupBOff, int nGroupCOff);
 		long gemm2(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, long hA, long hB, T fBeta, long hC, int lda, int ldb, int ldc);
+		long gemm2(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, long hA, long hB, T fBeta, long hC, int lda, int ldb, int ldc, int strideA, int nStrideB, int nStrideC, int nBatchCount);
 		long geam(bool bTransA, bool bTransB, int m, int n, T fAlpha, long hA, long hB, T fBeta, long hC, int nAOff, int nBOff, int nCOff);
 		long gemv(bool bTransA, int m, int n, T fAlpha, long hA, long hX, T fBeta, long hY, int nAOff, int nXOff, int nYOff);
 		long axpy(int n, T fAlpha, long hX, long hY, int nXOff = 0, int nYOff = 0);

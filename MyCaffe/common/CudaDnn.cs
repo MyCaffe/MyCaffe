@@ -5804,6 +5804,37 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Perform a matrix-matrix multiplication operation: C = alpha transB (B) transA (A) + beta C 
+        /// </summary>
+        /// <remarks>
+        /// This function uses [NVIDIA's cuBlas](https://developer.nvidia.com/cublas) but with a different parameter ordering.
+        /// </remarks>
+        /// <param name="bTransA">Specifies whether or not to transpose A.</param>
+        /// <param name="bTransB">Specifies whether or not to transpose B.</param>
+        /// <param name="m">Specifies the width (number of columns) of A and C.</param>
+        /// <param name="n">Specifies the height (number of rows) of B and C.</param>
+        /// <param name="k">Specifies the width (number of columns) of A and B.</param>
+        /// <param name="fAlpha">Specifies a scalar multiplied by the data where the scalar is of type 'T'.</param>
+        /// <param name="hA">Specifies a handle to the data for matrix A in GPU memory.</param>
+        /// <param name="hB">Specifies a handle to the data for matrix B in GPU memory.</param>
+        /// <param name="fBeta">Specifies a scalar multiplied by C where the scalar is of type 'T'.</param>
+        /// <param name="hC">Specifies a handle to the data for matrix C in GPU memory.</param>
+        /// <param name="lda">Specifies the leading dimension of A.</param>
+        /// <param name="ldb">Specifies the leading dimension of B.</param>
+        /// <param name="ldc">Specifies the leading dimension of C.</param>
+        /// <param name="stridea">Specifies the stride of matrix A</param>
+        /// <param name="strideb">Specifies the stride of matrix B</param>
+        /// <param name="stridec">Specifies the stride of matrix C</param>
+        /// <param name="batch_count">Specifies the number of matricies.</param>
+        public void gemm(bool bTransA, bool bTransB, int m, int n, int k, double fAlpha, long hA, long hB, double fBeta, long hC, uint lda, uint ldb, uint ldc, uint stridea, uint strideb, uint stridec, uint batch_count)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GEMM2, m_param.AsDouble((bTransA) ? 1.0 : 0.0, (bTransB) ? 1.0 : 0.0, m, n, k, fAlpha, hA, hB, fBeta, hC, lda, ldb, ldc, stridea, strideb, stridec, batch_count));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GEMM2, m_param.AsFloat((bTransA) ? 1.0f : 0.0f, (bTransB) ? 1.0f : 0.0f, m, n, k, (float)fAlpha, hA, hB, (float)fBeta, hC, lda, ldb, ldc, stridea, strideb, stridec, batch_count));
+        }
+
+        /// <summary>
         /// Perform a matrix-matrix addition/transposition operation: C = alpha transA (A) + beta transB (B) 
         /// </summary>
         /// <remarks>

@@ -1515,6 +1515,86 @@ long Math<float>::gemm(bool bTransA, bool bTransB, int m, int n, int k, float fA
 	return CUDA_SUCCESS;
 }
 
+template <>
+long Math<double>::gemm2(bool bTransA, bool bTransB, int m, int n, int k, double fAlpha, long hA, long hB, double fBeta, long hC, int lda, int ldb, int ldc, int strideA, int strideB, int strideC, int batchCount)
+{
+	if (m_cublas == NULL)
+		return ERROR_CUBLAS_NULL;
+
+	LONG lErr;
+	MemoryItem* pA;
+	MemoryItem* pB;
+	MemoryItem* pC;
+
+	if (lErr = m_pMemCol->GetData(hA, &pA))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hB, &pB))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hC, &pC))
+		return lErr;
+
+	cublasOperation_t cuTransA = (!bTransA) ? CUBLAS_OP_N : CUBLAS_OP_T;
+	cublasOperation_t cuTransB = (!bTransB) ? CUBLAS_OP_N : CUBLAS_OP_T;
+
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr | ERROR_CUBLAS_OFFSET;
+
+	if (pA->IsHalf() || pB->IsHalf() || pC->IsHalf())
+		return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+	double* a = (double*)pA->Data();
+	double* b = (double*)pB->Data();
+	double* c = (double*)pC->Data();
+
+	if (lErr = cublasDgemmStridedBatched(m_cublas, cuTransA, cuTransB, m, n, k, &fAlpha, a, lda, strideA, b, ldb, strideB, &fBeta, c, ldc, strideC, batchCount))
+		return lErr | ERROR_CUBLAS_OFFSET;
+
+	return cudaStreamSynchronize(stream);
+}
+
+template <>
+long Math<float>::gemm2(bool bTransA, bool bTransB, int m, int n, int k, float fAlpha, long hA, long hB, float fBeta, long hC, int lda, int ldb, int ldc, int strideA, int strideB, int strideC, int batchCount)
+{
+	if (m_cublas == NULL)
+		return ERROR_CUBLAS_NULL;
+
+	LONG lErr;
+	MemoryItem* pA;
+	MemoryItem* pB;
+	MemoryItem* pC;
+
+	if (lErr = m_pMemCol->GetData(hA, &pA))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hB, &pB))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hC, &pC))
+		return lErr;
+
+	cublasOperation_t cuTransA = (!bTransA) ? CUBLAS_OP_N : CUBLAS_OP_T;
+	cublasOperation_t cuTransB = (!bTransB) ? CUBLAS_OP_N : CUBLAS_OP_T;
+
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr | ERROR_CUBLAS_OFFSET;
+
+	if (pA->IsHalf() || pB->IsHalf() || pC->IsHalf())
+		return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+	float* a = (float*)pA->Data();
+	float* b = (float*)pB->Data();
+	float* c = (float*)pC->Data();
+
+	if (lErr = cublasSgemmStridedBatched(m_cublas, cuTransA, cuTransB, m, n, k, &fAlpha, a, lda, strideA, b, ldb, strideB, &fBeta, c, ldc, strideC, batchCount))
+		return lErr | ERROR_CUBLAS_OFFSET;
+
+	return cudaStreamSynchronize(stream);
+}
+
 
 template <> 
 long Math<double>::gemm2(bool bTransA, bool bTransB, int m, int n, int k, double fAlpha, long hA, long hB, double fBeta, long hC, int lda, int ldb, int ldc)
