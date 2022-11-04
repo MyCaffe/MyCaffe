@@ -483,7 +483,7 @@ namespace MyCaffe.layers
             addInternal(m_blobAtt, m_blobAtt1);
             m_transposeQ.Forward(m_colInternalBottom, m_colInternalTop);
 
-            m_blobY.Reshape(m_blobVt.num, m_blobVt.channels, m_blobVt.width, m_blobVt.height); 
+            m_blobY.Reshape(m_blobVt.num, m_blobVt.channels, m_blobVt.height, m_blobVt.width); 
 
             nOuterDim = m_blobAtt.count(0, nAxis);
             lda = (uint)nM;
@@ -534,11 +534,130 @@ namespace MyCaffe.layers
             // Gradient with respect to state then data.
             if (rgbPropagateDown[0])
             {
-                Blob<T> blobY = colTop[0];
-                Blob<T> blobX = colBottom[0];
                 List<bool> rgbPropagate = new List<bool>() { true, true };
 
-                // TBD
+                // Apply resid dropout
+                if (m_resid_dropout != null)
+                {
+                    addInternal(colTop[0], colTop[0]);
+                    m_resid_dropout.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+                }
+
+                // Apply output projection.
+                // y = self.resid_dropout(self.c_proj(y))
+                addInternal(m_blobY, colTop[0]);
+                m_c_proj.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+                m_blobY.Reshape(m_nB, m_nT, m_nC, 1);
+
+                // Reassemble all head outputs side by side.
+                // y = y.transpose(1, 2).contiguous().view(B, T, C) 
+                addInternal(m_blobWork, m_blobY);
+                m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+
+
+                // Multiply attention matrix with values
+                // y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
+                // Convert back from row-maj to col-maj
+
+                addInternal(m_blobY, m_blobWork);
+                m_transposeQ.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+                m_blobY.Reshape(m_blobVt.num, m_blobVt.channels, m_blobVt.height, m_blobVt.width);
+
+                int nM = m_blobVt.height;
+                int nN = m_blobY.height;
+                int nK = m_blobY.width;
+
+                int nAxis = 2;
+                int nOuterDim = m_blobAtt.count(0, nAxis);
+                uint lda = (uint)nM;
+                uint ldb = (uint)nK;
+                uint ldc = (uint)nM;
+                uint stridea = (uint)(nN * nK);
+                uint strideb = (uint)(nK * nM);
+                uint stridec = (uint)(nM * nN);
+
+                // Gradient with respect to att
+                m_cuda.gemm(false, false, nM, nN, nK, 1.0, m_blobVt1.gpu_data, m_blobY.gpu_diff, 0.0, m_blobAtt1.mutable_gpu_diff, lda, ldb, ldc, stridea, strideb, stridec, (uint)nOuterDim);
+
+                // Gradient with respect to vt
+                m_cuda.gemm(false, false, nM, nN, nK, 1.0, m_blobAtt1.gpu_data, m_blobY.gpu_diff, 0.0, m_blobVt1.mutable_gpu_diff, lda, ldb, ldc, stridea, strideb, stridec, (uint)nOuterDim);
+
+                // Convert from row-maj to col-maj (expected by gemm)
+                addInternal(m_blobVt, m_blobVt1);
+                m_transposeQ.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+                addInternal(m_blobAtt, m_blobAtt1);
+                m_transposeQ.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+
+                // Apply attention dropout.
+                // att = self.attn_dropout(att)
+                if (m_attn_dropout != null)
+                {
+                    addInternal(m_blobAtt, m_blobAtt);
+                    m_attn_dropout.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+                }
+
+                // Take softmax of attention along the last axis.
+                // att = F.softmax(att, dim = -1)
+                addInternal(m_blobAtt, m_blobAtt);
+                m_softmax.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+                
+                // Multiply query and key(T) matrices and scale
+                // att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
+
+                // Convert from row-maj to col-maj
+                addInternal(m_blobAtt1, m_blobAtt);
+                m_transposeQ.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+
+                nAxis = 2;
+                nM = m_blobKt.height;
+                nN = m_blobAtt.width;
+                nK = m_blobAtt.height;
+                double dfScale = 1.0 / Math.Sqrt(m_nSize);
+
+                nOuterDim = m_blobQt.count(0, nAxis);
+                lda = (uint)nM;
+                ldb = (uint)nK;
+                ldc = (uint)nM;
+                stridea = (uint)(nN * nK);
+                strideb = (uint)(nK * nM);
+                stridec = (uint)(nM * nN);
+
+                // Gradient with respect to att
+                m_cuda.gemm(false, false, nM, nN, nK, 1.0, m_blobKt.gpu_data, m_blobAtt1.gpu_diff, 0.0, m_blobQt1.mutable_gpu_diff, lda, ldb, ldc, stridea, strideb, stridec, (uint)nOuterDim);
+
+                // Gradient with respect to kt
+                m_cuda.gemm(false, false, nM, nN, nK, 1.0, m_blobQt1.gpu_data, m_blobAtt1.gpu_diff, 0.0, m_blobKt.mutable_gpu_diff, lda, ldb, ldc, stridea, strideb, stridec, (uint)nOuterDim);
+
+                // Convert from row-maj to col-maj (expected by gemm)
+                addInternal(m_blobQt, m_blobQt1);
+                m_transposeQ.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+                addInternal(m_blobKt1, m_blobKt);
+                m_transposeQ.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+
+                addInternal(m_blobKt, m_blobKt1);
+                m_transposeQ.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+
+                // Transpose query, key and values along axes 1 & 2
+                // k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
+                // q = q.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
+                // v = v.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
+                addInternal(m_blobK, m_blobKt);
+                m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom); // (B, nh, T, hs)
+                addInternal(m_blobQ, m_blobQt);
+                m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom); // (B, nh, T, hs)
+                addInternal(m_blobV, m_blobVt);
+                m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom); // (B, nh, T, hs)
+
+                // Split IP output (3 * nEmbed) into query, key, values.
+                int nCount = m_blobQ.count();
+                m_cuda.channel_copy(nCount, m_blobIpAttn.num, m_blobIpAttn.channels, 3, m_nEmbed, 0, m_blobIpAttn.mutable_gpu_diff, m_blobQ.gpu_diff, DIR.BWD);
+                m_cuda.channel_copy(nCount, m_blobIpAttn.num, m_blobIpAttn.channels, 3, m_nEmbed, 1, m_blobIpAttn.mutable_gpu_diff, m_blobK.gpu_diff, DIR.BWD);
+                m_cuda.channel_copy(nCount, m_blobIpAttn.num, m_blobIpAttn.channels, 3, m_nEmbed, 2, m_blobIpAttn.mutable_gpu_diff, m_blobV.gpu_diff, DIR.BWD);
+
+                // Calculate query, key, values for all heads in batch and move head forward to be the batch dim.
+                // q, k ,v  = self.c_attn(x).split(self.n_embd, dim=2)
+                addInternal(colBottom[0], m_blobIpAttn);
+                m_c_attn.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
             }
         }
     }
