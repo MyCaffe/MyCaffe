@@ -894,7 +894,7 @@ namespace MyCaffe.common
         {
             m_log.CHECK_EQ(blobSrc.num_axes, 4, "Currently, Blobs only support transposing 4 axis tensors.");
 
-            ReshapeLike(blobSrc);
+            Reshape(blobSrc.num, blobSrc.channels, blobSrc.width, blobSrc.height);
 
             SyncedMemory<T> dst = (bCopyDiff) ? m_diff : m_data;
             SyncedMemory<T> src = (bCopyDiff) ? blobSrc.m_diff : blobSrc.m_data;
