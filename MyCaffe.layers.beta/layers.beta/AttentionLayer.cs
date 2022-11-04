@@ -637,7 +637,7 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Computes the inner product loss error gradient w.r.t the outputs.
+        /// Computes the loss error gradient w.r.t the outputs.
         /// </summary>
         /// <param name="colTop">top output blob vector (length 1), providing the error gradient with
         /// respect to the outputs.
