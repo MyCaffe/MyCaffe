@@ -146,6 +146,10 @@ namespace MyCaffe.param
             /// </summary>
             BNLL,
             /// <summary>
+            /// Initializes a parameter for the CausalSelfAttentionLayer.
+            /// </summary>
+            CAUSAL_SELF_ATTENTION,
+            /// <summary>
             /// Initializes a parameter for the ClipLayer.
             /// </summary>
             CLIP,
@@ -854,6 +858,12 @@ namespace MyCaffe.param
                     expected_top.Add("max");
                     m_rgLayerParameters[lt] = new ArgMaxParameter();
                     m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
+                    break;
+
+                case LayerType.CAUSAL_SELF_ATTENTION:
+                    expected_bottom.Add("input");
+                    expected_top.Add("atten");
+                    m_rgLayerParameters[lt] = new CausalSelfAttentionParameter();
                     break;
 
                 case LayerType.ATTENTION:
@@ -1822,6 +1832,15 @@ namespace MyCaffe.param
         {
             get { return (AttentionParameter)m_rgLayerParameters[LayerType.ATTENTION]; }
             set { m_rgLayerParameters[LayerType.ATTENTION] = value; }
+        }
+
+        /// <summary>
+        /// Returns the parameter set when initialized with LayerType.CAUSAL_SELF_ATTENTION
+        /// </summary>
+        public CausalSelfAttentionParameter causal_self_attention_param
+        {
+            get { return (CausalSelfAttentionParameter)m_rgLayerParameters[LayerType.CAUSAL_SELF_ATTENTION]; }
+            set { m_rgLayerParameters[LayerType.CAUSAL_SELF_ATTENTION] = value; }
         }
 
         /// <summary>
@@ -2999,6 +3018,7 @@ namespace MyCaffe.param
 
             // Beta layers.
             rgParam.Add(new KeyValuePair<BaseParameter, string>(attention_param, "attention_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(causal_self_attention_param, "causal_self_attention_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(convolution_octave_param, "convolution_octave_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(data_sequence_param, "data_sequence_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(decode_param, "decode_param"));
@@ -3293,6 +3313,9 @@ namespace MyCaffe.param
             // Beta layers.
             if ((rpp = rp.FindChild("attention_param")) != null)
                 p.attention_param = AttentionParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("causal_self_attention_param")) != null)
+                p.causal_self_attention_param = CausalSelfAttentionParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("data_sequence_param")) != null)
                 p.data_sequence_param = DataSequenceParameter.FromProto(rpp);

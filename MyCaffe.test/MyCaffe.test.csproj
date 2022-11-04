@@ -29,6 +29,7 @@
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
     <PlatformTarget>x64</PlatformTarget>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -72,8 +73,8 @@
       <HintPath>..\packages\Microsoft.VisualStudio.QualityTools.UnitTestFramework.Updated.15.0.26228\lib\Microsoft.VisualStudio.QualityTools.UnitTestFramework.dll\Microsoft.VisualStudio.QualityTools.UnitTestFramework.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="OnnxControl, Version=1.11.8.8, Culture=neutral, PublicKeyToken=666204c5f16cdcaa, processorArchitecture=MSIL">
-      <HintPath>..\packages\OnnxControl.1.11.8.8\lib\net40\OnnxControl.dll</HintPath>
+    <Reference Include="OnnxControl, Version=1.11.8.12, Culture=neutral, PublicKeyToken=666204c5f16cdcaa, processorArchitecture=MSIL">
+      <HintPath>..\packages\OnnxControl.1.11.8.12\lib\net40\OnnxControl.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -112,6 +113,7 @@
     </Compile>
     <Compile Include="TestAccuracyEncodingLayer.cs" />
     <Compile Include="TestAnnotatedDataLayer.cs" />
+    <Compile Include="TestCausalSelfAttentionLayer.cs" />
     <Compile Include="TestBeamSearch.cs" />
     <Compile Include="TestAttentionLayer.cs" />
     <Compile Include="TestDataSequenceLayer.cs" />
