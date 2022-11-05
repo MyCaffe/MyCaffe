@@ -51,6 +51,25 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestBackwardPico()
+        {
+            CausalSelfAttentionLayerTest test = new CausalSelfAttentionLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ICausalSelfAttentionLayerTest t in test.Tests)
+                {
+                    t.TestBackwardPico(1);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
         [TestMethod]
         public void TestForwardPico3()
         {
@@ -129,6 +148,7 @@ namespace MyCaffe.test
     {
         void TestForwardPico(int nHeads);
         void TestGradientPico(int nHeads);
+        void TestBackwardPico(int nHeads);
         void TestForwardMini();
         void TestGradientMini();
     }
@@ -271,7 +291,69 @@ namespace MyCaffe.test
                 {
                     float fExpected = rgExpected[i];
                     float fActual = rgActual[i];
-                    float fErr = 0.0004f;
+                    float fErr = 0.00000001f;
+
+                    m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, fErr, "The values are not as expected!");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
+            }
+        }
+
+        public void TestBackwardPico(int nHeads)
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CAUSAL_SELF_ATTENTION);
+            p.causal_self_attention_param.heads = nHeads;
+            p.causal_self_attention_param.embed = 3;
+            p.causal_self_attention_param.block_size = 4;
+            p.causal_self_attention_param.attn_dropout = 0.0;
+            p.causal_self_attention_param.resid_dropout = 0.0;
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+
+            try
+            {
+                string strModel = "gpt-pico";
+                if (nHeads > 1)
+                    strModel += nHeads.ToString();
+
+                m_log.CHECK(layer.type == LayerParameter.LayerType.CAUSAL_SELF_ATTENTION, "The layer type is incorrect!");
+
+                Tuple<List<int>, float[]> x = Fill(strModel, "x", m_log, p.causal_self_attention_param);
+                m_blob_bottom.Reshape(x.Item1);
+                m_blob_bottom.mutable_cpu_data = convert(x.Item2);
+
+                Tuple<List<int>, float[]> y_grad = Fill(strModel, "1_grad_y", m_log, p.causal_self_attention_param);
+                
+                Tuple<List<int>, float[]> x_grad = Fill(strModel, "12_grad_x", m_log, p.causal_self_attention_param);
+                Tuple<List<int>, float[]> attnBias = Fill(strModel, "attn_bias", m_log, p.causal_self_attention_param);
+                Tuple<List<int>, float[]> attnWt = Fill(strModel, "attn_weight", m_log, p.causal_self_attention_param);
+                Tuple<List<int>, float[]> projBias = Fill(strModel, "proj_bias", m_log, p.causal_self_attention_param);
+                Tuple<List<int>, float[]> projWt = Fill(strModel, "proj_weight", m_log, p.causal_self_attention_param);
+
+                layer.Setup(BottomVec, TopVec);
+
+                layer.blobs[0].mutable_cpu_data = convert(attnWt.Item2);
+                layer.blobs[1].mutable_cpu_data = convert(attnBias.Item2);
+                layer.blobs[2].mutable_cpu_data = convert(projWt.Item2);
+                layer.blobs[3].mutable_cpu_data = convert(projBias.Item2);
+
+                layer.Forward(BottomVec, TopVec);
+
+                m_blob_top.mutable_cpu_diff = convert(y_grad.Item2);
+
+                layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
+                
+                // Now, check values
+                float[] rgExpected = x_grad.Item2;
+                float[] rgActual = convertF(m_blob_bottom.mutable_cpu_diff);
+
+                for (int i = 0; i < rgExpected.Length; i++)
+                {
+                    float fExpected = rgExpected[i];
+                    float fActual = rgActual[i];
+                    float fErr = 0.00000001f;
 
                     m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, fErr, "The values are not as expected!");
                 }
@@ -357,7 +439,7 @@ namespace MyCaffe.test
                 {
                     float fExpected = rgExpected[i];
                     float fActual = rgActual[i];
-                    float fErr = 0.0004f;
+                    float fErr = 0.0000001f;
 
                     m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, fErr, "The values are not as expected!");
                 }
