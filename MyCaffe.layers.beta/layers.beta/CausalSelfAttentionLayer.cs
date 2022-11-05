@@ -513,6 +513,9 @@ namespace MyCaffe.layers
         /// <param name="colBottom">bottom input blob vector (length 1)
         ///  -# @f$ (N \times C \times H \times W) @f$
         /// </param>
+        /// <remarks>
+        /// WORK IN PROGRESS.
+        /// </remarks>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
             // Gradient with respect to state then data.
@@ -538,11 +541,9 @@ namespace MyCaffe.layers
                 addInternal(m_blobWork, m_blobY);
                 m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
 
-
                 // Multiply attention matrix with values
                 // y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
                 // Convert back from row-maj to col-maj
-
                 m_blobY.CopyFrom(m_blobWork, true, true);
                 m_blobY.Reshape(m_blobVt.num, m_blobVt.channels, m_blobVt.height, m_blobVt.width);
 
@@ -552,25 +553,18 @@ namespace MyCaffe.layers
 
                 int nAxis = 2;
                 int nOuterDim = m_blobAtt.count(0, nAxis);
-                uint lda = (uint)nM;
+                uint lda = (uint)nN;
                 uint ldb = (uint)nK;
-                uint ldc = (uint)nM;
-                uint stridea = (uint)(nN * nK);
-                uint strideb = (uint)(nK * nM);
+                uint ldc = (uint)nN;
+                uint strideb = (uint)(nM * nK);
+                uint stridea = (uint)(nK * nN);
                 uint stridec = (uint)(nM * nN);
 
                 // Gradient with respect to att
-                m_cuda.gemm(false, false, nM, nN, nK, 1.0, m_blobVt1.gpu_data, m_blobY.gpu_diff, 0.0, m_blobAtt.mutable_gpu_diff, lda, ldb, ldc, stridea, strideb, stridec, (uint)nOuterDim);
+                m_cuda.gemm(false, false, nN, nM, nK, 1.0, m_blobY.gpu_diff, m_blobVt.gpu_data, 0.0, m_blobAtt.mutable_gpu_diff, lda, ldb, ldc, stridea, strideb, stridec, (uint)nOuterDim);
 
                 // Gradient with respect to vt
-#warning("NOT CORRECT")                
-                m_cuda.gemm(false, false, nM, nN, nK, 1.0, m_blobAtt1.gpu_data, m_blobY.gpu_diff, 0.0, m_blobVt1.mutable_gpu_diff, lda, ldb, ldc, stridea, strideb, stridec, (uint)nOuterDim);
-
-                // Convert from row-maj to col-maj (expected by gemm)
-                addInternal(m_blobVt, m_blobVt1);
-                m_transposeQ.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
-                //addInternal(m_blobAtt, m_blobAtt1);
-                //m_transposeQ.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+                m_cuda.gemm(false, false, nN, nM, nK, 1.0, m_blobY.gpu_diff, m_blobAtt.gpu_data, 0.0, m_blobVt.mutable_gpu_diff, lda, ldb, ldc, stridea, strideb, stridec, (uint)nOuterDim);
 
                 // Apply attention dropout.
                 // att = self.attn_dropout(att)
@@ -587,41 +581,25 @@ namespace MyCaffe.layers
                 
                 // Multiply query and key(T) matrices and scale
                 // att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
-
-                // Convert from row-maj to col-maj
-                addInternal(m_blobAtt1, m_blobAtt);
-                m_transposeQ.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
-
                 nAxis = 2;
                 nM = m_blobKt.height;
-                nN = m_blobAtt.width;
-                nK = m_blobAtt.height;
+                nN = m_blobAtt.height;
+                nK = m_blobAtt.width;
                 double dfScale = 1.0 / Math.Sqrt(m_nSize);
 
                 nOuterDim = m_blobQt.count(0, nAxis);
-                lda = (uint)nM;
+                lda = (uint)nN;
                 ldb = (uint)nK;
-                ldc = (uint)nM;
-                stridea = (uint)(nN * nK);
-                strideb = (uint)(nK * nM);
+                ldc = (uint)nN;
+                strideb = (uint)(nM * nK);
+                stridea = (uint)(nK * nN);
                 stridec = (uint)(nM * nN);
 
                 // Gradient with respect to att
-#warning("NOT CORRECT")                
-                m_cuda.gemm(false, false, nM, nN, nK, dfScale, m_blobKt.gpu_data, m_blobAtt1.gpu_diff, 0.0, m_blobQt1.mutable_gpu_diff, lda, ldb, ldc, stridea, strideb, stridec, (uint)nOuterDim);
+                m_cuda.gemm(false, false, nN, nM, nK, dfScale, m_blobAtt.gpu_diff, m_blobKt.gpu_data, 0.0, m_blobQt.mutable_gpu_diff, lda, ldb, ldc, stridea, strideb, stridec, (uint)nOuterDim);
 
                 // Gradient with respect to kt
-#warning("NOT CORRECT")                
-                m_cuda.gemm(false, false, nM, nN, nK, dfScale, m_blobQt1.gpu_data, m_blobAtt1.gpu_diff, 0.0, m_blobKt.mutable_gpu_diff, lda, ldb, ldc, stridea, strideb, stridec, (uint)nOuterDim);
-
-                // Convert from row-maj to col-maj (expected by gemm)
-                addInternal(m_blobQt, m_blobQt1);
-                m_transposeQ.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
-                addInternal(m_blobKt1, m_blobKt);
-                m_transposeQ.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
-
-                addInternal(m_blobKt, m_blobKt1);
-                m_transposeQ.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+                m_cuda.gemm(false, false, nN, nM, nK, dfScale, m_blobAtt.gpu_diff, m_blobQt.gpu_data, 0.0, m_blobKt.mutable_gpu_diff, lda, ldb, ldc, stridea, strideb, stridec, (uint)nOuterDim);
 
                 // Transpose query, key and values along axes 1 & 2
                 // k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
