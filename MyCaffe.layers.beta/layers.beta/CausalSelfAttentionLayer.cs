@@ -540,9 +540,6 @@ namespace MyCaffe.layers
         /// <param name="colBottom">bottom input blob vector (length 1)
         ///  -# @f$ (N \times C \times H \times W) @f$
         /// </param>
-        /// <remarks>
-        /// WORK IN PROGRESS.
-        /// </remarks>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
             // Gradient with respect to state then data.
