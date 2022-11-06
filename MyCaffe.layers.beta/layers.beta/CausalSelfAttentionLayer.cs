@@ -45,7 +45,6 @@ namespace MyCaffe.layers
         Blob<T> m_blobVt1;
         Blob<T> m_blobWork;
         Blob<T> m_blobAtt;
-        Blob<T> m_blobAtt1;
         Blob<T> m_blobIpAttn;
         Blob<T> m_blobY;
         // The number of heads.
@@ -142,13 +141,12 @@ namespace MyCaffe.layers
             m_blobK = new Blob<T>(cuda, log);
             m_blobV = new Blob<T>(cuda, log);
             m_blobQt = new Blob<T>(cuda, log);
-            m_blobQt1 = new Blob<T>(cuda, log);
+            m_blobQt1 = new Blob<T>(cuda, log, false);
             m_blobKt = new Blob<T>(cuda, log);
             m_blobKt1 = new Blob<T>(cuda, log);
             m_blobVt = new Blob<T>(cuda, log);
-            m_blobVt1 = new Blob<T>(cuda, log);
+            m_blobVt1 = new Blob<T>(cuda, log, false);
             m_blobAtt = new Blob<T>(cuda, log);
-            m_blobAtt1 = new Blob<T>(cuda, log);
             m_blobWork = new Blob<T>(cuda, log);
 
             m_blobIpAttn = new Blob<T>(cuda, log);
@@ -177,7 +175,6 @@ namespace MyCaffe.layers
             dispose(ref m_blobVt);
             dispose(ref m_blobVt1);
             dispose(ref m_blobAtt);
-            dispose(ref m_blobAtt1);
             dispose(ref m_blobWork);
             dispose(ref m_blobIpAttn);
             dispose(ref m_blobY);
@@ -363,7 +360,6 @@ namespace MyCaffe.layers
             m_blobQt1.ReshapeLike(m_blobQt);
 
             m_blobAtt.Reshape(m_nB, m_nHeads, m_nT, m_nT);
-            m_blobAtt1.ReshapeLike(m_blobAtt);
 
             m_blobV.Reshape(m_nB, m_nT, m_nHeads, m_nSize);
             addInternal(m_blobV, m_blobVt);
