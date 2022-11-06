@@ -401,6 +401,46 @@ namespace MyCaffe.layers
             m_cuda.gemm(false, false, nN, nM, nK, dfScale, blobB.gpu_data, blobA.gpu_data, 0.0, blobC.mutable_gpu_data, lda, ldb, ldc, stridea, strideb, stridec, (uint)nOuterDim);
         }
 
+        private void gemm_bwd1(double dfScale, Blob<T> blobA, Blob<T> blobB, Blob<T> blobC)
+        {
+            int nM = blobA.height;
+            int nN = blobB.width;
+            int nK = blobB.height;
+
+            int nAxis = 2;
+            int nOuterDim = blobA.count(0, nAxis);
+            uint lda = (uint)nN;
+            uint ldb = (uint)nK;
+            uint ldc = (uint)nN;
+            uint strideb = (uint)(nM * nK);
+            uint stridea = (uint)(nK * nN);
+            uint stridec = (uint)(nM * nN);
+
+            // cuBlas performs gemm in col-maj, performing B(rm) x A'(rm) = C'(rm), (e.g. reverse of c' = a' @ b)
+            // @see [How to transpose a matrix in CUDA/cublas](https://stackoverflow.com/questions/13782012/how-to-transpose-a-matrix-in-cuda-cublas)
+            m_cuda.gemm(false, false, nN, nM, nK, dfScale, blobB.gpu_data, blobA.gpu_diff, 0.0, blobC.mutable_gpu_diff, lda, ldb, ldc, stridea, strideb, stridec, (uint)nOuterDim);
+        }
+
+        private void gemm_bwd2(double dfScale, bool bTransposeA, Blob<T> blobA, Blob<T> blobB, Blob<T> blobC)
+        {
+            int nM = blobA.height;
+            int nN = blobB.width;
+            int nK = blobB.height;
+
+            int nAxis = 2;
+            int nOuterDim = blobA.count(0, nAxis);
+            uint lda = (uint)nN;
+            uint ldb = (uint)nK;
+            uint ldc = (uint)nN;
+            uint strideb = (uint)(nM * nK);
+            uint stridea = (uint)(nK * nN);
+            uint stridec = (uint)(nM * nN);
+
+            // cuBlas performs gemm in col-maj, performing B'(rm) x A(rm)^T = C'(rm), (e.g. reverse of c' = a^T @ b')
+            // @see [How to transpose a matrix in CUDA/cublas](https://stackoverflow.com/questions/13782012/how-to-transpose-a-matrix-in-cuda-cublas)
+            m_cuda.gemm(false, bTransposeA, nN, nM, nK, dfScale, blobB.gpu_diff, blobA.gpu_data, 0.0, blobC.mutable_gpu_diff, lda, ldb, ldc, stridea, strideb, stridec, (uint)nOuterDim);
+        }
+
         /// <summary>
         /// The forward computation.
         /// </summary>
@@ -537,43 +577,14 @@ namespace MyCaffe.layers
 
                 // Multiply attention matrix with values
                 // y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
-                int nM = m_blobY.height;
-                int nN = m_blobVt1.width;
-                int nK = m_blobVt1.height;
-
-                int nAxis = 2;
-                int nOuterDim = m_blobY.count(0, nAxis);
-                uint lda = (uint)nN;
-                uint ldb = (uint)nK;
-                uint ldc = (uint)nN;
-                uint strideb = (uint)(nM * nK);
-                uint stridea = (uint)(nK * nN);
-                uint stridec = (uint)(nM * nN);
 
                 // Gradient with respect to att
                 // att' = y' @ v^T 
-                // cuBlas performs gemm in col-maj, performing Vt(rm) x Y'(rm)^T = Att'(rm), (e.g. reverse of att' = y' @ v^T)
-                // @see [How to transpose a matrix in CUDA/cublas](https://stackoverflow.com/questions/13782012/how-to-transpose-a-matrix-in-cuda-cublas)
-                m_cuda.gemm(false, false, nN, nM, nK, 1.0, m_blobVt1.gpu_data, m_blobY.gpu_diff, 0.0, m_blobAtt.mutable_gpu_diff, lda, ldb, ldc, stridea, strideb, stridec, (uint)nOuterDim);
-
-                nM = m_blobAtt.height;
-                nN = m_blobY.width;
-                nK = m_blobY.height;
-
-                nAxis = 2;
-                nOuterDim = m_blobAtt.count(0, nAxis);
-                lda = (uint)nN;
-                ldb = (uint)nK;
-                ldc = (uint)nN;
-                strideb = (uint)(nM * nK);
-                stridea = (uint)(nK * nN);
-                stridec = (uint)(nM * nN);
+                gemm_bwd1(1.0, m_blobY, m_blobVt1, m_blobAtt);
 
                 // Gradient with respect to vt
                 // vt' = att^T @ y' 
-                // cuBlas performs gemm in col-maj, performing Y'(rm) x Att(rm)^T = Vt'(rm), (e.g. reverse of vt' = att^T @ y')
-                // @see [How to transpose a matrix in CUDA/cublas](https://stackoverflow.com/questions/13782012/how-to-transpose-a-matrix-in-cuda-cublas)
-                m_cuda.gemm(false, true, nN, nM, nK, 1.0, m_blobY.gpu_diff, m_blobAtt.gpu_data, 0.0, m_blobVt.mutable_gpu_diff, lda, ldb, ldc, stridea, strideb, stridec, (uint)nOuterDim);
+                gemm_bwd2(1.0, true, m_blobAtt, m_blobY, m_blobVt);
 
                 // Apply attention dropout.
                 // att = self.attn_dropout(att)
@@ -590,48 +601,19 @@ namespace MyCaffe.layers
 
                 // Multiply qt with kt^T to create attention matrix
                 // att = qt @ kt^T
-                nM = m_blobAtt.height;
-                nN = m_blobKt.width;
-                nK = m_blobKt.height;
-
-                nAxis = 2;
-                nOuterDim = m_blobKt.count(0, nAxis);
-                lda = (uint)nN;
-                ldb = (uint)nK;
-                ldc = (uint)nN;
-                strideb = (uint)(nM * nK);
-                stridea = (uint)(nK * nN);
-                stridec = (uint)(nM * nN);
                 double dfScale = 1.0 / Math.Sqrt(m_nSize);
 
                 // Gradient with respect to qt
                 // qt' = att' @ kt
-                // cuBlas performs gemm in col-maj, performing Vt(rm) x Y'(rm)^T = Att'(rm), (e.g. reverse of att' = y' @ v^T)
-                // @see [How to transpose a matrix in CUDA/cublas](https://stackoverflow.com/questions/13782012/how-to-transpose-a-matrix-in-cuda-cublas)
-                m_cuda.gemm(false, false, nN, nM, nK, dfScale, m_blobKt.gpu_data, m_blobAtt.gpu_diff, 0.0, m_blobQt.mutable_gpu_diff, lda, ldb, ldc, stridea, strideb, stridec, (uint)nOuterDim);
-
+                gemm_bwd1(dfScale, m_blobAtt, m_blobKt, m_blobQt);
+                
                 // Transpose Qt
                 addInternal(m_blobQt, m_blobQt1);
                 m_transposeQ.Forward(m_colInternalBottom, m_colInternalTop);
 
-                nM = m_blobQt1.height;
-                nN = m_blobAtt.width;
-                nK = m_blobAtt.height;
-
-                nAxis = 2;
-                nOuterDim = m_blobAtt.count(0, nAxis);
-                lda = (uint)nN;
-                ldb = (uint)nK;
-                ldc = (uint)nN;
-                strideb = (uint)(nM * nK);
-                stridea = (uint)(nK * nN);
-                stridec = (uint)(nM * nN);
-
                 // Gradient with respect to kt^T
                 // kt^T' = qt^T @ att'
-                // cuBlas performs gemm in col-maj, performing Vt(rm) x Y'(rm)^T = Att'(rm), (e.g. reverse of att' = y' @ v^T)
-                // @see [How to transpose a matrix in CUDA/cublas](https://stackoverflow.com/questions/13782012/how-to-transpose-a-matrix-in-cuda-cublas)
-                m_cuda.gemm(false, false, nN, nM, nK, dfScale, m_blobAtt.gpu_diff, m_blobQt1.gpu_data, 0.0, m_blobKt1.mutable_gpu_diff, lda, ldb, ldc, stridea, strideb, stridec, (uint)nOuterDim);
+                gemm_bwd2(dfScale, false, m_blobQt1, m_blobAtt, m_blobKt1);
 
                 // Transpose Kt1 back to Kt
                 addInternal(m_blobKt, m_blobKt1);
