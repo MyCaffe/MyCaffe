@@ -21,6 +21,10 @@ namespace MyCaffe.layers.beta
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class LayerNormLayer<T> : Layer<T>
     {
+        Blob<T> m_blobWork;
+        Blob<T> m_blobMeanDiff;
+        Blob<T> m_blobStdev;
+
         /// <summary>
         /// The LayerNormalizationLayer constructor.
         /// </summary>
@@ -34,11 +38,19 @@ namespace MyCaffe.layers.beta
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.LAYERNORM;
+
+            m_blobWork = new Blob<T>(cuda, log);
+            m_blobMeanDiff = new Blob<T>(cuda, log);
+            m_blobStdev = new Blob<T>(cuda, log);
         }
         
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
+            dispose(ref m_blobWork);
+            dispose(ref m_blobMeanDiff);
+            dispose(ref m_blobStdev);
+
             base.dispose();
         }
 
@@ -49,6 +61,8 @@ namespace MyCaffe.layers.beta
             {
                 BlobCollection<T> col = new BlobCollection<T>();
 
+                col.Add(m_blobWork);
+                
                 return col;
             }
         }
@@ -85,6 +99,9 @@ namespace MyCaffe.layers.beta
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            m_blobWork.ReshapeLike(colBottom[0]);
+            m_blobMeanDiff.ReshapeLike(colBottom[0]);
+            m_blobStdev.ReshapeLike(colBottom[0]);
             colTop[0].ReshapeLike(colBottom[0]);
         }
 
@@ -97,10 +114,42 @@ namespace MyCaffe.layers.beta
         ///  -# @f$ (N \times C \times H \times W) @f$ the outputs.</param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            long hBottomData = colBottom[0].gpu_data;
-            long hTopData = colTop[0].mutable_gpu_data;
-            int n = colBottom[0].num;
-            int d = colBottom[0].count() / n;
+            int nAxes = colBottom[0].num_axes;
+            int nCount = colBottom[0].count();
+            int nOuterNum = colBottom[0].num;
+            int nChannel = colBottom[0].channels;
+            int nInnerNum = colBottom[0].count(2);
+            
+            // Calculate the mean across the last dim.
+            // mean = x.mean(dim=-1, keepdim=True)
+            m_cuda.channel_sum(nCount, nOuterNum, nChannel, nInnerNum, colBottom[0].gpu_data, m_blobWork.mutable_gpu_data, false);
+            m_blobWork.scale_data(1.0 / nInnerNum);
+
+            // Copy each mean value per channel across all items in the channel (e.g. 1 -> channel items)
+            m_cuda.channel_fillfrom(nCount, nOuterNum, nChannel, nInnerNum, m_blobWork.gpu_data, m_blobWork.mutable_gpu_diff);
+
+            // Subtract the mean from the input.
+            // meandiff = x - mean
+            m_cuda.sub(nCount, colBottom[0].gpu_data, m_blobWork.gpu_diff, m_blobMeanDiff.mutable_gpu_data);
+            // Square the values
+            // var = (meandiff) ** 2
+            m_cuda.powx(nCount, m_blobMeanDiff.gpu_data, 2.0, m_blobWork.mutable_gpu_data);
+
+            // Calculate the var across the last dim.
+            // var = ((x - mean) ** 2).mean(dim=-1, keepdim=True)
+            // var shape = (n, c, 1)
+            m_cuda.channel_sum(nCount, nOuterNum, nChannel, nInnerNum, m_blobWork.gpu_data, m_blobStdev.mutable_gpu_data, false);
+            m_blobStdev.scale_data(1.0 / nInnerNum);
+
+            // Calculate the stdev across the last dim
+            // stdev shape: (n, c, 1)
+            m_cuda.add_scalar(nOuterNum * nChannel, m_param.layer_norm_param.epsilon, m_blobStdev.mutable_gpu_data);
+            m_cuda.sqrt(nOuterNum * nChannel, m_blobStdev.gpu_data, m_blobStdev.mutable_gpu_data);
+
+            // Normalize the input by centering and dividing by stdev across channels.
+            // Copy each stdev value per channel across all items in the channel (e.g. 1 -> channel items)
+            m_cuda.channel_fillfrom(nCount, nOuterNum, nChannel, nInnerNum, m_blobStdev.gpu_data, m_blobStdev.mutable_gpu_diff);
+            m_cuda.div(nCount, m_blobMeanDiff.gpu_data, m_blobStdev.gpu_diff, colTop[0].mutable_gpu_data);
         }
 
         /// <summary>
@@ -119,6 +168,8 @@ namespace MyCaffe.layers.beta
             long hBottomDiff = colBottom[0].mutable_gpu_diff;
             int n = colTop[0].num;
             int d = colTop[0].count() / n;
+
+            // WORK IN PROGRESS
         }
     }
 }
