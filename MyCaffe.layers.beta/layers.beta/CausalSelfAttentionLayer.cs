@@ -448,9 +448,8 @@ namespace MyCaffe.layers
         ///  -# @f$ (N \times C \times H \times W) @f$
         /// </param>
         /// <param name="colTop">top output blob vector (length 1)
-        ///  -# @f$ (N \times K \times 1 \times 1) @f$
-        ///     the computed inner product with the weights, where
-        ///     @f$ K @f$ equals <i>num_output</i>.
+        ///  -# @f$ (N \times C \times H \times W) @f$
+        ///     the computed causal self attention.
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
@@ -534,7 +533,7 @@ namespace MyCaffe.layers
         /// </summary>
         /// <param name="colTop">top output blob vector (length 1), providing the error gradient with
         /// respect to the outputs.
-        ///   -# @f$ (N \times K \times 1 \times 1) @f$, where @f$ K @f$ is equal to <i>num_output</i>.
+        ///   -# @f$ (N \times K \times H \times W) @f$.
         /// </param>
         /// <param name="rgbPropagateDown">see Layer::Backward.</param>
         /// <param name="colBottom">bottom input blob vector (length 1)
