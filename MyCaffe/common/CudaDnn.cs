@@ -753,7 +753,7 @@ namespace MyCaffe.common
         void channel_fillfrom(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
         void channel_scale(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hA, long hY);
         void channel_mulv(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hA, long hX, long hC);
-        void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
+        void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bSumAcrossChannels = true);
         void channel_copy(int nCount, int nOuterNum, int nChannels, int nBlocks, int nInnerNum, int nOffset, long hX, long hY, DIR dir);
 
         void gemm(bool bTransA, bool bTransB, int m, int n, int k, double fAlpha, long hA, long hB, double fBeta, long hC);
@@ -7473,12 +7473,13 @@ namespace MyCaffe.common
         /// <param name="nInnerNum">Specifies the dimension of each image in X.</param>
         /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
         /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
-        public void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY)
+        /// <param name="bSumAcrossChannels">Specifies to sum across channels (true), or within each channel (false), default = true.</param>"
+        public void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bSumAcrossChannels = true)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM, m_param.AsDouble(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM, m_param.AsDouble(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bSumAcrossChannels) ? 1 : 0));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM, m_param.AsFloat(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM, m_param.AsFloat(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bSumAcrossChannels) ? 1 : 0));
         }
 
         /// <summary>
