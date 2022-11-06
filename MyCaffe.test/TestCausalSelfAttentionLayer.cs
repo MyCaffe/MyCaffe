@@ -25,25 +25,7 @@ namespace MyCaffe.test
             {
                 foreach (ICausalSelfAttentionLayerTest t in test.Tests)
                 {
-                    t.TestForwardPico(1);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
-        public void TestGradientPico()
-        {
-            CausalSelfAttentionLayerTest test = new CausalSelfAttentionLayerTest(EngineParameter.Engine.CAFFE);
-
-            try
-            {
-                foreach (ICausalSelfAttentionLayerTest t in test.Tests)
-                {
-                    t.TestGradientPico(1);
+                    t.TestForwardPico(false, 1);
                 }
             }
             finally
@@ -61,7 +43,25 @@ namespace MyCaffe.test
             {
                 foreach (ICausalSelfAttentionLayerTest t in test.Tests)
                 {
-                    t.TestBackwardPico(1);
+                    t.TestBackwardPico(false, 1);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientPico()
+        {
+            CausalSelfAttentionLayerTest test = new CausalSelfAttentionLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ICausalSelfAttentionLayerTest t in test.Tests)
+                {
+                    t.TestGradientPico(false, 1);
                 }
             }
             finally
@@ -79,7 +79,25 @@ namespace MyCaffe.test
             {
                 foreach (ICausalSelfAttentionLayerTest t in test.Tests)
                 {
-                    t.TestForwardPico(3);
+                    t.TestForwardPico(false, 3);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestBackwardPico3()
+        {
+            CausalSelfAttentionLayerTest test = new CausalSelfAttentionLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ICausalSelfAttentionLayerTest t in test.Tests)
+                {
+                    t.TestBackwardPico(false, 3);
                 }
             }
             finally
@@ -97,7 +115,7 @@ namespace MyCaffe.test
             {
                 foreach (ICausalSelfAttentionLayerTest t in test.Tests)
                 {
-                    t.TestGradientPico(3);
+                    t.TestGradientPico(false, 3);
                 }
             }
             finally
@@ -106,6 +124,113 @@ namespace MyCaffe.test
             }
         }
 
+        [TestMethod]
+        public void TestForwardPicoBatch()
+        {
+            CausalSelfAttentionLayerTest test = new CausalSelfAttentionLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ICausalSelfAttentionLayerTest t in test.Tests)
+                {
+                    t.TestForwardPico(true, 1);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestBackwardPicoBatch()
+        {
+            CausalSelfAttentionLayerTest test = new CausalSelfAttentionLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ICausalSelfAttentionLayerTest t in test.Tests)
+                {
+                    t.TestBackwardPico(true, 1);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientPicoBatch()
+        {
+            CausalSelfAttentionLayerTest test = new CausalSelfAttentionLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ICausalSelfAttentionLayerTest t in test.Tests)
+                {
+                    t.TestGradientPico(true, 1);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardPico3Batch()
+        {
+            CausalSelfAttentionLayerTest test = new CausalSelfAttentionLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ICausalSelfAttentionLayerTest t in test.Tests)
+                {
+                    t.TestForwardPico(true, 3);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestBackwardPico3Batch()
+        {
+            CausalSelfAttentionLayerTest test = new CausalSelfAttentionLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ICausalSelfAttentionLayerTest t in test.Tests)
+                {
+                    t.TestBackwardPico(true, 3);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientPico3Batch()
+        {
+            CausalSelfAttentionLayerTest test = new CausalSelfAttentionLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ICausalSelfAttentionLayerTest t in test.Tests)
+                {
+                    t.TestGradientPico(true, 3);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
 
         [TestMethod]
         public void TestForwardMini()
@@ -146,9 +271,9 @@ namespace MyCaffe.test
 
     interface ICausalSelfAttentionLayerTest : ITest
     {
-        void TestForwardPico(int nHeads);
-        void TestGradientPico(int nHeads);
-        void TestBackwardPico(int nHeads);
+        void TestForwardPico(bool bBatch, int nHeads);
+        void TestBackwardPico(bool bBatch, int nHeads);
+        void TestGradientPico(bool bBatch, int nHeads);
         void TestForwardMini();
         void TestGradientMini();
     }
@@ -243,7 +368,7 @@ namespace MyCaffe.test
             return new Tuple<List<int>, float[]>(rgnShape, rgf);
         }
 
-        public void TestForwardPico(int nHeads)
+        public void TestForwardPico(bool bBatch, int nHeads)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CAUSAL_SELF_ATTENTION);
             p.causal_self_attention_param.heads = nHeads;
@@ -258,7 +383,9 @@ namespace MyCaffe.test
                 string strModel = "gpt-pico";
                 if (nHeads > 1)
                     strModel += nHeads.ToString();
-                
+                if (bBatch)
+                    strModel += "B";
+
                 m_log.CHECK(layer.type == LayerParameter.LayerType.CAUSAL_SELF_ATTENTION, "The layer type is incorrect!");
 
                 Tuple<List<int>, float[]> x = Fill(strModel, "x", m_log, p.causal_self_attention_param);
@@ -302,7 +429,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestBackwardPico(int nHeads)
+        public void TestBackwardPico(bool bBatch, int nHeads)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CAUSAL_SELF_ATTENTION);
             p.causal_self_attention_param.heads = nHeads;
@@ -317,6 +444,8 @@ namespace MyCaffe.test
                 string strModel = "gpt-pico";
                 if (nHeads > 1)
                     strModel += nHeads.ToString();
+                if (bBatch)
+                    strModel += "B";
 
                 m_log.CHECK(layer.type == LayerParameter.LayerType.CAUSAL_SELF_ATTENTION, "The layer type is incorrect!");
 
@@ -364,7 +493,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestGradientPico(int nHeads)
+        public void TestGradientPico(bool bBatch, int nHeads)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CAUSAL_SELF_ATTENTION);
             p.causal_self_attention_param.heads = nHeads;
@@ -379,14 +508,16 @@ namespace MyCaffe.test
                 string strModel = "gpt-pico";
                 if (nHeads > 1)
                     strModel += nHeads.ToString();
-                
+                if (bBatch)
+                    strModel += "B";
+
                 m_log.CHECK(layer.type == LayerParameter.LayerType.CAUSAL_SELF_ATTENTION, "The layer type is incorrect!");
 
                 Tuple<List<int>, float[]> data = Fill(strModel, "x", m_log, p.causal_self_attention_param);
                 m_blob_bottom.Reshape(data.Item1);
                 m_blob_bottom.mutable_cpu_data = convert(data.Item2);
 
-                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.01);
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.001);
                 checker.CheckGradient(layer, BottomVec, TopVec);
             }
             finally
@@ -468,7 +599,7 @@ namespace MyCaffe.test
                 m_blob_bottom.Reshape(data.Item1);
                 m_blob_bottom.mutable_cpu_data = convert(data.Item2);
 
-                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.01);
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.1);
                 checker.CheckGradient(layer, BottomVec, TopVec);
             }
             finally
