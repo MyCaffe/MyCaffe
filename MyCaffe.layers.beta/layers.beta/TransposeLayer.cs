@@ -23,6 +23,7 @@ namespace MyCaffe.layers.beta
         Blob<T> m_blobForwardMap;
         Blob<T> m_blobBackwardMap;
         Blob<T> m_blobBuffer;
+        bool m_bForceReshape = false;
 
         /// <summary>
         /// The TransposeLayer constructor.
@@ -114,7 +115,7 @@ namespace MyCaffe.layers.beta
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            if (!reshapeNeeded(colBottom, colTop))
+            if (!m_bForceReshape && !reshapeNeeded(colBottom, colTop))
                 return;
 
             m_log.CHECK_GT(colBottom[0].shape().Count, 0, "The dimension of the transposed blob should be greater than zero.");
@@ -193,6 +194,9 @@ namespace MyCaffe.layers.beta
         {
             if (!rgbPropagateDown[0])
                 return;
+
+            m_bForceReshape = true;
+            Reshape(colBottom, colTop);
 
             m_cuda.transpose(colBottom[0].count(), colTop[0].gpu_diff, colBottom[0].mutable_gpu_diff, m_blobTopCounts.gpu_data, m_blobBottomCounts.gpu_data, m_blobBackwardMap.gpu_data, colBottom[0].shape().Count, m_blobBuffer.mutable_gpu_data);
         }
