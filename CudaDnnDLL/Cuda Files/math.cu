@@ -5732,6 +5732,38 @@ template long Math<float>::channel_fill(int n, int nOutNum, int nChannels, int n
 
 
 template <typename T>
+__global__ void channel_fillfrom_kernel(const int nCount, const int num, const int channels, const int spatial_dim, const T* x, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nCount && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		int n = i / spatial_dim;
+		y[i] = x[n];
+	}
+}
+
+template <typename T>
+long Math<T>::channel_fillfrom(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	channel_fillfrom_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::channel_fillfrom(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
+template long Math<float>::channel_fillfrom(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
+
+
+template <typename T>
 __global__ void channel_copy_kernel_fwd(const int nYCount, const int num, const int channels, const int blocks, const int spatial_dim, const int offset, const T* x, T* y)
 {
 	const int nNSize = channels * spatial_dim;

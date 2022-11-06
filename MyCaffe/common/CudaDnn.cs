@@ -750,6 +750,7 @@ namespace MyCaffe.common
 
         void channel_compare(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
         void channel_fill(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, int nLabelDim, long hLabels, long hY);
+        void channel_fillfrom(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
         void channel_scale(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hA, long hY);
         void channel_mulv(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hA, long hX, long hC);
         void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
@@ -1126,6 +1127,7 @@ namespace MyCaffe.common
             CUDA_CHANNEL_SCALE = 298,
             CUDA_CHANNEL_MULV = 299,
             CUDA_CHANNEL_COPY = 300,
+            CUDA_CHANNEL_FILLFROM = 301,
 
             CUDA_RNG_SETSEED = 349,
             CUDA_RNG_UNIFORM = 350,
@@ -7398,6 +7400,24 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_COMPARE, m_param.AsDouble(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_COMPARE, m_param.AsFloat(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
+        }
+
+        /// <summary>
+        /// Fills each channel with the the values stored in Src data where the X data continains nOuterNum x nChannels of data,
+        /// (e.g. one item per channel) that is then copied to all nInnerNum elements of each channel in Y
+        /// </summary>
+        /// <param name="nCount">Specifies the number of items in Y.</param>
+        /// <param name="nOuterNum">Specifies the num of Y and Labels.</param>
+        /// <param name="nChannels">Specifies the channel size of Y and X.</param>
+        /// <param name="nInnerNum">Specifies the spatial dimension of X and Y, but is normally 1.</param>
+        /// <param name="hX">Specifies the GPU memory containing the src data of shape (nOuterNum, nChannels, 1).</param>
+        /// <param name="hY">Specifies the GPU memory of the output data where the X src data is copied where each item per channel is filled across all nInnerNum elements of Y.  Y should have shape (nOuterNum, nChannels, nInnerNum).</param>
+        public void channel_fillfrom(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_FILLFROM, m_param.AsDouble(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_FILLFROM, m_param.AsFloat(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
         }
 
         /// <summary>
