@@ -180,6 +180,32 @@ namespace MyCaffe.layers
         protected virtual void dispose()
         {
         }
+        
+        /// <summary>
+        /// Helper method used to dispose internal layers.
+        /// </summary>
+        /// <param name="l">Specifies the internal layer to dispose.</param>
+        protected void dispose(ref Layer<T> l)
+        {
+            if (l != null)
+            {
+                l.Dispose();
+                l = null;
+            }
+        }
+
+        /// <summary>
+        /// Helper method used to dispose internal blobs.
+        /// </summary>
+        /// <param name="b">Specifies the blob to dispose</param>
+        protected void dispose(ref Blob<T> b)
+        {
+            if (b != null)
+            {
+                b.Dispose();
+                b = null;
+            }
+        }
 
         /// <summary>
         /// Should return true when pre processing methods are overriden.

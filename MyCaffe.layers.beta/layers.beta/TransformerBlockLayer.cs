@@ -45,24 +45,6 @@ namespace MyCaffe.layers
             base.dispose();
         }
 
-        private void dispose(ref Layer<T> l)
-        {
-            if (l != null)
-            {
-                l.Dispose();
-                l = null;
-            }
-        }
-
-        private void dispose(ref Blob<T> b)
-        {
-            if (b != null)
-            {
-                b.Dispose();
-                b = null;
-            }
-        }
-
         /** @copydoc Layer::internal_blobs */
         public override BlobCollection<T> internal_blobs
         {
