@@ -486,6 +486,10 @@ namespace MyCaffe.param
             /// </summary>
             TRANSFORM,
             /// <summary>
+            /// Initializes a parameter for the TransformerBlockLayer.
+            /// </summary>
+            TRANSFORMER_BLOCK,
+            /// <summary>
             /// Initializes a parameter for the TransposeLayer.
             /// </summary>
             TRANSPOSE,
@@ -1481,6 +1485,12 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new TileParameter();
                     break;
 
+                case LayerType.TRANSFORMER_BLOCK:
+                    expected_bottom.Add("input");
+                    expected_top.Add("trans");
+                    m_rgLayerParameters[lt] = new CausalSelfAttentionParameter();
+                    break;
+
                 case LayerType.TRANSPOSE:
                     expected_bottom.Add("input");
                     expected_top.Add("output");
@@ -2394,6 +2404,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.TRANSFORMER_BLOCK
+        /// </summary>
+        public TransformerBlockParameter transformer_block_param
+        {
+            get { return (TransformerBlockParameter)m_rgLayerParameters[LayerType.TRANSFORMER_BLOCK]; }
+            set { m_rgLayerParameters[LayerType.TRANSFORMER_BLOCK] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.TRIPLET_LOSS
         /// </summary>
         public TripletLossParameter triplet_loss_param
@@ -3034,6 +3053,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(squeeze_param, "squeeze_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(model_data_param, "model_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(text_data_param, "text_data_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(transformer_block_param, "transformer_block_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(triplet_loss_param, "triplet_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(unpooling_param, "unpooling_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(transpose_param, "transpose_param"));
@@ -3358,6 +3378,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("triplet_loss_param")) != null)
                 p.triplet_loss_param = TripletLossParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("transformer_block_param")) != null)
+                p.transformer_block_param = TransformerBlockParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("transpose_param")) != null)
                 p.transpose_param = TransposeParameter.FromProto(rpp);

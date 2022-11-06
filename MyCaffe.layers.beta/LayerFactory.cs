@@ -97,6 +97,9 @@ namespace MyCaffe.layers.beta
                 case LayerParameter.LayerType.TRANSPOSE:
                     return new TransposeLayer<double>(cuda, log, p);
 
+                case LayerParameter.LayerType.TRANSFORMER_BLOCK:
+                    return new TransformerBlockLayer<double>(cuda, log, p);
+
                 case LayerParameter.LayerType.TRIPLET_LOSS:
                     return new TripletLossLayer<double>(cuda, log, p);
 
@@ -195,6 +198,9 @@ namespace MyCaffe.layers.beta
 
                 case LayerParameter.LayerType.TRANSPOSE:
                     return new TransposeLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.TRANSFORMER_BLOCK:
+                    return new TransformerBlockLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.TRIPLET_LOSS:
                     return new TripletLossLayer<float>(cuda, log, p);
