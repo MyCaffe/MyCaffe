@@ -459,13 +459,13 @@ namespace MyCaffe.layers
                 m_attn_dropout.Forward(m_colInternalBottom, m_colInternalTop);
             }
 
+            m_blobWork.Reshape(m_blobVt.num, m_blobVt.channels, m_blobVt.height, m_blobVt.width);
+
             // Multiply attention matrix with values
             // y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
             nM = m_blobAtt.height;
             nN = m_blobVt.width;
             nK = m_blobVt.height;
-
-            m_blobWork.Reshape(m_blobVt.num, m_blobVt.channels, m_blobVt.height, m_blobVt.width);
 
             nOuterDim = m_blobAtt.count(0, nAxis);
             lda = (uint)nN;
