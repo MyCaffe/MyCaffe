@@ -25,6 +25,7 @@
     <Prefer32Bit>false</Prefer32Bit>
     <DocumentationFile>bin\Debug\MyCaffe.xml</DocumentationFile>
     <NoWarn>1587</NoWarn>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -51,7 +52,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="CudaControlLib, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f59a5464a77ea1ad, processorArchitecture=MSIL">
-      <HintPath>..\packages\CudaControl.1.11.7.36\lib\net40\CudaControlLib.dll</HintPath>
+      <HintPath>..\packages\CudaControl.1.11.8.17\lib\net40\CudaControlLib.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Google.Protobuf, Version=3.21.4.0, Culture=neutral, PublicKeyToken=a7d26565bac4d604, processorArchitecture=MSIL">
@@ -198,6 +199,9 @@
     <Compile Include="MyCaffeControl.Designer.cs">
       <DependentUpon>MyCaffeControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="param.beta\LayerNormParameter.cs" />
+    <Compile Include="param.beta\TransformerBlockParameter.cs" />
+    <Compile Include="param.beta\CausalSelfAttentionParameter.cs" />
     <Compile Include="param.beta\ConvolutionOctaveParameter.cs" />
     <Compile Include="param.beta\InterpParameter.cs" />
     <Compile Include="param.beta\AttentionParameter.cs" />

@@ -113,6 +113,7 @@
     </Compile>
     <Compile Include="TestAccuracyEncodingLayer.cs" />
     <Compile Include="TestAnnotatedDataLayer.cs" />
+    <Compile Include="TestLayerNormLayer.cs" />
     <Compile Include="TestTransformerBlockLayer.cs" />
     <Compile Include="TestCausalSelfAttentionLayer.cs" />
     <Compile Include="TestBeamSearch.cs" />

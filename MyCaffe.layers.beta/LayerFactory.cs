@@ -70,6 +70,9 @@ namespace MyCaffe.layers.beta
                 case LayerParameter.LayerType.KNN:
                     return new KnnLayer<double>(cuda, log, p);
 
+                case LayerParameter.LayerType.LAYERNORM:
+                    return new LayerNormLayer<double>(cuda, log, p);
+
                 case LayerParameter.LayerType.LSTM_ATTENTION:
                     return new LSTMAttentionLayer<double>(cuda, log, p);
                     
@@ -171,6 +174,9 @@ namespace MyCaffe.layers.beta
 
                 case LayerParameter.LayerType.KNN:
                     return new KnnLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.LAYERNORM:
+                    return new LayerNormLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.LSTM_ATTENTION:
                     return new LSTMAttentionLayer<float>(cuda, log, p);

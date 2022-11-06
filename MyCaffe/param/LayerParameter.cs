@@ -306,6 +306,10 @@ namespace MyCaffe.param
             /// </summary>
             LABELMAPPING,
             /// <summary>
+            /// Initializes a parameter for the LayerNormalizationLayer.
+            /// </summary>
+            LAYERNORM,
+            /// <summary>
             /// Initializes a parameter for the LogLayer.
             /// </summary>
             LOG,
@@ -1177,6 +1181,12 @@ namespace MyCaffe.param
                     expected_top.Add("classes");
                     m_rgMaxBottomCount.Add(Phase.RUN, 1);
                     m_rgLayerParameters[lt] = new KnnParameter();
+                    break;
+
+                case LayerType.LAYERNORM:
+                    expected_bottom.Add("input");
+                    expected_top.Add("norm");
+                    m_rgLayerParameters[lt] = new LayerNormParameter();
                     break;
 
                 case LayerType.LOG:
@@ -2070,6 +2080,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.LAYERNORM
+        /// </summary>
+        public LayerNormParameter layer_norm_param
+        {
+            get { return (LayerNormParameter)m_rgLayerParameters[LayerType.LAYERNORM]; }
+            set { m_rgLayerParameters[LayerType.LAYERNORM] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.LOG
         /// </summary>
         public LogParameter log_param
@@ -2634,6 +2653,9 @@ namespace MyCaffe.param
                 case LayerType.BNLL:
                     return "BNLL";
 
+                case LayerType.CAUSAL_SELF_ATTENTION:
+                    return "CausalSelfAttention";
+
                 case LayerType.CLIP:
                     return "Clip";
 
@@ -2715,6 +2737,9 @@ namespace MyCaffe.param
                 case LayerType.GATHER:
                     return "Gather";
 
+                case LayerType.GELU:
+                    return "GELU";
+
                 case LayerType.GRN:
                     return "GRN";
 
@@ -2753,6 +2778,9 @@ namespace MyCaffe.param
 
                 case LayerType.LABELMAPPING:
                     return "LabelMapping";
+
+                case LayerType.LAYERNORM:
+                    return "LayerNorm";
 
                 case LayerType.LOG:
                     return "Log";
@@ -3515,6 +3543,9 @@ namespace MyCaffe.param
                 case "clip":
                     return LayerType.CLIP;
 
+                case "causalselfattention":
+                    return LayerType.CAUSAL_SELF_ATTENTION;
+
                 case "concat":
                     return LayerType.CONCAT;
 
@@ -3599,6 +3630,9 @@ namespace MyCaffe.param
 
                 case "gather":
                     return LayerType.GATHER;
+                    
+                case "gelu":
+                    return LayerType.GELU;
 
                 case "grn":
                     return LayerType.GRN;
@@ -3644,6 +3678,9 @@ namespace MyCaffe.param
 
                 case "labelmapping":
                     return LayerType.LABELMAPPING;
+
+                case "layernorm":
+                    return LayerType.LAYERNORM;
 
                 case "log":
                     return LayerType.LOG;
