@@ -60,6 +60,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestForwardBackward()
+        {
+            TransposeLayerTest test = new TransposeLayerTest();
+
+            try
+            {
+                foreach (ITransposeLayerTest t in test.Tests)
+                {
+                    t.TestForwardBackward();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestGradient()
         {
             TransposeLayerTest test = new TransposeLayerTest();
@@ -82,6 +100,7 @@ namespace MyCaffe.test
     {
         void TestForward();
         void TestForward2();
+        void TestForwardBackward();
         void TestGradient();
     }
 
@@ -248,6 +267,84 @@ namespace MyCaffe.test
                 for (int i = 0; i < rgActual.Length; i++)
                 {
                     m_log.EXPECT_EQUAL<float>(rgActual[i], rgExpected[i], "The values do not match!");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
+            }
+        }
+
+        public void TestForwardBackward()
+        {
+            float[] rgK = 
+            {   
+                 1.1544715e-08f,  1.10176614e-07f,  1.3792217e-08f,
+                 1.0969044e-08f,  6.1579705e-08f,  -7.788405e-08f,
+                -1.616798e-08f,  -7.6032656e-08f,   4.7443237e-07f,
+                -6.3457657e-09f, -9.572371e-08f,   -4.1034065e-07f
+            };
+            float[] rgKt =
+            {
+                1.1544715e-08f,  1.0969044e-08f, -1.616798e-08f,  -6.3457657e-09f,
+                1.10176614e-07f, 6.1579705e-08f, -7.6032656e-08f, -9.572371e-08f,
+                1.3792217e-08f, -7.788405e-08f,   4.7443237e-07f, -4.1034065e-07f
+            };
+
+            List<int> rgDim = new List<int>() { 0, 2, 1, 3 };
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSPOSE);
+            p.transpose_param.dim = new List<int>(rgDim);
+
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+
+            try
+            {
+                m_blob_bottom.Reshape(1, 4, 3, 1);
+                List<int> rgExpectedTopShape = new List<int>() { 1, 3, 4, 1 };                
+
+                layer.Setup(BottomVec, TopVec);
+
+                // Test Forward
+                m_blob_bottom.mutable_cpu_data = convert(rgK);
+                layer.Forward(BottomVec, TopVec);                
+              
+                m_log.CHECK_EQ(m_blob_bottom.count(), m_blob_top.count(), "The top and bottom should have the same count!");
+                m_log.CHECK_EQ(m_blob_bottom.num_axes, rgDim.Count, "The bottom must have the same number of axes as the rgDim!");
+                m_log.CHECK_EQ(m_blob_top.num_axes, rgDim.Count, "The bottom must have the same number of axes as the rgDim!");
+
+                for (int i = 0; i < rgExpectedTopShape.Count; i++)
+                {
+                    int nDim = m_blob_top.shape()[i];
+
+                    m_log.CHECK_EQ(nDim, rgExpectedTopShape[i], "The top dimension at index " + i.ToString() + " is not correct!");
+                }
+
+                float[] rgExpected = rgKt;
+                float[] rgActual = convertF(m_blob_top.mutable_cpu_data);
+
+                for (int i = 0; i < rgActual.Length; i++)
+                {
+                    float fExpected = rgExpected[i];
+                    float fActual = rgActual[i];
+                    float fErr = 0.0000001f;
+
+                    m_log.EXPECT_NEAR(fActual, fExpected, fErr, "The values do not match!");
+                }
+
+                // Test Backward
+                m_blob_top.mutable_cpu_diff = convert(rgKt);
+                layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
+
+                rgExpected = rgK;
+                rgActual = convertF(m_blob_bottom.mutable_cpu_diff);
+
+                for (int i = 0; i < rgActual.Length; i++)
+                {
+                    float fExpected = rgExpected[i];
+                    float fActual = rgActual[i];
+                    float fErr = 0.0000001f;
+
+                    m_log.EXPECT_NEAR(fActual, fExpected, fErr, "The values do not match!");
                 }
             }
             finally
