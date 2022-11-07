@@ -3152,7 +3152,7 @@ long Device<T>::cuda_channel_fillfrom(long lInput, T* pfInput, long* plOutput, T
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+	if (lErr = verifyInput(lInput, pfInput, 7, 7))
 		return lErr;
 
 	int n = (int)pfInput[0];
@@ -3161,8 +3161,9 @@ long Device<T>::cuda_channel_fillfrom(long lInput, T* pfInput, long* plOutput, T
 	int nInNum = (int)pfInput[3];
 	long hX = (long)pfInput[4];
 	long hY = (long)pfInput[5];
+	int nDir = (int)pfInput[6];
 
-	return m_math.channel_fillfrom(n, nOutNum, nChannels, nInNum, hX, hY);
+	return m_math.channel_fillfrom(n, nOutNum, nChannels, nInNum, hX, hY, nDir);
 }
 
 template long Device<double>::cuda_channel_fillfrom(long lInput, double* pfInput, long* plOutput, double** ppfOutput);

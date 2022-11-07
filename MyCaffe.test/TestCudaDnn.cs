@@ -2392,10 +2392,10 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestMath_channel_fillfrom()
+        public void TestMath_channel_fillfrom_fwd()
         {
             CudaDnnTest test = new CudaDnnTest();
-            Log log = new Log("Test Channel FillFrom");
+            Log log = new Log("Test Channel FillFrom FWD");
             long hSrc = 0;
             long hDst = 0;
 
@@ -2424,11 +2424,79 @@ namespace MyCaffe.test
                         hSrc = t.Cuda.AllocMemory(rgdfSrc);
                         hDst = t.Cuda.AllocMemory(nCount);
 
-                        t.Cuda.channel_fillfrom(nCount, nN, nC, nSpatial, hSrc, hDst);
+                        t.Cuda.channel_fillfrom(nCount, nN, nC, nSpatial, hSrc, hDst, DIR.FWD);
 
                         double[] rgDst = t.Cuda.GetMemoryDouble(hDst);
 
                         for (int i=0; i<nCount; i++)
+                        {
+                            double dfExpected = rgdfExpected[i];
+                            double dfActual = rgDst[i];
+                            double dfErr = 0.00000001;
+
+                            log.EXPECT_NEAR(dfExpected, dfActual, dfErr, "The values do not match!");
+                        }
+                    }
+                    finally
+                    {
+                        if (hSrc != 0)
+                        {
+                            t.Cuda.FreeMemory(hSrc);
+                            hSrc = 0;
+                        }
+
+                        if (hDst != 0)
+                        {
+                            t.Cuda.FreeMemory(hDst);
+                            hDst = 0;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestMath_channel_fillfrom_bwd()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+            Log log = new Log("Test Channel FillFrom BWD");
+            long hSrc = 0;
+            long hDst = 0;
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    try
+                    {
+                        int nN = 2;
+                        int nC = 3;
+                        int nSpatial = 5;
+                        int nCount = nN * nC * nSpatial;
+                        
+                        List<double> rgdfExpected = new List<double>()
+                        {
+                            1.0, 2.0, 3.0,
+                            4.0, 5.0, 6.0
+                        };
+                        List<double> rgdfSrc = new List<double>()
+                        {
+                            1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0, 3.0, 3.0,
+                            4.0, 4.0, 4.0, 4.0, 4.0, 5.0, 5.0, 5.0, 5.0, 5.0, 6.0, 6.0, 6.0, 6.0, 6.0
+                        };
+
+                        hSrc = t.Cuda.AllocMemory(rgdfSrc);
+                        hDst = t.Cuda.AllocMemory(nCount);
+
+                        t.Cuda.channel_fillfrom(nCount, nN, nC, nSpatial, hSrc, hDst, DIR.BWD);
+
+                        double[] rgDst = t.Cuda.GetMemoryDouble(hDst);
+
+                        for (int i = 0; i < nCount; i++)
                         {
                             double dfExpected = rgdfExpected[i];
                             double dfActual = rgDst[i];

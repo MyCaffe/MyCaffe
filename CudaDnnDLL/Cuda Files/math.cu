@@ -5751,7 +5751,7 @@ template long Math<float>::channel_fill(int n, int nOutNum, int nChannels, int n
 
 
 template <typename T>
-__global__ void channel_fillfrom_kernel(const int nCount, const int num, const int channels, const int spatial_dim, const T* x, T* y)
+__global__ void channel_fillfrom_kernel_fwd(const int nCount, const int num, const int channels, const int spatial_dim, const T* x, T* y)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nCount && i >= 0; i += blockDim.x * gridDim.x)
 	{
@@ -5759,9 +5759,19 @@ __global__ void channel_fillfrom_kernel(const int nCount, const int num, const i
 		y[i] = x[n];
 	}
 }
+template <typename T>
+__global__ void channel_fillfrom_kernel_bwd(const int nCount, const int num, const int channels, const int spatial_dim, T* x, const T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * channels && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		int n = i * spatial_dim;
+		x[i] = y[n];
+	}
+}
+
 
 template <typename T>
-long Math<T>::channel_fillfrom(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY)
+long Math<T>::channel_fillfrom(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nDir)
 {
 	LONG lErr;
 	MemoryItem* pX;
@@ -5773,13 +5783,16 @@ long Math<T>::channel_fillfrom(int n, int nOutNum, int nChannels, int nInNum, lo
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	channel_fillfrom_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+	if (nDir == 0) // FWD
+		channel_fillfrom_kernel_fwd<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+	else
+		channel_fillfrom_kernel_bwd<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::channel_fillfrom(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
-template long Math<float>::channel_fillfrom(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
+template long Math<double>::channel_fillfrom(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nDir);
+template long Math<float>::channel_fillfrom(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nDir);
 
 
 template <typename T>
