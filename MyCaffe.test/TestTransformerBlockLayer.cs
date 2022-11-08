@@ -128,60 +128,6 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestForwardPicoBatch()
-        {
-            TransformerBlockLayerTest test = new TransformerBlockLayerTest(EngineParameter.Engine.CAFFE);
-
-            try
-            {
-                foreach (ITransformerBlockLayerTest t in test.Tests)
-                {
-                    t.TestForwardPico(true, 1);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
-        public void TestBackwardPicoBatch()
-        {
-            TransformerBlockLayerTest test = new TransformerBlockLayerTest(EngineParameter.Engine.CAFFE);
-
-            try
-            {
-                foreach (ITransformerBlockLayerTest t in test.Tests)
-                {
-                    t.TestBackwardPico(true, 1);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
-        public void TestGradientPicoBatch()
-        {
-            TransformerBlockLayerTest test = new TransformerBlockLayerTest(EngineParameter.Engine.CAFFE);
-
-            try
-            {
-                foreach (ITransformerBlockLayerTest t in test.Tests)
-                {
-                    t.TestGradientPico(true, 1);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
         public void TestForwardPico3Batch()
         {
             TransformerBlockLayerTest test = new TransformerBlockLayerTest(EngineParameter.Engine.CAFFE);
@@ -252,24 +198,6 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
-
-        [TestMethod]
-        public void TestGradientMini()
-        {
-            TransformerBlockLayerTest test = new TransformerBlockLayerTest(EngineParameter.Engine.CAFFE);
-
-            try
-            {
-                foreach (ITransformerBlockLayerTest t in test.Tests)
-                {
-                    t.TestGradientMini();
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
     }
 
     interface ITransformerBlockLayerTest : ITest
@@ -278,7 +206,6 @@ namespace MyCaffe.test
         void TestBackwardPico(bool bBatch, int nHeads);
         void TestGradientPico(bool bBatch, int nHeads);
         void TestForwardMini();
-        void TestGradientMini();
     }
 
     class TransformerBlockLayerTest : TestBase
@@ -528,7 +455,7 @@ namespace MyCaffe.test
 
             try
             {
-                string strModel = "gpt-pico";
+                string strModel = "gpt-pico-blk";
                 if (nHeads > 1)
                     strModel += nHeads.ToString();
                 if (bBatch)
@@ -536,11 +463,11 @@ namespace MyCaffe.test
 
                 m_log.CHECK(layer.type == LayerParameter.LayerType.TRANSFORMER_BLOCK, "The layer type is incorrect!");
 
-                Tuple<List<int>, float[]> data = Fill(strModel, "x", m_log, p.transformer_block_param);
+                Tuple<List<int>, float[]> data = Fill(strModel, "1_x", m_log, p.transformer_block_param);
                 m_blob_bottom.Reshape(data.Item1);
                 m_blob_bottom.mutable_cpu_data = convert(data.Item2);
 
-                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.001);
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.01);
                 checker.CheckGradient(layer, BottomVec, TopVec);
             }
             finally
@@ -561,27 +488,39 @@ namespace MyCaffe.test
 
             try
             {
+                string strModel = "gpt-mini-blk";
+
                 m_log.CHECK(layer.type == LayerParameter.LayerType.TRANSFORMER_BLOCK, "The layer type is incorrect!");
 
-                Tuple<List<int>, float[]> x = Fill("gpt-mini", "x", m_log, p.transformer_block_param);
+                Tuple<List<int>, float[]> x = Fill(strModel, "1_x", m_log, p.transformer_block_param);
                 m_blob_bottom.Reshape(x.Item1);
                 m_blob_bottom.mutable_cpu_data = convert(x.Item2);
 
-                Tuple<List<int>, float[]> y = Fill("gpt-mini", "y", m_log, p.transformer_block_param);
+                Tuple<List<int>, float[]> y = Fill(strModel, "10_y", m_log, p.transformer_block_param);
                 m_blobY.Reshape(y.Item1);
                 m_blobY.mutable_cpu_data = convert(y.Item2);
 
-                Tuple<List<int>, float[]> attnBias = Fill("gpt-mini", "attn_bias", m_log, p.transformer_block_param);
-                Tuple<List<int>, float[]> attnWt = Fill("gpt-mini", "attn_weight", m_log, p.transformer_block_param);
-                Tuple<List<int>, float[]> projBias = Fill("gpt-mini", "proj_bias", m_log, p.transformer_block_param);
-                Tuple<List<int>, float[]> projWt = Fill("gpt-mini", "proj_weight", m_log, p.transformer_block_param);
+                Tuple<List<int>, float[]> attnBias = Fill(strModel, "attn_bias", m_log, p.transformer_block_param);
+                Tuple<List<int>, float[]> attnWt = Fill(strModel, "attn_weight", m_log, p.transformer_block_param);
+                Tuple<List<int>, float[]> attnProjBias = Fill(strModel, "attn_proj_bias", m_log, p.transformer_block_param);
+                Tuple<List<int>, float[]> attnProjWt = Fill(strModel, "attn_proj_weight", m_log, p.transformer_block_param);
+
+                Tuple<List<int>, float[]> fcBias = Fill(strModel, "fc_bias", m_log, p.transformer_block_param);
+                Tuple<List<int>, float[]> fcWt = Fill(strModel, "fc_weight", m_log, p.transformer_block_param);
+                Tuple<List<int>, float[]> projBias = Fill(strModel, "proj_bias", m_log, p.transformer_block_param);
+                Tuple<List<int>, float[]> projWt = Fill(strModel, "proj_weight", m_log, p.transformer_block_param);
 
                 layer.Setup(BottomVec, TopVec);
 
                 layer.blobs[0].mutable_cpu_data = convert(attnWt.Item2);
                 layer.blobs[1].mutable_cpu_data = convert(attnBias.Item2);
-                layer.blobs[2].mutable_cpu_data = convert(projWt.Item2);
-                layer.blobs[3].mutable_cpu_data = convert(projBias.Item2);
+                layer.blobs[2].mutable_cpu_data = convert(attnProjWt.Item2);
+                layer.blobs[3].mutable_cpu_data = convert(attnProjBias.Item2);
+
+                layer.blobs[4].mutable_cpu_data = convert(fcWt.Item2);
+                layer.blobs[5].mutable_cpu_data = convert(fcBias.Item2);
+                layer.blobs[6].mutable_cpu_data = convert(projWt.Item2);
+                layer.blobs[7].mutable_cpu_data = convert(projBias.Item2);
 
                 layer.Forward(BottomVec, TopVec);
 
@@ -593,37 +532,10 @@ namespace MyCaffe.test
                 {
                     float fExpected = rgExpected[i];
                     float fActual = rgActual[i];
-                    float fErr = 0.0000001f;
+                    float fErr = 1e-5f;
 
                     m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, fErr, "The values are not as expected!");
                 }
-            }
-            finally
-            {
-                layer.Dispose();
-            }
-        }
-
-        public void TestGradientMini()
-        {
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
-            p.transformer_block_param.heads = 6;
-            p.transformer_block_param.embed = 192;
-            p.transformer_block_param.block_size = 128;
-            p.transformer_block_param.attn_dropout = 0.0;
-            p.transformer_block_param.resid_dropout = 0.0;
-            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-
-            try
-            {
-                m_log.CHECK(layer.type == LayerParameter.LayerType.TRANSFORMER_BLOCK, "The layer type is incorrect!");
-
-                Tuple<List<int>, float[]> data = Fill("gpt-mini", "x", m_log, p.transformer_block_param);
-                m_blob_bottom.Reshape(data.Item1);
-                m_blob_bottom.mutable_cpu_data = convert(data.Item2);
-
-                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.1);
-                checker.CheckGradient(layer, BottomVec, TopVec);
             }
             finally
             {
