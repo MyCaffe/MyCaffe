@@ -98,12 +98,12 @@ namespace MyCaffe.test
         /// <param name="x">Specifies the input.</param>
         /// <returns>The calculated Gelu value is returned.</returns>
         /// <remarks>
-        /// Computes the mish non-linearity @f$ y  = 0.5 * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$.
+        /// Computes the mish non-linearity @f$ y  = 0.5 * x * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$.
         /// @see [Github - Karpathy: NewGELU, line 21](https://github.com/karpathy/minGPT/blob/master/mingpt/model.py) by Karpathy, 2022.
         /// </remarks>
         protected double gelu_native(double x)
         {
-            return 0.5 * (1.0 + Math.Tanh(Math.Sqrt(2.0 / Math.PI) * (x + 0.044715 * Math.Pow(x, 3))));
+            return 0.5 * x * (1.0 + Math.Tanh(Math.Sqrt(2.0 / Math.PI) * (x + 0.044715 * Math.Pow(x, 3))));
         }
 
         /// <summary>
@@ -112,18 +112,17 @@ namespace MyCaffe.test
         /// <param name="x">Specifies the input.</param>
         /// <returns>The calculated Gelu value is returned.</returns>
         /// <remarks>
-        /// Computes the gelu non-linearity @f$ y  = 0.5 * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$.
-        /// with                            @f$ y' = \frac{0.107032 * (x^2 + 7.45462)}{cosh(0.0713548 * x^3 + 1.59577 * x) + 1} @f$
-        /// Note, see Wolfram Alpha with 'derivative of @f$ d/dx  = 0.5 * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$'                                         
+        /// Computes the gelu non-linearity @f$ y  = 0.5 * x * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$.
+        ///                                 @f$ y' = 0.5 * tanh(0.797885 * (x + 0.044715 * x^3)) + 
+        ///                                          (0.0535161 * x^3 + 0.398942 * x) * sech^2(0.797885 * (x + 0.044715 * x^3)) + 0.5 @f$
+        /// Note, see Wolfram Alpha with 'derivative of @f$ d/dx  = 0.5 * x * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$                                         
         protected double gelu_native_grad(double x)
         {
-            double dfNum = 0.107032 * (Math.Pow(x, 2) + 7.45462);
-            double dfDen = Math.Cosh(0.0713548 * Math.Pow(x, 3) + 1.59577 * x) + 1;
+            double x3 = Math.Pow(x, 3);
+            double tanh = Math.Tanh(0.797885 * (x + 0.044715 * x3));
+            double sech = 1.0 / Math.Cosh(0.797885 * (x + 0.044715 * x3));
 
-            if (dfDen == 0)
-                return 0;
-
-            return dfNum / dfDen;
+            return 0.5 * tanh + (0.0535161 * x3 + 0.398942 * x) * sech * sech + 0.5;
         }
 
         public void TestForward(double dfFillerStd)

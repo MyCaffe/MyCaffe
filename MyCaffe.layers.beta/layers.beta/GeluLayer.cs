@@ -12,9 +12,10 @@ namespace MyCaffe.layers.beta
     /// The GeluLayer implements the New GELU activation function currently in Google BERT repo (same as OpenAI GPT)
     /// </summary>
     /// <remarks>
-    /// Computes the gelu non-linearity @f$ y  = 0.5 * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$.
-    /// with                            @f$ y' = \frac{0.107032 * (x^2 + 7.45462)}{cosh(0.0713548 * x^3 + 1.59577 * x) + 1} @f$
-    /// Note, see Wolfram Alpha with 'derivative of @f$ d/dx  = 0.5 * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$'                                         
+    /// Computes the gelu non-linearity @f$ y  = 0.5 * x * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$
+    ///                                 @f$ y' = 0.5 * tanh(0.797885 * (x + 0.044715 * x^3)) + 
+    ///                                          (0.0535161 * x^3 + 0.398942 * x) * sech^2(0.797885 * (x + 0.044715 * x^3)) + 0.5 @f$
+    /// Note, see Wolfram Alpha with 'derivative of @f$ d/dx  = 0.5 * x * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$                                         
     /// 
     /// @see [Github - Karpathy: NewGELU, line 21](https://github.com/karpathy/minGPT/blob/master/mingpt/model.py) by Karpathy, 2022.
     /// </remarks>
@@ -44,7 +45,7 @@ namespace MyCaffe.layers.beta
         /// <param name="colTop">top output Blob vector (length 1)
         ///  -# @f$ (N \times C \times H \times W) @f$
         ///     the computed outputs @f$ 
-        ///         y  = 0.5 * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3)))
+        ///         y  = 0.5 * x (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3)))
         ///     @f$.
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
@@ -69,8 +70,8 @@ namespace MyCaffe.layers.beta
         /// <param name="colBottom">bottom input blob vector (length 1)
         ///  -# @f$ (N \times C \times H \times W) @f$
         ///     the inputs @f$ x @f$; Backward fills their diff with 
-        ///     gradients @f$
-        ///                  y' = \frac{0.107032 * (x^2 + 7.45462)}{cosh(0.0713548 * x^3 + 1.59577 * x) + 1}       
+        ///     gradients f$ y' = 0.5 * tanh(0.797885 * (x + 0.044715 * x^3)) + 
+        ///                       (0.0535161 * x^3 + 0.398942 * x) * sech^2(0.797885 * (x + 0.044715 * x^3)) + 0.5
         ///     @f$ if propagate_down[0]
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)

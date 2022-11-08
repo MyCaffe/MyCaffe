@@ -100,7 +100,7 @@ inline __device__ double truncate(const double val)
 		return 0.0;
 	else if (val > 255.0)
 		return 255.0;
-	else
+	else		
 		return val;
 }
 
@@ -8579,7 +8579,7 @@ __global__ void gelu_fwd_kernel(int n, const T* in, T* out)
 
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		out[i] = (T)0.5 * ((T)1.0 + tanh(fSqrt2xPi * (in[i] + (T)0.044715 * in[i] * in[i] * in[i])));
+		out[i] = (T)0.5 * in[i] * ((T)1.0 + tanh(fSqrt2xPi * (in[i] + (T)0.044715 * pow(in[i], 3))));
 	}
 }
 
@@ -8608,21 +8608,22 @@ template long Math<double>::gelu_fwd(int nCount, long hBottomData, long hTopData
 template long Math<float>::gelu_fwd(int nCount, long hBottomData, long hTopData);
 
 
-/// Computes the GELU non-linearity @f$ y  = 0.5 * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$.
-/// with                            @f$ y' = \frac{0.107032 * (x^2 + 7.45462)}{cosh(0.0713548 * x^3 + 1.59577 * x) + 1} @f$
-/// Note, see Wolfram Alpha with 'derivative of @f$ d/dx  = 0.5 * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$'                                        
+/// Computes the GELU non-linearity @f$ y  = 0.5 * x (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$.
+/// with                            @f$ y' = 0.5 * tanh(0.797885 * (x + 0.044715 * x^3)) + 
+///                                          (0.0535161 * x^3 + 0.398942 * x) * sech^2(0.797885 * (x + 0.044715 * x^3)) + 0.5 @f$
+/// Note, see Wolfram Alpha with 'derivative of @f$ d/dx  = 0.5 * x * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$                                        
 template<typename T>
 __global__ void gelu_bwd_kernel(const int n, const T* in_diff, T* out_data, T* out_diff, const T* in_data)
-{
+{		
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
 		const T x = in_data[i];
-		const T fNum = (T)0.107032 * (x * x + (T)7.45462);
-		const T fDiv = cosh((T)0.0713548 * x * x * x + (T)1.59577 * x) + (T)1;
-		T grad = 0;
-
-		if (fDiv != 0)
-			grad = fNum / fDiv;
+		const T x3 = x * x * x;
+		const T valtanh = (T)0.797885 * (x + (T)0.044715 * x3);
+		const T valx = (T)0.0535161 * x3 + (T)0.398942 * x;
+		const T valcosh = cosh(valtanh);
+		const T valsech2 = (T)1.0 / (valcosh * valcosh);
+		T grad = (T)0.5 * tanh(valtanh) + valx * valsech2 + (T)0.5;
 		
 		out_diff[i] = in_diff[i] * grad;
 	}
