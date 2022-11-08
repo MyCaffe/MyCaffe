@@ -21,9 +21,10 @@ namespace MyCaffe.layers.beta
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class LayerNormLayer<T> : Layer<T>
     {
-        Blob<T> m_blobMean;
-        Blob<T> m_blobMeanDiff;
-        Blob<T> m_blobMeanDiffSq;
+        Blob<T> m_blobWork;
+        Blob<T> m_blobMu;
+        Blob<T> m_blobXmu;
+        Blob<T> m_blobXmuSq;
         Blob<T> m_blobVar;
         Blob<T> m_blobStdev;
         Blob<T> m_blobStdevFull;
@@ -42,9 +43,10 @@ namespace MyCaffe.layers.beta
         {
             m_type = LayerParameter.LayerType.LAYERNORM;
 
-            m_blobMean = new Blob<T>(cuda, log);
-            m_blobMeanDiff = new Blob<T>(cuda, log);
-            m_blobMeanDiffSq = new Blob<T>(cuda, log);
+            m_blobWork = new Blob<T>(cuda, log);
+            m_blobMu = new Blob<T>(cuda, log);
+            m_blobXmu = new Blob<T>(cuda, log);
+            m_blobXmuSq = new Blob<T>(cuda, log);
             m_blobVar = new Blob<T>(cuda, log);
             m_blobStdev = new Blob<T>(cuda, log);
             m_blobStdevFull = new Blob<T>(cuda, log);
@@ -53,9 +55,10 @@ namespace MyCaffe.layers.beta
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
-            dispose(ref m_blobMean);
-            dispose(ref m_blobMeanDiff);
-            dispose(ref m_blobMeanDiffSq);
+            m_blobWork.Dispose();
+            dispose(ref m_blobMu);
+            dispose(ref m_blobXmu);
+            dispose(ref m_blobXmuSq);
             dispose(ref m_blobVar);
             dispose(ref m_blobStdev);
             dispose(ref m_blobStdevFull);
@@ -106,9 +109,10 @@ namespace MyCaffe.layers.beta
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            m_blobMean.ReshapeLike(colBottom[0]);
-            m_blobMeanDiff.ReshapeLike(colBottom[0]);
-            m_blobMeanDiffSq.ReshapeLike(colBottom[0]);
+            m_blobWork.ReshapeLike(colBottom[0]);
+            m_blobMu.ReshapeLike(colBottom[0]);
+            m_blobXmu.ReshapeLike(colBottom[0]);
+            m_blobXmuSq.ReshapeLike(colBottom[0]);
             m_blobVar.ReshapeLike(colBottom[0]);
             m_blobStdev.ReshapeLike(colBottom[0]);
             m_blobStdevFull.ReshapeLike(colBottom[0]);
@@ -133,26 +137,25 @@ namespace MyCaffe.layers.beta
             //-----------------------------------
             // Calculate the mean across the last dim.
             // mean = x.mean(dim=-1, keepdim=True)
-            m_cuda.channel_sum(nCount, nOuterNum, nChannel, nInnerNum, colBottom[0].gpu_data, m_blobMean.mutable_gpu_data, false);
-            m_blobMean.scale_data(1.0 / nInnerNum);
-
+            m_cuda.channel_sum(nCount, nOuterNum, nChannel, nInnerNum, colBottom[0].gpu_data, m_blobMu.mutable_gpu_data, false);
+            m_blobMu.scale_data(1.0 / nInnerNum);
 
             //-----------------------------------
             // var = ((x - mean) ** 2).mean(dim=-1, keepdim=True)
             // Copy each mean value per channel across all items in the channel (e.g. 1 -> channel items)
-            m_cuda.channel_fillfrom(nCount, nOuterNum, nChannel, nInnerNum, m_blobMean.gpu_data, m_blobMeanDiff.mutable_gpu_data, DIR.FWD);
+            m_cuda.channel_fillfrom(nCount, nOuterNum, nChannel, nInnerNum, m_blobMu.gpu_data, m_blobXmu.mutable_gpu_data, DIR.FWD);
 
             // Subtract the mean from the input.
-            // meandiff = x - mean
-            m_cuda.sub(nCount, colBottom[0].gpu_data, m_blobMeanDiff.gpu_data, m_blobMeanDiff.mutable_gpu_data);
+            // xmu = x - mean
+            m_cuda.sub(nCount, colBottom[0].gpu_data, m_blobXmu.gpu_data, m_blobXmu.mutable_gpu_data);
             // Square the values
-            // meandiffsq = (meandiff) ** 2
-            m_cuda.powx(nCount, m_blobMeanDiff.gpu_data, 2.0, m_blobMeanDiffSq.mutable_gpu_data);
+            // xmusq = (xmu) ** 2
+            m_cuda.powx(nCount, m_blobXmu.gpu_data, 2.0, m_blobXmuSq.mutable_gpu_data);
 
             // Calculate the ean across the last dim.
-            // var = meandiffsq.mean(dim=-1, keepdim=True)
+            // var = xmusq.mean(dim=-1, keepdim=True)
             // var shape = (n, c, 1)
-            m_cuda.channel_sum(nCount, nOuterNum, nChannel, nInnerNum, m_blobMeanDiffSq.gpu_data, m_blobVar.mutable_gpu_data, false);
+            m_cuda.channel_sum(nCount, nOuterNum, nChannel, nInnerNum, m_blobXmuSq.gpu_data, m_blobVar.mutable_gpu_data, false);
             m_blobVar.scale_data(1.0 / nInnerNum);
 
             //-----------------------------------
@@ -168,7 +171,7 @@ namespace MyCaffe.layers.beta
             // Normalize the input by centering and dividing by stdev across channels.
             // Copy each stdev value per channel across all items in the channel (e.g. 1 -> channel items)
             m_cuda.channel_fillfrom(nCount, nOuterNum, nChannel, nInnerNum, m_blobStdev.gpu_data, m_blobStdevFull.mutable_gpu_data, DIR.FWD);
-            m_cuda.div(nCount, m_blobMeanDiff.gpu_data, m_blobStdevFull.gpu_data, colTop[0].mutable_gpu_data);
+            m_cuda.div(nCount, m_blobXmu.gpu_data, m_blobStdevFull.gpu_data, colTop[0].mutable_gpu_data);
         }
 
         /// <summary>
@@ -186,8 +189,55 @@ namespace MyCaffe.layers.beta
             int nOuterNum = colBottom[0].num;
             int nChannel = colBottom[0].channels;
             int nInnerNum = colBottom[0].count(2);
+            
 
-            // WORK IN PROGRESS
+            //-----------------------------------
+            // y = (x - mean) / std
+            // Normalize the input by centering and dividing by stdev across channels.
+            // Copy each stdev value per channel across all items in the channel (e.g. 1 -> channel items)
+            // xmu' = y' / std 
+            m_cuda.div(nCount, colTop[0].gpu_diff, m_blobStdevFull.gpu_data, m_blobXmu.mutable_gpu_diff);
+            // std' = -y' * xmu / std^2
+            m_cuda.mul(nCount, colTop[0].gpu_diff, m_blobXmu.gpu_data, m_blobStdevFull.mutable_gpu_diff);
+            m_cuda.powx(nCount, m_blobStdevFull.gpu_data, 2.0, m_blobWork.mutable_gpu_diff);
+            m_cuda.div(nCount, m_blobStdevFull.gpu_diff, m_blobWork.gpu_diff, m_blobStdevFull.mutable_gpu_diff);
+            m_cuda.scal(nCount, -1.0, m_blobStdevFull.mutable_gpu_diff);
+            // std' = channel_sum(stdfull')
+            m_cuda.channel_sum(nCount, nOuterNum, nChannel, nInnerNum, m_blobStdevFull.gpu_diff, m_blobStdev.mutable_gpu_diff, false);
+
+            //-----------------------------------
+            // std = var1.sqrt()
+            // var' = 0.5 * std^-1 * std'
+            m_cuda.powx(nOuterNum * nChannel, m_blobStdev.gpu_data, -1.0, m_blobWork.mutable_gpu_diff);
+            m_cuda.mul(nOuterNum * nChannel, m_blobWork.gpu_diff, m_blobStdev.gpu_diff, m_blobVar.mutable_gpu_diff);
+            m_cuda.scal(nOuterNum * nChannel, 0.5, m_blobVar.mutable_gpu_diff);
+
+            //-----------------------------------
+            // var = xmusq.mean(dim=-1, keepdim=True)
+            // xmusq' = 1 / n * var'
+            m_cuda.channel_fillfrom(nCount, nOuterNum, nChannel, nInnerNum, m_blobVar.gpu_diff, m_blobXmuSq.mutable_gpu_diff, DIR.FWD);
+            m_blobXmuSq.scale_diff(1.0 / nInnerNum);
+
+            //-----------------------------------
+            // xmusq = (xmu) ** 2
+            // xmu' = 2 * xmu * xmusq' + previous xmu' (xmu' = y' / std)
+            m_cuda.mul(nCount, m_blobXmu.gpu_data, m_blobXmuSq.gpu_diff, m_blobWork.mutable_gpu_diff);
+            m_cuda.scale(nCount, 2.0, m_blobWork.gpu_diff, m_blobWork.mutable_gpu_diff);
+            m_cuda.add(nCount, m_blobXmu.gpu_diff, m_blobWork.gpu_diff, m_blobXmu.mutable_gpu_diff);
+
+            //-----------------------------------
+            // xmu = x - mean
+            // x' = xmu' 
+            // mean' = -channel_sum(xmu')
+            m_cuda.channel_sum(nCount, nOuterNum, nChannel, nInnerNum, m_blobXmu.gpu_diff, m_blobMu.mutable_gpu_diff, false);
+            m_cuda.scal(nCount, -1, m_blobMu.mutable_gpu_diff);
+
+            //-----------------------------------
+            // mean = x.mean(dim=-1, keepdim=True)
+            // x' = 1 / n * mean' + x'
+            m_cuda.channel_fillfrom(nCount, nOuterNum, nChannel, nInnerNum, m_blobMu.gpu_diff, m_blobWork.mutable_gpu_diff, DIR.FWD);
+            m_blobWork.scale_diff(1.0 / nInnerNum);
+            m_cuda.add(nCount, m_blobXmu.gpu_diff, m_blobWork.gpu_diff, colBottom[0].mutable_gpu_diff);
         }
     }
 }
