@@ -108,6 +108,78 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestForwardPico3()
+        {
+            LayerNormLayerTest test = new LayerNormLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ILayerNormLayerTest t in test.Tests)
+                {
+                    t.TestForwardPico(false, 3);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestBackwardPico3()
+        {
+            LayerNormLayerTest test = new LayerNormLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ILayerNormLayerTest t in test.Tests)
+                {
+                    t.TestBackwardPico(false, 3);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardPico3B()
+        {
+            LayerNormLayerTest test = new LayerNormLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ILayerNormLayerTest t in test.Tests)
+                {
+                    t.TestForwardPico(true, 3);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestBackwardPico3B()
+        {
+            LayerNormLayerTest test = new LayerNormLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ILayerNormLayerTest t in test.Tests)
+                {
+                    t.TestBackwardPico(true, 3);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface ILayerNormLayerTest : ITest
@@ -297,7 +369,7 @@ namespace MyCaffe.test
             {
                 LayerParameter p = new LayerParameter(LayerParameter.LayerType.LAYERNORM);
                 layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-4);
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
 
                 checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
             }
