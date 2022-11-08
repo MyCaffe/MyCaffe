@@ -1497,8 +1497,8 @@ namespace MyCaffe.param
 
                 case LayerType.TRANSFORMER_BLOCK:
                     expected_bottom.Add("input");
-                    expected_top.Add("trans");
-                    m_rgLayerParameters[lt] = new CausalSelfAttentionParameter();
+                    expected_top.Add("tfb");
+                    m_rgLayerParameters[lt] = new TransformerBlockParameter();
                     break;
 
                 case LayerType.TRANSPOSE:
