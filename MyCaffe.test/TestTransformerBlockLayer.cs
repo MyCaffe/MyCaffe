@@ -383,7 +383,7 @@ namespace MyCaffe.test
 
             try
             {
-                string strModel = "gpt-pico";
+                string strModel = "gpt-pico-blk";
                 if (nHeads > 1)
                     strModel += nHeads.ToString();
                 if (bBatch)
@@ -391,16 +391,21 @@ namespace MyCaffe.test
 
                 m_log.CHECK(layer.type == LayerParameter.LayerType.TRANSFORMER_BLOCK, "The layer type is incorrect!");
 
-                Tuple<List<int>, float[]> x = Fill(strModel, "x", m_log, p.transformer_block_param);
+                Tuple<List<int>, float[]> x = Fill(strModel, "1_x", m_log, p.transformer_block_param);
                 m_blob_bottom.Reshape(x.Item1);
                 m_blob_bottom.mutable_cpu_data = convert(x.Item2);
                 
-                Tuple<List<int>, float[]> y = Fill(strModel, "y", m_log, p.transformer_block_param);
+                Tuple<List<int>, float[]> y = Fill(strModel, "10_y", m_log, p.transformer_block_param);
                 m_blobY.Reshape(y.Item1);
                 m_blobY.mutable_cpu_data = convert(y.Item2);
                 
                 Tuple<List<int>, float[]> attnBias = Fill(strModel, "attn_bias", m_log, p.transformer_block_param);
                 Tuple<List<int>, float[]> attnWt = Fill(strModel, "attn_weight", m_log, p.transformer_block_param);
+                Tuple<List<int>, float[]> attnProjBias = Fill(strModel, "attn_proj_bias", m_log, p.transformer_block_param);
+                Tuple<List<int>, float[]> attnProjWt = Fill(strModel, "attn_proj_weight", m_log, p.transformer_block_param);
+
+                Tuple<List<int>, float[]> fcBias = Fill(strModel, "fc_bias", m_log, p.transformer_block_param);
+                Tuple<List<int>, float[]> fcWt = Fill(strModel, "fc_weight", m_log, p.transformer_block_param);
                 Tuple<List<int>, float[]> projBias = Fill(strModel, "proj_bias", m_log, p.transformer_block_param);
                 Tuple<List<int>, float[]> projWt = Fill(strModel, "proj_weight", m_log, p.transformer_block_param);
 
@@ -408,8 +413,13 @@ namespace MyCaffe.test
 
                 layer.blobs[0].mutable_cpu_data = convert(attnWt.Item2);
                 layer.blobs[1].mutable_cpu_data = convert(attnBias.Item2);
-                layer.blobs[2].mutable_cpu_data = convert(projWt.Item2);
-                layer.blobs[3].mutable_cpu_data = convert(projBias.Item2);
+                layer.blobs[2].mutable_cpu_data = convert(attnProjWt.Item2);
+                layer.blobs[3].mutable_cpu_data = convert(attnProjBias.Item2);
+                
+                layer.blobs[4].mutable_cpu_data = convert(fcWt.Item2);
+                layer.blobs[5].mutable_cpu_data = convert(fcBias.Item2);
+                layer.blobs[6].mutable_cpu_data = convert(projWt.Item2);
+                layer.blobs[7].mutable_cpu_data = convert(projBias.Item2);
 
                 layer.Forward(BottomVec, TopVec);
 
@@ -444,7 +454,7 @@ namespace MyCaffe.test
 
             try
             {
-                string strModel = "gpt-pico";
+                string strModel = "gpt-pico-blk";
                 if (nHeads > 1)
                     strModel += nHeads.ToString();
                 if (bBatch)
@@ -452,15 +462,20 @@ namespace MyCaffe.test
 
                 m_log.CHECK(layer.type == LayerParameter.LayerType.TRANSFORMER_BLOCK, "The layer type is incorrect!");
 
-                Tuple<List<int>, float[]> x = Fill(strModel, "x", m_log, p.transformer_block_param);
+                Tuple<List<int>, float[]> x = Fill(strModel, "1_x", m_log, p.transformer_block_param);
                 m_blob_bottom.Reshape(x.Item1);
                 m_blob_bottom.mutable_cpu_data = convert(x.Item2);
 
-                Tuple<List<int>, float[]> y_grad = Fill(strModel, "1_grad_y", m_log, p.transformer_block_param);
-                
-                Tuple<List<int>, float[]> x_grad = Fill(strModel, "12_grad_x", m_log, p.transformer_block_param);
+                Tuple<List<int>, float[]> y_grad = Fill(strModel, "grad_1_y", m_log, p.transformer_block_param);                
+                Tuple<List<int>, float[]> x_grad = Fill(strModel, "grad_10_x", m_log, p.transformer_block_param);
+
                 Tuple<List<int>, float[]> attnBias = Fill(strModel, "attn_bias", m_log, p.transformer_block_param);
                 Tuple<List<int>, float[]> attnWt = Fill(strModel, "attn_weight", m_log, p.transformer_block_param);
+                Tuple<List<int>, float[]> attnProjBias = Fill(strModel, "attn_proj_bias", m_log, p.transformer_block_param);
+                Tuple<List<int>, float[]> attnProjWt = Fill(strModel, "attn_proj_weight", m_log, p.transformer_block_param);
+
+                Tuple<List<int>, float[]> fcBias = Fill(strModel, "fc_bias", m_log, p.transformer_block_param);
+                Tuple<List<int>, float[]> fcWt = Fill(strModel, "fc_weight", m_log, p.transformer_block_param);
                 Tuple<List<int>, float[]> projBias = Fill(strModel, "proj_bias", m_log, p.transformer_block_param);
                 Tuple<List<int>, float[]> projWt = Fill(strModel, "proj_weight", m_log, p.transformer_block_param);
 
@@ -468,8 +483,13 @@ namespace MyCaffe.test
 
                 layer.blobs[0].mutable_cpu_data = convert(attnWt.Item2);
                 layer.blobs[1].mutable_cpu_data = convert(attnBias.Item2);
-                layer.blobs[2].mutable_cpu_data = convert(projWt.Item2);
-                layer.blobs[3].mutable_cpu_data = convert(projBias.Item2);
+                layer.blobs[2].mutable_cpu_data = convert(attnProjWt.Item2);
+                layer.blobs[3].mutable_cpu_data = convert(attnProjBias.Item2);
+
+                layer.blobs[4].mutable_cpu_data = convert(fcWt.Item2);
+                layer.blobs[5].mutable_cpu_data = convert(fcBias.Item2);
+                layer.blobs[6].mutable_cpu_data = convert(projWt.Item2);
+                layer.blobs[7].mutable_cpu_data = convert(projBias.Item2);
 
                 layer.Forward(BottomVec, TopVec);
 
@@ -485,7 +505,7 @@ namespace MyCaffe.test
                 {
                     float fExpected = rgExpected[i];
                     float fActual = rgActual[i];
-                    float fErr = 0.00000001f;
+                    float fErr = 1e-3f;
 
                     m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, fErr, "The values are not as expected!");
                 }
