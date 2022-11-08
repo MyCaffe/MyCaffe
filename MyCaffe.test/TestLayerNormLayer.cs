@@ -296,7 +296,6 @@ namespace MyCaffe.test
             try
             {
                 LayerParameter p = new LayerParameter(LayerParameter.LayerType.LAYERNORM);
-                p.batch_norm_param.engine = m_engine;
                 layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
                 GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-4);
 
@@ -422,8 +421,8 @@ namespace MyCaffe.test
                 m_blob_bottom.Reshape(x.Item1);
                 m_blob_bottom.mutable_cpu_data = convert(x.Item2);
 
-                Tuple<List<int>, float[]> y_grad = Fill(strModel, "grad_1_y", m_log, p.causal_self_attention_param);
-                Tuple<List<int>, float[]> x_grad = Fill(strModel, "grad_8_x", m_log, p.causal_self_attention_param);
+                Tuple<List<int>, float[]> y_grad = Fill(strModel, "grad_1a_y", m_log, p.causal_self_attention_param);
+                Tuple<List<int>, float[]> x_grad = Fill(strModel, "grad_9_x", m_log, p.causal_self_attention_param);
 
                 layer.Setup(BottomVec, TopVec);
                 layer.Forward(BottomVec, TopVec);
