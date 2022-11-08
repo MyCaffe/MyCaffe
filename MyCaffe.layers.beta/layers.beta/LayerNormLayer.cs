@@ -6,9 +6,6 @@ using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
 
-///
-/// WORK IN PROGRESS
-///
 namespace MyCaffe.layers.beta
 {
     /// <summary>
