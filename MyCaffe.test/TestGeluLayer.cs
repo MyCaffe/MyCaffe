@@ -34,6 +34,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestBackward()
+        {
+            GeluLayerTest2 test = new GeluLayerTest2(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IGeluLayerTest2 t in test.Tests)
+                {
+                    t.TestBackward();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestGradient()
         {
             GeluLayerTest2 test = new GeluLayerTest2(EngineParameter.Engine.CAFFE);
@@ -55,6 +73,7 @@ namespace MyCaffe.test
     interface IGeluLayerTest2 : ITest
     {
         void TestForward();
+        void TestBackward();
         void TestGradient();
     }
 
@@ -153,6 +172,47 @@ namespace MyCaffe.test
                     double dfExpectedValue = gelu_native(rgBottomData[i]);
                     double dfPrecision = Math.Max(Math.Abs(dfExpectedValue * 1e-4), dfMinPrecision);
                     m_log.EXPECT_NEAR(dfExpectedValue, rgTopData[i], dfPrecision);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
+            }
+        }
+
+        public void TestBackward()
+        {
+            FillerParameter fp = new FillerParameter("gaussian");
+            fp.std = 1.0;
+            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
+
+            filler.Fill(Bottom);
+
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.GELU);
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+
+            try
+            {
+                m_log.CHECK(layer.type == LayerParameter.LayerType.GELU, "The layer type is incorrect!");
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                m_blob_top.SetDiff(1.0);
+
+                layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
+
+                // Now, check values
+                double[] rgBottomData = convert(Bottom.update_cpu_data());
+                double[] rgBottomDiff = convert(Bottom.update_cpu_diff());
+                double dfMinPrecision = 1e-5;
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfExpectedValue = gelu_native_grad(rgBottomData[i]);
+                    double dfActualValue = rgBottomDiff[i];
+                    double dfPrecision = Math.Max(Math.Abs(dfExpectedValue * 1e-4), dfMinPrecision);
+                    m_log.EXPECT_NEAR(dfExpectedValue, dfActualValue, dfPrecision);
                 }
             }
             finally
