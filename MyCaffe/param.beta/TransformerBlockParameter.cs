@@ -14,15 +14,16 @@ namespace MyCaffe.param
     /// </remarks>
     public class TransformerBlockParameter : LayerParameterBase
     {
-        int m_nHeads;
-        int m_nEmbed;
-        double m_dfAttnDropout;
-        double m_dfResidDropout;
-        int m_nBlockSize;
+        int m_nHeads = 6;
+        int m_nEmbed = 192;
+        double m_dfAttnDropout = 0.1;
+        double m_dfResidDropout = 0.1;
+        int m_nBlockSize = 128;
 
         /** @copydoc LayerParameterBase */
         public TransformerBlockParameter()
         {
+            
         }
 
         /// <summary>
