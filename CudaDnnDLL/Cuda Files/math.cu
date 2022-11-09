@@ -8569,9 +8569,10 @@ template long Math<double>::mish_bwd(int nCount, long hTopDiff, long hTopData, l
 template long Math<float>::mish_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, float fThreshold, int nMethod);
 
 
-/// Computes the GELU non-linearity @f$ y  = 0.5 * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$.
-/// with                            @f$ y' = \frac{0.107032 * (x^2 + 7.45462)}{cosh(0.0713548 * x^3 + 1.59577 * x) + 1} @f$
-/// Note, see Wolfram Alpha with 'derivative of @f$ d/dx  = 0.5 * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$'                                        
+/// Computes the GELU non-linearity @f$ y  = 0.5 * x * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$.
+/// with                            @f$ y' = 0.5 * tanh(0.797885 * (x + 0.044715 * x^3)) + 
+///                                          (0.0535161 * x^3 + 0.398942 * x) * sech^2(0.797885 * (x + 0.044715 * x^3)) + 0.5 @f$
+/// Note, see Wolfram Alpha with 'derivative of @f$ d/dx  = 0.5 * x * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$'                                        
 template<typename T>
 __global__ void gelu_fwd_kernel(int n, const T* in, T* out)
 {
