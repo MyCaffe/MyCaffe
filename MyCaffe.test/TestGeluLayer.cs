@@ -9,6 +9,7 @@ using MyCaffe.common;
 using MyCaffe.fillers;
 using MyCaffe.layers;
 using System.Diagnostics;
+using System.IO;
 
 namespace MyCaffe.test
 {
@@ -68,6 +69,42 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestForwardPico()
+        {
+            GeluLayerTest2 test = new GeluLayerTest2(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IGeluLayerTest2 t in test.Tests)
+                {
+                    t.TestForwardPico(false, 1);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestBackwardPico()
+        {
+            GeluLayerTest2 test = new GeluLayerTest2(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IGeluLayerTest2 t in test.Tests)
+                {
+                    t.TestBackwardPico(false, 1);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface IGeluLayerTest2 : ITest
@@ -75,6 +112,8 @@ namespace MyCaffe.test
         void TestForward();
         void TestBackward();
         void TestGradient();
+        void TestForwardPico(bool bBatch, int nHeads);
+        void TestBackwardPico(bool bBatch, int nHeads);
     }
 
     class GeluLayerTest2 : TestBase
@@ -253,6 +292,148 @@ namespace MyCaffe.test
         public void TestGradient()
         {
             TestBackward(1.0);
+        }
+
+        public Tuple<List<int>, float[]> Fill(string strGpt, string strName, Log log, CausalSelfAttentionParameter p)
+        {
+            string strFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\" + strGpt + "\\" + strName + ".txt";
+            string[] rgstrLines = File.ReadAllLines(strFile);
+            string strSize = rgstrLines[0].Trim('#', ' ', '(', ')', ',');
+            string[] rgstrSize = strSize.Split(',');
+            List<int> rgnShape = rgstrSize.Select(p1 => int.Parse(p1)).ToList();
+            List<float> rgfVal = new List<float>();
+
+            while (rgnShape.Count < 4)
+            {
+                rgnShape.Add(1);
+            }
+
+            int nCount = 1;
+            foreach (int nDim in rgnShape)
+            {
+                nCount *= nDim;
+            }
+
+            for (int i = 1; i < rgstrLines.Length; i++)
+            {
+                string[] rgstrVals = rgstrLines[i].Split(' ');
+
+                for (int j = 0; j < rgstrVals.Length; j++)
+                {
+                    string strVal = rgstrVals[j].Trim();
+
+                    if (!string.IsNullOrEmpty(strVal))
+                    {
+                        float fVal = float.Parse(strVal);
+                        rgfVal.Add(fVal);
+                    }
+                }
+            }
+
+            log.CHECK_EQ(rgfVal.Count, nCount, "The bottom count does not match the number of values read in!");
+
+            float[] rgf = rgfVal.ToArray();
+
+            return new Tuple<List<int>, float[]>(rgnShape, rgf);
+        }
+
+        public void TestForwardPico(bool bBatch, int nHeads)
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.GELU);
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+            Blob<T> blobY = null;
+
+            try
+            {
+                blobY = new Blob<T>(m_cuda, m_log);
+
+                string strModel = "gpt-pico-gelu";
+                if (nHeads > 1)
+                    strModel += nHeads.ToString();
+                if (bBatch)
+                    strModel += "B";
+
+                m_log.CHECK(layer.type == LayerParameter.LayerType.GELU, "The layer type is incorrect!");
+
+                Tuple<List<int>, float[]> x = Fill(strModel, "1_x", m_log, p.causal_self_attention_param);
+                m_blob_bottom.Reshape(x.Item1);
+                m_blob_bottom.mutable_cpu_data = convert(x.Item2);
+
+                Tuple<List<int>, float[]> y = Fill(strModel, "2_y", m_log, p.causal_self_attention_param);
+                blobY.Reshape(y.Item1);
+                blobY.mutable_cpu_data = convert(y.Item2);
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // Now, check values
+                float[] rgExpected = convertF(blobY.mutable_cpu_data);
+                float[] rgActual = convertF(m_blob_top.mutable_cpu_data);
+
+                for (int i = 0; i < rgExpected.Length; i++)
+                {
+                    float fExpected = rgExpected[i];
+                    float fActual = rgActual[i];
+                    float fErr = 1e-7f;
+
+                    m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, fErr, "The values are not as expected!");
+                }
+            }
+            finally
+            {
+                if (blobY != null)
+                    blobY.Dispose();
+
+                layer.Dispose();
+            }
+        }
+
+        public void TestBackwardPico(bool bBatch, int nHeads)
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.GELU);
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+
+            try
+            {
+                string strModel = "gpt-pico-gelu";
+                if (nHeads > 1)
+                    strModel += nHeads.ToString();
+                if (bBatch)
+                    strModel += "B";
+
+                m_log.CHECK(layer.type == LayerParameter.LayerType.GELU, "The layer type is incorrect!");
+
+                Tuple<List<int>, float[]> x = Fill(strModel, "1_x", m_log, p.causal_self_attention_param);
+                m_blob_bottom.Reshape(x.Item1);
+                m_blob_bottom.mutable_cpu_data = convert(x.Item2);
+
+                Tuple<List<int>, float[]> y_grad = Fill(strModel, "grad_1_y", m_log, p.causal_self_attention_param);
+                Tuple<List<int>, float[]> x_grad = Fill(strModel, "grad_2_x", m_log, p.causal_self_attention_param);
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                m_blob_top.mutable_cpu_diff = convert(y_grad.Item2);
+
+                layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
+
+                // Now, check values
+                float[] rgExpected = x_grad.Item2;
+                float[] rgActual = convertF(m_blob_bottom.mutable_cpu_diff);
+
+                for (int i = 0; i < rgExpected.Length; i++)
+                {
+                    float fExpected = rgExpected[i];
+                    float fActual = rgActual[i];
+                    float fErr = 1e-7f;
+
+                    m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, fErr, "The values are not as expected!");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }
