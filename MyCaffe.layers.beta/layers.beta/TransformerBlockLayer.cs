@@ -9,9 +9,6 @@ using MyCaffe.fillers;
 using MyCaffe.layers.beta;
 using System.Diagnostics;
 
-///
-/// WORK IN PROGRESS
-///
 namespace MyCaffe.layers
 {
     /// <summary>
