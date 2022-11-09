@@ -2926,6 +2926,9 @@ namespace MyCaffe.param
                 case LayerType.TRANSPOSE:
                     return "Transpose";
 
+                case LayerType.TRANSFORMER_BLOCK:
+                    return "TransformerBlock";
+
                 case LayerType.TRIPLET_LOSS:
                     return "TripletLoss";
 
@@ -3834,6 +3837,9 @@ namespace MyCaffe.param
 
                 case "transpose":
                     return LayerType.TRANSPOSE;
+
+                case "transformerblock":
+                    return LayerType.TRANSFORMER_BLOCK;
 
                 case "triplet_loss":
                 case "tripletloss":
