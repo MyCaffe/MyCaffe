@@ -19,11 +19,22 @@ namespace MyCaffe.param.gpt
         double m_dfAttnDropout = 0.1;
         double m_dfResidDropout = 0.1;
         int m_nBlockSize = 128;
+        int m_nLayers = 6;
 
         /** @copydoc LayerParameterBase */
         public TransformerBlockParameter()
         {
             
+        }
+
+        /// <summary>
+        /// The number of layers (transformer blocks) used.
+        /// </summary>
+        [Description("Specifies number of layers (transformer blocks) used.")]
+        public int layers
+        {
+            get { return m_nLayers; }
+            set { m_nLayers = value; }
         }
 
         /// <summary>
@@ -89,6 +100,7 @@ namespace MyCaffe.param.gpt
         {
             TransformerBlockParameter p = (TransformerBlockParameter)src;
 
+            m_nLayers = p.layers;
             m_nHeads = p.heads;
             m_nEmbed = p.embed;
             m_nBlockSize = p.block_size;
@@ -113,6 +125,7 @@ namespace MyCaffe.param.gpt
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
+            rgChildren.Add("layers", layers.ToString());
             rgChildren.Add("heads", heads.ToString());
             rgChildren.Add("embed", embed.ToString());
             rgChildren.Add("block_size", block_size.ToString());
@@ -131,6 +144,9 @@ namespace MyCaffe.param.gpt
         {
             string strVal;
             TransformerBlockParameter p = new TransformerBlockParameter();
+
+            if ((strVal = rp.FindValue("layers")) != null)
+                p.layers = int.Parse(strVal);
 
             if ((strVal = rp.FindValue("heads")) != null)
                 p.heads = int.Parse(strVal);
