@@ -2950,7 +2950,7 @@ namespace MyCaffe.param
                     return "TransformerBlock";
 
                 case LayerType.TOKENIZED_DATA:
-                    return "TransformerData";
+                    return "TokenizedData";
 
                 case LayerType.TRIPLET_LOSS:
                     return "TripletLoss";
