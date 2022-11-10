@@ -76,11 +76,16 @@ namespace MyCaffe.layers.gpt
             LayerParameter fc = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "fc");
             fc.inner_product_param.axis = 2;
             fc.inner_product_param.num_output = (uint)(p.transformer_block_param.embed * 4);
+            fc.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02);
+            fc.inner_product_param.bias_filler = new FillerParameter("constant", 0);
             m_fc = Layer<T>.Create(cuda, log, fc, evtCancel);
 
             LayerParameter proj = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "proj");
             proj.inner_product_param.axis = 2;
             proj.inner_product_param.num_output = (uint)p.transformer_block_param.embed;
+            // apply special scaled init to the residual projections, per GPT-2 paper
+            proj.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02/Math.Sqrt(2 * m_param.transformer_block_param.layers));
+            proj.inner_product_param.bias_filler = new FillerParameter("constant", 0);
             m_proj = Layer<T>.Create(cuda, log, proj, evtCancel);
 
             LayerParameter act = new LayerParameter(LayerParameter.LayerType.GELU, "act");
