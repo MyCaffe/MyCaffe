@@ -494,6 +494,10 @@ namespace MyCaffe.param
             /// </summary>
             TRANSFORMER_BLOCK,
             /// <summary>
+            /// Initializes a parameter for the TransformerDataLayer.
+            /// </summary>
+            TOKENIZED_DATA,
+            /// <summary>
             /// Initializes a parameter for the TransposeLayer.
             /// </summary>
             TRANSPOSE,
@@ -1501,6 +1505,13 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new TransformerBlockParameter();
                     break;
 
+                case LayerType.TOKENIZED_DATA:
+                    expected_top.Add("data");
+                    expected_top.Add("pos");
+                    expected_top.Add("tgt");
+                    m_rgLayerParameters[lt] = new TokenizedDataParameter();
+                    break;
+
                 case LayerType.TRANSPOSE:
                     expected_bottom.Add("input");
                     expected_top.Add("output");
@@ -2432,6 +2443,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.TOKENIZED_DATA
+        /// </summary>
+        public TokenizedDataParameter tokenized_data_param
+        {
+            get { return (TokenizedDataParameter)m_rgLayerParameters[LayerType.TOKENIZED_DATA]; }
+            set { m_rgLayerParameters[LayerType.TOKENIZED_DATA] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.TRIPLET_LOSS
         /// </summary>
         public TripletLossParameter triplet_loss_param
@@ -2929,6 +2949,9 @@ namespace MyCaffe.param
                 case LayerType.TRANSFORMER_BLOCK:
                     return "TransformerBlock";
 
+                case LayerType.TOKENIZED_DATA:
+                    return "TransformerData";
+
                 case LayerType.TRIPLET_LOSS:
                     return "TripletLoss";
 
@@ -3085,6 +3108,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(model_data_param, "model_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(text_data_param, "text_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(transformer_block_param, "transformer_block_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(tokenized_data_param, "tokenized_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(triplet_loss_param, "triplet_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(unpooling_param, "unpooling_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(transpose_param, "transpose_param"));
@@ -3412,6 +3436,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("transformer_block_param")) != null)
                 p.transformer_block_param = TransformerBlockParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("tokenized_data_param")) != null)
+                p.tokenized_data_param = TokenizedDataParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("transpose_param")) != null)
                 p.transpose_param = TransposeParameter.FromProto(rpp);
@@ -3840,6 +3867,9 @@ namespace MyCaffe.param
 
                 case "transformerblock":
                     return LayerType.TRANSFORMER_BLOCK;
+
+                case "tokenizeddata":
+                    return LayerType.TOKENIZED_DATA;
 
                 case "triplet_loss":
                 case "tripletloss":

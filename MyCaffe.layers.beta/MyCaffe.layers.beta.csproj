@@ -60,6 +60,7 @@
     <Compile Include="LayerFactory.cs" />
     <Compile Include="layers.beta\AccuracyDecodeLayer.cs" />
     <Compile Include="layers.beta\LayerNormLayer.cs" />
+    <Compile Include="layers.beta\TokenizedDataLayer.cs" />
     <Compile Include="layers.beta\TransformerBlockLayer.cs" />
     <Compile Include="layers.beta\CausalSelfAttentionLayer.cs" />
     <Compile Include="layers.beta\AttentionLayer.cs" />

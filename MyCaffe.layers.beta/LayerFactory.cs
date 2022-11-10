@@ -102,6 +102,9 @@ namespace MyCaffe.layers.beta
 
                 case LayerParameter.LayerType.TRANSFORMER_BLOCK:
                     return new TransformerBlockLayer<double>(cuda, log, p);
+                    
+                case LayerParameter.LayerType.TOKENIZED_DATA:
+                    return new TokenizedDataLayer<double>(cuda, log, p, imgDb, evtCancel);
 
                 case LayerParameter.LayerType.TRIPLET_LOSS:
                     return new TripletLossLayer<double>(cuda, log, p);
@@ -207,6 +210,9 @@ namespace MyCaffe.layers.beta
 
                 case LayerParameter.LayerType.TRANSFORMER_BLOCK:
                     return new TransformerBlockLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.TOKENIZED_DATA:
+                    return new TokenizedDataLayer<float>(cuda, log, p, imgDb, evtCancel);
 
                 case LayerParameter.LayerType.TRIPLET_LOSS:
                     return new TripletLossLayer<float>(cuda, log, p);
