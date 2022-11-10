@@ -59,7 +59,6 @@
   <ItemGroup>
     <Compile Include="LayerFactory.cs" />
     <Compile Include="layers.beta\AccuracyDecodeLayer.cs" />
-    <Compile Include="layers.beta\CausalSelfAttentionLayer.cs" />
     <Compile Include="layers.beta\AttentionLayer.cs" />
     <Compile Include="layers.beta\DecodeLayer.cs" />
     <Compile Include="layers.beta\AccuracyEncodingLayer.cs" />

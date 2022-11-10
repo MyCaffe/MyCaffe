@@ -51,6 +51,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="layers.gpt\CausalSelfAttentionLayer.cs" />
     <Compile Include="layers.gpt\GeluLayer.cs" />
     <Compile Include="LayerFactory.cs" />
     <Compile Include="layers.gpt\LayerNormLayer.cs" />

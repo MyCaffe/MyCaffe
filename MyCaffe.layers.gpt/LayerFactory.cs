@@ -30,7 +30,10 @@ namespace MyCaffe.layers.gpt
         public Layer<double> CreateDouble(CudaDnn<double> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXImageDatabaseBase imgDb)
         {
             switch (p.type)
-            {                    
+            {
+                case LayerParameter.LayerType.CAUSAL_SELF_ATTENTION:
+                    return new CausalSelfAttentionLayer<double>(cuda, log, p);
+                    
                 case LayerParameter.LayerType.GELU:
                     return new GeluLayer<double>(cuda, log, p);
 
@@ -61,6 +64,9 @@ namespace MyCaffe.layers.gpt
         {
             switch (p.type)
             {
+                case LayerParameter.LayerType.CAUSAL_SELF_ATTENTION:
+                    return new CausalSelfAttentionLayer<float>(cuda, log, p);
+                    
                 case LayerParameter.LayerType.GELU:
                     return new GeluLayer<float>(cuda, log, p);
 

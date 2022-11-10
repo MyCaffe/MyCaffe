@@ -6,10 +6,9 @@ using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
 using MyCaffe.fillers;
-using MyCaffe.layers.beta;
 using System.Diagnostics;
 
-namespace MyCaffe.layers
+namespace MyCaffe.layers.gpt
 {
     /// <summary>
     /// The CausalSelfAttention provides a vanilla multi-head self-attention layer with projection at the end.
