@@ -160,27 +160,28 @@ namespace MyCaffe.test
                 // Data
                 m_log.CHECK_EQ(TopVec[0].num, nBatchSize, "The top[0].num should equal the batch size of " + nBatchSize.ToString());
                 m_log.CHECK_EQ(TopVec[0].channels, nBlockSize, "The top[0].channels should equal the block size of " + nBlockSize.ToString());
-                m_log.CHECK_EQ(TopVec[0].height, 1, "The top[0].height should equal 1.");
-                m_log.CHECK_EQ(TopVec[0].width, 1, "The top[0].width should equal 1.");
+//                m_log.CHECK_EQ(TopVec[0].height, 1, "The top[0].height should equal 1.");
 
                 // Pos
-                m_log.CHECK_EQ(TopVec[1].num, 1, "The top[1].height should equal 1.");
+                m_log.CHECK_EQ(TopVec[1].num, nBatchSize, "The top[1].height should equal the batch size of " + nBlockSize.ToString());
                 m_log.CHECK_EQ(TopVec[1].channels, nBlockSize, "The top[1].channels should equal the block size of " + nBlockSize.ToString());
-                m_log.CHECK_EQ(TopVec[1].height, 1, "The top[1].height should equal 1.");
-                m_log.CHECK_EQ(TopVec[1].width, 1, "The top[1].width should equal 1.");
+//                m_log.CHECK_EQ(TopVec[1].height, 1, "The top[1].height should equal 1.");
 
                 // Target
                 m_log.CHECK_EQ(TopVec[2].num, nBatchSize, "The top[2].num should equal the batch size of " + nBatchSize.ToString());
                 m_log.CHECK_EQ(TopVec[2].channels, nBlockSize, "The top[2].channels should equal the block size of " + nBlockSize.ToString());
-                m_log.CHECK_EQ(TopVec[2].height, 1, "The top[2].height should equal 1.");
-                m_log.CHECK_EQ(TopVec[2].width, 1, "The top[2].width should equal 1.");
+//                m_log.CHECK_EQ(TopVec[2].height, 1, "The top[2].height should equal 1.");
 
                 layer.Forward(BottomVec, TopVec);
 
                 float[] rgPos = convertF(TopVec[1].mutable_cpu_data);
-                for (int i = 0; i < nBlockSize; i++)
+                for (int n = 0; n < nBatchSize; n++)
                 {
-                    m_log.CHECK_EQ((int)rgPos[i], i, "The position at index " + i.ToString() + " should equal " + i.ToString() + ".");
+                    for (int i = 0; i < nBlockSize; i++)
+                    {
+                        int nIdx = n * nBlockSize;
+                        m_log.CHECK_EQ((int)rgPos[nIdx + i], i, "The position at batch " + n.ToString() + ", index " + i.ToString() + " should equal " + i.ToString() + ".");
+                    }
                 }
 
                 float[] rgData = convertF(TopVec[0].mutable_cpu_data);
