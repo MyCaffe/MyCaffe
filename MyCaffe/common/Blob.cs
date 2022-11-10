@@ -45,6 +45,7 @@ namespace MyCaffe.common
         bool m_bReshapeWhenSharing = false;
         bool m_bSnapshotRequested = false;
         bool m_bPadded = false;
+        Dictionary<string, double> m_rgParam = new Dictionary<string, double>();
 
         /// <summary>
         /// Defines the maximum number of Axes supported by the Blob.
@@ -189,6 +190,32 @@ namespace MyCaffe.common
 
             if (m_diff != null)
                 m_diff.set_gpu_data(blob.gpu_diff, lCount, lOffset);
+        }
+
+        /// <summary>
+        /// Get a blob parameter.
+        /// </summary>
+        /// <param name="strName">Specifies the name of the blob parameter.</param>
+        /// <returns>If the parameter exists it is returned, otherwise null is returned.</returns>
+        public double? GetParameter(string strName)
+        {
+            if (m_rgParam.ContainsKey(strName))
+                return m_rgParam[strName];
+
+            return null;
+        }
+        
+        /// <summary>
+        /// Set a blob parameter.
+        /// </summary>
+        /// <param name="strName">Specifies the name of the blob parameter.</param>
+        /// <param name="dfVal">Specifies the value of the blob parameter.</param>
+        public void SetParameter(string strName, double dfVal)
+        {
+            if (!m_rgParam.ContainsKey(strName))
+                m_rgParam.Add(strName, dfVal);
+            else
+                m_rgParam[strName] = dfVal;
         }
 
         /// <summary>
