@@ -8,8 +8,9 @@ using MyCaffe.param;
 using MyCaffe.fillers;
 using System.IO;
 using MyCaffe.db.image;
+using MyCaffe.param.gpt;
 
-namespace MyCaffe.layers.beta
+namespace MyCaffe.layers.gpt
 {
     /// <summary>
     /// The TokenizedDataLayer loads and tokenizes data for a transformer model where data is loaded in the form: data, pos, target(optional)

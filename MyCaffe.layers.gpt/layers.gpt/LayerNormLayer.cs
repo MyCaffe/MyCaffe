@@ -6,7 +6,7 @@ using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
 
-namespace MyCaffe.layers.beta
+namespace MyCaffe.layers.gpt
 {
     /// <summary>
     /// The LayerNormalizationLayer performs layer normalization similar to the PyTorch LayerNorm layer.

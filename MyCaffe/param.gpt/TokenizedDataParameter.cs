@@ -5,7 +5,7 @@ using System.Text;
 using System.ComponentModel;
 using MyCaffe.basecode;
 
-namespace MyCaffe.param
+namespace MyCaffe.param.gpt
 {
     /// <summary>
     /// Specifies the parameters for the TokenizedDataLayer.

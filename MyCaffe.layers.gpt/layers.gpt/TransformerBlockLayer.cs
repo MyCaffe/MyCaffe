@@ -6,10 +6,9 @@ using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
 using MyCaffe.fillers;
-using MyCaffe.layers.beta;
 using System.Diagnostics;
 
-namespace MyCaffe.layers
+namespace MyCaffe.layers.gpt
 {
     /// <summary>
     /// The TransformerBlock provides a generic transformer block

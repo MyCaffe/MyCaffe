@@ -12,6 +12,8 @@ using MyCaffe.db.image;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.data;
 using MyCaffe.layers.beta;
+using MyCaffe.layers.gpt;
+using MyCaffe.param.gpt;
 
 /// <summary>
 /// Testing the tokenized data layer.

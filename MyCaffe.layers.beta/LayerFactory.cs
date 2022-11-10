@@ -9,7 +9,7 @@ using MyCaffe.db.image;
 using MyCaffe.param;
 
 /// <summary>
-/// The MyCaffe.layers.ssd namespace contains all SSD related layers.
+/// The MyCaffe.layers.beta namespace contains all beta stage layers.
 /// </summary>
 namespace MyCaffe.layers.beta
 {
@@ -58,9 +58,6 @@ namespace MyCaffe.layers.beta
                 case LayerParameter.LayerType.GATHER:
                     return new GatherLayer<double>(cuda, log, p);
                     
-                case LayerParameter.LayerType.GELU:
-                    return new GeluLayer<double>(cuda, log, p);
-
                 case LayerParameter.LayerType.GRN:
                     return new GRNLayer<double>(cuda, log, p);
 
@@ -69,9 +66,6 @@ namespace MyCaffe.layers.beta
 
                 case LayerParameter.LayerType.KNN:
                     return new KnnLayer<double>(cuda, log, p);
-
-                case LayerParameter.LayerType.LAYERNORM:
-                    return new LayerNormLayer<double>(cuda, log, p);
 
                 case LayerParameter.LayerType.LSTM_ATTENTION:
                     return new LSTMAttentionLayer<double>(cuda, log, p);
@@ -99,12 +93,6 @@ namespace MyCaffe.layers.beta
 
                 case LayerParameter.LayerType.TRANSPOSE:
                     return new TransposeLayer<double>(cuda, log, p);
-
-                case LayerParameter.LayerType.TRANSFORMER_BLOCK:
-                    return new TransformerBlockLayer<double>(cuda, log, p);
-                    
-                case LayerParameter.LayerType.TOKENIZED_DATA:
-                    return new TokenizedDataLayer<double>(cuda, log, p, imgDb, evtCancel);
 
                 case LayerParameter.LayerType.TRIPLET_LOSS:
                     return new TripletLossLayer<double>(cuda, log, p);
@@ -166,9 +154,6 @@ namespace MyCaffe.layers.beta
                 case LayerParameter.LayerType.GATHER:
                     return new GatherLayer<float>(cuda, log, p);
 
-                case LayerParameter.LayerType.GELU:
-                    return new GeluLayer<float>(cuda, log, p);
-
                 case LayerParameter.LayerType.GRN:
                     return new GRNLayer<float>(cuda, log, p);
 
@@ -177,9 +162,6 @@ namespace MyCaffe.layers.beta
 
                 case LayerParameter.LayerType.KNN:
                     return new KnnLayer<float>(cuda, log, p);
-
-                case LayerParameter.LayerType.LAYERNORM:
-                    return new LayerNormLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.LSTM_ATTENTION:
                     return new LSTMAttentionLayer<float>(cuda, log, p);
@@ -207,12 +189,6 @@ namespace MyCaffe.layers.beta
 
                 case LayerParameter.LayerType.TRANSPOSE:
                     return new TransposeLayer<float>(cuda, log, p);
-
-                case LayerParameter.LayerType.TRANSFORMER_BLOCK:
-                    return new TransformerBlockLayer<float>(cuda, log, p);
-
-                case LayerParameter.LayerType.TOKENIZED_DATA:
-                    return new TokenizedDataLayer<float>(cuda, log, p, imgDb, evtCancel);
 
                 case LayerParameter.LayerType.TRIPLET_LOSS:
                     return new TripletLossLayer<float>(cuda, log, p);

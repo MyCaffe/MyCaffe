@@ -8,6 +8,7 @@ using MyCaffe.common;
 using MyCaffe.param.nt;
 using MyCaffe.param.ssd;
 using MyCaffe.param.beta;
+using MyCaffe.param.gpt;
 
 namespace MyCaffe.param
 {

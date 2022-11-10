@@ -6,7 +6,7 @@ using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
 
-namespace MyCaffe.layers.beta
+namespace MyCaffe.layers.gpt
 {
     /// <summary>
     /// The GeluLayer implements the New GELU activation function currently in Google BERT repo (same as OpenAI GPT)

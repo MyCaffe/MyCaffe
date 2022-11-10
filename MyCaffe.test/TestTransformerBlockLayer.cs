@@ -10,6 +10,7 @@ using MyCaffe.fillers;
 using MyCaffe.layers;
 using System.Diagnostics;
 using System.IO;
+using MyCaffe.param.gpt;
 
 ///
 /// WORK IN PROGRESS
