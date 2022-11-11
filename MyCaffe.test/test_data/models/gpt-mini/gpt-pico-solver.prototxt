@@ -1,9 +1,9 @@
-test_iter: 1
-test_interval: 10
+test_iter: 100
+test_interval: 500
 test_compute_loss: False
 test_initialization: True
 base_lr: 0.0005
-display: 10
+display: 100
 average_loss: 1
 max_iter: 10000
 lr_policy: fixed
@@ -17,7 +17,7 @@ enable_clip_gradient_status: False
 snapshot: 500
 snapshot_prefix: basic
 snapshot_format: BINARYPROTO
-device_id: 0
+device_id: 1
 type: ADAM
 delta: 1E-08
 momentum2: 0.95

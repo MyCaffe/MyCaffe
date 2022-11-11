@@ -9,9 +9,9 @@ layer
    tokenized_data_param 
    {
       input_type: TEXT_FILE
-      source: "C:\ProgramData\MyCaffe\test_data\data\text\input.txt"
-      batch_size: 64
-      block_size: 128
+      source: "C:\ProgramData\MyCaffe\test_data\data\text\test_input.txt"
+      batch_size: 1
+      block_size: 4
    }
 }
 layer 
@@ -27,8 +27,8 @@ layer
    }
    embed_param 
    {
-      num_output: 192
-      input_dim: 65
+      num_output: 3
+      input_dim: 5
       bias_term: False
       weight_filler 
       {
@@ -51,8 +51,8 @@ layer
    }
    embed_param 
    {
-      num_output: 192
-      input_dim: 128
+      num_output: 3
+      input_dim: 4
       bias_term: False
       weight_filler 
       {
@@ -76,116 +76,25 @@ layer
 }
 layer 
 {
-   name: "dropout1"
-   type: "Dropout"
-   bottom: "eltwise1"
-   top: "eltwise1"
-   dropout_param 
-   {
-      dropout_ratio: 0.1
-   }
-}
-layer 
-{
    name: "tfb1"
    type: "TransformerBlock"
    bottom: "eltwise1"
    top: "tfb1"
    transformer_block_param 
    {
-      layers: 6
-      heads: 6
-      embed: 192
-      block_size: 128
-      attn_dropout: 0.1
-      resid_dropout: 0.1
-   }
-}
-layer 
-{
-   name: "tfb2"
-   type: "TransformerBlock"
-   bottom: "tfb1"
-   top: "tfb2"
-   transformer_block_param 
-   {
-      layers: 6
-      heads: 6
-      embed: 192
-      block_size: 128
-      attn_dropout: 0.1
-      resid_dropout: 0.1
-   }
-}
-layer 
-{
-   name: "tfb3"
-   type: "TransformerBlock"
-   bottom: "tfb2"
-   top: "tfb3"
-   transformer_block_param 
-   {
-      layers: 6
-      heads: 6
-      embed: 192
-      block_size: 128
-      attn_dropout: 0.1
-      resid_dropout: 0.1
-   }
-}
-layer 
-{
-   name: "tfb4"
-   type: "TransformerBlock"
-   bottom: "tfb3"
-   top: "tfb4"
-   transformer_block_param 
-   {
-      layers: 6
-      heads: 6
-      embed: 192
-      block_size: 128
-      attn_dropout: 0.1
-      resid_dropout: 0.1
-   }
-}
-layer 
-{
-   name: "tfb5"
-   type: "TransformerBlock"
-   bottom: "tfb4"
-   top: "tfb5"
-   transformer_block_param 
-   {
-      layers: 6
-      heads: 6
-      embed: 192
-      block_size: 128
-      attn_dropout: 0.1
-      resid_dropout: 0.1
-   }
-}
-layer 
-{
-   name: "tfb6"
-   type: "TransformerBlock"
-   bottom: "tfb5"
-   top: "tfb6"
-   transformer_block_param 
-   {
-      layers: 6
-      heads: 6
-      embed: 192
-      block_size: 128
-      attn_dropout: 0.1
-      resid_dropout: 0.1
+      layers: 1
+      heads: 1
+      embed: 3
+      block_size: 4
+      attn_dropout: 0
+      resid_dropout: 0
    }
 }
 layer 
 {
    name: "ln1"
    type: "LayerNorm"
-   bottom: "tfb6"
+   bottom: "tfb1"
    top: "ln1"
 }
 layer 
@@ -197,11 +106,11 @@ layer
    param 
    {
       lr_mult: 1
-      decay_mult: 1
+      decay_mult: 2
    }
    inner_product_param 
    {
-      num_output: 65
+      num_output: 5
       bias_term: False
       weight_filler 
       {
