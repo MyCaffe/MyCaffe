@@ -3196,6 +3196,28 @@ template long Device<float>::cuda_channel_copy(long lInput, float* pfInput, long
 
 
 template <class T>
+long Device<T>::cuda_channel_copyall(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	int nOutNum = (int)pfInput[1];
+	int nChannels = (int)pfInput[2];
+	int nInNum = (int)pfInput[3];
+	long hX = (long)pfInput[4];
+	long hY = (long)pfInput[5];
+
+	return m_math.channel_copyall(n, nOutNum, nChannels, nInNum, hX, hY);
+}
+
+template long Device<double>::cuda_channel_copyall(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_channel_copyall(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::cuda_im2col(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;

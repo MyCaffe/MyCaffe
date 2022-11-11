@@ -755,6 +755,7 @@ namespace MyCaffe.common
         void channel_mulv(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hA, long hX, long hC);
         void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bSumAcrossChannels = true);
         void channel_copy(int nCount, int nOuterNum, int nChannels, int nBlocks, int nInnerNum, int nOffset, long hX, long hY, DIR dir);
+        void channel_copyall(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
 
         void gemm(bool bTransA, bool bTransB, int m, int n, int k, double fAlpha, long hA, long hB, double fBeta, long hC);
         void gemm(bool bTransA, bool bTransB, int m, int n, int k, float fAlpha, long hA, long hB, float fBeta, long hC);
@@ -1128,6 +1129,7 @@ namespace MyCaffe.common
             CUDA_CHANNEL_MULV = 299,
             CUDA_CHANNEL_COPY = 300,
             CUDA_CHANNEL_FILLFROM = 301,
+            CUDA_CHANNEL_COPYALL = 302,
 
             CUDA_RNG_SETSEED = 349,
             CUDA_RNG_UNIFORM = 350,
@@ -1246,7 +1248,7 @@ namespace MyCaffe.common
             CUDA_ADADELTA_UPDATE = 503,
             CUDA_ADAM_UPDATE = 504,
             CUDA_RMSPROP_UPDATE = 505,
-            
+
             CUDA_COMBINE_DATA = 550,
 
             CUDA_GELU_FWD = 600,
@@ -1680,12 +1682,12 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.KERNEL_COPY_NCCL, m_param.AsDouble( hSrcKernel, hSrcNccl));
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.KERNEL_COPY_NCCL, m_param.AsDouble(hSrcKernel, hSrcNccl));
                 return (long)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.KERNEL_COPY_NCCL, m_param.AsFloat( hSrcKernel, hSrcNccl));
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.KERNEL_COPY_NCCL, m_param.AsFloat(hSrcKernel, hSrcNccl));
                 return (long)rg[0];
             }
         }
@@ -1751,9 +1753,9 @@ namespace MyCaffe.common
         public void CombineData(int nCount, long hOriginal, long hUpdated, double dfUpdatedPct, long hServer, double dfServerPct, long hNewData) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COMBINE_DATA, m_param.AsDouble( nCount, hOriginal, hUpdated, dfUpdatedPct, hServer, dfServerPct, hNewData));
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COMBINE_DATA, m_param.AsDouble(nCount, hOriginal, hUpdated, dfUpdatedPct, hServer, dfServerPct, hNewData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COMBINE_DATA, m_param.AsFloat( nCount, hOriginal, hUpdated, (float)dfUpdatedPct, hServer, (float)dfServerPct, hNewData));
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COMBINE_DATA, m_param.AsFloat(nCount, hOriginal, hUpdated, (float)dfUpdatedPct, hServer, (float)dfServerPct, hNewData));
         }
 
 #pragma warning restore 1591
@@ -4030,8 +4032,8 @@ namespace MyCaffe.common
             if (m_dt == DataType.DOUBLE)
             {
                 double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_DROPOUT_INFO, m_param.AsDouble(hCuDnn, hBottomDesc));
-                ulStateCount = (ulong)Math.Round(rg[0]/sizeof(double), 0, MidpointRounding.AwayFromZero);
-                ulReservedCount = (ulong)Math.Round(rg[1]/sizeof(double), 0, MidpointRounding.AwayFromZero);  
+                ulStateCount = (ulong)Math.Round(rg[0] / sizeof(double), 0, MidpointRounding.AwayFromZero);
+                ulReservedCount = (ulong)Math.Round(rg[1] / sizeof(double), 0, MidpointRounding.AwayFromZero);
             }
             else
             {
@@ -5090,37 +5092,62 @@ namespace MyCaffe.common
             {
                 List<double> rgArg = new List<double>();
 
-                /* 0 */ rgArg.Add(nGpuID);
-                /* 1 */ rgArg.Add(nNumClasses);
-                /* 2 */ rgArg.Add((bShareLocation) ? 1 : 0);
-                /* 3 */ rgArg.Add(nLocClasses);
-                /* 4 */ rgArg.Add(nBackgroundLabelId);
-                /* 5 */ rgArg.Add((bUseDiffcultGt) ? 1 : 0);
-                /* 6 */ rgArg.Add((int)miningType);
-                /* 7 */ rgArg.Add((int)matchType);
-                /* 8 */ rgArg.Add(fOverlapThreshold);
-                /* 9 */ rgArg.Add((bUsePriorForMatching) ? 1 : 0);
-                /* 10 */ rgArg.Add((int)codeType);
-                /* 11 */ rgArg.Add((bEncodeVariantInTgt) ? 1 : 0);
-                /* 12 */ rgArg.Add((bBpInside) ? 1 : 0);
-                /* 13 */ rgArg.Add((bIgnoreCrossBoundaryBbox) ? 1 : 0);
-                /* 14 */ rgArg.Add((bUsePriorForNms) ? 1 : 0);
-                /* 15 */ rgArg.Add((int)confLossType);
-                /* 16 */ rgArg.Add((int)locLossType);
-                /* 17 */ rgArg.Add(fNegPosRatio);
-                /* 18 */ rgArg.Add(fNegOverlap);
-                /* 19 */ rgArg.Add(nSampleSize);
-                /* 20 */ rgArg.Add((bMapObjectToAgnostic) ? 1 : 0);
-                /* 21 */ rgArg.Add((bNmsParam) ? 1 : 0);
+                /* 0 */
+                rgArg.Add(nGpuID);
+                /* 1 */
+                rgArg.Add(nNumClasses);
+                /* 2 */
+                rgArg.Add((bShareLocation) ? 1 : 0);
+                /* 3 */
+                rgArg.Add(nLocClasses);
+                /* 4 */
+                rgArg.Add(nBackgroundLabelId);
+                /* 5 */
+                rgArg.Add((bUseDiffcultGt) ? 1 : 0);
+                /* 6 */
+                rgArg.Add((int)miningType);
+                /* 7 */
+                rgArg.Add((int)matchType);
+                /* 8 */
+                rgArg.Add(fOverlapThreshold);
+                /* 9 */
+                rgArg.Add((bUsePriorForMatching) ? 1 : 0);
+                /* 10 */
+                rgArg.Add((int)codeType);
+                /* 11 */
+                rgArg.Add((bEncodeVariantInTgt) ? 1 : 0);
+                /* 12 */
+                rgArg.Add((bBpInside) ? 1 : 0);
+                /* 13 */
+                rgArg.Add((bIgnoreCrossBoundaryBbox) ? 1 : 0);
+                /* 14 */
+                rgArg.Add((bUsePriorForNms) ? 1 : 0);
+                /* 15 */
+                rgArg.Add((int)confLossType);
+                /* 16 */
+                rgArg.Add((int)locLossType);
+                /* 17 */
+                rgArg.Add(fNegPosRatio);
+                /* 18 */
+                rgArg.Add(fNegOverlap);
+                /* 19 */
+                rgArg.Add(nSampleSize);
+                /* 20 */
+                rgArg.Add((bMapObjectToAgnostic) ? 1 : 0);
+                /* 21 */
+                rgArg.Add((bNmsParam) ? 1 : 0);
 
                 if (bNmsParam)
                 {
                     if (!fNmsThreshold.HasValue)
                         throw new Exception("An NMS threshold must be specified when the 'bNmsParam' is true.");
 
-                    /* 22 */ rgArg.Add(fNmsThreshold.GetValueOrDefault(0));
-                    /* 23 */ rgArg.Add(nNmsTopK.GetValueOrDefault(-1));
-                    /* 24 */ rgArg.Add(fNmsEta.GetValueOrDefault(1));
+                    /* 22 */
+                    rgArg.Add(fNmsThreshold.GetValueOrDefault(0));
+                    /* 23 */
+                    rgArg.Add(nNmsTopK.GetValueOrDefault(-1));
+                    /* 24 */
+                    rgArg.Add(fNmsEta.GetValueOrDefault(1));
                 }
 
                 double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_SSD, rgArg.ToArray());
@@ -5130,37 +5157,62 @@ namespace MyCaffe.common
             {
                 List<float> rgArg = new List<float>();
 
-                /* 0 */ rgArg.Add(nGpuID);
-                /* 1 */ rgArg.Add(nNumClasses);
-                /* 2 */ rgArg.Add((bShareLocation) ? 1 : 0);
-                /* 3 */ rgArg.Add(nLocClasses);
-                /* 4 */ rgArg.Add(nBackgroundLabelId);
-                /* 5 */ rgArg.Add((bUseDiffcultGt) ? 1 : 0);
-                /* 6 */ rgArg.Add((int)miningType);
-                /* 7 */ rgArg.Add((int)matchType);
-                /* 8 */ rgArg.Add(fOverlapThreshold);
-                /* 9 */ rgArg.Add((bUsePriorForMatching) ? 1 : 0);
-                /* 10 */ rgArg.Add((int)codeType);
-                /* 11 */ rgArg.Add((bEncodeVariantInTgt) ? 1 : 0);
-                /* 12 */ rgArg.Add((bBpInside) ? 1 : 0);
-                /* 13 */ rgArg.Add((bIgnoreCrossBoundaryBbox) ? 1 : 0);
-                /* 14 */ rgArg.Add((bUsePriorForNms) ? 1 : 0);
-                /* 15 */ rgArg.Add((int)confLossType);
-                /* 16 */ rgArg.Add((int)locLossType);
-                /* 17 */ rgArg.Add(fNegPosRatio);
-                /* 18 */ rgArg.Add(fNegOverlap);
-                /* 19 */ rgArg.Add(nSampleSize);
-                /* 20 */ rgArg.Add((bMapObjectToAgnostic) ? 1 : 0);
-                /* 21 */ rgArg.Add((bNmsParam) ? 1 : 0);
+                /* 0 */
+                rgArg.Add(nGpuID);
+                /* 1 */
+                rgArg.Add(nNumClasses);
+                /* 2 */
+                rgArg.Add((bShareLocation) ? 1 : 0);
+                /* 3 */
+                rgArg.Add(nLocClasses);
+                /* 4 */
+                rgArg.Add(nBackgroundLabelId);
+                /* 5 */
+                rgArg.Add((bUseDiffcultGt) ? 1 : 0);
+                /* 6 */
+                rgArg.Add((int)miningType);
+                /* 7 */
+                rgArg.Add((int)matchType);
+                /* 8 */
+                rgArg.Add(fOverlapThreshold);
+                /* 9 */
+                rgArg.Add((bUsePriorForMatching) ? 1 : 0);
+                /* 10 */
+                rgArg.Add((int)codeType);
+                /* 11 */
+                rgArg.Add((bEncodeVariantInTgt) ? 1 : 0);
+                /* 12 */
+                rgArg.Add((bBpInside) ? 1 : 0);
+                /* 13 */
+                rgArg.Add((bIgnoreCrossBoundaryBbox) ? 1 : 0);
+                /* 14 */
+                rgArg.Add((bUsePriorForNms) ? 1 : 0);
+                /* 15 */
+                rgArg.Add((int)confLossType);
+                /* 16 */
+                rgArg.Add((int)locLossType);
+                /* 17 */
+                rgArg.Add(fNegPosRatio);
+                /* 18 */
+                rgArg.Add(fNegOverlap);
+                /* 19 */
+                rgArg.Add(nSampleSize);
+                /* 20 */
+                rgArg.Add((bMapObjectToAgnostic) ? 1 : 0);
+                /* 21 */
+                rgArg.Add((bNmsParam) ? 1 : 0);
 
                 if (bNmsParam)
                 {
                     if (!fNmsThreshold.HasValue)
                         throw new Exception("An NMS threshold must be specified when the 'bNmsParam' is true.");
 
-                    /* 22 */ rgArg.Add(fNmsThreshold.GetValueOrDefault(0));
-                    /* 23 */ rgArg.Add(nNmsTopK.GetValueOrDefault(-1));
-                    /* 24 */ rgArg.Add(fNmsEta.GetValueOrDefault(1));
+                    /* 22 */
+                    rgArg.Add(fNmsThreshold.GetValueOrDefault(0));
+                    /* 23 */
+                    rgArg.Add(nNmsTopK.GetValueOrDefault(-1));
+                    /* 24 */
+                    rgArg.Add(fNmsEta.GetValueOrDefault(1));
                 }
 
                 float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_SSD, rgArg.ToArray());
@@ -6460,7 +6512,7 @@ namespace MyCaffe.common
                 return convert(rg)[0];
             }
         }
-        
+
         /// <summary>
         /// Mask the mask the data in the source with the mask by replacing all values 'fSearch' found in the mask with 'fReplace' in the destination.
         /// </summary>
@@ -7205,7 +7257,7 @@ namespace MyCaffe.common
         /// <param name="hMax">Specifies a handle to the max values in GPU memory.</param>
         /// <param name="dfAlpha">Specifies the alpha value.</param>
         /// <param name="hWidth">Specifies the GPU memory where the width values are placed.</param>
-        public void width(int n, long hMean, long hMin, long hMax, double dfAlpha, long hWidth) 
+        public void width(int n, long hMean, long hMin, long hMax, double dfAlpha, long hWidth)
         {
             if (m_dt == DataType.DOUBLE)
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_WIDTH, m_param.AsDouble(n, hMean, hMin, hMax, dfAlpha, hWidth));
@@ -7223,7 +7275,7 @@ namespace MyCaffe.common
         /// <param name="hWork">Specifies a handle to the work data in GPU memory.</param>
         /// <param name="nXOff">Optionally, specifies an offset into the X vector (default = 0).</param>
         /// <returns>If the X values are within the bounds, <i>true</i> is returned, otherwise <i>false</i>.</returns>
-        public bool contains_point(int n, long hMean, long hWidth, long hX, long hWork, int nXOff = 0) 
+        public bool contains_point(int n, long hMean, long hWidth, long hX, long hWork, int nXOff = 0)
         {
             if (m_dt == DataType.DOUBLE)
             {
@@ -7591,6 +7643,23 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_COPY, m_param.AsDouble(nCount, nOuterNum, nChannels, nBlocks, nInnerNum, nOffset, hX, hY, (int)dir));
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_COPY, m_param.AsFloat(nCount, nOuterNum, nChannels, nBlocks, nInnerNum, nOffset, hX, hY, (int)dir));
+        }
+
+        /// <summary>
+        /// Copy all data from X (shape 1,c,sd) to each num in Y (shape n,c,sd).
+        /// </summary>
+        /// <param name="nCount">Specifies the full count of Y.</param>
+        /// <param name="nOuterNum">Specifies the outer num of Y.</param>
+        /// <param name="nChannels">Specifies the channels in X and Y.</param>
+        /// <param name="nInnerNum">Specifies the spatial dimension of X and Y.</param>
+        /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
+        /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
+        public void channel_copyall(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_COPYALL, m_param.AsDouble(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_COPYALL, m_param.AsFloat(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
         }
 
 

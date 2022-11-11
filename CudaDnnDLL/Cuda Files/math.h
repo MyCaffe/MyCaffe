@@ -234,6 +234,7 @@ class Math
 		long channel_fill(int n, int nOutNum, int nChannels, int nInNum, long hX, int nLabelDim, long hLabels, long hY);
 		long channel_fillfrom(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nDir);
 		long channel_copy(int n, int nOutNum, int nChannels, int nBlocks, int nInNum, int nOffset, long hX, long hY, int nDir);
+		long channel_copyall(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 
 		long im2col(long hDataIm, int nDataImOffset, int nChannels, int nHeight, int nWidth, int nKernelH, int nKernelW, int nPadH, int nPadW, int nStrideH, int nStrideW, int nDilationH, int nDilationW, long hDataCol, int nDataColOffset);
 		long col2im(long hDataCol, int nDataColOffset, int nChannels, int nHeight, int nWidth, int nKernelH, int nKernelW, int nPadH, int nPadW, int nStrideH, int nStrideW, int nDilationH, int nDilationW, long hDataIm, int nDataImOffset);
