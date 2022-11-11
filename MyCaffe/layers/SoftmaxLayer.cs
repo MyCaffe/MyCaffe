@@ -95,11 +95,19 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Returns the exact number of required bottom (input) Blobs: input.
+        /// Returns the minimum number of bottom blobs (input) Blobs: input.
         /// </summary>
-        public override int ExactNumBottomBlobs
+        public override int MinBottomBlobs
         {
             get { return 1; }
+        }
+
+        /// <summary>
+        /// Returns the maximum number of bottom blobs (input) Blobs: input, target (ignored)
+        /// </summary>
+        public override int MaxBottomBlobs
+        {
+            get { return 2; }
         }
 
         /// <summary>
