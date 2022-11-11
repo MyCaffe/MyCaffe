@@ -240,6 +240,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestTrainingGptPicoBatch3()
+        {
+            TransformerBlockLayerTest test = new TransformerBlockLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ITransformerBlockLayerTest t in test.Tests)
+                {
+                    t.TestTrainingGptPico(true, 3);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface ITransformerBlockLayerTest : ITest
@@ -321,9 +339,15 @@ namespace MyCaffe.test
             base.dispose();
         }
 
-        public Tuple<List<int>, float[]> Fill(string strGpt, string strName, Log log)
+        public Tuple<List<int>, float[]> Fill(string strGpt, string strName, Log log, string strPass = "")
         {
-            string strFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\" + strGpt + "\\" + strName + ".txt";
+            string strFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\" + strGpt + "\\";
+
+            if (!string.IsNullOrEmpty(strPass))
+                strFile += strPass + "\\";
+
+            strFile += strName + ".txt";
+
             string[] rgstrLines = File.ReadAllLines(strFile);
             string strSize = rgstrLines[0].Trim('#', ' ', '(', ')', ',');
             string[] rgstrSize = strSize.Split(',');
@@ -753,10 +777,10 @@ namespace MyCaffe.test
                 strModel += "B";
 
             m_log.EnableTrace = true;
-            m_log.WriteHeader("GPT-Mini - Test Train");
+            m_log.WriteHeader("GPT-Pico - Test Train");
 
             MyCaffeControl<T> ctrl = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, null, m_rgGpu, m_cuda.Path);
-            ProjectEx project = getGptProject("gpt-pico", 1);
+            ProjectEx project = getGptProject(strModel, 1);
 
             ctrl.Load(Phase.TRAIN, project, null, null, false, null, false, false);
 
@@ -772,6 +796,16 @@ namespace MyCaffe.test
             Tuple<List<int>, float[]> logits = Fill(strModel, "7_logits", m_log);
             Tuple<List<int>, float[]> target = Fill(strModel, "7_targets", m_log);
             Tuple<List<int>, float[]> loss = Fill(strModel, "7_loss", m_log);
+            
+            Tuple<List<int>, float[]> grad_1_loss = Fill(strModel, "grad_1_loss", m_log);
+            Tuple<List<int>, float[]> grad_2_logits = Fill(strModel, "grad_2_logits", m_log);
+            Tuple<List<int>, float[]> grad_3_x = Fill(strModel, "grad_3_x", m_log);
+            Tuple<List<int>, float[]> grad_4_x = Fill(strModel, "grad_4_x", m_log);
+            Tuple<List<int>, float[]> grad_5_x = Fill(strModel, "grad_5_x", m_log);
+            Tuple<List<int>, float[]> grad_6_pos_emb = Fill(strModel, "grad_6_pos_emb", m_log);
+            Tuple<List<int>, float[]> grad_6_tok_emb = Fill(strModel, "grad_6_tok_emb", m_log);
+            
+            // Load all weights.
 
             Tuple<List<int>, float[]> gpt_wte_weight = Fill(strModel, "gpt_wte_weight", m_log);
             net.learnable_parameters[0].mutable_cpu_data = convert(gpt_wte_weight.Item2);
@@ -806,6 +840,7 @@ namespace MyCaffe.test
             Tuple<List<int>, float[]> gpt_lm_head_weight = Fill(strModel, "gpt_lm_head_weight", m_log);
             net.learnable_parameters[10].mutable_cpu_data = convert(gpt_lm_head_weight.Item2);
 
+            // Test First Forward Pass            
             net.ForwardFromTo(0, 0); // TokenizedData
             verifyBlob(m_log, net.blobs[0], idx);
             verifyBlob(m_log, net.blobs[1], pos);
@@ -829,22 +864,127 @@ namespace MyCaffe.test
             net.ForwardFromTo(6, 6); // InnerProduct logit = lm_head(x)
             verifyBlob(m_log, net.blobs[8], logits);
 
-            net.ForwardFromTo(7);
+            net.ForwardFromTo(7); // loss = F.cross_entropy(logits, targets)
             verifyBlob(m_log, net.blobs[9], loss);
+
+            // Test Backward Pass
+            verifyBlob(m_log, net.blobs[9], grad_1_loss, true);
+
+            net.Backward(7, 7); // loss = F.cross_entropy(logits, targets)
+            verifyBlob(m_log, net.blobs[8], grad_2_logits, true); // logits diff
+
+            net.Backward(6, 6); // InnerProduct logit = lm_head(x)
+            verifyBlob(m_log, net.blobs[7], grad_3_x, true); // ln x diff
+
+            net.Backward(5, 5); // LayerNorm x = ln(x)
+            verifyBlob(m_log, net.blobs[6], grad_4_x, true); // tbf x diff
+
+            net.Backward(4, 4); // TransformerBlock x = block(x)
+            verifyBlob(m_log, net.blobs[5], grad_5_x, true); // x diff
+
+            net.Backward(3, 3); // x = tok_emb + pos_emb
+            verifyBlob(m_log, net.blobs[4], grad_6_pos_emb, true); // tbf x diff
+            verifyBlob(m_log, net.blobs[3], grad_6_tok_emb, true); // tbf x diff
+
+            net.Backward(2, 2);
+            net.Backward(1, 1);
+            
+            // Apply Gradients
+            Solver<T> solver = ctrl.GetInternalSolver();
+            solver.ApplyUpdate();
+
+
+            // Load second pass test data.
+            Tuple<List<int>, float[]> idx_2 = Fill(strModel, "1_idx", m_log, "pass_2");
+            Tuple<List<int>, float[]> pos_2 = Fill(strModel, "1_pos", m_log, "pass_2");
+            Tuple<List<int>, float[]> tok_emb_2 = Fill(strModel, "2_tok_emb", m_log, "pass_2");
+            Tuple<List<int>, float[]> pos_emb_2 = Fill(strModel, "3_pos_emb", m_log, "pass_2");
+            Tuple<List<int>, float[]> x4_2 = Fill(strModel, "4_x", m_log, "pass_2");
+            Tuple<List<int>, float[]> x5_2 = Fill(strModel, "5_x", m_log, "pass_2");
+            Tuple<List<int>, float[]> x6_2 = Fill(strModel, "6_x", m_log, "pass_2");
+            Tuple<List<int>, float[]> logits_2 = Fill(strModel, "7_logits", m_log, "pass_2");
+            Tuple<List<int>, float[]> target_2 = Fill(strModel, "7_targets", m_log, "pass_2");
+            Tuple<List<int>, float[]> loss_2 = Fill(strModel, "7_loss", m_log, "pass_2");
+
+            // Verify gradient application
+            Tuple<List<int>, float[]> gpt_lm_head_weight_2 = Fill(strModel, "gpt_lm_head_weight", m_log, "pass_2");
+            verifyBlob(m_log, net.learnable_parameters[10], gpt_lm_head_weight_2);
+
+            Tuple<List<int>, float[]> projBias_2 = Fill(strModel, "proj_bias", m_log, "pass_2");
+            verifyBlob(m_log, net.learnable_parameters[9], projBias_2);
+
+            Tuple<List<int>, float[]> projWt_2 = Fill(strModel, "proj_weight", m_log, "pass_2");
+            verifyBlob(m_log, net.learnable_parameters[8], projWt_2);
+
+            Tuple<List<int>, float[]> fcBias_2 = Fill(strModel, "fc_bias", m_log, "pass_2");
+            verifyBlob(m_log, net.learnable_parameters[7], fcBias_2);
+
+            Tuple<List<int>, float[]> fcWt_2 = Fill(strModel, "fc_weight", m_log, "pass_2");
+            verifyBlob(m_log, net.learnable_parameters[6], fcWt_2);
+
+            Tuple<List<int>, float[]> attn_proj_bias_2 = Fill(strModel, "attn_proj_bias", m_log, "pass_2");
+            verifyBlob(m_log, net.learnable_parameters[5], attn_proj_bias_2);
+
+            Tuple<List<int>, float[]> attn_proj_weight_2 = Fill(strModel, "attn_proj_weight", m_log, "pass_2");
+            verifyBlob(m_log, net.learnable_parameters[4], attn_proj_weight_2);
+
+            Tuple<List<int>, float[]> attn_bias_2 = Fill(strModel, "attn_bias", m_log, "pass_2");
+/*bug->*/ //verifyBlob(m_log, net.learnable_parameters[3], attn_bias_2);
+
+            Tuple<List<int>, float[]> attn_weight_2 = Fill(strModel, "attn_weight", m_log, "pass_2");
+            verifyBlob(m_log, net.learnable_parameters[2], attn_weight_2);
+
+            Tuple<List<int>, float[]> gpt_wpe_weight_2 = Fill(strModel, "gpt_wpe_weight", m_log, "pass_2");
+            verifyBlob(m_log, net.learnable_parameters[1], gpt_wpe_weight_2);
+
+            Tuple<List<int>, float[]> gpt_wte_weight_2 = Fill(strModel, "gpt_wte_weight", m_log, "pass_2");
+            verifyBlob(m_log, net.learnable_parameters[0], gpt_wte_weight_2);
+
+            
+            // Test Second Forward Pass to see if applied gradients match
+            net.ForwardFromTo(0, 0); // TokenizedData
+            verifyBlob(m_log, net.blobs[0], idx_2);
+            verifyBlob(m_log, net.blobs[1], pos_2);
+            verifyBlob(m_log, net.blobs[2], target_2);
+
+            net.ForwardFromTo(1, 1); // Embed wte
+            verifyBlob(m_log, net.blobs[3], tok_emb_2);
+
+            net.ForwardFromTo(2, 2); // Embed wpe
+            verifyBlob(m_log, net.blobs[4], pos_emb_2);
+
+            net.ForwardFromTo(3, 3); // EltWise x = (tok_emb + pos_emb)
+            verifyBlob(m_log, net.blobs[5], x4_2);
+
+            net.ForwardFromTo(4, 4); // TransformerBlock x = block(x)
+            verifyBlob(m_log, net.blobs[6], x5_2);
+
+            net.ForwardFromTo(5, 5); // LayerNorm x = ln(x)
+            verifyBlob(m_log, net.blobs[7], x6_2);
+
+            net.ForwardFromTo(6, 6); // InnerProduct logit = lm_head(x)
+            verifyBlob(m_log, net.blobs[8], logits_2);
+
+            net.ForwardFromTo(7); // loss = F.cross_entropy(logits, targets)
+            verifyBlob(m_log, net.blobs[9], loss_2);
 
             ctrl.Dispose();
         }
 
-        private void verifyBlob(Log log, Blob<T> blob, Tuple<List<int>, float[]> data)
+        private void verifyBlob(Log log, Blob<T> blob, Tuple<List<int>, float[]> data, bool bDiff = false)
         {
             if (blob.count() != data.Item2.Length)
                 m_log.FAIL(blob.Name + ": The blob count does not match the data count!");
 
-            float[] rgData = convertF(blob.mutable_cpu_data);
+            float[] rgData = (bDiff) ? convertF(blob.mutable_cpu_diff) : convertF(blob.mutable_cpu_data);
 
             for (int i = 0; i < rgData.Length; i++)
             {
-                if (Math.Abs(rgData[i] - data.Item2[i]) > 0.0001)
+                float fActual = rgData[i];
+                float fExpected = data.Item2[i];
+                float fDiff = fActual - fExpected;
+
+                if (Math.Abs(fDiff) > 0.0001)
                     m_log.FAIL(blob.Name + ": The data at index " + i.ToString() + " does not match!");
             }
         }
