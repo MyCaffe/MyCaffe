@@ -108,13 +108,13 @@ namespace MyCaffe.layers
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             base.Reshape(colBottom, colTop);
-            m_nOuterNum = colBottom[0].shape(0); // batch size
-            m_nInnerNum = colBottom[0].count(1); // instance size: |output| == |target|
+            int nAxis = colBottom[0].CanonicalAxisIndex(m_param.softmax_param.axis);
+            m_nOuterNum = colBottom[0].count(0, nAxis); // batch size
+            m_nInnerNum = colBottom[0].count(nAxis); // instance size: |output| == |target|
 
             if (colBottom[0].count() != colBottom[1].count())
             {
-                if (colBottom[1].count() != colBottom[0].num)
-                    m_log.FAIL("SOFTMAX_CROSS_ENTROPY_LOSS layer inputs must have the same count, or the target must have 'num' items of indexes.");
+                m_log.CHECK_EQ(colBottom[0].count(0, nAxis), colBottom[1].count(0, nAxis), "SOFTMAX_CROSS_ENTROPY_LOSS layer inputs must have the same count, or the target must have 'num' items of indexes.");
 
                 // Set the label at the target index = 1.0
                 if (m_blobTarget == null)
@@ -156,7 +156,8 @@ namespace MyCaffe.layers
             // Set the target data.
             if (m_blobTarget != null)
             {
-                m_log.CHECK_EQ(colBottom[0].num, colBottom[1].count(), "SOFTMAX_CROSS_ENTROPY_LOSS layer inputs must have the same count, or the target must have 'num' items of indexes.");
+                int nAxis = colBottom[0].CanonicalAxisIndex(m_param.softmax_param.axis);
+                m_log.CHECK_EQ(colBottom[0].count(0, nAxis), colBottom[1].count(0, nAxis), "SOFTMAX_CROSS_ENTROPY_LOSS layer inputs must have the same count, or the target must have 'num' items of indexes.");
                 m_blobTarget.SetData(0);
 
                 float[] rgfTarget = convertF(colBottom[1].mutable_cpu_data);
