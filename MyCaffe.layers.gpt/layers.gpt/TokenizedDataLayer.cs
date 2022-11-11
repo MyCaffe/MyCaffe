@@ -78,7 +78,7 @@ namespace MyCaffe.layers.gpt
         /// </summary>
         public override int MinTopBlobs
         {
-            get { return (m_phase == Phase.RUN) ? 2 : 3; }
+            get { return 2; }
         }
 
         /// <summary>
@@ -86,7 +86,7 @@ namespace MyCaffe.layers.gpt
         /// </summary>
         public override int MaxTopBlobs
         {
-            get { return (m_phase == Phase.RUN) ? 2 : 3; }
+            get { return 3; }
         }
 
         /// <summary>
@@ -96,6 +96,9 @@ namespace MyCaffe.layers.gpt
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            int nBatchSize = (int)m_param.tokenized_data_param.batch_size;
+            int nBlockSize = (int)m_param.tokenized_data_param.block_size;
+
             switch (m_param.tokenized_data_param.input_type)
             {
                 case TokenizedDataParameter.INPUT_TYPE.TEXT_FILE:
@@ -105,6 +108,22 @@ namespace MyCaffe.layers.gpt
                 default:
                     throw new Exception("Unknown input type '" + m_param.tokenized_data_param.input_type.ToString() + "'");
             }
+
+            Reshape(colBottom, colTop);
+
+            Blob<T> blobPos = colTop[1];
+            // Set the position data = 0, 1, 2, 3, ... block_size-1, for each batch
+            float[] rgPos = new float[nBatchSize * nBlockSize];
+            for (int n = 0; n < nBatchSize; n++)
+            {
+                for (int i = 0; i < nBlockSize; i++)
+                {
+                    int nIdx = n * nBlockSize;
+                    rgPos[nIdx + i] = i;
+                }
+            }
+
+            blobPos.mutable_cpu_data = convert(rgPos);
         }
 
         /// <summary>
@@ -125,15 +144,28 @@ namespace MyCaffe.layers.gpt
             if (colTop.Count > 2)   
                 blobTarget = colTop[2];
 
+            int nCount = 3;
+            if (nTokenSize == 1)
+                nCount = 2;
+            int[] rgShape = new int[nCount];
+
             if (colBottom.Count == 0)
             {
                 blobData.SetParameter("vocab_size", m_data.VocabularySize);
                 // reshape for single characters (each character is an index into the vocab vector)
-                blobData.Reshape(nBatchSize, nBlockSize, nTokenSize, 1);
-                blobPos.Reshape(1, nBlockSize, 1, 1);
+                rgShape[0] = nBatchSize;
+                rgShape[1] = nBlockSize;
+                if (rgShape.Length > 2)
+                    rgShape[2] = nTokenSize;
+
+                blobData.Reshape(rgShape);
 
                 if (blobTarget != null)
-                    blobTarget.Reshape(nBatchSize, nBlockSize, nTokenSize, 1);
+                    blobTarget.Reshape(rgShape);
+
+                if (rgShape.Length > 2)
+                    rgShape[2] = 1;
+                blobPos.Reshape(rgShape);
             }
             else
             {
@@ -147,17 +179,13 @@ namespace MyCaffe.layers.gpt
 
                 blobData.SetParameter("vocab_size", dfVocabSize.Value);
                 blobData.ReshapeLike(colBottom[0]);
-                blobPos.Reshape(1, colBottom[0].channels, 1, 1);
-            }
 
-            // Set the position data = 0, 1, 2, 3, ... block_size-1
-            float[] rgPos = new float[blobPos.channels];
-            for (int i = 0; i < nBlockSize; i++)
-            {
-                rgPos[i] = i;
-            }
+                rgShape[1] = colBottom[0].channels;
+                if (rgShape.Length > 2)
+                    rgShape[2] = 1;
 
-            blobPos.mutable_cpu_data = convert(rgPos);
+                blobPos.Reshape(rgShape);
+            }
         }
 
         /// <summary>
