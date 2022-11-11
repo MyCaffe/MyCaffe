@@ -163,7 +163,7 @@ namespace MyCaffe.test
 //                m_log.CHECK_EQ(TopVec[0].height, 1, "The top[0].height should equal 1.");
 
                 // Pos
-                m_log.CHECK_EQ(TopVec[1].num, nBatchSize, "The top[1].height should equal the batch size of " + nBlockSize.ToString());
+                m_log.CHECK_EQ(TopVec[1].num, 1, "The top[1].num should equal 1.");
                 m_log.CHECK_EQ(TopVec[1].channels, nBlockSize, "The top[1].channels should equal the block size of " + nBlockSize.ToString());
 //                m_log.CHECK_EQ(TopVec[1].height, 1, "The top[1].height should equal 1.");
 
@@ -175,15 +175,11 @@ namespace MyCaffe.test
                 layer.Forward(BottomVec, TopVec);
 
                 float[] rgPos = convertF(TopVec[1].mutable_cpu_data);
-                for (int n = 0; n < nBatchSize; n++)
+                for (int i = 0; i < nBlockSize; i++)
                 {
-                    for (int i = 0; i < nBlockSize; i++)
-                    {
-                        int nIdx = n * nBlockSize;
-                        m_log.CHECK_EQ((int)rgPos[nIdx + i], i, "The position at batch " + n.ToString() + ", index " + i.ToString() + " should equal " + i.ToString() + ".");
-                    }
+                    m_log.CHECK_EQ((int)rgPos[i], i, "The position at index " + i.ToString() + " should equal " + i.ToString() + ".");
                 }
-
+ 
                 float[] rgData = convertF(TopVec[0].mutable_cpu_data);
                 float[] rgTarget = convertF(TopVec[2].mutable_cpu_data);
 
