@@ -9,7 +9,7 @@ layer
    tokenized_data_param 
    {
       input_type: TEXT_FILE
-      source: "C:\ProgramData\MyCaffe\test_data\models\gpt-mini\input.txt"
+      source: "C:\ProgramData\MyCaffe\test_data\data\text\input.txt"
       batch_size: 1
       block_size: 128
    }
@@ -237,7 +237,7 @@ layer
          type: "constant"
          value: 0
       }
-      axis: 1
+      axis: 2
    }
 }
 layer 
