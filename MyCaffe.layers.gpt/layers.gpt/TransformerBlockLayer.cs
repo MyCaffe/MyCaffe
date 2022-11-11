@@ -71,6 +71,7 @@ namespace MyCaffe.layers.gpt
             attn.causal_self_attention_param.heads = p.transformer_block_param.heads;
             attn.causal_self_attention_param.attn_dropout = p.transformer_block_param.attn_dropout;
             attn.causal_self_attention_param.resid_dropout = p.transformer_block_param.resid_dropout;
+            attn.causal_self_attention_param.layers = p.transformer_block_param.layers;
             m_attn = Layer<T>.Create(cuda, log, attn, evtCancel);
 
             LayerParameter fc = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "fc");
