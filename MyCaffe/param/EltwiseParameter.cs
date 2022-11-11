@@ -54,6 +54,7 @@ namespace MyCaffe.param
         List<double> m_rgdfCoeff = new List<double>();
         bool m_bStableProdGrad = true;
         bool m_bCoeffBlob = false;
+        bool m_bAllowSingleBatchInput = false;
 
         /** @copydoc LayerParameterBase */
         public EltwiseParameter()
@@ -68,6 +69,16 @@ namespace MyCaffe.param
         {
             get { return m_operation; }
             set { m_operation = value; }
+        }
+
+        /// <summary>
+        /// Specifies whether to allow single batch input for the second input (default = false).
+        /// </summary>
+        [Description("Specifies whether to allow single batch input for the second input (default = false).")]
+        public bool allow_single_batch_input
+        {
+            get { return m_bAllowSingleBatchInput; }
+            set { m_bAllowSingleBatchInput = value; }
         }
 
         /// <summary>
@@ -122,6 +133,7 @@ namespace MyCaffe.param
             m_rgdfCoeff = Utility.Clone<double>(p.m_rgdfCoeff);
             m_bStableProdGrad = p.m_bStableProdGrad;
             m_bCoeffBlob = p.m_bCoeffBlob;
+            m_bAllowSingleBatchInput = p.allow_single_batch_input;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -149,6 +161,9 @@ namespace MyCaffe.param
 
             if (coeff_blob != false)
                 rgChildren.Add("coeff_blob", coeff_blob.ToString());
+
+            if (allow_single_batch_input != false)
+                rgChildren.Add("allow_single_batch_input", allow_single_batch_input.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -203,6 +218,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("coeff_blob")) != null)
                 p.coeff_blob = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("allow_single_batch_input")) != null)
+                p.allow_single_batch_input = bool.Parse(strVal);
 
             return p;
         }

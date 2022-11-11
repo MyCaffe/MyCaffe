@@ -134,6 +134,12 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            if (m_param.eltwise_param.allow_single_batch_input)
+                m_log.CHECK_EQ(colBottom.Count, 2, "Only two inputs allowed when 'allow_single_batch_input' = true.");
+
+            if (colBottom[1].count() == 1)
+                m_log.CHECK_EQ(colBottom.Count, 2, "Only two inputs allowed when colBottom[1].count() == 1.");
+
             for (int i = 1; i < colBottom.Count; i++)
             {
                 if (m_bCoeffBlob && i == colBottom.Count - 1)
@@ -151,7 +157,7 @@ namespace MyCaffe.layers
                     {
                         if (m_blobSingleSecondary == null)
                         {
-                            m_blobSingleSecondary = new Blob<T>(m_cuda, m_log, false);
+                            m_blobSingleSecondary = new Blob<T>(m_cuda, m_log);
                             m_blobSingleSecondary.ReshapeLike(colBottom[0]);
 
                             double dfVal = Utility.ConvertVal<T>(colBottom[i].GetData(0));
@@ -160,7 +166,19 @@ namespace MyCaffe.layers
                     }
                     else
                     {
-                        m_log.CHECK(Utility.Compare<int>(colBottom[i].shape(), colBottom[0].shape(), false), "The bottoms should all be of the same shape.");
+                        if (!m_param.eltwise_param.allow_single_batch_input)
+                            m_log.CHECK(Utility.Compare<int>(colBottom[i].shape(), colBottom[0].shape(), false), "The bottoms should all be of the same shape.");
+                        else
+                        {
+                            if (m_blobSingleSecondary == null)
+                            {
+                                m_blobSingleSecondary = new Blob<T>(m_cuda, m_log);
+                                m_blobSingleSecondary.ReshapeLike(colBottom[0]);
+                            }
+
+                            m_log.CHECK_EQ(colBottom[i].num, 1, "The batch for the second input must be 1.");
+                            m_log.CHECK_EQ(colBottom[i].count(1), colBottom[0].count(1), "All shapes other than the first shape must match!");
+                        }
                     }
                 }
             }
@@ -185,6 +203,17 @@ namespace MyCaffe.layers
             long hTopData = colTop[0].mutable_gpu_data;
             long hCoeffData = 0;
             int nCoeffCount = 0;
+
+            if (m_param.eltwise_param.allow_single_batch_input)
+            {
+                // Copy each colBottom[1] to each batch item in blobSingleSecondary.
+                m_cuda.channel_copyall(blob.count(),
+                                       blob.num,
+                                       blob.channels,
+                                       blob.count(2),
+                                       colBottom[1].gpu_data,
+                                       blob.mutable_gpu_data);
+            }
 
             switch (m_op)
             {
@@ -216,7 +245,7 @@ namespace MyCaffe.layers
 
                         for (int i = 0; i < colBottom.Count - nCoeffCount; i++)
                         {
-                            long hBottomData = colBottom[i].gpu_data;
+                            long hBottomData = (i == 0 || colBottom.Count > 3) ? colBottom[i].gpu_data : blob.gpu_data;
                             m_cuda.coeff_sum_fwd(nCount, nDim, i * nNum, m_rgdfCoeffs[i], hCoeffData, hBottomData, hTopData);
                         }
                     }
@@ -226,7 +255,8 @@ namespace MyCaffe.layers
                         // TODO(shelhamer) does cuBLAS optimize to sum of coeff = 1?
                         for (int i = 0; i < colBottom.Count; i++)
                         {
-                            m_cuda.axpy(nCount, m_rgdfCoeffs[i], colBottom[i].gpu_data, hTopData);
+                            long hBottomData = (i == 0 || colBottom.Count > 2) ? colBottom[i].gpu_data : blob.gpu_data;
+                            m_cuda.axpy(nCount, m_rgdfCoeffs[i], hBottomData, hTopData);
                         }
                     }
                     break;
@@ -241,7 +271,7 @@ namespace MyCaffe.layers
 
                         for (int i = 0; i < colBottom.Count - nCoeffCount; i++)
                         {
-                            long hBottomData = colBottom[i].gpu_data;
+                            long hBottomData = (i == 0 || colBottom.Count > 3) ? colBottom[i].gpu_data : blob.gpu_data;
                             m_cuda.coeff_sub_fwd(nCount, nDim, i * nNum, m_rgdfCoeffs[i], hCoeffData, hBottomData, hTopData);
                         }
                     }
@@ -251,7 +281,8 @@ namespace MyCaffe.layers
 
                         for (int i = 1; i < colBottom.Count; i++)
                         {
-                            m_cuda.axpy(nCount, -1 * m_rgdfCoeffs[i], colBottom[i].gpu_data, hTopData);
+                            long hBottomData = (i == 0 || colBottom.Count > 2) ? colBottom[i].gpu_data : blob.gpu_data;
+                            m_cuda.axpy(nCount, -1 * m_rgdfCoeffs[i], hBottomData, hTopData);
                         }
                     }
                     break;
@@ -307,6 +338,12 @@ namespace MyCaffe.layers
                 {
                     long hBottomData = colBottom[i].gpu_data;
                     long hBottomDiff = colBottom[i].mutable_gpu_diff;
+
+                    if (i == 1 && m_blobSingleSecondary != null)
+                    {
+                        hBottomData = m_blobSingleSecondary.gpu_data;
+                        hBottomDiff = m_blobSingleSecondary.mutable_gpu_diff;
+                    }
 
                     switch (m_op)
                     {
@@ -384,6 +421,10 @@ namespace MyCaffe.layers
                     }
                 }
             }
+
+            // sum the gradients across channels.
+            if (m_param.eltwise_param.allow_single_batch_input && colBottom[1].num == 1 && m_blobSingleSecondary != null)
+                m_cuda.channel_sum(nCount, 1, nNum, colTop[0].channels * colTop[0].count(2), m_blobSingleSecondary.gpu_diff, colBottom[1].mutable_gpu_diff);
         }
     }
 }
