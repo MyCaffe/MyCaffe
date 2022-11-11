@@ -58,33 +58,17 @@ namespace MyCaffe.layers.gpt
         }
 
         /// <summary>
-        /// No bottom blobs are used by this layer when training.
+        /// No bottom blobs for the data layer.
         /// </summary>
-        public override int MinBottomBlobs
+        public override int ExactNumBottomBlobs
         {
             get { return 0; }
         }
 
         /// <summary>
-        /// The data input is placed in the bottom blob when running.
+        /// Returns the maximum number of required top (output) Blobs: data, pos, target
         /// </summary>
-        public override int MaxBottomBlobs
-        {
-            get { return 1; }
-        }
-
-        /// <summary>
-        /// Returns the minimum number of required top (output) Blobs: data, pos, target (only valid on TRAIN or TEST)
-        /// </summary>
-        public override int MinTopBlobs
-        {
-            get { return 2; }
-        }
-
-        /// <summary>
-        /// Returns the maximum number of required top (output) Blobs: data, pos, target (only valid on TRAIN or TEST)
-        /// </summary>
-        public override int MaxTopBlobs
+        public override int ExactNumTopBlobs
         {
             get { return 3; }
         }
@@ -112,15 +96,11 @@ namespace MyCaffe.layers.gpt
             Reshape(colBottom, colTop);
 
             Blob<T> blobPos = colTop[1];
-            // Set the position data = 0, 1, 2, 3, ... block_size-1, for each batch
-            float[] rgPos = new float[nBatchSize * nBlockSize];
-            for (int n = 0; n < nBatchSize; n++)
+            // Set the position data = 0, 1, 2, 3, ... block_size-1
+            float[] rgPos = new float[nBlockSize];
+            for (int i = 0; i < nBlockSize; i++)
             {
-                for (int i = 0; i < nBlockSize; i++)
-                {
-                    int nIdx = n * nBlockSize;
-                    rgPos[nIdx + i] = i;
-                }
+                rgPos[i] = i;
             }
 
             blobPos.mutable_cpu_data = convert(rgPos);
@@ -133,59 +113,36 @@ namespace MyCaffe.layers.gpt
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            m_log.CHECK_EQ(colBottom.Count, 0, "Data Layer takes no input blobs.");
+            m_log.CHECK_EQ(colTop.Count, 3, "The TokenizedDataLayer requires 3 top blobs.");
+
             int nBatchSize = (int)m_param.tokenized_data_param.batch_size;
             int nBlockSize = (int)m_param.tokenized_data_param.block_size;
             int nTokenSize = (int)m_data.TokenSize;
 
             Blob<T> blobData = colTop[0];
             Blob<T> blobPos = colTop[1];
-            Blob<T> blobTarget = null;
-            
-            if (colTop.Count > 2)   
-                blobTarget = colTop[2];
+            Blob<T> blobTarget = colTop[2];
 
             int nCount = 3;
             if (nTokenSize == 1)
                 nCount = 2;
             int[] rgShape = new int[nCount];
 
-            if (colBottom.Count == 0)
-            {
-                blobData.SetParameter("vocab_size", m_data.VocabularySize);
-                // reshape for single characters (each character is an index into the vocab vector)
-                rgShape[0] = nBatchSize;
-                rgShape[1] = nBlockSize;
-                if (rgShape.Length > 2)
-                    rgShape[2] = nTokenSize;
+            blobData.SetParameter("vocab_size", m_data.VocabularySize);
+            // reshape for single characters (each character is an index into the vocab vector)
+            rgShape[0] = nBatchSize;
+            rgShape[1] = nBlockSize;
+            if (rgShape.Length > 2)
+                rgShape[2] = nTokenSize;
 
-                blobData.Reshape(rgShape);
+            blobData.Reshape(rgShape);
+            blobTarget.Reshape(rgShape);
 
-                if (blobTarget != null)
-                    blobTarget.Reshape(rgShape);
-
-                if (rgShape.Length > 2)
-                    rgShape[2] = 1;
-                blobPos.Reshape(rgShape);
-            }
-            else
-            {
-                nBlockSize = colBottom[0].channels;
-
-                double? dfVocabSize = colBottom[0].GetParameter("vocab_size");
-                if (!dfVocabSize.HasValue)
-                    throw new Exception("The bottom blob[0] must have its 'vocab_size' parameter set!");
-
-                m_log.CHECK_EQ(colBottom[0].height, nTokenSize, "The colBottom[0].height should equal the token size of " + nTokenSize.ToString() + "!");
-
-                blobData.SetParameter("vocab_size", dfVocabSize.Value);
-                blobData.ReshapeLike(colBottom[0]);
-
-                rgShape[1] = colBottom[0].channels;
-                if (rgShape.Length > 2)
-                    rgShape[2] = 1;
-
-                blobPos.Reshape(rgShape);
-            }
+            rgShape[0] = 1;
+            if (rgShape.Length > 2)
+                rgShape[2] = 1;
+            blobPos.Reshape(rgShape);
         }
 
         /// <summary>
@@ -202,19 +159,11 @@ namespace MyCaffe.layers.gpt
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            if (colBottom.Count == 0)
-            {
-                Tuple<float[], float[]> data = m_data.GetData((int)m_param.tokenized_data_param.batch_size, (int)m_param.tokenized_data_param.block_size);
+            Tuple<float[], float[]> data = m_data.GetData((int)m_param.tokenized_data_param.batch_size, (int)m_param.tokenized_data_param.block_size);
 
-                colTop[0].mutable_cpu_data = convert(data.Item1);
-                if (colTop.Count > 2)
-                    colTop[2].mutable_cpu_data = convert(data.Item2);
-            }
-            else
-            {
-                float[] rgData = m_data.Tokenize(convertF(colBottom[0].mutable_cpu_data));
-                colTop[0].mutable_cpu_data = convert(rgData);
-            }
+            colTop[0].mutable_cpu_data = convert(data.Item1);
+            if (colTop.Count > 2)
+                colTop[2].mutable_cpu_data = convert(data.Item2);
         }
 
         /// @brief Not implemented - data Layers do not perform backward..
