@@ -16,6 +16,7 @@ using System.Threading;
 using MyCaffe.layers.gpt;
 using MyCaffe.solvers;
 using MyCaffe.basecode.descriptors;
+using System.Dynamic;
 
 ///
 /// WORK IN PROGRESS
@@ -298,6 +299,7 @@ namespace MyCaffe.test
         TokenizedDataLayer<T> m_dataLayer = null;
         Blob<T> m_blobY;
         Blob<T> m_blobX;
+        Blob<T> m_blobPos;
         float[] m_rgTestInput;
         MyCaffeControl<T> m_ctrl = null;
 
@@ -307,6 +309,10 @@ namespace MyCaffe.test
             m_engine = engine;
             m_blobY = new Blob<T>(m_cuda, m_log);
             m_blobX = new Blob<T>(m_cuda, m_log);
+            m_blobX.Name = "data";
+            m_blobPos = new Blob<T>(m_cuda, m_log);
+            m_blobPos.Name = "pos";
+            m_blobPos.Reshape(1, 128, 1, 1);
 
             List<WaitHandle> rgWait = new List<WaitHandle>();
             rgWait.AddRange(m_evtCancel.Handles);
@@ -335,6 +341,7 @@ namespace MyCaffe.test
         {
             dispose(ref m_blobY);
             dispose(ref m_blobX);
+            dispose(ref m_blobPos);
 
             base.dispose();
         }
@@ -696,15 +703,16 @@ namespace MyCaffe.test
 
                 m_netRun = m_ctrl.GetInternalNet(Phase.RUN);
                 m_dataLayer = m_ctrl.GetInternalNet(Phase.TEST).layers[0] as TokenizedDataLayer<T>;
-
-                string strTestInput = ("O God, O God!").PadLeft((int)m_dataLayer.layer_param.tokenized_data_param.block_size, ' ');
+                
+                string strTestInput = "O God, O God!";
                 m_rgTestInput = new float[strTestInput.Length];
                 for (int i = 0; i < strTestInput.Length; i++)
                 {
                     m_rgTestInput[i] = (int)strTestInput[i];
                 }
 
-                m_blobX.Reshape(1, m_rgTestInput.Length, 1, 1);
+                int[] rgShape = new int[] { 1, m_rgTestInput.Length };
+                m_blobX.Reshape(rgShape);
                 m_blobX.mutable_cpu_data = convert(m_rgTestInput);
 
                 m_ctrl.Train();
@@ -722,7 +730,9 @@ namespace MyCaffe.test
             {
                 m_ctrl.UpdateRunWeights();
 
-                generate(m_netRun, m_blobX, m_blobY, 500);
+                fillPos(m_blobX, m_blobPos);
+                m_dataLayer.Tokenize(m_blobX, m_blobX);
+                generate(m_netRun, m_blobX, m_blobY, m_blobPos, 500, (int)m_dataLayer.layer_param.tokenized_data_param.block_size, 65);
                 
                 m_dataLayer.Detokenize(m_blobY, m_blobY);
                 float[] rgY = convertF(m_blobY.mutable_cpu_data);
@@ -737,34 +747,99 @@ namespace MyCaffe.test
             }
         }
 
-        // WORK IN PROGRESS
-        private void generate(Net<T> net, Blob<T> blobIdx, Blob<T> blobY, int nMaxNewTokens)
+        // DESIGN IMPROVEMENT NEEDED
+        private void fillPos(Blob<T> blobX, Blob<T> blobPos)
+        {
+            int[] rgShape = new int[] { 1, blobX.channels };
+
+            blobPos.Reshape(rgShape);
+            float[] rgPos = new float[blobX.channels];
+
+            for (int i = 0; i < rgPos.Length; i++)
+            {
+                rgPos[i] = i;
+            }
+
+            blobPos.mutable_cpu_data = convert(rgPos);
+        }
+
+        private int getNextIndex(Blob<T> blob)
+        {
+            float[] rgData = convertF(blob.mutable_cpu_data);
+            int nDim = blob.count(2);
+            int nIdxStart = (blob.channels - 1) * nDim;
+            
+            float fMax = 0;
+            int nIdx = -1;
+
+            for (int i = nIdxStart; i<blob.count(); i++)
+            {
+                float fVal = rgData[i];
+                if (float.IsNaN(fVal))
+                    return 0;
+
+                if (fMax < fVal)
+                {
+                    fMax = fVal;
+                    nIdx = i;
+                }
+            }
+
+            return nIdx - nIdxStart;
+        }
+
+        private void generate(Net<T> net, Blob<T> blobIdx, Blob<T> blobY, Blob<T> blobPos, int nMaxNewTokens, int nBlockSize, int nVocabSize)
         {
             Blob<T> blobLogits = net.blob_by_name("logits");
-            BlobCollection<T> colBottom = new BlobCollection<T>() { blobIdx };
+            BlobCollection<T> colBottom = new BlobCollection<T>() { blobIdx, blobPos };
             BlobCollection<T> colTop;
             double dfLoss;
             List<float> rgfIdx = new List<float>();
+            List<float> rgfIdxOut = new List<float>();
+            int[] rgShape;
 
             float[] rgIdx = convertF(blobIdx.mutable_cpu_data);
             rgfIdx.AddRange(rgIdx);
 
+            // Reshape onece with maximum size to optimize
+            // all smaller reshapings.
+            int nOriginalShape = blobIdx.channels;
+            rgShape = new int[] { 1, nBlockSize };
+            blobY.Reshape(rgShape);
+            colBottom[0] = blobY;
+            colBottom[1] = blobY;
+            net.Forward(colBottom, out dfLoss, true);
+
+            colBottom[0] = blobIdx;
+            colBottom[1] = blobPos;
+
+            rgfIdxOut.AddRange(rgfIdx);
+
             for (int i = 0; i < nMaxNewTokens; i++)
             {                
                 // Forward pass to get the logits.
-                colBottom[0] = blobIdx;
                 colTop = net.Forward(colBottom, out dfLoss, true);
-
+              
                 int nIdx = colTop[0].count();
-                float fIdxVal = convertF(colTop[0].GetData(nIdx - 1));
+                float fIdxVal = getNextIndex(colTop[0]);
+
                 rgfIdx.Add(fIdxVal);
                 // Clip to block size.
-                rgfIdx.RemoveAt(0);
+                if (rgfIdx.Count > nBlockSize)
+                    rgfIdx.RemoveAt(0);
 
+                rgfIdxOut.Add(fIdxVal);
+
+                rgShape = new int[] { blobIdx.num, rgfIdx.Count };
+                blobIdx.Reshape(rgShape);
                 blobIdx.mutable_cpu_data = convert(rgfIdx.ToArray());
+                
+                if (blobPos.count() != blobIdx.count(0, 2))
+                    fillPos(blobIdx, blobPos);
             }
 
-            blobY.Reshape(1, rgfIdx.Count(), 1, 1);
+            rgShape = new int[] { 1, rgfIdxOut.Count };
+            blobY.Reshape(rgShape);
             blobY.mutable_cpu_data = convert(rgfIdx.ToArray());
         }
 
