@@ -171,10 +171,8 @@ namespace MyCaffe.layers
                         else
                         {
                             if (m_blobSingleSecondary == null)
-                            {
                                 m_blobSingleSecondary = new Blob<T>(m_cuda, m_log);
-                                m_blobSingleSecondary.ReshapeLike(colBottom[0]);
-                            }
+                            m_blobSingleSecondary.ReshapeLike(colBottom[0]);
 
                             m_log.CHECK_EQ(colBottom[i].num, 1, "The batch for the second input must be 1.");
                             m_log.CHECK_EQ(colBottom[i].count(1), colBottom[0].count(1), "All shapes other than the first shape must match!");
