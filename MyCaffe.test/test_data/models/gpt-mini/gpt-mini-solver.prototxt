@@ -6,11 +6,12 @@ base_lr: 0.0005
 display: 10
 average_loss: 1
 max_iter: 10000
-lr_policy: fixed
+lr_policy: inv
 gamma: 0.0001
 power: 0.75
 momentum: 0.9
 weight_decay: 0.1
+adam_decay: 0.01
 regularization_type: L2
 clip_gradients: 1
 enable_clip_gradient_status: False

@@ -1,4 +1,4 @@
-name: "BasicNet"
+name: "GptMiniNet"
 layer 
 {
    name: "tokdata1"
@@ -34,7 +34,7 @@ layer
       {
          type: "gaussian"
          mean: 0
-         std: 0.02
+         std: 0.2
       }
    }
 }
@@ -58,7 +58,7 @@ layer
       {
          type: "gaussian"
          mean: 0
-         std: 0.02
+         std: 0.2
       }
    }
 }
@@ -77,6 +77,17 @@ layer
 }
 layer 
 {
+   name: "dropout1"
+   type: "Dropout"
+   bottom: "eltwise1"
+   top: "eltwise1"
+   dropout_param 
+   {
+      dropout_ratio: 0.1
+   }
+}
+layer 
+{
    name: "tfb1"
    type: "TransformerBlock"
    bottom: "eltwise1"
@@ -87,8 +98,8 @@ layer
       heads: 6
       embed: 192
       block_size: 128
-      attn_dropout: 0.0
-      resid_dropout: 0.0
+      attn_dropout: 0.1
+      resid_dropout: 0.1
    }
 }
 layer 
@@ -103,8 +114,8 @@ layer
       heads: 6
       embed: 192
       block_size: 128
-      attn_dropout: 0.0
-      resid_dropout: 0.0
+      attn_dropout: 0.1
+      resid_dropout: 0.1
    }
 }
 layer 
@@ -119,8 +130,8 @@ layer
       heads: 6
       embed: 192
       block_size: 128
-      attn_dropout: 0.0
-      resid_dropout: 0.0
+      attn_dropout: 0.1
+      resid_dropout: 0.1
    }
 }
 layer 
@@ -135,8 +146,8 @@ layer
       heads: 6
       embed: 192
       block_size: 128
-      attn_dropout: 0.0
-      resid_dropout: 0.0
+      attn_dropout: 0.1
+      resid_dropout: 0.1
    }
 }
 layer 
@@ -151,8 +162,8 @@ layer
       heads: 6
       embed: 192
       block_size: 128
-      attn_dropout: 0.0
-      resid_dropout: 0.0
+      attn_dropout: 0.1
+      resid_dropout: 0.1
    }
 }
 layer 
@@ -167,8 +178,8 @@ layer
       heads: 6
       embed: 192
       block_size: 128
-      attn_dropout: 0.0
-      resid_dropout: 0.0
+      attn_dropout: 0.1
+      resid_dropout: 0.1
    }
 }
 layer 
@@ -197,12 +208,7 @@ layer
       {
          type: "gaussian"
          mean: 0
-         std: 0.02
-      }
-      bias_filler 
-      {
-         type: "constant"
-         value: 0
+         std: 0.2
       }
       axis: 2
    }
