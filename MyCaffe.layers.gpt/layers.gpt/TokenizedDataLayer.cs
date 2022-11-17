@@ -86,7 +86,7 @@ namespace MyCaffe.layers.gpt
             switch (m_param.tokenized_data_param.input_type)
             {
                 case TokenizedDataParameter.INPUT_TYPE.TEXT_FILE:
-                    m_data = new TextInputData(m_param.tokenized_data_param.source, m_param.tokenized_data_param.seed);
+                    m_data = new TextInputData(m_param.tokenized_data_param.source, m_param.tokenized_data_param.seed, m_param.tokenized_data_param.debug_index_file);
                     break;
 
                 default:
@@ -172,6 +172,17 @@ namespace MyCaffe.layers.gpt
         }
 
         /// <summary>
+        /// Tokenize the source data by converting it from its native form to index values that reference into the vocabulary.
+        /// </summary>
+        /// <param name="blobSrc">Specifies the native source data.</param>
+        /// <param name="blobDst">Specifies the tokenized destination data.</param>
+        public void Tokenize(Blob<T> blobSrc, Blob<T> blobDst)
+        {
+            float[] rgSrc = convertF(blobSrc.mutable_cpu_data);
+            blobDst.mutable_cpu_data = convert(m_data.Tokenize(rgSrc));
+        }
+
+        /// <summary>
         /// Detokenize the source data by converting it to its native form.
         /// </summary>
         /// <param name="blobSrc">Specifies the tokenized source data.</param>
@@ -250,15 +261,35 @@ namespace MyCaffe.layers.gpt
         string m_strData;
         Dictionary<char, int> m_rgVocabKeyToIdx = new Dictionary<char, int>();
         Dictionary<int, char> m_rgVocabIdxToKey = new Dictionary<int, char>();
+        string m_strDebugIndexFile;
+        List<int> m_rgDebugIdx = null;
+        int m_nDebugIdx = 0;
+        Random m_random = new Random();
 
         /// <summary>
         /// The constructor.
         /// </summary>
         /// <param name="strSrc">Specifies the data source as the filename of the text data file.</param>
         /// <param name="nRandomSeed">Optionally, specifies a random seed for testing.</param>
-        public TextInputData(string strSrc, int? nRandomSeed = null) : base(nRandomSeed)
+        /// <param name="strDebugIndexFile">Optionally, specifies the debug index file containing index values in the form 'idx = #', one per line.</param>
+        public TextInputData(string strSrc, int? nRandomSeed = null, string strDebugIndexFile = null) : base(nRandomSeed)
         {
             m_strData = File.ReadAllText(strSrc);
+
+            if (File.Exists(strDebugIndexFile))
+            {
+                m_strDebugIndexFile = strDebugIndexFile;
+                m_rgDebugIdx = new List<int>();
+                string[] rgLines = File.ReadAllLines(strDebugIndexFile);
+                foreach (string strLine in rgLines)
+                {
+                    if (strLine.StartsWith("idx = "))
+                    {
+                        string strIdx = strLine.Substring(6).Trim(' ', '\t', '\n', '\r');
+                        m_rgDebugIdx.Add(int.Parse(strIdx));
+                    }
+                }
+            }
 
             m_rgVocabKeyToIdx.Clear();
             foreach (char ch in m_strData)
@@ -312,13 +343,30 @@ namespace MyCaffe.layers.gpt
                 int nDataIdx = m_random.Next(m_strData.Count() - (nBlockSize + 1));
                 int nDstIdx = i * nBlockSize;
 
+                if (m_rgDebugIdx != null)
+                {
+                    nDataIdx = m_rgDebugIdx[m_nDebugIdx];
+                    m_nDebugIdx++;
+
+                    if (m_nDebugIdx >= m_rgDebugIdx.Count)
+                        m_nDebugIdx = 0;
+                }
+
                 for (int j = 0; j < nBlockSize; j++)
                 {                    
                     char ch = m_strData[nDataIdx + j];
-                    int nCharIdx = m_rgVocabKeyToIdx[ch];                                  
+                    int nCharIdx = m_rgVocabKeyToIdx[ch];
+
+                    if (nCharIdx < 0 || nCharIdx > 65)
+                        throw new Exception("Token out of range!");
+
                     rgData[nDstIdx + j] = nCharIdx;
 
                     ch = m_strData[nDataIdx + j + 1];
+
+                    if (nCharIdx < 0 || nCharIdx > 65)
+                        throw new Exception("Token out of range!");
+
                     nCharIdx = m_rgVocabKeyToIdx[ch];
                     rgTgt[nDstIdx + j] = nCharIdx;
                 }
@@ -338,7 +386,13 @@ namespace MyCaffe.layers.gpt
             for (int i = 0; i < rgInput.Count(); i++)
             {
                 char ch = (char)rgInput[i];
-                int nCharIdx = m_rgVocabKeyToIdx[ch];
+                int nCharIdx;
+
+                if (m_rgVocabKeyToIdx.ContainsKey(ch))
+                    nCharIdx = m_rgVocabKeyToIdx[ch];
+                else
+                    nCharIdx = m_random.Next(m_rgVocabIdxToKey.Count);
+
                 rgInput[i] = nCharIdx;
             }
 
