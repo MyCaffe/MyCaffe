@@ -1863,7 +1863,13 @@ namespace MyCaffe.common
                 rgShape.Add(1);
             }
 
-            return Utility.Compare<int>(shape(), rgShape);
+            List<int> rgShape1 = new List<int>(shape());
+            while (rgShape1.Count < rgShape.Count)
+            {
+                rgShape1.Add(1);
+            }
+
+            return Utility.Compare<int>(rgShape1, rgShape);
         }
 
         /// <summary>
