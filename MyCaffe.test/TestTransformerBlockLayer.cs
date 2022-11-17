@@ -697,7 +697,7 @@ namespace MyCaffe.test
         {
             if (e.Iteration > 0 && e.Iteration % 500 == 0)
             {
-                m_ctrl.UpdateRunWeights();
+                m_ctrl.UpdateRunWeights(false, false);
 
                 fillPos(m_blobX, m_blobPos);
                 m_dataLayer.Tokenize(m_blobX, m_blobX);
@@ -776,8 +776,8 @@ namespace MyCaffe.test
             // Reshape onece with maximum size to optimize
             // all smaller reshapings.
             int nOriginalShape = blobIdx.channels;
-            rgShape = new int[] { 1, nBlockSize };
-            blobY.Reshape(rgShape);
+            rgShape = new int[] { 1, nMaxNewTokens };
+            blobY.Reshape(rgShape);            
             colBottom[0] = blobY;
             colBottom[1] = blobY;
             net.Forward(colBottom, out dfLoss, true);
@@ -786,7 +786,7 @@ namespace MyCaffe.test
             colBottom[1] = blobPos;
 
             rgfIdxOut.AddRange(rgfIdx);
-
+                       
             for (int i = 0; i < nMaxNewTokens; i++)
             {                
                 // Forward pass to get the logits.
