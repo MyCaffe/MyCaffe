@@ -18,6 +18,7 @@ using MyCaffe.solvers;
 using MyCaffe.basecode.descriptors;
 using System.Dynamic;
 using static MyCaffe.param.beta.DecodeParameter;
+using System.Collections.Concurrent;
 
 ///
 /// WORK IN PROGRESS
@@ -224,6 +225,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestTrainingGptMini1()
+        {
+            TransformerBlockLayerTest test = new TransformerBlockLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ITransformerBlockLayerTest t in test.Tests)
+                {
+                    t.TestTrainingGptMini1(10000);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface ITransformerBlockLayerTest : ITest
@@ -233,6 +252,7 @@ namespace MyCaffe.test
         void TestGradientPico(bool bBatch, int nHeads);
         void TestForwardMini();
         void TestTrainingGptMini(int nIter);
+        void TestTrainingGptMini1(int nIter);
     }
 
     class TransformerBlockLayerTest : TestBase
@@ -266,7 +286,7 @@ namespace MyCaffe.test
         Blob<T> m_blobPos = null;
         float[] m_rgTestInput;
         MyCaffeControl<T> m_ctrl = null;
-        Random m_random = new Random();
+        Random m_random = new Random(3407);
 
         public TransformerBlockLayerTest2(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, new List<int>() { 3, 2, 4, 1 }, nDeviceID)
@@ -301,9 +321,12 @@ namespace MyCaffe.test
             base.dispose();
         }
 
-        public Tuple<List<int>, float[]> Fill(string strGpt, string strName, Log log, string strPass = "")
+        public Tuple<List<int>, float[]> Fill(string strGpt, string strName, Log log, string strPass = "", string strPathOvr = null)
         {
-            string strFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\" + strGpt + "\\";
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\" + strGpt + "\\"; 
+            if (!string.IsNullOrEmpty(strPathOvr))
+                strPath = strPathOvr;
+            string strFile = strPath;
 
             if (!string.IsNullOrEmpty(strPass))
                 strFile += strPass + "\\";
@@ -692,6 +715,104 @@ namespace MyCaffe.test
             }
         }
 
+        public void TestTrainingGptMini1(int nIter)
+        {
+            m_log.EnableTrace = true;
+            m_log.WriteHeader("GPT-Mini - Test Train");
+
+            try
+            {
+                m_ctrl = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, null, m_rgGpu, m_cuda.Path);
+                ProjectEx project = getGptProject("gpt-mini", nIter);
+
+                m_ctrl.OnTestingIteration += ctrl_OnTestingIteration;
+                m_ctrl.Load(Phase.TRAIN, project, null, null, false, null, false);
+
+                Solver<T> solver = m_ctrl.GetInternalSolver();
+                solver.OnStart += Solver_OnStart;
+
+                m_blobY = m_ctrl.CreateBlob("results");
+                m_blobX = m_ctrl.CreateBlob("data");
+                m_blobPos = m_ctrl.CreateBlob("pos");
+                m_blobPos.Reshape(1, 128, 1, 1);
+
+                m_netRun = m_ctrl.GetInternalNet(Phase.RUN);
+                m_dataLayer = m_ctrl.GetInternalNet(Phase.TEST).layers[0] as TokenizedDataLayer<T>;
+
+                string strTestInput = "O God, O God!";
+                m_rgTestInput = new float[strTestInput.Length];
+                for (int i = 0; i < strTestInput.Length; i++)
+                {
+                    m_rgTestInput[i] = (int)strTestInput[i];
+                }
+
+                int[] rgShape = new int[] { 1, m_rgTestInput.Length };
+                m_blobX.Reshape(rgShape);
+                m_blobX.mutable_cpu_data = convert(m_rgTestInput);
+
+                m_ctrl.Train();
+            }
+            finally
+            {
+                dispose1(ref m_blobY);
+                dispose1(ref m_blobX);
+                dispose1(ref m_blobPos);
+
+                m_ctrl.Dispose();
+                m_ctrl = null;
+            }
+        }
+
+        private void Solver_OnStart(object sender, EventArgs e)
+        {
+            Solver<T> solver = sender as Solver<T>;
+
+            if (solver.iter == 0)
+            {
+                string strModel = "gpt-mini";
+                string strPath = "c:\\temp\\snap\\";
+
+                Tuple<List<int>, float[]> gpt_wte_weight = Fill(strModel, "gpt_wte_weight", m_log, "iter_0", strPath);
+                Tuple<List<int>, float[]> gpt_wpe_weight = Fill(strModel, "gpt_wpe_weight", m_log, "iter_0", strPath);
+
+                Tuple<List<int>, float[]> attn_weight = Fill(strModel, "attn_weight", m_log, "iter_0", strPath);
+                Tuple<List<int>, float[]> attn_bias = Fill(strModel, "attn_bias", m_log, "iter_0", strPath);
+                Tuple<List<int>, float[]> attn_proj_weight = Fill(strModel, "attn_proj_weight", m_log, "iter_0", strPath);
+                Tuple<List<int>, float[]> attn_proj_bias = Fill(strModel, "attn_proj_bias", m_log, "iter_0", strPath);
+
+                Tuple<List<int>, float[]> fc_weights = Fill(strModel, "fc_weight", m_log, "iter_0", strPath);
+                Tuple<List<int>, float[]> fc_bias = Fill(strModel, "fc_bias", m_log, "iter_0", strPath);
+                Tuple<List<int>, float[]> proj_weight = Fill(strModel, "proj_weight", m_log, "iter_0", strPath);
+                Tuple<List<int>, float[]> proj_bias = Fill(strModel, "proj_bias", m_log, "iter_0", strPath);
+
+                Tuple<List<int>, float[]> gpt_lm_head_weight = Fill(strModel, "gpt_lm_head_weight", m_log, "iter_0", strPath);
+
+                Net<T> net = solver.TrainingNet;
+
+                setData(net.learnable_parameters[0], gpt_wte_weight);
+                setData(net.learnable_parameters[1], gpt_wpe_weight);
+                
+                setData(net.learnable_parameters[2], attn_weight);
+                setData(net.learnable_parameters[3], attn_bias);
+                setData(net.learnable_parameters[4], attn_proj_weight);
+                setData(net.learnable_parameters[5], attn_proj_bias);
+                setData(net.learnable_parameters[6], fc_weights);
+                setData(net.learnable_parameters[7], fc_bias);
+                setData(net.learnable_parameters[8], proj_weight);
+                setData(net.learnable_parameters[9], proj_bias);
+
+                setData(net.learnable_parameters[10], gpt_lm_head_weight);
+            }
+        }
+
+        private void setData(Blob<T> blob, Tuple<List<int>, float[]> data)
+        {
+            if (!blob.CompareShape(data.Item1))
+                throw new Exception("The shapes do not match!");
+
+            blob.mutable_cpu_data = convert(data.Item2);
+        }
+
         private void ctrl_OnTestingIteration(object sender, TestingIterationArgs<T> e)
         {
             if (e.Iteration > 0 && e.Iteration % 500 == 0)
@@ -700,7 +821,7 @@ namespace MyCaffe.test
 
                 fillPos(m_blobX, m_blobPos);
                 m_dataLayer.Tokenize(m_blobX, m_blobX);
-                generate(m_netRun, m_blobX, m_blobY, m_blobPos, 500, (int)m_dataLayer.layer_param.tokenized_data_param.block_size, 65);
+                generate(m_netRun, m_blobX, m_blobY, m_blobPos, 500, (int)m_dataLayer.layer_param.tokenized_data_param.block_size, 65, 10);
                 
                 m_dataLayer.Detokenize(m_blobY, m_blobY);
                 float[] rgY = convertF(m_blobY.mutable_cpu_data);
@@ -730,40 +851,71 @@ namespace MyCaffe.test
             blobPos.mutable_cpu_data = convert(rgPos);
         }
 
-        private int getNextIndex(Blob<T> blob, int nVocabCount)
+        private int getNextIndex(Blob<T> blob, int nVocabCount, int nTopK, Layer<T> softmax)
         {
             float[] rgData = convertF(blob.mutable_cpu_data);
-            int nDim = blob.count(2);
-            int nIdxStart = (blob.channels - 1) * nDim;
-            
-            float fMax = 0;
-            int nIdx = -1;
+            float[] rgLogits = new float[nVocabCount];
+            int nIdxStart = blob.count() - nVocabCount;
+            Dictionary<int, float> rgTopK = new Dictionary<int, float>();
 
             for (int i = nIdxStart; i<blob.count(); i++)
             {
                 float fVal = rgData[i];
-                if (float.IsNaN(fVal))
-                    return m_random.Next(nVocabCount);
+                rgTopK.Add(i - nIdxStart, fVal);
 
-                if (fMax < fVal)
+                if (rgTopK.Count > nTopK)
                 {
-                    fMax = fVal;
-                    nIdx = i;
-                }
+                    float fMin = float.MaxValue;
+                    int nMinIdx = -1;
+
+                    foreach (KeyValuePair<int, float> kv in rgTopK)
+                    {
+                        if (kv.Value < fMin)
+                        {
+                            fMin = kv.Value;
+                            nMinIdx = kv.Key;
+                        }
+                    }
+
+                    rgTopK.Remove(nMinIdx);
+                }                
             }
 
-            int nNewIdx = nIdx - nIdxStart;
-            if (nNewIdx < 0 || nNewIdx >= 65)
-                return m_random.Next(nVocabCount);
+            for (int i = 0; i < rgLogits.Count(); i++)
+            {
+                if (rgTopK.ContainsKey(i))
+                    rgLogits[i] = rgTopK[i];
+                else
+                    rgLogits[i] = -float.MaxValue;
+            }
 
-            return nNewIdx;
+            m_blobX.Reshape(1, 1, nVocabCount, 1);
+            m_blobX.mutable_cpu_data = convert(rgLogits);
+
+            BlobCollection<T> colBottom = new BlobCollection<T>() { m_blobX };
+            BlobCollection<T> colTop = new BlobCollection<T>() { m_blobY };
+            softmax.Forward(colBottom, colTop);
+
+            float[] rgProb = convertF(m_blobY.mutable_cpu_data);
+            float fRand = (float)m_random.NextDouble();
+            float fTotal = 0;
+
+            for (int i = 0; i < rgProb.Length; i++)
+            {
+                fTotal += rgProb[i];
+
+                if (fTotal >= fRand)
+                    return i;
+            }
+
+            return rgProb.Length - 1;
         }
 
-        private void generate(Net<T> net, Blob<T> blobIdx, Blob<T> blobY, Blob<T> blobPos, int nMaxNewTokens, int nBlockSize, int nVocabSize)
+        private void generate(Net<T> net, Blob<T> blobIdx, Blob<T> blobY, Blob<T> blobPos, int nMaxNewTokens, int nBlockSize, int nVocabSize, int nTopK)
         {
             Blob<T> blobLogits = net.blob_by_name("logits");
+            Layer<T> softmax = net.FindLastLayer(LayerParameter.LayerType.SOFTMAX);
             BlobCollection<T> colBottom = new BlobCollection<T>() { blobIdx, blobPos };
-            BlobCollection<T> colTop;
             double dfLoss;
             List<float> rgfIdx = new List<float>();
             List<float> rgfIdxOut = new List<float>();
@@ -776,10 +928,8 @@ namespace MyCaffe.test
             for (int i = 0; i < nMaxNewTokens; i++)
             {                
                 // Forward pass to get the logits.
-                colTop = net.Forward(colBottom, out dfLoss, true);
-              
-                int nIdx = colTop[0].count();
-                float fIdxVal = getNextIndex(colTop[0], nVocabSize);
+                net.Forward(colBottom, out dfLoss, true);                                
+                float fIdxVal = getNextIndex(blobLogits, nVocabSize, nTopK, softmax);
 
                 rgfIdx.Add(fIdxVal);
                 // Clip to block size.
