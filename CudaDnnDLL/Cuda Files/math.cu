@@ -11949,7 +11949,6 @@ __global__ void adamw_update_kernel(int n, T* g, T* m, T* v, T beta1, T beta2, T
 		T fMi = m[i] = m[i] * beta1 + fGi * (1 - beta1);
 		T fVi = v[i] = v[i] * beta2 + fGi * fGi * (1 - beta2);
 		g[i] = correction * (learning_rate * fMi / (sqrt(fVi) + eps_hat) + (decay_rate * fW));
-		g[i] = g[i] * 1.0;
 	}
 }
 
