@@ -20,6 +20,8 @@ namespace MyCaffe.solvers
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class AdamSolver<T> : SGDSolver<T>
     {
+        protected double m_dfDetachedWeightDecayRate = 0.0f;
+
         /// <summary>
         /// The AdamSolver constructor.
         /// </summary>
@@ -45,7 +47,7 @@ namespace MyCaffe.solvers
         /// <summary>
         /// Runs the AdamSolver pre-solve which parpares the Solver to start Solving.
         /// </summary>
-        public void AdamPreSolve()
+        public virtual void AdamPreSolve()
         {
             // Add the extra history entries for AdaDelta after those from
             // SGDSolver::PreSolve
@@ -77,6 +79,7 @@ namespace MyCaffe.solvers
 
             List<double?> net_params_lr = m_net.params_lr;
             double dfLocalRate = dfRate * net_params_lr[param_id].GetValueOrDefault(0);
+            double dfLocalDecay = m_dfDetachedWeightDecayRate;
             double dfBeta1 = m_param.momentum;
             T fBeta1 = Utility.ConvertVal<T>(dfBeta1);
             double dfBeta2 = m_param.momentum2;
@@ -88,6 +91,7 @@ namespace MyCaffe.solvers
             Blob<T> val_v = m_colHistory[param_id + nUpdateHistoryOffset];
 
             int nT = nIterationOverride + 1;
+            // Set the schedule multiplier
             double dfCorrection = Math.Sqrt(1.0 - Math.Pow(dfBeta2, nT)) / (1.0 - Math.Pow(dfBeta1, nT));
             int nN = colNetParams[param_id].count();
             double dfEpsHat = m_param.delta;
@@ -100,7 +104,10 @@ namespace MyCaffe.solvers
                                fBeta1,
                                fBeta2,
                                Utility.ConvertVal<T>(dfEpsHat),
-                               Utility.ConvertVal<T>(dfLocalRate * dfCorrection));
+                               Utility.ConvertVal<T>(dfLocalRate),
+                               Utility.ConvertVal<T>(dfCorrection),
+                               Utility.ConvertVal<T>(dfLocalDecay),
+                               colNetParams[param_id].gpu_data);
         }
     }
 }

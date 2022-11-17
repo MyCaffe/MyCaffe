@@ -359,7 +359,7 @@ class Math
 		long nesterov_update(int nCount, long hNetParamDiff, long hHistoryData, T fMomentum, T fLearningRate);
 		long adagrad_update(int nCount, long hNetParamDiff, long hHistoryData, T fDelta, T fLearningRate);
 		long adadelta_update(int nCount, long hNetParamDiff, long hHistoryData1, long hHistoryData2, T fMomentum, T fDelta, T fLearningRate);
-		long adam_update(int nCount, long hNetParamDiff, long hValM, long hValV, T fBeta1, T fBeta2, T fEpsHat, T fCorrectedLearningRate);
+		long adam_update(int nCount, long hNetParamDiff, long hValM, long hValV, T fBeta1, T fBeta2, T fEpsHat, T fLearningRate, T fCorrection, T fDecayRate, long hNetParamData);
 		long rmsprop_update(int nCount, long hNetParamDiff, long hHistoryData, T fRmsDecay, T fDelta, T fLearningRate);
 
 		long combine_data(int nCount, long hOriginal, long hUpdated, T fUpdatedPct, long hServer, T fServerPct, long hNewData);

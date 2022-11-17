@@ -1910,6 +1910,10 @@ namespace MyCaffe.solvers
                     solver = new AdamSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
                     break;
 
+                case SolverParameter.SolverType.ADAMW:
+                    solver = new AdamWSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
+                    break;
+
                 case SolverParameter.SolverType.RMSPROP:
                     solver = new RmsPropSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
                     break;

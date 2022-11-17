@@ -8617,7 +8617,9 @@ __global__ void gelu_fwd_kernel(int n, const T* in, T* out)
 
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		out[i] = (T)0.5 * in[i] * ((T)1.0 + tanh(fSqrt2xPi * (in[i] + (T)0.044715 * pow(in[i], 3))));
+		const T x = in[i];
+		const T x3 = x * x * x;
+		out[i] = (T)(0.5 * x * (1.0 + tanh(fSqrt2xPi * (x + 0.044715 * x3))));
 	}
 }
 
@@ -11937,11 +11939,26 @@ __global__ void adam_update_kernel(int n, T* g, T* m, T* v, T beta1, T beta2, T 
 	}
 }
 
+template <typename T>
+__global__ void adamw_update_kernel(int n, T* g, T* m, T* v, T beta1, T beta2, T eps_hat, T learning_rate, T correction, T decay_rate, const T* w)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const T fGi = g[i];
+		const T fW = w[i];
+		T fMi = m[i] = m[i] * beta1 + fGi * (1 - beta1);
+		T fVi = v[i] = v[i] * beta2 + fGi * fGi * (1 - beta2);
+		g[i] = correction * (learning_rate * fMi / (sqrt(fVi) + eps_hat) + (decay_rate * fW));
+		g[i] = g[i] * 1.0;
+	}
+}
+
 template <class T>
-long Math<T>::adam_update(int n, long hNetParamDiff, long hValM, long hValV, T fBeta1, T fBeta2, T fEpsHat, T fCorrectedLearningRate)
+long Math<T>::adam_update(int n, long hNetParamDiff, long hValM, long hValV, T fBeta1, T fBeta2, T fEpsHat, T fLearningRate, T fCorrection, T fDecayRate, long hNetParamData)
 {
 	LONG lErr;
 	MemoryItem* pNetParamDiff;
+	MemoryItem* pNetParamData;
 	MemoryItem* pValM;
 	MemoryItem* pValV;
 
@@ -11955,16 +11972,28 @@ long Math<T>::adam_update(int n, long hNetParamDiff, long hValM, long hValV, T f
 		return lErr;
 
 	T* net_param_diff = (T*)pNetParamDiff->Data();
+	T* net_param_data = NULL;
 	T* val_m = (T*)pValM->Data();
 	T* val_v = (T*)pValV->Data();
 
-	adam_update_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, net_param_diff, val_m, val_v, fBeta1, fBeta2, fEpsHat, fCorrectedLearningRate);
+	if (hNetParamData != 0)
+	{
+		if (lErr = m_pMemCol->GetData(hNetParamData, &pNetParamData))
+			return lErr;
+
+		net_param_data = (T*)pNetParamData->Data();
+	}
+
+	if (fDecayRate != 0 && hNetParamData != 0)
+		adamw_update_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, net_param_diff, val_m, val_v, fBeta1, fBeta2, fEpsHat, fLearningRate, fCorrection, fDecayRate, net_param_data);
+	else
+		adam_update_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, net_param_diff, val_m, val_v, fBeta1, fBeta2, fEpsHat, fLearningRate * fCorrection);
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::adam_update(int nCount, long hNetParamDiff, long hValM, long hValV, double dfBeta1, double dfBeta2, double dfEpsHat, double dfCorrectedLearningRate);
-template long Math<float>::adam_update(int nCount, long hNetParamDiff, long hValM, long hValV, float fBeta1, float fBeta2, float fEpsHat, float fCorrectedLearningRate);
+template long Math<double>::adam_update(int nCount, long hNetParamDiff, long hValM, long hValV, double dfBeta1, double dfBeta2, double dfEpsHat, double dfLearningRate, double dfCorrection, double dfDecayRate, long hNetParamData);
+template long Math<float>::adam_update(int nCount, long hNetParamDiff, long hValM, long hValV, float fBeta1, float fBeta2, float fEpsHat, float fLearningRate, float fCorrection, float fDecayRate, long hNetParamData);
 
 
 template <typename T>

@@ -3513,7 +3513,7 @@ long Device<T>::cuda_adam_update(long lInput, T* pfInput, long* plOutput, T** pp
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 8, 8))
+	if (lErr = verifyInput(lInput, pfInput, 10, 11))
 		return lErr;
 
 	int n = (int)pfInput[0];
@@ -3523,9 +3523,15 @@ long Device<T>::cuda_adam_update(long lInput, T* pfInput, long* plOutput, T** pp
 	T fBeta1 = pfInput[4];
 	T fBeta2 = pfInput[5];
 	T fEpsHat = pfInput[6];
-	T fCorrectedLocalRate = pfInput[7];
+	T fLearningRate = pfInput[7];
+	T fCorrection = pfInput[8];
+	T fDecayRate = pfInput[9];
 
-	return m_math.adam_update(n, hNetParamDiff, hValM, hValV, fBeta1, fBeta2, fEpsHat, fCorrectedLocalRate);
+	long hNetParamData = 0;
+	if (lInput > 10)
+		hNetParamData = (long)pfInput[1];
+	
+	return m_math.adam_update(n, hNetParamDiff, hValM, hValV, fBeta1, fBeta2, fEpsHat, fLearningRate, fCorrection, fDecayRate, hNetParamData);
 }
 
 template long Device<double>::cuda_adam_update(long lInput, double* pfInput, long* plOutput, double** ppfOutput);

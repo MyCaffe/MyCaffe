@@ -9245,18 +9245,21 @@ namespace MyCaffe.common
         /// </remarks>
         /// <param name="nCount">Specifies the number of items.</param>
         /// <param name="hNetParamsDiff">Specifies a handle to the net params diff in GPU memory.</param>
-        /// <param name="hValM"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="hValV"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="fBeta1"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="fBeta2"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="fEpsHat"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="fCorrectedLocalRate"><b><i>NEEDS REVIEW</i></b></param>
-        public void adam_update(int nCount, long hNetParamsDiff, long hValM, long hValV, T fBeta1, T fBeta2, T fEpsHat, T fCorrectedLocalRate)
+        /// <param name="hValM"><b><i>First moment.</i></b></param>
+        /// <param name="hValV"><b><i>Second moment.</i></b></param>
+        /// <param name="fBeta1"><b><i>Momentum for first moment.</i></b></param>
+        /// <param name="fBeta2"><b><i>Momentum for second moment.</i></b></param>
+        /// <param name="fEpsHat"><b><i>Small value used to avoid Nan.</i></b></param>
+        /// <param name="fLearningRate"><b><i>Learning rate.</i></b></param>
+        /// <param name="fCorrection">Correction where Local Learning Rate = 'fCorrection' * 'fLearningRate'</param>
+        /// <param name="fDecayRate">Optionally, enable detached weight decay for AdamW optimization using this decay rate (when 0, Adam update is used).</param>
+        /// <param name="hNetParamsData">Optionally, specifies the net params weight data (used when fDecayRate != 0)</param>
+        public void adam_update(int nCount, long hNetParamsDiff, long hValM, long hValV, T fBeta1, T fBeta2, T fEpsHat, T fLearningRate, T fCorrection, T fDecayRate, long hNetParamsData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ADAM_UPDATE, m_param.AsDouble(nCount, hNetParamsDiff, hValM, hValV, convertD(fBeta1), convertD(fBeta2), convertD(fEpsHat), convertD(fCorrectedLocalRate)));
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ADAM_UPDATE, m_param.AsDouble(nCount, hNetParamsDiff, hValM, hValV, convertD(fBeta1), convertD(fBeta2), convertD(fEpsHat), convertD(fLearningRate), convertD(fCorrection), convertD(fDecayRate), hNetParamsData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ADAM_UPDATE, m_param.AsFloat( nCount, hNetParamsDiff, hValM, hValV, convertF(fBeta1), convertF(fBeta2), convertF(fEpsHat), convertF(fCorrectedLocalRate)));
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ADAM_UPDATE, m_param.AsFloat( nCount, hNetParamsDiff, hValM, hValV, convertF(fBeta1), convertF(fBeta2), convertF(fEpsHat), convertF(fLearningRate), convertF(fCorrection), convertF(fDecayRate), hNetParamsData));
         }
 
         /// <summary>

@@ -62,6 +62,7 @@ namespace MyCaffe.param
         double m_dfDelta = 1e-8;
         double m_dfMomentum2 = 0.999;
         double m_dfRmsDecay = 0.95;
+        double m_dfAdamWDecay = 1e-2;
         bool m_bDebugInfo = false;
         bool m_bSnapshotAfterTrain = false;
         string m_strCustomTrainer = null;
@@ -159,8 +160,16 @@ namespace MyCaffe.param
             /// @see [minFunc](https://www.cs.ubc.ca/~schmidtm/Software/minFunc.html) by Marc Schmidt, 2005
             /// </remarks>
             LBFGS = 6,
+            /// <summary>
+            /// Use AdamW gradient based optimization like Adam that includes a detached weight decay.
+            /// </summary>
+            /// <remarks>
+            /// @see [Decoupled Weight Decay Regularization](https://arxiv.org/abs/1711.05101) by Loshchilov, I. and Hutter, F., 2019.
+            /// @see [Adam: A Method for Stochastic Optimization](https://arxiv.org/abs/1412.6980v9) by Kingma, Diederik P. and Ba, Jimmy, 2014.
+            /// </remarks>
+            ADAMW = 7,
 #pragma warning disable 1591
-            _MAX = 7
+            _MAX = 8
 #pragma warning restore 1591
         }
 
@@ -809,9 +818,9 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Numerical stability for RMSProp, AdaGrad, AdaDelta and Adam solvers.
+        /// Numerical stability for RMSProp, AdaGrad, AdaDelta, Adam and AdamW solvers.
         /// </summary>
-        [Category("Solver - Ada and RMSProp")]
+        [Category("Solver - Ada, Adam and RMSProp")]
         [Description("Specifies the numerical stability for 'RMSProp', 'AdaGrad', 'AdaDelta' and 'Adam' solvers.")]
         public double delta
         {
@@ -820,10 +829,10 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// An additional momentum property for the Adam solver.
+        /// An additional momentum property for the Adam and AdamW solvers.
         /// </summary>
         [Category("Solver - Adam")]
-        [Description("Specifies an additional momentum property used by the 'Adam' solver.")]
+        [Description("Specifies an additional momentum property used by the 'Adam' and 'AdamW' solvers.")]
         public double momentum2
         {
             get { return m_dfMomentum2; }
@@ -831,7 +840,7 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// RMSProp decay value.
+        /// Specifies the 'RMSProp' decay value used by the 'RMSProp' solver.
         /// </summary>
         /// <remarks>
         /// MeanSquare(t) = rms_decay * MeanSquare(t-1) + (1 - rms_decay) * SquareGradient(t)
@@ -841,6 +850,20 @@ namespace MyCaffe.param
         public double rms_decay
         {
             get { return m_dfRmsDecay; }
+            set { m_dfRmsDecay = value; }
+        }
+
+        /// <summary>
+        /// Specifies the 'AdamW' detached weight decay value used by the 'AdamW' solver.
+        /// </summary>
+        /// <remarks>
+        /// Decay applied to detached weight decay.
+        /// </remarks>
+        [Category("Solver - AdamW")]
+        [Description("Specifies the 'AdamW' detached weight decay value used by the 'AdamW' solver.")]
+        public double adamw_decay
+        {
+            get { return m_dfAdamWDecay; }
             set { m_dfRmsDecay = value; }
         }
 
@@ -1001,14 +1024,17 @@ namespace MyCaffe.param
 
             rgChildren.Add("type", type.ToString());
 
-            if (type == SolverType.RMSPROP || type == SolverType.ADAGRAD || type == SolverType.ADADELTA  || type == SolverType.ADAM)
+            if (type == SolverType.RMSPROP || type == SolverType.ADAGRAD || type == SolverType.ADADELTA || type == SolverType.ADAM || type == SolverType.ADAMW)
                 rgChildren.Add("delta", delta.ToString());
 
-            if (type == SolverType.ADAM)
+            if (type == SolverType.ADAM || type == SolverType.ADAMW)
                 rgChildren.Add("momentum2", momentum2.ToString());
 
             if (type == SolverType.RMSPROP)
                 rgChildren.Add("rms_decay", rms_decay.ToString());
+
+            if (type == SolverType.ADAMW)
+                rgChildren.Add("adamw_decay", adamw_decay.ToString());
 
             if (type == SolverType.LBFGS)
                 rgChildren.Add("lbgfs_corrections", lbgfs_corrections.ToString());
@@ -1192,6 +1218,10 @@ namespace MyCaffe.param
                         p.type = SolverType.ADAM;
                         break;
 
+                    case "adamw":
+                        p.type = SolverType.ADAMW;
+                        break;
+
                     case "rmsprop":
                         p.type = SolverType.RMSPROP;
                         break;
@@ -1213,6 +1243,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("rms_decay")) != null)
                 p.rms_decay = ParseDouble(strVal);
+
+            if ((strVal = rp.FindValue("adamw_decay")) != null)
+                p.adamw_decay = ParseDouble(strVal);
 
             if ((strVal = rp.FindValue("debug_info")) != null)
                 p.debug_info = bool.Parse(strVal);
