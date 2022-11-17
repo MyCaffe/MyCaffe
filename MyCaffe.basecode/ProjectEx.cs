@@ -1076,7 +1076,7 @@ namespace MyCaffe.basecode
                             bRemove = true;
                         else
                         {
-                            if (strType == "data")
+                            if (strType == "data" || strType == "tokenizeddata")
                             {
                                 if (phase.Value == "TRAIN")
                                     nTrainDataLayerIdx = nIdx;
@@ -1321,7 +1321,8 @@ namespace MyCaffe.basecode
                     }
                     else if (!bNameSet && (
                         strType == "data" ||
-                        strType == "annotated_data"))
+                        strType == "annotated_data" ||
+                        strType == "tokenizeddata"))
                     {
                         RawProtoCollection tops = layer.FindChildren("top");
                         if (tops != null && tops.Count > 0)
@@ -1411,6 +1412,19 @@ namespace MyCaffe.basecode
                             if (colTop.Count > 0)
                             {
                                 rgInputs[0] = new Tuple<string, int, int, int, int>(colTop[0].Value, rgInputs[0].Item2, rgInputs[0].Item3, rgInputs[0].Item4, rgInputs[0].Item5);
+                                break;
+                            }
+                        }
+                    }
+                    else if (strType == "tokenizeddata")
+                    {
+                        if (rgInputs.Count > 0)
+                        {
+                            RawProtoCollection colTop = layer.FindChildren("top");
+                            if (colTop.Count > 0)
+                            {
+                                rgInputs[0] = new Tuple<string, int, int, int, int>(colTop[0].Value, rgInputs[0].Item2, rgInputs[0].Item3, rgInputs[0].Item4, rgInputs[0].Item5);
+                                rgInputs.Add(new Tuple<string, int, int, int, int>("pos", rgInputs[0].Item2, rgInputs[0].Item3, 1, 1));
                                 break;
                             }
                         }
@@ -1509,7 +1523,7 @@ namespace MyCaffe.basecode
 
                     bool bInclude = includeLayer(layer, stage, out psInclude, out psExclude);
 
-                    if (strType == "data" || strType == "annotateddata" || strType == "batchdata")
+                    if (strType == "data" || strType == "annotateddata" || strType == "batchdata" || strType == "tokenizeddata")
                     {
                         if (psInclude.Find(Phase.TEST, stage) != null)
                             protoTransform = layer.FindChild("transform_param");
@@ -1545,7 +1559,9 @@ namespace MyCaffe.basecode
                     {
                         rgRemove.Add(layer);
                     }
-                    else if (strType == "softmaxwithloss")
+                    else if (strType == "softmaxwithloss" ||
+                             strType == "softmaxcrossentropy_loss" ||
+                             strType == "softmaxcrossentropyloss")
                     {
                         if (!bSkipLossLayer)
                         {
@@ -1570,8 +1586,6 @@ namespace MyCaffe.basecode
                              strType == "multinomiallogisticloss" ||
                              strType == "sigmoidcrossentropy_loss" ||
                              strType == "sigmoidcrossentropyloss" ||
-                             strType == "softmaxcrossentropy_loss" ||
-                             strType == "softmaxcrossentropyloss" ||
                              strType == "triplet_loss" ||
                              strType == "tripletloss" ||
                              strType == "triplet_loss_simple" ||
@@ -1588,6 +1602,10 @@ namespace MyCaffe.basecode
                         rgRemove.Add(layer);
                     }
                     else if (strType == "debug")
+                    {
+                        rgRemove.Add(layer);
+                    }
+                    else if (strType == "tokenizeddata")
                     {
                         rgRemove.Add(layer);
                     }
@@ -1658,7 +1676,12 @@ namespace MyCaffe.basecode
                     if (type != null)
                         type.Value = "Softmax";
 
-                    protoSoftMaxLoss.RemoveChild("bottom", "label", true);
+                    RawProtoCollection colBtm = protoSoftMaxLoss.FindChildren("bottom");
+
+                    for (int i = 1; i < colBtm.Count; i++)
+                    {
+                        protoSoftMaxLoss.RemoveChild("bottom", colBtm[i].Value, true);
+                    }
                 }
             }
 
