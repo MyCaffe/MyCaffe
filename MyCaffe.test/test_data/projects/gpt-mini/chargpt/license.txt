@@ -1,0 +1,5 @@
+The gpt-mini project is a highly augmented project based on the minGPT github project by Karpathy, located at
+https://github.com/karpathy/minGPT and distributed under the MIT license at https://github.com/karpathy/minGPT/blob/master/LICENSE.
+
+The gpt-mini project has been altered to save input and gradient tensors for use with debugging the MyCaffe GPT implementation
+based on the gpt-mini project.
