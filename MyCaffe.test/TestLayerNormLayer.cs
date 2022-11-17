@@ -181,6 +181,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestBackwardPicoBlk()
+        {
+            LayerNormLayerTest test = new LayerNormLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ILayerNormLayerTest t in test.Tests)
+                {
+                    t.TestBackwardPicoBlk();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface ILayerNormLayerTest : ITest
@@ -191,6 +209,7 @@ namespace MyCaffe.test
 
         void TestForwardPico(bool bBatch, int nHeads);
         void TestBackwardPico(bool bBatch, int nHeads);
+        void TestBackwardPicoBlk();
     }
 
     class LayerNormLayerTest : TestBase
@@ -381,13 +400,22 @@ namespace MyCaffe.test
             }
         }
 
-        public Tuple<List<int>, float[]> Fill(string strGpt, string strName, Log log, CausalSelfAttentionParameter p)
+        public Tuple<List<int>, float[]> Fill(string strGpt, string strName, Log log, string strPass = "")
         {
-            string strFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\" + strGpt + "\\" + strName + ".txt";
+            string strFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\" + strGpt + "\\";
+
+            if (!string.IsNullOrEmpty(strPass))
+                strFile += strPass + "\\";
+
+            strFile += strName + ".txt";
+
             string[] rgstrLines = File.ReadAllLines(strFile);
             string strSize = rgstrLines[0].Trim('#', ' ', '(', ')', ',');
             string[] rgstrSize = strSize.Split(',');
-            List<int> rgnShape = rgstrSize.Select(p1 => int.Parse(p1)).ToList();
+            List<int> rgnShape = new List<int>() { 1 };
+
+            if (!string.IsNullOrEmpty(strSize))
+                rgnShape = rgstrSize.Select(p1 => int.Parse(p1)).ToList();
             List<float> rgfVal = new List<float>();
 
             while (rgnShape.Count < 4)
@@ -442,11 +470,11 @@ namespace MyCaffe.test
 
                 m_log.CHECK(layer.type == LayerParameter.LayerType.LAYERNORM, "The layer type is incorrect!");
 
-                Tuple<List<int>, float[]> x = Fill(strModel, "x", m_log, p.causal_self_attention_param);
+                Tuple<List<int>, float[]> x = Fill(strModel, "x", m_log);
                 m_blob_bottom.Reshape(x.Item1);
                 m_blob_bottom.mutable_cpu_data = convert(x.Item2);
 
-                Tuple<List<int>, float[]> y = Fill(strModel, "y", m_log, p.causal_self_attention_param);
+                Tuple<List<int>, float[]> y = Fill(strModel, "y", m_log);
                 blobY.Reshape(y.Item1);
                 blobY.mutable_cpu_data = convert(y.Item2);
 
@@ -461,9 +489,11 @@ namespace MyCaffe.test
                 {
                     float fExpected = rgExpected[i];
                     float fActual = rgActual[i];
-                    float fErr = 1e-5f;
+                    float fErr = 1e-6f;
+                    float fDiff = fActual - fExpected;
 
-                    m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, fErr, "The values are not as expected!");
+                    if (Math.Abs(fDiff) > fErr)
+                        m_log.FAIL("The values are not expected!");
                 }
             }
             finally
@@ -490,12 +520,12 @@ namespace MyCaffe.test
 
                 m_log.CHECK(layer.type == LayerParameter.LayerType.LAYERNORM, "The layer type is incorrect!");
 
-                Tuple<List<int>, float[]> x = Fill(strModel, "x", m_log, p.causal_self_attention_param);
+                Tuple<List<int>, float[]> x = Fill(strModel, "x", m_log);
                 m_blob_bottom.Reshape(x.Item1);
                 m_blob_bottom.mutable_cpu_data = convert(x.Item2);
 
-                Tuple<List<int>, float[]> y_grad = Fill(strModel, "grad_1a_y", m_log, p.causal_self_attention_param);
-                Tuple<List<int>, float[]> x_grad = Fill(strModel, "grad_9_x", m_log, p.causal_self_attention_param);
+                Tuple<List<int>, float[]> y_grad = Fill(strModel, "grad_1a_y", m_log);
+                Tuple<List<int>, float[]> x_grad = Fill(strModel, "grad_9_x", m_log);
 
                 layer.Setup(BottomVec, TopVec);
                 layer.Forward(BottomVec, TopVec);
@@ -512,9 +542,57 @@ namespace MyCaffe.test
                 {
                     float fExpected = rgExpected[i];
                     float fActual = rgActual[i];
-                    float fErr = 1e-5f;
+                    float fErr = 1e-6f;
+                    float fDiff = fActual - fExpected;
 
-                    m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, fErr, "The values are not as expected!");
+                    if (Math.Abs(fDiff) > fErr)
+                        m_log.FAIL("The values are not expected!");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
+            }
+        }
+
+        public void TestBackwardPicoBlk()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.LAYERNORM);
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+
+            try
+            {
+                string strModel = "gpt-pico-ln-blk";
+
+                m_log.CHECK(layer.type == LayerParameter.LayerType.LAYERNORM, "The layer type is incorrect!");
+
+                Tuple<List<int>, float[]> y_grad = Fill(strModel, "grad_1a_y", m_log, "iter_0");
+                Tuple<List<int>, float[]> x_grad = Fill(strModel, "grad_9_x", m_log, "iter_0");
+                Tuple<List<int>, float[]> x = Fill(strModel, "x", m_log);
+
+                m_blob_bottom.Reshape(x.Item1);
+                m_blob_bottom.mutable_cpu_data = convert(x.Item2);
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+                
+                m_blob_top.mutable_cpu_diff = convert(y_grad.Item2);
+
+                layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
+
+                // Now, check values
+                float[] rgExpected = x_grad.Item2;
+                float[] rgActual = convertF(m_blob_bottom.mutable_cpu_diff);
+
+                for (int i = 0; i < rgExpected.Length; i++)
+                {
+                    float fExpected = rgExpected[i];
+                    float fActual = rgActual[i];
+                    float fErr = 1e-6f;
+                    float fDiff = fActual - fExpected;
+
+                    if (Math.Abs(fDiff) > fErr)
+                        m_log.FAIL("The values are not expected!");
                 }
             }
             finally
