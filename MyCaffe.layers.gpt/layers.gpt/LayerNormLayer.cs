@@ -186,28 +186,31 @@ namespace MyCaffe.layers.gpt
             int nOuterNum = colBottom[0].num;
             int nChannel = colBottom[0].channels;
             int nInnerNum = colBottom[0].count(2);
-            
 
+            
             //-----------------------------------
             // y = (x - mean) / std
             // Normalize the input by centering and dividing by stdev across channels.
             // Copy each stdev value per channel across all items in the channel (e.g. 1 -> channel items)
             // xmu' = y' / std 
             m_cuda.div(nCount, colTop[0].gpu_diff, m_blobStdevFull.gpu_data, m_blobXmu.mutable_gpu_diff);
-            // std' = -y' * xmu / std^2
-            m_cuda.mul(nCount, colTop[0].gpu_diff, m_blobXmu.gpu_data, m_blobStdevFull.mutable_gpu_diff);
-            m_cuda.powx(nCount, m_blobStdevFull.gpu_data, 2.0, m_blobWork.mutable_gpu_diff);
-            m_cuda.div(nCount, m_blobStdevFull.gpu_diff, m_blobWork.gpu_diff, m_blobStdevFull.mutable_gpu_diff);
-            m_cuda.scal(nCount, -1.0, m_blobStdevFull.mutable_gpu_diff);
+
+            // std' = y' * -xmu / std^2
+            m_cuda.powx(nCount, m_blobStdevFull.gpu_data, 2.0, m_blobStdevFull.mutable_gpu_diff);
+            m_cuda.div(nCount, m_blobXmu.gpu_data, m_blobStdevFull.gpu_diff, m_blobWork.mutable_gpu_diff);
+            m_cuda.scal(nCount, -1, m_blobWork.mutable_gpu_diff);
+            m_cuda.mul(nCount, colTop[0].gpu_diff, m_blobWork.gpu_diff, m_blobStdevFull.mutable_gpu_diff);
+
             // std' = channel_sum(stdfull')
             m_cuda.channel_sum(nCount, nOuterNum, nChannel, nInnerNum, m_blobStdevFull.gpu_diff, m_blobStdev.mutable_gpu_diff, false);
 
             //-----------------------------------
             // std = var1.sqrt()
-            // var' = 0.5 * std^-1 * std'
+            // var' = std' * 0.5 * std^-1
+            m_blobWork.SetDiff(0);
             m_cuda.powx(nOuterNum * nChannel, m_blobStdev.gpu_data, -1.0, m_blobWork.mutable_gpu_diff);
-            m_cuda.mul(nOuterNum * nChannel, m_blobWork.gpu_diff, m_blobStdev.gpu_diff, m_blobVar.mutable_gpu_diff);
-            m_cuda.scal(nOuterNum * nChannel, 0.5, m_blobVar.mutable_gpu_diff);
+            m_cuda.scal(nOuterNum * nChannel, 0.5, m_blobWork.mutable_gpu_diff);
+            m_cuda.mul(nOuterNum * nChannel, m_blobStdev.gpu_diff, m_blobWork.gpu_diff, m_blobVar.mutable_gpu_diff);
 
             //-----------------------------------
             // var = xmusq.mean(dim=-1, keepdim=True)
