@@ -261,9 +261,9 @@ namespace MyCaffe.test
         List<int> m_rgGpu = new List<int>();
         Net<T> m_netRun = null;
         TokenizedDataLayer<T> m_dataLayer = null;
-        Blob<T> m_blobY;
-        Blob<T> m_blobX;
-        Blob<T> m_blobPos;
+        Blob<T> m_blobY = null;
+        Blob<T> m_blobX = null;
+        Blob<T> m_blobPos = null;
         float[] m_rgTestInput;
         MyCaffeControl<T> m_ctrl = null;
         Random m_random = new Random();
@@ -272,12 +272,6 @@ namespace MyCaffe.test
             : base(strName, new List<int>() { 3, 2, 4, 1 }, nDeviceID)
         {
             m_engine = engine;
-            m_blobY = new Blob<T>(m_cuda, m_log);
-            m_blobX = new Blob<T>(m_cuda, m_log);
-            m_blobX.Name = "data";
-            m_blobPos = new Blob<T>(m_cuda, m_log);
-            m_blobPos.Name = "pos";
-            m_blobPos.Reshape(1, 128, 1, 1);
 
             List<WaitHandle> rgWait = new List<WaitHandle>();
             rgWait.AddRange(m_evtCancel.Handles);
@@ -304,10 +298,6 @@ namespace MyCaffe.test
 
         protected override void dispose()
         {
-            dispose(ref m_blobY);
-            dispose(ref m_blobX);
-            dispose(ref m_blobPos);
-
             base.dispose();
         }
 
@@ -670,6 +660,11 @@ namespace MyCaffe.test
                 m_ctrl.OnTestingIteration += ctrl_OnTestingIteration;
                 m_ctrl.Load(Phase.TRAIN, project, null, null, false, null, false);
 
+                m_blobY = m_ctrl.CreateBlob("results");
+                m_blobX = m_ctrl.CreateBlob("data");
+                m_blobPos = m_ctrl.CreateBlob("pos");
+                m_blobPos.Reshape(1, 128, 1, 1);
+
                 m_netRun = m_ctrl.GetInternalNet(Phase.RUN);
                 m_dataLayer = m_ctrl.GetInternalNet(Phase.TEST).layers[0] as TokenizedDataLayer<T>;
                 
@@ -688,6 +683,10 @@ namespace MyCaffe.test
             }
             finally
             {
+                dispose1(ref m_blobY);
+                dispose1(ref m_blobX);
+                dispose1(ref m_blobPos);
+
                 m_ctrl.Dispose();
                 m_ctrl = null;
             }
@@ -772,19 +771,6 @@ namespace MyCaffe.test
 
             float[] rgIdx = convertF(blobIdx.mutable_cpu_data);
             rgfIdx.AddRange(rgIdx);
-
-            // Reshape onece with maximum size to optimize
-            // all smaller reshapings.
-            int nOriginalShape = blobIdx.channels;
-            rgShape = new int[] { 1, nMaxNewTokens };
-            blobY.Reshape(rgShape);            
-            colBottom[0] = blobY;
-            colBottom[1] = blobY;
-            net.Forward(colBottom, out dfLoss, true);
-
-            colBottom[0] = blobIdx;
-            colBottom[1] = blobPos;
-
             rgfIdxOut.AddRange(rgfIdx);
                        
             for (int i = 0; i < nMaxNewTokens; i++)
@@ -802,8 +788,9 @@ namespace MyCaffe.test
 
                 rgfIdxOut.Add(fIdxVal);
 
-                rgShape = new int[] { blobIdx.num, rgfIdx.Count };
-                blobIdx.Reshape(rgShape);
+                rgShape = new int[] { 1, rgfIdx.Count };
+                if (blobIdx.channels < rgfIdx.Count)
+                    blobIdx.Reshape(rgShape);
                 blobIdx.mutable_cpu_data = convert(rgfIdx.ToArray());
                 
                 if (blobPos.count() != blobIdx.count(0, 2))
