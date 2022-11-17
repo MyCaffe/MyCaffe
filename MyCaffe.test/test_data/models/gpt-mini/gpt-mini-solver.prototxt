@@ -18,7 +18,7 @@ snapshot: 500
 snapshot_prefix: basic
 snapshot_format: BINARYPROTO
 device_id: 0
-type: ADAM
+type: ADAMW
 delta: 1E-08
 momentum2: 0.95
 snapshot_include_weights: True
