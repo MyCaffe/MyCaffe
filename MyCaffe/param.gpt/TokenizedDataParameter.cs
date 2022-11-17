@@ -19,6 +19,7 @@ namespace MyCaffe.param.gpt
         INPUT_TYPE m_inputType;
         string m_strSource;
         int? m_nSeed = null;
+        string m_strDbgIdxFile;
 
         /// <summary>
         /// Defines the input type used.
@@ -66,6 +67,16 @@ namespace MyCaffe.param.gpt
         }
 
         /// <summary>
+        /// Specifies an optional data index file used for debugging only.
+        /// </summary>
+        [Description("Specifies an optional data index file used for debuging only.")]
+        public string debug_index_file
+        {
+            get { return m_strDbgIdxFile; }
+            set { m_strDbgIdxFile = value; }
+        }
+
+        /// <summary>
         /// The number of heads used.
         /// </summary>
         [Description("Specifies batch size.")]
@@ -106,6 +117,7 @@ namespace MyCaffe.param.gpt
             m_nBatchSize = p.batch_size;
             m_nBlockSize = p.block_size;
             m_nSeed = p.seed;
+            m_strDbgIdxFile = p.debug_index_file;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -129,6 +141,9 @@ namespace MyCaffe.param.gpt
             rgChildren.Add("source", "\"" + m_strSource + "\"");
             rgChildren.Add("batch_size", batch_size.ToString());
             rgChildren.Add("block_size", block_size.ToString());
+
+            if (!string.IsNullOrEmpty(debug_index_file))
+                rgChildren.Add("debug_index_file", debug_index_file);
 
             if (seed != null)
                 rgChildren.Add("seed", seed.ToString());
@@ -157,6 +172,9 @@ namespace MyCaffe.param.gpt
 
             if ((strVal = rp.FindValue("seed")) != null)
                 p.seed = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("debug_index_file")) != null)
+                p.debug_index_file = strVal;
 
             if ((strVal = rp.FindValue("input_type")) != null)
             {
