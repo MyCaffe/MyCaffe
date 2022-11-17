@@ -195,8 +195,9 @@ namespace MyCaffe.layers
 
             double dfLoss = convertD(fLoss);
             double dfNormalizer = get_normalizer(m_normalization, (int)dfValidCount);
+            double dfFinalLoss = dfLoss / dfNormalizer;
 
-            colTop[0].SetData(dfLoss / dfNormalizer, 0);
+            colTop[0].SetData(dfFinalLoss, 0);
 
             if (colTop.Count == 2)
                 colTop[1].ShareData(m_blobProb);
