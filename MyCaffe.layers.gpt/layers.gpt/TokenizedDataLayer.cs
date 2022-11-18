@@ -86,7 +86,7 @@ namespace MyCaffe.layers.gpt
             switch (m_param.tokenized_data_param.input_type)
             {
                 case TokenizedDataParameter.INPUT_TYPE.TEXT_FILE:
-                    m_data = new TextInputData(m_param.tokenized_data_param.source, m_param.tokenized_data_param.seed, m_param.tokenized_data_param.debug_index_file);
+                    m_data = new TextInputData(m_param.tokenized_data_param.source, m_param.tokenized_data_param.seed, m_param.tokenized_data_param.debug_index_file, m_param.phase);
                     break;
 
                 default:
@@ -264,7 +264,10 @@ namespace MyCaffe.layers.gpt
         string m_strDebugIndexFile;
         List<int> m_rgDebugIdx = null;
         int m_nDebugIdx = 0;
-        Random m_random = new Random();
+        float[] m_rgData = null;
+        float[] m_rgTgt = null;
+        Phase m_phase;
+
 
         /// <summary>
         /// The constructor.
@@ -272,8 +275,9 @@ namespace MyCaffe.layers.gpt
         /// <param name="strSrc">Specifies the data source as the filename of the text data file.</param>
         /// <param name="nRandomSeed">Optionally, specifies a random seed for testing.</param>
         /// <param name="strDebugIndexFile">Optionally, specifies the debug index file containing index values in the form 'idx = #', one per line.</param>
-        public TextInputData(string strSrc, int? nRandomSeed = null, string strDebugIndexFile = null) : base(nRandomSeed)
+        public TextInputData(string strSrc, int? nRandomSeed = null, string strDebugIndexFile = null, Phase phase = Phase.NONE) : base(nRandomSeed)
         {
+            m_phase = phase;
             m_strData = File.ReadAllText(strSrc);
 
             if (File.Exists(strDebugIndexFile))
@@ -335,8 +339,13 @@ namespace MyCaffe.layers.gpt
         /// <returns>A tuple containing the data and target is returned.</returns>
         public override Tuple<float[], float[]> GetData(int nBatchSize, int nBlockSize)
         {
-            float[] rgData = new float[nBlockSize * nBatchSize];
-            float[] rgTgt = new float[nBlockSize * nBatchSize];
+            int nSize = nBatchSize * nBlockSize;
+
+            if (m_rgData == null || m_rgData.Length != nSize)
+                m_rgData = new float[nSize];
+
+            if (m_rgTgt == null || m_rgTgt.Length != nSize)
+                m_rgTgt = new float[nSize];
 
             for (int i = 0; i < nBatchSize; i++)
             {
@@ -352,27 +361,26 @@ namespace MyCaffe.layers.gpt
                         m_nDebugIdx = 0;
                 }
 
-                for (int j = 0; j < nBlockSize; j++)
-                {                    
+                int? nCharIdxLast = null;
+                for (int j = 0; j < nBlockSize + 1; j++)
+                {               
+                    if (nCharIdxLast.HasValue)
+                        m_rgData[nDstIdx + j - 1] = nCharIdxLast.Value;
+
                     char ch = m_strData[nDataIdx + j];
                     int nCharIdx = m_rgVocabKeyToIdx[ch];
 
                     if (nCharIdx < 0 || nCharIdx > 65)
                         throw new Exception("Token out of range!");
 
-                    rgData[nDstIdx + j] = nCharIdx;
+                    if (j > 0)
+                        m_rgTgt[nDstIdx + j - 1] = nCharIdx;
 
-                    ch = m_strData[nDataIdx + j + 1];
-
-                    if (nCharIdx < 0 || nCharIdx > 65)
-                        throw new Exception("Token out of range!");
-
-                    nCharIdx = m_rgVocabKeyToIdx[ch];
-                    rgTgt[nDstIdx + j] = nCharIdx;
+                    nCharIdxLast = nCharIdx;
                 }
             }
 
-            return new Tuple<float[], float[]>(rgData, rgTgt);
+            return new Tuple<float[], float[]>(m_rgData, m_rgTgt);
         }
 
         /// <summary>
