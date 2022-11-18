@@ -86,8 +86,8 @@ namespace MyCaffe.layers.gpt
             LayerParameter ipAttn = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "c_attn");
             ipAttn.inner_product_param.num_output = (uint)(3 * m_nEmbed);
             ipAttn.inner_product_param.bias_term = true;
-            ipAttn.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.2); // Original 0.02 appears to contribute to vanishing gradient when using float.
-            ipAttn.inner_product_param.bias_filler = new FillerParameter("constant", 0.1); // Original 0.0 appears to contribute contribute to vanishing gradient when using float.
+            ipAttn.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02); 
+            ipAttn.inner_product_param.bias_filler = new FillerParameter("constant", 0.0); 
             ipAttn.inner_product_param.axis = 2;
             ipAttn.parameters.Add(new ParamSpec(1.0, 1.0));
             ipAttn.parameters.Add(new ParamSpec(1.0, 0.0));
@@ -98,8 +98,8 @@ namespace MyCaffe.layers.gpt
             LayerParameter ipProj = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "c_proj");
             ipProj.inner_product_param.num_output = (uint)m_nEmbed;
             ipProj.inner_product_param.bias_term = true;
-            ipProj.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.2 / Math.Sqrt(2 * m_param.causal_self_attention_param.layers)); // original 0.02/sqrt appears to contribute to vanishing gradient when using float.
-            ipProj.inner_product_param.bias_filler = new FillerParameter("constant", 0.1); // Original 0.0 appears to contribute to vanishing gradient when using float.
+            ipProj.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02 / Math.Sqrt(2 * m_param.causal_self_attention_param.layers)); 
+            ipProj.inner_product_param.bias_filler = new FillerParameter("constant", 0.0); 
             ipProj.inner_product_param.axis = 2;            
             ipProj.parameters.Add(new ParamSpec(1.0, 1.0));
             ipProj.parameters.Add(new ParamSpec(1.0, 0.0));
