@@ -6,6 +6,7 @@ Trains a character-level language model.
 from cmath import e
 import os
 import sys
+import random
 
 import torch
 from torch.utils.data import Dataset
@@ -30,7 +31,7 @@ def get_config():
     C.model = GPT.get_default_config()
 
     #C.model.model_type = 'gpt-mini1' # _CHANGE_
-    C.model.model_type = 'gpt-mini1'
+    C.model.model_type = 'gpt-mini'
     
     # data
     C.data = CharDataset.get_default_config(C.model.model_type)
@@ -67,6 +68,7 @@ class CharDataset(Dataset):
 
         chars = sorted(list(set(data)))
         data_size, vocab_size = len(data), len(chars)
+        self.max_idx = data_size - (config.block_size + 1)
         print('data has %d characters, %d unique.' % (data_size, vocab_size))
 
         self.stoi = { ch:i for i,ch in enumerate(chars) }
@@ -82,16 +84,21 @@ class CharDataset(Dataset):
 
     def __len__(self):
         return len(self.data) - self.config.block_size
-
+    
     def __getitem__(self, idx):
+        idx1 = random.randint(0, self.max_idx)
+        
         # grab a chunk of (block_size + 1) characters from the data
-        chunk = self.data[idx:idx + self.config.block_size + 1]
+        chunk = self.data[idx1:idx1 + self.config.block_size + 1]
         # encode every character to an integer
         dix = [self.stoi[s] for s in chunk]
         # return as tensors
         x = torch.tensor(dix[:-1], dtype=torch.long)
         y = torch.tensor(dix[1:], dtype=torch.long)      
         #print('idx = %d' % idx)
+        #file1 = open("c:\\temp\\snap\\idx.txt", "a")
+        #file1.write('idx = %d\n' % idx1)
+        #file1.close()
         return x, y
 
 # -----------------------------------------------------------------------------
@@ -123,9 +130,13 @@ if __name__ == '__main__':
     # iteration callback
     def batch_end_callback(trainer):
 
-#        if trainer.iter_num % 10 == 0:
-        print(f"iter_dt {trainer.iter_dt * 1000:.2f}ms; iter {trainer.iter_num}: train loss {trainer.loss.item():.5f}")
+        if trainer.iter_num % 10 == 0:
+            print(f"iter_dt {trainer.iter_dt * 1000:.2f}ms; iter {trainer.iter_num}: train loss {trainer.loss.item():.5f}")
 
+        #file1 = open("c:\\temp\\snap\\idx.txt", "a")
+        #file1.write(f"iter_dt {trainer.iter_dt * 1000:.2f}ms; iter {trainer.iter_num}: train loss {trainer.loss.item():.5f}\n")
+        #file1.close()
+        
         if trainer.iter_num > 0 and trainer.iter_num % 500 == 0:
             # evaluate both the train and test score
             model.eval()

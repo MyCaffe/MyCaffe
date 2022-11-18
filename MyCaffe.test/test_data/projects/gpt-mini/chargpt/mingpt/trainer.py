@@ -21,7 +21,7 @@ class Trainer:
         C.num_workers = 0 # 4 _CHANGE_
         # optimizer parameters
         C.max_iters = None
-        C.batch_size = 64
+        C.batch_size = 64 
        
         if model_type == 'gpt-pico' or model_type == 'gpt-pico3':
             C.batch_size = 1
@@ -77,20 +77,20 @@ class Trainer:
         # setup the dataloader
         train_loader = DataLoader(
             self.train_dataset,
-            sampler=torch.utils.data.RandomSampler(self.train_dataset, replacement=True, num_samples=int(1e10)), # _CHANGE_
-            #sampler=torch.utils.data.SequentialSampler(self.train_dataset),
+            #sampler=torch.utils.data.RandomSampler(self.train_dataset, replacement=True, num_samples=int(1e10)), # _CHANGE_
+            sampler=torch.utils.data.SequentialSampler(self.train_dataset),
             shuffle=False,
             pin_memory=True,
             batch_size=config.batch_size,
             num_workers=config.num_workers,
         )
-
+        
         model.train()
         self.iter_num = 0
         self.iter_time = time.time()
         data_iter = iter(train_loader)
         while True:
-            model.set_iter(self.iter_num)
+            model.set_iter(self.iter_num, False)
             # fetch the next batch (x, y) and re-init iterator if needed
             try:
                 batch = next(data_iter)
@@ -99,6 +99,8 @@ class Trainer:
                 batch = next(data_iter)
             batch = [t.to(self.device) for t in batch]
             x, y = batch
+            
+            #model.save_internal_blobs()
 
             # forward the model
             logits, self.loss = model(x, y)
