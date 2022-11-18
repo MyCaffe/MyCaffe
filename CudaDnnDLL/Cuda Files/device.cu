@@ -3529,7 +3529,7 @@ long Device<T>::cuda_adam_update(long lInput, T* pfInput, long* plOutput, T** pp
 
 	long hNetParamData = 0;
 	if (lInput > 10)
-		hNetParamData = (long)pfInput[1];
+		hNetParamData = (long)pfInput[10];
 	
 	return m_math.adam_update(n, hNetParamDiff, hValM, hValV, fBeta1, fBeta2, fEpsHat, fLearningRate, fCorrection, fDecayRate, hNetParamData);
 }
