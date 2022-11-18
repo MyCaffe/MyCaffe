@@ -34,7 +34,7 @@ layer
       {
          type: "gaussian"
          mean: 0
-         std: 0.2
+         std: 0.02
       }
    }
 }
@@ -58,7 +58,7 @@ layer
       {
          type: "gaussian"
          mean: 0
-         std: 0.2
+         std: 0.02
       }
    }
 }
@@ -92,6 +92,46 @@ layer
    type: "TransformerBlock"
    bottom: "eltwise1"
    top: "tfb1"
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
    transformer_block_param 
    {
       layers: 6
@@ -108,6 +148,46 @@ layer
    type: "TransformerBlock"
    bottom: "tfb1"
    top: "tfb2"
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
    transformer_block_param 
    {
       layers: 6
@@ -124,6 +204,46 @@ layer
    type: "TransformerBlock"
    bottom: "tfb2"
    top: "tfb3"
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
    transformer_block_param 
    {
       layers: 6
@@ -140,6 +260,46 @@ layer
    type: "TransformerBlock"
    bottom: "tfb3"
    top: "tfb4"
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
    transformer_block_param 
    {
       layers: 6
@@ -156,6 +316,46 @@ layer
    type: "TransformerBlock"
    bottom: "tfb4"
    top: "tfb5"
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
    transformer_block_param 
    {
       layers: 6
@@ -172,6 +372,46 @@ layer
    type: "TransformerBlock"
    bottom: "tfb5"
    top: "tfb6"
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
    transformer_block_param 
    {
       layers: 6
@@ -208,7 +448,7 @@ layer
       {
          type: "gaussian"
          mean: 0
-         std: 0.2
+         std: 0.02
       }
       axis: 2
    }
@@ -220,6 +460,7 @@ layer
    bottom: "logits"
    bottom: "tgt"
    top: "loss1"
+   loss_weight: 100
    loss_param 
    {
       normalization: BATCH_SIZE
