@@ -82,7 +82,7 @@ class CausalSelfAttention(nn.Module):
 
     def __init__(self, config):
         super().__init__()
-        self.debug = True # _CHANGE_
+        self.debug = False # _CHANGE_
         self.out_path = "c:\\temp\\snap\\"
         assert config.n_embd % config.n_head == 0
         # key, query, value projections for all heads, but in a batch
@@ -696,9 +696,9 @@ class GPT(nn.Module):
         C.vocab_size = None
         C.block_size = None
         # dropout hyperparameters
-        C.embd_pdrop = 0.0 # 0.1 _CHANGED_
-        C.resid_pdrop = 0.0 # 0.1 _CHANGED_
-        C.attn_pdrop = 0.0 # 0.1 _CHANGED_
+        C.embd_pdrop = 0.1 # 0.1 _CHANGED_
+        C.resid_pdrop = 0.1 # 0.1 _CHANGED_
+        C.attn_pdrop = 0.1 # 0.1 _CHANGED_
         return C
 
     def __init__(self, config):
@@ -755,27 +755,27 @@ class GPT(nn.Module):
         self.apply(self._init_weights)
         for pn, p in self.named_parameters():
             if pn.endswith('c_proj.weight'):
-                torch.nn.init.normal_(p, mean=0.0, std=0.2/math.sqrt(2 * config.n_layer)) #std=0.02/math.sqrt(2 * config.n_layer)) _CHANGE_
+                torch.nn.init.normal_(p, mean=0.0, std=0.02/math.sqrt(2 * config.n_layer))
 
         # report number of parameters (note we don't count the decoder parameters in lm_head)
         n_params = sum(p.numel() for p in self.transformer.parameters())
         print("number of parameters: %.2fM" % (n_params/1e6,))
 
-    def set_iter(self, iter_num):
+    def set_iter(self, iter_num, force):
         self.iter_num = iter_num
         self.out_path = "c:\\temp\\snap\\iter_%d\\" % iter_num
         DebugFunction.out_path = self.out_path
-        if self.debug or self.transformer.h[0].debug:
+        if force or self.debug or self.transformer.h[0].debug:
             if not os.path.exists(self.out_path):
                 os.makedirs(self.out_path)
 
     def _init_weights(self, module):
         if isinstance(module, nn.Linear):
-            torch.nn.init.normal_(module.weight, mean=0.0, std=0.2) # std=0.02) # _CHANGE_
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
             if module.bias is not None:
-                torch.nn.init.constant_(module.bias, 0.1) # torch.nn.init.zeros_(module.bias) # _CHANGE_
+                torch.nn.init.zeros_(module.bias) 
         elif isinstance(module, nn.Embedding):
-            torch.nn.init.normal_(module.weight, mean=0.0, std=0.2) # std=0.02) # _CHANGE_
+            torch.nn.init.normal_(module.weight, mean=0.0, std=0.02) 
         elif isinstance(module, nn.LayerNorm):
             torch.nn.init.zeros_(module.bias)
             torch.nn.init.ones_(module.weight)
@@ -863,8 +863,8 @@ class GPT(nn.Module):
             {"params": [param_dict[pn] for pn in sorted(list(decay))], "weight_decay": train_config.weight_decay},
             {"params": [param_dict[pn] for pn in sorted(list(no_decay))], "weight_decay": 0.0},
         ]
-        #optimizer = torch.optim.AdamW(optim_groups, lr=train_config.learning_rate, betas=train_config.betas) #_CHANGE_
-        optimizer = torch.optim.SGD(optim_groups, lr=train_config.learning_rate, momentum=0.9) 
+        optimizer = torch.optim.AdamW(optim_groups, lr=train_config.learning_rate, betas=train_config.betas) #_CHANGE_
+        #optimizer = torch.optim.SGD(optim_groups, lr=train_config.learning_rate, momentum=0.9) 
         return optimizer
     
     def save_internal_blobs(self):                    
@@ -978,7 +978,9 @@ class GPT(nn.Module):
         # if we are given some desired targets also calculate the loss
         loss = None
         if targets is not None:
-            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-1)
+            logits1 = logits.view(-1, logits.size(-1))
+            targets1 = targets.view(-1)
+            loss = F.cross_entropy(logits1, targets1, ignore_index=-1)
     
         if self.debug:    
             b = loss.detach().numpy()
@@ -1016,5 +1018,4 @@ class GPT(nn.Module):
                 _, idx_next = torch.topk(probs, k=1, dim=-1)
             # append sampled index to the running sequence and continue
             idx = torch.cat((idx, idx_next), dim=1)
-
         return idx
