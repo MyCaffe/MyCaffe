@@ -2941,7 +2941,7 @@ long Device<T>::cuda_channel_sub(long lInput, T* pfInput, long* plOutput, T** pp
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+	if (lErr = verifyInput(lInput, pfInput, 6, 7))
 		return lErr;
 
 	int n = (int)pfInput[0];
@@ -2950,8 +2950,12 @@ long Device<T>::cuda_channel_sub(long lInput, T* pfInput, long* plOutput, T** pp
 	int nInNum = (int)pfInput[3];
 	long hX = (long)pfInput[4];
 	long hY = (long)pfInput[5];
+	long hA = hY;
+	
+	if (lInput == 7)
+		hA = (long)pfInput[6];
 
-	return m_math.channel_sub(n, nOutNum, nChannels, nInNum, hY, hX, hY);
+	return m_math.channel_sub(n, nOutNum, nChannels, nInNum, hA, hX, hY);
 }
 
 template long Device<double>::cuda_channel_sub(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
