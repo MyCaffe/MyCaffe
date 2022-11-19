@@ -723,13 +723,14 @@ namespace MyCaffe.test
             try
             {
                 m_ctrl = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, null, m_rgGpu, m_cuda.Path);
-                ProjectEx project = getGptProject("gpt-mini", nIter);
+                ProjectEx project = getGptProject("gpt-mini1", nIter);
 
                 m_ctrl.OnTestingIteration += ctrl_OnTestingIteration;
                 m_ctrl.Load(Phase.TRAIN, project, null, null, false, null, false);
 
                 Solver<T> solver = m_ctrl.GetInternalSolver();
                 solver.OnStart += Solver_OnStart;
+                solver.OnTrainingIteration += Solver_OnTrainingIteration;
 
                 m_blobY = m_ctrl.CreateBlob("results");
                 m_blobX = m_ctrl.CreateBlob("data");
@@ -761,6 +762,11 @@ namespace MyCaffe.test
                 m_ctrl.Dispose();
                 m_ctrl = null;
             }
+        }
+
+        private void Solver_OnTrainingIteration(object sender, TrainingIterationArgs<T> e)
+        {
+            m_log.WriteLine("Loss = " + e.Loss.ToString());
         }
 
         private void Solver_OnStart(object sender, EventArgs e)
