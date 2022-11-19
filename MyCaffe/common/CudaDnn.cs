@@ -1239,8 +1239,8 @@ namespace MyCaffe.common
 
             CUDA_MEAN_ERROR_LOSS_BWD = 495,
 
-            CUDA_CROSS_ENTROPY_FWD = 496,
-            CUDA_CROSS_ENTROPY_IGNORE = 497,
+            CUDA_SIGMOID_CROSS_ENTROPY_FWD = 496,
+            CUDA_SIGMOID_CROSS_ENTROPY_IGNORE = 497,
 
             CUDA_SGD_UPDATE = 500,
             CUDA_NESTEROV_UPDATE = 501,
@@ -7502,6 +7502,24 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Subtracts the values across the channels of X from A and places the result in Y.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of elements in X.</param>
+        /// <param name="nOuterNum">Specifies the number of images within X.</param>
+        /// <param name="nChannels">Specifies the number of channels per image of X.</param>
+        /// <param name="nInnerNum">Specifies the dimension of each image in X.</param>
+        /// <param name="hA">Specifies a handle to the vector A in GPU memory.</param>
+        /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
+        /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
+        public void channel_sub(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hA, long hX, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUB, m_param.AsDouble(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, hA));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUB, m_param.AsFloat(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, hA));
+        }
+
+        /// <summary>
         /// Subtracts the values across the channels from X and places the result in Y.
         /// </summary>
         /// <param name="nCount">Specifies the number of elements in X.</param>
@@ -9522,12 +9540,12 @@ namespace MyCaffe.common
         /// <param name="bHasIgnoreLabel">Specifies whether or not an ignore label is used.</param>
         /// <param name="nIgnoreLabel">Specifies the ignore label which is used when <i>bHasIgnoreLabel</i> is <code>true</code></param>
         /// <param name="hCountData">Specifies a handle to the count data in GPU memory.</param>
-        public void cross_entropy_fwd(int nCount, long hInput, long hTarget, long hLoss, bool bHasIgnoreLabel, int nIgnoreLabel, long hCountData)
+        public void sigmoid_cross_entropy_fwd(int nCount, long hInput, long hTarget, long hLoss, bool bHasIgnoreLabel, int nIgnoreLabel, long hCountData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CROSS_ENTROPY_FWD, m_param.AsDouble( nCount, hInput, hTarget, hLoss, (bHasIgnoreLabel) ? 1 : 0, nIgnoreLabel, hCountData));
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SIGMOID_CROSS_ENTROPY_FWD, m_param.AsDouble( nCount, hInput, hTarget, hLoss, (bHasIgnoreLabel) ? 1 : 0, nIgnoreLabel, hCountData));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CROSS_ENTROPY_FWD, m_param.AsFloat( nCount, hInput, hTarget, hLoss, (bHasIgnoreLabel) ? 1 : 0, nIgnoreLabel, hCountData));
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SIGMOID_CROSS_ENTROPY_FWD, m_param.AsFloat( nCount, hInput, hTarget, hLoss, (bHasIgnoreLabel) ? 1 : 0, nIgnoreLabel, hCountData));
         }
 
         /// <summary>
@@ -9537,12 +9555,12 @@ namespace MyCaffe.common
         /// <param name="nIgnoreLabel">Specifies the label to ignore.</param>
         /// <param name="hTarget">Specifies a handle to the target data in GPU memory.</param>
         /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
-        public void cross_entropy_ignore(int nCount, int nIgnoreLabel, long hTarget, long hBottomDiff)
+        public void sigmoid_cross_entropy_ignore(int nCount, int nIgnoreLabel, long hTarget, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CROSS_ENTROPY_IGNORE, m_param.AsDouble( nCount, nIgnoreLabel, hTarget, hBottomDiff));
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SIGMOID_CROSS_ENTROPY_IGNORE, m_param.AsDouble( nCount, nIgnoreLabel, hTarget, hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CROSS_ENTROPY_IGNORE, m_param.AsFloat( nCount, nIgnoreLabel, hTarget, hBottomDiff));
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SIGMOID_CROSS_ENTROPY_IGNORE, m_param.AsFloat( nCount, nIgnoreLabel, hTarget, hBottomDiff));
         }
 
 #pragma warning disable 1591
