@@ -9,9 +9,10 @@ using MyCaffe.param;
 namespace MyCaffe.layers
 {
     /// <summary>
-    /// The SoftmaxCrossEntropyLayer computes the cross-entropy (logisitic) loss and is
+    /// The SoftmaxCrossEntropyLossLayer computes the cross-entropy (logisitic) loss and is
     /// often used for predicting targets interpreted as probabilities in reinforcement learning.
     /// </summary>
+    /// <remarks>DEPRECIATED - soon to be replaced by SoftmaxCrossEntropy2LossLayer</remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class SoftmaxCrossEntropyLossLayer<T> : LossLayer<T>
     {
@@ -184,7 +185,7 @@ namespace MyCaffe.layers
             long hLossData = colBottom[0].mutable_gpu_diff;
             long hCountData = (m_blobTarget != null) ? m_blobTarget.mutable_gpu_diff : colBottom[1].mutable_gpu_diff;
 
-            m_cuda.cross_entropy_fwd(nCount, hInputData, hTarget, hLossData, false, -1, hCountData);
+            m_cuda.sigmoid_cross_entropy_fwd(nCount, hInputData, hTarget, hLossData, false, -1, hCountData);
 
             double dfValidCount = nCount;
             double dfLoss = m_cuda.asum_double(nCount, hLossData);

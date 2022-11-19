@@ -203,7 +203,7 @@ namespace MyCaffe.layers
             long hLossData = colBottom[0].mutable_gpu_diff;
             long hCountData = (m_blobTarget != null) ? m_blobTarget.mutable_gpu_diff : colBottom[1].mutable_gpu_diff;
 
-            m_cuda.cross_entropy_fwd(nCount, hInputData, hTarget, hLossData, m_nIgnoreLabel.HasValue, m_nIgnoreLabel.GetValueOrDefault(-1), hCountData);
+            m_cuda.sigmoid_cross_entropy_fwd(nCount, hInputData, hTarget, hLossData, m_nIgnoreLabel.HasValue, m_nIgnoreLabel.GetValueOrDefault(-1), hCountData);
 
             double dfValidCount = nCount;
             // Only launch another CUDA kernel if we actually need the valid count.
@@ -280,7 +280,7 @@ namespace MyCaffe.layers
 
                 // Zero out gradient for ignored targets
                 if (m_nIgnoreLabel.HasValue)
-                    m_cuda.cross_entropy_ignore(nCount, m_nIgnoreLabel.Value, hTarget, hBottomDiff);
+                    m_cuda.sigmoid_cross_entropy_ignore(nCount, m_nIgnoreLabel.Value, hTarget, hBottomDiff);
 
                 // Scale down gradient
                 double dfLossWeight = convertD(colTop[0].GetDiff(0)) / m_dfNormalizer;
