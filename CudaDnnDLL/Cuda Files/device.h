@@ -566,6 +566,7 @@ class Device
 		long cuda_adagrad_update(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_adadelta_update(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_adam_update(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_adamw_update(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_rmsprop_update(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
 		long cuda_combine_data(long lInput, T* pfInput, long* plOutput, T** ppfOutput);

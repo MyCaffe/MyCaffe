@@ -79,8 +79,6 @@ namespace MyCaffe.solvers
 
             List<double?> net_params_lr = m_net.params_lr;
             double dfLocalRate = dfRate * net_params_lr[param_id].GetValueOrDefault(0);
-            List<double?> net_params_decay = net.params_weight_decay;
-            double dfLocalDecay = m_dfDetachedWeightDecayRate * net_params_decay[param_id].GetValueOrDefault(0);
             double dfBeta1 = m_param.momentum;
             T fBeta1 = Utility.ConvertVal<T>(dfBeta1);
             double dfBeta2 = m_param.momentum2;
@@ -106,9 +104,7 @@ namespace MyCaffe.solvers
                                fBeta2,
                                Utility.ConvertVal<T>(dfEpsHat),
                                Utility.ConvertVal<T>(dfLocalRate),
-                               Utility.ConvertVal<T>(dfCorrection),
-                               Utility.ConvertVal<T>(dfLocalDecay),
-                               colNetParams[param_id].gpu_data);
+                               Utility.ConvertVal<T>(dfCorrection));
         }
     }
 }

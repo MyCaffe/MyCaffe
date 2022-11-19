@@ -893,6 +893,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_ADAM_UPDATE:
 			return m_device.cuda_adam_update(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_ADAMW_UPDATE:
+			return m_device.cuda_adamw_update(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_RMSPROP_UPDATE:
 			return m_device.cuda_rmsprop_update(lCount, pfInput, plCount, ppfOutput);
 
@@ -1880,6 +1883,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_ADAM_UPDATE:
 		return "CUDA_FN_ADAM_UPDATE";
+
+	case CUDA_FN_ADAMW_UPDATE:
+		return "CUDA_FN_ADAMW_UPDATE";
 
 	case CUDA_FN_RMSPROP_UPDATE:
 		return "CUDA_FN_RMSPROP_UPDATE";

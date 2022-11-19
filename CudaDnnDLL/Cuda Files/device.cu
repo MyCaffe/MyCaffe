@@ -3513,7 +3513,7 @@ long Device<T>::cuda_adam_update(long lInput, T* pfInput, long* plOutput, T** pp
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 10, 11))
+	if (lErr = verifyInput(lInput, pfInput, 9, 9))
 		return lErr;
 
 	int n = (int)pfInput[0];
@@ -3525,17 +3525,39 @@ long Device<T>::cuda_adam_update(long lInput, T* pfInput, long* plOutput, T** pp
 	T fEpsHat = pfInput[6];
 	T fLearningRate = pfInput[7];
 	T fCorrection = pfInput[8];
-	T fDecayRate = pfInput[9];
-
-	long hNetParamData = 0;
-	if (lInput > 10)
-		hNetParamData = (long)pfInput[10];
 	
-	return m_math.adam_update(n, hNetParamDiff, hValM, hValV, fBeta1, fBeta2, fEpsHat, fLearningRate, fCorrection, fDecayRate, hNetParamData);
+	return m_math.adam_update(n, hNetParamDiff, hValM, hValV, fBeta1, fBeta2, fEpsHat, fLearningRate, fCorrection);
 }
 
 template long Device<double>::cuda_adam_update(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
 template long Device<float>::cuda_adam_update(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
+long Device<T>::cuda_adamw_update(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 11, 11))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	long hNetParamDiff = (long)pfInput[1];
+	long hValM = (long)pfInput[2];
+	long hValV = (long)pfInput[3];
+	T fBeta1 = pfInput[4];
+	T fBeta2 = pfInput[5];
+	T fEpsHat = pfInput[6];
+	T fLearningRate = pfInput[7];
+	T fDecayRate = pfInput[8];
+	long hNetParamData = (long)pfInput[9];
+	int nStep = (int)pfInput[10];
+
+	return m_math.adamw_update(n, hNetParamDiff, hValM, hValV, fBeta1, fBeta2, fEpsHat, fLearningRate, fDecayRate, hNetParamData, nStep);
+}
+
+template long Device<double>::cuda_adamw_update(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_adamw_update(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
