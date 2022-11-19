@@ -280,7 +280,7 @@ namespace MyCaffe.layers
 
                 // Zero out gradient for ignored targets
                 if (m_nIgnoreLabel.HasValue)
-                    m_cuda.sigmoid_cross_entropy_ignore(nCount, m_nIgnoreLabel.Value, hTarget, hBottomDiff);
+                    m_cuda.sigmoid_cross_entropy_bwd(nCount, m_nIgnoreLabel.Value, hTarget, hBottomDiff);
 
                 // Scale down gradient
                 double dfLossWeight = convertD(colTop[0].GetDiff(0)) / m_dfNormalizer;
