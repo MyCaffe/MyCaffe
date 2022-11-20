@@ -109,7 +109,7 @@ namespace MyCaffe.solvers
                                Utility.ConvertVal<T>(dfEpsHat),
                                Utility.ConvertVal<T>(dfLocalRate),
                                Utility.ConvertVal<T>(dfLocalDecay),
-                               colNetParams[param_id].gpu_data,
+                               colNetParams[param_id].mutable_gpu_data,
                                nT);
         }
     }
