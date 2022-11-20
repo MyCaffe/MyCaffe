@@ -1240,7 +1240,9 @@ namespace MyCaffe.common
             CUDA_MEAN_ERROR_LOSS_BWD = 495,
 
             CUDA_SIGMOID_CROSS_ENTROPY_FWD = 496,
-            CUDA_SIGMOID_CROSS_ENTROPY_IGNORE = 497,
+            CUDA_SIGMOID_CROSS_ENTROPY_BWD = 497,
+            CUDA_SOFTMAX_CROSS_ENTROPY_FWD = 498,
+            CUDA_SOFTMAX_CROSS_ENTROPY_BWD = 499,
 
             CUDA_SGD_UPDATE = 500,
             CUDA_NESTEROV_UPDATE = 501,
@@ -9555,12 +9557,64 @@ namespace MyCaffe.common
         /// <param name="nIgnoreLabel">Specifies the label to ignore.</param>
         /// <param name="hTarget">Specifies a handle to the target data in GPU memory.</param>
         /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
-        public void sigmoid_cross_entropy_ignore(int nCount, int nIgnoreLabel, long hTarget, long hBottomDiff)
+        public void sigmoid_cross_entropy_bwd(int nCount, int nIgnoreLabel, long hTarget, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SIGMOID_CROSS_ENTROPY_IGNORE, m_param.AsDouble( nCount, nIgnoreLabel, hTarget, hBottomDiff));
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SIGMOID_CROSS_ENTROPY_BWD, m_param.AsDouble( nCount, nIgnoreLabel, hTarget, hBottomDiff));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SIGMOID_CROSS_ENTROPY_IGNORE, m_param.AsFloat( nCount, nIgnoreLabel, hTarget, hBottomDiff));
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SIGMOID_CROSS_ENTROPY_BWD, m_param.AsFloat( nCount, nIgnoreLabel, hTarget, hBottomDiff));
+        }
+
+        /// <summary>
+        /// Performs a softmax cross entropy forward pass in Cuda.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="hProbData">Specifies a handle to the probability data in GPU memory.</param>
+        /// <param name="hLabel">Specifies a handle to the label data in GPU memory.</param>
+        /// <param name="hLossData">Specifies a handle to the loss data in GPU memory.</param>
+        /// <param name="nOuterNum"><b><i>NEEDS REVIEW</i></b></param>
+        /// <param name="nDim"><b><i>NEEDS REVIEW</i></b></param>
+        /// <param name="nInnerNum"><b><i>NEEDS REVIEW</i></b></param>
+        /// <param name="hCounts">Specifies a handle to the counts in GPU memory.</param>
+        /// <param name="nIgnoreLabel">Optionally, specifies a label to ignore.</param>
+        /// <remarks>
+        /// This forward pass is a helper to perform a part of the NLLLoss portion of the SoftmaxCrossEntropyLoss.
+        /// </remarks>
+        public void softmax_cross_entropy_fwd(int nCount, long hProbData, long hLabel, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int? nIgnoreLabel)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                List<double> rg = new List<double>() { nCount, hProbData, hLabel, hLossData, nOuterNum, nDim, nInnerNum, hCounts };
+
+                if (nIgnoreLabel.HasValue)
+                    rg.Add(nIgnoreLabel.Value);
+
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SOFTMAX_CROSS_ENTROPY_FWD, rg.ToArray());
+            }
+            else
+            {
+                List<float> rg = new List<float>() { nCount, hProbData, hLabel, hLossData, nOuterNum, nDim, nInnerNum, hCounts };
+
+                if (nIgnoreLabel.HasValue)
+                    rg.Add(nIgnoreLabel.Value);
+
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SOFTMAX_CROSS_ENTROPY_FWD, rg.ToArray());
+            }
+        }
+
+        /// <summary>
+        /// Performs a softmax cross entropy backward pass in Cuda when an ignore label is specified.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="nIgnoreLabel">Specifies the label to ignore.</param>
+        /// <param name="hTarget">Specifies a handle to the target data in GPU memory.</param>
+        /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
+        public void softmax_cross_entropy_bwd(int nCount, int nIgnoreLabel, long hTarget, long hBottomDiff)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SOFTMAX_CROSS_ENTROPY_BWD, m_param.AsDouble(nCount, nIgnoreLabel, hTarget, hBottomDiff));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SOFTMAX_CROSS_ENTROPY_BWD, m_param.AsFloat(nCount, nIgnoreLabel, hTarget, hBottomDiff));
         }
 
 #pragma warning disable 1591

@@ -353,7 +353,9 @@ class Math
 		long coeff_sub_bwd(int nCount, int nDim, int nNumOffset, T fCoeff, long hCoeffData, long hTopDiff, long hBottomDiff);
 
 		long sigmoid_cross_entropy_fwd(int nCount, long hInput, long hTarget, long hLoss, bool bHasIgnoreLabel, int nIgnoreLabel, long hCount);
-		long sigmoid_cross_entropy_ignore(int nCount, int nIgnoreLabel, long hTarget, long hData);
+		long sigmoid_cross_entropy_bwd(int nCount, int nIgnoreLabel, long hTarget, long hData);
+		long softmax_cross_entropy_fwd(int nCount, long hProbData, long hTarget, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
+		long softmax_cross_entropy_bwd(int nCount, int nIgnoreLabel, long hTarget, long hData);
 
 		long sgd_update(int nCount, long hNetParamDiff, long hHistoryData, T fMomentum, T fLearningRate);
 		long nesterov_update(int nCount, long hNetParamDiff, long hHistoryData, T fMomentum, T fLearningRate);

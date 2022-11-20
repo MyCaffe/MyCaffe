@@ -11668,7 +11668,7 @@ template long Math<float>::coeff_sub_bwd(int nCount, int nDim, int nNumOffset, f
 
 
 template <typename T>
-__global__ void sigmoid_cross_entropy_kernel(const int nthreads, const T* input_data, const T* target, T* loss, T* counts)
+__global__ void sigmoid_cross_entropy_fwd_kernel(const int nthreads, const T* input_data, const T* target, T* loss, T* counts)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
 	{
@@ -11681,7 +11681,7 @@ __global__ void sigmoid_cross_entropy_kernel(const int nthreads, const T* input_
 }
 
 template <typename T>
-__global__ void sigmoid_cross_entropy_kernel_withignore(const int nthreads, const T* input_data, const T* target, T* loss, const int ignore_label, T* counts)
+__global__ void sigmoid_cross_entropy_fwd_kernel_withignore(const int nthreads, const T* input_data, const T* target, T* loss, const int ignore_label, T* counts)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
 	{
@@ -11729,9 +11729,9 @@ long Math<T>::sigmoid_cross_entropy_fwd(int nCount, long hInput, long hTarget, l
 	T* count_data = (T*)pCount->Data();
 
 	if (bHasIgnoreLabel)
-		sigmoid_cross_entropy_kernel_withignore<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, input_data, target, loss_data, nIgnoreLabel, count_data);
+		sigmoid_cross_entropy_fwd_kernel_withignore<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, input_data, target, loss_data, nIgnoreLabel, count_data);
 	else
-		sigmoid_cross_entropy_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> >(nCount, input_data, target, loss_data, count_data);
+		sigmoid_cross_entropy_fwd_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> >(nCount, input_data, target, loss_data, count_data);
 
 	return cudaStreamSynchronize(0);
 }
@@ -11741,7 +11741,7 @@ template long Math<float>::sigmoid_cross_entropy_fwd(int nCount, long hInput, lo
 
 
 template <typename T>
-__global__ void sigmoid_cross_entropy_ignore_kernel(const int nthreads, const int ignore_label, const T* target, T* diff)
+__global__ void sigmoid_cross_entropy_bwd_kernel(const int nthreads, const int ignore_label, const T* target, T* diff)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
 	{
@@ -11753,7 +11753,7 @@ __global__ void sigmoid_cross_entropy_ignore_kernel(const int nthreads, const in
 }
 
 template <class T>
-long Math<T>::sigmoid_cross_entropy_ignore(int nCount, int nIgnoreLabel, long hTarget, long hData)
+long Math<T>::sigmoid_cross_entropy_bwd(int nCount, int nIgnoreLabel, long hTarget, long hData)
 {
 	LONG lErr;
 	MemoryItem* pTarget;
@@ -11768,14 +11768,137 @@ long Math<T>::sigmoid_cross_entropy_ignore(int nCount, int nIgnoreLabel, long hT
 	T* target = (T*)pTarget->Data();
 	T* bottom_diff = (T*)pData->Data();
 
-	sigmoid_cross_entropy_ignore_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, nIgnoreLabel, target, bottom_diff);
+	sigmoid_cross_entropy_bwd_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, nIgnoreLabel, target, bottom_diff);
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::sigmoid_cross_entropy_ignore(int nCount, int nIgnoreLabel, long hTarget, long hData);
-template long Math<float>::sigmoid_cross_entropy_ignore(int nCount, int nIgnoreLabel, long hTarget, long hData);
+template long Math<double>::sigmoid_cross_entropy_bwd(int nCount, int nIgnoreLabel, long hTarget, long hData);
+template long Math<float>::sigmoid_cross_entropy_bwd(int nCount, int nIgnoreLabel, long hTarget, long hData);
 
+
+template<typename T>
+__global__ void softmax_cross_entropy_fwd_kernel(int nthreads, const T* prob_data, const T* label, T* loss, int num, int dim, int spatial_dim, T* counts)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nthreads && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const int label_val = (int)label[i];
+		const int dst_idx = i * dim * spatial_dim + label_val;
+		loss[dst_idx] = 1;
+		counts[i] = 1;
+	}
+}
+
+template<typename T>
+__global__ void softmax_cross_entropy_fwd_kernel_withignore(int nthreads, const T* prob_data, const T* label, T* loss, int num, int dim, int spatial_dim, T* counts, int nIgnoreLabel)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nthreads && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const int label_val = (int)label[i];
+		const int dst_idx = i * dim * spatial_dim + label_val;
+
+		if (label_val == nIgnoreLabel)
+		{
+			loss[dst_idx] = 0;
+			counts[i] = 0;
+		}
+		else
+		{
+			loss[dst_idx] = 1;
+			counts[i] = 1;
+		}
+	}
+}
+
+template <class T>
+long Math<T>::softmax_cross_entropy_fwd(const int n, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel)
+{
+	LONG lErr;
+	MemoryItem* pProbData;
+	MemoryItem* pLabels;
+	MemoryItem* pLossData;
+	MemoryItem* pCounts;
+
+	if (lErr = m_pMemCol->GetData(hProbData, &pProbData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hLabels, &pLabels))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hLossData, &pLossData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hCounts, &pCounts))
+		return lErr;
+
+	T* prob_data = (T*)pProbData->Data();
+	T* labels = (T*)pLabels->Data();
+	T* loss_data = (T*)pLossData->Data();
+	T* counts = (T*)pCounts->Data();
+	
+	if (lErr = cudaMemset(loss_data, 0, sizeof(T) * n))
+		return lErr;
+	
+	// Set each target index to 1 in the logits.
+	int nCount = nOuterNum;
+	if (nIgnoreLabel == -1)
+		softmax_cross_entropy_fwd_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, prob_data, labels, loss_data, nOuterNum, nDim, nInnerNum, counts);
+	else
+		softmax_cross_entropy_fwd_kernel_withignore<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, prob_data, labels, loss_data, nOuterNum, nDim, nInnerNum, counts, nIgnoreLabel);
+
+	if (lErr = cudaStreamSynchronize(0))
+		return lErr;
+
+	// Multiply the probability data with the logits so that the probability at each target index in the logits remains.
+	mul_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, prob_data, loss_data, loss_data);
+	
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::softmax_cross_entropy_fwd(int n, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
+template long Math<float>::softmax_cross_entropy_fwd(int n, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
+
+
+template <typename T>
+__global__ void softmax_cross_entropy_bwd_kernel(const int nthreads, const int ignore_label, const T* target, T* diff)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nthreads && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const int target_val = (int)target[i];
+
+		if (target_val == ignore_label)
+			diff[i] = 0;
+	}
+}
+
+template <class T>
+long Math<T>::softmax_cross_entropy_bwd(int nCount, int nIgnoreLabel, long hTarget, long hData)
+{
+	LONG lErr;
+	MemoryItem* pTarget;
+	MemoryItem* pData;
+
+	if (lErr = m_pMemCol->GetData(hTarget, &pTarget))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hData, &pData))
+		return lErr;
+
+	T* target = (T*)pTarget->Data();
+	T* bottom_diff = (T*)pData->Data();
+
+	softmax_cross_entropy_bwd_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nIgnoreLabel, target, bottom_diff);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::softmax_cross_entropy_bwd(int nCount, int nIgnoreLabel, long hTarget, long hData);
+template long Math<float>::softmax_cross_entropy_bwd(int nCount, int nIgnoreLabel, long hTarget, long hData);
+
+
+//------------------------------------------------------------------------------------
+//	Solver update functions
+//------------------------------------------------------------------------------------
 
 template <typename T>
 __global__ void sgd_update_kernel(int n, T* g, T* h, T momentum, T local_rate)

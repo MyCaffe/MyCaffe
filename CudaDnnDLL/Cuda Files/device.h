@@ -559,7 +559,9 @@ class Device
 		long cuda_coeff_sub_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
 		long cuda_sigmoid_cross_entropy_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
-		long cuda_sigmoid_cross_entropy_ignore(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_sigmoid_cross_entropy_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_softmax_cross_entropy_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_softmax_cross_entropy_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
 		long cuda_sgd_update(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_nesterov_update(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -4729,7 +4731,7 @@ inline long Device<T>::cuda_sigmoid_cross_entropy_fwd(long lInput, T* pfInput, l
 }
 
 template <class T>
-inline long Device<T>::cuda_sigmoid_cross_entropy_ignore(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+inline long Device<T>::cuda_sigmoid_cross_entropy_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
@@ -4741,7 +4743,47 @@ inline long Device<T>::cuda_sigmoid_cross_entropy_ignore(long lInput, T* pfInput
 	long hTarget = (long)pfInput[2];
 	long hData = (long)pfInput[3];
 
-	return m_math.sigmoid_cross_entropy_ignore(nCount, nIgnoreLabel, hTarget, hData);
+	return m_math.sigmoid_cross_entropy_bwd(nCount, nIgnoreLabel, hTarget, hData);
+}
+
+template <class T>
+inline long Device<T>::cuda_softmax_cross_entropy_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 8, 9))
+		return lErr;
+
+	int nCount = (int)pfInput[0];
+	long hProbData = (long)pfInput[1];
+	long hTarget = (long)pfInput[2];
+	long hLossData = (long)pfInput[3];
+	int nOuterNum = (int)pfInput[4];
+	int nDim = (int)pfInput[5];
+	int nInnerNum = (int)pfInput[6];
+	long hCounts = (long)pfInput[7];
+	int nIgnoreLabel = -1;
+
+	if (lInput > 8)
+		nIgnoreLabel = (int)pfInput[8];
+
+	return m_math.softmax_cross_entropy_fwd(nCount, hProbData, hTarget, hLossData, nOuterNum, nDim, nInnerNum, hCounts, nIgnoreLabel);
+}
+
+template <class T>
+inline long Device<T>::cuda_softmax_cross_entropy_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 4, 4))
+		return lErr;
+
+	int nCount = (int)pfInput[0];
+	int nIgnoreLabel = (int)pfInput[1];
+	long hTarget = (long)pfInput[2];
+	long hData = (long)pfInput[3];
+
+	return m_math.softmax_cross_entropy_bwd(nCount, nIgnoreLabel, hTarget, hData);
 }
 
 

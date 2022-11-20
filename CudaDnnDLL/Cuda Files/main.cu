@@ -875,8 +875,14 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_SIGMOID_CROSS_ENTROPY_FWD:
 			return m_device.cuda_sigmoid_cross_entropy_fwd(lCount, pfInput, plCount, ppfOutput);
 
-		case CUDA_FN_SIGMOID_CROSS_ENTROPY_IGNORE:
-			return m_device.cuda_sigmoid_cross_entropy_ignore(lCount, pfInput, plCount, ppfOutput);
+		case CUDA_FN_SIGMOID_CROSS_ENTROPY_BWD:
+			return m_device.cuda_sigmoid_cross_entropy_bwd(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_SOFTMAX_CROSS_ENTROPY_FWD:
+			return m_device.cuda_softmax_cross_entropy_fwd(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_SOFTMAX_CROSS_ENTROPY_BWD:
+			return m_device.cuda_softmax_cross_entropy_bwd(lCount, pfInput, plCount, ppfOutput);
 
 		case CUDA_FN_SGD_UPDATE:
 			return m_device.cuda_sgd_update(lCount, pfInput, plCount, ppfOutput);
@@ -1866,8 +1872,14 @@ char* GetApiName(long lfnIdx)
 	case CUDA_FN_SIGMOID_CROSS_ENTROPY_FWD:
 		return "CUDA_FN_SIGMOID_CROSS_ENTROPY_FWD";
 
-	case CUDA_FN_SIGMOID_CROSS_ENTROPY_IGNORE:
-		return "CUDA_FN_SIGMOID_CROSS_ENTROPY_IGNORE";
+	case CUDA_FN_SIGMOID_CROSS_ENTROPY_BWD:
+		return "CUDA_FN_SIGMOID_CROSS_ENTROPY_BWD";
+
+	case CUDA_FN_SOFTMAX_CROSS_ENTROPY_FWD:
+		return "CUDA_FN_SOFTMAX_CROSS_ENTROPY_FWD";
+
+	case CUDA_FN_SOFTMAX_CROSS_ENTROPY_BWD:
+		return "CUDA_FN_SOFTMAX_CROSS_ENTROPY_BWD";
 
 	case CUDA_FN_SGD_UPDATE:
 		return "CUDA_FN_SGD_UPDATE";
