@@ -864,7 +864,7 @@ namespace MyCaffe.param
         public double adamw_decay
         {
             get { return m_dfAdamWDecay; }
-            set { m_dfRmsDecay = value; }
+            set { m_dfAdamWDecay = value; }
         }
 
         /// <summary>
