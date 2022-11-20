@@ -15,12 +15,15 @@ namespace MyCaffe.layers
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class SoftmaxCrossEntropy2LossLayer<T> : LossLayer<T>
     {
-        SoftmaxLayer<T> m_softmaxLayer;
+        Layer<T> m_softmaxLayer;
+        Layer<T> m_logLayer;
         Blob<T> m_blobProb;
-        Blob<T> m_blobTarget = null;
+        Blob<T> m_blobLogProb;
         Blob<T> m_blobLoss;
         BlobCollection<T> m_colSoftmaxBottomVec = new BlobCollection<T>();
         BlobCollection<T> m_colSoftmaxTopVec = new BlobCollection<T>();
+        BlobCollection<T> m_colLogBottomVec = new BlobCollection<T>();
+        BlobCollection<T> m_colLogTopVec = new BlobCollection<T>();
 
         // How to normalize the loss.
         int? m_nIgnoreLabel = null;
@@ -40,6 +43,10 @@ namespace MyCaffe.layers
             m_type = LayerParameter.LayerType.SOFTMAXCROSSENTROPY2_LOSS;
             m_blobProb = new Blob<T>(cuda, log);
             m_blobProb.Name = m_param.name + " prob";
+            m_blobLogProb = new Blob<T>(cuda, log);
+            m_blobLogProb.Name = m_param.name + " logprob";
+            m_blobLoss = new Blob<T>(cuda, log);
+            m_blobLoss.Name = m_param.name + " loss";
         }
 
         /** @copydoc Layer::dispose */
@@ -104,11 +111,19 @@ namespace MyCaffe.layers
             param_softmax.softmax_param = m_param.softmax_param.Clone() as SoftmaxParameter;
             param_softmax.loss_weight.Clear();
 
-            m_softmaxLayer = new SoftmaxLayer<T>(m_cuda, m_log, param_softmax);
+            m_softmaxLayer = Layer<T>.Create(m_cuda, m_log, param_softmax, null);
             m_colSoftmaxBottomVec = new BlobCollection<T>() { colBottom[0] };
             m_colSoftmaxTopVec = new BlobCollection<T>() { m_blobProb };
 
             m_softmaxLayer.Setup(m_colSoftmaxBottomVec, m_colSoftmaxTopVec);
+
+            LayerParameter param_log = new LayerParameter(LayerParameter.LayerType.LOG);
+
+            m_logLayer = Layer<T>.Create(m_cuda, m_log, param_log, null);
+            m_colLogBottomVec = new BlobCollection<T>() { m_blobProb };
+            m_colLogTopVec = new BlobCollection<T>() { m_blobLogProb };
+
+            m_logLayer.Setup(m_colLogBottomVec, m_colLogTopVec);
         }
 
         /// <summary>
@@ -120,7 +135,10 @@ namespace MyCaffe.layers
         {
             base.Reshape(colBottom, colTop);
 
+            m_blobLoss.ReshapeLike(colBottom[0]);            
+
             m_softmaxLayer.Reshape(m_colSoftmaxBottomVec, m_colSoftmaxTopVec);
+            m_logLayer.Reshape(m_colLogBottomVec, m_colLogTopVec);
             
             m_nSoftmaxAxis = colBottom[0].CanonicalAxisIndex(m_param.softmax_param.axis);
             m_nOuterNum = colBottom[0].count(0, m_nSoftmaxAxis);
@@ -161,25 +179,27 @@ namespace MyCaffe.layers
             // The forward pass computes the sotmax outputs (which are probabilities).
             m_softmaxLayer.Forward(m_colSoftmaxBottomVec, m_colSoftmaxTopVec);
 
+            // Run the log on the Probabilities to get LogSoftmax
+            m_logLayer.Forward(m_colLogBottomVec, m_colLogTopVec);
+
             // Use the softmax output for input data.
-            long hProbData = m_blobProb.gpu_data;
+            long hProbData = m_blobLogProb.gpu_data;
             long hTarget = colBottom[1].gpu_data;
             int nInputCount = m_blobProb.count();
             int nDim = m_blobProb.shape()[m_nSoftmaxAxis];
             int nCount = m_nOuterNum * m_nInnerNum;
 
-            // Run the log on the Probabilities to get LogSoftmax
-            m_cuda.log(nInputCount, hProbData, hProbData);
+            m_blobLoss.SetDiff(0.0);
+            long hLossData = m_blobLoss.mutable_gpu_data;
+            long hLossDiff = m_blobLoss.mutable_gpu_diff;
 
             // Since this memory is not used for anything, we use it here to avoid having
             // to allocate the GPU memory to accumulate intermediate results.
-            colBottom[0].SetDiff(0);
             colBottom[1].SetDiff(0);
-            long hLossData = colBottom[0].mutable_gpu_diff;
             long hCountData = colBottom[1].mutable_gpu_diff;
 
             // Run the NLL Loss portion to get the loss.
-            m_cuda.softmax_cross_entropy_fwd(colBottom[0].count(), hProbData, hTarget, hLossData, m_nOuterNum, nDim, m_nInnerNum, hCountData, m_nIgnoreLabel.GetValueOrDefault(-1));
+            m_cuda.softmax_cross_entropy_fwd(colBottom[0].count(), hProbData, hTarget, hLossDiff, hLossData, m_nOuterNum, nDim, m_nInnerNum, hCountData, m_nIgnoreLabel.GetValueOrDefault(-1));
             double dfLoss = m_cuda.asum_double(colBottom[0].count(), hLossData);
 
             double dfValidCount = nCount;
@@ -194,13 +214,9 @@ namespace MyCaffe.layers
 
             // Return the losses in colTop[1] if it exists.
             if (colTop.Count == 2)
-            {
-                m_cuda.copy(nCount, hLossData, m_blobLoss.mutable_gpu_data);
-                colTop[1].ShareData(m_blobLoss);
-            }
+                colTop[1].CopyFrom(m_blobLoss);
 
             // Clear scratch memory to prevent interfering with the backward pass (see #6202)
-            colBottom[0].SetDiff(0);
             colBottom[1].SetDiff(0);
         }
 
@@ -241,6 +257,19 @@ namespace MyCaffe.layers
         {
             if (!rgbPropagateDown[0])
                 return;
+
+            // Calculate the NLL Loss Gradient
+            float fGrad = convertF(colTop[0].GetDiff(0));
+            fGrad = -1.0f * fGrad / (float)m_dfNormalizer;
+            
+            m_blobLoss.scale_diff(fGrad);
+
+            // Calculate the log gradient.
+            m_blobLogProb.CopyFrom(m_blobLoss, true);
+            m_logLayer.Backward(m_colLogTopVec, rgbPropagateDown, m_colLogBottomVec);
+
+            // Calculate the Softmax gradient.
+            m_softmaxLayer.Backward(m_colSoftmaxTopVec, rgbPropagateDown, m_colSoftmaxBottomVec);
         }
     }
 }
