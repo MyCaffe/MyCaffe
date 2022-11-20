@@ -4722,12 +4722,12 @@ inline long Device<T>::cuda_sigmoid_cross_entropy_fwd(long lInput, T* pfInput, l
 	int nCount = (int)pfInput[0];
 	long hInput = (long)pfInput[1];
 	long hTarget = (long)pfInput[2];
-	long hLoss = (long)pfInput[3];
+	long hLossData = (long)pfInput[3];
 	bool bHasIgnoreLabel = (pfInput[4] == 1) ? true : false;
 	int nIgnoreLabel = (int)pfInput[5];
 	long hCount = (long)pfInput[6];
 
-	return m_math.sigmoid_cross_entropy_fwd(nCount, hInput, hTarget, hLoss, bHasIgnoreLabel, nIgnoreLabel, hCount);
+	return m_math.sigmoid_cross_entropy_fwd(nCount, hInput, hTarget, hLossData, bHasIgnoreLabel, nIgnoreLabel, hCount);
 }
 
 template <class T>
@@ -4751,23 +4751,24 @@ inline long Device<T>::cuda_softmax_cross_entropy_fwd(long lInput, T* pfInput, l
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 8, 9))
+	if (lErr = verifyInput(lInput, pfInput, 9, 10))
 		return lErr;
 
 	int nCount = (int)pfInput[0];
 	long hProbData = (long)pfInput[1];
 	long hTarget = (long)pfInput[2];
-	long hLossData = (long)pfInput[3];
-	int nOuterNum = (int)pfInput[4];
-	int nDim = (int)pfInput[5];
-	int nInnerNum = (int)pfInput[6];
-	long hCounts = (long)pfInput[7];
+	long hLossDiff = (long)pfInput[3];
+	long hLossData = (long)pfInput[4];
+	int nOuterNum = (int)pfInput[5];
+	int nDim = (int)pfInput[6];
+	int nInnerNum = (int)pfInput[7];
+	long hCounts = (long)pfInput[8];
 	int nIgnoreLabel = -1;
 
-	if (lInput > 8)
-		nIgnoreLabel = (int)pfInput[8];
+	if (lInput > 9)
+		nIgnoreLabel = (int)pfInput[9];
 
-	return m_math.softmax_cross_entropy_fwd(nCount, hProbData, hTarget, hLossData, nOuterNum, nDim, nInnerNum, hCounts, nIgnoreLabel);
+	return m_math.softmax_cross_entropy_fwd(nCount, hProbData, hTarget, hLossDiff, hLossData, nOuterNum, nDim, nInnerNum, hCounts, nIgnoreLabel);
 }
 
 template <class T>

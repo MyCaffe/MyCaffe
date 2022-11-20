@@ -11811,11 +11811,12 @@ __global__ void softmax_cross_entropy_fwd_kernel_withignore(int nthreads, const 
 }
 
 template <class T>
-long Math<T>::softmax_cross_entropy_fwd(const int n, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel)
+long Math<T>::softmax_cross_entropy_fwd(const int n, long hProbData, long hLabels, long hLossDiff, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel)
 {
 	LONG lErr;
 	MemoryItem* pProbData;
 	MemoryItem* pLabels;
+	MemoryItem* pLossDiff;
 	MemoryItem* pLossData;
 	MemoryItem* pCounts;
 
@@ -11823,6 +11824,9 @@ long Math<T>::softmax_cross_entropy_fwd(const int n, long hProbData, long hLabel
 		return lErr;
 
 	if (lErr = m_pMemCol->GetData(hLabels, &pLabels))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hLossDiff, &pLossDiff))
 		return lErr;
 
 	if (lErr = m_pMemCol->GetData(hLossData, &pLossData))
@@ -11833,6 +11837,7 @@ long Math<T>::softmax_cross_entropy_fwd(const int n, long hProbData, long hLabel
 
 	T* prob_data = (T*)pProbData->Data();
 	T* labels = (T*)pLabels->Data();
+	T* loss_diff = (T*)pLossDiff->Data();
 	T* loss_data = (T*)pLossData->Data();
 	T* counts = (T*)pCounts->Data();
 	
@@ -11842,21 +11847,21 @@ long Math<T>::softmax_cross_entropy_fwd(const int n, long hProbData, long hLabel
 	// Set each target index to 1 in the logits.
 	int nCount = nOuterNum;
 	if (nIgnoreLabel == -1)
-		softmax_cross_entropy_fwd_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, prob_data, labels, loss_data, nOuterNum, nDim, nInnerNum, counts);
+		softmax_cross_entropy_fwd_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, prob_data, labels, loss_diff, nOuterNum, nDim, nInnerNum, counts);
 	else
-		softmax_cross_entropy_fwd_kernel_withignore<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, prob_data, labels, loss_data, nOuterNum, nDim, nInnerNum, counts, nIgnoreLabel);
+		softmax_cross_entropy_fwd_kernel_withignore<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, prob_data, labels, loss_diff, nOuterNum, nDim, nInnerNum, counts, nIgnoreLabel);
 
 	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
 
 	// Multiply the probability data with the logits so that the probability at each target index in the logits remains.
-	mul_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, prob_data, loss_data, loss_data);
+	mul_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, prob_data, loss_diff, loss_data);
 	
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::softmax_cross_entropy_fwd(int n, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
-template long Math<float>::softmax_cross_entropy_fwd(int n, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
+template long Math<double>::softmax_cross_entropy_fwd(int n, long hProbData, long hLabels, long hLossDiff, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
+template long Math<float>::softmax_cross_entropy_fwd(int n, long hProbData, long hLabels, long hLossDiff, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
 
 
 template <typename T>

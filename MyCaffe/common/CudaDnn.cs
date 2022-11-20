@@ -9571,6 +9571,7 @@ namespace MyCaffe.common
         /// <param name="nCount">Specifies the number of items.</param>
         /// <param name="hProbData">Specifies a handle to the probability data in GPU memory.</param>
         /// <param name="hLabel">Specifies a handle to the label data in GPU memory.</param>
+        /// <param name="hLossDiff">Specifies a handle to the loss diff in GPU memory that is filled with 1's at each 'active' location where loss data is placed.</param>
         /// <param name="hLossData">Specifies a handle to the loss data in GPU memory.</param>
         /// <param name="nOuterNum"><b><i>NEEDS REVIEW</i></b></param>
         /// <param name="nDim"><b><i>NEEDS REVIEW</i></b></param>
@@ -9580,11 +9581,11 @@ namespace MyCaffe.common
         /// <remarks>
         /// This forward pass is a helper to perform a part of the NLLLoss portion of the SoftmaxCrossEntropyLoss.
         /// </remarks>
-        public void softmax_cross_entropy_fwd(int nCount, long hProbData, long hLabel, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int? nIgnoreLabel)
+        public void softmax_cross_entropy_fwd(int nCount, long hProbData, long hLabel, long hLossDiff, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int? nIgnoreLabel)
         {
             if (m_dt == DataType.DOUBLE)
             {
-                List<double> rg = new List<double>() { nCount, hProbData, hLabel, hLossData, nOuterNum, nDim, nInnerNum, hCounts };
+                List<double> rg = new List<double>() { nCount, hProbData, hLabel, hLossDiff, hLossData, nOuterNum, nDim, nInnerNum, hCounts };
 
                 if (nIgnoreLabel.HasValue)
                     rg.Add(nIgnoreLabel.Value);
@@ -9593,7 +9594,7 @@ namespace MyCaffe.common
             }
             else
             {
-                List<float> rg = new List<float>() { nCount, hProbData, hLabel, hLossData, nOuterNum, nDim, nInnerNum, hCounts };
+                List<float> rg = new List<float>() { nCount, hProbData, hLabel, hLossDiff, hLossData, nOuterNum, nDim, nInnerNum, hCounts };
 
                 if (nIgnoreLabel.HasValue)
                     rg.Add(nIgnoreLabel.Value);
