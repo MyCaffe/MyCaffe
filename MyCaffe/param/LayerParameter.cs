@@ -423,6 +423,10 @@ namespace MyCaffe.param
             /// </summary>
             SOFTMAXCROSSENTROPY_LOSS,
             /// <summary>
+            /// Initializes a parameter for the SoftmaxCrossEntropy2LossLayer.
+            /// </summary>
+            SOFTMAXCROSSENTROPY2_LOSS,
+            /// <summary>
             /// Initializes a parameter for the SoftmaxLayer.
             /// </summary>
             SOFTMAX,
@@ -1409,6 +1413,14 @@ namespace MyCaffe.param
                     break;
 
                 case LayerType.SOFTMAXCROSSENTROPY_LOSS:
+                    expected_bottom.Add("scores");
+                    expected_bottom.Add("trgt");
+                    expected_top.Add("loss");
+                    m_rgLayerParameters[LayerType.LOSS] = new LossParameter(LossParameter.NormalizationMode.BATCH_SIZE);
+                    m_rgLayerParameters[LayerType.SOFTMAX] = new SoftmaxParameter();
+                    break;
+
+                case LayerType.SOFTMAXCROSSENTROPY2_LOSS:
                     expected_bottom.Add("scores");
                     expected_bottom.Add("trgt");
                     expected_top.Add("loss");
@@ -2905,6 +2917,9 @@ namespace MyCaffe.param
                 case LayerType.SOFTMAXCROSSENTROPY_LOSS:
                     return "SoftmaxCrossEntropyLoss";
 
+                case LayerType.SOFTMAXCROSSENTROPY2_LOSS:
+                    return "SoftmaxCrossEntropy2Loss";
+
                 case LayerType.SILENCE:
                     return "Silence";
 
@@ -3818,6 +3833,10 @@ namespace MyCaffe.param
                 case "softmaxcrossentropyloss":
                 case "softmaxcrossentropy_loss":
                     return LayerType.SOFTMAXCROSSENTROPY_LOSS;
+
+                case "softmaxcrossentropy2loss":
+                case "softmaxcrossentropy2_loss":
+                    return LayerType.SOFTMAXCROSSENTROPY2_LOSS;
 
                 case "silence":
                     return LayerType.SILENCE;

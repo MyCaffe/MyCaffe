@@ -1489,8 +1489,12 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.SIGMOIDCROSSENTROPY_LOSS:
                     return new SigmoidCrossEntropyLossLayer<T>(cuda, log, p);
 
+                /// <remarks>DEPRECIATED - soon to be replaced by SOFTMAXCROSSENTROPY2_LOSS</remarks>
                 case LayerParameter.LayerType.SOFTMAXCROSSENTROPY_LOSS:
                     return new SoftmaxCrossEntropyLossLayer<T>(cuda, log, p);
+
+                case LayerParameter.LayerType.SOFTMAXCROSSENTROPY2_LOSS:
+                    return new SoftmaxCrossEntropy2LossLayer<T>(cuda, log, p);
 
                 case LayerParameter.LayerType.SILENCE:
                     return new SilenceLayer<T>(cuda, log, p);
