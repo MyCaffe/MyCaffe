@@ -1561,7 +1561,9 @@ namespace MyCaffe.basecode
                     }
                     else if (strType == "softmaxwithloss" ||
                              strType == "softmaxcrossentropy_loss" ||
-                             strType == "softmaxcrossentropyloss")
+                             strType == "softmaxcrossentropyloss" ||
+                             strType == "softmaxcrossentropy2_loss" ||
+                             strType == "softmaxcrossentropy2loss")
                     {
                         if (!bSkipLossLayer)
                         {
