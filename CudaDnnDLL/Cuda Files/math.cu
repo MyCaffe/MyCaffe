@@ -12101,19 +12101,18 @@ template long Math<float>::adam_update(int nCount, long hNetParamDiff, long hVal
 
 
 template <typename T>
-__global__ void adamw_update_kernel_withdecay(int n, T* g, T* m, T* v, T beta1, T beta2, T eps_hat, T learning_rate, T step_size, T correction2_sqrt, T decay_rate, const T* w)
+__global__ void adamw_update_kernel_withdecay(int n, T* g, T* m, T* v, T beta1, T beta2, T eps_hat, T learning_rate, T step_size, T correction2_sqrt, T decay_rate, T* w)
 {
 
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		const T fW = w[i];
+		w[i] *= (1 - learning_rate * decay_rate);
 		const T fGi = g[i];
 		const T fMi = m[i] * beta1 + fGi * (1 - beta1);
 		const T fVi = v[i] * beta2 + fGi * fGi * (1 - beta2);
 
 		const T fDenom = sqrt(fVi) / correction2_sqrt + eps_hat;
 		g[i] = step_size * fMi / fDenom;
-		g[i] += (learning_rate * decay_rate * fW); // detached weight decay (this is the AdamW part)
 
 		m[i] = fMi;
 		v[i] = fVi;
