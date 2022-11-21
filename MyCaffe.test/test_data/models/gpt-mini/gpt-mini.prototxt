@@ -36,6 +36,11 @@ layer
          mean: 0
          std: 0.02
       }
+      bias_filler
+      {
+         type: "constant"
+         value: 0.1
+      }
    }
 }
 layer 
@@ -59,6 +64,11 @@ layer
          type: "gaussian"
          mean: 0
          std: 0.02
+      }
+      bias_filler
+      {
+         type: "constant"
+         value: 0.1
       }
    }
 }
@@ -456,11 +466,10 @@ layer
 layer 
 {
    name: "loss1"
-   type: "SoftmaxWithLoss"
+   type: "SoftmaxCrossEntropy2Loss"
    bottom: "logits"
    bottom: "tgt"
    top: "loss1"
-   loss_weight: 100
    loss_param 
    {
       normalization: BATCH_SIZE

@@ -1,9 +1,9 @@
 test_iter: 1
 test_interval: 100
 test_compute_loss: False
-test_initialization: True
+test_initialization: false
 base_lr: 0.0005
-display: 10
+display: 1
 average_loss: 1
 max_iter: 10000
 lr_policy: fixed
@@ -11,9 +11,9 @@ gamma: 0.0001
 power: 0.75
 momentum: 0.9
 weight_decay: 0.1
-adam_decay: 0.01
-regularization_type: L2
-clip_gradients: 1
+adamw_decay: 0.1
+regularization_type: NONE
+clip_gradients: -1
 enable_clip_gradient_status: False
 snapshot: 500
 snapshot_prefix: basic
@@ -28,3 +28,4 @@ eval_type: classification
 ap_version: integral
 show_per_class_result: False
 accuracy_average_window: 0
+debug_info: False
