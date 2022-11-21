@@ -250,9 +250,6 @@ namespace MyCaffe.layers
         ///  -# @f$ (N \times 1 \times 1 \times 1) @f$
         ///     the labels -- ignored as we can't compute their error gradients.
         /// </param>
-        /// <remarks>
-        /// WORK IN PROGRESS
-        /// </remarks>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
             if (!rgbPropagateDown[0])
