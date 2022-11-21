@@ -1523,9 +1523,10 @@ namespace MyCaffe.common
                 Blob<T> blob = m_rgcolTopVecs[layer_id][top_id];
                 int nIdx = m_rgrgnTopIdVecs[layer_id][top_id];
                 string blob_name = m_rgstrBlobNames[nIdx];
-                double data_abs_val_mean = Utility.ConvertVal<T>(blob.asum_data()) / blob.count();
+                double data_asum = Utility.ConvertVal<T>(blob.asum_data());
+                double data_abs_val_mean = data_asum / blob.count();
 
-                m_log.WriteLine("  [Forward] Layer " + m_rgstrLayerNames[layer_id] + ", top blob " + blob_name + " data: " + data_abs_val_mean.ToString());
+                m_log.WriteLine("  [Forward] Layer " + m_rgstrLayerNames[layer_id] + ", top blob " + blob_name + " data: " + data_abs_val_mean.ToString() + " asum: " + data_asum.ToString());
             }
 
             for (int param_id = 0; param_id < m_rgLayers[layer_id].blobs.Count; param_id++)
@@ -1533,9 +1534,10 @@ namespace MyCaffe.common
                 Blob<T> blob = m_rgLayers[layer_id].blobs[param_id];
                 int net_param_id = m_rgrgnParamIdVecs[layer_id][param_id];
                 string blob_name = m_rgstrParamDisplayNames[net_param_id];
-                double data_abs_val_mean = Utility.ConvertVal<T>(blob.asum_data()) / blob.count();
+                double data_asum = Utility.ConvertVal<T>(blob.asum_data());
+                double data_abs_val_mean = data_asum / blob.count();
 
-                m_log.WriteLine("  [Forward] Layer " + m_rgstrLayerNames[layer_id] + ", param blob " + blob_name + " data: " + data_abs_val_mean.ToString());
+                m_log.WriteLine("  [Forward] Layer " + m_rgstrLayerNames[layer_id] + ", param blob " + blob_name + " data: " + data_abs_val_mean.ToString() + " asum: " + data_asum.ToString());
             }
         }
 
@@ -1555,9 +1557,10 @@ namespace MyCaffe.common
                 Blob<T> blob = bottom_vec[bottom_id];
                 int nIdx = m_rgrgnBottomIdVecs[layer_id][bottom_id];
                 string blob_name = m_rgstrBlobNames[nIdx];
-                double diff_abs_val_mean = Utility.ConvertVal<T>(blob.asum_diff()) / blob.count();
+                double diff_asum = Utility.ConvertVal<T>(blob.asum_diff());
+                double diff_abs_val_mean = diff_asum / blob.count();
 
-                m_log.WriteLine("  [Backward] Layer " + m_rgstrLayerNames[layer_id] + ", bottom blob " + blob_name + " diff: " + diff_abs_val_mean.ToString());
+                m_log.WriteLine("  [Backward] Layer " + m_rgstrLayerNames[layer_id] + ", bottom blob " + blob_name + " diff: " + diff_abs_val_mean.ToString() + " asum: " + diff_asum.ToString());
             }
 
             for (int param_id = 0; param_id < m_rgLayers[layer_id].blobs.Count; param_id++)
@@ -1566,9 +1569,10 @@ namespace MyCaffe.common
                     continue;
 
                 Blob<T> blob = m_rgLayers[layer_id].blobs[param_id];
-                double diff_abs_val_mean = Utility.ConvertVal<T>(blob.asum_diff()) / blob.count();
+                double diff_asum = Utility.ConvertVal<T>(blob.asum_diff());
+                double diff_abs_val_mean = diff_asum / blob.count();
 
-                m_log.WriteLine("  [Backward] Layer " + m_rgstrLayerNames[layer_id] + ", param blob " + param_id.ToString() + " diff: " + diff_abs_val_mean.ToString());
+                m_log.WriteLine("  [Backward] Layer " + m_rgstrLayerNames[layer_id] + ", param blob " + param_id.ToString() + " diff: " + diff_abs_val_mean.ToString() + " asum: " + diff_asum.ToString());
             }
         }
 
@@ -1583,12 +1587,13 @@ namespace MyCaffe.common
             int nIdx = m_rgParamLayerIndices[param_id].Key;
             string layer_name = m_rgstrLayerNames[nIdx];
             string param_display_name = m_rgstrParamDisplayNames[param_id];
-            double diff_abs_val_mean = Utility.ConvertVal<T>(blob.asum_diff()) / blob.count();
+            double diff_asum = Utility.ConvertVal<T>(blob.asum_diff());
+            double diff_abs_val_mean = diff_asum / blob.count();
 
             if (param_owner < 0)
             {
                 double data_abs_val_mean = Utility.ConvertVal<T>(blob.asum_data()) / blob.count();
-                m_log.WriteLine("  [Update] Layer " + layer_name + ", param " + param_display_name + " data: " + data_abs_val_mean.ToString() + "; diff: " + diff_abs_val_mean.ToString());
+                m_log.WriteLine("  [Update] Layer " + layer_name + ", param " + param_display_name + " data: " + data_abs_val_mean.ToString() + "; diff: " + diff_abs_val_mean.ToString() + " asum: " + diff_asum.ToString());
             }
             else
             {
@@ -1596,7 +1601,7 @@ namespace MyCaffe.common
                 string owner_layer_name = m_rgstrLayerNames[nIdx2];
                 int nIdx3 = m_rgnParamOwners[param_id];
                 string param_display_name_owner = m_rgstrParamDisplayNames[nIdx3];
-                m_log.WriteLine("  [Update] Layer " + layer_name + ", param blob " + param_display_name + " (owned by layer " + owner_layer_name + ", param " + param_display_name_owner + ") diff: " + diff_abs_val_mean.ToString());
+                m_log.WriteLine("  [Update] Layer " + layer_name + ", param blob " + param_display_name + " (owned by layer " + owner_layer_name + ", param " + param_display_name_owner + ") diff: " + diff_abs_val_mean.ToString() + " asum: " + diff_asum.ToString());
             }
         }
 
