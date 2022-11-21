@@ -1,9 +1,9 @@
-test_iter: 1
-test_interval: 100
+test_iter: 10
+test_interval: 500
 test_compute_loss: False
 test_initialization: false
 base_lr: 0.0005
-display: 1
+display: 10
 average_loss: 1
 max_iter: 10000
 lr_policy: fixed
