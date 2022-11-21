@@ -297,7 +297,7 @@ namespace MyCaffe.test
 
         public Tuple<List<int>, float[]> Fill(string strGpt, string strName, Log log, CausalSelfAttentionParameter p)
         {
-            string strFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\" + strGpt + "\\" + strName + ".txt";
+            string strFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\gpt\\" + strGpt + "\\" + strName + ".txt";
             string[] rgstrLines = File.ReadAllLines(strFile);
             string strSize = rgstrLines[0].Trim('#', ' ', '(', ')', ',');
             string[] rgstrSize = strSize.Split(',');

@@ -328,7 +328,7 @@ namespace MyCaffe.test
 
         public Tuple<List<int>, float[]> Fill(string strGpt, string strName, Log log, string strPass = "")
         {
-            string strFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\" + strGpt + "\\";
+            string strFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\gpt\\" + strGpt + "\\";
 
             if (!string.IsNullOrEmpty(strPass))
                 strFile += strPass + "\\";

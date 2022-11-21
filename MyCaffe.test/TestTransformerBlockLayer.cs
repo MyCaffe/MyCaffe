@@ -217,7 +217,8 @@ namespace MyCaffe.test
             {
                 foreach (ITransformerBlockLayerTest t in test.Tests)
                 {
-                    t.TestTrainingGptMini(100000);
+                    // Change to 10000 for full training.
+                    t.TestTrainingGptMini(500);
                 }
             }
             finally
@@ -235,7 +236,7 @@ namespace MyCaffe.test
             {
                 foreach (ITransformerBlockLayerTest t in test.Tests)
                 {
-                    t.TestTrainingGptMini1(10000);
+                    t.TestTrainingGptMini1(10);
                 }
             }
             finally
@@ -323,7 +324,7 @@ namespace MyCaffe.test
 
         public Tuple<List<int>, float[]> Fill(string strGpt, string strName, Log log, string strPass = "", string strPathOvr = null)
         {
-            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\" + strGpt + "\\"; 
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\gpt\\" + strGpt + "\\"; 
             if (!string.IsNullOrEmpty(strPathOvr))
                 strPath = strPathOvr;
             string strFile = strPath;
@@ -385,6 +386,7 @@ namespace MyCaffe.test
             p.transformer_block_param.attn_dropout = 0.0;
             p.transformer_block_param.resid_dropout = 0.0;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+            Blob<T> blobY = new Blob<T>(m_cuda, m_log);
 
             try
             {
@@ -399,10 +401,10 @@ namespace MyCaffe.test
                 Tuple<List<int>, float[]> x = Fill(strModel, "1_x", m_log);
                 m_blob_bottom.Reshape(x.Item1);
                 m_blob_bottom.mutable_cpu_data = convert(x.Item2);
-                
+
                 Tuple<List<int>, float[]> y = Fill(strModel, "10_y", m_log);
-                m_blobY.Reshape(y.Item1);
-                m_blobY.mutable_cpu_data = convert(y.Item2);
+                blobY.Reshape(y.Item1);
+                blobY.mutable_cpu_data = convert(y.Item2);
                 
                 Tuple<List<int>, float[]> attnBias = Fill(strModel, "attn_bias", m_log);
                 Tuple<List<int>, float[]> attnWt = Fill(strModel, "attn_weight", m_log);
@@ -429,7 +431,7 @@ namespace MyCaffe.test
                 layer.Forward(BottomVec, TopVec);
 
                 // Now, check values
-                float[] rgExpected = convertF(m_blobY.mutable_cpu_data);
+                float[] rgExpected = convertF(blobY.mutable_cpu_data);
                 float[] rgActual = convertF(m_blob_top.mutable_cpu_data);
 
                 for (int i = 0; i < rgExpected.Length; i++)
@@ -445,6 +447,7 @@ namespace MyCaffe.test
             }
             finally
             {
+                blobY.Dispose();
                 layer.Dispose();
             }
         }
@@ -525,6 +528,7 @@ namespace MyCaffe.test
             }
         }
 
+        // Currently Fails on bBatch=True, nHeads=3
         public void TestGradientPico(bool bBatch, int nHeads)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
@@ -567,6 +571,7 @@ namespace MyCaffe.test
             p.transformer_block_param.attn_dropout = 0.0;
             p.transformer_block_param.resid_dropout = 0.0;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+            Blob<T> blobY = new Blob<T>(m_cuda, m_log);
 
             try
             {
@@ -579,8 +584,8 @@ namespace MyCaffe.test
                 m_blob_bottom.mutable_cpu_data = convert(x.Item2);
 
                 Tuple<List<int>, float[]> y = Fill(strModel, "10_y", m_log);
-                m_blobY.Reshape(y.Item1);
-                m_blobY.mutable_cpu_data = convert(y.Item2);
+                blobY.Reshape(y.Item1);
+                blobY.mutable_cpu_data = convert(y.Item2);
 
                 Tuple<List<int>, float[]> attnBias = Fill(strModel, "attn_bias", m_log);
                 Tuple<List<int>, float[]> attnWt = Fill(strModel, "attn_weight", m_log);
@@ -607,7 +612,7 @@ namespace MyCaffe.test
                 layer.Forward(BottomVec, TopVec);
 
                 // Now, check values
-                float[] rgExpected = convertF(m_blobY.mutable_cpu_data);
+                float[] rgExpected = convertF(blobY.mutable_cpu_data);
                 float[] rgActual = convertF(m_blob_top.mutable_cpu_data);
 
                 for (int i = 0; i < rgExpected.Length; i++)
@@ -622,6 +627,7 @@ namespace MyCaffe.test
             }
             finally
             {
+                blobY.Dispose();
                 layer.Dispose();
             }
         }
@@ -704,7 +710,7 @@ namespace MyCaffe.test
                 m_blobX.Reshape(rgShape);
                 m_blobX.mutable_cpu_data = convert(m_rgTestInput);
 
-                m_ctrl.Train(500);
+                m_ctrl.Train();
             }
             finally
             {
