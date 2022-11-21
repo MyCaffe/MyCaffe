@@ -10,6 +10,8 @@ import torch
 from torch.utils.data.dataloader import DataLoader
 from mingpt.utils import CfgNode as CN
 
+from typing import Iterator, Iterable, Optional, Sequence, List, TypeVar, Generic, Sized, Union
+
 class Trainer:
 
     @staticmethod
@@ -18,10 +20,10 @@ class Trainer:
         # device to train on
         C.device = 'auto'
         # dataloder parameters
-        C.num_workers = 0 # 4 _CHANGE_
+        C.num_workers = 0 #_CHANGE_ 
         # optimizer parameters
         C.max_iters = None
-        C.batch_size = 64 
+        C.batch_size = 64
        
         if model_type == 'gpt-pico' or model_type == 'gpt-pico3':
             C.batch_size = 1
@@ -35,7 +37,7 @@ class Trainer:
         C.learning_rate = 3e-4
         C.betas = (0.9, 0.95)
         C.weight_decay = 0.1 # only applied on matmul weights
-        C.grad_norm_clip = 1.0
+        C.grad_norm_clip = 0.0 # _CHANGE_ disable
         C.model_type = model_type
         return C
 
@@ -45,6 +47,7 @@ class Trainer:
         self.optimizer = None
         self.train_dataset = train_dataset
         self.callbacks = defaultdict(list)
+        self.debug = False #_CHANGE_
 
         # determine the device we'll train on
         if config.device == 'auto':
@@ -90,7 +93,8 @@ class Trainer:
         self.iter_time = time.time()
         data_iter = iter(train_loader)
         while True:
-            model.set_iter(self.iter_num, False)
+            # Set to True to generate 'iter_#' directories
+            model.set_iter(self.iter_num, self.debug)
             # fetch the next batch (x, y) and re-init iterator if needed
             try:
                 batch = next(data_iter)
@@ -100,21 +104,26 @@ class Trainer:
             batch = [t.to(self.device) for t in batch]
             x, y = batch
             
-            #model.save_internal_blobs()
+            if self.debug:
+                model.save_internal_blobs()
 
             # forward the model
             logits, self.loss = model(x, y)
-
+            
             # backprop and update the parameters
             model.zero_grad(set_to_none=True)          
             self.loss.backward()
             
-            if model.debug:
+            if self.debug:
                 model.save_internal_grad()
             
-            torch.nn.utils.clip_grad_norm_(model.parameters(), config.grad_norm_clip)
+            if config.grad_norm_clip > 0:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), config.grad_norm_clip)
             self.optimizer.step()
-
+            
+            if self.debug:
+                model.save_internal_grad("after_step")
+            
             self.trigger_callbacks('on_batch_end')
             self.iter_num += 1
             tnow = time.time()

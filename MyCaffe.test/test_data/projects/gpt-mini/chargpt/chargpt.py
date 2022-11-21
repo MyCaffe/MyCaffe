@@ -12,6 +12,7 @@ import torch
 from torch.utils.data import Dataset
 from torch.utils.data.dataloader import DataLoader
 
+import mingpt.model
 from mingpt.model import GPT
 from mingpt.trainer import Trainer
 from mingpt.utils import set_seed, setup_logging, CfgNode as CN
@@ -19,7 +20,6 @@ from mingpt.utils import set_seed, setup_logging, CfgNode as CN
 # -----------------------------------------------------------------------------
 
 def get_config():
-
     C = CN()
 
     # system
@@ -86,10 +86,12 @@ class CharDataset(Dataset):
         return len(self.data) - self.config.block_size
     
     def __getitem__(self, idx):
-        idx1 = random.randint(0, self.max_idx)
+        # Used to get same data ordering
+        #idx = model.get_next_index(self.max_idx)
+        idx = random.randint(0, self.max_idx)
         
         # grab a chunk of (block_size + 1) characters from the data
-        chunk = self.data[idx1:idx1 + self.config.block_size + 1]
+        chunk = self.data[idx:idx + self.config.block_size + 1]
         # encode every character to an integer
         dix = [self.stoi[s] for s in chunk]
         # return as tensors
@@ -97,7 +99,7 @@ class CharDataset(Dataset):
         y = torch.tensor(dix[1:], dtype=torch.long)      
         #print('idx = %d' % idx)
         #file1 = open("c:\\temp\\snap\\idx.txt", "a")
-        #file1.write('idx = %d\n' % idx1)
+        #file1.write('idx = %d\n' % idx)
         #file1.close()
         return x, y
 
