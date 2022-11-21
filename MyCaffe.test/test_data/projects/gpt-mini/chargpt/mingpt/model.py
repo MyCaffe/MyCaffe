@@ -36,7 +36,6 @@ input_dict = { None : "" }
 #pid = os.getpid()
 #opt = CustomOptimizer(pid)
 
-
 # -----------------------------------------------------------------------------
 class DebugFunction(torch.autograd.Function):
     out_path = "c:\\temp\\snap\\"
@@ -135,6 +134,23 @@ class CausalSelfAttention(nn.Module):
         
         b = self.c_proj.weight.detach().numpy()
         np.savetxt(path + tag + "_attn_proj_weight.txt", b.flatten(), fmt="%s", header=str(b.shape))
+
+    def save_internal_weights(self, path, tag):
+        b = self.c_attn.bias.detach().numpy()
+        np.save(path + tag + "_attn_bias.npy", b)
+        np.savetxt(path + tag + "_attn_bias.txt", b.shape)
+        
+        b = self.c_attn.weight.detach().numpy()
+        np.save(path + tag + "_attn_weight.npy", b)
+        np.savetxt(path + tag + "_attn_weight.txt", b.shape)
+        
+        b = self.c_proj.bias.detach().numpy()
+        np.save(path + tag + "_attn_proj_bias.npy", b)
+        np.savetxt(path + tag + "_attn_proj_bias.txt", b.shape)
+        
+        b = self.c_proj.weight.detach().numpy()
+        np.save(path + tag + "_attn_proj_weight.npy", b)
+        np.savetxt(path + tag + "_attn_proj_weight.txt", b.shape)
         
     def save_internal_grad(self, path, tag):
         b = self.c_attn.bias.grad.detach().numpy()
@@ -590,6 +606,24 @@ class Block(nn.Module):
         
         b = self.c_proj.weight.detach().numpy()
         np.savetxt(path + tag + "_proj_weight.txt", b.flatten(), fmt="%s", header=str(b.shape))
+        
+    def save_internal_weights(self, path, tag):
+        self.attn.save_internal_weights(path, tag)
+        b = self.c_fc.bias.detach().numpy()
+        np.save(path + tag + "_fc_bias.npy", b)
+        np.savetxt(path + tag + "_fc_bias.txt", b.shape)
+        
+        b = self.c_fc.weight.detach().numpy()
+        np.save(path + tag + "_fc_weight.npy", b)
+        np.savetxt(path + tag + "_fc_weight.txt", b.shape)
+        
+        b = self.c_proj.bias.detach().numpy()
+        np.save(path + tag + "_proj_bias.npy", b)
+        np.savetxt(path + tag + "_proj_bias.txt", b.shape)
+        
+        b = self.c_proj.weight.detach().numpy()
+        np.save(path + tag + "_proj_weight.npy", b)
+        np.savetxt(path + tag + "_proj_weight.txt", b.shape)
     
     def save_internal_grad(self, path, tag):
         self.attn.save_internal_grad(path, tag)
@@ -1437,7 +1471,7 @@ class GPT(nn.Module):
         sd_hf = model_hf.state_dict()
 
         # copy while ensuring all of the parameters are aligned and match in names and shapes
-        keys = [k for k in sd_hf if not k.endswith('attn.masked_bias')] # ignore these
+        keys = [k for k in sd_hf if not k.endswith('attn.masked_bias') and not k.endswith('ln_1.weight') and not k.endswith('ln_1.bias') and not k.endswith('ln_2.weight') and not k.endswith('ln_2.bias') and not k.endswith('ln_f.weight') and not k.endswith('ln_f.bias')] # ignore these
         transposed = ['attn.c_attn.weight', 'attn.c_proj.weight', 'mlp.c_fc.weight', 'mlp.c_proj.weight']
         # basically the openai checkpoints use a "Conv1D" module, but we only want to use a vanilla nn.Linear.
         # this means that we have to transpose these weights when we import them
@@ -1445,14 +1479,20 @@ class GPT(nn.Module):
         for k in keys:
             if any(k.endswith(w) for w in transposed):
                 # special treatment for the Conv1D weights we need to transpose
-                assert sd_hf[k].shape[::-1] == sd[k].shape
+                k1 = k
+                if ".mlp." in k:
+                    k1 = k.replace(".mlp.", ".")
+                assert sd_hf[k].shape[::-1] == sd[k1].shape
                 with torch.no_grad():
-                    sd[k].copy_(sd_hf[k].t())
+                    sd[k1].copy_(sd_hf[k].t())
             else:
                 # vanilla copy over the other parameters
-                assert sd_hf[k].shape == sd[k].shape
+                k1 = k
+                if ".mlp." in k:
+                    k1 = k.replace(".mlp.", ".")
+                assert sd_hf[k].shape == sd[k1].shape
                 with torch.no_grad():
-                    sd[k].copy_(sd_hf[k])
+                    sd[k1].copy_(sd_hf[k])
 
         return model
 
@@ -1520,6 +1560,25 @@ class GPT(nn.Module):
 
         b = self.lm_head.weight.detach().numpy()
         np.savetxt(self.out_path + "gpt_lm_head_weight.txt", b.flatten(), fmt="%s", header=str(b.shape))
+        
+    def save_internal_weights(self):                    
+        b = self.transformer.wte.weight.detach().numpy()
+        np.save(self.out_path + "gpt_wte_weight.npy", b)
+        np.savetxt(self.out_path + "gpt_wte_weight.txt", b.shape)
+                
+        b = self.transformer.wpe.weight.detach().numpy()
+        np.save(self.out_path + "gpt_wpe_weight.npy", b)
+        np.savetxt(self.out_path + "gpt_wpe_weight.txt", b.shape)
+        
+        tfb = 1
+        for block in self.transformer.h:
+            block.save_internal_weights(self.out_path, "tfb_" + str(tfb))
+            tfb += 1
+
+        b = self.lm_head.weight.detach().numpy()
+        np.save(self.out_path + "gpt_lm_head_weight.npy", b)
+        np.savetxt(self.out_path + "gpt_lm_head_weight.txt", b.shape)
+
         
     def save_internal_grad(self, extrapath = None):
         path = self.out_path
