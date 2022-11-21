@@ -19,10 +19,8 @@ using MyCaffe.basecode.descriptors;
 using System.Dynamic;
 using static MyCaffe.param.beta.DecodeParameter;
 using System.Collections.Concurrent;
+using System.IO.Compression;
 
-///
-/// WORK IN PROGRESS
-///
 namespace MyCaffe.test
 {
     [TestClass]
@@ -244,6 +242,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+//        [TestMethod]
+        public void TestGptHuggingFaceImport()
+        {
+            TransformerBlockLayerTest test = new TransformerBlockLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ITransformerBlockLayerTest t in test.Tests)
+                {
+                    t.TestTestHuggingFaceImport();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface ITransformerBlockLayerTest : ITest
@@ -254,6 +270,7 @@ namespace MyCaffe.test
         void TestForwardMini();
         void TestTrainingGptMini(int nIter);
         void TestTrainingGptMini1(int nIter);
+        void TestTestHuggingFaceImport();
     }
 
     class TransformerBlockLayerTest : TestBase
@@ -767,6 +784,9 @@ namespace MyCaffe.test
                 dispose1(ref m_blobX);
                 dispose1(ref m_blobPos);
 
+                m_dataLayer = null;
+                m_netRun = null;
+
                 m_ctrl.Dispose();
                 m_ctrl = null;
             }
@@ -962,7 +982,10 @@ namespace MyCaffe.test
 
             float[] rgIdx = convertF(blobIdx.mutable_cpu_data);
             rgfIdx.AddRange(rgIdx);
-                       
+
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
             for (int i = 0; i < nMaxNewTokens; i++)
             {                
                 // Forward pass to get the logits.
@@ -983,6 +1006,13 @@ namespace MyCaffe.test
                 
                 if (blobPos.count() != blobIdx.count(0, 2))
                     fillPos(blobIdx, blobPos);
+
+                if (sw.Elapsed.TotalMilliseconds > 1000)
+                {
+                    sw.Restart();
+                    double dfPct = (double)i / nMaxNewTokens;
+                    m_log.WriteLine("Generating at " + dfPct.ToString("P") + "...");
+                }
             }
 
             rgShape = new int[] { 1, rgfIdxOut.Count };
@@ -1006,6 +1036,292 @@ namespace MyCaffe.test
                 if (Math.Abs(fDiff) > dfErr)
                     m_log.FAIL(blob.Name + ": The data at index " + i.ToString() + " does not match!");
             }
+        }
+
+        // WORK IN PROGRESS
+        //
+        // TODO: All that remains is to implement the GPT2 tokenizer and load the GPT2 vocabulary file
+        // found at:
+        // @see [GPT2 Vocabulary File](https://s3.amazonaws.com/models.huggingface.co/bert/gpt2-vocab.json)
+        public void TestTestHuggingFaceImport()
+        {
+            string strModelPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\huggingface\\gpt2\\";
+            string strWtPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\huggingface\\gpt2\\gpt2_weights\\";
+            string strSrc = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\input.txt";
+            TextInputData input = new TextInputData(strSrc);
+            int nVocabSize = 50257; // OpenAi's model vocabulary
+            int nBlockSize = 1024;
+            int nLayerCount = 12;
+            int nHeads = 12;
+            int nEmbed = 768;
+            int nBatchSize = 1;
+
+            string strModel = createGptModel("GPT2", strSrc, nVocabSize, nLayerCount, nHeads, nEmbed, nBlockSize, nBatchSize);
+
+            m_log.EnableTrace = true;
+            m_log.WriteHeader("GPT-Mini - Test Train");
+
+            try
+            {
+                m_log.WriteLine("Downloading GPT2 model weights...");
+                loadWeightFiles(strModelPath, strModel);
+
+                m_ctrl = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, null, m_rgGpu, m_cuda.Path);
+                m_log.WriteLine("Loading GPT2 model...");
+                BlobShape shape = new BlobShape(new List<int>() { 1, nBlockSize });
+                m_ctrl.LoadToRun(strModel, null, shape, null, null, false, false);
+
+                m_blobY = m_ctrl.CreateBlob("results");
+                m_blobX = m_ctrl.CreateBlob("data");
+                m_blobPos = m_ctrl.CreateBlob("pos");
+                m_blobPos.Reshape(1, 128, 1, 1);
+                
+                m_netRun = m_ctrl.GetInternalNet(Phase.RUN);
+                m_log.WriteLine("Loading GPT2 pre-trained weights into the model...");
+                loadWeights(m_netRun, strWtPath);
+
+                if (m_dataLayer == null)
+                {
+                    LayerParameter param_data = new LayerParameter(LayerParameter.LayerType.TOKENIZED_DATA);
+                    param_data.tokenized_data_param.source = strSrc;
+                    param_data.tokenized_data_param.block_size = (uint)nBlockSize;
+                    param_data.tokenized_data_param.batch_size = (uint)nBatchSize;
+                    param_data.tokenized_data_param.input_type = TokenizedDataParameter.INPUT_TYPE.TEXT_FILE;
+                    m_dataLayer = new TokenizedDataLayer<T>(m_cuda, m_log, param_data, null, null);
+
+                    BlobCollection<T> colBottom = new BlobCollection<T>();
+                    BlobCollection<T> colTop = new BlobCollection<T>() { m_blobX, m_blobPos, m_blobX };
+
+                    m_dataLayer.LayerSetUp(colBottom, colTop);
+                }
+
+                string strInput = File.ReadAllText(strSrc);
+                int nIdx = m_random.Next(strInput.Length - (2 * nBlockSize));
+
+                m_rgTestInput = new float[nBlockSize];
+                for (int i = 0; i < nBlockSize; i++)
+                {
+                    m_rgTestInput[i] = (int)strInput[nIdx + i];
+                }
+
+                int[] rgShape = new int[] { 1, m_rgTestInput.Length };
+                m_blobX.Reshape(rgShape);
+                m_blobX.mutable_cpu_data = convert(m_rgTestInput);
+
+                fillPos(m_blobX, m_blobPos);
+                m_dataLayer.Tokenize(m_blobX, m_blobX);
+
+                generate(m_netRun, m_blobX, m_blobY, m_blobPos, 500, nBlockSize, nVocabSize, 10);
+
+                m_dataLayer.Detokenize(m_blobY, m_blobY);
+                float[] rgY = convertF(m_blobY.mutable_cpu_data);
+                string strOut = "";
+
+                for (int i = 0; i < rgY.Length; i++)
+                {
+                    strOut += (char)rgY[i];
+                }
+
+                m_log.WriteLine(strOut);
+            }
+            finally
+            {
+                dispose1(ref m_blobY);
+                dispose1(ref m_blobX);
+                dispose1(ref m_blobPos);
+
+                if (m_dataLayer != null)
+                {
+                    m_dataLayer.Dispose();
+                    m_dataLayer = null;
+                }
+
+                m_ctrl.Dispose();
+                m_ctrl = null;
+            }
+        }
+
+        private void setData(Blob<T> blob, string strPath, string strName)
+        {
+            m_log.WriteLine("Loading blob '" + strName + "' from '" + strPath + "'...");
+            string strNpyFile = strPath + strName + ".npy";
+            string strShapeFile = strPath + strName + ".txt";
+
+            List<int> rgShape = new List<int>();
+            string[] rgstr = File.ReadAllLines(strShapeFile);
+            foreach (string s in rgstr)
+            {
+                rgShape.Add((int)float.Parse(s));
+            }
+
+            if (!blob.CompareShape(rgShape))
+                throw new Exception("The shape of the blob '" + blob.Name + "' does not match the shape of the data!");
+
+            blob.LoadFromNumpy(strNpyFile);
+        }
+        
+        private void loadWeights(Net<T> net, string strPath)
+        {
+            Stopwatch sw = new Stopwatch();
+            string strModelPath = strPath;
+            int nTfBlockCount = 12;
+            
+            setData(net.learnable_parameters[0], strModelPath, "gpt_wte_weight");
+            setData(net.learnable_parameters[1], strModelPath, "gpt_wpe_weight");
+            int nIdx = 2;
+
+            sw.Start();
+            
+            for (int i = 0; i < nTfBlockCount; i++)
+            {
+                setData(net.learnable_parameters[nIdx], strModelPath, "tfb_" + (i+1).ToString() + "_attn_weight");
+                nIdx++;
+                setData(net.learnable_parameters[nIdx], strModelPath, "tfb_" + (i+1).ToString() + "_attn_bias");
+                nIdx++;
+                setData(net.learnable_parameters[nIdx], strModelPath, "tfb_" + (i+1).ToString() + "_attn_proj_weight");
+                nIdx++;
+                setData(net.learnable_parameters[nIdx], strModelPath, "tfb_" + (i+1).ToString() + "_attn_proj_bias");
+                nIdx++;
+                setData(net.learnable_parameters[nIdx], strModelPath, "tfb_" + (i+1).ToString() + "_fc_weight");
+                nIdx++;
+                setData(net.learnable_parameters[nIdx], strModelPath, "tfb_" + (i+1).ToString() + "_fc_bias");
+                nIdx++;
+                setData(net.learnable_parameters[nIdx], strModelPath, "tfb_" + (i+1).ToString() + "_proj_weight");
+                nIdx++;
+                setData(net.learnable_parameters[nIdx], strModelPath, "tfb_" + (i+1).ToString() + "_proj_bias");
+                nIdx++;
+
+                if (sw.Elapsed.TotalMilliseconds > 1000)
+                {
+                    sw.Restart();
+                    double dfPct = (double)i / nTfBlockCount;
+                    m_log.WriteLine("Loading pre-trained weights: " + dfPct.ToString("P"));
+                }
+            }
+
+            setData(net.learnable_parameters[nIdx], strModelPath, "gpt_lm_head_weight");
+        }
+
+        private void loadWeightFiles(string strPath, string strModel)
+        {
+            if (!Directory.Exists(strPath))
+                Directory.CreateDirectory(strPath);
+
+            string strModelFile = strPath + "gpt2_model.prototxt";
+            if (!File.Exists(strModelFile))
+                File.WriteAllText(strModelFile, strModel);
+
+            string strWtsFile = strPath + "gpt2_weights.zip";
+            if (!File.Exists(strWtsFile))
+            {
+                // TODO download from azure
+            }
+
+            string strFirstTarget = strPath + "gpt2_weights\\gpt_lm_head_weight.npy";
+            if (!File.Exists(strFirstTarget))
+            {
+                ZipFile.ExtractToDirectory(strWtsFile, strPath + "gpt2_weights");
+            }
+        }
+
+        private string createGptModel(string strName, string strSrc, int nVocabSize, int nLayers, int nHeads, int nEmbed, int nBlockSize, int nBatchSize)
+        {
+            NetParameter p = new NetParameter();
+            p.name = strName;
+
+            LayerParameter input = new LayerParameter(LayerParameter.LayerType.INPUT);
+            input.input_param.shape.Add(new BlobShape() { dim = new List<int>() { 1, nBlockSize } });
+            input.top.Add("tokdata1");
+            input.input_param.shape.Add(new BlobShape() { dim = new List<int>() { 1, nBlockSize } });
+            input.top.Add("pos");
+            p.layer.Add(input);
+
+            LayerParameter embedTok = new LayerParameter(LayerParameter.LayerType.EMBED);
+            embedTok.name = "wte";
+            embedTok.embed_param.bias_term = false;
+            embedTok.embed_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02);
+            embedTok.embed_param.input_dim = (uint)nVocabSize;
+            embedTok.embed_param.num_output = (uint)nEmbed;
+            embedTok.parameters.Add(new ParamSpec(1, 0)); // mult lr, decay
+            embedTok.bottom.Add("tokdata1");
+            embedTok.top.Add("tok_emb");
+            p.layer.Add(embedTok);
+
+            LayerParameter embedPos = new LayerParameter(LayerParameter.LayerType.EMBED);
+            embedPos.name = "wpe";
+            embedPos.embed_param.bias_term = false;
+            embedPos.embed_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02);
+            embedPos.embed_param.input_dim = (uint)nBlockSize;
+            embedPos.embed_param.num_output = (uint)nEmbed;
+            embedPos.parameters.Add(new ParamSpec(1, 0)); // mult lr, decay
+            embedPos.bottom.Add("pos");
+            embedPos.top.Add("pos_emb");
+            p.layer.Add(embedPos);
+
+            LayerParameter add = new LayerParameter(LayerParameter.LayerType.ELTWISE);
+            add.name = "eltwise1";
+            add.eltwise_param.operation = EltwiseParameter.EltwiseOp.SUM;
+            add.eltwise_param.allow_single_batch_input = true;
+            add.bottom.Add("tok_emb");
+            add.bottom.Add("pos_emb");
+            add.top.Add("eltwise1");
+            p.layer.Add(add);
+
+            string strTop = "eltwise1";
+            LayerParameter drop = new LayerParameter(LayerParameter.LayerType.DROPOUT);
+            drop.name = "drop1";
+            drop.dropout_param.dropout_ratio = 0.1;
+            drop.bottom.Add(strTop);
+            drop.top.Add(strTop);
+            p.layer.Add(drop);
+
+            for (int i = 0; i < nLayers; i++)
+            {
+                LayerParameter tfb = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
+                tfb.name = "tfb" + (i + 1).ToString();
+                tfb.transformer_block_param.layers = nLayers;
+                tfb.transformer_block_param.heads = nHeads;
+                tfb.transformer_block_param.embed = nEmbed;
+                tfb.transformer_block_param.block_size = nBlockSize;
+                tfb.transformer_block_param.attn_dropout = 0.1;
+                tfb.transformer_block_param.resid_dropout = 0.1;
+                tfb.parameters.Add(new ParamSpec(1, 1)); // mult lr, decay for Attn c_attn weight/bias
+                tfb.parameters.Add(new ParamSpec(1, 0)); // mult lr, decay for Attn c_proj weight/bias
+                tfb.parameters.Add(new ParamSpec(1, 0)); // mult lr, decay for FC weight/bias
+                tfb.parameters.Add(new ParamSpec(1, 0)); // mult lr, decay for Proj weight/bias
+                tfb.bottom.Add(strTop);
+
+                strTop = "tfb" + (i + 1).ToString();
+                tfb.top.Add(strTop);
+                p.layer.Add(tfb);
+            }
+
+            LayerParameter ln = new LayerParameter(LayerParameter.LayerType.LAYERNORM);
+            ln.name = "ln1";
+            ln.bottom.Add(strTop);
+            ln.top.Add("ln1");
+            p.layer.Add(ln);
+
+            LayerParameter lm_head = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
+            lm_head.name = "lm_head";
+            lm_head.inner_product_param.bias_term = false;
+            lm_head.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02);
+            lm_head.inner_product_param.num_output = (uint)nVocabSize;
+            lm_head.inner_product_param.axis = 2;
+            lm_head.parameters.Add(new ParamSpec(1, 1)); // mult lr, decay
+            lm_head.bottom.Add("ln1");
+            lm_head.top.Add("logits");
+            p.layer.Add(lm_head);
+
+            LayerParameter prob = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
+            prob.name = "prob";
+            prob.softmax_param.axis = 2;
+            prob.bottom.Add("logits");
+            prob.top.Add("prob");
+            p.layer.Add(prob);
+
+            RawProto proto = p.ToProto("root");
+            return proto.ToString();
         }
     }
 }
