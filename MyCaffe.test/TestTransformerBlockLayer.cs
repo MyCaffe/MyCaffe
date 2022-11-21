@@ -20,6 +20,9 @@ using System.Dynamic;
 using static MyCaffe.param.beta.DecodeParameter;
 using System.Collections.Concurrent;
 using System.IO.Compression;
+using Google.Protobuf.WellKnownTypes;
+using System.Net;
+using static System.Net.WebRequestMethods;
 
 namespace MyCaffe.test
 {
@@ -243,7 +246,7 @@ namespace MyCaffe.test
             }
         }
 
-//        [TestMethod]
+        //[TestMethod]
         public void TestGptHuggingFaceImport()
         {
             TransformerBlockLayerTest test = new TransformerBlockLayerTest(EngineParameter.Engine.CAFFE);
@@ -305,6 +308,9 @@ namespace MyCaffe.test
         float[] m_rgTestInput;
         MyCaffeControl<T> m_ctrl = null;
         Random m_random = new Random(3407);
+        Stopwatch m_swUpdateTimer = new Stopwatch();
+        double m_dfLastProgress = 0;
+        AutoResetEvent m_evtDownloadDone = new AutoResetEvent(false);
 
         public TransformerBlockLayerTest2(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, new List<int>() { 3, 2, 4, 1 }, nDeviceID)
@@ -351,7 +357,7 @@ namespace MyCaffe.test
 
             strFile += strName + ".txt";
 
-            string[] rgstrLines = File.ReadAllLines(strFile);
+            string[] rgstrLines = System.IO.File.ReadAllLines(strFile);
             string strSize = rgstrLines[0].Trim('#', ' ', '(', ')', ',');
             string[] rgstrSize = strSize.Split(',');
             List<int> rgnShape = new List<int>() { 1 };
@@ -1095,7 +1101,7 @@ namespace MyCaffe.test
                     m_dataLayer.LayerSetUp(colBottom, colTop);
                 }
 
-                string strInput = File.ReadAllText(strSrc);
+                string strInput = System.IO.File.ReadAllText(strSrc);
                 int nIdx = m_random.Next(strInput.Length - (2 * nBlockSize));
 
                 m_rgTestInput = new float[nBlockSize];
@@ -1148,7 +1154,7 @@ namespace MyCaffe.test
             string strShapeFile = strPath + strName + ".txt";
 
             List<int> rgShape = new List<int>();
-            string[] rgstr = File.ReadAllLines(strShapeFile);
+            string[] rgstr = System.IO.File.ReadAllLines(strShapeFile);
             foreach (string s in rgstr)
             {
                 rgShape.Add((int)float.Parse(s));
@@ -1208,19 +1214,63 @@ namespace MyCaffe.test
                 Directory.CreateDirectory(strPath);
 
             string strModelFile = strPath + "gpt2_model.prototxt";
-            if (!File.Exists(strModelFile))
-                File.WriteAllText(strModelFile, strModel);
+            if (!System.IO.File.Exists(strModelFile))
+                System.IO.File.WriteAllText(strModelFile, strModel);
 
             string strWtsFile = strPath + "gpt2_weights.zip";
-            if (!File.Exists(strWtsFile))
+            if (!System.IO.File.Exists(strWtsFile))
             {
-                // TODO download from azure
+                using (WebClient webClient = new WebClient())
+                {
+                    string strUrl = "https://signalpopcdn.blob.core.windows.net/mycaffesupport/gpt2_weights.zip";
+                    string strFile1 = "gpt2_weights.zip";
+                    string strFile = strPath + strFile1;
+
+                    m_swUpdateTimer.Start();
+                    m_dfLastProgress = 0;
+                    
+                    webClient.DownloadProgressChanged += WebClient_DownloadProgressChanged;
+                    webClient.DownloadFileCompleted += WebClient_DownloadFileCompleted;
+                    webClient.DownloadFileAsync(new Uri(strUrl), strFile, strFile1);
+
+                    m_evtDownloadDone.WaitOne();
+                }
             }
 
             string strFirstTarget = strPath + "gpt2_weights\\gpt_lm_head_weight.npy";
-            if (!File.Exists(strFirstTarget))
+            if (!System.IO.File.Exists(strFirstTarget))
             {
                 ZipFile.ExtractToDirectory(strWtsFile, strPath + "gpt2_weights");
+            }
+        }
+
+        private void WebClient_DownloadFileCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
+        {
+            bool bTraceEnabled = m_log.EnableTrace;
+            m_log.EnableTrace = true;
+            m_log.WriteLine("Downloading done.");
+            m_log.EnableTrace = bTraceEnabled;
+
+            m_evtDownloadDone.Set();
+        }
+
+        private void WebClient_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+        {
+            if (m_swUpdateTimer.Elapsed.TotalMilliseconds >= 1000)
+            {
+                if (m_dfLastProgress != e.ProgressPercentage)
+                {
+                    m_dfLastProgress = e.ProgressPercentage;
+                    string strFile = e.UserState.ToString();
+                    bool bTraceEnabled = m_log.EnableTrace;
+                    m_log.EnableTrace = true;
+
+                    m_log.Progress = e.ProgressPercentage / 100.0;
+                    m_log.WriteLine("Downloading '" + strFile + "' at " + m_log.Progress.ToString("P") + "...");
+                    m_log.EnableTrace = bTraceEnabled;
+                }
+
+                m_swUpdateTimer.Restart();
             }
         }
 
