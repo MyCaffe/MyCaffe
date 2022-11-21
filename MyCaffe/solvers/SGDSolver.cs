@@ -197,7 +197,7 @@ namespace MyCaffe.solvers
                 dfRate = LearningRateOverride;
 
             if (m_param.display > 0 && (m_nIter % m_param.display) == 0)
-                m_log.WriteLine("Iteration " + m_nIter.ToString() + ", lr = " + dfRate.ToString());
+                m_log.WriteLine("Iteration " + m_nIter.ToString() + ", lr = " + dfRate.ToString() + ", Loss = " + m_dfSmoothedLoss.ToString());
 
             ClipGradients();
 
@@ -209,6 +209,13 @@ namespace MyCaffe.solvers
             }
 
             m_net.Update();
+
+            Dictionary<string, double> rgAsum = new Dictionary<string, double>();
+            for (int i = 0; i < m_net.learnable_parameters.Count; i++)
+            {
+                double dfAsum = Utility.ConvertVal<T>(m_net.learnable_parameters[i].asum_data());
+                rgAsum.Add(m_net.learnable_parameters[i].Name, dfAsum);
+            }
 
             // Increment the internal iter_ counter -- its value should always indicate
             // the number of times the weights have been updated.
