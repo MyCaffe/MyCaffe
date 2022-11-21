@@ -1,0 +1,254 @@
+name: "GptMiniNet"
+layer 
+{
+   name: "tokdata1"
+   type: "TokenizedData"
+   top: "tokdata1"
+   top: "pos"
+   top: "tgt"
+   tokenized_data_param 
+   {
+      input_type: TEXT_FILE
+      source: "C:\ProgramData\MyCaffe\test_data\data\text\input.txt"
+      debug_index_file: "C:\ProgramData\MyCaffe\test_data\data\text\gpt-mini1\idx.txt"
+      batch_size: 64
+      block_size: 128
+      seed: 1701
+   }
+}
+layer 
+{
+   name: "wte"
+   type: "Embed"
+   bottom: "tokdata1"
+   top: "tok_emb"
+   param 
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   embed_param 
+   {
+      num_output: 192
+      input_dim: 65
+      bias_term: False
+      weight_filler 
+      {
+         type: "gaussian"
+         mean: 0
+         std: 0.2
+      }
+   }
+}
+layer 
+{
+   name: "wpe"
+   type: "Embed"
+   bottom: "pos"
+   top: "pos_emb"
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   embed_param 
+   {
+      num_output: 192
+      input_dim: 128
+      bias_term: False
+      weight_filler 
+      {
+         type: "gaussian"
+         mean: 0
+         std: 0.2
+      }
+   }
+}
+layer 
+{
+   name: "eltwise1"
+   type: "Eltwise"
+   bottom: "tok_emb"
+   bottom: "pos_emb"
+   top: "eltwise1"
+   eltwise_param 
+   {
+      operation: SUM
+      allow_single_batch_input: True
+   }
+}
+layer 
+{
+   name: "tfb1"
+   type: "TransformerBlock"
+   bottom: "eltwise1"
+   top: "tfb1"
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   transformer_block_param 
+   {
+      layers: 2
+      heads: 6
+      embed: 192
+      block_size: 128
+      attn_dropout: 0.0
+      resid_dropout: 0.0
+   }
+}
+layer 
+{
+   name: "tfb2"
+   type: "TransformerBlock"
+   bottom: "tfb1"
+   top: "tfb2"
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   param
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   transformer_block_param 
+   {
+      layers: 2
+      heads: 6
+      embed: 192
+      block_size: 128
+      attn_dropout: 0.0
+      resid_dropout: 0.0
+   }
+}
+layer 
+{
+   name: "ln1"
+   type: "LayerNorm"
+   bottom: "tfb2"
+   top: "ln1"
+}
+layer 
+{
+   name: "ip1"
+   type: "InnerProduct"
+   bottom: "ln1"
+   top: "logits"
+   param 
+   {
+      lr_mult: 1
+      decay_mult: 1
+   }
+   inner_product_param 
+   {
+      num_output: 65
+      bias_term: False
+      weight_filler 
+      {
+         type: "gaussian"
+         mean: 0
+         std: 0.2
+      }
+      axis: 2
+   }
+}
+layer 
+{
+   name: "loss1"
+   type: "SoftmaxCrossEntropy2Loss"
+   bottom: "logits"
+   bottom: "tgt"
+   top: "loss1"
+   loss_param 
+   {
+      normalization: BATCH_SIZE
+   }
+   softmax_param 
+   {
+      axis: 2
+   }
+}
+layer 
+{
+   name: "accuracy1"
+   type: "Accuracy"
+   bottom: "logits"
+   bottom: "tgt"
+   top: "accuracy1"
+   include 
+   {
+      phase: TEST
+   }
+   accuracy_param 
+   {
+      axis: 2
+   }
+}
