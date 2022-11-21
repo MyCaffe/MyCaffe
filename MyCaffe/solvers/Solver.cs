@@ -65,7 +65,7 @@ namespace MyCaffe.solvers
         bool m_bEnableDetailedNanDetection = false;
         bool m_bEnableSingleStep = false;
 
-        double m_dfSmoothedLoss = 0;
+        protected double m_dfSmoothedLoss = 0;
         CancelEvent m_evtCancel;
         AutoResetEvent m_evtForceSnapshot;
         AutoResetEvent m_evtForceTest;
