@@ -349,7 +349,8 @@ namespace MyCaffe.layers.gpt
 
             for (int i = 0; i < nBatchSize; i++)
             {
-                int nDataIdx = m_random.Next(m_strData.Count() - (nBlockSize + 1));
+                int nMax = m_strData.Count() - (nBlockSize + 1);
+                int nDataIdx = m_random.Next(nMax);
                 int nDstIdx = i * nBlockSize;
 
                 if (m_rgDebugIdx != null)
