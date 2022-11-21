@@ -880,8 +880,8 @@ namespace MyCaffe
         {
             int nNum = (bMaintainBatchSize) ? shape.dim[0] : 1;
             int nImageChannels = shape.dim[1];
-            int nImageHeight = shape.dim[2];
-            int nImageWidth = shape.dim[3];
+            int nImageHeight = (shape.dim.Count > 2) ? shape.dim[2] : 1;
+            int nImageWidth = (shape.dim.Count > 3) ? shape.dim[3] : 1;
 
             RawProto protoTransform = null;
             RawProto protoModel = ProjectEx.CreateModelForRunning(strModel, "data", nNum, nImageChannels, nImageHeight, nImageWidth, out protoTransform, stage, bSkipLossLayer);
