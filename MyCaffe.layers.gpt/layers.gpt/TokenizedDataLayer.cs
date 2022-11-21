@@ -197,7 +197,7 @@ namespace MyCaffe.layers.gpt
     /// <summary>
     /// The InputData is an abstract class used to get training data and tokenize input data.
     /// </summary>
-    internal abstract class InputData
+    public abstract class InputData
     {
         protected Random m_random;
 
@@ -256,7 +256,7 @@ namespace MyCaffe.layers.gpt
     /// Tokenizing is the process of converting each input character to its respective 'token' or in this case, index value.
     /// So, for example, 'a' is tokenized as index 2; 'd' is tokenized as index 3, etc.
     /// </remarks>
-    internal class TextInputData : InputData
+    public class TextInputData : InputData
     {
         string m_strData;
         Dictionary<char, int> m_rgVocabKeyToIdx = new Dictionary<char, int>();
@@ -275,6 +275,7 @@ namespace MyCaffe.layers.gpt
         /// <param name="strSrc">Specifies the data source as the filename of the text data file.</param>
         /// <param name="nRandomSeed">Optionally, specifies a random seed for testing.</param>
         /// <param name="strDebugIndexFile">Optionally, specifies the debug index file containing index values in the form 'idx = #', one per line.</param>
+        /// <param name="phase">Specifies the currently running phase.</param>
         public TextInputData(string strSrc, int? nRandomSeed = null, string strDebugIndexFile = null, Phase phase = Phase.NONE) : base(nRandomSeed)
         {
             m_phase = phase;
