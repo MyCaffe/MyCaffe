@@ -302,6 +302,42 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestLoadFromNumpy()
+        {
+            BlobSimpleTest test = new BlobSimpleTest();
+
+            try
+            {
+                foreach (IBlobSimpleTest t in test.Tests)
+                {
+                    t.TestLoadFromNumpy();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSaveToNumpy()
+        {
+            BlobSimpleTest test = new BlobSimpleTest();
+
+            try
+            {
+                foreach (IBlobSimpleTest t in test.Tests)
+                {
+                    t.TestSaveToNumpy();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     class BlobSimpleTest : TestBase
@@ -338,6 +374,8 @@ namespace MyCaffe.test
         void TestResize3();
         void TestSetPixel();
         void TestSetPixelAtOffset();
+        void TestLoadFromNumpy();
+        void TestSaveToNumpy();
     }
 
     class BlobSimpleTest<T> : Test<T>, IBlobSimpleTest 
@@ -1164,6 +1202,89 @@ namespace MyCaffe.test
             m_log.CHECK_EQ(dfB2, dfB, "The values are not as expected!");
 
             m_blob_preshaped.SetPixel(nX, nY, pixel, false, order, nOffset);
+        }
+
+        public void TestLoadFromNumpy()
+        {
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\numpy\\";
+            Blob<T> blob = new Blob<T>(m_cuda, m_log);
+
+            try
+            {
+                blob.LoadFromNumpy(strPath + "numpy_1.npy");
+
+                string[] rgstrLines = File.ReadAllLines(strPath + "numpy_1.txt");
+                List<int> rgShape = new List<int>();
+
+                for (int i=0; i<rgstrLines.Length; i++)
+                { 
+                    float fVal = float.Parse(rgstrLines[i]);
+                    rgShape.Add((int)fVal);
+                }
+
+                if (!blob.CompareShape(rgShape))
+                    m_log.FAIL("The numpy shape and expected shape do not match!");
+            }
+            finally
+            {
+                blob.Dispose();
+            }
+        }
+
+        public void TestSaveToNumpy()
+        {
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\numpy\\";
+            Blob<T> blob = new Blob<T>(m_cuda, m_log);
+            Blob<T> blob2 = new Blob<T>(m_cuda, m_log);
+
+            try
+            {
+                string strTempFile = strPath + "temp.npy";
+                if (File.Exists(strTempFile))
+                    File.Delete(strTempFile);
+                
+                blob.LoadFromNumpy(strPath + "numpy_1.npy");
+
+                string[] rgstrLines = File.ReadAllLines(strPath + "numpy_1.txt");
+                List<int> rgShape = new List<int>();
+
+                for (int i = 0; i < rgstrLines.Length; i++)
+                {
+                    float fVal = float.Parse(rgstrLines[i]);
+                    rgShape.Add((int)fVal);
+                }
+
+                if (!blob.CompareShape(rgShape))
+                    m_log.FAIL("The numpy shape and expected shape do not match!");
+
+                // Change the data at the start of each channel.
+                int nSpatialDim = blob.count(1);
+                for (int i = 0; i < blob.num; i++)
+                {
+                    int nIdx = i * nSpatialDim;
+                    blob.SetData(i, nIdx);
+                }
+
+                blob.SaveToNumpy(strTempFile);
+                blob2.LoadFromNumpy(strTempFile);
+
+                if (!blob.CompareShape(blob2.shape()))
+                    m_log.FAIL("The numpy shape and expected shape do not match!");
+
+                for (int i = 0; i < blob2.num; i++)
+                {
+                    int nIdx = i * nSpatialDim;
+                    float fVal = Utility.ConvertValF<T>(blob.GetData(nIdx));
+                    
+                    if ((int)fVal != i)
+                        m_log.FAIL("The data at index '" + i.ToString() + "' does not match!");
+                }
+            }
+            finally
+            {
+                blob.Dispose();
+                blob2.Dispose();
+            }
         }
     }
 }

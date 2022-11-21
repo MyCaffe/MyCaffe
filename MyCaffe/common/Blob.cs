@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Drawing;
 using MyCaffe.param;
 using MyCaffe.basecode;
+using System.Drawing.Text;
 
 namespace MyCaffe.common
 {
@@ -2720,6 +2721,181 @@ namespace MyCaffe.common
                 m_cuda.SetPixel(mutable_gpu_data, count(), true, nOffset, new Tuple<int, T>(nIdxR, fR), new Tuple<int, T>(nIdxG, fG), new Tuple<int, T>(nIdxB, fB));
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Save a blob with data to a Numpy .npy file.
+        /// </summary>
+        /// <param name="strFile">Specifies the .npy file name where the data is saved.</param>
+        /// <param name="bSaveDiff">Specifies to save the diff, when false, the data is saved.</param>
+        /// <remarks>
+        /// @see[A Simple File Format for NumPy Arrays](https://numpy.org/doc/1.13/neps/npy-format.html)
+        /// </remarks>
+        public void SaveToNumpy(string strFile, bool bSaveDiff = false)
+        {
+            using (FileStream fs = File.Open(strFile, FileMode.Create))
+            using (BinaryWriter bw = new BinaryWriter(fs))
+            {
+                bw.Write((byte)0x93);
+                bw.Write((byte)0x4E); // N
+                bw.Write((byte)0x55); // U
+                bw.Write((byte)0x4D); // M
+                bw.Write((byte)0x50); // P
+                bw.Write((byte)0x59); // Y
+                bw.Write((byte)0x01);
+                bw.Write((byte)0x00);
+
+                string strHeader = "{'descr': '<f4', 'fortran_order': False, 'shape': (";
+                for (int i = 0; i < shape().Count; i++)
+                {
+                    strHeader += shape(i).ToString() + ",";
+                }
+
+                strHeader = strHeader.TrimEnd(',');
+                strHeader += ")";
+                strHeader = strHeader.PadRight(117, ' ');
+                strHeader += "\n";
+
+                byte bLen = (byte)strHeader.Length;
+                bw.Write(bLen);
+                bw.Write((byte)0x00);
+
+                foreach (char ch in strHeader)
+                {
+                    bw.Write((byte)ch);
+                }
+
+                float[] rgData;
+                if (bSaveDiff)
+                    rgData = Utility.ConvertVecF<T>(mutable_cpu_diff);
+                else
+                    rgData = Utility.ConvertVecF<T>(mutable_cpu_data);
+                
+                for (int i = 0; i < rgData.Length; i++)
+                {
+                    bw.Write(rgData[i]);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Load a blob with data from a Numpy array .npy file.
+        /// </summary>
+        /// <param name="strFile">Specifies the .npy file name.</param>
+        /// <param name="bLoadDiff">Specifies to load the diff, when false, the data is loaded.</param>
+        /// <exception cref="Exception">An exception is thrown when an invalid or unsupported feature is located.</exception>
+        /// <remarks>
+        /// @see[A Simple File Format for NumPy Arrays](https://numpy.org/doc/1.13/neps/npy-format.html)
+        /// </remarks>
+        public void LoadFromNumpy(string strFile, bool bLoadDiff = false)
+        {
+            using (FileStream fs = File.OpenRead(strFile))
+            using (BinaryReader br = new BinaryReader(fs))
+            {
+                byte[] rgMagic = new byte[6];
+                for (int i = 0; i < rgMagic.Length; i++)
+                {
+                    rgMagic[i] = br.ReadByte();
+                }
+
+                if (rgMagic[0] != 0x93 || rgMagic[1] != 0x4E || rgMagic[2] != 0x55 || rgMagic[3] != 0x4D || rgMagic[4] != 0x50 || rgMagic[5] != 0x59)
+                    throw new Exception("The file is not a valid Numpy file!");
+
+                byte bMajor = br.ReadByte();
+                byte bMinor = br.ReadByte();
+
+                if (bMajor != 1 || bMinor != 0)
+                    throw new Exception("The file is not a valid Numpy file!");
+
+                byte bHeaderLen1 = br.ReadByte();
+                byte bHeaderLen2 = br.ReadByte();
+                int nHeaderLen = bHeaderLen2 << 8 | bHeaderLen1;
+
+                byte[] rgHeader = new byte[nHeaderLen];
+                for (int i = 0; i < rgHeader.Length; i++)
+                {
+                    rgHeader[i] = br.ReadByte();
+                }
+                string strHeader = Encoding.ASCII.GetString(rgHeader);
+
+                bool bFortranOrder;
+                int[] rgShape;
+                int nCount = parseHeader(strHeader, out bFortranOrder, out rgShape);
+
+                if (bFortranOrder)
+                    throw new Exception("Currently the fortran ordering is not supported");
+
+                Reshape(rgShape);
+
+                float[] rgData = new float[nCount];
+                for (int i = 0; i < rgData.Length; i++)
+                {
+                    rgData[i] = br.ReadSingle();
+                }
+
+                if (bLoadDiff)
+                    mutable_cpu_diff = Utility.ConvertVec<T>(rgData);
+                else
+                    mutable_cpu_data = Utility.ConvertVec<T>(rgData);
+            }            
+        }
+
+        private int parseHeader(string str, out bool bFortranOrder, out int[] rgShape)
+        {
+            int nCount = 1;
+            List<int> rgShape1 = new List<int>();
+            str = str.Trim('{', '}', ' ', '\n', ',');
+
+            string strShape = null;
+            string strTarget = "'shape':";
+            int nPos = str.IndexOf(strTarget);
+            if (nPos > 0)
+            {
+                strShape = str.Substring(nPos + strTarget.Length);
+                str = str.Substring(0, nPos);
+
+                nPos = strShape.IndexOf(')');
+                str += strShape.Substring(nPos + 1);
+                str = str.Trim(',', ' ');
+
+                strShape = strShape.Substring(0, nPos);
+                strShape = strShape.Trim(' ', '(', ')');
+                string[] rgShapeStr = strShape.Split(',');
+
+                foreach (string strShape1 in rgShapeStr)
+                {
+                    rgShape1.Add(int.Parse(strShape1));
+                    nCount *= rgShape1[rgShape1.Count - 1];
+                }
+            }
+
+            rgShape = rgShape1.ToArray();
+            bFortranOrder = false;
+
+            string[] rgstr = str.Split(',');
+            foreach (string str1 in rgstr)
+            {
+                string[] rgstrKeyVal = str1.Split(':');
+                if (rgstrKeyVal.Length != 2)
+                    throw new Exception("Invalid header key value, '" + str1 + "'!");
+
+                string strKey = rgstrKeyVal[0].Trim('\'', ' ');
+                string strVal = rgstrKeyVal[1].Trim('\'', ' ');
+
+                switch (strKey)
+                {
+                    case "descr":
+                        if (strVal != "<f4")
+                            throw new Exception("Unsupported data type '" + strVal + "', currenly only support '<f4'");
+                        break;
+
+                    case "fortran_order":
+                        bFortranOrder = bool.Parse(strVal);
+                        break;
+                }
+            }
+
+            return nCount;
         }
     }
 }
