@@ -40,7 +40,7 @@ class Trainer:
         C.grad_norm_clip = 0.0 # _CHANGE_ disable
         C.model_type = model_type
         return C
-
+    
     def __init__(self, config, model, train_dataset):
         self.config = config
         self.model = model

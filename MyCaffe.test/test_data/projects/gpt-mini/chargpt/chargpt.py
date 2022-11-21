@@ -115,7 +115,7 @@ if __name__ == '__main__':
     set_seed(config.system.seed)
     
     # construct the training dataset
-    if config.model.model_type == "gpt-mini" or config.model.model_type == "gpt-mini1":
+    if config.model.model_type == "gpt-mini" or config.model.model_type == "gpt-mini1" or config.model.model_type == "gpt2":
         text = open('input.txt', 'r').read()
     else:
         text = open('test_input.txt', 'r').read() # don't worry we won't run out of file handles _CHANGE_
@@ -125,6 +125,8 @@ if __name__ == '__main__':
     config.model.vocab_size = train_dataset.get_vocab_size()
     config.model.block_size = train_dataset.get_block_size()
     model = GPT(config.model)
+    #model = GPT.from_pretrained(config.model.model_type)
+    #model.save_internal_weights()
     
     # construct the trainer object
     trainer = Trainer(config.trainer, model, train_dataset) 
