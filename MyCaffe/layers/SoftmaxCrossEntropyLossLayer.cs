@@ -12,7 +12,9 @@ namespace MyCaffe.layers
     /// The SoftmaxCrossEntropyLossLayer computes the cross-entropy (logisitic) loss and is
     /// often used for predicting targets interpreted as probabilities in reinforcement learning.
     /// </summary>
-    /// <remarks>DEPRECIATED - soon to be replaced by SoftmaxCrossEntropy2LossLayer</remarks>
+    /// <remarks>
+    /// For GPT models, the SoftmaxCrossEntropy2LossLayer is recommended.
+    /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class SoftmaxCrossEntropyLossLayer<T> : LossLayer<T>
     {
