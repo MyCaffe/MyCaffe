@@ -2864,8 +2864,11 @@ namespace MyCaffe.common
 
                 foreach (string strShape1 in rgShapeStr)
                 {
-                    rgShape1.Add(int.Parse(strShape1));
-                    nCount *= rgShape1[rgShape1.Count - 1];
+                    if (!string.IsNullOrEmpty(strShape1))
+                    {
+                        rgShape1.Add(int.Parse(strShape1));
+                        nCount *= rgShape1[rgShape1.Count - 1];
+                    }
                 }
             }
 
