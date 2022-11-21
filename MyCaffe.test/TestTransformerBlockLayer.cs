@@ -684,7 +684,6 @@ namespace MyCaffe.test
                 m_ctrl.Load(Phase.TRAIN, project, null, null, false, null, false);
 
                 Solver<T> solver = m_ctrl.GetInternalSolver();
-                //solver.OnStart += Solver_OnStartMini;
 
                 m_blobY = m_ctrl.CreateBlob("results");
                 m_blobX = m_ctrl.CreateBlob("data");
@@ -705,7 +704,7 @@ namespace MyCaffe.test
                 m_blobX.Reshape(rgShape);
                 m_blobX.mutable_cpu_data = convert(m_rgTestInput);
 
-                m_ctrl.Train();
+                m_ctrl.Train(500);
             }
             finally
             {
@@ -715,57 +714,6 @@ namespace MyCaffe.test
 
                 m_ctrl.Dispose();
                 m_ctrl = null;
-            }
-        }
-
-        private void Solver_OnStartMini(object sender, EventArgs e)
-        {
-            Solver<T> solver = sender as Solver<T>;
-
-            if (solver.iter == 0)
-            {
-                string strModel = "gpt-mini";
-                string strPath = "c:\\temp\\snap\\";
-                Net<T> net = solver.TrainingNet;
-
-                Tuple<List<int>, float[]> gpt_wte_weight = Fill(strModel, "gpt_wte_weight", m_log, "iter_0", strPath);
-                Tuple<List<int>, float[]> gpt_wpe_weight = Fill(strModel, "gpt_wpe_weight", m_log, "iter_0", strPath);
-                setData(net.learnable_parameters[0], gpt_wte_weight);
-                setData(net.learnable_parameters[1], gpt_wpe_weight);
-                int nIdx = 2;
-
-                for (int i = 0; i < 6; i++)
-                {
-                    string strI = (i + 1).ToString();
-                    Tuple<List<int>, float[]> attn_weight1 = Fill(strModel, "tfb_" + strI + "_attn_weight", m_log, "iter_0", strPath);
-                    Tuple<List<int>, float[]> attn_bias1 = Fill(strModel, "tfb_" + strI + "_attn_bias", m_log, "iter_0", strPath);
-                    Tuple<List<int>, float[]> attn_proj_weight1 = Fill(strModel, "tfb_" + strI + "_attn_proj_weight", m_log, "iter_0", strPath);
-                    Tuple<List<int>, float[]> attn_proj_bias1 = Fill(strModel, "tfb_" + strI + "_attn_proj_bias", m_log, "iter_0", strPath);
-                    Tuple<List<int>, float[]> fc_weights1 = Fill(strModel, "tfb_" + strI + "_fc_weight", m_log, "iter_0", strPath);
-                    Tuple<List<int>, float[]> fc_bias1 = Fill(strModel, "tfb_" + strI + "_fc_bias", m_log, "iter_0", strPath);
-                    Tuple<List<int>, float[]> proj_weight1 = Fill(strModel, "tfb_" + strI + "_proj_weight", m_log, "iter_0", strPath);
-                    Tuple<List<int>, float[]> proj_bias1 = Fill(strModel, "tfb_" + strI + "_proj_bias", m_log, "iter_0", strPath);
-
-                    setData(net.learnable_parameters[nIdx], attn_weight1);
-                    nIdx++;
-                    setData(net.learnable_parameters[nIdx], attn_bias1);
-                    nIdx++;
-                    setData(net.learnable_parameters[nIdx], attn_proj_weight1);
-                    nIdx++;
-                    setData(net.learnable_parameters[nIdx], attn_proj_bias1);
-                    nIdx++;
-                    setData(net.learnable_parameters[nIdx], fc_weights1);
-                    nIdx++;
-                    setData(net.learnable_parameters[nIdx], fc_bias1);
-                    nIdx++;
-                    setData(net.learnable_parameters[nIdx], proj_weight1);
-                    nIdx++;
-                    setData(net.learnable_parameters[nIdx], proj_bias1);
-                    nIdx++;
-                }
-
-                Tuple<List<int>, float[]> gpt_lm_head_weight = Fill(strModel, "gpt_lm_head_weight", m_log, "iter_0", strPath);
-                setData(net.learnable_parameters[nIdx], gpt_lm_head_weight);
             }
         }
 
@@ -805,7 +753,7 @@ namespace MyCaffe.test
                 m_blobX.Reshape(rgShape);
                 m_blobX.mutable_cpu_data = convert(m_rgTestInput);
 
-                m_ctrl.Train();
+                m_ctrl.Train(10);
             }
             finally
             {
@@ -820,10 +768,9 @@ namespace MyCaffe.test
 
         private void Solver_OnTrainingIteration(object sender, TrainingIterationArgs<T> e)
         {
-            string strModel = "gpt-mini";
-            string strPath = "c:\\temp\\snap\\";
+            string strModel = "gpt-mini1";
             string strIter = "iter_" + (e.Iteration - 1).ToString();
-            Tuple<List<int>, float[]> loss = Fill(strModel, "7_loss", m_log, strIter, strPath);
+            Tuple<List<int>, float[]> loss = Fill(strModel, "7_loss", m_log, strIter);
 
             double dfDiff = Math.Abs(loss.Item2[0] - e.Loss);
 
@@ -836,8 +783,8 @@ namespace MyCaffe.test
 
             if (solver.iter == 0)
             {
-                string strModel = "gpt-mini";
-                string strPath = "c:\\temp\\snap\\";
+                string strModel = "gpt-mini1";
+                string strPath = null;
 
                 Tuple<List<int>, float[]> gpt_wte_weight = Fill(strModel, "gpt_wte_weight", m_log, "iter_0", strPath);
                 Tuple<List<int>, float[]> gpt_wpe_weight = Fill(strModel, "gpt_wpe_weight", m_log, "iter_0", strPath);
@@ -1009,7 +956,6 @@ namespace MyCaffe.test
 
             float[] rgIdx = convertF(blobIdx.mutable_cpu_data);
             rgfIdx.AddRange(rgIdx);
-            rgfIdxOut.AddRange(rgfIdx);
                        
             for (int i = 0; i < nMaxNewTokens; i++)
             {                
