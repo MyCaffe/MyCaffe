@@ -199,6 +199,9 @@ namespace MyCaffe.layers.gpt
     /// </summary>
     public abstract class InputData
     {
+        /// <summary>
+        /// Specifies the random object made available to the derived classes.
+        /// </summary>
         protected Random m_random;
 
         /// <summary>
