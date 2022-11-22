@@ -1878,7 +1878,7 @@ namespace MyCaffe
 
             m_lastPhaseRun = Phase.RUN;
 
-            UpdateRunWeights(false);
+            UpdateRunWeights(false, false);
 
             double dfThreshold = customInput.GetPropertyAsDouble("Threshold", 0.2);
             int nMax = customInput.GetPropertyAsInt("Max", 80);
@@ -2761,9 +2761,14 @@ namespace MyCaffe
                     Stopwatch sw = new Stopwatch();
                     sw.Start();
 
-                    while (res[0].Item1.Length > 0 && nCount < nMax)
+                    int nSkipCount = 0;
+                    if (layerInput.layer_param.tokenized_data_param != null)
+                        nSkipCount = (int)layerInput.layer_param.tokenized_data_param.block_size;
+                    
+                    while (res[0].Item1.Length > 0 && nCount < nMax + nSkipCount)
                     {
-                        strOut += res[0].Item1;
+                        if (nCount > nSkipCount)
+                            strOut += res[0].Item1;
 
                         if (!layerInput.SupportsPostProcessingLogits)
                             strOut += " ";
@@ -2779,7 +2784,7 @@ namespace MyCaffe
 
                         if (sw.Elapsed.TotalMilliseconds > 1000)
                         {
-                            double dfPct = (double)nCount / nMax;
+                            double dfPct = (double)nCount / (nMax + nSkipCount);
                             m_log.WriteLine("Generating response at " + dfPct.ToString("P") + "...");
                         }
                     }
@@ -2813,7 +2818,23 @@ namespace MyCaffe
                 strFinal += str + "|";
             }
 
+            strFinal = clean(strFinal);
             return new PropertySet("Results=" + strFinal);
+        }
+
+        private string clean(string strFinal)
+        {
+            string str = "";
+
+            foreach (char ch in strFinal)
+            {
+                if (ch == ';')
+                    str += ' ';
+                else
+                    str += ch;
+            }
+
+            return str;
         }
 
         /// <summary>
