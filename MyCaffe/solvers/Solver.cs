@@ -64,7 +64,9 @@ namespace MyCaffe.solvers
         bool m_bEnableBreakOnNan = false;
         bool m_bEnableDetailedNanDetection = false;
         bool m_bEnableSingleStep = false;
-
+        /// <summary>
+        /// Specifies the smoothed loss protected for derived classes to use.
+        /// </summary>
         protected double m_dfSmoothedLoss = 0;
         CancelEvent m_evtCancel;
         AutoResetEvent m_evtForceSnapshot;
