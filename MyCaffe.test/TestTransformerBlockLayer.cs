@@ -229,6 +229,25 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestTrainingGptMiniTestMany()
+        {
+            TransformerBlockLayerTest test = new TransformerBlockLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ITransformerBlockLayerTest t in test.Tests)
+                {
+                    // Change to 10000 for full training.
+                    t.TestTrainingGptMini(10000);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestTrainingGptMini1()
         {
             TransformerBlockLayerTest test = new TransformerBlockLayerTest(EngineParameter.Engine.CAFFE);
@@ -272,6 +291,7 @@ namespace MyCaffe.test
         void TestGradientPico(bool bBatch, int nHeads);
         void TestForwardMini();
         void TestTrainingGptMini(int nIter);
+        void TestTrainingGptMiniTestMany(int nIter);
         void TestTrainingGptMini1(int nIter);
         void TestTestHuggingFaceImport();
     }
@@ -712,12 +732,8 @@ namespace MyCaffe.test
                 m_ctrl.OnTestingIteration += ctrl_OnTestingIteration;
                 m_ctrl.Load(Phase.TRAIN, project, null, null, false, null, false);
 
-                Solver<T> solver = m_ctrl.GetInternalSolver();
-
                 m_blobY = m_ctrl.CreateBlob("results");
                 m_blobX = m_ctrl.CreateBlob("data");
-                m_blobPos = m_ctrl.CreateBlob("pos");
-                m_blobPos.Reshape(1, 128, 1, 1);
 
                 m_netRun = m_ctrl.GetInternalNet(Phase.RUN);
                 m_dataLayer = m_ctrl.GetInternalNet(Phase.TEST).layers[0] as TokenizedDataLayer<T>;
@@ -739,7 +755,49 @@ namespace MyCaffe.test
             {
                 dispose1(ref m_blobY);
                 dispose1(ref m_blobX);
-                dispose1(ref m_blobPos);
+
+                m_ctrl.Dispose();
+                m_ctrl = null;
+            }
+        }
+
+        public void TestTrainingGptMiniTestMany(int nIter)
+        {
+            m_log.EnableTrace = true;
+            m_log.WriteHeader("GPT-Mini - Test Train");
+
+            try
+            {
+                m_ctrl = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, null, m_rgGpu, m_cuda.Path);
+                ProjectEx project = getGptProject("gpt-mini", nIter);
+
+                m_ctrl.Load(Phase.TRAIN, project, null, null, false, null, false);
+
+
+                
+                m_blobY = m_ctrl.CreateBlob("results");
+                m_blobX = m_ctrl.CreateBlob("data");
+
+                string strTestInput = "O God, O God!";
+                m_rgTestInput = new float[strTestInput.Length];
+                for (int i = 0; i < strTestInput.Length; i++)
+                {
+                    m_rgTestInput[i] = (int)strTestInput[i];
+                }
+
+                int[] rgShape = new int[] { 1, m_rgTestInput.Length };
+                m_blobX.Reshape(rgShape);
+                m_blobX.mutable_cpu_data = convert(m_rgTestInput);
+
+                PropertySet res;
+                m_ctrl.Train(500);
+                res = m_ctrl.TestMany(new PropertySet("InputData=O God! O God!;Max=500"));
+                m_log.WriteLine(res.GetProperty("Results"));
+            }
+            finally
+            {
+                dispose1(ref m_blobY);
+                dispose1(ref m_blobX);
 
                 m_ctrl.Dispose();
                 m_ctrl = null;
@@ -765,8 +823,6 @@ namespace MyCaffe.test
 
                 m_blobY = m_ctrl.CreateBlob("results");
                 m_blobX = m_ctrl.CreateBlob("data");
-                m_blobPos = m_ctrl.CreateBlob("pos");
-                m_blobPos.Reshape(1, 128, 1, 1);
 
                 m_netRun = m_ctrl.GetInternalNet(Phase.RUN);
                 m_dataLayer = m_ctrl.GetInternalNet(Phase.TEST).layers[0] as TokenizedDataLayer<T>;
@@ -788,7 +844,6 @@ namespace MyCaffe.test
             {
                 dispose1(ref m_blobY);
                 dispose1(ref m_blobX);
-                dispose1(ref m_blobPos);
 
                 m_dataLayer = null;
                 m_netRun = null;
@@ -884,9 +939,8 @@ namespace MyCaffe.test
             {
                 m_ctrl.UpdateRunWeights(false, false);
 
-                fillPos(m_blobX, m_blobPos);
                 m_dataLayer.Tokenize(m_blobX, m_blobX);
-                generate(m_netRun, m_blobX, m_blobY, m_blobPos, 500, (int)m_dataLayer.layer_param.tokenized_data_param.block_size, 65, 10);
+                generate(m_netRun, m_blobX, m_blobY, 500, (int)m_dataLayer.layer_param.tokenized_data_param.block_size, 65, 10);
                 
                 m_dataLayer.Detokenize(m_blobY, m_blobY);
                 float[] rgY = convertF(m_blobY.mutable_cpu_data);
@@ -918,6 +972,12 @@ namespace MyCaffe.test
 
         private int getNextIndex(Blob<T> blob, int nVocabCount, int nTopK, Layer<T> softmax)
         {
+            List<Tuple<string, int, double>> rg = m_dataLayer.PostProcessLogitsOutput(blob, softmax, 10);
+            return rg[0].Item2;
+        }
+
+        private int getNextIndexOld(Blob<T> blob, int nVocabCount, int nTopK, Layer<T> softmax)
+        {           
             float[] rgData = convertF(blob.mutable_cpu_data);
             float[] rgLogits = new float[nVocabCount];
             int nIdxStart = blob.count() - nVocabCount;
@@ -976,11 +1036,11 @@ namespace MyCaffe.test
             return rgProb.Length - 1;
         }
 
-        private void generate(Net<T> net, Blob<T> blobIdx, Blob<T> blobY, Blob<T> blobPos, int nMaxNewTokens, int nBlockSize, int nVocabSize, int nTopK)
+        private void generate(Net<T> net, Blob<T> blobIdx, Blob<T> blobY, int nMaxNewTokens, int nBlockSize, int nVocabSize, int nTopK)
         {
             Blob<T> blobLogits = net.blob_by_name("logits");
             Layer<T> softmax = net.FindLastLayer(LayerParameter.LayerType.SOFTMAX);
-            BlobCollection<T> colBottom = new BlobCollection<T>() { blobIdx, blobPos };
+            BlobCollection<T> colBottom = new BlobCollection<T>() { blobIdx };
             double dfLoss;
             List<float> rgfIdx = new List<float>();
             List<float> rgfIdxOut = new List<float>();
@@ -1010,9 +1070,6 @@ namespace MyCaffe.test
                     blobIdx.Reshape(rgShape);
                 blobIdx.mutable_cpu_data = convert(rgfIdx.ToArray());
                 
-                if (blobPos.count() != blobIdx.count(0, 2))
-                    fillPos(blobIdx, blobPos);
-
                 if (sw.Elapsed.TotalMilliseconds > 1000)
                 {
                     sw.Restart();
@@ -1114,10 +1171,8 @@ namespace MyCaffe.test
                 m_blobX.Reshape(rgShape);
                 m_blobX.mutable_cpu_data = convert(m_rgTestInput);
 
-                fillPos(m_blobX, m_blobPos);
                 m_dataLayer.Tokenize(m_blobX, m_blobX);
-
-                generate(m_netRun, m_blobX, m_blobY, m_blobPos, 500, nBlockSize, nVocabSize, 10);
+                generate(m_netRun, m_blobX, m_blobY, 500, nBlockSize, nVocabSize, 10);
 
                 m_dataLayer.Detokenize(m_blobY, m_blobY);
                 float[] rgY = convertF(m_blobY.mutable_cpu_data);
