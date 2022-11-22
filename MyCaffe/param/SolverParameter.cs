@@ -62,7 +62,7 @@ namespace MyCaffe.param
         double m_dfDelta = 1e-8;
         double m_dfMomentum2 = 0.999;
         double m_dfRmsDecay = 0.95;
-        double m_dfAdamWDecay = 1e-2;
+        double m_dfAdamWDecay = 0.1;
         bool m_bDebugInfo = false;
         bool m_bSnapshotAfterTrain = false;
         string m_strCustomTrainer = null;
