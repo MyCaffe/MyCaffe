@@ -44,8 +44,11 @@ namespace MyCaffe.python
         /// <summary>
         /// Initialize the Python Engine with the version of Python used.
         /// </summary>
-        /// <param name="strPythonDllPath">Specifies the path to the Python DLL (e.g. Python39.dll) which is usually located
-        /// at: @"C:\Users\" + strUserName + @"\AppData\Local\Programs\Python\Python39\python39.dll"</param>
+        /// <param name="strPythonDllPath">Specifies the path to the Python DLL (e.g. Python39.dll) which is usually located at:
+        /// <code>
+        /// @"C:\Users\" + strUserName + @"\AppData\Local\Programs\Python\Python39\python39.dll"
+        /// </code>
+        /// </param>
         public void Initialize(string strPythonDllPath)
         {
             Environment.SetEnvironmentVariable("PYTHONNET_PYDLL", strPythonDllPath);
