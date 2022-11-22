@@ -1648,10 +1648,10 @@ namespace MyCaffe.common
             T[] rg = m_cuda.get(count(), gpu_data, nIdx);
             if (rg.Length == 0)
                 throw new Exception("No data at index = " + nIdx.ToString());
-
+            
             return rg[0];
         }
-
+       
         /// <summary>
         /// Returns the diff at a given flat index within the Blob.
         /// </summary>

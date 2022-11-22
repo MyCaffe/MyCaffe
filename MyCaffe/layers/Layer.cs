@@ -224,6 +224,14 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Should return true when pre postprocessinglogits methods are overriden.
+        /// </summary>
+        public virtual bool SupportsPostProcessingLogits
+        {
+            get { return false; }
+        }
+
+        /// <summary>
         /// The PreprocessInput allows derivative data layers to convert a property set of input
         /// data into the bottom blob collection used as intput.
         /// </summary>
@@ -255,8 +263,8 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// The PostprocessOutput allows derivative data layers to post-process the results,
-        /// converting them back into text results.
+        /// The PostProcessOutput allows derivative data layers to post-process the results,
+        /// converting them back into text results (e.g., detokenizing).
         /// </summary>
         /// <param name="blobSofmtax">Specifies the softmax blob output by the network.</param>
         /// <param name="nK">Optionally, specifies the K top items to return (default = 1).</param>
@@ -265,6 +273,18 @@ namespace MyCaffe.layers
         {
             return null;
         }
+        /// <summary>
+        /// The PostProcessLogitsOutput allows derivative data layers to post-process the results,
+        /// converting them back into text results (e.g., detokenizing).
+        /// </summary>
+        /// <param name="blobLogits">Specifies the logits blob output by the last inner product layer of the network.</param>
+        /// <param name="nK">Optionally, specifies the K top items to return (default = 1).</param>
+        /// <returns>The array of word string, index and propabilities corresponding to the softmax output is returned.</returns>
+        public virtual List<Tuple<string, int, double>> PostProcessLogitsOutput(Blob<T> blobLogits, Layer<T> softmax, int nK = 1)
+        {
+            return null;
+        }
+
 
         /// <summary>
         /// Convert the index to the word.
