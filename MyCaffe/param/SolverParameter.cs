@@ -209,10 +209,14 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Defines the regularization type.
+        /// Defines the regularization type.  When enabled, weight_decay is used.
         /// </summary>
         public enum RegularizationType
         {
+            /// <summary>
+            /// Specifies to not use regularization.
+            /// </summary>
+            NONE,
             /// <summary>
             /// Specifies L1 regularization.
             /// </summary>
@@ -620,6 +624,9 @@ namespace MyCaffe.param
             {
                 switch (m_strRegularizationType)
                 {
+                    case "NONE":
+                        return RegularizationType.NONE;
+                        
                     case "L1":
                         return RegularizationType.L1;
 
@@ -634,6 +641,10 @@ namespace MyCaffe.param
             {
                 switch (value)
                 {
+                    case RegularizationType.NONE:
+                        m_strRegularizationType = "NONE";
+                        break;
+                        
                     case RegularizationType.L1:
                         m_strRegularizationType = "L1";
                         break;
