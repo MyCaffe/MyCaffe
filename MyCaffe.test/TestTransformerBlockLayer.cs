@@ -238,7 +238,7 @@ namespace MyCaffe.test
                 foreach (ITransformerBlockLayerTest t in test.Tests)
                 {
                     // Change to 10000 for full training.
-                    t.TestTrainingGptMini(10000);
+                    t.TestTrainingGptMini(500);
                 }
             }
             finally
@@ -790,7 +790,7 @@ namespace MyCaffe.test
                 m_blobX.mutable_cpu_data = convert(m_rgTestInput);
 
                 PropertySet res;
-                m_ctrl.Train(500);
+                m_ctrl.Train(nIter);
                 res = m_ctrl.TestMany(new PropertySet("InputData=O God! O God!;Max=500"));
                 m_log.WriteLine(res.GetProperty("Results"));
             }
