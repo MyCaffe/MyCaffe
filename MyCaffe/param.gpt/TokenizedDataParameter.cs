@@ -20,6 +20,7 @@ namespace MyCaffe.param.gpt
         string m_strSource;
         int? m_nSeed = null;
         string m_strDbgIdxFile;
+        bool m_bTokenizeRunInput = false;
 
         /// <summary>
         /// Defines the input type used.
@@ -54,6 +55,15 @@ namespace MyCaffe.param.gpt
         {
             get { return m_inputType; }
             set { m_inputType = value; }
+        }
+
+        /// <summary>
+        /// Specifies that the input during the RUN phase needs tokenizing (default = false).
+        /// </summary>
+        public bool tokenize_run_input
+        {
+            get { return m_bTokenizeRunInput; }
+            set { m_bTokenizeRunInput = value; }
         }
 
         /// <summary>
@@ -118,6 +128,7 @@ namespace MyCaffe.param.gpt
             m_nBlockSize = p.block_size;
             m_nSeed = p.seed;
             m_strDbgIdxFile = p.debug_index_file;
+            m_bTokenizeRunInput = p.tokenize_run_input;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -148,6 +159,9 @@ namespace MyCaffe.param.gpt
             if (seed != null)
                 rgChildren.Add("seed", seed.ToString());
 
+            if (tokenize_run_input)
+                rgChildren.Add("tokenize_run_input", tokenize_run_input.ToString());
+
             return new RawProto(strName, "", rgChildren);
         }
 
@@ -175,6 +189,9 @@ namespace MyCaffe.param.gpt
 
             if ((strVal = rp.FindValue("debug_index_file")) != null)
                 p.debug_index_file = strVal;
+
+            if ((strVal = rp.FindValue("tokenize_run_input")) != null)
+                p.tokenize_run_input = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("input_type")) != null)
             {

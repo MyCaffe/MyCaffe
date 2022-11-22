@@ -9,6 +9,7 @@ using MyCaffe.fillers;
 using System.IO;
 using MyCaffe.db.image;
 using MyCaffe.param.gpt;
+using System.Net;
 
 namespace MyCaffe.layers.gpt
 {
@@ -20,6 +21,12 @@ namespace MyCaffe.layers.gpt
     {
         CancelEvent m_evtCancel;
         InputData m_data;
+        Blob<T> m_blobIdx = null;
+        Blob<T> m_blobPos = null;
+        Blob<T> m_blobX = null;
+        Blob<T> m_blobY = null;
+        Blob<T> m_blobProb = null;
+        Random m_random = new Random();
 
         /// <summary>
         /// The TokenizedDataLayer constructor.
@@ -54,13 +61,27 @@ namespace MyCaffe.layers.gpt
         /// </summary>
         protected override void dispose()
         {
+            dispose(ref m_blobIdx);
+            dispose(ref m_blobPos);
+            dispose(ref m_blobY);
+            dispose(ref m_blobX);
+            dispose(ref m_blobProb);
+
             base.dispose();
         }
 
         /// <summary>
-        /// No bottom blobs for the data layer.
+        /// No bottom blobs for the data layer, except when running.
         /// </summary>
-        public override int ExactNumBottomBlobs
+        public override int MaxBottomBlobs
+        {
+            get { return (m_phase == Phase.RUN) ? 1 : 0; }
+        }
+
+        /// <summary>
+        /// Returns the minimum number of bottom blobs.
+        /// </summary>
+        public override int MinBottomBlobs
         {
             get { return 0; }
         }
@@ -80,7 +101,6 @@ namespace MyCaffe.layers.gpt
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            int nBatchSize = (int)m_param.tokenized_data_param.batch_size;
             int nBlockSize = (int)m_param.tokenized_data_param.block_size;
 
             switch (m_param.tokenized_data_param.input_type)
@@ -96,6 +116,10 @@ namespace MyCaffe.layers.gpt
             Reshape(colBottom, colTop);
 
             Blob<T> blobPos = colTop[1];
+            List<int> rgShape = Utility.Clone<int>(colTop[1].shape());
+            rgShape[1] = nBlockSize;
+            blobPos.Reshape(rgShape);
+
             // Set the position data = 0, 1, 2, 3, ... block_size-1
             float[] rgPos = new float[nBlockSize];
             for (int i = 0; i < nBlockSize; i++)
@@ -113,36 +137,82 @@ namespace MyCaffe.layers.gpt
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            m_log.CHECK_EQ(colBottom.Count, 0, "Data Layer takes no input blobs.");
-            m_log.CHECK_EQ(colTop.Count, 3, "The TokenizedDataLayer requires 3 top blobs.");
+            if (m_phase == Phase.RUN)
+            {
+                int nBatchSize = colBottom[0].num;
+                int nBlockSize = (int)m_param.tokenized_data_param.block_size;
+                int nTokenSize = (int)m_data.TokenSize;
 
-            int nBatchSize = (int)m_param.tokenized_data_param.batch_size;
-            int nBlockSize = (int)m_param.tokenized_data_param.block_size;
-            int nTokenSize = (int)m_data.TokenSize;
+                Blob<T> blobData = colTop[0];
+                Blob<T> blobPos = colTop[1];
+                Blob<T> blobTarget = colTop[2];
 
-            Blob<T> blobData = colTop[0];
-            Blob<T> blobPos = colTop[1];
-            Blob<T> blobTarget = colTop[2];
+                int nCount = 3;
+                if (nTokenSize == 1)
+                    nCount = 2;
+                int[] rgShape = new int[nCount];
 
-            int nCount = 3;
-            if (nTokenSize == 1)
-                nCount = 2;
-            int[] rgShape = new int[nCount];
+                blobData.SetParameter("vocab_size", m_data.VocabularySize);
 
-            blobData.SetParameter("vocab_size", m_data.VocabularySize);
-            // reshape for single characters (each character is an index into the vocab vector)
-            rgShape[0] = nBatchSize;
-            rgShape[1] = nBlockSize;
-            if (rgShape.Length > 2)
-                rgShape[2] = nTokenSize;
+                int nC = colBottom[0].channels;
+                if (nC > nBlockSize)
+                    throw new Exception("The bottom input channel count cannot exceed the block_size=" + nBlockSize.ToString());
 
-            blobData.Reshape(rgShape);
-            blobTarget.Reshape(rgShape);
+                // reshape for single characters (each character is an index into the vocab vector)
+                rgShape[0] = nBatchSize;
+                rgShape[1] = nC;
+                if (rgShape.Length > 2)
+                    rgShape[2] = nTokenSize;
 
-            rgShape[0] = 1;
-            if (rgShape.Length > 2)
-                rgShape[2] = 1;
-            blobPos.Reshape(rgShape);
+                blobData.Reshape(rgShape);
+                blobTarget.Reshape(rgShape);
+
+                if (blobPos.count() < nBlockSize)
+                {
+                    rgShape[0] = 1;
+                    if (rgShape.Length > 2)
+                        rgShape[2] = 1;
+
+                    blobPos.Reshape(rgShape);
+                }
+
+                rgShape[0] = nBatchSize;
+                rgShape[1] = nC;
+                blobPos.Reshape(rgShape);
+            }
+            else
+            {
+                m_log.CHECK_EQ(colBottom.Count, 0, "Data Layer takes no input blobs.");
+                m_log.CHECK_EQ(colTop.Count, 3, "The TokenizedDataLayer requires 3 top blobs.");
+
+                int nBatchSize = (int)m_param.tokenized_data_param.batch_size;
+                int nBlockSize = (int)m_param.tokenized_data_param.block_size;
+                int nTokenSize = (int)m_data.TokenSize;
+
+                Blob<T> blobData = colTop[0];
+                Blob<T> blobPos = colTop[1];
+                Blob<T> blobTarget = colTop[2];
+
+                int nCount = 3;
+                if (nTokenSize == 1)
+                    nCount = 2;
+                int[] rgShape = new int[nCount];
+
+                blobData.SetParameter("vocab_size", m_data.VocabularySize);
+                // reshape for single characters (each character is an index into the vocab vector)
+                rgShape[0] = nBatchSize;
+                rgShape[1] = nBlockSize;
+                if (rgShape.Length > 2)
+                    rgShape[2] = nTokenSize;
+
+                blobData.Reshape(rgShape);
+                blobTarget.Reshape(rgShape);
+
+                rgShape[0] = 1;
+                if (rgShape.Length > 2)
+                    rgShape[2] = 1;
+                blobPos.Reshape(rgShape);
+            }
         }
 
         /// <summary>
@@ -159,17 +229,54 @@ namespace MyCaffe.layers.gpt
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            Tuple<float[], float[]> data = m_data.GetData((int)m_param.tokenized_data_param.batch_size, (int)m_param.tokenized_data_param.block_size);
+            if (m_phase == Phase.RUN)
+            {
+                m_log.CHECK_EQ(colBottom.Count, 1, "There must be one input blob when running.");
 
-            colTop[0].mutable_cpu_data = convert(data.Item1);
-            if (colTop.Count > 2)
-                colTop[2].mutable_cpu_data = convert(data.Item2);
+                if (m_param.tokenized_data_param.tokenize_run_input)
+                {
+                    float[] rgInput = convertF(colBottom[0].mutable_cpu_data);
+                    rgInput = m_data.Tokenize(rgInput);
+                    colTop[0].mutable_cpu_data = convert(rgInput);
+                }
+                else
+                {
+                    colTop[0].CopyFrom(colBottom[0]);
+                }
+                // Top[1] should already have pos data in it.
+                // There is no Top[2] target data when running.
+            }
+            else
+            {
+                Tuple<float[], float[]> data = m_data.GetData((int)m_param.tokenized_data_param.batch_size, (int)m_param.tokenized_data_param.block_size);
+
+                colTop[0].mutable_cpu_data = convert(data.Item1);
+                if (colTop.Count > 2)
+                    colTop[2].mutable_cpu_data = convert(data.Item2);
+            }
         }
 
         /// @brief Not implemented - data Layers do not perform backward..
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
         }
+
+        /// <summary>
+        /// Specifies that this layer supports preprocessing.
+        /// </summary>
+        public override bool SupportsPreProcessing
+        {
+            get { return true; }
+        }
+
+        /// <summary>
+        /// Specifies that this layer supports post processing the logits.
+        /// </summary>
+        public override bool SupportsPostProcessingLogits
+        {
+            get { return true; }
+        }
+
 
         /// <summary>
         /// Tokenize the source data by converting it from its native form to index values that reference into the vocabulary.
@@ -191,6 +298,144 @@ namespace MyCaffe.layers.gpt
         {
             float[] rgSrc = convertF(blobSrc.mutable_cpu_data);
             blobDst.mutable_cpu_data = convert(m_data.Detokenize(rgSrc));
+        }
+
+        /// <summary>
+        /// Preproces the input and return as a set of bottom blobs.
+        /// </summary>
+        /// <param name="customInput">Specifies the custom text input.</param>
+        /// <param name="colBottom">The output is placed in the bottom blobs as: tokidx, pos</param>
+        /// <returns>The bottom blob collection is returned.</returns>
+        public override BlobCollection<T> PreProcessInput(PropertySet customInput, BlobCollection<T> colBottom = null)
+        {
+            if (m_blobIdx == null)
+                m_blobIdx = new Blob<T>(m_cuda, m_log, false);
+
+            string strInput = customInput.GetProperty("InputData");
+            if (string.IsNullOrEmpty(strInput))
+                throw new Exception("Could not find 'InputData' property!");
+
+            int[] rgShape = new int[2];
+            rgShape[0] = 1;
+            rgShape[1] = strInput.Length;
+
+            m_blobIdx.Reshape(rgShape);
+
+            float[] rgInput = new float[strInput.Length];
+
+            for (int i = 0; i < strInput.Length; i++)
+            {
+                rgInput[i] = (int)strInput[i];
+            }
+
+            m_blobIdx.mutable_cpu_data = convert(m_data.Tokenize(rgInput));
+
+            return new BlobCollection<T>() { m_blobIdx };
+        }
+
+        /// <summary>
+        /// Preproces the input and return as a set of bottom blobs.
+        /// </summary>
+        /// <param name="str">Specifies the string input, can be null.</param>
+        /// <param name="nTokIdx">Specifies the token input.</param>
+        /// <param name="colBottom">The output is placed in the bottom blobs as: tokidx, pos</param>
+        /// <returns>The bottom blob collection is returned.</returns>
+        public override void PreProcessInput(string str, int? nTokIdx, BlobCollection<T> colBottom = null)
+        {
+            List<float> rgTok = convertF(colBottom[0].mutable_cpu_data).ToList();
+
+            rgTok.Add(nTokIdx.Value);
+            if (rgTok.Count > m_param.tokenized_data_param.block_size)
+                rgTok.RemoveAt(0);
+
+            List<int> rgShape = Utility.Clone<int>(colBottom[0].shape());
+            rgShape[1] = rgTok.Count;
+            colBottom[0].Reshape(rgShape);
+            
+            colBottom[0].mutable_cpu_data = convert(rgTok.ToArray());
+        }
+
+        /// <summary>
+        /// Allows post processing the logits output data by converting the logits to and selecting 
+        /// from the probability distribution produced and detokenizing the results to the string character.
+        /// </summary>
+        /// <param name="blobLogits">Specifies the output of the last inner product layer.</param>
+        /// <param name="softmax">Specifies the softmax layer.</param>
+        /// <param name="nK">Specifies the TopK max items of the logits to use, or 0 to ignore.</param>
+        /// <returns>
+        /// The detokenized data is returned.
+        /// </returns>
+        public override List<Tuple<string, int, double>> PostProcessLogitsOutput(Blob<T> blobLogits, Layer<T> softmax, int nK = 1)
+        {
+            float[] rgData = convertF(blobLogits.mutable_cpu_data);
+            int nVocabCount = blobLogits.count(softmax.layer_param.softmax_param.axis);
+            float[] rgLogits = new float[nVocabCount];
+            int nIdxStart = blobLogits.count() - nVocabCount;
+            Dictionary<int, float> rgTopK = new Dictionary<int, float>();
+
+            for (int i = nIdxStart; i < blobLogits.count(); i++)
+            {
+                float fVal = rgData[i];
+                rgTopK.Add(i - nIdxStart, fVal);
+
+                if (rgTopK.Count > nK)
+                {
+                    float fMin = float.MaxValue;
+                    int nMinIdx = -1;
+
+                    foreach (KeyValuePair<int, float> kv in rgTopK)
+                    {
+                        if (kv.Value < fMin)
+                        {
+                            fMin = kv.Value;
+                            nMinIdx = kv.Key;
+                        }
+                    }
+
+                    rgTopK.Remove(nMinIdx);
+                }
+            }
+
+            for (int i = 0; i < rgLogits.Count(); i++)
+            {
+                if (rgTopK.ContainsKey(i))
+                    rgLogits[i] = rgTopK[i];
+                else
+                    rgLogits[i] = -float.MaxValue;
+            }
+
+            if (m_blobX == null)
+                m_blobX = new Blob<T>(m_cuda, m_log, false);
+            if (m_blobY == null)
+                m_blobY = new Blob<T>(m_cuda, m_log, false);
+
+            m_blobX.Reshape(1, 1, nVocabCount, 1);
+            m_blobX.mutable_cpu_data = convert(rgLogits);
+
+            BlobCollection<T> colBottom = new BlobCollection<T>() { m_blobX };
+            BlobCollection<T> colTop = new BlobCollection<T>() { m_blobY };
+            softmax.Forward(colBottom, colTop);
+
+            float[] rgProb = convertF(m_blobY.mutable_cpu_data);
+            float fRand = (float)m_random.NextDouble();
+            float fTotal = 0;
+            int nCharIdx = rgProb.Length - 1;
+
+            for (int i = 0; i < rgProb.Length; i++)
+            {
+                fTotal += rgProb[i];
+
+                if (fTotal >= fRand)
+                {
+                    nCharIdx = i;
+                    break;
+                }
+            }
+
+            string str = "";
+            str += m_data.Detokenize(nCharIdx);
+
+            return new List<Tuple<string, int, double>>() { new Tuple<string, int, double>(str, nCharIdx, 0) };
         }
     }
 
@@ -243,6 +488,12 @@ namespace MyCaffe.layers.gpt
         /// <param name="rgInput">Specifies the tokenized data.</param>
         /// <returns>The de-tokenized data is returned.</returns>
         public abstract float[] Detokenize(float[] rgInput);
+        /// <summary>
+        /// Detokenize a single token.
+        /// </summary>
+        /// <param name="nTokIdx">Specifies an index to the token to be detokenized.</param>
+        /// <returns>The detokenized character is returned.</returns>
+        public abstract char Detokenize(int nTokIdx);
     }
 
     /// <summary>
@@ -368,7 +619,7 @@ namespace MyCaffe.layers.gpt
 
                 int? nCharIdxLast = null;
                 for (int j = 0; j < nBlockSize + 1; j++)
-                {               
+                {
                     if (nCharIdxLast.HasValue)
                         m_rgData[nDstIdx + j - 1] = nCharIdxLast.Value;
 
@@ -411,7 +662,7 @@ namespace MyCaffe.layers.gpt
 
             return rgInput;
         }
-        
+
         /// <summary>
         /// Convert tokenized data back to its native character form.
         /// </summary>
@@ -427,6 +678,17 @@ namespace MyCaffe.layers.gpt
             }
 
             return rgInput;
+        }
+
+
+        /// <summary>
+        /// Detokenize a single token.
+        /// </summary>
+        /// <param name="nTokIdx">Specifies an index to the token to be detokenized.</param>
+        /// <returns>The detokenized character is returned.</returns>
+        public override char Detokenize(int nTokIdx)
+        {
+            return m_rgVocabIdxToKey[nTokIdx];
         }
     }
 }
