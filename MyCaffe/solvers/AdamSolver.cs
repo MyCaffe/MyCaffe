@@ -20,8 +20,6 @@ namespace MyCaffe.solvers
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class AdamSolver<T> : SGDSolver<T>
     {
-        protected double m_dfDetachedWeightDecayRate = 0.0f;
-
         /// <summary>
         /// The AdamSolver constructor.
         /// </summary>

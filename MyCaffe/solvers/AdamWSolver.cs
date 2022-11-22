@@ -23,7 +23,6 @@ namespace MyCaffe.solvers
     {
         double m_dfDetachedWeightDecayRate = 0.0f;
 
-
         /// <summary>
         /// The AdamSolver constructor.
         /// </summary>
