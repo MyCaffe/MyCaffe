@@ -2706,8 +2706,9 @@ namespace MyCaffe
         /// <param name="nK">Optionally, specifies the number of items to use in the search where nK=1 runs a greedy search and any values > 1 run a beam search with that width.</param>
         /// <param name="dfThreshold">Specifies the threshold where detected items with probabilities less than the threshold are ignored (default = 0.01).</param>
         /// <param name="nMax">Optionally, specifies the maximum number of outputs (default = 80).</param>
+        /// <param name="bBeamSearch">Optionally, specifies to run a Beam Search.</param>
         /// <returns>The results are returned as in a property set.</returns>
-        public PropertySet Run(PropertySet customInput, int nK = 1, double dfThreshold = 0.01, int nMax = 80)
+        public PropertySet Run(PropertySet customInput, int nK = 1, double dfThreshold = 0.01, int nMax = 80, bool bBeamSearch = false)
         {
             m_log.CHECK_GE(nK, 1, "The K must be >= 1!");
 
@@ -2720,9 +2721,9 @@ namespace MyCaffe
             foreach (string strInput1 in rgstrInput)
             {
                 PropertySet input = new PropertySet("InputData=" + strInput1);
-                string strOut = "";
+                string strOut = "\n";
 
-                if (nK == 1)
+                if (!bBeamSearch)
                 {
                     foreach (Layer<T> layer in m_net.layers)
                     {
@@ -2736,19 +2737,51 @@ namespace MyCaffe
 
                     if (colBottom == null)
                         throw new Exception("At least one layer must support the 'PreprocessInput' method!");
-
+                    
                     double dfLoss;
-                    BlobCollection<T> colTop = m_net.Forward(colBottom, out dfLoss);
-                    List<Tuple<string, int, double>> res = layerInput.PostProcessOutput(colTop[0]);
+                    BlobCollection<T> colTop = m_net.Forward(colBottom, out dfLoss, layerInput.SupportsPostProcessingLogits);
+                    Blob<T> blobTop = colTop[0];
+                    Layer<T> softmax = m_net.layers[m_net.layers.Count - 1] as SoftmaxLayer<T>;
+                    List<Tuple<string, int, double>> res;
 
+                    if (layerInput.SupportsPostProcessingLogits)
+                    {
+                        nK = 10;
+                        blobTop = m_net.FindBlob("logits");
+                        if (blobTop == null)
+                            throw new Exception("Could not find the 'logits' blob!");
+                        if (softmax == null)
+                            throw new Exception("Coult not find the softmax layer!");
+                        res = layerInput.PostProcessLogitsOutput(blobTop, softmax, nK);
+                    }
+                    else
+                        res = layerInput.PostProcessOutput(colTop[0]);
+                        
                     int nCount = 0;
+                    Stopwatch sw = new Stopwatch();
+                    sw.Start();
+
                     while (res[0].Item1.Length > 0 && nCount < nMax)
                     {
-                        strOut += res[0].Item1 + " ";
+                        strOut += res[0].Item1;
+
+                        if (!layerInput.SupportsPostProcessingLogits)
+                            strOut += " ";
+
                         layerInput.PreProcessInput(null, res[0].Item2, colBottom);
-                        colTop = m_net.Forward(colBottom, out dfLoss);
-                        res = layerInput.PostProcessOutput(colTop[0]);
+                        colTop = m_net.Forward(colBottom, out dfLoss, layerInput.SupportsPostProcessingLogits);
+                        
+                        if (layerInput.SupportsPostProcessingLogits)
+                            res = layerInput.PostProcessLogitsOutput(blobTop, softmax, nK);
+                        else
+                            res = layerInput.PostProcessOutput(blobTop);
                         nCount++;
+
+                        if (sw.Elapsed.TotalMilliseconds > 1000)
+                        {
+                            double dfPct = (double)nCount / nMax;
+                            m_log.WriteLine("Generating response at " + dfPct.ToString("P") + "...");
+                        }
                     }
 
                     colBottom.Dispose();
