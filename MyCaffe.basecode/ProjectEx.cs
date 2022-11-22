@@ -1327,7 +1327,10 @@ namespace MyCaffe.basecode
                         RawProtoCollection tops = layer.FindChildren("top");
                         if (tops != null && tops.Count > 0)
                         {
-                            strName = tops[0].Value;
+                            if (strType == "tokenizeddata")
+                                strName = "data";
+                            else
+                                strName = tops[0].Value;
                             bNameSet = true;
                         }
                     }
@@ -1423,8 +1426,8 @@ namespace MyCaffe.basecode
                             RawProtoCollection colTop = layer.FindChildren("top");
                             if (colTop.Count > 0)
                             {
-                                rgInputs[0] = new Tuple<string, int, int, int, int>(colTop[0].Value, rgInputs[0].Item2, rgInputs[0].Item3, rgInputs[0].Item4, rgInputs[0].Item5);
-                                rgInputs.Add(new Tuple<string, int, int, int, int>("pos", rgInputs[0].Item2, rgInputs[0].Item3, 1, 1));
+                                rgInputs[0] = new Tuple<string, int, int, int, int>("data", rgInputs[0].Item2, rgInputs[0].Item3, rgInputs[0].Item4, rgInputs[0].Item5);
+                                layer.Children.Add<string>("bottom", new List<string>() { "data" });
                                 break;
                             }
                         }
@@ -1609,7 +1612,7 @@ namespace MyCaffe.basecode
                     }
                     else if (strType == "tokenizeddata")
                     {
-                        rgRemove.Add(layer);
+                        //rgRemove.Add(layer);
                     }
 
                     if (!bKeepLayer && psInclude.FindAllWith(Phase.TEST, Phase.TRAIN).Count > 0 && psInclude.FindAllWith(Phase.RUN).Count == 0)
