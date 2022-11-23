@@ -21,11 +21,8 @@ namespace MyCaffe.layers.gpt
     {
         CancelEvent m_evtCancel;
         InputData m_data;
-        Blob<T> m_blobIdx = null;
-        Blob<T> m_blobPos = null;
         Blob<T> m_blobX = null;
         Blob<T> m_blobY = null;
-        Blob<T> m_blobProb = null;
         Random m_random = new Random();
 
         /// <summary>
@@ -61,11 +58,8 @@ namespace MyCaffe.layers.gpt
         /// </summary>
         protected override void dispose()
         {
-            dispose(ref m_blobIdx);
-            dispose(ref m_blobPos);
             dispose(ref m_blobY);
             dispose(ref m_blobX);
-            dispose(ref m_blobProb);
 
             base.dispose();
         }
@@ -308,8 +302,7 @@ namespace MyCaffe.layers.gpt
         /// <returns>The bottom blob collection is returned.</returns>
         public override BlobCollection<T> PreProcessInput(PropertySet customInput, BlobCollection<T> colBottom = null)
         {
-            if (m_blobIdx == null)
-                m_blobIdx = new Blob<T>(m_cuda, m_log, false);
+            Blob<T> blobIdx = new Blob<T>(m_cuda, m_log, false);
 
             string strInput = customInput.GetProperty("InputData");
             if (string.IsNullOrEmpty(strInput))
@@ -319,7 +312,7 @@ namespace MyCaffe.layers.gpt
             rgShape[0] = 1;
             rgShape[1] = strInput.Length;
 
-            m_blobIdx.Reshape(rgShape);
+            blobIdx.Reshape(rgShape);
 
             float[] rgInput = new float[strInput.Length];
 
@@ -328,9 +321,9 @@ namespace MyCaffe.layers.gpt
                 rgInput[i] = (int)strInput[i];
             }
 
-            m_blobIdx.mutable_cpu_data = convert(m_data.Tokenize(rgInput));
+            blobIdx.mutable_cpu_data = convert(m_data.Tokenize(rgInput));
 
-            return new BlobCollection<T>() { m_blobIdx };
+            return new BlobCollection<T>() { blobIdx };
         }
 
         /// <summary>
@@ -532,12 +525,16 @@ namespace MyCaffe.layers.gpt
         /// <param name="phase">Specifies the currently running phase.</param>
         public TextInputData(string strSrc, int? nRandomSeed = null, string strDebugIndexFile = null, Phase phase = Phase.NONE) : base(nRandomSeed)
         {
+            string strProgData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+
+            strSrc = Utility.ReplaceMacro(strSrc, "$ProgramData$", strProgData);
+
             m_phase = phase;
             m_strData = File.ReadAllText(strSrc);
 
             if (File.Exists(strDebugIndexFile))
             {
-                m_strDebugIndexFile = strDebugIndexFile;
+                m_strDebugIndexFile = Utility.ReplaceMacro(strDebugIndexFile, "$ProgramData$", strProgData);
                 m_rgDebugIdx = new List<int>();
                 string[] rgLines = File.ReadAllLines(strDebugIndexFile);
                 foreach (string strLine in rgLines)
