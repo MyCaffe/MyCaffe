@@ -24,6 +24,7 @@
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Debug\MyCaffe.layers.ssd.xml</DocumentationFile>
     <NoWarn>1587</NoWarn>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -46,11 +47,11 @@
     <ApplicationIcon>MainIcon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="DirectShow, Version=1.11.7.7, Culture=neutral, PublicKeyToken=9f3f7731a2cb8d51, processorArchitecture=MSIL">
-      <HintPath>..\packages\WebCam.1.11.7.7\lib\net40\DirectShow.dll</HintPath>
+    <Reference Include="DirectShow, Version=1.11.8.27, Culture=neutral, PublicKeyToken=9f3f7731a2cb8d51, processorArchitecture=MSIL">
+      <HintPath>..\packages\WebCam.1.11.8.27\lib\net40\DirectShow.dll</HintPath>
     </Reference>
-    <Reference Include="DirectX.Capture, Version=1.11.7.7, Culture=neutral, PublicKeyToken=8ce8db723478ce47, processorArchitecture=MSIL">
-      <HintPath>..\packages\WebCam.1.11.7.7\lib\net40\DirectX.Capture.dll</HintPath>
+    <Reference Include="DirectX.Capture, Version=1.11.8.27, Culture=neutral, PublicKeyToken=8ce8db723478ce47, processorArchitecture=MSIL">
+      <HintPath>..\packages\WebCam.1.11.8.27\lib\net40\DirectX.Capture.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -62,8 +63,8 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
-    <Reference Include="WebCam, Version=1.11.7.7, Culture=neutral, PublicKeyToken=5e37ae9e6a2fcb01, processorArchitecture=MSIL">
-      <HintPath>..\packages\WebCam.1.11.7.7\lib\net40\WebCam.dll</HintPath>
+    <Reference Include="WebCam, Version=1.11.8.27, Culture=neutral, PublicKeyToken=5e37ae9e6a2fcb01, processorArchitecture=MSIL">
+      <HintPath>..\packages\WebCam.1.11.8.27\lib\net40\WebCam.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

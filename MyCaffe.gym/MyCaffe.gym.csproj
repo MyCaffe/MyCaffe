@@ -24,6 +24,7 @@
     <WarningLevel>4</WarningLevel>
     <NoWarn>1587</NoWarn>
     <DocumentationFile>bin\Debug\MyCaffe.gym.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -47,7 +48,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="AleControlLib, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f59a5464a77ea1ad, processorArchitecture=MSIL">
-      <HintPath>..\packages\AleControl.1.11.7.7\lib\net40\AleControlLib.dll</HintPath>
+      <HintPath>..\packages\AleControl.1.11.8.27\lib\net40\AleControlLib.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="System" />
