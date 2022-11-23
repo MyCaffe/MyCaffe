@@ -52,7 +52,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="CudaControlLib, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f59a5464a77ea1ad, processorArchitecture=MSIL">
-      <HintPath>..\packages\CudaControl.1.11.8.19\lib\net40\CudaControlLib.dll</HintPath>
+      <HintPath>..\packages\CudaControl.1.11.8.27\lib\net40\CudaControlLib.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Google.Protobuf, Version=3.21.4.0, Culture=neutral, PublicKeyToken=a7d26565bac4d604, processorArchitecture=MSIL">
@@ -128,8 +128,9 @@
     <Compile Include="layers\CropLayer.cs" />
     <Compile Include="layers\GradientScaleLayer.cs" />
     <Compile Include="layers\MemoryLossLayer.cs" />
-    <Compile Include="layers\SoftmaxCrossEntropyLossLayer.cs" />
     <Compile Include="layers\ClipLayer.cs" />
+    <Compile Include="layers\SoftmaxCrossEntropy2LossLayer.cs" />
+    <Compile Include="layers\SoftmaxCrossEntropyLossLayer.cs" />
     <Compile Include="layers\SwishLayer.cs" />
     <Compile Include="layers\MemoryDataLayer.cs" />
     <Compile Include="layers\DebugLayer.cs" />
@@ -339,6 +340,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="solvers\AdaGradSolver.cs" />
+    <Compile Include="solvers\AdamWSolver.cs" />
     <Compile Include="solvers\AdamSolver.cs" />
     <Compile Include="common\Parallel.cs" />
     <Compile Include="solvers\LBFGSSolver.cs" />

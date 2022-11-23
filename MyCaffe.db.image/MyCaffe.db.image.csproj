@@ -28,6 +28,7 @@
     <Prefer32Bit>false</Prefer32Bit>
     <NoWarn>1587,1591</NoWarn>
     <DocumentationFile>bin\Debug\MyCaffe.db.image.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
