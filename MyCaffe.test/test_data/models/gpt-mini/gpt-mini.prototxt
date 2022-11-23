@@ -2,14 +2,14 @@ name: "GptMiniNet"
 layer 
 {
    name: "tokdata1"
-   type: "TokenizedData"
-   top: "tokdata1"
+   type: "TokenizedData"   
+   top: "tokdata"
    top: "pos"
    top: "tgt"
    tokenized_data_param 
    {
       input_type: TEXT_FILE
-      source: "C:\ProgramData\MyCaffe\test_data\data\text\input.txt"
+      source: "$ProgramData$\MyCaffe\test_data\data\text\input.txt"
       batch_size: 64
       block_size: 128
    }
@@ -18,7 +18,7 @@ layer
 {
    name: "wte"
    type: "Embed"
-   bottom: "tokdata1"
+   bottom: "tokdata"
    top: "tok_emb"
    param 
    {

@@ -9,8 +9,8 @@ layer
    tokenized_data_param 
    {
       input_type: TEXT_FILE
-      source: "C:\ProgramData\MyCaffe\test_data\data\text\input.txt"
-      debug_index_file: "C:\ProgramData\MyCaffe\test_data\data\text\gpt-mini1\idx.txt"
+      source: "$ProgramData$\MyCaffe\test_data\data\text\input.txt"
+      debug_index_file: "c:\\temp\\snap\\idx.txt"
       batch_size: 64
       block_size: 128
       seed: 1701
