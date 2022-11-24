@@ -18,7 +18,7 @@ namespace MyCaffe.test
     public class TestGeluLayer
     {
         [TestMethod]
-        public void TestForward()
+        public void TestForwardBert()
         {
             GeluLayerTest2 test = new GeluLayerTest2(EngineParameter.Engine.CAFFE);
 
@@ -26,7 +26,7 @@ namespace MyCaffe.test
             {
                 foreach (IGeluLayerTest2 t in test.Tests)
                 {
-                    t.TestForward();
+                    t.TestForward(true);
                 }
             }
             finally
@@ -36,7 +36,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestBackward()
+        public void TestBackwardBert()
         {
             GeluLayerTest2 test = new GeluLayerTest2(EngineParameter.Engine.CAFFE);
 
@@ -44,7 +44,7 @@ namespace MyCaffe.test
             {
                 foreach (IGeluLayerTest2 t in test.Tests)
                 {
-                    t.TestBackward();
+                    t.TestBackward(true);
                 }
             }
             finally
@@ -54,7 +54,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestGradient()
+        public void TestGradientBert()
         {
             GeluLayerTest2 test = new GeluLayerTest2(EngineParameter.Engine.CAFFE);
 
@@ -62,7 +62,25 @@ namespace MyCaffe.test
             {
                 foreach (IGeluLayerTest2 t in test.Tests)
                 {
-                    t.TestGradient();
+                    t.TestGradient(true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientDefault()
+        {
+            GeluLayerTest2 test = new GeluLayerTest2(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IGeluLayerTest2 t in test.Tests)
+                {
+                    t.TestGradient(false);
                 }
             }
             finally
@@ -110,9 +128,9 @@ namespace MyCaffe.test
 
     interface IGeluLayerTest2 : ITest
     {
-        void TestForward();
-        void TestBackward();
-        void TestGradient();
+        void TestForward(bool bBertVersion);
+        void TestBackward(bool bBertVersion);
+        void TestGradient(bool bBertVersion);
         void TestForwardPico(bool bBatch, int nHeads);
         void TestBackwardPico(bool bBatch, int nHeads);
     }
@@ -184,7 +202,7 @@ namespace MyCaffe.test
             return 0.5 * tanh + (0.0535161 * x3 + 0.398942 * x) * sech * sech + 0.5;
         }
 
-        public void TestForward(double dfFillerStd)
+        public void TestForward(bool bBertVersion, double dfFillerStd)
         {
             FillerParameter fp = new FillerParameter("gaussian");
             fp.std = dfFillerStd;
@@ -193,6 +211,7 @@ namespace MyCaffe.test
             filler.Fill(Bottom);
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.GELU);
+            p.gelu_param.enable_bert_version = bBertVersion;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             try
@@ -220,7 +239,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestBackward()
+        public void TestBackward(bool bBertVersion)
         {
             FillerParameter fp = new FillerParameter("gaussian");
             fp.std = 1.0;
@@ -229,6 +248,7 @@ namespace MyCaffe.test
             filler.Fill(Bottom);
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.GELU);
+            p.gelu_param.enable_bert_version = bBertVersion;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             try
@@ -261,7 +281,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestBackward(double dfFillerStd)
+        public void TestBackward(bool bBertVersion, double dfFillerStd)
         {
             FillerParameter fp = new FillerParameter("gaussian");
             fp.std = dfFillerStd;
@@ -270,6 +290,7 @@ namespace MyCaffe.test
             filler.Fill(Bottom);
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.GELU);
+            p.gelu_param.enable_bert_version = bBertVersion;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             try
@@ -285,14 +306,14 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestForward()
+        public void TestForward(bool bBertVersion)
         {
-            TestForward(1.0);
+            TestForward(bBertVersion, 1.0);
         }
 
-        public void TestGradient()
+        public void TestGradient(bool bBertVersion)
         {
-            TestBackward(1.0);
+            TestBackward(bBertVersion, 1.0);
         }
 
         public Tuple<List<int>, float[]> Fill(string strGpt, string strName, Log log, CausalSelfAttentionParameter p)
@@ -341,6 +362,7 @@ namespace MyCaffe.test
         public void TestForwardPico(bool bBatch, int nHeads)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.GELU);
+            p.gelu_param.enable_bert_version = true;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
             Blob<T> blobY = null;
 
@@ -392,6 +414,7 @@ namespace MyCaffe.test
         public void TestBackwardPico(bool bBatch, int nHeads)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.GELU);
+            p.gelu_param.enable_bert_version = true;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             try

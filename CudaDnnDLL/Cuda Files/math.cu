@@ -8611,7 +8611,7 @@ template long Math<float>::mish_bwd(int nCount, long hTopDiff, long hTopData, lo
 ///                                          (0.0535161 * x^3 + 0.398942 * x) * sech^2(0.797885 * (x + 0.044715 * x^3)) + 0.5 @f$
 /// Note, see Wolfram Alpha with 'derivative of @f$ d/dx  = 0.5 * x * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$'                                        
 template<typename T>
-__global__ void gelu_fwd_kernel(int n, const T* in, T* out)
+__global__ void gelu_fwd_kernel_bert(int n, const T* in, T* out)
 {
 	const T fSqrt2xPi = sqrt(2.0 / M_PI);
 
@@ -8623,8 +8623,27 @@ __global__ void gelu_fwd_kernel(int n, const T* in, T* out)
 	}
 }
 
+/// Computes the GELU non-linearity @f$ y = cdf + x * pdf @f$
+///                           where @f$ cdf = 0.5 * (1.0 + erf(x / sqrt(2.0))) @f$
+///                                 @f$ pdf = 1.0 / sqrt(2.0 * PI) * exp(-0.5 * x^2) @f$
+/// 
+/// with                            @f$ y' = cdf + x * pdf @f$
+/// @see [On the GELU Activation Function](https://alaaalatif.github.io/2019-04-11-gelu/)
+template<typename T>
+__global__ void gelu_fwd_kernel(int n, const T* in, T* out)
+{
+	const T fSqrt2 = sqrt(2.0);
+
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const T x = in[i];
+		const T cdf = (T)0.5 * ((T)1.0 + erf(x / fSqrt2));
+		out[i] = x * cdf;
+	}
+}
+
 template <class T>
-long Math<T>::gelu_fwd(int n, long hBottomData, long hTopData)
+long Math<T>::gelu_fwd(int n, long hBottomData, long hTopData, bool bUseBertVersion)
 {
 	LONG lErr;
 	MemoryItem* pBottomData;
@@ -8639,13 +8658,16 @@ long Math<T>::gelu_fwd(int n, long hBottomData, long hTopData)
 	T* bottom_data = (T*)pBottomData->Data();
 	T* top_data = (T*)pTopData->Data();
 
-	gelu_fwd_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+	if (bUseBertVersion)
+		gelu_fwd_kernel_bert << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+	else
+		gelu_fwd_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::gelu_fwd(int nCount, long hBottomData, long hTopData);
-template long Math<float>::gelu_fwd(int nCount, long hBottomData, long hTopData);
+template long Math<double>::gelu_fwd(int nCount, long hBottomData, long hTopData, bool bUseBertVersion);
+template long Math<float>::gelu_fwd(int nCount, long hBottomData, long hTopData, bool bUseBertVersion);
 
 
 /// Computes the GELU non-linearity @f$ y  = 0.5 * x (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$.
@@ -8653,7 +8675,7 @@ template long Math<float>::gelu_fwd(int nCount, long hBottomData, long hTopData)
 ///                                          (0.0535161 * x^3 + 0.398942 * x) * sech^2(0.797885 * (x + 0.044715 * x^3)) + 0.5 @f$
 /// Note, see Wolfram Alpha with 'derivative of @f$ d/dx  = 0.5 * x * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$                                        
 template<typename T>
-__global__ void gelu_bwd_kernel(const int n, const T* in_diff, T* out_data, T* out_diff, const T* in_data)
+__global__ void gelu_bwd_kernel_bert(const int n, const T* in_diff, T* out_data, T* out_diff, const T* in_data)
 {		
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
@@ -8669,8 +8691,31 @@ __global__ void gelu_bwd_kernel(const int n, const T* in_diff, T* out_data, T* o
 	}
 }
 
+/// Computes the GELU non-linearity @f$ y = cdf + x * pdf @f$
+///                           where @f$ cdf = 0.5 * (1.0 + erf(x / sqrt(2.0))) @f$
+///                                 @f$ pdf = 1.0 / sqrt(2.0 * PI) * exp(-0.5 * x^2) @f$
+/// 
+/// with                            @f$ y' = cdf + x * pdf @f$
+/// @see [On the GELU Activation Function](https://alaaalatif.github.io/2019-04-11-gelu/)
+template<typename T>
+__global__ void gelu_bwd_kernel(const int n, const T* in_diff, T* out_data, T* out_diff, const T* in_data)
+{
+	const T fSqrt2Pi = sqrt(2.0 * M_PI);
+	const T fSqrt2 = sqrt(2.0);
+
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const T x = in_data[i];
+		const T x2 = x * x;
+		const T cdf = (T)0.5 * ((T)1.0 + erf(x / fSqrt2));
+		const T pdf = (T)1.0 / fSqrt2Pi * exp((T)-0.5 * x2);
+		T grad = cdf + x * pdf;
+		out_diff[i] = in_diff[i] * grad;
+	}
+}
+
 template <class T>
-long Math<T>::gelu_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData)
+long Math<T>::gelu_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, bool bUseBertVersion)
 {
 	LONG lErr;
 	MemoryItem* pTopDiff;
@@ -8695,13 +8740,16 @@ long Math<T>::gelu_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff, lo
 	T* bottom_diff = (T*)pBottomDiff->Data();
 	T* bottom_data = (T*)pBottomData->Data();
 
-	gelu_bwd_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+	if (bUseBertVersion)
+		gelu_bwd_kernel_bert << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+	else
+		gelu_bwd_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::gelu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
-template long Math<float>::gelu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
+template long Math<double>::gelu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, bool bUseBertVersion);
+template long Math<float>::gelu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, bool bUseBertVersion);
 
 
 /// Computes the serf non-linearity @f$ f(x) = x erf(\ln( 1 + \exp(x) )) @f$.

@@ -1108,6 +1108,12 @@ namespace MyCaffe.param
                     m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE_AND_TRAINING;
                     break;
 
+                case LayerType.GELU:
+                    expected_bottom.Add("input");
+                    expected_top.Add("gelu");
+                    m_rgLayerParameters[lt] = new GeluParameter();
+                    break;
+
                 case LayerType.GRADIENTSCALER:
                     expected_bottom.Add("input");
                     expected_top.Add("identity");
@@ -2011,6 +2017,15 @@ namespace MyCaffe.param
         {
             get { return (GatherParameter)m_rgLayerParameters[LayerType.GATHER]; }
             set { m_rgLayerParameters[LayerType.GATHER] = value; }
+        }
+
+        /// <summary>
+        /// Returns the parameter set when initialized with LayerType.GELU
+        /// </summary>
+        public GeluParameter gelu_param
+        {
+            get { return (GeluParameter)m_rgLayerParameters[LayerType.GELU]; }
+            set { m_rgLayerParameters[LayerType.GELU] = value; }
         }
 
         /// <summary>
@@ -3107,7 +3122,6 @@ namespace MyCaffe.param
 
             // Beta layers.
             rgParam.Add(new KeyValuePair<BaseParameter, string>(attention_param, "attention_param"));
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(causal_self_attention_param, "causal_self_attention_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(convolution_octave_param, "convolution_octave_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(data_sequence_param, "data_sequence_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(decode_param, "decode_param"));
@@ -3123,14 +3137,18 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(squeeze_param, "squeeze_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(model_data_param, "model_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(text_data_param, "text_data_param"));
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(transformer_block_param, "transformer_block_param"));
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(tokenized_data_param, "tokenized_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(triplet_loss_param, "triplet_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(unpooling_param, "unpooling_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(transpose_param, "transpose_param"));
 
             // HDF5 layes.
             rgParam.Add(new KeyValuePair<BaseParameter, string>(hdf5_data_param, "hdf5_data_param"));
+
+            // GPT Layers.
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(causal_self_attention_param, "causal_self_attention_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(gelu_param, "gelu_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(transformer_block_param, "transformer_block_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(tokenized_data_param, "tokenized_data_param"));
 
             // Nt layers.
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gram_param, "gram_param"));
@@ -3405,9 +3423,6 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("attention_param")) != null)
                 p.attention_param = AttentionParameter.FromProto(rpp);
 
-            if ((rpp = rp.FindChild("causal_self_attention_param")) != null)
-                p.causal_self_attention_param = CausalSelfAttentionParameter.FromProto(rpp);
-
             if ((rpp = rp.FindChild("data_sequence_param")) != null)
                 p.data_sequence_param = DataSequenceParameter.FromProto(rpp);
 
@@ -3450,12 +3465,6 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("triplet_loss_param")) != null)
                 p.triplet_loss_param = TripletLossParameter.FromProto(rpp);
 
-            if ((rpp = rp.FindChild("transformer_block_param")) != null)
-                p.transformer_block_param = TransformerBlockParameter.FromProto(rpp);
-
-            if ((rpp = rp.FindChild("tokenized_data_param")) != null)
-                p.tokenized_data_param = TokenizedDataParameter.FromProto(rpp);
-
             if ((rpp = rp.FindChild("transpose_param")) != null)
                 p.transpose_param = TransposeParameter.FromProto(rpp);
 
@@ -3465,6 +3474,20 @@ namespace MyCaffe.param
             // HDF5 layers.
             if ((rpp = rp.FindChild("hdf5_data_param")) != null)
                 p.hdf5_data_param = HDF5DataParameter.FromProto(rpp);
+
+            // GPT layers.
+
+            if ((rpp = rp.FindChild("causal_self_attention_param")) != null)
+                p.causal_self_attention_param = CausalSelfAttentionParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("gelu_param")) != null)
+                p.gelu_param = GeluParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("transformer_block_param")) != null)
+                p.transformer_block_param = TransformerBlockParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("tokenized_data_param")) != null)
+                p.tokenized_data_param = TokenizedDataParameter.FromProto(rpp);
 
             // Nt layers.
             if ((rpp = rp.FindChild("gram_param")) != null)

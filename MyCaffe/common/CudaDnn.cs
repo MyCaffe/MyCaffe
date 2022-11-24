@@ -8250,6 +8250,15 @@ namespace MyCaffe.common
         /// Performs a GELU forward pass in Cuda.
         /// </summary>
         /// <remarks>
+        /// When bEnableBertVersion=false (default)
+        /// Computes the GELU non-linearity @f$ y = cdf + x * pdf @f$
+        ///                           where @f$ cdf = 0.5 * (1.0 + erf(x / sqrt(2.0))) @f$
+        ///                                 @f$ pdf = 1.0 / sqrt(2.0 * PI) * exp(-0.5 * x^2) @f$
+        /// 
+        /// with                            @f$ y' = cdf + x * pdf @f$
+        /// @see [On the GELU Activation Function](https://alaaalatif.github.io/2019-04-11-gelu/)
+        /// 
+        /// When bEnableBertVersion=True
         /// Computes the GELU non-linearity @f$ f(x)  =y  = 0.5 * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3))) @f$.
         /// 
         /// @see [Github - Karpathy: NewGELU, line 21](https://github.com/karpathy/minGPT/blob/master/mingpt/model.py) by Karpathy, 2022.
@@ -8257,20 +8266,32 @@ namespace MyCaffe.common
         /// <param name="nCount">Specifies the number of items in the bottom and top data.</param>
         /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
         /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
-        public void gelu_fwd(int nCount, long hBottomData, long hTopData)
+        /// <param name="bEnableBertVersion">Specifies to use the BERT version or the default version.</param>
+        public void gelu_fwd(int nCount, long hBottomData, long hTopData, bool bEnableBertVersion)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GELU_FWD, m_param.AsDouble(nCount, hBottomData, hTopData));
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GELU_FWD, m_param.AsDouble(nCount, hBottomData, hTopData, (bEnableBertVersion) ? 1 : 0));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GELU_FWD, m_param.AsFloat(nCount, hBottomData, hTopData));
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GELU_FWD, m_param.AsFloat(nCount, hBottomData, hTopData, (bEnableBertVersion) ? 1 : 0));
         }
 
         /// <summary>
         /// Performs a GELU backward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// Computes the GELU gradient @f$ y' = \frac{0.107032 * (x^2 + 7.45462)}{cosh(0.0713548 * x^3 + 1.59577 * x) + 1} @f$
-        /// Note, see Wolfram Alpha with 'derivative of d/dx  = 0.5 * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3)))'                                         
+        /// Computes the GELU gradient.
+        /// When bEnableBertVersion=false (default)
+        /// Computes the GELU non-linearity @f$ y = cdf + x * pdf @f$
+        ///                           where @f$ cdf = 0.5 * (1.0 + erf(x / sqrt(2.0))) @f$
+        ///                                 @f$ pdf = 1.0 / sqrt(2.0 * PI) * exp(-0.5 * x^2) @f$
+        /// 
+        /// with                            @f$ y' = cdf + x * pdf @f$
+        /// @see [On the GELU Activation Function](https://alaaalatif.github.io/2019-04-11-gelu/)
+        /// 
+        /// When bEnableBertVersion=true, 
+        ///                                 @f$ y' = 0.5 * tanh(0.797885 * (x + 0.044715 * x^3)) + 
+        ///                                          (0.0535161 * x^3 + 0.398942 * x) * sech^2(0.797885 * (x + 0.044715 * x^3)) + 0.5 @f$
+        /// Note, see Wolfram Alpha with 'derivative of d/dx  = 0.5 * x * (1.0 + tanh(sqrt(2.0/PI) * (x + 0.044715 * x^3)))'                                         
         /// 
         /// @see [Github - Karpathy: NewGELU, line 21](https://github.com/karpathy/minGPT/blob/master/mingpt/model.py) by Karpathy, 2022.
         /// </remarks>
@@ -8279,12 +8300,13 @@ namespace MyCaffe.common
         /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
         /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
         /// <param name="hBottomData">Specifies a handle tot he bottom data in GPU memory.</param>
-        public void gelu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData)
+        /// <param name="bEnableBertVersion">Specifies to use the BERT version, or default version.</param>
+        public void gelu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, bool bEnableBertVersion)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GELU_BWD, m_param.AsDouble(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData));
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GELU_BWD, m_param.AsDouble(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, (bEnableBertVersion) ? 1 : 0));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GELU_BWD, m_param.AsFloat(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData));
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GELU_BWD, m_param.AsFloat(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, (bEnableBertVersion) ? 1 : 0));
         }
 
         /// <summary>

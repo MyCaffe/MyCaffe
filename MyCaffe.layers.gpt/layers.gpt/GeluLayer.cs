@@ -22,6 +22,8 @@ namespace MyCaffe.layers.gpt
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class GeluLayer<T> : NeuronLayer<T>
     {
+        bool m_bEnableBertVersion;
+
         /// <summary>
         /// The GeluLayer constructor.
         /// </summary>
@@ -33,6 +35,7 @@ namespace MyCaffe.layers.gpt
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.GELU;
+            m_bEnableBertVersion = p.gelu_param.enable_bert_version;
         }
 
         /// <summary>
@@ -54,7 +57,7 @@ namespace MyCaffe.layers.gpt
             long hTopData = colTop[0].mutable_gpu_data;
             int nCount = colBottom[0].count();
 
-            m_cuda.gelu_fwd(nCount, hBottomData, hTopData);
+            m_cuda.gelu_fwd(nCount, hBottomData, hTopData, m_bEnableBertVersion);
         }
 
         /// <summary>
@@ -82,7 +85,7 @@ namespace MyCaffe.layers.gpt
             long hBottomData = colBottom[0].gpu_data;
             int nCount = colBottom[0].count();
 
-            m_cuda.gelu_bwd(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData);
+            m_cuda.gelu_bwd(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, m_bEnableBertVersion);
         }
     }
 }
