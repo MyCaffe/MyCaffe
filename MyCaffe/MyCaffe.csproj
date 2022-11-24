@@ -200,6 +200,7 @@
     <Compile Include="MyCaffeControl.Designer.cs">
       <DependentUpon>MyCaffeControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="param.gpt\GeluParameter.cs" />
     <Compile Include="param.gpt\LayerNormParameter.cs" />
     <Compile Include="param.gpt\TokenizedDataParameter.cs" />
     <Compile Include="param.gpt\TransformerBlockParameter.cs" />
