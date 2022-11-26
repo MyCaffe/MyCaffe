@@ -75,6 +75,9 @@
     <Reference Include="OnnxControl, Version=1.11.8.27, Culture=neutral, PublicKeyToken=666204c5f16cdcaa, processorArchitecture=MSIL">
       <HintPath>..\packages\OnnxControl.1.11.8.27\lib\net40\OnnxControl.dll</HintPath>
     </Reference>
+    <Reference Include="SimpleGraphing, Version=1.11.8.28, Culture=neutral, PublicKeyToken=db1fd361618e40f6, processorArchitecture=MSIL">
+      <HintPath>..\packages\SimpleGraphingControl.1.11.8.28\lib\net40\SimpleGraphing.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
@@ -97,6 +100,7 @@
       <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.6.0.0\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
     </Reference>
     <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
     <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
@@ -110,6 +114,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="TestActivations.cs" />
     <Compile Include="TestAccuracyEncodingLayer.cs" />
     <Compile Include="TestAnnotatedDataLayer.cs" />
     <Compile Include="TestSoftmaxCrossEntropyLossLayer.cs" />
