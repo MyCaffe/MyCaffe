@@ -20,11 +20,40 @@ namespace MyCaffe.param.gpt
         double m_dfResidDropout = 0.1;
         int m_nBlockSize = 128;
         int m_nLayers = 6;
+        ACTIVATION m_activation = ACTIVATION.RELU;
+
+        /// <summary>
+        /// Defines the various activations supported by the TransformerBlock.
+        /// </summary>
+        public enum ACTIVATION
+        {
+            /// <summary>
+            /// Specifies to use the RELU activation (default)
+            /// </summary>
+            RELU = 0,
+            /// <summary>
+            /// Specifies to use the GELU activation.
+            /// </summary>
+            GELU = 1,
+            /// <summary>
+            /// Specifies to use the special GELU activation used in BERT models.
+            /// </summary>
+            GELU_BERT = 2
+        }
 
         /** @copydoc LayerParameterBase */
         public TransformerBlockParameter()
         {
             
+        }
+
+        /// <summary>
+        /// Specifies the activation type to use (default = RELU)
+        /// </summary>
+        public ACTIVATION activation
+        {
+            get { return m_activation; }
+            set { m_activation = value; }
         }
 
         /// <summary>
@@ -106,6 +135,7 @@ namespace MyCaffe.param.gpt
             m_nBlockSize = p.block_size;
             m_dfAttnDropout = p.attn_dropout;
             m_dfResidDropout = p.resid_dropout;
+            m_activation = p.activation;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -131,6 +161,7 @@ namespace MyCaffe.param.gpt
             rgChildren.Add("block_size", block_size.ToString());
             rgChildren.Add("attn_dropout", attn_dropout.ToString());
             rgChildren.Add("resid_dropout", resid_dropout.ToString());
+            rgChildren.Add("activation", activation.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -162,6 +193,16 @@ namespace MyCaffe.param.gpt
 
             if ((strVal = rp.FindValue("resid_dropout")) != null)
                 p.resid_dropout = double.Parse(strVal);
+
+            if ((strVal = rp.FindValue("activation")) != null)
+            {
+                if (strVal == ACTIVATION.GELU.ToString())
+                    p.activation = ACTIVATION.GELU;
+                else if (strVal == ACTIVATION.GELU_BERT.ToString())
+                    p.activation = ACTIVATION.GELU_BERT;
+                else
+                    p.activation = ACTIVATION.RELU;
+            }
 
             return p;
         }

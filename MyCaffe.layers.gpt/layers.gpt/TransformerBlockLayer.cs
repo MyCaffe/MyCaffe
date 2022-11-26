@@ -95,8 +95,25 @@ namespace MyCaffe.layers.gpt
             proj.parameters.Add(new ParamSpec(1.0, 0.0));
             m_proj = Layer<T>.Create(cuda, log, proj, evtCancel);
 
-            //LayerParameter act = new LayerParameter(LayerParameter.LayerType.GELU, "act"); // When using float GELU produces very small gradients
-            LayerParameter act = new LayerParameter(LayerParameter.LayerType.RELU, "act");   // ReLU has a very similar curve, and is faster.
+            // ReLU has a very similar curve, and is faster.
+            LayerParameter.LayerType actType = LayerParameter.LayerType.RELU;
+            bool? bEnableBert = null;
+
+            if (p.transformer_block_param.activation == param.gpt.TransformerBlockParameter.ACTIVATION.GELU_BERT)
+            {
+                actType = LayerParameter.LayerType.GELU;
+                bEnableBert = true;
+            }
+            else if (p.transformer_block_param.activation == param.gpt.TransformerBlockParameter.ACTIVATION.GELU)
+            {
+                actType = LayerParameter.LayerType.GELU;
+                bEnableBert = false;
+            }
+                
+            LayerParameter act = new LayerParameter(actType, "act");   
+            if (bEnableBert.HasValue)
+                act.gelu_param.enable_bert_version = bEnableBert.Value;
+            
             m_act = Layer<T>.Create(cuda, log, act, evtCancel);
 
             if (p.transformer_block_param.resid_dropout > 0)
