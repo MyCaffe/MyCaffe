@@ -239,8 +239,8 @@ namespace MyCaffe.test
         {
             int nCount = 100;
             float[] rgX = new float[nCount];
-            float fStart = -8.0f;
-            float fStep = (16.0f / nCount);
+            float fStart = -4.0f;
+            float fStep = (8.0f / nCount);
 
             for (int i = 0; i < nCount; i++)
             {
@@ -256,12 +256,13 @@ namespace MyCaffe.test
             m_blob_top.Reshape(1, 1, 1, nCount);
             m_blob_top.SetData(0);
         }
+        
         public void FillDataBwd()
         {
             int nCount = 100;
             float[] rgY = new float[nCount];
-            float fStart = -8.0f;
-            float fStep = (16.0f / nCount);
+            float fStart = -4.0f;
+            float fStep = (8.0f / nCount);
 
             for (int i = 0; i < nCount; i++)
             {
@@ -270,7 +271,6 @@ namespace MyCaffe.test
 
             m_blob_top.mutable_cpu_diff = convert(rgY);
         }
-
 
         private Image plotFunction(LayerParameter.LayerType layerType, Blob<T> bottom, Blob<T> top, Configuration cfg)
         {
@@ -404,6 +404,7 @@ namespace MyCaffe.test
                 Configuration cfg = SimpleGraphingControl.GetQuickRenderConfiguration(layerType.ToString() + " Activation", m_blob_bottom.count());
                 cfg.Frames[0].XAxis.ValueType = ConfigurationAxis.VALUE_TYPE.NUMBER;
                 cfg.Frames[0].XAxis.Decimals = 3;
+                cfg.Frames[0].XAxis.Margin = 40;
                 cfg.Frames[0].Plots[0].LookaheadActive = false;
 
                 Image bmpFwd = plotFunction(layerType, BottomVec[0], TopVec[0], cfg);
@@ -481,6 +482,7 @@ namespace MyCaffe.test
                 Configuration cfg = SimpleGraphingControl.GetQuickRenderConfiguration("All Activations", m_blob_bottom.count());
                 cfg.Frames[0].XAxis.ValueType = ConfigurationAxis.VALUE_TYPE.NUMBER;
                 cfg.Frames[0].XAxis.Decimals = 3;
+                cfg.Frames[0].XAxis.Margin = 40;
                 cfg.Frames[0].Plots[0].PlotLineColor = Color.Transparent;
                 cfg.Frames[0].Plots[0].PlotFillColor = Color.Transparent;
                 cfg.Frames[0].Plots[0].LookaheadActive = false;
