@@ -28,7 +28,7 @@ namespace MyCaffe.test
             {
                 foreach (IActivationsTest t in test.Tests)
                 {
-                    t.TestActivation(LayerParameter.LayerType.GELU, false);
+                    t.TestActivation(LayerParameter.LayerType.GELU, EngineParameter.Engine.CAFFE, false);
                 }
             }
             finally
@@ -46,7 +46,7 @@ namespace MyCaffe.test
             {
                 foreach (IActivationsTest t in test.Tests)
                 {
-                    t.TestActivation(LayerParameter.LayerType.GELU, true);
+                    t.TestActivation(LayerParameter.LayerType.GELU, EngineParameter.Engine.CAFFE, true);
                 }
             }
             finally
@@ -182,6 +182,79 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestReluCuDnn()
+        {
+            ActivationsTest test = new ActivationsTest();
+
+            try
+            {
+                foreach (IActivationsTest t in test.Tests)
+                {
+                    t.TestActivation(LayerParameter.LayerType.RELU, EngineParameter.Engine.CUDNN);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSigmoidCuDnn()
+        {
+            ActivationsTest test = new ActivationsTest();
+
+            try
+            {
+                foreach (IActivationsTest t in test.Tests)
+                {
+                    t.TestActivation(LayerParameter.LayerType.SIGMOID, EngineParameter.Engine.CUDNN);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestTanhCuDnn()
+        {
+            ActivationsTest test = new ActivationsTest();
+
+            try
+            {
+                foreach (IActivationsTest t in test.Tests)
+                {
+                    t.TestActivation(LayerParameter.LayerType.TANH, EngineParameter.Engine.CUDNN);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestEluCuDnn()
+        {
+            ActivationsTest test = new ActivationsTest();
+
+            try
+            {
+                foreach (IActivationsTest t in test.Tests)
+                {
+                    t.TestActivation(LayerParameter.LayerType.ELU, EngineParameter.Engine.CUDNN);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+
+        [TestMethod]
         public void TestAll()
         {
             ActivationsTest test = new ActivationsTest();
@@ -202,7 +275,7 @@ namespace MyCaffe.test
 
     interface IActivationsTest : ITest
     {
-        void TestActivation(LayerParameter.LayerType layerType, bool? bExtra = null);
+        void TestActivation(LayerParameter.LayerType layerType, EngineParameter.Engine engine = EngineParameter.Engine.CAFFE, bool? bExtra = null);
         void TestAllActivations();
     }
 
@@ -361,17 +434,41 @@ namespace MyCaffe.test
             return SimpleGraphingControl.QuickRender(rgPlots1, cfg);
         }
 
-        public Tuple<LayerParameter.LayerType, bool?, Blob<T>, Blob<T>> TestActivation(LayerParameter.LayerType layerType, bool? bExtra, Blob<T> bottom = null, Blob<T> top = null)
+        public Tuple<LayerParameter.LayerType, bool?, Blob<T>, Blob<T>> TestActivation(LayerParameter.LayerType layerType, EngineParameter.Engine engine, bool? bExtra, Blob<T> bottom = null, Blob<T> top = null)
         {
             FillDataFwd();
 
-            LayerParameter p = new LayerParameter(layerType);
+            string strEngine = "";            
+            LayerParameter p = new LayerParameter(layerType);           
             string strExtra = "";
             if (layerType == LayerParameter.LayerType.GELU && bExtra.HasValue)
             {
                 p.gelu_param.enable_bert_version = bExtra.Value;
                 if (bExtra.Value)
                     strExtra = "_BERT";
+            }
+
+            switch (layerType)
+            {
+                case LayerType.RELU:
+                    p.relu_param.engine = engine;
+                    strEngine = engine.ToString();
+                    break;
+
+                case LayerType.SIGMOID:
+                    p.sigmoid_param.engine = engine;
+                    strEngine = engine.ToString();
+                    break;
+
+                case LayerType.TANH:
+                    p.tanh_param.engine = engine;
+                    strEngine = engine.ToString();
+                    break;
+
+                case LayerType.ELU:
+                    p.elu_param.engine = engine;
+                    strEngine = engine.ToString();
+                    break;
             }
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
@@ -408,10 +505,18 @@ namespace MyCaffe.test
                 cfg.Frames[0].Plots[0].LookaheadActive = false;
 
                 Image bmpFwd = plotFunction(layerType, BottomVec[0], TopVec[0], cfg);
+
+                cfg.Frames[0].Name = layerType.ToString() + " Derivative";
                 Image bmpBwd = plotDerivative(layerType, BottomVec[0], TopVec[0], cfg);
 
-                bmpFwd.Save(strPath + "\\" + layerType.ToString() + strExtra + "_fwd.png");
-                bmpBwd.Save(strPath + "\\" + layerType.ToString() + strExtra + "_bwd.png");
+                Bitmap bmp = new Bitmap(bmpFwd.Width + bmpBwd.Width, bmpFwd.Height);
+                using (Graphics g = Graphics.FromImage(bmp))
+                {
+                    g.DrawImage(bmpFwd, 0, 0);
+                    g.DrawImage(bmpBwd, bmpFwd.Width, 0);
+                }
+
+                bmp.Save(strPath + "\\" + layerType.ToString() + "_" + engine + "_" + strExtra + ".png");
 
                 return null;
             }
@@ -419,9 +524,9 @@ namespace MyCaffe.test
             return new Tuple<LayerParameter.LayerType, bool?, Blob<T>, Blob<T>>(layerType, bExtra, bottom, top);
         }
 
-        public void TestActivation(LayerParameter.LayerType layerType, bool? bExtra)
+        public void TestActivation(LayerParameter.LayerType layerType, EngineParameter.Engine engine, bool? bExtra)
         {
-            TestActivation(layerType, bExtra, null, null);
+            TestActivation(layerType, engine, bExtra, null, null);
         }
 
         public void TestAllActivations()
@@ -430,47 +535,47 @@ namespace MyCaffe.test
             {
                 List<Tuple<string, Tuple<float[], float[], float[]>, Color>> rgRes = new List<Tuple<string, Tuple<float[], float[], float[]>, Color>>();
 
-                TestActivation(LayerParameter.LayerType.GELU, false, m_blob_bottom, m_blob_top);
+                TestActivation(LayerParameter.LayerType.GELU, EngineParameter.Engine.CAFFE, false, m_blob_bottom, m_blob_top);
                 m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
                 Tuple<float[], float[], float[]> resGelu = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
                 rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("GELU", resGelu, Color.Blue));
 
-                TestActivation(LayerParameter.LayerType.GELU, true, m_blob_bottom, m_blob_top);
+                TestActivation(LayerParameter.LayerType.GELU, EngineParameter.Engine.CAFFE, true, m_blob_bottom, m_blob_top);
                 m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
                 Tuple<float[], float[], float[]> resGeluBert = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
                 rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("GELU_BERT", resGeluBert, Color.Red));
 
-                TestActivation(LayerParameter.LayerType.SIGMOID, null, m_blob_bottom, m_blob_top);
+                TestActivation(LayerParameter.LayerType.SIGMOID, EngineParameter.Engine.CAFFE, null, m_blob_bottom, m_blob_top);
                 m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
                 Tuple<float[], float[], float[]> resSigmoid = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
                 rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("SIGMOID", resSigmoid, Color.Green));
 
-                TestActivation(LayerParameter.LayerType.TANH, null, m_blob_bottom, m_blob_top);
+                TestActivation(LayerParameter.LayerType.TANH, EngineParameter.Engine.CAFFE, null, m_blob_bottom, m_blob_top);
                 m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
                 Tuple<float[], float[], float[]> resTanh = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
                 rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("TANH", resTanh, Color.Orange));
 
-                TestActivation(LayerParameter.LayerType.ELU, null, m_blob_bottom, m_blob_top);
+                TestActivation(LayerParameter.LayerType.ELU, EngineParameter.Engine.CAFFE, null, m_blob_bottom, m_blob_top);
                 m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
                 Tuple<float[], float[], float[]> resElu = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
                 rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("ELU", resElu, Color.Lime));
 
-                TestActivation(LayerParameter.LayerType.PRELU, null, m_blob_bottom, m_blob_top);
+                TestActivation(LayerParameter.LayerType.PRELU, EngineParameter.Engine.CAFFE, null, m_blob_bottom, m_blob_top);
                 m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
                 Tuple<float[], float[], float[]> resPRelu = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
                 rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("PRELU", resPRelu, Color.Purple));
 
-                TestActivation(LayerParameter.LayerType.RELU, null, m_blob_bottom, m_blob_top);
+                TestActivation(LayerParameter.LayerType.RELU, EngineParameter.Engine.CAFFE, null, m_blob_bottom, m_blob_top);
                 m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
                 Tuple<float[], float[], float[]> resRelu = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
                 rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("RELU", resRelu, Color.Brown));
 
-                TestActivation(LayerParameter.LayerType.SERF, null, m_blob_bottom, m_blob_top);
+                TestActivation(LayerParameter.LayerType.SERF, EngineParameter.Engine.CAFFE, null, m_blob_bottom, m_blob_top);
                 m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
                 Tuple<float[], float[], float[]> resSerf = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
                 rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("SERF", resSerf, Color.Cyan));
 
-                TestActivation(LayerParameter.LayerType.MISH, null, m_blob_bottom, m_blob_top);
+                TestActivation(LayerParameter.LayerType.MISH, EngineParameter.Engine.CAFFE, null, m_blob_bottom, m_blob_top);
                 m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
                 Tuple<float[], float[], float[]> resMish = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
                 rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("MISH", resMish, Color.SkyBlue));
@@ -506,8 +611,14 @@ namespace MyCaffe.test
                 Image bmpFwd = plotFunctions(rgRes, cfg);
                 Image bmpBwd = plotDerivatives(rgRes, cfg);
 
-                bmpFwd.Save(strPath + "\\activations_all_fwd.png");
-                bmpBwd.Save(strPath + "\\activations_all__bwd.png");
+                Bitmap bmp = new Bitmap(bmpFwd.Width + bmpBwd.Width, bmpFwd.Height);
+                using (Graphics g = Graphics.FromImage(bmp))
+                {
+                    g.DrawImage(bmpFwd, 0, 0);
+                    g.DrawImage(bmpBwd, bmpFwd.Width, 0);
+                }
+
+                bmp.Save(strPath + "\\activations_all.png");
             }
             finally
             {
