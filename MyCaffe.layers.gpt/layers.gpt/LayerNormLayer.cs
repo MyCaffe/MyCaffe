@@ -149,7 +149,7 @@ namespace MyCaffe.layers.gpt
             // xmusq = (xmu) ** 2
             m_cuda.powx(nCount, m_blobXmu.gpu_data, 2.0, m_blobXmuSq.mutable_gpu_data);
 
-            // Calculate the ean across the last dim.
+            // Calculate the mean across the last dim.
             // var = xmusq.mean(dim=-1, keepdim=True)
             // var shape = (n, c, 1)
             m_cuda.channel_sum(nCount, nOuterNum, nChannel, nInnerNum, m_blobXmuSq.gpu_data, m_blobVar.mutable_gpu_data, false);
