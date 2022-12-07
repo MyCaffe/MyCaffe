@@ -31,7 +31,7 @@ namespace MyCaffe.layers.gpt
         /// </summary>
         /// <param name="cuda">Specifies the CudaDnn connection to Cuda.</param>
         /// <param name="log">Specifies the Log for output.</param>
-        /// <param name="p">Specifies the LayerParameter of type LayerNormaqlizationLayer with parameter layernorm_param,
+        /// <param name="p">Specifies the LayerParameter of type LayerNormalizationLayer with parameter layer_norm_param,
         /// with options:
         ///   - epsilon (\b optional, default 1e-10). The epsilon value used to avoid Nan values.
         /// </param>
