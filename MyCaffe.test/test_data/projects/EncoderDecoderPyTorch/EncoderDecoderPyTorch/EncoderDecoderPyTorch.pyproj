@@ -1,0 +1,46 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>4afaa463-213e-4801-a88c-245e70c36dce</ProjectGuid>
+    <ProjectHome>.</ProjectHome>
+    <StartupFile>Translation.py</StartupFile>
+    <SearchPath>
+    </SearchPath>
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <Name>DecoderEncoderPyTorch</Name>
+    <RootNamespace>DecoderEncoderPyTorch</RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="DotProductAttention.py" />
+    <Compile Include="MultiHeadAttention.py" />
+    <Compile Include="PrepareDataset.py" />
+    <Compile Include="PositionEmbedding.py" />
+    <Compile Include="PrepareTextData.py" />
+    <Compile Include="Training.py" />
+    <Compile Include="TransformerModel.py" />
+    <Compile Include="TransformerDecoder.py" />
+    <Compile Include="TransformerEncoder.py" />
+    <Compile Include="Translation.py" />
+    <Compile Include="Utility.py" />
+    <Compile Include="Vocabulary.py" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
+  <!-- Uncomment the CoreCompile target to enable the Build command in
+       Visual Studio and specify your pre- and post-build commands in
+       the BeforeBuild and AfterBuild targets below. -->
+  <!--<Target Name="CoreCompile" />-->
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+</Project>
