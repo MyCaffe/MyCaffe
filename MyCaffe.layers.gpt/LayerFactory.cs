@@ -33,7 +33,10 @@ namespace MyCaffe.layers.gpt
             {
                 case LayerParameter.LayerType.CAUSAL_SELF_ATTENTION:
                     return new CausalSelfAttentionLayer<double>(cuda, log, p);
-                    
+
+                case LayerParameter.LayerType.MULTIHEAD_ATTENTION:
+                    return new MultiheadAttentionLayer<double>(cuda, log, p);
+
                 case LayerParameter.LayerType.GELU:
                     return new GeluLayer<double>(cuda, log, p);
 
@@ -66,7 +69,10 @@ namespace MyCaffe.layers.gpt
             {
                 case LayerParameter.LayerType.CAUSAL_SELF_ATTENTION:
                     return new CausalSelfAttentionLayer<float>(cuda, log, p);
-                    
+
+                case LayerParameter.LayerType.MULTIHEAD_ATTENTION:
+                    return new MultiheadAttentionLayer<float>(cuda, log, p);
+
                 case LayerParameter.LayerType.GELU:
                     return new GeluLayer<float>(cuda, log, p);
 

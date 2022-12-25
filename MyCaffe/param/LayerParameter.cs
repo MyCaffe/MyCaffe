@@ -351,6 +351,10 @@ namespace MyCaffe.param
             /// </summary>
             MULTIBOX_LOSS,
             /// <summary>
+            /// Initializes a parameter for the MultiheadAttentionLayer.
+            /// </summary>
+            MULTIHEAD_ATTENTION,
+            /// <summary>
             /// Initializes a parameter for the MultinomialLogisticLossLayer.
             /// </summary>
             MULTINOMIALLOGISTIC_LOSS,
@@ -1268,6 +1272,14 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new MultiBoxLossParameter();
                     break;
 
+                case LayerType.MULTIHEAD_ATTENTION:
+                    expected_bottom.Add("q");
+                    expected_bottom.Add("k");
+                    expected_bottom.Add("v");
+                    expected_top.Add("attn");
+                    m_rgLayerParameters[lt] = new CausalSelfAttentionParameter();
+                    break;
+
                 case LayerType.MULTINOMIALLOGISTIC_LOSS:
                     expected_bottom.Add("pred");
                     expected_bottom.Add("label");
@@ -1891,6 +1903,15 @@ namespace MyCaffe.param
         {
             get { return (CausalSelfAttentionParameter)m_rgLayerParameters[LayerType.CAUSAL_SELF_ATTENTION]; }
             set { m_rgLayerParameters[LayerType.CAUSAL_SELF_ATTENTION] = value; }
+        }
+
+        /// <summary>
+        /// Returns the parameter set when initialized with LayerType.MULTIHEAD_ATTENTION
+        /// </summary>
+        public MultiheadAttentionParameter multihead_attention_param
+        {
+            get { return (MultiheadAttentionParameter)m_rgLayerParameters[LayerType.MULTIHEAD_ATTENTION]; }
+            set { m_rgLayerParameters[LayerType.MULTIHEAD_ATTENTION] = value; }
         }
 
         /// <summary>
@@ -2854,6 +2875,9 @@ namespace MyCaffe.param
                 case LayerType.MULTIBOX_LOSS:
                     return "MultiBoxLoss";
 
+                case LayerType.MULTIHEAD_ATTENTION:
+                    return "MultiheadAttention";
+
                 case LayerType.MEMORY_LOSS:
                     return "MemoryLoss";
 
@@ -3146,6 +3170,7 @@ namespace MyCaffe.param
 
             // GPT Layers.
             rgParam.Add(new KeyValuePair<BaseParameter, string>(causal_self_attention_param, "causal_self_attention_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(multihead_attention_param, "multihead_attention_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gelu_param, "gelu_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(transformer_block_param, "transformer_block_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(tokenized_data_param, "tokenized_data_param"));
@@ -3480,6 +3505,9 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("causal_self_attention_param")) != null)
                 p.causal_self_attention_param = CausalSelfAttentionParameter.FromProto(rpp);
 
+            if ((rpp = rp.FindChild("multihead_attention_param")) != null)
+                p.multihead_attention_param = MultiheadAttentionParameter.FromProto(rpp);
+
             if ((rpp = rp.FindChild("gelu_param")) != null)
                 p.gelu_param = GeluParameter.FromProto(rpp);
 
@@ -3773,6 +3801,9 @@ namespace MyCaffe.param
                 case "multiboxloss":
                 case "multibox_loss":
                     return LayerType.MULTIBOX_LOSS;
+
+                case "multiheadattention":
+                    return LayerType.MULTIHEAD_ATTENTION;
 
                 case "memoryloss":
                 case "memory_loss":
