@@ -81,7 +81,7 @@ namespace MyCaffe.layers.gpt
 
             log.CHECK_EQ(m_nEmbed % m_nHeads, 0, "The embedding size must be divisible by the number of heads.");
 
-            // Key, query, value projectstion for all heads, but in a batch.
+            // Key, query, value projections for all heads, but in a batch.
             // input features = m_nHeads
             LayerParameter ipAttn = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "c_attn");
             ipAttn.inner_product_param.num_output = (uint)(3 * m_nEmbed);
