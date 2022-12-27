@@ -104,6 +104,8 @@ namespace MyCaffe.test
         Blob<T> m_blobQ;
         Blob<T> m_blobK;
         Blob<T> m_blobV;
+        Blob<T> m_blobMask;
+        Blob<T> m_blobInput;
         Blob<T> m_blobQexp;
         Blob<T> m_blobKexp;
         Blob<T> m_blobVexp;
@@ -118,6 +120,8 @@ namespace MyCaffe.test
             m_blobQ = new Blob<T>(m_cuda, m_log);
             m_blobK = new Blob<T>(m_cuda, m_log);
             m_blobV = new Blob<T>(m_cuda, m_log);
+            m_blobMask = new Blob<T>(m_cuda, m_log);
+            m_blobInput = new Blob<T>(m_cuda, m_log);
             m_blobY = new Blob<T>(m_cuda, m_log);
             m_blobQexp = new Blob<T>(m_cuda, m_log);
             m_blobKexp = new Blob<T>(m_cuda, m_log);
@@ -143,6 +147,8 @@ namespace MyCaffe.test
             dispose(ref m_blobQ);
             dispose(ref m_blobK);
             dispose(ref m_blobV);
+            dispose(ref m_blobMask);
+            dispose(ref m_blobInput);
             dispose(ref m_blobQexp);
             dispose(ref m_blobKexp);
             dispose(ref m_blobVexp);
@@ -242,11 +248,15 @@ namespace MyCaffe.test
                 m_blobQ.LoadFromNumpy(strTestDataPath + "q0.npy");
                 m_blobK.LoadFromNumpy(strTestDataPath + "k0.npy");
                 m_blobV.LoadFromNumpy(strTestDataPath + "v0.npy");
-
+                m_blobInput.LoadFromNumpy(strTestDataPath + "src_input.npy");
+                m_blobMask.ReshapeLike(m_blobInput);
+                m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMask.mutable_gpu_data);
+                
                 BottomVec.Clear();
                 BottomVec.Add(m_blobQ);
                 BottomVec.Add(m_blobK);
                 BottomVec.Add(m_blobV);
+                BottomVec.Add(m_blobMask);
 
                 layer.Setup(BottomVec, TopVec);
 
