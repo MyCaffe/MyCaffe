@@ -271,17 +271,7 @@ namespace MyCaffe.test
                 m_blobY.LoadFromNumpy(strTestDataPath + "12_output.npy");
 
                 // Now, check values
-                float[] rgExpected = convertF(m_blobY.mutable_cpu_data);
-                float[] rgActual = convertF(m_blob_top.mutable_cpu_data);
-
-                for (int i = 0; i < rgExpected.Length; i++)
-                {
-                    float fExpected = rgExpected[i];
-                    float fActual = rgActual[i];
-                    float fErr = 1e-6f;
-
-                    m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, fErr, "The values are not as expected!");
-                }
+                verify(TopVec[0], m_blobY, false);
             }
             finally
             {
@@ -311,11 +301,15 @@ namespace MyCaffe.test
                 m_blobQ.LoadFromNumpy(strTestDataPath + "q0.npy");
                 m_blobK.LoadFromNumpy(strTestDataPath + "k0.npy");
                 m_blobV.LoadFromNumpy(strTestDataPath + "v0.npy");
+                m_blobInput.LoadFromNumpy(strTestDataPath + "src_input.npy");
+                m_blobMask.ReshapeLike(m_blobInput);
+                m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMask.mutable_gpu_data);
 
                 BottomVec.Clear();
                 BottomVec.Add(m_blobQ);
                 BottomVec.Add(m_blobK);
                 BottomVec.Add(m_blobV);
+                BottomVec.Add(m_blobMask);
 
                 layer.Setup(BottomVec, TopVec);
 
@@ -359,7 +353,7 @@ namespace MyCaffe.test
             {
                 float fExpected = rgExpected[i];
                 float fActual = rgActual[i];
-                float fErr = 1e-7f;
+                float fErr = 1e-6f;
 
                 m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, fErr, "The values are not as expected!");
             }
