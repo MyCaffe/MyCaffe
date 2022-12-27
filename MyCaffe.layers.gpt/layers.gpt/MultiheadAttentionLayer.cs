@@ -86,7 +86,7 @@ namespace MyCaffe.layers.gpt
             // Query projection for all heads, but in a batch.
             // input features = m_nHeads
             LayerParameter ipAttnQ = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "c_attnQ");
-            ipAttnQ.inner_product_param.num_output = (uint)(3 * m_nEmbed);
+            ipAttnQ.inner_product_param.num_output = (uint)m_nEmbed;
             ipAttnQ.inner_product_param.bias_term = true;
             ipAttnQ.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02); 
             ipAttnQ.inner_product_param.bias_filler = new FillerParameter("constant", 0.0); 
@@ -98,7 +98,7 @@ namespace MyCaffe.layers.gpt
             // Key projection for all heads, but in a batch.
             // input features = m_nHeads
             LayerParameter ipAttnK = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "c_attnK");
-            ipAttnK.inner_product_param.num_output = (uint)(3 * m_nEmbed);
+            ipAttnK.inner_product_param.num_output = (uint)m_nEmbed;
             ipAttnK.inner_product_param.bias_term = true;
             ipAttnK.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02);
             ipAttnK.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
@@ -110,7 +110,7 @@ namespace MyCaffe.layers.gpt
             // Value projection for all heads, but in a batch.
             // input features = m_nHeads
             LayerParameter ipAttnV = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "c_attnV");
-            ipAttnV.inner_product_param.num_output = (uint)(3 * m_nEmbed);
+            ipAttnV.inner_product_param.num_output = (uint)m_nEmbed;
             ipAttnV.inner_product_param.bias_term = true;
             ipAttnV.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02);
             ipAttnV.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
@@ -509,9 +509,13 @@ namespace MyCaffe.layers.gpt
             // k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
             // q = q.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
             // v = v.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
-            addInternal(m_blobK, m_blobKt);
-            m_transpose.Forward(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
+            m_blobQ.Reshape(m_nB, m_nT, m_nHeads, m_nSize);
+            m_blobK.Reshape(m_nB, m_nT, m_nHeads, m_nSize);
+            m_blobV.Reshape(m_nB, m_nT, m_nHeads, m_nSize);
+
             addInternal(m_blobQ, m_blobQt);
+            m_transpose.Forward(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
+            addInternal(m_blobK, m_blobKt);
             m_transpose.Forward(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
             addInternal(m_blobV, m_blobVt);
             m_transpose.Forward(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
