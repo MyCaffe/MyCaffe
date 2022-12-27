@@ -205,23 +205,6 @@ namespace MyCaffe.layers.gpt
             base.dispose();
         }
 
-        private void fillMask(Blob<T> b)
-        {
-            b.SetData(1.0);
-
-            float[] rgBiasData = convertF(b.mutable_cpu_data);
-
-            for (int i = 0; i<b.height; i++)
-            {
-                for (int j = i + 1; j < b.width; j++)
-                {
-                    rgBiasData[i * b.width + j] = 0;
-                }
-            }
-
-            b.mutable_cpu_data = convert(rgBiasData);
-        }
-
         /** @copydoc Layer::internal_blobs */
         public override BlobCollection<T> internal_blobs
         {
@@ -523,7 +506,7 @@ namespace MyCaffe.layers.gpt
 
                 // Apply mask to attention matrix
                 // att = att.masked_fill(self.bias[:,:,:T,:T] == 0, float('-inf'))
-                m_cuda.mask(m_blobAtt.count(), blobMask.count(), convert(0.0), convert(double.NegativeInfinity), m_blobAtt.gpu_data, blobMask.gpu_data, m_blobAtt.mutable_gpu_data); // all masked items set to -inf.
+                m_cuda.mask_batch(m_blobAtt.count(), m_blobAtt.num, blobMask.count(), convert(0.0), convert(double.NegativeInfinity), m_blobAtt.gpu_data, blobMask.gpu_data, m_blobAtt.mutable_gpu_data); // all masked items set to -inf.
 
                 // Take softmax of attention along the last axis.
                 // att = F.softmax(att, dim = -1)
