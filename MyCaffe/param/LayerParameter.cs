@@ -1277,7 +1277,7 @@ namespace MyCaffe.param
                     expected_bottom.Add("k");
                     expected_bottom.Add("v");
                     expected_top.Add("attn");
-                    m_rgLayerParameters[lt] = new CausalSelfAttentionParameter();
+                    m_rgLayerParameters[lt] = new MultiheadAttentionParameter();
                     break;
 
                 case LayerType.MULTINOMIALLOGISTIC_LOSS:
