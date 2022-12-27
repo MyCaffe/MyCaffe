@@ -2820,7 +2820,8 @@ namespace MyCaffe.common
 
                 bool bFortranOrder;
                 int[] rgShape;
-                int nCount = parseHeader(strHeader, out bFortranOrder, out rgShape);
+                Type dataType;
+                int nCount = parseHeader(strHeader, out bFortranOrder, out rgShape, out dataType);
 
                 if (bFortranOrder)
                     throw new Exception("Currently the fortran ordering is not supported");
@@ -2830,7 +2831,16 @@ namespace MyCaffe.common
                 float[] rgData = new float[nCount];
                 for (int i = 0; i < rgData.Length; i++)
                 {
-                    rgData[i] = br.ReadSingle();
+                    if (dataType == typeof(float))
+                        rgData[i] = br.ReadSingle();
+                    else if (dataType == typeof(double))
+                        rgData[i] = (float)br.ReadDouble();
+                    else if (dataType == typeof(int))
+                        rgData[i] = (float)br.ReadInt32();
+                    else if (dataType == typeof(long))
+                        rgData[i] = (float)br.ReadInt64();
+                    else
+                        throw new Exception("Unsupported data type!");
                 }
 
                 if (bLoadDiff)
@@ -2840,11 +2850,13 @@ namespace MyCaffe.common
             }            
         }
 
-        private int parseHeader(string str, out bool bFortranOrder, out int[] rgShape)
+        private int parseHeader(string str, out bool bFortranOrder, out int[] rgShape, out Type dataType)
         {
             int nCount = 1;
             List<int> rgShape1 = new List<int>();
             str = str.Trim('{', '}', ' ', '\n', ',');
+
+            dataType = typeof(object);
 
             string strShape = null;
             string strTarget = "'shape':";
@@ -2888,7 +2900,15 @@ namespace MyCaffe.common
                 switch (strKey)
                 {
                     case "descr":
-                        if (strVal != "<f4")
+                        if (strVal == "<f4")
+                            dataType = typeof(float);
+                        else if (strVal == "<f8")
+                            dataType = typeof(double);
+                        else if (strVal == "<i4")
+                            dataType = typeof(int);
+                        else if (strVal == "<i8")
+                            dataType = typeof(long);
+                        else
                             throw new Exception("Unsupported data type '" + strVal + "', currenly only support '<f4'");
                         break;
 
