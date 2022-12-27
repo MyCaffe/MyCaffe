@@ -641,9 +641,9 @@ namespace MyCaffe.layers.gpt
                 // k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
                 // q = q.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
                 // v = v.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
-                addInternal(m_blobK, m_blobKt);
-                m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom); // (B, nh, T, hs)
                 addInternal(m_blobQ, m_blobQt);
+                m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom); // (B, nh, T, hs)
+                addInternal(m_blobK, m_blobKt);
                 m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom); // (B, nh, T, hs)
                 addInternal(m_blobV, m_blobVt);
                 m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom); // (B, nh, T, hs)
@@ -660,7 +660,7 @@ namespace MyCaffe.layers.gpt
 
                 // Calculate query for all heads in batch and move head forward to be the batch dim.
                 // v = self.c_attnV(x3)
-                addInternal(colBottom[2], m_blobK);
+                addInternal(colBottom[2], m_blobV);
                 m_c_attnV.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
             }
         }
