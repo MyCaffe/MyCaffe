@@ -800,9 +800,11 @@ namespace MyCaffe.common
         double sumsqdiff(int n, long hW, long hA, long hB, int nAOff = 0, int nBOff = 0);
         void sqrt(int n, long hA, long hY);
         void sqrt_scale(int n, long hA, long hY);
-
+        
         void mask(int n, int nMaskDim, double fSearch, double fReplace, long hX, long hMask, long hY);
         void mask(int n, int nMaskDim, float fSearch, float fReplace, long hX, long hMask, long hY);
+        void mask_batch(int n, int nBatch, int nMaskDim, double fSearch, double fReplace, long hX, long hMask, long hY);
+        void mask_batch(int n, int nBatch, int nMaskDim, float fSearch, float fReplace, long hX, long hMask, long hY);
 
         void im2col(long hDataIm, int nDataImOffset, int nChannels, int nHeight, int nWidth, int nKernelH, int nKernelW, int nPadH, int nPadW, int nStrideH, int nStrideW, int nDilationH, int nDilationW, long hDataCol, int nDataColOffset);
         void im2col_nd(long hDataIm, int nDataImOffset, int nNumSpatialAxes, int nColCount, int nChannelAxis, long hImShape, long hColShape, long hKernelShape, long hPad, long hStride, long hDilation, long hDataCol, int nDataColOffset);
@@ -1105,6 +1107,7 @@ namespace MyCaffe.common
             CUDA_MASK = 264,
 
             CUDA_INTERP2 = 265,
+            CUDA_MASK_BATCH = 266,
 
             CUDA_MULBSX = 270,
             CUDA_DIVBSX = 271,
@@ -6562,6 +6565,57 @@ namespace MyCaffe.common
         public void mask(int n, int nMaskDim, float fSearch, float fReplace, long hX, long hMask, long hY)
         {
             mask(n, nMaskDim, (T)Convert.ChangeType(fSearch, typeof(T)), (T)Convert.ChangeType(fReplace, typeof(T)), hX, hMask, hY);
+        }
+
+        /// <summary>
+        /// Mask the mask the batch of data in the source with the mask by replacing all values 'fSearch' found in the mask with 'fReplace' in the destination.
+        /// </summary>
+        /// <param name="n">Specifies the number of items.</param>
+        /// <param name="nBatch">Specifies the batch size.</param>
+        /// <param name="nMaskDim">Specifies the number of items in the mask.</param>
+        /// <param name="fSearch">Specifies the value within the mask to replace.</param>
+        /// <param name="fReplace">Specifies the replacement value.</param>
+        /// <param name="hX">Specifies a handle to the GPU memory of the source.</param>
+        /// <param name="hMask">Specifies a handle to the GPU memory of the mask (containing the 'fSearch' values)</param>
+        /// <param name="hY">Specifies a handle to the GPU memory of the destination.</param>
+        public void mask_batch(int n, int nBatch, int nMaskDim, T fSearch, T fReplace, long hX, long hMask, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MASK_BATCH, m_param.AsDouble(n, nBatch, nMaskDim, convertD(fSearch), convertD(fReplace), hX, hMask, hY));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MASK_BATCH, m_param.AsFloat(n, nBatch, nMaskDim, convertF(fSearch), convertF(fReplace), hX, hMask, hY));
+        }
+
+        /// <summary>
+        /// Mask the mask the batch of data in the source with the mask by replacing all values 'fSearch' found in the mask with 'fReplace' in the destination.
+        /// </summary>
+        /// <param name="n">Specifies the number of items.</param>
+        /// <param name="nBatch">Specifies the batch size.</param>
+        /// <param name="nMaskDim">Specifies the number of items in the mask.</param>
+        /// <param name="fSearch">Specifies the value within the mask to replace.</param>
+        /// <param name="fReplace">Specifies the replacement value.</param>
+        /// <param name="hX">Specifies a handle to the GPU memory of the source.</param>
+        /// <param name="hMask">Specifies a handle to the GPU memory of the mask (containing the 'fSearch' values)</param>
+        /// <param name="hY">Specifies a handle to the GPU memory of the destination.</param>
+        public void mask_batch(int n, int nBatch, int nMaskDim, double fSearch, double fReplace, long hX, long hMask, long hY)
+        {
+            mask_batch(n, nBatch, nMaskDim, (T)Convert.ChangeType(fSearch, typeof(T)), (T)Convert.ChangeType(fReplace, typeof(T)), hX, hMask, hY);
+        }
+
+        /// <summary>
+        /// Mask the mask the batch of data in the source with the mask by replacing all values 'fSearch' found in the mask with 'fReplace' in the destination.
+        /// </summary>
+        /// <param name="n">Specifies the number of items.</param>
+        /// <param name="nBatch">Specifies the batch size.</param>
+        /// <param name="nMaskDim">Specifies the number of items in the mask.</param>
+        /// <param name="fSearch">Specifies the value within the mask to replace.</param>
+        /// <param name="fReplace">Specifies the replacement value.</param>
+        /// <param name="hX">Specifies a handle to the GPU memory of the source.</param>
+        /// <param name="hMask">Specifies a handle to the GPU memory of the mask (containing the 'fSearch' values)</param>
+        /// <param name="hY">Specifies a handle to the GPU memory of the destination.</param>
+        public void mask_batch(int n, int nBatch, int nMaskDim, float fSearch, float fReplace, long hX, long hMask, long hY)
+        {
+            mask_batch(n, nBatch, nMaskDim, (T)Convert.ChangeType(fSearch, typeof(T)), (T)Convert.ChangeType(fReplace, typeof(T)), hX, hMask, hY);
         }
 
         /// <summary>

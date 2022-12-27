@@ -2013,6 +2013,29 @@ template long Device<float>::cuda_mask(long lInput, float* pfInput, long* plOutp
 
 
 template <class T>
+long Device<T>::cuda_mask_batch(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 8, 8))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	int nBatch = (int)pfInput[1];
+	int nMaskDim = (int)pfInput[2];
+	T fSearch = pfInput[3];
+	T fReplace = pfInput[4];
+	long hX = (long)pfInput[5];
+	long hMask = (long)pfInput[6];
+	long hY = (long)pfInput[7];
+
+	return m_math.mask_batch(n, nBatch, nMaskDim, fSearch, fReplace, hX, hMask, hY);
+}
+
+template long Device<double>::cuda_mask_batch(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mask_batch(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+template <class T>
 long Device<T>::cuda_interp2(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;

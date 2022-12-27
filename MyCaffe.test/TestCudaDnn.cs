@@ -1735,6 +1735,90 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestMath_mask_batch()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+            float[] rgf = new float[]  // shape (3, 2, 4)
+            { 
+                1.1f, 2.2f, 0.0000099f, 999999.888f,
+                1.21f, 2.22f, 0.2000099f, 999999.2888f,
+
+                11.1f, 12.2f, 10.0000099f, 1999999.888f,
+                11.21f, 12.22f, 10.2000099f, 1999999.2888f,
+
+                21.1f, 22.2f, 20.0000099f, 2999999.888f,
+                21.21f, 22.22f, 20.2000099f, 2999999.2888f
+            };
+            float[] rgfMask = new float[] // shape (3, 1, 4)
+            {
+                1.0f, 1.0f, 0.0f, 0.0f,
+                1.0f, 1.0f, 1.0f, 0.0f,
+                1.0f, 1.0f, 1.0f, 1.0f
+            };
+            float[] rgfExpected = new float[]  // shape (3, 2, 4)
+            {
+                1.1f, 2.2f, float.NegativeInfinity, float.NegativeInfinity,
+                1.21f, 2.22f, float.NegativeInfinity, float.NegativeInfinity,
+
+                11.1f, 12.2f, 10.0000099f, float.NegativeInfinity,
+                11.21f, 12.22f, 10.2000099f, float.NegativeInfinity,
+
+                21.1f, 22.2f, 20.0000099f, 2999999.888f,
+                21.21f, 22.22f, 20.2000099f, 2999999.2888f
+            };
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    long hData = t.Cuda.AllocMemory(rgf);
+                    long hMask = t.Cuda.AllocMemory(rgfMask);
+                    long hDst = t.Cuda.AllocMemory(rgfExpected);
+
+                    try
+                    {
+                        t.Cuda.mask_batch(rgf.Length, 3, rgfMask.Length, 0.0, double.NegativeInfinity, hData, hMask, hDst);
+
+                        float[] rgfRes = t.Cuda.get_float(rgfExpected.Length, hDst);
+                        t.Log.CHECK_EQ(rgfRes.Length, rgfExpected.Length, "The data length returned is not correct!");
+
+                        for (int j = 0; j < rgfRes.Length; j++)
+                        {
+                            float fExpected = rgfExpected[j];
+                            float fActual = rgfRes[j];
+
+                            t.Log.EXPECT_NEAR_FLOAT(fExpected, fActual, 0.000001, "The expected and actual are not as expected!");
+                        }
+                    }
+                    finally
+                    {
+                        if (hData != 0)
+                        {
+                            t.Cuda.FreeMemory(hData);
+                            hData = 0;
+                        }
+
+                        if (hMask != 0)
+                        {
+                            t.Cuda.FreeMemory(hMask);
+                            hMask = 0;
+                        }
+
+                        if (hDst != 0)
+                        {
+                            t.Cuda.FreeMemory(hDst);
+                            hDst = 0;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestMath_copy()
         {
             CudaDnnTest test = new CudaDnnTest();

@@ -2703,6 +2703,50 @@ template long Math<double>::mask(int n, int nMaskDim, double dfSearch, double df
 template long Math<float>::mask(int n, int nMaskDim, float dfSearch, float dfReplace, long hX, long hMask, long hY);
 
 
+template <typename T>
+__global__ void mask_batch_kernel(const int n, const int nBatch, const int nMaskDim, const T* x, const T* mask, T* y, const T fSearch, const T fReplace)
+{
+	const int nMaskDim1 = nMaskDim / nBatch;
+	const int nDataDim1 = n / nBatch;
+
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{		
+		const int nMaskIdx = i % nMaskDim1 + (i / nDataDim1) * nMaskDim1;
+		y[i] = (mask[nMaskIdx] == fSearch) ? fReplace : x[i];
+	}
+}
+
+
+template <class T>
+long Math<T>::mask_batch(int n, int nBatch, int nMaskDim, T fSearch, T fReplace, long hX, long hMask, long hY)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pMask;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hMask, &pMask))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	T* x = (T*)pX->Data();
+	T* mask = (T*)pMask->Data();
+	T* y = (T*)pY->Data();
+
+	mask_batch_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nBatch, nMaskDim, x, mask, y, fSearch, fReplace);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::mask_batch(int n, int nBatch, int nMaskDim, double dfSearch, double dfReplace, long hX, long hMask, long hY);
+template long Math<float>::mask_batch(int n, int nBatch, int nMaskDim, float dfSearch, float dfReplace, long hX, long hMask, long hY);
+
+
 // Bi-linear interpolation
 // input:  [channels height1 width1] cropped from a bigger [Height1 Width1] image
 // output: [channels height2 width2] cropped from a bigger [Height2 Width2] image

@@ -239,6 +239,7 @@ const int CUDA_FN_ERF = 263;
 const int CUDA_FN_MASK = 264;
 
 const int CUDA_FN_INTERP2 = 265;
+const int CUDA_FN_MASK_BATCH = 266;
 
 const int CUDA_FN_MULBSX = 270;
 const int CUDA_FN_DIVBSX = 271;
