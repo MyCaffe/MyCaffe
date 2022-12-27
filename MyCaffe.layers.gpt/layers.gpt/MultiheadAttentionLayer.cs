@@ -75,11 +75,11 @@ namespace MyCaffe.layers.gpt
         {
             m_type = LayerParameter.LayerType.MULTIHEAD_ATTENTION;
 
-            m_nHeads = p.causal_self_attention_param.heads;
-            m_nEmbed = p.causal_self_attention_param.embed;
-            m_nBlockSize = p.causal_self_attention_param.block_size;
-            m_dfAttnDropout = p.causal_self_attention_param.attn_dropout;
-            m_dfResidDropout = p.causal_self_attention_param.resid_dropout;
+            m_nHeads = p.multihead_attention_param.heads;
+            m_nEmbed = p.multihead_attention_param.embed;
+            m_nBlockSize = p.multihead_attention_param.block_size;
+            m_dfAttnDropout = p.multihead_attention_param.attn_dropout;
+            m_dfResidDropout = p.multihead_attention_param.resid_dropout;
 
             log.CHECK_EQ(m_nEmbed % m_nHeads, 0, "The embedding size must be divisible by the number of heads.");
 
@@ -124,7 +124,7 @@ namespace MyCaffe.layers.gpt
             LayerParameter ipProj = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "c_proj");
             ipProj.inner_product_param.num_output = (uint)m_nEmbed;
             ipProj.inner_product_param.bias_term = true;
-            ipProj.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02 / Math.Sqrt(2 * m_param.causal_self_attention_param.layers)); 
+            ipProj.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02 / Math.Sqrt(2 * m_param.multihead_attention_param.layers)); 
             ipProj.inner_product_param.bias_filler = new FillerParameter("constant", 0.0); 
             ipProj.inner_product_param.axis = 2;            
             ipProj.parameters.Add(new ParamSpec(1.0, 1.0));
