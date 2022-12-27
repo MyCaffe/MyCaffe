@@ -109,6 +109,7 @@ namespace MyCaffe.test
         Blob<T> m_blobQexp;
         Blob<T> m_blobKexp;
         Blob<T> m_blobVexp;
+        Blob<T> m_blobWork;
         Stopwatch m_swUpdateTimer = new Stopwatch();
         double m_dfLastProgress = 0;
         AutoResetEvent m_evtDownloadDone = new AutoResetEvent(false);
@@ -126,6 +127,7 @@ namespace MyCaffe.test
             m_blobQexp = new Blob<T>(m_cuda, m_log);
             m_blobKexp = new Blob<T>(m_cuda, m_log);
             m_blobVexp = new Blob<T>(m_cuda, m_log);
+            m_blobWork = new Blob<T>(m_cuda, m_log);
         }
 
         protected override FillerParameter getFillerParam()
@@ -153,6 +155,7 @@ namespace MyCaffe.test
             dispose(ref m_blobKexp);
             dispose(ref m_blobVexp);
             dispose(ref m_blobY);
+            dispose(ref m_blobWork);
             base.dispose();
         }
 
@@ -279,9 +282,6 @@ namespace MyCaffe.test
             }
         }
 
-        /// <summary>
-        /// WORK IN PROGRESS
-        /// </summary>
         public void TestBackward(int nBatch, int nHeads)
         {
             string strTestDataPath = loadTestData();
@@ -357,6 +357,10 @@ namespace MyCaffe.test
 
                 m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, fErr, "The values are not as expected!");
             }
+
+            bool bRes = b1.Compare(b1exp, m_blobWork, bCompareDiff, 1e-6f); 
+            if (!bRes)
+                m_log.FAIL("The blobs are not equal!");
         }
 
         /// <summary>
