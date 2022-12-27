@@ -34,8 +34,6 @@ namespace MyCaffe.layers.gpt
         Layer<T> m_transposeQ;
         // Softmax
         Layer<T> m_softmax = null;
-        // Causal mask to ensure that atttention is only applied to the left in the input sequence.
-        Blob<T> m_blobMask;
         Blob<T> m_blobQ;
         Blob<T> m_blobK;
         Blob<T> m_blobV;
@@ -162,11 +160,6 @@ namespace MyCaffe.layers.gpt
             softmax.softmax_param.axis = -1;
             softmax.softmax_param.engine = EngineParameter.Engine.CUDNN;
             m_softmax = Layer<T>.Create(cuda, log, softmax, null);
-
-            // Causal mask to ensure that atttention is only applied to the left in the input sequence.
-            m_blobMask = new Blob<T>(cuda, log);
-            m_blobMask.Reshape(1, 1, m_nBlockSize, m_nBlockSize);
-            fillMask(m_blobMask);
            
             m_blobQ = new Blob<T>(cuda, log);
             m_blobK = new Blob<T>(cuda, log);
@@ -196,7 +189,6 @@ namespace MyCaffe.layers.gpt
             dispose(ref m_transposeQ);
             dispose(ref m_softmax);
 
-            dispose(ref m_blobMask);
             dispose(ref m_blobQ);
             dispose(ref m_blobK);
             dispose(ref m_blobV);
@@ -237,18 +229,16 @@ namespace MyCaffe.layers.gpt
             {
                 BlobCollection<T> col = new BlobCollection<T>();
 
-                col.Add(m_blobMask);
-
                 return col;
             }
         }
 
         /// <summary>
-        /// Returns the exact number of required bottom (input) Blobs: q, k, v
+        /// Returns the exact number of required bottom (input) Blobs: q, k, v, mask
         /// </summary>
         public override int ExactNumBottomBlobs
         {
-            get { return 3; }
+            get { return 4; }
         }
 
         /// <summary>
@@ -489,6 +479,7 @@ namespace MyCaffe.layers.gpt
             Blob<T> blobQ = colBottom[0];
             Blob<T> blobK = colBottom[1];
             Blob<T> blobV = colBottom[2];
+            Blob<T> blobMask = colBottom[3];
 
             // Calculate query, for all heads in batch and move head forward to be the batch dim.
             // q  = self.c_attnQ(x1)
@@ -532,7 +523,7 @@ namespace MyCaffe.layers.gpt
 
                 // Apply mask to attention matrix
                 // att = att.masked_fill(self.bias[:,:,:T,:T] == 0, float('-inf'))
-                m_cuda.mask(m_blobAtt.count(), m_blobMask.count(), convert(0.0), convert(double.NegativeInfinity), m_blobAtt.gpu_data, m_blobMask.gpu_data, m_blobAtt.mutable_gpu_data); // all masked items set to -inf.
+                m_cuda.mask(m_blobAtt.count(), blobMask.count(), convert(0.0), convert(double.NegativeInfinity), m_blobAtt.gpu_data, blobMask.gpu_data, m_blobAtt.mutable_gpu_data); // all masked items set to -inf.
 
                 // Take softmax of attention along the last axis.
                 // att = F.softmax(att, dim = -1)
