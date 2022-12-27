@@ -226,9 +226,6 @@ namespace MyCaffe.test
             }
         }
 
-        /// <summary>
-        /// WORK IN PROGRESS
-        /// </summary>
         public void TestForward(int nBatch, int nHeads)
         {
             string strTestDataPath = loadTestData();
@@ -281,7 +278,7 @@ namespace MyCaffe.test
                 {
                     float fExpected = rgExpected[i];
                     float fActual = rgActual[i];
-                    float fErr = 1e-7f;
+                    float fErr = 1e-6f;
 
                     m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, fErr, "The values are not as expected!");
                 }
