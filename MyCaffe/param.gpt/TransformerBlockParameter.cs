@@ -21,6 +21,26 @@ namespace MyCaffe.param.gpt
         int m_nBlockSize = 128;
         int m_nLayers = 6;
         ACTIVATION m_activation = ACTIVATION.RELU;
+        BLOCK_TYPE m_type = BLOCK_TYPE.CAUSAL_SELF_ATTENTION;
+
+        /// <summary>
+        /// Defines the type of transformer block
+        /// </summary>
+        public enum BLOCK_TYPE
+        {
+            /// <summary>
+            /// Specifies to configure a causal self attention block.
+            /// </summary>
+            CAUSAL_SELF_ATTENTION = 0,
+            /// <summary>
+            /// Specifies to configure an encoder transformer block.
+            /// </summary>
+            ENCODER,
+            /// <summary>
+            /// Specifies to configure a decoder transformer block
+            /// </summary>
+            DECODER
+        }
 
         /// <summary>
         /// Defines the various activations supported by the TransformerBlock.
@@ -54,6 +74,15 @@ namespace MyCaffe.param.gpt
         {
             get { return m_activation; }
             set { m_activation = value; }
+        }
+
+        /// <summary>
+        /// Specifies the type of transformer block to configure.
+        /// </summary>
+        public BLOCK_TYPE block_type
+        {
+            get { return m_type; }
+            set { m_type = value; }
         }
 
         /// <summary>
@@ -136,6 +165,7 @@ namespace MyCaffe.param.gpt
             m_dfAttnDropout = p.attn_dropout;
             m_dfResidDropout = p.resid_dropout;
             m_activation = p.activation;
+            m_type = p.block_type;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -162,6 +192,7 @@ namespace MyCaffe.param.gpt
             rgChildren.Add("attn_dropout", attn_dropout.ToString());
             rgChildren.Add("resid_dropout", resid_dropout.ToString());
             rgChildren.Add("activation", activation.ToString());
+            rgChildren.Add("block_type", block_type.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -202,6 +233,16 @@ namespace MyCaffe.param.gpt
                     p.activation = ACTIVATION.GELU_BERT;
                 else
                     p.activation = ACTIVATION.RELU;
+            }
+
+            if ((strVal = rp.FindValue("block_type")) != null)
+            {
+                if (strVal == BLOCK_TYPE.CAUSAL_SELF_ATTENTION.ToString())
+                    p.block_type = BLOCK_TYPE.CAUSAL_SELF_ATTENTION;
+                else if (strVal == BLOCK_TYPE.ENCODER.ToString())
+                    p.block_type = BLOCK_TYPE.ENCODER;
+                else if (strVal == BLOCK_TYPE.DECODER.ToString())
+                    p.block_type = BLOCK_TYPE.DECODER;
             }
 
             return p;
