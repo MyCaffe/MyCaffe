@@ -172,7 +172,7 @@ namespace MyCaffe.test
 
         private string downloadTestData()
         {
-            string strTestDataPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\";
+            string strTestDataPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\mh\\";
             if (!Directory.Exists(strTestDataPath))
                 Directory.CreateDirectory(strTestDataPath);
 
