@@ -36,8 +36,7 @@ namespace MyCaffe.layers.gpt
         Layer<T> m_fc;      // initial linear
         Layer<T> m_proj;    // projection
         Layer<T> m_act;     // activation
-        Layer<T> m_dropout1 = null;
-        Layer<T> m_dropout2 = null; // resid dropout
+        Layer<T> m_dropout = null; // resid dropout
 
         BlobCollection<T> m_colInternalBottom = new BlobCollection<T>();
         BlobCollection<T> m_colInternalTop = new BlobCollection<T>();
@@ -141,7 +140,7 @@ namespace MyCaffe.layers.gpt
             {
                 LayerParameter dropout = new LayerParameter(LayerParameter.LayerType.DROPOUT, "dropout");
                 dropout.dropout_param.dropout_ratio = p.transformer_block_param.resid_dropout;
-                m_dropout2 = Layer<T>.Create(cuda, log, dropout, evtCancel);
+                m_dropout = Layer<T>.Create(cuda, log, dropout, evtCancel);
             }
         }
 
@@ -160,7 +159,7 @@ namespace MyCaffe.layers.gpt
             dispose(ref m_fc);
             dispose(ref m_proj);
             dispose(ref m_act);
-            dispose(ref m_dropout2);
+            dispose(ref m_dropout);
             
             base.dispose();
         }
@@ -300,10 +299,10 @@ namespace MyCaffe.layers.gpt
             addInternal(m_blobMlp, m_blobMlpOut);
             m_proj.LayerSetUp(m_colInternalBottom, m_colInternalTop);
 
-            if (m_dropout2 != null)
+            if (m_dropout != null)
             {
                 addInternal(m_blobMlpOut, m_blobMlpOut);
-                m_dropout2.LayerSetUp(m_colInternalBottom, m_colInternalTop);
+                m_dropout.LayerSetUp(m_colInternalBottom, m_colInternalTop);
             }
 
             colTop[0].ReshapeLike(m_blobMlpOut);
@@ -367,10 +366,10 @@ namespace MyCaffe.layers.gpt
             addInternal(m_blobMlp, m_blobMlpOut);
             m_proj.Reshape(m_colInternalBottom, m_colInternalTop);
 
-            if (m_dropout2 != null)
+            if (m_dropout != null)
             {
                 addInternal(m_blobMlpOut, m_blobMlpOut);
-                m_dropout2.Reshape(m_colInternalBottom, m_colInternalTop);
+                m_dropout.Reshape(m_colInternalBottom, m_colInternalTop);
             }
         }
 
@@ -430,10 +429,10 @@ namespace MyCaffe.layers.gpt
             addInternal(m_blobMlp, m_blobMlpOut);
             m_proj.Forward(m_colInternalBottom, m_colInternalTop);
 
-            if (m_dropout2 != null)
+            if (m_dropout != null)
             {
                 addInternal(m_blobMlpOut, m_blobMlpOut);
-                m_dropout2.Forward(m_colInternalBottom, m_colInternalTop);
+                m_dropout.Forward(m_colInternalBottom, m_colInternalTop);
             }
             
             // x = x + self.mlpf(self.ln_2(x))
@@ -465,10 +464,10 @@ namespace MyCaffe.layers.gpt
                 m_cuda.copy(nCount, colTop[0].gpu_diff, colBottom[0].mutable_gpu_diff); // temporary holding dx2
 
                 // Gradient for self.mlpf(self.ln_2(x))
-                if (m_dropout2 != null)
+                if (m_dropout != null)
                 {
                     addInternal(m_blobMlpOut, m_blobMlpOut);
-                    m_dropout2.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+                    m_dropout.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
                 }
 
                 addInternal(m_blobMlp, m_blobMlpOut);
