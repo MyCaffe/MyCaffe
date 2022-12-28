@@ -56,10 +56,10 @@ namespace MyCaffe.test
         /// Note that after the gradient check, we do not guarantee that the data stored
         /// in the layer parameters and the blobs are unchanged.
         /// </remarks>
-        public void CheckGradient(Layer<T> layer, BlobCollection<T> colBottom, BlobCollection<T> colTop, int nCheckBottom = -1)
+        public void CheckGradient(Layer<T> layer, BlobCollection<T> colBottom, BlobCollection<T> colTop, int nCheckBottom = -1, int nFeatureStep = 1)
         {
             layer.Setup(colBottom, colTop);
-            CheckGradientSingle(layer, colBottom, colTop, nCheckBottom, -1, -1);
+            CheckGradientSingle(layer, colBottom, colTop, nCheckBottom, -1, -1, false, nFeatureStep);
         }
 
         /// <summary>
@@ -68,7 +68,7 @@ namespace MyCaffe.test
         /// If check_bottom == -1, check everything -- all bottom Blobs and all
         /// param Blobs.  Otherwise (if check_bottom less than -1), check only param Blobs.
         /// </summary>
-        public void CheckGradientSingle(Layer<T> layer, BlobCollection<T> colBottom, BlobCollection<T> colTop, int nCheckBottom, int nTopID, int nTopDataID, bool bElementwise = false)
+        public void CheckGradientSingle(Layer<T> layer, BlobCollection<T> colBottom, BlobCollection<T> colTop, int nCheckBottom, int nTopID, int nTopDataID, bool bElementwise = false, int nFeatureStep = 1)
         {
             if (bElementwise)
             {
@@ -151,7 +151,16 @@ namespace MyCaffe.test
 
             // Compute derivative of top w.r.t. each bottom and parameter input using
             // finite differencing.
+            long lTotal = 0;
+            for (int nBlobID = 0; nBlobID < colBlobsToCheck.Count; nBlobID++)
+            {
+                lTotal += colBlobsToCheck[nBlobID].count();
+            }
 
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
+            long lIdx = 0;
             for (int nBlobID = 0; nBlobID < colBlobsToCheck.Count; nBlobID++)
             {
                 Blob<T> current_blob = colBlobsToCheck[nBlobID];
@@ -162,7 +171,9 @@ namespace MyCaffe.test
                 T[] rgdfComputedGradients = colComputedGradientBlobs[nBlobID].update_cpu_data();
                 double dfData;
 
-                for (int nFeatID=0; nFeatID<current_blob.count(); nFeatID++)
+                Trace.WriteLine("** BLOB " + nBlobID.ToString() + " **");
+
+                for (int nFeatID=0; nFeatID<current_blob.count(); nFeatID += nFeatureStep)
                 {
                     if (m_evtCancel.WaitOne(0))
                         throw new Exception("Aborted!");
@@ -219,6 +230,16 @@ namespace MyCaffe.test
 
                         m_log.EXPECT_NEAR(dfComputedGradient, dfEstimateGradient, m_dfThreshold * dfScale, "DEBUG: (nTopID, nTopDataID, nBlobID, nFeatID)=" + nTopID.ToString() + ", " + nTopDataID.ToString() + ", " + nBlobID.ToString() + ", " + nFeatID.ToString() + "; feat = " + dfFeature.ToString() + "; objective+ = " + dfPositiveObjective.ToString() + "; objective- = " + dfNegativeObjective.ToString());
                     }
+
+                    if (sw.Elapsed.TotalMilliseconds > 1000)
+                    {
+                        sw.Restart();
+                        double dfPct = (double)lIdx / lTotal;
+                        double dfPctBlob = (double)nFeatID / current_blob.count();
+                        Trace.WriteLine("Checking BLOB " + nBlobID.ToString() + " '" + current_blob.Name + "' gradient at " + lIdx.ToString("N0") + " of " + lTotal.ToString("N0") + " - blob " + dfPctBlob.ToString("P") + " global " + dfPct.ToString("P") + "...");
+                    }
+
+                    lIdx += nFeatureStep;
                 }
             }
         }
