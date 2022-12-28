@@ -363,9 +363,6 @@ namespace MyCaffe.test
                 m_log.FAIL("The blobs are not equal!");
         }
 
-        /// <summary>
-        /// WORK IN PROGRESS
-        /// </summary>
         public void TestGradient(int nBatch, int nHeads)
         {
             string strTestDataPath = loadTestData();
@@ -385,16 +382,18 @@ namespace MyCaffe.test
                 m_blobQ.LoadFromNumpy(strTestDataPath + "q0.npy");
                 m_blobK.LoadFromNumpy(strTestDataPath + "k0.npy");
                 m_blobV.LoadFromNumpy(strTestDataPath + "v0.npy");
+                m_blobInput.LoadFromNumpy(strTestDataPath + "src_input.npy");
+                m_blobMask.ReshapeLike(m_blobInput);
+                m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMask.mutable_gpu_data);
 
                 BottomVec.Clear();
                 BottomVec.Add(m_blobQ);
                 BottomVec.Add(m_blobK);
                 BottomVec.Add(m_blobV);
+                BottomVec.Add(m_blobMask);
 
-                layer.Setup(BottomVec, TopVec);
-
-                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.001);
-                checker.CheckGradient(layer, BottomVec, TopVec);
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.0001);
+                checker.CheckGradient(layer, BottomVec, TopVec, -1, 100);
             }
             finally
             {
