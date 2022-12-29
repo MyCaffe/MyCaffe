@@ -1010,7 +1010,7 @@ namespace MyCaffe.common
 
             m_cuda.sub(count(), h1, h2, work.mutable_gpu_data);
             double dfMin = work.min_data;
-            if (dfMin < -dfTol)
+            if (Math.Abs(dfMin) > dfTol)
                 return false;
 
             double dfMax = work.max_data;
