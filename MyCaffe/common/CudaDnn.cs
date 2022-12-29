@@ -9,6 +9,7 @@ using System.IO;
 using MyCaffe.basecode;
 using System.ComponentModel;
 using System.Runtime.Remoting.Channels;
+using System.Xml.Linq;
 
 namespace MyCaffe.common
 {
@@ -1308,6 +1309,11 @@ namespace MyCaffe.common
             CUDA_SSD_FWD_MULTIBOXLOSS = 955,
             CUDA_SSD_ENCODE_LOCPRED = 958,
             CUDA_SSD_ENCODE_CONFPRED = 959,
+
+            CUDA_CREATE_LAYERNORM = 970,
+            CUDA_FREE_LAYERNORM = 971,
+            CUDA_LAYERNORM_FWD = 975,
+            CUDA_LAYERNORM_BWD = 976,
 
             CUDA_DEBUG = 1000
         }
@@ -5424,6 +5430,70 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SSD_ENCODE_CONFPRED, m_param.AsDouble(hSSD, nConfPredCount, hConfPred, nConfGtCount, hConfGt));
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SSD_ENCODE_CONFPRED, m_param.AsFloat(hSSD, nConfPredCount, hConfPred, nConfGtCount, hConfGt));
+        }
+
+        /// <summary>
+        /// Create the Cuda version of LayerNorm
+        /// </summary>
+        /// <param name="nGpuID">Specifies the GPUID to use.</param>
+        /// <param name="nCount">Specifies the total number of items in the input (and output).</param>
+        /// <param name="nOuterNum">Specifies the outer number of items (e.g., num)</param>
+        /// <param name="nChannels">Specifies the number of channels in the data.</param>
+        /// <param name="nInnerNum">Specifies the spatial dimentions of the inner data.</param>
+        /// <param name="fEps">Optionally, specifies the epsilon value to avoid numeric issues (default = 1e-10).</param>
+        /// <returns>The handle to the LayerNorm configuration.  This handle is used with all other layer norm functions.</returns>
+        public long CreateLayerNorm(int nGpuID, int nCount, int nOuterNum, int nChannels, int nInnerNum, float fEps = 1e-10f)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_LAYERNORM, m_param.AsDouble(nGpuID, nCount, nOuterNum, nChannels, nInnerNum, fEps));
+                return (long)rg[0];
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_LAYERNORM, m_param.AsFloat(nGpuID, nCount, nOuterNum, nChannels, nInnerNum, fEps));
+                return (long)rg[0];
+            }
+        }
+
+        /// <summary>
+        /// Free the instance of LayerNorm GPU support.
+        /// </summary>
+        /// <param name="hLayerNorm">Specifies the handle to the LayerNorm instance.</param>
+        public void FreeLayerNorm(long hLayerNorm)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_FREE_LAYERNORM, m_param.AsDouble(hLayerNorm));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_FREE_LAYERNORM, m_param.AsFloat(hLayerNorm));
+        }
+
+        /// <summary>
+        /// Run the LayerNorm forward pass.
+        /// </summary>
+        /// <param name="hLayerNorm">Specifies the handle to the LayerNorm instance.</param>
+        /// <param name="hXdata">Specifies the input data to be normalized.</param>
+        /// <param name="hYdata">Specifies the normalized output data.</param>
+        public void LayerNormForward(long hLayerNorm, long hXdata, long hYdata)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LAYERNORM_FWD, m_param.AsDouble(hLayerNorm, hXdata, hYdata));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LAYERNORM_FWD, m_param.AsFloat(hLayerNorm, hXdata, hYdata));
+        }
+
+        /// <summary>
+        /// Run the LayerNorm backward pass.
+        /// </summary>
+        /// <param name="hLayerNorm">Specifies the handle to the LayerNorm instance.</param>
+        /// <param name="hYdiff">Specifies the input diff to be un-normalized.</param>
+        /// <param name="hXdiff">Specifies the un-normalized output diff.</param>
+        public void LayerNormBackward(long hLayerNorm, long hYdiff, long hXdiff)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LAYERNORM_BWD, m_param.AsDouble(hLayerNorm, hYdiff, hXdiff));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LAYERNORM_BWD, m_param.AsFloat(hLayerNorm, hYdiff, hXdiff));
         }
 
         #endregion

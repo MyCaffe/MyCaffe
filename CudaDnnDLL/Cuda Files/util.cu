@@ -260,6 +260,14 @@ bool GetErrorString(long lKernel, long lErr, char* szErr, long lMaxErr)
 		case ERROR_SSD_MINEHARDEXAMPLES_NO_MATCHES:
 			_snprintf(szErr, lMaxErr, "SSD: No matches were found to mine hard examples. (%ld), Kernel = %ld", lErr, lKernel);
 			return true;
+
+		case ERROR_LAYERNORM:
+			_snprintf(szErr, lMaxErr, "LAYERNORM: A general LayerNorm error occurred. (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
+
+		case ERROR_LAYERNORM_NOT_INITIALIZED:
+			_snprintf(szErr, lMaxErr, "LAYERNORM: The LayerNorm is not initialized. (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
 	}
 
 	return false;

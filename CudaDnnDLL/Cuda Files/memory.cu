@@ -140,6 +140,11 @@ Memory<T>::~Memory()
 		FreeSSD(i);
 	}
 
+	for (int i = 0; i < m_layernorm.GetCount(); i++)
+	{
+		FreeLayerNorm(i);
+	}
+
 	m_memoryMap.clear();
 	m_cudnnRef.clear();
 	m_cudnnH2Dev.clear();

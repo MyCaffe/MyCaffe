@@ -1004,6 +1004,18 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_SSD_ENCODE_CONFPRED:
 			return m_device.SsdEncodeConfPrediction(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_CREATE_LAYERNORM:
+			return m_device.CreateLayerNorm(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_FREE_LAYERNORM:
+			return m_device.FreeLayerNorm(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_LAYERNORM_FWD:
+			return m_device.LayerNormForward(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_LAYERNORM_BWD:
+			return m_device.LayerNormBackward(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_DEBUG:
 			return 0;
 
@@ -2000,6 +2012,18 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_SSD_ENCODE_CONFPRED:
 		return "CUDA_FN_SSD_ENCODE_CONFPRED";
+
+	case CUDA_FN_CREATE_LAYERNORM:
+		return "CUDA_FN_CREATE_LAYERNORM";
+
+	case CUDA_FN_FREE_LAYERNORM:
+		return "CUDA_FN_FREE_LAYERNORM";
+
+	case CUDA_FN_LAYERNORM_FWD:
+		return "CUDA_FN_LAYERNORM_FWD";
+
+	case CUDA_FN_LAYERNORM_BWD:
+		return "CUDA_FN_LAYERNORM_BWD";
 
 	default:
 		return "UNKNOWN";

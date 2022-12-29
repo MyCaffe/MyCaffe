@@ -17,6 +17,7 @@
 #include "tsne_g.h"
 #include "nccl.h"
 #include "ssd.h"
+#include "layernorm.h"
 #include "extension.h"
 #include <vector>
 #include <algorithm>
@@ -130,6 +131,7 @@ class Memory
 		HandleCollection<MIN_HANDLES> m_imgop;
 		HandleCollection<MIN_HANDLES> m_nccl;
 		HandleCollection<MIN_HANDLES> m_ssd;
+		HandleCollection<MIN_HANDLES> m_layernorm;
 		HandleCollection<MIN_HANDLES> m_extensions;
 		T m_tOne;
 		T m_tZero;
@@ -447,7 +449,13 @@ class Memory
 		long SsdEncodeLocPrediction(long hSsd, int nLocPredCount, long hLocPred, int nLocGtCount, long hLocGt);
 		long SsdEncodeConfPrediction(long hSsd, int nConfPredCount, long hConfPred, int nConfGtCount, long hConfGt);
 		long SsdGetAllMatchIndices(long hSsd, vector<map<int, vector<int>>>* pall_match_indices);
-		long SsdGetAllNegIndices(LONG hSsd, vector<vector<int>>* pall_neg_indices);
+		long SsdGetAllNegIndices(long hSsd, vector<vector<int>>* pall_neg_indices);
+
+		long CreateLayerNorm(int nGpuID, int nCount, int nOuterNum, int nChannels, int nInnerNum, T fEps, Math<T>* pMath, long* phHandle);
+		long FreeLayerNorm(long hHandle);
+		layernormHandle<T>* GetLayerNorm(long hHandle);
+		long LayerNormForward(long hLayerNorm, long hXdata, long hYdata);
+		long LayerNormBackward(long hLayerNorm, long hXdiff, long hYdiff);
 
 		long CreateExtensionFloat(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle);
 		long CreateExtensionDouble(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle);
@@ -1760,6 +1768,85 @@ inline long Memory<T>::SsdGetAllNegIndices(LONG hSsd, vector<vector<int>>* pall_
 
 	return pSsd->GetAllNegIndices(pall_neg_indices);
 }
+
+
+template <class T>
+inline long Memory<T>::CreateLayerNorm(int nGpuID, int nCount, int nOuterCount, int nChannels, int nInnerCount, T fEps, Math<T>* pMath, long* phHandle)
+{
+	LONG lErr;
+	layernormHandle<T>* ln = NULL;
+
+	if (phHandle == NULL)
+		return ERROR_PARAM_NULL;
+
+	if ((ln = new layernormHandle<T>()) == NULL)
+		return ERROR_MEMORY_OUT;
+
+	if (lErr = ln->Update(this, pMath))
+	{
+		delete ln;
+		return lErr;
+	}
+
+	if (lErr = ln->Initialize(nGpuID, nCount, nOuterCount, nChannels, nInnerCount, fEps))
+	{
+		delete ln;
+		return lErr;
+	}
+
+	long hHandle = m_layernorm.Allocate(ln);
+	if (hHandle < 0)
+	{
+		delete ln;
+		return ERROR_MEMORY_OUT;
+	}
+
+	*phHandle = hHandle;
+	return 0;
+}
+
+template <class T>
+inline long Memory<T>::FreeLayerNorm(long hHandle)
+{
+	layernormHandle<T>* ln = (layernormHandle<T>*)m_layernorm.Free(hHandle);
+
+	if (ln != NULL && ln->IsOwner())
+	{
+		ln->CleanUp();
+
+		if (ln->RefCount() == 0)
+			delete ln;
+	}
+
+	return 0;
+}
+
+template <class T>
+inline layernormHandle<T>* Memory<T>::GetLayerNorm(long hHandle)
+{
+	return (layernormHandle<T>*)m_layernorm.GetData(hHandle);
+}
+
+template <class T>
+inline long Memory<T>::LayerNormForward(long hLayerNorm, long hYdata, long hXdata)
+{
+	layernormHandle<T>* pLn = (layernormHandle<T>*)m_layernorm.GetData(hLayerNorm);
+	if (pLn == NULL)
+		return ERROR_LAYERNORM_NOT_INITIALIZED;
+
+	return pLn->Forward(hYdata, hXdata);
+}
+
+template <class T>
+inline long Memory<T>::LayerNormBackward(long hLayerNorm, long hYdiff, long hXdiff)
+{
+	layernormHandle<T>* pLn = (layernormHandle<T>*)m_layernorm.GetData(hLayerNorm);
+	if (pLn == NULL)
+		return ERROR_LAYERNORM_NOT_INITIALIZED;
+
+	return pLn->Backward(hYdiff, hXdiff);
+}
+
 
 template <class T>
 inline long Memory<T>::CreateNCCL(int nGpuID, int nCount, int nRank, char* szId, Math<T>* pMath, long* phHandle)

@@ -3019,6 +3019,15 @@ __global__ void add_kernel(const int n, T* a, T* b, T* y, T fAlpha)
 	}
 }
 
+template <typename T>
+__global__ void add_kernel1(const int n, T* a, T* b, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		y[i] = a[i] + b[i];
+	}
+}
+
 __global__ void add_kernel_half(const int n, __half* a, __half* b, __half* y, __half fAlpha)
 {
 #if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 530)
@@ -3060,7 +3069,10 @@ long Math<double>::add(int n, long hA, long hB, long hY, double dfAlpha)
 		if (pA->IsHalf() || pB->IsHalf() || pY->IsHalf())
 			return ERROR_MEMORY_MIXED_HALF_TYPES;
 
-		add_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>> (n, (double*)pA->Data(), (double*)pB->Data(), (double*)pY->Data(), dfAlpha);
+		if (dfAlpha == 1.0)
+			add_kernel1<double> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, (double*)pA->Data(), (double*)pB->Data(), (double*)pY->Data());
+		else
+			add_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>> (n, (double*)pA->Data(), (double*)pB->Data(), (double*)pY->Data(), dfAlpha);
 	}
 
 	return cudaStreamSynchronize(0);
@@ -3097,7 +3109,10 @@ long Math<float>::add(int n, long hA, long hB, long hY, float fAlpha)
 		if (pA->IsHalf() || pB->IsHalf() || pY->IsHalf())
 			return ERROR_MEMORY_MIXED_HALF_TYPES;
 
-		add_kernel<float> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, (float*)pA->Data(), (float*)pB->Data(), (float*)pY->Data(), fAlpha);
+		if (fAlpha == 1.0)
+			add_kernel1<float> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, (float*)pA->Data(), (float*)pB->Data(), (float*)pY->Data());
+		else
+			add_kernel<float> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, (float*)pA->Data(), (float*)pB->Data(), (float*)pY->Data(), fAlpha);
 	}
 
 	return cudaStreamSynchronize(0);
@@ -5436,14 +5451,14 @@ __global__ void channel_sum_kernel_acrosschannels(const int num, const int chann
 	{
 		int n = i / spatial_dim;
 		int s = i % spatial_dim;
-		T val = 0;
+		double val = 0;
 
 		for (int c=0; c<channels; c++)
 		{
-			val += x[(n * channels + c) * spatial_dim + s];
+			val += (double)x[(n * channels + c) * spatial_dim + s];
 		}
 
-		y[i] = val;
+		y[i] = (T)val;
 	}
 }
 
@@ -5452,14 +5467,14 @@ __global__ void channel_sum_kernel_withinchannel(const int num, const int channe
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * channels && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		T val = 0;
+		double val = 0;
 
 		for (int j = 0; j < spatial_dim; j++)
 		{
-			val += x[(i * spatial_dim) + j];
+			val += (double)x[(i * spatial_dim) + j];
 		}
 
-		y[i] = val;
+		y[i] = (T)val;
 	}
 }
 
@@ -5480,7 +5495,7 @@ long Math<T>::channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX
 	if (bSumAcrossChannels)
 		channel_sum_kernel_acrosschannels<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
 	else
-		channel_sum_kernel_withinchannel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+		channel_sum_kernel_withinchannel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
 
 	return cudaStreamSynchronize(0);
 }

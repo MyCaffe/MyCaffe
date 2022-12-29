@@ -17,6 +17,7 @@ namespace MyCaffe.param.gpt
     public class LayerNormParameter : LayerParameterBase 
     {
         double m_dfEpsilon = 1e-10;
+        bool m_bEnableCudaImplementation = false;
 
         /** @copydoc LayerParameterBase */
         public LayerNormParameter()
@@ -31,6 +32,18 @@ namespace MyCaffe.param.gpt
         {
             get { return m_dfEpsilon; }
             set { m_dfEpsilon = value; }
+        }
+
+        /// <summary>
+        /// Specifies to use the low-level full cuda implementation of LayerNorm (default = false).
+        /// </summary>
+        /// <remarks>
+        /// The cuda implementation runs around 30% faster when using float base types.
+        /// </remarks>
+        public bool enable_cuda_impl
+        {
+            get { return m_bEnableCudaImplementation; }
+            set { m_bEnableCudaImplementation = value; }
         }
 
         /// <summary>
@@ -58,6 +71,7 @@ namespace MyCaffe.param.gpt
         {
             LayerNormParameter p = (LayerNormParameter)src;
             m_dfEpsilon = p.epsilon;
+            m_bEnableCudaImplementation = p.enable_cuda_impl;
         }
 
         /// <summary>
@@ -81,6 +95,7 @@ namespace MyCaffe.param.gpt
             RawProtoCollection rgChildren = new RawProtoCollection();
 
             rgChildren.Add("epsilon", m_dfEpsilon.ToString());
+            rgChildren.Add("enable_cuda_impl", m_bEnableCudaImplementation.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -97,6 +112,9 @@ namespace MyCaffe.param.gpt
 
             if ((strVal = rp.FindValue("epsilon")) != null)
                 p.m_dfEpsilon = double.Parse(strVal);
+
+            if ((strVal = rp.FindValue("enable_cuda_impl")) != null)
+                p.m_bEnableCudaImplementation = bool.Parse(strVal);
 
             return p;
         }

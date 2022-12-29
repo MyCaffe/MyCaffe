@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using MyCaffe.basecode;
@@ -25,6 +26,11 @@ namespace MyCaffe.layers.gpt
         Blob<T> m_blobVar;
         Blob<T> m_blobStdev;
         Blob<T> m_blobStdevFull;
+        long m_hLayerNorm = 0;
+        int m_nCount = 0;
+        int m_nOuterNum = 0;
+        int m_nChannels = 0;
+        int m_nInnerNum = 0;
 
         /// <summary>
         /// The LayerNormalizationLayer constructor.
@@ -52,7 +58,7 @@ namespace MyCaffe.layers.gpt
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
-            m_blobWork.Dispose();
+            dispose(ref m_blobWork);
             dispose(ref m_blobMu);
             dispose(ref m_blobXmu);
             dispose(ref m_blobXmuSq);
@@ -60,6 +66,12 @@ namespace MyCaffe.layers.gpt
             dispose(ref m_blobStdev);
             dispose(ref m_blobStdevFull);
 
+            if (m_hLayerNorm != 0)
+            {
+                m_cuda.FreeLayerNorm(m_hLayerNorm);
+                m_hLayerNorm = 0;
+            }
+            
             base.dispose();
         }
 
@@ -106,13 +118,35 @@ namespace MyCaffe.layers.gpt
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            m_blobWork.ReshapeLike(colBottom[0]);
-            m_blobMu.ReshapeLike(colBottom[0]);
-            m_blobXmu.ReshapeLike(colBottom[0]);
-            m_blobXmuSq.ReshapeLike(colBottom[0]);
-            m_blobVar.ReshapeLike(colBottom[0]);
-            m_blobStdev.ReshapeLike(colBottom[0]);
-            m_blobStdevFull.ReshapeLike(colBottom[0]);
+            if (m_param.layer_norm_param.enable_cuda_impl)
+            {
+                if (colBottom[0].count() != m_nCount || colBottom[0].num != m_nOuterNum || colBottom[0].channels != m_nChannels || colBottom[0].count(2) != m_nInnerNum)
+                {
+                    if (m_hLayerNorm != 0)
+                        m_cuda.FreeLayerNorm(m_hLayerNorm);
+
+                    int nGpuID = m_cuda.GetDeviceID();
+                    m_nCount = colBottom[0].count();
+                    m_nOuterNum = colBottom[0].num;
+                    m_nChannels = colBottom[0].channels;
+                    m_nInnerNum = colBottom[0].count(2);
+
+                    m_hLayerNorm = m_cuda.CreateLayerNorm(nGpuID, m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, (float)m_param.layer_norm_param.epsilon);
+                    if (m_hLayerNorm == 0)
+                        m_log.FAIL("Failed to create CUDA version LayerNorm!");
+                }
+            }
+            else
+            {
+                m_blobWork.ReshapeLike(colBottom[0]);
+                m_blobMu.ReshapeLike(colBottom[0]);
+                m_blobXmu.ReshapeLike(colBottom[0]);
+                m_blobXmuSq.ReshapeLike(colBottom[0]);
+                m_blobVar.ReshapeLike(colBottom[0]);
+                m_blobStdev.ReshapeLike(colBottom[0]);
+                m_blobStdevFull.ReshapeLike(colBottom[0]);
+            }
+            
             colTop[0].ReshapeLike(colBottom[0]);
         }
 
@@ -125,17 +159,26 @@ namespace MyCaffe.layers.gpt
         ///  -# @f$ (N \times C \times H \times W) @f$ the outputs.</param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            if (m_param.layer_norm_param.enable_cuda_impl)
+                m_cuda.LayerNormForward(m_hLayerNorm, colBottom[0].gpu_data, colTop[0].mutable_gpu_data);
+            else
+                forward_local(colBottom, colTop);
+        }
+
+        private void forward_local(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
             int nAxes = colBottom[0].num_axes;
             int nCount = colBottom[0].count();
             int nOuterNum = colBottom[0].num;
             int nChannel = colBottom[0].channels;
             int nInnerNum = colBottom[0].count(2);
-                     
+
             //-----------------------------------
             // Calculate the mean across the last dim.
             // mean = x.mean(dim=-1, keepdim=True)
             m_cuda.channel_sum(nCount, nOuterNum, nChannel, nInnerNum, colBottom[0].gpu_data, m_blobMu.mutable_gpu_data, false);
             m_blobMu.scale_data(1.0 / nInnerNum);
+            m_blobMu.Reshape(m_blobMu.num, m_blobMu.channels, 1, 1);
 
             //-----------------------------------
             // var = ((x - mean) ** 2).mean(dim=-1, keepdim=True)
@@ -145,6 +188,7 @@ namespace MyCaffe.layers.gpt
             // Subtract the mean from the input.
             // xmu = x - mean
             m_cuda.sub(nCount, colBottom[0].gpu_data, m_blobXmu.gpu_data, m_blobXmu.mutable_gpu_data);
+
             // Square the values
             // xmusq = (xmu) ** 2
             m_cuda.powx(nCount, m_blobXmu.gpu_data, 2.0, m_blobXmuSq.mutable_gpu_data);
@@ -152,14 +196,17 @@ namespace MyCaffe.layers.gpt
             // Calculate the mean across the last dim.
             // var = xmusq.mean(dim=-1, keepdim=True)
             // var shape = (n, c, 1)
+            m_blobVar.SetData(0);
             m_cuda.channel_sum(nCount, nOuterNum, nChannel, nInnerNum, m_blobXmuSq.gpu_data, m_blobVar.mutable_gpu_data, false);
             m_blobVar.scale_data(1.0 / nInnerNum);
+            m_blobVar.Reshape(m_blobVar.num, m_blobVar.channels, 1, 1);
 
             //-----------------------------------
             // std = (var + self.epsilon).sqrt()
             // Calculate the stdev across the last dim
             // std = sqrt(var + eps)
             // stdev shape: (n, c, 1)
+            m_blobStdev.Reshape(m_blobStdev.num, m_blobStdev.channels, 1, 1);
             m_cuda.add_scalar(nOuterNum * nChannel, m_param.layer_norm_param.epsilon, m_blobVar.mutable_gpu_data);
             m_cuda.sqrt(nOuterNum * nChannel, m_blobVar.gpu_data, m_blobStdev.mutable_gpu_data);
 
@@ -181,13 +228,24 @@ namespace MyCaffe.layers.gpt
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
+            if (rgbPropagateDown[0])
+            {
+                if (m_param.layer_norm_param.enable_cuda_impl)
+                    m_cuda.LayerNormBackward(m_hLayerNorm, colTop[0].gpu_diff, colBottom[0].mutable_gpu_diff);
+                else
+                    backward_local(colTop, rgbPropagateDown, colBottom);
+            }
+        }
+
+        private void backward_local(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
+        {
             int nAxes = colBottom[0].num_axes;
             int nCount = colBottom[0].count();
             int nOuterNum = colBottom[0].num;
             int nChannel = colBottom[0].channels;
             int nInnerNum = colBottom[0].count(2);
 
-            
+
             //-----------------------------------
             // y = (x - mean) / std
             // Normalize the input by centering and dividing by stdev across channels.

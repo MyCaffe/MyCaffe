@@ -11,6 +11,10 @@ using MyCaffe.layers;
 using MyCaffe.param.beta;
 using System.IO;
 using MyCaffe.param.gpt;
+using System.IO.Compression;
+using System.Net;
+using System.Diagnostics;
+using System.Threading;
 
 ///
 /// WORK IN PROGRESS
@@ -199,6 +203,78 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestForwardEx()
+        {
+            LayerNormLayerTest test = new LayerNormLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ILayerNormLayerTest t in test.Tests)
+                {
+                    t.TestForwardEx(false);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardExCuda()
+        {
+            LayerNormLayerTest test = new LayerNormLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ILayerNormLayerTest t in test.Tests)
+                {
+                    t.TestForwardEx(true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestBackwardEx()
+        {
+            LayerNormLayerTest test = new LayerNormLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ILayerNormLayerTest t in test.Tests)
+                {
+                    t.TestBackwardEx(false);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestBackwardExCuda()
+        {
+            LayerNormLayerTest test = new LayerNormLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ILayerNormLayerTest t in test.Tests)
+                {
+                    t.TestBackwardEx(true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface ILayerNormLayerTest : ITest
@@ -210,6 +286,9 @@ namespace MyCaffe.test
         void TestForwardPico(bool bBatch, int nHeads);
         void TestBackwardPico(bool bBatch, int nHeads);
         void TestBackwardPicoBlk();
+
+        void TestForwardEx(bool bUseCuda);
+        void TestBackwardEx(bool bUseCuda);
     }
 
     class LayerNormLayerTest : TestBase
@@ -230,14 +309,25 @@ namespace MyCaffe.test
 
     class LayerNormLayerTest<T> : TestEx<T>, ILayerNormLayerTest
     {
+        Blob<T> m_blobWork;
+        Blob<T> m_blobVal;
+        Stopwatch m_swUpdateTimer = new Stopwatch();
+        double m_dfLastProgress = 0;
+        AutoResetEvent m_evtDownloadDone = new AutoResetEvent(false);
+
         public LayerNormLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, new List<int>() { 2, 3, 3, 1 }, nDeviceID)
         {
             m_engine = engine;
+
+            m_blobWork = new Blob<T>(m_cuda, m_log);
+            m_blobVal = new Blob<T>(m_cuda, m_log);
         }
 
         protected override void dispose()
         {
+            dispose(ref m_blobWork);
+            dispose(ref m_blobVal);
             base.dispose();
         }
 
@@ -598,6 +688,194 @@ namespace MyCaffe.test
             finally
             {
                 layer.Dispose();
+            }
+        }
+
+        private string loadTestData()
+        {
+            string strTestDataFile = downloadTestData();
+            string strPath = Path.GetDirectoryName(strTestDataFile);
+
+            if (!File.Exists(strPath + "\\test\\1_x.npy"))
+                ZipFile.ExtractToDirectory(strTestDataFile, strPath);
+
+            return strPath + "\\test\\";
+        }
+
+        private string downloadTestData()
+        {
+            string strTestDataPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\ln\\";
+            if (!Directory.Exists(strTestDataPath))
+                Directory.CreateDirectory(strTestDataPath);
+
+            string strTestDataFile = strTestDataPath + "_layernorm_test.zip";
+            if (!File.Exists(strTestDataFile))
+            {
+                using (WebClient webClient = new WebClient())
+                {
+                    string strUrl = "https://signalpopcdn.blob.core.windows.net/mycaffesupport/_layernorm_test.zip";
+                    string strFile1 = "_layernorm_test.zip";
+                    string strFile = strTestDataPath + strFile1;
+
+                    m_swUpdateTimer.Start();
+                    m_dfLastProgress = 0;
+
+                    webClient.DownloadProgressChanged += WebClient_DownloadProgressChanged;
+                    webClient.DownloadFileCompleted += WebClient_DownloadFileCompleted;
+                    webClient.DownloadFileAsync(new Uri(strUrl), strFile, strFile1);
+
+                    m_evtDownloadDone.WaitOne();
+                }
+            }
+
+            return strTestDataFile;
+        }
+
+        private void WebClient_DownloadFileCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
+        {
+            bool bTraceEnabled = m_log.EnableTrace;
+            m_log.EnableTrace = true;
+            m_log.WriteLine("Downloading done.");
+            m_log.EnableTrace = bTraceEnabled;
+
+            m_evtDownloadDone.Set();
+        }
+
+        private void WebClient_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+        {
+            if (m_swUpdateTimer.Elapsed.TotalMilliseconds >= 1000)
+            {
+                if (m_dfLastProgress != e.ProgressPercentage)
+                {
+                    m_dfLastProgress = e.ProgressPercentage;
+                    string strFile = e.UserState.ToString();
+                    bool bTraceEnabled = m_log.EnableTrace;
+                    m_log.EnableTrace = true;
+
+                    m_log.Progress = e.ProgressPercentage / 100.0;
+                    m_log.WriteLine("Downloading '" + strFile + "' at " + m_log.Progress.ToString("P") + "...");
+                    m_log.EnableTrace = bTraceEnabled;
+                }
+
+                m_swUpdateTimer.Restart();
+            }
+        }
+
+        private void verify(Blob<T> b1, Blob<T> b1exp, bool bCompareDiff, float fTol = 1e-6f)
+        {
+            float[] rgExpected = (bCompareDiff) ? convertF(b1exp.mutable_cpu_diff) : convertF(b1exp.mutable_cpu_data);
+            float[] rgActual = (bCompareDiff) ? convertF(b1.mutable_cpu_diff) : convertF(b1.mutable_cpu_data);
+
+            for (int i = 0; i < rgExpected.Length; i++)
+            {
+                float fExpected = rgExpected[i];
+                float fActual = rgActual[i];
+                
+                m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, fTol, "The values are not as expected!");
+            }
+
+            bool bRes = b1.Compare(b1exp, m_blobWork, bCompareDiff, fTol);
+            if (!bRes)
+                m_log.FAIL("The blobs are not equal!");
+        }
+
+        public void TestForwardEx(bool bUseCuda)
+        {
+            string strTestDataPath = loadTestData();
+            Layer<T> layer = null;
+
+            try
+            {
+                Stopwatch sw = new Stopwatch();
+
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.LAYERNORM);
+                p.layer_norm_param.enable_cuda_impl = bUseCuda;
+                layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+
+                m_log.CHECK(layer.type == LayerParameter.LayerType.LAYERNORM, "The layer type is incorrect!");
+
+                m_blob_bottom.LoadFromNumpy(strTestDataPath + "q0.npy");
+                m_blob_top.SetData(0);
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(m_blob_top.num, m_blob_bottom.num, "The num does not match!");
+                m_log.CHECK_EQ(m_blob_top.channels, m_blob_bottom.channels, "The num does not match!");
+                m_log.CHECK_EQ(m_blob_top.height, m_blob_bottom.height, "The num does not match!");
+                m_log.CHECK_EQ(m_blob_top.width, m_blob_bottom.width, "The num does not match!");
+
+                m_blobVal.LoadFromNumpy(strTestDataPath + "8_ln.y.npy");
+
+                float fErr = 3e-7f;
+                verify(m_blob_top, m_blobVal, false, fErr);
+
+                sw.Start();
+                for (int i = 0; i < 100; i++)
+                {
+                    layer.Forward(BottomVec, TopVec);
+                }
+                sw.Stop();
+
+                double dfTime = sw.Elapsed.TotalMilliseconds / 100.0;
+                Trace.WriteLine("Time Per Forward = " + dfTime.ToString("N6") + " ms");
+            }
+            finally
+            {
+                if (layer != null)
+                    layer.Dispose();
+            }
+        }
+
+        public void TestBackwardEx(bool bUseCuda)
+        {
+            string strTestDataPath = loadTestData();
+            Layer<T> layer = null;
+
+            try
+            {
+                Stopwatch sw = new Stopwatch();
+
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.LAYERNORM);
+                p.layer_norm_param.enable_cuda_impl = bUseCuda;
+                layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+
+                m_log.CHECK(layer.type == LayerParameter.LayerType.LAYERNORM, "The layer type is incorrect!");
+
+                m_blob_bottom.LoadFromNumpy(strTestDataPath + "q0.npy");
+                m_blob_top.SetData(0);
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                m_blob_top.LoadFromNumpy(strTestDataPath + "grad_8_ln.y.npy", true);
+
+                List<bool> rgProp = new List<bool>() { true };
+                layer.Backward(TopVec, rgProp, BottomVec);
+
+                m_log.CHECK_EQ(m_blob_top.num, m_blob_bottom.num, "The num does not match!");
+                m_log.CHECK_EQ(m_blob_top.channels, m_blob_bottom.channels, "The num does not match!");
+                m_log.CHECK_EQ(m_blob_top.height, m_blob_bottom.height, "The num does not match!");
+                m_log.CHECK_EQ(m_blob_top.width, m_blob_bottom.width, "The num does not match!");
+
+                m_blobVal.LoadFromNumpy(strTestDataPath + "grad_1_x.npy", true);
+
+                float fErr = 1e-8f;
+                verify(m_blob_bottom, m_blobVal, true, fErr);
+
+                sw.Start();
+                for (int i = 0; i < 100; i++)
+                {
+                    layer.Backward(TopVec, rgProp, BottomVec);
+                }
+                sw.Stop();
+                double dfTime = sw.Elapsed.TotalMilliseconds / 100.0;
+                Trace.WriteLine("Time Per Backward = " + dfTime.ToString("N6") + " ms");
+            }
+            finally
+            {
+                if (layer != null)
+                    layer.Dispose();
             }
         }
     }

@@ -362,6 +362,11 @@ class Device
 		long SsdEncodeLocPrediction(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long SsdEncodeConfPrediction(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
+		long CreateLayerNorm(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long FreeLayerNorm(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long LayerNormForward(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long LayerNormBackward(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+
 
 		//---------------------------------------------------------------------------
 		//	Math functions
@@ -3486,6 +3491,81 @@ inline long Device<T>::SsdEncodeConfPrediction(long lInput, T* pfInput, long* pl
 	long hConfGt = (long)pfInput[4];
 
 	return m_memory.SsdEncodeConfPrediction(hSsd, nConfPredCount, hConfPred, nConfGtCount, hConfGt);
+}
+
+
+template <class T>
+inline long Device<T>::CreateLayerNorm(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+	long hHandle = 0;
+
+	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+		return lErr;
+
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+	
+	int nGpuID = (int)pfInput[0];
+	int nCount = (int)pfInput[1];
+	int nOuterNum = (int)pfInput[2];
+	int nChannel = (int)pfInput[3];
+	int nInnerNum = (int)pfInput[4];
+	T fEps = pfInput[5];
+	
+	if (lErr = m_memory.CreateLayerNorm(nGpuID, nCount, nOuterNum, nChannel, nInnerNum, fEps, &m_math, &hHandle))
+		return lErr;
+	
+	return setOutput(hHandle, plOutput, ppfOutput);
+}
+
+template <class T>
+inline long Device<T>::FreeLayerNorm(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+
+	return m_memory.FreeLayerNorm(hHandle);
+}
+
+template <class T>
+inline long Device<T>::LayerNormForward(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+	
+	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+		return lErr;
+
+	long hLayerNorm = (long)pfInput[0];
+	long hXdata = (long)pfInput[1];
+	long hYdata = (long)pfInput[2];
+	
+	if (lErr = m_memory.LayerNormForward(hLayerNorm, hXdata, hYdata))
+		return lErr;
+
+	return 0;
+}
+
+template <class T>
+inline long Device<T>::LayerNormBackward(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+		return lErr;
+
+	long hLayerNorm = (long)pfInput[0];
+	long hXdiff = (long)pfInput[1];
+	long hYdiff = (long)pfInput[2];
+
+	if (lErr = m_memory.LayerNormBackward(hLayerNorm, hXdiff, hYdiff))
+		return lErr;
+
+	return 0;
 }
 
 
