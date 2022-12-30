@@ -494,7 +494,7 @@ namespace MyCaffe.layers.gpt
             addInternal(m_blobV, m_blobVt);
             m_transpose.Forward(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
 
-            // Peroform Self Attention forward pass
+            // Perform Self Attention forward pass
             {
                 // Multiply query and key(T) matrices and scale
                 // att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
@@ -506,7 +506,7 @@ namespace MyCaffe.layers.gpt
 
                 // Apply mask to attention matrix
                 // att = att.masked_fill(self.bias[:,:,:T,:T] == 0, float('-inf'))
-                m_cuda.mask_batch(m_blobAtt.count(), m_blobAtt.num, blobMask.count(), convert(0.0), convert(double.NegativeInfinity), m_blobAtt.gpu_data, blobMask.gpu_data, m_blobAtt.mutable_gpu_data); // all masked items set to -inf.
+                m_cuda.mask_batch(m_blobAtt.count(), m_blobAtt.num, blobMask.count(), convert(0.0), convert(-1e+09), m_blobAtt.gpu_data, blobMask.gpu_data, m_blobAtt.mutable_gpu_data); // all masked items set to -inf.
 
                 // Take softmax of attention along the last axis.
                 // att = F.softmax(att, dim = -1)
