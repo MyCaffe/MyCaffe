@@ -29,7 +29,25 @@ namespace MyCaffe.test
             {
                 foreach (IEncoderBlockLayerTest t in test.Tests)
                 {
-                    t.TestForward(3, 8);
+                    t.TestForward(3, 8, false);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardLnCuda()
+        {
+            EncoderBlockLayerTest test = new EncoderBlockLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IEncoderBlockLayerTest t in test.Tests)
+                {
+                    t.TestForward(3, 8, true);
                 }
             }
             finally
@@ -77,7 +95,7 @@ namespace MyCaffe.test
 
     interface IEncoderBlockLayerTest : ITest
     {
-        void TestForward(int nBatch, int nHeads);
+        void TestForward(int nBatch, int nHeads, bool bEnableLnCudaImpl);
         void TestBackward(int nBatch, int nHeads);
         void TestGradient(int nBatch, int nHeads);
     }
@@ -233,10 +251,7 @@ namespace MyCaffe.test
                 m_log.FAIL("The blobs are not equal!");
         }
 
-        /// <summary>
-        /// WORK IN PROGRESS
-        /// </summary>
-        public void TestForward(int nBatch, int nHeads)
+        public void TestForward(int nBatch, int nHeads, bool bEnableLnCudaImpl)
         {
             string strTestDataPath = loadTestData();
 
@@ -247,6 +262,7 @@ namespace MyCaffe.test
             p.transformer_block_param.block_size = 200;
             p.transformer_block_param.attn_dropout = 0.0;
             p.transformer_block_param.resid_dropout = 0.0;
+            p.transformer_block_param.enable_layernorm_cuda_impl = bEnableLnCudaImpl;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             try
@@ -280,10 +296,21 @@ namespace MyCaffe.test
 
                 layer.Forward(BottomVec, TopVec);
 
-                m_blobYexp.LoadFromNumpy(strTestDataPath + "enc_x1.npy");
-
                 // Now, check values
+                m_blobYexp.LoadFromNumpy("C:\\temp\\projects\\TransformerTranslator\\TransformerTranslator\\test\\" + "enc.12_output.npy");
                 verify(TopVec[0], m_blobYexp, false);
+
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
+
+                for (int i = 0; i < 100; i++)
+                {
+                    layer.Forward(BottomVec, TopVec);
+                }
+
+                sw.Stop();
+                double dfTime = sw.Elapsed.TotalMilliseconds / 100;
+                Trace.WriteLine("Encoder Forward time = " + dfTime.ToString("N6") + " ms.");
             }
             finally
             {
