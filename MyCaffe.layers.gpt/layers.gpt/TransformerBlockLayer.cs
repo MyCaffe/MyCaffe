@@ -62,9 +62,11 @@ namespace MyCaffe.layers.gpt
             m_blobMlpOut = new Blob<T>(cuda, log);
 
             LayerParameter ln1 = new LayerParameter(LayerParameter.LayerType.LAYERNORM, "ln1");
+            ln1.layer_norm_param.enable_cuda_impl = p.transformer_block_param.enable_layernorm_cuda_impl;
             m_ln1 = Layer<T>.Create(cuda, log, ln1, evtCancel) as Layer<T>;
             
             LayerParameter ln2 = new LayerParameter(LayerParameter.LayerType.LAYERNORM, "ln2");
+            ln2.layer_norm_param.enable_cuda_impl = p.transformer_block_param.enable_layernorm_cuda_impl;
             m_ln2 = Layer<T>.Create(cuda, log, ln1, evtCancel) as Layer<T>;
 
             if (p.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION)

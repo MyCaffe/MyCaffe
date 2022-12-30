@@ -22,6 +22,7 @@ namespace MyCaffe.param.gpt
         int m_nLayers = 6;
         ACTIVATION m_activation = ACTIVATION.RELU;
         BLOCK_TYPE m_type = BLOCK_TYPE.CAUSAL_SELF_ATTENTION;
+        bool m_bEnableLayerNormCudaImplementation = false;
 
         /// <summary>
         /// Defines the type of transformer block
@@ -65,6 +66,18 @@ namespace MyCaffe.param.gpt
         public TransformerBlockParameter()
         {
             
+        }
+
+        /// <summary>
+        /// Specifies to use the low-level full cuda implementation of LayerNorm (default = false).
+        /// </summary>
+        /// <remarks>
+        /// The cuda implementation runs around 30% faster when using float base types.
+        /// </remarks>
+        public bool enable_layernorm_cuda_impl
+        {
+            get { return m_bEnableLayerNormCudaImplementation; }
+            set { m_bEnableLayerNormCudaImplementation = value; }
         }
 
         /// <summary>
@@ -166,6 +179,7 @@ namespace MyCaffe.param.gpt
             m_dfResidDropout = p.resid_dropout;
             m_activation = p.activation;
             m_type = p.block_type;
+            m_bEnableLayerNormCudaImplementation = p.enable_layernorm_cuda_impl;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -193,6 +207,7 @@ namespace MyCaffe.param.gpt
             rgChildren.Add("resid_dropout", resid_dropout.ToString());
             rgChildren.Add("activation", activation.ToString());
             rgChildren.Add("block_type", block_type.ToString());
+            rgChildren.Add("enable_ln_cuda_impl", enable_layernorm_cuda_impl.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -244,6 +259,9 @@ namespace MyCaffe.param.gpt
                 else if (strVal == BLOCK_TYPE.DECODER.ToString())
                     p.block_type = BLOCK_TYPE.DECODER;
             }
+
+            if ((strVal = rp.FindValue("enable_ln_cuda_impl")) != null)
+                p.enable_layernorm_cuda_impl = bool.Parse(strVal);
 
             return p;
         }
