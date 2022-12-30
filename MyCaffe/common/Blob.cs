@@ -2869,6 +2869,8 @@ namespace MyCaffe.common
                         rgData[i] = (float)br.ReadInt32();
                     else if (dataType == typeof(long))
                         rgData[i] = (float)br.ReadInt64();
+                    else if (dataType == typeof(bool))
+                        rgData[i] = (br.ReadBoolean()) ? 1 : 0;
                     else
                         throw new Exception("Unsupported data type!");
                 }
@@ -2938,6 +2940,8 @@ namespace MyCaffe.common
                             dataType = typeof(int);
                         else if (strVal == "<i8")
                             dataType = typeof(long);
+                        else if (strVal == "|b1")
+                            dataType = typeof(bool);
                         else
                             throw new Exception("Unsupported data type '" + strVal + "', currenly only support '<f4'");
                         break;
