@@ -34,6 +34,9 @@ namespace MyCaffe.layers.gpt
         Layer<T> m_transposeQ;
         // Softmax
         Layer<T> m_softmax = null;
+        Blob<T> m_blobX0;
+        Blob<T> m_blobX1;
+        Blob<T> m_blobX2;
         Blob<T> m_blobQ;
         Blob<T> m_blobK;
         Blob<T> m_blobV;
@@ -160,7 +163,10 @@ namespace MyCaffe.layers.gpt
             softmax.softmax_param.axis = -1;
             softmax.softmax_param.engine = EngineParameter.Engine.CUDNN;
             m_softmax = Layer<T>.Create(cuda, log, softmax, null);
-           
+
+            m_blobX0 = new Blob<T>(cuda, log);
+            m_blobX1 = new Blob<T>(cuda, log);
+            m_blobX2 = new Blob<T>(cuda, log);
             m_blobQ = new Blob<T>(cuda, log);
             m_blobK = new Blob<T>(cuda, log);
             m_blobV = new Blob<T>(cuda, log);
@@ -189,6 +195,9 @@ namespace MyCaffe.layers.gpt
             dispose(ref m_transposeQ);
             dispose(ref m_softmax);
 
+            dispose(ref m_blobX0);
+            dispose(ref m_blobX1);
+            dispose(ref m_blobX2);
             dispose(ref m_blobQ);
             dispose(ref m_blobK);
             dispose(ref m_blobV);
@@ -278,20 +287,20 @@ namespace MyCaffe.layers.gpt
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            Blob<T> blobQ = colBottom[0];
-            Blob<T> blobK = colBottom[1];
-            Blob<T> blobV = colBottom[2];
+            m_blobX0.ReshapeLike(colBottom[0]);
+            m_blobX1.ReshapeLike(colBottom[1]);
+            m_blobX2.ReshapeLike(colBottom[2]);
             
-            m_nB = blobQ.num;         // batch size
-            m_nT = blobK.channels;    // sequence length
-            m_nC = blobV.height;      // embedding dim (m_nEmbed)
+            m_nB = m_blobX0.num;         // batch size
+            m_nT = m_blobX0.channels;    // sequence length
+            m_nC = m_blobX0.height;      // embedding dim (m_nEmbed)
             m_nSize = m_nC / m_nHeads;
 
-            addInternal(blobQ, m_blobQ);
+            addInternal(m_blobX0, m_blobQ);
             m_c_attnQ.Setup(m_colInternalBottom, m_colInternalTop);
-            addInternal(blobK, m_blobK);
+            addInternal(m_blobX1, m_blobK);
             m_c_attnK.Setup(m_colInternalBottom, m_colInternalTop);
-            addInternal(blobV, m_blobV);
+            addInternal(m_blobX2, m_blobV);
             m_c_attnV.Setup(m_colInternalBottom, m_colInternalTop);
 
             blobs.Add(m_c_attnQ.blobs[0]);
@@ -305,7 +314,7 @@ namespace MyCaffe.layers.gpt
             addInternal(m_blobQ, m_blobQt);
             m_transpose.Setup(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
 
-            m_blobAtt.ReshapeLike(blobQ);
+            m_blobAtt.ReshapeLike(m_blobX0);
             addInternal(m_blobAtt, m_blobAtt);
             m_softmax.Setup(m_colInternalBottom, m_colInternalTop);
 
@@ -346,13 +355,13 @@ namespace MyCaffe.layers.gpt
             if (!reshapeNeeded(colBottom, colTop))
                 return;
 
-            Blob<T> blobQ = colBottom[0];
-            Blob<T> blobK = colBottom[1];
-            Blob<T> blobV = colBottom[2];
+            m_blobX0.ReshapeLike(colBottom[0]);
+            m_blobX1.ReshapeLike(colBottom[1]);
+            m_blobX2.ReshapeLike(colBottom[2]);
 
-            m_nB = blobQ.num;         // batch size
-            m_nT = blobQ.channels;    // sequence length
-            m_nC = blobQ.height;      // embedding dim (m_nEmbed)
+            m_nB = m_blobX0.num;         // batch size
+            m_nT = m_blobX0.channels;    // sequence length
+            m_nC = m_blobX0.height;      // embedding dim (m_nEmbed)
             m_nSize = m_nC / m_nHeads;
 
             m_blobK.Reshape(m_nB, m_nT, m_nHeads, m_nSize);
@@ -459,24 +468,25 @@ namespace MyCaffe.layers.gpt
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            Blob<T> blobQ = colBottom[0];
-            Blob<T> blobK = colBottom[1];
-            Blob<T> blobV = colBottom[2];
             Blob<T> blobMask = colBottom[3];
 
+            m_blobX0.CopyFrom(colBottom[0]);
+            m_blobX1.CopyFrom(colBottom[1]);
+            m_blobX2.CopyFrom(colBottom[2]);
+            
             // Calculate query, for all heads in batch and move head forward to be the batch dim.
             // q  = self.c_attnQ(x1)
-            addInternal(blobQ, m_blobQ);
+            addInternal(m_blobX0, m_blobQ);
             m_c_attnQ.Forward(m_colInternalBottom, m_colInternalTop);
 
             // Calculate key, for all heads in batch and move head forward to be the batch dim.
             // k  = self.c_attnK(x2)
-            addInternal(blobK, m_blobK);
+            addInternal(m_blobX1, m_blobK);
             m_c_attnK.Forward(m_colInternalBottom, m_colInternalTop);
 
             // Calculate value, for all heads in batch and move head forward to be the batch dim.
             // v  = self.c_attnK(x3)
-            addInternal(blobV, m_blobV);
+            addInternal(m_blobX2, m_blobV);
             m_c_attnV.Forward(m_colInternalBottom, m_colInternalTop);
 
             // Transpose query, key and values along axes 1 & 2
@@ -647,21 +657,25 @@ namespace MyCaffe.layers.gpt
                 m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom); // (B, nh, T, hs)
                 addInternal(m_blobV, m_blobVt);
                 m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom); // (B, nh, T, hs)
-
+                
                 // Calculate query for all heads in batch and move head forward to be the batch dim.
                 // q = self.c_attnQ(x1)
-                addInternal(colBottom[0], m_blobQ);
+                addInternal(m_blobX0, m_blobQ);
                 m_c_attnQ.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
-
+                
                 // Calculate query for all heads in batch and move head forward to be the batch dim.
                 // k = self.c_attnK(x2)
-                addInternal(colBottom[1], m_blobK);
+                addInternal(m_blobX1, m_blobK);
                 m_c_attnK.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
 
                 // Calculate query for all heads in batch and move head forward to be the batch dim.
                 // v = self.c_attnV(x3)
-                addInternal(colBottom[2], m_blobV);
+                addInternal(m_blobX2, m_blobV);
                 m_c_attnV.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+
+                m_cuda.add(m_blobX0.count(), m_blobX0.gpu_diff, colBottom[0].gpu_diff, colBottom[0].mutable_gpu_diff);
+                m_cuda.add(m_blobX1.count(), m_blobX1.gpu_diff, colBottom[1].gpu_diff, colBottom[1].mutable_gpu_diff);
+                m_cuda.add(m_blobX2.count(), m_blobX2.gpu_diff, colBottom[2].gpu_diff, colBottom[2].mutable_gpu_diff);
             }
         }
     }
