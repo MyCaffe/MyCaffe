@@ -164,7 +164,7 @@ namespace MyCaffe.test
             string strTestDataFile = downloadTestData();
             string strPath = Path.GetDirectoryName(strTestDataFile);
             
-            if (!File.Exists(strPath + "\\test\\10_concat_output1.npy"))
+            if (!File.Exists(strPath + "\\test\\mh.10_concat_output1.npy"))
                 ZipFile.ExtractToDirectory(strTestDataFile, strPath);
 
             return strPath + "\\test\\";
@@ -271,7 +271,7 @@ namespace MyCaffe.test
 
                 layer.Forward(BottomVec, TopVec);
 
-                m_blobY.LoadFromNumpy(strTestDataPath + "12_output.npy");
+                m_blobY.LoadFromNumpy(strTestDataPath + "mh.12_output.npy");
 
                 // Now, check values
                 verify(TopVec[0], m_blobY, false);
@@ -325,13 +325,13 @@ namespace MyCaffe.test
                 layer.Forward(BottomVec, TopVec);
 
                 // Load the inbound gradients.
-                TopVec[0].LoadFromNumpy(strTestDataPath + "grad_12_output.npy", true);
+                TopVec[0].LoadFromNumpy(strTestDataPath + "grad_mh.12_output.npy", true);
 
                 layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
 
-                m_blobQexp.LoadFromNumpy(strTestDataPath + "grad_1_q.npy", true);
-                m_blobKexp.LoadFromNumpy(strTestDataPath + "grad_1_k.npy", true);
-                m_blobVexp.LoadFromNumpy(strTestDataPath + "grad_1_v.npy", true);
+                m_blobQexp.LoadFromNumpy(strTestDataPath + "grad_mh.1_q.npy", true);
+                m_blobKexp.LoadFromNumpy(strTestDataPath + "grad_mh.1_k.npy", true);
+                m_blobVexp.LoadFromNumpy(strTestDataPath + "grad_mh.1_v.npy", true);
 
                 // Now, check values
                 verify(BottomVec[0], m_blobQexp, true);

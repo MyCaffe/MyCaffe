@@ -696,7 +696,7 @@ namespace MyCaffe.test
             string strTestDataFile = downloadTestData();
             string strPath = Path.GetDirectoryName(strTestDataFile);
 
-            if (!File.Exists(strPath + "\\test\\1_x.npy"))
+            if (!File.Exists(strPath + "\\test\\ln.1_x.npy"))
                 ZipFile.ExtractToDirectory(strTestDataFile, strPath);
 
             return strPath + "\\test\\";
@@ -805,9 +805,9 @@ namespace MyCaffe.test
                 m_log.CHECK_EQ(m_blob_top.height, m_blob_bottom.height, "The num does not match!");
                 m_log.CHECK_EQ(m_blob_top.width, m_blob_bottom.width, "The num does not match!");
 
-                m_blobVal.LoadFromNumpy(strTestDataPath + "8_ln.y.npy");
+                m_blobVal.LoadFromNumpy(strTestDataPath + "ln.8_y.npy");
 
-                float fErr = 3e-7f;
+                float fErr = 2e-6f;
                 verify(m_blob_top, m_blobVal, false, fErr);
 
                 sw.Start();
@@ -848,7 +848,7 @@ namespace MyCaffe.test
                 layer.Setup(BottomVec, TopVec);
                 layer.Forward(BottomVec, TopVec);
 
-                m_blob_top.LoadFromNumpy(strTestDataPath + "grad_8_ln.y.npy", true);
+                m_blob_top.LoadFromNumpy(strTestDataPath + "grad_ln.8_y.npy", true);
 
                 List<bool> rgProp = new List<bool>() { true };
                 layer.Backward(TopVec, rgProp, BottomVec);
@@ -858,7 +858,7 @@ namespace MyCaffe.test
                 m_log.CHECK_EQ(m_blob_top.height, m_blob_bottom.height, "The num does not match!");
                 m_log.CHECK_EQ(m_blob_top.width, m_blob_bottom.width, "The num does not match!");
 
-                m_blobVal.LoadFromNumpy(strTestDataPath + "grad_1_x.npy", true);
+                m_blobVal.LoadFromNumpy(strTestDataPath + "grad_ln.1_x.npy", true);
 
                 float fErr = 1e-8f;
                 verify(m_blob_bottom, m_blobVal, true, fErr);
