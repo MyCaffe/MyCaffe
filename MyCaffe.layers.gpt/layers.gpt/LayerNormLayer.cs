@@ -177,8 +177,8 @@ namespace MyCaffe.layers.gpt
             // Calculate the mean across the last dim.
             // mean = x.mean(dim=-1, keepdim=True)
             m_cuda.channel_sum(nCount, nOuterNum, nChannel, nInnerNum, colBottom[0].gpu_data, m_blobMu.mutable_gpu_data, false);
-            m_blobMu.scale_data(1.0 / nInnerNum);
             m_blobMu.Reshape(m_blobMu.num, m_blobMu.channels, 1, 1);
+            m_blobMu.scale_data(1.0 / nInnerNum);
 
             //-----------------------------------
             // var = ((x - mean) ** 2).mean(dim=-1, keepdim=True)
