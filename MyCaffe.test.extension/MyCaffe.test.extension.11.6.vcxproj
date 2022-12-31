@@ -32,6 +32,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\imgop.h" />
+    <ClInclude Include="..\CudaDnnDLL\Cuda Files\layernorm.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\math.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\memory.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\memorycol.h" />
@@ -53,6 +54,7 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\imgop.cu" />
+    <CudaCompile Include="..\CudaDnnDLL\Cuda Files\layernorm.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\math.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\memory.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\memorycol.cu" />
