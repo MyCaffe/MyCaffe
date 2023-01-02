@@ -117,6 +117,7 @@
     <Compile Include="TestActivations.cs" />
     <Compile Include="TestAccuracyEncodingLayer.cs" />
     <Compile Include="TestAnnotatedDataLayer.cs" />
+    <Compile Include="TestDecoderBlockLayer.cs" />
     <Compile Include="TestEncoderBlockLayer.cs" />
     <Compile Include="TestMultiheadAttentionLayer.cs" />
     <Compile Include="TestSoftmaxCrossEntropyLossLayer.cs" />
