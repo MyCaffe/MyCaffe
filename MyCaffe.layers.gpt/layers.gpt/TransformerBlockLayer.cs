@@ -22,16 +22,17 @@ namespace MyCaffe.layers.gpt
     public class TransformerBlockLayer<T> : Layer<T>
     {
         Blob<T> m_blobLn1;
-        Blob<T> m_blobAttn;
+        Blob<T> m_blobAttn1;
         Blob<T> m_blobLn2;
+        Blob<T> m_blobAttn2 = null;
+        Blob<T> m_blobLn3 = null;
         Blob<T> m_blobMlp;
         Blob<T> m_blobMlpOut;
-        // Initial input Layer normalization
-        Layer<T> m_ln1;
-        // Layer normalization after the first attention block
-        Layer<T> m_ln2;
-        // Attention block
-        Layer<T> m_attn1;
+        Layer<T> m_ln1;          // Input layer normalization.
+        Layer<T> m_attn1;        // Attention block used with encoder and decoder        
+        Layer<T> m_ln2;          // Layer normalization after the first attention block
+        Layer<T> m_attn2 = null; // Attention block used with decoder only.
+        Layer<T> m_ln3 = null;   // Layer normalization after second attention block, used with decoder only.
         // MLP block
         Layer<T> m_fc;      // initial linear
         Layer<T> m_proj;    // projection
@@ -56,7 +57,7 @@ namespace MyCaffe.layers.gpt
             m_type = LayerParameter.LayerType.TRANSFORMER_BLOCK;
 
             m_blobLn1 = new Blob<T>(cuda, log);
-            m_blobAttn = new Blob<T>(cuda, log);
+            m_blobAttn1 = new Blob<T>(cuda, log);
             m_blobLn2 = new Blob<T>(cuda, log);
             m_blobMlp = new Blob<T>(cuda, log);
             m_blobMlpOut = new Blob<T>(cuda, log);
@@ -67,7 +68,7 @@ namespace MyCaffe.layers.gpt
             
             LayerParameter ln2 = new LayerParameter(LayerParameter.LayerType.LAYERNORM, "ln2");
             ln2.layer_norm_param.enable_cuda_impl = p.transformer_block_param.enable_layernorm_cuda_impl;
-            m_ln2 = Layer<T>.Create(cuda, log, ln1, evtCancel) as Layer<T>;
+            m_ln2 = Layer<T>.Create(cuda, log, ln2, evtCancel) as Layer<T>;
 
             if (p.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION)
             {
@@ -90,6 +91,33 @@ namespace MyCaffe.layers.gpt
                 attn.multihead_attention_param.resid_dropout = p.transformer_block_param.resid_dropout;
                 attn.multihead_attention_param.layers = p.transformer_block_param.layers;
                 m_attn1 = Layer<T>.Create(cuda, log, attn, evtCancel);
+            }
+            else if (p.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.DECODER)
+            {
+                m_blobAttn2 = new Blob<T>(cuda, log);
+                m_blobLn3 = new Blob<T>(cuda, log);
+
+                LayerParameter ln3 = new LayerParameter(LayerParameter.LayerType.LAYERNORM, "ln3");
+                ln3.layer_norm_param.enable_cuda_impl = p.transformer_block_param.enable_layernorm_cuda_impl;
+                m_ln3 = Layer<T>.Create(cuda, log, ln3, evtCancel) as Layer<T>;
+
+                LayerParameter attn1 = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION, "attn1");
+                attn1.multihead_attention_param.block_size = p.transformer_block_param.block_size;
+                attn1.multihead_attention_param.embed = p.transformer_block_param.embed;
+                attn1.multihead_attention_param.heads = p.transformer_block_param.heads;
+                attn1.multihead_attention_param.attn_dropout = p.transformer_block_param.attn_dropout;
+                attn1.multihead_attention_param.resid_dropout = p.transformer_block_param.resid_dropout;
+                attn1.multihead_attention_param.layers = p.transformer_block_param.layers;
+                m_attn1 = Layer<T>.Create(cuda, log, attn1, evtCancel);
+
+                LayerParameter attn2 = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION, "attn2");
+                attn2.multihead_attention_param.block_size = p.transformer_block_param.block_size;
+                attn2.multihead_attention_param.embed = p.transformer_block_param.embed;
+                attn2.multihead_attention_param.heads = p.transformer_block_param.heads;
+                attn2.multihead_attention_param.attn_dropout = p.transformer_block_param.attn_dropout;
+                attn2.multihead_attention_param.resid_dropout = p.transformer_block_param.resid_dropout;
+                attn2.multihead_attention_param.layers = p.transformer_block_param.layers;
+                m_attn2 = Layer<T>.Create(cuda, log, attn2, evtCancel);
             }
             else
             {
@@ -150,14 +178,18 @@ namespace MyCaffe.layers.gpt
         protected override void dispose()
         {
             dispose(ref m_blobLn1);
-            dispose(ref m_blobAttn);
+            dispose(ref m_blobAttn1);
             dispose(ref m_blobLn2);
+            dispose(ref m_blobAttn2);
+            dispose(ref m_blobLn3);
             dispose(ref m_blobMlp);
             dispose(ref m_blobMlpOut);
 
             dispose(ref m_ln1);
-            dispose(ref m_ln2);
             dispose(ref m_attn1);
+            dispose(ref m_ln2);
+            dispose(ref m_attn2);
+            dispose(ref m_ln3);
             dispose(ref m_fc);
             dispose(ref m_proj);
             dispose(ref m_act);
@@ -198,7 +230,7 @@ namespace MyCaffe.layers.gpt
                         return 2;
 
                     case TransformerBlockParameter.BLOCK_TYPE.DECODER:
-                        return 3;
+                        return 4;
 
                     default:
                         return 1;
@@ -224,8 +256,12 @@ namespace MyCaffe.layers.gpt
             base.ReInitializeParameters(target);
 
             m_ln1.ReInitializeParameters(target);
-            m_ln2.ReInitializeParameters(target);
             m_attn1.ReInitializeParameters(target);
+            m_ln2.ReInitializeParameters(target);
+            if (m_attn2 != null)
+                m_attn2.ReInitializeParameters(target);
+            if (m_ln3 != null)
+                m_ln3.ReInitializeParameters(target);
             m_fc.ReInitializeParameters(target);
             m_proj.ReInitializeParameters(target);
 
@@ -257,15 +293,33 @@ namespace MyCaffe.layers.gpt
         /// <summary>
         /// Setup the layer.
         /// </summary>
-        /// <param name="colBottom">Specifies the collection of bottom (input) Blobs.</param>
+        /// <param name="colBottom">Specifies the collection of bottom (input) Blobs.
+        ///           CAUSAL_SELF
+        ///                 colBottom[0] = input
+        ///           ENCODER
+        ///                 colBottom[0] = input
+        ///                 colBottom[1] = encoder mask
+        ///           DECODER
+        ///                 colBottom[0] = decoder input
+        ///                 colBottom[1] = decoder mask
+        ///                 colBottom[2] = last encoder output
+        ///                 colBottom[3] = encoder mask
+        /// </param>
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             colTop[0].ReshapeLike(colBottom[0]);
 
             m_blobLn1.ReshapeLike(colBottom[0]);
-            m_blobAttn.ReshapeLike(colBottom[0]);
+            m_blobAttn1.ReshapeLike(colBottom[0]);
             m_blobLn2.ReshapeLike(colBottom[0]);
+
+            if (m_blobAttn2 != null)
+                m_blobAttn2.ReshapeLike(colBottom[0]);
+
+            if (m_blobLn3 != null)
+                m_blobLn3.ReshapeLike(colBottom[0]);
+            
             m_blobMlp.ReshapeLike(colBottom[0]);
             m_blobMlpOut.ReshapeLike(colBottom[0]);
 
@@ -275,13 +329,19 @@ namespace MyCaffe.layers.gpt
             if (m_param.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION)
             {
                 // self.attn(self.ln_1(x))            
-                addInternal(m_blobLn1, m_blobAttn);
+                addInternal(m_blobLn1, m_blobAttn1);
                 m_attn1.LayerSetUp(m_colInternalBottom, m_colInternalTop);
             }
             else if (m_param.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.ENCODER)
             {
                 // self.attn(x_1, x_1, x_1, e_mask)
-                addInternal(new List<Blob<T>>() { m_blobLn1, m_blobLn1, m_blobLn1, colBottom[1] }, m_blobAttn);
+                addInternal(new List<Blob<T>>() { m_blobLn1, m_blobLn1, m_blobLn1, colBottom[1] }, m_blobAttn1);
+                m_attn1.LayerSetUp(m_colInternalBottom, m_colInternalTop);
+            }
+            else if (m_param.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.DECODER)
+            {
+                // self.attn1(x_1, x_1, x_1, d_mask)
+                addInternal(new List<Blob<T>>() { m_blobLn1, m_blobLn1, m_blobLn1, colBottom[1] }, m_blobAttn1);
                 m_attn1.LayerSetUp(m_colInternalBottom, m_colInternalTop);
             }
             else
@@ -291,8 +351,20 @@ namespace MyCaffe.layers.gpt
 
             addInternal(colTop[0], m_blobLn2);
             m_ln2.LayerSetUp(m_colInternalBottom, m_colInternalTop);
-            
-            addInternal(m_blobLn2, m_blobMlp);
+            Blob<T> blobLn = m_blobLn2;
+
+            if (m_param.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.DECODER)
+            {
+                // self.attn2(x_2, e_output, e_output, e_mask)
+                addInternal(new List<Blob<T>>() { m_blobLn2, colBottom[2], colBottom[2], colBottom[3] }, m_blobAttn2);
+                m_attn2.LayerSetUp(m_colInternalBottom, m_colInternalTop);
+
+                addInternal(m_blobAttn2, m_blobLn3);
+                m_ln3.LayerSetUp(m_colInternalBottom, m_colInternalTop);
+                blobLn = m_blobLn3;
+            }
+
+            addInternal(blobLn, m_blobMlp);
             m_fc.LayerSetUp(m_colInternalBottom, m_colInternalTop);
             addInternal(m_blobLn2, m_blobMlp);
             m_fc.Reshape(m_colInternalBottom, m_colInternalTop);
@@ -310,6 +382,8 @@ namespace MyCaffe.layers.gpt
             colTop[0].ReshapeLike(m_blobMlpOut);
 
             blobs.Add(m_attn1.blobs);
+            if (m_attn2 != null)
+                blobs.Add(m_attn2.blobs);
             blobs.Add(m_fc.blobs);
             blobs.Add(m_proj.blobs);
 
@@ -333,8 +407,15 @@ namespace MyCaffe.layers.gpt
             colTop[0].ReshapeLike(colBottom[0]);
 
             m_blobLn1.ReshapeLike(colBottom[0]);
-            m_blobAttn.ReshapeLike(colBottom[0]);
+            m_blobAttn1.ReshapeLike(colBottom[0]);
             m_blobLn2.ReshapeLike(colBottom[0]);
+
+            if (m_blobAttn2 != null)
+                m_blobAttn2.ReshapeLike(colBottom[0]);
+
+            if (m_blobLn3 != null)
+                m_blobLn3.ReshapeLike(colBottom[0]);
+            
             m_blobMlp.ReshapeLike(colBottom[0]);
             m_blobMlpOut.ReshapeLike(colBottom[0]);
 
@@ -344,13 +425,19 @@ namespace MyCaffe.layers.gpt
             if (m_param.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION)
             {
                 // self.attn(self.ln_1(x))            
-                addInternal(m_blobLn1, m_blobAttn);
+                addInternal(m_blobLn1, m_blobAttn1);
                 m_attn1.Reshape(m_colInternalBottom, m_colInternalTop);
             }
             else if (m_param.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.ENCODER)
             {
                 // self.attn(x_1, x_1, x_1, e_mask)
-                addInternal(new List<Blob<T>>() { m_blobLn1, m_blobLn1, m_blobLn1, colBottom[1] }, m_blobAttn);
+                addInternal(new List<Blob<T>>() { m_blobLn1, m_blobLn1, m_blobLn1, colBottom[1] }, m_blobAttn1);
+                m_attn1.Reshape(m_colInternalBottom, m_colInternalTop);
+            }
+            else if (m_param.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.DECODER)
+            {
+                // self.attn1(x_1, x_1, x_1, d_mask)
+                addInternal(new List<Blob<T>>() { m_blobLn1, m_blobLn1, m_blobLn1, colBottom[1] }, m_blobAttn1);
                 m_attn1.Reshape(m_colInternalBottom, m_colInternalTop);
             }
             else
@@ -360,8 +447,20 @@ namespace MyCaffe.layers.gpt
 
             addInternal(colTop[0], m_blobLn2);
             m_ln2.Reshape(m_colInternalBottom, m_colInternalTop);
+            Blob<T> blobLn = m_blobLn2;
 
-            addInternal(m_blobLn2, m_blobMlp);
+            if (m_param.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.DECODER)
+            {
+                // self.attn2(x_2, e_output, e_output, e_mask)
+                addInternal(new List<Blob<T>>() { m_blobLn2, colBottom[2], colBottom[2], colBottom[3] }, m_blobAttn2);
+                m_attn2.Reshape(m_colInternalBottom, m_colInternalTop);
+
+                addInternal(m_blobAttn2, m_blobLn3);
+                m_ln3.Reshape(m_colInternalBottom, m_colInternalTop);
+                blobLn = m_blobLn3;
+            }
+
+            addInternal(blobLn, m_blobMlp);
             m_fc.Reshape(m_colInternalBottom, m_colInternalTop);
             addInternal(m_blobMlp, m_blobMlp);
             m_act.Reshape(m_colInternalBottom, m_colInternalTop);
@@ -373,58 +472,127 @@ namespace MyCaffe.layers.gpt
                 addInternal(m_blobMlpOut, m_blobMlpOut);
                 m_dropout.Reshape(m_colInternalBottom, m_colInternalTop);
             }
+
+            colTop[0].ReshapeLike(colBottom[0]);
         }
 
         /// <summary>
         /// The forward computation.
         /// </summary>
-        /// <param name="colBottom">bottom input blob vector (length 1)
-        ///  -# @f$ (N \times C \times H \times W) @f$
+        /// <param name="colBottom">Specifies the collection of bottom (input) Blobs.
+        /// CAUSAL_SELF
+        ///       colBottom[0] = @f$ (N \times C \times H \times W) @f$ input
+        /// ENCODER
+        ///       colBottom[0] = @f$ (N \times C \times H \times W) @f$ input
+        ///       colBottom[1] = @f$ (N \times C \times H \times W) @f$ encoder mask
+        /// DECODER
+        ///       colBottom[0] = @f$ (N \times C \times H \times W) @f$ decoder input
+        ///       colBottom[1] = @f$ (N \times C \times H \times W) @f$ decoder mask
+        ///       colBottom[2] = @f$ (N \times C \times H \times W) @f$ last encoder output
+        ///       colBottom[3] = @f$ (N \times C \times H \times W) @f$ encoder mask
         /// </param>
         /// <param name="colTop">top output blob vector (length 1)
         ///  -# @f$ (N \times C \times H \times W) @f$
         ///     the computed transformer block.
         /// </param>
+        /// <remarks>
+        /// The encoder and decoder masks use the following formats.
+        /// 
+        /// Encoder Mask:
+        /// shape = (batch, 1, seq_len)
+        /// The sequence length is filled with 1 where data exists in each sequence, and
+        /// 0 otherwise.  For example, when using a sequence length of 4 and batch = 3, 
+        /// the following input:
+        /// <code>
+        ///  encoder input                encoder mask
+        ///  shape = (3,4)                (3,4)
+        ///  [33, 44, 22, 55]             [  1,  1,  1,  1]
+        ///  [44, 33, 0,  0 ] has mask -> [  1,  1,  0,  0]
+        ///  [88, 99, 22, 0 ]             [  1,  1,  1,  0]
+        /// </code>
+        /// 
+        /// Decoder Mask:
+        /// shape (batch, seq_len, seq_len)
+        /// The decoder mask is first filled with a mask similar to the encoder mask, whre each
+        /// sequence for each entry is duplicated for the number of sequences high to create an
+        /// initial mask like the following. Next a triangular mask is anded to avoid right side info.
+        /// <code>
+        ///  decoder input                encoder like mask        triangular mask     final decoder mask
+        ///  shape = (3,4)                (3,4,4)                  (3,4,4)             (3,4,4)
+        ///  [33, 44, 22, 55]             [  1,  1,  1,  1]        [  1,  0,  0,  0]   [  1,  0,  0,  0]
+        ///                               [  1,  1,  1,  1]        [  1,  1,  0,  0]   [  1,  1,  0,  0]
+        ///                               [  1,  1,  1,  1] -and-> [  1,  1,  1,  0] = [  1,  1,  1,  0]
+        ///                               [  1,  1,  1,  1]        [  1,  1,  1,  1]   [  1,  1,  1,  1]
+        ///  [44, 33, 0,  0 ] has mask -> [  1,  1,  0,  0]        [  1,  0,  0,  0]   [  1,  0,  0,  0]
+        ///                               [  1,  1,  0,  0]        [  1,  1,  0,  0]   [  1,  1,  0,  0]
+        ///                               [  1,  1,  0,  0] -and-> [  1,  1,  1,  0] = [  1,  1,  0,  0]
+        ///                               [  1,  1,  0,  0]        [  1,  1,  1,  1]   [  1,  1,  0,  0]
+        ///  [88, 99, 22, 0 ]             [  1,  1,  1,  0]        [  1,  0,  0,  0]   [  1,  0,  0,  0]
+        ///                               [  1,  1,  1,  0]        [  1,  1,  0,  0]   [  1,  1,  0,  0]
+        ///                               [  1,  1,  1,  0] -and-> [  1,  1,  1,  0] = [  1,  1,  1,  0]
+        ///                               [  1,  1,  1,  0]        [  1,  1,  1,  1]   [  1,  1,  1,  0]
+        /// </code>                              
+        /// </remarks>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             int nCount = colBottom[0].count();
-
+            
             //-------------------------------------------
             // x = x + self.attn(self.ln_1(x))
 
-            // self.ln_1(x)
+            // x_1 = self.ln_1(x)
             addInternal(colBottom[0], m_blobLn1);            
             m_ln1.Forward(m_colInternalBottom, m_colInternalTop);
 
             if (m_param.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION)
             {
-                // self.attn(self.ln_1(x))            
-                addInternal(m_blobLn1, m_blobAttn);
+                // attn1 = self.attn(self.ln_1(x))            
+                addInternal(m_blobLn1, m_blobAttn1);
                 m_attn1.Forward(m_colInternalBottom, m_colInternalTop);
             }
             else if (m_param.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.ENCODER)
             {
-                // self.attn(x_1, x_1, x_1, e_mask)
-                addInternal(new List<Blob<T>>() { m_blobLn1, m_blobLn1, m_blobLn1, colBottom[1] }, m_blobAttn);
+                // attn1 = self.attn(x_1, x_1, x_1, e_mask)
+                addInternal(new List<Blob<T>>() { m_blobLn1, m_blobLn1, m_blobLn1, colBottom[1] }, m_blobAttn1);
+                m_attn1.Forward(m_colInternalBottom, m_colInternalTop);
+            }
+            else if (m_param.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.DECODER)
+            {
+                // attn1 = self.attn1(x_1, x_1, x_1, d_mask)
+                addInternal(new List<Blob<T>>() { m_blobLn1, m_blobLn1, m_blobLn1, colBottom[1] }, m_blobAttn1);
                 m_attn1.Forward(m_colInternalBottom, m_colInternalTop);
             }
             else
             {
                 throw new Exception("Unknown block type '" + m_param.transformer_block_param.block_type.ToString() + "'!");
             }
+            
+            // xB = x + self.attn1(self.ln_1(x))
+            m_cuda.add(nCount, colBottom[0].gpu_data, m_blobAttn1.gpu_data, colTop[0].mutable_gpu_data);
 
-            // x = x + self.attn(self.ln_1(x))
-            m_cuda.add(nCount, colBottom[0].gpu_data, m_blobAttn.gpu_data, colTop[0].mutable_gpu_data);
-
-            //-------------------------------------------
-            // x = x + self.mlpf(self.ln_2(x))
-
-            // self.ln_2(x) 
+            // x_2 = self.ln_2(xB) 
             addInternal(colTop[0], m_blobLn2);
             m_ln2.Forward(m_colInternalBottom, m_colInternalTop);
-            
-            // self.mlpf(self.ln_2(x))
-            addInternal(m_blobLn2, m_blobMlp);
+            Blob<T> blobLn = m_blobLn2;
+
+            if (m_param.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.DECODER)
+            {
+                // attn2 = self.attn2(x_2, e_output, e_output, e_mask)
+                addInternal(new List<Blob<T>>() { m_blobLn2, colBottom[2], colBottom[2], colBottom[3] }, m_blobAttn2);
+                m_attn2.Forward(m_colInternalBottom, m_colInternalTop);
+                
+                // xC = xB + self.attn2(self.ln_2(x))
+                m_cuda.add(nCount, colTop[0].gpu_data, m_blobAttn2.gpu_data, colTop[0].mutable_gpu_data);
+
+                // x_3 = self.ln3(xC)
+                addInternal(colTop[0], m_blobLn3);
+                m_ln3.Forward(m_colInternalBottom, m_colInternalTop);
+                blobLn = m_blobLn3;
+            }
+
+            // CSA | ENCODER: ff = self.mlpf(self.ln_2(x_2)),
+            // DECODER:       ff = self.mlpf(self.ln_3(x_3))
+            addInternal(blobLn, m_blobMlp);
             m_fc.Forward(m_colInternalBottom, m_colInternalTop);
             addInternal(m_blobMlp, m_blobMlp);
             m_act.Forward(m_colInternalBottom, m_colInternalTop);
@@ -436,8 +604,9 @@ namespace MyCaffe.layers.gpt
                 addInternal(m_blobMlpOut, m_blobMlpOut);
                 m_dropout.Forward(m_colInternalBottom, m_colInternalTop);
             }
-            
-            // x = x + self.mlpf(self.ln_2(x))
+
+            // CSA | ENCODER: xC = xB + self.mlpf(self.ln_2(x_2)),
+            // DECODER:       xD = xC + self.mlpf(self.ln_3(x_3))
             m_cuda.add(nCount, colTop[0].gpu_data, m_blobMlpOut.gpu_data, colTop[0].mutable_gpu_data);
         }
 
@@ -449,8 +618,17 @@ namespace MyCaffe.layers.gpt
         ///   -# @f$ (N \times K \times H \times W) @f$.
         /// </param>
         /// <param name="rgbPropagateDown">see Layer::Backward.</param>
-        /// <param name="colBottom">bottom input blob vector (length 1)
-        ///  -# @f$ (N \times C \times H \times W) @f$
+        /// <param name="colBottom">Specifies the collection of bottom (input) Blobs.
+        /// CAUSAL_SELF
+        ///       colBottom[0] = @f$ (N \times C \times H \times W) @f$ input
+        /// ENCODER
+        ///       colBottom[0] = @f$ (N \times C \times H \times W) @f$ input
+        ///       colBottom[1] = @f$ (N \times C \times H \times W) @f$ encoder mask
+        /// DECODER
+        ///       colBottom[0] = @f$ (N \times C \times H \times W) @f$ decoder input
+        ///       colBottom[1] = @f$ (N \times C \times H \times W) @f$ decoder mask
+        ///       colBottom[2] = @f$ (N \times C \times H \times W) @f$ last encoder output
+        ///       colBottom[3] = @f$ (N \times C \times H \times W) @f$ encoder mask
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
@@ -460,42 +638,60 @@ namespace MyCaffe.layers.gpt
             if (rgbPropagateDown[0])
             {
                 List<bool> rgbPropagate = new List<bool>() { true, true };
-
-                // Gradient for x = x + self.mlpf(self.ln_2(x))
+                
+                // CSA | ENCODER Gradient for xC = xB + self.mlpf(self.ln_2(x_2))
+                // DECODER Gradient for       xD = xC + self.mlpf(self.ln_3(x_3))
                 m_cuda.copy(nCount, colTop[0].gpu_diff, m_blobMlpOut.mutable_gpu_diff);
-                m_cuda.copy(nCount, colTop[0].gpu_diff, colBottom[0].mutable_gpu_diff); // temporary holding dx2
+                m_cuda.copy(nCount, colTop[0].gpu_diff, colBottom[0].mutable_gpu_diff); // temporary holding xB
 
-                // Gradient for self.mlpf(self.ln_2(x))
                 if (m_dropout != null)
                 {
                     addInternal(m_blobMlpOut, m_blobMlpOut);
                     m_dropout.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
                 }
-
+                
+                // Gradient for MLP
                 addInternal(m_blobMlp, m_blobMlpOut);
                 m_proj.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
                 addInternal(m_blobMlp, m_blobMlp);
                 m_act.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
-                addInternal(m_blobLn2, m_blobMlp);
+                Blob<T> blobLn = (m_param.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.DECODER) ? m_blobLn3 : m_blobLn2;
+                addInternal(blobLn, m_blobMlp);
                 m_fc.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
 
-                // Gradient for self.ln_2(x) 
-                addInternal(m_blobAttn, m_blobLn2);
-                m_ln2.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+                if (m_param.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.DECODER)
+                {
+                    // x_3 = self.ln3(xC)
+                    addInternal(m_blobAttn2, m_blobLn3);
+                    m_ln3.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
 
-                // Gradient for x = x + self.attn(self.ln_1(x))
-                m_cuda.add(nCount, colBottom[0].gpu_diff, m_blobAttn.gpu_diff, m_blobAttn.mutable_gpu_diff);
+                    // xC = xB + attn2
+                    m_cuda.add(nCount, colBottom[0].gpu_diff, m_blobAttn2.gpu_diff, colBottom[0].mutable_gpu_diff);
+
+                    // attn2 = self.attn2(x_2, e_output, e_output, e_mask)
+                    addInternal(new List<Blob<T>>() { m_blobLn2, colBottom[2], colBottom[2], colBottom[3] }, m_blobAttn2);
+                    m_attn2.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+                }
+
+                // x_2 = self.ln_2(xB) 
+                addInternal(m_blobAttn1, m_blobLn2);
+                m_ln2.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+                
+                // xB = x + attn1
+                m_cuda.add(nCount, colBottom[0].gpu_diff, m_blobAttn1.gpu_diff, colBottom[0].mutable_gpu_diff);
+                m_blobAttn1.CopyFrom(colBottom[0], true);
 
                 if (m_param.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION)
                 {
                     // Gradient for self.attn(self.ln_1(x))
-                    addInternal(m_blobLn1, m_blobAttn);
+                    addInternal(m_blobLn1, m_blobAttn1);
                     m_attn1.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
                 }
-                else if (m_param.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.ENCODER)
+                else if (m_param.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.ENCODER ||
+                         m_param.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.DECODER)
                 {
                     // Gradient for self.attn(x_1, x_1, x_1, e_mask)
-                    addInternal(new List<Blob<T>>() { m_blobLn1, m_blobLn1, m_blobLn1, colBottom[1] }, m_blobAttn);
+                    addInternal(new List<Blob<T>>() { m_blobLn1, m_blobLn1, m_blobLn1, colBottom[1] }, m_blobAttn1);
                     m_attn1.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
                 }
                 else
@@ -503,10 +699,13 @@ namespace MyCaffe.layers.gpt
                     throw new Exception("Unknown block type '" + m_param.transformer_block_param.block_type.ToString() + "'!");
                 }
 
-                // Gradient for self.ln_1(x)
-                addInternal(colBottom[0], m_blobLn1);
+                // x_1 = ln1(x)
+                // place gradients in Attn1 as temp holder to save GPU memory
+                addInternal(m_blobAttn1, m_blobLn1);
                 m_ln1.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
-                m_cuda.add(nCount, colBottom[0].gpu_diff, m_blobAttn.gpu_diff, colBottom[0].mutable_gpu_diff);
+
+                // Accumulate attention gradient with others in bottom[0].
+                m_cuda.add(nCount, colBottom[0].gpu_diff, m_blobAttn1.gpu_diff, colBottom[0].mutable_gpu_diff);
             }
         }
     }
