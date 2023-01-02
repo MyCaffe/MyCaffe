@@ -1020,6 +1020,35 @@ namespace MyCaffe.common
             return true;
         }
 
+        /// <summary>
+        /// Compare the data (or diff) of one blob to another and return true if all items fall within the specified tolerance or not.
+        /// </summary>
+        /// <param name="cuda">Specifies a double precision CudaDnn.</param>
+        /// <param name="other">Specifies the other blob to compare.</param>
+        /// <param name="work">Specifies a temporary work blob.</param>
+        /// <param name="bDiff">Specifies to compare the diff.</param>
+        /// <param name="dfTol">Specifies the accepted tolerance.</param>
+        /// <returns>If all data (or diff) values fall within the tolerance, true is returned, otherwise false.</returns>
+        public bool Compare(CudaDnn<double> cuda, Blob<T> other, Blob<double> work, bool bDiff = false, double dfTol = 1e-8)
+        {
+            if (count() != other.count())
+                return false;
+
+            work.Reshape(num, channels, height, width);
+            work.mutable_cpu_data = (bDiff) ? Utility.ConvertVec<T>(mutable_cpu_diff) : Utility.ConvertVec<T>(mutable_cpu_data);
+            work.mutable_cpu_diff = (bDiff) ? Utility.ConvertVec<T>(other.mutable_cpu_diff) : Utility.ConvertVec<T>(other.mutable_cpu_data);
+
+            cuda.sub(count(), work.gpu_data, work.gpu_diff, work.mutable_gpu_data);
+            double dfMin = work.min_data;
+            if (Math.Abs(dfMin) > dfTol)
+                return false;
+
+            double dfMax = work.max_data;
+            if (dfMax > dfTol)
+                return false;
+
+            return true;
+        }
 
 #pragma warning disable 1591
 
