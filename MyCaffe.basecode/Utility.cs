@@ -521,6 +521,20 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Convert an array of <i>float</i> to an array of generics.
+        /// </summary>
+        /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
+        /// <param name="rgf">Specifies the array of <i>float</i>.</param>
+        /// <returns>The array of generics is returned.</returns>
+        public static double[] ConvertVec(float[] rgf)
+        {
+            double[] rgt = new double[rgf.Length];
+            Array.Copy(rgf, rgt, rgf.Length);
+            
+            return rgt;
+        }
+
+        /// <summary>
         /// Resize a List and fill the new elements with the default value.
         /// </summary>
         /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
