@@ -29,7 +29,7 @@ namespace MyCaffe.test
             {
                 foreach (IEncoderBlockLayerTest t in test.Tests)
                 {
-                    t.TestForward(3, 8, false);
+                    t.TestForward(8, false);
                 }
             }
             finally
@@ -47,7 +47,7 @@ namespace MyCaffe.test
             {
                 foreach (IEncoderBlockLayerTest t in test.Tests)
                 {
-                    t.TestForward(3, 8, true);
+                    t.TestForward(8, true);
                 }
             }
             finally
@@ -65,7 +65,7 @@ namespace MyCaffe.test
             {
                 foreach (IEncoderBlockLayerTest t in test.Tests)
                 {
-                    t.TestBackward(3, 8, false);
+                    t.TestBackward(8, false);
                 }
             }
             finally
@@ -83,7 +83,7 @@ namespace MyCaffe.test
             {
                 foreach (IEncoderBlockLayerTest t in test.Tests)
                 {
-                    t.TestBackward(3, 8, true);
+                    t.TestBackward(8, true);
                 }
             }
             finally
@@ -95,8 +95,9 @@ namespace MyCaffe.test
 
     interface IEncoderBlockLayerTest : ITest
     {
-        void TestForward(int nBatch, int nHeads, bool bEnableCudaImpl);
-        void TestBackward(int nBatch, int nHeads, bool bEnableCudaImpl);
+        void TestForward(int nHeads, bool bEnableCudaImpl);
+        void TestBackward(int nHeads, bool bEnableCudaImpl);
+        void TestGradient(int nHeads, bool bEnableCudaImpl);
     }
 
     class EncoderBlockLayerTest : TestBase
@@ -249,7 +250,7 @@ namespace MyCaffe.test
                 m_log.FAIL("The blobs are not equal!");
         }
 
-        public void TestForward(int nBatch, int nHeads, bool bEnableCudaImpl)
+        public void TestForward(int nHeads, bool bEnableCudaImpl)
         {
             string strTestDataPath = loadTestData();
 
@@ -267,7 +268,7 @@ namespace MyCaffe.test
             {
                 m_log.CHECK(layer.type == LayerParameter.LayerType.TRANSFORMER_BLOCK, "The layer type is incorrect!");
 
-                m_blobX.LoadFromNumpy(strTestDataPath + "enc_x0.npy");
+                m_blobX.LoadFromNumpy(strTestDataPath + "enc_in_x0.npy");
                 m_blobInput.LoadFromNumpy(strTestDataPath + "src_input.npy");
                 m_blobMask.ReshapeLike(m_blobInput);
                 m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMask.mutable_gpu_data);
@@ -316,7 +317,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestBackward(int nBatch, int nHeads, bool bEnableCudaImpl)
+        public void TestBackward(int nHeads, bool bEnableCudaImpl)
         {
             string strTestDataPath = loadTestData();
 
@@ -334,7 +335,7 @@ namespace MyCaffe.test
             {
                 m_log.CHECK(layer.type == LayerParameter.LayerType.TRANSFORMER_BLOCK, "The layer type is incorrect!");
 
-                m_blobX.LoadFromNumpy(strTestDataPath + "enc_x0.npy");
+                m_blobX.LoadFromNumpy(strTestDataPath + "enc_in_x0.npy");
                 m_blobInput.LoadFromNumpy(strTestDataPath + "src_input.npy");
                 m_blobMask.ReshapeLike(m_blobInput);
                 m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMask.mutable_gpu_data);
@@ -386,6 +387,42 @@ namespace MyCaffe.test
                 sw.Stop();
                 double dfTime = sw.Elapsed.TotalMilliseconds / 100;
                 Trace.WriteLine("Encoder Backward time = " + dfTime.ToString("N6") + " ms.");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
+        }
+
+        public void TestGradient(int nHeads, bool bEnableCudaImpl)
+        {
+            string strTestDataPath = loadTestData();
+
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
+            p.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.ENCODER;
+            p.transformer_block_param.heads = nHeads;
+            p.transformer_block_param.embed = 512;
+            p.transformer_block_param.block_size = 200;
+            p.transformer_block_param.attn_dropout = 0.0;
+            p.transformer_block_param.resid_dropout = 0.0;
+            p.transformer_block_param.enable_layernorm_cuda_impl = bEnableCudaImpl;
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+
+            try
+            {
+                m_log.CHECK(layer.type == LayerParameter.LayerType.TRANSFORMER_BLOCK, "The layer type is incorrect!");
+
+                m_blobX.LoadFromNumpy(strTestDataPath + "enc_in_x0.npy");
+                m_blobInput.LoadFromNumpy(strTestDataPath + "src_input.npy");
+                m_blobMask.ReshapeLike(m_blobInput);
+                m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMask.mutable_gpu_data);
+
+                BottomVec.Clear();
+                BottomVec.Add(m_blobX);
+                BottomVec.Add(m_blobMask);
+
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.0001);
+                checker.CheckGradient(layer, BottomVec, TopVec, -1, 100);
             }
             finally
             {
