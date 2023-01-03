@@ -121,6 +121,8 @@ namespace MyCaffe.test
         Blob<T> m_blobEncOut;
         Blob<T> m_blobMaskEnc;
         Blob<T> m_blobMaskDec;
+        Blob<T> m_blobMaskEnc_exp;
+        Blob<T> m_blobMaskDec_exp;
         Blob<T> m_blobInput;
         Blob<T> m_blobYexp;
         Blob<T> m_blobWork;
@@ -136,6 +138,8 @@ namespace MyCaffe.test
             m_blobEncOut = new Blob<T>(m_cuda, m_log);
             m_blobMaskEnc = new Blob<T>(m_cuda, m_log);
             m_blobMaskDec = new Blob<T>(m_cuda, m_log);
+            m_blobMaskEnc_exp = new Blob<T>(m_cuda, m_log);
+            m_blobMaskDec_exp = new Blob<T>(m_cuda, m_log);
             m_blobInput = new Blob<T>(m_cuda, m_log);
             m_blobYexp = new Blob<T>(m_cuda, m_log);
             m_blobWork = new Blob<T>(m_cuda, m_log);
@@ -161,6 +165,8 @@ namespace MyCaffe.test
             dispose(ref m_blobEncOut);
             dispose(ref m_blobMaskEnc);
             dispose(ref m_blobMaskDec);
+            dispose(ref m_blobMaskEnc_exp);
+            dispose(ref m_blobMaskDec_exp);
             dispose(ref m_blobInput);
             dispose(ref m_blobYexp);
             dispose(ref m_blobWork);
@@ -286,12 +292,9 @@ namespace MyCaffe.test
             blobMask.mutable_cpu_data = convert(rgMask1);
         }
 
-        /// <summary>
-        /// WORK IN PROGRESS
-        /// </summary>
         public void TestForward(int nBatch, int nHeads, bool bEnableCudaImpl)
         {
-            string strTestDataPath = "C:\\temp\\projects\\TransformerTranslator\\TransformerTranslator\\test\\"; // loadTestData();
+            string strTestDataPath = loadTestData();
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
             p.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.DECODER;
@@ -311,14 +314,23 @@ namespace MyCaffe.test
                 m_blobX.Name = "dec_in_x0";
                 m_blobEncOut.LoadFromNumpy(strTestDataPath + "enc_out_x1.npy");
                 m_blobEncOut.Name = "enc_out_x1";
-                m_blobInput.LoadFromNumpy(strTestDataPath + "src_input.npy");
+                
+                m_blobInput.LoadFromNumpy(strTestDataPath + "src_input.npy");                
+                m_blobMaskEnc.ReshapeLike(m_blobInput);
+                m_blobMaskEnc.Name = "e_mask";
+                m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMaskEnc.mutable_gpu_data);
+                
+                m_blobInput.LoadFromNumpy(strTestDataPath + "trg_input.npy");
                 m_blobMaskDec.ReshapeLike(m_blobInput);
                 m_blobMaskDec.Name = "d_mask";
                 m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMaskDec.mutable_gpu_data);
                 createDecoderMask(m_blobMaskDec);
-                m_blobMaskEnc.ReshapeLike(m_blobEncOut);
-                m_blobMaskEnc.Name = "e_mask";
-                m_cuda.sign(m_blobEncOut.count(), m_blobEncOut.gpu_data, m_blobMaskEnc.mutable_gpu_data);
+
+                m_blobMaskDec_exp.LoadFromNumpy(strTestDataPath + "mh1.1_mask.npy");
+                verify(m_blobMaskDec, m_blobMaskDec_exp, false, 1e-09);
+
+                m_blobMaskEnc_exp.LoadFromNumpy(strTestDataPath + "mh2.1_mask.npy");
+                verify(m_blobMaskEnc, m_blobMaskEnc_exp, false, 1e-09);
 
                 BottomVec.Clear();
                 BottomVec.Add(m_blobX);
@@ -339,17 +351,17 @@ namespace MyCaffe.test
 
                 layer.blobs[8].LoadFromNumpy(strTestDataPath + "mh2.w_q_weight.npy");    // multi-head query weight
                 layer.blobs[9].LoadFromNumpy(strTestDataPath + "mh2.w_q_bias.npy");      // multi-head query bias
-                layer.blobs[10].LoadFromNumpy(strTestDataPath + "mh2.w_k_weight.npy");    // multi-head key weight
-                layer.blobs[11].LoadFromNumpy(strTestDataPath + "mh2.w_k_bias.npy");      // multi-head key bias
-                layer.blobs[12].LoadFromNumpy(strTestDataPath + "mh2.w_v_weight.npy");    // multi-head value weight
-                layer.blobs[13].LoadFromNumpy(strTestDataPath + "mh2.w_v_bias.npy");      // multi-head value bias
-                layer.blobs[14].LoadFromNumpy(strTestDataPath + "mh2.w_o_weight.npy");    // multi-head output weight
-                layer.blobs[15].LoadFromNumpy(strTestDataPath + "mh2.w_o_bias.npy");      // multi-head output bias
+                layer.blobs[10].LoadFromNumpy(strTestDataPath + "mh2.w_k_weight.npy");   // multi-head key weight
+                layer.blobs[11].LoadFromNumpy(strTestDataPath + "mh2.w_k_bias.npy");     // multi-head key bias
+                layer.blobs[12].LoadFromNumpy(strTestDataPath + "mh2.w_v_weight.npy");   // multi-head value weight
+                layer.blobs[13].LoadFromNumpy(strTestDataPath + "mh2.w_v_bias.npy");     // multi-head value bias
+                layer.blobs[14].LoadFromNumpy(strTestDataPath + "mh2.w_o_weight.npy");   // multi-head output weight
+                layer.blobs[15].LoadFromNumpy(strTestDataPath + "mh2.w_o_bias.npy");     // multi-head output bias
 
                 layer.blobs[16].LoadFromNumpy(strTestDataPath + "ff.w_1_weight.npy");    // fc
                 layer.blobs[17].LoadFromNumpy(strTestDataPath + "ff.w_1_bias.npy");      // fc
-                layer.blobs[18].LoadFromNumpy(strTestDataPath + "ff.w_2_weight.npy");   // proj
-                layer.blobs[19].LoadFromNumpy(strTestDataPath + "ff.w_2_bias.npy");     // proj
+                layer.blobs[18].LoadFromNumpy(strTestDataPath + "ff.w_2_weight.npy");    // proj
+                layer.blobs[19].LoadFromNumpy(strTestDataPath + "ff.w_2_bias.npy");      // proj
 
                 layer.Forward(BottomVec, TopVec);
 
@@ -375,12 +387,9 @@ namespace MyCaffe.test
             }
         }
 
-        /// <summary>
-        /// WORK IN PROGRESS
-        /// </summary>
         public void TestBackward(int nBatch, int nHeads, bool bEnableCudaImpl)
         {
-            string strTestDataPath = "C:\\temp\\projects\\TransformerTranslator\\TransformerTranslator\\test\\"; // loadTestData();
+            string strTestDataPath = loadTestData();
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
             p.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.DECODER;
@@ -400,14 +409,23 @@ namespace MyCaffe.test
                 m_blobX.Name = "dec_in_x0";
                 m_blobEncOut.LoadFromNumpy(strTestDataPath + "enc_out_x1.npy");
                 m_blobEncOut.Name = "enc_out_x1";
+
                 m_blobInput.LoadFromNumpy(strTestDataPath + "src_input.npy");
+                m_blobMaskEnc.ReshapeLike(m_blobInput);
+                m_blobMaskEnc.Name = "e_mask";
+                m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMaskEnc.mutable_gpu_data);
+
+                m_blobInput.LoadFromNumpy(strTestDataPath + "trg_input.npy");
                 m_blobMaskDec.ReshapeLike(m_blobInput);
                 m_blobMaskDec.Name = "d_mask";
                 m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMaskDec.mutable_gpu_data);
                 createDecoderMask(m_blobMaskDec);
-                m_blobMaskEnc.ReshapeLike(m_blobEncOut);
-                m_blobMaskEnc.Name = "e_mask";
-                m_cuda.sign(m_blobEncOut.count(), m_blobEncOut.gpu_data, m_blobMaskEnc.mutable_gpu_data);
+
+                m_blobMaskDec_exp.LoadFromNumpy(strTestDataPath + "mh1.1_mask.npy");
+                verify(m_blobMaskDec, m_blobMaskDec_exp, false, 1e-09);
+
+                m_blobMaskEnc_exp.LoadFromNumpy(strTestDataPath + "mh2.1_mask.npy");
+                verify(m_blobMaskEnc, m_blobMaskEnc_exp, false, 1e-09);
 
                 BottomVec.Clear();
                 BottomVec.Add(m_blobX);
