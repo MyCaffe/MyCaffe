@@ -536,14 +536,14 @@ namespace MyCaffe.layers.gpt
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             int nCount = colBottom[0].count();
-            
+
             //-------------------------------------------
             // x = x + self.attn(self.ln_1(x))
 
             // x_1 = self.ln_1(x)
             addInternal(colBottom[0], m_blobLn1);            
             m_ln1.Forward(m_colInternalBottom, m_colInternalTop);
-
+            
             if (m_param.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION)
             {
                 // attn1 = self.attn(self.ln_1(x))            
@@ -580,7 +580,7 @@ namespace MyCaffe.layers.gpt
                 // attn2 = self.attn2(x_2, e_output, e_output, e_mask)
                 addInternal(new List<Blob<T>>() { m_blobLn2, colBottom[2], colBottom[2], colBottom[3] }, m_blobAttn2);
                 m_attn2.Forward(m_colInternalBottom, m_colInternalTop);
-                
+
                 // xC = xB + self.attn2(self.ln_2(x))
                 m_cuda.add(nCount, colTop[0].gpu_data, m_blobAttn2.gpu_data, colTop[0].mutable_gpu_data);
 
@@ -649,7 +649,7 @@ namespace MyCaffe.layers.gpt
                     addInternal(m_blobMlpOut, m_blobMlpOut);
                     m_dropout.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
                 }
-                
+
                 // Gradient for MLP
                 addInternal(m_blobMlp, m_blobMlpOut);
                 m_proj.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
@@ -667,6 +667,7 @@ namespace MyCaffe.layers.gpt
 
                     // xC = xB + attn2
                     m_cuda.add(nCount, colBottom[0].gpu_diff, m_blobAttn2.gpu_diff, colBottom[0].mutable_gpu_diff);
+                    m_blobAttn2.CopyFrom(colBottom[0], true);
 
                     // attn2 = self.attn2(x_2, e_output, e_output, e_mask)
                     addInternal(new List<Blob<T>>() { m_blobLn2, colBottom[2], colBottom[2], colBottom[3] }, m_blobAttn2);
