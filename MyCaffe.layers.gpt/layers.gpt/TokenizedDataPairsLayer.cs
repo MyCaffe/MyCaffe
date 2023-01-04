@@ -518,6 +518,7 @@ namespace MyCaffe.layers.gpt
 
     /// <summary>
     /// The TextListData manages parallel lists of data where the first list contains the encoder input data and the second the decoder input/target data.
+    /// </summary>
     public class TextListData : InputData
     {
         List<string> m_rgstrData = new List<string>();
