@@ -123,6 +123,7 @@
     <Compile Include="TestSoftmaxCrossEntropyLossLayer.cs" />
     <Compile Include="TestTokenizedDataLayer.cs" />
     <Compile Include="TestLayerNormLayer.cs" />
+    <Compile Include="TestTokenizedDataPairsLayer.cs" />
     <Compile Include="TestTransformerBlockLayer.cs" />
     <Compile Include="TestCausalSelfAttentionLayer.cs" />
     <Compile Include="TestBeamSearch.cs" />

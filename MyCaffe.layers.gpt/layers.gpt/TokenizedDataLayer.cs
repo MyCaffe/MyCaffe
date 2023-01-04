@@ -564,8 +564,8 @@ namespace MyCaffe.layers.gpt
 
             for (int i = 0; i < rgKeys.Count; i++)
             {
-                m_rgVocabKeyToIdx.Add(rgKeys[i], i);
-                m_rgVocabIdxToKey.Add(i, rgKeys[i]);
+                m_rgVocabKeyToIdx.Add(rgKeys[i], i + 1);
+                m_rgVocabIdxToKey.Add(i + 1, rgKeys[i]);
             }
 
             return Count;
@@ -668,9 +668,18 @@ namespace MyCaffe.layers.gpt
         /// <returns>The detokenized character is returned.</returns>
         public char Detokenize(int nIdxToken)
         {
+            if (nIdxToken == 0)
+                return (char)0;
+
+            if (nIdxToken == BOS)
+                return BOS;
+
+            if (nIdxToken == EOS)
+                return EOS;
+            
             if (!m_rgVocabIdxToKey.ContainsKey(nIdxToken))
                 throw new Exception("The token '" + nIdxToken.ToString() + "' is not in the vocabulary!");
-
+            
             return m_rgVocabIdxToKey[nIdxToken];
         }
 

@@ -11,6 +11,7 @@ using MyCaffe.db.image;
 using MyCaffe.param.gpt;
 using System.Net;
 using System.Globalization;
+using System.Diagnostics;
 
 namespace MyCaffe.layers.gpt
 {
@@ -27,6 +28,21 @@ namespace MyCaffe.layers.gpt
         Blob<T> m_blobY = null;
         Blob<T> m_blobTriangle = null;
         Random m_random = new Random();
+
+        /// <summary>
+        /// Defines the input source.
+        /// </summary>
+        public enum VOCABULARY
+        {
+            /// <summary>
+            /// Specifies the encoder input source.
+            /// </summary>
+            ENCODER,
+            /// <summary>
+            /// Specifies the decoder input source.
+            /// </summary>
+            DECODER
+        }
 
         /// <summary>
         /// The TokenizedDataPairsLayer constructor.
@@ -101,8 +117,6 @@ namespace MyCaffe.layers.gpt
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            int nBlockSize = (int)m_param.tokenized_data_pairs_param.block_size;
-
             switch (m_param.tokenized_data_pairs_param.input_type)
             {
                 case TokenizedDataParameter.INPUT_TYPE.TEXT_FILE:
@@ -190,14 +204,14 @@ namespace MyCaffe.layers.gpt
                 blobDecIn.Reshape(rgShape);
                 blobDecOut.Reshape(rgShape);
                 blobEncMask.Reshape(nBatchSize, nBlockSize, 1, 1);
-                blobDecMask.Reshape(nBatchSize, 1, nBlockSize, nBlockSize);
+                blobDecMask.Reshape(nBatchSize, nBlockSize, nBlockSize, 1);
 
-                if (m_blobTriangle != null)
+                if (m_blobTriangle == null)
                     m_blobTriangle = new Blob<T>(m_cuda, m_log, false);
 
-                if (!m_blobTriangle.CompareShape(rgShape.ToList()))
+                if (!m_blobTriangle.CompareShape(blobDecMask.shape()))
                 {
-                    m_blobTriangle.Reshape(rgShape);
+                    m_blobTriangle.ReshapeLike(blobDecMask);
 
                     T[] rgMask = new T[m_blobTriangle.count()];
                     for (int n = 0; n < m_blobTriangle.num; n++)
@@ -206,7 +220,7 @@ namespace MyCaffe.layers.gpt
                         {
                             for (int h = 0; h < m_blobTriangle.height; h++)
                             {
-                                int nIdx = n * nBlockSize + h;
+                                int nIdx = n * nBlockSize * nBlockSize + c * nBlockSize + h;
                                 rgMask[nIdx] = (h > c) ? m_tZero : m_tOne;
                             }
                         }
@@ -343,10 +357,12 @@ namespace MyCaffe.layers.gpt
         /// </summary>
         /// <param name="blobSrc">Specifies the native source data.</param>
         /// <param name="blobDst">Specifies the tokenized destination data.</param>
-        public void Tokenize(Blob<T> blobSrc, Blob<T> blobDst)
+        /// <param name="src">Specifies the vocabulary to use when tokenizing</param>
+        public void Tokenize(Blob<T> blobSrc, Blob<T> blobDst, VOCABULARY src)
         {
+            InputData input = (src == VOCABULARY.ENCODER) ? m_encoderData : m_decoderData;
             float[] rgSrc = convertF(blobSrc.mutable_cpu_data);
-            blobDst.mutable_cpu_data = convert(m_encoderData.Tokenize(rgSrc));
+            blobDst.mutable_cpu_data = convert(input.Tokenize(rgSrc));
         }
 
         /// <summary>
@@ -354,10 +370,12 @@ namespace MyCaffe.layers.gpt
         /// </summary>
         /// <param name="blobSrc">Specifies the tokenized source data.</param>
         /// <param name="blobDst">Specifies the detokenized destination data.</param>
-        public void Detokenize(Blob<T> blobSrc, Blob<T> blobDst)
+        /// <param name="src">Specifies the vocabulary to use when detokenizing.</param>
+        public void Detokenize(Blob<T> blobSrc, Blob<T> blobDst, VOCABULARY src)
         {
+            InputData input = (src == VOCABULARY.ENCODER) ? m_encoderData : m_decoderData;
             float[] rgSrc = convertF(blobSrc.mutable_cpu_data);
-            blobDst.mutable_cpu_data = convert(m_encoderData.Detokenize(rgSrc));
+            blobDst.mutable_cpu_data = convert(input.Detokenize(rgSrc));
         }
 
         /// <summary>
@@ -519,6 +537,7 @@ namespace MyCaffe.layers.gpt
         /// <param name="phase">Specifies the currently running phase.</param>
         public TextListData(string strSrcFile, bool bIncludeTarget, int? nRandomSeed = null, Phase phase = Phase.NONE) : base(nRandomSeed)
         {
+            Stopwatch sw = new Stopwatch();
             m_vocab = new CharacterVocabulary(m_random, true, true);
             m_phase = phase;
 
@@ -527,6 +546,8 @@ namespace MyCaffe.layers.gpt
 
             string[] rgstr = File.ReadAllLines(strSrcFile);
 
+            sw.Start();
+
             for (int i = 0; i < rgstr.Length; i++)
             {
                 m_rgstrData.Add(rgstr[i]);
@@ -534,6 +555,12 @@ namespace MyCaffe.layers.gpt
                 foreach (char ch in rgstr[i])
                 {
                     m_vocab.Add(ch);
+                }
+
+                if (sw.Elapsed.TotalMilliseconds > 1000)
+                {
+                    sw.Restart();
+                    Trace.WriteLine("Loading vocabulary at (" + ((double)i / rgstr.Length).ToString("P") + ")...");
                 }
             }
 
@@ -550,6 +577,12 @@ namespace MyCaffe.layers.gpt
                     rgnTrg = m_vocab.CreateTarget(rgnSrc);
 
                 m_rgnData.Add(new Tuple<int[], int[]>(rgnSrc, rgnTrg));
+
+                if (sw.Elapsed.TotalMilliseconds > 1000)
+                {
+                    sw.Restart();
+                    Trace.WriteLine("Tokenizing data at (" + ((double)i / m_rgstrData.Count).ToString("P") + ")...");
+                }
             }
         }
 
@@ -608,9 +641,20 @@ namespace MyCaffe.layers.gpt
                     if (j < rgSrc.Length)
                         m_rgData[nDstIdx + j] = rgSrc[j];
 
-                    if (j < rgTrg.Length && rgTrg != null)
+                    if (rgTrg != null && j < rgTrg.Length)
                         m_rgTgt[nDstIdx + j] = rgTrg[j];
                 }
+
+                if (rgTrg != null &&
+                    rgTrg[rgTrg.Length - 1] == EOS &&
+                    m_rgTgt[nDstIdx + nBlockSize - 1] != 0 &&
+                    m_rgTgt[nDstIdx + nBlockSize - 1] != EOS)
+                    m_rgTgt[nDstIdx + nBlockSize - 1] = EOS;
+
+                if (rgSrc[rgSrc.Length - 1] == EOS &&
+                    m_rgData[nDstIdx + nBlockSize - 1] != 0 &&
+                    m_rgData[nDstIdx + nBlockSize - 1] != EOS)
+                    m_rgData[nDstIdx + nBlockSize - 1] = EOS;
             }
 
             return new Tuple<float[], float[]>(m_rgData, m_rgTgt);
@@ -653,6 +697,17 @@ namespace MyCaffe.layers.gpt
                     if (j < rgTrg.Length && rgTrg != null)
                         m_rgTgt[nDstIdx + j] = rgTrg[j];
                 }
+
+                if (rgTrg != null &&
+                    rgTrg[rgTrg.Length - 1] == EOS &&
+                    m_rgTgt[nDstIdx + nBlockSize - 1] != 0 &&
+                    m_rgTgt[nDstIdx + nBlockSize - 1] != EOS)
+                    m_rgTgt[nDstIdx + nBlockSize - 1] = EOS;
+
+                if (rgSrc[rgSrc.Length - 1] == EOS &&
+                    m_rgData[nDstIdx + nBlockSize - 1] != 0 &&
+                    m_rgData[nDstIdx + nBlockSize - 1] != EOS)
+                    m_rgData[nDstIdx + nBlockSize - 1] = EOS;
             }
 
             return new Tuple<float[], float[]>(m_rgData, m_rgTgt);
@@ -686,8 +741,7 @@ namespace MyCaffe.layers.gpt
             for (int i = 0; i < rgInput.Count(); i++)
             {
                 int nCharIdx = (int)rgInput[i];
-                char ch = m_vocab.Detokenize(nCharIdx);
-                rgInput[i] = ch;
+                rgInput[i] = m_vocab.Detokenize(nCharIdx);                
             }
 
             return rgInput;
