@@ -49,6 +49,9 @@ namespace MyCaffe.layers.gpt
                 case LayerParameter.LayerType.TOKENIZED_DATA:
                     return new TokenizedDataLayer<double>(cuda, log, p, imgDb, evtCancel);
 
+                case LayerParameter.LayerType.TOKENIZED_DATA_PAIRS:
+                    return new TokenizedDataPairsLayer<double>(cuda, log, p, imgDb, evtCancel);
+
                 default:
                     return null;
             }
@@ -84,6 +87,9 @@ namespace MyCaffe.layers.gpt
 
                 case LayerParameter.LayerType.TOKENIZED_DATA:
                     return new TokenizedDataLayer<float>(cuda, log, p, imgDb, evtCancel);
+
+                case LayerParameter.LayerType.TOKENIZED_DATA_PAIRS:
+                    return new TokenizedDataPairsLayer<float>(cuda, log, p, imgDb, evtCancel);
 
                 default:
                     return null;
