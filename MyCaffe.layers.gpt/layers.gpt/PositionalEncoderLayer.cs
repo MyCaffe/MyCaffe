@@ -66,7 +66,7 @@ namespace MyCaffe.layers.gpt
             {
                 m_blobPosEnc.Reshape(m_rgShape);
 
-                float[] rgPosEnc1 = new float[m_nBlockSize * m_nEmbed];
+                T[] rgPosEnc1 = new T[m_nBlockSize * m_nEmbed];
                 for (int pos = 0; pos < m_nBlockSize; pos++)
                 {
                     for (int i = 0; i < m_nEmbed; i++)
@@ -74,19 +74,19 @@ namespace MyCaffe.layers.gpt
                         int nIdx = pos * m_nEmbed + i;
 
                         if (i % 2 == 0)
-                            rgPosEnc1[nIdx] = (float)Math.Sin(pos / Math.Pow(10000.0, (2 * i / (double)m_nEmbed)));
+                            rgPosEnc1[nIdx] = Utility.ConvertVal<T>(Math.Sin(pos / Math.Pow(10000.0, (2 * i / (double)m_nEmbed))));
                         else if (i % 2 == 1)
-                            rgPosEnc1[nIdx] = (float)Math.Cos(pos / Math.Pow(10000.0, (2 * i / (double)m_nEmbed)));
+                            rgPosEnc1[nIdx] = Utility.ConvertVal<T>(Math.Cos(pos / Math.Pow(10000.0, (2 * i / (double)m_nEmbed))));
                     }
                 }
 
-                float[] rgPosEnc = new float[nBatch * m_nBlockSize * m_nEmbed];
+                T[] rgPosEnc = new T[nBatch * m_nBlockSize * m_nEmbed];
                 for (int n = 0; n < nBatch; n++)
                 {
                     Array.Copy(rgPosEnc1, 0, rgPosEnc, n * m_nBlockSize * m_nEmbed, m_nBlockSize * m_nEmbed);
                 }
 
-                m_blobPosEnc.mutable_cpu_data = convert(rgPosEnc);
+                m_blobPosEnc.mutable_cpu_data = rgPosEnc;
             }
         }
 
