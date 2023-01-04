@@ -499,7 +499,7 @@ namespace MyCaffe.layers.gpt
         /// The encoder and decoder masks use the following formats.
         /// 
         /// Encoder Mask:
-        /// shape = (batch, 1, seq_len)
+        /// shape = (batch, seq_len, 1)
         /// The sequence length is filled with 1 where data exists in each sequence, and
         /// 0 otherwise.  For example, when using a sequence length of 4 and batch = 3, 
         /// the following input:
