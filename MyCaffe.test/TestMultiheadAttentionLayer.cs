@@ -85,7 +85,7 @@ namespace MyCaffe.test
     class MultiheadAttentionLayerTest : TestBase
     {
         public MultiheadAttentionLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
-            : base("Causal Self Attention Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
+            : base("Multihead Attention Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
 
