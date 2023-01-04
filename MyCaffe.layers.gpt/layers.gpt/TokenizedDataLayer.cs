@@ -34,7 +34,7 @@ namespace MyCaffe.layers.gpt
         /// Provides TokenizedDataParameter model_data_param with options:
         ///  - source.  The data source(s) where the source is the data input table who's RawImageResults table contains the data for training.
         ///  
-        ///  - batch_size.  The batch size (currently only 1 supported).
+        ///  - batch_size.  The batch size.
         ///  
         ///  - time_steps.  The maximum number of time steps.
         ///  
@@ -125,9 +125,9 @@ namespace MyCaffe.layers.gpt
         }
 
         /// <summary>
-        /// Data layers have no bottoms, so reshaping is trivial.
+        /// Reshape the top based on the parameter batch and block size.
         /// </summary>
-        /// <param name="colBottom">Not used.</param>
+        /// <param name="colBottom">Specifies the collection of bottom (input) Blobs - Used only during RUN phase.</param>
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
@@ -242,7 +242,8 @@ namespace MyCaffe.layers.gpt
             }
             else
             {
-                Tuple<float[], float[]> data = m_data.GetData((int)m_param.tokenized_data_param.batch_size, (int)m_param.tokenized_data_param.block_size);
+                int[] rgnIdx;
+                Tuple<float[], float[]> data = m_data.GetData((int)m_param.tokenized_data_param.batch_size, (int)m_param.tokenized_data_param.block_size, out rgnIdx);
 
                 colTop[0].mutable_cpu_data = convert(data.Item1);
                 if (colTop.Count > 2)
@@ -436,7 +437,7 @@ namespace MyCaffe.layers.gpt
     /// The InputData is an abstract class used to get training data and tokenize input data.
     /// </summary>
     public abstract class InputData
-    {
+    {        
         /// <summary>
         /// Specifies the random object made available to the derived classes.
         /// </summary>
@@ -463,12 +464,21 @@ namespace MyCaffe.layers.gpt
         /// </summary>
         public abstract uint VocabularySize { get; }
         /// <summary>
-        /// 
+        /// Gets a set of randomly selected source/target data, where the target may be null.
         /// </summary>
         /// <param name="nBatchSize">Specifies the number of blocks in the batch.</param>
         /// <param name="nBlockSize">Specifies the size of each block.</param>
+        /// <param name="rgnIdx">Returns an array of the indexes of the data returned.</param>
         /// <returns>A tuple containing the data and target is returned.</returns>
-        public abstract Tuple<float[], float[]> GetData(int nBatchSize, int nBlockSize);
+        public abstract Tuple<float[], float[]> GetData(int nBatchSize, int nBlockSize, out int[] rgnIdx);
+        /// <summary>
+        /// Gets a set of source/target data from a specific index.
+        /// </summary>
+        /// <param name="nBatchSize">Specifies the number of blocks in the batch.</param>
+        /// <param name="nBlockSize">Specifies the size of each block.</param>
+        /// <param name="rgnIdx">Specifies the array of indexes of data to retrieve.</param>
+        /// <returns>A tuple containing the data and target is returned.</returns>
+        public abstract Tuple<float[], float[]> GetDataAt(int nBatchSize, int nBlockSize, int[] rgnIdx);
         /// <summary>
         /// Tokenize the input data.
         /// </summary>
@@ -487,6 +497,205 @@ namespace MyCaffe.layers.gpt
         /// <param name="nTokIdx">Specifies an index to the token to be detokenized.</param>
         /// <returns>The detokenized character is returned.</returns>
         public abstract char Detokenize(int nTokIdx);
+        /// <summary>
+        /// Return the special begin of sequence character.
+        /// </summary>
+        public abstract char BOS { get; }
+        /// <summary>
+        /// Return the special end of sequence character.
+        /// </summary>
+        public abstract char EOS { get; }
+    }
+
+    /// <summary>
+    /// The CharacterVocabulary class manages the data vocabulary of characters.
+    /// </summary>
+    public class CharacterVocabulary
+    {
+        Random m_random;
+        Dictionary<char, int> m_rgVocabKeyToIdx = new Dictionary<char, int>();
+        Dictionary<int, char> m_rgVocabIdxToKey = new Dictionary<int, char>();
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="random">Specifies the random number generator used.</param>
+        /// <param name="bAddBos">Specifies to include the special BOS character in the vocabulary.</param>
+        /// <param name="bAddEos">Specifies to include the special EOS character in the vocabulary.</param>
+        public CharacterVocabulary(Random random, bool bAddBos, bool bAddEos)
+        {
+            m_random = random;
+
+            if (bAddBos)
+                m_rgVocabKeyToIdx.Add(BOS, 1);
+
+            if (bAddEos)
+                m_rgVocabKeyToIdx.Add(EOS, 2);
+        }
+
+        /// <summary>
+        /// Returns the size of the vocabulary.
+        /// </summary>
+        public int Count
+        {
+            get { return m_rgVocabKeyToIdx.Count; }
+        }
+
+        /// <summary>
+        /// Adds a new character to the vocabulary.
+        /// </summary>
+        /// <param name="ch">Specifies the character</param>
+        public void Add(char ch)
+        {
+            if (!m_rgVocabKeyToIdx.ContainsKey(ch))
+                m_rgVocabKeyToIdx.Add(ch, 1);
+        }
+
+        /// <summary>
+        /// Builds the vocabulary from all characters added.
+        /// </summary>
+        /// <returns>The vocabulary size is returned.</returns>
+        public int Build()
+        {
+            List<char> rgKeys = m_rgVocabKeyToIdx.Keys.ToList();
+            rgKeys.Sort();
+
+            m_rgVocabKeyToIdx.Clear();
+
+            for (int i = 0; i < rgKeys.Count; i++)
+            {
+                m_rgVocabKeyToIdx.Add(rgKeys[i], i);
+                m_rgVocabIdxToKey.Add(i, rgKeys[i]);
+            }
+
+            return Count;
+        }
+
+        /// <summary>
+        /// Build the vocabulary from a string.
+        /// </summary>
+        /// <param name="strData">Specifies the data to build the vocabulary from.</param>
+        /// <returns>The vocabulary size is returned.</returns>
+        public int BuildFromString(string strData)
+        {
+            foreach (char ch in strData)
+            {
+                Add(ch);
+            }
+
+            return Build();
+        }
+
+        /// <summary>
+        /// Returns the special BOS character.
+        /// </summary>
+        public char BOS
+        {
+            get { return (char)1; }
+        }
+
+        /// <summary>
+        /// Returns the special EOS character.
+        /// </summary>
+        public char EOS
+        {
+            get { return (char)2; }
+        }
+
+        /// <summary>
+        /// Create a target that is offset from the source by one and ends with a EOS.
+        /// </summary>
+        /// <param name="rgSrc">Specifies the source to create the target from.</param>
+        /// <returns>The tokenized target is returned.</returns>
+        public int[] CreateTarget(int[] rgSrc)
+        {
+            List<int> rgTrg = new List<int>(rgSrc);
+
+            rgTrg.RemoveAt(0);
+            rgTrg.Add(EOS);
+
+            return rgTrg.ToArray();
+        }
+
+        /// <summary>
+        /// Tokenize a character into its corresponding index token.
+        /// </summary>
+        /// <param name="ch">Specifies the character to tokenize.</param>
+        /// <param name="bMustExist">Optionally, specifies to throw an error if the character is not in the vocabulary (default = true).</param>
+        /// <returns>The token corresponding to the character is returned.</returns>
+        public int Tokenize(char ch, bool bMustExist = true)
+        {
+            if (!m_rgVocabKeyToIdx.ContainsKey(ch))
+            {
+                if (bMustExist)
+                    throw new Exception("The character '" + ch.ToString() + " is not in the vocabulary!");
+                else
+                    return m_random.Next(Count);
+            }
+
+            return m_rgVocabKeyToIdx[ch];
+        }
+
+        /// <summary>
+        /// Tokenize a string of data.
+        /// </summary>
+        /// <param name="str">Specifies the string to tokenize.</param>
+        /// <param name="bAddBos">Specifies to add the BOS at the start of the tokenized data.</param>
+        /// <param name="bAddEos">Specifies to add the EOS to the end of the tokenized data.</param>
+        /// <returns>The array of tokens is returned.</returns>
+        public int[] Tokenize(string str, bool bAddBos, bool bAddEos)
+        {
+            List<int> rgTokens = new List<int>();
+
+            foreach (char ch in str)
+            {
+                rgTokens.Add(Tokenize(ch));
+            }
+
+            if (bAddBos)
+                rgTokens.Insert(0, BOS);
+
+            if (bAddEos)
+                rgTokens.Add(EOS);
+
+            return rgTokens.ToArray();
+        }
+
+        /// <summary>
+        /// Detokenize an index token into its corresponding character.
+        /// </summary>
+        /// <param name="nIdxToken">Specifies the token to detokenize.</param>
+        /// <returns>The detokenized character is returned.</returns>
+        public char Detokenize(int nIdxToken)
+        {
+            if (!m_rgVocabIdxToKey.ContainsKey(nIdxToken))
+                throw new Exception("The token '" + nIdxToken.ToString() + "' is not in the vocabulary!");
+
+            return m_rgVocabIdxToKey[nIdxToken];
+        }
+
+        /// <summary>
+        /// Detokenize an array into a string.
+        /// </summary>
+        /// <param name="rgf">Specifies the array of tokens to detokenize.</param>
+        /// <returns>The detokenized string is returned.</returns>
+        public string Detokenize(float[] rgf)
+        {
+            string str = "";
+
+            foreach (float f in rgf)
+            {
+                char ch = Detokenize((int)f);
+
+                if (ch != 0 && ch != BOS && ch != EOS)
+                    str += Detokenize((int)f);
+
+                if (ch == EOS)
+                    break;
+            }
+
+            return str;
+        }
     }
 
     /// <summary>
@@ -506,8 +715,7 @@ namespace MyCaffe.layers.gpt
     public class TextInputData : InputData
     {
         string m_strData;
-        Dictionary<char, int> m_rgVocabKeyToIdx = new Dictionary<char, int>();
-        Dictionary<int, char> m_rgVocabIdxToKey = new Dictionary<int, char>();
+        CharacterVocabulary m_vocab;
         string m_strDebugIndexFile;
         List<int> m_rgDebugIdx = null;
         int m_nDebugIdx = 0;
@@ -526,7 +734,6 @@ namespace MyCaffe.layers.gpt
         public TextInputData(string strSrc, int? nRandomSeed = null, string strDebugIndexFile = null, Phase phase = Phase.NONE) : base(nRandomSeed)
         {
             string strProgData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-
             strSrc = Utility.ReplaceMacro(strSrc, "$ProgramData$", strProgData);
 
             m_phase = phase;
@@ -547,23 +754,8 @@ namespace MyCaffe.layers.gpt
                 }
             }
 
-            m_rgVocabKeyToIdx.Clear();
-            foreach (char ch in m_strData)
-            {
-                if (!m_rgVocabKeyToIdx.ContainsKey(ch))
-                    m_rgVocabKeyToIdx.Add(ch, 1);
-            }
-
-            List<char> rgKeys = m_rgVocabKeyToIdx.Keys.ToList();
-            rgKeys.Sort();
-
-            m_rgVocabKeyToIdx.Clear();
-
-            for (int i = 0; i < rgKeys.Count; i++)
-            {
-                m_rgVocabKeyToIdx.Add(rgKeys[i], i);
-                m_rgVocabIdxToKey.Add(i, rgKeys[i]);
-            }
+            m_vocab = new CharacterVocabulary(m_random, false, false);
+            m_vocab.BuildFromString(m_strData);
         }
 
         /// <summary>
@@ -579,7 +771,7 @@ namespace MyCaffe.layers.gpt
         /// </summary>
         public override uint VocabularySize
         {
-            get { return (uint)m_rgVocabKeyToIdx.Count; }
+            get { return (uint)m_vocab.Count; }
         }
 
         /// <summary>
@@ -588,10 +780,13 @@ namespace MyCaffe.layers.gpt
         /// </summary>
         /// <param name="nBatchSize">Specifies the batch size.</param>
         /// <param name="nBlockSize">Specifies teh block size.</param>
+        /// <param name="rgnIdx">Returns an array of indexes of the data returned.</param>
         /// <returns>A tuple containing the data and target is returned.</returns>
-        public override Tuple<float[], float[]> GetData(int nBatchSize, int nBlockSize)
+        public override Tuple<float[], float[]> GetData(int nBatchSize, int nBlockSize, out int[] rgnIdx)
         {
             int nSize = nBatchSize * nBlockSize;
+
+            rgnIdx = new int[nBatchSize];
 
             if (m_rgData == null || m_rgData.Length != nSize)
                 m_rgData = new float[nSize];
@@ -604,6 +799,8 @@ namespace MyCaffe.layers.gpt
                 int nMax = m_strData.Count() - (nBlockSize + 1);
                 int nDataIdx = m_random.Next(nMax);
                 int nDstIdx = i * nBlockSize;
+
+                rgnIdx[i] = nDataIdx;
 
                 if (m_rgDebugIdx != null)
                 {
@@ -621,10 +818,7 @@ namespace MyCaffe.layers.gpt
                         m_rgData[nDstIdx + j - 1] = nCharIdxLast.Value;
 
                     char ch = m_strData[nDataIdx + j];
-                    int nCharIdx = m_rgVocabKeyToIdx[ch];
-
-                    if (nCharIdx < 0 || nCharIdx > 65)
-                        throw new Exception("Token out of range!");
+                    int nCharIdx = m_vocab.Tokenize(ch);
 
                     if (j > 0)
                         m_rgTgt[nDstIdx + j - 1] = nCharIdx;
@@ -634,6 +828,18 @@ namespace MyCaffe.layers.gpt
             }
 
             return new Tuple<float[], float[]>(m_rgData, m_rgTgt);
+        }
+
+        /// <summary>
+        /// Specifies the GetDataAt method - Not used.
+        /// </summary>
+        /// <param name="nBatchSize">Specifies the number of blocks in the batch.</param>
+        /// <param name="nBlockSize">Specifies the size of each block.</param>
+        /// <param name="rgnIdx">Not used.</param>
+        /// <exception cref="NotImplementedException"></exception>
+        public override Tuple<float[], float[]> GetDataAt(int nBatchSize, int nBlockSize, int[] rgnIdx)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -647,13 +853,7 @@ namespace MyCaffe.layers.gpt
             for (int i = 0; i < rgInput.Count(); i++)
             {
                 char ch = (char)rgInput[i];
-                int nCharIdx;
-
-                if (m_rgVocabKeyToIdx.ContainsKey(ch))
-                    nCharIdx = m_rgVocabKeyToIdx[ch];
-                else
-                    nCharIdx = m_random.Next(m_rgVocabIdxToKey.Count);
-
+                int nCharIdx = m_vocab.Tokenize(ch, false);
                 rgInput[i] = nCharIdx;
             }
 
@@ -670,7 +870,7 @@ namespace MyCaffe.layers.gpt
             for (int i = 0; i < rgInput.Count(); i++)
             {
                 int nCharIdx = (int)rgInput[i];
-                char ch = m_rgVocabIdxToKey[nCharIdx];
+                char ch = m_vocab.Detokenize(nCharIdx);
                 rgInput[i] = ch;
             }
 
@@ -685,7 +885,23 @@ namespace MyCaffe.layers.gpt
         /// <returns>The detokenized character is returned.</returns>
         public override char Detokenize(int nTokIdx)
         {
-            return m_rgVocabIdxToKey[nTokIdx];
+            return m_vocab.Detokenize(nTokIdx);
+        }
+
+        /// <summary>
+        /// Return the special begin of sequence character.
+        /// </summary>
+        public override char BOS
+        { 
+            get { return m_vocab.BOS; }
+        }
+
+        /// <summary>
+        /// Return the special end of sequence character.
+        /// </summary>
+        public override char EOS
+        {
+            get { return m_vocab.EOS; }
         }
     }
 }
