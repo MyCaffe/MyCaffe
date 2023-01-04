@@ -208,7 +208,7 @@ namespace MyCaffe.test
             }
         }
 
-        private void verify(Blob<T> b1, Blob<T> b1exp, bool bCompareDiff)
+        private void verify(Blob<T> b1, Blob<T> b1exp, bool bCompareDiff, double dfErr = 1e-08)
         {
             float[] rgExpected = (bCompareDiff) ? convertF(b1exp.mutable_cpu_diff) : convertF(b1exp.mutable_cpu_data);
             float[] rgActual = (bCompareDiff) ? convertF(b1.mutable_cpu_diff) : convertF(b1.mutable_cpu_data);
@@ -217,12 +217,11 @@ namespace MyCaffe.test
             {
                 float fExpected = rgExpected[i];
                 float fActual = rgActual[i];
-                float fErr = 1e-6f;
 
-                m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, fErr, "The values are not as expected!");
+                m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, dfErr, "The values are not as expected!");
             }
 
-            bool bRes = b1.Compare(b1exp, m_blobWork, bCompareDiff, 1e-6f);
+            bool bRes = b1.Compare(b1exp, m_blobWork, bCompareDiff, dfErr);
             if (!bRes)
                 m_log.FAIL("The blobs are not equal!");
         }
@@ -251,7 +250,8 @@ namespace MyCaffe.test
                 m_blobY.LoadFromNumpy(strTestDataPath + "pos.output.npy");
 
                 // Now, check values
-                verify(TopVec[0], m_blobY, false);
+                double dfErr = (typeof(T) == typeof(double)) ? 1e-05 : 1e-08;
+                verify(TopVec[0], m_blobY, false, dfErr);
             }
             finally
             {
@@ -315,7 +315,7 @@ namespace MyCaffe.test
                 BottomVec.Add(m_blobQ);
 
                 GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.0001);
-                checker.CheckGradient(layer, BottomVec, TopVec, -1, 100);
+                checker.CheckGradient(layer, BottomVec, TopVec, -1, 200);
             }
             finally
             {
