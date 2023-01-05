@@ -378,9 +378,10 @@ namespace MyCaffe.param
             /// Initializes a parameter for the PoolingLayer.
             /// </summary>
             POOLING,
+            /// <summary>
             /// Initializes a parameter for the PositionalEncoderLayer.
             /// </summary>
-            POSITIONAL_ENCODER,
+            POSITIONAL_ENCODING,
             /// <summary>
             /// Initializes a parameter for the PowerLayer.
             /// </summary>
@@ -1330,10 +1331,10 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new PermuteParameter();
                     break;
 
-                case LayerType.POSITIONAL_ENCODER:
+                case LayerType.POSITIONAL_ENCODING:
                     expected_bottom.Add("input");
                     expected_top.Add("pos");
-                    m_rgLayerParameters[lt] = new PositionalEncoderParameter();
+                    m_rgLayerParameters[lt] = new PositionalEncodingParameter();
                     break;
 
                 case LayerType.POOLING:
@@ -1939,10 +1940,10 @@ namespace MyCaffe.param
         /// <summary>
         /// Returns the parameter set when initialized with LayerType.POSITIONAL_ENCODER
         /// </summary>
-        public PositionalEncoderParameter positional_encoder_param
+        public PositionalEncodingParameter positional_encoder_param
         {
-            get { return (PositionalEncoderParameter)m_rgLayerParameters[LayerType.POSITIONAL_ENCODER]; }
-            set { m_rgLayerParameters[LayerType.POSITIONAL_ENCODER] = value; }
+            get { return (PositionalEncodingParameter)m_rgLayerParameters[LayerType.POSITIONAL_ENCODING]; }
+            set { m_rgLayerParameters[LayerType.POSITIONAL_ENCODING] = value; }
         }
 
         /// <summary>
@@ -2945,7 +2946,7 @@ namespace MyCaffe.param
                 case LayerType.PERMUTE:
                     return "Permute";
 
-                case LayerType.POSITIONAL_ENCODER:
+                case LayerType.POSITIONAL_ENCODING:
                     return "PositionalEncoder";
 
                 case LayerType.POOLING:
@@ -3557,7 +3558,7 @@ namespace MyCaffe.param
                 p.multihead_attention_param = MultiheadAttentionParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("positional_encoder_param")) != null)
-                p.positional_encoder_param = PositionalEncoderParameter.FromProto(rpp);
+                p.positional_encoder_param = PositionalEncodingParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("gelu_param")) != null)
                 p.gelu_param = GeluParameter.FromProto(rpp);
@@ -3890,7 +3891,7 @@ namespace MyCaffe.param
                     return LayerType.PERMUTE;
 
                 case "positionalencoder":
-                    return LayerType.POSITIONAL_ENCODER;
+                    return LayerType.POSITIONAL_ENCODING;
 
                 case "pooling":
                     return LayerType.POOLING;

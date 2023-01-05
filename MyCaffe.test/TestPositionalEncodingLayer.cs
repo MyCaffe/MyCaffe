@@ -18,16 +18,16 @@ using System.IO.Compression;
 namespace MyCaffe.test
 {
     [TestClass]
-    public class TestPositionalEncoderLayer
+    public class TestPositionalEncodingLayer
     {
         [TestMethod]
         public void TestForward()
         {
-            PositionalEncoderLayerTest test = new PositionalEncoderLayerTest(EngineParameter.Engine.CAFFE);
+            PositionalEncodingLayerTest test = new PositionalEncodingLayerTest(EngineParameter.Engine.CAFFE);
 
             try
             {
-                foreach (IPositionalEncoderLayerTest t in test.Tests)
+                foreach (IPositionalEncodingLayerTest t in test.Tests)
                 {
                     t.TestForward(3, 8);
                 }
@@ -41,11 +41,11 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestBackward()
         {
-            PositionalEncoderLayerTest test = new PositionalEncoderLayerTest(EngineParameter.Engine.CAFFE);
+            PositionalEncodingLayerTest test = new PositionalEncodingLayerTest(EngineParameter.Engine.CAFFE);
 
             try
             {
-                foreach (IPositionalEncoderLayerTest t in test.Tests)
+                foreach (IPositionalEncodingLayerTest t in test.Tests)
                 {
                     t.TestBackward(3, 8);
                 }
@@ -59,11 +59,11 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestGradient()
         {
-            PositionalEncoderLayerTest test = new PositionalEncoderLayerTest(EngineParameter.Engine.CAFFE);
+            PositionalEncodingLayerTest test = new PositionalEncodingLayerTest(EngineParameter.Engine.CAFFE);
 
             try
             {
-                foreach (IPositionalEncoderLayerTest t in test.Tests)
+                foreach (IPositionalEncodingLayerTest t in test.Tests)
                 {
                     t.TestGradient(3, 8);
                 }
@@ -75,35 +75,35 @@ namespace MyCaffe.test
         }
     }
 
-    interface IPositionalEncoderLayerTest : ITest
+    interface IPositionalEncodingLayerTest : ITest
     {
         void TestForward(int nBatch, int nHeads);
         void TestBackward(int nBatch, int nHeads);
         void TestGradient(int nBatch, int nHeads);
     }
 
-    class PositionalEncoderLayerTest : TestBase
+    class PositionalEncodingLayerTest : TestBase
     {
-        public PositionalEncoderLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
-            : base("Positional Encoder Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
+        public PositionalEncodingLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
+            : base("Positional Encoding Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
 
         protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
         {
             if (dt == common.DataType.DOUBLE)
-                return new PositionalEncoderLayerTest2<double>(strName, nDeviceID, engine);
+                return new PositionalEncodingLayerTest2<double>(strName, nDeviceID, engine);
             else
-                return new PositionalEncoderLayerTest2<float>(strName, nDeviceID, engine);
+                return new PositionalEncodingLayerTest2<float>(strName, nDeviceID, engine);
         }
     }
 
-    class PositionalEncoderLayerTest2<T> : TestEx<T>, IPositionalEncoderLayerTest
+    class PositionalEncodingLayerTest2<T> : TestEx<T>, IPositionalEncodingLayerTest
     {
         Blob<T> m_blobY;
         Blob<T> m_blobQ;
 
-        public PositionalEncoderLayerTest2(string strName, int nDeviceID, EngineParameter.Engine engine)
+        public PositionalEncodingLayerTest2(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, new List<int>() { 3, 2, 4, 1 }, nDeviceID)
         {
             m_engine = engine;
@@ -136,14 +136,14 @@ namespace MyCaffe.test
         {
             string strTestDataPath = loadTestData1();
 
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODER);
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODING);
             p.positional_encoder_param.embed = 512;
             p.positional_encoder_param.block_size = 200;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             try
             {
-                m_log.CHECK(layer.type == LayerParameter.LayerType.POSITIONAL_ENCODER, "The layer type is incorrect!");
+                m_log.CHECK(layer.type == LayerParameter.LayerType.POSITIONAL_ENCODING, "The layer type is incorrect!");
 
                 m_blobQ.LoadFromNumpy(strTestDataPath + "q0.npy");
                 
@@ -169,14 +169,14 @@ namespace MyCaffe.test
         {
             string strTestDataPath = loadTestData1();
 
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODER);
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODING);
             p.positional_encoder_param.embed = 512;
             p.positional_encoder_param.block_size = 200;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             try
             {
-                m_log.CHECK(layer.type == LayerParameter.LayerType.POSITIONAL_ENCODER, "The layer type is incorrect!");
+                m_log.CHECK(layer.type == LayerParameter.LayerType.POSITIONAL_ENCODING, "The layer type is incorrect!");
 
                 m_blobQ.LoadFromNumpy(strTestDataPath + "q0.npy");
 
@@ -206,14 +206,14 @@ namespace MyCaffe.test
         {
             string strTestDataPath = loadTestData1();
 
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODER);
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODING);
             p.positional_encoder_param.embed = 512;
             p.positional_encoder_param.block_size = 200;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             try
             {
-                m_log.CHECK(layer.type == LayerParameter.LayerType.POSITIONAL_ENCODER, "The layer type is incorrect!");
+                m_log.CHECK(layer.type == LayerParameter.LayerType.POSITIONAL_ENCODING, "The layer type is incorrect!");
 
                 m_blobQ.LoadFromNumpy(strTestDataPath + "q0.npy");
 

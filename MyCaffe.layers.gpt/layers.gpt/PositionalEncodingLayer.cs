@@ -10,10 +10,10 @@ using MyCaffe.param;
 namespace MyCaffe.layers.gpt
 {
     /// <summary>
-    /// The PositionalEncoderLayer is a neuron layer that adds positional encoding to the input.
+    /// The PositionalEncodingLayer is a neuron layer that adds positional encoding to the input.
     /// </summary>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
-    public class PositionalEncoderLayer<T> : NeuronLayer<T>
+    public class PositionalEncodingLayer<T> : NeuronLayer<T>
     {
         Blob<T> m_blobPosEnc;
         int[] m_rgShape = new int[3];
@@ -28,10 +28,10 @@ namespace MyCaffe.layers.gpt
         /// <param name="log">Specifies the Log for output.</param>
         /// <param name="p">Specifies the LayerParameter of type Mish with parameter Mish_param
         /// </param>
-        public PositionalEncoderLayer(CudaDnn<T> cuda, Log log, LayerParameter p)
+        public PositionalEncodingLayer(CudaDnn<T> cuda, Log log, LayerParameter p)
             : base(cuda, log, p)
         {
-            m_type = LayerParameter.LayerType.POSITIONAL_ENCODER;
+            m_type = LayerParameter.LayerType.POSITIONAL_ENCODING;
             m_nBlockSize = p.positional_encoder_param.block_size;
             m_nEmbed = p.positional_encoder_param.embed;
             m_dfScale = Math.Sqrt(m_nEmbed);
