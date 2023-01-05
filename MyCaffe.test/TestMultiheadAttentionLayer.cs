@@ -109,10 +109,6 @@ namespace MyCaffe.test
         Blob<T> m_blobQexp;
         Blob<T> m_blobKexp;
         Blob<T> m_blobVexp;
-        Blob<T> m_blobWork;
-        Stopwatch m_swUpdateTimer = new Stopwatch();
-        double m_dfLastProgress = 0;
-        AutoResetEvent m_evtDownloadDone = new AutoResetEvent(false);
 
         public MultiheadAttentionLayerTest2(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, new List<int>() { 3, 2, 4, 1 }, nDeviceID)
@@ -155,83 +151,21 @@ namespace MyCaffe.test
             dispose(ref m_blobKexp);
             dispose(ref m_blobVexp);
             dispose(ref m_blobY);
-            dispose(ref m_blobWork);
             base.dispose();
         }
 
-        private string loadTestData()
+        private string loadTestData1()
         {
-            string strTestDataFile = downloadTestData();
-            string strPath = Path.GetDirectoryName(strTestDataFile);
-            
-            if (!File.Exists(strPath + "\\test\\mh.10_concat_output1.npy"))
-                ZipFile.ExtractToDirectory(strTestDataFile, strPath);
-
-            return strPath + "\\test\\";
-        }
-
-        private string downloadTestData()
-        {
-            string strTestDataPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\mh\\";
-            if (!Directory.Exists(strTestDataPath))
-                Directory.CreateDirectory(strTestDataPath);
-
-            string strTestDataFile = strTestDataPath + "_multihead_test.zip";
-            if (!File.Exists(strTestDataFile))
-            {
-                using (WebClient webClient = new WebClient())
-                {
-                    string strUrl = "https://signalpopcdn.blob.core.windows.net/mycaffesupport/_multihead_test.zip";
-                    string strFile1 = "_multihead_test.zip";
-                    string strFile = strTestDataPath + strFile1;
-
-                    m_swUpdateTimer.Start();
-                    m_dfLastProgress = 0;
-
-                    webClient.DownloadProgressChanged += WebClient_DownloadProgressChanged;
-                    webClient.DownloadFileCompleted += WebClient_DownloadFileCompleted;
-                    webClient.DownloadFileAsync(new Uri(strUrl), strFile, strFile1);
-
-                    m_evtDownloadDone.WaitOne();
-                }
-            }
-
-            return strTestDataFile;
-        }
-
-        private void WebClient_DownloadFileCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
-        {
-            bool bTraceEnabled = m_log.EnableTrace;
-            m_log.EnableTrace = true;
-            m_log.WriteLine("Downloading done.");
-            m_log.EnableTrace = bTraceEnabled;
-
-            m_evtDownloadDone.Set();
-        }
-
-        private void WebClient_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
-        {
-            if (m_swUpdateTimer.Elapsed.TotalMilliseconds >= 1000)
-            {
-                if (m_dfLastProgress != e.ProgressPercentage)
-                {
-                    m_dfLastProgress = e.ProgressPercentage;
-                    string strFile = e.UserState.ToString();
-                    bool bTraceEnabled = m_log.EnableTrace;
-                    m_log.EnableTrace = true;
-
-                    m_log.Progress = e.ProgressPercentage / 100.0;
-                    m_log.WriteLine("Downloading '" + strFile + "' at " + m_log.Progress.ToString("P") + "...");
-                    m_log.EnableTrace = bTraceEnabled;
-                }
-
-                m_swUpdateTimer.Restart();
-            }
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\mh\\";
+            string strFileName = "_multihead_test.zip";
+            string strTestPath = "test";
+            string strTestFile = "mh.10_concat_output1.npy";
+            return loadTestData(strPath, strFileName, strTestPath, strTestFile);
         }
 
         public void TestForward(int nBatch, int nHeads)
         {
-            string strTestDataPath = loadTestData();
+            string strTestDataPath = loadTestData1();
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION);
             p.multihead_attention_param.heads = nHeads;
@@ -284,7 +218,7 @@ namespace MyCaffe.test
 
         public void TestBackward(int nBatch, int nHeads)
         {
-            string strTestDataPath = loadTestData();
+            string strTestDataPath = loadTestData1();
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION);
             p.multihead_attention_param.heads = nHeads;
@@ -344,28 +278,9 @@ namespace MyCaffe.test
             }
         }
 
-        private void verify(Blob<T> b1, Blob<T> b1exp, bool bCompareDiff)
-        {
-            float[] rgExpected = (bCompareDiff) ? convertF(b1exp.mutable_cpu_diff) : convertF(b1exp.mutable_cpu_data);
-            float[] rgActual = (bCompareDiff) ? convertF(b1.mutable_cpu_diff) : convertF(b1.mutable_cpu_data);
-
-            for (int i = 0; i < rgExpected.Length; i++)
-            {
-                float fExpected = rgExpected[i];
-                float fActual = rgActual[i];
-                float fErr = 1e-6f;
-
-                m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, fErr, "The values are not as expected!");
-            }
-
-            bool bRes = b1.Compare(b1exp, m_blobWork, bCompareDiff, 1e-6f); 
-            if (!bRes)
-                m_log.FAIL("The blobs are not equal!");
-        }
-
         public void TestGradient(int nBatch, int nHeads)
         {
-            string strTestDataPath = loadTestData();
+            string strTestDataPath = loadTestData1();
             
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION);
             p.multihead_attention_param.heads = nHeads;

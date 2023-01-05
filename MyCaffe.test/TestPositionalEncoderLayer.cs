@@ -102,10 +102,6 @@ namespace MyCaffe.test
     {
         Blob<T> m_blobY;
         Blob<T> m_blobQ;
-        Blob<T> m_blobWork;
-        Stopwatch m_swUpdateTimer = new Stopwatch();
-        double m_dfLastProgress = 0;
-        AutoResetEvent m_evtDownloadDone = new AutoResetEvent(false);
 
         public PositionalEncoderLayerTest2(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, new List<int>() { 3, 2, 4, 1 }, nDeviceID)
@@ -113,7 +109,6 @@ namespace MyCaffe.test
             m_engine = engine;
             m_blobY = new Blob<T>(m_cuda, m_log);
             m_blobQ = new Blob<T>(m_cuda, m_log);
-            m_blobWork = new Blob<T>(m_cuda, m_log);
         }
 
         protected override FillerParameter getFillerParam()
@@ -121,114 +116,25 @@ namespace MyCaffe.test
             return base.getFillerParam();
         }
 
-        private void dispose1(ref Blob<T> b)
-        {
-            if (b != null)
-            {
-                b.Dispose();
-                b = null;
-            }
-        }
-
         protected override void dispose()
         {
             dispose(ref m_blobY);
             dispose(ref m_blobQ);
-            dispose(ref m_blobWork);
             base.dispose();
         }
 
-        private string loadTestData()
+        private string loadTestData1()
         {
-            string strTestDataFile = downloadTestData();
-            string strPath = Path.GetDirectoryName(strTestDataFile);
-            
-            if (!File.Exists(strPath + "\\test\\pos.output.npy"))
-                ZipFile.ExtractToDirectory(strTestDataFile, strPath);
-
-            return strPath + "\\test\\";
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\pos\\";
+            string strFileName = "_posenc_test.zip";
+            string strTestPath = "test";
+            string strTestFile = "pos.output.npy";
+            return loadTestData(strPath, strFileName, strTestPath, strTestFile);
         }
-
-        private string downloadTestData()
-        {
-            string strTestDataPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\pos\\";
-            if (!Directory.Exists(strTestDataPath))
-                Directory.CreateDirectory(strTestDataPath);
-
-            string strTestDataFile = strTestDataPath + "_posenc_test.zip";
-            if (!File.Exists(strTestDataFile))
-            {
-                using (WebClient webClient = new WebClient())
-                {
-                    string strUrl = "https://signalpopcdn.blob.core.windows.net/mycaffesupport/_posenc_test.zip";
-                    string strFile1 = "_posenc_test.zip";
-                    string strFile = strTestDataPath + strFile1;
-
-                    m_swUpdateTimer.Start();
-                    m_dfLastProgress = 0;
-
-                    webClient.DownloadProgressChanged += WebClient_DownloadProgressChanged;
-                    webClient.DownloadFileCompleted += WebClient_DownloadFileCompleted;
-                    webClient.DownloadFileAsync(new Uri(strUrl), strFile, strFile1);
-
-                    m_evtDownloadDone.WaitOne();
-                }
-            }
-
-            return strTestDataFile;
-        }
-
-        private void WebClient_DownloadFileCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
-        {
-            bool bTraceEnabled = m_log.EnableTrace;
-            m_log.EnableTrace = true;
-            m_log.WriteLine("Downloading done.");
-            m_log.EnableTrace = bTraceEnabled;
-
-            m_evtDownloadDone.Set();
-        }
-
-        private void WebClient_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
-        {
-            if (m_swUpdateTimer.Elapsed.TotalMilliseconds >= 1000)
-            {
-                if (m_dfLastProgress != e.ProgressPercentage)
-                {
-                    m_dfLastProgress = e.ProgressPercentage;
-                    string strFile = e.UserState.ToString();
-                    bool bTraceEnabled = m_log.EnableTrace;
-                    m_log.EnableTrace = true;
-
-                    m_log.Progress = e.ProgressPercentage / 100.0;
-                    m_log.WriteLine("Downloading '" + strFile + "' at " + m_log.Progress.ToString("P") + "...");
-                    m_log.EnableTrace = bTraceEnabled;
-                }
-
-                m_swUpdateTimer.Restart();
-            }
-        }
-
-        private void verify(Blob<T> b1, Blob<T> b1exp, bool bCompareDiff, double dfErr = 1e-08)
-        {
-            float[] rgExpected = (bCompareDiff) ? convertF(b1exp.mutable_cpu_diff) : convertF(b1exp.mutable_cpu_data);
-            float[] rgActual = (bCompareDiff) ? convertF(b1.mutable_cpu_diff) : convertF(b1.mutable_cpu_data);
-
-            for (int i = 0; i < rgExpected.Length; i++)
-            {
-                float fExpected = rgExpected[i];
-                float fActual = rgActual[i];
-
-                m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, dfErr, "The values are not as expected!");
-            }
-
-            bool bRes = b1.Compare(b1exp, m_blobWork, bCompareDiff, dfErr);
-            if (!bRes)
-                m_log.FAIL("The blobs are not equal!");
-        }
-
+        
         public void TestForward(int nBatch, int nHeads)
         {
-            string strTestDataPath = loadTestData();
+            string strTestDataPath = loadTestData1();
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODER);
             p.positional_encoder_param.embed = 512;
@@ -261,7 +167,7 @@ namespace MyCaffe.test
 
         public void TestBackward(int nBatch, int nHeads)
         {
-            string strTestDataPath = loadTestData();
+            string strTestDataPath = loadTestData1();
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODER);
             p.positional_encoder_param.embed = 512;
@@ -298,7 +204,7 @@ namespace MyCaffe.test
 
         public void TestGradient(int nBatch, int nHeads)
         {
-            string strTestDataPath = loadTestData();
+            string strTestDataPath = loadTestData1();
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODER);
             p.positional_encoder_param.embed = 512;

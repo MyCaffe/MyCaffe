@@ -12,6 +12,8 @@ using System.Diagnostics;
 using System.Threading;
 using MyCaffe.db.image;
 using System.Globalization;
+using System.IO.Compression;
+using System.Net;
 
 namespace MyCaffe.test
 {
@@ -533,6 +535,10 @@ namespace MyCaffe.test
         BlobCollection<T> m_colBottom = new BlobCollection<T>();
         BlobCollection<T> m_colTop = new BlobCollection<T>();
         protected Filler<T> m_filler;
+        protected Blob<T> m_blobWork;
+        Stopwatch m_swUpdateTimer = new Stopwatch();
+        double m_dfLastProgress = 0;
+        AutoResetEvent m_evtDownloadDone = new AutoResetEvent(false);
 
         public TestEx(string strName, List<int> rgBottomShape = null, int nDeviceID = TestBase.DEFAULT_DEVICE_ID, bool bHalf = false)
             : base(strName, nDeviceID, EngineParameter.Engine.DEFAULT, bHalf)
@@ -540,6 +546,7 @@ namespace MyCaffe.test
             if (rgBottomShape == null)
                 rgBottomShape = new List<int>() { 2, 3, 4, 5 };
 
+            m_blobWork = new Blob<T>(m_cuda, m_log);
             m_blob_bottom = new Blob<T>(m_cuda, m_log, rgBottomShape, true);
             m_blob_top = new Blob<T>(m_cuda, m_log, true);
             m_colBottom.Add(m_blob_bottom);
@@ -561,8 +568,9 @@ namespace MyCaffe.test
 
         protected override void dispose()
         {
-            m_blob_bottom.Dispose();
-            m_blob_top.Dispose();
+            dispose(ref m_blobWork);
+            dispose(ref m_blob_bottom);
+            dispose(ref m_blob_top);
 
             base.dispose();
         }
@@ -644,6 +652,92 @@ namespace MyCaffe.test
         protected T[] convert(float[] rg)
         {
             return Utility.ConvertVec<T>(rg);
+        }
+
+        protected string loadTestData(string strPath, string strFileName, string strTestPath, string strTestFile)
+        {
+            string strTestDataFile = downloadTestData(strPath, strFileName);
+
+            if (!File.Exists(strPath + strTestPath + "\\" + strTestFile))
+                ZipFile.ExtractToDirectory(strTestDataFile, strPath);
+
+            return strPath + strTestPath + "\\";
+        }
+
+        protected string downloadTestData(string strPath, string strFileName)
+        {
+            if (!Directory.Exists(strPath))
+                Directory.CreateDirectory(strPath);
+
+            string strTestDataFile = strPath + strFileName;
+            if (!File.Exists(strTestDataFile))
+            {
+                using (WebClient webClient = new WebClient())
+                {
+                    string strUrl = "https://signalpopcdn.blob.core.windows.net/mycaffesupport/" + strFileName;
+                    string strFile1 = strFileName;
+                    string strFile = strPath + strFile1;
+
+                    m_swUpdateTimer.Start();
+                    m_dfLastProgress = 0;
+
+                    webClient.DownloadProgressChanged += WebClient_DownloadProgressChanged;
+                    webClient.DownloadFileCompleted += WebClient_DownloadFileCompleted;
+                    webClient.DownloadFileAsync(new Uri(strUrl), strFile, strFile1);
+
+                    m_evtDownloadDone.WaitOne();
+                }
+            }
+
+            return strTestDataFile;
+        }
+
+        private void WebClient_DownloadFileCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
+        {
+            bool bTraceEnabled = m_log.EnableTrace;
+            m_log.EnableTrace = true;
+            m_log.WriteLine("Downloading done.");
+            m_log.EnableTrace = bTraceEnabled;
+
+            m_evtDownloadDone.Set();
+        }
+
+        private void WebClient_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+        {
+            if (m_swUpdateTimer.Elapsed.TotalMilliseconds >= 1000)
+            {
+                if (m_dfLastProgress != e.ProgressPercentage)
+                {
+                    m_dfLastProgress = e.ProgressPercentage;
+                    string strFile = e.UserState.ToString();
+                    bool bTraceEnabled = m_log.EnableTrace;
+                    m_log.EnableTrace = true;
+
+                    m_log.Progress = e.ProgressPercentage / 100.0;
+                    m_log.WriteLine("Downloading '" + strFile + "' at " + m_log.Progress.ToString("P") + "...");
+                    m_log.EnableTrace = bTraceEnabled;
+                }
+
+                m_swUpdateTimer.Restart();
+            }
+        }
+
+        protected void verify(Blob<T> b1, Blob<T> b1exp, bool bCompareDiff, double dfErr = 1e-08)
+        {
+            float[] rgExpected = (bCompareDiff) ? convertF(b1exp.mutable_cpu_diff) : convertF(b1exp.mutable_cpu_data);
+            float[] rgActual = (bCompareDiff) ? convertF(b1.mutable_cpu_diff) : convertF(b1.mutable_cpu_data);
+
+            for (int i = 0; i < rgExpected.Length; i++)
+            {
+                float fExpected = rgExpected[i];
+                float fActual = rgActual[i];
+
+                m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, dfErr, "The values are not as expected!");
+            }
+
+            bool bRes = b1.Compare(b1exp, m_blobWork, bCompareDiff, dfErr);
+            if (!bRes)
+                m_log.FAIL("The blobs are not equal!");
         }
     }
 }

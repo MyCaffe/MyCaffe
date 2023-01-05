@@ -103,7 +103,7 @@ namespace MyCaffe.test
     class EncoderBlockLayerTest : TestBase
     {
         public EncoderBlockLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
-            : base("Causal Self Attention Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
+            : base("Encoder Transformer Block Test", TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
 
@@ -122,17 +122,12 @@ namespace MyCaffe.test
         Blob<T> m_blobMask;
         Blob<T> m_blobInput;
         Blob<T> m_blobYexp;
-        Blob<T> m_blobWork;
-        Stopwatch m_swUpdateTimer = new Stopwatch();
-        double m_dfLastProgress = 0;
-        AutoResetEvent m_evtDownloadDone = new AutoResetEvent(false);
 
         public EncoderBlockLayerTest2(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, new List<int>() { 3, 2, 4, 1 }, nDeviceID)
         {
             m_engine = engine;
             m_blobX = new Blob<T>(m_cuda, m_log);
-            m_blobMask = new Blob<T>(m_cuda, m_log);
             m_blobInput = new Blob<T>(m_cuda, m_log);
             m_blobYexp = new Blob<T>(m_cuda, m_log);
             m_blobWork = new Blob<T>(m_cuda, m_log);
@@ -158,101 +153,21 @@ namespace MyCaffe.test
             dispose(ref m_blobMask);
             dispose(ref m_blobInput);
             dispose(ref m_blobYexp);
-            dispose(ref m_blobWork);
             base.dispose();
         }
 
-        private string loadTestData()
+        private string loadTestData1()
         {
-            string strTestDataFile = downloadTestData();
-            string strPath = Path.GetDirectoryName(strTestDataFile);
-            
-            if (!File.Exists(strPath + "\\test\\13_out1.npy"))
-                ZipFile.ExtractToDirectory(strTestDataFile, strPath);
-
-            return strPath + "\\test\\";
-        }
-
-        private string downloadTestData()
-        {
-            string strTestDataPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\enc\\";
-            if (!Directory.Exists(strTestDataPath))
-                Directory.CreateDirectory(strTestDataPath);
-
-            string strTestDataFile = strTestDataPath + "_encoder_test.zip";
-            if (!File.Exists(strTestDataFile))
-            {
-                using (WebClient webClient = new WebClient())
-                {
-                    string strUrl = "https://signalpopcdn.blob.core.windows.net/mycaffesupport/_encoder_test.zip";
-                    string strFile1 = "_encoder_test.zip";
-                    string strFile = strTestDataPath + strFile1;
-
-                    m_swUpdateTimer.Start();
-                    m_dfLastProgress = 0;
-
-                    webClient.DownloadProgressChanged += WebClient_DownloadProgressChanged;
-                    webClient.DownloadFileCompleted += WebClient_DownloadFileCompleted;
-                    webClient.DownloadFileAsync(new Uri(strUrl), strFile, strFile1);
-
-                    m_evtDownloadDone.WaitOne();
-                }
-            }
-
-            return strTestDataFile;
-        }
-
-        private void WebClient_DownloadFileCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
-        {
-            bool bTraceEnabled = m_log.EnableTrace;
-            m_log.EnableTrace = true;
-            m_log.WriteLine("Downloading done.");
-            m_log.EnableTrace = bTraceEnabled;
-
-            m_evtDownloadDone.Set();
-        }
-
-        private void WebClient_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
-        {
-            if (m_swUpdateTimer.Elapsed.TotalMilliseconds >= 1000)
-            {
-                if (m_dfLastProgress != e.ProgressPercentage)
-                {
-                    m_dfLastProgress = e.ProgressPercentage;
-                    string strFile = e.UserState.ToString();
-                    bool bTraceEnabled = m_log.EnableTrace;
-                    m_log.EnableTrace = true;
-
-                    m_log.Progress = e.ProgressPercentage / 100.0;
-                    m_log.WriteLine("Downloading '" + strFile + "' at " + m_log.Progress.ToString("P") + "...");
-                    m_log.EnableTrace = bTraceEnabled;
-                }
-
-                m_swUpdateTimer.Restart();
-            }
-        }
-
-        private void verify(Blob<T> b1, Blob<T> b1exp, bool bCompareDiff, double fErr = 1e-06)
-        {
-            float[] rgExpected = (bCompareDiff) ? convertF(b1exp.mutable_cpu_diff) : convertF(b1exp.mutable_cpu_data);
-            float[] rgActual = (bCompareDiff) ? convertF(b1.mutable_cpu_diff) : convertF(b1.mutable_cpu_data);
-
-            for (int i = 0; i < rgExpected.Length; i++)
-            {
-                float fExpected = rgExpected[i];
-                float fActual = rgActual[i];
-
-                m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, fErr, "The values are not as expected!");
-            }
-            
-            bool bRes = b1.Compare(b1exp, m_blobWork, bCompareDiff, fErr);
-            if (!bRes)
-                m_log.FAIL("The blobs are not equal!");
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\enc\\";
+            string strFileName = "_encoder_test.zip";
+            string strTestPath = "test";
+            string strTestFile = "13_out1.npy";
+            return loadTestData(strPath, strFileName, strTestPath, strTestFile);
         }
 
         public void TestForward(int nHeads, bool bEnableCudaImpl)
         {
-            string strTestDataPath = loadTestData();
+            string strTestDataPath = loadTestData1();
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
             p.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.ENCODER;
@@ -319,7 +234,7 @@ namespace MyCaffe.test
 
         public void TestBackward(int nHeads, bool bEnableCudaImpl)
         {
-            string strTestDataPath = loadTestData();
+            string strTestDataPath = loadTestData1();
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
             p.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.ENCODER;
@@ -396,7 +311,7 @@ namespace MyCaffe.test
 
         public void TestGradient(int nHeads, bool bEnableCudaImpl)
         {
-            string strTestDataPath = loadTestData();
+            string strTestDataPath = loadTestData1();
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
             p.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.ENCODER;
