@@ -3569,7 +3569,7 @@ namespace MyCaffe.param
                 p.tokenized_data_param = TokenizedDataParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("tokenized_data_pairs_param")) != null)
-                p.tokenized_data_param = TokenizedDataPairsParameter.FromProto(rpp);
+                p.tokenized_data_pairs_param = TokenizedDataPairsParameter.FromProto(rpp);
 
             // Nt layers.
             if ((rpp = rp.FindChild("gram_param")) != null)
