@@ -203,7 +203,9 @@
     <Compile Include="param.gpt\CausalSelfAttentionParameter.cs" />
     <Compile Include="param.gpt\GeluParameter.cs" />
     <Compile Include="param.gpt\LayerNormParameter.cs" />
+    <Compile Include="param.gpt\PositionalEncodingParameter.cs" />
     <Compile Include="param.gpt\MultiheadAttentionParameter.cs" />
+    <Compile Include="param.gpt\TokenizedDataPairsParameter.cs" />
     <Compile Include="param.gpt\TokenizedDataParameter.cs" />
     <Compile Include="param.gpt\TransformerBlockParameter.cs" />
     <Compile Include="param.beta\ConvolutionOctaveParameter.cs" />

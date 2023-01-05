@@ -119,7 +119,7 @@
     <Compile Include="TestAnnotatedDataLayer.cs" />
     <Compile Include="TestDecoderBlockLayer.cs" />
     <Compile Include="TestEncoderBlockLayer.cs" />
-    <Compile Include="TestPositionalEncoderLayer.cs" />
+    <Compile Include="TestPositionalEncodingLayer.cs" />
     <Compile Include="TestMultiheadAttentionLayer.cs" />
     <Compile Include="TestSoftmaxCrossEntropyLossLayer.cs" />
     <Compile Include="TestTokenizedDataLayer.cs" />

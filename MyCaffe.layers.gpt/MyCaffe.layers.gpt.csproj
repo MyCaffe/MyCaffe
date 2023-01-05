@@ -52,7 +52,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="layers.gpt\PositionalEncoderLayer.cs" />
+    <Compile Include="layers.gpt\PositionalEncodingLayer.cs" />
     <Compile Include="layers.gpt\MultiheadAttentionLayer.cs" />
     <Compile Include="layers.gpt\CausalSelfAttentionLayer.cs" />
     <Compile Include="layers.gpt\GeluLayer.cs" />

@@ -37,8 +37,8 @@ namespace MyCaffe.layers.gpt
                 case LayerParameter.LayerType.MULTIHEAD_ATTENTION:
                     return new MultiheadAttentionLayer<double>(cuda, log, p);
 
-                case LayerParameter.LayerType.POSITIONAL_ENCODER:
-                    return new PositionalEncoderLayer<double>(cuda, log, p);
+                case LayerParameter.LayerType.POSITIONAL_ENCODING:
+                    return new PositionalEncodingLayer<double>(cuda, log, p);
 
                 case LayerParameter.LayerType.GELU:
                     return new GeluLayer<double>(cuda, log, p);
@@ -79,8 +79,8 @@ namespace MyCaffe.layers.gpt
                 case LayerParameter.LayerType.MULTIHEAD_ATTENTION:
                     return new MultiheadAttentionLayer<float>(cuda, log, p);
 
-                case LayerParameter.LayerType.POSITIONAL_ENCODER:
-                    return new PositionalEncoderLayer<float>(cuda, log, p);
+                case LayerParameter.LayerType.POSITIONAL_ENCODING:
+                    return new PositionalEncodingLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.GELU:
                     return new GeluLayer<float>(cuda, log, p);
