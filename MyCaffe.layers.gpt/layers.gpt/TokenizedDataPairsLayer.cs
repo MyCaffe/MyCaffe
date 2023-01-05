@@ -377,6 +377,17 @@ namespace MyCaffe.layers.gpt
             float[] rgSrc = convertF(blobSrc.mutable_cpu_data);
             blobDst.mutable_cpu_data = convert(input.Detokenize(rgSrc));
         }
+        
+        /// <summary>
+        /// Get the vocabulary size for the specified vocabulary source.
+        /// </summary>
+        /// <param name="src">Specifies the vocabulary source (ENCODER or DECODER).</param>
+        /// <returns>The vocabulary size is returned.</returns>
+        public uint GetVocabuarySize(VOCABULARY src)
+        {
+            InputData input = (src == VOCABULARY.ENCODER) ? m_encoderData : m_decoderData;
+            return input.VocabularySize;
+        }
 
         /// <summary>
         /// Preproces the input and return as a set of bottom blobs.
