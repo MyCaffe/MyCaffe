@@ -14,7 +14,7 @@ namespace MyCaffe.param.gpt
     /// </remarks>
     public class TokenizedDataPairsParameter : TokenizedDataParameter
     {
-        string m_strTarget;
+        string m_strTarget = "";
 
         /** @copydoc LayerParameterBase */
         public TokenizedDataPairsParameter() : base()
@@ -50,8 +50,11 @@ namespace MyCaffe.param.gpt
         {
             base.Copy(src);
 
-            TokenizedDataPairsParameter p = (TokenizedDataPairsParameter)src;
-            m_strTarget = p.target;
+            if (src is TokenizedDataPairsParameter)
+            {
+                TokenizedDataPairsParameter p = (TokenizedDataPairsParameter)src;
+                m_strTarget = p.target;
+            }
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -69,11 +72,13 @@ namespace MyCaffe.param.gpt
         /// <returns>The new RawProto is returned.</returns>
         public override RawProto ToProto(string strName)
         {
-            RawProto proto = base.ToProto(strName);
-            
-            proto.Children.Add("target", m_strTarget);
+            RawProto rpBase = base.ToProto("data");
+            RawProtoCollection rgChildren = new RawProtoCollection();
 
-            return proto;
+            rgChildren.Add(rpBase.Children);
+            rgChildren.Add("target", "\"" + target + "\"");
+
+            return new RawProto(strName, "", rgChildren);
         }
 
         /// <summary>
@@ -83,19 +88,11 @@ namespace MyCaffe.param.gpt
         /// <returns>A new instance of the parameter is returned.</returns>
         public static new TokenizedDataPairsParameter FromProto(RawProto rp)
         {
-            TokenizedDataParameter p1 = TokenizedDataParameter.FromProto(rp);
-
             string strVal;
             TokenizedDataPairsParameter p = new TokenizedDataPairsParameter();
 
-            p.block_size = p1.block_size;
-            p.batch_size = p1.batch_size;
-            p.source = p1.source;
-            p.seed = p1.seed;
-            p.debug_index_file = p1.debug_index_file;
-            p.tokenize_run_input = p1.tokenize_run_input;
-            p.input_type = p1.input_type;
-
+            ((TokenizedDataParameter)p).Copy(TokenizedDataParameter.FromProto(rp));
+            
             if ((strVal = rp.FindValue("target")) != null)
                 p.target = strVal;
 

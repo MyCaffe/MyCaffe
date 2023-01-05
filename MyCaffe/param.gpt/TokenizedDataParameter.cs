@@ -148,8 +148,8 @@ namespace MyCaffe.param.gpt
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
-            rgChildren.Add("input_type", m_inputType.ToString());
-            rgChildren.Add("source", "\"" + m_strSource + "\"");
+            rgChildren.Add("input_type", input_type.ToString());
+            rgChildren.Add("source", "\"" + source + "\"");
             rgChildren.Add("batch_size", batch_size.ToString());
             rgChildren.Add("block_size", block_size.ToString());
 
