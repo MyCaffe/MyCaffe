@@ -669,14 +669,14 @@ namespace MyCaffe.test
             if (!Directory.Exists(strPath))
                 Directory.CreateDirectory(strPath);
 
-            string strTestDataFile = strPath + strFileName;
+            string strTestDataFile = strPath + "\\" + strFileName;
             if (!File.Exists(strTestDataFile))
             {
                 using (WebClient webClient = new WebClient())
                 {
                     string strUrl = "https://signalpopcdn.blob.core.windows.net/mycaffesupport/" + strFileName;
                     string strFile1 = strFileName;
-                    string strFile = strPath + strFile1;
+                    string strFile = strPath + "\\" + strFile1;
 
                     m_swUpdateTimer.Start();
                     m_dfLastProgress = 0;
