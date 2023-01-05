@@ -14,6 +14,11 @@ using MyCaffe.param.gpt;
 using System.Net;
 using System.Threading;
 using System.IO.Compression;
+using static System.Net.Mime.MediaTypeNames;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TrackBar;
+using System.Drawing.Imaging;
+using System.Runtime.CompilerServices;
+using System.Windows.Forms;
 
 namespace MyCaffe.test
 {
@@ -29,7 +34,7 @@ namespace MyCaffe.test
             {
                 foreach (IDecoderBlockLayerTest t in test.Tests)
                 {
-                    t.TestForward(3, 8, false);
+                    t.TestForward(8, false);
                 }
             }
             finally
@@ -47,7 +52,7 @@ namespace MyCaffe.test
             {
                 foreach (IDecoderBlockLayerTest t in test.Tests)
                 {
-                    t.TestForward(3, 8, true);
+                    t.TestForward(8, true);
                 }
             }
             finally
@@ -65,7 +70,7 @@ namespace MyCaffe.test
             {
                 foreach (IDecoderBlockLayerTest t in test.Tests)
                 {
-                    t.TestBackward(3, 8, false);
+                    t.TestBackward(8, false);
                 }
             }
             finally
@@ -83,7 +88,26 @@ namespace MyCaffe.test
             {
                 foreach (IDecoderBlockLayerTest t in test.Tests)
                 {
-                    t.TestBackward(3, 8, true);
+                    t.TestBackward(8, true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestTraining()
+        {
+            DecoderBlockLayerTest test = new DecoderBlockLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IDecoderBlockLayerTest t in test.Tests)
+                {
+                    if (t.DataType == DataType.FLOAT)
+                        t.TestTraining();
                 }
             }
             finally
@@ -95,8 +119,9 @@ namespace MyCaffe.test
 
     interface IDecoderBlockLayerTest : ITest
     {
-        void TestForward(int nBatch, int nHeads, bool bEnableCudaImpl);
-        void TestBackward(int nBatch, int nHeads, bool bEnableCudaImpl);
+        void TestForward(uint nHeads, bool bEnableCudaImpl);
+        void TestBackward(uint nHeads, bool bEnableCudaImpl);
+        void TestTraining();
     }
 
     class DecoderBlockLayerTest : TestBase
@@ -207,7 +232,7 @@ namespace MyCaffe.test
             blobMask.mutable_cpu_data = convert(rgMask1);
         }
 
-        public void TestForward(int nBatch, int nHeads, bool bEnableCudaImpl)
+        public void TestForward(uint nHeads, bool bEnableCudaImpl)
         {
             string strTestDataPath = loadTestData1();
 
@@ -302,7 +327,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestBackward(int nBatch, int nHeads, bool bEnableCudaImpl)
+        public void TestBackward(uint nHeads, bool bEnableCudaImpl)
         {
             string strTestDataPath = loadTestData1();
 
@@ -404,6 +429,187 @@ namespace MyCaffe.test
             finally
             {
                 layer.Dispose();
+            }
+        }
+
+
+        private Tuple<string, string> loadDataFiles1()
+        {
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\encdec";
+            string strFileName = "en_fr.zip";
+
+            string strTestData = downloadTestData(strPath, strFileName);
+            string strTestDataPath = Path.GetDirectoryName(strTestData);
+
+            if (!File.Exists(strTestDataPath + "\\en_fr\\src\\train.txt"))
+                ZipFile.ExtractToDirectory(strTestData, strPath);
+
+            string strSrcText = strPath + "\\en_fr\\src\\train.txt";
+            string strTrgText = strPath + "\\en_fr\\trg\\train.txt";
+
+            return new Tuple<string, string>(strSrcText, strTrgText);
+        }
+
+        private string buildModel(uint nBatch, uint nBlockSize, uint nEmbed, uint nVocabSize)
+        {
+            NetParameter net = new NetParameter();
+            net.name = "TranslatorNet";
+
+            LayerParameter data = new LayerParameter(LayerParameter.LayerType.TOKENIZED_DATA_PAIRS);
+            data.name = "tokdata1";
+            data.tokenized_data_pairs_param.target = "$ProgramData$\\MyCaffe\\test_data\\data\\text\\encdec\\en_fr\\tgt\\train.txt";
+            data.tokenized_data_pairs_param.source = "$ProgramData$\\MyCaffe\\test_data\\data\\text\\encdec\\en_fr\\src\\train.txt";
+            data.tokenized_data_pairs_param.input_type = TokenizedDataParameter.INPUT_TYPE.TEXT_FILE;
+            data.tokenized_data_pairs_param.batch_size = nBatch;
+            data.tokenized_data_pairs_param.block_size = nBlockSize;
+            data.bottom.Add("enc");
+            data.bottom.Add("dec");
+            data.bottom.Add("tgt");
+            data.bottom.Add("emsk");
+            data.bottom.Add("dmsk");
+            net.layer.Add(data);
+
+            LayerParameter emb1 = new LayerParameter(LayerParameter.LayerType.EMBED);
+            emb1.name = "embed1";
+            emb1.embed_param.input_dim = nBlockSize;
+            emb1.embed_param.num_output = nEmbed;
+            emb1.bottom.Add("enc");
+            emb1.top.Add("emb1");
+            net.layer.Add(emb1);
+
+            LayerParameter pos1 = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODING);
+            pos1.name = "posenc1";
+            pos1.bottom.Add("emb1");
+            pos1.top.Add("emb1");
+
+            string strEncBtm = "emb1";
+            int nLayers = 6;
+            for (int i = 0; i < nLayers; i++)
+            {
+                LayerParameter enc = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
+                enc.name = "enc" + (i + 1).ToString();
+                enc.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.ENCODER;
+                enc.transformer_block_param.heads = 8;
+                enc.transformer_block_param.embed = nEmbed;
+                enc.transformer_block_param.block_size = nBlockSize;
+                enc.transformer_block_param.layers = (uint)nLayers;
+                enc.transformer_block_param.enable_layernorm_cuda_impl = true;
+                enc.transformer_block_param.activation = TransformerBlockParameter.ACTIVATION.RELU;
+                enc.transformer_block_param.attn_dropout = 0.1;
+                enc.transformer_block_param.resid_dropout = 0.1;
+                enc.bottom.Add(strEncBtm);
+                enc.bottom.Add("emsk");
+                enc.top.Add(enc.name);
+                net.layer.Add(enc);
+                
+                strEncBtm = enc.name;
+            }
+
+            LayerParameter emb2 = new LayerParameter(LayerParameter.LayerType.EMBED);
+            emb2.name = "embed2";
+            emb2.embed_param.input_dim = nBlockSize;
+            emb2.embed_param.num_output = nEmbed;
+            emb2.bottom.Add("dec");
+            emb2.top.Add("emb2");
+            net.layer.Add(emb2);
+
+            LayerParameter pos2 = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODING);
+            pos2.name = "posenc2";
+            pos2.bottom.Add("emb2");
+            pos2.top.Add("emb2");
+
+            string strDecBtm = "emb2";
+            for (int i = 0; i < nLayers; i++)
+            {
+                LayerParameter dec = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
+                dec.name = "dec" + (i + 1).ToString();
+                dec.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.DECODER;
+                dec.transformer_block_param.heads = 8;
+                dec.transformer_block_param.embed = nEmbed;
+                dec.transformer_block_param.block_size = nBlockSize;
+                dec.transformer_block_param.layers = (uint)nLayers;
+                dec.transformer_block_param.enable_layernorm_cuda_impl = true;
+                dec.transformer_block_param.activation = TransformerBlockParameter.ACTIVATION.RELU;
+                dec.transformer_block_param.attn_dropout = 0.1;
+                dec.transformer_block_param.resid_dropout = 0.1;
+                dec.bottom.Add(strDecBtm);
+                dec.bottom.Add("dmsk");
+                dec.bottom.Add(strEncBtm);
+                dec.bottom.Add("emsk");
+                dec.top.Add(dec.name);
+                net.layer.Add(dec);
+
+                strDecBtm = dec.name;
+            }
+
+            LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
+            ip1.name = "ip1";
+            ip1.inner_product_param.axis = 1;
+            ip1.inner_product_param.num_output = nVocabSize;
+            ip1.bottom.Add(strDecBtm);
+            ip1.top.Add("logits");
+            net.layer.Add(ip1);
+
+            LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
+            softmax.name = "softmax";
+            softmax.softmax_param.axis = 1;
+            softmax.bottom.Add("logits");
+            softmax.top.Add("prob");
+            softmax.include.Add(new NetStateRule(Phase.RUN));
+            net.layer.Add(softmax);
+
+            LayerParameter loss = new LayerParameter(LayerParameter.LayerType.SOFTMAXCROSSENTROPY2_LOSS);
+            loss.name = "loss";
+            loss.softmax_param.axis = 1;
+            loss.bottom.Add("logits");
+            loss.top.Add("loss");
+            loss.include.Add(new NetStateRule(Phase.TRAIN));
+            net.layer.Add(loss);
+
+            LayerParameter accuracy = new LayerParameter(LayerParameter.LayerType.ACCURACY);
+            accuracy.name = "accuracy";
+            accuracy.accuracy_param.axis = 1;
+            accuracy.bottom.Add("logits");
+            accuracy.top.Add("accuracy");
+            accuracy.include.Add(new NetStateRule(Phase.TEST));
+            net.layer.Add(accuracy);
+
+            return net.ToProto("root").ToString();
+        }
+
+        private string buildSolver()
+        {
+            SolverParameter solver = new SolverParameter();
+            solver.base_lr = 1e-4;
+            solver.type = SolverParameter.SolverType.ADAM;
+
+            return solver.ToProto("root").ToString();
+        }
+        
+        public void TestTraining()
+        {
+            Tuple<string, string> dataFiles = loadDataFiles1();
+            string strSrcFile = dataFiles.Item1;
+            string strTrgFile = dataFiles.Item2;
+
+            string strModel = buildModel(80, 200, 512, 322);
+            string strSolver = buildSolver();
+
+            SettingsCaffe s = new SettingsCaffe
+            {
+                GpuIds = "0"
+            };
+            CancelEvent evtCancel = new CancelEvent();
+            MyCaffeControl<float> mycaffe = new MyCaffeControl<float>(s, m_log, evtCancel);
+
+            try
+            {
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
+                mycaffe.Train(1000);
+            }
+            finally
+            {
+                mycaffe.Dispose();
             }
         }
     }

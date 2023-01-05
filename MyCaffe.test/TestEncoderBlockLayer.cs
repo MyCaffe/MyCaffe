@@ -95,9 +95,9 @@ namespace MyCaffe.test
 
     interface IEncoderBlockLayerTest : ITest
     {
-        void TestForward(int nHeads, bool bEnableCudaImpl);
-        void TestBackward(int nHeads, bool bEnableCudaImpl);
-        void TestGradient(int nHeads, bool bEnableCudaImpl);
+        void TestForward(uint nHeads, bool bEnableCudaImpl);
+        void TestBackward(uint nHeads, bool bEnableCudaImpl);
+        void TestGradient(uint nHeads, bool bEnableCudaImpl);
     }
 
     class EncoderBlockLayerTest : TestBase
@@ -165,7 +165,7 @@ namespace MyCaffe.test
             return loadTestData(strPath, strFileName, strTestPath, strTestFile);
         }
 
-        public void TestForward(int nHeads, bool bEnableCudaImpl)
+        public void TestForward(uint nHeads, bool bEnableCudaImpl)
         {
             string strTestDataPath = loadTestData1();
 
@@ -232,7 +232,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestBackward(int nHeads, bool bEnableCudaImpl)
+        public void TestBackward(uint nHeads, bool bEnableCudaImpl)
         {
             string strTestDataPath = loadTestData1();
 
@@ -309,7 +309,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestGradient(int nHeads, bool bEnableCudaImpl)
+        public void TestGradient(uint nHeads, bool bEnableCudaImpl)
         {
             string strTestDataPath = loadTestData1();
 

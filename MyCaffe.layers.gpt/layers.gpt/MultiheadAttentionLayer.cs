@@ -76,9 +76,9 @@ namespace MyCaffe.layers.gpt
         {
             m_type = LayerParameter.LayerType.MULTIHEAD_ATTENTION;
 
-            m_nHeads = p.multihead_attention_param.heads;
-            m_nEmbed = p.multihead_attention_param.embed;
-            m_nBlockSize = p.multihead_attention_param.block_size;
+            m_nHeads = (int)p.multihead_attention_param.heads;
+            m_nEmbed = (int)p.multihead_attention_param.embed;
+            m_nBlockSize = (int)p.multihead_attention_param.block_size;
             m_dfAttnDropout = p.multihead_attention_param.attn_dropout;
             m_dfResidDropout = p.multihead_attention_param.resid_dropout;
 

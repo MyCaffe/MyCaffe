@@ -77,9 +77,9 @@ namespace MyCaffe.test
 
     interface IMultiheadAttentionLayerTest : ITest
     {
-        void TestForward(int nBatch, int nHeads);
-        void TestBackward(int nBatch, int nHeads);
-        void TestGradient(int nBatch, int nHeads);
+        void TestForward(uint nBatch, uint nHeads);
+        void TestBackward(uint nBatch, uint nHeads);
+        void TestGradient(uint nBatch, uint nHeads);
     }
 
     class MultiheadAttentionLayerTest : TestBase
@@ -163,7 +163,7 @@ namespace MyCaffe.test
             return loadTestData(strPath, strFileName, strTestPath, strTestFile);
         }
 
-        public void TestForward(int nBatch, int nHeads)
+        public void TestForward(uint nBatch, uint nHeads)
         {
             string strTestDataPath = loadTestData1();
 
@@ -216,7 +216,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestBackward(int nBatch, int nHeads)
+        public void TestBackward(uint nBatch, uint nHeads)
         {
             string strTestDataPath = loadTestData1();
 
@@ -278,7 +278,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestGradient(int nBatch, int nHeads)
+        public void TestGradient(uint nBatch, uint nHeads)
         {
             string strTestDataPath = loadTestData1();
             

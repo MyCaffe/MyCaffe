@@ -73,9 +73,9 @@ namespace MyCaffe.layers.gpt
         {
             m_type = LayerParameter.LayerType.CAUSAL_SELF_ATTENTION;
 
-            m_nHeads = p.causal_self_attention_param.heads;
-            m_nEmbed = p.causal_self_attention_param.embed;
-            m_nBlockSize = p.causal_self_attention_param.block_size;
+            m_nHeads = (int)p.causal_self_attention_param.heads;
+            m_nEmbed = (int)p.causal_self_attention_param.embed;
+            m_nBlockSize = (int)p.causal_self_attention_param.block_size;
             m_dfAttnDropout = p.causal_self_attention_param.attn_dropout;
             m_dfResidDropout = p.causal_self_attention_param.resid_dropout;
 
@@ -282,7 +282,7 @@ namespace MyCaffe.layers.gpt
             m_nB = blobX.num;         // batch size
             m_nT = blobX.channels;    // sequence length
             m_nC = blobX.height;      // embedding dim (m_nEmbed)
-            m_nSize = m_nC / m_nHeads;
+            m_nSize = m_nC / (int)m_nHeads;
 
             addInternal(blobX, m_blobIpAttn);
             m_c_attn.Setup(m_colInternalBottom, m_colInternalTop);
@@ -290,7 +290,7 @@ namespace MyCaffe.layers.gpt
             blobs.Add(m_c_attn.blobs[0]);
             blobs.Add(m_c_attn.blobs[1]);
 
-            m_blobQ.Reshape(m_nB, m_nT, m_nHeads, m_nSize);
+            m_blobQ.Reshape(m_nB, m_nT, (int)m_nHeads, m_nSize);
             addInternal(m_blobQ, m_blobQt);
             m_transpose.Setup(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
 

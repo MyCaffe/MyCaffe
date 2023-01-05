@@ -14,12 +14,12 @@ namespace MyCaffe.param.gpt
     /// </remarks>
     public class CausalSelfAttentionParameter : LayerParameterBase
     {
-        int m_nHeads = 6;
-        int m_nEmbed = 192;
+        uint m_nHeads = 6;
+        uint m_nEmbed = 192;
         double m_dfAttnDropout;
         double m_dfResidDropout;
-        int m_nBlockSize = 128;
-        int m_nLayers = 6;
+        uint m_nBlockSize = 128;
+        uint m_nLayers = 6;
 
         /** @copydoc LayerParameterBase */
         public CausalSelfAttentionParameter()
@@ -30,7 +30,7 @@ namespace MyCaffe.param.gpt
         /// The number of layers (transformer blocks) used.
         /// </summary>
         [Description("Specifies number of layers (transformer blocks) used.")]
-        public int layers
+        public uint layers
         {
             get { return m_nLayers; }
             set { m_nLayers = value; }
@@ -40,7 +40,7 @@ namespace MyCaffe.param.gpt
         /// The number of heads used.
         /// </summary>
         [Description("Specifies number of heads used.")]
-        public int heads
+        public uint heads
         {
             get { return m_nHeads; }
             set { m_nHeads = value; }
@@ -49,7 +49,7 @@ namespace MyCaffe.param.gpt
         /// <summary>
         /// Specifies size of the embed.
         /// </summary>
-        public int embed
+        public uint embed
         {
             get { return m_nEmbed; }
             set { m_nEmbed = value; }
@@ -58,7 +58,7 @@ namespace MyCaffe.param.gpt
         /// <summary>
         /// Specifies size of the block.
         /// </summary>
-        public int block_size
+        public uint block_size
         {
             get { return m_nBlockSize; }
             set { m_nBlockSize = value; }
@@ -145,16 +145,16 @@ namespace MyCaffe.param.gpt
             CausalSelfAttentionParameter p = new CausalSelfAttentionParameter();
 
             if ((strVal = rp.FindValue("layers")) != null)
-                p.layers = int.Parse(strVal);
+                p.layers = uint.Parse(strVal);
             
             if ((strVal = rp.FindValue("heads")) != null)
-                p.heads = int.Parse(strVal);
+                p.heads = uint.Parse(strVal);
             
             if ((strVal = rp.FindValue("embed")) != null)
-                p.embed = int.Parse(strVal);
+                p.embed = uint.Parse(strVal);
 
             if ((strVal = rp.FindValue("block_size")) != null)
-                p.block_size = int.Parse(strVal);
+                p.block_size = uint.Parse(strVal);
 
             if ((strVal = rp.FindValue("attn_dropout")) != null)
                 p.attn_dropout = double.Parse(strVal);

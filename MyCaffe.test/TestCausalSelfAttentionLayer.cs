@@ -272,9 +272,9 @@ namespace MyCaffe.test
 
     interface ICausalSelfAttentionLayerTest : ITest
     {
-        void TestForwardPico(bool bBatch, int nHeads);
-        void TestBackwardPico(bool bBatch, int nHeads);
-        void TestGradientPico(bool bBatch, int nHeads);
+        void TestForwardPico(bool bBatch, uint nHeads);
+        void TestBackwardPico(bool bBatch, uint nHeads);
+        void TestGradientPico(bool bBatch, uint nHeads);
         void TestForwardMini();
         void TestGradientMini();
     }
@@ -378,7 +378,7 @@ namespace MyCaffe.test
             return new Tuple<List<int>, float[]>(rgnShape, rgf);
         }
 
-        public void TestForwardPico(bool bBatch, int nHeads)
+        public void TestForwardPico(bool bBatch, uint nHeads)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CAUSAL_SELF_ATTENTION);
             p.causal_self_attention_param.heads = nHeads;
@@ -439,7 +439,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestBackwardPico(bool bBatch, int nHeads)
+        public void TestBackwardPico(bool bBatch, uint nHeads)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CAUSAL_SELF_ATTENTION);
             p.causal_self_attention_param.heads = nHeads;
@@ -502,7 +502,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestGradientPico(bool bBatch, int nHeads)
+        public void TestGradientPico(bool bBatch, uint nHeads)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CAUSAL_SELF_ATTENTION);
             p.causal_self_attention_param.heads = nHeads;

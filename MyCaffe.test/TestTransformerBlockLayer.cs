@@ -286,9 +286,9 @@ namespace MyCaffe.test
 
     interface ITransformerBlockLayerTest : ITest
     {
-        void TestForwardPico(bool bBatch, int nHeads);
-        void TestBackwardPico(bool bBatch, int nHeads);
-        void TestGradientPico(bool bBatch, int nHeads);
+        void TestForwardPico(bool bBatch, uint nHeads);
+        void TestBackwardPico(bool bBatch, uint nHeads);
+        void TestGradientPico(bool bBatch, uint nHeads);
         void TestForwardMini();
         void TestTrainingGptMini(int nIter);
         void TestTrainingGptMiniTestMany(int nIter);
@@ -420,7 +420,7 @@ namespace MyCaffe.test
             return new Tuple<List<int>, float[]>(rgnShape, rgf);
         }
 
-        public void TestForwardPico(bool bBatch, int nHeads)
+        public void TestForwardPico(bool bBatch, uint nHeads)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
             p.transformer_block_param.heads = nHeads;
@@ -495,7 +495,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestBackwardPico(bool bBatch, int nHeads)
+        public void TestBackwardPico(bool bBatch, uint nHeads)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
             p.transformer_block_param.heads = nHeads;
@@ -572,7 +572,7 @@ namespace MyCaffe.test
         }
 
         // Currently Fails on bBatch=True, nHeads=3
-        public void TestGradientPico(bool bBatch, int nHeads)
+        public void TestGradientPico(bool bBatch, uint nHeads)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
             p.transformer_block_param.heads = nHeads;
@@ -1119,7 +1119,7 @@ namespace MyCaffe.test
             int nEmbed = 768;
             int nBatchSize = 1;
 
-            string strModel = createGptModel("GPT2", strSrc, nVocabSize, nLayerCount, nHeads, nEmbed, nBlockSize, nBatchSize);
+            string strModel = createGptModel("GPT2", strSrc, nVocabSize, (uint)nLayerCount, (uint)nHeads, (uint)nEmbed, (uint)nBlockSize, nBatchSize);
 
             m_log.EnableTrace = true;
             m_log.WriteHeader("GPT-Mini - Test Train");
@@ -1329,15 +1329,15 @@ namespace MyCaffe.test
             }
         }
 
-        private string createGptModel(string strName, string strSrc, int nVocabSize, int nLayers, int nHeads, int nEmbed, int nBlockSize, int nBatchSize)
+        private string createGptModel(string strName, string strSrc, int nVocabSize, uint nLayers, uint nHeads, uint nEmbed, uint nBlockSize, int nBatchSize)
         {
             NetParameter p = new NetParameter();
             p.name = strName;
 
             LayerParameter input = new LayerParameter(LayerParameter.LayerType.INPUT);
-            input.input_param.shape.Add(new BlobShape() { dim = new List<int>() { 1, nBlockSize } });
+            input.input_param.shape.Add(new BlobShape() { dim = new List<int>() { 1, (int)nBlockSize } });
             input.top.Add("tokdata1");
-            input.input_param.shape.Add(new BlobShape() { dim = new List<int>() { 1, nBlockSize } });
+            input.input_param.shape.Add(new BlobShape() { dim = new List<int>() { 1, (int)nBlockSize } });
             input.top.Add("pos");
             p.layer.Add(input);
 
