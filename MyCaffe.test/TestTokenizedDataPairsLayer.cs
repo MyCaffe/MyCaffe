@@ -14,6 +14,8 @@ using MyCaffe.data;
 using MyCaffe.layers.beta;
 using MyCaffe.layers.gpt;
 using MyCaffe.param.gpt;
+using System.IO.Compression;
+using System.IO;
 
 /// <summary>
 /// Testing the tokenized data layer.
@@ -27,16 +29,14 @@ namespace MyCaffe.test
     {
         [TestMethod]
         public void TestForwardEnFr()
-        {
+        {            
             TokenizedDataPairsLayerTest test = new TokenizedDataPairsLayerTest();
-            string strSrcText = "C:\\temp\\projects\\TransformerTranslator\\TransformerTranslator\\en_fr\\data\\src\\train.txt";
-            string strTrgText = "C:\\temp\\projects\\TransformerTranslator\\TransformerTranslator\\en_fr\\data\\trg\\train.txt";
-
+            
             try
             {
                 foreach (ITokenizedDataPairsLayerTest t in test.Tests)
                 {
-                    t.TestForward(10, 128, strSrcText, strTrgText);
+                    t.TestForward(10, 128);
                 }
             }
             finally
@@ -48,7 +48,7 @@ namespace MyCaffe.test
 
     interface ITokenizedDataPairsLayerTest : ITest
     {
-        void TestForward(int nBatchSize, int nBlockSize, string strSrcFile, string strTrgFile);
+        void TestForward(int nBatchSize, int nBlockSize);
     }
 
     class TokenizedDataPairsLayerTest : TestBase
@@ -103,8 +103,29 @@ namespace MyCaffe.test
             return new FillerParameter("gaussian");
         }
 
-        public void TestForward(int nBatchSize, int nBlockSize, string strSrcFile, string strTrgFile)
+        private Tuple<string, string> loadDataFiles1()
         {
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\encdec";
+            string strFileName = "en_fr.zip";
+            
+            string strTestData = downloadTestData(strPath, strFileName);
+            string strTestDataPath = Path.GetDirectoryName(strTestData);
+
+            if (!File.Exists(strTestDataPath + "\\en_fr\\src\\train.txt"))
+                ZipFile.ExtractToDirectory(strTestData, strPath);
+
+            string strSrcText = strPath + "\\en_fr\\src\\train.txt";
+            string strTrgText = strPath + "\\en_fr\\trg\\train.txt";
+
+            return new Tuple<string, string>(strSrcText, strTrgText);
+        }
+
+        public void TestForward(int nBatchSize, int nBlockSize)
+        {
+            Tuple<string, string> dataFiles = loadDataFiles1();
+            string strSrcFile = dataFiles.Item1;
+            string strTrgFile = dataFiles.Item2;
+            
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TOKENIZED_DATA_PAIRS);
             p.tokenized_data_pairs_param.batch_size = (uint)nBatchSize;
             p.tokenized_data_pairs_param.block_size = (uint)nBlockSize;
@@ -208,6 +229,9 @@ namespace MyCaffe.test
                     m_log.WriteLine("DecInput: " + rgDataOut[i].Item2);
                     m_log.WriteLine("DecOutput: " + rgDataOut[i].Item3);
                 }
+
+                m_log.WriteLine("Source Vocabulary Size = " + ((TokenizedDataPairsLayer<T>)layer).GetVocabuarySize(TokenizedDataPairsLayer<T>.VOCABULARY.ENCODER).ToString());
+                m_log.WriteLine("Target Vocabulary Size = " + ((TokenizedDataPairsLayer<T>)layer).GetVocabuarySize(TokenizedDataPairsLayer<T>.VOCABULARY.DECODER).ToString());
             }
             finally
             {
