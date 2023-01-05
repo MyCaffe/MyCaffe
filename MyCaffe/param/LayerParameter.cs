@@ -1557,11 +1557,11 @@ namespace MyCaffe.param
                     break;
 
                 case LayerType.TOKENIZED_DATA_PAIRS:
-                    expected_top.Add("data");
-                    expected_top.Add("pos");
+                    expected_top.Add("enc");
+                    expected_top.Add("dec");
                     expected_top.Add("tgt");
-                    expected_top.Add("e_mask");
-                    expected_top.Add("d_mask");
+                    expected_top.Add("emsk");
+                    expected_top.Add("dmsk");
                     m_rgLayerParameters[lt] = new TokenizedDataPairsParameter();
                     break;
 
