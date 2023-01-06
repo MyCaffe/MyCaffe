@@ -7,6 +7,7 @@ using MyCaffe.common;
 using MyCaffe.param;
 using MyCaffe.fillers;
 using System.Diagnostics;
+using MyCaffe.param.gpt;
 
 /// WORK IN PROGRESS
 namespace MyCaffe.layers.gpt
@@ -89,8 +90,16 @@ namespace MyCaffe.layers.gpt
             LayerParameter ipAttnQ = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "c_attnQ");
             ipAttnQ.inner_product_param.num_output = (uint)m_nEmbed;
             ipAttnQ.inner_product_param.bias_term = true;
-            ipAttnQ.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02); 
-            ipAttnQ.inner_product_param.bias_filler = new FillerParameter("constant", 0.0); 
+            if (m_param.multihead_attention_param.weight_init == MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER)
+            {
+                ipAttnQ.inner_product_param.weight_filler = new FillerParameter("xavier");
+                ipAttnQ.inner_product_param.bias_filler = new FillerParameter("xavier");
+            }
+            else
+            {
+                ipAttnQ.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02);
+                ipAttnQ.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
+            }
             ipAttnQ.inner_product_param.axis = 2;
             ipAttnQ.parameters.Add(new ParamSpec(1.0, 1.0));
             ipAttnQ.parameters.Add(new ParamSpec(1.0, 0.0));
@@ -101,8 +110,16 @@ namespace MyCaffe.layers.gpt
             LayerParameter ipAttnK = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "c_attnK");
             ipAttnK.inner_product_param.num_output = (uint)m_nEmbed;
             ipAttnK.inner_product_param.bias_term = true;
-            ipAttnK.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02);
-            ipAttnK.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
+            if (m_param.multihead_attention_param.weight_init == MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER)
+            {
+                ipAttnK.inner_product_param.weight_filler = new FillerParameter("xavier");
+                ipAttnK.inner_product_param.bias_filler = new FillerParameter("xavier");
+            }
+            else
+            {
+                ipAttnK.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02);
+                ipAttnK.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
+            }
             ipAttnK.inner_product_param.axis = 2;
             ipAttnK.parameters.Add(new ParamSpec(1.0, 1.0));
             ipAttnK.parameters.Add(new ParamSpec(1.0, 0.0));
@@ -113,8 +130,16 @@ namespace MyCaffe.layers.gpt
             LayerParameter ipAttnV = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "c_attnV");
             ipAttnV.inner_product_param.num_output = (uint)m_nEmbed;
             ipAttnV.inner_product_param.bias_term = true;
-            ipAttnV.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02);
-            ipAttnV.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
+            if (m_param.multihead_attention_param.weight_init == MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER)
+            {
+                ipAttnV.inner_product_param.weight_filler = new FillerParameter("xavier");
+                ipAttnV.inner_product_param.bias_filler = new FillerParameter("xavier");
+            }
+            else
+            {
+                ipAttnV.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02);
+                ipAttnV.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
+            }
             ipAttnV.inner_product_param.axis = 2;
             ipAttnV.parameters.Add(new ParamSpec(1.0, 1.0));
             ipAttnV.parameters.Add(new ParamSpec(1.0, 0.0));
@@ -125,8 +150,16 @@ namespace MyCaffe.layers.gpt
             LayerParameter ipProj = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "c_proj");
             ipProj.inner_product_param.num_output = (uint)m_nEmbed;
             ipProj.inner_product_param.bias_term = true;
-            ipProj.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02 / Math.Sqrt(2 * m_param.multihead_attention_param.layers)); 
-            ipProj.inner_product_param.bias_filler = new FillerParameter("constant", 0.0); 
+            if (m_param.multihead_attention_param.weight_init == MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER)
+            {
+                ipProj.inner_product_param.weight_filler = new FillerParameter("xavier");
+                ipProj.inner_product_param.bias_filler = new FillerParameter("xavier");
+            }
+            else
+            {
+                ipProj.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02 / Math.Sqrt(2 * m_param.multihead_attention_param.layers));
+                ipProj.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
+            }
             ipProj.inner_product_param.axis = 2;            
             ipProj.parameters.Add(new ParamSpec(1.0, 1.0));
             ipProj.parameters.Add(new ParamSpec(1.0, 0.0));

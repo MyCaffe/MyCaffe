@@ -90,6 +90,7 @@ namespace MyCaffe.layers.gpt
                 attn.multihead_attention_param.attn_dropout = p.transformer_block_param.attn_dropout;
                 attn.multihead_attention_param.resid_dropout = p.transformer_block_param.resid_dropout;
                 attn.multihead_attention_param.layers = p.transformer_block_param.layers;
+                attn.multihead_attention_param.weight_init = MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER;
                 m_attn1 = Layer<T>.Create(cuda, log, attn, evtCancel);
             }
             else if (p.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.DECODER)
@@ -108,6 +109,7 @@ namespace MyCaffe.layers.gpt
                 attn1.multihead_attention_param.attn_dropout = p.transformer_block_param.attn_dropout;
                 attn1.multihead_attention_param.resid_dropout = p.transformer_block_param.resid_dropout;
                 attn1.multihead_attention_param.layers = p.transformer_block_param.layers;
+                attn1.multihead_attention_param.weight_init = MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER;
                 m_attn1 = Layer<T>.Create(cuda, log, attn1, evtCancel);
 
                 LayerParameter attn2 = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION, "attn2");
@@ -117,6 +119,7 @@ namespace MyCaffe.layers.gpt
                 attn2.multihead_attention_param.attn_dropout = p.transformer_block_param.attn_dropout;
                 attn2.multihead_attention_param.resid_dropout = p.transformer_block_param.resid_dropout;
                 attn2.multihead_attention_param.layers = p.transformer_block_param.layers;
+                attn2.multihead_attention_param.weight_init = MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER;
                 m_attn2 = Layer<T>.Create(cuda, log, attn2, evtCancel);
             }
             else
@@ -128,8 +131,16 @@ namespace MyCaffe.layers.gpt
             fc.inner_product_param.axis = 2;
             fc.inner_product_param.bias_term = true;
             fc.inner_product_param.num_output = (uint)(p.transformer_block_param.embed * 4);
-            fc.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02);  
-            fc.inner_product_param.bias_filler = new FillerParameter("constant", 0.0); 
+            if (p.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION)
+            {
+                fc.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02);
+                fc.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
+            }
+            else
+            {
+                fc.inner_product_param.weight_filler = new FillerParameter("xavier");
+                fc.inner_product_param.bias_filler = new FillerParameter("xavier");
+            }
             fc.parameters.Add(new ParamSpec(1.0, 1.0));
             fc.parameters.Add(new ParamSpec(1.0, 0.0));
             m_fc = Layer<T>.Create(cuda, log, fc, evtCancel);
@@ -138,9 +149,17 @@ namespace MyCaffe.layers.gpt
             proj.inner_product_param.axis = 2;
             proj.inner_product_param.bias_term = true;
             proj.inner_product_param.num_output = (uint)p.transformer_block_param.embed;
-            // apply special scaled init to the residual projections, per GPT-2 paper
-            proj.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02/Math.Sqrt(2 * m_param.transformer_block_param.layers)); 
-            proj.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);  
+            if (p.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION)
+            {
+                // apply special scaled init to the residual projections, per GPT-2 paper
+                proj.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02/Math.Sqrt(2 * m_param.transformer_block_param.layers)); 
+                proj.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
+            }
+            else
+            {
+                proj.inner_product_param.weight_filler = new FillerParameter("xavier");
+                proj.inner_product_param.bias_filler = new FillerParameter("xavier");
+            }
             proj.parameters.Add(new ParamSpec(1.0, 1.0));
             proj.parameters.Add(new ParamSpec(1.0, 0.0));
             m_proj = Layer<T>.Create(cuda, log, proj, evtCancel);
