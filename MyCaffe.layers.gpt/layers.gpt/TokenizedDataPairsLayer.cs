@@ -120,8 +120,8 @@ namespace MyCaffe.layers.gpt
             switch (m_param.tokenized_data_pairs_param.input_type)
             {
                 case TokenizedDataParameter.INPUT_TYPE.TEXT_FILE:
-                    m_encoderData = new TextListData(m_param.tokenized_data_pairs_param.source, false, m_param.tokenized_data_pairs_param.seed, m_param.phase);
-                    m_decoderData = new TextListData(m_param.tokenized_data_pairs_param.target, true, m_param.tokenized_data_pairs_param.seed, m_param.phase);
+                    m_encoderData = new TextListData(m_log, m_param.tokenized_data_pairs_param.source, false, m_param.tokenized_data_pairs_param.seed, m_param.phase);
+                    m_decoderData = new TextListData(m_log, m_param.tokenized_data_pairs_param.target, true, m_param.tokenized_data_pairs_param.seed, m_param.phase);
                     break;
 
                 default:
@@ -138,7 +138,7 @@ namespace MyCaffe.layers.gpt
         {
             if (m_phase == Phase.RUN)
             {
-                int nBatchSize = colBottom[0].num;
+                int nBatchSize = 1;
                 int nBlockSize = (int)m_param.tokenized_data_pairs_param.block_size;
                 int nTokenSize = (int)m_encoderData.TokenSize;
 
@@ -152,24 +152,20 @@ namespace MyCaffe.layers.gpt
                 if (nTokenSize == 1)
                     nCount = 2;
                 int[] rgShape = new int[nCount];
-
+                
                 blobEncIn.SetParameter("vocab_size", m_encoderData.VocabularySize);
                 blobDecIn.SetParameter("vocab_size", m_decoderData.VocabularySize);
 
-                int nC = colBottom[0].channels;
-                if (nC > nBlockSize)
-                    throw new Exception("The bottom input channel count cannot exceed the block_size=" + nBlockSize.ToString());
-
                 // reshape for single characters (each character is an index into the vocab vector)
                 rgShape[0] = nBatchSize;
-                rgShape[1] = nC;
+                rgShape[1] = nBlockSize;
                 if (rgShape.Length > 2)
                     rgShape[2] = nTokenSize;
-
+                
                 blobEncIn.Reshape(rgShape);
                 blobDecIn.Reshape(rgShape);
                 blobDecOut.Reshape(rgShape);
-                blobEncMask.Reshape(nBatchSize, 1, 1, 1);
+                blobEncMask.Reshape(nBatchSize, nBlockSize, 1, 1);
                 blobDecMask.Reshape(nBatchSize, 1, 1, 1);
             }
             else
@@ -319,7 +315,13 @@ namespace MyCaffe.layers.gpt
             {
                 int[] rgnIdx;
                 Tuple<float[], float[]> encData = m_encoderData.GetData((int)m_param.tokenized_data_pairs_param.batch_size, (int)m_param.tokenized_data_pairs_param.block_size, out rgnIdx);
-                Tuple<float[], float[]> decData = m_decoderData.GetDataAt((int)m_param.tokenized_data_pairs_param.batch_size, (int)m_param.tokenized_data_pairs_param.block_size, rgnIdx); 
+                Tuple<float[], float[]> decData = m_decoderData.GetDataAt((int)m_param.tokenized_data_pairs_param.batch_size, (int)m_param.tokenized_data_pairs_param.block_size, rgnIdx);
+
+                float fMin1 = encData.Item1.Min();
+                float fMax1 = encData.Item1.Max();
+
+                float fMin2 = decData.Item1.Min();
+                float fMax2 = decData.Item1.Max();
 
                 colTop[0].mutable_cpu_data = convert(encData.Item1);
                 colTop[1].mutable_cpu_data = convert(decData.Item1);
@@ -538,6 +540,7 @@ namespace MyCaffe.layers.gpt
         float[] m_rgData = null;
         float[] m_rgTgt = null;
         Phase m_phase;
+        Log m_log;
 
 
         /// <summary>
@@ -547,8 +550,10 @@ namespace MyCaffe.layers.gpt
         /// <param name="bIncludeTarget">Specifies to create the target tokens.</param>
         /// <param name="nRandomSeed">Optionally, specifies a random seed for testing.</param>
         /// <param name="phase">Specifies the currently running phase.</param>
-        public TextListData(string strSrcFile, bool bIncludeTarget, int? nRandomSeed = null, Phase phase = Phase.NONE) : base(nRandomSeed)
+        /// <param name="log">Specifies the output log.</param>
+        public TextListData(Log log, string strSrcFile, bool bIncludeTarget, int? nRandomSeed = null, Phase phase = Phase.NONE) : base(nRandomSeed)
         {
+            m_log = log;
             Stopwatch sw = new Stopwatch();
             m_vocab = new CharacterVocabulary(m_random, true, true);
             m_phase = phase;
@@ -572,7 +577,7 @@ namespace MyCaffe.layers.gpt
                 if (sw.Elapsed.TotalMilliseconds > 1000)
                 {
                     sw.Restart();
-                    Trace.WriteLine("Loading vocabulary at (" + ((double)i / rgstr.Length).ToString("P") + ")...");
+                    m_log.WriteLine("Loading vocabulary at (" + ((double)i / rgstr.Length).ToString("P") + ")...", true);
                 }
             }
 
@@ -593,7 +598,7 @@ namespace MyCaffe.layers.gpt
                 if (sw.Elapsed.TotalMilliseconds > 1000)
                 {
                     sw.Restart();
-                    Trace.WriteLine("Tokenizing data at (" + ((double)i / m_rgstrData.Count).ToString("P") + ")...");
+                    m_log.WriteLine("Tokenizing data at (" + ((double)i / m_rgstrData.Count).ToString("P") + ")...", true);
                 }
             }
         }
