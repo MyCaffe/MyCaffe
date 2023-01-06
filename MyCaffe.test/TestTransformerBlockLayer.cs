@@ -941,14 +941,15 @@ namespace MyCaffe.test
 
                 m_dataLayer.Tokenize(m_blobX, m_blobX);
                 generate(m_netRun, m_blobX, m_blobY, 500, (int)m_dataLayer.layer_param.tokenized_data_param.block_size, 65, 10);
-                
-                m_dataLayer.Detokenize(m_blobY, m_blobY);
-                float[] rgY = convertF(m_blobY.mutable_cpu_data);
-                string strOut = "";
 
-                for (int i = 0; i < rgY.Length; i++)
+                string strOut = "";
+                float[] rgY = convertF(m_blobY.mutable_cpu_data);
+                int nCount = m_blobY.count(1);
+
+                for (int i = 0; i < m_blobY.num; i++)
                 {
-                    strOut += (char)rgY[i];
+                    string str1 = m_dataLayer.Detokenize(rgY, i * nCount, nCount);
+                    strOut += str1 + Environment.NewLine;
                 }
 
                 m_log.WriteLine(strOut);
@@ -1174,13 +1175,14 @@ namespace MyCaffe.test
                 m_dataLayer.Tokenize(m_blobX, m_blobX);
                 generate(m_netRun, m_blobX, m_blobY, 500, nBlockSize, nVocabSize, 10);
 
-                m_dataLayer.Detokenize(m_blobY, m_blobY);
-                float[] rgY = convertF(m_blobY.mutable_cpu_data);
                 string strOut = "";
+                float[] rgY = convertF(m_blobY.mutable_cpu_data);
+                int nCount = m_blobY.count(1);
 
-                for (int i = 0; i < rgY.Length; i++)
+                for (int i = 0; i < m_blobY.num; i++)
                 {
-                    strOut += (char)rgY[i];
+                    string str1 = m_dataLayer.Detokenize(rgY, i * nCount, nCount);
+                    strOut += str1 + Environment.NewLine;
                 }
 
                 m_log.WriteLine(strOut);
