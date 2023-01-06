@@ -538,7 +538,7 @@ namespace MyCaffe.layers.gpt
         /// </summary>
         public int Count
         {
-            get { return m_rgVocabKeyToIdx.Count; }
+            get { return m_rgVocabKeyToIdx.Count + 1; }
         }
 
         /// <summary>
