@@ -508,206 +508,6 @@ namespace MyCaffe.layers.gpt
     }
 
     /// <summary>
-    /// The CharacterVocabulary class manages the data vocabulary of characters.
-    /// </summary>
-    public class CharacterVocabulary
-    {
-        Random m_random;
-        Dictionary<char, int> m_rgVocabKeyToIdx = new Dictionary<char, int>();
-        Dictionary<int, char> m_rgVocabIdxToKey = new Dictionary<int, char>();
-
-        /// <summary>
-        /// The constructor.
-        /// </summary>
-        /// <param name="random">Specifies the random number generator used.</param>
-        /// <param name="bAddBos">Specifies to include the special BOS character in the vocabulary.</param>
-        /// <param name="bAddEos">Specifies to include the special EOS character in the vocabulary.</param>
-        public CharacterVocabulary(Random random, bool bAddBos, bool bAddEos)
-        {
-            m_random = random;
-
-            if (bAddBos)
-                m_rgVocabKeyToIdx.Add(BOS, 1);
-
-            if (bAddEos)
-                m_rgVocabKeyToIdx.Add(EOS, 2);
-        }
-
-        /// <summary>
-        /// Returns the size of the vocabulary.
-        /// </summary>
-        public int Count
-        {
-            get { return m_rgVocabKeyToIdx.Count + 1; }
-        }
-
-        /// <summary>
-        /// Adds a new character to the vocabulary.
-        /// </summary>
-        /// <param name="ch">Specifies the character</param>
-        public void Add(char ch)
-        {
-            if (!m_rgVocabKeyToIdx.ContainsKey(ch))
-                m_rgVocabKeyToIdx.Add(ch, 1);
-        }
-
-        /// <summary>
-        /// Builds the vocabulary from all characters added.
-        /// </summary>
-        /// <returns>The vocabulary size is returned.</returns>
-        public int Build()
-        {
-            List<char> rgKeys = m_rgVocabKeyToIdx.Keys.ToList();
-            rgKeys.Sort();
-
-            m_rgVocabKeyToIdx.Clear();
-
-            for (int i = 0; i < rgKeys.Count; i++)
-            {
-                m_rgVocabKeyToIdx.Add(rgKeys[i], i + 1);
-                m_rgVocabIdxToKey.Add(i + 1, rgKeys[i]);
-            }
-
-            return Count;
-        }
-
-        /// <summary>
-        /// Build the vocabulary from a string.
-        /// </summary>
-        /// <param name="strData">Specifies the data to build the vocabulary from.</param>
-        /// <returns>The vocabulary size is returned.</returns>
-        public int BuildFromString(string strData)
-        {
-            foreach (char ch in strData)
-            {
-                Add(ch);
-            }
-
-            return Build();
-        }
-
-        /// <summary>
-        /// Returns the special BOS character.
-        /// </summary>
-        public char BOS
-        {
-            get { return (char)1; }
-        }
-
-        /// <summary>
-        /// Returns the special EOS character.
-        /// </summary>
-        public char EOS
-        {
-            get { return (char)2; }
-        }
-
-        /// <summary>
-        /// Create a target that is offset from the source by one and ends with a EOS.
-        /// </summary>
-        /// <param name="rgSrc">Specifies the source to create the target from.</param>
-        /// <returns>The tokenized target is returned.</returns>
-        public int[] CreateTarget(int[] rgSrc)
-        {
-            List<int> rgTrg = new List<int>(rgSrc);
-
-            rgTrg.RemoveAt(0);
-            rgTrg.Add(EOS);
-
-            return rgTrg.ToArray();
-        }
-
-        /// <summary>
-        /// Tokenize a character into its corresponding index token.
-        /// </summary>
-        /// <param name="ch">Specifies the character to tokenize.</param>
-        /// <param name="bMustExist">Optionally, specifies to throw an error if the character is not in the vocabulary (default = true).</param>
-        /// <returns>The token corresponding to the character is returned.</returns>
-        public int Tokenize(char ch, bool bMustExist = true)
-        {
-            if (!m_rgVocabKeyToIdx.ContainsKey(ch))
-            {
-                if (bMustExist)
-                    throw new Exception("The character '" + ch.ToString() + " is not in the vocabulary!");
-                else
-                    return m_random.Next(Count);
-            }
-
-            return m_rgVocabKeyToIdx[ch];
-        }
-
-        /// <summary>
-        /// Tokenize a string of data.
-        /// </summary>
-        /// <param name="str">Specifies the string to tokenize.</param>
-        /// <param name="bAddBos">Specifies to add the BOS at the start of the tokenized data.</param>
-        /// <param name="bAddEos">Specifies to add the EOS to the end of the tokenized data.</param>
-        /// <returns>The array of tokens is returned.</returns>
-        public int[] Tokenize(string str, bool bAddBos, bool bAddEos)
-        {
-            List<int> rgTokens = new List<int>();
-
-            foreach (char ch in str)
-            {
-                rgTokens.Add(Tokenize(ch));
-            }
-
-            if (bAddBos)
-                rgTokens.Insert(0, BOS);
-
-            if (bAddEos)
-                rgTokens.Add(EOS);
-
-            return rgTokens.ToArray();
-        }
-
-        /// <summary>
-        /// Detokenize an index token into its corresponding character.
-        /// </summary>
-        /// <param name="nIdxToken">Specifies the token to detokenize.</param>
-        /// <returns>The detokenized character is returned.</returns>
-        public char Detokenize(int nIdxToken)
-        {
-            if (nIdxToken == 0)
-                return (char)0;
-
-            if (nIdxToken == BOS)
-                return BOS;
-
-            if (nIdxToken == EOS)
-                return EOS;
-            
-            if (!m_rgVocabIdxToKey.ContainsKey(nIdxToken))
-                throw new Exception("The token '" + nIdxToken.ToString() + "' is not in the vocabulary!");
-            
-            return m_rgVocabIdxToKey[nIdxToken];
-        }
-
-        /// <summary>
-        /// Detokenize an array into a string.
-        /// </summary>
-        /// <param name="rgf">Specifies the array of tokens to detokenize.</param>
-        /// <returns>The detokenized string is returned.</returns>
-        public string Detokenize(float[] rgf)
-        {
-            string str = "";
-
-            foreach (float f in rgf)
-            {
-                char ch = Detokenize((int)f);
-
-                if (ch != 0 && ch != BOS && ch != EOS)
-                    str += Detokenize((int)f);
-
-                if (ch == EOS)
-                    break;
-            }
-
-            return str;
-        }
-    }
-
-    /// <summary>
     /// The TextInputData manages character data read in from a text file.  Data is tokenized into indexes that reference each character
     /// within the vocabulary.
     /// </summary>
@@ -724,7 +524,7 @@ namespace MyCaffe.layers.gpt
     public class TextInputData : InputData
     {
         string m_strData;
-        CharacterVocabulary m_vocab;
+        VocabularyCharacter m_vocab;
         string m_strDebugIndexFile;
         List<int> m_rgDebugIdx = null;
         int m_nDebugIdx = 0;
@@ -763,7 +563,7 @@ namespace MyCaffe.layers.gpt
                 }
             }
 
-            m_vocab = new CharacterVocabulary(m_random, false, false);
+            m_vocab = new VocabularyCharacter(m_random, false, false);
             m_vocab.BuildFromString(m_strData);
         }
 

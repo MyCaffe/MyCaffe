@@ -536,7 +536,7 @@ namespace MyCaffe.layers.gpt
     {
         List<string> m_rgstrData = new List<string>();
         List<Tuple<int[], int[]>> m_rgnData = new List<Tuple<int[], int[]>>();
-        CharacterVocabulary m_vocab;
+        VocabularyCharacter m_vocab;
         float[] m_rgData = null;
         float[] m_rgTgt = null;
         Phase m_phase;
@@ -555,7 +555,7 @@ namespace MyCaffe.layers.gpt
         {
             m_log = log;
             Stopwatch sw = new Stopwatch();
-            m_vocab = new CharacterVocabulary(m_random, true, true);
+            m_vocab = new VocabularyCharacter(m_random, true, true);
             m_phase = phase;
 
             string strProgData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);

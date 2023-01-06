@@ -60,6 +60,7 @@
     <Compile Include="layers.gpt\LayerNormLayer.cs" />
     <Compile Include="layers.gpt\TokenizedDataPairsLayer.cs" />
     <Compile Include="layers.gpt\TransformerBlockLayer.cs" />
+    <Compile Include="layers.gpt\VocabularyCharacter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="layers.gpt\TokenizedDataLayer.cs" />
   </ItemGroup>
