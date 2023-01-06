@@ -285,14 +285,17 @@ namespace MyCaffe.layers.gpt
         }
 
         /// <summary>
-        /// Detokenize the source data by converting it to its native form.
+        /// Detokenize a set of tokens from the data specified.
         /// </summary>
-        /// <param name="blobSrc">Specifies the tokenized source data.</param>
-        /// <param name="blobDst">Specifies the detokenized destination data.</param>
-        public void Detokenize(Blob<T> blobSrc, Blob<T> blobDst)
+        /// <param name="rg">Specifies an array of tokens.</param>
+        /// <param name="nStartIdx">Specifies the start index.</param>
+        /// <param name="nCount">Specifies the number of tokens to detokenize.</param>
+        /// <param name="bIgnoreBos">Specifies to ignore the BOS token.</param>
+        /// <param name="bIgnoreEos">Specifies to ignore the EOS token.</param>
+        /// <returns>The detokenized string is returned.</returns>
+        public string Detokenize(float[] rg, int nStartIdx, int nCount, bool bIgnoreBos = true, bool bIgnoreEos = true)
         {
-            float[] rgSrc = convertF(blobSrc.mutable_cpu_data);
-            blobDst.mutable_cpu_data = convert(m_data.Detokenize(rgSrc));
+            return m_data.Detokenize(rg, nStartIdx, nCount, bIgnoreBos, bIgnoreEos);
         }
 
         /// <summary>
@@ -427,84 +430,10 @@ namespace MyCaffe.layers.gpt
             }
 
             string str = "";
-            str += m_data.Detokenize(nCharIdx);
+            str += m_data.Detokenize(nCharIdx, true, true);
 
             return new List<Tuple<string, int, double>>() { new Tuple<string, int, double>(str, nCharIdx, 0) };
         }
-    }
-
-    /// <summary>
-    /// The InputData is an abstract class used to get training data and tokenize input data.
-    /// </summary>
-    public abstract class InputData
-    {        
-        /// <summary>
-        /// Specifies the random object made available to the derived classes.
-        /// </summary>
-        protected Random m_random;
-
-        /// <summary>
-        /// The constructor.
-        /// </summary>
-        /// <param name="nRandomSeed">Optionally, specifies the seed to use for testing.</param>
-        public InputData(int? nRandomSeed = null)
-        {
-            if (nRandomSeed.HasValue)
-                m_random = new Random(nRandomSeed.Value);
-            else
-                m_random = new Random();
-        }
-
-        /// <summary>
-        /// Returns the size of a single token (e.g. 1 for character data)
-        /// </summary>
-        public abstract uint TokenSize { get; }
-        /// <summary>
-        /// Returns the size of the vocabulary.
-        /// </summary>
-        public abstract uint VocabularySize { get; }
-        /// <summary>
-        /// Gets a set of randomly selected source/target data, where the target may be null.
-        /// </summary>
-        /// <param name="nBatchSize">Specifies the number of blocks in the batch.</param>
-        /// <param name="nBlockSize">Specifies the size of each block.</param>
-        /// <param name="rgnIdx">Returns an array of the indexes of the data returned.</param>
-        /// <returns>A tuple containing the data and target is returned.</returns>
-        public abstract Tuple<float[], float[]> GetData(int nBatchSize, int nBlockSize, out int[] rgnIdx);
-        /// <summary>
-        /// Gets a set of source/target data from a specific index.
-        /// </summary>
-        /// <param name="nBatchSize">Specifies the number of blocks in the batch.</param>
-        /// <param name="nBlockSize">Specifies the size of each block.</param>
-        /// <param name="rgnIdx">Specifies the array of indexes of data to retrieve.</param>
-        /// <returns>A tuple containing the data and target is returned.</returns>
-        public abstract Tuple<float[], float[]> GetDataAt(int nBatchSize, int nBlockSize, int[] rgnIdx);
-        /// <summary>
-        /// Tokenize the input data.
-        /// </summary>
-        /// <param name="rgInput">Specifies the untokenized input data.</param>
-        /// <returns>The tokenized data is returned.</returns>
-        public abstract float[] Tokenize(float[] rgInput);
-        /// <summary>
-        /// Detokenize the input data, but converting tokenized data to its native form.
-        /// </summary>
-        /// <param name="rgInput">Specifies the tokenized data.</param>
-        /// <returns>The de-tokenized data is returned.</returns>
-        public abstract float[] Detokenize(float[] rgInput);
-        /// <summary>
-        /// Detokenize a single token.
-        /// </summary>
-        /// <param name="nTokIdx">Specifies an index to the token to be detokenized.</param>
-        /// <returns>The detokenized character is returned.</returns>
-        public abstract char Detokenize(int nTokIdx);
-        /// <summary>
-        /// Return the special begin of sequence character.
-        /// </summary>
-        public abstract char BOS { get; }
-        /// <summary>
-        /// Return the special end of sequence character.
-        /// </summary>
-        public abstract char EOS { get; }
     }
 
     /// <summary>
@@ -524,7 +453,7 @@ namespace MyCaffe.layers.gpt
     public class TextInputData : InputData
     {
         string m_strData;
-        VocabularyCharacter m_vocab;
+        IVocabulary m_vocab;
         string m_strDebugIndexFile;
         List<int> m_rgDebugIdx = null;
         int m_nDebugIdx = 0;
@@ -625,9 +554,10 @@ namespace MyCaffe.layers.gpt
                 {
                     if (nCharIdxLast.HasValue)
                         m_rgData[nDstIdx + j - 1] = nCharIdxLast.Value;
-
-                    char ch = m_strData[nDataIdx + j];
-                    int nCharIdx = m_vocab.Tokenize(ch);
+                    
+                    string str = "";
+                    str += m_strData[nDataIdx + j];
+                    int nCharIdx = m_vocab.Tokenize(str);
 
                     if (j > 0)
                         m_rgTgt[nDstIdx + j - 1] = nCharIdx;
@@ -662,7 +592,7 @@ namespace MyCaffe.layers.gpt
             for (int i = 0; i < rgInput.Count(); i++)
             {
                 char ch = (char)rgInput[i];
-                int nCharIdx = m_vocab.Tokenize(ch, false);
+                int nCharIdx = m_vocab.Tokenize(ch.ToString(), false);
                 rgInput[i] = nCharIdx;
             }
 
@@ -670,31 +600,39 @@ namespace MyCaffe.layers.gpt
         }
 
         /// <summary>
-        /// Convert tokenized data back to its native character form.
-        /// </summary>
-        /// <param name="rgInput">Specifies the tokenized data.</param>
-        /// <returns>The characters in numeric form are returned.</returns>
-        public override float[] Detokenize(float[] rgInput)
-        {
-            for (int i = 0; i < rgInput.Count(); i++)
-            {
-                int nCharIdx = (int)rgInput[i];
-                char ch = m_vocab.Detokenize(nCharIdx);
-                rgInput[i] = ch;
-            }
-
-            return rgInput;
-        }
-
-
-        /// <summary>
         /// Detokenize a single token.
         /// </summary>
         /// <param name="nTokIdx">Specifies an index to the token to be detokenized.</param>
+        /// <param name="bIgnoreBos">Specifies to ignore the BOS token.</param>
+        /// <param name="bIgnoreEos">Specifies to ignore the EOS token.</param>
         /// <returns>The detokenized character is returned.</returns>
-        public override char Detokenize(int nTokIdx)
+        public override string Detokenize(int nTokIdx, bool bIgnoreBos, bool bIgnoreEos)
         {
-            return m_vocab.Detokenize(nTokIdx);
+            return m_vocab.Detokenize(nTokIdx, bIgnoreBos, bIgnoreEos);
+        }
+
+        /// <summary>
+        /// Detokenize an array into a string.
+        /// </summary>
+        /// <param name="rgfTokIdx">Specifies the array of tokens to detokenize.</param>
+        /// <param name="nStartIdx">Specifies the starting index where detokenizing begins.</param>
+        /// <param name="nCount">Specifies the number of tokens to detokenize.</param>
+        /// <param name="bIgnoreBos">Specifies to ignore the BOS token.</param>
+        /// <param name="bIgnoreEos">Specifies to ignore the EOS token.</param>
+        /// <returns>The detokenized string is returned.</returns>
+        public override string Detokenize(float[] rgfTokIdx, int nStartIdx, int nCount, bool bIgnoreBos, bool bIgnoreEos)
+        {
+            string str = "";
+            for (int i = nStartIdx; i < nStartIdx + nCount; i++)
+            {
+                string strItem = m_vocab.Detokenize((int)rgfTokIdx[i], bIgnoreBos, bIgnoreEos);
+                if (string.IsNullOrEmpty(strItem))
+                    break;
+
+                str += strItem;
+            }
+
+            return str;
         }
 
         /// <summary>

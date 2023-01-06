@@ -194,28 +194,14 @@ namespace MyCaffe.test
                     }
                 }
 
-                ((TokenizedDataLayer<T>)layer).Detokenize(TopVec[0], TopVec[0]);
-                ((TokenizedDataLayer<T>)layer).Detokenize(TopVec[2], TopVec[2]);
-
                 rgData = convertF(TopVec[0].mutable_cpu_data);
                 rgTarget = convertF(TopVec[2].mutable_cpu_data);
                 List<Tuple<string, string>> rgDataOut = new List<Tuple<string, string>>();
 
                 for (int i = 0; i < nBatchSize; i++)
                 {
-                    string strData = "";
-                    string strTarget = "";
-                    
-                    for (int j = 0; j < nBlockSize - 1; j++)
-                    {
-                        float fExpected = rgData[i * nBlockSize + j + 1];
-                        float fActual = rgTarget[i * nBlockSize + j];
-
-                        strData += (char)rgData[i * nBlockSize + j];
-                        strTarget += (char)fActual;
-
-                        m_log.CHECK_EQ(fActual, fExpected, "The token in batch " + i.ToString() + " at block " + j.ToString() + " is not correct.");
-                    }
+                    string strData = ((TokenizedDataLayer<T>)layer).Detokenize(rgData, i * nBlockSize, nBlockSize);
+                    string strTarget = ((TokenizedDataLayer<T>)layer).Detokenize(rgTarget, i * nBlockSize, nBlockSize);
 
                     rgDataOut.Add(new Tuple<string, string>(strData, strTarget));
                 }

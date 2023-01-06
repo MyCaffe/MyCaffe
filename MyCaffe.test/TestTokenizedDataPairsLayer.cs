@@ -192,10 +192,6 @@ namespace MyCaffe.test
                     }
                 }
                 
-                ((TokenizedDataPairsLayer<T>)layer).Detokenize(TopVec[0], TopVec[0], TokenizedDataPairsLayer<T>.VOCABULARY.ENCODER);
-                ((TokenizedDataPairsLayer<T>)layer).Detokenize(TopVec[1], TopVec[1], TokenizedDataPairsLayer<T>.VOCABULARY.DECODER);
-                ((TokenizedDataPairsLayer<T>)layer).Detokenize(TopVec[2], TopVec[2], TokenizedDataPairsLayer<T>.VOCABULARY.DECODER);
-
                 float[] rgEncInput = convertF(TopVec[0].mutable_cpu_data);
                 rgDecInput = convertF(TopVec[1].mutable_cpu_data);
                 rgDecOutput = convertF(TopVec[2].mutable_cpu_data);
@@ -203,20 +199,9 @@ namespace MyCaffe.test
 
                 for (int i = 0; i < nBatchSize; i++)
                 {
-                    string strEncInput = "";
-                    string strDecInput = "";
-                    string strDecOutput = "";
-                    
-                    for (int j = 0; j < nBlockSize; j++)
-                    {
-                        float fEncInput = rgEncInput[i * nBlockSize + j];
-                        float fDecInput = rgDecInput[i * nBlockSize + j];
-                        float fDecOutput = rgDecOutput[i * nBlockSize + j];
-
-                        strEncInput += getChar(fEncInput);
-                        strDecInput += getChar(fDecInput);
-                        strDecOutput += getChar(fDecOutput);
-                    }
+                    string strEncInput = ((TokenizedDataPairsLayer<T>)layer).Detokenize(rgEncInput, i * nBlockSize, nBlockSize, TokenizedDataPairsLayer<T>.VOCABULARY.ENCODER);
+                    string strDecInput = ((TokenizedDataPairsLayer<T>)layer).Detokenize(rgDecInput, i * nBlockSize, nBlockSize, TokenizedDataPairsLayer<T>.VOCABULARY.DECODER);
+                    string strDecOutput = ((TokenizedDataPairsLayer<T>)layer).Detokenize(rgDecOutput, i * nBlockSize, nBlockSize, TokenizedDataPairsLayer<T>.VOCABULARY.DECODER);
 
                     rgDataOut.Add(new Tuple<string, string, string>(strEncInput, strDecInput, strDecOutput));
                 }

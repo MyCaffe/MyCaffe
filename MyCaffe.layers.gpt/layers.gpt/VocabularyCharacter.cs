@@ -14,6 +14,8 @@ namespace MyCaffe.layers.gpt
         Random m_random;
         Dictionary<char, int> m_rgVocabKeyToIdx = new Dictionary<char, int>();
         Dictionary<int, char> m_rgVocabIdxToKey = new Dictionary<int, char>();
+        bool m_bAddBos;
+        bool m_bAddEos;
 
         /// <summary>
         /// The constructor.
@@ -24,7 +26,9 @@ namespace MyCaffe.layers.gpt
         public VocabularyCharacter(Random random, bool bAddBos, bool bAddEos)
         {
             m_random = random;
-
+            m_bAddBos = bAddBos;
+            m_bAddEos = bAddEos;
+            
             if (bAddBos)
                 m_rgVocabKeyToIdx.Add(BOS, 1);
 
@@ -119,11 +123,16 @@ namespace MyCaffe.layers.gpt
         /// <summary>
         /// Tokenize a character into its corresponding index token.
         /// </summary>
-        /// <param name="ch">Specifies the character to tokenize.</param>
-        /// <param name="bMustExist">Optionally, specifies to throw an error if the character is not in the vocabulary (default = true).</param>
+        /// <param name="str1">Specifies a single element (character or word) to tokenize.</param>
+        /// <param name="bMustExist">Optionally, specifies to throw an error if the item is not in the vocabulary (default = true).</param>
         /// <returns>The token corresponding to the character is returned.</returns>
-        public int Tokenize(char ch, bool bMustExist = true)
+        public int Tokenize(string str1, bool bMustExist = true)
         {
+            if (str1.Length != 1)
+                throw new Exception("The character must be a single character!");
+
+            char ch = str1[0];
+
             if (!m_rgVocabKeyToIdx.ContainsKey(ch))
             {
                 if (bMustExist)
@@ -147,8 +156,8 @@ namespace MyCaffe.layers.gpt
             List<int> rgTokens = new List<int>();
 
             foreach (char ch in str)
-            {
-                rgTokens.Add(Tokenize(ch));
+            {                
+                rgTokens.Add(Tokenize(ch.ToString()));
             }
 
             if (bAddBos)
@@ -164,42 +173,66 @@ namespace MyCaffe.layers.gpt
         /// Detokenize an index token into its corresponding character.
         /// </summary>
         /// <param name="nIdxToken">Specifies the token to detokenize.</param>
-        /// <returns>The detokenized character is returned.</returns>
-        public char Detokenize(int nIdxToken)
+        /// <param name="bIgnoreBos">Specifies to ignore the BOS token.</param>
+        /// <param name="bIgnoreEos">Specifies to ignore the EOS token.</param>
+        /// <returns>The detokenized string is returned (which may just be a character).</returns>
+        public string Detokenize(int nIdxToken, bool bIgnoreBos, bool bIgnoreEos)
         {
+            string str = null;
+            
             if (nIdxToken == 0)
-                return (char)0;
+                return str;
 
-            if (nIdxToken == BOS)
-                return BOS;
+            str = "";
 
-            if (nIdxToken == EOS)
-                return EOS;
+            if (m_bAddBos && nIdxToken == BOS)
+            {
+                if (!bIgnoreBos)
+                    str += "<BOS>";
+            }
 
-            if (!m_rgVocabIdxToKey.ContainsKey(nIdxToken))
-                throw new Exception("The token '" + nIdxToken.ToString() + "' is not in the vocabulary!");
+            else if (m_bAddEos && nIdxToken == EOS)
+            {
+                if (!bIgnoreEos)
+                    str += "<EOS>";
+            }
 
-            return m_rgVocabIdxToKey[nIdxToken];
+            else
+            {
+                if (!m_rgVocabIdxToKey.ContainsKey(nIdxToken))
+                    throw new Exception("The token '" + nIdxToken.ToString() + "' is not in the vocabulary!");
+
+                str += m_rgVocabIdxToKey[nIdxToken];
+            }
+            
+            return str;
         }
 
         /// <summary>
         /// Detokenize an array into a string.
         /// </summary>
         /// <param name="rgf">Specifies the array of tokens to detokenize.</param>
+        /// <param name="bIgnoreBos">Specifies to ignore the BOS token.</param>
+        /// <param name="bIgnoreEos">Specifies to ignore the EOS token.</param>
         /// <returns>The detokenized string is returned.</returns>
-        public string Detokenize(float[] rgf)
+        public string Detokenize(float[] rgf, bool bIgnoreBos, bool bIgnoreEos)
         {
             string str = "";
 
             foreach (float f in rgf)
             {
-                char ch = Detokenize((int)f);
+                string str1 = Detokenize((int)f, bIgnoreBos, bIgnoreEos);
 
-                if (ch != 0 && ch != BOS && ch != EOS)
-                    str += Detokenize((int)f);
+                if (!string.IsNullOrEmpty(str1))
+                {
+                    char ch = str1[0];
 
-                if (ch == EOS)
-                    break;
+                    if (ch == EOS)
+                        break;
+
+                    if (ch != 0 && ch != BOS && ch != EOS)
+                        str += ch;
+                }
             }
 
             return str;
