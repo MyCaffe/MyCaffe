@@ -9,7 +9,7 @@ namespace MyCaffe.layers.gpt
     /// <summary>
     /// The VocabularyCharacters class manages the data vocabulary of characters.
     /// </summary>
-    public class VocabularyCharacter
+    public class VocabularyCharacter : IVocabulary
     {
         Random m_random;
         Dictionary<char, int> m_rgVocabKeyToIdx = new Dictionary<char, int>();
