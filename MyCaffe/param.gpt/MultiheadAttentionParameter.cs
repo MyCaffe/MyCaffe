@@ -20,6 +20,22 @@ namespace MyCaffe.param.gpt
         double m_dfResidDropout;
         uint m_nBlockSize = 128;
         uint m_nLayers = 6;
+        WEIGHT_INIT m_weightInit = WEIGHT_INIT.ENCODER_DECODER;
+
+        /// <summary>
+        /// Defines the weight initialization strategy.
+        /// </summary>
+        public enum WEIGHT_INIT
+        {
+            /// <summary>
+            /// Specifies to use the GPT style weight strategy.
+            /// </summary>
+            GPT,
+            /// <summary>
+            /// Specifies to use the XAVIER initialization on both weight and bias.
+            /// </summary>
+            ENCODER_DECODER
+        }
 
         /** @copydoc LayerParameterBase */
         public MultiheadAttentionParameter()
@@ -82,6 +98,15 @@ namespace MyCaffe.param.gpt
             set { m_dfResidDropout = value; }
         }
 
+        /// <summary>
+        /// Specifies the weight initialization strategy (default = ENCODER_DECODER).
+        /// </summary>
+        public WEIGHT_INIT weight_init
+        {
+            get { return m_weightInit; }
+            set { m_weightInit = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -105,6 +130,7 @@ namespace MyCaffe.param.gpt
             m_nBlockSize = p.block_size;
             m_dfAttnDropout = p.attn_dropout;
             m_dfResidDropout = p.resid_dropout;
+            m_weightInit = p.weight_init;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -130,6 +156,7 @@ namespace MyCaffe.param.gpt
             rgChildren.Add("block_size", block_size.ToString());
             rgChildren.Add("attn_dropout", attn_dropout.ToString());
             rgChildren.Add("resid_dropout", resid_dropout.ToString());
+            rgChildren.Add("weight_init", weight_init.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -161,6 +188,16 @@ namespace MyCaffe.param.gpt
 
             if ((strVal = rp.FindValue("resid_dropout")) != null)
                 p.resid_dropout = double.Parse(strVal);
+
+            if ((strVal = rp.FindValue("weight_init")) != null)
+            {
+                if (strVal == WEIGHT_INIT.GPT.ToString())
+                    p.weight_init = WEIGHT_INIT.GPT;
+                else if (strVal == WEIGHT_INIT.ENCODER_DECODER.ToString())
+                    p.weight_init = WEIGHT_INIT.ENCODER_DECODER;
+                else
+                    throw new Exception("Unknown weight init strategy '" + strVal + "'!");
+            }    
 
             return p;
         }
