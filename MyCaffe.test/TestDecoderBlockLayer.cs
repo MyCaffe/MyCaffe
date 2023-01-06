@@ -450,28 +450,28 @@ namespace MyCaffe.test
             return new Tuple<string, string>(strSrcText, strTrgText);
         }
 
-        private string buildModel(uint nBatch, uint nBlockSize, uint nEmbed, uint nVocabSize)
+        private string buildModel(string strSrc, string strTrg, uint nBatch, uint nBlockSize, uint nEmbed, uint nEncVocabSize, uint nDecVocabSize)
         {
             NetParameter net = new NetParameter();
             net.name = "TranslatorNet";
 
             LayerParameter data = new LayerParameter(LayerParameter.LayerType.TOKENIZED_DATA_PAIRS);
             data.name = "tokdata1";
-            data.tokenized_data_pairs_param.target = "$ProgramData$\\MyCaffe\\test_data\\data\\text\\encdec\\en_fr\\tgt\\train.txt";
-            data.tokenized_data_pairs_param.source = "$ProgramData$\\MyCaffe\\test_data\\data\\text\\encdec\\en_fr\\src\\train.txt";
+            data.tokenized_data_pairs_param.target = strTrg;
+            data.tokenized_data_pairs_param.source = strSrc;
             data.tokenized_data_pairs_param.input_type = TokenizedDataParameter.INPUT_TYPE.TEXT_FILE;
             data.tokenized_data_pairs_param.batch_size = nBatch;
             data.tokenized_data_pairs_param.block_size = nBlockSize;
-            data.bottom.Add("enc");
-            data.bottom.Add("dec");
-            data.bottom.Add("tgt");
-            data.bottom.Add("emsk");
-            data.bottom.Add("dmsk");
+            data.top.Add("enc");
+            data.top.Add("dec");
+            data.top.Add("tgt");
+            data.top.Add("emsk");
+            data.top.Add("dmsk");
             net.layer.Add(data);
 
             LayerParameter emb1 = new LayerParameter(LayerParameter.LayerType.EMBED);
             emb1.name = "embed1";
-            emb1.embed_param.input_dim = nBlockSize;
+            emb1.embed_param.input_dim = nEncVocabSize;
             emb1.embed_param.num_output = nEmbed;
             emb1.bottom.Add("enc");
             emb1.top.Add("emb1");
@@ -481,6 +481,7 @@ namespace MyCaffe.test
             pos1.name = "posenc1";
             pos1.bottom.Add("emb1");
             pos1.top.Add("emb1");
+            net.layer.Add(pos1);
 
             string strEncBtm = "emb1";
             int nLayers = 6;
@@ -493,10 +494,9 @@ namespace MyCaffe.test
                 enc.transformer_block_param.embed = nEmbed;
                 enc.transformer_block_param.block_size = nBlockSize;
                 enc.transformer_block_param.layers = (uint)nLayers;
-                enc.transformer_block_param.enable_layernorm_cuda_impl = true;
                 enc.transformer_block_param.activation = TransformerBlockParameter.ACTIVATION.RELU;
-                enc.transformer_block_param.attn_dropout = 0.1;
-                enc.transformer_block_param.resid_dropout = 0.1;
+                enc.transformer_block_param.attn_dropout = 0.0;
+                enc.transformer_block_param.resid_dropout = 0.0;
                 enc.bottom.Add(strEncBtm);
                 enc.bottom.Add("emsk");
                 enc.top.Add(enc.name);
@@ -507,7 +507,7 @@ namespace MyCaffe.test
 
             LayerParameter emb2 = new LayerParameter(LayerParameter.LayerType.EMBED);
             emb2.name = "embed2";
-            emb2.embed_param.input_dim = nBlockSize;
+            emb2.embed_param.input_dim = nDecVocabSize;
             emb2.embed_param.num_output = nEmbed;
             emb2.bottom.Add("dec");
             emb2.top.Add("emb2");
@@ -517,6 +517,7 @@ namespace MyCaffe.test
             pos2.name = "posenc2";
             pos2.bottom.Add("emb2");
             pos2.top.Add("emb2");
+            net.layer.Add(pos2);
 
             string strDecBtm = "emb2";
             for (int i = 0; i < nLayers; i++)
@@ -528,10 +529,9 @@ namespace MyCaffe.test
                 dec.transformer_block_param.embed = nEmbed;
                 dec.transformer_block_param.block_size = nBlockSize;
                 dec.transformer_block_param.layers = (uint)nLayers;
-                dec.transformer_block_param.enable_layernorm_cuda_impl = true;
                 dec.transformer_block_param.activation = TransformerBlockParameter.ACTIVATION.RELU;
-                dec.transformer_block_param.attn_dropout = 0.1;
-                dec.transformer_block_param.resid_dropout = 0.1;
+                dec.transformer_block_param.attn_dropout = 0.0;
+                dec.transformer_block_param.resid_dropout = 0.0;
                 dec.bottom.Add(strDecBtm);
                 dec.bottom.Add("dmsk");
                 dec.bottom.Add(strEncBtm);
@@ -544,32 +544,34 @@ namespace MyCaffe.test
 
             LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
             ip1.name = "ip1";
-            ip1.inner_product_param.axis = 1;
-            ip1.inner_product_param.num_output = nVocabSize;
+            ip1.inner_product_param.axis = 2;
+            ip1.inner_product_param.num_output = nDecVocabSize;
             ip1.bottom.Add(strDecBtm);
             ip1.top.Add("logits");
             net.layer.Add(ip1);
 
             LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
             softmax.name = "softmax";
-            softmax.softmax_param.axis = 1;
+            softmax.softmax_param.axis = 2;
             softmax.bottom.Add("logits");
             softmax.top.Add("prob");
             softmax.include.Add(new NetStateRule(Phase.RUN));
             net.layer.Add(softmax);
 
-            LayerParameter loss = new LayerParameter(LayerParameter.LayerType.SOFTMAXCROSSENTROPY2_LOSS);
+            LayerParameter loss = new LayerParameter(LayerParameter.LayerType.SOFTMAXWITH_LOSS);
             loss.name = "loss";
-            loss.softmax_param.axis = 1;
+            loss.softmax_param.axis = 2;
             loss.bottom.Add("logits");
+            loss.bottom.Add("tgt");
             loss.top.Add("loss");
             loss.include.Add(new NetStateRule(Phase.TRAIN));
             net.layer.Add(loss);
 
             LayerParameter accuracy = new LayerParameter(LayerParameter.LayerType.ACCURACY);
             accuracy.name = "accuracy";
-            accuracy.accuracy_param.axis = 1;
+            accuracy.accuracy_param.axis = 2;
             accuracy.bottom.Add("logits");
+            accuracy.bottom.Add("tgt");
             accuracy.top.Add("accuracy");
             accuracy.include.Add(new NetStateRule(Phase.TEST));
             net.layer.Add(accuracy);
@@ -582,6 +584,7 @@ namespace MyCaffe.test
             SolverParameter solver = new SolverParameter();
             solver.base_lr = 1e-4;
             solver.type = SolverParameter.SolverType.ADAM;
+            solver.clip_gradients = 1;
 
             return solver.ToProto("root").ToString();
         }
@@ -592,7 +595,7 @@ namespace MyCaffe.test
             string strSrcFile = dataFiles.Item1;
             string strTrgFile = dataFiles.Item2;
 
-            string strModel = buildModel(80, 200, 512, 322);
+            string strModel = buildModel(strSrcFile, strTrgFile, 20, 200, 512, 314, 323);
             string strSolver = buildSolver();
 
             SettingsCaffe s = new SettingsCaffe
@@ -601,16 +604,60 @@ namespace MyCaffe.test
             };
             CancelEvent evtCancel = new CancelEvent();
             MyCaffeControl<float> mycaffe = new MyCaffeControl<float>(s, m_log, evtCancel);
+            mycaffe.OnTrainingIteration += Mycaffe_OnTrainingIteration;
+
+            Blob<float> blobWork = null;
 
             try
             {
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
-                mycaffe.Train(1000);
+
+                Net<float> net = mycaffe.GetInternalNet(Phase.TRAIN);
+                net.Forward();
+
+                blobWork = mycaffe.CreateBlob("work");
+                for (int i=0; i<net.parameters.Count; i++)
+                {
+                    Blob<float> blob = net.parameters[i];
+                    blobWork.ReshapeLike(blob);
+
+                    Tuple<double, double, double, double> data = blob.minmax_data(blobWork, true);
+                    Trace.WriteLine(i.ToString() + ". " + blob.Name + " min: " + data.Item1.ToString() + Environment.NewLine);
+                    Trace.WriteLine(i.ToString() + ". " + blob.Name + " max: " + data.Item2.ToString() + Environment.NewLine);
+                    Trace.WriteLine(i.ToString() + ". " + blob.Name + " nan: " + data.Item3.ToString() + Environment.NewLine);
+                    Trace.WriteLine(i.ToString() + ". " + blob.Name + " inf: " + data.Item4.ToString() + Environment.NewLine);
+                    if (data.Item3 > 0 || data.Item4 > 0)
+                        Trace.WriteLine("Nan or Inf detected!");
+                    Trace.WriteLine("---------------");                    
+                }
+
+                for (int i = 0; i < net.blobs.Count; i++)
+                {
+                    Blob<float> blob = net.blobs[i];
+                    blobWork.ReshapeLike(blob);
+
+                    Tuple<double, double, double, double> data = blob.minmax_data(blobWork, true);
+                    Trace.WriteLine(i.ToString() + ". " + blob.Name + " min: " + data.Item1.ToString() + Environment.NewLine);
+                    Trace.WriteLine(i.ToString() + ". " + blob.Name + " max: " + data.Item2.ToString() + Environment.NewLine);
+                    Trace.WriteLine(i.ToString() + ". " + blob.Name + " nan: " + data.Item3.ToString() + Environment.NewLine);
+                    Trace.WriteLine(i.ToString() + ". " + blob.Name + " inf: " + data.Item4.ToString() + Environment.NewLine);
+                    if (data.Item3 > 0 || data.Item4 > 0)
+                        Trace.WriteLine("Nan or Inf detected!");
+                    Trace.WriteLine("---------------");
+                }
             }
             finally
             {
+                if (blobWork != null)
+                    blobWork.Dispose();
+
                 mycaffe.Dispose();
             }
+        }
+
+        private void Mycaffe_OnTrainingIteration(object sender, TrainingIterationArgs<float> e)
+        {
+            Trace.WriteLine(e.Iteration.ToString() + " - " + e.Loss.ToString());
         }
     }
 }
