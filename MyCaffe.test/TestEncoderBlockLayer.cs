@@ -130,6 +130,7 @@ namespace MyCaffe.test
             m_blobX = new Blob<T>(m_cuda, m_log);
             m_blobInput = new Blob<T>(m_cuda, m_log);
             m_blobYexp = new Blob<T>(m_cuda, m_log);
+            m_blobMask = new Blob<T>(m_cuda, m_log);
             m_blobWork = new Blob<T>(m_cuda, m_log);
         }
 
@@ -150,9 +151,10 @@ namespace MyCaffe.test
         protected override void dispose()
         {
             dispose(ref m_blobX);
-            dispose(ref m_blobMask);
             dispose(ref m_blobInput);
             dispose(ref m_blobYexp);
+            dispose(ref m_blobMask);
+            dispose(ref m_blobWork);
             base.dispose();
         }
 
