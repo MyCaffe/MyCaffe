@@ -54,45 +54,24 @@ namespace MyCaffe.layers.beta
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
-            if (m_blobEncodings != null)
-            {
-                m_blobEncodings.Dispose();
-                m_blobEncodings = null;
-            }
-
-            if (m_blobDistSq != null)
-            {
-                m_blobDistSq.Dispose();
-                m_blobDistSq = null;
-            }
-
-            if (m_blobSummerVec != null)
-            {
-                m_blobSummerVec.Dispose();
-                m_blobSummerVec = null;
-            }
-
-            if (m_blobData != null)
-            {
-                m_blobData.Dispose();
-                m_blobData = null;
-            }
+            dispose(ref m_blobEncodings);
+            dispose(ref m_blobDistSq);
+            dispose(ref m_blobSummerVec);
+            dispose(ref m_blobData);
 
             base.dispose();
         }
 
-        /** @copydoc Layer::internal_blobs */
-        public override BlobCollection<T> internal_blobs
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            get
-            {
-                BlobCollection<T> col = new BlobCollection<T>();
-                col.Add(m_blobEncodings);
-                col.Add(m_blobDistSq);
-                col.Add(m_blobSummerVec);
-                col.Add(m_blobData);
-                return col;
-            }
+            if (col.Count > 0)
+                return;
+
+            col.Add(m_blobEncodings);
+            col.Add(m_blobDistSq);
+            col.Add(m_blobSummerVec);
+            col.Add(m_blobData);
         }
 
         /// <summary>

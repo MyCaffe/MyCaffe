@@ -45,17 +45,13 @@ namespace MyCaffe.layers.beta
             base.dispose();
         }
 
-        /** @copydoc Layer::internal_blobs */
-        public override BlobCollection<T> internal_blobs
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            get
-            {
-                BlobCollection<T> col = new BlobCollection<T>();
+            if (col.Count > 0)
+                return;
 
-                col.Add(m_blobSquared);
-
-                return col;
-            }
+            col.Add(m_blobSquared);
         }
 
         /// <summary>

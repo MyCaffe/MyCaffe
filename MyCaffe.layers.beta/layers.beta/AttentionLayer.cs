@@ -12,7 +12,7 @@ using System.Diagnostics;
 namespace MyCaffe.layers
 {
     /// <summary>
-    /// The AttentionLayer provides focus for LSTM based encoder/decoder models.
+    /// [DEPRECIATED] The AttentionLayer provides focus for LSTM based encoder/decoder models.
     /// </summary>
     /// <remarks>
     /// @see [Attention Is All You Need](https://arxiv.org/abs/1706.03762) by Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz Kaiser, and Illia Polosukhin, 2017, arXiv:1706:03762
@@ -207,26 +207,22 @@ namespace MyCaffe.layers
             base.dispose();
         }
 
-        /** @copydoc Layer::internal_blobs */
-        public override BlobCollection<T> internal_blobs
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            get
-            {
-                BlobCollection<T> col = new BlobCollection<T>();
+            if (col.Count > 0)
+                return;
 
-                col.Add(m_blobState);
-                col.Add(m_blobUh);
-                col.Add(m_blobWc);
-                col.Add(m_blobFullWc);
-                col.Add(m_blobAddOutput);
-                col.Add(m_blobGG);
-                col.Add(m_blobAA);
-                col.Add(m_blobScale);
-                col.Add(m_blobFocusedInput);
-                col.Add(m_blobContext);
-
-                return col;
-            }
+            col.Add(m_blobState);
+            col.Add(m_blobUh);
+            col.Add(m_blobWc);
+            col.Add(m_blobFullWc);
+            col.Add(m_blobAddOutput);
+            col.Add(m_blobGG);
+            col.Add(m_blobAA);
+            col.Add(m_blobScale);
+            col.Add(m_blobFocusedInput);
+            col.Add(m_blobContext);
         }
 
         /// <summary>

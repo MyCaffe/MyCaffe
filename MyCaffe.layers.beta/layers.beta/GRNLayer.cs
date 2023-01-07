@@ -45,26 +45,22 @@ namespace MyCaffe.layers.beta
         protected override void dispose()
         {
             base.dispose();
-            m_blobSumMultiplier.Dispose();
-            m_blobSquare.Dispose();
-            m_blobNorm.Dispose();
-            m_blobTempDot.Dispose();
+            dispose(ref m_blobSumMultiplier);
+            dispose(ref m_blobSquare);
+            dispose(ref m_blobNorm);
+            dispose(ref m_blobTempDot);
         }
 
-        /** @copydoc Layer::internal_blobs */
-        public override BlobCollection<T> internal_blobs
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            get
-            {
-                BlobCollection<T> col = new BlobCollection<T>();
+            if (col.Count > 0)
+                return;
 
-                col.Add(m_blobSquare);
-                col.Add(m_blobNorm);
-                col.Add(m_blobTempDot);
-                col.Add(m_blobSumMultiplier);
-
-                return col;
-            }
+            col.Add(m_blobSquare);
+            col.Add(m_blobNorm);
+            col.Add(m_blobTempDot);
+            col.Add(m_blobSumMultiplier);
         }
 
         /// <summary>

@@ -145,32 +145,28 @@ namespace MyCaffe.layers.beta
             base.dispose();
         }
 
-        /** @copydoc Layer::internal_blobs */
-        public override BlobCollection<T> internal_blobs
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            get
-            {
-                BlobCollection<T> col = new BlobCollection<T>();
+            if (col.Count > 0)
+                return;
 
-                col.Add(m_blobDiffAP);
-                col.Add(m_blobDiffSqAP);
-                col.Add(m_blobDistSqAP);
-                col.Add(m_blobDiffAN);
-                col.Add(m_blobDiffSqAN);
-                col.Add(m_blobDistSqAN);
-                col.Add(m_blobDiffPN);
-                col.Add(m_blobSumVec);
-                col.Add(m_blobLossVec);
-                col.Add(m_blobWork);
+            col.Add(m_blobDiffAP);
+            col.Add(m_blobDiffSqAP);
+            col.Add(m_blobDistSqAP);
+            col.Add(m_blobDiffAN);
+            col.Add(m_blobDiffSqAN);
+            col.Add(m_blobDistSqAN);
+            col.Add(m_blobDiffPN);
+            col.Add(m_blobSumVec);
+            col.Add(m_blobLossVec);
+            col.Add(m_blobWork);
 
-                if (m_blobPreGenTargetsPos != null)
-                    col.Add(m_blobPreGenTargetsPos);
+            if (m_blobPreGenTargetsPos != null)
+                col.Add(m_blobPreGenTargetsPos);
 
-                if (m_blobPreGenTargetsNeg != null)
-                    col.Add(m_blobPreGenTargetsNeg);
-
-                return col;
-            }
+            if (m_blobPreGenTargetsNeg != null)
+                col.Add(m_blobPreGenTargetsNeg);
         }
 
         /// <summary>

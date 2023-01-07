@@ -47,6 +47,8 @@ namespace MyCaffe.layers.beta
             m_blobBackwardMap.Name = m_param.name + " backward map";
             m_blobBuffer = new Blob<T>(cuda, log, false);
             m_blobBuffer.Name = m_param.name + " buffer";
+
+            setup_internal_blobs(m_colInternalBlobs);
         }
 
         /// <summary>
@@ -62,23 +64,17 @@ namespace MyCaffe.layers.beta
             base.dispose();
         }
 
-        /// <summary>
-        /// Returns the internal blobs.
-        /// </summary>
-        public override BlobCollection<T> internal_blobs
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            get
-            {
-                BlobCollection<T> col = new BlobCollection<T>();
+            if (col.Count > 0)
+                return;
 
-                col.Add(m_blobBottomCounts);
-                col.Add(m_blobTopCounts);
-                col.Add(m_blobForwardMap);
-                col.Add(m_blobBackwardMap);
-                col.Add(m_blobBuffer);
-
-                return col;                
-            }
+            col.Add(m_blobBottomCounts);
+            col.Add(m_blobTopCounts);
+            col.Add(m_blobForwardMap);
+            col.Add(m_blobBackwardMap);
+            col.Add(m_blobBuffer);
         }        
 
         private List<int> permute(List<int> rg)

@@ -166,58 +166,36 @@ namespace MyCaffe.layers
             dispose(ref m_blobEOutputWhd);
         }
 
-        private void dispose(ref Layer<T> l)
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            if (l != null)
+            if (col.Count > 0)
+                return;
+
+            col.Add(m_blobBiasMultiplier);
+            col.Add(m_blobCell);
+            col.Add(m_blobPreGate);
+            col.Add(m_blobGate);
+            col.Add(m_blob_C_0);
+            col.Add(m_blob_H_0);
+            col.Add(m_blob_C_T);
+            col.Add(m_blob_H_T);
+            col.Add(m_blob_H_to_Gate);
+            col.Add(m_blob_H_to_H);
+            col.Add(m_blobMaxT);
+
+            if (m_blobEOutputWhd != null)
+                col.Add(m_blobEOutputWhd);
+
+            if (m_attention != null)
             {
-                l.Dispose();
-                l = null;
-            }
-        }
+                col.Add(m_blob_C_to_Gate);
+                col.Add(m_blobPrevCt);
 
-        private void dispose(ref Blob<T> b)
-        {
-            if (b != null)
-            {
-                b.Dispose();
-                b = null;
-            }
-        }
-
-        /** @copydoc Layer::internal_blobs */
-        public override BlobCollection<T> internal_blobs
-        {
-            get
-            {
-                BlobCollection<T> col = new BlobCollection<T>();
-
-                col.Add(m_blobBiasMultiplier);
-                col.Add(m_blobCell);
-                col.Add(m_blobPreGate);
-                col.Add(m_blobGate);
-                col.Add(m_blob_C_0);
-                col.Add(m_blob_H_0);
-                col.Add(m_blob_C_T);
-                col.Add(m_blob_H_T);
-                col.Add(m_blob_H_to_Gate);
-                col.Add(m_blob_H_to_H);
-                col.Add(m_blobMaxT);
-
-                if (m_blobEOutputWhd != null)
-                    col.Add(m_blobEOutputWhd);
-
-                if (m_attention != null)
+                foreach (Blob<T> b in m_attention.internal_blobs)
                 {
-                    col.Add(m_blob_C_to_Gate);
-                    col.Add(m_blobPrevCt);
-
-                    foreach (Blob<T> b in m_attention.internal_blobs)
-                    {
-                        col.Add(b);
-                    }
+                    col.Add(b);
                 }
-
-                return col;
             }
         }
 
