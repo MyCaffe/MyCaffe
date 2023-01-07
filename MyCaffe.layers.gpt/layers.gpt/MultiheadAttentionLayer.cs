@@ -254,6 +254,22 @@ namespace MyCaffe.layers.gpt
             {
                 BlobCollection<T> col = new BlobCollection<T>();
 
+                col.Add(m_blobX0);
+                col.Add(m_blobX1);
+                col.Add(m_blobX2);
+                col.Add(m_blobQ);
+                col.Add(m_blobK);
+                col.Add(m_blobV);
+                col.Add(m_blobQt);
+                col.Add(m_blobQt1);
+                col.Add(m_blobKt);
+                col.Add(m_blobKt1);
+                col.Add(m_blobVt);
+                col.Add(m_blobVt1);
+                col.Add(m_blobAtt);
+                col.Add(m_blobWork);
+                col.Add(m_blobY);
+                
                 return col;
             }
         }

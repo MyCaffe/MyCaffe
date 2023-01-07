@@ -224,6 +224,16 @@ namespace MyCaffe.layers.gpt
             {
                 BlobCollection<T> col = new BlobCollection<T>();
 
+                col.Add(m_blobLn1);
+                col.Add(m_blobAttn1);
+                col.Add(m_blobLn2);
+                if (m_blobAttn2 != null)
+                    col.Add(m_blobAttn2);
+                if (m_blobLn3 != null)
+                    col.Add(m_blobLn3);
+                col.Add(m_blobMlp);
+                col.Add(m_blobMlpOut);
+
                 return col;
             }
         }

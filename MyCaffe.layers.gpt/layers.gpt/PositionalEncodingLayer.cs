@@ -47,7 +47,20 @@ namespace MyCaffe.layers.gpt
             dispose(ref m_blobPosEnc);
             base.dispose();
         }
-        
+
+        /** @copydoc Layer::internal_blobs */
+        public override BlobCollection<T> internal_blobs
+        {
+            get
+            {
+                BlobCollection<T> col = new BlobCollection<T>();
+                
+                col.Add(m_blobPosEnc);
+
+                return col;
+            }
+        }
+
         /// <summary>
         /// Reshape the data as needed by the layer.
         /// </summary>

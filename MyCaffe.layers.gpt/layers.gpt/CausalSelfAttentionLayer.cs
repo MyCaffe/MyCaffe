@@ -187,6 +187,32 @@ namespace MyCaffe.layers.gpt
             base.dispose();
         }
 
+        /** @copydoc Layer::internal_blobs */
+        public override BlobCollection<T> internal_blobs
+        {
+            get
+            {
+                BlobCollection<T> col = new BlobCollection<T>();
+
+                col.Add(m_blobBias);
+                col.Add(m_blobQ);
+                col.Add(m_blobK);
+                col.Add(m_blobV);
+                col.Add(m_blobQt);
+                col.Add(m_blobQt1);
+                col.Add(m_blobKt);
+                col.Add(m_blobKt1);
+                col.Add(m_blobVt);
+                col.Add(m_blobVt1);
+                col.Add(m_blobAtt);
+                col.Add(m_blobWork);
+                col.Add(m_blobIpAttn);
+                col.Add(m_blobY);
+                
+                return col;
+            }
+        }
+
         private void fillBias(Blob<T> b)
         {
             b.SetData(1.0);
@@ -202,19 +228,6 @@ namespace MyCaffe.layers.gpt
             }
 
             b.mutable_cpu_data = convert(rgBiasData);
-        }
-
-        /** @copydoc Layer::internal_blobs */
-        public override BlobCollection<T> internal_blobs
-        {
-            get
-            {
-                BlobCollection<T> col = new BlobCollection<T>();
-
-                col.Add(m_blobBias);
-
-                return col;
-            }
         }
 
         /// <summary>
