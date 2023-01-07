@@ -14,8 +14,8 @@ namespace MyCaffe.param.gpt
     /// </remarks>
     public class PositionalEncodingParameter : LayerParameterBase
     {
-        int m_nEmbed = 192;     // d_model
-        int m_nBlockSize = 128;
+        uint m_nEmbed = 192;     // d_model
+        uint m_nBlockSize = 128;
 
         /** @copydoc LayerParameterBase */
         public PositionalEncodingParameter()
@@ -25,7 +25,7 @@ namespace MyCaffe.param.gpt
         /// <summary>
         /// Specifies size of the embed.
         /// </summary>
-        public int embed
+        public uint embed
         {
             get { return m_nEmbed; }
             set { m_nEmbed = value; }
@@ -34,7 +34,7 @@ namespace MyCaffe.param.gpt
         /// <summary>
         /// Specifies size of the block.
         /// </summary>
-        public int block_size
+        public uint block_size
         {
             get { return m_nBlockSize; }
             set { m_nBlockSize = value; }
@@ -95,10 +95,10 @@ namespace MyCaffe.param.gpt
             PositionalEncodingParameter p = new PositionalEncodingParameter();
 
             if ((strVal = rp.FindValue("embed")) != null)
-                p.embed = int.Parse(strVal);
+                p.embed = uint.Parse(strVal);
 
             if ((strVal = rp.FindValue("block_size")) != null)
-                p.block_size = int.Parse(strVal);
+                p.block_size = uint.Parse(strVal);
 
             return p;
         }

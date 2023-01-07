@@ -32,8 +32,8 @@ namespace MyCaffe.layers.gpt
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.POSITIONAL_ENCODING;
-            m_nBlockSize = p.positional_encoder_param.block_size;
-            m_nEmbed = p.positional_encoder_param.embed;
+            m_nBlockSize = (int)p.positional_encoder_param.block_size;
+            m_nEmbed = (int)p.positional_encoder_param.embed;
             m_dfScale = Math.Sqrt(m_nEmbed);
 
             m_blobPosEnc = new Blob<T>(m_cuda, m_log, false);
