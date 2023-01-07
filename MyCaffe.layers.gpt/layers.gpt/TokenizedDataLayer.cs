@@ -100,7 +100,7 @@ namespace MyCaffe.layers.gpt
             switch (m_param.tokenized_data_param.input_type)
             {
                 case TokenizedDataParameter.INPUT_TYPE.TEXT_FILE:
-                    m_data = new TextInputData(m_param.tokenized_data_param.source, m_param.tokenized_data_param.seed, m_param.tokenized_data_param.debug_index_file, m_param.phase);
+                    m_data = new TextInputData(m_param.tokenized_data_param.source, m_param.tokenized_data_param.vocabulary_type, m_param.tokenized_data_param.seed, m_param.tokenized_data_param.debug_index_file, m_param.phase);
                     break;
 
                 default:
@@ -226,17 +226,7 @@ namespace MyCaffe.layers.gpt
             if (m_phase == Phase.RUN)
             {
                 m_log.CHECK_EQ(colBottom.Count, 1, "There must be one input blob when running.");
-
-                if (m_param.tokenized_data_param.tokenize_run_input)
-                {
-                    float[] rgInput = convertF(colBottom[0].mutable_cpu_data);
-                    rgInput = m_data.Tokenize(rgInput);
-                    colTop[0].mutable_cpu_data = convert(rgInput);
-                }
-                else
-                {
-                    colTop[0].CopyFrom(colBottom[0]);
-                }
+                colTop[0].CopyFrom(colBottom[0]);
                 // Top[1] should already have pos data in it.
                 // There is no Top[2] target data when running.
             }
@@ -272,16 +262,14 @@ namespace MyCaffe.layers.gpt
             get { return true; }
         }
 
-
         /// <summary>
-        /// Tokenize the source data by converting it from its native form to index values that reference into the vocabulary.
+        /// Tokenize an input string using the internal vocabulary.
         /// </summary>
-        /// <param name="blobSrc">Specifies the native source data.</param>
-        /// <param name="blobDst">Specifies the tokenized destination data.</param>
-        public void Tokenize(Blob<T> blobSrc, Blob<T> blobDst)
+        /// <param name="str">Specifies the string to tokenize.</param>
+        /// <returns>A list of tokens corresponding to the input is returned.</returns>
+        public List<int> Tokenize(string str)
         {
-            float[] rgSrc = convertF(blobSrc.mutable_cpu_data);
-            blobDst.mutable_cpu_data = convert(m_data.Tokenize(rgSrc));
+            return m_data.Tokenize(str);
         }
 
         /// <summary>
@@ -318,14 +306,15 @@ namespace MyCaffe.layers.gpt
 
             blobIdx.Reshape(rgShape);
 
-            float[] rgInput = new float[strInput.Length];
+            List<int> rgTokens = m_data.Tokenize(strInput);
+            float[] rgInput = new float[rgTokens.Count];
 
             for (int i = 0; i < strInput.Length; i++)
             {
-                rgInput[i] = (int)strInput[i];
+                rgInput[i] = rgTokens[i];
             }
 
-            blobIdx.mutable_cpu_data = convert(m_data.Tokenize(rgInput));
+            blobIdx.mutable_cpu_data = convert(rgInput);
 
             return new BlobCollection<T>() { blobIdx };
         }
@@ -466,10 +455,11 @@ namespace MyCaffe.layers.gpt
         /// The constructor.
         /// </summary>
         /// <param name="strSrc">Specifies the data source as the filename of the text data file.</param>
+        /// <param name="vocabType">Specifies the vocabulary type to use.</param>
         /// <param name="nRandomSeed">Optionally, specifies a random seed for testing.</param>
         /// <param name="strDebugIndexFile">Optionally, specifies the debug index file containing index values in the form 'idx = #', one per line.</param>
         /// <param name="phase">Specifies the currently running phase.</param>
-        public TextInputData(string strSrc, int? nRandomSeed = null, string strDebugIndexFile = null, Phase phase = Phase.NONE) : base(nRandomSeed)
+        public TextInputData(string strSrc, TokenizedDataParameter.VOCABULARY_TYPE vocabType = TokenizedDataParameter.VOCABULARY_TYPE.CHARACTER, int? nRandomSeed = null, string strDebugIndexFile = null, Phase phase = Phase.NONE) : base(nRandomSeed)
         {
             string strProgData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
             strSrc = Utility.ReplaceMacro(strSrc, "$ProgramData$", strProgData);
@@ -492,8 +482,23 @@ namespace MyCaffe.layers.gpt
                 }
             }
 
-            m_vocab = new VocabularyCharacter(m_random, false, false);
+            if (vocabType == TokenizedDataParameter.VOCABULARY_TYPE.WORD)
+                m_vocab = new VocabularyWord(m_random, false, false);
+            else
+               m_vocab = new VocabularyCharacter(m_random, false, false);
+            
             m_vocab.BuildFromString(m_strData);
+        }
+
+        /// <summary>
+        /// Return the raw data.
+        /// </summary>
+        public override List<string> RawData
+        {
+            get
+            {
+                return new List<string>() { m_strData };
+            }
         }
 
         /// <summary>
@@ -549,21 +554,22 @@ namespace MyCaffe.layers.gpt
                         m_nDebugIdx = 0;
                 }
 
-                int? nCharIdxLast = null;
-                for (int j = 0; j < nBlockSize + 1; j++)
+                List<int> rgTokens = new List<int>();
+                List<int> rgLastTokens;
+                int nIdx = 0;
+                
+                while (rgTokens.Count < nBlockSize + 1)
                 {
-                    if (nCharIdxLast.HasValue)
-                        m_rgData[nDstIdx + j - 1] = nCharIdxLast.Value;
-                    
-                    string str = "";
-                    str += m_strData[nDataIdx + j];
-                    int nCharIdx = m_vocab.Tokenize(str);
+                    rgLastTokens = m_vocab.Tokenize(m_strData[nDataIdx + nIdx].ToString());
+                    if (rgLastTokens.Count > 0)
+                        rgTokens.AddRange(rgLastTokens);
 
-                    if (j > 0)
-                        m_rgTgt[nDstIdx + j - 1] = nCharIdx;
-
-                    nCharIdxLast = nCharIdx;
+                    nIdx++;
                 }
+
+                Array.Copy(rgTokens.ToArray(), 0, m_rgData, nDstIdx, nBlockSize);
+                rgTokens.RemoveAt(0);
+                Array.Copy(rgTokens.ToArray(), 0, m_rgTgt, nDstIdx, nBlockSize);
             }
 
             return new Tuple<float[], float[]>(m_rgData, m_rgTgt);
@@ -582,23 +588,15 @@ namespace MyCaffe.layers.gpt
         }
 
         /// <summary>
-        /// Convert text input (input as a set of ASCII character values) into their respective
-        /// char indexes in the vocabulary.
+        /// Tokenize an input string using the internal vocabulary.
         /// </summary>
-        /// <param name="rgInput">Specifies input data where each element is an ASCII character numeric value.</param>
-        /// <returns>The tokenized input is returned.</returns>
-        public override float[] Tokenize(float[] rgInput)
+        /// <param name="str">Specifies the string to tokenize.</param>
+        /// <returns>A list of tokens corresponding to the input is returned.</returns>
+        public override List<int> Tokenize(string str)
         {
-            for (int i = 0; i < rgInput.Count(); i++)
-            {
-                char ch = (char)rgInput[i];
-                int nCharIdx = m_vocab.Tokenize(ch.ToString(), false);
-                rgInput[i] = nCharIdx;
-            }
-
-            return rgInput;
+            return m_vocab.Tokenize(str);
         }
-
+        
         /// <summary>
         /// Detokenize a single token.
         /// </summary>

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -7,13 +8,13 @@ using System.Threading.Tasks;
 namespace MyCaffe.layers.gpt
 {
     /// <summary>
-    /// The VocabularyCharacters class manages the data vocabulary of characters.
+    /// The VocabularyWords class manages the data vocabulary of words.
     /// </summary>
-    public class VocabularyCharacter : IVocabulary
+    public class VocabularyWord : IVocabulary
     {
         Random m_random;
-        Dictionary<char, int> m_rgVocabKeyToIdx = new Dictionary<char, int>();
-        Dictionary<int, char> m_rgVocabIdxToKey = new Dictionary<int, char>();
+        Dictionary<string, int> m_rgVocabKeyToIdx = new Dictionary<string, int>();
+        Dictionary<int, string> m_rgVocabIdxToKey = new Dictionary<int, string>();
         bool m_bAddBos;
         bool m_bAddEos;
 
@@ -23,17 +24,17 @@ namespace MyCaffe.layers.gpt
         /// <param name="random">Specifies the random number generator used.</param>
         /// <param name="bAddBos">Specifies to include the special BOS character in the vocabulary.</param>
         /// <param name="bAddEos">Specifies to include the special EOS character in the vocabulary.</param>
-        public VocabularyCharacter(Random random, bool bAddBos, bool bAddEos)
+        public VocabularyWord(Random random, bool bAddBos, bool bAddEos)
         {
             m_random = random;
             m_bAddBos = bAddBos;
             m_bAddEos = bAddEos;
             
             if (bAddBos)
-                m_rgVocabKeyToIdx.Add(BOS, 1);
+                m_rgVocabKeyToIdx.Add(BOS.ToString(), 1);
 
             if (bAddEos)
-                m_rgVocabKeyToIdx.Add(EOS, 2);
+                m_rgVocabKeyToIdx.Add(EOS.ToString(), 2);
         }
 
         /// <summary>
@@ -44,35 +45,99 @@ namespace MyCaffe.layers.gpt
             get { return m_rgVocabKeyToIdx.Count + 1; }
         }
 
-        /// <summary>
-        /// Adds a new character to the vocabulary.
-        /// </summary>
-        /// <param name="ch">Specifies the character</param>
-        public void Add(char ch)
+        private bool isSymbol(char ch)
         {
-            if (!m_rgVocabKeyToIdx.ContainsKey(ch))
-                m_rgVocabKeyToIdx.Add(ch, 1);
+            if (char.IsDigit(ch))
+                return true;
+
+            if (char.IsPunctuation(ch))
+                return true;
+
+            if (char.IsSymbol(ch))
+                return true;
+
+            System.Globalization.UnicodeCategory cat = char.GetUnicodeCategory(ch);
+            if (cat == System.Globalization.UnicodeCategory.OtherPunctuation ||
+                cat == System.Globalization.UnicodeCategory.OtherSymbol ||
+                cat == System.Globalization.UnicodeCategory.DecimalDigitNumber)
+                return true;
+
+            return false;
+        }
+
+        private string trim(string str)
+        {
+            string strOut = "";
+
+            foreach (char ch in str)
+            {
+                System.Globalization.UnicodeCategory cat = char.GetUnicodeCategory(ch);
+
+                if (!char.IsWhiteSpace(ch) && cat != System.Globalization.UnicodeCategory.SpaceSeparator)
+                    strOut += ch;
+            }
+
+            return strOut;
         }
 
         /// <summary>
-        /// Add a string of characters to the vocabulary.
+        /// Adds a new character to the vocabulary.
         /// </summary>
-        /// <param name="str">Specifies the string to add.</param>
+        /// <param name="str">Specifies the sentence or word to add.</param>
         public void Add(string str)
         {
-            foreach (char ch in str)
+            string[] rgstr = str.Split(' ');
+
+            foreach (string strWord in rgstr)
             {
-                Add(ch);
+                if (!string.IsNullOrEmpty(strWord))
+                {
+                    if (strWord == "–  Ladies")
+                        Trace.WriteLine("Found it.");
+
+                    string strWord1 = trim(strWord.ToLower().Trim('\'', '\"'));                    
+                    if (string.IsNullOrEmpty(strWord1))
+                        continue;
+
+                    while (strWord1.Length > 0 && isSymbol(strWord1[strWord1.Length-1]) && strWord1[strWord1.Length-1] != ' ')
+                    {
+                        string strLast = strWord1[strWord1.Length - 1].ToString();
+                        if (!m_rgVocabKeyToIdx.ContainsKey(strLast))
+                            m_rgVocabKeyToIdx.Add(strLast, 1);
+
+                        strWord1 = strWord1.Substring(0, strWord1.Length - 1);
+                    }
+
+                    strWord1 = trim(strWord1);
+                    if (string.IsNullOrEmpty(strWord1))
+                        continue;
+
+                    while (strWord1.Length > 0 && isSymbol(strWord1[0]) && strWord1[0] != ' ')
+                    {
+                        string strFirst = strWord1[0].ToString();
+                        if (!m_rgVocabKeyToIdx.ContainsKey(strFirst))
+                            m_rgVocabKeyToIdx.Add(strFirst, 1);
+
+                        strWord1 = strWord1.Substring(1);
+                    }
+
+                    strWord1 = trim(strWord1);
+                    if (string.IsNullOrEmpty(strWord1))
+                        continue;
+
+                    if (!m_rgVocabKeyToIdx.ContainsKey(strWord1))
+                        m_rgVocabKeyToIdx.Add(strWord1, 1);
+                }
             }
         }
 
         /// <summary>
-        /// Builds the vocabulary from all characters added.
+        /// Builds the vocabulary from all words added.
         /// </summary>
         /// <returns>The vocabulary size is returned.</returns>
         public int Build()
         {
-            List<char> rgKeys = m_rgVocabKeyToIdx.Keys.ToList();
+            List<string> rgKeys = m_rgVocabKeyToIdx.Keys.ToList();
             rgKeys.Sort();
 
             m_rgVocabKeyToIdx.Clear();
@@ -94,9 +159,10 @@ namespace MyCaffe.layers.gpt
         /// <returns>The vocabulary size is returned.</returns>
         public int BuildFromString(string strData)
         {
-            foreach (char ch in strData)
+            string[] rgstrWords = strData.Split(' ');
+            foreach (string strWord in rgstrWords)
             {
-                Add(ch);
+                Add(strWord);
             }
 
             return Build();
@@ -136,26 +202,22 @@ namespace MyCaffe.layers.gpt
         /// <summary>
         /// Tokenize a character into its corresponding index token.
         /// </summary>
-        /// <param name="str1">Specifies a single element (character or word) to tokenize.</param>
+        /// <param name="strWord">Specifies a single word to tokenize.</param>
         /// <param name="bMustExist">Optionally, specifies to throw an error if the item is not in the vocabulary (default = true).</param>
-        /// <returns>A list of tokens corresponding to the character is returned (typically just a single token).</returns>
-        public List<int> Tokenize(string str1, bool bMustExist = true)
+        /// <returns>A list of tokens corresponding to the input is returned.</returns>
+        public List<int> Tokenize(string strWord, bool bMustExist = true)
         {
-            if (str1.Length != 1)
-                throw new Exception("The character must be a single character!");
-
             List<int> rgTokens = new List<int>();
-            char ch = str1[0];
-
-            if (!m_rgVocabKeyToIdx.ContainsKey(ch))
+            
+            if (!m_rgVocabKeyToIdx.ContainsKey(strWord))
             {
                 if (bMustExist)
-                    throw new Exception("The character '" + ch.ToString() + " is not in the vocabulary!");
+                    throw new Exception("The word '" + strWord + " is not in the vocabulary!");
                 else
                     rgTokens.Add(m_random.Next(Count));
             }
-
-            rgTokens.Add(m_rgVocabKeyToIdx[ch]);
+            
+            rgTokens.Add(m_rgVocabKeyToIdx[strWord]);
             return rgTokens;
         }
 
@@ -170,9 +232,10 @@ namespace MyCaffe.layers.gpt
         {
             List<int> rgTokens = new List<int>();
 
-            foreach (char ch in str)
+            string[] rgstr = str.Split(' ');
+            foreach (string strWord in rgstr)
             {                
-                rgTokens.AddRange(Tokenize(ch.ToString()));
+                rgTokens.AddRange(Tokenize(strWord));
             }
 
             if (bAddBos)
@@ -239,15 +302,7 @@ namespace MyCaffe.layers.gpt
                 string str1 = Detokenize((int)f, bIgnoreBos, bIgnoreEos);
 
                 if (!string.IsNullOrEmpty(str1))
-                {
-                    char ch = str1[0];
-
-                    if (ch == EOS)
-                        break;
-
-                    if (ch != 0 && ch != BOS && ch != EOS)
-                        str += ch;
-                }
+                    str += str1;
             }
 
             return str;

@@ -15,10 +15,13 @@ namespace MyCaffe.param.gpt
     public class TokenizedDataPairsParameter : TokenizedDataParameter
     {
         string m_strTarget = "";
+        string m_strSourceVocabFile = "";
+        string m_strTargetVocabFile = "";
 
         /** @copydoc LayerParameterBase */
         public TokenizedDataPairsParameter() : base()
-        {            
+        {
+            vocabulary_type = VOCABULARY_TYPE.SENTENCEPIECE;
         }
 
 
@@ -31,6 +34,24 @@ namespace MyCaffe.param.gpt
         {
             get { return m_strTarget; }
             set { m_strTarget = value; }
+        }
+        
+        /// <summary>
+        /// Specifies the source vocabulary file used with the SENTENCEPIECE vocabulary type.  The vocabulary file is created using the Python SentencePieceProcess.
+        /// </summary>
+        public string source_vocab_file
+        {
+            get { return m_strSourceVocabFile; }
+            set { m_strSourceVocabFile = value; }
+        }
+
+        /// <summary>
+        /// Specifies the target vocabulary file used with the SENTENCEPIECE vocabulary type.  The vocabulary file is created using the Python SentencePieceProcess.
+        /// </summary>
+        public string target_vocab_file
+        {
+            get { return m_strTargetVocabFile; }
+            set { m_strTargetVocabFile = value; }
         }
         
         /** @copydoc LayerParameterBase::Load */
@@ -54,6 +75,8 @@ namespace MyCaffe.param.gpt
             {
                 TokenizedDataPairsParameter p = (TokenizedDataPairsParameter)src;
                 m_strTarget = p.target;
+                m_strSourceVocabFile = p.source_vocab_file;
+                m_strTargetVocabFile = p.target_vocab_file;
             }
         }
 
@@ -77,6 +100,8 @@ namespace MyCaffe.param.gpt
 
             rgChildren.Add(rpBase.Children);
             rgChildren.Add("target", "\"" + target + "\"");
+            rgChildren.Add("target_vocab_file", "\"" + target_vocab_file + "\"");
+            rgChildren.Add("source_vocab_file", "\"" + source_vocab_file + "\"");
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -95,6 +120,12 @@ namespace MyCaffe.param.gpt
             
             if ((strVal = rp.FindValue("target")) != null)
                 p.target = strVal;
+
+            if ((strVal = rp.FindValue("target_vocab_file")) != null)
+                p.target_vocab_file = strVal;
+
+            if ((strVal = rp.FindValue("source_vocab_file")) != null)
+                p.source_vocab_file = strVal;
 
             return p;
         }

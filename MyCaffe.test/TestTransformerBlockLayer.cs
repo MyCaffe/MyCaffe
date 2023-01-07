@@ -739,6 +739,7 @@ namespace MyCaffe.test
                 m_dataLayer = m_ctrl.GetInternalNet(Phase.TEST).layers[0] as TokenizedDataLayer<T>;
                 
                 string strTestInput = "O God, O God!";
+                
                 m_rgTestInput = new float[strTestInput.Length];
                 for (int i = 0; i < strTestInput.Length; i++)
                 {
@@ -779,6 +780,7 @@ namespace MyCaffe.test
                 m_blobX = m_ctrl.CreateBlob("data");
 
                 string strTestInput = "O God, O God!";
+                
                 m_rgTestInput = new float[strTestInput.Length];
                 for (int i = 0; i < strTestInput.Length; i++)
                 {
@@ -828,10 +830,13 @@ namespace MyCaffe.test
                 m_dataLayer = m_ctrl.GetInternalNet(Phase.TEST).layers[0] as TokenizedDataLayer<T>;
 
                 string strTestInput = "O God, O God!";
-                m_rgTestInput = new float[strTestInput.Length];
-                for (int i = 0; i < strTestInput.Length; i++)
+                
+                List<int> rgTokens = ((TokenizedDataLayer<T>)m_dataLayer).Tokenize(strTestInput);
+
+                m_rgTestInput = new float[rgTokens.Count];
+                for (int i = 0; i < rgTokens.Count; i++)
                 {
-                    m_rgTestInput[i] = (int)strTestInput[i];
+                    m_rgTestInput[i] = rgTokens[i];
                 }
 
                 int[] rgShape = new int[] { 1, m_rgTestInput.Length };
@@ -938,8 +943,6 @@ namespace MyCaffe.test
             if (e.Iteration > 0 && e.Iteration % 500 == 0)
             {
                 m_ctrl.UpdateRunWeights(false, false);
-
-                m_dataLayer.Tokenize(m_blobX, m_blobX);
                 generate(m_netRun, m_blobX, m_blobY, 500, (int)m_dataLayer.layer_param.tokenized_data_param.block_size, 65, 10);
 
                 string strOut = "";
@@ -1162,17 +1165,19 @@ namespace MyCaffe.test
                 string strInput = System.IO.File.ReadAllText(strSrc);
                 int nIdx = m_random.Next(strInput.Length - (2 * nBlockSize));
 
+                List<int> rgTokens = m_dataLayer.Tokenize(strInput.Substring(nIdx, nBlockSize));
+
                 m_rgTestInput = new float[nBlockSize];
                 for (int i = 0; i < nBlockSize; i++)
                 {
-                    m_rgTestInput[i] = (int)strInput[nIdx + i];
+                    if (i < rgTokens.Count)
+                        m_rgTestInput[i] = rgTokens[i];
                 }
 
                 int[] rgShape = new int[] { 1, m_rgTestInput.Length };
                 m_blobX.Reshape(rgShape);
                 m_blobX.mutable_cpu_data = convert(m_rgTestInput);
 
-                m_dataLayer.Tokenize(m_blobX, m_blobX);
                 generate(m_netRun, m_blobX, m_blobY, 500, nBlockSize, nVocabSize, 10);
 
                 string strOut = "";

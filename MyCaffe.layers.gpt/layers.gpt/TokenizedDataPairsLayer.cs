@@ -12,6 +12,7 @@ using MyCaffe.param.gpt;
 using System.Net;
 using System.Globalization;
 using System.Diagnostics;
+using System.Xml.Linq;
 
 namespace MyCaffe.layers.gpt
 {
@@ -120,8 +121,8 @@ namespace MyCaffe.layers.gpt
             switch (m_param.tokenized_data_pairs_param.input_type)
             {
                 case TokenizedDataParameter.INPUT_TYPE.TEXT_FILE:
-                    m_encoderData = new TextListData(m_log, m_param.tokenized_data_pairs_param.source, false, m_param.tokenized_data_pairs_param.seed, m_param.phase);
-                    m_decoderData = new TextListData(m_log, m_param.tokenized_data_pairs_param.target, true, m_param.tokenized_data_pairs_param.seed, m_param.phase);
+                    m_encoderData = new TextListData(m_log, m_param.tokenized_data_pairs_param.source, m_param.tokenized_data_pairs_param.source_vocab_file, false, m_param.tokenized_data_pairs_param.vocabulary_type, m_param.tokenized_data_pairs_param.seed, m_param.phase);
+                    m_decoderData = new TextListData(m_log, m_param.tokenized_data_pairs_param.target, m_param.tokenized_data_pairs_param.target_vocab_file, true, m_param.tokenized_data_pairs_param.vocabulary_type, m_param.tokenized_data_pairs_param.seed, m_param.phase);
                     break;
 
                 default:
@@ -289,16 +290,7 @@ namespace MyCaffe.layers.gpt
             {
                 m_log.CHECK_EQ(colBottom.Count, 1, "There must be one input blob when running.");
 
-                if (m_param.tokenized_data_pairs_param.tokenize_run_input)
-                {
-                    float[] rgEncIn = convertF(colBottom[0].mutable_cpu_data);
-                    rgEncIn = m_encoderData.Tokenize(rgEncIn);
-                    colTop[0].mutable_cpu_data = convert(rgEncIn);
-                }
-                else
-                {
-                    colTop[0].CopyFrom(colBottom[0]);
-                }
+                colTop[0].CopyFrom(colBottom[0]);
 
                 float[] rgDecIn = new float[1] { m_decoderData.BOS };
                 colTop[1].mutable_cpu_data = convert(rgDecIn);
@@ -353,18 +345,18 @@ namespace MyCaffe.layers.gpt
             get { return true; }
         }
 
-
         /// <summary>
-        /// Tokenize the encoder source data by converting it from its native form to index values that reference into the vocabulary.
+        /// Tokenize an input string using the internal vocabulary.
         /// </summary>
-        /// <param name="blobSrc">Specifies the native source data.</param>
-        /// <param name="blobDst">Specifies the tokenized destination data.</param>
-        /// <param name="src">Specifies the vocabulary to use when tokenizing</param>
-        public void Tokenize(Blob<T> blobSrc, Blob<T> blobDst, VOCABULARY src)
+        /// <param name="str">Specifies the string to tokenize.</param>
+        /// <param name="vocab">Specifies the vocabulary to use, ENCODER or DECODER.</param>
+        /// <returns>A list of tokens corresponding to the input is returned.</returns>
+        public List<int> Tokenize(string str, VOCABULARY vocab)
         {
-            InputData input = (src == VOCABULARY.ENCODER) ? m_encoderData : m_decoderData;
-            float[] rgSrc = convertF(blobSrc.mutable_cpu_data);
-            blobDst.mutable_cpu_data = convert(input.Tokenize(rgSrc));
+            if (vocab == VOCABULARY.ENCODER)
+                return m_encoderData.Tokenize(str);
+            else
+                return m_decoderData.Tokenize(str);
         }
 
         /// <summary>
@@ -412,14 +404,15 @@ namespace MyCaffe.layers.gpt
 
             blobIdx.Reshape(rgShape);
 
-            float[] rgInput = new float[strInput.Length];
+            List<int> rgTokens = m_encoderData.Tokenize(strInput);
+            float[] rgInput = new float[rgTokens.Count];
 
             for (int i = 0; i < strInput.Length; i++)
             {
-                rgInput[i] = (int)strInput[i];
+                rgInput[i] = rgTokens[i];
             }
 
-            blobIdx.mutable_cpu_data = convert(m_encoderData.Tokenize(rgInput));
+            blobIdx.mutable_cpu_data = convert(rgInput);
 
             return new BlobCollection<T>() { blobIdx };
         }
@@ -537,27 +530,50 @@ namespace MyCaffe.layers.gpt
     {
         List<string> m_rgstrData = new List<string>();
         List<Tuple<int[], int[]>> m_rgnData = new List<Tuple<int[], int[]>>();
-        VocabularyCharacter m_vocab;
+        IVocabulary m_vocab;
         float[] m_rgData = null;
         float[] m_rgTgt = null;
         Phase m_phase;
         Log m_log;
 
+        /// <summary>
+        /// Defines the vocabulary time to use.
+        /// </summary>
+        public enum VOCABUARY_TYPE
+        {
+            /// <summary>
+            /// Specifies a character vocabulary.
+            /// </summary>
+            CHARACTER,
+            /// <summary>
+            /// Specifies a space separated word vocabulary.
+            /// </summary>
+            WORD
+        }
 
         /// <summary>
         /// The constructor.
         /// </summary>
         /// <param name="strSrcFile">Specifies the text file name for the data source.</param>"
+        /// <param name="strVocabFile">Specifies the vocabulary file (used by SENTENCEPICE type).</param>
         /// <param name="bIncludeTarget">Specifies to create the target tokens.</param>
+        /// <param name="vocabType">Specifies the vocabulary type to use.</param>
         /// <param name="nRandomSeed">Optionally, specifies a random seed for testing.</param>
         /// <param name="phase">Specifies the currently running phase.</param>
         /// <param name="log">Specifies the output log.</param>
-        public TextListData(Log log, string strSrcFile, bool bIncludeTarget, int? nRandomSeed = null, Phase phase = Phase.NONE) : base(nRandomSeed)
+        public TextListData(Log log, string strSrcFile, string strVocabFile, bool bIncludeTarget, TokenizedDataParameter.VOCABULARY_TYPE vocabType, int? nRandomSeed = null, Phase phase = Phase.NONE) : base(nRandomSeed)
         {
             m_log = log;
-            Stopwatch sw = new Stopwatch();
-            m_vocab = new VocabularyCharacter(m_random, true, true);
             m_phase = phase;
+
+            Stopwatch sw = new Stopwatch();
+
+            if (vocabType == TokenizedDataParameter.VOCABULARY_TYPE.WORD)
+                m_vocab = new VocabularyWord(m_random, true, true);
+            else if (vocabType == TokenizedDataParameter.VOCABULARY_TYPE.SENTENCEPIECE)
+                m_vocab = new VocabularySentencePiece(m_random, true, true, strVocabFile);
+            else
+                m_vocab = new VocabularyCharacter(m_random, true, true);
 
             string strProgData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
             strSrcFile = Utility.ReplaceMacro(strSrcFile, "$ProgramData$", strProgData);
@@ -569,16 +585,13 @@ namespace MyCaffe.layers.gpt
             for (int i = 0; i < rgstr.Length; i++)
             {
                 m_rgstrData.Add(rgstr[i]);
-                
-                foreach (char ch in rgstr[i])
-                {
-                    m_vocab.Add(ch);
-                }
+                m_vocab.Add(rgstr[i]);
 
                 if (sw.Elapsed.TotalMilliseconds > 1000)
                 {
                     sw.Restart();
-                    m_log.WriteLine("Loading vocabulary at (" + ((double)i / rgstr.Length).ToString("P") + ")...", true);
+                    m_log.Progress = (double)i / rgstr.Length;
+                    m_log.WriteLine("Loading vocabulary " + i.ToString("N0") + " of " + rgstr.Length.ToString("N0") + "...", true);
                 }
             }
 
@@ -587,7 +600,6 @@ namespace MyCaffe.layers.gpt
             for (int i = 0; i < m_rgstrData.Count; i++)
             {
                 string str = m_rgstrData[i];
-
                 int[] rgnSrc = m_vocab.Tokenize(str, bIncludeTarget, !bIncludeTarget);
                 int[] rgnTrg = null;
 
@@ -599,9 +611,18 @@ namespace MyCaffe.layers.gpt
                 if (sw.Elapsed.TotalMilliseconds > 1000)
                 {
                     sw.Restart();
-                    m_log.WriteLine("Tokenizing data at (" + ((double)i / m_rgstrData.Count).ToString("P") + ")...", true);
+                    m_log.Progress = (double)i / m_rgstrData.Count;
+                    m_log.WriteLine("Tokenizing data " + i.ToString("N0") + " of " + m_rgstrData.Count.ToString("N0") + "...", true);
                 }
             }
+        }
+
+        /// <summary>
+        /// Return the raw data.
+        /// </summary>
+        public override List<string> RawData
+        {
+            get { return m_rgstrData; }
         }
 
         /// <summary>
@@ -647,12 +668,24 @@ namespace MyCaffe.layers.gpt
             for (int i = 0; i < nBatchSize; i++)
             {
                 int nDataIdx = m_random.Next(m_rgnData.Count);
+                int[] rgSrc = m_rgnData[nDataIdx].Item1;
+                int nRetryCount = 0;
+               
+                while (rgSrc.Length == 0)
+                {
+                    nDataIdx = m_random.Next(m_rgnData.Count);
+                    rgSrc = m_rgnData[nDataIdx].Item1;
+                    
+                    nRetryCount++;
+                    if (rgSrc.Length == 0 && nRetryCount > 20)
+                        throw new Exception("Could not find a non-empty source data item!");
+                }
+
+                int[] rgTrg = m_rgnData[nDataIdx].Item2;
                 int nDstIdx = i * nBlockSize;
 
                 rgnIdx[i] = nDataIdx;
 
-                int[] rgSrc = m_rgnData[nDataIdx].Item1;
-                int[] rgTrg = m_rgnData[nDataIdx].Item2;
 
                 for (int j = 0; j < nBlockSize; j++)
                 {
@@ -732,21 +765,13 @@ namespace MyCaffe.layers.gpt
         }
 
         /// <summary>
-        /// Convert text input (input as a set of ASCII character values) into their respective
-        /// char indexes in the vocabulary.
+        /// Tokenize an input string using the internal vocabulary.
         /// </summary>
-        /// <param name="rgInput">Specifies input data where each element is an ASCII character numeric value.</param>
-        /// <returns>The tokenized input is returned.</returns>
-        public override float[] Tokenize(float[] rgInput)
+        /// <param name="str">Specifies the string to tokenize.</param>
+        /// <returns>A list of tokens corresponding to the input is returned.</returns>
+        public override List<int> Tokenize(string str)
         {
-            for (int i = 0; i < rgInput.Count(); i++)
-            {
-                char ch = (char)rgInput[i];
-                int nCharIdx = m_vocab.Tokenize(ch.ToString(), false);
-                rgInput[i] = nCharIdx;
-            }
-
-            return rgInput;
+            return m_vocab.Tokenize(str);
         }
 
         /// <summary>
@@ -767,10 +792,10 @@ namespace MyCaffe.layers.gpt
                 if (string.IsNullOrEmpty(strItem))
                     break;
 
-                str += strItem;
+                str += strItem + " ";
             }
 
-            return str;
+            return str.TrimEnd(' ');
         }
 
         /// <summary>

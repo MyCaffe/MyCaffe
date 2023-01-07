@@ -28,7 +28,7 @@ namespace MyCaffe.test
     public class TestTokenizedDataPairsLayer
     {
         [TestMethod]
-        public void TestForwardEnFr()
+        public void TestForwardEnFrCharacter()
         {            
             TokenizedDataPairsLayerTest test = new TokenizedDataPairsLayerTest();
             
@@ -36,7 +36,79 @@ namespace MyCaffe.test
             {
                 foreach (ITokenizedDataPairsLayerTest t in test.Tests)
                 {
-                    t.TestForward(10, 128);
+                    t.TestForward(10, 128, TokenizedDataParameter.VOCABULARY_TYPE.CHARACTER);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardEnFrWord()
+        {
+            TokenizedDataPairsLayerTest test = new TokenizedDataPairsLayerTest();
+
+            try
+            {
+                foreach (ITokenizedDataPairsLayerTest t in test.Tests)
+                {
+                    t.TestForward(10, 128, TokenizedDataParameter.VOCABULARY_TYPE.WORD);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardEnFrSentencePieceSmall()
+        {
+            TokenizedDataPairsLayerTest test = new TokenizedDataPairsLayerTest();
+
+            try
+            {
+                foreach (ITokenizedDataPairsLayerTest t in test.Tests)
+                {
+                    t.TestForward(1, 10, TokenizedDataParameter.VOCABULARY_TYPE.SENTENCEPIECE);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardEnFrSentencePieceSmall2()
+        {
+            TokenizedDataPairsLayerTest test = new TokenizedDataPairsLayerTest();
+
+            try
+            {
+                foreach (ITokenizedDataPairsLayerTest t in test.Tests)
+                {
+                    t.TestForward(2, 10, TokenizedDataParameter.VOCABULARY_TYPE.SENTENCEPIECE);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardEnFrSentencePiece()
+        {
+            TokenizedDataPairsLayerTest test = new TokenizedDataPairsLayerTest();
+
+            try
+            {
+                foreach (ITokenizedDataPairsLayerTest t in test.Tests)
+                {
+                    t.TestForward(10, 128, TokenizedDataParameter.VOCABULARY_TYPE.SENTENCEPIECE);
                 }
             }
             finally
@@ -48,7 +120,7 @@ namespace MyCaffe.test
 
     interface ITokenizedDataPairsLayerTest : ITest
     {
-        void TestForward(int nBatchSize, int nBlockSize);
+        void TestForward(int nBatchSize, int nBlockSize, TokenizedDataPairsParameter.VOCABULARY_TYPE vocabType);
     }
 
     class TokenizedDataPairsLayerTest : TestBase
@@ -103,7 +175,7 @@ namespace MyCaffe.test
             return new FillerParameter("gaussian");
         }
 
-        private Tuple<string, string> loadDataFiles1()
+        private Tuple<string, string, string, string> loadDataFiles1()
         {
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\encdec";
             string strFileName = "en_fr.zip";
@@ -113,24 +185,31 @@ namespace MyCaffe.test
 
             if (!File.Exists(strTestDataPath + "\\en_fr\\src\\train.txt"))
                 ZipFile.ExtractToDirectory(strTestData, strPath);
-
+            
             string strSrcText = strPath + "\\en_fr\\src\\train.txt";
             string strTrgText = strPath + "\\en_fr\\trg\\train.txt";
+            string strSrcVocabFile = strPath + "\\en_fr\\sp\\src_sp.vocab";
+            string strTrgVocabFile = strPath + "\\en_fr\\sp\\trg_sp.vocab";
 
-            return new Tuple<string, string>(strSrcText, strTrgText);
+            return new Tuple<string, string, string, string>(strSrcText, strTrgText, strSrcVocabFile, strTrgVocabFile);
         }
 
-        public void TestForward(int nBatchSize, int nBlockSize)
+        public void TestForward(int nBatchSize, int nBlockSize, TokenizedDataPairsParameter.VOCABULARY_TYPE vocabType)
         {
-            Tuple<string, string> dataFiles = loadDataFiles1();
+            Tuple<string, string, string, string> dataFiles = loadDataFiles1();
             string strSrcFile = dataFiles.Item1;
             string strTrgFile = dataFiles.Item2;
+            string strSrcVocabFile = dataFiles.Item3;
+            string strTrgVocabFile = dataFiles.Item4;
             
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TOKENIZED_DATA_PAIRS);
             p.tokenized_data_pairs_param.batch_size = (uint)nBatchSize;
             p.tokenized_data_pairs_param.block_size = (uint)nBlockSize;
             p.tokenized_data_pairs_param.input_type = TokenizedDataParameter.INPUT_TYPE.TEXT_FILE;
+            p.tokenized_data_pairs_param.vocabulary_type = vocabType;
+            p.tokenized_data_pairs_param.source_vocab_file = strSrcVocabFile;
             p.tokenized_data_pairs_param.source = strSrcFile;
+            p.tokenized_data_pairs_param.target_vocab_file = strTrgVocabFile;
             p.tokenized_data_pairs_param.target = strTrgFile;
             p.tokenized_data_pairs_param.seed = 1701;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);

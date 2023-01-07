@@ -24,6 +24,18 @@ namespace MyCaffe.layers.gpt
         /// </summary>
         char EOS { get; }
         /// <summary>
+        /// Add a new string to the vocabulary.
+        /// </summary>
+        /// <param name="str">Specifies the string to add.</param>
+        void Add(string str);
+        /// <summary>
+        /// Build the vocabulary.
+        /// </summary>
+        /// <returns>
+        /// The vocabulary size is returned.
+        /// </returns>
+        int Build();
+        /// <summary>
         /// Build the vocabulary from a string.
         /// </summary>
         /// <param name="strData">Specifies the data to build the vocabulary from.</param>
@@ -48,8 +60,8 @@ namespace MyCaffe.layers.gpt
         /// </summary>
         /// <param name="str1">Specifies a single element (character or word) to tokenize.</param>
         /// <param name="bMustExist">Optionally, specifies to throw an error if the item is not in the vocabulary (default = true).</param>
-        /// <returns>The token corresponding to the character is returned.</returns>
-        int Tokenize(string str1, bool bMustExist = true);
+        /// <returns>A list of tokens corresponding to the input is returned.</returns>
+        List<int> Tokenize(string str1, bool bMustExist = true);
         /// <summary>
         /// Detokenize an array into a string.
         /// </summary>
@@ -91,6 +103,10 @@ namespace MyCaffe.layers.gpt
         }
 
         /// <summary>
+        /// Returns the raw data.
+        /// </summary>
+        public abstract List<string> RawData { get; }
+        /// <summary>
         /// Returns the size of a single token (e.g. 1 for character data)
         /// </summary>
         public abstract uint TokenSize { get; }
@@ -115,11 +131,11 @@ namespace MyCaffe.layers.gpt
         /// <returns>A tuple containing the data and target is returned.</returns>
         public abstract Tuple<float[], float[]> GetDataAt(int nBatchSize, int nBlockSize, int[] rgnIdx);
         /// <summary>
-        /// Tokenize the input data.
+        /// Tokenize an input string using the internal vocabulary.
         /// </summary>
-        /// <param name="rgInput">Specifies the untokenized input data.</param>
-        /// <returns>The tokenized data is returned.</returns>
-        public abstract float[] Tokenize(float[] rgInput);
+        /// <param name="str">Specifies the string to tokenize.</param>
+        /// <returns>A list of tokens corresponding to the input is returned.</returns>
+        public abstract List<int> Tokenize(string str);
         /// <summary>
         /// Detokenize a single token.
         /// </summary>

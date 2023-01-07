@@ -20,7 +20,26 @@ namespace MyCaffe.param.gpt
         string m_strSource;
         int? m_nSeed = null;
         string m_strDbgIdxFile;
-        bool m_bTokenizeRunInput = false;
+        VOCABULARY_TYPE m_vocabType = VOCABULARY_TYPE.CHARACTER;
+
+        /// <summary>
+        /// Defines the vocabulary type to use.
+        /// </summary>
+        public enum VOCABULARY_TYPE
+        {
+            /// <summary>
+            /// Specifies to use a character based vocabulary.
+            /// </summary>
+            CHARACTER,
+            /// <summary>
+            /// Specifies to use a word based vocabulary.
+            /// </summary>
+            WORD,
+            /// <summary>
+            /// Specifies to use pre-generated SentencePiece vocabulary.
+            /// </summary>
+            SENTENCEPIECE
+        }
 
         /// <summary>
         /// Defines the input type used.
@@ -58,12 +77,13 @@ namespace MyCaffe.param.gpt
         }
 
         /// <summary>
-        /// Specifies that the input during the RUN phase needs tokenizing (default = false).
+        /// Specifies the vocabulary type to use.
         /// </summary>
-        public bool tokenize_run_input
+        [Description("Specifies the vocabulary type to use.")]
+        public VOCABULARY_TYPE vocabulary_type
         {
-            get { return m_bTokenizeRunInput; }
-            set { m_bTokenizeRunInput = value; }
+            get { return m_vocabType; }
+            set { m_vocabType = value; }
         }
 
         /// <summary>
@@ -128,7 +148,7 @@ namespace MyCaffe.param.gpt
             m_nBlockSize = p.block_size;
             m_nSeed = p.seed;
             m_strDbgIdxFile = p.debug_index_file;
-            m_bTokenizeRunInput = p.tokenize_run_input;
+            m_vocabType = p.vocabulary_type;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -149,6 +169,7 @@ namespace MyCaffe.param.gpt
             RawProtoCollection rgChildren = new RawProtoCollection();
 
             rgChildren.Add("input_type", input_type.ToString());
+            rgChildren.Add("vocabulary_type", vocabulary_type.ToString());
             rgChildren.Add("source", "\"" + source + "\"");
             rgChildren.Add("batch_size", batch_size.ToString());
             rgChildren.Add("block_size", block_size.ToString());
@@ -158,9 +179,6 @@ namespace MyCaffe.param.gpt
 
             if (seed != null)
                 rgChildren.Add("seed", seed.ToString());
-
-            if (tokenize_run_input)
-                rgChildren.Add("tokenize_run_input", tokenize_run_input.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -190,15 +208,24 @@ namespace MyCaffe.param.gpt
             if ((strVal = rp.FindValue("debug_index_file")) != null)
                 p.debug_index_file = strVal;
 
-            if ((strVal = rp.FindValue("tokenize_run_input")) != null)
-                p.tokenize_run_input = bool.Parse(strVal);
-
             if ((strVal = rp.FindValue("input_type")) != null)
             {
                 if (strVal == INPUT_TYPE.TEXT_FILE.ToString())
                     p.input_type = INPUT_TYPE.TEXT_FILE;
                 else
                     throw new Exception("Unknown input type '" + strVal + "'");
+            }
+
+            if ((strVal = rp.FindValue("vocabulary_type")) != null)
+            {
+                if (strVal == VOCABULARY_TYPE.CHARACTER.ToString())
+                    p.vocabulary_type = VOCABULARY_TYPE.CHARACTER;
+                else if (strVal == VOCABULARY_TYPE.WORD.ToString())
+                    p.vocabulary_type = VOCABULARY_TYPE.WORD;
+                else if (strVal == VOCABULARY_TYPE.SENTENCEPIECE.ToString())
+                    p.vocabulary_type = VOCABULARY_TYPE.SENTENCEPIECE;
+                else
+                    throw new Exception("Unknown vocabulary type '" + strVal + "'");
             }
 
             return p;
