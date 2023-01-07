@@ -10,6 +10,7 @@ using MyCaffe.basecode;
 using System.ComponentModel;
 using System.Runtime.Remoting.Channels;
 using System.Xml.Linq;
+using System.Security.Cryptography.X509Certificates;
 
 namespace MyCaffe.common
 {
@@ -10357,6 +10358,25 @@ namespace MyCaffe.common
             }
 
             return rgDst;
+        }
+
+        #endregion
+
+        #region Debugging Methods
+        
+        /// <summary>
+        /// Report the memory use on the current GPU managed by the CudaDnn object.
+        /// </summary>
+        /// <param name="log">Specifies the output log.</param>
+        /// <param name="strLocation">Specifies the location of the memory test.</param>
+        public void ReportMemory(Log log, string strLocation)
+        {
+            double dfFree;
+            double dfUsed;
+            bool bCudaCallUsed;
+            int nGpuID = GetDeviceID();
+            double dfMem = GetDeviceMemory(out dfFree, out dfUsed, out bCudaCallUsed);
+            log.WriteLine(strLocation + " Memory (GPU " + nGpuID.ToString() + "): " + dfMem.ToString("N2") + " GB total; " + dfFree.ToString("N2") + " GB free; " + dfUsed.ToString("N2") + " GB used.");
         }
 
         #endregion

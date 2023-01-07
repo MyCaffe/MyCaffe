@@ -654,15 +654,6 @@ namespace MyCaffe.test
             return Utility.ConvertVec<T>(rg);
         }
 
-        protected void report_memory(CudaDnn<float> cuda, Log log, string strLocation)
-        {
-            double dfFree;
-            double dfUsed;
-            bool bCudaCallUsed;
-            double dfMem = cuda.GetDeviceMemory(out dfFree, out dfUsed, out bCudaCallUsed);
-            log.WriteLine(strLocation + " Memory: " + dfMem.ToString("N2") + " GB total; " + dfFree.ToString("N2") + " GB free; " + dfUsed.ToString("N2") + " GB used.");
-        }
-
         protected string loadTestData(string strPath, string strFileName, string strTestPath, string strTestFile)
         {
             string strTestDataFile = downloadTestData(strPath, strFileName);

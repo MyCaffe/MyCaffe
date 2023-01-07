@@ -641,12 +641,12 @@ namespace MyCaffe.test
             mycaffe.OnTrainingIteration += Mycaffe_OnTrainingIteration;
             
             Blob<float> blobWork = null;
-
+            
             try
             {
-                report_memory(mycaffe.Cuda, m_log, "Pre-Model Load");   
+                mycaffe.Cuda.ReportMemory(m_log, "Pre-Model Load");
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
-                report_memory(mycaffe.Cuda, m_log, "Pos-Model Load");
+                mycaffe.Cuda.ReportMemory(m_log, "Post-Model Load");
                 
                 Net<float> net = mycaffe.GetInternalNet(Phase.TRAIN);
                 net.Forward();
