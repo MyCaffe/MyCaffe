@@ -10376,7 +10376,7 @@ namespace MyCaffe.common
             bool bCudaCallUsed;
             int nGpuID = GetDeviceID();
             double dfMem = GetDeviceMemory(out dfFree, out dfUsed, out bCudaCallUsed);
-            log.WriteLine(strLocation + " Memory (GPU " + nGpuID.ToString() + "): " + dfMem.ToString("N2") + " GB total; " + dfFree.ToString("N2") + " GB free; " + dfUsed.ToString("N2") + " GB used.");
+            log.WriteLine(strLocation + " Memory (GPU " + nGpuID.ToString() + "): " + dfMem.ToString("N2") + " GB total; " + dfFree.ToString("N2") + " GB free; " + dfUsed.ToString("N2") + " GB used.", true);
         }
 
         #endregion
