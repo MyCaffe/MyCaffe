@@ -431,34 +431,39 @@ namespace MyCaffe.test
                 layer.Dispose();
             }
         }
+        
 
-
-        private Tuple<string, string> loadDataFiles1()
+        private Tuple<string, string, string, string> loadDataFiles1()
         {
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\encdec";
             string strFileName = "en_fr.zip";
 
             string strTestData = downloadTestData(strPath, strFileName);
             string strTestDataPath = Path.GetDirectoryName(strTestData);
-
+            
             if (!File.Exists(strTestDataPath + "\\en_fr\\src\\train.txt"))
                 ZipFile.ExtractToDirectory(strTestData, strPath);
 
             string strSrcText = strPath + "\\en_fr\\src\\train.txt";
             string strTrgText = strPath + "\\en_fr\\trg\\train.txt";
+            string strSrcVocab = strPath + "\\en_fr\\sp\\src_sp.vocab";
+            string strTrgVocab = strPath + "\\en_fr\\sp\\trg_sp.vocab";
 
-            return new Tuple<string, string>(strSrcText, strTrgText);
+            return new Tuple<string, string, string, string>(strSrcText, strTrgText, strSrcVocab, strTrgVocab);
         }
 
-        private string buildModel(string strSrc, string strTrg, uint nBatch, uint nBlockSize, uint nEmbed, uint nEncVocabSize, uint nDecVocabSize)
+        private string buildModel(string strSrcFile, string strSrcVocabFile, string strTrgFile, string strTrgVocabFile, uint nBatch, uint nBlockSize, uint nEmbed, uint nEncVocabSize, uint nDecVocabSize)
         {
             NetParameter net = new NetParameter();
             net.name = "TranslatorNet";
 
             LayerParameter data = new LayerParameter(LayerParameter.LayerType.TOKENIZED_DATA_PAIRS);
             data.name = "tokdata1";
-            data.tokenized_data_pairs_param.target = strTrg;
-            data.tokenized_data_pairs_param.source = strSrc;
+            data.tokenized_data_pairs_param.target = strTrgFile;
+            data.tokenized_data_pairs_param.target_vocab_file = strTrgVocabFile;
+            data.tokenized_data_pairs_param.source = strSrcFile;
+            data.tokenized_data_pairs_param.source_vocab_file = strSrcVocabFile;
+            data.tokenized_data_pairs_param.vocabulary_type = TokenizedDataParameter.VOCABULARY_TYPE.SENTENCEPIECE;
             data.tokenized_data_pairs_param.input_type = TokenizedDataParameter.INPUT_TYPE.TEXT_FILE;
             data.tokenized_data_pairs_param.batch_size = nBatch;
             data.tokenized_data_pairs_param.block_size = nBlockSize;
@@ -478,6 +483,8 @@ namespace MyCaffe.test
             net.layer.Add(emb1);
 
             LayerParameter pos1 = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODING);
+            pos1.positional_encoder_param.block_size = nBlockSize;
+            pos1.positional_encoder_param.embed = nEmbed;
             pos1.name = "posenc1";
             pos1.bottom.Add("emb1");
             pos1.top.Add("emb1");
@@ -514,6 +521,8 @@ namespace MyCaffe.test
             net.layer.Add(emb2);
 
             LayerParameter pos2 = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODING);
+            pos2.positional_encoder_param.block_size = nBlockSize;
+            pos2.positional_encoder_param.embed = nEmbed;
             pos2.name = "posenc2";
             pos2.bottom.Add("emb2");
             pos2.top.Add("emb2");
@@ -591,16 +600,18 @@ namespace MyCaffe.test
         
         public void TestTraining()
         {
-            Tuple<string, string> dataFiles = loadDataFiles1();
+            Tuple<string, string, string, string> dataFiles = loadDataFiles1();
             string strSrcFile = dataFiles.Item1;
             string strTrgFile = dataFiles.Item2;
+            string strSrcVocab = dataFiles.Item3;
+            string strTrgVocab = dataFiles.Item4;
 
-            string strModel = buildModel(strSrcFile, strTrgFile, 20, 200, 512, 314, 323);
+            string strModel = buildModel(strSrcFile, strSrcVocab, strTrgFile, strTrgVocab, 20, 200, 512, 14878, 14638);
             string strSolver = buildSolver();
 
             SettingsCaffe s = new SettingsCaffe
             {
-                GpuIds = "0"
+                GpuIds = "1"
             };
             CancelEvent evtCancel = new CancelEvent();
             MyCaffeControl<float> mycaffe = new MyCaffeControl<float>(s, m_log, evtCancel);
