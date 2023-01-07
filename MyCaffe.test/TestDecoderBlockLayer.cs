@@ -433,7 +433,7 @@ namespace MyCaffe.test
         }
         
 
-        private Tuple<string, string, string, string> loadDataFiles1()
+        private Tuple<string, string, string, string, string, string> loadDataFiles1()
         {
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\encdec";
             string strFileName = "en_fr.zip";
@@ -444,35 +444,56 @@ namespace MyCaffe.test
             if (!File.Exists(strTestDataPath + "\\en_fr\\src\\train.txt"))
                 ZipFile.ExtractToDirectory(strTestData, strPath);
 
-            string strSrcText = strPath + "\\en_fr\\src\\train.txt";
-            string strTrgText = strPath + "\\en_fr\\trg\\train.txt";
+            string strSrcTextT = strPath + "\\en_fr\\src\\train.txt";
+            string strTrgTextT = strPath + "\\en_fr\\trg\\train.txt";
+            string strSrcTextV = strPath + "\\en_fr\\src\\valid.txt";
+            string strTrgTextV = strPath + "\\en_fr\\trg\\valid.txt";
             string strSrcVocab = strPath + "\\en_fr\\sp\\src_sp.vocab";
             string strTrgVocab = strPath + "\\en_fr\\sp\\trg_sp.vocab";
 
-            return new Tuple<string, string, string, string>(strSrcText, strTrgText, strSrcVocab, strTrgVocab);
+            return new Tuple<string, string, string, string, string, string>(strSrcTextT, strTrgTextT, strSrcTextV, strTrgTextV, strSrcVocab, strTrgVocab);
         }
 
-        private string buildModel(string strSrcFile, string strSrcVocabFile, string strTrgFile, string strTrgVocabFile, uint nBatch, uint nBlockSize, uint nEmbed, uint nEncVocabSize, uint nDecVocabSize)
+        private string buildModel(string strSrcFileT, string strSrcFileV, string strSrcVocabFile, string strTrgFileT, string strTrgFileV, string strTrgVocabFile, uint nBatch, uint nBlockSize, uint nEmbed, uint nEncVocabSize, uint nDecVocabSize)
         {
             NetParameter net = new NetParameter();
             net.name = "TranslatorNet";
+            
+            LayerParameter dataT = new LayerParameter(LayerParameter.LayerType.TOKENIZED_DATA_PAIRS);
+            dataT.name = "tokdata1";
+            dataT.tokenized_data_pairs_param.target = strTrgFileT;
+            dataT.tokenized_data_pairs_param.target_vocab_file = strTrgVocabFile;
+            dataT.tokenized_data_pairs_param.source = strSrcFileT;
+            dataT.tokenized_data_pairs_param.source_vocab_file = strSrcVocabFile;
+            dataT.tokenized_data_pairs_param.vocabulary_type = TokenizedDataParameter.VOCABULARY_TYPE.SENTENCEPIECE;
+            dataT.tokenized_data_pairs_param.input_type = TokenizedDataParameter.INPUT_TYPE.TEXT_FILE;
+            dataT.tokenized_data_pairs_param.batch_size = nBatch;
+            dataT.tokenized_data_pairs_param.block_size = nBlockSize;
+            dataT.top.Add("enc");
+            dataT.top.Add("dec");
+            dataT.top.Add("tgt");
+            dataT.top.Add("emsk");
+            dataT.top.Add("dmsk");
+            dataT.include.Add(new NetStateRule(Phase.TRAIN));
+            net.layer.Add(dataT);
 
-            LayerParameter data = new LayerParameter(LayerParameter.LayerType.TOKENIZED_DATA_PAIRS);
-            data.name = "tokdata1";
-            data.tokenized_data_pairs_param.target = strTrgFile;
-            data.tokenized_data_pairs_param.target_vocab_file = strTrgVocabFile;
-            data.tokenized_data_pairs_param.source = strSrcFile;
-            data.tokenized_data_pairs_param.source_vocab_file = strSrcVocabFile;
-            data.tokenized_data_pairs_param.vocabulary_type = TokenizedDataParameter.VOCABULARY_TYPE.SENTENCEPIECE;
-            data.tokenized_data_pairs_param.input_type = TokenizedDataParameter.INPUT_TYPE.TEXT_FILE;
-            data.tokenized_data_pairs_param.batch_size = nBatch;
-            data.tokenized_data_pairs_param.block_size = nBlockSize;
-            data.top.Add("enc");
-            data.top.Add("dec");
-            data.top.Add("tgt");
-            data.top.Add("emsk");
-            data.top.Add("dmsk");
-            net.layer.Add(data);
+            LayerParameter dataV = new LayerParameter(LayerParameter.LayerType.TOKENIZED_DATA_PAIRS);
+            dataV.name = "tokdata1";
+            dataV.tokenized_data_pairs_param.target = strTrgFileV;
+            dataV.tokenized_data_pairs_param.target_vocab_file = strTrgVocabFile;
+            dataV.tokenized_data_pairs_param.source = strSrcFileV;
+            dataV.tokenized_data_pairs_param.source_vocab_file = strSrcVocabFile;
+            dataV.tokenized_data_pairs_param.vocabulary_type = TokenizedDataParameter.VOCABULARY_TYPE.SENTENCEPIECE;
+            dataV.tokenized_data_pairs_param.input_type = TokenizedDataParameter.INPUT_TYPE.TEXT_FILE;
+            dataV.tokenized_data_pairs_param.batch_size = nBatch;
+            dataV.tokenized_data_pairs_param.block_size = nBlockSize;
+            dataV.top.Add("enc");
+            dataV.top.Add("dec");
+            dataV.top.Add("tgt");
+            dataV.top.Add("emsk");
+            dataV.top.Add("dmsk");
+            dataV.include.Add(new NetStateRule(Phase.TEST));
+            net.layer.Add(dataV);
 
             LayerParameter emb1 = new LayerParameter(LayerParameter.LayerType.EMBED);
             emb1.name = "embed1";
@@ -598,24 +619,17 @@ namespace MyCaffe.test
             return solver.ToProto("root").ToString();
         }
 
-        private void report_memory(CudaDnn<float> cuda, Log log, string strLocation)
-        {
-            double dfFree;
-            double dfUsed;
-            bool bCudaCallUsed;
-            double dfMem = cuda.GetDeviceMemory(out dfFree, out dfUsed, out bCudaCallUsed);
-            log.WriteLine(strLocation + " Memory: " + dfMem.ToString("N2") + " GB total; " + dfFree.ToString("N2") + " GB free; " + dfUsed.ToString("N2") + " GB used.");
-        }
-
         public void TestTraining()
         {
-            Tuple<string, string, string, string> dataFiles = loadDataFiles1();
-            string strSrcFile = dataFiles.Item1;
-            string strTrgFile = dataFiles.Item2;
-            string strSrcVocab = dataFiles.Item3;
-            string strTrgVocab = dataFiles.Item4;
+            Tuple<string, string, string, string, string, string> dataFiles = loadDataFiles1();
+            string strSrcFileT = dataFiles.Item1;
+            string strTrgFileT = dataFiles.Item2;
+            string strSrcFileV = dataFiles.Item3;
+            string strTrgFileV = dataFiles.Item4;
+            string strSrcVocab = dataFiles.Item5;
+            string strTrgVocab = dataFiles.Item6;
 
-            string strModel = buildModel(strSrcFile, strSrcVocab, strTrgFile, strTrgVocab, 20, 200, 512, 14878, 14638);
+            string strModel = buildModel(strSrcFileT, strSrcFileV, strSrcVocab, strTrgFileT, strTrgFileV, strTrgVocab, 20, 200, 512, 14878, 14638);
             string strSolver = buildSolver();
 
             SettingsCaffe s = new SettingsCaffe
