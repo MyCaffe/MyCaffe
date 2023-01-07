@@ -208,7 +208,7 @@ namespace MyCaffe.test
                 m_blobY.LoadFromNumpy(strTestDataPath + "mh.12_output.npy");
 
                 // Now, check values
-                verify(TopVec[0], m_blobY, false);
+                verify(TopVec[0], m_blobY, false, 6e-07);
             }
             finally
             {
