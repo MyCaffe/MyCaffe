@@ -198,37 +198,33 @@ namespace MyCaffe.layers
             base.dispose();
         }
 
-        /** @copydoc Layer::internal_blobs */
-        public override BlobCollection<T> internal_blobs
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            get
+            if (col.Count > 0)
+                return;
+
+            col.Add(m_blobMean);
+            col.Add(m_blobVariance);
+
+            if (m_param.batch_norm_param.useCudnn())
             {
-                BlobCollection<T> col = new BlobCollection<T>();
+                col.Add(m_blobPrivateBottom);
+                col.Add(m_blobPrivateTop);
 
-                col.Add(m_blobMean);
-                col.Add(m_blobVariance);
-
-                if (m_param.batch_norm_param.useCudnn())
+                if (!m_bScaleBias)
                 {
-                    col.Add(m_blobPrivateBottom);
-                    col.Add(m_blobPrivateTop);
-
-                    if (!m_bScaleBias)
-                    {
-                        col.Add(m_blobScaleOnes);
-                        col.Add(m_blobBiasZeros);
-                    }
+                    col.Add(m_blobScaleOnes);
+                    col.Add(m_blobBiasZeros);
                 }
-                else
-                {
-                    col.Add(m_blobTemp);
-                    col.Add(m_blobXNorm);
-                    col.Add(m_blobBatchSumMultiplier);
-                    col.Add(m_blobNumByChans);
-                    col.Add(m_blobSpaitalSumMultiplier);
-                }
-
-                return col;
+            }
+            else
+            {
+                col.Add(m_blobTemp);
+                col.Add(m_blobXNorm);
+                col.Add(m_blobBatchSumMultiplier);
+                col.Add(m_blobNumByChans);
+                col.Add(m_blobSpaitalSumMultiplier);
             }
         }
 

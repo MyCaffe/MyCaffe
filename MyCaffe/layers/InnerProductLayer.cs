@@ -68,6 +68,8 @@ namespace MyCaffe.layers
                     m_blobEpsilonBias.Name = m_param.name + " epsilon_bias";
                 }
             }
+
+            setup_internal_blobs(m_colInternalBlobs);
         }
 
         /** @copydoc Layer::dispose */
@@ -90,23 +92,19 @@ namespace MyCaffe.layers
             base.dispose();
         }
 
-        /** @copydoc Layer::internal_blobs */
-        public override BlobCollection<T> internal_blobs
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            get
-            {
-                BlobCollection<T> col = new BlobCollection<T>();
+            if (col.Count > 0)
+                return;
 
-                col.Add(m_blobBiasMultiplier);
+            col.Add(m_blobBiasMultiplier);
 
-                if (m_blobEpsilonWeight != null)
-                    col.Add(m_blobEpsilonWeight);
+            if (m_blobEpsilonWeight != null)
+                col.Add(m_blobEpsilonWeight);
 
-                if (m_blobEpsilonBias != null)
-                    col.Add(m_blobEpsilonBias);
-
-                return col;
-            }
+            if (m_blobEpsilonBias != null)
+                col.Add(m_blobEpsilonBias);
         }
 
         /// <summary>

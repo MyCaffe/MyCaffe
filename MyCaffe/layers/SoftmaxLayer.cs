@@ -49,6 +49,8 @@ namespace MyCaffe.layers
             m_blobSumMultiplier.Name = m_param.name + " summult";
             m_blobScale = new Blob<T>(cuda, log);
             m_blobScale.Name = m_param.name + " scale";
+
+            setup_internal_blobs(m_colInternalBlobs);
         }
 
         /** @copydoc Layer::dispose */
@@ -77,20 +79,16 @@ namespace MyCaffe.layers
             base.dispose();
         }
 
-        /** @copydoc Layer::internal_blobs */
-        public override BlobCollection<T> internal_blobs
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            get
+            if (col.Count > 0)
+                return;
+
+            if (!m_param.softmax_param.useCudnn())
             {
-                BlobCollection<T> col = new BlobCollection<T>();
-
-                if (!m_param.softmax_param.useCudnn())
-                {
-                    col.Add(m_blobSumMultiplier);
-                    col.Add(m_blobScale);
-                }
-
-                return col;
+                col.Add(m_blobSumMultiplier);
+                col.Add(m_blobScale);
             }
         }
 

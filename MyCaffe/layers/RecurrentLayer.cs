@@ -898,29 +898,23 @@ namespace MyCaffe.layers
         /// <param name="rgNames">Specifies the output names.</param>
         protected abstract void OutputBlobNames(List<string> rgNames);
 
-        /// <summary>
-        /// Returns the internal blobs for this layer.
-        /// </summary>
-        public override BlobCollection<T> internal_blobs
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            get
-            {
-                BlobCollection<T> col = new common.BlobCollection<T>();
-                
-                if (m_blobCx != null)
-                    col.Add(m_blobCx);
+            if (col.Count > 0)
+                return;
 
-                if (m_blobHx != null)
-                    col.Add(m_blobHx);
+            if (m_blobCx != null)
+                col.Add(m_blobCx);
 
-                if (m_blobCy != null)
-                    col.Add(m_blobCy);
+            if (m_blobHx != null)
+                col.Add(m_blobHx);
 
-                if (m_blobHy != null)
-                    col.Add(m_blobHy);
+            if (m_blobCy != null)
+                col.Add(m_blobCy);
 
-                return col;
-            }
+            if (m_blobHy != null)
+                col.Add(m_blobHy);
         }
 
         /// <summary>

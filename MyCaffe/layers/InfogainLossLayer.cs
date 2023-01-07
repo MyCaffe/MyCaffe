@@ -90,17 +90,15 @@ namespace MyCaffe.layers
             }
         }
 
-        /** @copydoc Layer::internal_blobs */
-        public override BlobCollection<T> internal_blobs
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            get
-            {
-                BlobCollection<T> col = base.internal_blobs;
-                col.Add(m_blobInfoGain);
-                col.Add(m_blobProb);
-                col.Add(m_blobSumRowsOfH);
-                return col;
-            }
+            if (col.Count > 0)
+                return;
+
+            col.Add(m_blobInfoGain);
+            col.Add(m_blobProb);
+            col.Add(m_blobSumRowsOfH);
         }
 
         /// <summary>

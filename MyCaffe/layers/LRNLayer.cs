@@ -178,30 +178,29 @@ namespace MyCaffe.layers
             base.dispose();
         }
 
-        /** @copydoc Layer::internal_blobs */
-        public override BlobCollection<T> internal_blobs
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            get
+            if (col.Count > 0)
+                return;
+
+            if (col.Count > 0)
+                return;
+
+            if (!m_param.lrn_param.useCudnn())
             {
-                BlobCollection<T> col = new BlobCollection<T>();
-
-                if (!m_param.lrn_param.useCudnn())
+                if (m_param.lrn_param.norm_region == LRNParameter.NormRegion.ACROSS_CHANNELS)
                 {
-                    if (m_param.lrn_param.norm_region == LRNParameter.NormRegion.ACROSS_CHANNELS)
-                    {
-                        col.Add(m_blobScale);
-                    }
-                    else
-                    {
-                        col.Add(m_blobSquareInput);
-                        col.Add(m_blobSquareOutput);
-                        col.Add(m_blobPoolOutput);
-                        col.Add(m_blobPowerOutput);
-                        col.Add(m_blobProductInput);
-                    }
+                    col.Add(m_blobScale);
                 }
-
-                return col;
+                else
+                {
+                    col.Add(m_blobSquareInput);
+                    col.Add(m_blobSquareOutput);
+                    col.Add(m_blobPoolOutput);
+                    col.Add(m_blobPowerOutput);
+                    col.Add(m_blobProductInput);
+                }
             }
         }
 

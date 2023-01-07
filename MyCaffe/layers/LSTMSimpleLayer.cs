@@ -119,27 +119,23 @@ namespace MyCaffe.layers
             m_blob_H_to_H.Dispose();
         }
 
-        /** @copydoc Layer::internal_blobs */
-        public override BlobCollection<T> internal_blobs
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            get
-            {
-                BlobCollection<T> col = new BlobCollection<T>();
+            if (col.Count > 0)
+                return;
 
-                col.Add(m_blobBiasMultiplier);
-                col.Add(m_blobTop);
-                col.Add(m_blobCell);
-                col.Add(m_blobPreGate);
-                col.Add(m_blobGate);
-                col.Add(m_blob_C_0);
-                col.Add(m_blob_H_0);
-                col.Add(m_blob_C_T);
-                col.Add(m_blob_H_T);
-                col.Add(m_blob_H_to_Gate);
-                col.Add(m_blob_H_to_H);
-
-                return col;
-            }
+            col.Add(m_blobBiasMultiplier);
+            col.Add(m_blobTop);
+            col.Add(m_blobCell);
+            col.Add(m_blobPreGate);
+            col.Add(m_blobGate);
+            col.Add(m_blob_C_0);
+            col.Add(m_blob_H_0);
+            col.Add(m_blob_C_T);
+            col.Add(m_blob_H_T);
+            col.Add(m_blob_H_to_Gate);
+            col.Add(m_blob_H_to_H);
         }
 
         /// <summary>

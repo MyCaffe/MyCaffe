@@ -54,6 +54,10 @@ namespace MyCaffe.layers
         /// </summary>
         protected BlobCollection<T> m_colBlobs;
         /// <summary>
+        /// Specifies internal blobs used by the layer.
+        /// </summary>
+        protected BlobCollection<T> m_colInternalBlobs = new BlobCollection<T>();
+        /// <summary>
         /// Specifies whether or not to compute the learnable diff of each parameter Blob.
         /// </summary>
         protected DictionaryMap<bool> m_rgbParamPropagateDown;
@@ -163,7 +167,7 @@ namespace MyCaffe.layers
             }
 
             m_tOne = (T)Convert.ChangeType(1, typeof(T));
-            m_tZero = (T)Convert.ChangeType(0, typeof(T));
+            m_tZero = (T)Convert.ChangeType(0, typeof(T));            
         }
 
         /// <summary>
@@ -378,6 +382,7 @@ namespace MyCaffe.layers
                 m_rgrgLastTopShape = new List<List<int>>();
 
                 CheckBlobCounts(colBottom, colTop);
+                setup_internal_blobs(m_colInternalBlobs);
                 LayerSetUp(colBottom, colTop);
                 Reshape(colBottom, colTop);
                 setShapes(colBottom, colTop);
@@ -793,9 +798,17 @@ namespace MyCaffe.layers
         /// <summary>
         /// Returns the collection of internal Blobs used by the Layer.
         /// </summary>
-        public virtual BlobCollection<T> internal_blobs
+        public BlobCollection<T> internal_blobs
         {
-            get { return new BlobCollection<T>(); }
+            get { return m_colInternalBlobs; }
+        }
+
+        /// <summary>
+        /// Derivative layers should add all internal blobws to the 'col' provided.
+        /// </summary>
+        /// <param name="col">Specifies the blob collection where internal blobs are added.</param>
+        protected virtual void setup_internal_blobs(BlobCollection<T> col)
+        {
         }
 
         /// <summary>
@@ -1029,6 +1042,23 @@ namespace MyCaffe.layers
                     colTop[i].SetDiff(dfLossWeight);
                 }
             }
+        }
+
+        /// <summary>
+        /// Called to convert a parent LayerParameterEx, used in blob sharing, with a child layer parameter.
+        /// </summary>
+        /// <param name="pChild">Specifies the child layer parameter.</param>
+        /// <param name="pParent">Specifies the parent layer parameter.</param>
+        /// <returns>If the parent layer parameter is a LayerParameterEx, the shared blobs are passed to the child.</returns>
+        protected LayerParameter convertLayerParam(LayerParameter pChild, LayerParameter pParent)
+        {
+            if (pParent is LayerParameterEx<T>)
+            {
+                LayerParameterEx<T> pEx = pParent as LayerParameterEx<T>;
+                return new LayerParameterEx<T>(pChild, pEx.SharedBlobs, pEx.SharedLayerBlobs, null);
+            }
+
+            return pChild;
         }
 
         /// <summary>

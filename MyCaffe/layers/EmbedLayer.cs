@@ -50,6 +50,8 @@ namespace MyCaffe.layers
             m_type = LayerParameter.LayerType.EMBED;
             m_blobBiasMultiplier = new common.Blob<T>(cuda, log);
             m_blobBiasMultiplier.Name = m_param.name + " biasmult";
+
+            setup_internal_blobs(m_colInternalBlobs);
         }
 
         /** @copydoc Layer::dispose */
@@ -64,17 +66,13 @@ namespace MyCaffe.layers
             base.dispose();
         }
 
-        /** @copydoc Layer::internal_blobs */
-        public override BlobCollection<T> internal_blobs
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            get
-            {
-                BlobCollection<T> col = new BlobCollection<T>();
+            if (col.Count > 0)
+                return;
 
-                col.Add(m_blobBiasMultiplier);
-
-                return col;
-            }
+            col.Add(m_blobBiasMultiplier);
         }
 
         /// <summary>

@@ -201,20 +201,16 @@ namespace MyCaffe.layers
             return lWorkspaceLimitBytes;
         }
 
-        /** @copydoc Layer::internal_blobs */
-        public override BlobCollection<T> internal_blobs
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            get
+            if (col.Count > 0)
+                return;
+
+            if (!m_param.convolution_param.useCudnn(m_nNumSpatialAxes) || reverse_dimensions())
             {
-                BlobCollection<T> col = new BlobCollection<T>();
-
-                if (!m_param.convolution_param.useCudnn(m_nNumSpatialAxes) || reverse_dimensions())
-                {
-                    col.Add(m_blobColBuffer);
-                    col.Add(m_blobBiasMultiplier);
-                }
-
-                return col;
+                col.Add(m_blobColBuffer);
+                col.Add(m_blobBiasMultiplier);
             }
         }
 
