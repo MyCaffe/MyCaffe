@@ -92,7 +92,7 @@ namespace MyCaffe.layers.gpt
             ipAttn.inner_product_param.axis = 2;
             ipAttn.parameters.Add(new ParamSpec(1.0, 1.0));
             ipAttn.parameters.Add(new ParamSpec(1.0, 0.0));
-            m_c_attn = Layer<T>.Create(cuda, log, ipAttn, null);
+            m_c_attn = Layer<T>.Create(cuda, log, convertLayerParam(ipAttn, p), null);
 
             // Output projection.
             // input features = m_nEmbed
@@ -104,43 +104,47 @@ namespace MyCaffe.layers.gpt
             ipProj.inner_product_param.axis = 2;            
             ipProj.parameters.Add(new ParamSpec(1.0, 1.0));
             ipProj.parameters.Add(new ParamSpec(1.0, 0.0));
-            m_c_proj = Layer<T>.Create(cuda, log, ipProj, null);
+            m_c_proj = Layer<T>.Create(cuda, log, convertLayerParam(ipProj, p), null);
 
             // Regularization
             if (m_dfAttnDropout > 0)
             {
                 LayerParameter dropoutAttn = new LayerParameter(LayerParameter.LayerType.DROPOUT);
                 dropoutAttn.dropout_param.dropout_ratio = m_dfAttnDropout;
-                m_attn_dropout = Layer<T>.Create(cuda, log, dropoutAttn, null);
+                m_attn_dropout = Layer<T>.Create(cuda, log, convertLayerParam(dropoutAttn, p), null);
             }
 
             if (m_dfResidDropout > 0)
             {
                 LayerParameter dropoutResid = new LayerParameter(LayerParameter.LayerType.DROPOUT);
                 dropoutResid.dropout_param.dropout_ratio = m_dfResidDropout;
-                m_resid_dropout = Layer<T>.Create(cuda, log, dropoutResid, null);
+                m_resid_dropout = Layer<T>.Create(cuda, log, convertLayerParam(dropoutResid, p), null);
             }
 
             // Transpose
             LayerParameter transpose = new LayerParameter(LayerParameter.LayerType.TRANSPOSE);
             transpose.transpose_param.dim[1] = 2;
             transpose.transpose_param.dim[2] = 1;
-            m_transpose = Layer<T>.Create(cuda, log, transpose, null);
+            m_transpose = Layer<T>.Create(cuda, log, convertLayerParam(transpose, p), null);
 
             LayerParameter transposeK = new LayerParameter(LayerParameter.LayerType.TRANSPOSE);
             transposeK.transpose_param.dim[2] = 3;
             transposeK.transpose_param.dim[3] = 2;
-            m_transposeQ = Layer<T>.Create(cuda, log, transposeK, null);
+            m_transposeQ = Layer<T>.Create(cuda, log, convertLayerParam(transposeK, p), null);
 
             // Softmax
             LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
             softmax.softmax_param.axis = -1;
             softmax.softmax_param.engine = EngineParameter.Engine.CUDNN;
-            m_softmax = Layer<T>.Create(cuda, log, softmax, null);
+            m_softmax = Layer<T>.Create(cuda, log, convertLayerParam(softmax, p), null);
 
             // Causal mask to ensure that atttention is only applied to the left in the input sequence.
             m_blobBias = new Blob<T>(cuda, log);
-            m_blobBias.Reshape(1, 1, m_nBlockSize, m_nBlockSize);
+            m_blobBias.Name = m_param.name + " bias";
+
+            List<int> rgShape = new List<int>() { 1, 1, m_nBlockSize, m_nBlockSize };
+            if (!shareLayerBlob(m_blobBias, rgShape))
+                m_blobBias.Reshape(rgShape);
             fillBias(m_blobBias);
            
             m_blobQ = new Blob<T>(cuda, log);
@@ -170,6 +174,8 @@ namespace MyCaffe.layers.gpt
             m_blobIpAttn.Name = m_param.name + " IpAttn";
             m_blobY = new Blob<T>(cuda, log);
             m_blobY.Name = m_param.name + " Y";
+
+            setup_internal_blobs(m_colInternalBlobs);
         }
 
         /** @copydoc Layer::dispose */
@@ -201,30 +207,36 @@ namespace MyCaffe.layers.gpt
             base.dispose();
         }
 
-        /** @copydoc Layer::internal_blobs */
-        public override BlobCollection<T> internal_blobs
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            get
-            {
-                BlobCollection<T> col = new BlobCollection<T>();
+            if (col.Count > 0)
+                return;
 
-                col.Add(m_blobBias);
-                col.Add(m_blobQ);
-                col.Add(m_blobK);
-                col.Add(m_blobV);
-                col.Add(m_blobQt);
-                col.Add(m_blobQt1);
-                col.Add(m_blobKt);
-                col.Add(m_blobKt1);
-                col.Add(m_blobVt);
-                col.Add(m_blobVt1);
-                col.Add(m_blobAtt);
-                col.Add(m_blobWork);
-                col.Add(m_blobIpAttn);
-                col.Add(m_blobY);
-                
-                return col;
-            }
+            col.Add(m_blobBias);
+            col.Add(m_blobQ);
+            col.Add(m_blobK);
+            col.Add(m_blobV);
+            col.Add(m_blobQt);
+            col.Add(m_blobQt1);
+            col.Add(m_blobKt);
+            col.Add(m_blobKt1);
+            col.Add(m_blobVt);
+            col.Add(m_blobVt1);
+            col.Add(m_blobAtt);
+            col.Add(m_blobWork);
+            col.Add(m_blobIpAttn);
+            col.Add(m_blobY);
+
+            col.Add(m_c_attn.internal_blobs);
+            col.Add(m_c_proj.internal_blobs);
+            if (m_attn_dropout != null)
+                col.Add(m_attn_dropout.internal_blobs);
+            if (m_resid_dropout != null)
+                col.Add(m_resid_dropout.internal_blobs);
+            col.Add(m_transpose.internal_blobs);
+            col.Add(m_transposeQ.internal_blobs);
+            col.Add(m_softmax.internal_blobs);
         }
 
         private void fillBias(Blob<T> b)

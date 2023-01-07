@@ -37,6 +37,8 @@ namespace MyCaffe.layers.gpt
             m_dfScale = Math.Sqrt(m_nEmbed);
 
             m_blobPosEnc = new Blob<T>(m_cuda, m_log, false);
+
+            setup_internal_blobs(m_colInternalBlobs);
         }
 
         /// <summary>
@@ -48,17 +50,13 @@ namespace MyCaffe.layers.gpt
             base.dispose();
         }
 
-        /** @copydoc Layer::internal_blobs */
-        public override BlobCollection<T> internal_blobs
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            get
-            {
-                BlobCollection<T> col = new BlobCollection<T>();
-                
-                col.Add(m_blobPosEnc);
+            if (col.Count > 0)
+                return;
 
-                return col;
-            }
+            col.Add(m_blobPosEnc);
         }
 
         /// <summary>

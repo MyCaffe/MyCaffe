@@ -88,7 +88,7 @@ namespace MyCaffe.layers.gpt
 
             // Query projection for all heads, but in a batch.
             // input features = m_nHeads
-            LayerParameter ipAttnQ = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "c_attnQ");
+            LayerParameter ipAttnQ = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_attnQ");
             ipAttnQ.inner_product_param.num_output = (uint)m_nEmbed;
             ipAttnQ.inner_product_param.bias_term = true;
             if (m_param.multihead_attention_param.weight_init == MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER)
@@ -104,11 +104,11 @@ namespace MyCaffe.layers.gpt
             ipAttnQ.inner_product_param.axis = 2;
             ipAttnQ.parameters.Add(new ParamSpec(1.0, 1.0));
             ipAttnQ.parameters.Add(new ParamSpec(1.0, 0.0));
-            m_c_attnQ = Layer<T>.Create(cuda, log, ipAttnQ, null);
+            m_c_attnQ = Layer<T>.Create(cuda, log, convertLayerParam(ipAttnQ, p), null);
 
             // Key projection for all heads, but in a batch.
             // input features = m_nHeads
-            LayerParameter ipAttnK = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "c_attnK");
+            LayerParameter ipAttnK = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_attnK");
             ipAttnK.inner_product_param.num_output = (uint)m_nEmbed;
             ipAttnK.inner_product_param.bias_term = true;
             if (m_param.multihead_attention_param.weight_init == MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER)
@@ -124,11 +124,11 @@ namespace MyCaffe.layers.gpt
             ipAttnK.inner_product_param.axis = 2;
             ipAttnK.parameters.Add(new ParamSpec(1.0, 1.0));
             ipAttnK.parameters.Add(new ParamSpec(1.0, 0.0));
-            m_c_attnK = Layer<T>.Create(cuda, log, ipAttnK, null);
+            m_c_attnK = Layer<T>.Create(cuda, log, convertLayerParam(ipAttnK, p), null);
 
             // Value projection for all heads, but in a batch.
             // input features = m_nHeads
-            LayerParameter ipAttnV = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "c_attnV");
+            LayerParameter ipAttnV = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_attnV");
             ipAttnV.inner_product_param.num_output = (uint)m_nEmbed;
             ipAttnV.inner_product_param.bias_term = true;
             if (m_param.multihead_attention_param.weight_init == MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER)
@@ -144,11 +144,11 @@ namespace MyCaffe.layers.gpt
             ipAttnV.inner_product_param.axis = 2;
             ipAttnV.parameters.Add(new ParamSpec(1.0, 1.0));
             ipAttnV.parameters.Add(new ParamSpec(1.0, 0.0));
-            m_c_attnV = Layer<T>.Create(cuda, log, ipAttnV, null);
+            m_c_attnV = Layer<T>.Create(cuda, log, convertLayerParam(ipAttnV, p), null);
 
             // Output projection.
             // input features = m_nEmbed
-            LayerParameter ipProj = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "c_proj");
+            LayerParameter ipProj = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_proj");
             ipProj.inner_product_param.num_output = (uint)m_nEmbed;
             ipProj.inner_product_param.bias_term = true;
             if (m_param.multihead_attention_param.weight_init == MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER)
@@ -164,39 +164,39 @@ namespace MyCaffe.layers.gpt
             ipProj.inner_product_param.axis = 2;            
             ipProj.parameters.Add(new ParamSpec(1.0, 1.0));
             ipProj.parameters.Add(new ParamSpec(1.0, 0.0));
-            m_c_proj = Layer<T>.Create(cuda, log, ipProj, null);
+            m_c_proj = Layer<T>.Create(cuda, log, convertLayerParam(ipProj, p), null);
 
             // Regularization
             if (m_dfAttnDropout > 0)
             {
-                LayerParameter dropoutAttn = new LayerParameter(LayerParameter.LayerType.DROPOUT);
+                LayerParameter dropoutAttn = new LayerParameter(LayerParameter.LayerType.DROPOUT, p.name + ".drop_attn");
                 dropoutAttn.dropout_param.dropout_ratio = m_dfAttnDropout;
-                m_attn_dropout = Layer<T>.Create(cuda, log, dropoutAttn, null);
+                m_attn_dropout = Layer<T>.Create(cuda, log, convertLayerParam(dropoutAttn, p), null);
             }
 
             if (m_dfResidDropout > 0)
             {
-                LayerParameter dropoutResid = new LayerParameter(LayerParameter.LayerType.DROPOUT);
+                LayerParameter dropoutResid = new LayerParameter(LayerParameter.LayerType.DROPOUT, p.name + ".drop_resid");
                 dropoutResid.dropout_param.dropout_ratio = m_dfResidDropout;
-                m_resid_dropout = Layer<T>.Create(cuda, log, dropoutResid, null);
+                m_resid_dropout = Layer<T>.Create(cuda, log, convertLayerParam(dropoutResid, p), null);
             }
 
             // Transpose
-            LayerParameter transpose = new LayerParameter(LayerParameter.LayerType.TRANSPOSE);
+            LayerParameter transpose = new LayerParameter(LayerParameter.LayerType.TRANSPOSE, p.name + ".trans");
             transpose.transpose_param.dim[1] = 2;
             transpose.transpose_param.dim[2] = 1;
-            m_transpose = Layer<T>.Create(cuda, log, transpose, null);
+            m_transpose = Layer<T>.Create(cuda, log, convertLayerParam(transpose, p), null);
 
-            LayerParameter transposeK = new LayerParameter(LayerParameter.LayerType.TRANSPOSE);
-            transposeK.transpose_param.dim[2] = 3;
-            transposeK.transpose_param.dim[3] = 2;
-            m_transposeQ = Layer<T>.Create(cuda, log, transposeK, null);
+            LayerParameter transposeQ = new LayerParameter(LayerParameter.LayerType.TRANSPOSE, p.name + ".transQ");
+            transposeQ.transpose_param.dim[2] = 3;
+            transposeQ.transpose_param.dim[3] = 2;
+            m_transposeQ = Layer<T>.Create(cuda, log, convertLayerParam(transposeQ, p), null);
 
             // Softmax
-            LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
+            LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX, p.name + ".softmax");
             softmax.softmax_param.axis = -1;
             softmax.softmax_param.engine = EngineParameter.Engine.CUDNN;
-            m_softmax = Layer<T>.Create(cuda, log, softmax, null);
+            m_softmax = Layer<T>.Create(cuda, log, convertLayerParam(softmax, p), null);
 
             m_blobX0 = new Blob<T>(cuda, log);
             m_blobX0.Name = m_param.name + " x0";
@@ -228,6 +228,8 @@ namespace MyCaffe.layers.gpt
             m_blobWork.Name = m_param.name + " Work";
             m_blobY = new Blob<T>(cuda, log);
             m_blobY.Name = m_param.name + " Y";
+
+            setup_internal_blobs(m_colInternalBlobs);
         }
 
         /** @copydoc Layer::dispose */
@@ -262,31 +264,39 @@ namespace MyCaffe.layers.gpt
             base.dispose();
         }
 
-        /** @copydoc Layer::internal_blobs */
-        public override BlobCollection<T> internal_blobs
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            get
-            {
-                BlobCollection<T> col = new BlobCollection<T>();
+            if (col.Count > 0)
+                return;
 
-                col.Add(m_blobX0);
-                col.Add(m_blobX1);
-                col.Add(m_blobX2);
-                col.Add(m_blobQ);
-                col.Add(m_blobK);
-                col.Add(m_blobV);
-                col.Add(m_blobQt);
-                col.Add(m_blobQt1);
-                col.Add(m_blobKt);
-                col.Add(m_blobKt1);
-                col.Add(m_blobVt);
-                col.Add(m_blobVt1);
-                col.Add(m_blobAtt);
-                col.Add(m_blobWork);
-                col.Add(m_blobY);
-                
-                return col;
-            }
+            col.Add(m_blobX0);
+            col.Add(m_blobX1);
+            col.Add(m_blobX2);
+            col.Add(m_blobQ);
+            col.Add(m_blobK);
+            col.Add(m_blobV);
+            col.Add(m_blobQt);
+            col.Add(m_blobQt1);
+            col.Add(m_blobKt);
+            col.Add(m_blobKt1);
+            col.Add(m_blobVt);
+            col.Add(m_blobVt1);
+            col.Add(m_blobAtt);
+            col.Add(m_blobWork);
+            col.Add(m_blobY);
+
+            col.Add(m_c_attnQ.internal_blobs);
+            col.Add(m_c_attnK.internal_blobs);
+            col.Add(m_c_attnV.internal_blobs);
+            col.Add(m_c_proj.internal_blobs);
+            if (m_attn_dropout != null)
+                col.Add(m_attn_dropout.internal_blobs);
+            if (m_resid_dropout != null)
+                col.Add(m_resid_dropout.internal_blobs);
+            col.Add(m_transpose.internal_blobs);
+            col.Add(m_transposeQ.internal_blobs);
+            col.Add(m_softmax.internal_blobs);
         }
 
         /// <summary>

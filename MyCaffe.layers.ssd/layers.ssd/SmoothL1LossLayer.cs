@@ -75,16 +75,14 @@ namespace MyCaffe.layers.ssd
             base.dispose();
         }
 
-        /** @copydoc Layer::internal_blobs */
-        public override BlobCollection<T> internal_blobs
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            get
-            {
-                BlobCollection<T> col = new BlobCollection<T>();
-                col.Add(m_blobDiff);
-                col.Add(m_blobErrors);
-                return col;
-            }
+            if (col.Count > 0)
+                return;
+
+            col.Add(m_blobDiff);
+            col.Add(m_blobErrors);
         }
 
         /// <summary>

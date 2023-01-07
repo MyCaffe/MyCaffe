@@ -82,23 +82,9 @@ namespace MyCaffe.layers.ssd
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
-            if (m_blobBboxPreds != null)
-            {
-                m_blobBboxPreds.Dispose();
-                m_blobBboxPreds = null;
-            }
-
-            if (m_blobBboxPermute != null)
-            {
-                m_blobBboxPermute.Dispose();
-                m_blobBboxPermute = null;
-            }
-
-            if (m_blobConfPermute != null)
-            {
-                m_blobConfPermute.Dispose();
-                m_blobConfPermute = null;
-            }
+            dispose(ref m_blobBboxPreds);
+            dispose(ref m_blobBboxPermute);
+            dispose(ref m_blobConfPermute);
 
             if (m_bboxUtil != null)
             {
@@ -115,19 +101,15 @@ namespace MyCaffe.layers.ssd
             base.dispose();
         }
 
-        /** @copydoc Layer::internal_blobs */
-        public override BlobCollection<T> internal_blobs
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            get
-            {
-                BlobCollection<T> col = new BlobCollection<T>();
+            if (col.Count > 0)
+                return;
 
-                col.Add(m_blobBboxPreds);
-                col.Add(m_blobBboxPermute);
-                col.Add(m_blobConfPermute);
-
-                return col;
-            }
+            col.Add(m_blobBboxPreds);
+            col.Add(m_blobBboxPermute);
+            col.Add(m_blobConfPermute);
         }
 
         /// <summary>

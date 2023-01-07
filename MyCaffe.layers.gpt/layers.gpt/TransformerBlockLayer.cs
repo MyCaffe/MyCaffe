@@ -67,28 +67,28 @@ namespace MyCaffe.layers.gpt
             m_blobMlpOut = new Blob<T>(cuda, log);
             m_blobMlpOut.Name = m_param.name + " mlp_out";
 
-            LayerParameter ln1 = new LayerParameter(LayerParameter.LayerType.LAYERNORM, "ln1");
+            LayerParameter ln1 = new LayerParameter(LayerParameter.LayerType.LAYERNORM, p.name + ".ln1");
             ln1.layer_norm_param.enable_cuda_impl = p.transformer_block_param.enable_layernorm_cuda_impl;
-            m_ln1 = Layer<T>.Create(cuda, log, ln1, evtCancel) as Layer<T>;
+            m_ln1 = Layer<T>.Create(cuda, log, convertLayerParam(ln1, p), evtCancel) as Layer<T>;
             
-            LayerParameter ln2 = new LayerParameter(LayerParameter.LayerType.LAYERNORM, "ln2");
+            LayerParameter ln2 = new LayerParameter(LayerParameter.LayerType.LAYERNORM, p.name + ".ln2");
             ln2.layer_norm_param.enable_cuda_impl = p.transformer_block_param.enable_layernorm_cuda_impl;
-            m_ln2 = Layer<T>.Create(cuda, log, ln2, evtCancel) as Layer<T>;
+            m_ln2 = Layer<T>.Create(cuda, log, convertLayerParam(ln2, p), evtCancel) as Layer<T>;
 
             if (p.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION)
             {
-                LayerParameter attn = new LayerParameter(LayerParameter.LayerType.CAUSAL_SELF_ATTENTION, "attn");
+                LayerParameter attn = new LayerParameter(LayerParameter.LayerType.CAUSAL_SELF_ATTENTION, p.name + ".attn");
                 attn.causal_self_attention_param.block_size = p.transformer_block_param.block_size;
                 attn.causal_self_attention_param.embed = p.transformer_block_param.embed;
                 attn.causal_self_attention_param.heads = p.transformer_block_param.heads;
                 attn.causal_self_attention_param.attn_dropout = p.transformer_block_param.attn_dropout;
                 attn.causal_self_attention_param.resid_dropout = p.transformer_block_param.resid_dropout;
                 attn.causal_self_attention_param.layers = p.transformer_block_param.layers;
-                m_attn1 = Layer<T>.Create(cuda, log, attn, evtCancel);
+                m_attn1 = Layer<T>.Create(cuda, log, convertLayerParam(attn, p), evtCancel);
             }
             else if (p.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.ENCODER)
             {
-                LayerParameter attn = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION, "attn");
+                LayerParameter attn = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION, p.name + ".attn");
                 attn.multihead_attention_param.block_size = p.transformer_block_param.block_size;
                 attn.multihead_attention_param.embed = p.transformer_block_param.embed;
                 attn.multihead_attention_param.heads = p.transformer_block_param.heads;
@@ -96,7 +96,7 @@ namespace MyCaffe.layers.gpt
                 attn.multihead_attention_param.resid_dropout = p.transformer_block_param.resid_dropout;
                 attn.multihead_attention_param.layers = p.transformer_block_param.layers;
                 attn.multihead_attention_param.weight_init = MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER;
-                m_attn1 = Layer<T>.Create(cuda, log, attn, evtCancel);
+                m_attn1 = Layer<T>.Create(cuda, log, convertLayerParam(attn, p), evtCancel);
             }
             else if (p.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.DECODER)
             {
@@ -107,9 +107,9 @@ namespace MyCaffe.layers.gpt
 
                 LayerParameter ln3 = new LayerParameter(LayerParameter.LayerType.LAYERNORM, "ln3");
                 ln3.layer_norm_param.enable_cuda_impl = p.transformer_block_param.enable_layernorm_cuda_impl;
-                m_ln3 = Layer<T>.Create(cuda, log, ln3, evtCancel) as Layer<T>;
+                m_ln3 = Layer<T>.Create(cuda, log, convertLayerParam(ln3, p), evtCancel) as Layer<T>;
 
-                LayerParameter attn1 = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION, "attn1");
+                LayerParameter attn1 = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION, p.name + ".attn1");
                 attn1.multihead_attention_param.block_size = p.transformer_block_param.block_size;
                 attn1.multihead_attention_param.embed = p.transformer_block_param.embed;
                 attn1.multihead_attention_param.heads = p.transformer_block_param.heads;
@@ -117,9 +117,9 @@ namespace MyCaffe.layers.gpt
                 attn1.multihead_attention_param.resid_dropout = p.transformer_block_param.resid_dropout;
                 attn1.multihead_attention_param.layers = p.transformer_block_param.layers;
                 attn1.multihead_attention_param.weight_init = MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER;
-                m_attn1 = Layer<T>.Create(cuda, log, attn1, evtCancel);
+                m_attn1 = Layer<T>.Create(cuda, log, convertLayerParam(attn1, p), evtCancel);
 
-                LayerParameter attn2 = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION, "attn2");
+                LayerParameter attn2 = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION, p.name + ".attn2");
                 attn2.multihead_attention_param.block_size = p.transformer_block_param.block_size;
                 attn2.multihead_attention_param.embed = p.transformer_block_param.embed;
                 attn2.multihead_attention_param.heads = p.transformer_block_param.heads;
@@ -127,14 +127,14 @@ namespace MyCaffe.layers.gpt
                 attn2.multihead_attention_param.resid_dropout = p.transformer_block_param.resid_dropout;
                 attn2.multihead_attention_param.layers = p.transformer_block_param.layers;
                 attn2.multihead_attention_param.weight_init = MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER;
-                m_attn2 = Layer<T>.Create(cuda, log, attn2, evtCancel);
+                m_attn2 = Layer<T>.Create(cuda, log, convertLayerParam(attn2, p), evtCancel);
             }
             else
             {
                 throw new Exception("The block type '" + p.transformer_block_param.block_type.ToString() + "' is not supported!");
             }
 
-            LayerParameter fc = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "fc");
+            LayerParameter fc = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".fc");
             fc.inner_product_param.axis = 2;
             fc.inner_product_param.bias_term = true;
             fc.inner_product_param.num_output = (uint)(p.transformer_block_param.embed * 4);
@@ -150,9 +150,9 @@ namespace MyCaffe.layers.gpt
             }
             fc.parameters.Add(new ParamSpec(1.0, 1.0));
             fc.parameters.Add(new ParamSpec(1.0, 0.0));
-            m_fc = Layer<T>.Create(cuda, log, fc, evtCancel);
+            m_fc = Layer<T>.Create(cuda, log, convertLayerParam(fc, p), evtCancel);
 
-            LayerParameter proj = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "proj");
+            LayerParameter proj = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".proj");
             proj.inner_product_param.axis = 2;
             proj.inner_product_param.bias_term = true;
             proj.inner_product_param.num_output = (uint)p.transformer_block_param.embed;
@@ -169,7 +169,7 @@ namespace MyCaffe.layers.gpt
             }
             proj.parameters.Add(new ParamSpec(1.0, 1.0));
             proj.parameters.Add(new ParamSpec(1.0, 0.0));
-            m_proj = Layer<T>.Create(cuda, log, proj, evtCancel);
+            m_proj = Layer<T>.Create(cuda, log, convertLayerParam(proj, p), evtCancel);
 
             // ReLU has a very similar curve, and is faster.
             LayerParameter.LayerType actType = LayerParameter.LayerType.RELU;
@@ -186,18 +186,20 @@ namespace MyCaffe.layers.gpt
                 bEnableBert = false;
             }
                 
-            LayerParameter act = new LayerParameter(actType, "act");   
+            LayerParameter act = new LayerParameter(actType, p.name + ".act");   
             if (bEnableBert.HasValue)
                 act.gelu_param.enable_bert_version = bEnableBert.Value;
             
-            m_act = Layer<T>.Create(cuda, log, act, evtCancel);
+            m_act = Layer<T>.Create(cuda, log, convertLayerParam(act, p), evtCancel);
 
             if (p.transformer_block_param.resid_dropout > 0)
             {
-                LayerParameter dropout = new LayerParameter(LayerParameter.LayerType.DROPOUT, "dropout");
+                LayerParameter dropout = new LayerParameter(LayerParameter.LayerType.DROPOUT, p.name + ".drop");
                 dropout.dropout_param.dropout_ratio = p.transformer_block_param.resid_dropout;
-                m_dropout = Layer<T>.Create(cuda, log, dropout, evtCancel);
+                m_dropout = Layer<T>.Create(cuda, log, convertLayerParam(dropout, p), evtCancel);
             }
+
+            setup_internal_blobs(m_colInternalBlobs);
         }
 
         /** @copydoc Layer::dispose */
@@ -224,25 +226,34 @@ namespace MyCaffe.layers.gpt
             base.dispose();
         }
 
-        /** @copydoc Layer::internal_blobs */
-        public override BlobCollection<T> internal_blobs
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            get
-            {
-                BlobCollection<T> col = new BlobCollection<T>();
+            if (col.Count > 0)
+                return;
 
-                col.Add(m_blobLn1);
-                col.Add(m_blobAttn1);
-                col.Add(m_blobLn2);
-                if (m_blobAttn2 != null)
-                    col.Add(m_blobAttn2);
-                if (m_blobLn3 != null)
-                    col.Add(m_blobLn3);
-                col.Add(m_blobMlp);
-                col.Add(m_blobMlpOut);
+            col.Add(m_blobLn1);
+            col.Add(m_blobAttn1);
+            col.Add(m_blobLn2);
+            if (m_blobAttn2 != null)
+                col.Add(m_blobAttn2);
+            if (m_blobLn3 != null)
+                col.Add(m_blobLn3);
+            col.Add(m_blobMlp);
+            col.Add(m_blobMlpOut);
 
-                return col;
-            }
+            col.Add(m_ln1.internal_blobs);
+            col.Add(m_attn1.internal_blobs);
+            col.Add(m_ln2.internal_blobs);
+            if (m_attn2 != null)    
+                col.Add(m_attn2.internal_blobs);
+            if (m_ln3 != null)
+                col.Add(m_ln3.internal_blobs);
+            col.Add(m_fc.internal_blobs);
+            col.Add(m_proj.internal_blobs);
+            col.Add(m_act.internal_blobs);
+            if (m_dropout != null)
+                col.Add(m_dropout.internal_blobs);
         }
 
         /// <summary>

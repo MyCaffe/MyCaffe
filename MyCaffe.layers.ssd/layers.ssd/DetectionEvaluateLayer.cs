@@ -59,17 +59,6 @@ namespace MyCaffe.layers.ssd
             base.dispose();
         }
 
-        /** @copydoc Layer::internal_blobs */
-        public override BlobCollection<T> internal_blobs
-        {
-            get
-            {
-                BlobCollection<T> col = new BlobCollection<T>();
-
-                return col;
-            }
-        }
-
         /// <summary>
         /// Returns the exact number of required bottom (input) Blobs: det res, gt
         /// </summary>

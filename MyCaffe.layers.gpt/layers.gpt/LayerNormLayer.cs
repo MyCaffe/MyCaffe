@@ -60,6 +60,8 @@ namespace MyCaffe.layers.gpt
             m_blobStdev.Name = m_param.name + " stdev";
             m_blobStdevFull = new Blob<T>(cuda, log);
             m_blobStdevFull.Name = m_param.name + " stdev_full";
+
+            setup_internal_blobs(m_colInternalBlobs);
         }
 
         /** @copydoc Layer::dispose */
@@ -82,23 +84,19 @@ namespace MyCaffe.layers.gpt
             base.dispose();
         }
 
-        /** @copydoc Layer::internal_blobs */
-        public override BlobCollection<T> internal_blobs
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            get
-            {
-                BlobCollection<T> col = new BlobCollection<T>();
+            if (col.Count > 0)
+                return;
 
-                col.Add(m_blobWork);
-                col.Add(m_blobMu);
-                col.Add(m_blobXmu);
-                col.Add(m_blobXmuSq);
-                col.Add(m_blobVar);
-                col.Add(m_blobStdev);
-                col.Add(m_blobStdevFull);
-
-                return col;
-            }
+            col.Add(m_blobWork);
+            col.Add(m_blobMu);
+            col.Add(m_blobXmu);
+            col.Add(m_blobXmuSq);
+            col.Add(m_blobVar);
+            col.Add(m_blobStdev);
+            col.Add(m_blobStdevFull);
         }
 
         /// <summary>

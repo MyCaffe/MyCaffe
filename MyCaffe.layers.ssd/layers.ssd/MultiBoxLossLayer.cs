@@ -184,26 +184,18 @@ namespace MyCaffe.layers.ssd
             base.dispose();
         }
 
-        /// <summary>
-        /// Returns the internal blobs of this layer.
-        /// </summary>
-        public override BlobCollection<T> internal_blobs
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
         {
-            get
-            {
-                {
-                    BlobCollection<T> col = new BlobCollection<T>();
+            if (col.Count > 0)
+                return;
 
-                    col.Add(m_blobConfPred);
-                    col.Add(m_blobLocGt);
-                    col.Add(m_blobLocLoss);
-                    col.Add(m_blobConfPred);
-                    col.Add(m_blobConfGt);
-                    col.Add(m_blobConfLoss);
-
-                    return col;
-                }
-            }
+            col.Add(m_blobConfPred);
+            col.Add(m_blobLocGt);
+            col.Add(m_blobLocLoss);
+            col.Add(m_blobConfPred);
+            col.Add(m_blobConfGt);
+            col.Add(m_blobConfLoss);
         }
 
         /// <summary>
