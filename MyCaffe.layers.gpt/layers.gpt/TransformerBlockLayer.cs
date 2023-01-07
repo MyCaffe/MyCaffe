@@ -57,10 +57,15 @@ namespace MyCaffe.layers.gpt
             m_type = LayerParameter.LayerType.TRANSFORMER_BLOCK;
 
             m_blobLn1 = new Blob<T>(cuda, log);
+            m_blobLn1.Name = m_param.name + " ln1";
             m_blobAttn1 = new Blob<T>(cuda, log);
+            m_blobAttn1.Name = m_param.name + " attn1";
             m_blobLn2 = new Blob<T>(cuda, log);
+            m_blobLn2.Name = m_param.name + " ln2";
             m_blobMlp = new Blob<T>(cuda, log);
+            m_blobMlp.Name = m_param.name + " mlp";
             m_blobMlpOut = new Blob<T>(cuda, log);
+            m_blobMlpOut.Name = m_param.name + " mlp_out";
 
             LayerParameter ln1 = new LayerParameter(LayerParameter.LayerType.LAYERNORM, "ln1");
             ln1.layer_norm_param.enable_cuda_impl = p.transformer_block_param.enable_layernorm_cuda_impl;
@@ -96,7 +101,9 @@ namespace MyCaffe.layers.gpt
             else if (p.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.DECODER)
             {
                 m_blobAttn2 = new Blob<T>(cuda, log);
+                m_blobAttn2.Name = m_param.name + " attn2";
                 m_blobLn3 = new Blob<T>(cuda, log);
+                m_blobLn3.Name = m_param.name + " ln3";
 
                 LayerParameter ln3 = new LayerParameter(LayerParameter.LayerType.LAYERNORM, "ln3");
                 ln3.layer_norm_param.enable_cuda_impl = p.transformer_block_param.enable_layernorm_cuda_impl;
@@ -339,18 +346,29 @@ namespace MyCaffe.layers.gpt
         {
             colTop[0].ReshapeLike(colBottom[0]);
 
-            m_blobLn1.ReshapeLike(colBottom[0]);
-            m_blobAttn1.ReshapeLike(colBottom[0]);
-            m_blobLn2.ReshapeLike(colBottom[0]);
+            if (!shareLayerBlob(m_blobLn1, colBottom[0].shape()))
+                m_blobLn1.ReshapeLike(colBottom[0]);
+            if (!shareLayerBlob(m_blobAttn1, colBottom[0].shape()))
+                m_blobAttn1.ReshapeLike(colBottom[0]);
+            if (!shareLayerBlob(m_blobLn2, colBottom[0].shape()))
+                m_blobLn2.ReshapeLike(colBottom[0]);
 
             if (m_blobAttn2 != null)
-                m_blobAttn2.ReshapeLike(colBottom[0]);
+            {
+                if (!shareLayerBlob(m_blobAttn2, colBottom[0].shape()))
+                    m_blobAttn2.ReshapeLike(colBottom[0]);
+            }
 
             if (m_blobLn3 != null)
-                m_blobLn3.ReshapeLike(colBottom[0]);
-            
-            m_blobMlp.ReshapeLike(colBottom[0]);
-            m_blobMlpOut.ReshapeLike(colBottom[0]);
+            {
+                if (!shareLayerBlob(m_blobLn2, colBottom[0].shape()))   
+                    m_blobLn3.ReshapeLike(colBottom[0]);
+            }
+    
+            if (!shareLayerBlob(m_blobMlp, colBottom[0].shape()))
+                m_blobMlp.ReshapeLike(colBottom[0]);
+            if (!shareLayerBlob(m_blobMlpOut, colBottom[0].shape()))
+                m_blobMlpOut.ReshapeLike(colBottom[0]);
 
             addInternal(colBottom[0], m_blobLn1);
             m_ln1.LayerSetUp(m_colInternalBottom, m_colInternalTop);

@@ -16,7 +16,7 @@ namespace MyCaffe.layers.gpt
     public class PositionalEncodingLayer<T> : NeuronLayer<T>
     {
         Blob<T> m_blobPosEnc;
-        int[] m_rgShape = new int[3];
+        List<int> m_rgShape = new List<int>() { 1, 1, 1 };
         double m_dfScale;
         int m_nBlockSize;
         int m_nEmbed;
@@ -75,31 +75,34 @@ namespace MyCaffe.layers.gpt
             m_rgShape[1] = m_nBlockSize;
             m_rgShape[2] = m_nEmbed;
 
-            if (!m_blobPosEnc.CompareShape(m_rgShape.ToList()))
+            if (!shareLayerBlob(m_blobPosEnc, m_rgShape))
             {
-                m_blobPosEnc.Reshape(m_rgShape);
-
-                T[] rgPosEnc1 = new T[m_nBlockSize * m_nEmbed];
-                for (int pos = 0; pos < m_nBlockSize; pos++)
+                if (!m_blobPosEnc.CompareShape(m_rgShape))
                 {
-                    for (int i = 0; i < m_nEmbed; i++)
+                    m_blobPosEnc.Reshape(m_rgShape);
+
+                    T[] rgPosEnc1 = new T[m_nBlockSize * m_nEmbed];
+                    for (int pos = 0; pos < m_nBlockSize; pos++)
                     {
-                        int nIdx = pos * m_nEmbed + i;
+                        for (int i = 0; i < m_nEmbed; i++)
+                        {
+                            int nIdx = pos * m_nEmbed + i;
 
-                        if (i % 2 == 0)
-                            rgPosEnc1[nIdx] = Utility.ConvertVal<T>(Math.Sin(pos / Math.Pow(10000.0, (2 * i / (double)m_nEmbed))));
-                        else if (i % 2 == 1)
-                            rgPosEnc1[nIdx] = Utility.ConvertVal<T>(Math.Cos(pos / Math.Pow(10000.0, (2 * i / (double)m_nEmbed))));
+                            if (i % 2 == 0)
+                                rgPosEnc1[nIdx] = Utility.ConvertVal<T>(Math.Sin(pos / Math.Pow(10000.0, (2 * i / (double)m_nEmbed))));
+                            else if (i % 2 == 1)
+                                rgPosEnc1[nIdx] = Utility.ConvertVal<T>(Math.Cos(pos / Math.Pow(10000.0, (2 * i / (double)m_nEmbed))));
+                        }
                     }
-                }
 
-                T[] rgPosEnc = new T[nBatch * m_nBlockSize * m_nEmbed];
-                for (int n = 0; n < nBatch; n++)
-                {
-                    Array.Copy(rgPosEnc1, 0, rgPosEnc, n * m_nBlockSize * m_nEmbed, m_nBlockSize * m_nEmbed);
-                }
+                    T[] rgPosEnc = new T[nBatch * m_nBlockSize * m_nEmbed];
+                    for (int n = 0; n < nBatch; n++)
+                    {
+                        Array.Copy(rgPosEnc1, 0, rgPosEnc, n * m_nBlockSize * m_nEmbed, m_nBlockSize * m_nEmbed);
+                    }
 
-                m_blobPosEnc.mutable_cpu_data = rgPosEnc;
+                    m_blobPosEnc.mutable_cpu_data = rgPosEnc;
+                }
             }
         }
 

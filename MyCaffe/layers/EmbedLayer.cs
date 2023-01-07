@@ -211,7 +211,8 @@ namespace MyCaffe.layers
             if (m_bBiasTerm)
             {
                 List<int> rgBiasShape = new List<int>() { m_nM };
-                m_blobBiasMultiplier.Reshape(rgBiasShape);
+                if (!shareLayerBlob(m_blobBiasMultiplier, rgBiasShape))
+                    m_blobBiasMultiplier.Reshape(rgBiasShape);
                 m_blobBiasMultiplier.SetData(1.0);
             }
         }

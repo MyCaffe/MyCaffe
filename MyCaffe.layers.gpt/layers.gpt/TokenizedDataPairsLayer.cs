@@ -592,8 +592,9 @@ namespace MyCaffe.layers.gpt
                 if (sw.Elapsed.TotalMilliseconds > 1000)
                 {
                     sw.Restart();
-                    m_log.Progress = (double)i / rgstr.Length;
-                    m_log.WriteLine("Loading vocabulary " + i.ToString("N0") + " of " + rgstr.Length.ToString("N0") + "...", true);
+                    double dfPct = (double)i/(double)rgstr.Length;
+                    m_log.Progress = dfPct;
+                    m_log.WriteLine("Loading vocabulary " + i.ToString("N0") + " of " + rgstr.Length.ToString("N0") + " (" + dfPct.ToString("P") + ") ...", true);
                 }
             }
 
@@ -613,8 +614,9 @@ namespace MyCaffe.layers.gpt
                 if (sw.Elapsed.TotalMilliseconds > 1000)
                 {
                     sw.Restart();
-                    m_log.Progress = (double)i / m_rgstrData.Count;
-                    m_log.WriteLine("Tokenizing data " + i.ToString("N0") + " of " + m_rgstrData.Count.ToString("N0") + "...", true);
+                    double dfPct = (double)i / (double)m_rgstrData.Count;
+                    m_log.Progress = dfPct;
+                    m_log.WriteLine("Tokenizing data " + i.ToString("N0") + " of " + m_rgstrData.Count.ToString("N0") + " (" + dfPct.ToString("P") + ") ...", true);
                 }
             }
         }

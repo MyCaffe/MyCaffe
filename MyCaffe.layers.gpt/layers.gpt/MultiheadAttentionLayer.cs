@@ -21,6 +21,7 @@ namespace MyCaffe.layers.gpt
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class MultiheadAttentionLayer<T> : Layer<T>
     {
+        List<int> m_rgShape = new List<int>() { 1, 1, 1, 1 };
         // Key, query, value projections for all heads, but in a batch.
         Layer<T> m_c_attnQ = null;
         Layer<T> m_c_attnK = null;
@@ -198,21 +199,35 @@ namespace MyCaffe.layers.gpt
             m_softmax = Layer<T>.Create(cuda, log, softmax, null);
 
             m_blobX0 = new Blob<T>(cuda, log);
+            m_blobX0.Name = m_param.name + " x0";
             m_blobX1 = new Blob<T>(cuda, log);
+            m_blobX1.Name = m_param.name + " x1";
             m_blobX2 = new Blob<T>(cuda, log);
+            m_blobX2.Name = m_param.name + " x2";
             m_blobQ = new Blob<T>(cuda, log);
+            m_blobQ.Name = m_param.name + " Q";
             m_blobK = new Blob<T>(cuda, log);
+            m_blobK.Name = m_param.name + " K";
             m_blobV = new Blob<T>(cuda, log);
+            m_blobV.Name = m_param.name + " V";
             m_blobQt = new Blob<T>(cuda, log);
+            m_blobQt.Name = m_param.name + " Qt";
             m_blobQt1 = new Blob<T>(cuda, log, false);
+            m_blobQt1.Name = m_param.name + " Qt1";
             m_blobKt = new Blob<T>(cuda, log);
+            m_blobKt.Name = m_param.name + " Kt";
             m_blobKt1 = new Blob<T>(cuda, log);
+            m_blobKt1.Name = m_param.name + " Kt1";
             m_blobVt = new Blob<T>(cuda, log);
+            m_blobVt.Name = m_param.name + " Vt";
             m_blobVt1 = new Blob<T>(cuda, log, false);
+            m_blobVt1.Name = m_param.name + " Vt1";
             m_blobAtt = new Blob<T>(cuda, log);
+            m_blobAtt.Name = m_param.name + " Att";
             m_blobWork = new Blob<T>(cuda, log);
-
+            m_blobWork.Name = m_param.name + " Work";
             m_blobY = new Blob<T>(cuda, log);
+            m_blobY.Name = m_param.name + " Y";
         }
 
         /** @copydoc Layer::dispose */
@@ -336,9 +351,12 @@ namespace MyCaffe.layers.gpt
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            m_blobX0.ReshapeLike(colBottom[0]);
-            m_blobX1.ReshapeLike(colBottom[1]);
-            m_blobX2.ReshapeLike(colBottom[2]);
+            if (!shareLayerBlob(m_blobX0, colBottom[0].shape()))
+                m_blobX0.ReshapeLike(colBottom[0]);
+            if (!shareLayerBlob(m_blobX1, colBottom[0].shape()))
+                m_blobX1.ReshapeLike(colBottom[1]);
+            if (!shareLayerBlob(m_blobX2, colBottom[0].shape()))
+                m_blobX2.ReshapeLike(colBottom[2]);
             
             m_nB = m_blobX0.num;         // batch size
             m_nT = m_blobX0.channels;    // sequence length
@@ -359,11 +377,18 @@ namespace MyCaffe.layers.gpt
             blobs.Add(m_c_attnV.blobs[0]);
             blobs.Add(m_c_attnV.blobs[1]);
 
-            m_blobQ.Reshape(m_nB, m_nT, m_nHeads, m_nSize);
+            m_rgShape[0] = m_nB;
+            m_rgShape[1] = m_nHeads;
+            m_rgShape[2] = m_nT;
+            m_rgShape[3] = m_nSize;
+
+            if (!shareLayerBlob(m_blobQ, m_rgShape))
+                m_blobQ.Reshape(m_rgShape);
             addInternal(m_blobQ, m_blobQt);
             m_transpose.Setup(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
-
-            m_blobAtt.ReshapeLike(m_blobX0);
+            
+            if (!shareLayerBlob(m_blobAtt, m_blobX0.shape()))
+                m_blobAtt.ReshapeLike(m_blobX0);
             addInternal(m_blobAtt, m_blobAtt);
             m_softmax.Setup(m_colInternalBottom, m_colInternalTop);
 
@@ -373,7 +398,13 @@ namespace MyCaffe.layers.gpt
                 m_attn_dropout.Setup(m_colInternalBottom, m_colInternalTop);
             }
 
-            m_blobY.Reshape(m_nB, m_nT, m_nC, 1);
+            m_rgShape[0] = m_nB;
+            m_rgShape[1] = m_nT;
+            m_rgShape[2] = m_nC;
+            m_rgShape[3] = 1;
+            
+            if (!shareLayerBlob(m_blobY, m_rgShape))
+                m_blobY.Reshape(m_rgShape);
 
             addInternal(m_blobY, colTop[0]);
             m_c_proj.Setup(m_colInternalBottom, m_colInternalTop);
@@ -413,28 +444,66 @@ namespace MyCaffe.layers.gpt
             m_nC = m_blobX0.height;      // embedding dim (m_nEmbed)
             m_nSize = m_nC / m_nHeads;
 
-            m_blobK.Reshape(m_nB, m_nT, m_nHeads, m_nSize);
+            m_rgShape[0] = m_nB;
+            m_rgShape[1] = m_nT;
+            m_rgShape[2] = m_nHeads;
+            m_rgShape[3] = m_nSize;
+            
+            if (!shareLayerBlob(m_blobK, m_rgShape))
+                m_blobK.Reshape(m_rgShape);
+            if (!shareLayerBlob(m_blobKt1, m_rgShape))
+                m_blobKt1.ReshapeLike(m_blobK);
+            shareLayerBlob(m_blobKt, m_rgShape);
+
             addInternal(m_blobK, m_blobKt);
             m_transpose.Reshape(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
             m_blobKt1.ReshapeLike(m_blobKt);
 
-            m_blobQ.Reshape(m_nB, m_nT, m_nHeads, m_nSize);
+            if (!shareLayerBlob(m_blobQ, m_rgShape))
+                m_blobQ.Reshape(m_rgShape);
+            if (!shareLayerBlob(m_blobQt1, m_rgShape))
+                m_blobQt1.ReshapeLike(m_blobQ);
+            shareLayerBlob(m_blobQt, m_rgShape);
+
             addInternal(m_blobQ, m_blobQt);
             m_transpose.Reshape(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
             m_blobQt1.ReshapeLike(m_blobQt);
 
-            m_blobAtt.Reshape(m_nB, m_nHeads, m_nT, m_nT);
+            if (!shareLayerBlob(m_blobV, m_rgShape))
+                m_blobV.Reshape(m_rgShape);
+            if (!shareLayerBlob(m_blobVt1, m_rgShape))
+                m_blobVt1.ReshapeLike(m_blobQ);
+            shareLayerBlob(m_blobVt, m_rgShape);
 
-            m_blobV.Reshape(m_nB, m_nT, m_nHeads, m_nSize);
             addInternal(m_blobV, m_blobVt);
             m_transpose.Reshape(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
             m_blobVt1.ReshapeLike(m_blobVt);
 
-            m_blobWork.Reshape(m_blobVt.num, m_blobVt.channels, m_blobVt.width, m_blobVt.height); // col major
+            m_rgShape[0] = m_nB;
+            m_rgShape[1] = m_nHeads;
+            m_rgShape[2] = m_nT;
+            m_rgShape[3] = m_nT;
+
+            if (!shareLayerBlob(m_blobAtt, m_rgShape))
+                m_blobAtt.Reshape(m_rgShape);
+
+            m_rgShape[0] = m_blobVt.num;
+            m_rgShape[1] = m_blobVt.channels;
+            m_rgShape[2] = m_blobVt.width;  // col major
+            m_rgShape[3] = m_blobVt.height;
+
+            if (!shareLayerBlob(m_blobWork, m_rgShape))
+                m_blobWork.Reshape(m_rgShape); // col major
             addInternal(m_blobWork, m_blobY);
             m_transposeQ.Reshape(m_colInternalBottom, m_colInternalTop);
 
-            m_blobY.Reshape(m_nB, m_nT, m_nC, 1);
+            m_rgShape[0] = m_nB;
+            m_rgShape[1] = m_nT;
+            m_rgShape[2] = m_nC;
+            m_rgShape[3] = 1;
+
+            if (!shareLayerBlob(m_blobY, m_rgShape))
+                m_blobY.Reshape(m_rgShape);
             addInternal(m_blobY, colTop[0]);
             m_c_proj.Reshape(m_colInternalBottom, m_colInternalTop);
             
