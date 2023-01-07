@@ -99,6 +99,9 @@ namespace MyCaffe.common
         /// <param name="rg">Specifies the blob collection to add.</param>
         public void Add(BlobCollection<T> rg)
         {
+            if (rg == null)
+                return;
+
             foreach (Blob<T> b in rg)
             {
                 m_rgBlobs.Add(b);
