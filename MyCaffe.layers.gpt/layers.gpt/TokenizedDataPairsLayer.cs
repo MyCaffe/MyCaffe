@@ -556,13 +556,13 @@ namespace MyCaffe.layers.gpt
         /// <summary>
         /// The constructor.
         /// </summary>
+        /// <param name="log">Specifies the output log.</param>
         /// <param name="strSrcFile">Specifies the text file name for the data source.</param>"
         /// <param name="strVocabFile">Specifies the vocabulary file (used by SENTENCEPICE type).</param>
         /// <param name="bIncludeTarget">Specifies to create the target tokens.</param>
         /// <param name="vocabType">Specifies the vocabulary type to use.</param>
         /// <param name="nRandomSeed">Optionally, specifies a random seed for testing.</param>
         /// <param name="phase">Specifies the currently running phase.</param>
-        /// <param name="log">Specifies the output log.</param>
         public TextListData(Log log, string strSrcFile, string strVocabFile, bool bIncludeTarget, TokenizedDataParameter.VOCABULARY_TYPE vocabType, int? nRandomSeed = null, Phase phase = Phase.NONE) : base(nRandomSeed)
         {
             m_log = log;
