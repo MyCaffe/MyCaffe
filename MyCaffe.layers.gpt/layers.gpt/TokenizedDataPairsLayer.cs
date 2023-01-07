@@ -557,7 +557,7 @@ namespace MyCaffe.layers.gpt
         /// The constructor.
         /// </summary>
         /// <param name="log">Specifies the output log.</param>
-        /// <param name="strSrcFile">Specifies the text file name for the data source.</param>"
+        /// <param name="strSrcFile">Specifies the text file name for the data source.</param>
         /// <param name="strVocabFile">Specifies the vocabulary file (used by SENTENCEPICE type).</param>
         /// <param name="bIncludeTarget">Specifies to create the target tokens.</param>
         /// <param name="vocabType">Specifies the vocabulary type to use.</param>
@@ -669,6 +669,7 @@ namespace MyCaffe.layers.gpt
         /// </summary>
         /// <param name="nBatchSize">Specifies the batch size.</param>
         /// <param name="nBlockSize">Specifies teh block size.</param>
+        /// <param name="trgData">Specifies the matching target data used to verify that both source and target have data at each chosen index.</param>
         /// <param name="rgnIdx">Returns an array of the indexes of the data returned.</param>
         /// <returns>A tuple containing the data and target is returned.</returns>
         public override Tuple<float[], float[]> GetData(int nBatchSize, int nBlockSize, InputData trgData, out int[] rgnIdx)
