@@ -597,7 +597,16 @@ namespace MyCaffe.test
 
             return solver.ToProto("root").ToString();
         }
-        
+
+        private void report_memory(CudaDnn<float> cuda, Log log, string strLocation)
+        {
+            double dfFree;
+            double dfUsed;
+            bool bCudaCallUsed;
+            double dfMem = cuda.GetDeviceMemory(out dfFree, out dfUsed, out bCudaCallUsed);
+            log.WriteLine(strLocation + " Memory: " + dfMem.ToString("N2") + " GB total; " + dfFree.ToString("N2") + " GB free; " + dfUsed.ToString("N2") + " GB used.");
+        }
+
         public void TestTraining()
         {
             Tuple<string, string, string, string> dataFiles = loadDataFiles1();
@@ -614,15 +623,17 @@ namespace MyCaffe.test
                 GpuIds = "1"
             };
             CancelEvent evtCancel = new CancelEvent();
-            MyCaffeControl<float> mycaffe = new MyCaffeControl<float>(s, m_log, evtCancel);
+            MyCaffeControl<float> mycaffe = new MyCaffeControl<float>(s, m_log, evtCancel, null, null, null, null, "", true);
             mycaffe.OnTrainingIteration += Mycaffe_OnTrainingIteration;
-
+            
             Blob<float> blobWork = null;
 
             try
             {
+                report_memory(mycaffe.Cuda, m_log, "Pre-Model Load");   
                 mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
-
+                report_memory(mycaffe.Cuda, m_log, "Pos-Model Load");
+                
                 Net<float> net = mycaffe.GetInternalNet(Phase.TRAIN);
                 net.Forward();
 
