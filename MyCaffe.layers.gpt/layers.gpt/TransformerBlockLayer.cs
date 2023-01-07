@@ -361,7 +361,7 @@ namespace MyCaffe.layers.gpt
 
             if (m_blobLn3 != null)
             {
-                if (!shareLayerBlob(m_blobLn2, colBottom[0].shape()))   
+                if (!shareLayerBlob(m_blobLn3, colBottom[0].shape()))   
                     m_blobLn3.ReshapeLike(colBottom[0]);
             }
     
