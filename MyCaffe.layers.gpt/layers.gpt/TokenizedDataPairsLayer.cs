@@ -123,6 +123,8 @@ namespace MyCaffe.layers.gpt
                 case TokenizedDataParameter.INPUT_TYPE.TEXT_FILE:
                     m_encoderData = new TextListData(m_log, m_param.tokenized_data_pairs_param.source, m_param.tokenized_data_pairs_param.source_vocab_file, false, m_param.tokenized_data_pairs_param.vocabulary_type, m_param.tokenized_data_pairs_param.seed, m_param.phase);
                     m_decoderData = new TextListData(m_log, m_param.tokenized_data_pairs_param.target, m_param.tokenized_data_pairs_param.target_vocab_file, true, m_param.tokenized_data_pairs_param.vocabulary_type, m_param.tokenized_data_pairs_param.seed, m_param.phase);
+                    m_log.WriteLine("Encoder Vocabulary: " + m_encoderData.VocabularySize.ToString());
+                    m_log.WriteLine("Decoder Vocabulary: " + m_decoderData.VocabularySize.ToString());
                     break;
 
                 default:
