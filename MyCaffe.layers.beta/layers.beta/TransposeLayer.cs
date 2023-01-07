@@ -38,10 +38,15 @@ namespace MyCaffe.layers.beta
             m_type = LayerParameter.LayerType.TRANSPOSE;
 
             m_blobBottomCounts = new Blob<T>(cuda, log, false);
+            m_blobBottomCounts.Name = m_param.name + " bottom counts";
             m_blobTopCounts = new Blob<T>(cuda, log, false);
+            m_blobTopCounts.Name = m_param.name + " top counts";
             m_blobForwardMap = new Blob<T>(cuda, log, false);
+            m_blobForwardMap.Name = m_param.name + " forward map";
             m_blobBackwardMap = new Blob<T>(cuda, log, false);
+            m_blobBackwardMap.Name = m_param.name + " backward map";
             m_blobBuffer = new Blob<T>(cuda, log, false);
+            m_blobBuffer.Name = m_param.name + " buffer";
         }
 
         /// <summary>
@@ -57,14 +62,24 @@ namespace MyCaffe.layers.beta
             base.dispose();
         }
 
-        private void dispose(ref Blob<T> b)
+        /// <summary>
+        /// Returns the internal blobs.
+        /// </summary>
+        public override BlobCollection<T> internal_blobs
         {
-            if (b != null)
+            get
             {
-                b.Dispose();
-                b = null;
+                BlobCollection<T> col = new BlobCollection<T>();
+
+                col.Add(m_blobBottomCounts);
+                col.Add(m_blobTopCounts);
+                col.Add(m_blobForwardMap);
+                col.Add(m_blobBackwardMap);
+                col.Add(m_blobBuffer);
+
+                return col;                
             }
-        }
+        }        
 
         private List<int> permute(List<int> rg)
         {
@@ -129,8 +144,11 @@ namespace MyCaffe.layers.beta
             List<int> rgShape = new List<int>();
 
             rgShape.Add(nNumAxes);
-            m_blobBottomCounts.Reshape(rgShape);
-            m_blobTopCounts.Reshape(rgShape);
+
+            if (!shareLayerBlob(m_blobBottomCounts, rgShape))
+                m_blobBottomCounts.Reshape(rgShape);
+            if (!shareLayerBlob(m_blobTopCounts, rgShape))
+                m_blobTopCounts.Reshape(rgShape);
 
             List<float> rgBottomCounts = new List<float>();
             List<float> rgTopCounts = new List<float>();
@@ -147,8 +165,10 @@ namespace MyCaffe.layers.beta
             m_blobBottomCounts.mutable_cpu_data = convert(rgBottomCounts.ToArray());
             m_blobTopCounts.mutable_cpu_data = convert(rgTopCounts.ToArray());
 
-            m_blobForwardMap.Reshape(rgShape);
-            m_blobBackwardMap.Reshape(rgShape);
+            if (!shareLayerBlob(m_blobForwardMap, rgShape))
+                m_blobForwardMap.Reshape(rgShape);
+            if (!shareLayerBlob(m_blobBackwardMap, rgShape))
+                m_blobBackwardMap.Reshape(rgShape);
 
             List<float> rgForwardMap = new List<float>();
             List<float> rgBackwardMap = Utility.Create<float>(nNumAxes, 0);
@@ -165,7 +185,9 @@ namespace MyCaffe.layers.beta
 
             rgShape.Clear();
             rgShape.Add(colBottom[0].count() * nNumAxes);
-            m_blobBuffer.Reshape(rgShape);
+
+            if (!shareLayerBlob(m_blobBuffer, rgShape))
+                m_blobBuffer.Reshape(rgShape);
         }
 
         /// <summary>
