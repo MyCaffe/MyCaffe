@@ -308,7 +308,7 @@ namespace MyCaffe.layers.gpt
             else
             {
                 int[] rgnIdx;
-                Tuple<float[], float[]> encData = m_encoderData.GetData((int)m_param.tokenized_data_pairs_param.batch_size, (int)m_param.tokenized_data_pairs_param.block_size, out rgnIdx);
+                Tuple<float[], float[]> encData = m_encoderData.GetData((int)m_param.tokenized_data_pairs_param.batch_size, (int)m_param.tokenized_data_pairs_param.block_size, m_decoderData, out rgnIdx);
                 Tuple<float[], float[]> decData = m_decoderData.GetDataAt((int)m_param.tokenized_data_pairs_param.batch_size, (int)m_param.tokenized_data_pairs_param.block_size, rgnIdx);
 
                 float fMin1 = encData.Item1.Min();
@@ -644,6 +644,24 @@ namespace MyCaffe.layers.gpt
         }
 
         /// <summary>
+        /// Returns true if data is available at the given index.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index to check</param>
+        /// <param name="bIncludeSrc">Specifies to include the source in the check.</param>
+        /// <param name="bIncludeTrg">Specifies to include the target in the check.</param>
+        /// <returns>If the data is available, true is returned.</returns>
+        public override bool GetDataAvailabilityAt(int nIdx, bool bIncludeSrc, bool bIncludeTrg)
+        {
+            if (bIncludeSrc && m_rgnData[nIdx].Item1.Length == 0)
+                return false;
+
+            if (bIncludeTrg && m_rgnData[nIdx].Item2.Length == 0)
+                return false;
+
+            return true;
+        }
+
+        /// <summary>
         /// Retrieve random blocks from the source data where the data and target are the same
         /// but offset by one element where the target is offset +1 from the data.
         /// </summary>
@@ -651,7 +669,7 @@ namespace MyCaffe.layers.gpt
         /// <param name="nBlockSize">Specifies teh block size.</param>
         /// <param name="rgnIdx">Returns an array of the indexes of the data returned.</param>
         /// <returns>A tuple containing the data and target is returned.</returns>
-        public override Tuple<float[], float[]> GetData(int nBatchSize, int nBlockSize, out int[] rgnIdx)
+        public override Tuple<float[], float[]> GetData(int nBatchSize, int nBlockSize, InputData trgData, out int[] rgnIdx)
         {
             int nSize = nBatchSize * nBlockSize;
 
@@ -672,14 +690,14 @@ namespace MyCaffe.layers.gpt
                 int nDataIdx = m_random.Next(m_rgnData.Count);
                 int[] rgSrc = m_rgnData[nDataIdx].Item1;
                 int nRetryCount = 0;
-               
-                while (rgSrc.Length == 0)
+
+                while (rgSrc.Length == 0 || !trgData.GetDataAvailabilityAt(nDataIdx, true, true))
                 {
                     nDataIdx = m_random.Next(m_rgnData.Count);
                     rgSrc = m_rgnData[nDataIdx].Item1;
-                    
+
                     nRetryCount++;
-                    if (rgSrc.Length == 0 && nRetryCount > 20)
+                    if (nRetryCount > 20 && (rgSrc.Length == 0 || !trgData.GetDataAvailabilityAt(nDataIdx, true, true)))
                         throw new Exception("Could not find a non-empty source data item!");
                 }
 

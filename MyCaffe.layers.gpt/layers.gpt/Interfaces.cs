@@ -115,13 +115,22 @@ namespace MyCaffe.layers.gpt
         /// </summary>
         public abstract uint VocabularySize { get; }
         /// <summary>
+        /// Returns true if data is available at the given index.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index to check</param>
+        /// <param name="bIncludeSrc">Specifies to include the source in the check.</param>
+        /// <param name="bIncludeTrg">Specifies to include the target in the check.</param>
+        /// <returns>If the data is available, true is returned.</returns>
+        public abstract bool GetDataAvailabilityAt(int nIdx, bool bIncludeSrc, bool bIncludeTrg);
+        /// <summary>
         /// Gets a set of randomly selected source/target data, where the target may be null.
         /// </summary>
         /// <param name="nBatchSize">Specifies the number of blocks in the batch.</param>
         /// <param name="nBlockSize">Specifies the size of each block.</param>
+        /// <param name="trgData">Specifies the target data used to see if data at index has data.</param>
         /// <param name="rgnIdx">Returns an array of the indexes of the data returned.</param>
         /// <returns>A tuple containing the data and target is returned.</returns>
-        public abstract Tuple<float[], float[]> GetData(int nBatchSize, int nBlockSize, out int[] rgnIdx);
+        public abstract Tuple<float[], float[]> GetData(int nBatchSize, int nBlockSize, InputData trgData, out int[] rgnIdx);
         /// <summary>
         /// Gets a set of source/target data from a specific index.
         /// </summary>

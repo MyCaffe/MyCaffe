@@ -233,7 +233,7 @@ namespace MyCaffe.layers.gpt
             else
             {
                 int[] rgnIdx;
-                Tuple<float[], float[]> data = m_data.GetData((int)m_param.tokenized_data_param.batch_size, (int)m_param.tokenized_data_param.block_size, out rgnIdx);
+                Tuple<float[], float[]> data = m_data.GetData((int)m_param.tokenized_data_param.batch_size, (int)m_param.tokenized_data_param.block_size, null, out rgnIdx);
 
                 colTop[0].mutable_cpu_data = convert(data.Item1);
                 if (colTop.Count > 2)
@@ -518,14 +518,27 @@ namespace MyCaffe.layers.gpt
         }
 
         /// <summary>
+        /// Returns true if data is available at the given index.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index to check</param>
+        /// <param name="bIncludeSrc">Specifies to include the source in the check.</param>
+        /// <param name="bIncludeTrg">Specifies to include the target in the check.</param>
+        /// <returns>If the data is available, true is returned.</returns>
+        public override bool GetDataAvailabilityAt(int nIdx, bool bIncludeSrc, bool bIncludeTrg)
+        {
+            return true;
+        }
+
+        /// <summary>
         /// Retrieve random blocks from the source data where the data and target are the same
         /// but offset by one element where the target is offset +1 from the data.
         /// </summary>
         /// <param name="nBatchSize">Specifies the batch size.</param>
         /// <param name="nBlockSize">Specifies teh block size.</param>
+        /// <param name="trgData">Specifies the target data provided to check for data availability at the selected data index.</param>
         /// <param name="rgnIdx">Returns an array of indexes of the data returned.</param>
         /// <returns>A tuple containing the data and target is returned.</returns>
-        public override Tuple<float[], float[]> GetData(int nBatchSize, int nBlockSize, out int[] rgnIdx)
+        public override Tuple<float[], float[]> GetData(int nBatchSize, int nBlockSize, InputData trgData, out int[] rgnIdx)
         {
             int nSize = nBatchSize * nBlockSize;
 
