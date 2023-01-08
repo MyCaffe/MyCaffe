@@ -614,7 +614,7 @@ namespace MyCaffe.test
             SolverParameter solver = new SolverParameter();
             solver.base_lr = 1e-4;
             solver.type = SolverParameter.SolverType.ADAM;
-            solver.clip_gradients = 1;
+            solver.test_initialization = false;
 
             return solver.ToProto("root").ToString();
         }
@@ -682,6 +682,7 @@ namespace MyCaffe.test
                     Trace.WriteLine("---------------");
                 }
 
+                mycaffe.Train(1);
                 mycaffe.Test(1);
             }
             finally
