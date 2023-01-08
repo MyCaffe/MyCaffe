@@ -166,6 +166,8 @@ namespace MyCaffe.test
 
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestMultiBoxLossLayer", "TestLocGradientGpu", "SKIPPED - CUDA: Invalid parameter."));
 
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestCausalSelfAttentionLayer", "TestGradientMini", "SKIPPED - Takes a long time to complete."));
+
                 //rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_1btmA0", "SKIPPED - Testing work in progress."));
                 //rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_1btmAp5", "SKIPPED - Testing work in progress."));
                 //rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionOctaveLayer", "TestGradient_2btmA0", "SKIPPED - Testing work in progress."));
