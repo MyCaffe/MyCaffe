@@ -151,20 +151,20 @@ namespace MyCaffe.layers.gpt
             }
             else
             {
-                if (!shareLayerBlob(m_blobWork, colBottom[0].shape()))
-                    m_blobWork.ReshapeLike(colBottom[0]);
-                if (!shareLayerBlob(m_blobMu, colBottom[0].shape()))
-                    m_blobMu.ReshapeLike(colBottom[0]);
-                if (!shareLayerBlob(m_blobXmu, colBottom[0].shape()))
-                    m_blobXmu.ReshapeLike(colBottom[0]);
-                if (!shareLayerBlob(m_blobXmuSq, colBottom[0].shape()))
-                    m_blobXmuSq.ReshapeLike(colBottom[0]);
-                if (!shareLayerBlob(m_blobVar, colBottom[0].shape()))
-                    m_blobVar.ReshapeLike(colBottom[0]);
-                if (!shareLayerBlob(m_blobStdev, colBottom[0].shape()))
-                    m_blobStdev.ReshapeLike(colBottom[0]);
-                if (!shareLayerBlob(m_blobStdevFull, colBottom[0].shape()))
-                    m_blobStdevFull.ReshapeLike(colBottom[0]);
+                shareLayerBlob(m_blobWork, colBottom[0].shape());
+                m_blobWork.ReshapeLike(colBottom[0]);
+                shareLayerBlob(m_blobMu, colBottom[0].shape());
+                m_blobMu.ReshapeLike(colBottom[0]);
+                shareLayerBlob(m_blobXmu, colBottom[0].shape());
+                m_blobXmu.ReshapeLike(colBottom[0]);
+                shareLayerBlob(m_blobXmuSq, colBottom[0].shape());
+                m_blobXmuSq.ReshapeLike(colBottom[0]);
+                shareLayerBlob(m_blobVar, colBottom[0].shape());
+                m_blobVar.ReshapeLike(colBottom[0]);
+                shareLayerBlob(m_blobStdev, colBottom[0].shape());
+                m_blobStdev.ReshapeLike(colBottom[0]);
+                shareLayerBlob(m_blobStdevFull, colBottom[0].shape());
+                m_blobStdevFull.ReshapeLike(colBottom[0]);
             }
             
             colTop[0].ReshapeLike(colBottom[0]);

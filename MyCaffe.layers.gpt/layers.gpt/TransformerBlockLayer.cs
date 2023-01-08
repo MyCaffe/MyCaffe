@@ -357,29 +357,29 @@ namespace MyCaffe.layers.gpt
         {
             colTop[0].ReshapeLike(colBottom[0]);
 
-            if (!shareLayerBlob(m_blobLn1, colBottom[0].shape()))
-                m_blobLn1.ReshapeLike(colBottom[0]);
-            if (!shareLayerBlob(m_blobAttn1, colBottom[0].shape()))
-                m_blobAttn1.ReshapeLike(colBottom[0]);
-            if (!shareLayerBlob(m_blobLn2, colBottom[0].shape()))
-                m_blobLn2.ReshapeLike(colBottom[0]);
+            shareLayerBlob(m_blobLn1, colBottom[0].shape());
+            m_blobLn1.ReshapeLike(colBottom[0]);
+            shareLayerBlob(m_blobAttn1, colBottom[0].shape());
+            m_blobAttn1.ReshapeLike(colBottom[0]);
+            shareLayerBlob(m_blobLn2, colBottom[0].shape());
+            m_blobLn2.ReshapeLike(colBottom[0]);
 
             if (m_blobAttn2 != null)
             {
-                if (!shareLayerBlob(m_blobAttn2, colBottom[0].shape()))
-                    m_blobAttn2.ReshapeLike(colBottom[0]);
+                shareLayerBlob(m_blobAttn2, colBottom[0].shape());
+                m_blobAttn2.ReshapeLike(colBottom[0]);
             }
 
             if (m_blobLn3 != null)
             {
-                if (!shareLayerBlob(m_blobLn3, colBottom[0].shape()))   
-                    m_blobLn3.ReshapeLike(colBottom[0]);
+                shareLayerBlob(m_blobLn3, colBottom[0].shape());
+                m_blobLn3.ReshapeLike(colBottom[0]);
             }
-    
-            if (!shareLayerBlob(m_blobMlp, colBottom[0].shape()))
-                m_blobMlp.ReshapeLike(colBottom[0]);
-            if (!shareLayerBlob(m_blobMlpOut, colBottom[0].shape()))
-                m_blobMlpOut.ReshapeLike(colBottom[0]);
+
+            shareLayerBlob(m_blobMlp, colBottom[0].shape());
+            m_blobMlp.ReshapeLike(colBottom[0]);
+            shareLayerBlob(m_blobMlpOut, colBottom[0].shape());
+            m_blobMlpOut.ReshapeLike(colBottom[0]);
 
             addInternal(colBottom[0], m_blobLn1);
             m_ln1.LayerSetUp(m_colInternalBottom, m_colInternalTop);

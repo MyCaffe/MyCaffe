@@ -361,12 +361,12 @@ namespace MyCaffe.layers.gpt
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            if (!shareLayerBlob(m_blobX0, colBottom[0].shape()))
-                m_blobX0.ReshapeLike(colBottom[0]);
-            if (!shareLayerBlob(m_blobX1, colBottom[0].shape()))
-                m_blobX1.ReshapeLike(colBottom[1]);
-            if (!shareLayerBlob(m_blobX2, colBottom[0].shape()))
-                m_blobX2.ReshapeLike(colBottom[2]);
+            shareLayerBlob(m_blobX0, colBottom[0].shape());
+            m_blobX0.ReshapeLike(colBottom[0]);
+            shareLayerBlob(m_blobX1, colBottom[0].shape());
+            m_blobX1.ReshapeLike(colBottom[1]);
+            shareLayerBlob(m_blobX2, colBottom[0].shape());
+            m_blobX2.ReshapeLike(colBottom[2]);
             
             m_nB = m_blobX0.num;         // batch size
             m_nT = m_blobX0.channels;    // sequence length
@@ -392,13 +392,13 @@ namespace MyCaffe.layers.gpt
             m_rgShape[2] = m_nT;
             m_rgShape[3] = m_nSize;
 
-            if (!shareLayerBlob(m_blobQ, m_rgShape))
-                m_blobQ.Reshape(m_rgShape);
+            shareLayerBlob(m_blobQ, m_rgShape);
+            m_blobQ.Reshape(m_rgShape);
             addInternal(m_blobQ, m_blobQt);
             m_transpose.Setup(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
-            
-            if (!shareLayerBlob(m_blobAtt, m_blobX0.shape()))
-                m_blobAtt.ReshapeLike(m_blobX0);
+
+            shareLayerBlob(m_blobAtt, m_blobX0.shape());
+            m_blobAtt.ReshapeLike(m_blobX0);
             addInternal(m_blobAtt, m_blobAtt);
             m_softmax.Setup(m_colInternalBottom, m_colInternalTop);
 
@@ -412,9 +412,9 @@ namespace MyCaffe.layers.gpt
             m_rgShape[1] = m_nT;
             m_rgShape[2] = m_nC;
             m_rgShape[3] = 1;
-            
-            if (!shareLayerBlob(m_blobY, m_rgShape))
-                m_blobY.Reshape(m_rgShape);
+
+            shareLayerBlob(m_blobY, m_rgShape);
+            m_blobY.Reshape(m_rgShape);
 
             addInternal(m_blobY, colTop[0]);
             m_c_proj.Setup(m_colInternalBottom, m_colInternalTop);
@@ -458,31 +458,31 @@ namespace MyCaffe.layers.gpt
             m_rgShape[1] = m_nT;
             m_rgShape[2] = m_nHeads;
             m_rgShape[3] = m_nSize;
-            
-            if (!shareLayerBlob(m_blobK, m_rgShape))
-                m_blobK.Reshape(m_rgShape);
-            if (!shareLayerBlob(m_blobKt1, m_rgShape))
-                m_blobKt1.ReshapeLike(m_blobK);
+
+            shareLayerBlob(m_blobK, m_rgShape);
+            m_blobK.Reshape(m_rgShape);
+            shareLayerBlob(m_blobKt1, m_rgShape);
+            m_blobKt1.ReshapeLike(m_blobK);
             shareLayerBlob(m_blobKt, m_rgShape);
 
             addInternal(m_blobK, m_blobKt);
             m_transpose.Reshape(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
             m_blobKt1.ReshapeLike(m_blobKt);
 
-            if (!shareLayerBlob(m_blobQ, m_rgShape))
-                m_blobQ.Reshape(m_rgShape);
-            if (!shareLayerBlob(m_blobQt1, m_rgShape))
-                m_blobQt1.ReshapeLike(m_blobQ);
+            shareLayerBlob(m_blobQ, m_rgShape);
+            m_blobQ.Reshape(m_rgShape);
+            shareLayerBlob(m_blobQt1, m_rgShape);
+            m_blobQt1.ReshapeLike(m_blobQ);
             shareLayerBlob(m_blobQt, m_rgShape);
 
             addInternal(m_blobQ, m_blobQt);
             m_transpose.Reshape(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
             m_blobQt1.ReshapeLike(m_blobQt);
 
-            if (!shareLayerBlob(m_blobV, m_rgShape))
-                m_blobV.Reshape(m_rgShape);
-            if (!shareLayerBlob(m_blobVt1, m_rgShape))
-                m_blobVt1.ReshapeLike(m_blobQ);
+            shareLayerBlob(m_blobV, m_rgShape);
+            m_blobV.Reshape(m_rgShape);
+            shareLayerBlob(m_blobVt1, m_rgShape);
+            m_blobVt1.ReshapeLike(m_blobQ);
             shareLayerBlob(m_blobVt, m_rgShape);
 
             addInternal(m_blobV, m_blobVt);
@@ -494,16 +494,16 @@ namespace MyCaffe.layers.gpt
             m_rgShape[2] = m_nT;
             m_rgShape[3] = m_nT;
 
-            if (!shareLayerBlob(m_blobAtt, m_rgShape))
-                m_blobAtt.Reshape(m_rgShape);
+            shareLayerBlob(m_blobAtt, m_rgShape);
+            m_blobAtt.Reshape(m_rgShape);
 
             m_rgShape[0] = m_blobVt.num;
             m_rgShape[1] = m_blobVt.channels;
             m_rgShape[2] = m_blobVt.width;  // col major
             m_rgShape[3] = m_blobVt.height;
 
-            if (!shareLayerBlob(m_blobWork, m_rgShape))
-                m_blobWork.Reshape(m_rgShape); // col major
+            shareLayerBlob(m_blobWork, m_rgShape);
+            m_blobWork.Reshape(m_rgShape); // col major
             addInternal(m_blobWork, m_blobY);
             m_transposeQ.Reshape(m_colInternalBottom, m_colInternalTop);
 
@@ -512,8 +512,8 @@ namespace MyCaffe.layers.gpt
             m_rgShape[2] = m_nC;
             m_rgShape[3] = 1;
 
-            if (!shareLayerBlob(m_blobY, m_rgShape))
-                m_blobY.Reshape(m_rgShape);
+            shareLayerBlob(m_blobY, m_rgShape);
+            m_blobY.Reshape(m_rgShape);
             addInternal(m_blobY, colTop[0]);
             m_c_proj.Reshape(m_colInternalBottom, m_colInternalTop);
             
