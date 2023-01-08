@@ -681,6 +681,8 @@ namespace MyCaffe.test
                         Trace.WriteLine("Nan or Inf detected!");
                     Trace.WriteLine("---------------");
                 }
+
+                mycaffe.Test(1);
             }
             finally
             {
