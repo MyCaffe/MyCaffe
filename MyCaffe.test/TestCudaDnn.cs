@@ -2790,7 +2790,6 @@ namespace MyCaffe.test
             long hDataA = 0;
             long hDataAll = 0;
 
-
             try
             {
                 foreach (ITest t in test.Tests)
