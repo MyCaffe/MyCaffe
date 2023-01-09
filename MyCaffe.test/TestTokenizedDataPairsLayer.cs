@@ -16,6 +16,7 @@ using MyCaffe.layers.gpt;
 using MyCaffe.param.gpt;
 using System.IO.Compression;
 using System.IO;
+using System.Drawing;
 
 /// <summary>
 /// Testing the tokenized data layer.
@@ -220,10 +221,15 @@ namespace MyCaffe.test
                 TopVec.Clear();
 
                 TopVec.Add(m_blobEncInput);
+                m_blobEncInput.Name = "enc_in";
                 TopVec.Add(m_blobDecInput);
+                m_blobDecInput.Name = "dec_in";
                 TopVec.Add(m_blobDecOutput);
+                m_blobDecOutput.Name = "dec_out";
                 TopVec.Add(m_blobEncMask);
+                m_blobEncMask.Name = "enc_mask";
                 TopVec.Add(m_blobDecMask);
+                m_blobDecMask.Name = "dec_mask";
 
                 layer.Setup(BottomVec, TopVec);
 
@@ -296,6 +302,31 @@ namespace MyCaffe.test
 
                 m_log.WriteLine("Source Vocabulary Size = " + ((TokenizedDataPairsLayer<T>)layer).GetVocabuarySize(TokenizedDataPairsLayer<T>.VOCABULARY.ENCODER).ToString());
                 m_log.WriteLine("Target Vocabulary Size = " + ((TokenizedDataPairsLayer<T>)layer).GetVocabuarySize(TokenizedDataPairsLayer<T>.VOCABULARY.DECODER).ToString());
+
+                string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\mycaffe\\test_data\\results\\tokenized_data_test\\";
+                if (!Directory.Exists(strPath))
+                    Directory.CreateDirectory(strPath);
+
+                for (int i = 0; i < 10; i++)
+                {
+                    Dictionary<float, Color> rgSpecialColors = new Dictionary<float, Color>();
+                    rgSpecialColors.Add(1, Color.Fuchsia);
+                    rgSpecialColors.Add(2, Color.Blue);
+
+                    layer.Forward(BottomVec, TopVec);
+                    
+                    for (int j = 0; j < TopVec.Count; j++)
+                    {
+                        TopVec[j].SaveToImage(strPath + i.ToString() + "_top_" + name.ToString() + TopVec[j].Name + ".png", true, false, rgSpecialColors);
+
+                        if (j >= 2)
+                            rgSpecialColors = null;
+                    }
+
+                    foreach (Blob<T> blob in layer.internal_blobs)
+                    {
+                        blob.SaveToImage(strPath + i.ToString() + "_internal_" + name.ToString() + blob.Name + ".png");
+                    }                }
             }
             finally
             {
