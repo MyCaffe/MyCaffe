@@ -266,10 +266,12 @@ namespace MyCaffe.layers.gpt
         /// Tokenize an input string using the internal vocabulary.
         /// </summary>
         /// <param name="str">Specifies the string to tokenize.</param>
+        /// <param name="bAddBos">Add the begin of sequence token.</param>
+        /// <param name="bAddEos">Add the end of sequence token.</param>
         /// <returns>A list of tokens corresponding to the input is returned.</returns>
-        public List<int> Tokenize(string str)
+        public List<int> Tokenize(string str, bool bAddBos, bool bAddEos)
         {
-            return m_data.Tokenize(str);
+            return m_data.Tokenize(str, bAddBos, bAddEos);
         }
 
         /// <summary>
@@ -306,7 +308,7 @@ namespace MyCaffe.layers.gpt
 
             blobIdx.Reshape(rgShape);
 
-            List<int> rgTokens = m_data.Tokenize(strInput);
+            List<int> rgTokens = m_data.Tokenize(strInput, false, false);
             float[] rgInput = new float[rgTokens.Count];
 
             for (int i = 0; i < strInput.Length; i++)
@@ -604,10 +606,12 @@ namespace MyCaffe.layers.gpt
         /// Tokenize an input string using the internal vocabulary.
         /// </summary>
         /// <param name="str">Specifies the string to tokenize.</param>
+        /// <param name="bAddBos">Add the begin of sequence token.</param>
+        /// <param name="bAddEos">Add the end of sequence token.</param>
         /// <returns>A list of tokens corresponding to the input is returned.</returns>
-        public override List<int> Tokenize(string str)
+        public override List<int> Tokenize(string str, bool bAddBos, bool bAddEos)
         {
-            return m_vocab.Tokenize(str);
+            return m_vocab.Tokenize(str, bAddBos, bAddEos).ToList();
         }
         
         /// <summary>

@@ -212,7 +212,7 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Should return true when pre processing methods are overriden.
+        /// Should return true when PreProcessing methods are overriden.
         /// </summary>
         public virtual bool SupportsPreProcessing
         {
@@ -220,7 +220,7 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Should return true when pre postprocessing methods are overriden.
+        /// Should return true when pre PostProcessing methods are overriden.
         /// </summary>
         public virtual bool SupportsPostProcessing
         {
@@ -228,9 +228,17 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Should return true when pre postprocessinglogits methods are overriden.
+        /// Should return true when pre PostProcessingLogits methods are overriden.
         /// </summary>
         public virtual bool SupportsPostProcessingLogits
+        {
+            get { return false; }
+        }
+
+        /// <summary>
+        /// Should return true when PostProcessingFullOutput is supported.
+        /// </summary>
+        public virtual bool SupportsPostProcessingFullOutput
         {
             get { return false; }
         }
@@ -289,7 +297,15 @@ namespace MyCaffe.layers
         {
             return null;
         }
-
+        /// <summary>
+        /// The PostProcessFullOutput allows derivative data layers to post-process the results, usually be detokenizing the data in the blobSoftmax.
+        /// </summary>
+        /// <param name="blobSoftmax">Specifies the data to be post processed.</param>
+        /// <returns>A string of the post processed data is returned.</returns>
+        public virtual string PostProcessFullOutput(Blob<T> blobSoftmax)
+        {
+            return null;
+        }
 
         /// <summary>
         /// Convert the index to the word.

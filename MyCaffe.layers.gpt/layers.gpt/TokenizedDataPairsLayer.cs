@@ -13,6 +13,7 @@ using System.Net;
 using System.Globalization;
 using System.Diagnostics;
 using System.Xml.Linq;
+using System.Drawing;
 
 namespace MyCaffe.layers.gpt
 {
@@ -88,19 +89,11 @@ namespace MyCaffe.layers.gpt
         }
 
         /// <summary>
-        /// No bottom blobs for the data layer, except when running.
+        /// Specifies the exact number of bottom blobs (TRAIN|TEST: 0, RUN:2 encin, decin)
         /// </summary>
-        public override int MaxBottomBlobs
+        public override int ExactNumBottomBlobs
         {
-            get { return (m_phase == Phase.RUN) ? 1 : 0; }
-        }
-
-        /// <summary>
-        /// Returns the minimum number of bottom blobs.
-        /// </summary>
-        public override int MinBottomBlobs
-        {
-            get { return 0; }
+            get { return (m_phase == Phase.RUN) ? 2 : 0; }
         }
 
         /// <summary>
@@ -139,94 +132,63 @@ namespace MyCaffe.layers.gpt
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            int nBatchSize = (int)m_param.tokenized_data_pairs_param.batch_size;
+            int nBlockSize = (int)m_param.tokenized_data_pairs_param.block_size;
+            int nTokenSize = (int)m_encoderData.TokenSize;
+
             if (m_phase == Phase.RUN)
-            {
-                int nBatchSize = 1;
-                int nBlockSize = (int)m_param.tokenized_data_pairs_param.block_size;
-                int nTokenSize = (int)m_encoderData.TokenSize;
-
-                Blob<T> blobEncIn = colTop[0];
-                Blob<T> blobDecIn = colTop[1];
-                Blob<T> blobDecOut = colTop[2];
-                Blob<T> blobEncMask = colTop[3];
-                Blob<T> blobDecMask = colTop[4];
-
-                int nCount = 3;
-                if (nTokenSize == 1)
-                    nCount = 2;
-                int[] rgShape = new int[nCount];
-                
-                blobEncIn.SetParameter("vocab_size", m_encoderData.VocabularySize);
-                blobDecIn.SetParameter("vocab_size", m_decoderData.VocabularySize);
-
-                // reshape for single characters (each character is an index into the vocab vector)
-                rgShape[0] = nBatchSize;
-                rgShape[1] = nBlockSize;
-                if (rgShape.Length > 2)
-                    rgShape[2] = nTokenSize;
-                
-                blobEncIn.Reshape(rgShape);
-                blobDecIn.Reshape(rgShape);
-                blobDecOut.Reshape(rgShape);
-                blobEncMask.Reshape(nBatchSize, nBlockSize, 1, 1);
-                blobDecMask.Reshape(nBatchSize, 1, 1, 1);
-            }
+                nBatchSize = 1;
             else
-            {
                 m_log.CHECK_EQ(colBottom.Count, 0, "Data Layer takes no input blobs.");
-                m_log.CHECK_EQ(colTop.Count, 5, "The TokenizedDataPairsLayer requires 5 top blobs.");
+             
+            m_log.CHECK_EQ(colTop.Count, 5, "The TokenizedDataPairsLayer requires 5 top blobs.");
 
-                int nBatchSize = (int)m_param.tokenized_data_pairs_param.batch_size;
-                int nBlockSize = (int)m_param.tokenized_data_pairs_param.block_size;
-                int nTokenSize = (int)m_encoderData.TokenSize;
+            Blob<T> blobEncIn = colTop[0];
+            Blob<T> blobDecIn = colTop[1];
+            Blob<T> blobDecOut = colTop[2];
+            Blob<T> blobEncMask = colTop[3];
+            Blob<T> blobDecMask = colTop[4];
 
-                Blob<T> blobEncIn = colTop[0];
-                Blob<T> blobDecIn = colTop[1];
-                Blob<T> blobDecOut = colTop[2];
-                Blob<T> blobEncMask = colTop[3];
-                Blob<T> blobDecMask = colTop[4];
+            int nCount = 3;
+            if (nTokenSize == 1)
+                nCount = 2;
+            int[] rgShape = new int[nCount];
 
-                int nCount = 3;
-                if (nTokenSize == 1)
-                    nCount = 2;
-                int[] rgShape = new int[nCount];
+            blobEncIn.SetParameter("vocab_size", m_encoderData.VocabularySize);
+            blobDecIn.SetParameter("vocab_size", m_decoderData.VocabularySize);
+            // reshape for single characters (each character is an index into the vocab vector)
+            rgShape[0] = nBatchSize;
+            rgShape[1] = nBlockSize;
+            if (rgShape.Length > 2)
+                rgShape[2] = nTokenSize;
 
-                blobEncIn.SetParameter("vocab_size", m_encoderData.VocabularySize);
-                blobDecIn.SetParameter("vocab_size", m_decoderData.VocabularySize);
-                // reshape for single characters (each character is an index into the vocab vector)
-                rgShape[0] = nBatchSize;
-                rgShape[1] = nBlockSize;
-                if (rgShape.Length > 2)
-                    rgShape[2] = nTokenSize;
+            blobEncIn.Reshape(rgShape);
+            blobDecIn.Reshape(rgShape);
+            blobDecOut.Reshape(rgShape);
+            blobEncMask.Reshape(nBatchSize, nBlockSize, 1, 1);
+            blobDecMask.Reshape(nBatchSize, nBlockSize, nBlockSize, 1);
 
-                blobEncIn.Reshape(rgShape);
-                blobDecIn.Reshape(rgShape);
-                blobDecOut.Reshape(rgShape);
-                blobEncMask.Reshape(nBatchSize, nBlockSize, 1, 1);
-                blobDecMask.Reshape(nBatchSize, nBlockSize, nBlockSize, 1);
+            if (m_blobTriangle == null)
+                m_blobTriangle = new Blob<T>(m_cuda, m_log, false);
 
-                if (m_blobTriangle == null)
-                    m_blobTriangle = new Blob<T>(m_cuda, m_log, false);
+            if (!m_blobTriangle.CompareShape(blobDecMask.shape()))
+            {
+                m_blobTriangle.ReshapeLike(blobDecMask);
 
-                if (!m_blobTriangle.CompareShape(blobDecMask.shape()))
+                T[] rgMask = new T[m_blobTriangle.count()];
+                for (int n = 0; n < m_blobTriangle.num; n++)
                 {
-                    m_blobTriangle.ReshapeLike(blobDecMask);
-
-                    T[] rgMask = new T[m_blobTriangle.count()];
-                    for (int n = 0; n < m_blobTriangle.num; n++)
+                    for (int c = 0; c < m_blobTriangle.channels; c++)
                     {
-                        for (int c = 0; c < m_blobTriangle.channels; c++)
+                        for (int h = 0; h < m_blobTriangle.height; h++)
                         {
-                            for (int h = 0; h < m_blobTriangle.height; h++)
-                            {
-                                int nIdx = n * nBlockSize * nBlockSize + c * nBlockSize + h;
-                                rgMask[nIdx] = (h > c) ? m_tZero : m_tOne;
-                            }
+                            int nIdx = n * nBlockSize * nBlockSize + c * nBlockSize + h;
+                            rgMask[nIdx] = (h > c) ? m_tZero : m_tOne;
                         }
                     }
-
-                    m_blobTriangle.mutable_cpu_data = rgMask;
                 }
+
+                m_blobTriangle.mutable_cpu_data = rgMask;
             }
         }
 
@@ -290,20 +252,9 @@ namespace MyCaffe.layers.gpt
         {
             if (m_phase == Phase.RUN)
             {
-                m_log.CHECK_EQ(colBottom.Count, 1, "There must be one input blob when running.");
-
-                colTop[0].CopyFrom(colBottom[0]);
-
-                float[] rgDecIn = new float[1] { m_decoderData.BOS };
-                colTop[1].mutable_cpu_data = convert(rgDecIn);
-
+                colTop[0].CopyFromAndPad(colBottom[0]);
+                colTop[1].CopyFromAndPad(colBottom[1]);
                 // colTop[2] NO Dec target data when running.
-
-                float[] rgEncMask = new float[1] { 1 };
-                colTop[3].mutable_cpu_data = convert(rgEncMask);
-
-                float[] rgDecMask = new float[1] { 1 };
-                colTop[4].mutable_cpu_data = convert(rgDecMask);
             }
             else
             {
@@ -320,10 +271,45 @@ namespace MyCaffe.layers.gpt
                 colTop[0].mutable_cpu_data = convert(encData.Item1);
                 colTop[1].mutable_cpu_data = convert(decData.Item1);
                 colTop[2].mutable_cpu_data = convert(decData.Item2);
-                m_cuda.sign(colTop[0].count(), colTop[0].gpu_data, colTop[3].mutable_gpu_data);
-                m_cuda.sign(colTop[1].count(), colTop[1].gpu_data, colTop[4].mutable_gpu_data);
-                m_cuda.mul(colTop[4].count(), colTop[4].gpu_data, m_blobTriangle.gpu_data, colTop[4].mutable_gpu_data);
             }
+
+            // Fill encoder mask based on encoder input.
+            m_cuda.sign(colTop[0].count(), colTop[0].gpu_data, colTop[3].mutable_gpu_data);
+            // Fill decoder mask based on decoder input.
+            m_cuda.channel_duplicate(colTop[4].count(), colTop[1].num, colTop[1].channels, colTop[4].count(2), colTop[1].gpu_data, colTop[4].mutable_gpu_data);
+            m_cuda.sign(colTop[4].count(), colTop[4].gpu_data, colTop[4].mutable_gpu_data);
+            // Overlay triangular matrix on decoder mask.
+            m_cuda.mul(colTop[4].count(), colTop[4].gpu_data, m_blobTriangle.gpu_data, colTop[4].mutable_gpu_data);
+        }
+
+        /// <summary>
+        /// Used to debug the mask and masked data.
+        /// </summary>
+        /// <param name="b">Specifies the blob to debug.</param>
+        /// <param name="strFile">Specifies the bitmap file where the image is saved.</param>
+        private void drawImage(Blob<T> b, string strFile)
+        {
+            float[] rgData = convertF(b.mutable_cpu_data);
+            DirectBitmap bmp = new DirectBitmap(b.num * b.channels, b.height);
+
+            for (int n = 0; n < b.num; n++)
+            {
+                for (int c = 0; c < b.channels; c++)
+                {
+                    for (int h = 0; h < b.height; h++)
+                    {
+                        int nIdx = n * b.channels * b.height + c * b.height + h;
+                        float fVal = rgData[nIdx];
+
+                        if (fVal == 0)
+                            bmp.SetPixel(n * b.channels + h, c, Color.Black);
+                        else
+                            bmp.SetPixel(n * b.channels + h, c, Color.White);
+                    }
+                }
+            }
+
+            bmp.Bitmap.Save(strFile);
         }
 
         /// @brief Not implemented - data Layers do not perform backward..
@@ -356,9 +342,9 @@ namespace MyCaffe.layers.gpt
         public List<int> Tokenize(string str, VOCABULARY vocab)
         {
             if (vocab == VOCABULARY.ENCODER)
-                return m_encoderData.Tokenize(str);
+                return m_encoderData.Tokenize(str, false, false);
             else
-                return m_decoderData.Tokenize(str);
+                return m_decoderData.Tokenize(str, false, false);
         }
 
         /// <summary>
@@ -406,10 +392,10 @@ namespace MyCaffe.layers.gpt
 
             blobIdx.Reshape(rgShape);
 
-            List<int> rgTokens = m_encoderData.Tokenize(strInput);
+            List<int> rgTokens = m_encoderData.Tokenize(strInput, true, true);
             float[] rgInput = new float[rgTokens.Count];
 
-            for (int i = 0; i < strInput.Length; i++)
+            for (int i = 0; i < rgTokens.Count; i++)
             {
                 rgInput[i] = rgTokens[i];
             }
@@ -522,6 +508,27 @@ namespace MyCaffe.layers.gpt
             str += m_decoderData.Detokenize(nCharIdx, true, true);
 
             return new List<Tuple<string, int, double>>() { new Tuple<string, int, double>(str, nCharIdx, 0) };
+        }
+
+        /// <summary>
+        /// The PostProcessFullOutput allows derivative data layers to post-process the results, usually be detokenizing the data in the blobSoftmax.
+        /// </summary>
+        /// <param name="blobSoftmax">Specifies the data to be post processed.</param>
+        /// <returns>A string of the post processed data is returned.</returns>
+        public override string PostProcessFullOutput(Blob<T> blobSoftmax)
+        {
+            float[] rgData = convertF(blobSoftmax.mutable_cpu_data);
+            string strOut = "";
+
+            foreach (float fTok in rgData)
+            {
+                if (fTok == 0)
+                    break;
+
+                strOut += m_decoderData.Detokenize((int)fTok, true, true);
+            }
+
+            return strOut;
         }
     }
 
@@ -791,10 +798,12 @@ namespace MyCaffe.layers.gpt
         /// Tokenize an input string using the internal vocabulary.
         /// </summary>
         /// <param name="str">Specifies the string to tokenize.</param>
+        /// <param name="bAddBos">Add the begin of sequence token.</param>
+        /// <param name="bAddEos">Add the end of sequence token.</param>
         /// <returns>A list of tokens corresponding to the input is returned.</returns>
-        public override List<int> Tokenize(string str)
+        public override List<int> Tokenize(string str, bool bAddBos, bool bAddEos)
         {
-            return m_vocab.Tokenize(str);
+            return m_vocab.Tokenize(str, bAddBos, bAddEos).ToList();
         }
 
         /// <summary>

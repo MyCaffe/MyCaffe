@@ -51,8 +51,8 @@ namespace MyCaffe.layers.gpt
         /// Tokenize a string of data.
         /// </summary>
         /// <param name="str">Specifies the string to tokenize.</param>
-        /// <param name="bAddBos">Specifies to add the BOS at the start of the tokenized data.</param>
-        /// <param name="bAddEos">Specifies to add the EOS to the end of the tokenized data.</param>
+        /// <param name="bAddBos">Add the begin of sequence token.</param>
+        /// <param name="bAddEos">Add the end of sequence token.</param>
         /// <returns>The array of tokens is returned.</returns>
         int[] Tokenize(string str, bool bAddBos, bool bAddEos);
         /// <summary>
@@ -143,8 +143,10 @@ namespace MyCaffe.layers.gpt
         /// Tokenize an input string using the internal vocabulary.
         /// </summary>
         /// <param name="str">Specifies the string to tokenize.</param>
+        /// <param name="bAddBos">Add the begin of sequence token.</param>
+        /// <param name="bAddEos">Add the end of sequence token.</param>
         /// <returns>A list of tokens corresponding to the input is returned.</returns>
-        public abstract List<int> Tokenize(string str);
+        public abstract List<int> Tokenize(string str, bool bAddBos, bool bAddEos);
         /// <summary>
         /// Detokenize a single token.
         /// </summary>
