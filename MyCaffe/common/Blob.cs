@@ -914,6 +914,36 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Copy the source data to this Blob, and if this blob is larger than the source,
+        /// pad this blob with 'dfPad' values to the right.
+        /// </summary>
+        /// <param name="src">Specifies the source Blob to copy.</param>
+        /// <param name="dfPad">Specifies the pad value (default = 0).</param>
+        /// <param name="bCopyDiff">Specifies to copy the diff values (default = false).</param>
+        public void CopyFromAndPad(Blob<T> src, double dfPad = 0, bool bCopyDiff = false)
+        {
+            if (count() == src.count())
+            {
+                CopyFrom(src, bCopyDiff);
+                return;
+            }
+
+            if (count() < src.count())
+                m_log.FAIL("The destination blob must be larger than the source blob.");
+
+            if (bCopyDiff)
+            {
+                SetDiff(dfPad);
+                m_cuda.copy(src.count(), src.gpu_diff, mutable_gpu_diff);
+            }
+            else
+            {
+                SetData(dfPad);
+                m_cuda.copy(src.count(), src.gpu_data, mutable_gpu_data);
+            }
+        }
+
+        /// <summary>
         /// Copy from a source Blob and transpose the height and width of the copy.
         /// </summary>
         /// <param name="blobSrc">The Blob to copy from.</param>
