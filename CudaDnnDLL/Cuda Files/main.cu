@@ -640,7 +640,10 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 
 		case CUDA_FN_CHANNEL_COPYALL:
 			return m_device.cuda_channel_copyall(lCount, pfInput, plCount, ppfOutput);
-
+			
+		case CUDA_FN_CHANNEL_DUPLICATE:
+			return m_device.cuda_channel_duplicate(lCount, pfInput, plCount, ppfOutput);
+			
 		case CUDA_FN_IM2COL:
 			return m_device.cuda_im2col(lCount, pfInput, plCount, ppfOutput);
 
@@ -1658,6 +1661,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_CHANNEL_COPYALL:
 		return "CUDA_FN_CHANNEL_COPYALL";
+
+	case CUDA_FN_CHANNEL_DUPLICATE:
+		return "CUDA_FN_CHANNEL_DUPLICATE";
 
 	case CUDA_FN_IM2COL:
 		return "CUDA_FN_IM2COL";

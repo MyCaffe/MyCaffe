@@ -5952,6 +5952,43 @@ template long Math<double>::channel_copyall(int n, int nOutNum, int nChannels, i
 template long Math<float>::channel_copyall(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 
 
+template <typename T>
+__global__ void channel_duplicate_kernel(const int nYCount, const int num, const int channels, const int dup_count, const T* x, T* y)
+{
+	const int nNSize = num * channels;
+
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nYCount && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const int nSrcIdx = ((i / nNSize) * channels) + (i % channels);
+		y[i] = x[nSrcIdx];
+	}
+}
+
+template <typename T>
+long Math<T>::channel_duplicate(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	T* x = (T*)pX->Data();
+	T* y = (T*)pY->Data();
+
+	channel_duplicate_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nOutNum, nChannels, nInNum, x, y);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::channel_duplicate(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
+template long Math<float>::channel_duplicate(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
+
+
 template<typename T>
 __global__ void im2col_kernel(int n, T* data_im, int height, int width, int kernel_h, int kernel_w, int pad_h, int pad_w, int stride_h, int stride_w, int dilation_h, int dilation_w, int height_col, int width_col, T* data_col)
 {

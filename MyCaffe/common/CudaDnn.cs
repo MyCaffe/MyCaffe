@@ -758,6 +758,7 @@ namespace MyCaffe.common
         void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bSumAcrossChannels = true);
         void channel_copy(int nCount, int nOuterNum, int nChannels, int nBlocks, int nInnerNum, int nOffset, long hX, long hY, DIR dir);
         void channel_copyall(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
+        void channel_duplicate(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
 
         void gemm(bool bTransA, bool bTransB, int m, int n, int k, double fAlpha, long hA, long hB, double fBeta, long hC);
         void gemm(bool bTransA, bool bTransB, int m, int n, int k, float fAlpha, long hA, long hB, float fBeta, long hC);
@@ -1135,6 +1136,7 @@ namespace MyCaffe.common
             CUDA_CHANNEL_COPY = 300,
             CUDA_CHANNEL_FILLFROM = 301,
             CUDA_CHANNEL_COPYALL = 302,
+            CUDA_CHANNEL_DUP = 303,
 
             CUDA_RNG_SETSEED = 349,
             CUDA_RNG_UNIFORM = 350,
@@ -7769,6 +7771,23 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_DOT, m_param.AsDouble(nCount, nOuterNum, nChannels, nInnerNum, hX, hA, hY));
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_DOT, m_param.AsFloat(nCount, nOuterNum, nChannels, nInnerNum, hX, hA, hY));
+        }
+
+        /// <summary>
+        /// Duplicates each channel 'nInnerNum' of times in the destination.
+        /// </summary>
+        /// <param name="nCount">Specifies the total number of elements in Y which = count(X)*nInnerDim in length.</param>
+        /// <param name="nOuterNum">Specifies the number of items.</param>
+        /// <param name="nChannels">Specifies the number of channels.</param>
+        /// <param name="nInnerNum">Specifies the dimension of each inner dim within the channel.</param>
+        /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
+        /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
+        public void channel_duplicate(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_DUP, m_param.AsDouble(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_DUP, m_param.AsFloat(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
         }
 
         /// <summary>

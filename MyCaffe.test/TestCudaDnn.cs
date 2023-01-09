@@ -2782,6 +2782,77 @@ namespace MyCaffe.test
             }
         }
 
+        [TestMethod]
+        public void TestMath_channel_duplicate()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+            Log log = new Log("Test Channel Duplicate");
+            long hDataA = 0;
+            long hDataAll = 0;
+
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    try
+                    {
+                        int nNum = 2;
+                        int nChannels = 3;
+                        int nDupCount = 2;
+                        int nCount = nNum * nChannels * nDupCount;
+                        //                                      |-c0-----------------|-c1----------------|
+                        List<double> rgdfA = new List<double>() { 00.01, 00.02, 00.03, 01.01, 01.02, 01.03 };
+                        List<double> rgdfExpectedAll = new List<double>() { 
+                        // |-c0----------------|
+                            00.01, 00.02, 00.03, 
+                            00.01, 00.02, 00.03, 
+                        // |-c1----------------|    
+                            01.01, 01.02, 01.03, 
+                            01.01, 01.02, 01.03, 
+                        };
+
+                        hDataA = t.Cuda.AllocMemory(rgdfA);
+                        hDataAll = t.Cuda.AllocMemory(rgdfExpectedAll.Count());
+
+                        // Test copyall from A -> Y
+                        t.Cuda.channel_duplicate(nCount, nNum, nChannels, nDupCount, hDataA, hDataAll);
+
+                        double[] rgDataAll = t.Cuda.GetMemoryDouble(hDataAll);
+
+                        log.CHECK_EQ(rgDataAll.Length, rgdfExpectedAll.Count(), "The data length should be equal.");
+
+                        for (int i = 0; i < rgDataAll.Length; i++)
+                        {
+                            double dfActual = rgDataAll[i];
+                            double dfExpected = rgdfExpectedAll[i];
+                            double dfDiff = Math.Abs(dfActual - dfExpected);
+
+                            log.CHECK_LT(dfDiff, 1e-7, "The values are incorrect at index " + i.ToString() + "!");
+                        }
+                    }
+                    finally
+                    {
+                        if (hDataA != 0)
+                        {
+                            t.Cuda.FreeMemory(hDataA);
+                            hDataA = 0;
+                        }
+
+                        if (hDataAll != 0)
+                        {
+                            t.Cuda.FreeMemory(hDataAll);
+                            hDataAll = 0;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
         private bool verifyData(Log log, List<double> rgdf, double[] rgData)
         {
             log.CHECK_EQ(rgdf.Count, rgData.Length, "The length of Data does not match the count of rgdf!");

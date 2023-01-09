@@ -613,7 +613,8 @@ namespace MyCaffe.test
         {
             SolverParameter solver = new SolverParameter();
             solver.base_lr = 1e-4;
-            solver.type = SolverParameter.SolverType.ADAM;
+            solver.type = SolverParameter.SolverType.ADAMW;
+            solver.lr_policy = "fixed";
             solver.test_initialization = false;
 
             return solver.ToProto("root").ToString();
