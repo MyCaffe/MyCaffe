@@ -115,6 +115,25 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestInference()
+        {
+            DecoderBlockLayerTest test = new DecoderBlockLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IDecoderBlockLayerTest t in test.Tests)
+                {
+                    if (t.DataType == DataType.FLOAT)
+                        t.TestInference();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface IDecoderBlockLayerTest : ITest
@@ -122,6 +141,7 @@ namespace MyCaffe.test
         void TestForward(uint nHeads, bool bEnableCudaImpl);
         void TestBackward(uint nHeads, bool bEnableCudaImpl);
         void TestTraining();
+        void TestInference();
     }
 
     class DecoderBlockLayerTest : TestBase
@@ -646,7 +666,8 @@ namespace MyCaffe.test
             try
             {
                 mycaffe.Cuda.ReportMemory(m_log, "Pre-Model Load");
-                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
+                SimpleDatum sdMean = new SimpleDatum(1, 1, 1);  // Dummy mean.
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, true, sdMean);
                 mycaffe.Cuda.ReportMemory(m_log, "Post-Model Load");
                 
                 Net<float> net = mycaffe.GetInternalNet(Phase.TRAIN);
@@ -698,6 +719,92 @@ namespace MyCaffe.test
         private void Mycaffe_OnTrainingIteration(object sender, TrainingIterationArgs<float> e)
         {
             Trace.WriteLine(e.Iteration.ToString() + " - " + e.Loss.ToString());
+        }
+
+        public void TestInference()
+        {
+            Tuple<string, string, string, string, string, string> dataFiles = loadDataFiles1();
+            string strSrcFileT = dataFiles.Item1;
+            string strTrgFileT = dataFiles.Item2;
+            string strSrcFileV = dataFiles.Item3;
+            string strTrgFileV = dataFiles.Item4;
+            string strSrcVocab = dataFiles.Item5;
+            string strTrgVocab = dataFiles.Item6;
+
+            string strModel = File.ReadAllText("C:\\temp\\_models\\models\\enc_dec\\train_test.prototxt");
+            byte[] rgWeights = File.ReadAllBytes("C:\\temp\\_models\\models\\enc_dec\\model.caffemodel");
+
+            SettingsCaffe s = new SettingsCaffe
+            {
+                GpuIds = "1"
+            };
+            CancelEvent evtCancel = new CancelEvent();
+            MyCaffeControl<float> mycaffe = new MyCaffeControl<float>(s, m_log, evtCancel, null, null, null, null, "", true);
+            Blob<float> blobDec = null;
+
+            try
+            {
+                mycaffe.Cuda.ReportMemory(m_log, "Pre-Model Load");
+                mycaffe.LoadToRun(strModel, rgWeights, new BlobShape(new List<int>() { 1, 1, 1 }));
+                mycaffe.Cuda.ReportMemory(m_log, "Post-Model Load");
+                blobDec = mycaffe.CreateBlob("dec_in");
+
+                Net<float> net = mycaffe.GetInternalNet(Phase.RUN);
+
+                string strInput = "When is the first session";
+                PropertySet input = new PropertySet("InputData=" + strInput);
+                BlobCollection<float> colBottom = net.layers[0].PreProcessInput(input);
+
+                int nSeqLen = (int)net.layers[0].layer_param.tokenized_data_pairs_param.block_size;
+                blobDec.Reshape(1, nSeqLen, 1, 1);
+                blobDec.SetData(0);
+                blobDec.SetData(1, 0); // BOS
+
+                // Run up to the first decoder.
+                net.input_blobs.Add(colBottom);
+                net.input_blobs.Add(blobDec);
+
+                BlobCollection<float> res = net.Forward();
+                List<int> rgPredTokens = new List<int>();
+
+                for (int i = 1; i < nSeqLen; i++)
+                {
+                    int nPredTok = argmax(res[0].mutable_cpu_data);
+
+                    // Done, when EOS found.
+                    if (nPredTok == 2)
+                        break;
+
+                    blobDec.SetData(nPredTok, i);
+
+                    res = net.Forward();
+                }
+
+                string strResult = net.layers[0].PostProcessFullOutput(blobDec);
+                Trace.WriteLine("Input: " + strInput);
+                Trace.WriteLine("Output: " + strResult);
+            }
+            finally
+            {
+                mycaffe.Dispose();
+            }
+        }
+
+        private int argmax(float[] rg)
+        {
+            float fMax = -float.MaxValue;
+            int nIdx = -1;
+
+            for (int i = 0; i < rg.Length; i++)
+            {
+                if (rg[i] > fMax)
+                {
+                    nIdx = i;
+                    fMax = rg[i];
+                }
+            }
+
+            return nIdx;
         }
     }
 }
