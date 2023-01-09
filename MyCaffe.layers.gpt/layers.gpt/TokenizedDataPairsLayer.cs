@@ -13,7 +13,6 @@ using System.Net;
 using System.Globalization;
 using System.Diagnostics;
 using System.Xml.Linq;
-using System.Drawing;
 
 namespace MyCaffe.layers.gpt
 {
@@ -74,6 +73,9 @@ namespace MyCaffe.layers.gpt
         {
             m_evtCancel = evtCancel;
             m_type = LayerParameter.LayerType.TOKENIZED_DATA_PAIRS;
+
+            m_blobTriangle = new Blob<T>(m_cuda, m_log, false);
+            m_blobTriangle.Name = "triangle";
         }
 
         /// <summary>
@@ -86,6 +88,15 @@ namespace MyCaffe.layers.gpt
             dispose(ref m_blobTriangle);
 
             base.dispose();
+        }
+
+        /// <summary>
+        /// Add all internal blobs.
+        /// </summary>
+        /// <param name="col">Specifies the internal blob array.</param>
+        protected override void setup_internal_blobs(BlobCollection<T> col)
+        {
+            col.Add(m_blobTriangle);
         }
 
         /// <summary>
@@ -167,9 +178,6 @@ namespace MyCaffe.layers.gpt
             blobDecOut.Reshape(rgShape);
             blobEncMask.Reshape(nBatchSize, nBlockSize, 1, 1);
             blobDecMask.Reshape(nBatchSize, nBlockSize, nBlockSize, 1);
-
-            if (m_blobTriangle == null)
-                m_blobTriangle = new Blob<T>(m_cuda, m_log, false);
 
             if (!m_blobTriangle.CompareShape(blobDecMask.shape()))
             {
@@ -280,36 +288,6 @@ namespace MyCaffe.layers.gpt
             m_cuda.sign(colTop[4].count(), colTop[4].gpu_data, colTop[4].mutable_gpu_data);
             // Overlay triangular matrix on decoder mask.
             m_cuda.mul(colTop[4].count(), colTop[4].gpu_data, m_blobTriangle.gpu_data, colTop[4].mutable_gpu_data);
-        }
-
-        /// <summary>
-        /// Used to debug the mask and masked data.
-        /// </summary>
-        /// <param name="b">Specifies the blob to debug.</param>
-        /// <param name="strFile">Specifies the bitmap file where the image is saved.</param>
-        private void drawImage(Blob<T> b, string strFile)
-        {
-            float[] rgData = convertF(b.mutable_cpu_data);
-            DirectBitmap bmp = new DirectBitmap(b.num * b.channels, b.height);
-
-            for (int n = 0; n < b.num; n++)
-            {
-                for (int c = 0; c < b.channels; c++)
-                {
-                    for (int h = 0; h < b.height; h++)
-                    {
-                        int nIdx = n * b.channels * b.height + c * b.height + h;
-                        float fVal = rgData[nIdx];
-
-                        if (fVal == 0)
-                            bmp.SetPixel(n * b.channels + h, c, Color.Black);
-                        else
-                            bmp.SetPixel(n * b.channels + h, c, Color.White);
-                    }
-                }
-            }
-
-            bmp.Bitmap.Save(strFile);
         }
 
         /// @brief Not implemented - data Layers do not perform backward..
