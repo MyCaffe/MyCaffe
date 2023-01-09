@@ -5955,7 +5955,7 @@ template long Math<float>::channel_copyall(int n, int nOutNum, int nChannels, in
 template <typename T>
 __global__ void channel_duplicate_kernel(const int nYCount, const int num, const int channels, const int dup_count, const T* x, T* y)
 {
-	const int nNSize = num * channels;
+	int nNSize = channels * dup_count;
 
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nYCount && i >= 0; i += blockDim.x * gridDim.x)
 	{
