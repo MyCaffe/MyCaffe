@@ -831,7 +831,7 @@ namespace MyCaffe.test
 
                 string strTestInput = "O God, O God!";
                 
-                List<int> rgTokens = ((TokenizedDataLayer<T>)m_dataLayer).Tokenize(strTestInput);
+                List<int> rgTokens = ((TokenizedDataLayer<T>)m_dataLayer).Tokenize(strTestInput, false, false);
 
                 m_rgTestInput = new float[rgTokens.Count];
                 for (int i = 0; i < rgTokens.Count; i++)
@@ -1165,7 +1165,7 @@ namespace MyCaffe.test
                 string strInput = System.IO.File.ReadAllText(strSrc);
                 int nIdx = m_random.Next(strInput.Length - (2 * nBlockSize));
 
-                List<int> rgTokens = m_dataLayer.Tokenize(strInput.Substring(nIdx, nBlockSize));
+                List<int> rgTokens = m_dataLayer.Tokenize(strInput.Substring(nIdx, nBlockSize), false, false);
 
                 m_rgTestInput = new float[nBlockSize];
                 for (int i = 0; i < nBlockSize; i++)
