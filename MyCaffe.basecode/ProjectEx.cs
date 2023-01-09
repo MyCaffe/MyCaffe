@@ -1018,12 +1018,13 @@ namespace MyCaffe.basecode
         /// <param name="nHeight">Specifies the height of each item in the batch.</param>
         /// <param name="nWidth">Specifies the width of each item in the batch.</param>
         /// <param name="protoTransform">Returns a RawProto describing the Data Transformation parameters to use.</param>
+        /// <param name="bSkipTransformParam">Specifies to skip the transform parameter.</param>
         /// <param name="stage">Optionally, specifies the stage to create the run network on.</param>
         /// <param name="bSkipLossLayer">Optionally, specifies to skip the loss layer and not output a converted layer to replace it (default = false).</param>
         /// <returns>The RawProto of the model description is returned.</returns>
-        public RawProto CreateModelForRunning(string strName, int nNum, int nChannels, int nHeight, int nWidth, out RawProto protoTransform, Stage stage = Stage.NONE, bool bSkipLossLayer = false)
+        public RawProto CreateModelForRunning(string strName, int nNum, int nChannels, int nHeight, int nWidth, out RawProto protoTransform, out bool bSkipTransformParam, Stage stage = Stage.NONE, bool bSkipLossLayer = false)
         {
-            return CreateModelForRunning(m_project.ModelDescription, strName, nNum, nChannels, nHeight, nWidth, out protoTransform, stage, bSkipLossLayer);
+            return CreateModelForRunning(m_project.ModelDescription, strName, nNum, nChannels, nHeight, nWidth, out protoTransform, out bSkipTransformParam, stage, bSkipLossLayer);
         }
 
         /// <summary>
@@ -1285,10 +1286,11 @@ namespace MyCaffe.basecode
         /// <param name="nHeight">Specifies the height of each item in the batch.</param>
         /// <param name="nWidth">Specifies the width of each item in the batch.</param>
         /// <param name="protoTransform">Returns a RawProto describing the Data Transformation parameters to use.</param>
+        /// <param name="bSkipTransformParam">Specifies to skip the transform parameter.</param>
         /// <param name="stage">Optionally, specifies the stage to create the run network on.</param>
         /// <param name="bSkipLossLayer">Optionally, specifies to skip the loss layer and not output a converted layer to replace it (default = false).</param>
         /// <returns>The RawProto of the model description is returned.</returns>
-        public static RawProto CreateModelForRunning(string strModelDescription, string strName, int nNum, int nChannels, int nHeight, int nWidth, out RawProto protoTransform, Stage stage = Stage.NONE, bool bSkipLossLayer = false)
+        public static RawProto CreateModelForRunning(string strModelDescription, string strName, int nNum, int nChannels, int nHeight, int nWidth, out RawProto protoTransform, out bool bSkipTransformParam, Stage stage = Stage.NONE, bool bSkipLossLayer = false)
         {
             PhaseStageCollection psInclude;
             PhaseStageCollection psExclude;
@@ -1300,6 +1302,7 @@ namespace MyCaffe.basecode
             bool bNameSet = false;
 
             protoTransform = null;
+            bSkipTransformParam = false;
 
             nNameIdx++;
             if (nNameIdx < 0)
@@ -1322,12 +1325,14 @@ namespace MyCaffe.basecode
                     else if (!bNameSet && (
                         strType == "data" ||
                         strType == "annotated_data" ||
-                        strType == "tokenizeddata"))
+                        strType == "tokenizeddata" ||
+                        strType == "tokenizeddatapairs"))
                     {
                         RawProtoCollection tops = layer.FindChildren("top");
                         if (tops != null && tops.Count > 0)
                         {
-                            if (strType == "tokenizeddata")
+                            if (strType == "tokenizeddata" ||
+                                strType == "tokenizeddatapairs")
                                 strName = "data";
                             else
                                 strName = tops[0].Value;
@@ -1342,6 +1347,7 @@ namespace MyCaffe.basecode
 
             bool bFoundInput = false;
             bool bFoundMemoryData = false;
+            bool bSkipBottomRename = false;
 
             foreach (RawProto layer in rgLayers)
             {
@@ -1419,15 +1425,17 @@ namespace MyCaffe.basecode
                             }
                         }
                     }
-                    else if (strType == "tokenizeddata")
+                    else if (strType == "tokenizeddata" || strType == "tokenizeddatapairs")
                     {
                         if (rgInputs.Count > 0)
                         {
                             RawProtoCollection colTop = layer.FindChildren("top");
                             if (colTop.Count > 0)
                             {
-                                rgInputs[0] = new Tuple<string, int, int, int, int>("data", rgInputs[0].Item2, rgInputs[0].Item3, rgInputs[0].Item4, rgInputs[0].Item5);
-                                layer.Children.Add<string>("bottom", new List<string>() { "data" });
+                                rgInputs[0] = new Tuple<string, int, int, int, int>("encin", rgInputs[0].Item2, rgInputs[0].Item3, rgInputs[0].Item4, rgInputs[0].Item5);
+                                rgInputs.Add(new Tuple<string, int, int, int, int>("decin", rgInputs[0].Item2, rgInputs[0].Item3, rgInputs[0].Item4, rgInputs[0].Item5));
+                                layer.Children.Add<string>("bottom", new List<string>() { "encin", "decin" });
+                                bSkipBottomRename = true;
                                 break;
                             }
                         }
@@ -1526,10 +1534,29 @@ namespace MyCaffe.basecode
 
                     bool bInclude = includeLayer(layer, stage, out psInclude, out psExclude);
 
-                    if (strType == "data" || strType == "annotateddata" || strType == "batchdata" || strType == "tokenizeddata")
+                    if (strType == "data" || strType == "annotateddata" || strType == "batchdata" || strType == "tokenizeddata" || strType == "tokenizeddatapairs")
                     {
                         if (psInclude.Find(Phase.TEST, stage) != null)
                             protoTransform = layer.FindChild("transform_param");
+
+                        if (strType == "tokenizeddata" || strType == "tokenizeddatapairs")
+                        {
+                            bSkipTransformParam = true;
+
+                            if (psInclude != null && psInclude.Count > 0 && psInclude[0].Phase == Phase.TRAIN)
+                            {
+                                bInclude = true;
+                                bKeepLayer = true;
+
+                                RawProto rpParam = layer.FindChild("tokenized_data_pairs_param");
+                                if (rpParam != null)
+                                {
+                                    RawProto rpBatch = rpParam.FindChild("batch_size");
+                                    if (rpBatch != null)
+                                        rpBatch.Value = "1";
+                                }
+                            }
+                        }
                     }
                     else if (strType == "decode")
                     {
@@ -1610,9 +1637,19 @@ namespace MyCaffe.basecode
                     {
                         rgRemove.Add(layer);
                     }
-                    else if (strType == "tokenizeddata")
+                    else if (strType == "tokenizeddata" || strType == "tokenizeddatapairs")
                     {
-                        //rgRemove.Add(layer);
+                        if (psInclude.Count > 0 && psInclude[0].Phase == Phase.TRAIN)
+                        {
+                            RawProtoCollection rpInc = layer.FindChildren("include");
+                            if (rpInc != null)
+                            {
+                                foreach (RawProto rpInc1 in rpInc)
+                                {
+                                    layer.Children.Remove(rpInc1);
+                                }
+                            }
+                        }
                     }
 
                     if (!bKeepLayer && psInclude.FindAllWith(Phase.TEST, Phase.TRAIN).Count > 0 && psInclude.FindAllWith(Phase.RUN).Count == 0)
@@ -1699,7 +1736,7 @@ namespace MyCaffe.basecode
             if (layer1 != null)
             {
                 RawProto btm = layer1.FindChild("bottom");
-                if (btm != null)
+                if (btm != null && !bSkipBottomRename)
                     btm.Value = strName;
             }
 
@@ -2113,6 +2150,11 @@ namespace MyCaffe.basecode
         public int Count
         {
             get { return m_rgItems.Count; }
+        }
+
+        public PhaseStage this[int nIdx]
+        {
+            get { return m_rgItems[nIdx]; }
         }
 
         public bool Add(Phase p, Stage s)
