@@ -3271,7 +3271,15 @@ namespace MyCaffe.param
             LayerParameter p = new LayerParameter(layerType, strName);
 
             p.bottom = rp.FindArray<string>("bottom");
+            for (int i = 0; i < p.bottom.Count; i++)
+            {
+                p.bottom[i] = p.bottom[i].Trim('\"', ' ');
+            }
             p.top = rp.FindArray<string>("top");
+            for (int i = 0; i < p.top.Count; i++)
+            {
+                p.top[i] = p.top[i].Trim('\"', ' ');
+            }
 
             if ((strVal = rp.FindValue("phase")) != null)
                 p.phase = parsePhase(strVal);
