@@ -883,18 +883,24 @@ namespace MyCaffe
             int nImageHeight = (shape.dim.Count > 2) ? shape.dim[2] : 1;
             int nImageWidth = (shape.dim.Count > 3) ? shape.dim[3] : 1;
 
+            transform_param = null;
+
             RawProto protoTransform = null;
-            RawProto protoModel = ProjectEx.CreateModelForRunning(strModel, "data", nNum, nImageChannels, nImageHeight, nImageWidth, out protoTransform, stage, bSkipLossLayer);
+            bool bSkipTransformParam = false;
+            RawProto protoModel = ProjectEx.CreateModelForRunning(strModel, "data", nNum, nImageChannels, nImageHeight, nImageWidth, out protoTransform, out bSkipTransformParam, stage, bSkipLossLayer);
 
-            if (protoTransform != null)
-                transform_param = TransformationParameter.FromProto(protoTransform);
-            else
-                transform_param = new param.TransformationParameter();
-
-            if (transform_param.resize_param != null && transform_param.resize_param.Active)
+            if (!bSkipTransformParam)
             {
-                shape.dim[2] = (int)transform_param.resize_param.height;
-                shape.dim[3] = (int)transform_param.resize_param.width;
+                if (protoTransform != null)
+                    transform_param = TransformationParameter.FromProto(protoTransform);
+                else
+                    transform_param = new param.TransformationParameter();
+
+                if (transform_param.resize_param != null && transform_param.resize_param.Active)
+                {
+                    shape.dim[2] = (int)transform_param.resize_param.height;
+                    shape.dim[3] = (int)transform_param.resize_param.width;
+                }
             }
 
             NetParameter np = NetParameter.FromProto(protoModel);
