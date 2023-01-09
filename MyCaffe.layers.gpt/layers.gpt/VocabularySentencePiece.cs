@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MyCaffe.basecode;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -30,6 +31,9 @@ namespace MyCaffe.layers.gpt
         /// <param name="strVocabFile">Specifies the vocabulary file created using the Python, SentencePieceProcess.</param>
         public VocabularySentencePiece(Random random, bool bAddBos, bool bAddEos, string strVocabFile)
         {
+            string strProgData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+            strVocabFile = Utility.ReplaceMacro(strVocabFile, "$ProgramData$", strProgData);
+            
             string[] rgstrLines = File.ReadAllLines(strVocabFile);
 
             foreach (string strLine in rgstrLines)
