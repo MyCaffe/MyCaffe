@@ -2813,6 +2813,135 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Save the Blob to an image where values less than 0 are colored red, and values greater than 0 are colored green.  Values = 0 are colored black.
+        /// </summary>
+        /// <param name="strFile">Specifies the file where the image is saved.</param>
+        /// <param name="bNonZeroExistOnly">Optionally, specifies to color whether data exists as nonZero only (default = true).</param>
+        /// <param name="bSaveDiff">Optionally, specifies to save the diff instead of the data (default = false).</param>
+        /// <param name="rgSpecialValues">Optionally, specifies special values with associated colors.</param>
+        public void SaveToImage(string strFile, bool bNonZeroExistOnly = true, bool bSaveDiff = false, Dictionary<float, Color> rgSpecialValues = null)
+        {
+            Blob<T> blobWork = new Blob<T>(m_cuda, m_log);
+            float[] rgData;
+            double dfMin = 1;
+            double dfMax = 1;
+            int nWid = width;
+            int nHt = height;
+            int nNum = num * channels;
+
+            try
+            {
+                blobWork.ReshapeLike(this);
+
+                if (bSaveDiff)
+                {
+                    rgData = Utility.ConvertVecF<T>(mutable_cpu_diff);
+
+                    if (!bNonZeroExistOnly)
+                    {
+                        Tuple<double, double, double, double> minmax = minmax_diff(blobWork);
+                        dfMin = minmax.Item1;
+                        dfMax = minmax.Item2;
+                    }
+                }
+                else
+                {
+                    rgData = Utility.ConvertVecF<T>(mutable_cpu_data);
+
+                    if (!bNonZeroExistOnly)
+                    {
+                        Tuple<double, double, double, double> minmax = minmax_data(blobWork);
+                        dfMin = minmax.Item1;
+                        dfMax = minmax.Item2;
+                    }
+                }
+
+                if (nWid == 1 && nHt == 1)
+                {
+                    nNum = 1;
+                    nHt = num;
+                    nWid = channels;
+                }
+                else if (nWid == 1)
+                {
+                    nNum = num;
+                    nWid = height;
+                    nHt = channels;
+                }
+
+                Bitmap bmp = new Bitmap(nNum * nWid, nHt);
+                using (Graphics g = Graphics.FromImage(bmp))
+                {
+                    g.FillRectangle(Brushes.Black, 0, 0, bmp.Width, bmp.Height);
+                }
+
+                LockBitmap bmp1 = new LockBitmap(bmp);
+                bmp1.LockBits();
+
+                for (int n = 0; n < nNum; n++)
+                {
+                    for (int h = 0; h < nHt; h++)
+                    {
+                        for (int w = 0; w < nWid; w++)
+                        {
+                            int nIdx = n * nHt * nWid + h * nWid + w;
+                            float fVal = rgData[nIdx];
+                            Color clr = Color.Empty;
+
+                            if (rgSpecialValues != null && rgSpecialValues.ContainsKey(fVal))
+                            {
+                                clr = rgSpecialValues[fVal];
+                            }
+                            else if (fVal < 0)
+                            {
+                                if (bNonZeroExistOnly)
+                                {
+                                    clr = Color.White;
+                                }
+                                else
+                                {
+                                    int nClr = (int)(255 * (rgData[nIdx] - dfMin) / (0 - dfMin));
+                                    clr = Color.FromArgb(nClr, 0, 0);
+                                }
+                            }
+                            else if (fVal > 0)
+                            {
+                                if (bNonZeroExistOnly)
+                                {
+                                    clr = Color.White;
+                                }
+                                else
+                                {
+                                    int nClr = (int)(255 * (rgData[nIdx] - 0) / (dfMax - 0));
+                                    clr = Color.FromArgb(0, nClr, 0);
+                                }
+                            }
+
+                            if (!clr.IsEmpty)
+                                bmp1.SetPixel(n * nWid + w, h, clr);
+                        }
+                    }
+                }
+
+                bmp1.UnlockBits();
+                bmp.Save(strFile);
+            }
+            finally
+            {
+                blobWork.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Used to debug the mask and masked data.
+        /// </summary>
+        /// <param name="b">Specifies the blob to debug.</param>
+        /// <param name="strFile">Specifies the bitmap file where the image is saved.</param>
+        private void drawImage(Blob<T> b, string strFile)
+        {
+        }
+
+        /// <summary>
         /// Save a blob with data to a Numpy .npy file.
         /// </summary>
         /// <param name="strFile">Specifies the .npy file name where the data is saved.</param>
