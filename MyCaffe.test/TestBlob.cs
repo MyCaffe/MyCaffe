@@ -142,6 +142,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestChannelDuplicate()
+        {
+            BlobSimpleTest test = new BlobSimpleTest();
+
+            try
+            {
+                foreach (IBlobSimpleTest t in test.Tests)
+                {
+                    t.TestChannelDuplicate();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestMath_SumOfSquares()
         {
             BlobSimpleTest test = new BlobSimpleTest();
@@ -376,6 +394,7 @@ namespace MyCaffe.test
         void TestSetPixelAtOffset();
         void TestLoadFromNumpy();
         void TestSaveToNumpy();
+        void TestChannelDuplicate();
     }
 
     class BlobSimpleTest<T> : Test<T>, IBlobSimpleTest 
@@ -1284,6 +1303,63 @@ namespace MyCaffe.test
             {
                 blob.Dispose();
                 blob2.Dispose();
+            }
+        }
+
+        public void TestChannelDuplicate()
+        {
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\numpy\\";
+            string strFile = strPath + "channel_duplicate_test.npy";
+            Blob<T> blob = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobDup = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobExp = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobWork = new Blob<T>(m_cuda, m_log);
+
+            try
+            {
+                blob.LoadFromNumpy(strFile);
+                float[] rgData = Utility.ConvertVecF<T>(blob.mutable_cpu_data);
+                int nDupCount = blob.channels;
+                float[] rgExpected = new float[rgData.Length * nDupCount];
+
+                for (int n = 0; n < blob.num; n++)
+                {
+                    for (int c = 0; c < blob.channels; c++)
+                    {
+                        int nSrcIdx = blob.offset(n, c);
+                        float fVal = rgData[nSrcIdx];
+
+                        for (int d = 0; d < nDupCount; d++)
+                        {
+                            int nDstIdx = n * nDupCount * blob.channels + d * blob.channels + c;
+                            rgExpected[nDstIdx] = fVal;
+                        }
+                    }
+                }
+
+                string strDbgPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\mycaffe\\test_data\\results\\tokenized_data_test\\";
+                if (!Directory.Exists(strDbgPath))
+                    Directory.CreateDirectory(strDbgPath);
+
+                blob.SaveToImage(strDbgPath + "__original.png", false);
+                
+                blobExp.Reshape(blob.num, blob.channels, nDupCount, 1);
+                blobExp.mutable_cpu_data = Utility.ConvertVec<T>(rgExpected);
+                blobExp.SaveToImage(strDbgPath + "__exp_dup.png", false);
+
+                blobDup.ReshapeLike(blobExp);
+                int nCount1 = blobDup.count(2);
+                m_cuda.channel_duplicate(blobDup.count(), blob.num, blob.channels, nCount1, blob.gpu_data, blobDup.mutable_gpu_data);
+
+                blobDup.SaveToImage(strDbgPath + "__actual_dup.png", false);
+                m_log.CHECK(blobDup.Compare(blobExp, blobWork), "The blob is not as expected!");
+            }
+            finally
+            {
+                blob.Dispose();
+                blobDup.Dispose();
+                blobExp.Dispose();
+                blobWork.Dispose();
             }
         }
     }
