@@ -137,8 +137,7 @@ namespace MyCaffe.layers
             base.Reshape(colBottom, colTop);
 
             // Setup the cache for random number generation
-            if (!shareLayerBlob(m_blobRand, colBottom[0].shape()))
-                m_blobRand.ReshapeLike(colBottom[0]);
+            m_blobRand.ReshapeLike(colBottom[0]);
 
             if (!m_param.dropout_param.useCudnn())
                 return;
