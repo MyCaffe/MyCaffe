@@ -2827,7 +2827,8 @@ namespace MyCaffe.common
             double dfMax = 1;
             int nWid = width;
             int nHt = height;
-            int nNum = num * channels;
+            int nNumY = num;
+            int nNumX = channels;
 
             try
             {
@@ -2858,18 +2859,20 @@ namespace MyCaffe.common
 
                 if (nWid == 1 && nHt == 1)
                 {
-                    nNum = 1;
+                    nNumX = 1;
+                    nNumY = 1;
                     nHt = num;
                     nWid = channels;
                 }
                 else if (nWid == 1)
                 {
-                    nNum = num;
+                    nNumY = num;
+                    nNumX = 1;
                     nWid = height;
                     nHt = channels;
                 }
 
-                Bitmap bmp = new Bitmap(nNum * nWid, nHt);
+                Bitmap bmp = new Bitmap(nNumX * nWid + (nNumX - 1), nNumY * nHt + (nNumY - 1));
                 using (Graphics g = Graphics.FromImage(bmp))
                 {
                     g.FillRectangle(Brushes.Black, 0, 0, bmp.Width, bmp.Height);
@@ -2878,49 +2881,70 @@ namespace MyCaffe.common
                 LockBitmap bmp1 = new LockBitmap(bmp);
                 bmp1.LockBits();
 
-                for (int n = 0; n < nNum; n++)
+                int nX = 0;
+                int nY = 0;
+                int nX1 = 0;
+                int nY1 = 0;
+
+                for (int y = 0; y < nNumY; y++)
                 {
-                    for (int h = 0; h < nHt; h++)
+                    for (int x = 0; x < nNumX; x++)
                     {
-                        for (int w = 0; w < nWid; w++)
+                        for (int h = 0; h < nHt; h++)
                         {
-                            int nIdx = n * nHt * nWid + h * nWid + w;
-                            float fVal = rgData[nIdx];
-                            Color clr = Color.Empty;
+                            for (int w = 0; w < nWid; w++)
+                            {
+                                int nIdx = y *  nNumX * nHt * nWid + x * nHt * nWid + h * nWid + w;
+                                float fVal = rgData[nIdx];
+                                Color clr = Color.Empty;
 
-                            if (rgSpecialValues != null && rgSpecialValues.ContainsKey(fVal))
-                            {
-                                clr = rgSpecialValues[fVal];
-                            }
-                            else if (fVal < 0)
-                            {
-                                if (bNonZeroExistOnly)
+                                if (rgSpecialValues != null && rgSpecialValues.ContainsKey(fVal))
                                 {
-                                    clr = Color.White;
+                                    clr = rgSpecialValues[fVal];
                                 }
-                                else
+                                else if (fVal < 0)
                                 {
-                                    int nClr = (int)(255 * (rgData[nIdx] - dfMin) / (0 - dfMin));
-                                    clr = Color.FromArgb(nClr, 0, 0);
+                                    if (bNonZeroExistOnly)
+                                    {
+                                        clr = Color.White;
+                                    }
+                                    else
+                                    {
+                                        int nClr = (int)(255 * (rgData[nIdx] - dfMin) / (0 - dfMin));
+                                        clr = Color.FromArgb(nClr, 0, 0);
+                                    }
                                 }
-                            }
-                            else if (fVal > 0)
-                            {
-                                if (bNonZeroExistOnly)
+                                else if (fVal > 0)
                                 {
-                                    clr = Color.White;
+                                    if (bNonZeroExistOnly)
+                                    {
+                                        clr = Color.White;
+                                    }
+                                    else
+                                    {
+                                        int nClr = (int)(255 * (rgData[nIdx] - 0) / (dfMax - 0));
+                                        clr = Color.FromArgb(0, nClr, 0);
+                                    }
                                 }
-                                else
-                                {
-                                    int nClr = (int)(255 * (rgData[nIdx] - 0) / (dfMax - 0));
-                                    clr = Color.FromArgb(0, nClr, 0);
-                                }
+
+                                if (!clr.IsEmpty)
+                                    bmp1.SetPixel(nX1, nY1, clr);
+
+                                nX1++;
                             }
 
-                            if (!clr.IsEmpty)
-                                bmp1.SetPixel(n * nWid + w, h, clr);
+                            nX1 = nX;
+                            nY1++;                            
                         }
+
+                        nX += nWid + 1;
+                        nX1 = nX;
+                        nY1 = nY;
                     }
+
+                    nX = 0;
+                    nY += nHt + 1;
+                    nY1 = nY;
                 }
 
                 bmp1.UnlockBits();
