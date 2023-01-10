@@ -474,7 +474,7 @@ namespace MyCaffe.test
             return new Tuple<string, string, string, string, string, string>(strSrcTextT, strTrgTextT, strSrcTextV, strTrgTextV, strSrcVocab, strTrgVocab);
         }
 
-        private string buildModel(string strSrcFileT, string strSrcFileV, string strSrcVocabFile, string strTrgFileT, string strTrgFileV, string strTrgVocabFile, uint nBatch, uint nBlockSize, uint nEmbed, uint nEncVocabSize, uint nDecVocabSize)
+        private string buildModel(string strSrcFileT, string strSrcFileV, string strSrcVocabFile, string strTrgFileT, string strTrgFileV, string strTrgVocabFile, uint nBatch, uint nBlockSize, uint nEmbed, uint nEncVocabSize, uint nDecVocabSize, double dfDropout)
         {
             NetParameter net = new NetParameter();
             net.name = "TranslatorNet";
@@ -543,8 +543,8 @@ namespace MyCaffe.test
                 enc.transformer_block_param.block_size = nBlockSize;
                 enc.transformer_block_param.layers = (uint)nLayers;
                 enc.transformer_block_param.activation = TransformerBlockParameter.ACTIVATION.RELU;
-                enc.transformer_block_param.attn_dropout = 0.0;
-                enc.transformer_block_param.resid_dropout = 0.0;
+                enc.transformer_block_param.attn_dropout = dfDropout;
+                enc.transformer_block_param.resid_dropout = dfDropout;
                 enc.bottom.Add(strEncBtm);
                 enc.bottom.Add("emsk");
                 enc.top.Add(enc.name);
@@ -580,8 +580,8 @@ namespace MyCaffe.test
                 dec.transformer_block_param.block_size = nBlockSize;
                 dec.transformer_block_param.layers = (uint)nLayers;
                 dec.transformer_block_param.activation = TransformerBlockParameter.ACTIVATION.RELU;
-                dec.transformer_block_param.attn_dropout = 0.0;
-                dec.transformer_block_param.resid_dropout = 0.0;
+                dec.transformer_block_param.attn_dropout = dfDropout;
+                dec.transformer_block_param.resid_dropout = dfDropout;
                 dec.bottom.Add(strDecBtm);
                 dec.bottom.Add("dmsk");
                 dec.bottom.Add(strEncBtm);
@@ -650,7 +650,7 @@ namespace MyCaffe.test
             string strSrcVocab = dataFiles.Item5;
             string strTrgVocab = dataFiles.Item6;
 
-            string strModel = buildModel(strSrcFileT, strSrcFileV, strSrcVocab, strTrgFileT, strTrgFileV, strTrgVocab, 20, 200, 512, 14878, 14638);
+            string strModel = buildModel(strSrcFileT, strSrcFileV, strSrcVocab, strTrgFileT, strTrgFileV, strTrgVocab, 20, 200, 512, 14878, 14638, 0.1);
             string strSolver = buildSolver();
 
             SettingsCaffe s = new SettingsCaffe
