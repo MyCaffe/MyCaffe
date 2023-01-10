@@ -92,9 +92,6 @@ namespace MyCaffe.layers.gpt
             {
                 if (!string.IsNullOrEmpty(strWord))
                 {
-                    if (strWord == "–  Ladies")
-                        Trace.WriteLine("Found it.");
-
                     string strWord1 = trim(strWord.ToLower().Trim('\'', '\"'));                    
                     if (string.IsNullOrEmpty(strWord1))
                         continue;
@@ -208,16 +205,43 @@ namespace MyCaffe.layers.gpt
         public List<int> Tokenize(string strWord, bool bMustExist = true)
         {
             List<int> rgTokens = new List<int>();
-            
-            if (!m_rgVocabKeyToIdx.ContainsKey(strWord))
+
+            if (!string.IsNullOrEmpty(strWord))
             {
-                if (bMustExist)
-                    throw new Exception("The word '" + strWord + " is not in the vocabulary!");
-                else
-                    rgTokens.Add(m_random.Next(Count));
+                string strWord1 = trim(strWord.ToLower().Trim('\'', '\"'));
+                if (string.IsNullOrEmpty(strWord1))
+                    return rgTokens;
+
+                while (strWord1.Length > 0 && isSymbol(strWord1[strWord1.Length - 1]) && strWord1[strWord1.Length - 1] != ' ')
+                {
+                    string strLast = strWord1[strWord1.Length - 1].ToString();
+                    if (m_rgVocabKeyToIdx.ContainsKey(strLast))
+                        rgTokens.Add(m_rgVocabKeyToIdx[strLast]);
+
+                    strWord1 = strWord1.Substring(0, strWord1.Length - 1);
+                }
+
+                strWord1 = trim(strWord1);
+                if (string.IsNullOrEmpty(strWord1))
+                    return rgTokens;
+
+                while (strWord1.Length > 0 && isSymbol(strWord1[0]) && strWord1[0] != ' ')
+                {
+                    string strFirst = strWord1[0].ToString();
+                    if (m_rgVocabKeyToIdx.ContainsKey(strFirst))
+                        rgTokens.Add(m_rgVocabKeyToIdx[strFirst]);
+
+                    strWord1 = strWord1.Substring(1);
+                }
+
+                strWord1 = trim(strWord1);
+                if (string.IsNullOrEmpty(strWord1))
+                    return rgTokens;
+
+                if (m_rgVocabKeyToIdx.ContainsKey(strWord1))
+                    rgTokens.Add(m_rgVocabKeyToIdx[strWord1]);
             }
-            
-            rgTokens.Add(m_rgVocabKeyToIdx[strWord]);
+
             return rgTokens;
         }
 
