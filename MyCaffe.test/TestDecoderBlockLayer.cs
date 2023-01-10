@@ -611,6 +611,7 @@ namespace MyCaffe.test
             LayerParameter loss = new LayerParameter(LayerParameter.LayerType.SOFTMAXWITH_LOSS);
             loss.name = "loss";
             loss.softmax_param.axis = 2;
+            loss.loss_param.ignore_label = 0;
             loss.bottom.Add("logits");
             loss.bottom.Add("tgt");
             loss.top.Add("loss");
@@ -620,6 +621,7 @@ namespace MyCaffe.test
             LayerParameter accuracy = new LayerParameter(LayerParameter.LayerType.ACCURACY);
             accuracy.name = "accuracy";
             accuracy.accuracy_param.axis = 2;
+            accuracy.accuracy_param.ignore_labels.Add(0);
             accuracy.bottom.Add("logits");
             accuracy.bottom.Add("tgt");
             accuracy.top.Add("accuracy");
