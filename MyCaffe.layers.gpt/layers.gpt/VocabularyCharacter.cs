@@ -11,6 +11,7 @@ namespace MyCaffe.layers.gpt
     /// </summary>
     public class VocabularyCharacter : IVocabulary
     {
+        bool m_bEnablePad = true;
         Random m_random;
         Dictionary<char, int> m_rgVocabKeyToIdx = new Dictionary<char, int>();
         Dictionary<int, char> m_rgVocabIdxToKey = new Dictionary<int, char>();
@@ -23,11 +24,12 @@ namespace MyCaffe.layers.gpt
         /// <param name="random">Specifies the random number generator used.</param>
         /// <param name="bAddBos">Specifies to include the special BOS character in the vocabulary.</param>
         /// <param name="bAddEos">Specifies to include the special EOS character in the vocabulary.</param>
-        public VocabularyCharacter(Random random, bool bAddBos, bool bAddEos)
+        public VocabularyCharacter(Random random, bool bAddBos, bool bAddEos, bool bEnablePad)
         {
             m_random = random;
             m_bAddBos = bAddBos;
             m_bAddEos = bAddEos;
+            m_bEnablePad = bEnablePad;
             
             if (bAddBos)
                 m_rgVocabKeyToIdx.Add(BOS, 1);
@@ -77,11 +79,13 @@ namespace MyCaffe.layers.gpt
 
             m_rgVocabKeyToIdx.Clear();
 
+            int nPadOffset = (m_bEnablePad) ? 1 : 0;
+            
             // index 0 reserved for pad.
             for (int i = 0; i < rgKeys.Count; i++)
             {
-                m_rgVocabKeyToIdx.Add(rgKeys[i], i + 1);
-                m_rgVocabIdxToKey.Add(i + 1, rgKeys[i]);
+                m_rgVocabKeyToIdx.Add(rgKeys[i], i + nPadOffset);
+                m_rgVocabIdxToKey.Add(i + nPadOffset, rgKeys[i]);
             }
 
             return Count;

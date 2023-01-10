@@ -560,7 +560,7 @@ namespace MyCaffe.layers.gpt
             else if (vocabType == TokenizedDataParameter.VOCABULARY_TYPE.SENTENCEPIECE)
                 m_vocab = new VocabularySentencePiece(m_random, true, true, strVocabFile);
             else
-                m_vocab = new VocabularyCharacter(m_random, true, true);
+                m_vocab = new VocabularyCharacter(m_random, true, true, true);
 
             string strProgData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
             strSrcFile = Utility.ReplaceMacro(strSrcFile, "$ProgramData$", strProgData);

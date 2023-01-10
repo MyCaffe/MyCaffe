@@ -487,7 +487,7 @@ namespace MyCaffe.layers.gpt
             if (vocabType == TokenizedDataParameter.VOCABULARY_TYPE.WORD)
                 m_vocab = new VocabularyWord(m_random, false, false);
             else
-               m_vocab = new VocabularyCharacter(m_random, false, false);
+               m_vocab = new VocabularyCharacter(m_random, false, false, false);
             
             m_vocab.BuildFromString(m_strData);
         }
