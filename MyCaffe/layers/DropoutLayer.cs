@@ -105,6 +105,15 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Add all internal blobs.
+        /// </summary>
+        /// <param name="col">Specifies the collection of internal blobs.</param>
+        protected override void setup_internal_blobs(BlobCollection<T> col)
+        {
+            col.Add(m_blobRand);
+        }
+
+        /// <summary>
         /// Setup the layer for use with both Engine.CAFFE and Engine.CUDNN modes.
         /// </summary>
         /// <param name="colBottom">Specifies the collection of bottom (input) Blobs.</param>
@@ -118,6 +127,8 @@ namespace MyCaffe.layers
             m_log.CHECK(m_dfThreshold < 1.0, "Threshold should be < 1");
             m_dfScale = 1.0 / (1.0 - m_dfThreshold);
             m_uiThreshold = (uint)(uint.MaxValue * m_dfThreshold);
+
+            shareLayerBlob(m_blobRand, colBottom[0].shape());
 
             if (!m_param.dropout_param.useCudnn())
                 return;
