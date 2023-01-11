@@ -452,7 +452,6 @@ namespace MyCaffe.test
             }
         }
         
-
         private Tuple<string, string, string, string, string, string> loadDataFiles1()
         {
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\encdec";
@@ -515,6 +514,28 @@ namespace MyCaffe.test
             dataV.include.Add(new NetStateRule(Phase.TEST));
             net.layer.Add(dataV);
 
+            return buildModelEx(net, nBatch, nBlockSize, nEmbed, nEncVocabSize, nDecVocabSize, dfDropout);
+        }
+
+        private string buildModelEx(NetParameter net, uint nBatch, uint nBlockSize, uint nEmbed, uint nEncVocabSize, uint nDecVocabSize, double dfDropout, bool bAddInput = false)
+        {
+            if (bAddInput)
+            {
+                LayerParameter input = new LayerParameter(LayerParameter.LayerType.INPUT);
+                input.name = "input";
+                input.input_param.shape.Add(new BlobShape() { dim = new List<int>() { (int)nBatch, (int)nBlockSize } });
+                input.input_param.shape.Add(new BlobShape() { dim = new List<int>() { (int)nBatch, (int)nBlockSize } });
+                input.input_param.shape.Add(new BlobShape() { dim = new List<int>() { (int)nBatch, (int)nBlockSize } });
+                input.input_param.shape.Add(new BlobShape() { dim = new List<int>() { (int)nBatch, (int)nBlockSize } });
+                input.input_param.shape.Add(new BlobShape() { dim = new List<int>() { (int)nBatch, (int)nBlockSize, (int)nBlockSize } });
+                input.top.Add("enc");
+                input.top.Add("dec");
+                input.top.Add("tgt");
+                input.top.Add("emsk");
+                input.top.Add("dmsk");
+                net.layer.Add(input);
+            }
+
             LayerParameter emb1 = new LayerParameter(LayerParameter.LayerType.EMBED);
             emb1.name = "embed1";
             emb1.embed_param.input_dim = nEncVocabSize;
@@ -549,9 +570,16 @@ namespace MyCaffe.test
                 enc.bottom.Add("emsk");
                 enc.top.Add(enc.name);
                 net.layer.Add(enc);
-                
+
                 strEncBtm = enc.name;
             }
+
+            LayerParameter ln1 = new LayerParameter(LayerParameter.LayerType.LAYERNORM);
+            ln1.name = "ln1";
+            ln1.layer_norm_param.enable_cuda_impl = false;
+            ln1.bottom.Add(strEncBtm);
+            ln1.top.Add("ln1");
+            net.layer.Add(ln1);
 
             LayerParameter emb2 = new LayerParameter(LayerParameter.LayerType.EMBED);
             emb2.name = "embed2";
@@ -584,7 +612,7 @@ namespace MyCaffe.test
                 dec.transformer_block_param.resid_dropout = dfDropout;
                 dec.bottom.Add(strDecBtm);
                 dec.bottom.Add("dmsk");
-                dec.bottom.Add(strEncBtm);
+                dec.bottom.Add("ln1");
                 dec.bottom.Add("emsk");
                 dec.top.Add(dec.name);
                 net.layer.Add(dec);
@@ -592,11 +620,18 @@ namespace MyCaffe.test
                 strDecBtm = dec.name;
             }
 
+            LayerParameter ln2 = new LayerParameter(LayerParameter.LayerType.LAYERNORM);
+            ln2.name = "ln2";
+            ln2.layer_norm_param.enable_cuda_impl = false;
+            ln2.bottom.Add(strDecBtm);
+            ln2.top.Add("ln2");
+            net.layer.Add(ln2);
+
             LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
             ip1.name = "ip1";
             ip1.inner_product_param.axis = 2;
             ip1.inner_product_param.num_output = nDecVocabSize;
-            ip1.bottom.Add(strDecBtm);
+            ip1.bottom.Add("ln2");
             ip1.top.Add("logits");
             net.layer.Add(ip1);
 
@@ -630,6 +665,7 @@ namespace MyCaffe.test
 
             return net.ToProto("root").ToString();
         }
+
 
         private string buildSolver()
         {
