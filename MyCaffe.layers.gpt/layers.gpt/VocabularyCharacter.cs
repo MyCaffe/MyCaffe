@@ -24,6 +24,7 @@ namespace MyCaffe.layers.gpt
         /// <param name="random">Specifies the random number generator used.</param>
         /// <param name="bAddBos">Specifies to include the special BOS character in the vocabulary.</param>
         /// <param name="bAddEos">Specifies to include the special EOS character in the vocabulary.</param>
+        /// <param name="bEnablePad">Specifies to enable the 0 based padding by adding the 0 pad key to the vocabulary.</param>
         public VocabularyCharacter(Random random, bool bAddBos, bool bAddEos, bool bEnablePad)
         {
             m_random = random;
