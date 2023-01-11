@@ -1573,7 +1573,7 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
-        /// Converts a set of bytes from a file path\name by loading its bytes and returning them, or if the original bytes do not
+        /// Converts a set of bytes from a file path-name by loading its bytes and returning them, or if the original bytes do not
         /// contain a path, just returns the original bytes.
         /// </summary>
         /// <param name="rgData">Specifies the original bytes.</param>
