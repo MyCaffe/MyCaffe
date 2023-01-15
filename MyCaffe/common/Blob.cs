@@ -1030,20 +1030,28 @@ namespace MyCaffe.common
         /// <returns>If all data (or diff) values fall within the tolerance, true is returned, otherwise false.</returns>
         public bool Compare(Blob<T> other, Blob<T> work, bool bDiff = false, double dfTol = 1e-8)
         {
-            if (count() != other.count())
+            int nCount = count();
+            if (nCount != other.count())
                 return false;
 
+            if (Cuda.KernelHandle != other.Cuda.KernelHandle)
+                throw new Exception("The compare blob has a different Cuda Kernel Handles!");
+
+            if (Cuda.KernelHandle != work.Cuda.KernelHandle)
+                throw new Exception("The work blob has a different Cuda Kernel Handle!");
+            
             work.ReshapeLike(this);
 
             long h1 = (bDiff) ? gpu_diff : gpu_data;
             long h2 = (bDiff) ? other.gpu_diff : other.gpu_data;
+            long lPos;
 
-            m_cuda.sub(count(), h1, h2, work.mutable_gpu_data);
-            double dfMin = work.min_data;
+            m_cuda.sub(nCount, h1, h2, work.mutable_gpu_data);
+            double dfMin = m_cuda.min(nCount, work.gpu_data, out lPos, 0, work.mutable_gpu_diff);
             if (Math.Abs(dfMin) > dfTol)
                 return false;
-
-            double dfMax = work.max_data;
+            
+            double dfMax = m_cuda.max(nCount, work.gpu_data, out lPos, 0, work.mutable_gpu_diff);
             if (dfMax > dfTol)
                 return false;
 
