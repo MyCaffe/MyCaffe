@@ -13,7 +13,7 @@ namespace MyCaffe.layers.gpt
     /// The PositionalEncodingLayer is a neuron layer that adds positional encoding to the input.
     /// </summary>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
-    public class PositionalEncodingLayer<T> : NeuronLayer<T>
+    public class PositionalEncodingLayer<T> : Layer<T>
     {
         Blob<T> m_blobPosEnc;
         List<int> m_rgShape = new List<int>() { 1, 1, 1 };
@@ -57,6 +57,31 @@ namespace MyCaffe.layers.gpt
                 return;
 
             col.Add(m_blobPosEnc);
+        }
+
+        /// <summary>
+        /// Returns the exact number of required bottom (input) Blobs: embed
+        /// </summary>
+        public override int ExactNumBottomBlobs
+        {
+            get { return 1; }
+        }
+
+        /// <summary>
+        /// Returns the exact number of required top (output) Blobs: embed
+        /// </summary>
+        public override int ExactNumTopBlobs
+        {
+            get { return 1; }
+        }
+       
+        /// <summary>
+        /// Setup the layer.
+        /// </summary>
+        /// <param name="colBottom">Specifies the collection of bottom (input) Blobs.</param>
+        /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
+        public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
         }
 
         /// <summary>
@@ -122,7 +147,7 @@ namespace MyCaffe.layers.gpt
             long hBottomData = colBottom[0].gpu_data;
             long hTopData = colTop[0].mutable_gpu_data;
             int nCount = colBottom[0].count();
-
+            
             m_cuda.add(nCount, m_blobPosEnc.gpu_data, hBottomData, hTopData, m_dfScale);
         }
 
