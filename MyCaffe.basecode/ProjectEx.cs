@@ -1432,9 +1432,17 @@ namespace MyCaffe.basecode
                             RawProtoCollection colTop = layer.FindChildren("top");
                             if (colTop.Count > 0)
                             {
-                                rgInputs[0] = new Tuple<string, int, int, int, int>("encin", rgInputs[0].Item2, rgInputs[0].Item3, rgInputs[0].Item4, rgInputs[0].Item5);
-                                rgInputs.Add(new Tuple<string, int, int, int, int>("decin", rgInputs[0].Item2, rgInputs[0].Item3, rgInputs[0].Item4, rgInputs[0].Item5));
-                                layer.Children.Add<string>("bottom", new List<string>() { "encin", "decin" });
+                                if (strType == "tokenizeddatapairs")
+                                {
+                                    rgInputs[0] = new Tuple<string, int, int, int, int>("encin", rgInputs[0].Item2, rgInputs[0].Item3, rgInputs[0].Item4, rgInputs[0].Item5);
+                                    rgInputs.Add(new Tuple<string, int, int, int, int>("decin", rgInputs[0].Item2, rgInputs[0].Item3, rgInputs[0].Item4, rgInputs[0].Item5));
+                                    layer.Children.Add<string>("bottom", new List<string>() { "encin", "decin" });
+                                }
+                                else
+                                {
+                                    rgInputs[0] = new Tuple<string, int, int, int, int>("encin", rgInputs[0].Item2, rgInputs[0].Item3, rgInputs[0].Item4, rgInputs[0].Item5);
+                                    layer.Children.Add<string>("bottom", new List<string>() { "encin" });
+                                }
                                 bSkipBottomRename = true;
                                 break;
                             }
