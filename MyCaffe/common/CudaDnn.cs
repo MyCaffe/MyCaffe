@@ -797,8 +797,8 @@ namespace MyCaffe.common
         void powx(int n, long hA, double fAlpha, long hY, int nAOff = 0, int nYOff = 0);
         void powx(int n, long hA, float fAlpha, long hY, int nAOff = 0, int nYOff = 0);
         void sign(int n, long hX, long hY, int nXOff = 0, int nYOff = 0);
-        double min(int n, long hA, out long lPos, int nAOff = 0);
-        double max(int n, long hA, out long lPos, int nAOff = 0);
+        double min(int n, long hA, out long lPos, int nAOff = 0, long hWork = 0);
+        double max(int n, long hA, out long lPos, int nAOff = 0, long hWork = 0);
         double sumsq(int n, long hW, long hA, int nAOff = 0);
         double sumsqdiff(int n, long hW, long hA, long hB, int nAOff = 0, int nBOff = 0);
         void sqrt(int n, long hA, long hY);
@@ -1488,87 +1488,95 @@ namespace MyCaffe.common
         {
             FileInfo fi = new FileInfo(Process.GetCurrentProcess().MainModule.FileName);
 
-            string strPath = fi.DirectoryName + "\\cuda_11.8\\CudaDnnDll.11.8.dll";
+            string strPath = fi.DirectoryName + "\\cuda_12.0\\CudaDnnDll.12.0.dll";
 
             if (!File.Exists(strPath))
             {
-                strPath = fi.DirectoryName + "\\CudaDnnDll.11.8.dll";
+                strPath = fi.DirectoryName + "\\CudaDnnDll.12.0.dll";
                 if (!File.Exists(strPath))
                 {
-                    strPath = fi.DirectoryName + "\\cuda_11.7\\CudaDnnDll.11.7.dll";
+                    strPath = fi.DirectoryName + "\\cuda_11.8\\CudaDnnDll.11.8.dll";
                     if (!File.Exists(strPath))
                     {
-                        strPath = fi.DirectoryName + "\\CudaDnnDll.11.7.dll";
+                        strPath = fi.DirectoryName + "\\CudaDnnDll.11.8.dll";
                         if (!File.Exists(strPath))
                         {
-                            strPath = fi.DirectoryName + "\\cuda_11.6\\CudaDnnDll.11.6.dll";
+                            strPath = fi.DirectoryName + "\\cuda_11.7\\CudaDnnDll.11.7.dll";
                             if (!File.Exists(strPath))
                             {
-                                strPath = fi.DirectoryName + "\\CudaDnnDll.11.6.dll";
+                                strPath = fi.DirectoryName + "\\CudaDnnDll.11.7.dll";
                                 if (!File.Exists(strPath))
                                 {
-                                    strPath = fi.DirectoryName + "\\cuda_11.5\\CudaDnnDll.11.5.dll";
+                                    strPath = fi.DirectoryName + "\\cuda_11.6\\CudaDnnDll.11.6.dll";
                                     if (!File.Exists(strPath))
                                     {
-                                        strPath = fi.DirectoryName + "\\CudaDnnDll.11.5.dll";
+                                        strPath = fi.DirectoryName + "\\CudaDnnDll.11.6.dll";
                                         if (!File.Exists(strPath))
                                         {
-                                            strPath = fi.DirectoryName + "\\cuda_11.4\\CudaDnnDll.11.4.dll";
+                                            strPath = fi.DirectoryName + "\\cuda_11.5\\CudaDnnDll.11.5.dll";
                                             if (!File.Exists(strPath))
                                             {
-                                                strPath = fi.DirectoryName + "\\CudaDnnDll.11.4.dll";
+                                                strPath = fi.DirectoryName + "\\CudaDnnDll.11.5.dll";
                                                 if (!File.Exists(strPath))
                                                 {
-                                                    strPath = fi.DirectoryName + "\\cuda_11.3\\CudaDnnDll.11.3.dll";
+                                                    strPath = fi.DirectoryName + "\\cuda_11.4\\CudaDnnDll.11.4.dll";
                                                     if (!File.Exists(strPath))
                                                     {
-                                                        strPath = fi.DirectoryName + "\\CudaDnnDll.11.3.dll";
+                                                        strPath = fi.DirectoryName + "\\CudaDnnDll.11.4.dll";
                                                         if (!File.Exists(strPath))
                                                         {
-                                                            strPath = fi.DirectoryName + "\\cuda_11.2\\CudaDnnDll.11.2.dll";
+                                                            strPath = fi.DirectoryName + "\\cuda_11.3\\CudaDnnDll.11.3.dll";
                                                             if (!File.Exists(strPath))
                                                             {
-                                                                strPath = fi.DirectoryName + "\\CudaDnnDll.11.2.dll";
+                                                                strPath = fi.DirectoryName + "\\CudaDnnDll.11.3.dll";
                                                                 if (!File.Exists(strPath))
                                                                 {
-                                                                    strPath = fi.DirectoryName + "\\cuda_11.1\\CudaDnnDll.11.1.dll";
+                                                                    strPath = fi.DirectoryName + "\\cuda_11.2\\CudaDnnDll.11.2.dll";
                                                                     if (!File.Exists(strPath))
                                                                     {
-                                                                        strPath = fi.DirectoryName + "\\CudaDnnDll.11.1.dll";
+                                                                        strPath = fi.DirectoryName + "\\CudaDnnDll.11.2.dll";
                                                                         if (!File.Exists(strPath))
                                                                         {
-                                                                            strPath = fi.DirectoryName + "\\cuda_11.0\\CudaDnnDll.11.0.dll";
+                                                                            strPath = fi.DirectoryName + "\\cuda_11.1\\CudaDnnDll.11.1.dll";
                                                                             if (!File.Exists(strPath))
                                                                             {
-                                                                                strPath = fi.DirectoryName + "\\CudaDnnDll.11.0.dll";
+                                                                                strPath = fi.DirectoryName + "\\CudaDnnDll.11.1.dll";
                                                                                 if (!File.Exists(strPath))
                                                                                 {
-                                                                                    strPath = fi.DirectoryName + "\\cuda_10.2\\CudaDnnDll.10.2.dll";
+                                                                                    strPath = fi.DirectoryName + "\\cuda_11.0\\CudaDnnDll.11.0.dll";
                                                                                     if (!File.Exists(strPath))
                                                                                     {
-                                                                                        strPath = fi.DirectoryName + "\\CudaDnnDll.10.2.dll";
+                                                                                        strPath = fi.DirectoryName + "\\CudaDnnDll.11.0.dll";
                                                                                         if (!File.Exists(strPath))
                                                                                         {
-                                                                                            strPath = fi.DirectoryName + "\\cuda_10.2.3_5\\CudaDnnDll.10.2.dll";
+                                                                                            strPath = fi.DirectoryName + "\\cuda_10.2\\CudaDnnDll.10.2.dll";
                                                                                             if (!File.Exists(strPath))
                                                                                             {
-                                                                                                strPath = fi.DirectoryName + "\\CudaDnnDll.10.2.3_5.dll";
+                                                                                                strPath = fi.DirectoryName + "\\CudaDnnDll.10.2.dll";
                                                                                                 if (!File.Exists(strPath))
                                                                                                 {
-                                                                                                    strPath = fi.DirectoryName + "\\CudaDnnDll.10.1.dll";
+                                                                                                    strPath = fi.DirectoryName + "\\cuda_10.2.3_5\\CudaDnnDll.10.2.dll";
                                                                                                     if (!File.Exists(strPath))
                                                                                                     {
-                                                                                                        strPath = fi.DirectoryName + "\\CudaDnnDll.10.0.dll";
+                                                                                                        strPath = fi.DirectoryName + "\\CudaDnnDll.10.2.3_5.dll";
                                                                                                         if (!File.Exists(strPath))
                                                                                                         {
-                                                                                                            strPath = fi.DirectoryName + "\\CudaDnnDll.9.2.dll";
+                                                                                                            strPath = fi.DirectoryName + "\\CudaDnnDll.10.1.dll";
                                                                                                             if (!File.Exists(strPath))
                                                                                                             {
-                                                                                                                strPath = fi.DirectoryName + "\\CudaDnnDll.9.1.dll";
+                                                                                                                strPath = fi.DirectoryName + "\\CudaDnnDll.10.0.dll";
                                                                                                                 if (!File.Exists(strPath))
                                                                                                                 {
+                                                                                                                    strPath = fi.DirectoryName + "\\CudaDnnDll.9.2.dll";
                                                                                                                     if (!File.Exists(strPath))
-                                                                                                                        strPath = fi.DirectoryName + "\\CudaDnnDll.8.dll";
+                                                                                                                    {
+                                                                                                                        strPath = fi.DirectoryName + "\\CudaDnnDll.9.1.dll";
+                                                                                                                        if (!File.Exists(strPath))
+                                                                                                                        {
+                                                                                                                            if (!File.Exists(strPath))
+                                                                                                                                strPath = fi.DirectoryName + "\\CudaDnnDll.8.dll";
+                                                                                                                        }
+                                                                                                                    }
                                                                                                                 }
                                                                                                             }
                                                                                                         }
@@ -7224,20 +7232,41 @@ namespace MyCaffe.common
         /// <param name="hA">Specifies a handle to the vector A in GPU memory.</param>
         /// <param name="lPos">Returns the position of the maximum value.</param>
         /// <param name="nAOff">Optionally, specifies an offset (in items, not bytes) into the memory of A (default = 0).</param>
+        /// <param name="hWork">Optionally, specifies the handle to GPU memory in the size of A, which when specified is used in the 
+        /// extended version of max val.  The extended version does not use thrust, and does not calculate 'lPos', which is always
+        /// returned as -1 when using the extended version. (default = 0, use non extended version)</param>
         /// <returns>The maximum value is returned as type <code>double</code></returns>
-        public double max(int n, long hA, out long lPos, int nAOff = 0)
+        public double max(int n, long hA, out long lPos, int nAOff = 0, long hWork = 0)
         {
-            if (m_dt == DataType.DOUBLE)
+            if (hWork != 0)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MAXVAL, m_param.AsDouble(n, hA, nAOff));
-                lPos = (long)rg[1];
-                return rg[0];
+                if (m_dt == DataType.DOUBLE)
+                {
+                    double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MAXVAL, m_param.AsDouble(n, hA, nAOff, hWork));
+                    lPos = (long)rg[1];
+                    return rg[0];
+                }
+                else
+                {
+                    float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MAXVAL, m_param.AsFloat(n, hA, nAOff, hWork));
+                    lPos = (long)rg[1];
+                    return rg[0];
+                }
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MAXVAL, m_param.AsFloat(n, hA, nAOff));
-                lPos = (long)rg[1];
-                return rg[0];
+                if (m_dt == DataType.DOUBLE)
+                {
+                    double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MAXVAL, m_param.AsDouble(n, hA, nAOff));
+                    lPos = (long)rg[1];
+                    return rg[0];
+                }
+                else
+                {
+                    float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MAXVAL, m_param.AsFloat(n, hA, nAOff));
+                    lPos = (long)rg[1];
+                    return rg[0];
+                }
             }
         }
 
@@ -7251,20 +7280,41 @@ namespace MyCaffe.common
         /// <param name="hA">Specifies a handle to the vector A in GPU memory.</param>
         /// <param name="lPos">Returns the position of the minimum value.</param>
         /// <param name="nAOff">Optionally, specifies an offset (in items, not bytes) into the memory of A (default = 0).</param>
+        /// <param name="hWork">Optionally, specifies the handle to GPU memory in the size of A, which when specified is used in the 
+        /// extended version of max val.  The extended version does not use thrust, and does not calculate 'lPos', which is always
+        /// returned as -1 when using the extended version. (default = 0, use non extended version)</param>
         /// <returns>The minimum value is returned as type <code>double</code></returns>
-        public double min(int n, long hA, out long lPos, int nAOff = 0)
+        public double min(int n, long hA, out long lPos, int nAOff = 0, long hWork = 0)
         {
-            if (m_dt == DataType.DOUBLE)
+            if (hWork != 0)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MINVAL, m_param.AsDouble(n, hA, nAOff));
-                lPos = (long)rg[1];
-                return rg[0];
+                if (m_dt == DataType.DOUBLE)
+                {
+                    double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MINVAL, m_param.AsDouble(n, hA, nAOff, hWork));
+                    lPos = (long)rg[1];
+                    return rg[0];
+                }
+                else
+                {
+                    float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MINVAL, m_param.AsFloat(n, hA, nAOff, hWork));
+                    lPos = (long)rg[1];
+                    return rg[0];
+                }
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MINVAL, m_param.AsFloat(n, hA, nAOff));
-                lPos = (long)rg[1];
-                return rg[0];
+                if (m_dt == DataType.DOUBLE)
+                {
+                    double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MINVAL, m_param.AsDouble(n, hA, nAOff));
+                    lPos = (long)rg[1];
+                    return rg[0];
+                }
+                else
+                {
+                    float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MINVAL, m_param.AsFloat(n, hA, nAOff));
+                    lPos = (long)rg[1];
+                    return rg[0];
+                }
             }
         }
 

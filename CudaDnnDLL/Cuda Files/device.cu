@@ -2556,20 +2556,32 @@ long Device<T>::cuda_maxval(long lInput, T* pfInput, long* plOutput, T** ppfOutp
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 2, 3))
+	if (lErr = verifyInput(lInput, pfInput, 2, 4))
 		return lErr;
 
 	int n = (int)pfInput[0];
 	long hA = (long)pfInput[1];
 	int nAOff = 0;
 	T fOutput = 0;
+	long hWork = 0;
 
 	if (lInput > 2)
 		nAOff = (int)pfInput[2];
 
-	long lPos = 0;
-	if (lErr = m_math.maxval(n, hA, &fOutput, nAOff, &lPos))
-		return lErr;
+	if (lInput > 3)
+		hWork = (long)pfInput[3];
+
+	long lPos = -1;	
+	if (hWork != 0)
+	{
+		if (lErr = m_math.maxvalEx(n, hA, hWork, &fOutput, nAOff))
+			return lErr;
+	}
+	else
+	{
+		if (lErr = m_math.maxval(n, hA, &fOutput, nAOff, &lPos))
+			return lErr;
+	}
 
 	// ppfOutput has up to MAX_OUTPUT(16) pre-allocated items
 	T* pfOutput = *ppfOutput;
@@ -2592,20 +2604,32 @@ long Device<T>::cuda_minval(long lInput, T* pfInput, long* plOutput, T** ppfOutp
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 2, 3))
+	if (lErr = verifyInput(lInput, pfInput, 2, 4))
 		return lErr;
 
 	int n = (int)pfInput[0];
 	long hA = (long)pfInput[1];
 	int nAOff = 0;
 	T fOutput = 0;
-
+	long hWork = 0;
+	
 	if (lInput > 2)
 		nAOff = (int)pfInput[2];
 
-	long lPos = 0;
-	if (lErr = m_math.minval(n, hA, &fOutput, nAOff, &lPos))
-		return lErr;
+	if (lInput > 3)
+		hWork = (long)pfInput[3];
+
+	long lPos = -1;
+	if (hWork != 0)
+	{
+		if (lErr = m_math.minvalEx(n, hA, hWork, &fOutput, nAOff))
+			return lErr;
+	}
+	else
+	{
+		if (lErr = m_math.minval(n, hA, &fOutput, nAOff, &lPos))
+			return lErr;
+	}
 
 	// ppfOutput has up to MAX_OUTPUT(16) pre-allocated items
 	T* pfOutput = *ppfOutput;

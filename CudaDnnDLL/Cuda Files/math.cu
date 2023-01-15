@@ -3421,6 +3421,252 @@ template long Math<float>::minval(int n, long hA, float* pOut, int nAOff, long* 
 
 
 template <class T>
+__global__ void min_kernel(const T* d_data, T* d_min, const size_t n, const T MIN)
+{
+	// Load a segment of the input vector into shared memory
+	__shared__ T sharedMin[MAX_SH_MEM];
+	int tid = threadIdx.x;
+	int gid = (blockDim.x * blockIdx.x) + tid;
+
+	sharedMin[tid] = MIN;
+	__syncthreads();
+
+	while (gid < n)
+	{
+		sharedMin[tid] = min(sharedMin[tid], d_data[gid]);
+		gid += gridDim.x * blockDim.x;
+	}
+	__syncthreads();
+
+	for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1)
+	{
+		if (tid < s)
+		{
+			int nIdx = tid + s;
+			if (nIdx < MAX_SH_MEM)
+			{
+				sharedMin[tid] = min(sharedMin[tid], sharedMin[nIdx]);
+			}
+		}
+
+		__syncthreads();
+	}
+
+	if (tid == 0)
+	{
+		math_atomic_min(d_min, sharedMin[0]);
+	}
+}
+
+template <class T>
+long Math<T>::minvalEx(int n, long hA, long hWork1, T* pMin, int nAOff)
+{
+	int nBlocks = DIVUP(n, MAX_SH_MEM);
+	if (nBlocks > NUM_BLOCKS_MAX)
+		nBlocks = NUM_BLOCKS_MAX;
+
+	int nSize = nBlocks * MAX_SH_MEM;
+
+	if (hA == 0 || hWork1 == 0)
+	{
+		*pMin = (T)nSize;
+		return 0;
+	}
+
+	LONG lErr;
+	MemoryItem* pA;
+	MemoryItem* pW1;
+
+	if (lErr = m_pMemCol->GetData(hA, &pA))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hWork1, &pW1))
+		return lErr;
+
+	T* a = (T*)pA->Data();
+	T* w1 = (T*)pW1->Data();
+
+	if (nAOff > 0)
+		a += nAOff;
+
+	T fMin = (sizeof(T) == sizeof(float)) ? FLT_MAX : DBL_MAX;
+
+	int nRemaining = n;
+	int nCount = 0;
+	T fMinFinal = fMin;
+	T fMin1;
+
+	if (nSize > n)
+		nSize = n;
+
+	if (n > 1)
+	{
+		while (nCount < n)
+		{
+			long long lSize = nSize * sizeof(T);
+			if (lSize > SIZE_MAX)
+				return ERROR_MEMORY_RANGE_EXCEEDED;
+
+			if (lErr = cudaMemset(w1, 0, (size_t)lSize))
+				return lErr;
+
+			min_kernel<T> << <nBlocks, MAX_SH_MEM >> > (a, w1, nSize, fMin);
+
+			if (lErr = cudaStreamSynchronize(0))
+				return lErr;
+
+			if (lErr = cudaMemcpy(&fMin1, w1, sizeof(T), cudaMemcpyDeviceToHost))
+				return lErr;
+
+			fMinFinal = min(fMinFinal, fMin1);
+
+			a += nSize;
+			nCount += nSize;
+			nRemaining -= nSize;
+
+			if (nRemaining < nSize)
+				nSize = nRemaining;
+		}
+	}
+	else
+	{
+		if (lErr = cudaMemcpy(&fMinFinal, a, sizeof(T), cudaMemcpyDeviceToHost))
+			return lErr;
+	}
+
+	*pMin = fMinFinal;
+
+	return CUDA_SUCCESS;
+}
+
+template long Math<double>::minvalEx(int n, long hA, long hWork1, double* pMin, int nAOff);
+template long Math<float>::minvalEx(int n, long hA, long hWork1, float* pMin, int nAOff);
+
+
+template <class T>
+__global__ void max_kernel(const T* d_data, T* d_max, const size_t n, const T MAX)
+{
+	// Load a segment of the input vector into shared memory
+	__shared__ T sharedMax[MAX_SH_MEM];
+	int tid = threadIdx.x;
+	int gid = (blockDim.x * blockIdx.x) + tid;
+
+	sharedMax[tid] = MAX;
+	__syncthreads();
+
+	while (gid < n)
+	{
+		sharedMax[tid] = max(sharedMax[tid], d_data[gid]);
+		gid += gridDim.x * blockDim.x;
+	}
+	__syncthreads();
+
+	for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1)
+	{
+		if (tid < s)
+		{
+			int nIdx = tid + s;
+			if (nIdx < MAX_SH_MEM)
+			{
+				sharedMax[tid] = max(sharedMax[tid], sharedMax[nIdx]);
+			}
+		}
+
+		__syncthreads();
+	}
+
+	if (tid == 0)
+	{
+		math_atomic_max(d_max, sharedMax[0]);
+	}
+}
+
+template <class T>
+long Math<T>::maxvalEx(int n, long hA, long hWork1, T* pMax, int nAOff)
+{
+	int nBlocks = DIVUP(n, MAX_SH_MEM);
+	if (nBlocks > NUM_BLOCKS_MAX)
+		nBlocks = NUM_BLOCKS_MAX;
+
+	int nSize = nBlocks * MAX_SH_MEM;
+
+	if (hA == 0 || hWork1 == 0)
+	{
+		*pMax = (T)nSize;
+		return 0;
+	}
+
+	LONG lErr;
+	MemoryItem* pA;
+	MemoryItem* pW1;
+
+	if (lErr = m_pMemCol->GetData(hA, &pA))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hWork1, &pW1))
+		return lErr;
+
+	T* a = (T*)pA->Data();
+	T* w1 = (T*)pW1->Data();
+
+	if (nAOff > 0)
+		a += nAOff;
+
+	T fMax = (sizeof(T) == sizeof(float)) ? -FLT_MAX : -DBL_MAX;
+
+	int nRemaining = n;
+	int nCount = 0;
+	T fMaxFinal = fMax;
+	T fMax1;
+
+	if (nSize > n)
+		nSize = n;
+
+	if (n > 1)
+	{
+		while (nCount < n)
+		{
+			long long lSize = nSize * sizeof(T);
+			if (lSize > SIZE_MAX)
+				return ERROR_MEMORY_RANGE_EXCEEDED;
+
+			if (lErr = cudaMemset(w1, 0, (size_t)lSize))
+				return lErr;
+
+			max_kernel<T> << <nBlocks, MAX_SH_MEM >> > (a, w1, nSize, fMax);
+
+			if (lErr = cudaStreamSynchronize(0))
+				return lErr;
+
+			if (lErr = cudaMemcpy(&fMax1, w1, sizeof(T), cudaMemcpyDeviceToHost))
+				return lErr;
+
+			fMaxFinal = max(fMaxFinal, fMax1);
+
+			a += nSize;
+			nCount += nSize;
+			nRemaining -= nSize;
+
+			if (nRemaining < nSize)
+				nSize = nRemaining;
+		}
+	}
+	else
+	{
+		if (lErr = cudaMemcpy(&fMaxFinal, a, sizeof(T), cudaMemcpyDeviceToHost))
+			return lErr;
+	}
+
+	*pMax = fMaxFinal;
+
+	return CUDA_SUCCESS;
+}
+
+template long Math<double>::maxvalEx(int n, long hA, long hWork1, double* pMax, int nAOff);
+template long Math<float>::maxvalEx(int n, long hA, long hWork1, float* pMax, int nAOff);
+
+
+template <class T>
 __global__ void minmax_kernel(const T* d_data, T* d_min, T* d_max, const size_t n, const T MIN, const T MAX)
 {
 	// Load a segment of the input vector into shared memory
