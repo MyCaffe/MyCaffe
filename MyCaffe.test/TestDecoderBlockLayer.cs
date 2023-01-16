@@ -98,6 +98,42 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestBackward2()
+        {
+            DecoderBlockLayerTest test = new DecoderBlockLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IDecoderBlockLayerTest t in test.Tests)
+                {
+                    t.TestBackward2(false);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestBackward2Cuda()
+        {
+            DecoderBlockLayerTest test = new DecoderBlockLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IDecoderBlockLayerTest t in test.Tests)
+                {
+                    t.TestBackward2(true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestTraining()
         {
             DecoderBlockLayerTest test = new DecoderBlockLayerTest(EngineParameter.Engine.CAFFE);
@@ -134,14 +170,52 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestFull()
+        {
+            DecoderBlockLayerTest test = new DecoderBlockLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IDecoderBlockLayerTest t in test.Tests)
+                {
+                    t.TestFull(false);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestCudaFull()
+        {
+            DecoderBlockLayerTest test = new DecoderBlockLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IDecoderBlockLayerTest t in test.Tests)
+                {
+                    t.TestFull(true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface IDecoderBlockLayerTest : ITest
     {
         void TestForward(uint nHeads, bool bEnableCudaImpl);
         void TestBackward(uint nHeads, bool bEnableCudaImpl);
+        void TestBackward2(bool bEnableCudaImpl);
         void TestTraining();
         void TestInference();
+        void TestFull(bool bEnableCudaImpl);
     }
 
     class DecoderBlockLayerTest : TestBase
@@ -221,6 +295,15 @@ namespace MyCaffe.test
             return loadTestData(strPath, strFileName, strTestPath, strTestFile);
         }
 
+        private string loadTestData2()
+        {
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\trfb\\";
+            string strFileName = "_transformer_test.zip";
+            string strTestPath = "test";
+            string strTestFile = "0_d_mask.npy";
+            return loadTestData(strPath, strFileName, strTestPath, strTestFile);
+        }
+
         private void createDecoderMask(Blob<T> blobMask)
         {
             int nBatch = blobMask.num;
@@ -270,10 +353,10 @@ namespace MyCaffe.test
             {
                 m_log.CHECK(layer.type == LayerParameter.LayerType.TRANSFORMER_BLOCK, "The layer type is incorrect!");
 
-                m_blobX.LoadFromNumpy(strTestDataPath + "dec_in_x0.npy");
-                m_blobX.Name = "dec_in_x0";
-                m_blobEncOut.LoadFromNumpy(strTestDataPath + "enc_out_x1.npy");
-                m_blobEncOut.Name = "enc_out_x1";
+                m_blobX.LoadFromNumpy(strTestDataPath + "dec.decin_x0.npy");
+                m_blobX.Name = "dec.decin_x0";
+                m_blobEncOut.LoadFromNumpy(strTestDataPath + "enc.encout_x1.npy");
+                m_blobEncOut.Name = "enc.encout_x1";
                 
                 m_blobInput.LoadFromNumpy(strTestDataPath + "src_input.npy");                
                 m_blobMaskEnc.ReshapeLike(m_blobInput);
@@ -365,10 +448,10 @@ namespace MyCaffe.test
             {
                 m_log.CHECK(layer.type == LayerParameter.LayerType.TRANSFORMER_BLOCK, "The layer type is incorrect!");
 
-                m_blobX.LoadFromNumpy(strTestDataPath + "dec_in_x0.npy");
-                m_blobX.Name = "dec_in_x0";
-                m_blobEncOut.LoadFromNumpy(strTestDataPath + "enc_out_x1.npy");
-                m_blobEncOut.Name = "enc_out_x1";
+                m_blobX.LoadFromNumpy(strTestDataPath + "dec.decin_x0.npy");
+                m_blobX.Name = "dec.decin_x0";
+                m_blobEncOut.LoadFromNumpy(strTestDataPath + "enc.encout_x1.npy");
+                m_blobEncOut.Name = "enc.encout_x1";
 
                 m_blobInput.LoadFromNumpy(strTestDataPath + "src_input.npy");
                 m_blobMaskEnc.ReshapeLike(m_blobInput);
@@ -451,7 +534,103 @@ namespace MyCaffe.test
                 layer.Dispose();
             }
         }
-        
+
+        public void TestBackward2(bool bEnableCudaImpl)
+        {
+            string strPath = loadTestData1();
+
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
+            p.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.DECODER;
+            p.transformer_block_param.heads = 8;
+            p.transformer_block_param.embed = 512;
+            p.transformer_block_param.block_size = 200;
+            p.transformer_block_param.attn_dropout = 0.0;
+            p.transformer_block_param.resid_dropout = 0.0;
+            p.transformer_block_param.enable_layernorm_cuda_impl = bEnableCudaImpl;
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+            Blob<T> blobDecIn = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobEncOut = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobDecMask = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobEncMask = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobVal = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobWork = new Blob<T>(m_cuda, m_log);
+
+            try
+            {
+                m_log.CHECK(layer.type == LayerParameter.LayerType.TRANSFORMER_BLOCK, "The layer type is incorrect!");
+                
+                blobDecIn.LoadFromNumpy(strPath + "dec.dec5.dec.1_x.npy");
+                blobDecIn.Name = "dec.decin_x0";
+                blobEncOut.LoadFromNumpy(strPath + "dec.dec5.dec.5_e_out.npy");
+                blobEncOut.Name = "enc.encout_x1";
+
+                blobEncMask.LoadFromNumpy(strPath + "dec.dec5.dec.1_e_mask.npy");
+                blobEncMask.Name = "enc.mask";
+                blobDecMask.LoadFromNumpy(strPath + "dec.dec5.dec.1_d_mask.npy");
+                blobDecMask.Name = "dec.mask";
+
+                BottomVec.Clear();
+                BottomVec.Add(blobDecIn);
+                BottomVec.Add(blobDecMask);
+                BottomVec.Add(blobEncOut);
+                BottomVec.Add(blobEncMask);
+
+                layer.Setup(BottomVec, TopVec);
+
+                layer.blobs[0].LoadFromNumpy(strPath + "dec.dec5.mh1.w_q.weight.npy");
+                layer.blobs[1].LoadFromNumpy(strPath + "dec.dec5.mh1.w_q.bias.npy");
+                layer.blobs[2].LoadFromNumpy(strPath + "dec.dec5.mh1.w_k.weight.npy");
+                layer.blobs[3].LoadFromNumpy(strPath + "dec.dec5.mh1.w_k.bias.npy");
+                layer.blobs[4].LoadFromNumpy(strPath + "dec.dec5.mh1.w_v.weight.npy");
+                layer.blobs[5].LoadFromNumpy(strPath + "dec.dec5.mh1.w_v.bias.npy");
+                layer.blobs[6].LoadFromNumpy(strPath + "dec.dec5.mh1.w_o.weight.npy");
+                layer.blobs[7].LoadFromNumpy(strPath + "dec.dec5.mh1.w_o.bias.npy");
+
+                layer.blobs[8].LoadFromNumpy(strPath + "dec.dec5.mh2.w_q.weight.npy");
+                layer.blobs[9].LoadFromNumpy(strPath + "dec.dec5.mh2.w_q.bias.npy");
+                layer.blobs[10].LoadFromNumpy(strPath + "dec.dec5.mh2.w_k.weight.npy");
+                layer.blobs[11].LoadFromNumpy(strPath + "dec.dec5.mh2.w_k.bias.npy");
+                layer.blobs[12].LoadFromNumpy(strPath + "dec.dec5.mh2.w_v.weight.npy");
+                layer.blobs[13].LoadFromNumpy(strPath + "dec.dec5.mh2.w_v.bias.npy");
+                layer.blobs[14].LoadFromNumpy(strPath + "dec.dec5.mh2.w_o.weight.npy");
+                layer.blobs[15].LoadFromNumpy(strPath + "dec.dec5.mh2.w_o.bias.npy");
+
+                layer.blobs[16].LoadFromNumpy(strPath + "dec.dec5.ff.linear_1.weight.npy");
+                layer.blobs[17].LoadFromNumpy(strPath + "dec.dec5.ff.linear_1.bias.npy");
+                layer.blobs[18].LoadFromNumpy(strPath + "dec.dec5.ff.linear_2.weight.npy");
+                layer.blobs[19].LoadFromNumpy(strPath + "dec.dec5.ff.linear_2.bias.npy");
+
+                layer.Forward(BottomVec, TopVec);
+
+                // Now, check values from forward
+                blobVal.LoadFromNumpy(strPath + "dec.dec5.dec.10_xD.npy");
+                Trace.Assert(blobVal.Compare(TopVec[0], blobWork, false, (typeof(T) == typeof(float)) ? 3e-06 : 4e-06));
+
+                // Load the inbound gradients.
+                TopVec[0].LoadFromNumpy(strPath + "grad_dec.dec5.dec.10_xD.npy", true);
+
+                List<bool> rgProp = new List<bool>() { true };
+                layer.Backward(TopVec, rgProp, BottomVec);
+
+                // Now, check values form backward
+                blobVal.LoadFromNumpy(strPath + "grad_dec.dec5.dec.1_x.npy", true);
+                Trace.Assert(blobVal.Compare(BottomVec[0], blobWork, true, 3e-08));
+                blobVal.LoadFromNumpy(strPath + "grad_dec.dec5.dec.5_e_out.npy", true);
+                Trace.Assert(blobVal.Compare(BottomVec[2], blobWork, true, 1e-08));
+            }
+            finally
+            {
+                dispose(ref blobDecIn);
+                dispose(ref blobEncOut);
+                dispose(ref blobDecMask);
+                dispose(ref blobEncMask);
+                dispose(ref blobVal);
+                dispose(ref blobWork);
+
+                layer.Dispose();
+            }
+        }
+
         private Tuple<string, string, string, string, string, string> loadDataFiles1()
         {
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\encdec";
@@ -517,7 +696,7 @@ namespace MyCaffe.test
             return buildModelEx(net, nBatch, nBlockSize, nEmbed, nEncVocabSize, nDecVocabSize, dfDropout);
         }
 
-        private string buildModelEx(NetParameter net, uint nBatch, uint nBlockSize, uint nEmbed, uint nEncVocabSize, uint nDecVocabSize, double dfDropout, bool bAddInput = false)
+        private string buildModelEx(NetParameter net, uint nBatch, uint nBlockSize, uint nEmbed, uint nEncVocabSize, uint nDecVocabSize, double dfDropout, bool bAddInput = false, Phase phase = Phase.TRAIN)
         {
             if (bAddInput)
             {
@@ -538,21 +717,39 @@ namespace MyCaffe.test
 
             LayerParameter emb1 = new LayerParameter(LayerParameter.LayerType.EMBED);
             emb1.name = "embed1";
+            emb1.embed_param.bias_term = false;
             emb1.embed_param.input_dim = nEncVocabSize;
             emb1.embed_param.num_output = nEmbed;
             emb1.bottom.Add("enc");
             emb1.top.Add("emb1");
             net.layer.Add(emb1);
 
+            LayerParameter emb2 = new LayerParameter(LayerParameter.LayerType.EMBED);
+            emb2.name = "embed2";
+            emb2.embed_param.bias_term = false;
+            emb2.embed_param.input_dim = nDecVocabSize;
+            emb2.embed_param.num_output = nEmbed;
+            emb2.bottom.Add("dec");
+            emb2.top.Add("emb2");
+            net.layer.Add(emb2);
+
             LayerParameter pos1 = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODING);
             pos1.positional_encoder_param.block_size = nBlockSize;
             pos1.positional_encoder_param.embed = nEmbed;
             pos1.name = "posenc1";
             pos1.bottom.Add("emb1");
-            pos1.top.Add("emb1");
+            pos1.top.Add("pos1");
             net.layer.Add(pos1);
 
-            string strEncBtm = "emb1";
+            LayerParameter pos2 = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODING);
+            pos2.positional_encoder_param.block_size = nBlockSize;
+            pos2.positional_encoder_param.embed = nEmbed;
+            pos2.name = "posenc2";
+            pos2.bottom.Add("emb2");
+            pos2.top.Add("pos2");
+            net.layer.Add(pos2);
+
+            string strEncBtm = "pos1";
             int nLayers = 6;
             for (int i = 0; i < nLayers; i++)
             {
@@ -581,23 +778,7 @@ namespace MyCaffe.test
             ln1.top.Add("ln1");
             net.layer.Add(ln1);
 
-            LayerParameter emb2 = new LayerParameter(LayerParameter.LayerType.EMBED);
-            emb2.name = "embed2";
-            emb2.embed_param.input_dim = nDecVocabSize;
-            emb2.embed_param.num_output = nEmbed;
-            emb2.bottom.Add("dec");
-            emb2.top.Add("emb2");
-            net.layer.Add(emb2);
-
-            LayerParameter pos2 = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODING);
-            pos2.positional_encoder_param.block_size = nBlockSize;
-            pos2.positional_encoder_param.embed = nEmbed;
-            pos2.name = "posenc2";
-            pos2.bottom.Add("emb2");
-            pos2.top.Add("emb2");
-            net.layer.Add(pos2);
-
-            string strDecBtm = "emb2";
+            string strDecBtm = "pos2";
             for (int i = 0; i < nLayers; i++)
             {
                 LayerParameter dec = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
@@ -635,37 +816,45 @@ namespace MyCaffe.test
             ip1.top.Add("logits");
             net.layer.Add(ip1);
 
-            LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
-            softmax.name = "softmax";
-            softmax.softmax_param.axis = 2;
-            softmax.bottom.Add("logits");
-            softmax.top.Add("prob");
-            softmax.include.Add(new NetStateRule(Phase.RUN));
-            net.layer.Add(softmax);
+            if (phase == Phase.RUN)
+            {
+                LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
+                softmax.name = "softmax";
+                softmax.softmax_param.axis = 2;
+                softmax.bottom.Add("logits");
+                softmax.top.Add("prob");
+                softmax.include.Add(new NetStateRule(Phase.RUN));
+                net.layer.Add(softmax);
+            }
 
-            LayerParameter loss = new LayerParameter(LayerParameter.LayerType.SOFTMAXWITH_LOSS);
-            loss.name = "loss";
-            loss.softmax_param.axis = 2;
-            loss.loss_param.ignore_label = 0;
-            loss.bottom.Add("logits");
-            loss.bottom.Add("tgt");
-            loss.top.Add("loss");
-            loss.include.Add(new NetStateRule(Phase.TRAIN));
-            net.layer.Add(loss);
+            if (phase == Phase.TRAIN)
+            {
+                LayerParameter loss = new LayerParameter(LayerParameter.LayerType.SOFTMAXWITH_LOSS);
+                loss.name = "loss";
+                loss.softmax_param.axis = 2;
+                loss.loss_param.normalization = LossParameter.NormalizationMode.VALID;
+                loss.bottom.Add("logits");
+                loss.bottom.Add("tgt");
+                loss.top.Add("loss");
+                loss.include.Add(new NetStateRule(Phase.TRAIN));
+                net.layer.Add(loss);
+            }
 
-            LayerParameter accuracy = new LayerParameter(LayerParameter.LayerType.ACCURACY);
-            accuracy.name = "accuracy";
-            accuracy.accuracy_param.axis = 2;
-            accuracy.accuracy_param.ignore_labels.Add(0);
-            accuracy.bottom.Add("logits");
-            accuracy.bottom.Add("tgt");
-            accuracy.top.Add("accuracy");
-            accuracy.include.Add(new NetStateRule(Phase.TEST));
-            net.layer.Add(accuracy);
+            if (phase == Phase.TEST)
+            {
+                LayerParameter accuracy = new LayerParameter(LayerParameter.LayerType.ACCURACY);
+                accuracy.name = "accuracy";
+                accuracy.accuracy_param.axis = 2;
+                accuracy.accuracy_param.ignore_labels.Add(0);
+                accuracy.bottom.Add("logits");
+                accuracy.bottom.Add("tgt");
+                accuracy.top.Add("accuracy");
+                accuracy.include.Add(new NetStateRule(Phase.TEST));
+                net.layer.Add(accuracy);
+            }
 
             return net.ToProto("root").ToString();
         }
-
 
         private string buildSolver()
         {
@@ -785,7 +974,7 @@ namespace MyCaffe.test
                 mycaffe.Cuda.ReportMemory(m_log, "Pre-Model Load");
                 mycaffe.LoadToRun(strModel, rgWeights, new BlobShape(new List<int>() { 1, 1, 1 }));
                 mycaffe.Cuda.ReportMemory(m_log, "Post-Model Load");
-                blobDec = mycaffe.CreateBlob("dec_in");
+                blobDec = mycaffe.CreateBlob("dec.decin");
 
                 Net<float> net = mycaffe.GetInternalNet(Phase.RUN);
 
@@ -843,6 +1032,535 @@ namespace MyCaffe.test
             }
 
             return nIdx;
+        }
+
+        private void loadInitialState(Net<T> net, string strPath)
+        {
+            foreach (Layer<T> layer in net.layers)
+            {
+                switch (layer.layer_param.name)
+                {
+                    case "embed1":
+                        layer.blobs[0].LoadFromNumpy(strPath + "transformer.src_emb.weight.npy");
+                        break;
+
+                    case "embed2":
+                        layer.blobs[0].LoadFromNumpy(strPath + "transformer.trg_emb.weight.npy");
+                        break;
+
+                    case "enc1":
+                        layer.blobs[0].LoadFromNumpy(strPath + "enc.enc0.mh.w_q.weight.npy");
+                        layer.blobs[1].LoadFromNumpy(strPath + "enc.enc0.mh.w_q.bias.npy");
+                        layer.blobs[2].LoadFromNumpy(strPath + "enc.enc0.mh.w_k.weight.npy");
+                        layer.blobs[3].LoadFromNumpy(strPath + "enc.enc0.mh.w_k.bias.npy");
+                        layer.blobs[4].LoadFromNumpy(strPath + "enc.enc0.mh.w_v.weight.npy");
+                        layer.blobs[5].LoadFromNumpy(strPath + "enc.enc0.mh.w_v.bias.npy");
+                        layer.blobs[6].LoadFromNumpy(strPath + "enc.enc0.mh.w_o.weight.npy");
+                        layer.blobs[7].LoadFromNumpy(strPath + "enc.enc0.mh.w_o.bias.npy");
+                        
+                        layer.blobs[8].LoadFromNumpy(strPath + "enc.enc0.ff.linear_1.weight.npy");
+                        layer.blobs[9].LoadFromNumpy(strPath + "enc.enc0.ff.linear_1.bias.npy");
+                        layer.blobs[10].LoadFromNumpy(strPath + "enc.enc0.ff.linear_2.weight.npy");
+                        layer.blobs[11].LoadFromNumpy(strPath + "enc.enc0.ff.linear_2.bias.npy");
+                        break;
+
+                    case "enc2":
+                        layer.blobs[0].LoadFromNumpy(strPath + "enc.enc1.mh.w_q.weight.npy");
+                        layer.blobs[1].LoadFromNumpy(strPath + "enc.enc1.mh.w_q.bias.npy");
+                        layer.blobs[2].LoadFromNumpy(strPath + "enc.enc1.mh.w_k.weight.npy");
+                        layer.blobs[3].LoadFromNumpy(strPath + "enc.enc1.mh.w_k.bias.npy");
+                        layer.blobs[4].LoadFromNumpy(strPath + "enc.enc1.mh.w_v.weight.npy");
+                        layer.blobs[5].LoadFromNumpy(strPath + "enc.enc1.mh.w_v.bias.npy");
+                        layer.blobs[6].LoadFromNumpy(strPath + "enc.enc1.mh.w_o.weight.npy");
+                        layer.blobs[7].LoadFromNumpy(strPath + "enc.enc1.mh.w_o.bias.npy");
+                        
+                        layer.blobs[8].LoadFromNumpy(strPath + "enc.enc1.ff.linear_1.weight.npy");
+                        layer.blobs[9].LoadFromNumpy(strPath + "enc.enc1.ff.linear_1.bias.npy");
+                        layer.blobs[10].LoadFromNumpy(strPath + "enc.enc1.ff.linear_2.weight.npy");
+                        layer.blobs[11].LoadFromNumpy(strPath + "enc.enc1.ff.linear_2.bias.npy");
+                        break;
+
+                    case "enc3":
+                        layer.blobs[0].LoadFromNumpy(strPath + "enc.enc2.mh.w_q.weight.npy");
+                        layer.blobs[1].LoadFromNumpy(strPath + "enc.enc2.mh.w_q.bias.npy");
+                        layer.blobs[2].LoadFromNumpy(strPath + "enc.enc2.mh.w_k.weight.npy");
+                        layer.blobs[3].LoadFromNumpy(strPath + "enc.enc2.mh.w_k.bias.npy");
+                        layer.blobs[4].LoadFromNumpy(strPath + "enc.enc2.mh.w_v.weight.npy");
+                        layer.blobs[5].LoadFromNumpy(strPath + "enc.enc2.mh.w_v.bias.npy");
+                        layer.blobs[6].LoadFromNumpy(strPath + "enc.enc2.mh.w_o.weight.npy");
+                        layer.blobs[7].LoadFromNumpy(strPath + "enc.enc2.mh.w_o.bias.npy");
+                        
+                        layer.blobs[8].LoadFromNumpy(strPath + "enc.enc2.ff.linear_1.weight.npy");
+                        layer.blobs[9].LoadFromNumpy(strPath + "enc.enc2.ff.linear_1.bias.npy");
+                        layer.blobs[10].LoadFromNumpy(strPath + "enc.enc2.ff.linear_2.weight.npy");
+                        layer.blobs[11].LoadFromNumpy(strPath + "enc.enc2.ff.linear_2.bias.npy");
+                        break;
+
+                    case "enc4":
+                        layer.blobs[0].LoadFromNumpy(strPath + "enc.enc3.mh.w_q.weight.npy");
+                        layer.blobs[1].LoadFromNumpy(strPath + "enc.enc3.mh.w_q.bias.npy");
+                        layer.blobs[2].LoadFromNumpy(strPath + "enc.enc3.mh.w_k.weight.npy");
+                        layer.blobs[3].LoadFromNumpy(strPath + "enc.enc3.mh.w_k.bias.npy");
+                        layer.blobs[4].LoadFromNumpy(strPath + "enc.enc3.mh.w_v.weight.npy");
+                        layer.blobs[5].LoadFromNumpy(strPath + "enc.enc3.mh.w_v.bias.npy");
+                        layer.blobs[6].LoadFromNumpy(strPath + "enc.enc3.mh.w_o.weight.npy");
+                        layer.blobs[7].LoadFromNumpy(strPath + "enc.enc3.mh.w_o.bias.npy");
+                        
+                        layer.blobs[8].LoadFromNumpy(strPath + "enc.enc3.ff.linear_1.weight.npy");
+                        layer.blobs[9].LoadFromNumpy(strPath + "enc.enc3.ff.linear_1.bias.npy");
+                        layer.blobs[10].LoadFromNumpy(strPath + "enc.enc3.ff.linear_2.weight.npy");
+                        layer.blobs[11].LoadFromNumpy(strPath + "enc.enc3.ff.linear_2.bias.npy");
+                        break;
+
+                    case "enc5":
+                        layer.blobs[0].LoadFromNumpy(strPath + "enc.enc4.mh.w_q.weight.npy");
+                        layer.blobs[1].LoadFromNumpy(strPath + "enc.enc4.mh.w_q.bias.npy");
+                        layer.blobs[2].LoadFromNumpy(strPath + "enc.enc4.mh.w_k.weight.npy");
+                        layer.blobs[3].LoadFromNumpy(strPath + "enc.enc4.mh.w_k.bias.npy");
+                        layer.blobs[4].LoadFromNumpy(strPath + "enc.enc4.mh.w_v.weight.npy");
+                        layer.blobs[5].LoadFromNumpy(strPath + "enc.enc4.mh.w_v.bias.npy");
+                        layer.blobs[6].LoadFromNumpy(strPath + "enc.enc4.mh.w_o.weight.npy");
+                        layer.blobs[7].LoadFromNumpy(strPath + "enc.enc4.mh.w_o.bias.npy");
+                        
+                        layer.blobs[8].LoadFromNumpy(strPath + "enc.enc4.ff.linear_1.weight.npy");
+                        layer.blobs[9].LoadFromNumpy(strPath + "enc.enc4.ff.linear_1.bias.npy");
+                        layer.blobs[10].LoadFromNumpy(strPath + "enc.enc4.ff.linear_2.weight.npy");
+                        layer.blobs[11].LoadFromNumpy(strPath + "enc.enc4.ff.linear_2.bias.npy");
+                        break;
+
+                    case "enc6":
+                        layer.blobs[0].LoadFromNumpy(strPath + "enc.enc5.mh.w_q.weight.npy");
+                        layer.blobs[1].LoadFromNumpy(strPath + "enc.enc5.mh.w_q.bias.npy");
+                        layer.blobs[2].LoadFromNumpy(strPath + "enc.enc5.mh.w_k.weight.npy");
+                        layer.blobs[3].LoadFromNumpy(strPath + "enc.enc5.mh.w_k.bias.npy");
+                        layer.blobs[4].LoadFromNumpy(strPath + "enc.enc5.mh.w_v.weight.npy");
+                        layer.blobs[5].LoadFromNumpy(strPath + "enc.enc5.mh.w_v.bias.npy");
+                        layer.blobs[6].LoadFromNumpy(strPath + "enc.enc5.mh.w_o.weight.npy");
+                        layer.blobs[7].LoadFromNumpy(strPath + "enc.enc5.mh.w_o.bias.npy");
+                        
+                        layer.blobs[8].LoadFromNumpy(strPath + "enc.enc5.ff.linear_1.weight.npy");
+                        layer.blobs[9].LoadFromNumpy(strPath + "enc.enc5.ff.linear_1.bias.npy");
+                        layer.blobs[10].LoadFromNumpy(strPath + "enc.enc5.ff.linear_2.weight.npy");
+                        layer.blobs[11].LoadFromNumpy(strPath + "enc.enc5.ff.linear_2.bias.npy");
+                        break;
+
+                    case "dec1":
+                        layer.blobs[0].LoadFromNumpy(strPath + "dec.dec0.mh1.w_q.weight.npy");
+                        layer.blobs[1].LoadFromNumpy(strPath + "dec.dec0.mh1.w_q.bias.npy");
+                        layer.blobs[2].LoadFromNumpy(strPath + "dec.dec0.mh1.w_k.weight.npy");
+                        layer.blobs[3].LoadFromNumpy(strPath + "dec.dec0.mh1.w_k.bias.npy");
+                        layer.blobs[4].LoadFromNumpy(strPath + "dec.dec0.mh1.w_v.weight.npy");
+                        layer.blobs[5].LoadFromNumpy(strPath + "dec.dec0.mh1.w_v.bias.npy");
+                        layer.blobs[6].LoadFromNumpy(strPath + "dec.dec0.mh1.w_o.weight.npy");
+                        layer.blobs[7].LoadFromNumpy(strPath + "dec.dec0.mh1.w_o.bias.npy");
+
+                        layer.blobs[8].LoadFromNumpy(strPath + "dec.dec0.mh2.w_q.weight.npy");
+                        layer.blobs[9].LoadFromNumpy(strPath + "dec.dec0.mh2.w_q.bias.npy");
+                        layer.blobs[10].LoadFromNumpy(strPath + "dec.dec0.mh2.w_k.weight.npy");
+                        layer.blobs[11].LoadFromNumpy(strPath + "dec.dec0.mh2.w_k.bias.npy");
+                        layer.blobs[12].LoadFromNumpy(strPath + "dec.dec0.mh2.w_v.weight.npy");
+                        layer.blobs[13].LoadFromNumpy(strPath + "dec.dec0.mh2.w_v.bias.npy");
+                        layer.blobs[14].LoadFromNumpy(strPath + "dec.dec0.mh2.w_o.weight.npy");
+                        layer.blobs[15].LoadFromNumpy(strPath + "dec.dec0.mh2.w_o.bias.npy");
+
+                        layer.blobs[16].LoadFromNumpy(strPath + "dec.dec0.ff.linear_1.weight.npy");
+                        layer.blobs[17].LoadFromNumpy(strPath + "dec.dec0.ff.linear_1.bias.npy");
+                        layer.blobs[18].LoadFromNumpy(strPath + "dec.dec0.ff.linear_2.weight.npy");
+                        layer.blobs[19].LoadFromNumpy(strPath + "dec.dec0.ff.linear_2.bias.npy");
+                        break;
+
+                    case "dec2":
+                        layer.blobs[0].LoadFromNumpy(strPath + "dec.dec1.mh1.w_q.weight.npy");
+                        layer.blobs[1].LoadFromNumpy(strPath + "dec.dec1.mh1.w_q.bias.npy");
+                        layer.blobs[2].LoadFromNumpy(strPath + "dec.dec1.mh1.w_k.weight.npy");
+                        layer.blobs[3].LoadFromNumpy(strPath + "dec.dec1.mh1.w_k.bias.npy");
+                        layer.blobs[4].LoadFromNumpy(strPath + "dec.dec1.mh1.w_v.weight.npy");
+                        layer.blobs[5].LoadFromNumpy(strPath + "dec.dec1.mh1.w_v.bias.npy");
+                        layer.blobs[6].LoadFromNumpy(strPath + "dec.dec1.mh1.w_o.weight.npy");
+                        layer.blobs[7].LoadFromNumpy(strPath + "dec.dec1.mh1.w_o.bias.npy");
+
+                        layer.blobs[8].LoadFromNumpy(strPath + "dec.dec1.mh2.w_q.weight.npy");
+                        layer.blobs[9].LoadFromNumpy(strPath + "dec.dec1.mh2.w_q.bias.npy");
+                        layer.blobs[10].LoadFromNumpy(strPath + "dec.dec1.mh2.w_k.weight.npy");
+                        layer.blobs[11].LoadFromNumpy(strPath + "dec.dec1.mh2.w_k.bias.npy");
+                        layer.blobs[12].LoadFromNumpy(strPath + "dec.dec1.mh2.w_v.weight.npy");
+                        layer.blobs[13].LoadFromNumpy(strPath + "dec.dec1.mh2.w_v.bias.npy");
+                        layer.blobs[14].LoadFromNumpy(strPath + "dec.dec1.mh2.w_o.weight.npy");
+                        layer.blobs[15].LoadFromNumpy(strPath + "dec.dec1.mh2.w_o.bias.npy");
+
+                        layer.blobs[16].LoadFromNumpy(strPath + "dec.dec1.ff.linear_1.weight.npy");
+                        layer.blobs[17].LoadFromNumpy(strPath + "dec.dec1.ff.linear_1.bias.npy");
+                        layer.blobs[18].LoadFromNumpy(strPath + "dec.dec1.ff.linear_2.weight.npy");
+                        layer.blobs[19].LoadFromNumpy(strPath + "dec.dec1.ff.linear_2.bias.npy");
+                        break;
+
+                    case "dec3":
+                        layer.blobs[0].LoadFromNumpy(strPath + "dec.dec2.mh1.w_q.weight.npy");
+                        layer.blobs[1].LoadFromNumpy(strPath + "dec.dec2.mh1.w_q.bias.npy");
+                        layer.blobs[2].LoadFromNumpy(strPath + "dec.dec2.mh1.w_k.weight.npy");
+                        layer.blobs[3].LoadFromNumpy(strPath + "dec.dec2.mh1.w_k.bias.npy");
+                        layer.blobs[4].LoadFromNumpy(strPath + "dec.dec2.mh1.w_v.weight.npy");
+                        layer.blobs[5].LoadFromNumpy(strPath + "dec.dec2.mh1.w_v.bias.npy");
+                        layer.blobs[6].LoadFromNumpy(strPath + "dec.dec2.mh1.w_o.weight.npy");
+                        layer.blobs[7].LoadFromNumpy(strPath + "dec.dec2.mh1.w_o.bias.npy");
+
+                        layer.blobs[8].LoadFromNumpy(strPath + "dec.dec2.mh2.w_q.weight.npy");
+                        layer.blobs[9].LoadFromNumpy(strPath + "dec.dec2.mh2.w_q.bias.npy");
+                        layer.blobs[10].LoadFromNumpy(strPath + "dec.dec2.mh2.w_k.weight.npy");
+                        layer.blobs[11].LoadFromNumpy(strPath + "dec.dec2.mh2.w_k.bias.npy");
+                        layer.blobs[12].LoadFromNumpy(strPath + "dec.dec2.mh2.w_v.weight.npy");
+                        layer.blobs[13].LoadFromNumpy(strPath + "dec.dec2.mh2.w_v.bias.npy");
+                        layer.blobs[14].LoadFromNumpy(strPath + "dec.dec2.mh2.w_o.weight.npy");
+                        layer.blobs[15].LoadFromNumpy(strPath + "dec.dec2.mh2.w_o.bias.npy");
+
+                        layer.blobs[16].LoadFromNumpy(strPath + "dec.dec2.ff.linear_1.weight.npy");
+                        layer.blobs[17].LoadFromNumpy(strPath + "dec.dec2.ff.linear_1.bias.npy");
+                        layer.blobs[18].LoadFromNumpy(strPath + "dec.dec2.ff.linear_2.weight.npy");
+                        layer.blobs[19].LoadFromNumpy(strPath + "dec.dec2.ff.linear_2.bias.npy");
+                        break;
+
+                    case "dec4":
+                        layer.blobs[0].LoadFromNumpy(strPath + "dec.dec3.mh1.w_q.weight.npy");
+                        layer.blobs[1].LoadFromNumpy(strPath + "dec.dec3.mh1.w_q.bias.npy");
+                        layer.blobs[2].LoadFromNumpy(strPath + "dec.dec3.mh1.w_k.weight.npy");
+                        layer.blobs[3].LoadFromNumpy(strPath + "dec.dec3.mh1.w_k.bias.npy");
+                        layer.blobs[4].LoadFromNumpy(strPath + "dec.dec3.mh1.w_v.weight.npy");
+                        layer.blobs[5].LoadFromNumpy(strPath + "dec.dec3.mh1.w_v.bias.npy");
+                        layer.blobs[6].LoadFromNumpy(strPath + "dec.dec3.mh1.w_o.weight.npy");
+                        layer.blobs[7].LoadFromNumpy(strPath + "dec.dec3.mh1.w_o.bias.npy");
+
+                        layer.blobs[8].LoadFromNumpy(strPath + "dec.dec3.mh2.w_q.weight.npy");
+                        layer.blobs[9].LoadFromNumpy(strPath + "dec.dec3.mh2.w_q.bias.npy");
+                        layer.blobs[10].LoadFromNumpy(strPath + "dec.dec3.mh2.w_k.weight.npy");
+                        layer.blobs[11].LoadFromNumpy(strPath + "dec.dec3.mh2.w_k.bias.npy");
+                        layer.blobs[12].LoadFromNumpy(strPath + "dec.dec3.mh2.w_v.weight.npy");
+                        layer.blobs[13].LoadFromNumpy(strPath + "dec.dec3.mh2.w_v.bias.npy");
+                        layer.blobs[14].LoadFromNumpy(strPath + "dec.dec3.mh2.w_o.weight.npy");
+                        layer.blobs[15].LoadFromNumpy(strPath + "dec.dec3.mh2.w_o.bias.npy");
+
+                        layer.blobs[16].LoadFromNumpy(strPath + "dec.dec3.ff.linear_1.weight.npy");
+                        layer.blobs[17].LoadFromNumpy(strPath + "dec.dec3.ff.linear_1.bias.npy");
+                        layer.blobs[18].LoadFromNumpy(strPath + "dec.dec3.ff.linear_2.weight.npy");
+                        layer.blobs[19].LoadFromNumpy(strPath + "dec.dec3.ff.linear_2.bias.npy");
+                        break;
+
+                    case "dec5":
+                        layer.blobs[0].LoadFromNumpy(strPath + "dec.dec4.mh1.w_q.weight.npy");
+                        layer.blobs[1].LoadFromNumpy(strPath + "dec.dec4.mh1.w_q.bias.npy");
+                        layer.blobs[2].LoadFromNumpy(strPath + "dec.dec4.mh1.w_k.weight.npy");
+                        layer.blobs[3].LoadFromNumpy(strPath + "dec.dec4.mh1.w_k.bias.npy");
+                        layer.blobs[4].LoadFromNumpy(strPath + "dec.dec4.mh1.w_v.weight.npy");
+                        layer.blobs[5].LoadFromNumpy(strPath + "dec.dec4.mh1.w_v.bias.npy");
+                        layer.blobs[6].LoadFromNumpy(strPath + "dec.dec4.mh1.w_o.weight.npy");
+                        layer.blobs[7].LoadFromNumpy(strPath + "dec.dec4.mh1.w_o.bias.npy");
+
+                        layer.blobs[8].LoadFromNumpy(strPath + "dec.dec4.mh2.w_q.weight.npy");
+                        layer.blobs[9].LoadFromNumpy(strPath + "dec.dec4.mh2.w_q.bias.npy");
+                        layer.blobs[10].LoadFromNumpy(strPath + "dec.dec4.mh2.w_k.weight.npy");
+                        layer.blobs[11].LoadFromNumpy(strPath + "dec.dec4.mh2.w_k.bias.npy");
+                        layer.blobs[12].LoadFromNumpy(strPath + "dec.dec4.mh2.w_v.weight.npy");
+                        layer.blobs[13].LoadFromNumpy(strPath + "dec.dec4.mh2.w_v.bias.npy");
+                        layer.blobs[14].LoadFromNumpy(strPath + "dec.dec4.mh2.w_o.weight.npy");
+                        layer.blobs[15].LoadFromNumpy(strPath + "dec.dec4.mh2.w_o.bias.npy");
+
+                        layer.blobs[16].LoadFromNumpy(strPath + "dec.dec4.ff.linear_1.weight.npy");
+                        layer.blobs[17].LoadFromNumpy(strPath + "dec.dec4.ff.linear_1.bias.npy");
+                        layer.blobs[18].LoadFromNumpy(strPath + "dec.dec4.ff.linear_2.weight.npy");
+                        layer.blobs[19].LoadFromNumpy(strPath + "dec.dec4.ff.linear_2.bias.npy");
+                        break;
+
+                    case "dec6":
+                        layer.blobs[0].LoadFromNumpy(strPath + "dec.dec5.mh1.w_q.weight.npy");
+                        layer.blobs[1].LoadFromNumpy(strPath + "dec.dec5.mh1.w_q.bias.npy");
+                        layer.blobs[2].LoadFromNumpy(strPath + "dec.dec5.mh1.w_k.weight.npy");
+                        layer.blobs[3].LoadFromNumpy(strPath + "dec.dec5.mh1.w_k.bias.npy");
+                        layer.blobs[4].LoadFromNumpy(strPath + "dec.dec5.mh1.w_v.weight.npy");
+                        layer.blobs[5].LoadFromNumpy(strPath + "dec.dec5.mh1.w_v.bias.npy");
+                        layer.blobs[6].LoadFromNumpy(strPath + "dec.dec5.mh1.w_o.weight.npy");
+                        layer.blobs[7].LoadFromNumpy(strPath + "dec.dec5.mh1.w_o.bias.npy");
+
+                        layer.blobs[8].LoadFromNumpy(strPath + "dec.dec5.mh2.w_q.weight.npy");
+                        layer.blobs[9].LoadFromNumpy(strPath + "dec.dec5.mh2.w_q.bias.npy");
+                        layer.blobs[10].LoadFromNumpy(strPath + "dec.dec5.mh2.w_k.weight.npy");
+                        layer.blobs[11].LoadFromNumpy(strPath + "dec.dec5.mh2.w_k.bias.npy");
+                        layer.blobs[12].LoadFromNumpy(strPath + "dec.dec5.mh2.w_v.weight.npy");
+                        layer.blobs[13].LoadFromNumpy(strPath + "dec.dec5.mh2.w_v.bias.npy");
+                        layer.blobs[14].LoadFromNumpy(strPath + "dec.dec5.mh2.w_o.weight.npy");
+                        layer.blobs[15].LoadFromNumpy(strPath + "dec.dec5.mh2.w_o.bias.npy");
+
+                        layer.blobs[16].LoadFromNumpy(strPath + "dec.dec5.ff.linear_1.weight.npy");
+                        layer.blobs[17].LoadFromNumpy(strPath + "dec.dec5.ff.linear_1.bias.npy");
+                        layer.blobs[18].LoadFromNumpy(strPath + "dec.dec5.ff.linear_2.weight.npy");
+                        layer.blobs[19].LoadFromNumpy(strPath + "dec.dec5.ff.linear_2.bias.npy");
+                        break;
+
+                    case "ip1":
+                        layer.blobs[0].LoadFromNumpy(strPath + "transformer.out_linear.weight.npy");
+                        layer.blobs[1].LoadFromNumpy(strPath + "transformer.out_linear.bias.npy");
+                        break;
+                }
+            }
+        }
+
+        public void TestFull(bool bEnableCudaImpl)
+        {
+            string strPath = loadTestData1();
+            CancelEvent evtCancel = new CancelEvent();
+            NetParameter net_param = new NetParameter();
+            string strModel = buildModelEx(net_param, 3, 200, 512, 16000, 16000, 0.0, true, Phase.TRAIN);
+            string strSolver = buildSolver();
+            Blob<T> blobEncIn = null;
+            Blob<T> blobDecIn = null;
+            Blob<T> blobDecOut = null;
+            Blob<T> blobEncMask = null;
+            Blob<T> blobDecMask = null;
+            Blob<T> blobLoss = null;
+            Blob<T> blobVal = null;
+            Blob<T> blobWork = null;
+            MyCaffeControl<T> mycaffe = null;
+
+            try
+            {                
+                SettingsCaffe s = new SettingsCaffe() { GpuIds = "0" };
+                mycaffe = new MyCaffeControl<T>(s, m_log, evtCancel);
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
+
+                blobEncIn = mycaffe.CreateBlob("encin");
+                blobDecIn = mycaffe.CreateBlob("decin");
+                blobDecOut = mycaffe.CreateBlob("decout");
+                blobEncMask = mycaffe.CreateBlob("e_mask");
+                blobDecMask = mycaffe.CreateBlob("d_mask");
+                blobLoss = mycaffe.CreateBlob("loss");
+                blobVal = mycaffe.CreateBlob("val");
+                blobWork = mycaffe.CreateBlob("work");
+
+                Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
+                loadInitialState(net, strPath + "iter_0\\");
+
+                blobEncIn.LoadFromNumpy(strPath + "0_src_input.npy");
+                blobDecIn.LoadFromNumpy(strPath + "0_trg_input.npy");
+                blobDecOut.LoadFromNumpy(strPath + "0_trg_output.npy");
+                blobEncMask.LoadFromNumpy(strPath + "0_e_mask.npy");
+                blobDecMask.LoadFromNumpy(strPath + "0_d_mask.npy");
+
+                blobEncMask.Reshape(blobEncMask.num, blobEncMask.height, 1, 1);
+
+                BlobCollection<T> colBottom = new BlobCollection<T>();
+                colBottom.Add(blobEncIn);
+                colBottom.Add(blobDecIn);
+                colBottom.Add(blobDecOut);
+                colBottom.Add(blobEncMask);
+                colBottom.Add(blobDecMask);
+
+                strPath += "iter_0\\";
+
+                //---------------------------------
+                // Test the forward pass
+                //---------------------------------
+                double dfLoss;
+                BlobCollection<T> colTop = net.Forward(colBottom, out dfLoss);
+
+                int nEmb1LayerI = 3;
+                blobVal.LoadFromNumpy(strPath + "transformer.src_input.npy");
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEmb1LayerI][0], blobWork, false, 1e-08));
+                blobVal.LoadFromNumpy(strPath + "transformer.src_emb.weight.npy");
+                Trace.Assert(blobVal.Compare(net.layers[nEmb1LayerI].blobs[0], blobWork, false, 1e-08));
+                blobVal.LoadFromNumpy(strPath + "transformer.src_input_emb.npy");
+                Trace.Assert(blobVal.Compare(net.top_vecs[nEmb1LayerI][0], blobWork, false, 1e-08));
+
+                int nEmb2LayerI = 4;
+                blobVal.LoadFromNumpy(strPath + "transformer.trg_input.npy");
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEmb2LayerI][0], blobWork, false, 1e-08));
+                blobVal.LoadFromNumpy(strPath + "transformer.trg_emb.weight.npy");
+                Trace.Assert(blobVal.Compare(net.layers[nEmb2LayerI].blobs[0], blobWork, false, 1e-08));
+                blobVal.LoadFromNumpy(strPath + "transformer.trg_input_emb.npy");
+                Trace.Assert(blobVal.Compare(net.top_vecs[nEmb2LayerI][0], blobWork, false, 1e-08));
+
+                int nEmb1LayerO = 5;
+                blobVal.LoadFromNumpy(strPath + "transformer.src_input_emb.npy");
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEmb1LayerO][0], blobWork, false, 1e-08));
+
+                int nEmb2LayerO = 6;
+                blobVal.LoadFromNumpy(strPath + "transformer.trg_input_emb.npy");
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEmb2LayerO][0], blobWork, false, 1e-08));
+
+                int nPos1LayerO = 7;
+                blobVal.LoadFromNumpy(strPath + "transformer.src_input_pos.npy");
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nPos1LayerO][0], blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-07));
+                blobVal.LoadFromNumpy(strPath + "transformer.e_mask.npy");
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nPos1LayerO][1], blobWork, false, 1e-08));
+
+                int nEnc1Layer = 8;
+                blobVal.LoadFromNumpy(strPath + "enc.enc1.enc.1_x.npy");
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEnc1Layer][0], blobWork, false, 7e-06));
+
+                int nEnc2Layer = 9;
+                blobVal.LoadFromNumpy(strPath + "enc.enc2.enc.1_x.npy");
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEnc2Layer][0], blobWork, false, 8e-06));
+
+                int nEnc3Layer = 10;
+                blobVal.LoadFromNumpy(strPath + "enc.enc3.enc.1_x.npy");
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEnc3Layer][0], blobWork, false, 1e-05));
+
+                int nEnc4Layer = 11;
+                blobVal.LoadFromNumpy(strPath + "enc.enc4.enc.1_x.npy");
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEnc4Layer][0], blobWork, false, 1.2e-05));
+
+                int nEnc5Layer = 12;
+                blobVal.LoadFromNumpy(strPath + "enc.enc5.enc.1_x.npy");
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEnc5Layer][0], blobWork, false, 1.3e-05));
+
+                int nEncOutLayerO = 13;
+                blobVal.LoadFromNumpy(strPath + "enc.ln.out.npy");
+                Trace.Assert(blobVal.Compare(net.top_vecs[nEncOutLayerO][0], blobWork, false, 5e-06));
+                blobVal.LoadFromNumpy(strPath + "transformer.e_output.npy");
+                Trace.Assert(blobVal.Compare(net.top_vecs[nEncOutLayerO][0], blobWork, false, 5e-06));
+
+                int nPos2LayerO = 15;
+                blobVal.LoadFromNumpy(strPath + "transformer.trg_input_pos.npy");
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nPos2LayerO][0], blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-07));
+
+                int nDecOutLayerO = 21;
+                blobVal.LoadFromNumpy(strPath + "transformer.d_output.npy");
+                Trace.Assert(blobVal.Compare(net.top_vecs[nDecOutLayerO][0], blobWork, false, 5e-06));
+
+                int nDecOutLayerO1 = 22;
+                blobVal.LoadFromNumpy(strPath + "transformer.d_output1.npy");
+                Trace.Assert(blobVal.Compare(net.top_vecs[nDecOutLayerO1][0], blobWork, false, 2e-06));
+
+                blobLoss.LoadFromNumpy(strPath + "0_loss.npy");
+                double dfActual = Utility.ConvertVal<T>(blobLoss.GetData(0));
+                double dfErr = (typeof(T) == typeof(float)) ? 1e-08 : 1e-06;
+                m_log.EXPECT_NEAR(dfLoss, dfActual, dfErr, "The loss does not match the actual.");
+
+                //---------------------------------
+                // Test the backward pass.
+                //---------------------------------
+
+                blobLoss.LoadFromNumpy(strPath + "grad_0_loss.npy", true);
+                int nOutLayer = 23;
+                net.top_vecs[nOutLayer][0].CopyFrom(blobLoss, true);
+
+                net.Backward();
+
+                blobVal.LoadFromNumpy(strPath + "grad_transformer.d_output1.npy", true);
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nOutLayer][0], blobWork, true, 1e-08));
+
+                blobVal.LoadFromNumpy(strPath + "grad_transformer.d_output.npy", true);
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nDecOutLayerO1][0], blobWork, true, 1e-08));
+                
+                blobVal.LoadFromNumpy(strPath + "grad_dec.ln.in.npy", true);
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 0][0], blobWork, true, 1e-08));
+
+                blobVal.LoadFromNumpy(strPath + "grad_dec.x5.out.npy", true);
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 0][0], blobWork, true, 3e-08));
+
+                blobVal.LoadFromNumpy(strPath + "grad_dec.x5.in.npy", true);
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 1][0], blobWork, true, 3e-08));
+
+                blobVal.LoadFromNumpy(strPath + "grad_dec.x4.in.npy", true);
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 2][0], blobWork, true, 3e-08));
+
+                blobVal.LoadFromNumpy(strPath + "grad_dec.x3.in.npy", true);
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 3][0], blobWork, true, 4e-08));
+
+                blobVal.LoadFromNumpy(strPath + "grad_dec.x2.in.npy", true);
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 4][0], blobWork, true, 5e-08));
+
+                blobVal.LoadFromNumpy(strPath + "grad_dec.x1.in.npy", true);
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 5][0], blobWork, true, 2e-07));
+
+                blobVal.LoadFromNumpy(strPath + "grad_dec.x0.in.npy", true);
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 6][0], blobWork, true, 3e-07));
+
+                int nSplitLayer = 14;
+                blobVal.LoadFromNumpy(strPath + "grad_transformer.e_output.npy", true);
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nSplitLayer][0], blobWork, true, 2e-08));
+
+                int nLn1Layer = 13;
+                blobVal.LoadFromNumpy(strPath + "grad_enc.ln.in.npy", true);
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nLn1Layer][0], blobWork, true, 1e-08));
+
+                int nEncOutLayer = 12;
+                blobVal.LoadFromNumpy(strPath + "grad_enc.x5.in.npy", true);
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEncOutLayer - 0][0], blobWork, true, 1e-08));
+
+                blobVal.LoadFromNumpy(strPath + "grad_enc.x4.in.npy", true);
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEncOutLayer - 1][0], blobWork, true, 1e-08));
+
+                blobVal.LoadFromNumpy(strPath + "grad_enc.x3.in.npy", true);
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEncOutLayer - 2][0], blobWork, true, 1e-08));
+
+                blobVal.LoadFromNumpy(strPath + "grad_enc.x2.in.npy", true);
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEncOutLayer - 3][0], blobWork, true, 1e-08));
+
+                blobVal.LoadFromNumpy(strPath + "grad_enc.x1.in.npy", true);
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEncOutLayer - 4][0], blobWork, true, 2e-08));
+
+                blobVal.LoadFromNumpy(strPath + "grad_enc.x0.in.npy", true);
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEncOutLayer - 5][0], blobWork, true, 4e-08));
+
+                int nDecPosLayer = 6;
+                blobVal.LoadFromNumpy(strPath + "grad_transformer.trg_input_pos.npy", true);
+                Trace.Assert(blobVal.Compare(net.top_vecs[nDecPosLayer][0], blobWork, true, 3e-07));
+
+                int nEncPosLayer = 5;
+                blobVal.LoadFromNumpy(strPath + "grad_transformer.src_input_pos.npy", true);
+                Trace.Assert(blobVal.Compare(net.top_vecs[nEncPosLayer][0], blobWork, true, 4e-08));
+
+                int nDecEmbLayer = 4;
+                blobVal.LoadFromNumpy(strPath + "grad_transformer.trg_input_emb.npy", true);
+                Trace.Assert(blobVal.Compare(net.top_vecs[nDecEmbLayer][0], blobWork, true, 5e-06));
+
+                int nEncEmbLayer = 3;
+                blobVal.LoadFromNumpy(strPath + "grad_transformer.src_input_emb.npy", true);
+                Trace.Assert(blobVal.Compare(net.top_vecs[nEncEmbLayer][0], blobWork, true, 8e-07));
+
+                // Train a few iterations.
+                mycaffe.Train(5);
+
+                
+                //-------------------------------------
+                // Verify training and testing weights
+                //-------------------------------------
+
+                Net<T> trainNet = mycaffe.GetInternalNet(Phase.TRAIN);
+                Net<T> testNet = mycaffe.GetInternalNet(Phase.TEST);
+
+                m_log.CHECK_EQ(trainNet.learnable_parameters.Count, testNet.learnable_parameters.Count, "The train and test nets should have an equal number of learnable parameters!");
+                for (int i = 0; i < trainNet.learnable_parameters.Count; i++)
+                {
+                    Blob<T> blobTrain = trainNet.learnable_parameters[i];
+                    Blob<T> blobTest = testNet.learnable_parameters[i];
+
+                    long lGpuDataTrain = blobTrain.gpu_data;
+                    long lGpuDiffTrain = blobTrain.gpu_diff;
+                    long lGpuDataTest = blobTest.gpu_data;
+                    long lGpuDiffTest = blobTest.gpu_diff;
+
+                    m_log.CHECK_EQ(lGpuDataTrain, lGpuDataTest, "The gpu data for train and test should be sharing data!");
+                    m_log.CHECK_EQ(lGpuDiffTrain, lGpuDiffTest, "The gpu diff for train and test should be sharing diff!");
+
+                    Trace.Assert(blobTrain.Compare(blobTest, blobWork, false, 1e-10));
+                }
+            }
+            finally
+            {
+                if (evtCancel != null)
+                    evtCancel.Dispose();
+                
+                dispose(ref blobEncIn);
+                dispose(ref blobDecIn);
+                dispose(ref blobDecOut);
+                dispose(ref blobEncMask);
+                dispose(ref blobDecMask);
+                dispose(ref blobLoss);
+                dispose(ref blobVal);
+                dispose(ref blobWork);
+
+                if (mycaffe != null)
+                    mycaffe.Dispose();
+            }
         }
     }
 }
