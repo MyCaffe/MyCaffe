@@ -37,6 +37,7 @@ namespace MyCaffe.layers.gpt
             m_dfScale = Math.Sqrt(m_nEmbed);
 
             m_blobPosEnc = new Blob<T>(m_cuda, m_log, false);
+            m_blobPosEnc.Name = p.name + " posenc";
 
             setup_internal_blobs(m_colInternalBlobs);
         }
