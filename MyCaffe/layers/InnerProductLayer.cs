@@ -218,7 +218,7 @@ namespace MyCaffe.layers
                 blobWeight.Name = m_param.name + " weights";
                 blobWeight.type = BLOB_TYPE.IP_WEIGHT;
 
-                if (!shareParameter(blobWeight, rgWeightShape))
+                if (!shareParameter(blobWeight, rgWeightShape, true))
                 {
                     blobWeight.Reshape(rgWeightShape);
                     Filler<T> weight_filler = Filler<T>.Create(m_cuda, m_log, m_param.inner_product_param.weight_filler);
@@ -237,7 +237,7 @@ namespace MyCaffe.layers
                     blobBias.Name = m_param.name + " bias";
                     blobBias.type = BLOB_TYPE.IP_WEIGHT;
 
-                    if (!shareParameter(blobBias, rgBiasShape))
+                    if (!shareParameter(blobBias, rgBiasShape, true))
                     {
                         blobBias.Reshape(rgBiasShape);
                         Filler<T> bias_filler = Filler<T>.Create(m_cuda, m_log, m_param.inner_product_param.bias_filler);

@@ -1082,8 +1082,9 @@ namespace MyCaffe.layers
         /// </summary>
         /// <param name="b">Specifies the Blob to share.</param>
         /// <param name="rgMinShape">Specifies the minimum shape requried to share.</param>
+        /// <param name="bAllowEndsWithComparison">Optionally, allow name comparison where end of blob 'b' name is compared with the share blob names (default = false).</param>
         /// <returns>If the Blob is shared, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
-        protected bool shareParameter(Blob<T> b, List<int> rgMinShape)
+        protected bool shareParameter(Blob<T> b, List<int> rgMinShape, bool bAllowEndsWithComparison = false)
         {
             LayerParameterEx<T> paramEx = m_param as LayerParameterEx<T>;
             if (paramEx == null)
@@ -1092,7 +1093,7 @@ namespace MyCaffe.layers
             if (paramEx.SharedBlobs == null)
                 return false;
 
-            return paramEx.SharedBlobs.Share(b, rgMinShape, false);
+            return paramEx.SharedBlobs.Share(b, rgMinShape, false, bAllowEndsWithComparison);
         }
 
         /// <summary>
