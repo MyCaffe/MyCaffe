@@ -404,8 +404,9 @@ namespace MyCaffe.common
         /// <param name="b">Specifies the Blob that will share the found Blob.</param>
         /// <param name="rgMinShape">Specifies the minimum shape required to share.</param>
         /// <param name="bThrowExceptions">Specifies whether or not th throw an Exception if the sizes do not match.</param>
+        /// <param name="bAllowEndsWith">Optionally, allow name comparison where the share blob name ends with the 'b' blob name (default = false).</param>
         /// <returns></returns>
-        public bool Share(Blob<T> b, List<int> rgMinShape, bool bThrowExceptions)
+        public bool Share(Blob<T> b, List<int> rgMinShape, bool bThrowExceptions, bool bAllowEndsWith = false)
         {
             int nCount = 0;
 
@@ -420,7 +421,7 @@ namespace MyCaffe.common
 
             foreach (Blob<T> blobShare in m_rgBlobs)
             {
-                if (blobShare.Name == b.Name)
+                if (blobShare.Name == b.Name || (bAllowEndsWith && blobShare.Name.EndsWith(b.Name)))
                 {
                     if (nCount > 0)
                     {
