@@ -28,6 +28,8 @@ namespace MyCaffe.layers.gpt
         Blob<T> m_blobLn3 = null;
         Blob<T> m_blobMlp;
         Blob<T> m_blobMlpOut;
+        Blob<T> m_blobEOutput1 = null;
+        Blob<T> m_blobEOutput2 = null;
         Layer<T> m_ln1;          // Input layer normalization.
         Layer<T> m_attn1;        // Attention block used with encoder and decoder        
         Layer<T> m_ln2;          // Layer normalization after the first attention block
@@ -104,6 +106,10 @@ namespace MyCaffe.layers.gpt
                 m_blobAttn2.Name = m_param.name + " attn2";
                 m_blobLn3 = new Blob<T>(cuda, log);
                 m_blobLn3.Name = m_param.name + " ln3";
+                m_blobEOutput1 = new Blob<T>(m_cuda, m_log);
+                m_blobEOutput1.Name = m_param.name + " e_out1";
+                m_blobEOutput2 = new Blob<T>(m_cuda, m_log);
+                m_blobEOutput2.Name = m_param.name + " e_out2";
 
                 LayerParameter ln3 = new LayerParameter(LayerParameter.LayerType.LAYERNORM, "ln3");
                 ln3.layer_norm_param.enable_cuda_impl = p.transformer_block_param.enable_layernorm_cuda_impl;
@@ -212,6 +218,8 @@ namespace MyCaffe.layers.gpt
             dispose(ref m_blobLn3);
             dispose(ref m_blobMlp);
             dispose(ref m_blobMlpOut);
+            dispose(ref m_blobEOutput1);
+            dispose(ref m_blobEOutput2);
 
             dispose(ref m_ln1);
             dispose(ref m_attn1);
@@ -239,6 +247,10 @@ namespace MyCaffe.layers.gpt
                 col.Add(m_blobAttn2);
             if (m_blobLn3 != null)
                 col.Add(m_blobLn3);
+            if (m_blobEOutput1 != null)
+                col.Add(m_blobEOutput1);
+            if (m_blobEOutput2 != null)
+                col.Add(m_blobEOutput2);
             col.Add(m_blobMlp);
             col.Add(m_blobMlpOut);
 
@@ -473,10 +485,15 @@ namespace MyCaffe.layers.gpt
 
             if (m_blobLn3 != null)
                 m_blobLn3.ReshapeLike(colBottom[0]);
-            
+
+            if (m_blobEOutput1 != null)
+                m_blobEOutput1.ReshapeLike(colBottom[2]);
+            if (m_blobEOutput2 != null)
+                m_blobEOutput2.ReshapeLike(colBottom[2]);
+
             m_blobMlp.ReshapeLike(colBottom[0]);
             m_blobMlpOut.ReshapeLike(colBottom[0]);
-
+            
             addInternal(colBottom[0], m_blobLn1);
             m_ln1.Reshape(m_colInternalBottom, m_colInternalTop);
 
@@ -636,7 +653,9 @@ namespace MyCaffe.layers.gpt
             if (m_param.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.DECODER)
             {
                 // attn2 = self.attn2(x_2, e_output, e_output, e_mask)
-                addInternal(new List<Blob<T>>() { m_blobLn2, colBottom[2], colBottom[2], colBottom[3] }, m_blobAttn2);
+                m_blobEOutput1.CopyFrom(colBottom[2]);
+                m_blobEOutput2.CopyFrom(colBottom[2]);
+                addInternal(new List<Blob<T>>() { m_blobLn2, m_blobEOutput1, m_blobEOutput2, colBottom[3] }, m_blobAttn2);
                 m_attn2.Forward(m_colInternalBottom, m_colInternalTop);
 
                 // xC = xB + self.attn2(self.ln_2(x))
@@ -728,8 +747,12 @@ namespace MyCaffe.layers.gpt
                     m_blobAttn2.CopyFrom(colBottom[0], true);
 
                     // attn2 = self.attn2(x_2, e_output, e_output, e_mask)
-                    addInternal(new List<Blob<T>>() { m_blobLn2, colBottom[2], colBottom[2], colBottom[3] }, m_blobAttn2);
+                    addInternal(new List<Blob<T>>() { m_blobLn2, m_blobEOutput1, m_blobEOutput2, colBottom[3] }, m_blobAttn2);
                     m_attn2.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+                    
+                    // Accumulate e_output gradients.
+                    m_cuda.add(nCount, m_blobEOutput1.gpu_diff, colBottom[2].gpu_diff, colBottom[2].mutable_gpu_diff);
+                    m_cuda.add(nCount, m_blobEOutput2.gpu_diff, colBottom[2].gpu_diff, colBottom[2].mutable_gpu_diff);
                 }
 
                 // x_2 = self.ln_2(xB) 
