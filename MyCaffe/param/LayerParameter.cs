@@ -315,6 +315,10 @@ namespace MyCaffe.param
             /// </summary>
             LOG,
             /// <summary>
+            /// Initializes a parameter for the LogSoftmaxLayer.
+            /// </summary>
+            LOG_SOFTMAX,
+            /// <summary>
             /// Initializes a parameter for the LossLayer.
             /// </summary>
             LOSS,
@@ -1221,6 +1225,12 @@ namespace MyCaffe.param
                     expected_top.Add("log");
                     m_rgLayerParameters[lt] = new LogParameter();
                     m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
+                    break;
+
+                case LayerType.LOG_SOFTMAX:
+                    expected_bottom.Add("input");
+                    expected_top.Add("logsmax");
+                    m_rgLayerParameters[lt] = new LogSoftmaxParameter();
                     break;
 
                 case LayerType.LRN:
@@ -2190,6 +2200,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.LOG_SOFTMAX
+        /// </summary>
+        public LogSoftmaxParameter log_softmax_param
+        {
+            get { return (LogSoftmaxParameter)m_rgLayerParameters[LayerType.LOG_SOFTMAX]; }
+            set { m_rgLayerParameters[LayerType.LOG_SOFTMAX] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.LRN
         /// </summary>
         public LRNParameter lrn_param
@@ -2895,6 +2914,9 @@ namespace MyCaffe.param
                 case LayerType.LOG:
                     return "Log";
 
+                case LayerType.LOG_SOFTMAX:
+                    return "LogSoftmax";
+
                 case LayerType.LOSS:
                     return "Loss";
 
@@ -3223,6 +3245,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(transformer_block_param, "transformer_block_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(tokenized_data_param, "tokenized_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(tokenized_data_pairs_param, "tokenized_data_pairs_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(log_softmax_param, "log_softmax_param"));
 
             // Nt layers.
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gram_param, "gram_param"));
@@ -3580,6 +3603,9 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("tokenized_data_pairs_param")) != null)
                 p.tokenized_data_pairs_param = TokenizedDataPairsParameter.FromProto(rpp);
 
+            if ((rpp = rp.FindChild("log_softmax_param")) != null)
+                p.log_softmax_param = LogSoftmaxParameter.FromProto(rpp);
+
             // Nt layers.
             if ((rpp = rp.FindChild("gram_param")) != null)
                 p.gram_param = GramParameter.FromProto(rpp);
@@ -3844,6 +3870,10 @@ namespace MyCaffe.param
 
                 case "log":
                     return LayerType.LOG;
+
+                case "logsoftmax":
+                case "log_softmax":
+                    return LayerType.LOG_SOFTMAX;
 
                 case "lrn":
                     return LayerType.LRN;

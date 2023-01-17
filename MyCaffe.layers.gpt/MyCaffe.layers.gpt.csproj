@@ -60,6 +60,7 @@
     <Compile Include="layers.gpt\GeluLayer.cs" />
     <Compile Include="LayerFactory.cs" />
     <Compile Include="layers.gpt\LayerNormLayer.cs" />
+    <Compile Include="layers.gpt\LogSoftmaxLayer.cs" />
     <Compile Include="layers.gpt\TokenizedDataPairsLayer.cs" />
     <Compile Include="layers.gpt\TransformerBlockLayer.cs" />
     <Compile Include="layers.gpt\VocabularySentencePiece.cs" />

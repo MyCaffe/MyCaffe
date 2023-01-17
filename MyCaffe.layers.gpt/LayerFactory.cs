@@ -55,6 +55,9 @@ namespace MyCaffe.layers.gpt
                 case LayerParameter.LayerType.TOKENIZED_DATA_PAIRS:
                     return new TokenizedDataPairsLayer<double>(cuda, log, p, imgDb, evtCancel);
 
+                case LayerParameter.LayerType.LOG_SOFTMAX:
+                    return new LogSoftmaxLayer<double>(cuda, log, p);
+
                 default:
                     return null;
             }
@@ -87,7 +90,7 @@ namespace MyCaffe.layers.gpt
 
                 case LayerParameter.LayerType.LAYERNORM:
                     return new LayerNormLayer<float>(cuda, log, p);
-
+                    
                 case LayerParameter.LayerType.TRANSFORMER_BLOCK:
                     return new TransformerBlockLayer<float>(cuda, log, p);
 
@@ -96,6 +99,9 @@ namespace MyCaffe.layers.gpt
 
                 case LayerParameter.LayerType.TOKENIZED_DATA_PAIRS:
                     return new TokenizedDataPairsLayer<float>(cuda, log, p, imgDb, evtCancel);
+
+                case LayerParameter.LayerType.LOG_SOFTMAX:
+                    return new LogSoftmaxLayer<float>(cuda, log, p);
 
                 default:
                     return null;
