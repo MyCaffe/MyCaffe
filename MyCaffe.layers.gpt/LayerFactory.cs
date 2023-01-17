@@ -57,6 +57,9 @@ namespace MyCaffe.layers.gpt
 
                 case LayerParameter.LayerType.LOG_SOFTMAX:
                     return new LogSoftmaxLayer<double>(cuda, log, p);
+                    
+                case LayerParameter.LayerType.NLL_LOSS:
+                    return new NLLLossLayer<double>(cuda, log, p);
 
                 default:
                     return null;
@@ -102,6 +105,9 @@ namespace MyCaffe.layers.gpt
 
                 case LayerParameter.LayerType.LOG_SOFTMAX:
                     return new LogSoftmaxLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.NLL_LOSS:
+                    return new NLLLossLayer<float>(cuda, log, p);
 
                 default:
                     return null;
