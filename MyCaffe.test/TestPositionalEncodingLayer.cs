@@ -136,14 +136,14 @@ namespace MyCaffe.test
         {
             string strTestDataPath = loadTestData1();
 
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODING);
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODER);
             p.positional_encoder_param.embed = 512;
             p.positional_encoder_param.block_size = 200;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             try
             {
-                m_log.CHECK(layer.type == LayerParameter.LayerType.POSITIONAL_ENCODING, "The layer type is incorrect!");
+                m_log.CHECK(layer.type == LayerParameter.LayerType.POSITIONAL_ENCODER, "The layer type is incorrect!");
 
                 m_blobQ.LoadFromNumpy(strTestDataPath + "q0.npy");
                 
@@ -169,14 +169,14 @@ namespace MyCaffe.test
         {
             string strTestDataPath = loadTestData1();
 
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODING);
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODER);
             p.positional_encoder_param.embed = 512;
             p.positional_encoder_param.block_size = 200;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             try
             {
-                m_log.CHECK(layer.type == LayerParameter.LayerType.POSITIONAL_ENCODING, "The layer type is incorrect!");
+                m_log.CHECK(layer.type == LayerParameter.LayerType.POSITIONAL_ENCODER, "The layer type is incorrect!");
 
                 m_blobQ.LoadFromNumpy(strTestDataPath + "q0.npy");
 
@@ -206,14 +206,14 @@ namespace MyCaffe.test
         {
             string strTestDataPath = loadTestData1();
 
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODING);
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODER);
             p.positional_encoder_param.embed = 512;
             p.positional_encoder_param.block_size = 200;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             try
             {
-                m_log.CHECK(layer.type == LayerParameter.LayerType.POSITIONAL_ENCODING, "The layer type is incorrect!");
+                m_log.CHECK(layer.type == LayerParameter.LayerType.POSITIONAL_ENCODER, "The layer type is incorrect!");
 
                 m_blobQ.LoadFromNumpy(strTestDataPath + "q0.npy");
 
