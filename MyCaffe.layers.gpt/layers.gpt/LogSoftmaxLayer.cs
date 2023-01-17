@@ -191,7 +191,7 @@ namespace MyCaffe.layers.gpt
             // exp_sum_grad = exp_sum * exp_log_grad
             m_blobExpXSum.SetDiff(1.0);
             m_cuda.div(m_blobExpXSum.count(), m_blobExpXSum.gpu_diff, m_blobExpXSum.gpu_data, m_blobExpXSum.mutable_gpu_diff);
-            m_cuda.mul(nCount, m_blobScale.gpu_diff, m_blobExpXSum.gpu_diff, m_blobScale.mutable_gpu_diff);
+            m_cuda.mul(m_blobScale.count(), m_blobScale.gpu_diff, m_blobExpXSum.gpu_diff, m_blobScale.mutable_gpu_diff);
 
             // exp_x_grad = exp_sum_grad filled across each channel
             m_cuda.channel_fillfrom(nCount, m_nOuterNum, 1, nChannels, m_blobScale.gpu_diff, m_blobExpX.mutable_gpu_diff, DIR.FWD);
