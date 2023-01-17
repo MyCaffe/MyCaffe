@@ -153,7 +153,7 @@ namespace MyCaffe.layers.gpt
         }
 
         /// <summary>
-        /// Computes the error gradient w.r.t. the Mish value inputs.
+        /// Computes the error gradient w.r.t. the PositionalEncoder value inputs.
         /// </summary>
         /// <param name="colTop">top output blob vector (length 1), providing the error gradient
         /// with respect to outputs
@@ -164,7 +164,7 @@ namespace MyCaffe.layers.gpt
         /// <param name="rgbPropagateDown">propagate_down see Layer::Backward.</param>
         /// <param name="colBottom">bottom input blob vector (length 1)
         ///  -# @f$ (N \times C \times H \times W) @f$
-        ///     gradients f$ y' = sqrt(m_nEmbed) @f$
+        ///     gradients f$ y' = scale @f$
         ///     @f$ if propagate_down[0]
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
