@@ -733,7 +733,7 @@ namespace MyCaffe.test
             emb2.top.Add("emb2");
             net.layer.Add(emb2);
 
-            LayerParameter pos1 = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODING);
+            LayerParameter pos1 = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODER);
             pos1.positional_encoder_param.block_size = nBlockSize;
             pos1.positional_encoder_param.embed = nEmbed;
             pos1.name = "posenc1";
@@ -741,7 +741,7 @@ namespace MyCaffe.test
             pos1.top.Add("pos1");
             net.layer.Add(pos1);
 
-            LayerParameter pos2 = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODING);
+            LayerParameter pos2 = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODER);
             pos2.positional_encoder_param.block_size = nBlockSize;
             pos2.positional_encoder_param.embed = nEmbed;
             pos2.name = "posenc2";
