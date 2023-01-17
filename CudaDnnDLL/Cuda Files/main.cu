@@ -764,6 +764,12 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_PRELU_BWD_PARAM:
 			return m_device.cuda_prelu_bwd_param(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_NLLLOSS_FWD:
+			return m_device.cuda_nllloss_fwd(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_NLLLOSS_BWD:
+			return m_device.cuda_nllloss_bwd(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_SOFTMAXLOSS_FWD:
 			return m_device.cuda_softmaxloss_fwd(lCount, pfInput, plCount, ppfOutput);
 
@@ -1778,6 +1784,12 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_PRELU_BWD_PARAM:
 		return "CUDA_FN_PRELU_BWD_PARAM";
+
+	case CUDA_FN_NLLLOSS_FWD:
+		return "CUDA_FN_NLLLOSS_FWD";
+
+	case CUDA_FN_NLLLOSS_BWD:
+		return "CUDA_FN_NLLLOSS_BWD";
 
 	case CUDA_FN_SOFTMAXLOSS_FWD:
 		return "CUDA_FN_SOFTMAXLOSS_FWD";

@@ -72,11 +72,11 @@
       <HintPath>..\packages\Microsoft.VisualStudio.QualityTools.UnitTestFramework.Updated.15.0.26228\lib\Microsoft.VisualStudio.QualityTools.UnitTestFramework.dll\Microsoft.VisualStudio.QualityTools.UnitTestFramework.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="OnnxControl, Version=1.11.8.39, Culture=neutral, PublicKeyToken=666204c5f16cdcaa, processorArchitecture=MSIL">
-      <HintPath>..\packages\OnnxControl.1.11.8.39\lib\net40\OnnxControl.dll</HintPath>
+    <Reference Include="OnnxControl, Version=1.11.8.56, Culture=neutral, PublicKeyToken=666204c5f16cdcaa, processorArchitecture=MSIL">
+      <HintPath>..\packages\OnnxControl.1.11.8.56\lib\net40\OnnxControl.dll</HintPath>
     </Reference>
-    <Reference Include="SimpleGraphing, Version=1.11.8.39, Culture=neutral, PublicKeyToken=db1fd361618e40f6, processorArchitecture=MSIL">
-      <HintPath>..\packages\SimpleGraphingControl.1.11.8.39\lib\net40\SimpleGraphing.dll</HintPath>
+    <Reference Include="SimpleGraphing, Version=1.11.8.56, Culture=neutral, PublicKeyToken=db1fd361618e40f6, processorArchitecture=MSIL">
+      <HintPath>..\packages\SimpleGraphingControl.1.11.8.56\lib\net40\SimpleGraphing.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -119,9 +119,11 @@
     <Compile Include="TestAnnotatedDataLayer.cs" />
     <Compile Include="TestDecoderBlockLayer.cs" />
     <Compile Include="TestEncoderBlockLayer.cs" />
+    <Compile Include="TestNllLossLayer.cs" />
     <Compile Include="TestPositionalEncodingLayer.cs" />
     <Compile Include="TestMultiheadAttentionLayer.cs" />
     <Compile Include="TestSoftmaxCrossEntropyLossLayer.cs" />
+    <Compile Include="TestLogSoftmaxLayer.cs" />
     <Compile Include="TestTokenizedDataLayer.cs" />
     <Compile Include="TestLayerNormLayer.cs" />
     <Compile Include="TestTokenizedDataPairsLayer.cs" />

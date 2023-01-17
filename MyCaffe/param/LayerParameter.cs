@@ -367,6 +367,10 @@ namespace MyCaffe.param
             /// </summary>
             MVN,
             /// <summary>
+            /// Initializes a parameter for the NLLLossLayer
+            /// </summary>
+            NLL_LOSS,
+            /// <summary>
             /// Initializes a parameter for the OneHotLayer.
             /// </summary>
             ONEHOT,
@@ -1309,6 +1313,14 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("mvn");
                     m_rgLayerParameters[lt] = new MVNParameter();
+                    break;
+
+                case LayerType.NLL_LOSS:
+                    expected_bottom.Add("pred");
+                    expected_bottom.Add("label");
+                    expected_top.Add("loss");
+                    m_rgLayerParameters[LayerType.LOSS] = new LossParameter();
+                    m_rgLayerParameters[lt] = new NLLLossParameter();
                     break;
 
                 case LayerType.ONEHOT:
@@ -2281,6 +2293,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.NLL_LOSS
+        /// </summary>
+        public NLLLossParameter nll_loss_param
+        {
+            get { return (NLLLossParameter)m_rgLayerParameters[LayerType.NLL_LOSS]; }
+            set { m_rgLayerParameters[LayerType.NLL_LOSS] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.ONEHOT
         /// </summary>
         public OneHotParameter onehot_param
@@ -2953,6 +2974,9 @@ namespace MyCaffe.param
                 case LayerType.MVN:
                     return "MVN";
 
+                case LayerType.NLL_LOSS:
+                    return "NLLLoss";
+
                 case LayerType.ONEHOT:
                     return "OneHot";
 
@@ -3246,6 +3270,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(tokenized_data_param, "tokenized_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(tokenized_data_pairs_param, "tokenized_data_pairs_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(log_softmax_param, "log_softmax_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(nll_loss_param, "nll_loss_param"));
 
             // Nt layers.
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gram_param, "gram_param"));
@@ -3606,6 +3631,9 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("log_softmax_param")) != null)
                 p.log_softmax_param = LogSoftmaxParameter.FromProto(rpp);
 
+            if ((rpp = rp.FindChild("nll_loss_param")) != null)
+                p.nll_loss_param = NLLLossParameter.FromProto(rpp);
+
             // Nt layers.
             if ((rpp = rp.FindChild("gram_param")) != null)
                 p.gram_param = GramParameter.FromProto(rpp);
@@ -3911,6 +3939,10 @@ namespace MyCaffe.param
 
                 case "mvn":
                     return LayerType.MVN;
+
+                case "nllloss":
+                case "nll_loss":
+                    return LayerType.NLL_LOSS;
 
                 case "onehot":
                     return LayerType.ONEHOT;

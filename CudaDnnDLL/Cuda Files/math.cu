@@ -9928,6 +9928,159 @@ template long Math<float>::softmaxloss_bwd(int n, long hTopData, long hLabels, l
 
 
 template<typename T>
+__global__ void nllloss_fwd_param_kernel(int nthreads, const T* prob_data, const T* label, T* loss, int num, int dim, int spatial_dim, T* counts)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nthreads && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const int n = i / spatial_dim;
+		const int s = i % spatial_dim;
+		const int label_value = (int)label[n * spatial_dim + s];
+		loss[i] = -1 * max(prob_data[n * dim + label_value * spatial_dim + s], (T)-FLT_MAX);
+		counts[i] = 1;
+	}
+}
+
+template<typename T>
+__global__ void nllloss_fwd_param_kernel1(int nthreads, const T* prob_data, const T* label, T* loss, int num, int dim, int spatial_dim, T* counts, int nIgnoreLabel)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nthreads && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const int n = i / spatial_dim;
+		const int s = i % spatial_dim;
+		const int label_value = (int)label[n * spatial_dim + s];
+
+		if (label_value == nIgnoreLabel)
+		{
+			loss[i] = 0;
+			counts[i] = 0;
+		}
+		else
+		{
+			loss[i] = -1 * max(prob_data[n * dim + label_value * spatial_dim + s], (T)-FLT_MAX);
+			counts[i] = 1;
+		}
+	}
+}
+
+template <class T>
+long Math<T>::nllloss_fwd(int n, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel)
+{
+	LONG lErr;
+	MemoryItem* pProbData;
+	MemoryItem* pLabels;
+	MemoryItem* pLossData;
+	MemoryItem* pCounts;
+
+	if (lErr = m_pMemCol->GetData(hProbData, &pProbData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hLabels, &pLabels))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hLossData, &pLossData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hCounts, &pCounts))
+		return lErr;
+
+	T* prob_data = (T*)pProbData->Data();
+	T* labels = (T*)pLabels->Data();
+	T* loss_data = (T*)pLossData->Data();
+	T* counts = (T*)pCounts->Data();
+
+	if (nIgnoreLabel == -1)
+		nllloss_fwd_param_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, prob_data, labels, loss_data, nOuterNum, nDim, nInnerNum, counts);
+	else
+		nllloss_fwd_param_kernel1<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, prob_data, labels, loss_data, nOuterNum, nDim, nInnerNum, counts, nIgnoreLabel);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::nllloss_fwd(int n, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
+template long Math<float>::nllloss_fwd(int n, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
+
+
+template<typename T>
+__global__ void nllloss_bwd_param_kernel(int nthreads, const T* top, const T* label, T* bottom_diff, int num, int dim, int spatial_dim, T* counts)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nthreads && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const int n = i / spatial_dim;
+		const int s = i % spatial_dim;
+		const int label_value = (int)label[n * spatial_dim + s];
+
+		bottom_diff[n * dim + label_value * spatial_dim + s] -= 1;
+		counts[i] = 1;
+	}
+}
+
+template<typename T>
+__global__ void nllloss_bwd_param_kernel1(int nthreads, const T* top, const T* label, T* bottom_diff, int num, int dim, int spatial_dim, T* counts, int nIgnoreLabel)
+{
+	int channels = dim / spatial_dim;
+
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nthreads && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const int n = i / spatial_dim;
+		const int s = i % spatial_dim;
+		const int label_value = (int)label[n * spatial_dim + s];
+
+		if (label_value == nIgnoreLabel)
+		{
+			for (int c = 0; c < channels; c++)
+			{
+				bottom_diff[n * dim + c * spatial_dim + s] = 0;
+			}
+
+			counts[i] = 0;
+		}
+		else
+		{
+			bottom_diff[n * dim + label_value * spatial_dim + s] -= 1;
+			counts[i] = 1;
+		}
+	}
+}
+
+template <class T>
+long Math<T>::nllloss_bwd(int n, long hTopData, long hLabels, long hBottomDiff, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel)
+{
+	LONG lErr;
+	MemoryItem* pTopData;
+	MemoryItem* pLabels;
+	MemoryItem* pBottomDiff;
+	MemoryItem* pCounts;
+
+	if (lErr = m_pMemCol->GetData(hTopData, &pTopData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hLabels, &pLabels))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBottomDiff, &pBottomDiff))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hCounts, &pCounts))
+		return lErr;
+
+	T* top_data = (T*)pTopData->Data();
+	T* labels = (T*)pLabels->Data();
+	T* bottom_diff = (T*)pBottomDiff->Data();
+	T* counts = (T*)pCounts->Data();
+
+	if (nIgnoreLabel == -1)
+		nllloss_bwd_param_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_data, labels, bottom_diff, nOuterNum, nDim, nInnerNum, counts);
+	else
+		nllloss_bwd_param_kernel1<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_data, labels, bottom_diff, nOuterNum, nDim, nInnerNum, counts, nIgnoreLabel);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::nllloss_bwd(int n, long hTopData, long hLabels, long hBottomDiff, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
+template long Math<float>::nllloss_bwd(int n, long hTopData, long hLabels, long hBottomDiff, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
+
+
+template<typename T>
 __global__ void min_fwd_kernel(int nthreads, const T* bottom_data_a, const T* bottom_data_b, int blob_idx, T* top_data, T* mask)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nthreads && i >= 0; i += blockDim.x * gridDim.x)

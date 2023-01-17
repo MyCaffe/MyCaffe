@@ -1185,6 +1185,9 @@ namespace MyCaffe.common
             CUDA_PRELU_BWD = 439,
             CUDA_PRELU_BWD_PARAM = 440,
 
+            CUDA_NLLLOSS_FWD = 442,
+            CUDA_NLLLOSS_BWD = 443,
+
             CUDA_SOFTMAXLOSS_FWD = 444,
             CUDA_SOFTMAXLOSS_BWD = 445,
 
@@ -8928,6 +8931,74 @@ namespace MyCaffe.common
                     rg.Add(nIgnoreLabel.Value);
 
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SOFTMAXLOSS_BWD, rg.ToArray());
+            }
+        }
+
+        /// <summary>
+        /// Performs NLL Loss forward pass in Cuda.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="hProbData">Specifies a handle to the probability data in GPU memory.</param>
+        /// <param name="hLabel">Specifies a handle to the label data in GPU memory.</param>
+        /// <param name="hLossData">Specifies a handle to the loss data in GPU memory.</param>
+        /// <param name="nOuterNum"><b><i>NEEDS REVIEW</i></b></param>
+        /// <param name="nDim"><b><i>NEEDS REVIEW</i></b></param>
+        /// <param name="nInnerNum"><b><i>NEEDS REVIEW</i></b></param>
+        /// <param name="hCounts">Specifies a handle to the counts in GPU memory.</param>
+        /// <param name="nIgnoreLabel">Optionally, specifies a label to ignore.</param>
+        public void nllloss_fwd(int nCount, long hProbData, long hLabel, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int? nIgnoreLabel)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                List<double> rg = new List<double>() { nCount, hProbData, hLabel, hLossData, nOuterNum, nDim, nInnerNum, hCounts };
+
+                if (nIgnoreLabel.HasValue)
+                    rg.Add(nIgnoreLabel.Value);
+
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_NLLLOSS_FWD, rg.ToArray());
+            }
+            else
+            {
+                List<float> rg = new List<float>() { nCount, hProbData, hLabel, hLossData, nOuterNum, nDim, nInnerNum, hCounts };
+
+                if (nIgnoreLabel.HasValue)
+                    rg.Add(nIgnoreLabel.Value);
+
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_NLLLOSS_FWD, rg.ToArray());
+            }
+        }
+
+        /// <summary>
+        /// Performs NLL Loss backward pass in Cuda.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
+        /// <param name="hLabel">Specifies a handle to the label data in GPU memory.</param>
+        /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
+        /// <param name="nOuterNum"><b><i>NEEDS REVIEW</i></b></param>
+        /// <param name="nDim"><b><i>NEEDS REVIEW</i></b></param>
+        /// <param name="nInnerNum"><b><i>NEEDS REVIEW</i></b></param>
+        /// <param name="hCounts">Specifies a handle to the counts in GPU memory.</param>
+        /// <param name="nIgnoreLabel">Optionally, specifies a label to ignore.</param>
+        public void nllloss_bwd(int nCount, long hTopData, long hLabel, long hBottomDiff, int nOuterNum, int nDim, int nInnerNum, long hCounts, int? nIgnoreLabel)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                List<double> rg = new List<double>() { nCount, hTopData, hLabel, hBottomDiff, nOuterNum, nDim, nInnerNum, hCounts };
+
+                if (nIgnoreLabel.HasValue)
+                    rg.Add(nIgnoreLabel.Value);
+
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_NLLLOSS_BWD, rg.ToArray());
+            }
+            else
+            {
+                List<float> rg = new List<float>() { nCount, hTopData, hLabel, hBottomDiff, nOuterNum, nDim, nInnerNum, hCounts };
+
+                if (nIgnoreLabel.HasValue)
+                    rg.Add(nIgnoreLabel.Value);
+
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_NLLLOSS_BWD, rg.ToArray());
             }
         }
 

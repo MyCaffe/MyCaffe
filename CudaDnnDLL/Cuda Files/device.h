@@ -515,6 +515,9 @@ class Device
 		long cuda_prelu_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_prelu_bwd_param(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
+		long cuda_nllloss_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_nllloss_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+
 		long cuda_softmaxloss_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_softmaxloss_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
@@ -4051,6 +4054,54 @@ inline long Device<T>::cuda_prelu_bwd_param(long lInput, T* pfInput, long* plOut
 	long hBackBuffDiff = (long)pfInput[5];
 
 	return m_math.prelu_bwd_param(nCDim, nNum, nTopOffset, hTopDiff, hBottomData, hBackBuffDiff);
+}
+
+template <class T>
+inline long Device<T>::cuda_nllloss_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 8, 9))
+		return lErr;
+
+	int nCount = (int)pfInput[0];
+	long hProbData = (long)pfInput[1];
+	long hLabels = (long)pfInput[2];
+	long hLossData = (long)pfInput[3];
+	int nOuterNum = (int)pfInput[4];
+	int nDim = (int)pfInput[5];
+	int nInnerNum = (int)pfInput[6];
+	long hCounts = (long)pfInput[7];
+	int nIgnoreLabel = -1;
+
+	if (lInput > 8)
+		nIgnoreLabel = (int)pfInput[8];
+
+	return m_math.nllloss_fwd(nCount, hProbData, hLabels, hLossData, nOuterNum, nDim, nInnerNum, hCounts, nIgnoreLabel);
+}
+
+template <class T>
+inline long Device<T>::cuda_nllloss_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 8, 9))
+		return lErr;
+
+	int nCount = (int)pfInput[0];
+	long hTopData = (long)pfInput[1];
+	long hLabels = (long)pfInput[2];
+	long hBottomDiff = (long)pfInput[3];
+	int nOuterNum = (int)pfInput[4];
+	int nDim = (int)pfInput[5];
+	int nInnerNum = (int)pfInput[6];
+	long hCounts = (long)pfInput[7];
+	int nIgnoreLabel = -1;
+
+	if (lInput > 8)
+		nIgnoreLabel = (int)pfInput[8];
+
+	return m_math.nllloss_bwd(nCount, hTopData, hLabels, hBottomDiff, nOuterNum, nDim, nInnerNum, hCounts, nIgnoreLabel);
 }
 
 
