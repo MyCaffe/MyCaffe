@@ -12,13 +12,13 @@ namespace MyCaffe.param.gpt
     /// </summary>
     /// <remarks>
     /// </remarks>
-    public class PositionalEncodingParameter : LayerParameterBase
+    public class PositionalEncoderParameter : LayerParameterBase
     {
         uint m_nEmbed = 192;     // d_model
         uint m_nBlockSize = 128;
 
         /** @copydoc LayerParameterBase */
-        public PositionalEncodingParameter()
+        public PositionalEncoderParameter()
         {
         }
 
@@ -44,7 +44,7 @@ namespace MyCaffe.param.gpt
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
             RawProto proto = RawProto.Parse(br.ReadString());
-            PositionalEncodingParameter p = FromProto(proto);
+            PositionalEncoderParameter p = FromProto(proto);
 
             if (!bNewInstance)
                 Copy(p);
@@ -55,7 +55,7 @@ namespace MyCaffe.param.gpt
         /** @copydoc LayerParameterBase::Copy */
         public override void Copy(LayerParameterBase src)
         {
-            PositionalEncodingParameter p = (PositionalEncodingParameter)src;
+            PositionalEncoderParameter p = (PositionalEncoderParameter)src;
 
             m_nEmbed = p.embed;
             m_nBlockSize = p.block_size;
@@ -64,7 +64,7 @@ namespace MyCaffe.param.gpt
         /** @copydoc LayerParameterBase::Clone */
         public override LayerParameterBase Clone()
         {
-            PositionalEncodingParameter p = new PositionalEncodingParameter();
+            PositionalEncoderParameter p = new PositionalEncoderParameter();
             p.Copy(this);
             return p;
         }
@@ -89,10 +89,10 @@ namespace MyCaffe.param.gpt
         /// </summary>
         /// <param name="rp">Specifies the RawProto to parse.</param>
         /// <returns>A new instance of the parameter is returned.</returns>
-        public static PositionalEncodingParameter FromProto(RawProto rp)
+        public static PositionalEncoderParameter FromProto(RawProto rp)
         {
             string strVal;
-            PositionalEncodingParameter p = new PositionalEncodingParameter();
+            PositionalEncoderParameter p = new PositionalEncoderParameter();
 
             if ((strVal = rp.FindValue("embed")) != null)
                 p.embed = uint.Parse(strVal);

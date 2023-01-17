@@ -1356,7 +1356,7 @@ namespace MyCaffe.param
                 case LayerType.POSITIONAL_ENCODING:
                     expected_bottom.Add("input");
                     expected_top.Add("pos");
-                    m_rgLayerParameters[lt] = new PositionalEncodingParameter();
+                    m_rgLayerParameters[lt] = new PositionalEncoderParameter();
                     break;
 
                 case LayerType.POOLING:
@@ -1962,9 +1962,9 @@ namespace MyCaffe.param
         /// <summary>
         /// Returns the parameter set when initialized with LayerType.POSITIONAL_ENCODER
         /// </summary>
-        public PositionalEncodingParameter positional_encoder_param
+        public PositionalEncoderParameter positional_encoder_param
         {
-            get { return (PositionalEncodingParameter)m_rgLayerParameters[LayerType.POSITIONAL_ENCODING]; }
+            get { return (PositionalEncoderParameter)m_rgLayerParameters[LayerType.POSITIONAL_ENCODING]; }
             set { m_rgLayerParameters[LayerType.POSITIONAL_ENCODING] = value; }
         }
 
@@ -3614,7 +3614,7 @@ namespace MyCaffe.param
                 p.multihead_attention_param = MultiheadAttentionParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("positional_encoder_param")) != null)
-                p.positional_encoder_param = PositionalEncodingParameter.FromProto(rpp);
+                p.positional_encoder_param = PositionalEncoderParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("gelu_param")) != null)
                 p.gelu_param = GeluParameter.FromProto(rpp);
