@@ -140,6 +140,7 @@ namespace MyCaffe.test
             p.positional_encoder_param.embed = 512;
             p.positional_encoder_param.block_size = 200;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+            Blob<T> blobVal = new Blob<T>(m_cuda, m_log);
 
             try
             {
@@ -151,16 +152,25 @@ namespace MyCaffe.test
                 BottomVec.Add(m_blobQ);
 
                 layer.Setup(BottomVec, TopVec);
+
+                // Check the pos embed matrix.
+                blobVal.LoadFromNumpy(strTestDataPath + "pos.3_pos_enc.npy");
+                for (int i = 0; i < nBatch; i++)
+                {
+                    verify(layer.internal_blobs[0], blobVal, i, false, 1e-10);
+                }
+
                 layer.Forward(BottomVec, TopVec);
 
                 m_blobY.LoadFromNumpy(strTestDataPath + "pos.output.npy");
 
                 // Now, check values
-                double dfErr = (typeof(T) == typeof(double)) ? 1e-05 : 1e-08;
+                double dfErr = (typeof(T) == typeof(float)) ? 1e-10 : 1e-5;
                 verify(TopVec[0], m_blobY, false, dfErr);
             }
             finally
             {
+                dispose(ref blobVal);
                 layer.Dispose();
             }
         }
