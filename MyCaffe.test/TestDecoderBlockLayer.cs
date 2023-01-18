@@ -816,24 +816,20 @@ namespace MyCaffe.test
             ip1.top.Add("logits");
             net.layer.Add(ip1);
 
-            if (phase == Phase.RUN)
-            {
-                LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
-                softmax.name = "softmax";
-                softmax.softmax_param.axis = 2;
-                softmax.bottom.Add("logits");
-                softmax.top.Add("prob");
-                softmax.include.Add(new NetStateRule(Phase.RUN));
-                net.layer.Add(softmax);
-            }
+            LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.LOG_SOFTMAX);
+            softmax.name = "softmax";
+            softmax.log_softmax_param.axis = 2;
+            softmax.bottom.Add("logits");
+            softmax.top.Add("prob");
+            net.layer.Add(softmax);
 
             if (phase == Phase.TRAIN)
             {
-                LayerParameter loss = new LayerParameter(LayerParameter.LayerType.SOFTMAXWITH_LOSS);
+                LayerParameter loss = new LayerParameter(LayerParameter.LayerType.NLL_LOSS);
                 loss.name = "loss";
-                loss.softmax_param.axis = 2;
+                loss.nll_loss_param.axis = 2;
                 loss.loss_param.normalization = LossParameter.NormalizationMode.VALID;
-                loss.bottom.Add("logits");
+                loss.bottom.Add("prob");
                 loss.bottom.Add("tgt");
                 loss.top.Add("loss");
                 loss.include.Add(new NetStateRule(Phase.TRAIN));
@@ -846,7 +842,7 @@ namespace MyCaffe.test
                 accuracy.name = "accuracy";
                 accuracy.accuracy_param.axis = 2;
                 accuracy.accuracy_param.ignore_labels.Add(0);
-                accuracy.bottom.Add("logits");
+                accuracy.bottom.Add("prob");
                 accuracy.bottom.Add("tgt");
                 accuracy.top.Add("accuracy");
                 accuracy.include.Add(new NetStateRule(Phase.TEST));
@@ -1438,13 +1434,13 @@ namespace MyCaffe.test
                 //---------------------------------
 
                 blobLoss.LoadFromNumpy(strPath + "grad_0_loss.npy", true);
-                int nOutLayer = 23;
+                int nOutLayer = 24;
                 net.top_vecs[nOutLayer][0].CopyFrom(blobLoss, true);
 
                 net.Backward();
 
                 blobVal.LoadFromNumpy(strPath + "grad_transformer.d_output1.npy", true);
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nOutLayer][0], blobWork, true, 1e-08));
+                Trace.Assert(blobVal.Compare(net.bottom_vecs[nDecOutLayerO1 + 1][0], blobWork, true, 1e-08));
 
                 blobVal.LoadFromNumpy(strPath + "grad_transformer.d_output.npy", true);
                 Trace.Assert(blobVal.Compare(net.bottom_vecs[nDecOutLayerO1][0], blobWork, true, 1e-08));
