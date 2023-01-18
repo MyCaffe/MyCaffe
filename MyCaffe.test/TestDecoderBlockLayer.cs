@@ -1304,7 +1304,7 @@ namespace MyCaffe.test
 
         public void TestFull(bool bEnableCudaImpl)
         {
-            string strPath = loadTestData1();
+            string strPath = loadTestData2();
             CancelEvent evtCancel = new CancelEvent();
             NetParameter net_param = new NetParameter();
             string strModel = buildModelEx(net_param, 3, 200, 512, 16000, 16000, 0.0, true, Phase.TRAIN);
