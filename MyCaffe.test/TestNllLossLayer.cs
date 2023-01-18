@@ -7,6 +7,7 @@ using MyCaffe.param;
 using MyCaffe.layers;
 using MyCaffe.layers.gpt;
 using MyCaffe.common;
+using System.Diagnostics;
 
 namespace MyCaffe.test
 {
@@ -30,11 +31,30 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestBackward()
+        {
+            NLLLossLayerTest test = new NLLLossLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (INLLLossLayerTest t in test.Tests)
+                {
+                    t.TestBackward();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface INLLLossLayerTest : ITest
     {
         void TestForwardBackward();
+        void TestBackward();
     }
 
     class NLLLossLayerTest : TestBase
@@ -263,6 +283,58 @@ namespace MyCaffe.test
                 dispose(ref blobTarget);
                 dispose(ref blobLoss);
                 dispose(ref blobLossExp);
+                layer.Dispose();
+            }
+        }
+
+        private string loadTestData1()
+        {
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\mh\\";
+            string strFileName = "_multihead_test.zip";
+            string strTestPath = "test";
+            string strTestFile = "mh.10_concat_output1.npy";
+            return loadTestData(strPath, strFileName, strTestPath, strTestFile);
+        }
+
+        public void TestBackward()
+        {
+            string strPath = loadTestData1();
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.NLL_LOSS);
+            p.nll_loss_param.axis = 2;
+            NLLLossLayer<T> layer = new NLLLossLayer<T>(m_cuda, m_log, p);
+            Blob<T> blobVal = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobWork = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobX = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobTarget = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobLoss = new Blob<T>(m_cuda, m_log);
+
+            try
+            {
+                blobX.LoadFromNumpy(strPath + "14_out2.npy");
+                blobTarget.LoadFromNumpy(strPath + "trg_output.npy");
+
+                BottomVec.Clear();
+                BottomVec.Add(blobX);
+                BottomVec.Add(blobTarget);
+                TopVec.Clear();
+                TopVec.Add(blobLoss);
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+                
+                blobLoss.SetDiff(1);
+                layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
+
+                blobVal.LoadFromNumpy(strPath + "grad_14_out2.npy", true);
+                m_log.CHECK(blobVal.Compare(blobX, blobWork, true), "The blobs do not match!");
+            }
+            finally
+            {
+                dispose(ref blobVal);
+                dispose(ref blobWork);
+                dispose(ref blobX);
+                dispose(ref blobTarget);
+                dispose(ref blobLoss);
                 layer.Dispose();
             }
         }
