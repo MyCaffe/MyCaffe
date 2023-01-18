@@ -604,7 +604,7 @@ namespace MyCaffe.test
 
                 // Now, check values from forward
                 blobVal.LoadFromNumpy(strPath + "dec.dec5.dec.10_xD.npy");
-                Trace.Assert(blobVal.Compare(TopVec[0], blobWork, false, (typeof(T) == typeof(float)) ? 3e-06 : 4e-06));
+                m_log.CHECK(blobVal.Compare(TopVec[0], blobWork, false, (typeof(T) == typeof(float)) ? 3e-06 : 4e-06), "The blobs do not match!");
 
                 // Load the inbound gradients.
                 TopVec[0].LoadFromNumpy(strPath + "grad_dec.dec5.dec.10_xD.npy", true);
@@ -614,9 +614,9 @@ namespace MyCaffe.test
 
                 // Now, check values form backward
                 blobVal.LoadFromNumpy(strPath + "grad_dec.dec5.dec.1_x.npy", true);
-                Trace.Assert(blobVal.Compare(BottomVec[0], blobWork, true, 3e-08));
+                m_log.CHECK(blobVal.Compare(BottomVec[0], blobWork, true, 3e-08), "The blobs do not match!");
                 blobVal.LoadFromNumpy(strPath + "grad_dec.dec5.dec.5_e_out.npy", true);
-                Trace.Assert(blobVal.Compare(BottomVec[2], blobWork, true, 1e-08));
+                m_log.CHECK(blobVal.Compare(BottomVec[2], blobWork, true, 1e-08), "The blobs do not match!");
             }
             finally
             {
@@ -1358,71 +1358,71 @@ namespace MyCaffe.test
 
                 int nEmb1LayerI = 3;
                 blobVal.LoadFromNumpy(strPath + "transformer.src_input.npy");
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEmb1LayerI][0], blobWork, false, 1e-08));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nEmb1LayerI][0], blobWork, false, 1e-08), "The blobs do not match!");
                 blobVal.LoadFromNumpy(strPath + "transformer.src_emb.weight.npy");
-                Trace.Assert(blobVal.Compare(net.layers[nEmb1LayerI].blobs[0], blobWork, false, 1e-08));
+                m_log.CHECK(blobVal.Compare(net.layers[nEmb1LayerI].blobs[0], blobWork, false, 1e-08), "The blobs do not match!");
                 blobVal.LoadFromNumpy(strPath + "transformer.src_input_emb.npy");
-                Trace.Assert(blobVal.Compare(net.top_vecs[nEmb1LayerI][0], blobWork, false, 1e-08));
+                m_log.CHECK(blobVal.Compare(net.top_vecs[nEmb1LayerI][0], blobWork, false, 1e-08), "The blobs do not match!");
 
                 int nEmb2LayerI = 4;
                 blobVal.LoadFromNumpy(strPath + "transformer.trg_input.npy");
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEmb2LayerI][0], blobWork, false, 1e-08));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nEmb2LayerI][0], blobWork, false, 1e-08), "The blobs do not match!");
                 blobVal.LoadFromNumpy(strPath + "transformer.trg_emb.weight.npy");
-                Trace.Assert(blobVal.Compare(net.layers[nEmb2LayerI].blobs[0], blobWork, false, 1e-08));
+                m_log.CHECK(blobVal.Compare(net.layers[nEmb2LayerI].blobs[0], blobWork, false, 1e-08), "The blobs do not match!");
                 blobVal.LoadFromNumpy(strPath + "transformer.trg_input_emb.npy");
-                Trace.Assert(blobVal.Compare(net.top_vecs[nEmb2LayerI][0], blobWork, false, 1e-08));
+                m_log.CHECK(blobVal.Compare(net.top_vecs[nEmb2LayerI][0], blobWork, false, 1e-08), "The blobs do not match!");
 
                 int nEmb1LayerO = 5;
                 blobVal.LoadFromNumpy(strPath + "transformer.src_input_emb.npy");
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEmb1LayerO][0], blobWork, false, 1e-08));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nEmb1LayerO][0], blobWork, false, 1e-08), "The blobs do not match!");
 
                 int nEmb2LayerO = 6;
                 blobVal.LoadFromNumpy(strPath + "transformer.trg_input_emb.npy");
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEmb2LayerO][0], blobWork, false, 1e-08));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nEmb2LayerO][0], blobWork, false, 1e-08), "The blobs do not match!");
 
                 int nPos1LayerO = 7;
                 blobVal.LoadFromNumpy(strPath + "transformer.src_input_pos.npy");
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nPos1LayerO][0], blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-07));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nPos1LayerO][0], blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-07), "The blobs do not match!");
                 blobVal.LoadFromNumpy(strPath + "transformer.e_mask.npy");
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nPos1LayerO][1], blobWork, false, 1e-08));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nPos1LayerO][1], blobWork, false, 1e-08), "The blobs do not match!");
 
                 int nEnc1Layer = 8;
                 blobVal.LoadFromNumpy(strPath + "enc.enc1.enc.1_x.npy");
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEnc1Layer][0], blobWork, false, 7e-06));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nEnc1Layer][0], blobWork, false, 7e-06), "The blobs do not match!");
 
                 int nEnc2Layer = 9;
                 blobVal.LoadFromNumpy(strPath + "enc.enc2.enc.1_x.npy");
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEnc2Layer][0], blobWork, false, 8e-06));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nEnc2Layer][0], blobWork, false, 8e-06), "The blobs do not match!");
 
                 int nEnc3Layer = 10;
                 blobVal.LoadFromNumpy(strPath + "enc.enc3.enc.1_x.npy");
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEnc3Layer][0], blobWork, false, 1e-05));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nEnc3Layer][0], blobWork, false, 1e-05), "The blobs do not match!");
 
                 int nEnc4Layer = 11;
                 blobVal.LoadFromNumpy(strPath + "enc.enc4.enc.1_x.npy");
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEnc4Layer][0], blobWork, false, 1.2e-05));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nEnc4Layer][0], blobWork, false, 1.2e-05), "The blobs do not match!");
 
                 int nEnc5Layer = 12;
                 blobVal.LoadFromNumpy(strPath + "enc.enc5.enc.1_x.npy");
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEnc5Layer][0], blobWork, false, 1.3e-05));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nEnc5Layer][0], blobWork, false, 1.3e-05), "The blobs do not match!");
 
                 int nEncOutLayerO = 13;
                 blobVal.LoadFromNumpy(strPath + "enc.ln.out.npy");
-                Trace.Assert(blobVal.Compare(net.top_vecs[nEncOutLayerO][0], blobWork, false, 5e-06));
+                m_log.CHECK(blobVal.Compare(net.top_vecs[nEncOutLayerO][0], blobWork, false, 5e-06), "The blobs do not match!");
                 blobVal.LoadFromNumpy(strPath + "transformer.e_output.npy");
-                Trace.Assert(blobVal.Compare(net.top_vecs[nEncOutLayerO][0], blobWork, false, 5e-06));
+                m_log.CHECK(blobVal.Compare(net.top_vecs[nEncOutLayerO][0], blobWork, false, 5e-06), "The blobs do not match!");
 
                 int nPos2LayerO = 15;
                 blobVal.LoadFromNumpy(strPath + "transformer.trg_input_pos.npy");
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nPos2LayerO][0], blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-07));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nPos2LayerO][0], blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-07), "The blobs do not match!");
 
                 int nDecOutLayerO = 21;
                 blobVal.LoadFromNumpy(strPath + "transformer.d_output.npy");
-                Trace.Assert(blobVal.Compare(net.top_vecs[nDecOutLayerO][0], blobWork, false, 5e-06));
+                m_log.CHECK(blobVal.Compare(net.top_vecs[nDecOutLayerO][0], blobWork, false, 5e-06), "The blobs do not match!");
 
                 int nDecOutLayerO1 = 22;
                 blobVal.LoadFromNumpy(strPath + "transformer.d_output1.npy");
-                Trace.Assert(blobVal.Compare(net.top_vecs[nDecOutLayerO1][0], blobWork, false, 2e-06));
+                m_log.CHECK(blobVal.Compare(net.top_vecs[nDecOutLayerO1][0], blobWork, false, 2e-06), "The blobs do not match!");
 
                 blobLoss.LoadFromNumpy(strPath + "0_loss.npy");
                 double dfActual = Utility.ConvertVal<T>(blobLoss.GetData(0));
@@ -1440,77 +1440,77 @@ namespace MyCaffe.test
                 net.Backward();
 
                 blobVal.LoadFromNumpy(strPath + "grad_transformer.d_output1.npy", true);
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nDecOutLayerO1 + 1][0], blobWork, true, 1e-08));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nDecOutLayerO1 + 1][0], blobWork, true, 1e-08), "The blobs do not match!");
 
                 blobVal.LoadFromNumpy(strPath + "grad_transformer.d_output.npy", true);
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nDecOutLayerO1][0], blobWork, true, 1e-08));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nDecOutLayerO1][0], blobWork, true, 1e-08), "The blobs do not match!");
                 
                 blobVal.LoadFromNumpy(strPath + "grad_dec.ln.in.npy", true);
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 0][0], blobWork, true, 1e-08));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 0][0], blobWork, true, 1e-08), "The blobs do not match!");
 
                 blobVal.LoadFromNumpy(strPath + "grad_dec.x5.out.npy", true);
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 0][0], blobWork, true, 3e-08));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 0][0], blobWork, true, 3e-08), "The blobs do not match!");
 
                 blobVal.LoadFromNumpy(strPath + "grad_dec.x5.in.npy", true);
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 1][0], blobWork, true, 3e-08));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 1][0], blobWork, true, 3e-08), "The blobs do not match!");
 
                 blobVal.LoadFromNumpy(strPath + "grad_dec.x4.in.npy", true);
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 2][0], blobWork, true, 3e-08));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 2][0], blobWork, true, 3e-08), "The blobs do not match!");
 
                 blobVal.LoadFromNumpy(strPath + "grad_dec.x3.in.npy", true);
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 3][0], blobWork, true, 4e-08));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 3][0], blobWork, true, 4e-08), "The blobs do not match!");
 
                 blobVal.LoadFromNumpy(strPath + "grad_dec.x2.in.npy", true);
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 4][0], blobWork, true, 5e-08));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 4][0], blobWork, true, 5e-08), "The blobs do not match!");
 
                 blobVal.LoadFromNumpy(strPath + "grad_dec.x1.in.npy", true);
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 5][0], blobWork, true, 2e-07));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 5][0], blobWork, true, 2e-07), "The blobs do not match!");
 
                 blobVal.LoadFromNumpy(strPath + "grad_dec.x0.in.npy", true);
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 6][0], blobWork, true, 3e-07));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nDecOutLayerO - 6][0], blobWork, true, 3e-07), "The blobs do not match!");
 
                 int nSplitLayer = 14;
                 blobVal.LoadFromNumpy(strPath + "grad_transformer.e_output.npy", true);
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nSplitLayer][0], blobWork, true, 2e-08));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nSplitLayer][0], blobWork, true, 2e-08), "The blobs do not match!");
 
                 int nLn1Layer = 13;
                 blobVal.LoadFromNumpy(strPath + "grad_enc.ln.in.npy", true);
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nLn1Layer][0], blobWork, true, 1e-08));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nLn1Layer][0], blobWork, true, 1e-08), "The blobs do not match!");
 
                 int nEncOutLayer = 12;
                 blobVal.LoadFromNumpy(strPath + "grad_enc.x5.in.npy", true);
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEncOutLayer - 0][0], blobWork, true, 1e-08));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nEncOutLayer - 0][0], blobWork, true, 1e-08), "The blobs do not match!");
 
                 blobVal.LoadFromNumpy(strPath + "grad_enc.x4.in.npy", true);
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEncOutLayer - 1][0], blobWork, true, 1e-08));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nEncOutLayer - 1][0], blobWork, true, 1e-08), "The blobs do not match!");
 
                 blobVal.LoadFromNumpy(strPath + "grad_enc.x3.in.npy", true);
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEncOutLayer - 2][0], blobWork, true, 1e-08));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nEncOutLayer - 2][0], blobWork, true, 1e-08), "The blobs do not match!");
 
                 blobVal.LoadFromNumpy(strPath + "grad_enc.x2.in.npy", true);
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEncOutLayer - 3][0], blobWork, true, 1e-08));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nEncOutLayer - 3][0], blobWork, true, 1e-08), "The blobs do not match!");
 
                 blobVal.LoadFromNumpy(strPath + "grad_enc.x1.in.npy", true);
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEncOutLayer - 4][0], blobWork, true, 2e-08));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nEncOutLayer - 4][0], blobWork, true, 2e-08), "The blobs do not match!");
 
                 blobVal.LoadFromNumpy(strPath + "grad_enc.x0.in.npy", true);
-                Trace.Assert(blobVal.Compare(net.bottom_vecs[nEncOutLayer - 5][0], blobWork, true, 4e-08));
+                m_log.CHECK(blobVal.Compare(net.bottom_vecs[nEncOutLayer - 5][0], blobWork, true, 4e-08), "The blobs do not match!");
 
                 int nDecPosLayer = 6;
                 blobVal.LoadFromNumpy(strPath + "grad_transformer.trg_input_pos.npy", true);
-                Trace.Assert(blobVal.Compare(net.top_vecs[nDecPosLayer][0], blobWork, true, 3e-07));
+                m_log.CHECK(blobVal.Compare(net.top_vecs[nDecPosLayer][0], blobWork, true, 3e-07), "The blobs do not match!");
 
                 int nEncPosLayer = 5;
                 blobVal.LoadFromNumpy(strPath + "grad_transformer.src_input_pos.npy", true);
-                Trace.Assert(blobVal.Compare(net.top_vecs[nEncPosLayer][0], blobWork, true, 4e-08));
+                m_log.CHECK(blobVal.Compare(net.top_vecs[nEncPosLayer][0], blobWork, true, 4e-08), "The blobs do not match!");
 
                 int nDecEmbLayer = 4;
                 blobVal.LoadFromNumpy(strPath + "grad_transformer.trg_input_emb.npy", true);
-                Trace.Assert(blobVal.Compare(net.top_vecs[nDecEmbLayer][0], blobWork, true, 5e-06));
+                m_log.CHECK(blobVal.Compare(net.top_vecs[nDecEmbLayer][0], blobWork, true, 5e-06), "The blobs do not match!");
 
                 int nEncEmbLayer = 3;
                 blobVal.LoadFromNumpy(strPath + "grad_transformer.src_input_emb.npy", true);
-                Trace.Assert(blobVal.Compare(net.top_vecs[nEncEmbLayer][0], blobWork, true, 8e-07));
+                m_log.CHECK(blobVal.Compare(net.top_vecs[nEncEmbLayer][0], blobWork, true, 8e-07), "The blobs do not match!");
 
                 // Train a few iterations.
                 mycaffe.Train(5);
@@ -1537,7 +1537,7 @@ namespace MyCaffe.test
                     m_log.CHECK_EQ(lGpuDataTrain, lGpuDataTest, "The gpu data for train and test should be sharing data!");
                     m_log.CHECK_EQ(lGpuDiffTrain, lGpuDiffTest, "The gpu diff for train and test should be sharing diff!");
 
-                    Trace.Assert(blobTrain.Compare(blobTest, blobWork, false, 1e-10));
+                    m_log.CHECK(blobTrain.Compare(blobTest, blobWork, false, 1e-10), "The blobs do not match!");
                 }
             }
             finally
