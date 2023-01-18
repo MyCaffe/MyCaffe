@@ -741,5 +741,22 @@ namespace MyCaffe.test
             if (!bRes)
                 m_log.FAIL("The blobs are not equal!");
         }
+
+        protected void verify(Blob<T> b1, Blob<T> b1exp, int nOffset, bool bCompareDiff, double dfErr = 1e-08)
+        {
+            if ((b1.count() % b1exp.count()) != 0)
+                m_log.FAIL("The blob 'b1' must have a count that is a multiple of 'b1exp' blob's count.");
+
+            float[] rgExpected = (bCompareDiff) ? convertF(b1exp.mutable_cpu_diff) : convertF(b1exp.mutable_cpu_data);
+            float[] rgActual = (bCompareDiff) ? convertF(b1.mutable_cpu_diff) : convertF(b1.mutable_cpu_data);
+
+            for (int i = 0; i < rgExpected.Length; i++)
+            {
+                float fExpected = rgExpected[i];
+                float fActual = rgActual[nOffset * rgExpected.Length + i];
+
+                m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, dfErr, "The values are not as expected!");
+            }
+        }
     }
 }
