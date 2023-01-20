@@ -2748,6 +2748,28 @@ template long Device<float>::cuda_transpose(long lInput, float* pfInput, long* p
 
 
 template <class T>
+long Device<T>::cuda_transpose_hw(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	int c = (int)pfInput[1];
+	int h = (int)pfInput[2];
+	int w = (int)pfInput[3];
+	long hSrc = (long)pfInput[4];
+	long hDst = (long)pfInput[5];
+
+	return m_math.transpose_hw(n, c, h, w, hSrc, hDst);
+}
+
+template long Device<double>::cuda_transpose_hw(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_transpose_hw(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::cuda_sumsq(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;

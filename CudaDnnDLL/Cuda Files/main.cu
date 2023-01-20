@@ -581,6 +581,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_TRANSPOSE:
 			return m_device.cuda_transpose(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_TRANSPOSE_HW:
+			return m_device.cuda_transpose_hw(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_SUMSQ:
 			return m_device.cuda_sumsq(lCount, pfInput, plCount, ppfOutput);
 

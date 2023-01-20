@@ -1111,6 +1111,7 @@ namespace MyCaffe.common
 
             CUDA_INTERP2 = 265,
             CUDA_MASK_BATCH = 266,
+            CUDA_TRANSPOSE_HW = 267,
 
             CUDA_MULBSX = 270,
             CUDA_DIVBSX = 271,
@@ -6044,8 +6045,6 @@ namespace MyCaffe.common
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GEAM, m_param.AsFloat((bTransA) ? 1.0f : 0.0f, (bTransB) ? 1.0f : 0.0f, m, n, convertF(fAlpha), hA, hB, convertF(fBeta), hC, nAOffset, nBOffset, nCOffset));
         }
 
-
-
         /// <summary>
         /// Perform a matrix-vector multiplication operation: y = alpha transA (A) x + beta y (where x and y are vectors)
         /// </summary>
@@ -6307,6 +6306,52 @@ namespace MyCaffe.common
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_DIVBSX, m_param.AsFloat(n, hA, nAOff, hX, nXOff, nC, nSpatialDim, (bTranspose) ? 1 : 0, hB, nBOff));
         }
+
+        /// <summary>
+        /// Perform matmul operation hC = matmul(hA, hB), where hA, hB and hC are all in row-major format.
+        /// </summary>
+        /// <param name="nOuterCount">Specifies the outer count (e.g. batch * channels)</param>
+        /// <param name="m">Specifies the </param>
+        /// <param name="n"></param>
+        /// <param name="k"></param>
+        /// <param name="hA">Specifies the handle to GPU memory holding the mxk matrix A (in row-major format)</param>
+        /// <param name="hB">Specifies the handle to GPU memory holding the kxn matrix B (in row-major format)</param>
+        /// <param name="hC">Specifies the handle to GPU memory holding the mxn matrix C (in row-major format) where the result is placed.</param>
+        /// <param name="dfScale">Specifies the scale value applied to matrix B in hB (default = 1.0)</param>
+        /// <param name="bTransA">Specifies to transpose matrix A (default = false).</param>
+        /// <param name="bTransB">Specifies to transpose matrix B (default = false).</param>
+        /// <remarks>
+        /// @see [How to transpose a matrix in CUDA/cublas](https://stackoverflow.com/questions/13782012/how-to-transpose-a-matrix-in-cuda-cublas)
+        /// </remarks>
+        public void matmul(uint nOuterCount, int m, int n, int k, long hA, long hB, long hC, double dfScale = 1.0, bool bTransA = false, bool bTransB = false)
+        {
+            uint ldb = (uint)n;
+            uint lda = (uint)k;
+            uint ldc = (uint)n;
+            uint strideb = (uint)(k * n);
+            uint stridea = (uint)(m * k);
+            uint stridec = (uint)(m * n);
+
+            gemm(bTransB, bTransA, n, m, k, dfScale, hB, hA, 0.0, hC, ldb, lda, ldc, strideb, stridea, stridec, nOuterCount);
+        }
+
+        /// <summary>
+        /// Transpose a n*c number of matrices along the height and width dimensions.  All matrices are in row-major format.
+        /// </summary>
+        /// <param name="n">Specifies the number of items (e.g. batches)</param>
+        /// <param name="c">Specifies the number of channels.</param>
+        /// <param name="h">Specifies the height.</param>
+        /// <param name="w">Specifies the width.</param>
+        /// <param name="hSrc">Specifies a handle to GPU memory of shape (n,c,h,w)</param>
+        /// <param name="hDst">Specifies a handle to GPU memory of shape (n,c,w,h)</param>
+        public void transposeHW(int n, int c, int h, int w, long hSrc, long hDst)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TRANSPOSE_HW, m_param.AsDouble(n, c, h, w, hSrc, hDst));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TRANSPOSE_HW, m_param.AsFloat(n, c, h, w, hSrc, hDst));
+        }
+
 
         /// <summary>
         /// Set the bounds of all items within the data to a set range of values.

@@ -426,6 +426,7 @@ class Device
 		long cuda_minmaxval(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_minmaxvec(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_transpose(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_transpose_hw(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_sumsq(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_sumsqdiff(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_sum(long lInput, T* pfInput, long* plOutput, T** ppfOutput);

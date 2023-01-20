@@ -4097,6 +4097,76 @@ long Math<T>::transpose(int n, long hX, long hY, long hXCounts, long hYCounts, l
 template long Math<double>::transpose(int n, long hX, long hY, long hXCounts, long hYCounts, long hMapping, int nNumAxes, long hBuffer);
 template long Math<float>::transpose(int n, long hX, long hY, long hXCounts, long hYCounts, long hMapping, int nNumAxes, long hBuffer);
 
+template <>
+long Math<float>::transpose_hw(int num, int c, int h, int w, long hSrc, long hDst)
+{
+	LONG lErr;
+	MemoryItem* pSrc;
+	MemoryItem* pDst;
+
+	if (lErr = m_pMemCol->GetData(hSrc, &pSrc))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hDst, &pDst))
+		return lErr;
+
+	float* src = (float*)pSrc->Data();
+	float* dst = (float*)pDst->Data();
+	int nCount = num * c;
+	int nDim = h * w;
+	float fAlpha = 0.0f;
+	float fBeta = 1.0f;
+
+	int m = h;
+	int n = w;
+	
+	for (int i = 0; i < nCount; i++)
+	{
+		if (lErr = cublasSgeam(m_cublas, CUBLAS_OP_N, CUBLAS_OP_T, n, m, &fAlpha, dst, n, &fBeta, src, m, dst, n))
+			return lErr | ERROR_CUBLAS_OFFSET;
+
+		src += nDim;
+		dst += nDim;
+	}
+	
+	return cudaStreamSynchronize(0);
+}
+
+template <>
+long Math<double>::transpose_hw(int num, int c, int h, int w, long hSrc, long hDst)
+{
+	LONG lErr;
+	MemoryItem* pSrc;
+	MemoryItem* pDst;
+
+	if (lErr = m_pMemCol->GetData(hSrc, &pSrc))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hDst, &pDst))
+		return lErr;
+
+	double* src = (double*)pSrc->Data();
+	double* dst = (double*)pDst->Data();
+	int nCount = num * c;
+	int nDim = h * w;
+	double fAlpha = 0.0f;
+	double fBeta = 1.0f;
+
+	int m = h;
+	int n = w;
+	
+	for (int i = 0; i < nCount; i++)
+	{
+		if (lErr = cublasDgeam(m_cublas, CUBLAS_OP_N, CUBLAS_OP_T, n, m, &fAlpha, dst, n, &fBeta, src, m, dst, n))
+			return lErr | ERROR_CUBLAS_OFFSET;
+
+		src += nDim;
+		dst += nDim;
+	}
+
+	return cudaStreamSynchronize(0);
+}
+
 
 template <class T>
 __global__ void naninf_kernel(const T* d_data, T* d_nan, T* d_inf, const size_t n)
