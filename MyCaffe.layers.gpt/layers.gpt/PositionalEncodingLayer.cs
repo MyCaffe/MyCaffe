@@ -99,77 +99,75 @@ namespace MyCaffe.layers.gpt
             m_rgShape[1] = m_nBlockSize;
             m_rgShape[2] = m_nEmbed;
 
-            if (!shareLayerBlob(m_blobPosEnc, m_rgShape))
+            shareLayerBlob(m_blobPosEnc, m_rgShape);
+            if (!m_blobPosEnc.CompareShape(m_rgShape))
             {
-                if (!m_blobPosEnc.CompareShape(m_rgShape))
+                m_blobPosEnc.Reshape(m_rgShape);
+                m_blobPosEnc.Reshape(1, m_rgShape[1], m_rgShape[2], 1);
+                int nDim = m_nBlockSize * m_nEmbed;
+
+                if (typeof(T) == typeof(float))
+                {
+                    float[] rgPosEnc1 = new float[nDim];
+                    for (int pos = 0; pos < m_nBlockSize; pos++)
+                    {
+                        for (int i = 0; i < m_nEmbed; i++)
+                        {
+                            int nIdx = pos * m_nEmbed + i;
+                            double df1 = 2 * i / (double)m_nEmbed;
+                            double dfPow = Math.Pow(10000, df1);
+                            double dfPos = pos / dfPow;
+
+                            if (i % 2 == 0)
+                            {
+                                double dfSin = Math.Sin(dfPos);
+                                rgPosEnc1[nIdx] = (float)dfSin;
+                            }
+                            else if (i % 2 == 1)
+                            {
+                                double dfCos = Math.Cos(dfPos);
+                                rgPosEnc1[nIdx] = (float)dfCos;
+                            }
+                        }
+                    }
+
+                    m_blobPosEnc.mutable_cpu_data = convert(rgPosEnc1);
+                }
+                else
+                {
+                    double[] rgPosEnc1 = new double[nDim];
+                    for (int pos = 0; pos < m_nBlockSize; pos++)
+                    {
+                        for (int i = 0; i < m_nEmbed; i++)
+                        {
+                            int nIdx = pos * m_nEmbed + i;
+                            double df1 = 2 * i / (double)m_nEmbed;
+                            double dfPow = Math.Pow(10000, df1);
+                            double dfPos = pos / dfPow;
+
+                            if (i % 2 == 0)
+                            {
+                                double dfSin = Math.Sin(dfPos);
+                                rgPosEnc1[nIdx] = dfSin;
+                            }
+                            else if (i % 2 == 1)
+                            {
+                                double dfCos = Math.Cos(dfPos);
+                                rgPosEnc1[nIdx] = dfCos;
+                            }
+                        }
+                    }
+
+                    m_blobPosEnc.mutable_cpu_data = convert(rgPosEnc1);
+                }
+
+                if (nBatch > 1)
                 {
                     m_blobPosEnc.Reshape(m_rgShape);
-                    m_blobPosEnc.Reshape(1, m_rgShape[1], m_rgShape[2], 1);
-                    int nDim = m_nBlockSize * m_nEmbed;
 
-                    if (typeof(T) == typeof(float))
+                    for (int i = 1; i < nBatch; i++)
                     {
-                        float[] rgPosEnc1 = new float[nDim];
-                        for (int pos = 0; pos < m_nBlockSize; pos++)
-                        {
-                            for (int i = 0; i < m_nEmbed; i++)
-                            {
-                                int nIdx = pos * m_nEmbed + i;
-                                double df1 = 2 * i / (double)m_nEmbed;
-                                double dfPow = Math.Pow(10000, df1);
-                                double dfPos = pos / dfPow;
-
-                                if (i % 2 == 0)
-                                {
-                                    double dfSin = Math.Sin(dfPos);
-                                    rgPosEnc1[nIdx] = (float)dfSin;
-                                }
-                                else if (i % 2 == 1)
-                                {
-                                    double dfCos = Math.Cos(dfPos);
-                                    rgPosEnc1[nIdx] = (float)dfCos;
-                                }
-                            }
-                        }
-
-                        m_blobPosEnc.mutable_cpu_data = convert(rgPosEnc1);
-                    }
-                    else
-                    {
-                        double[] rgPosEnc1 = new double[nDim];
-                        for (int pos = 0; pos < m_nBlockSize; pos++)
-                        {
-                            for (int i = 0; i < m_nEmbed; i++)
-                            {
-                                int nIdx = pos * m_nEmbed + i;
-                                double df1 = 2 * i / (double)m_nEmbed;
-                                double dfPow = Math.Pow(10000, df1);
-                                double dfPos = pos / dfPow;
-
-                                if (i % 2 == 0)
-                                {
-                                    double dfSin = Math.Sin(dfPos);
-                                    rgPosEnc1[nIdx] = dfSin;
-                                }
-                                else if (i % 2 == 1)
-                                {
-                                    double dfCos = Math.Cos(dfPos);
-                                    rgPosEnc1[nIdx] = dfCos;
-                                }
-                            }
-                        }
-
-                        m_blobPosEnc.mutable_cpu_data = convert(rgPosEnc1);
-                    }
-
-                    if (nBatch > 1)
-                    {
-                        m_blobPosEnc.Reshape(m_rgShape);
-
-                        for (int i = 1; i < nBatch; i++)
-                        {
-                            m_cuda.copy(nDim, m_blobPosEnc.gpu_data, m_blobPosEnc.mutable_gpu_data, 0, i * nDim);
-                        }
+                        m_cuda.copy(nDim, m_blobPosEnc.gpu_data, m_blobPosEnc.mutable_gpu_data, 0, i * nDim);
                     }
                 }
             }
