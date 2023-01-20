@@ -24,6 +24,7 @@ namespace MyCaffe.common
     public class Blob<T> : IDisposable
     {
         T m_tZero;
+        T m_tOne;
         T m_tMinusOne;
         string m_strName = "";
         CudaDnn<T> m_cuda;
@@ -72,6 +73,7 @@ namespace MyCaffe.common
 
             m_tZero = Zero;
             m_tMinusOne = MinusOne;
+            m_tOne = One;
             m_bIncludeDiff = bIncludeDiff;
             m_cuda = cuda;
             m_log = log;
@@ -946,9 +948,10 @@ namespace MyCaffe.common
         /// <summary>
         /// Copy from a source Blob and transpose the height and width of the copy.
         /// </summary>
-        /// <param name="blobSrc">The Blob to copy from.</param>
-        /// <param name="bCopyDiff">If false, copy the data; if true, copy the diff.</param>
-        public void CopyFromAndTransposeHeightWidth(Blob<T> blobSrc, bool bCopyDiff = false)
+        /// <param name="blobSrc">Specifies the Blob to copy from.</param>
+        /// <param name="bCopyDiff">Optionally, specifies to copy and transform the diff instead of the data (default = false).</param>
+        /// <param name="bUseCuda">Optionally, specifies to use CUDA function for transformations (default = true)</param>
+        public void CopyFromAndTransposeHeightWidth(Blob<T> blobSrc, bool bCopyDiff = false, bool bUseCuda = true)
         {
             m_log.CHECK_EQ(blobSrc.num_axes, 4, "Currently, Blobs only support transposing 4 axis tensors.");
 
@@ -962,28 +965,35 @@ namespace MyCaffe.common
             int nH = height;
             int nW = width;
 
-            T[] rgSrc = src.update_cpu_data();
-            T[] rgDst = dst.mutable_cpu_data;
-
-            for (int n = 0; n < nN; n++)
+            if (bUseCuda)
             {
-                for (int c = 0; c < nC; c++)
-                {
-                    int nOffset = (n * nC * nH * nW) + (c * nH * nW);
+                m_cuda.transposeHW(nN, nC, nH, nW, src.gpu_data, dst.mutable_gpu_data);
+            }
+            else
+            {
+                T[] rgSrc = src.update_cpu_data();
+                T[] rgDst = dst.mutable_cpu_data;
 
-                    for (int h = 0; h < nH; h++)
+                for (int n = 0; n < nN; n++)
+                {
+                    for (int c = 0; c < nC; c++)
                     {
-                        for (int w = 0; w < nW; w++)
+                        int nOffset = (n * nC * nH * nW) + (c * nH * nW);
+
+                        for (int h = 0; h < nH; h++)
                         {
-                            int nSrcIdx = nOffset + (h * nW) + w;
-                            int nDstIdx = nOffset + (w + nH) + h;
-                            rgDst[nDstIdx] = rgSrc[nSrcIdx];
+                            for (int w = 0; w < nW; w++)
+                            {
+                                int nSrcIdx = nOffset + (h * nW) + w;
+                                int nDstIdx = nOffset + (w + nH) + h;
+                                rgDst[nDstIdx] = rgSrc[nSrcIdx];
+                            }
                         }
                     }
                 }
-            }
 
-            dst.mutable_cpu_data = rgDst;
+                dst.mutable_cpu_data = rgDst;
+            }
         }
 
         /// <summary>
@@ -3173,6 +3183,77 @@ namespace MyCaffe.common
             }
 
             return nCount;
+        }
+
+        /// <summary>
+        /// MatMul blobA with blobB and place the result in this blob (e.g. this = matmul(A, B)).  All blobs are in row-major format.
+        /// </summary>
+        /// <param name="blobA">Specifies the first input with last 2 axes size of MxK row-major matrix (first axes must match blobB's)</param>
+        /// <param name="blobB">Specifies the second input with last 2 axes size of KxN row-major matrix (first axes must match blobA's)</param>
+        /// <param name="dfScale">Specifies the scale applied to blobB.</param>
+        /// <param name="bReshape">Specifies to reshape this blob the the expected shape.</param>
+        /// <param name="bTransA">Specifies to transpose A first.</param>
+        /// <param name="bTransB">Specifies to transpose B first.</param>
+        /// <param name="bADiff">Specifies to use the diff values in blobA, otherwise the data values are used (default = false).</param>
+        /// <param name="bBDiff">Specifies to use the diff values in blobB, otherwise the data values are used (default = false).</param>
+        /// <param name="bCDiff">Specifies to use the diff values in blobC, otherwise the data values are used (default = false).</param>
+        public void MatMul(Blob<T> blobA, Blob<T> blobB, bool bReshape, bool bTransA = false, bool bTransB = false, double dfScale = 1.0, bool bADiff = false, bool bBDiff = false, bool bCDiff = false)
+        {
+            m_log.CHECK_EQ(blobA.num_axes, 4, "The blobA must have 4 axes!");
+            m_log.CHECK_EQ(blobB.num_axes, 4, "The blobB must have 4 axes!");
+
+            if (bADiff && blobA.gpu_diff == 0)
+                m_log.FAIL("Blob A does not have a diff value!");
+            if (bBDiff && blobB.gpu_diff == 0)
+                m_log.FAIL("Blob B does not have a diff value!");
+
+            for (int i = 0; i < blobA.num_axes - 2; i++)
+            {
+                m_log.CHECK_EQ(blobA.shape(i), blobB.shape(i), "Blob A and B must have the same shape at axis '" + i.ToString() + "'!");
+            }
+
+            if (bCDiff && gpu_diff == 0)
+                m_log.FAIL("This blob does not have a diff value!");
+
+            int nAxis = 2;
+            uint nOuterCount = (uint)blobA.count(0, nAxis);
+            int m = blobA.shape(2);
+            int n = blobB.shape(3);
+            int k = blobA.shape(3);
+
+            // Reshape the resulting blob to shape (B,C,M,N)
+            List<int> rgShape = Utility.Clone<int>(blobA.shape());
+            rgShape[rgShape.Count - 1] = n;
+            rgShape[rgShape.Count - 2] = m;
+            
+            if (bReshape)
+                Reshape(rgShape);
+            else
+                m_log.CHECK(CompareShape(rgShape), "This (resulting) blob does not have the correct shape!  Expected shape = " + Utility.ToString<int>(rgShape));
+
+            long hA = (bADiff) ? blobA.gpu_diff : blobA.gpu_data;
+            long hB = (bBDiff) ? blobB.gpu_diff : blobB.gpu_data;
+            long hC = (bCDiff) ? mutable_gpu_diff : mutable_gpu_data;
+
+            m_cuda.matmul(nOuterCount, m, n, k, hA, hB, hC, dfScale, bTransA, bTransB);
+        }
+
+        /// <summary>
+        /// Calculates and propagates the gradient for blobA and BlobB given the input gradient in this blob's diff values.  After
+        /// this call, the blobA and blobB diff values are filled with their respective gradients.
+        /// </summary>
+        /// <param name="blobA">Specifies the blobA where blobA gradients are placed (in diff values).</param>
+        /// <param name="blobB">Specifies the blobB where blobB gradients are placed (in diff values).</param>
+        /// <param name="blobWork">Specifies a work blob.</param>
+        /// <remarks>
+        /// @see [PyGrad:functions.py](https://github.com/jaketae/pygrad/blob/master/pygrad/functions.py) by Jake Tae, 2020, GitHub:jaketae/pygrad
+        /// </remarks>
+        public void MatMulGrad(Blob<T> blobA, Blob<T> blobB, Blob<T> blobWork)
+        {
+            blobWork.CopyFromAndTransposeHeightWidth(blobB, false);
+            blobA.MatMul(this, blobWork, false, false, false, 1, true, false, true);
+            blobWork.CopyFromAndTransposeHeightWidth(blobA, false);
+            blobB.MatMul(blobWork, this, false, false, false, 1, false, true, true);
         }
     }
 }
