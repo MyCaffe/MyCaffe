@@ -144,8 +144,8 @@ namespace MyCaffe.layers
             colTop[0].ReshapeLike(colBottom[0]);
             List<int> rgMultDims = new List<int>() { colBottom[0].shape(m_nSoftmaxAxis) };
 
-            if (!shareLayerBlob(m_blobSumMultiplier, rgMultDims))
-                m_blobSumMultiplier.Reshape(rgMultDims);
+            shareLayerBlob(m_blobSumMultiplier, rgMultDims);
+            m_blobSumMultiplier.Reshape(rgMultDims);
             m_blobSumMultiplier.SetData(1.0);
 
             m_nOuterNum = colBottom[0].count(0, m_nSoftmaxAxis);
@@ -153,9 +153,9 @@ namespace MyCaffe.layers
 
             List<int> rgScaleDims = Utility.Clone<int>(colBottom[0].shape());
             rgScaleDims[m_nSoftmaxAxis] = 1;
-            
-            if (!shareLayerBlob(m_blobScale, rgScaleDims))
-                m_blobScale.Reshape(rgScaleDims);
+
+            shareLayerBlob(m_blobScale, rgScaleDims);
+            m_blobScale.Reshape(rgScaleDims);
 
             if (!m_param.softmax_param.useCudnn())
                 return;
