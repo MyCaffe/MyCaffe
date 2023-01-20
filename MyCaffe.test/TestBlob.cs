@@ -9,6 +9,8 @@ using MyCaffe.fillers;
 using MyCaffe.basecode;
 using System.Drawing;
 using System.IO;
+using MyCaffe.layers;
+using System.Text.RegularExpressions;
 
 namespace MyCaffe.test
 {
@@ -151,6 +153,42 @@ namespace MyCaffe.test
                 foreach (IBlobSimpleTest t in test.Tests)
                 {
                     t.TestChannelDuplicate();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestCopyAndTransposeHeightWidth()
+        {
+            BlobSimpleTest test = new BlobSimpleTest();
+
+            try
+            {
+                foreach (IBlobSimpleTest t in test.Tests)
+                {
+                    t.TestCopyTransposeHeightWidth(1, 1);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestCopyAndTransposeHeightWidthBatch()
+        {
+            BlobSimpleTest test = new BlobSimpleTest();
+
+            try
+            {
+                foreach (IBlobSimpleTest t in test.Tests)
+                {
+                    t.TestCopyTransposeHeightWidth(3, 1);
                 }
             }
             finally
@@ -356,6 +394,76 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestMatMul()
+        {
+            BlobSimpleTest test = new BlobSimpleTest();
+
+            try
+            {
+                foreach (IBlobSimpleTest t in test.Tests)
+                {
+                    t.TestMatMul(1, 1, false, false);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+        [TestMethod]
+        public void TestMatMulBatch()
+        {
+            BlobSimpleTest test = new BlobSimpleTest();
+
+            try
+            {
+                foreach (IBlobSimpleTest t in test.Tests)
+                {
+                    t.TestMatMul(3, 1, false, false);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestMatMulGrad()
+        {
+            BlobSimpleTest test = new BlobSimpleTest();
+
+            try
+            {
+                foreach (IBlobSimpleTest t in test.Tests)
+                {
+                    t.TestMatMulGrad(1, 1);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+        [TestMethod]
+        public void TestMatMulGradBatch()
+        {
+            BlobSimpleTest test = new BlobSimpleTest();
+
+            try
+            {
+                foreach (IBlobSimpleTest t in test.Tests)
+                {
+                    t.TestMatMulGrad(3, 1);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     class BlobSimpleTest : TestBase
@@ -383,6 +491,7 @@ namespace MyCaffe.test
         void TestLegacyBlobProtoShapeEquals();
         void TestCopyFrom();
         void TestCopyFromChannels();
+        void TestCopyTransposeHeightWidth(int nBatch, int nChannels);
         void TestMath_SumOfSquares();
         void TestMath_Asum();
         void TestMath_Scale();
@@ -395,6 +504,8 @@ namespace MyCaffe.test
         void TestLoadFromNumpy();
         void TestSaveToNumpy();
         void TestChannelDuplicate();
+        void TestMatMul(int nBatch, int nChannels, bool bTransA, bool bTransB);
+        void TestMatMulGrad(int nBatch, int nChannels);
     }
 
     class BlobSimpleTest<T> : Test<T>, IBlobSimpleTest 
@@ -1360,6 +1471,306 @@ namespace MyCaffe.test
                 blobDup.Dispose();
                 blobExp.Dispose();
                 blobWork.Dispose();
+            }
+        }
+
+        private float[] matmul(int nBatch, int nChannels, int nM, int nK, int nN, T[] rgA, T[] rgB)
+        {
+            return matmul(nBatch, nChannels, nM, nN, nK,
+                Utility.ConvertVecF<T>(rgA),
+                Utility.ConvertVecF<T>(rgB));
+        }
+
+        private float[] matmul(int nBatch, int nChannels, int nM, int nK, int nN, float[] rgA, float[] rgB)
+        {
+            int nCount = nBatch * nChannels;
+            float[] rgC = new float[nCount * nM * nN];
+
+            for (int i = 0; i < nCount; i++)
+            {
+                for (int m = 0; m < nM; m++)
+                {
+                    for (int n = 0; n < nN; n++)
+                    {
+                        for (int k = 0; k < nK; k++)
+                        {
+                            int nIdxA = (i * nM * nK) + m * nK + k;
+                            int nIdxB = (i * nK * nN) + k * nN + n;
+                            int nIdxC = (i * nM * nN) + m * nN + n;
+
+                            rgC[nIdxC] += rgA[nIdxA] * rgB[nIdxB];
+                        }
+                    }
+                }
+            }
+
+            return rgC;
+        }
+
+        private void expand(Blob<T> b, int nBatch, int nChannels)
+        {
+            int nExpand = nBatch * nChannels;
+            if (nExpand == 1)
+                return;
+
+            int nCount = b.count();
+          
+            List<int> rgShape = Utility.Clone<int>(b.shape());
+            rgShape[0] = nBatch;
+            rgShape[1] = nChannels;
+
+            float[] rgData = Utility.ConvertVecF<T>(b.mutable_cpu_data);
+            float[] rgDiff = Utility.ConvertVecF<T>(b.mutable_cpu_diff);
+
+            b.Reshape(rgShape);
+
+            float[] rgData1 = new float[rgData.Length * nExpand];
+            float[] rgDiff1 = new float[rgDiff.Length * nExpand];
+
+            for (int i = 0; i < nExpand; i++)
+            {
+                Array.Copy(rgData, 0, rgData1, i * nCount, nCount);
+                Array.Copy(rgDiff, 0, rgDiff1, i * nCount, nCount);
+            }
+
+            b.mutable_cpu_data = Utility.ConvertVec<T>(rgData1);
+            b.mutable_cpu_diff = Utility.ConvertVec<T>(rgDiff1);
+        }
+
+        private void compare(T[] rg1, T[] rg2)
+        {
+            compare(Utility.ConvertVecF<T>(rg1),
+                    Utility.ConvertVecF<T>(rg2));
+        }
+
+        private void compare(float[] rg1, float[] rg2)
+        {
+            m_log.CHECK_EQ(rg1.Length, rg2.Length, "The lengths should be equal!");
+
+            for (int i = 0; i < rg1.Length; i++)
+            {
+                m_log.CHECK_EQ(rg1[i], rg2[i], "The items at index '" + i.ToString() + "' should be equal!");
+            }
+        }
+
+        public void TestCopyTransposeHeightWidth(int nBatch, int nChannels)
+        {            
+            int nM = 4;
+            int nN = 4;
+            Blob<T> blobA = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobB = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobC = new Blob<T>(m_cuda, m_log);
+
+            LayerParameter transpose_param = new LayerParameter(LayerParameter.LayerType.TRANSPOSE, "transpose");
+            transpose_param.transpose_param.dim[2] = 3;
+            transpose_param.transpose_param.dim[3] = 2;
+            Layer<T> transpose = Layer<T>.Create(m_cuda, m_log, transpose_param, null);
+
+            try
+            {
+                // Create the A and B blobs in row-major ordering
+                blobA.Reshape(nBatch, nChannels, nM, nN);
+                blobB.Reshape(nBatch, nChannels, nN, nM);
+                blobB.SetData(0.0);
+                
+                // Check Data
+                float[] rgA = Utility.ConvertVecF<T>(blobA.mutable_cpu_data);
+                for (int i = 0; i < rgA.Length; i++)
+                {
+                    rgA[i] = i;
+                }
+                blobA.mutable_cpu_data = Utility.ConvertVec<T>(rgA);
+
+                blobB.CopyFromAndTransposeHeightWidth(blobA, false, true);
+
+                BlobCollection<T> colBtm = new BlobCollection<T>();
+                BlobCollection<T> colTop = new BlobCollection<T>();
+
+                colBtm.Add(blobA);
+                colTop.Add(blobC);
+
+                transpose.Forward(colBtm, colTop);
+
+                float[] rgB = Utility.ConvertVecF<T>(blobB.mutable_cpu_data);
+                float[] rgC = Utility.ConvertVecF<T>(blobB.mutable_cpu_data);
+                compare(rgB, rgC);
+
+                // Check Diff
+                rgC = Utility.ConvertVecF<T>(blobC.mutable_cpu_diff);
+                for (int i = 0; i < rgC.Length; i++)
+                {
+                    rgC[i] = i * 100;
+                }
+                blobC.mutable_cpu_diff = Utility.ConvertVec<T>(rgC);
+
+                blobB.CopyFromAndTransposeHeightWidth(blobC, true, true);
+
+                colBtm.Clear();
+                colBtm.Add(blobA);
+                colTop.Clear();
+                colTop.Add(blobC);
+                
+                transpose.Backward(colTop, new List<bool>() { true }, colBtm);
+
+                rgA = Utility.ConvertVecF<T>(blobB.mutable_cpu_diff);
+                rgB = Utility.ConvertVecF<T>(blobB.mutable_cpu_diff);
+                compare(rgA, rgB);
+            }
+            finally
+            {
+                blobA.Dispose();
+                blobB.Dispose();
+                blobC.Dispose();
+                transpose.Dispose();
+            }
+        }
+
+        public void TestMatMul(int nBatch, int nChannels, bool bTransA, bool bTransB)
+        {
+            int nM = 4;
+            int nN = 4;
+            int nK = 2;
+            Blob<T> blobA = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobB = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobC = new Blob<T>(m_cuda, m_log);
+
+            try
+            {
+                // Create the A and B blobs in row-major ordering
+                blobA.Reshape(nBatch, nChannels, nM, nK);
+                blobB.Reshape(nBatch, nChannels, nK, nN);
+
+                float[] rgA = Utility.ConvertVecF<T>(blobA.mutable_cpu_data);
+                float[] rgB = Utility.ConvertVecF<T>(blobB.mutable_cpu_data);
+                blobC.SetData(0);
+
+                for (int i = 0; i < rgA.Length; i++)
+                {
+                    rgA[i] = i;
+                }
+                blobA.mutable_cpu_data = Utility.ConvertVec<T>(rgA);
+
+                for (int i = 0; i < rgB.Length; i++)
+                {
+                    rgB[i] = i + 100;
+                }
+                blobB.mutable_cpu_data = Utility.ConvertVec<T>(rgB);
+
+                expand(blobA, nBatch, nChannels);
+                expand(blobB, nBatch, nChannels);
+
+
+                //==================================
+                // MatMul Operation
+                //==================================
+
+                blobC.MatMul(blobA, blobB, true);
+
+                // Verify values.
+                float[] rgC = Utility.ConvertVecF<T>(blobC.mutable_cpu_data);
+                m_log.CHECK_EQ(rgC.Length, nM * nN * nBatch * nChannels, "The C matrix is not the expected size!");
+
+                List<int> rgShape = new List<int>() { nBatch, nChannels, nM, nN };
+                m_log.CHECK(blobC.CompareShape(rgShape), "The C matrix shape is not the expected size!");
+
+                float[] rgExpected = matmul(nBatch, nChannels, nM, nK, nN, rgA, rgB);
+                compare(rgExpected, rgC);
+            }
+            finally
+            {
+                blobA.Dispose();
+                blobB.Dispose();
+                blobC.Dispose();
+            }
+        }
+
+        public void TestMatMulGrad(int nBatch, int nChannels)
+        {
+            int nM = 4;
+            int nN = 4;
+            int nK = 2;
+            Blob<T> blobA = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobB = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobWork = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobAt = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobBt = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobC = new Blob<T>(m_cuda, m_log);
+
+            LayerParameter transpose_param = new LayerParameter(LayerParameter.LayerType.TRANSPOSE, "transpose");
+            transpose_param.transpose_param.dim[2] = 3;
+            transpose_param.transpose_param.dim[3] = 2;
+            Layer<T> transpose = Layer<T>.Create(m_cuda, m_log, transpose_param, null);
+
+            try
+            {
+                // Create the A and B blobs in row-major ordering
+                blobA.Reshape(1, 1, nM, nK);
+                blobB.Reshape(1, 1, nK, nN);
+
+                float[] rgA = Utility.ConvertVecF<T>(blobA.mutable_cpu_data);
+                float[] rgB = Utility.ConvertVecF<T>(blobB.mutable_cpu_data);
+                blobC.SetData(0);
+
+                for (int i = 0; i < rgA.Length; i++)
+                {
+                    rgA[i] = i;
+                }
+                blobA.mutable_cpu_data = Utility.ConvertVec<T>(rgA);
+
+                for (int i = 0; i < rgB.Length; i++)
+                {
+                    rgB[i] = i + 100;
+                }
+                blobB.mutable_cpu_data = Utility.ConvertVec<T>(rgB);
+
+                expand(blobA, nBatch, nChannels);
+                expand(blobB, nBatch, nChannels);
+
+                List<int> rgShape = new List<int>() { nBatch, nChannels, nM, nN };
+                blobC.Reshape(rgShape);
+                blobC.SetData(0.0);
+                blobC.SetDiff(1.0);
+
+                //==================================
+                // MatMul Operation
+                //==================================
+
+                blobC.MatMulGrad(blobA, blobB, blobWork);
+
+                // Verify values.
+                BlobCollection<T> colBtm = new BlobCollection<T>();
+                BlobCollection<T> colTop = new BlobCollection<T>();
+
+                colBtm.Clear();
+                colBtm.Add(blobB);
+                colTop.Clear();
+                colTop.Add(blobBt);
+                transpose.Setup(colBtm, colTop);
+                transpose.Forward(colBtm, colTop);
+
+                float[] rgAgrad = matmul(nBatch, nChannels, nM, nK, nN, blobC.mutable_cpu_diff, blobBt.mutable_cpu_data);
+                compare(rgAgrad, Utility.ConvertVecF<T>(blobA.mutable_cpu_diff));
+
+                colBtm.Clear();
+                colBtm.Add(blobA);
+                colTop.Clear();
+                colTop.Add(blobAt);
+                transpose.Setup(colBtm, colTop);
+                transpose.Forward(colBtm, colTop);
+
+                float[] rgBgrad = matmul(nBatch, nChannels, 2, 4, 4, blobAt.mutable_cpu_data, blobC.mutable_cpu_diff);
+                compare(rgBgrad, Utility.ConvertVecF<T>(blobB.mutable_cpu_diff));
+            }
+            finally
+            {
+                blobA.Dispose();
+                blobB.Dispose();
+                blobC.Dispose();
+                blobAt.Dispose();
+                blobBt.Dispose();
+                blobWork.Dispose();
+
+                transpose.Dispose();
             }
         }
     }
