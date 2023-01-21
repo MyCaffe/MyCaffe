@@ -3191,13 +3191,13 @@ namespace MyCaffe.common
         /// <param name="blobA">Specifies the first input with last 2 axes size of MxK row-major matrix (first axes must match blobB's)</param>
         /// <param name="blobB">Specifies the second input with last 2 axes size of KxN row-major matrix (first axes must match blobA's)</param>
         /// <param name="dfScale">Specifies the scale applied to blobB.</param>
-        /// <param name="bReshape">Specifies to reshape this blob the the expected shape.</param>
+        /// <param name="bReshape">Specifies to reshape this blob the the expected shape (default = false).</param>
         /// <param name="bTransA">Specifies to transpose A first.</param>
         /// <param name="bTransB">Specifies to transpose B first.</param>
         /// <param name="bADiff">Specifies to use the diff values in blobA, otherwise the data values are used (default = false).</param>
         /// <param name="bBDiff">Specifies to use the diff values in blobB, otherwise the data values are used (default = false).</param>
         /// <param name="bCDiff">Specifies to use the diff values in blobC, otherwise the data values are used (default = false).</param>
-        public void MatMul(Blob<T> blobA, Blob<T> blobB, bool bReshape, bool bTransA = false, bool bTransB = false, double dfScale = 1.0, bool bADiff = false, bool bBDiff = false, bool bCDiff = false)
+        public void MatMul(Blob<T> blobA, Blob<T> blobB, bool bReshape = false, bool bTransA = false, bool bTransB = false, double dfScale = 1.0, bool bADiff = false, bool bBDiff = false, bool bCDiff = false)
         {
             m_log.CHECK_EQ(blobA.num_axes, 4, "The blobA must have 4 axes!");
             m_log.CHECK_EQ(blobB.num_axes, 4, "The blobB must have 4 axes!");
