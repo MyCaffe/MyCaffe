@@ -57,6 +57,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestBackward2()
+        {
+            MultiheadAttentionLayerTest test = new MultiheadAttentionLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IMultiheadAttentionLayerTest t in test.Tests)
+                {
+                    t.TestBackward2(3, 8);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestGradient()
         {
             MultiheadAttentionLayerTest test = new MultiheadAttentionLayerTest(EngineParameter.Engine.CAFFE);
@@ -79,6 +97,7 @@ namespace MyCaffe.test
     {
         void TestForward(uint nBatch, uint nHeads);
         void TestBackward(uint nBatch, uint nHeads);
+        void TestBackward2(uint nBatch, uint nHeads);
         void TestGradient(uint nBatch, uint nHeads);
     }
 
@@ -255,6 +274,69 @@ namespace MyCaffe.test
                 layer.blobs[5].LoadFromNumpy(strTestDataPath + "w_v_bias.npy");
                 layer.blobs[6].LoadFromNumpy(strTestDataPath + "w_o_weight.npy");
                 layer.blobs[7].LoadFromNumpy(strTestDataPath + "w_o_bias.npy");
+
+                layer.Forward(BottomVec, TopVec);
+
+                // Load the inbound gradients.
+                TopVec[0].LoadFromNumpy(strTestDataPath + "grad_mh.12_output.npy", true);
+
+                layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
+
+                m_blobQexp.LoadFromNumpy(strTestDataPath + "grad_mh.1_q.npy", true);
+                m_blobKexp.LoadFromNumpy(strTestDataPath + "grad_mh.1_k.npy", true);
+                m_blobVexp.LoadFromNumpy(strTestDataPath + "grad_mh.1_v.npy", true);
+
+                // Now, check values
+                verify(BottomVec[0], m_blobQexp, true);
+                verify(BottomVec[1], m_blobKexp, true);
+                verify(BottomVec[2], m_blobVexp, true);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
+        }
+
+        public void TestBackward2(uint nBatch, uint nHeads)
+        {
+            string strTestDataPath = "C:\\temp\\projects\\TransformerTranslator\\TransformerTranslator\\test\\"; // loadTestData1();
+
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION);
+            p.multihead_attention_param.heads = nHeads;
+            p.multihead_attention_param.embed = 512;
+            p.multihead_attention_param.block_size = 200;
+            p.multihead_attention_param.attn_dropout = 0.0;
+            p.multihead_attention_param.resid_dropout = 0.0;
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+
+            try
+            {
+                m_log.CHECK(layer.type == LayerParameter.LayerType.MULTIHEAD_ATTENTION, "The layer type is incorrect!");
+
+                m_blobQ.LoadFromNumpy(strTestDataPath + "q0.npy");
+                m_blobK.LoadFromNumpy(strTestDataPath + "k0.npy");
+                m_blobV.LoadFromNumpy(strTestDataPath + "v0.npy");
+                m_blobInput.LoadFromNumpy(strTestDataPath + "src_input.npy");
+                m_blobMask.ReshapeLike(m_blobInput);
+                m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMask.mutable_gpu_data);
+
+                BottomVec.Clear();
+                BottomVec.Add(m_blobQ);
+                BottomVec.Add(m_blobK);
+                BottomVec.Add(m_blobV);
+                BottomVec.Add(m_blobMask);
+
+                layer.Setup(BottomVec, TopVec);
+
+                strTestDataPath += "iter_0\\";
+                layer.blobs[0].LoadFromNumpy(strTestDataPath + "mh.w_q.weight.npy");
+                layer.blobs[1].LoadFromNumpy(strTestDataPath + "mh.w_q.bias.npy");
+                layer.blobs[2].LoadFromNumpy(strTestDataPath + "mh.w_k.weight.npy");
+                layer.blobs[3].LoadFromNumpy(strTestDataPath + "mh.w_k.bias.npy");
+                layer.blobs[4].LoadFromNumpy(strTestDataPath + "mh.w_v.weight.npy");
+                layer.blobs[5].LoadFromNumpy(strTestDataPath + "mh.w_v.bias.npy");
+                layer.blobs[6].LoadFromNumpy(strTestDataPath + "mh.w_o.weight.npy");
+                layer.blobs[7].LoadFromNumpy(strTestDataPath + "mh.w_o.bias.npy");
 
                 layer.Forward(BottomVec, TopVec);
 
