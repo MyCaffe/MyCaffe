@@ -141,10 +141,10 @@ namespace MyCaffe.layers.beta
 
             rgShape.Add(nNumAxes);
 
-            if (!shareLayerBlob(m_blobBottomCounts, rgShape))
-                m_blobBottomCounts.Reshape(rgShape);
-            if (!shareLayerBlob(m_blobTopCounts, rgShape))
-                m_blobTopCounts.Reshape(rgShape);
+            shareLayerBlob(m_blobBottomCounts, rgShape);
+            m_blobBottomCounts.Reshape(rgShape);
+            shareLayerBlob(m_blobTopCounts, rgShape);
+            m_blobTopCounts.Reshape(rgShape);
 
             List<float> rgBottomCounts = new List<float>();
             List<float> rgTopCounts = new List<float>();
@@ -161,10 +161,10 @@ namespace MyCaffe.layers.beta
             m_blobBottomCounts.mutable_cpu_data = convert(rgBottomCounts.ToArray());
             m_blobTopCounts.mutable_cpu_data = convert(rgTopCounts.ToArray());
 
-            if (!shareLayerBlob(m_blobForwardMap, rgShape))
-                m_blobForwardMap.Reshape(rgShape);
-            if (!shareLayerBlob(m_blobBackwardMap, rgShape))
-                m_blobBackwardMap.Reshape(rgShape);
+            shareLayerBlob(m_blobForwardMap, rgShape);
+            m_blobForwardMap.Reshape(rgShape);
+            shareLayerBlob(m_blobBackwardMap, rgShape);
+            m_blobBackwardMap.Reshape(rgShape);
 
             List<float> rgForwardMap = new List<float>();
             List<float> rgBackwardMap = Utility.Create<float>(nNumAxes, 0);
@@ -182,8 +182,8 @@ namespace MyCaffe.layers.beta
             rgShape.Clear();
             rgShape.Add(colBottom[0].count() * nNumAxes);
 
-            if (!shareLayerBlob(m_blobBuffer, rgShape))
-                m_blobBuffer.Reshape(rgShape);
+            shareLayerBlob(m_blobBuffer, rgShape);
+            m_blobBuffer.Reshape(rgShape);
         }
 
         /// <summary>
