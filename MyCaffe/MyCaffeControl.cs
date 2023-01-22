@@ -2745,9 +2745,23 @@ namespace MyCaffe
                         throw new Exception("At least one layer must support the 'PreprocessInput' method!");
                     
                     double dfLoss;
+                    int nAxis = 1;
                     BlobCollection<T> colTop = m_net.Forward(colBottom, out dfLoss, layerInput.SupportsPostProcessingLogits);
                     Blob<T> blobTop = colTop[0];
-                    Layer<T> softmax = m_net.layers[m_net.layers.Count - 1] as SoftmaxLayer<T>;
+                    Layer<T> softmax = null;
+
+                    if (m_net.layers[m_net.layers.Count - 1].layer_param.type == LayerParameter.LayerType.SOFTMAX)
+                    {
+                        softmax = m_net.layers[m_net.layers.Count - 1];
+                        nAxis = softmax.layer_param.softmax_param.axis;
+                    }
+                    else if (m_net.layers[m_net.layers.Count - 1].layer_param.type == LayerParameter.LayerType.LOG_SOFTMAX)
+                    {
+                        softmax = m_net.layers[m_net.layers.Count - 1];
+                        nAxis = softmax.layer_param.log_softmax_param.axis;
+                        softmax = null;
+                    }
+
                     List<Tuple<string, int, double>> res;
 
                     if (layerInput.SupportsPostProcessingLogits)
@@ -2756,9 +2770,7 @@ namespace MyCaffe
                         blobTop = m_net.FindBlob("logits");
                         if (blobTop == null)
                             throw new Exception("Could not find the 'logits' blob!");
-                        if (softmax == null)
-                            throw new Exception("Coult not find the softmax layer!");
-                        res = layerInput.PostProcessLogitsOutput(blobTop, softmax, nK);
+                        res = layerInput.PostProcessLogitsOutput(blobTop, softmax, nAxis, nK);
                     }
                     else
                         res = layerInput.PostProcessOutput(colTop[0]);
