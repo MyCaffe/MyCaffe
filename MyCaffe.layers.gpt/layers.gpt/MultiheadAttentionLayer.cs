@@ -300,12 +300,10 @@ namespace MyCaffe.layers.gpt
         /// <summary>
         /// Returns the exact number of required top (output) Blobs: attn
         /// </summary>
-        //public override int ExactNumTopBlobs
-        //{
-        //    get { return 1; }
-        //}
-        public override int MinTopBlobs => 1;
-        public override int MaxTopBlobs => 10;
+        public override int ExactNumTopBlobs
+        {
+            get { return 1; }
+        }
         
 
         /// <summary>
