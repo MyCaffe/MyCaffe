@@ -291,9 +291,10 @@ namespace MyCaffe.layers
         /// </summary>
         /// <param name="blobLogits">Specifies the logits blob output by the last inner product layer of the network.</param>
         /// <param name="softmax">Specifies the softmax layer used to post process the logits.</param>
+        /// <param name="nAxis">Specifies the axis of the softmax layer.</param>
         /// <param name="nK">Optionally, specifies the K top items to return (default = 1).</param>
         /// <returns>The array of word string, index and propabilities corresponding to the softmax output is returned.</returns>
-        public virtual List<Tuple<string, int, double>> PostProcessLogitsOutput(Blob<T> blobLogits, Layer<T> softmax, int nK = 1)
+        public virtual List<Tuple<string, int, double>> PostProcessLogitsOutput(Blob<T> blobLogits, Layer<T> softmax, int nAxis, int nK = 1)
         {
             return null;
         }
