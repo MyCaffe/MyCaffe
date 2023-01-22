@@ -24,6 +24,7 @@ namespace MyCaffe.layers.gpt
         Blob<T> m_blobX = null;
         Blob<T> m_blobY = null;
         Random m_random = new Random();
+        Layer<T> m_softmax = null;
 
         /// <summary>
         /// The TokenizedDataLayer constructor.
@@ -60,6 +61,7 @@ namespace MyCaffe.layers.gpt
         {
             dispose(ref m_blobY);
             dispose(ref m_blobX);
+            dispose(ref m_softmax);
 
             base.dispose();
         }
@@ -349,14 +351,15 @@ namespace MyCaffe.layers.gpt
         /// </summary>
         /// <param name="blobLogits">Specifies the output of the last inner product layer.</param>
         /// <param name="softmax">Specifies the softmax layer.</param>
+        /// <param name="nAxis">Specifies the axis of the softmax layer.</param>
         /// <param name="nK">Specifies the TopK max items of the logits to use, or 0 to ignore.</param>
         /// <returns>
         /// The detokenized data is returned.
         /// </returns>
-        public override List<Tuple<string, int, double>> PostProcessLogitsOutput(Blob<T> blobLogits, Layer<T> softmax, int nK = 1)
+        public override List<Tuple<string, int, double>> PostProcessLogitsOutput(Blob<T> blobLogits, Layer<T> softmax, int nAxis, int nK = 1)
         {
             float[] rgData = convertF(blobLogits.mutable_cpu_data);
-            int nVocabCount = blobLogits.count(softmax.layer_param.softmax_param.axis);
+            int nVocabCount = blobLogits.count(nAxis);
             float[] rgLogits = new float[nVocabCount];
             int nIdxStart = blobLogits.count() - nVocabCount;
             Dictionary<int, float> rgTopK = new Dictionary<int, float>();
@@ -370,7 +373,7 @@ namespace MyCaffe.layers.gpt
                 {
                     float fMin = float.MaxValue;
                     int nMinIdx = -1;
-
+                    
                     foreach (KeyValuePair<int, float> kv in rgTopK)
                     {
                         if (kv.Value < fMin)
@@ -402,6 +405,18 @@ namespace MyCaffe.layers.gpt
 
             BlobCollection<T> colBottom = new BlobCollection<T>() { m_blobX };
             BlobCollection<T> colTop = new BlobCollection<T>() { m_blobY };
+            if (softmax == null)
+            {
+                if (m_softmax == null)
+                {
+                    LayerParameter softmax_param = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
+                    softmax_param.softmax_param.axis = nAxis;
+                    m_softmax = Layer<T>.Create(m_cuda, m_log, softmax_param, null);
+                    m_softmax.Setup(colBottom, colTop);
+                }
+
+                softmax = m_softmax;
+            }
             softmax.Forward(colBottom, colTop);
 
             float[] rgProb = convertF(m_blobY.mutable_cpu_data);
