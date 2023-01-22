@@ -300,10 +300,13 @@ namespace MyCaffe.layers.gpt
         /// <summary>
         /// Returns the exact number of required top (output) Blobs: attn
         /// </summary>
-        public override int ExactNumTopBlobs
-        {
-            get { return 1; }
-        }
+        //public override int ExactNumTopBlobs
+        //{
+        //    get { return 1; }
+        //}
+        public override int MinTopBlobs => 1;
+        public override int MaxTopBlobs => 10;
+        
 
         /// <summary>
         /// Re-initialize the parameters of the layer.
@@ -540,7 +543,7 @@ namespace MyCaffe.layers.gpt
             // v  = self.c_attnK(x3)
             addInternal(m_blobX2, m_blobV);
             m_c_attnV.Forward(m_colInternalBottom, m_colInternalTop);
-
+            
             // Transpose query, key and values along axes 1 & 2
             // k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
             // q = q.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
@@ -679,9 +682,7 @@ namespace MyCaffe.layers.gpt
                     // Gradient with respect to qt
                     // qt' = att' @ kt
                     double dfScale = 1.0 / Math.Sqrt(m_nSize);
-                    m_blobAtt.MatMulGrad(m_blobQt, m_blobKt1, m_blobWork);
-                    m_blobQt.scale_diff(dfScale);
-                    m_blobKt1.scale_diff(dfScale);
+                    m_blobAtt.MatMulGrad(m_blobQt, m_blobKt1, m_blobWork, dfScale);
 
                     // Transpose Kt1 back to Kt
                     addInternal(m_blobKt, m_blobKt1);
@@ -698,7 +699,7 @@ namespace MyCaffe.layers.gpt
                 m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom); // (B, nh, T, hs)
                 addInternal(m_blobV, m_blobVt);
                 m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom); // (B, nh, T, hs)
-                
+            
                 // Calculate query for all heads in batch and move head forward to be the batch dim.
                 // q = self.c_attnQ(x1)
                 addInternal(m_blobX0, m_blobQ);
@@ -713,6 +714,22 @@ namespace MyCaffe.layers.gpt
                 // v = self.c_attnV(x3)
                 addInternal(m_blobX2, m_blobV);
                 m_c_attnV.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+
+                if (colBottom[0].gpu_diff == colBottom[1].gpu_diff && colBottom[0].gpu_diff == colBottom[2].gpu_diff)
+                {
+                    colBottom[0].SetDiff(0);
+                }
+                else if (colBottom[1].gpu_diff == colBottom[2].gpu_diff)
+                {
+                    colBottom[0].SetDiff(0);
+                    colBottom[1].SetDiff(0);
+                }
+                else
+                {
+                    colBottom[0].SetDiff(0);
+                    colBottom[1].SetDiff(0);
+                    colBottom[2].SetDiff(0);
+                }
 
                 m_cuda.add(m_blobX0.count(), m_blobX0.gpu_diff, colBottom[0].gpu_diff, colBottom[0].mutable_gpu_diff);
                 m_cuda.add(m_blobX1.count(), m_blobX1.gpu_diff, colBottom[1].gpu_diff, colBottom[1].mutable_gpu_diff);
