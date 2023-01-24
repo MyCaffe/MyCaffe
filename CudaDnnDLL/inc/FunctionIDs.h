@@ -23,6 +23,18 @@ typedef LONG(WINAPI *LPFNINTERNAL_INVOKEDOUBLE)(LONG lKernelIdx,
 	double* pInput, LONG lInput,
 	double** ppOutput, LONG* plOutput,
 	LPTSTR szErr, LONG lszErrMax);
+typedef LONG(WINAPI* LPFNINTERNAL_INVOKEFLOATEX2)(LONG lKernelIdx,
+	LONG lFunctionIdx,
+	float* pInput, LONG lInput,
+	LONGLONG* plInput, LONG llInput,
+	float** ppOutput, LONG* plOutput,
+	LPTSTR szErr, LONG lszErrMax);
+typedef LONG(WINAPI* LPFNINTERNAL_INVOKEDOUBLEEX2)(LONG lKernelIdx,
+	LONG lFunctionIdx,
+	double* pInput, LONG lInput,
+	LONGLONG* plInput, LONG llInput,
+	double** ppOutput, LONG* plOutput,
+	LPTSTR szErr, LONG lszErrMax);
 typedef LONG(WINAPI *LPFNINTERNAL_GETPTRFLOAT)(HANDLE_TYPE ht, LONG lKernelIdx, LONG hHandle, void** ppPtr);
 typedef LONG(WINAPI *LPFNINTERNAL_GETPTRDOUBLE)(HANDLE_TYPE ht, LONG lKernelIdx, LONG hHandle, void** ppPtr);
 typedef LONG(WINAPI *LPFNINTERNAL_ALLOCHOSTFLOAT)(LONG lKernelIdx, LONG lCount, float**pfDst, float* pfSrc, bool bSrcOnDevice);
@@ -30,6 +42,8 @@ typedef LONG(WINAPI *LPFNINTERNAL_ALLOCHOSTDOUBLE)(LONG lKernelIdx, LONG lCount,
 
 #define SZFN_INTERNAL_INVOKEFLOAT "DLL_InvokeFloat"
 #define SZFN_INTERNAL_INVOKEDOUBLE "DLL_InvokeDouble"
+#define SZFN_INTERNAL_INVOKEFLOATEX2 "DLL_InvokeFloatEx2"
+#define SZFN_INTERNAL_INVOKEDOUBLEEX2 "DLL_InvokeDoubleEx2"
 #define SZFN_INTERNAL_GETPOINTERFLT "Internal_GetPointerFloat"
 #define SZFN_INTERNAL_GETPOINTERDBL "Internal_GetPointerDouble"
 #define SZFN_INTERNAL_ALLOCHOSTFLT "Internal_AllocHostFloat"
@@ -266,7 +280,7 @@ const int CUDA_FN_CHANNEL_MULV = 299;
 const int CUDA_FN_CHANNEL_COPY = 300;
 const int CUDA_FN_CHANNEL_FILLFROM = 301;
 const int CUDA_FN_CHANNEL_COPYALL = 302;
-const int CUDA_FN_CHANNEL_DUPLICATE = 303;
+const int CUDA_FN_CHANNEL_DUP = 303;
 
 const int CUDA_RNG_SETSEED = 349;
 const int CUDA_RNG_UNIFORM = 350;
