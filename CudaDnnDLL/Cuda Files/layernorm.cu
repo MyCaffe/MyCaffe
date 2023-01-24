@@ -214,7 +214,6 @@ template void LayerNormMemory<float>::CleanUp();
 template <class T>
 LONG LayerNormMemory<T>::save(std::string strName, bool bSaveDiff)
 {
-	LONG lErr;
 	std::ofstream wf("c:\\temp\\snap\\" + strName + ".npy", std::ios::out | std::ios::binary);
 	if (!wf)
 		return ERROR_FILE_NOT_FOUND;
