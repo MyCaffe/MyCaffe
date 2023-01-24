@@ -522,6 +522,7 @@ namespace MyCaffe.test
 
                 for (int i = 0; i < 100; i++)
                 {
+                    layer.Forward(BottomVec, TopVec);
                     layer.Backward(TopVec, rgProp, BottomVec);
                 }
 
