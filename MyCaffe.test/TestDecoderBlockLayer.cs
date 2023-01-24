@@ -353,10 +353,10 @@ namespace MyCaffe.test
             {
                 m_log.CHECK(layer.type == LayerParameter.LayerType.TRANSFORMER_BLOCK, "The layer type is incorrect!");
 
-                m_blobX.LoadFromNumpy(strTestDataPath + "dec.decin_x0.npy");
-                m_blobX.Name = "dec.decin_x0";
-                m_blobEncOut.LoadFromNumpy(strTestDataPath + "enc.encout_x1.npy");
-                m_blobEncOut.Name = "enc.encout_x1";
+                m_blobX.LoadFromNumpy(strTestDataPath + "dec_in_x0.npy");
+                m_blobX.Name = "dec_in_x0";
+                m_blobEncOut.LoadFromNumpy(strTestDataPath + "enc_out_x1.npy");
+                m_blobEncOut.Name = "enc_out_x1";
                 
                 m_blobInput.LoadFromNumpy(strTestDataPath + "src_input.npy");                
                 m_blobMaskEnc.ReshapeLike(m_blobInput);
@@ -448,10 +448,10 @@ namespace MyCaffe.test
             {
                 m_log.CHECK(layer.type == LayerParameter.LayerType.TRANSFORMER_BLOCK, "The layer type is incorrect!");
 
-                m_blobX.LoadFromNumpy(strTestDataPath + "dec.decin_x0.npy");
-                m_blobX.Name = "dec.decin_x0";
-                m_blobEncOut.LoadFromNumpy(strTestDataPath + "enc.encout_x1.npy");
-                m_blobEncOut.Name = "enc.encout_x1";
+                m_blobX.LoadFromNumpy(strTestDataPath + "dec_in_x0.npy");
+                m_blobX.Name = "dec_in_x0";
+                m_blobEncOut.LoadFromNumpy(strTestDataPath + "enc_out_x1.npy");
+                m_blobEncOut.Name = "enc_out_x1";
 
                 m_blobInput.LoadFromNumpy(strTestDataPath + "src_input.npy");
                 m_blobMaskEnc.ReshapeLike(m_blobInput);
