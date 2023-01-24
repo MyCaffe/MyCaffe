@@ -300,12 +300,193 @@ extern "C" LONG WINAPI DLL_InvokeFloat(LONG lKernelIdx,
 				return lErr;
 			}
 
-			if (lErr = pKernel->Run(lFunctionIdx, pInput, lInput, ppOutput, plOutput))
+			if (lErr = pKernel->Run(lFunctionIdx, pInput, lInput, NULL, 0, ppOutput, plOutput))
 			{
 				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 			break;
+	}
+
+	return lErr;
+}
+
+extern "C" LONG WINAPI DLL_InvokeFloatEx2(LONG lKernelIdx,
+	LONG lFunctionIdx,
+	float* pInput, LONG lInput,
+	LONGLONG* plInput, LONG llInput,
+	float** ppOutput, LONG * plOutput,
+	LPTSTR szErr, LONG lszErrMax)
+{
+	Kernel<float>* pKernel = NULL;
+	LONG lErr = 0;
+
+
+	if (lKernelIdx < 0 || lKernelIdx >= (LONG)g_dwMaxKernelCount)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+
+	//-------------------------------------------
+	//	Process the requested function.
+	//-------------------------------------------
+
+	switch (lFunctionIdx)
+	{
+	case CUDA_DLL_INITIALIZE:
+		setCurrentDirectory();
+
+		if (lErr = getKernelFloatIndex(&lKernelIdx))
+		{
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		pKernel = new Kernel<float>();
+
+		if (lErr = pKernel->Initialize(pInput, lInput))
+		{
+			delete pKernel;
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		g_rgdwFloatKernelTable[lKernelIdx] = pKernel;
+
+		(*ppOutput)[0] = (float)lKernelIdx;
+		*plOutput = 1;
+		break;
+
+	case CUDA_DLL_CLEANUP:
+		pKernel = g_rgdwFloatKernelTable[lKernelIdx];
+		if (pKernel != NULL)
+		{
+			pKernel->CleanUp();
+			delete pKernel;
+			g_rgdwFloatKernelTable[lKernelIdx] = NULL;
+		}
+		break;
+
+	case CUDA_DLL_FREEMEM:
+		if ((pKernel = g_rgdwFloatKernelTable[lKernelIdx]) == NULL)
+		{
+			lErr = ERROR_PARAM_NULL;
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		if (lErr = pKernel->FreeHost(pInput))
+		{
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+		break;
+
+	case CUDA_DLL_KERNEL_MEMCPY:
+		if ((pKernel = g_rgdwFloatKernelTable[lKernelIdx]) == NULL)
+		{
+			lErr = ERROR_PARAM_NULL;
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		if (lErr = copyMemKernelToKernel(pKernel, lInput, pInput))
+		{
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+		break;
+
+	case CUDA_DLL_KERNEL_ADD:
+		if ((pKernel = g_rgdwFloatKernelTable[lKernelIdx]) == NULL)
+		{
+			lErr = ERROR_PARAM_NULL;
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		if (lErr = addKernelToKernel(pKernel, lInput, pInput))
+		{
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+		break;
+
+	case CUDA_DLL_KERNEL_COPY_NCCL:
+	{
+		if ((pKernel = g_rgdwFloatKernelTable[lKernelIdx]) == NULL)
+		{
+			lErr = ERROR_PARAM_NULL;
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		if (lInput != 2)
+		{
+			return ERROR_PARAM_OUT_OF_RANGE;
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		long hKernelSrc = (long)pInput[0];
+		long hNcclSrc = (long)pInput[1];
+
+		if (hKernelSrc == 0 || hNcclSrc == 0)
+		{
+			return ERROR_PARAM_OUT_OF_RANGE;
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		Kernel<float>* pKernelSrc = NULL;
+		if ((pKernelSrc = g_rgdwFloatKernelTable[hKernelSrc]) == NULL)
+		{
+			lErr = ERROR_PARAM_NULL;
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		ncclHandle<float>* pNccl = NULL;
+		if ((pNccl = pKernelSrc->GetNCCL(hNcclSrc)) == NULL)
+		{
+			lErr = ERROR_PARAM_NULL;
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		if (lErr = pKernel->SetNCCL(pNccl, ppOutput, plOutput))
+		{
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+	}
+	break;
+
+	case CUDA_FN_EXTENSION_RUN:
+		if ((pKernel = g_rgdwFloatKernelTable[lKernelIdx]) == NULL)
+		{
+			lErr = ERROR_PARAM_NULL;
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		if (lErr = pKernel->Run(lFunctionIdx, pInput, lInput, ppOutput, plOutput, szErr, lszErrMax))
+			return lErr;
+		break;
+
+	default:
+		if ((pKernel = g_rgdwFloatKernelTable[lKernelIdx]) == NULL)
+		{
+			lErr = ERROR_PARAM_NULL;
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		if (lErr = pKernel->Run(lFunctionIdx, pInput, lInput, plInput, llInput, ppOutput, plOutput))
+		{
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+		break;
 	}
 
 	return lErr;
@@ -479,7 +660,7 @@ extern "C" LONG WINAPI DLL_InvokeDouble(LONG lKernelIdx,
 				return lErr;
 			}
 
-			if (lErr = pKernel->Run(lFunctionIdx, pInput, lInput, ppOutput, plOutput))
+			if (lErr = pKernel->Run(lFunctionIdx, pInput, lInput, NULL, 0, ppOutput, plOutput))
 			{
 				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
@@ -489,6 +670,187 @@ extern "C" LONG WINAPI DLL_InvokeDouble(LONG lKernelIdx,
 
 	return lErr;
 }
+
+extern "C" LONG WINAPI DLL_InvokeDoubleEx2(LONG lKernelIdx,
+	LONG lFunctionIdx,
+	double* pInput, LONG lInput,
+	LONGLONG* plInput, LONG llInput,
+	double** ppOutput, LONG * plOutput,
+	LPTSTR szErr, LONG lszErrMax)
+{
+	Kernel<double>* pKernel = NULL;
+	LONG lErr = 0;
+
+	if (lKernelIdx < 0 || lKernelIdx >= (LONG)g_dwMaxKernelCount)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+
+	//-------------------------------------------
+	//	Process the requested function.
+	//-------------------------------------------
+
+	switch (lFunctionIdx)
+	{
+	case CUDA_DLL_INITIALIZE:
+		setCurrentDirectory();
+
+		if (lErr = getKernelDoubleIndex(&lKernelIdx))
+		{
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		pKernel = new Kernel<double>();
+
+		if (lErr = pKernel->Initialize(pInput, lInput))
+		{
+			delete pKernel;
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		g_rgdwDoubleKernelTable[lKernelIdx] = pKernel;
+
+		(*ppOutput)[0] = (double)lKernelIdx;
+		*plOutput = 1;
+		break;
+
+	case CUDA_DLL_CLEANUP:
+		pKernel = g_rgdwDoubleKernelTable[lKernelIdx];
+		if (pKernel != NULL)
+		{
+			pKernel->CleanUp();
+			delete pKernel;
+			g_rgdwDoubleKernelTable[lKernelIdx] = NULL;
+		}
+		break;
+
+	case CUDA_DLL_FREEMEM:
+		if ((pKernel = g_rgdwDoubleKernelTable[lKernelIdx]) == NULL)
+		{
+			lErr = ERROR_PARAM_NULL;
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		if (lErr = pKernel->FreeHost(pInput))
+		{
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+		break;
+
+	case CUDA_DLL_KERNEL_MEMCPY:
+		if ((pKernel = g_rgdwDoubleKernelTable[lKernelIdx]) == NULL)
+		{
+			lErr = ERROR_PARAM_NULL;
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		if (lErr = copyMemKernelToKernel(pKernel, lInput, pInput))
+		{
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+		break;
+
+	case CUDA_DLL_KERNEL_ADD:
+		if ((pKernel = g_rgdwDoubleKernelTable[lKernelIdx]) == NULL)
+		{
+			lErr = ERROR_PARAM_NULL;
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		if (lErr = addKernelToKernel(pKernel, lInput, pInput))
+		{
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+		break;
+
+	case CUDA_DLL_KERNEL_COPY_NCCL:
+	{
+		if ((pKernel = g_rgdwDoubleKernelTable[lKernelIdx]) == NULL)
+		{
+			lErr = ERROR_PARAM_NULL;
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		if (lInput != 2)
+		{
+			return ERROR_PARAM_OUT_OF_RANGE;
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		long hKernelSrc = (long)pInput[0];
+		long hNcclSrc = (long)pInput[1];
+
+		if (hKernelSrc == 0 || hNcclSrc == 0)
+		{
+			return ERROR_PARAM_OUT_OF_RANGE;
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		Kernel<double>* pKernelSrc = NULL;
+		if ((pKernelSrc = g_rgdwDoubleKernelTable[hKernelSrc]) == NULL)
+		{
+			lErr = ERROR_PARAM_NULL;
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		ncclHandle<double>* pNccl = NULL;
+		if ((pNccl = pKernelSrc->GetNCCL(hNcclSrc)) == NULL)
+		{
+			lErr = ERROR_PARAM_NULL;
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		if (lErr = pKernel->SetNCCL(pNccl, ppOutput, plOutput))
+		{
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+	}
+	break;
+
+	case CUDA_FN_EXTENSION_RUN:
+		if ((pKernel = g_rgdwDoubleKernelTable[lKernelIdx]) == NULL)
+		{
+			lErr = ERROR_PARAM_NULL;
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		if (lErr = pKernel->Run(lFunctionIdx, pInput, lInput, ppOutput, plOutput, szErr, lszErrMax))
+			return lErr;
+		break;
+
+	default:
+		if ((pKernel = g_rgdwDoubleKernelTable[lKernelIdx]) == NULL)
+		{
+			lErr = ERROR_PARAM_NULL;
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+
+		if (lErr = pKernel->Run(lFunctionIdx, pInput, lInput, plInput, llInput, ppOutput, plOutput))
+		{
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
+			return lErr;
+		}
+		break;
+	}
+
+	return lErr;
+}
+
 
 extern "C" LONG WINAPI DLL_QueryString(LONG lKernelIdx,
 										LONG lFunctionIdx,
