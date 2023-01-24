@@ -2561,7 +2561,7 @@ namespace MyCaffe.test
                         int nC = 3;
                         int nSpatial = 5;
                         int nCount = nN * nC * nSpatial;
-                        
+
                         List<double> rgdfExpected = new List<double>()
                         {
                             1.0, 2.0, 3.0,
@@ -2574,13 +2574,13 @@ namespace MyCaffe.test
                         };
 
                         hSrc = t.Cuda.AllocMemory(rgdfSrc);
-                        hDst = t.Cuda.AllocMemory(nCount);
+                        hDst = t.Cuda.AllocMemory(nN * nC);
 
-                        t.Cuda.channel_fillfrom(nCount, nN, nC, nSpatial, hSrc, hDst, DIR.BWD);
+                        t.Cuda.channel_fillfrom(nCount, nN, nC, nSpatial, hDst, hSrc, DIR.BWD);
 
                         double[] rgDst = t.Cuda.GetMemoryDouble(hDst);
 
-                        for (int i = 0; i < nCount; i++)
+                        for (int i = 0; i < rgDst.Length; i++)
                         {
                             double dfExpected = rgdfExpected[i];
                             double dfActual = rgDst[i];
@@ -2610,7 +2610,6 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
-
         [TestMethod]
         public void TestMath_channel_copy()
         {
