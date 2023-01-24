@@ -75,7 +75,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestGradient()
+        public void TestGradientEncoderDecoder()
         {
             MultiheadAttentionLayerTest test = new MultiheadAttentionLayerTest(EngineParameter.Engine.CAFFE);
 
@@ -83,7 +83,25 @@ namespace MyCaffe.test
             {
                 foreach (IMultiheadAttentionLayerTest t in test.Tests)
                 {
-                    t.TestGradient(3, 8);
+                    t.TestGradient(3, 8, MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientGpt()
+        {
+            MultiheadAttentionLayerTest test = new MultiheadAttentionLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IMultiheadAttentionLayerTest t in test.Tests)
+                {
+                    t.TestGradient(3, 8, MultiheadAttentionParameter.WEIGHT_INIT.GPT);
                 }
             }
             finally
@@ -98,7 +116,7 @@ namespace MyCaffe.test
         void TestForward(uint nBatch, uint nHeads);
         void TestBackward(uint nBatch, uint nHeads);
         void TestBackward2(uint nBatch, uint nHeads);
-        void TestGradient(uint nBatch, uint nHeads);
+        void TestGradient(uint nBatch, uint nHeads, MultiheadAttentionParameter.WEIGHT_INIT init);
     }
 
     class MultiheadAttentionLayerTest : TestBase
@@ -360,11 +378,12 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestGradient(uint nBatch, uint nHeads)
+        public void TestGradient(uint nBatch, uint nHeads, MultiheadAttentionParameter.WEIGHT_INIT init)
         {
             string strTestDataPath = loadTestData1();
             
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION);
+            p.multihead_attention_param.weight_init = init;
             p.multihead_attention_param.heads = nHeads;
             p.multihead_attention_param.embed = 512;
             p.multihead_attention_param.block_size = 200;
@@ -389,8 +408,9 @@ namespace MyCaffe.test
                 BottomVec.Add(m_blobV);
                 BottomVec.Add(m_blobMask);
 
+                double dfPctStep = (typeof(T) == typeof(float)) ? 0.001 : 0.01;
                 GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.0001);
-                checker.CheckGradient(layer, BottomVec, TopVec, -1, 100);
+                checker.CheckGradient(layer, BottomVec, TopVec, -1, 1, dfPctStep);
             }
             finally
             {
