@@ -75,7 +75,7 @@ namespace MyCaffe.layers
         ///     gradients @f$
         ///         \frac{\partial E}{\partial x} = \left\{
         ///         \begin{array}{lr}
-        ///           0 \: \mathrm{if} \; x < min \vee x > max \\           
+        ///           0 \: \mathrm{if} \; x \lt min \vee x \gt max \\           
         ///           \frac{\partial E}{\partial y} \: \mathrm{if} \; x \ge min \wedge x \le max
         ///         \end{array} \right.
         ///     @f$ 
