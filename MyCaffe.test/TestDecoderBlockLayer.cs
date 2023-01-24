@@ -538,7 +538,7 @@ namespace MyCaffe.test
 
         public void TestBackward2(bool bEnableCudaImpl)
         {
-            string strPath = loadTestData1();
+            string strPath = loadTestData2();
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
             p.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.DECODER;
@@ -558,8 +558,10 @@ namespace MyCaffe.test
 
             try
             {
+                strPath += "iter_0\\";
+
                 m_log.CHECK(layer.type == LayerParameter.LayerType.TRANSFORMER_BLOCK, "The layer type is incorrect!");
-                
+
                 blobDecIn.LoadFromNumpy(strPath + "dec.dec5.dec.1_x.npy");
                 blobDecIn.Name = "dec.decin_x0";
                 blobEncOut.LoadFromNumpy(strPath + "dec.dec5.dec.5_e_out.npy");
