@@ -30,8 +30,13 @@ namespace MyCaffe.test
         /// <summary>
         /// The constructor.
         /// </summary>
+        /// <param name="cuda">Specifies the CUDA connection</param>
+        /// <param name="log">Specifies the output log.</param>
         /// <param name="dfStepSize">Step size of the gradient test.</param>
         /// <param name="dfThreshold">Error threshold.</param>
+        /// <param name="nSeed">Specifies the random seed (default = 1701)</param>
+        /// <param name="dfKink">Specifies the kink (default = 0)</param>
+        /// <param name="dfKinkRange">Specifies the kink range (default = -1)</param>
         /// <remarks>
         /// The kink and kink_range specify an ignored nonsmooth region of the form
         /// kink - kink_range less than or equal |feature value| less than or equal kink + kink_range,
@@ -52,14 +57,21 @@ namespace MyCaffe.test
         /// <summary>
         /// Checks the gradient of a layer, with provided bottom layers and top layers.
         /// </summary>
+        /// <param name="layer">Specifies the layer to test.</param>
+        /// <param name="colBottom">Specifies the bottom (inputs)</param>
+        /// <param name="colTop">Specifies the top (outputs)</param>
+        /// <param name="nCheckBottom">Specifies to check the bottom at this index, or all if -1.</param>
+        /// <param name="nFeatureStep">Specifies the feature step (default = 1)</param>
+        /// <param name="dfDynamicFeatureStepPct">Specifies a dynamic percentage based feature step that when > 0 is applied to the blob count to get the step (default = 0)</param>
+        /// <param name="nFirstFeature">Specifies the first feature to check (default = 0)</param>
         /// <remarks>
         /// Note that after the gradient check, we do not guarantee that the data stored
         /// in the layer parameters and the blobs are unchanged.
         /// </remarks>
-        public void CheckGradient(Layer<T> layer, BlobCollection<T> colBottom, BlobCollection<T> colTop, int nCheckBottom = -1, int nFeatureStep = 1)
+        public void CheckGradient(Layer<T> layer, BlobCollection<T> colBottom, BlobCollection<T> colTop, int nCheckBottom = -1, int nFeatureStep = 1, double dfDynamicFeatureStepPct = 0, int nFirstFeature = 0)
         {
             layer.Setup(colBottom, colTop);
-            CheckGradientSingle(layer, colBottom, colTop, nCheckBottom, -1, -1, false, nFeatureStep);
+            CheckGradientSingle(layer, colBottom, colTop, nCheckBottom, -1, -1, false, nFeatureStep, dfDynamicFeatureStepPct, nFirstFeature);
         }
 
         /// <summary>
@@ -68,178 +80,231 @@ namespace MyCaffe.test
         /// If check_bottom == -1, check everything -- all bottom Blobs and all
         /// param Blobs.  Otherwise (if check_bottom less than -1), check only param Blobs.
         /// </summary>
-        public void CheckGradientSingle(Layer<T> layer, BlobCollection<T> colBottom, BlobCollection<T> colTop, int nCheckBottom, int nTopID, int nTopDataID, bool bElementwise = false, int nFeatureStep = 1)
+        /// <param name="layer">Specifies the layer to test.</param>
+        /// <param name="colBottom">Specifies the bottom (inputs)</param>
+        /// <param name="colTop">Specifies the top (outputs)</param>
+        /// <param name="nCheckBottom">Specifies to check the bottom at this index, or all if -1.</param>
+        /// <param name="nTopID">Specifies the id of the top to check.</param>
+        /// <param name="nTopDataID">Specifies to check the top data to check.</param>
+        /// <param name="bElementwise">Specifies to check elementwise (default = false).</param>
+        /// <param name="nFeatureStep">Specifies the feature step (default = 1)</param>
+        /// <param name="dfDynamicFeatureStepPct">Specifies a dynamic percentage based feature step that when > 0 is applied to the blob count to get the step (default = 0)</param>
+        /// <param name="nFirstFeature">Specifies the first feature to check (default = 0)</param>
+        public void CheckGradientSingle(Layer<T> layer, BlobCollection<T> colBottom, BlobCollection<T> colTop, int nCheckBottom, int nTopID, int nTopDataID, bool bElementwise = false, int nFeatureStep = 1, double dfDynamicFeatureStepPct = 0, int nFirstFeature = 0)
         {
-            if (bElementwise)
-            {
-                m_log.CHECK_EQ(0, layer.blobs.Count(), "Cannot have blobs in the layer checked for element-wise checking.");
-                m_log.CHECK_LE(0, nTopID, "The top ID '" + nTopID.ToString() + "' must be zero or greater with element-wise checking.");
-                m_log.CHECK_LE(0, nTopDataID, "The top data ID '" + nTopDataID.ToString() + "' must be zero or greater with element-wise checking.");
-
-                int nTopCount = colTop[nTopID].count();
-
-                for (int nBlobID = 0; nBlobID < colBottom.Count(); nBlobID++)
-                {
-                    m_log.CHECK_EQ(nTopCount, colBottom[nBlobID].count(), "The top count and blob counts must be equal for element-wise checking.");
-                }
-            }
-
-            // First, figure out what blobs we need to check against, and zero init
-            // parameter blobs.
-            BlobCollection<T> colBlobsToCheck = new BlobCollection<T>();
-            List<bool> rgPropagateDown = new List<bool>();
-
-            for (int i = 0; i < colBottom.Count; i++)
-            {
-                rgPropagateDown.Add((nCheckBottom == -1) ? true : false);
-            }
-
-            for (int i = 0; i < layer.blobs.Count; i++)
-            {
-                Blob<T> blob = layer.blobs[i];
-
-                blob.SetDiff(0);
-                colBlobsToCheck.Add(blob);
-            }
-
-            if (nCheckBottom == -1)
-            {
-                for (int i = 0; i < colBottom.Count; i++)
-                {
-                    colBlobsToCheck.Add(colBottom[i]);
-                }
-            }
-            else if (nCheckBottom >= 0)
-            {
-                m_log.CHECK_LT(nCheckBottom, colBottom.Count, "The check bottom value '" + nCheckBottom.ToString() + "' must be less than the number of bottom blobs.");
-                colBlobsToCheck.Add(colBottom[nCheckBottom]);
-                rgPropagateDown[nCheckBottom] = true;
-            }
-
-            m_log.CHECK_GT(colBlobsToCheck.Count, 0, "No blobs to check!");
-            
-            // Compute the gradient analytically using Backward.
-            m_cuda.rng_setseed(m_uiSeed);
-
-            // Ignore the loss from the layer (it's just the weighted sum of the losses
-            // from the top blobs, whose gradients we may want to test individually).
-            layer.Forward(colBottom, colTop);
-            layer.ConvertToBase(colTop);
-
-            // Get additional loss from the objective.
-            GetObjAndGradient(layer, colTop, nTopID, nTopDataID);
-            layer.Backward(colTop, rgPropagateDown, colBottom);
-
             // Store computed gradients for all checked blobs
             BlobCollection<T> colComputedGradientBlobs = new BlobCollection<T>();
 
-            layer.ConvertToBase(colBlobsToCheck);
-
-            for (int nBlobID = 0; nBlobID < colBlobsToCheck.Count; nBlobID++)
+            try
             {
-                Blob<T> current_blob = colBlobsToCheck[nBlobID];
-                Blob<T> new_blob = new Blob<T>(m_cuda, m_log);
-
-                if (current_blob.DiffExists)
+                if (bElementwise)
                 {
-                    new_blob.ReshapeLike(current_blob);
-                    m_cuda.copy(current_blob.count(), current_blob.gpu_diff, new_blob.mutable_gpu_data);
+                    m_log.CHECK_EQ(0, layer.blobs.Count(), "Cannot have blobs in the layer checked for element-wise checking.");
+                    m_log.CHECK_LE(0, nTopID, "The top ID '" + nTopID.ToString() + "' must be zero or greater with element-wise checking.");
+                    m_log.CHECK_LE(0, nTopDataID, "The top data ID '" + nTopDataID.ToString() + "' must be zero or greater with element-wise checking.");
+
+                    int nTopCount = colTop[nTopID].count();
+
+                    for (int nBlobID = 0; nBlobID < colBottom.Count(); nBlobID++)
+                    {
+                        m_log.CHECK_EQ(nTopCount, colBottom[nBlobID].count(), "The top count and blob counts must be equal for element-wise checking.");
+                    }
                 }
 
-                colComputedGradientBlobs.Add(new_blob);
-            }
+                // First, figure out what blobs we need to check against, and zero init
+                // parameter blobs.
+                BlobCollection<T> colBlobsToCheck = new BlobCollection<T>();
+                List<bool> rgPropagateDown = new List<bool>();
 
-            // Compute derivative of top w.r.t. each bottom and parameter input using
-            // finite differencing.
-            long lTotal = 0;
-            for (int nBlobID = 0; nBlobID < colBlobsToCheck.Count; nBlobID++)
-            {
-                lTotal += colBlobsToCheck[nBlobID].count();
-            }
-
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
-
-            long lIdx = 0;
-            for (int nBlobID = 0; nBlobID < colBlobsToCheck.Count; nBlobID++)
-            {
-                Blob<T> current_blob = colBlobsToCheck[nBlobID];
-
-                if (!current_blob.DiffExists)
-                    continue;
-
-                T[] rgdfComputedGradients = colComputedGradientBlobs[nBlobID].update_cpu_data();
-                double dfData;
-
-                Trace.WriteLine("** BLOB " + nBlobID.ToString() + " **");
-
-                for (int nFeatID=0; nFeatID<current_blob.count(); nFeatID += nFeatureStep)
+                for (int i = 0; i < colBottom.Count; i++)
                 {
-                    if (m_evtCancel.WaitOne(0))
-                        throw new Exception("Aborted!");
+                    rgPropagateDown.Add((nCheckBottom == -1) ? true : false);
+                }
 
-                    // For an element-wise layer, we only need to do finite differencing to
-                    // compute the derivative of top[nTopID][nTopDataID] w.r.t.
-                    // bottom[nBlobID][i] only for i == nTopDataID.  For any otehr
-                    // i != nTopDataID, we know the derivative is 0 by definition, and simply
-                    // check that that's true.
-                    double dfEstimateGradient = 0;
-                    double dfPositiveObjective = 0;
-                    double dfNegativeObjective = 0;
+                for (int i = 0; i < layer.blobs.Count; i++)
+                {
+                    Blob<T> blob = layer.blobs[i];
 
-                    if (!bElementwise || (nFeatID == nTopDataID))
+                    blob.SetDiff(0);
+                    colBlobsToCheck.Add(blob);
+                }
+
+                if (nCheckBottom == -1)
+                {
+                    for (int i = 0; i < colBottom.Count; i++)
                     {
-                        // Do finite differencing.
-                        // Compute loss with stepwise added to input.
-                        dfData = (double)Convert.ChangeType(current_blob.GetData(nFeatID), typeof(double));
-                        dfData += m_dfStepsize;
-                        current_blob.SetData(dfData, nFeatID);
-                        m_cuda.rng_setseed(m_uiSeed);
+                        colBlobsToCheck.Add(colBottom[i]);
+                    }
+                }
+                else if (nCheckBottom >= 0)
+                {
+                    m_log.CHECK_LT(nCheckBottom, colBottom.Count, "The check bottom value '" + nCheckBottom.ToString() + "' must be less than the number of bottom blobs.");
+                    colBlobsToCheck.Add(colBottom[nCheckBottom]);
+                    rgPropagateDown[nCheckBottom] = true;
+                }
 
-                        layer.Forward(colBottom, colTop);
-                        layer.ConvertToBase(colTop);
-                        dfPositiveObjective = GetObjAndGradient(layer, colTop, nTopID, nTopDataID);
+                m_log.CHECK_GT(colBlobsToCheck.Count, 0, "No blobs to check!");
 
-                        // Compute loss with stepsize subtracted from input.
-                        dfData = (double)Convert.ChangeType(current_blob.GetData(nFeatID), typeof(double));
-                        dfData -= (m_dfStepsize * 2);
-                        current_blob.SetData(dfData, nFeatID);
-                        m_cuda.rng_setseed(m_uiSeed);
+                // Compute the gradient analytically using Backward.
+                m_cuda.rng_setseed(m_uiSeed);
 
-                        layer.Forward(colBottom, colTop);
-                        layer.ConvertToBase(colTop);
-                        dfNegativeObjective = GetObjAndGradient(layer, colTop, nTopID, nTopDataID);
+                // Ignore the loss from the layer (it's just the weighted sum of the losses
+                // from the top blobs, whose gradients we may want to test individually).
+                layer.Forward(colBottom, colTop);
+                layer.ConvertToBase(colTop);
 
-                        // Recover original input value.
-                        dfData = (double)Convert.ChangeType(current_blob.GetData(nFeatID), typeof(double));
-                        dfData += m_dfStepsize;
-                        current_blob.SetData(dfData, nFeatID);
+                // Get additional loss from the objective.
+                GetObjAndGradient(layer, colTop, nTopID, nTopDataID);
+                layer.Backward(colTop, rgPropagateDown, colBottom);
+                layer.ConvertToBase(colBlobsToCheck);
 
-                        dfEstimateGradient = (dfPositiveObjective - dfNegativeObjective) / m_dfStepsize / 2.0;
+                for (int nBlobID = 0; nBlobID < colBlobsToCheck.Count; nBlobID++)
+                {
+                    Blob<T> current_blob = colBlobsToCheck[nBlobID];
+                    Blob<T> new_blob = new Blob<T>(m_cuda, m_log);
+
+                    if (current_blob.DiffExists)
+                    {
+                        new_blob.ReshapeLike(current_blob);
+                        m_cuda.copy(current_blob.count(), current_blob.gpu_diff, new_blob.mutable_gpu_data);
                     }
 
-                    double dfComputedGradient = (double)Convert.ChangeType(rgdfComputedGradients[nFeatID], typeof(double));
-                    double dfFeature = (double)Convert.ChangeType(current_blob.GetData(nFeatID), typeof(double));
+                    colComputedGradientBlobs.Add(new_blob);
+                }
 
-                    if (m_dfKink - m_dfKinkRange > Math.Abs(dfFeature) ||
-                        Math.Abs(dfFeature) > m_dfKink + m_dfKinkRange)
+                // Compute derivative of top w.r.t. each bottom and parameter input using
+                // finite differencing.
+                long lTotal = 0;
+                for (int nBlobID = 0; nBlobID < colBlobsToCheck.Count; nBlobID++)
+                {
+                    lTotal += colBlobsToCheck[nBlobID].count();
+                }
+
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
+
+                long lIdx = nFirstFeature;
+                for (int nBlobID = 0; nBlobID < colBlobsToCheck.Count; nBlobID++)
+                {
+                    Blob<T> current_blob = colBlobsToCheck[nBlobID];
+
+                    if (!current_blob.DiffExists)
+                        continue;
+
+                    T[] rgdfComputedGradients = colComputedGradientBlobs[nBlobID].update_cpu_data();
+
+                    Trace.WriteLine("** BLOB " + nBlobID.ToString() + " of " + colBlobsToCheck.Count.ToString() + " **");
+
+                    if (dfDynamicFeatureStepPct > 0)
                     {
-                        // We check the relative accuracy, but for too small values, we threshold
-                        // the scale factor by 1.
-                        double dfScale = Math.Max(Math.Max(Math.Abs(dfComputedGradient), Math.Abs(dfEstimateGradient)), 1.0);
-
-                        m_log.EXPECT_NEAR(dfComputedGradient, dfEstimateGradient, m_dfThreshold * dfScale, "DEBUG: (nTopID, nTopDataID, nBlobID, nFeatID)=" + nTopID.ToString() + ", " + nTopDataID.ToString() + ", " + nBlobID.ToString() + ", " + nFeatID.ToString() + "; feat = " + dfFeature.ToString() + "; objective+ = " + dfPositiveObjective.ToString() + "; objective- = " + dfNegativeObjective.ToString());
+                        nFeatureStep = (int)(current_blob.count() * dfDynamicFeatureStepPct);
+                        if (nFeatureStep <= 0)
+                            nFeatureStep = 1;
+                        Trace.WriteLine("Using dynamic feature step of " + nFeatureStep.ToString() + " for blob " + nBlobID.ToString() + ".");
                     }
 
-                    if (sw.Elapsed.TotalMilliseconds > 1000)
+                    for (int nFeatID = nFirstFeature; nFeatID < current_blob.count(); nFeatID += nFeatureStep)
                     {
-                        sw.Restart();
-                        double dfPct = (double)lIdx / lTotal;
-                        double dfPctBlob = (double)nFeatID / current_blob.count();
-                        Trace.WriteLine("Checking BLOB " + nBlobID.ToString() + " '" + current_blob.Name + "' gradient at " + lIdx.ToString("N0") + " of " + lTotal.ToString("N0") + " - blob " + dfPctBlob.ToString("P") + " global " + dfPct.ToString("P") + "...");
-                    }
+                        if (m_evtCancel.WaitOne(0))
+                            throw new Exception("Aborted!");
 
-                    lIdx += nFeatureStep;
+                        // For an element-wise layer, we only need to do finite differencing to
+                        // compute the derivative of top[nTopID][nTopDataID] w.r.t.
+                        // bottom[nBlobID][i] only for i == nTopDataID.  For any otehr
+                        // i != nTopDataID, we know the derivative is 0 by definition, and simply
+                        // check that that's true.
+                        double dfEstimateGradient = 0;
+                        double dfPositiveObjective = 0;
+                        double dfNegativeObjective = 0;
+
+                        if (!bElementwise || (nFeatID == nTopDataID))
+                        {
+                            // Do finite differencing.
+                            // Compute loss with stepwise added to input.
+                            set_at(current_blob, nFeatID, m_dfStepsize, true);
+
+                            m_cuda.rng_setseed(m_uiSeed);
+
+                            layer.Forward(colBottom, colTop);
+                            layer.ConvertToBase(colTop);
+                            dfPositiveObjective = GetObjAndGradient(layer, colTop, nTopID, nTopDataID);
+
+                            // Compute loss with stepsize subtracted from input.
+                            set_at(current_blob, nFeatID, m_dfStepsize * -2, true);
+
+                            m_cuda.rng_setseed(m_uiSeed);
+
+                            layer.Forward(colBottom, colTop);
+                            layer.ConvertToBase(colTop);
+                            dfNegativeObjective = GetObjAndGradient(layer, colTop, nTopID, nTopDataID);
+
+                            // Recover original input value.
+                            set_at(current_blob, nFeatID, m_dfStepsize, true);
+
+                            dfEstimateGradient = (dfPositiveObjective - dfNegativeObjective) / m_dfStepsize / 2.0;
+                        }
+
+                        double dfComputedGradient = (double)Convert.ChangeType(rgdfComputedGradients[nFeatID], typeof(double));
+                        double dfFeature = (double)Convert.ChangeType(current_blob.GetData(nFeatID), typeof(double));
+
+                        if (m_dfKink - m_dfKinkRange > Math.Abs(dfFeature) ||
+                            Math.Abs(dfFeature) > m_dfKink + m_dfKinkRange)
+                        {
+                            // We check the relative accuracy, but for too small values, we threshold
+                            // the scale factor by 1.
+                            double dfScale = Math.Max(Math.Max(Math.Abs(dfComputedGradient), Math.Abs(dfEstimateGradient)), 1.0);
+
+                            m_log.EXPECT_NEAR(dfComputedGradient, dfEstimateGradient, m_dfThreshold * dfScale, "DEBUG: (nTopID, nTopDataID, nBlobID, nFeatID)=" + nTopID.ToString() + ", " + nTopDataID.ToString() + ", " + nBlobID.ToString() + ", " + nFeatID.ToString() + "; feat = " + dfFeature.ToString() + "; objective+ = " + dfPositiveObjective.ToString() + "; objective- = " + dfNegativeObjective.ToString());
+                        }
+
+                        if (sw.Elapsed.TotalMilliseconds > 1000)
+                        {
+                            sw.Restart();
+                            double dfPct = (double)lIdx / lTotal;
+                            double dfPctBlob = (double)nFeatID / current_blob.count();
+                            Trace.WriteLine("Checking BLOB " + nBlobID.ToString() + " '" + current_blob.Name + "' gradient at " + lIdx.ToString("N0") + " of " + lTotal.ToString("N0") + " - blob " + dfPctBlob.ToString("P") + " global " + dfPct.ToString("P") + "...");
+                        }
+
+                        lIdx += nFeatureStep;
+                    }
+                }
+            }
+            finally
+            {
+                colComputedGradientBlobs.Dispose();
+            }
+        }
+
+        private void set_at(Blob<T> blob, int nFeatID, double dfStep, bool bVerify = false)
+        {
+            T val = blob.GetData(nFeatID);
+
+            if (typeof(T) == typeof(float))
+            {
+                float fVal = (float)Convert.ChangeType(val, typeof(float));
+                fVal += (float)dfStep;
+                blob.SetData(fVal, nFeatID);
+
+                if (bVerify)
+                {
+                    val = blob.GetData(nFeatID);
+                    float fAct = (float)Convert.ChangeType(val, typeof(float));
+
+                    m_log.CHECK_EQ(fVal, fAct, "The values are not the same!");
+                }
+            }
+            else
+            {
+                double fVal = (double)Convert.ChangeType(val, typeof(double));
+                fVal += (double)dfStep;
+                blob.SetData(fVal, nFeatID);
+
+                if (bVerify)
+                {
+                    val = blob.GetData(nFeatID);
+                    double fAct = (double)Convert.ChangeType(val, typeof(double));
+
+                    m_log.CHECK_EQ(fVal, fAct, "The values are not the same!");
                 }
             }
         }
@@ -347,7 +412,7 @@ namespace MyCaffe.test
             }
         }
 
-        protected double GetObjAndGradient(Layer<T> layer, BlobCollection<T> colTop, int nTopID = -1, int nTopDataID = -1)
+        public double GetObjAndGradient(Layer<T> layer, BlobCollection<T> colTop, int nTopID = -1, int nTopDataID = -1)
         {
             double dfLoss = 0;
 
