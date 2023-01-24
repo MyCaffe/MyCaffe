@@ -10591,7 +10591,7 @@ namespace MyCaffe.common
         {
         }
         
-        public long[] AsLong(params long[] rg)
+        public long[] AsLong(params long[] rg) /** @private */
         {
             return rg;
         }
