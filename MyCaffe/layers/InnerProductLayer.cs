@@ -189,7 +189,7 @@ namespace MyCaffe.layers
 
             // Dimensions starting from 'axis' are 'flattened' into a single
             // length K_ vector. For example, if bottom[0]'s shape is (N, C, H, W),
-            // and axis == 1, N inner products with dimension CHW are preformed..
+            // and axis == 1, N inner products with dimension CHW are preformed.
             m_nK = colBottom[0].count(nAxis);
 
             // Check if we need to set up the weights.
