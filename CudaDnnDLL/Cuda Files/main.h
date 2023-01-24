@@ -69,7 +69,7 @@ public:
 		if (lErr = m_device.Initialize())
 			return lErr;
 
-		return Run(CUDA_FN_SETDEVICE, pfInput, lCount, NULL, NULL);
+		return Run(CUDA_FN_SETDEVICE, pfInput, lCount, (LONGLONG*)NULL, 0, NULL, NULL);
 	}
 
 	void CleanUp()
@@ -147,7 +147,7 @@ public:
 		return m_device.SetNccl(pNccl, plCount, ppfOutput);
 	}
 
-	long Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* plCount);
+	long Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, long llCount, T** ppfOutput, long* plCount);
 
 	long Run(long lfnIdx, T* pfInput, long lCount, LPTSTR pszInput, T** ppfOutput, long* plCount);
 

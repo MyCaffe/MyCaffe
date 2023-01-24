@@ -12781,8 +12781,8 @@ long Math<T>::adamw_update(int n, long hNetParamDiff, long hValM, long hValV, T 
 		net_param_data = (T*)pNetParamData->Data();
 	}
 
-	T fBiasCorrection1 = 1 - pow(fBeta1, nStep);
-	T fBiasCorrection2 = 1 - pow(fBeta2, nStep);
+	T fBiasCorrection1 = (T)(1 - pow(fBeta1, nStep));
+	T fBiasCorrection2 = (T)(1 - pow(fBeta2, nStep));
 	T fStepSize = fLearningRate / fBiasCorrection1;
 	T fBiasCorrection2Sqrt = std::sqrt(fBiasCorrection2);
 
@@ -14468,7 +14468,7 @@ template long Math<double>::hamming_diff(int n, double dfThreshold, long hA, lon
 template long Math<float>::hamming_diff(int n, float fThreshold, long hA, long hB, long hY, int nOffA, int nOffB, int nOffY);
 
 template <class T>
-long Math<T>::calc_batch_dist(int nDistMethod, T fThreshold, int nItemDim, long hS, long hT, long hW, const int nDim0, const int nDim1, T* rgOffsets, T* rgDist)
+long Math<T>::calc_batch_dist(int nDistMethod, T fThreshold, int nItemDim, long hS, long hT, long hW, const int nDim0, const int nDim1, LONGLONG* rgOffsets, T* rgDist)
 {
 	LONG lErr;
 	MemoryItem* pS;
@@ -14569,7 +14569,7 @@ cleanup:
 	return lErr;
 }
 
-template long Math<double>::calc_batch_dist(int nDistMethod, double fThreshold, int nItemDim, long hS, long hT, long hW, const int nDim0, const int nDim1, double* rgOffsets, double* rgDist);
-template long Math<float>::calc_batch_dist(int nDistMethod, float fThreshold, int nItemDim, long hS, long hT, long hW, const int nDim0, const int nDim1, float* rgOffsets, float* rgDist);
+template long Math<double>::calc_batch_dist(int nDistMethod, double fThreshold, int nItemDim, long hS, long hT, long hW, const int nDim0, const int nDim1, LONGLONG* rgOffsets, double* rgDist);
+template long Math<float>::calc_batch_dist(int nDistMethod, float fThreshold, int nItemDim, long hS, long hT, long hW, const int nDim0, const int nDim1, LONGLONG* rgOffsets, float* rgDist);
 
 //end math.cu

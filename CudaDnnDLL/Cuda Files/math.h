@@ -405,7 +405,7 @@ class Math
 		long gaussian_blur(int n, int c, int h, int w, T fSigma, long hX, long hY);
 		long calc_dft(int n, long hX, int m, long hY);
 		long hamming_diff(int n, T fThreshold, long hA, long hB, long hY, int nOffA = 0, int nOffB = 0, int nOffY = 0);
-		long calc_batch_dist(int nDistMethod, T fThreshold, int nItemDim, long hS, long hT, long hW, const int nDim0, const int nDim1, T* rgOffsets, T* rgDist);
+		long calc_batch_dist(int nDistMethod, T fThreshold, int nItemDim, long hS, long hT, long hW, const int nDim0, const int nDim1, LONGLONG* rgOffsets, T* rgDist);
 };
 
 

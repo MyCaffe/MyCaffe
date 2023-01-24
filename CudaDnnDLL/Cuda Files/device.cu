@@ -400,7 +400,7 @@ template long Device<double>::CleanUp();
 template long Device<float>::CleanUp();
 
 template <class T>
-long Device<T>::CanAccessPeer(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::CanAccessPeer(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	long lErr;
 
@@ -422,12 +422,12 @@ long Device<T>::CanAccessPeer(long lInput, T* pfInput, long* plOutput, T** ppfOu
 	return setOutput(fVal, plOutput, ppfOutput);
 }
 
-template long Device<double>::CanAccessPeer(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::CanAccessPeer(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::CanAccessPeer(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::CanAccessPeer(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::EnablePeerAccess(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::EnablePeerAccess(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	long lErr;
 
@@ -439,12 +439,12 @@ long Device<T>::EnablePeerAccess(long lInput, T* pfInput, long* plOutput, T** pp
 	return cudaDeviceEnablePeerAccess(nSrcDeviceID, 0);
 }
 
-template long Device<double>::EnablePeerAccess(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::EnablePeerAccess(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::EnablePeerAccess(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::EnablePeerAccess(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::DisablePeerAccess(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::DisablePeerAccess(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	long lErr;
 
@@ -456,8 +456,8 @@ long Device<T>::DisablePeerAccess(long lInput, T* pfInput, long* plOutput, T** p
 	return cudaDeviceDisablePeerAccess(nSrcDeviceID);
 }
 
-template long Device<double>::DisablePeerAccess(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::DisablePeerAccess(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::DisablePeerAccess(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::DisablePeerAccess(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
@@ -705,7 +705,7 @@ template long Device<double>::GetDeviceInfo(long lInput, LONG* pInput, LPTSTR* p
 template long Device<float>::GetDeviceInfo(long lInput, LONG* pInput, LPTSTR* ppOutput);
 
 template <class T>
-long Device<T>::SetDevice(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::SetDevice(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 	
@@ -725,8 +725,8 @@ long Device<T>::SetDevice(long lInput, T* pfInput, long* plOutput, T** ppfOutput
 	return SetDevice(nDevice, nFlags, lSeed);
 }
 
-template long Device<double>::SetDevice(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::SetDevice(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::SetDevice(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::SetDevice(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
@@ -785,16 +785,21 @@ template long Device<float>::SetDevice(int nDeviceID, int nInitFlags, long lSeed
 
 
 template <class T>
-long Device<T>::AllocMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::AllocMemory(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 1, INT_MAX))
+	if (pfInput != NULL && lInput > 1)
+	{
+		if (lErr = verifyInput(lInput, pfInput, 1, INT_MAX))
+			return lErr;
+	}
+	if (lErr = verifyInput(llInput, plInput, 1, 2))
 		return lErr;
 
 	long hHandle = 0;
 	long hStream = 0;
-	size_t lCount = (size_t)pfInput[0];
+	size_t lCount = (size_t)plInput[0];
 	T* pSrc = NULL;
 
 	if (lInput > 1)
@@ -805,7 +810,7 @@ long Device<T>::AllocMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutp
 		}
 		else if (lInput == lCount + 2)
 		{
-			hStream = (long)pfInput[1];
+			hStream = (long)plInput[1];
 			pSrc = &pfInput[2];
 		}
 		else
@@ -823,21 +828,26 @@ long Device<T>::AllocMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutp
 	return 0;
 }
 
-template long Device<double>::AllocMemory(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::AllocMemory(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::AllocMemory(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::AllocMemory(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::AllocMemoryHalf(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::AllocMemoryHalf(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 1, INT_MAX))
+	if (pfInput != NULL && lInput > 1)
+	{
+		if (lErr = verifyInput(lInput, pfInput, 1, INT_MAX))
+			return lErr;
+	}
+	if (lErr = verifyInput(llInput, plInput, 1, 2))
 		return lErr;
 
 	long hHandle = 0;
 	long hStream = 0;
-	size_t lCount = (size_t)pfInput[0];
+	size_t lCount = (size_t)plInput[0];
 	T* pSrc = NULL;
 
 	if (lInput > 1)
@@ -848,7 +858,7 @@ long Device<T>::AllocMemoryHalf(long lInput, T* pfInput, long* plOutput, T** ppf
 		}
 		else if (lInput == lCount + 2)
 		{
-			hStream = (long)pfInput[1];
+			hStream = (long)plInput[1];
 			pSrc = &pfInput[2];
 		}
 		else
@@ -866,51 +876,51 @@ long Device<T>::AllocMemoryHalf(long lInput, T* pfInput, long* plOutput, T** ppf
 	return 0;
 }
 
-template long Device<double>::AllocMemoryHalf(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::AllocMemoryHalf(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::AllocMemoryHalf(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::AllocMemoryHalf(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::FreeMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::FreeMemory(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+	if (lErr = verifyInput(llInput, plInput, 1, 1))
 		return lErr;
 
-	long hHandle = (long)pfInput[0];
+	long hHandle = (long)plInput[0];
 
 	return m_memory.FreeMemory(hHandle);
 }
 
-template long Device<double>::FreeMemory(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::FreeMemory(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::FreeMemory(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::FreeMemory(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::GetMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::GetMemory(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 1, 2))
+	if (lErr = verifyInput(llInput, plInput, 1, 2))
 		return lErr;
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
 		return lErr;
 
-	long hHandle = (long)pfInput[0];
-	size_t lCount = 0;
+	long hHandle = (long)plInput[0];
+	LONGLONG lCount = 0;
 	MemoryItem* pItem;
 
-	if (lInput > 1)
-		lCount = (size_t)pfInput[1];
+	if (llInput > 1)
+		lCount = plInput[1];
 
 	if (lErr = m_memory.GetMemory(hHandle, &pItem))
 		return lErr;
 
 	size_t lAllocatedCount = pItem->Size() / (pItem->IsHalf() ? sizeof(__half) : sizeof(T));
 
-	if (lCount >= (SIZE_MAX - 10))
+	if (lCount < 0)
 		lCount = lAllocatedCount;
 	else if (lCount > lAllocatedCount)
 		return ERROR_PARAM_OUT_OF_RANGE;
@@ -939,20 +949,22 @@ long Device<T>::GetMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput
 	return 0;
 }
 
-template long Device<double>::GetMemory(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::GetMemory(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::GetMemory(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::GetMemory(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::SetMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::SetMemory(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
 	if (lErr = verifyInput(lInput, pfInput, 2, INT_MAX))
 		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 2, 2))
+		return lErr;
 
-	long hHandle = (long)pfInput[0];
-	size_t lCount = (size_t)pfInput[1];
+	long hHandle = (long)plInput[0];
+	size_t lCount = (size_t)plInput[1];
 	long hStream = 0;
 	T* pData = NULL;
 
@@ -1006,21 +1018,23 @@ long Device<T>::SetMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput
 	return 0;
 }
 
-template long Device<double>::SetMemory(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::SetMemory(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::SetMemory(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::SetMemory(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::SetMemoryAt(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::SetMemoryAt(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
 	if (lErr = verifyInput(lInput, pfInput, 3, INT_MAX))
 		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 3, 3))
+		return lErr;
 
-	long hHandle = (long)pfInput[0];
-	size_t lCount = (size_t)pfInput[1];
-	size_t nOffset = (size_t)pfInput[2];
+	long hHandle = (long)plInput[0];
+	size_t lCount = (size_t)plInput[1];
+	size_t nOffset = (size_t)plInput[2];
 	T* pData = &pfInput[3];
 
 	if (lErr = m_memory.SetMemoryAt(hHandle, pData, lCount, nOffset))
@@ -1029,12 +1043,12 @@ long Device<T>::SetMemoryAt(long lInput, T* pfInput, long* plOutput, T** ppfOutp
 	return 0;
 }
 
-template long Device<double>::SetMemoryAt(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::SetMemoryAt(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::SetMemoryAt(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::SetMemoryAt(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::SetPixel(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::SetPixel(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
@@ -1054,7 +1068,7 @@ long Device<T>::SetPixel(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 		if (lErr = verifyOutput(plOutput, ppfOutput))
 			return lErr;
 
-		if (lErr = GetPixel(lInput, pfInput, plOutput, ppfOutput))
+		if (lErr = GetPixel(lInput, pfInput, llInput, plInput, plOutput, ppfOutput))
 			return lErr;
 	}
 
@@ -1071,12 +1085,12 @@ long Device<T>::SetPixel(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 	return 0;
 }
 
-template long Device<double>::SetPixel(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::SetPixel(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::SetPixel(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::SetPixel(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::GetPixel(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::GetPixel(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
@@ -1113,21 +1127,21 @@ long Device<T>::GetPixel(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 	return 0;
 }
 
-template long Device<double>::GetPixel(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::GetPixel(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::GetPixel(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::GetPixel(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::CopyGpuToHostBuffer(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::CopyGpuToHostBuffer(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+	if (lErr = verifyInput(llInput, plInput, 3, 3))
 		return lErr;
 
-	long lCount = (long)pfInput[0];
-	long hGpuSrc = (long)pfInput[1];
-	long hHostDst = (long)pfInput[2];
+	long lCount = (long)plInput[0];
+	long hGpuSrc = (long)plInput[1];
+	long hHostDst = (long)plInput[2];
 
 	if (lErr = m_memory.CopyGpuToHost(lCount, hGpuSrc, hHostDst))
 		return lErr;
@@ -1135,21 +1149,21 @@ long Device<T>::CopyGpuToHostBuffer(long lInput, T* pfInput, long* plOutput, T**
 	return 0;
 }
 
-template long Device<double>::CopyGpuToHostBuffer(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::CopyGpuToHostBuffer(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::CopyGpuToHostBuffer(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::CopyGpuToHostBuffer(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::CopyHostBufferToGpu(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::CopyHostBufferToGpu(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+	if (lErr = verifyInput(llInput, plInput, 3, 3))
 		return lErr;
 
-	long lCount = (long)pfInput[0];
-	long hHostSrc = (long)pfInput[1];
-	long hGpuDst = (long)pfInput[2];
+	long lCount = (long)plInput[0];
+	long hHostSrc = (long)plInput[1];
+	long hGpuDst = (long)plInput[2];
 
 	if (lErr = m_memory.CopyHostToGpu(lCount, hHostSrc, hGpuDst))
 		return lErr;
@@ -1157,20 +1171,20 @@ long Device<T>::CopyHostBufferToGpu(long lInput, T* pfInput, long* plOutput, T**
 	return 0;
 }
 
-template long Device<double>::CopyHostBufferToGpu(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::CopyHostBufferToGpu(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::CopyHostBufferToGpu(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::CopyHostBufferToGpu(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::AllocHostBuffer(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::AllocHostBuffer(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+	if (lErr = verifyInput(llInput, plInput, 1, 1))
 		return lErr;
 
 	long hHandle = 0;
-	long lCount = (long)pfInput[0];
+	long lCount = (long)plInput[0];
 
 	if (lErr = m_memory.AllocHostBuffer(lCount, &hHandle))
 		return lErr;
@@ -1181,36 +1195,36 @@ long Device<T>::AllocHostBuffer(long lInput, T* pfInput, long* plOutput, T** ppf
 	return 0;
 }
 
-template long Device<double>::AllocHostBuffer(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::AllocHostBuffer(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::AllocHostBuffer(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::AllocHostBuffer(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::FreeHostBuffer(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::FreeHostBuffer(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+	if (lErr = verifyInput(llInput, plInput, 1, 1))
 		return lErr;
 
-	long hHandle = (long)pfInput[0];
+	long hHandle = (long)plInput[0];
 
 	return m_memory.FreeHostBuffer(hHandle);
 }
 
-template long Device<double>::FreeHostBuffer(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::FreeHostBuffer(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::FreeHostBuffer(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::FreeHostBuffer(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::GetHostBufferCapacity(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::GetHostBufferCapacity(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+	if (lErr = verifyInput(llInput, plInput, 1, 1))
 		return lErr;
 
-	long hHandle = (long)pfInput[0];
+	long hHandle = (long)plInput[0];
 
 	HostBuffer<T>* pbuf = m_memory.GetHostBuffer(hHandle);
 	if (pbuf == NULL)
@@ -1222,22 +1236,22 @@ long Device<T>::GetHostBufferCapacity(long lInput, T* pfInput, long* plOutput, T
 	return 0;
 }
 
-template long Device<double>::GetHostBufferCapacity(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::GetHostBufferCapacity(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::GetHostBufferCapacity(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::GetHostBufferCapacity(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::GetHostMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::GetHostMemory(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+	if (lErr = verifyInput(llInput, plInput, 1, 1))
 		return lErr;
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
 		return lErr;
 
-	long hHandle = (long)pfInput[0];
+	long hHandle = (long)plInput[0];
 
 	HostBuffer<T>* pHostBuf = m_memory.GetHostBuffer(hHandle);
 
@@ -1259,101 +1273,103 @@ long Device<T>::GetHostMemory(long lInput, T* pfInput, long* plOutput, T** ppfOu
 	return 0;
 }
 
-template long Device<double>::GetHostMemory(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::GetHostMemory(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::GetHostMemory(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::GetHostMemory(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 
 template <class T>
-long Device<T>::SetHostMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::SetHostMemory(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
 	if (lErr = verifyInput(lInput, pfInput, 3, INT_MAX))
 		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 2, INT_MAX))
+		return lErr;
 
-	long hHandle = (long)pfInput[0];
-	long lCount = (long)pfInput[1];
+	long hHandle = (long)plInput[0];
+	long lCount = (long)plInput[1];
 	T* pData = &pfInput[2];
 
 	return m_memory.SetHostBuffer(hHandle, lCount, pData);
 }
 
-template long Device<double>::SetHostMemory(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::SetHostMemory(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::SetHostMemory(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::SetHostMemory(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::RunMemoryTest(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::RunMemoryTest(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 8, 8))
+	if (lErr = verifyInput(llInput, plInput, 8, 8))
 		return lErr;
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
 		return lErr;
 
-	long hHandle = (long)pfInput[0];
-	MEMTEST_TYPE memTestType = (MEMTEST_TYPE)(int)pfInput[1];
-	size_t szStartOffset = (size_t)pfInput[2];
-	size_t szCount = (size_t)pfInput[3];
-	bool bVerbose = (pfInput[4] == 0) ? false : true;
-	bool bWrite = (pfInput[5] == 0) ? false : true;
-	bool bReadWrite = (pfInput[6] == 0) ? false : true;
-	bool bRead = (pfInput[7] == 0) ? false : true;
+	long hHandle = (long)plInput[0];
+	MEMTEST_TYPE memTestType = (MEMTEST_TYPE)(int)plInput[1];
+	size_t szStartOffset = (size_t)plInput[2];
+	size_t szCount = (size_t)plInput[3];
+	bool bVerbose = (plInput[4] == 0) ? false : true;
+	bool bWrite = (plInput[5] == 0) ? false : true;
+	bool bReadWrite = (plInput[6] == 0) ? false : true;
+	bool bRead = (plInput[7] == 0) ? false : true;
 
 	return m_memory.RunMemoryTest(hHandle, memTestType, szStartOffset, szCount, plOutput, ppfOutput, bVerbose, bWrite, bReadWrite, bRead);
 }
 
-template long Device<double>::RunMemoryTest(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::RunMemoryTest(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::RunMemoryTest(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::RunMemoryTest(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 template <class T>
-long Device<T>::DistortImage(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::DistortImage(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+	if (lErr = verifyInput(llInput, plInput, 6, 6))
 		return lErr;
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
 		return lErr;
 
-	long hHandle = (long)pfInput[0];
-	int nCount = (int)pfInput[1];
-	int nNum = (int)pfInput[2];
-	int nDim = (int)pfInput[3];
-	long hX = (long)pfInput[4];
-	long hY = (long)pfInput[5];
+	long hHandle = (long)plInput[0];
+	int nCount = (int)plInput[1];
+	int nNum = (int)plInput[2];
+	int nDim = (int)plInput[3];
+	long hX = (long)plInput[4];
+	long hY = (long)plInput[5];
 
 	return m_memory.DistortImage(hHandle, nCount, nNum, nDim, hX, hY);
 }
 
-template long Device<double>::DistortImage(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::DistortImage(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::DistortImage(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::DistortImage(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::SetTensorDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::SetTensorDesc(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 10, true))
+	if (lErr = verifyInput(llInput, plInput, 6, 10, true))
 		return lErr;
 
-	long hHandle = (long)pfInput[0];
-	bool bHalf = (bool)(pfInput[1] == 1) ? true : false;
-	int n = (int)pfInput[2];
-	int c = (int)pfInput[3];
-	int h = (int)pfInput[4];
-	int w = (int)pfInput[5];
+	long hHandle = (long)plInput[0];
+	bool bHalf = (bool)(plInput[1] == 1) ? true : false;
+	int n = (int)plInput[2];
+	int c = (int)plInput[3];
+	int h = (int)plInput[4];
+	int w = (int)plInput[5];
 	int nStride;
 	int cStride;
 	int hStride;
 	int wStride;
 
-	if (lInput == 6)
+	if (llInput == 6)
 	{
 		wStride = 1;
 		hStride = w * wStride;
@@ -1362,10 +1378,10 @@ long Device<T>::SetTensorDesc(long lInput, T* pfInput, long* plOutput, T** ppfOu
 	}
 	else
 	{
-		nStride = (int)pfInput[6];
-		cStride = (int)pfInput[7];
-		hStride = (int)pfInput[8];
-		wStride = (int)pfInput[9];
+		nStride = (int)plInput[6];
+		cStride = (int)plInput[7];
+		hStride = (int)plInput[8];
+		wStride = (int)plInput[9];
 	}
 
 	if (lErr = m_memory.SetTensorDesc(hHandle, n, c, h, w, nStride, cStride, hStride, wStride, bHalf))
@@ -1374,23 +1390,23 @@ long Device<T>::SetTensorDesc(long lInput, T* pfInput, long* plOutput, T** ppfOu
 	return 0;
 }
 
-template long Device<double>::SetTensorDesc(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::SetTensorDesc(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::SetTensorDesc(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::SetTensorDesc(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::SetTensorNdDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::SetTensorNdDesc(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, MAX_ARG))
+	if (lErr = verifyInput(llInput, plInput, 4, MAX_ARG))
 		return lErr;
 
-	long hHandle = (long)pfInput[0];
-	bool bHalf = (bool)(pfInput[1] == 1) ? true : false;
-	int nCount = (int)pfInput[2];
+	long hHandle = (long)plInput[0];
+	bool bHalf = (bool)(plInput[1] == 1) ? true : false;
+	int nCount = (int)plInput[2];
 
-	if (nCount > MAX_DIM || nCount <= 0 || nCount > (lInput - 2)/2)
+	if (nCount > MAX_DIM || nCount <= 0 || nCount > (llInput - 2)/2)
 		return ERROR_PARAM_OUT_OF_RANGE;
 
 	int* rgDim = (int*)malloc(sizeof(int) * nCount);
@@ -1407,13 +1423,13 @@ long Device<T>::SetTensorNdDesc(long lInput, T* pfInput, long* plOutput, T** ppf
 	int nIdx = 3;
 	for (int i = 0; i < nCount; i++)
 	{
-		rgDim[i] = (int)pfInput[nIdx];
+		rgDim[i] = (int)plInput[nIdx];
 		nIdx++;
 	}
 
 	for (int i = 0; i < nCount; i++)
 	{
-		rgStride[i] = (int)pfInput[nIdx];
+		rgStride[i] = (int)plInput[nIdx];
 		nIdx++;
 	}
 
@@ -1425,23 +1441,23 @@ long Device<T>::SetTensorNdDesc(long lInput, T* pfInput, long* plOutput, T** ppf
 	return lErr;
 }
 
-template long Device<double>::SetTensorNdDesc(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::SetTensorNdDesc(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::SetTensorNdDesc(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::SetTensorNdDesc(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::SetFilterNdDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::SetFilterNdDesc(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, MAX_ARG))
+	if (lErr = verifyInput(llInput, plInput, 3, MAX_ARG))
 		return lErr;
 
-	long hHandle = (long)pfInput[0];
-	bool bHalf = (bool)(pfInput[1] == 1) ? true : false;
-	int nCount = (int)pfInput[2];
+	long hHandle = (long)plInput[0];
+	bool bHalf = (bool)(plInput[1] == 1) ? true : false;
+	int nCount = (int)plInput[2];
 
-	if (nCount > MAX_DIM || nCount <= 0 || nCount > (lInput - 2))
+	if (nCount > MAX_DIM || nCount <= 0 || nCount > (llInput - 2))
 		return ERROR_PARAM_OUT_OF_RANGE;
 
 	int* rgDim = (int*)malloc(sizeof(int) * nCount);
@@ -1451,7 +1467,7 @@ long Device<T>::SetFilterNdDesc(long lInput, T* pfInput, long* plOutput, T** ppf
 	int nIdx = 3;
 	for (int i = 0; i < nCount; i++)
 	{
-		rgDim[i] = (int)pfInput[nIdx];
+		rgDim[i] = (int)plInput[nIdx];
 		nIdx++;
 	}
 
@@ -1462,25 +1478,25 @@ long Device<T>::SetFilterNdDesc(long lInput, T* pfInput, long* plOutput, T** ppf
 	return lErr;
 }
 
-template long Device<double>::SetFilterNdDesc(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::SetFilterNdDesc(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::SetFilterNdDesc(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::SetFilterNdDesc(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::GetDropoutInfo(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::GetDropoutInfo(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;	
 	unsigned long lStates = 0;
 	unsigned long lReserved = 0;
 
-	if (lErr = verifyInput(lInput, pfInput, 2, 2))
+	if (lErr = verifyInput(llInput, plInput, 2, 2))
 		return lErr;
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
 		return lErr;
 
-	long hCuda = (long)pfInput[0];
-	long hBottomDesc = (long)pfInput[1];
+	long hCuda = (long)plInput[0];
+	long hBottomDesc = (long)plInput[1];
 
 	if (lErr = m_memory.GetDropoutInfo(hCuda, hBottomDesc, &lStates, &lReserved))
 		return lErr;
@@ -1497,29 +1513,29 @@ long Device<T>::GetDropoutInfo(long lInput, T* pfInput, long* plOutput, T** ppfO
 	return 0;
 }
 
-template long Device<double>::GetDropoutInfo(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::GetDropoutInfo(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::GetDropoutInfo(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::GetDropoutInfo(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_get(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_get(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 2, 3))
+	if (lErr = verifyInput(llInput, plInput, 2, 3))
 		return lErr;
-
+	
 	if (lErr = verifyOutput(plOutput, ppfOutput))
 		return lErr;
 
-	int nCount = (int)pfInput[0];
-	long hHandle = (long)pfInput[1];
+	int nCount = (int)plInput[0];
+	long hHandle = (long)plInput[1];
 	int nIdx = -1;
 	int nItems = nCount;
 
-	if (lInput > 2)
+	if (llInput > 2)
 	{
-		nIdx = (int)pfInput[2];
+		nIdx = (int)plInput[2];
 
 		if (nIdx >= 0)
 			nItems = 1;
@@ -1541,11 +1557,11 @@ long Device<T>::cuda_get(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 	return 0;
 }
 
-template long Device<double>::cuda_get(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_get(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_get(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_get(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 template <class T>
-long Device<T>::cuda_gemm(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_gemm(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
@@ -1594,11 +1610,11 @@ long Device<T>::cuda_gemm(long lInput, T* pfInput, long* plOutput, T** ppfOutput
 	return m_math.gemm(bTransA, bTransB, m, n, k, fAlpha, hA, hB, fBeta, hC, nAOff, nBOff, nCOff, nGroups, nGroupAOff, nGroupBOff, nGroupCOff);
 }
 
-template long Device<double>::cuda_gemm(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_gemm(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_gemm(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_gemm(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 template <class T>
-long Device<T>::cuda_gemm2(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_gemm2(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
@@ -1633,12 +1649,12 @@ long Device<T>::cuda_gemm2(long lInput, T* pfInput, long* plOutput, T** ppfOutpu
 	return m_math.gemm2(bTransA, bTransB, m, n, k, fAlpha, hA, hB, fBeta, hC, lda, ldb, ldc, stridea, strideb, stridec, batch_count);
 }
 
-template long Device<double>::cuda_gemm2(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_gemm2(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_gemm2(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_gemm2(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_gemv(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_gemv(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
@@ -1669,12 +1685,12 @@ long Device<T>::cuda_gemv(long lInput, T* pfInput, long* plOutput, T** ppfOutput
 	return m_math.gemv(bTransA, n, m, fAlpha, hA, hX, fBeta, hY, nAOffset, nXOffset, nYOffset);
 }
 
-template long Device<double>::cuda_gemv(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_gemv(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_gemv(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_gemv(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_geam(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_geam(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
@@ -1706,12 +1722,12 @@ long Device<T>::cuda_geam(long lInput, T* pfInput, long* plOutput, T** ppfOutput
 	return m_math.geam(bTransA, bTransB, m, n, fAlpha, hA, hB, fBeta, hC, nAOff, nBOff, nCOff);
 }
 
-template long Device<double>::cuda_geam(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_geam(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_geam(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_geam(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_ger(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_ger(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
@@ -1728,105 +1744,111 @@ long Device<T>::cuda_ger(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 	return m_math.ger(m, n, fAlpha, hA, hB, hC);
 }
 
-template long Device<double>::cuda_ger(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_ger(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_ger(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_ger(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_axpy(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_axpy(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, 6))
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 4, 6))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	T fAlpha = pfInput[1];
-	long hX = (long)pfInput[2];
-	long hY = (long)pfInput[3];
+	int n = (int)plInput[0];
+	T fAlpha = pfInput[0];
+	long hX = (long)plInput[2];
+	long hY = (long)plInput[3];
 	int nXOff = 0;
 	int nYOff = 0;
 
-	if (lInput > 4)
-		nXOff = (int)pfInput[4];
+	if (llInput > 4)
+		nXOff = (int)plInput[4];
 
-	if (lInput > 5)
-		nYOff = (int)pfInput[5];
+	if (llInput > 5)
+		nYOff = (int)plInput[5];
 
 	return m_math.axpy(n, fAlpha, hX, hY, nXOff, nYOff);
 }
 
-template long Device<double>::cuda_axpy(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_axpy(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_axpy(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_axpy(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_axpby(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_axpby(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 5, 5))
+	if (lErr = verifyInput(lInput, pfInput, 2, 2))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 5, 5))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	T fAlpha = pfInput[1];
-	long hX = (long)pfInput[2];
-	T fBeta = pfInput[3];
-	long hY = (long)pfInput[4];
+	int n = (int)plInput[0];
+	T fAlpha = pfInput[0];
+	long hX = (long)plInput[2];
+	T fBeta = pfInput[1];
+	long hY = (long)plInput[4];
 
 	return m_math.axpby(n, fAlpha, hX, fBeta, hY);
 }
 
-template long Device<double>::cuda_axpby(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_axpby(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_axpby(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_axpby(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_scal(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_scal(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 4))
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 3, 4))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	T fAlpha = pfInput[1];
-	long hX = (long)pfInput[2];
+	int n = (int)plInput[0];
+	T fAlpha = pfInput[0];
+	long hX = (long)plInput[2];
 	int nXOff = 0;
 
-	if (lInput > 3)
-		nXOff = (int)pfInput[3];
+	if (llInput > 3)
+		nXOff = (int)plInput[3];
 
 	return m_math.scal(n, fAlpha, hX, nXOff);
 }
 
-template long Device<double>::cuda_scal(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_scal(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_scal(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_scal(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_dot(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_dot(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 5))
+	if (lErr = verifyInput(llInput, plInput, 3, 5))
 		return lErr;
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hX = (long)pfInput[1];
-	long hY = (long)pfInput[2];
+	int n = (int)plInput[0];
+	long hX = (long)plInput[1];
+	long hY = (long)plInput[2];
 	int nXOff = 0;
 	int nYOff = 0;
 	T fOutput = 0;
 
-	if (lInput > 3)
-		nXOff = (int)pfInput[3];
+	if (llInput > 3)
+		nXOff = (int)plInput[3];
 
-	if (lInput > 4)
-		nYOff = (int)pfInput[4];
+	if (llInput > 4)
+		nYOff = (int)plInput[4];
 
 	if (lErr = m_math.dot(n, hX, hY, &fOutput, nXOff, nYOff))
 		return lErr;
@@ -1834,27 +1856,27 @@ long Device<T>::cuda_dot(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 	return setOutput(fOutput, plOutput, ppfOutput);
 }
 
-template long Device<double>::cuda_dot(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_dot(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_dot(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_dot(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_asum(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_asum(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 2, 3))
+	if (lErr = verifyInput(llInput, plInput, 2, 3))
 		return lErr;
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hX = (long)pfInput[1];
+	int n = (int)plInput[0];
+	long hX = (long)plInput[1];
 	int nXOff = 0;
 
-	if (lInput > 2)
-		nXOff = (int)pfInput[2];
+	if (llInput > 2)
+		nXOff = (int)plInput[2];
 
 	T fOutput = 0;
 
@@ -1864,112 +1886,116 @@ long Device<T>::cuda_asum(long lInput, T* pfInput, long* plOutput, T** ppfOutput
 	return setOutput(fOutput, plOutput, ppfOutput);
 }
 
-template long Device<double>::cuda_asum(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_asum(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_asum(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_asum(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_mulbsx(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_mulbsx(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 10, 10))
+	if (lErr = verifyInput(llInput, plInput, 10, 10))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hA = (long)pfInput[1];
-	int nAOff = (int)pfInput[2];
-	long hX = (long)pfInput[3];
-	int nXOff = (int)pfInput[4];
-	int nC = (int)pfInput[5];
-	int nSpatialDim = (int)pfInput[6];
-	bool bTranspose = (pfInput[7] == 0) ? false : true;
-	long hB = (long)pfInput[8];
-	int nBOff = (int)pfInput[9];
+	int n = (int)plInput[0];
+	long hA = (long)plInput[1];
+	int nAOff = (int)plInput[2];
+	long hX = (long)plInput[3];
+	int nXOff = (int)plInput[4];
+	int nC = (int)plInput[5];
+	int nSpatialDim = (int)plInput[6];
+	bool bTranspose = (plInput[7] == 0) ? false : true;
+	long hB = (long)plInput[8];
+	int nBOff = (int)plInput[9];
 
 	return m_math.mulbsx(n, hA, nAOff, hX, nXOff, nC, nSpatialDim, bTranspose, hB, nBOff);
 }
 
-template long Device<double>::cuda_mulbsx(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_mulbsx(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_mulbsx(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mulbsx(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_divbsx(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_divbsx(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 10, 10))
+	if (lErr = verifyInput(llInput, plInput, 10, 10))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hA = (long)pfInput[1];
-	int nAOff = (int)pfInput[2];
-	long hX = (long)pfInput[3];
-	int nXOff = (int)pfInput[4];
-	int nC = (int)pfInput[5];
-	int nSpatialDim = (int)pfInput[6];
-	bool bTranspose = (pfInput[7] == 0) ? false : true;
-	long hB = (long)pfInput[8];
-	int nBOff = (int)pfInput[9];
+	int n = (int)plInput[0];
+	long hA = (long)plInput[1];
+	int nAOff = (int)plInput[2];
+	long hX = (long)plInput[3];
+	int nXOff = (int)plInput[4];
+	int nC = (int)plInput[5];
+	int nSpatialDim = (int)plInput[6];
+	bool bTranspose = (plInput[7] == 0) ? false : true;
+	long hB = (long)plInput[8];
+	int nBOff = (int)plInput[9];
 
 	return m_math.divbsx(n, hA, nAOff, hX, nXOff, nC, nSpatialDim, bTranspose, hB, nBOff);
 }
 
-template long Device<double>::cuda_divbsx(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_divbsx(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_divbsx(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_divbsx(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_scale(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_scale(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, 6))
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 4, 6))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	T fAlpha = pfInput[1];
-	long hX = (long)pfInput[2];
-	long hY = (long)pfInput[3];
+	int n = (int)plInput[0];
+	T fAlpha = pfInput[0];
+	long hX = (long)plInput[2];
+	long hY = (long)plInput[3];
 	int nXOff = 0;
 	int nYOff = 0;
 
-	if (lInput > 4)
-		nXOff = (int)pfInput[4];
+	if (llInput > 4)
+		nXOff = (int)plInput[4];
 
-	if (lInput > 5)
-		nYOff = (int)pfInput[5];
+	if (llInput > 5)
+		nYOff = (int)plInput[5];
 
 	return m_math.scale(n, fAlpha, hX, hY, nXOff, nYOff);
 }
 
-template long Device<double>::cuda_scale(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_scale(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_scale(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_scale(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_scale_to_range(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_scale_to_range(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 5, 5))
+	if (lErr = verifyInput(lInput, pfInput, 2, 2))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 5, 5))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hX = (long)pfInput[1];
-	long hY = (long)pfInput[2];
-	T fMin = pfInput[3];
-	T fMax = pfInput[4];
+	int n = (int)plInput[0];
+	long hX = (long)plInput[1];
+	long hY = (long)plInput[2];
+	T fMin = pfInput[0];
+	T fMax = pfInput[1];
 
 	return m_math.scale_to_range(n, hX, hY, fMin, fMax);
 }
 
-template long Device<double>::cuda_scale_to_range(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_scale_to_range(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_scale_to_range(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_scale_to_range(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 template <class T>
-long Device<T>::cuda_erf(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_erf(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
@@ -1985,198 +2011,211 @@ long Device<T>::cuda_erf(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 	return setOutput(fResult, plOutput, ppfOutput);
 }
 
-template long Device<double>::cuda_erf(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_erf(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_erf(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_erf(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_mask(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_mask(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+	if (lErr = verifyInput(lInput, pfInput, 2, 2))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 7, 7))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	int nMaskDim = (int)pfInput[1];
-	T fSearch = pfInput[2];
-	T fReplace = pfInput[3];
-	long hX = (long)pfInput[4];
-	long hMask = (long)pfInput[5];
-	long hY = (long)pfInput[6];
+	int n = (int)plInput[0];
+	int nMaskDim = (int)plInput[1];
+	T fSearch = pfInput[0];
+	T fReplace = pfInput[1];
+	long hX = (long)plInput[4];
+	long hMask = (long)plInput[5];
+	long hY = (long)plInput[6];
 
 	return m_math.mask(n, nMaskDim, fSearch, fReplace, hX, hMask, hY);
 }
 
-template long Device<double>::cuda_mask(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_mask(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_mask(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mask(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_mask_batch(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_mask_batch(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 8, 8))
+	if (lErr = verifyInput(lInput, pfInput, 2, 2))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 8, 8))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	int nBatch = (int)pfInput[1];
-	int nMaskDim = (int)pfInput[2];
-	T fSearch = pfInput[3];
-	T fReplace = pfInput[4];
-	long hX = (long)pfInput[5];
-	long hMask = (long)pfInput[6];
-	long hY = (long)pfInput[7];
+	int n = (int)plInput[0];
+	int nBatch = (int)plInput[1];
+	int nMaskDim = (int)plInput[2];
+	T fSearch = pfInput[0];
+	T fReplace = pfInput[1];
+	long hX = (long)plInput[5];
+	long hMask = (long)plInput[6];
+	long hY = (long)plInput[7];
 
 	return m_math.mask_batch(n, nBatch, nMaskDim, fSearch, fReplace, hX, hMask, hY);
 }
 
-template long Device<double>::cuda_mask_batch(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_mask_batch(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_mask_batch(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mask_batch(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 template <class T>
-long Device<T>::cuda_interp2(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_interp2(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 16, 16))
+	if (lErr = verifyInput(llInput, plInput, 16, 16))
 		return lErr;
 
-	int nC = (int)pfInput[0];
-	long hX = (long)pfInput[1];
-	int nX1 = (int)pfInput[2];
-	int nY1 = (int)pfInput[3];
-	int nH1 = (int)pfInput[4];
-	int nW1 = (int)pfInput[5];
-	int nH1A = (int)pfInput[6];
-	int nW1A = (int)pfInput[7];
-	long hY = (long)pfInput[8];
-	int nX2 = (int)pfInput[9];
-	int nY2 = (int)pfInput[10];
-	int nH2 = (int)pfInput[11];
-	int nW2 = (int)pfInput[12];
-	int nH2B = (int)pfInput[13];
-	int nW2B = (int)pfInput[14];
-	bool bBwd = (pfInput[15] == 0) ? false : true;
+	int nC = (int)plInput[0];
+	long hX = (long)plInput[1];
+	int nX1 = (int)plInput[2];
+	int nY1 = (int)plInput[3];
+	int nH1 = (int)plInput[4];
+	int nW1 = (int)plInput[5];
+	int nH1A = (int)plInput[6];
+	int nW1A = (int)plInput[7];
+	long hY = (long)plInput[8];
+	int nX2 = (int)plInput[9];
+	int nY2 = (int)plInput[10];
+	int nH2 = (int)plInput[11];
+	int nW2 = (int)plInput[12];
+	int nH2B = (int)plInput[13];
+	int nW2B = (int)plInput[14];
+	bool bBwd = (plInput[15] == 0) ? false : true;
 
 	return m_math.interp2(nC, hX, nX1, nY1, nH1, nW1, nH1A, nW1A, hY, nX2, nY2, nH2, nW2, nH2B, nW2B, bBwd);
 }
 
-template long Device<double>::cuda_interp2(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_interp2(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_interp2(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_interp2(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_add_scalar(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_add_scalar(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 4))
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 3, 4))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	T fAlpha = pfInput[1];
-	long hY = (long)pfInput[2];
+	int n = (int)plInput[0];
+	T fAlpha = pfInput[0];
+	long hY = (long)plInput[2];
 	int nYOff = 0;
 
-	if (lInput > 3)
-		nYOff = (int)pfInput[3];
+	if (llInput > 3)
+		nYOff = (int)plInput[3];
 
 	return m_math.add_scalar(n, fAlpha, hY, nYOff);
 }
 
-template long Device<double>::cuda_add_scalar(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_add_scalar(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_add_scalar(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_add_scalar(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_add(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_add(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, 5))
+	if (lInput > 0 && pfInput != NULL)
+	{
+		if (lErr = verifyInput(lInput, pfInput, 1, 1))
+			return lErr;
+	}
+	if (lErr = verifyInput(llInput, plInput, 4, 5))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hA = (long)pfInput[1];
-	long hB = (long)pfInput[2];
-	long hY = (long)pfInput[3];
+	int n = (int)plInput[0];
+	long hA = (long)plInput[1];
+	long hB = (long)plInput[2];
+	long hY = (long)plInput[3];
 	T fAlpha = 1.0;
 
-	if (lInput > 4)
-		fAlpha = pfInput[4];
+	if (lInput > 0 && pfInput != NULL)
+		fAlpha = pfInput[0];
 
 	return m_math.add(n, hA, hB, hY, fAlpha);
 }
 
-template long Device<double>::cuda_add(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_add(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_add(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_add(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_add2(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_add2(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 9))
+	if (lErr = verifyInput(lInput, pfInput, 2, 2))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 6, 9))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hA = (long)pfInput[1];
-	long hB = (long)pfInput[2];
-	long hY = (long)pfInput[3];
-	T fAlphaA = pfInput[4];
-	T fAlphaB = pfInput[5];
+	int n = (int)plInput[0];
+	long hA = (long)plInput[1];
+	long hB = (long)plInput[2];
+	long hY = (long)plInput[3];
+	T fAlphaA = pfInput[0];
+	T fAlphaB = pfInput[1];
 	int nAOff = 0;
 	int nBOff = 0;
 	int nYOff = 0;
 
-	if (lInput > 6)
-		nAOff = (int)pfInput[6];
+	if (llInput > 6)
+		nAOff = (int)plInput[6];
 
-	if (lInput > 7)
-		nBOff = (int)pfInput[7];
+	if (llInput > 7)
+		nBOff = (int)plInput[7];
 
-	if (lInput > 8)
-		nYOff = (int)pfInput[8];
+	if (llInput > 8)
+		nYOff = (int)plInput[8];
 
 	return m_math.add2(n, hA, hB, hY, fAlphaA, fAlphaB, nAOff, nBOff, nYOff);
 }
 
-template long Device<double>::cuda_add2(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_add2(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_add2(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_add2(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_sub(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_sub(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, 8))
+	if (lErr = verifyInput(llInput, plInput, 4, 8))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hA = (long)pfInput[1];
-	long hB = (long)pfInput[2];
-	long hY = (long)pfInput[3];
+	int n = (int)plInput[0];
+	long hA = (long)plInput[1];
+	long hB = (long)plInput[2];
+	long hY = (long)plInput[3];
 	int nAOff = 0;
 	int nBOff = 0;
 	int nYOff = 0;
 	int nB = 0;
 
-	if (lInput > 4)
-		nAOff = (int)pfInput[4];
+	if (llInput > 4)
+		nAOff = (int)plInput[4];
 
-	if (lInput > 5)
-		nBOff = (int)pfInput[5];
+	if (llInput > 5)
+		nBOff = (int)plInput[5];
 
-	if (lInput > 6)
-		nYOff = (int)pfInput[6];
+	if (llInput > 6)
+		nYOff = (int)plInput[6];
 
-	if (lInput > 7)
+	if (llInput > 7)
 	{
-		nB = (int)pfInput[7];
+		nB = (int)plInput[7];
 
 		if (nB > 0)
 		{
@@ -2188,388 +2227,396 @@ long Device<T>::cuda_sub(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 	return m_math.sub(n, hA, hB, hY, nAOff, nBOff, nYOff, nB);
 }
 
-template long Device<double>::cuda_sub(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_sub(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_sub(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_sub(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 
 template <class T>
-long Device<T>::cuda_sub_and_dot(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_sub_and_dot(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 9))
+	if (lErr = verifyInput(llInput, plInput, 6, 9))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	int nN = (int)pfInput[1];
-	int nLen = (int)pfInput[2];
-	long hA = (long)pfInput[3];
-	long hB = (long)pfInput[4];
-	long hY = (long)pfInput[5];
+	int n = (int)plInput[0];
+	int nN = (int)plInput[1];
+	int nLen = (int)plInput[2];
+	long hA = (long)plInput[3];
+	long hB = (long)plInput[4];
+	long hY = (long)plInput[5];
 	int nAOff = 0;
 	int nBOff = 0;
 	int nYOff = 0;
 
-	if (lInput > 6)
-		nAOff = (int)pfInput[6];
+	if (llInput > 6)
+		nAOff = (int)plInput[6];
 
-	if (lInput > 7)
-		nBOff = (int)pfInput[7];
+	if (llInput > 7)
+		nBOff = (int)plInput[7];
 
-	if (lInput > 8)
-		nYOff = (int)pfInput[8];
+	if (llInput > 8)
+		nYOff = (int)plInput[8];
 
 	return m_math.sub_and_dot(n, nN, nLen, hA, hB, hY, nAOff, nBOff, nYOff);
 }
 
-template long Device<double>::cuda_sub_and_dot(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_sub_and_dot(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_sub_and_dot(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_sub_and_dot(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_mul_scalar(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_mul_scalar(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 4))
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 3, 4))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	T fAlpha = pfInput[1];
-	long hY = (long)pfInput[2];
+	int n = (int)plInput[0];
+	T fAlpha = pfInput[0];
+	long hY = (long)plInput[2];
 	int nYOff = 0;
 
-	if (lInput > 3)
-		nYOff = (int)pfInput[3];
+	if (llInput > 3)
+		nYOff = (int)plInput[3];
 
 	return m_math.mul_scalar(n, fAlpha, hY, nYOff);
 }
 
-template long Device<double>::cuda_mul_scalar(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_mul_scalar(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_mul_scalar(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mul_scalar(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_mul(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_mul(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, 7))
+	if (lErr = verifyInput(llInput, plInput, 4, 7))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hA = (long)pfInput[1];
-	long hB = (long)pfInput[2];
-	long hY = (long)pfInput[3];
+	int n = (int)plInput[0];
+	long hA = (long)plInput[1];
+	long hB = (long)plInput[2];
+	long hY = (long)plInput[3];
 	int nAOff = 0;
 	int nBOff = 0;
 	int nYOff = 0;
 
-	if (lInput > 4)
-		nAOff = (int)pfInput[4];
+	if (llInput > 4)
+		nAOff = (int)plInput[4];
 
-	if (lInput > 5)
-		nBOff = (int)pfInput[5];
+	if (llInput > 5)
+		nBOff = (int)plInput[5];
 
-	if (lInput > 6)
-		nYOff = (int)pfInput[6];
+	if (llInput > 6)
+		nYOff = (int)plInput[6];
 
 	return m_math.mul(n, hA, hB, hY, nAOff, nBOff, nYOff);
 }
 
-template long Device<double>::cuda_mul(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_mul(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_mul(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mul(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_div(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_div(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, 4))
+	if (lErr = verifyInput(llInput, plInput, 4, 4))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hA = (long)pfInput[1];
-	long hB = (long)pfInput[2];
-	long hY = (long)pfInput[3];
+	int n = (int)plInput[0];
+	long hA = (long)plInput[1];
+	long hB = (long)plInput[2];
+	long hY = (long)plInput[3];
 
 	return m_math.div(n, hA, hB, hY);
 }
 
-template long Device<double>::cuda_div(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_div(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_div(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_div(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_abs(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_abs(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+	if (lErr = verifyInput(llInput, plInput, 3, 3))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hA = (long)pfInput[1];
-	long hY = (long)pfInput[2];
+	int n = (int)plInput[0];
+	long hA = (long)plInput[1];
+	long hY = (long)plInput[2];
 
 	return m_math.abs(n, hA, hY);
 }
 
-template long Device<double>::cuda_abs(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_abs(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_abs(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_abs(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_exp(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_exp(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 6))
+	if (lErr = verifyInput(lInput, pfInput, 0, 1))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 3, 6))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hA = (long)pfInput[1];
-	long hY = (long)pfInput[2];
+	int n = (int)plInput[0];
+	long hA = (long)plInput[1];
+	long hY = (long)plInput[2];
 	int nAOff = 0;
 	int nYOff = 0;
 	T fBeta = 1.0;
 
-	if (lInput > 3)
-		nAOff = (int)pfInput[3];
+	if (llInput > 3)
+		nAOff = (int)plInput[3];
 
-	if (lInput > 4)
-		nYOff = (int)pfInput[4];
+	if (llInput > 4)
+		nYOff = (int)plInput[4];
 
-	if (lInput > 5)
-		fBeta = pfInput[5];
+	if (lInput > 0)
+		fBeta = pfInput[0];
 
 	return m_math.exp(n, hA, hY, nAOff, nYOff, fBeta);
 }
 
-template long Device<double>::cuda_exp(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_exp(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_exp(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_exp(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_log(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_log(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 5))
+	if (lErr = verifyInput(lInput, pfInput, 0, 2))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 3, 5))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hA = (long)pfInput[1];
-	long hY = (long)pfInput[2];
+	int n = (int)plInput[0];
+	long hA = (long)plInput[1];
+	long hY = (long)plInput[2];
 	T fBeta = 1;
 	T fAlpha = 0;
 
-	if (lInput > 3)
+	if (lInput > 0)
 	{
-		fBeta = pfInput[3];
+		fBeta = pfInput[0];
 
-		if (lInput > 4)
-			fAlpha = pfInput[4];
+		if (lInput > 1)
+			fAlpha = pfInput[1];
 	}
 
 	return m_math.log(n, hA, hY, fBeta, fAlpha);
 }
 
-template long Device<double>::cuda_log(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_log(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_log(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_log(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_powx(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_powx(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, 6))
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 4, 6))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hA = (long)pfInput[1];
-	T fAlpha = pfInput[2];
-	long hY = (long)pfInput[3];
+	int n = (int)plInput[0];
+	long hA = (long)plInput[1];
+	T fAlpha = pfInput[0];
+	long hY = (long)plInput[3];
 	int nAOff = 0;
 	int nYOff = 0;
 
-	if (lInput > 4)
-		nAOff = (int)pfInput[4];
+	if (llInput > 4)
+		nAOff = (int)plInput[4];
 
-	if (lInput > 5)
-		nYOff = (int)pfInput[5];
+	if (llInput > 5)
+		nYOff = (int)plInput[5];
 
 	return m_math.powx(n, hA, fAlpha, hY, nAOff, nYOff);
 }
 
-template long Device<double>::cuda_powx(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_powx(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_powx(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_powx(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_sign(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_sign(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 5))
+	if (lErr = verifyInput(llInput, plInput, 3, 5))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hX = (long)pfInput[1];
-	long hY = (long)pfInput[2];
+	int n = (int)plInput[0];
+	long hX = (long)plInput[1];
+	long hY = (long)plInput[2];
 	int nXOff = 0;
 	int nYOff = 0;
 
-	if (lInput > 3)
-		nXOff = (int)pfInput[3];
+	if (llInput > 3)
+		nXOff = (int)plInput[3];
 
-	if (lInput > 4)
-		nYOff = (int)pfInput[4];
+	if (llInput > 4)
+		nYOff = (int)plInput[4];
 
 	return m_math.sign(n, hX, hY, nXOff, nYOff);
 }
 
-template long Device<double>::cuda_sign(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_sign(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_sign(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_sign(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_sqrt(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_sqrt(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+	if (lErr = verifyInput(llInput, plInput, 3, 3))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hX = (long)pfInput[1];
-	long hY = (long)pfInput[2];
+	int n = (int)plInput[0];
+	long hX = (long)plInput[1];
+	long hY = (long)plInput[2];
 
 	return m_math.sqrt(n, hX, hY);
 }
 
-template long Device<double>::cuda_sqrt(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_sqrt(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_sqrt(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_sqrt(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_reciprocol(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_reciprocol(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+	if (lErr = verifyInput(llInput, plInput, 3, 3))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hX = (long)pfInput[1];
-	long hY = (long)pfInput[2];
+	int n = (int)plInput[0];
+	long hX = (long)plInput[1];
+	long hY = (long)plInput[2];
 
 	return m_math.reciprocol(n, hX, hY);
 }
 
-template long Device<double>::cuda_reciprocol(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_reciprocol(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_reciprocol(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_reciprocol(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_student(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_student(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+	if (lErr = verifyInput(llInput, plInput, 3, 3))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hX = (long)pfInput[1];
-	long hY = (long)pfInput[2];
+	int n = (int)plInput[0];
+	long hX = (long)plInput[1];
+	long hY = (long)plInput[2];
 
 	return m_math.student(n, hX, hY);
 }
 
-template long Device<double>::cuda_student(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_student(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_student(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_student(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_logistic1(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_logistic1(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+	if (lErr = verifyInput(llInput, plInput, 3, 3))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hX = (long)pfInput[1];
-	long hY = (long)pfInput[2];
+	int n = (int)plInput[0];
+	long hX = (long)plInput[1];
+	long hY = (long)plInput[2];
 
 	return m_math.logistic1(n, hX, hY);
 }
 
-template long Device<double>::cuda_logistic1(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_logistic1(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_logistic1(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_logistic1(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_logistic2(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_logistic2(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+	if (lErr = verifyInput(llInput, plInput, 3, 3))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hX = (long)pfInput[1];
-	long hY = (long)pfInput[2];
+	int n = (int)plInput[0];
+	long hX = (long)plInput[1];
+	long hY = (long)plInput[2];
 
 	return m_math.logistic2(n, hX, hY);
 }
 
-template long Device<double>::cuda_logistic2(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_logistic2(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_logistic2(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_logistic2(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_compare_signs(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_compare_signs(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, 4))
+	if (lErr = verifyInput(llInput, plInput, 4, 4))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hA = (long)pfInput[1];
-	long hB = (long)pfInput[2];
-	long hY = (long)pfInput[3];
+	int n = (int)plInput[0];
+	long hA = (long)plInput[1];
+	long hB = (long)plInput[2];
+	long hY = (long)plInput[3];
 
 	return m_math.compare_signs(n, hA, hB, hY);
 }
 
-template long Device<double>::cuda_compare_signs(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_compare_signs(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_compare_signs(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_compare_signs(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_maxval(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_maxval(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 2, 4))
+	if (lErr = verifyInput(llInput, plInput, 2, 4))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hA = (long)pfInput[1];
+	int n = (int)plInput[0];
+	long hA = (long)plInput[1];
 	int nAOff = 0;
 	T fOutput = 0;
 	long hWork = 0;
 
-	if (lInput > 2)
-		nAOff = (int)pfInput[2];
+	if (llInput > 2)
+		nAOff = (int)plInput[2];
 
-	if (lInput > 3)
-		hWork = (long)pfInput[3];
+	if (llInput > 3)
+		hWork = (long)plInput[3];
 
 	long lPos = -1;	
 	if (hWork != 0)
@@ -2595,29 +2642,29 @@ long Device<T>::cuda_maxval(long lInput, T* pfInput, long* plOutput, T** ppfOutp
 	return 0;
 }
 
-template long Device<double>::cuda_maxval(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_maxval(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_maxval(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_maxval(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_minval(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_minval(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 2, 4))
+	if (lErr = verifyInput(llInput, plInput, 2, 4))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hA = (long)pfInput[1];
+	int n = (int)plInput[0];
+	long hA = (long)plInput[1];
 	int nAOff = 0;
 	T fOutput = 0;
 	long hWork = 0;
 	
-	if (lInput > 2)
-		nAOff = (int)pfInput[2];
+	if (llInput > 2)
+		nAOff = (int)plInput[2];
 
-	if (lInput > 3)
-		hWork = (long)pfInput[3];
+	if (llInput > 3)
+		hWork = (long)plInput[3];
 
 	long lPos = -1;
 	if (hWork != 0)
@@ -2643,22 +2690,22 @@ long Device<T>::cuda_minval(long lInput, T* pfInput, long* plOutput, T** ppfOutp
 	return 0;
 }
 
-template long Device<double>::cuda_minval(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_minval(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_minval(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_minval(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_minmaxval(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_minmaxval(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, 6))
+	if (lErr = verifyInput(llInput, plInput, 4, 6))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hA = (long)pfInput[1];
-	long hWork1 = (long)pfInput[2];
-	long hWork2 = (long)pfInput[3];
+	int n = (int)plInput[0];
+	long hA = (long)plInput[1];
+	long hWork1 = (long)plInput[2];
+	long hWork2 = (long)plInput[3];
 	bool bDetectNans = false;
 	int nAOff = 0;
 	T fMin;
@@ -2666,11 +2713,11 @@ long Device<T>::cuda_minmaxval(long lInput, T* pfInput, long* plOutput, T** ppfO
 	T fNan = 0;
 	T fInf = 0;
 
-	if (lInput > 4)
-		bDetectNans = (pfInput[4] == 0) ? false : true;
+	if (llInput > 4)
+		bDetectNans = (plInput[4] == 0) ? false : true;
 
-	if (lInput > 5)
-		nAOff = (int)pfInput[5];
+	if (llInput > 5)
+		nAOff = (int)plInput[5];
 
 	if (lErr = m_math.minmaxval(n, hA, hWork1, hWork2, &fMin, &fMax, nAOff))
 		return lErr;
@@ -2695,95 +2742,95 @@ long Device<T>::cuda_minmaxval(long lInput, T* pfInput, long* plOutput, T** ppfO
 	return 0;
 }
 
-template long Device<double>::cuda_minmaxval(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_minmaxval(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_minmaxval(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_minmaxval(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_minmaxvec(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_minmaxvec(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 8, 8))
+	if (lErr = verifyInput(llInput, plInput, 8, 8))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hA = (long)pfInput[1];
-	long hWork1 = (long)pfInput[2];
-	long hWork2 = (long)pfInput[3];
-	int nK = (int)pfInput[4];
-	long hMin = (long)pfInput[5];
-	long hMax = (long)pfInput[6];
-	bool bNonZero = (bool)(pfInput[7] == 0) ? true : false;
+	int n = (int)plInput[0];
+	long hA = (long)plInput[1];
+	long hWork1 = (long)plInput[2];
+	long hWork2 = (long)plInput[3];
+	int nK = (int)plInput[4];
+	long hMin = (long)plInput[5];
+	long hMax = (long)plInput[6];
+	bool bNonZero = (bool)(plInput[7] == 0) ? true : false;
 
 	return m_math.minmaxvec(n, hA, hWork1, hWork2, nK, hMin, hMax, bNonZero);
 }
 
-template long Device<double>::cuda_minmaxvec(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_minmaxvec(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_minmaxvec(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_minmaxvec(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_transpose(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_transpose(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 8, 8))
+	if (lErr = verifyInput(llInput, plInput, 8, 8))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hX = (long)pfInput[1];
-	long hY = (long)pfInput[2];
-	long hXCounts = (long)pfInput[3];
-	long hYCounts = (long)pfInput[4];
-	long hMapping = (long)pfInput[5];
-	int nNumAxes = (int)pfInput[6];
-	long hBuffer = (long)pfInput[7];
+	int n = (int)plInput[0];
+	long hX = (long)plInput[1];
+	long hY = (long)plInput[2];
+	long hXCounts = (long)plInput[3];
+	long hYCounts = (long)plInput[4];
+	long hMapping = (long)plInput[5];
+	int nNumAxes = (int)plInput[6];
+	long hBuffer = (long)plInput[7];
 
 	return m_math.transpose(n, hX, hY, hXCounts, hYCounts, hMapping, nNumAxes, hBuffer);
 }
 
-template long Device<double>::cuda_transpose(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_transpose(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_transpose(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_transpose(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_transpose_hw(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_transpose_hw(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+	if (lErr = verifyInput(llInput, plInput, 6, 6))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	int c = (int)pfInput[1];
-	int h = (int)pfInput[2];
-	int w = (int)pfInput[3];
-	long hSrc = (long)pfInput[4];
-	long hDst = (long)pfInput[5];
+	int n = (int)plInput[0];
+	int c = (int)plInput[1];
+	int h = (int)plInput[2];
+	int w = (int)plInput[3];
+	long hSrc = (long)plInput[4];
+	long hDst = (long)plInput[5];
 
 	return m_math.transpose_hw(n, c, h, w, hSrc, hDst);
 }
 
-template long Device<double>::cuda_transpose_hw(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_transpose_hw(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_transpose_hw(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_transpose_hw(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_sumsq(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_sumsq(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 4))
+	if (lErr = verifyInput(llInput, plInput, 3, 4))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hW = (long)pfInput[1];
-	long hA = (long)pfInput[2];
+	int n = (int)plInput[0];
+	long hW = (long)plInput[1];
+	long hA = (long)plInput[2];
 	int nAOff = 0;
 
-	if (lInput > 3)
-		nAOff = (int)pfInput[3];
+	if (llInput > 3)
+		nAOff = (int)plInput[3];
 
 	T fOutput = 0;
 
@@ -2793,30 +2840,30 @@ long Device<T>::cuda_sumsq(long lInput, T* pfInput, long* plOutput, T** ppfOutpu
 	return setOutput(fOutput, plOutput, ppfOutput);
 }
 
-template long Device<double>::cuda_sumsq(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_sumsq(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_sumsq(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_sumsq(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_sumsqdiff(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_sumsqdiff(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, 6))
+	if (lErr = verifyInput(llInput, plInput, 4, 6))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hW = (long)pfInput[1];
-	long hA = (long)pfInput[2];
-	long hB = (long)pfInput[3];
+	int n = (int)plInput[0];
+	long hW = (long)plInput[1];
+	long hA = (long)plInput[2];
+	long hB = (long)plInput[3];
 	int nAOff = 0;
 	int nBOff = 0;
 
-	if (lInput > 4)
-		nAOff = (int)pfInput[4];
+	if (llInput > 4)
+		nAOff = (int)plInput[4];
 
-	if (lInput > 5)
-		nBOff = (int)pfInput[5];
+	if (llInput > 5)
+		nBOff = (int)plInput[5];
 
 	T fOutput = 0;
 
@@ -2826,89 +2873,91 @@ long Device<T>::cuda_sumsqdiff(long lInput, T* pfInput, long* plOutput, T** ppfO
 	return setOutput(fOutput, plOutput, ppfOutput);
 }
 
-template long Device<double>::cuda_sumsqdiff(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_sumsqdiff(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_sumsqdiff(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_sumsqdiff(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_sum(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_sum(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 5, 5))
+	if (lErr = verifyInput(llInput, plInput, 5, 5))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	int nOutNum = (int)pfInput[1];
-	int nInNum = (int)pfInput[2];
-	long hX = (long)pfInput[3];
-	long hY = (long)pfInput[4];
+	int n = (int)plInput[0];
+	int nOutNum = (int)plInput[1];
+	int nInNum = (int)plInput[2];
+	long hX = (long)plInput[3];
+	long hY = (long)plInput[4];
 
 	return m_math.sum(n, nOutNum, nInNum, hX, hY);
 }
 
-template long Device<double>::cuda_sum(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_sum(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_sum(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_sum(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_sqrt_scale(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_sqrt_scale(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+	if (lErr = verifyInput(llInput, plInput, 3, 3))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hX = (long)pfInput[1];
-	long hY = (long)pfInput[2];
+	int n = (int)plInput[0];
+	long hX = (long)plInput[1];
+	long hY = (long)plInput[2];
 
 	return m_math.sqrt_scale(n, hX, hY);
 }
 
-template long Device<double>::cuda_sqrt_scale(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_sqrt_scale(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_sqrt_scale(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_sqrt_scale(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_width(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_width(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 6, 6))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hMean = (long)pfInput[1];
-	long hMin = (long)pfInput[2];
-	long hMax = (long)pfInput[3];
-	T fAlpha = pfInput[4];
-	long hWidth = (long)pfInput[5];
+	int n = (int)plInput[0];
+	long hMean = (long)plInput[1];
+	long hMin = (long)plInput[2];
+	long hMax = (long)plInput[3];
+	T fAlpha = pfInput[0];
+	long hWidth = (long)plInput[5];
 
 	return m_math.width(n, hMean, hMin, hMax, fAlpha, hWidth);
 }
 
-template long Device<double>::cuda_width(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_width(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_width(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_width(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_contains_point(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_contains_point(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 5, 6))
+	if (lErr = verifyInput(llInput, plInput, 5, 6))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hMean = (long)pfInput[1];
-	long hWidth = (long)pfInput[2];
-	long hX = (long)pfInput[3];
-	long hWork = (long)pfInput[4];
+	int n = (int)plInput[0];
+	long hMean = (long)plInput[1];
+	long hWidth = (long)plInput[2];
+	long hX = (long)plInput[3];
+	long hWork = (long)plInput[4];
 	int nXOff = 0;
 
-	if (lInput > 5)
-		nXOff = (int)pfInput[5];
+	if (llInput > 5)
+		nXOff = (int)plInput[5];
 
 	T fOutput = 0;
 
@@ -2918,522 +2967,526 @@ long Device<T>::cuda_contains_point(long lInput, T* pfInput, long* plOutput, T**
 	return setOutput(fOutput, plOutput, ppfOutput);
 }
 
-template long Device<double>::cuda_contains_point(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_contains_point(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_contains_point(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_contains_point(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_denan(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_denan(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 3, 3))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hX = (long)pfInput[1];
-	T fReplacement = pfInput[2];
+	int n = (int)plInput[0];
+	long hX = (long)plInput[1];
+	T fReplacement = pfInput[0];
 
 	return m_math.denan(n, hX, fReplacement);
 }
 
-template long Device<double>::cuda_denan(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_denan(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_denan(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_denan(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_set_bounds(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_set_bounds(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, 4))
+	if (lErr = verifyInput(lInput, pfInput, 2, 2))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 4, 4))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	T fMin = pfInput[1];
-	T fMax = pfInput[2];
-	long hX = (long)pfInput[3];
+	int n = (int)plInput[0];
+	T fMin = pfInput[0];
+	T fMax = pfInput[1];
+	long hX = (long)plInput[3];
 
 	return m_math.set_bounds(n, fMin, fMax, hX);
 }
 
-template long Device<double>::cuda_set_bounds(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_set_bounds(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_set_bounds(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_set_bounds(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_channel_min(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_channel_min(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+	if (lErr = verifyInput(llInput, plInput, 6, 6))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	int nOutNum = (int)pfInput[1];
-	int nChannels = (int)pfInput[2];
-	int nInNum = (int)pfInput[3];
-	long hX = (long)pfInput[4];
-	long hY = (long)pfInput[5];
+	int n = (int)plInput[0];
+	int nOutNum = (int)plInput[1];
+	int nChannels = (int)plInput[2];
+	int nInNum = (int)plInput[3];
+	long hX = (long)plInput[4];
+	long hY = (long)plInput[5];
 
 	return m_math.channel_min(n, nOutNum, nChannels, nInNum, hX, hY);
 }
 
-template long Device<double>::cuda_channel_min(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_channel_min(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_channel_min(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_channel_min(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_channel_max(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_channel_max(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+	if (lErr = verifyInput(llInput, plInput, 6, 6))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	int nOutNum = (int)pfInput[1];
-	int nChannels = (int)pfInput[2];
-	int nInNum = (int)pfInput[3];
-	long hX = (long)pfInput[4];
-	long hY = (long)pfInput[5];
+	int n = (int)plInput[0];
+	int nOutNum = (int)plInput[1];
+	int nChannels = (int)plInput[2];
+	int nInNum = (int)plInput[3];
+	long hX = (long)plInput[4];
+	long hY = (long)plInput[5];
 
 	return m_math.channel_max(n, nOutNum, nChannels, nInNum, hX, hY);
 }
 
-template long Device<double>::cuda_channel_max(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_channel_max(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_channel_max(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_channel_max(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_channel_sub(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_channel_sub(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 7))
+	if (lErr = verifyInput(llInput, plInput, 6, 7))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	int nOutNum = (int)pfInput[1];
-	int nChannels = (int)pfInput[2];
-	int nInNum = (int)pfInput[3];
-	long hX = (long)pfInput[4];
-	long hY = (long)pfInput[5];
+	int n = (int)plInput[0];
+	int nOutNum = (int)plInput[1];
+	int nChannels = (int)plInput[2];
+	int nInNum = (int)plInput[3];
+	long hX = (long)plInput[4];
+	long hY = (long)plInput[5];
 	long hA = hY;
 	
-	if (lInput == 7)
-		hA = (long)pfInput[6];
+	if (llInput == 7)
+		hA = (long)plInput[6];
 
 	return m_math.channel_sub(n, nOutNum, nChannels, nInNum, hA, hX, hY);
 }
 
-template long Device<double>::cuda_channel_sub(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_channel_sub(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_channel_sub(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_channel_sub(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_channel_sum(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_channel_sum(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+	if (lErr = verifyInput(llInput, plInput, 7, 7))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	int nOutNum = (int)pfInput[1];
-	int nChannels = (int)pfInput[2];
-	int nInNum = (int)pfInput[3];
-	long hX = (long)pfInput[4];
-	long hY = (long)pfInput[5];
-	bool bSumAcrossChannels = (pfInput[6] == 0) ? false : true;
+	int n = (int)plInput[0];
+	int nOutNum = (int)plInput[1];
+	int nChannels = (int)plInput[2];
+	int nInNum = (int)plInput[3];
+	long hX = (long)plInput[4];
+	long hY = (long)plInput[5];
+	bool bSumAcrossChannels = (plInput[6] == 0) ? false : true;
 
 	return m_math.channel_sum(n, nOutNum, nChannels, nInNum, hX, hY, bSumAcrossChannels);
 }
 
-template long Device<double>::cuda_channel_sum(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_channel_sum(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_channel_sum(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_channel_sum(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_channel_div(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_channel_div(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 7))
+	if (lErr = verifyInput(llInput, plInput, 6, 7))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	int nOutNum = (int)pfInput[1];
-	int nChannels = (int)pfInput[2];
-	int nInNum = (int)pfInput[3];
-	long hX = (long)pfInput[4];
-	long hY = (long)pfInput[5];
+	int n = (int)plInput[0];
+	int nOutNum = (int)plInput[1];
+	int nChannels = (int)plInput[2];
+	int nInNum = (int)plInput[3];
+	long hX = (long)plInput[4];
+	long hY = (long)plInput[5];
 	int nMethod = 1;
 
-	if (lInput > 6)
-		nMethod = (int)pfInput[6];
+	if (llInput > 6)
+		nMethod = (int)plInput[6];
 
 	return m_math.channel_div(n, nOutNum, nChannels, nInNum, hX, hY, nMethod);
 }
 
-template long Device<double>::cuda_channel_div(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_channel_div(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_channel_div(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_channel_div(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 template <class T>
-long Device<T>::cuda_channel_mul(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_channel_mul(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 7))
+	if (lErr = verifyInput(llInput, plInput, 6, 7))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	int nOutNum = (int)pfInput[1];
-	int nChannels = (int)pfInput[2];
-	int nInNum = (int)pfInput[3];
-	long hX = (long)pfInput[4];
-	long hY = (long)pfInput[5];
+	int n = (int)plInput[0];
+	int nOutNum = (int)plInput[1];
+	int nChannels = (int)plInput[2];
+	int nInNum = (int)plInput[3];
+	long hX = (long)plInput[4];
+	long hY = (long)plInput[5];
 	int nMethod = 1;
 
-	if (lInput > 6)
-		nMethod = (int)pfInput[6];
+	if (llInput > 6)
+		nMethod = (int)plInput[6];
 
 	return m_math.channel_mul(n, nOutNum, nChannels, nInNum, hX, hY, nMethod);
 }
 
-template long Device<double>::cuda_channel_mul(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_channel_mul(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_channel_mul(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_channel_mul(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_channel_mulv(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_channel_mulv(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+	if (lErr = verifyInput(llInput, plInput, 7, 7))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	int nOutNum = (int)pfInput[1];
-	int nChannels = (int)pfInput[2];
-	int nInNum = (int)pfInput[3];
-	long hA = (long)pfInput[4];
-	long hX = (long)pfInput[5];
-	long hC = (long)pfInput[6];
+	int n = (int)plInput[0];
+	int nOutNum = (int)plInput[1];
+	int nChannels = (int)plInput[2];
+	int nInNum = (int)plInput[3];
+	long hA = (long)plInput[4];
+	long hX = (long)plInput[5];
+	long hC = (long)plInput[6];
 
 	return m_math.channel_mulv(n, nOutNum, nChannels, nInNum, hA, hX, hC);
 }
 
-template long Device<double>::cuda_channel_mulv(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_channel_mulv(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_channel_mulv(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_channel_mulv(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_channel_scale(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_channel_scale(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+	if (lErr = verifyInput(llInput, plInput, 7, 7))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	int nOutNum = (int)pfInput[1];
-	int nChannels = (int)pfInput[2];
-	int nInNum = (int)pfInput[3];
-	long hX = (long)pfInput[4];
-	long hA = (long)pfInput[5];
-	long hY = (long)pfInput[6];
+	int n = (int)plInput[0];
+	int nOutNum = (int)plInput[1];
+	int nChannels = (int)plInput[2];
+	int nInNum = (int)plInput[3];
+	long hX = (long)plInput[4];
+	long hA = (long)plInput[5];
+	long hY = (long)plInput[6];
 
 	return m_math.channel_scale(n, nOutNum, nChannels, nInNum, hX, hA, hY);
 }
 
-template long Device<double>::cuda_channel_scale(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_channel_scale(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_channel_scale(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_channel_scale(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_channel_dot(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_channel_dot(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+	if (lErr = verifyInput(llInput, plInput, 7, 7))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	int nOutNum = (int)pfInput[1];
-	int nChannels = (int)pfInput[2];
-	int nInNum = (int)pfInput[3];
-	long hX = (long)pfInput[4];
-	long hA = (long)pfInput[5];
-	long hY = (long)pfInput[6];
+	int n = (int)plInput[0];
+	int nOutNum = (int)plInput[1];
+	int nChannels = (int)plInput[2];
+	int nInNum = (int)plInput[3];
+	long hX = (long)plInput[4];
+	long hA = (long)plInput[5];
+	long hY = (long)plInput[6];
 
 	return m_math.channel_dot(n, nOutNum, nChannels, nInNum, hX, hA, hY);
 }
 
-template long Device<double>::cuda_channel_dot(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_channel_dot(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_channel_dot(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_channel_dot(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_channel_compare(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_channel_compare(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+	if (lErr = verifyInput(llInput, plInput, 6, 6))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	int nOutNum = (int)pfInput[1];
-	int nChannels = (int)pfInput[2];
-	int nInNum = (int)pfInput[3];
-	long hX = (long)pfInput[4];
-	long hY = (long)pfInput[5];
+	int n = (int)plInput[0];
+	int nOutNum = (int)plInput[1];
+	int nChannels = (int)plInput[2];
+	int nInNum = (int)plInput[3];
+	long hX = (long)plInput[4];
+	long hY = (long)plInput[5];
 
 	return m_math.channel_compare(n, nOutNum, nChannels, nInNum, hX, hY);
 }
 
-template long Device<double>::cuda_channel_compare(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_channel_compare(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_channel_compare(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_channel_compare(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_channel_fill(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_channel_fill(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 8, 8))
+	if (lErr = verifyInput(llInput, plInput, 8, 8))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	int nOutNum = (int)pfInput[1];
-	int nChannels = (int)pfInput[2];
-	int nInNum = (int)pfInput[3];
-	long hX = (long)pfInput[4];
-	int nLabelDim = (int)pfInput[5];
-	long hLabels = (long)pfInput[6];
-	long hY = (long)pfInput[7];
+	int n = (int)plInput[0];
+	int nOutNum = (int)plInput[1];
+	int nChannels = (int)plInput[2];
+	int nInNum = (int)plInput[3];
+	long hX = (long)plInput[4];
+	int nLabelDim = (int)plInput[5];
+	long hLabels = (long)plInput[6];
+	long hY = (long)plInput[7];
 
 	return m_math.channel_fill(n, nOutNum, nChannels, nInNum, hX, nLabelDim, hLabels, hY);
 }
 
-template long Device<double>::cuda_channel_fill(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_channel_fill(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_channel_fill(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_channel_fill(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_channel_fillfrom(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_channel_fillfrom(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+	if (lErr = verifyInput(llInput, plInput, 7, 7))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	int nOutNum = (int)pfInput[1];
-	int nChannels = (int)pfInput[2];
-	int nInNum = (int)pfInput[3];
-	long hX = (long)pfInput[4];
-	long hY = (long)pfInput[5];
-	int nDir = (int)pfInput[6];
+	int n = (int)plInput[0];
+	int nOutNum = (int)plInput[1];
+	int nChannels = (int)plInput[2];
+	int nInNum = (int)plInput[3];
+	long hX = (long)plInput[4];
+	long hY = (long)plInput[5];
+	int nDir = (int)plInput[6];
 
 	return m_math.channel_fillfrom(n, nOutNum, nChannels, nInNum, hX, hY, nDir);
 }
 
-template long Device<double>::cuda_channel_fillfrom(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_channel_fillfrom(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_channel_fillfrom(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_channel_fillfrom(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_channel_copy(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_channel_copy(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 9, 9))
+	if (lErr = verifyInput(llInput, plInput, 9, 9))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	int nOutNum = (int)pfInput[1];
-	int nChannels = (int)pfInput[2];
-	int nBlocks = (int)pfInput[3];
-	int nInNum = (int)pfInput[4];
-	int nOffset = (int)pfInput[5];
-	long hX = (long)pfInput[6];
-	long hY = (long)pfInput[7];
-	int nDir = (int)pfInput[8];
+	int n = (int)plInput[0];
+	int nOutNum = (int)plInput[1];
+	int nChannels = (int)plInput[2];
+	int nBlocks = (int)plInput[3];
+	int nInNum = (int)plInput[4];
+	int nOffset = (int)plInput[5];
+	long hX = (long)plInput[6];
+	long hY = (long)plInput[7];
+	int nDir = (int)plInput[8];
 
 	return m_math.channel_copy(n, nOutNum, nChannels, nBlocks, nInNum, nOffset, hX, hY, nDir);
 }
 
-template long Device<double>::cuda_channel_copy(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_channel_copy(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_channel_copy(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_channel_copy(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_channel_copyall(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_channel_copyall(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+	if (lErr = verifyInput(llInput, plInput, 6, 6))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	int nOutNum = (int)pfInput[1];
-	int nChannels = (int)pfInput[2];
-	int nInNum = (int)pfInput[3];
-	long hX = (long)pfInput[4];
-	long hY = (long)pfInput[5];
+	int n = (int)plInput[0];
+	int nOutNum = (int)plInput[1];
+	int nChannels = (int)plInput[2];
+	int nInNum = (int)plInput[3];
+	long hX = (long)plInput[4];
+	long hY = (long)plInput[5];
 
 	return m_math.channel_copyall(n, nOutNum, nChannels, nInNum, hX, hY);
 }
 
-template long Device<double>::cuda_channel_copyall(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_channel_copyall(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_channel_copyall(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_channel_copyall(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_channel_duplicate(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_channel_duplicate(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+	if (lErr = verifyInput(llInput, plInput, 6, 6))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	int nOutNum = (int)pfInput[1];
-	int nChannels = (int)pfInput[2];
-	int nInNum = (int)pfInput[3];
-	long hX = (long)pfInput[4];
-	long hY = (long)pfInput[5];
+	int n = (int)plInput[0];
+	int nOutNum = (int)plInput[1];
+	int nChannels = (int)plInput[2];
+	int nInNum = (int)plInput[3];
+	long hX = (long)plInput[4];
+	long hY = (long)plInput[5];
 
 	return m_math.channel_duplicate(n, nOutNum, nChannels, nInNum, hX, hY);
 }
 
-template long Device<double>::cuda_channel_duplicate(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_channel_duplicate(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_channel_duplicate(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_channel_duplicate(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_im2col(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_im2col(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 15, 15))
+	if (lErr = verifyInput(llInput, plInput, 15, 15))
 		return lErr;
 
-	long hDataIm = (long)pfInput[0];
-	int nDataImOffset = (int)pfInput[1];
-	int nChannels = (int)pfInput[2];
-	int nHeight = (int)pfInput[3];
-	int nWidth = (int)pfInput[4];
-	int nKernelH = (int)pfInput[5];
-	int nKernelW = (int)pfInput[6];
-	int nPadH = (int)pfInput[7];
-	int nPadW = (int)pfInput[8];
-	int nStrideH = (int)pfInput[9];
-	int nStrideW = (int)pfInput[10];
-	int nDilationH = (int)pfInput[11];
-	int nDilationW = (int)pfInput[12];
-	long hDataCol = (long)pfInput[13];
-	int nDataColOffset = (int)pfInput[14];
+	long hDataIm = (long)plInput[0];
+	int nDataImOffset = (int)plInput[1];
+	int nChannels = (int)plInput[2];
+	int nHeight = (int)plInput[3];
+	int nWidth = (int)plInput[4];
+	int nKernelH = (int)plInput[5];
+	int nKernelW = (int)plInput[6];
+	int nPadH = (int)plInput[7];
+	int nPadW = (int)plInput[8];
+	int nStrideH = (int)plInput[9];
+	int nStrideW = (int)plInput[10];
+	int nDilationH = (int)plInput[11];
+	int nDilationW = (int)plInput[12];
+	long hDataCol = (long)plInput[13];
+	int nDataColOffset = (int)plInput[14];
 
 	return m_math.im2col(hDataIm, nDataImOffset, nChannels, nHeight, nWidth, nKernelH, nKernelW, nPadH, nPadW, nStrideH, nStrideW, nDilationH, nDilationW, hDataCol, nDataColOffset);
 }
 
-template long Device<double>::cuda_im2col(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_im2col(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_im2col(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_im2col(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_im2col_nd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_im2col_nd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 13, 13))
+	if (lErr = verifyInput(llInput, plInput, 13, 13))
 		return lErr;
 
-	long hDataIm = (long)pfInput[0];
-	int nDataImOffset = (int)pfInput[1];
-	int nNumSpatialAxes = (int)pfInput[2];
-	int nImCount = (int)pfInput[3];
-	int nChannelAxis = (int)pfInput[4];
-	long hImShape = (long)pfInput[5];
-	long hColShape = (long)pfInput[6];
-	long hKernelShape = (long)pfInput[7];
-	long hPad = (long)pfInput[8];
-	long hStride = (long)pfInput[9];
-	long hDilation = (long)pfInput[10];
-	long hDataCol = (long)pfInput[11];
-	int nDataColOffset = (int)pfInput[12];
+	long hDataIm = (long)plInput[0];
+	int nDataImOffset = (int)plInput[1];
+	int nNumSpatialAxes = (int)plInput[2];
+	int nImCount = (int)plInput[3];
+	int nChannelAxis = (int)plInput[4];
+	long hImShape = (long)plInput[5];
+	long hColShape = (long)plInput[6];
+	long hKernelShape = (long)plInput[7];
+	long hPad = (long)plInput[8];
+	long hStride = (long)plInput[9];
+	long hDilation = (long)plInput[10];
+	long hDataCol = (long)plInput[11];
+	int nDataColOffset = (int)plInput[12];
 
 	return m_math.im2col_nd(hDataIm, nDataImOffset, nNumSpatialAxes, nImCount, nChannelAxis, hImShape, hColShape, hKernelShape, hPad, hStride, hDilation, hDataCol, nDataColOffset);
 }
 
-template long Device<double>::cuda_im2col_nd(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_im2col_nd(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_im2col_nd(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_im2col_nd(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_col2im(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_col2im(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 15, 15))
+	if (lErr = verifyInput(llInput, plInput, 15, 15))
 		return lErr;
 
-	long hDataCol = (long)pfInput[0];
-	int nDataColOffset = (int)pfInput[1];
-	int nChannels = (int)pfInput[2];
-	int nHeight = (int)pfInput[3];
-	int nWidth = (int)pfInput[4];
-	int nKernelH = (int)pfInput[5];
-	int nKernelW = (int)pfInput[6];
-	int nPadH = (int)pfInput[7];
-	int nPadW = (int)pfInput[8];
-	int nStrideH = (int)pfInput[9];
-	int nStrideW = (int)pfInput[10];
-	int nDilationH = (int)pfInput[11];
-	int nDilationW = (int)pfInput[12];
-	long hDataIm = (long)pfInput[13];
-	int nDataImOffset = (int)pfInput[14];
+	long hDataCol = (long)plInput[0];
+	int nDataColOffset = (int)plInput[1];
+	int nChannels = (int)plInput[2];
+	int nHeight = (int)plInput[3];
+	int nWidth = (int)plInput[4];
+	int nKernelH = (int)plInput[5];
+	int nKernelW = (int)plInput[6];
+	int nPadH = (int)plInput[7];
+	int nPadW = (int)plInput[8];
+	int nStrideH = (int)plInput[9];
+	int nStrideW = (int)plInput[10];
+	int nDilationH = (int)plInput[11];
+	int nDilationW = (int)plInput[12];
+	long hDataIm = (long)plInput[13];
+	int nDataImOffset = (int)plInput[14];
 
 	return m_math.col2im(hDataCol, nDataColOffset, nChannels, nHeight, nWidth, nKernelH, nKernelW, nPadH, nPadW, nStrideH, nStrideW, nDilationH, nDilationW, hDataIm, nDataImOffset);
 }
 
-template long Device<double>::cuda_col2im(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_col2im(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_col2im(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_col2im(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_col2im_nd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_col2im_nd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 13, 13))
+	if (lErr = verifyInput(llInput, plInput, 13, 13))
 		return lErr;
 
-	long hDataCol = (long)pfInput[0];
-	int nDataColOffset = (int)pfInput[1];
-	int nNumSpatialAxes = (int)pfInput[2];
-	int nColCount = (int)pfInput[3];
-	int nChannelAxis = (int)pfInput[4];
-	long hImShape = (long)pfInput[5];
-	long hColShape = (long)pfInput[6];
-	long hKernelShape = (long)pfInput[7];
-	long hPad = (long)pfInput[8];
-	long hStride = (long)pfInput[9];
-	long hDilation = (long)pfInput[10];
-	long hDataIm = (long)pfInput[11];
-	int nDataImOffset = (int)pfInput[12];
+	long hDataCol = (long)plInput[0];
+	int nDataColOffset = (int)plInput[1];
+	int nNumSpatialAxes = (int)plInput[2];
+	int nColCount = (int)plInput[3];
+	int nChannelAxis = (int)plInput[4];
+	long hImShape = (long)plInput[5];
+	long hColShape = (long)plInput[6];
+	long hKernelShape = (long)plInput[7];
+	long hPad = (long)plInput[8];
+	long hStride = (long)plInput[9];
+	long hDilation = (long)plInput[10];
+	long hDataIm = (long)plInput[11];
+	int nDataImOffset = (int)plInput[12];
 
 	return m_math.col2im_nd(hDataCol, nDataColOffset, nNumSpatialAxes, nColCount, nChannelAxis, hImShape, hColShape, hKernelShape, hPad, hStride, hDilation, hDataIm, nDataImOffset);
 }
 
-template long Device<double>::cuda_col2im_nd(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_col2im_nd(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_col2im_nd(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_col2im_nd(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_rng_setseed(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_rng_setseed(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
@@ -3445,58 +3498,62 @@ long Device<T>::cuda_rng_setseed(long lInput, T* pfInput, long* plOutput, T** pp
 	return m_math.rng_setseed(lSeed);
 }
 
-template long Device<double>::cuda_rng_setseed(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_rng_setseed(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_rng_setseed(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_rng_setseed(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_rng_uniform(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_rng_uniform(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, 4))
+	if (lErr = verifyInput(lInput, pfInput, 2, 2))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 4, 4))
 		return lErr;
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	T fMin = pfInput[1];
-	T fMax = pfInput[2];
-	long hY = (long)pfInput[3];
+	int n = (int)plInput[0];
+	T fMin = pfInput[0];
+	T fMax = pfInput[1];
+	long hY = (long)plInput[3];
 
 	return m_math.rng_uniform(n, fMin, fMax, hY);
 }
 
-template long Device<double>::cuda_rng_uniform(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_rng_uniform(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_rng_uniform(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_rng_uniform(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_rng_gaussian(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_rng_gaussian(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, 4))
+	if (lErr = verifyInput(lInput, pfInput, 2, 2))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 4, 4))
 		return lErr;
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	T fMu = pfInput[1];
-	T fSigma = pfInput[2];
-	long hY = (long)pfInput[3];
+	int n = (int)plInput[0];
+	T fMu = pfInput[0];
+	T fSigma = pfInput[1];
+	long hY = (long)plInput[3];
 
 	return m_math.rng_gaussian(n, fMu, fSigma, hY);
 }
 
-template long Device<double>::cuda_rng_gaussian(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_rng_gaussian(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_rng_gaussian(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_rng_gaussian(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_rng_bernoulli(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_rng_bernoulli(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
@@ -3513,572 +3570,602 @@ long Device<T>::cuda_rng_bernoulli(long lInput, T* pfInput, long* plOutput, T** 
 	return m_math.rng_bernoulli(n, fNonZeroProb, hY);
 }
 
-template long Device<double>::cuda_rng_bernoulli(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_rng_bernoulli(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_rng_bernoulli(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_rng_bernoulli(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_sgd_update(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_sgd_update(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 5, 5))
+	if (lErr = verifyInput(lInput, pfInput, 2, 2))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 5, 5))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hNetParamDiff = (long)pfInput[1];
-	long hHistoryData = (long)pfInput[2];
-	T fMomentum = pfInput[3];
-	T fLocalRate = pfInput[4];
+	int n = (int)plInput[0];
+	long hNetParamDiff = (long)plInput[1];
+	long hHistoryData = (long)plInput[2];
+	T fMomentum = pfInput[0];
+	T fLocalRate = pfInput[1];
 
 	return m_math.sgd_update(n, hNetParamDiff, hHistoryData, fMomentum, fLocalRate);
 }
 
-template long Device<double>::cuda_sgd_update(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_sgd_update(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_sgd_update(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_sgd_update(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_nesterov_update(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_nesterov_update(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 5, 5))
+	if (lErr = verifyInput(lInput, pfInput, 2, 2))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 5, 5))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hNetParamDiff = (long)pfInput[1];
-	long hHistoryData = (long)pfInput[2];
-	T fMomentum = pfInput[3];
-	T fLocalRate = pfInput[4];
+	int n = (int)plInput[0];
+	long hNetParamDiff = (long)plInput[1];
+	long hHistoryData = (long)plInput[2];
+	T fMomentum = pfInput[0];
+	T fLocalRate = pfInput[1];
 
 	return m_math.nesterov_update(n, hNetParamDiff, hHistoryData, fMomentum, fLocalRate);
 }
 
-template long Device<double>::cuda_nesterov_update(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_nesterov_update(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_nesterov_update(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_nesterov_update(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_adagrad_update(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_adagrad_update(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 5, 5))
+	if (lErr = verifyInput(lInput, pfInput, 2, 2))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 5, 5))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hNetParamDiff = (long)pfInput[1];
-	long hHistoryData = (long)pfInput[2];
-	T fDelta = pfInput[3];
-	T fLocalRate = pfInput[4];
+	int n = (int)plInput[0];
+	long hNetParamDiff = (long)plInput[1];
+	long hHistoryData = (long)plInput[2];
+	T fDelta = pfInput[0];
+	T fLocalRate = pfInput[1];
 
 	return m_math.adagrad_update(n, hNetParamDiff, hHistoryData, fDelta, fLocalRate);
 }
 
-template long Device<double>::cuda_adagrad_update(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_adagrad_update(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_adagrad_update(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_adagrad_update(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_adadelta_update(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_adadelta_update(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 7, 7))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hNetParamDiff = (long)pfInput[1];
-	long hHistoryData1 = (long)pfInput[2];
-	long hHistoryData2 = (long)pfInput[3];
-	T fMomentum = pfInput[4];
-	T fDelta = pfInput[5];
-	T fLocalRate = pfInput[6];
+	int n = (int)plInput[0];
+	long hNetParamDiff = (long)plInput[1];
+	long hHistoryData1 = (long)plInput[2];
+	long hHistoryData2 = (long)plInput[3];
+	T fMomentum = pfInput[0];
+	T fDelta = pfInput[1];
+	T fLocalRate = pfInput[2];
 
 	return m_math.adadelta_update(n, hNetParamDiff, hHistoryData1, hHistoryData2, fMomentum, fDelta, fLocalRate);
 }
 
-template long Device<double>::cuda_adadelta_update(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_adadelta_update(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_adadelta_update(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_adadelta_update(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_adam_update(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_adam_update(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 9, 9))
+	if (lErr = verifyInput(lInput, pfInput, 5, 5))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 9, 9))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hNetParamDiff = (long)pfInput[1];
-	long hValM = (long)pfInput[2];
-	long hValV = (long)pfInput[3];
-	T fBeta1 = pfInput[4];
-	T fBeta2 = pfInput[5];
-	T fEpsHat = pfInput[6];
-	T fLearningRate = pfInput[7];
-	T fCorrection = pfInput[8];
+	int n = (int)plInput[0];
+	long hNetParamDiff = (long)plInput[1];
+	long hValM = (long)plInput[2];
+	long hValV = (long)plInput[3];
+	T fBeta1 = pfInput[0];
+	T fBeta2 = pfInput[1];
+	T fEpsHat = pfInput[2];
+	T fLearningRate = pfInput[3];
+	T fCorrection = pfInput[4];
 	
 	return m_math.adam_update(n, hNetParamDiff, hValM, hValV, fBeta1, fBeta2, fEpsHat, fLearningRate, fCorrection);
 }
 
-template long Device<double>::cuda_adam_update(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_adam_update(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_adam_update(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_adam_update(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_adamw_update(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_adamw_update(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 11, 11))
+	if (lErr = verifyInput(lInput, pfInput, 5, 5))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 11, 11))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hNetParamDiff = (long)pfInput[1];
-	long hValM = (long)pfInput[2];
-	long hValV = (long)pfInput[3];
-	T fBeta1 = pfInput[4];
-	T fBeta2 = pfInput[5];
-	T fEpsHat = pfInput[6];
-	T fLearningRate = pfInput[7];
-	T fDecayRate = pfInput[8];
-	long hNetParamData = (long)pfInput[9];
-	int nStep = (int)pfInput[10];
+	int n = (int)plInput[0];
+	long hNetParamDiff = (long)plInput[1];
+	long hValM = (long)plInput[2];
+	long hValV = (long)plInput[3];
+	T fBeta1 = pfInput[0];
+	T fBeta2 = pfInput[1];
+	T fEpsHat = pfInput[2];
+	T fLearningRate = pfInput[3];
+	T fDecayRate = pfInput[4];
+	long hNetParamData = (long)plInput[9];
+	int nStep = (int)plInput[10];
 
 	return m_math.adamw_update(n, hNetParamDiff, hValM, hValV, fBeta1, fBeta2, fEpsHat, fLearningRate, fDecayRate, hNetParamData, nStep);
 }
 
-template long Device<double>::cuda_adamw_update(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_adamw_update(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_adamw_update(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_adamw_update(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_rmsprop_update(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_rmsprop_update(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 6, 6))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	long hNetParamDiff = (long)pfInput[1];
-	long hHistoryData = (long)pfInput[2];
-	T fRmsDecay = pfInput[3];
-	T fDelta = pfInput[4];
-	T fLocalRate = pfInput[5];
+	int n = (int)plInput[0];
+	long hNetParamDiff = (long)plInput[1];
+	long hHistoryData = (long)plInput[2];
+	T fRmsDecay = pfInput[0];
+	T fDelta = pfInput[1];
+	T fLocalRate = pfInput[2];
 
 	return m_math.rmsprop_update(n, hNetParamDiff, hHistoryData, fRmsDecay, fDelta, fLocalRate);
 }
 
-template long Device<double>::cuda_rmsprop_update(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_rmsprop_update(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_rmsprop_update(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_rmsprop_update(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 
 template <class T>
-long Device<T>::cuda_combine_data(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_combine_data(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+	if (lErr = verifyInput(lInput, pfInput, 2, 2))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 7, 7))
 		return lErr;
 
-	int nCount = (int)pfInput[0];
-	long hOriginal = (long)pfInput[1];
-	long hUpdated = (long)pfInput[2];
-	T fUpdatedPct = pfInput[3];
-	long hServer = (long)pfInput[4];
-	T fServerPct = pfInput[5];
-	long hNewData = (long)pfInput[6];
+	int nCount = (int)plInput[0];
+	long hOriginal = (long)plInput[1];
+	long hUpdated = (long)plInput[2];
+	T fUpdatedPct = pfInput[0];
+	long hServer = (long)plInput[4];
+	T fServerPct = pfInput[1];
+	long hNewData = (long)plInput[6];
 
 	return m_math.combine_data(nCount, hOriginal, hUpdated, fUpdatedPct, hServer, fServerPct, hNewData);
 }
 
-template long Device<double>::cuda_combine_data(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_combine_data(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_combine_data(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_combine_data(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_mtx_set_diagonal(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_mtx_set_diagonal(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, 4))
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 4, 4))
 		return lErr;
 
-	int nCount = (int)pfInput[0];
-	int nRows = (int)pfInput[1];
-	T fVal = pfInput[2];
-	long hData = (long)pfInput[3];
+	int nCount = (int)plInput[0];
+	int nRows = (int)plInput[1];
+	T fVal = pfInput[0];
+	long hData = (long)plInput[3];
 
 	return m_math.mtx_set_diagonal(nCount, nRows, fVal, hData);
 }
 
-template long Device<double>::cuda_mtx_set_diagonal(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_mtx_set_diagonal(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_mtx_set_diagonal(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mtx_set_diagonal(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_mtx_set_diagonal2(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_mtx_set_diagonal2(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+	if (lErr = verifyInput(lInput, pfInput, 2, 2))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 6, 6))
 		return lErr;
 
-	int nCount = (int)pfInput[0];
-	int nRows = (int)pfInput[1];
-	long hDiagonal = (long)pfInput[2];
-	T fScaleA = pfInput[3];
-	T fScaleB = pfInput[4];
-	long hData = (long)pfInput[5];
+	int nCount = (int)plInput[0];
+	int nRows = (int)plInput[1];
+	long hDiagonal = (long)plInput[2];
+	T fScaleA = pfInput[0];
+	T fScaleB = pfInput[1];
+	long hData = (long)plInput[5];
 
 	return m_math.mtx_set_diagonal(nCount, nRows, hDiagonal, fScaleA, fScaleB, hData);
 }
 
-template long Device<double>::cuda_mtx_set_diagonal2(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_mtx_set_diagonal2(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_mtx_set_diagonal2(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mtx_set_diagonal2(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_mtx_add_vector(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_mtx_add_vector(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 7, 7))
 		return lErr;
 
-	int nOrientation = (int)pfInput[0];
-	int nWidth = (int)pfInput[1];
-	int nHeight = (int)pfInput[2];
-	T fScale = pfInput[3];
-	long hA = (long)pfInput[4];
-	long hB = (long)pfInput[5];
-	long hY = (long)pfInput[6];
+	int nOrientation = (int)plInput[0];
+	int nWidth = (int)plInput[1];
+	int nHeight = (int)plInput[2];
+	T fScale = pfInput[0];
+	long hA = (long)plInput[4];
+	long hB = (long)plInput[5];
+	long hY = (long)plInput[6];
 
 	return m_math.mtx_add_vector(nOrientation, nWidth, nHeight, fScale, hA, hB, hY);
 }
 
-template long Device<double>::cuda_mtx_add_vector(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_mtx_add_vector(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_mtx_add_vector(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mtx_add_vector(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_mtx_transpose_op(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_mtx_transpose_op(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 8))
+	if (lErr = verifyInput(lInput, pfInput, 0, 2))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 6, 8))
 		return lErr;
 
-	int nOp = (int)pfInput[0];
-	int nWidth = (int)pfInput[1];
-	int nHeight = (int)pfInput[2];
-	long hA = (long)pfInput[3];
-	long hB = (long)pfInput[4];
-	long hY = (long)pfInput[5];
+	int nOp = (int)plInput[0];
+	int nWidth = (int)plInput[1];
+	int nHeight = (int)plInput[2];
+	long hA = (long)plInput[3];
+	long hB = (long)plInput[4];
+	long hY = (long)plInput[5];
 	T fScaleA = 1.0;
 	T fScaleB = 1.0;
 
-	if (lInput > 6)
-		fScaleA = pfInput[6];
+	if (lInput > 0)
+		fScaleA = pfInput[0];
 
-	if (lInput > 7)
-		fScaleB = pfInput[7];
+	if (lInput > 1)
+		fScaleB = pfInput[1];
 
 	return m_math.mtx_transpose_op(nOp, nWidth, nHeight, hA, hB, hY, fScaleA, fScaleB);
 }
 
-template long Device<double>::cuda_mtx_transpose_op(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_mtx_transpose_op(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_mtx_transpose_op(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mtx_transpose_op(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_mtx_aggregate_cols(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_mtx_aggregate_cols(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 5, 5))
+	if (lErr = verifyInput(llInput, plInput, 5, 5))
 		return lErr;
 
-	int nOp = (int)pfInput[0];
-	int nWidth = (int)pfInput[1];
-	int nHeight = (int)pfInput[2];
-	long hA = (long)pfInput[3];
-	long hY = (long)pfInput[4];
+	int nOp = (int)plInput[0];
+	int nWidth = (int)plInput[1];
+	int nHeight = (int)plInput[2];
+	long hA = (long)plInput[3];
+	long hY = (long)plInput[4];
 
 	return m_math.mtx_aggregate_cols(nOp, nWidth, nHeight, hA, hY);
 }
 
-template long Device<double>::cuda_mtx_aggregate_cols(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_mtx_aggregate_cols(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_mtx_aggregate_cols(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mtx_aggregate_cols(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_mtx_aggregate_rows(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_mtx_aggregate_rows(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+	if (lErr = verifyInput(llInput, plInput, 6, 6))
 		return lErr;
 
-	int nOp = (int)pfInput[0];
-	int nWidth = (int)pfInput[1];
-	int nHeight = (int)pfInput[2];
-	long hA = (long)pfInput[3];
-	long hOnes = (long)pfInput[4];
-	long hY = (long)pfInput[5];
+	int nOp = (int)plInput[0];
+	int nWidth = (int)plInput[1];
+	int nHeight = (int)plInput[2];
+	long hA = (long)plInput[3];
+	long hOnes = (long)plInput[4];
+	long hY = (long)plInput[5];
 
 	return m_math.mtx_aggregate_rows(nOp, nWidth, nHeight, hA, hOnes, hY);
 }
 
-template long Device<double>::cuda_mtx_aggregate_rows(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_mtx_aggregate_rows(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_mtx_aggregate_rows(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mtx_aggregate_rows(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_mtx_transpose(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_mtx_transpose(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, 4))
+	if (lErr = verifyInput(llInput, plInput, 4, 4))
 		return lErr;
 
-	int nWidth = (int)pfInput[0];
-	int nHeight = (int)pfInput[1];
-	long hA = (long)pfInput[2];
-	long hY = (long)pfInput[3];
+	int nWidth = (int)plInput[0];
+	int nHeight = (int)plInput[1];
+	long hA = (long)plInput[2];
+	long hY = (long)plInput[3];
 
 	return m_math.mtx_transpose(nWidth, nHeight, hA, hY);
 }
 
-template long Device<double>::cuda_mtx_transpose(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_mtx_transpose(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_mtx_transpose(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mtx_transpose(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_mtx_meancenter_by_column(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_mtx_meancenter_by_column(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 5, 6))
+	if (lErr = verifyInput(llInput, plInput, 5, 6))
 		return lErr;
 
-	int nWidth = (int)pfInput[0];
-	int nHeight = (int)pfInput[1];
-	long hA = (long)pfInput[2];
-	long hB = (long)pfInput[3];
-	long hY = (long)pfInput[4];
+	int nWidth = (int)plInput[0];
+	int nHeight = (int)plInput[1];
+	long hA = (long)plInput[2];
+	long hB = (long)plInput[3];
+	long hY = (long)plInput[4];
 	bool bNormalize = false;
 
-	if (lInput > 5)
-		bNormalize = (pfInput[5] == 0) ? false : true;
+	if (llInput > 5)
+		bNormalize = (plInput[5] == 0) ? false : true;
 
 	return m_math.mtx_meancenter_by_column(nWidth, nHeight, hA, hB, hY, bNormalize);
 }
 
-template long Device<double>::cuda_mtx_meancenter_by_column(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_mtx_meancenter_by_column(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_mtx_meancenter_by_column(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mtx_meancenter_by_column(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_mtx_euclidean_dist(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_mtx_euclidean_dist(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+	if (lErr = verifyInput(llInput, plInput, 7, 7))
 		return lErr;
 
-	long hX = (long)pfInput[0];
-	long hY = (long)pfInput[1];
-	long hOut = (long)pfInput[2];
-	int n = (int)pfInput[3];
-	int d = (int)pfInput[4];
-	int nStart = (int)pfInput[5];
-	int nEnd = (int)pfInput[6];
+	long hX = (long)plInput[0];
+	long hY = (long)plInput[1];
+	long hOut = (long)plInput[2];
+	int n = (int)plInput[3];
+	int d = (int)plInput[4];
+	int nStart = (int)plInput[5];
+	int nEnd = (int)plInput[6];
 
 	return m_math.mtx_euclidean_dist(hX, hY, hOut, n, d, nStart, nEnd);
 }
 
-template long Device<double>::cuda_mtx_euclidean_dist(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_mtx_euclidean_dist(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_mtx_euclidean_dist(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mtx_euclidean_dist(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_mtx_dot(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_mtx_dot(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+	if (lErr = verifyInput(llInput, plInput, 6, 6))
 		return lErr;
 
 	// C(m,k) = A(m,n) * B(n,k)
 
-	int m = (int)pfInput[0];	// rows in A, C
-	int n = (int)pfInput[1];	// cols in A, rows in B
-	int k = (int)pfInput[2];	// cost in C, B
-	long hA = (long)pfInput[3];	// m x n matrix (m rows, n cols)
-	long hB = (long)pfInput[4]; // n x k matrix (n rows, k cols)
-	long hC = (long)pfInput[5]; // k x m matrix (k rows, m cols)
+	int m = (int)plInput[0];	// rows in A, C
+	int n = (int)plInput[1];	// cols in A, rows in B
+	int k = (int)plInput[2];	// cost in C, B
+	long hA = (long)plInput[3];	// m x n matrix (m rows, n cols)
+	long hB = (long)plInput[4]; // n x k matrix (n rows, k cols)
+	long hC = (long)plInput[5]; // k x m matrix (k rows, m cols)
 
 	return m_math.mtx_dot(m, n, k, hA, hB, hC);
 }
 
-template long Device<double>::cuda_mtx_dot(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_mtx_dot(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_mtx_dot(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mtx_dot(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_mtx_mean(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_mtx_mean(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 6, 6))
 		return lErr;
 
-	int nWid = (int)pfInput[0];	// cols in A and Y
-	int nHt = (int)pfInput[1];	// rows in A and Y
-	long hA = (long)pfInput[2];	// 
-	long hOnes = (long)pfInput[3]; // nWid in length, contains 1 on each column to include in the mean calculation.
-	T fAlpha = pfInput[4];
-	long hY = (long)pfInput[5]; // reduction leaves results in first nHt items of hY
+	int nWid = (int)plInput[0];	// cols in A and Y
+	int nHt = (int)plInput[1];	// rows in A and Y
+	long hA = (long)plInput[2];	// 
+	long hOnes = (long)plInput[3]; // nWid in length, contains 1 on each column to include in the mean calculation.
+	T fAlpha = pfInput[0];
+	long hY = (long)plInput[5]; // reduction leaves results in first nHt items of hY
 
 	return m_math.mtx_mean(nWid, nHt, hA, hOnes, fAlpha, hY);
 }
 
-template long Device<double>::cuda_mtx_mean(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_mtx_mean(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_mtx_mean(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mtx_mean(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_mtx_stdev(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_mtx_stdev(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+	if (lErr = verifyInput(llInput, plInput, 7, 7))
 		return lErr;
 
-	int nWid = (int)pfInput[0];	// cols in A and Y
-	int nHt = (int)pfInput[1];	// rows in A and Y
-	long hA = (long)pfInput[2];	// 
-	long hOnes = (long)pfInput[3]; // nWid in length, contains 1 on each column to include in the mean calculation.
-	long hMean = (long)pfInput[4]; // nHt items containing the mean of each row.
-	long hWork = (long)pfInput[5]; // same size as A.
-	long hY = (long)pfInput[6]; // reduction leaves results in first nHt items of hY
+	int nWid = (int)plInput[0];	// cols in A and Y
+	int nHt = (int)plInput[1];	// rows in A and Y
+	long hA = (long)plInput[2];	// 
+	long hOnes = (long)plInput[3]; // nWid in length, contains 1 on each column to include in the mean calculation.
+	long hMean = (long)plInput[4]; // nHt items containing the mean of each row.
+	long hWork = (long)plInput[5]; // same size as A.
+	long hY = (long)plInput[6]; // reduction leaves results in first nHt items of hY
 
 	return m_math.mtx_stdev(nWid, nHt, hA, hOnes, hMean, hWork, hY);
 }
 
-template long Device<double>::cuda_mtx_stdev(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_mtx_stdev(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_mtx_stdev(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mtx_stdev(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_mtx_correlation(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_mtx_correlation(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 8, 8))
+	if (lErr = verifyInput(llInput, plInput, 8, 8))
 		return lErr;
 
-	int nWid = (int)pfInput[0];	// cols in A and Y
-	int nHt = (int)pfInput[1];	// rows in A and Y
-	long hA = (long)pfInput[2];	// 
-	long hOnes = (long)pfInput[3]; // nWid in length, contains 1 on each column to include in the mean calculation.
-	long hMean = (long)pfInput[4]; // nHt items containing the mean of each row.
-	long hStdev = (long)pfInput[5]; // nHt items containing the stdev of each row.
-	long hWork = (long)pfInput[6]; // same size as A.
-	long hY = (long)pfInput[7]; // reduction leaves results in first nHt items of hY
+	int nWid = (int)plInput[0];	// cols in A and Y
+	int nHt = (int)plInput[1];	// rows in A and Y
+	long hA = (long)plInput[2];	// 
+	long hOnes = (long)plInput[3]; // nWid in length, contains 1 on each column to include in the mean calculation.
+	long hMean = (long)plInput[4]; // nHt items containing the mean of each row.
+	long hStdev = (long)plInput[5]; // nHt items containing the stdev of each row.
+	long hWork = (long)plInput[6]; // same size as A.
+	long hY = (long)plInput[7]; // reduction leaves results in first nHt items of hY
 
 	return m_math.mtx_correlation(nWid, nHt, hA, hOnes, hMean, hStdev, hWork, hY);
 }
 
-template long Device<double>::cuda_mtx_correlation(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_mtx_correlation(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_mtx_correlation(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mtx_correlation(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_tsne_update(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
-{
-	LONG lErr;
-
-	if (lErr = verifyInput(lInput, pfInput, 9, 9))
-		return lErr;
-
-	unsigned int n = (unsigned int)pfInput[0];
-	T fMomentum = pfInput[1];
-	T fLearningRate = pfInput[2];
-	long hdY = (long)pfInput[3];
-	long huY = (long)pfInput[4];
-	long hGains = (long)pfInput[5];
-	long hY = (long)pfInput[6];
-	T fGainFactor1 = pfInput[7];
-	T fGainFactor2 = pfInput[8];
-
-	return m_math.tsne_update(n, fMomentum, fLearningRate, hdY, huY, hGains, hY, fGainFactor1, fGainFactor2);
-}
-
-template long Device<double>::cuda_tsne_update(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_tsne_update(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
-
-
-template <class T>
-long Device<T>::cuda_tsne_update_grad(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
-{
-	LONG lErr;
-
-	if (lErr = verifyInput(lInput, pfInput, 5, 5))
-		return lErr;
-
-	unsigned int n = (unsigned int)pfInput[0];
-	long hPosF = (long)pfInput[1];
-	long hNegF = (long)pfInput[2];
-	T fSumQ = pfInput[3];
-	long hdC = (long)pfInput[4];
-
-	return m_math.tsne_update_grad(n, hPosF, hNegF, fSumQ, hdC);
-}
-
-template long Device<double>::cuda_tsne_update_grad(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_tsne_update_grad(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
-
-
-template <class T>
-long Device<T>::cuda_tsne_compute_exact_error(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_tsne_update(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
 	if (lErr = verifyInput(lInput, pfInput, 4, 4))
 		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 9, 9))
+		return lErr;
 
-	unsigned int n = (unsigned int)pfInput[0];
-	long hP = (long)pfInput[1];
-	long hQ = (long)pfInput[2];
-	long hY = (long)pfInput[3];
+	unsigned int n = (unsigned int)plInput[0];
+	T fMomentum = pfInput[0];
+	T fLearningRate = pfInput[1];
+	long hdY = (long)plInput[3];
+	long huY = (long)plInput[4];
+	long hGains = (long)plInput[5];
+	long hY = (long)plInput[6];
+	T fGainFactor1 = pfInput[2];
+	T fGainFactor2 = pfInput[3];
+
+	return m_math.tsne_update(n, fMomentum, fLearningRate, hdY, huY, hGains, hY, fGainFactor1, fGainFactor2);
+}
+
+template long Device<double>::cuda_tsne_update(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_tsne_update(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
+long Device<T>::cuda_tsne_update_grad(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 5, 5))
+		return lErr;
+
+	unsigned int n = (unsigned int)plInput[0];
+	long hPosF = (long)plInput[1];
+	long hNegF = (long)plInput[2];
+	T fSumQ = pfInput[0];
+	long hdC = (long)plInput[4];
+
+	return m_math.tsne_update_grad(n, hPosF, hNegF, fSumQ, hdC);
+}
+
+template long Device<double>::cuda_tsne_update_grad(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_tsne_update_grad(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
+long Device<T>::cuda_tsne_compute_exact_error(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 4, 4))
+		return lErr;
+
+	unsigned int n = (unsigned int)plInput[0];
+	long hP = (long)plInput[1];
+	long hQ = (long)plInput[2];
+	long hY = (long)plInput[3];
 
 	return m_math.tsne_compute_exact_error(n, hP, hQ, hY);
 }
 
-template long Device<double>::cuda_tsne_compute_exact_error(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_tsne_compute_exact_error(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_tsne_compute_exact_error(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_tsne_compute_exact_error(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_tsne_compute_squared_euclidean_distance(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_tsne_compute_squared_euclidean_distance(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 5, 5))
+	if (lErr = verifyInput(llInput, plInput, 5, 5))
 		return lErr;
 
-	unsigned int n = (unsigned int)pfInput[0];
-	unsigned int d = (unsigned int)pfInput[1];
-//	long hW = (long)pfInput[2];  // currently not used.
-	long hX = (long)pfInput[3];
-	long hDD = (long)pfInput[4];
+	unsigned int n = (unsigned int)plInput[0];
+	unsigned int d = (unsigned int)plInput[1];
+//	long hW = (long)plInput[2];  // currently not used.
+	long hX = (long)plInput[3];
+	long hDD = (long)plInput[4];
 
 	HostBuffer<T>* pDD = m_memory.GetHostBuffer(hDD);
 	T* pX_on_host = m_memory.GetMemoryToHost(hX);
@@ -4091,21 +4178,21 @@ long Device<T>::cuda_tsne_compute_squared_euclidean_distance(long lInput, T* pfI
 	return lErr;
 }
 
-template long Device<double>::cuda_tsne_compute_squared_euclidean_distance(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_tsne_compute_squared_euclidean_distance(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_tsne_compute_squared_euclidean_distance(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_tsne_compute_squared_euclidean_distance(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_tsne_compute_q_matrix(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_tsne_compute_q_matrix(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, 4))
+	if (lErr = verifyInput(llInput, plInput, 4, 4))
 		return lErr;
 
-	unsigned int n = (unsigned int)pfInput[0];
-	long hDD = (long)pfInput[1];
-	long hQ = (long)pfInput[2];
+	unsigned int n = (unsigned int)plInput[0];
+	long hDD = (long)plInput[1];
+	long hQ = (long)plInput[2];
 	bool bQisHostMem = (pfInput[3] == 1.0) ? true : false;
 
 	HostBuffer<T>* pDD = m_memory.GetHostBuffer(hDD);
@@ -4128,26 +4215,28 @@ long Device<T>::cuda_tsne_compute_q_matrix(long lInput, T* pfInput, long* plOutp
 	return setOutput(fSumQ, plOutput, ppfOutput);
 }
 
-template long Device<double>::cuda_tsne_compute_q_matrix(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_tsne_compute_q_matrix(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_tsne_compute_q_matrix(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_tsne_compute_q_matrix(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_tsne_compute_exact_gradient(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_tsne_compute_exact_gradient(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 8, 8))
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 8, 8))
 		return lErr;
 
-	unsigned int n = (unsigned int)pfInput[0];
-	unsigned int d = (unsigned int)pfInput[1];
-	long hY = (long)pfInput[2];
-	long hP = (long)pfInput[3];
-	long hQ = (long)pfInput[4];
-	bool bQisHostMem = (pfInput[5] == 1.0) ? true : false;
-	long hdC = (long)pfInput[6];
-	T fSumQ = pfInput[7];
+	unsigned int n = (unsigned int)plInput[0];
+	unsigned int d = (unsigned int)plInput[1];
+	long hY = (long)plInput[2];
+	long hP = (long)plInput[3];
+	long hQ = (long)plInput[4];
+	bool bQisHostMem = (plInput[5] == 1.0) ? true : false;
+	long hdC = (long)plInput[6];
+	T fSumQ = pfInput[0];
 
 	T* pY_on_host = m_memory.GetMemoryToHost(hY);
 	T* pP_on_host = m_memory.GetMemoryToHost(hP);
@@ -4183,25 +4272,25 @@ long Device<T>::cuda_tsne_compute_exact_gradient(long lInput, T* pfInput, long* 
 	return 0;
 }
 
-template long Device<double>::cuda_tsne_compute_exact_gradient(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_tsne_compute_exact_gradient(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_tsne_compute_exact_gradient(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_tsne_compute_exact_gradient(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_tsne_symmetrize_matrix(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_tsne_symmetrize_matrix(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, 4))
+	if (lErr = verifyInput(llInput, plInput, 4, 4))
 		return lErr;
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
 		return lErr;
 
-	unsigned int n = (unsigned int)pfInput[0];
-	long hRowP = (long)pfInput[1];
-	long hColP = (long)pfInput[2];
-	long hValP = (long)pfInput[3];
+	unsigned int n = (unsigned int)plInput[0];
+	long hRowP = (long)plInput[1];
+	long hColP = (long)plInput[2];
+	long hValP = (long)plInput[3];
 	unsigned int nRowCount = 0;
 
 	if (lErr = m_math.tsne_symmetrize_matrix(n, hRowP, hColP, hValP, &nRowCount))
@@ -4210,24 +4299,26 @@ long Device<T>::cuda_tsne_symmetrize_matrix(long lInput, T* pfInput, long* plOut
 	return setOutput(T(nRowCount), plOutput, ppfOutput);
 }
 
-template long Device<double>::cuda_tsne_symmetrize_matrix(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_tsne_symmetrize_matrix(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_tsne_symmetrize_matrix(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_tsne_symmetrize_matrix(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_tsne_compute_knn_bounds(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_tsne_compute_knn_bounds(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 3, 3))
 		return lErr;
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
 		return lErr;
 
-	unsigned int n = (unsigned int)pfInput[0];
-	long hData = (long)pfInput[1];
-	T fPctInCircle = pfInput[2];
+	unsigned int n = (unsigned int)plInput[0];
+	long hData = (long)plInput[1];
+	T fPctInCircle = pfInput[0];
 	T fMinX;
 	T fMinY;
 	T fMaxX;
@@ -4250,112 +4341,118 @@ long Device<T>::cuda_tsne_compute_knn_bounds(long lInput, T* pfInput, long* plOu
 	return 0;
 }
 
-template long Device<double>::cuda_tsne_compute_knn_bounds(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_tsne_compute_knn_bounds(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_tsne_compute_knn_bounds(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_tsne_compute_knn_bounds(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_guassian_blur(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_guassian_blur(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 7, 7))
 		return lErr;
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	int c = (int)pfInput[1];
-	int h = (int)pfInput[2];
-	int w = (int)pfInput[3];
-	T fSigma = pfInput[4];
-	long hX = (long)pfInput[5];
-	long hY = (long)pfInput[6];
+	int n = (int)plInput[0];
+	int c = (int)plInput[1];
+	int h = (int)plInput[2];
+	int w = (int)plInput[3];
+	T fSigma = pfInput[0];
+	long hX = (long)plInput[5];
+	long hY = (long)plInput[6];
 
 	return m_math.gaussian_blur(n, c, h, w, fSigma, hX, hY);
 }
 
-template long Device<double>::cuda_guassian_blur(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_guassian_blur(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_guassian_blur(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_guassian_blur(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_calc_dft(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_calc_dft(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, 4))
+	if (lErr = verifyInput(llInput, plInput, 4, 4))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	int hX = (long)pfInput[1];
-	int m = (int)pfInput[2];
-	int hY = (long)pfInput[3];
+	int n = (int)plInput[0];
+	int hX = (long)plInput[1];
+	int m = (int)plInput[2];
+	int hY = (long)plInput[3];
 
 	return m_math.calc_dft(n, hX, m, hY);
 }
 
-template long Device<double>::cuda_calc_dft(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_calc_dft(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_calc_dft(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_calc_dft(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 
 template <class T>
-long Device<T>::cuda_hamming_diff(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_hamming_diff(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 5, 8))
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 5, 8))
 		return lErr;
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	T fThreshold = pfInput[1];
-	long hA = (long)pfInput[2];
-	long hB = (long)pfInput[3];
-	long hY = (long)pfInput[4];
+	int n = (int)plInput[0];
+	T fThreshold = pfInput[0];
+	long hA = (long)plInput[2];
+	long hB = (long)plInput[3];
+	long hY = (long)plInput[4];
 	int nOffA = 0;
 	int nOffB = 0;
 	int nOffY = 0;
 
-	if (lInput > 5)
-		nOffA = (int)pfInput[5];
+	if (llInput > 5)
+		nOffA = (int)plInput[5];
 
-	if (lInput > 6)
-		nOffB = (int)pfInput[6];
+	if (llInput > 6)
+		nOffB = (int)plInput[6];
 
-	if (lInput > 7)
-		nOffY = (int)pfInput[7];
+	if (llInput > 7)
+		nOffY = (int)plInput[7];
 
 	return m_math.hamming_diff(n, fThreshold, hA, hB, hY, nOffA, nOffB, nOffY);
 }
 
-template long Device<double>::cuda_hamming_diff(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_hamming_diff(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_hamming_diff(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_hamming_diff(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
-long Device<T>::cuda_calc_batch_dist(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+long Device<T>::cuda_calc_batch_dist(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 9, SHRT_MAX))
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 9, SHRT_MAX))
 		return lErr;
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
 		return lErr;
 
-	int nDistMethod = (int)pfInput[0];
-	T fThreshold = pfInput[1];
-	int nItemDim = (int)pfInput[2];
-	long hSrc = (long)pfInput[3];
-	long hTargets = (long)pfInput[4];
-	long hWork = (long)pfInput[5];
-	int nDim0 = (int)pfInput[6];
-	int nDim1 = (int)pfInput[7];
+	int nDistMethod = (int)plInput[0];
+	T fThreshold = pfInput[0];
+	int nItemDim = (int)plInput[2];
+	long hSrc = (long)plInput[3];
+	long hTargets = (long)plInput[4];
+	long hWork = (long)plInput[5];
+	int nDim0 = (int)plInput[6];
+	int nDim1 = (int)plInput[7];
 
 	if (nDim1 != 2)
 		return ERROR_PARAM_OUT_OF_RANGE;
@@ -4367,7 +4464,7 @@ long Device<T>::cuda_calc_batch_dist(long lInput, T* pfInput, long* plOutput, T*
 	if (lErr = m_memory.AllocHost(nDim0, &pfOutput, NULL, false, false, false))
 		return lErr;
 
-	lErr = m_math.calc_batch_dist(nDistMethod, fThreshold, nItemDim, hSrc, hTargets, hWork, nDim0, nDim1, &pfInput[8], pfOutput);
+	lErr = m_math.calc_batch_dist(nDistMethod, fThreshold, nItemDim, hSrc, hTargets, hWork, nDim0, nDim1, &plInput[8], pfOutput);
 
 	if (!lErr)
 	{
@@ -4382,7 +4479,7 @@ long Device<T>::cuda_calc_batch_dist(long lInput, T* pfInput, long* plOutput, T*
 	return lErr;
 }
 
-template long Device<double>::cuda_calc_batch_dist(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
-template long Device<float>::cuda_calc_batch_dist(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+template long Device<double>::cuda_calc_batch_dist(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_calc_batch_dist(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
 
 //end device.cu
