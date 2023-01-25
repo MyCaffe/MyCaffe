@@ -620,6 +620,8 @@ namespace MyCaffe.layers.gpt
                     m_log.WriteLine("Tokenizing data " + i.ToString("N0") + " of " + m_rgstrData.Count.ToString("N0") + " (" + dfPct.ToString("P") + ") ...", true);
                 }
             }
+
+            m_log.WriteLine("'" + strSrcFile + "' vocabulary size = " + m_vocab.Count.ToString("N0"));
         }
 
         /// <summary>
