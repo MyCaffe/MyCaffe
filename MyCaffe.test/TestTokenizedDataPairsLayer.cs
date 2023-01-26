@@ -117,11 +117,30 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestForwardEnFrSentencePiecePy()
+        {
+            TokenizedDataPairsLayerTest test = new TokenizedDataPairsLayerTest();
+
+            try
+            {
+                foreach (ITokenizedDataPairsLayerTest t in test.Tests)
+                {
+                    t.TestForwardPy();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface ITokenizedDataPairsLayerTest : ITest
     {
         void TestForward(int nBatchSize, int nBlockSize, TokenizedDataPairsParameter.VOCABULARY_TYPE vocabType);
+        void TestForwardPy();
     }
 
     class TokenizedDataPairsLayerTest : TestBase
@@ -176,7 +195,7 @@ namespace MyCaffe.test
             return new FillerParameter("gaussian");
         }
 
-        private Tuple<string, string, string, string> loadDataFiles1()
+        private Tuple<string, string, string, string, string> loadDataFiles1()
         {
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\encdec";
             string strFileName = "en_fr.zip";
@@ -184,24 +203,25 @@ namespace MyCaffe.test
             string strTestData = downloadTestData(strPath, strFileName);
             string strTestDataPath = Path.GetDirectoryName(strTestData);
 
-            if (!File.Exists(strTestDataPath + "\\en_fr\\src\\train.txt"))
+            if (!File.Exists(strTestDataPath + "\\en_fr\\data\\src\\train.txt"))
                 ZipFile.ExtractToDirectory(strTestData, strPath);
             
-            string strSrcText = strPath + "\\en_fr\\src\\train.txt";
-            string strTrgText = strPath + "\\en_fr\\trg\\train.txt";
-            string strSrcVocabFile = strPath + "\\en_fr\\sp\\src_sp.vocab";
-            string strTrgVocabFile = strPath + "\\en_fr\\sp\\trg_sp.vocab";
+            string strSrcText = strPath + "\\en_fr\\data\\src\\train.txt";
+            string strTrgText = strPath + "\\en_fr\\data\\trg\\train.txt";
+            string strSrcVocabFile = strPath + "\\en_fr\\data\\sp\\src_sp.vocab";
+            string strTrgVocabFile = strPath + "\\en_fr\\data\\sp\\trg_sp.vocab";
 
-            return new Tuple<string, string, string, string>(strSrcText, strTrgText, strSrcVocabFile, strTrgVocabFile);
+            return new Tuple<string, string, string, string, string>(strSrcText, strTrgText, strSrcVocabFile, strTrgVocabFile, strPath);
         }
 
         public void TestForward(int nBatchSize, int nBlockSize, TokenizedDataPairsParameter.VOCABULARY_TYPE vocabType)
         {
-            Tuple<string, string, string, string> dataFiles = loadDataFiles1();
+            Tuple<string, string, string, string, string> dataFiles = loadDataFiles1();
             string strSrcFile = dataFiles.Item1;
             string strTrgFile = dataFiles.Item2;
             string strSrcVocabFile = dataFiles.Item3;
             string strTrgVocabFile = dataFiles.Item4;
+            string strDataPath = dataFiles.Item5;
             
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TOKENIZED_DATA_PAIRS);
             p.tokenized_data_pairs_param.batch_size = (uint)nBatchSize;
@@ -351,6 +371,74 @@ namespace MyCaffe.test
             str += ch;
 
             return str;
+        }
+
+        private string getUserName()
+        {
+            string strUserName = System.Security.Principal.WindowsIdentity.GetCurrent().Name;
+            int nPos = strUserName.LastIndexOf('\\');
+            if (nPos >= 0)
+                strUserName = strUserName.Substring(nPos + 1);
+
+            return strUserName;
+        }
+
+        public void TestForwardPy()
+        {
+            Tuple<string, string, string, string, string> dataFiles = loadDataFiles1();
+            string strSrcFile = dataFiles.Item1;
+            string strTrgFile = dataFiles.Item2;
+            string strSrcVocabFile = dataFiles.Item3;
+            string strTrgVocabFile = dataFiles.Item4;
+            string strDataPath = dataFiles.Item5;
+
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.TOKENIZED_DATA_PAIRS_PY);
+            p.tokenized_data_pairs_param.batch_size = (uint)40;
+            p.tokenized_data_pairs_param.block_size = (uint)200;
+            p.tokenized_data_pairs_param.input_type = TokenizedDataParameter.INPUT_TYPE.TEXT_FILE;
+            p.tokenized_data_pairs_param.vocabulary_type = TokenizedDataParameter.VOCABULARY_TYPE.SENTENCEPIECE;
+            p.tokenized_data_pairs_param.source_vocab_file = strDataPath;
+            p.tokenized_data_pairs_param.source = strDataPath;
+            p.tokenized_data_pairs_param.target_vocab_file = strDataPath;
+            p.tokenized_data_pairs_param.target = strDataPath;
+            p.tokenized_data_pairs_param.seed = 1701;
+            string strUserName = getUserName();
+            p.tokenized_data_pairs_param.python_param.python_path = "C:\\Users\\" + strUserName + "\\AppData\\Local\\Programs\\Python\\Python39\\python39.dll";
+
+            if (!File.Exists(p.tokenized_data_pairs_param.python_param.python_path))
+                m_log.FAIL("Could not find Python 3.9 at '" + p.tokenized_data_pairs_param.python_param.python_path + "'!");
+
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
+
+            Blob<T> blobEnc = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobDec = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobTrg = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobEmsk = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobDmsk = new Blob<T>(m_cuda, m_log);
+
+            try
+            {
+                TopVec.Clear();
+                TopVec.Add(blobEnc);
+                TopVec.Add(blobDec);
+                TopVec.Add(blobTrg);
+                TopVec.Add(blobEmsk);
+                TopVec.Add(blobDmsk);
+                BottomVec.Clear();
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+            }
+            finally
+            {
+                dispose(ref blobEnc);
+                dispose(ref blobDec);
+                dispose(ref blobTrg);
+                dispose(ref blobEmsk);
+                dispose(ref blobDmsk);
+
+                layer.Dispose();
+            }
         }
     }
 }
