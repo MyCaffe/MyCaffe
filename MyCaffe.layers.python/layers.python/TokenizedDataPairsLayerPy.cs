@@ -137,6 +137,7 @@ namespace MyCaffe.layers.python.layers.python
             var strConverted = uri.AbsoluteUri;
 
             strSrc = strConverted.Substring(8);
+            strSrc = strSrc.TrimEnd('/');
             strSrc += "/";
 
             string strCache = strSrc + "cache/";
@@ -217,11 +218,24 @@ namespace MyCaffe.layers.python.layers.python
             if (m_rgDataTrg == null || m_rgDataTrg.Length != nCount)
                 m_rgDataTrg = new float[nCount];
 
-            colTop[0].Reshape((int)m_param.tokenized_data_pairs_param.batch_size, (int)m_param.tokenized_data_pairs_param.block_size, 1, 1);
-            colTop[1].Reshape((int)m_param.tokenized_data_pairs_param.batch_size, (int)m_param.tokenized_data_pairs_param.block_size, 1, 1);
-            colTop[2].Reshape((int)m_param.tokenized_data_pairs_param.batch_size, (int)m_param.tokenized_data_pairs_param.block_size, 1, 1);
-            colTop[3].Reshape((int)m_param.tokenized_data_pairs_param.batch_size, (int)m_param.tokenized_data_pairs_param.block_size, 1, 1);
-            colTop[4].Reshape((int)m_param.tokenized_data_pairs_param.batch_size, (int)m_param.tokenized_data_pairs_param.block_size, (int)m_param.tokenized_data_pairs_param.block_size, 1);
+            List<int> rgShape = new List<int>()
+            {
+                (int)m_param.tokenized_data_pairs_param.batch_size,
+                (int)m_param.tokenized_data_pairs_param.block_size
+            };
+            
+            colTop[0].Reshape(rgShape); // B,L
+            colTop[1].Reshape(rgShape); // B,L
+            colTop[2].Reshape(rgShape); // B,L
+
+            rgShape.Add(1);
+            rgShape.Add(1);
+            
+            colTop[3].Reshape(rgShape); // B,L,1
+
+            rgShape[2] = rgShape[1];
+            
+            colTop[4].Reshape(rgShape); // B,L,L
 
             int nBlockSize = (int)m_param.tokenized_data_pairs_param.block_size;
 
