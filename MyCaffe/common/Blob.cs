@@ -3043,11 +3043,12 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="strFile">Specifies the .npy file name.</param>
         /// <param name="bLoadDiff">Specifies to load the diff, when false, the data is loaded.</param>
+        /// <param name="bLoadDataOnly">Specifies to load the data and return it as an array but do not load the gpu memory.</param>
         /// <exception cref="Exception">An exception is thrown when an invalid or unsupported feature is located.</exception>
         /// <remarks>
         /// @see[A Simple File Format for NumPy Arrays](https://numpy.org/doc/1.13/neps/npy-format.html)
         /// </remarks>
-        public void LoadFromNumpy(string strFile, bool bLoadDiff = false)
+        public Tuple<float[], int[]> LoadFromNumpy(string strFile, bool bLoadDiff = false, bool bLoadDataOnly = false)
         {
             using (FileStream fs = File.OpenRead(strFile))
             using (BinaryReader br = new BinaryReader(fs))
@@ -3086,8 +3087,6 @@ namespace MyCaffe.common
                 if (bFortranOrder)
                     throw new Exception("Currently the fortran ordering is not supported");
 
-                Reshape(rgShape);
-
                 float[] rgData = new float[nCount];
                 for (int i = 0; i < rgData.Length; i++)
                 {
@@ -3105,10 +3104,17 @@ namespace MyCaffe.common
                         throw new Exception("Unsupported data type!");
                 }
 
-                if (bLoadDiff)
-                    mutable_cpu_diff = Utility.ConvertVec<T>(rgData);
-                else
-                    mutable_cpu_data = Utility.ConvertVec<T>(rgData);
+                if (!bLoadDataOnly)
+                {
+                    Reshape(rgShape);
+
+                    if (bLoadDiff)
+                        mutable_cpu_diff = Utility.ConvertVec<T>(rgData);
+                    else
+                        mutable_cpu_data = Utility.ConvertVec<T>(rgData);
+                }
+
+                return new Tuple<float[], int[]>(rgData, rgShape);
             }            
         }
 
