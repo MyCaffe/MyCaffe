@@ -1326,13 +1326,13 @@ namespace MyCaffe.basecode
                         strType == "data" ||
                         strType == "annotated_data" ||
                         strType == "tokenizeddata" ||
-                        strType == "tokenizeddatapairs"))
+                        strType.StartsWith("tokenizeddatapairs")))
                     {
                         RawProtoCollection tops = layer.FindChildren("top");
                         if (tops != null && tops.Count > 0)
                         {
                             if (strType == "tokenizeddata" ||
-                                strType == "tokenizeddatapairs")
+                                strType.StartsWith("tokenizeddatapairs"))
                                 strName = "data";
                             else
                                 strName = tops[0].Value;
@@ -1425,14 +1425,14 @@ namespace MyCaffe.basecode
                             }
                         }
                     }
-                    else if (strType == "tokenizeddata" || strType == "tokenizeddatapairs")
+                    else if (strType == "tokenizeddata" || strType.StartsWith("tokenizeddatapairs"))
                     {
                         if (rgInputs.Count > 0)
                         {
                             RawProtoCollection colTop = layer.FindChildren("top");
                             if (colTop.Count > 0)
                             {
-                                if (strType == "tokenizeddatapairs")
+                                if (strType.StartsWith("tokenizeddatapairs"))
                                 {
                                     rgInputs[0] = new Tuple<string, int, int, int, int>("encin", rgInputs[0].Item2, rgInputs[0].Item3, rgInputs[0].Item4, rgInputs[0].Item5);
                                     rgInputs.Add(new Tuple<string, int, int, int, int>("decin", rgInputs[0].Item2, rgInputs[0].Item3, rgInputs[0].Item4, rgInputs[0].Item5));
@@ -1542,12 +1542,12 @@ namespace MyCaffe.basecode
 
                     bool bInclude = includeLayer(layer, stage, out psInclude, out psExclude);
 
-                    if (strType == "data" || strType == "annotateddata" || strType == "batchdata" || strType == "tokenizeddata" || strType == "tokenizeddatapairs")
+                    if (strType == "data" || strType == "annotateddata" || strType == "batchdata" || strType == "tokenizeddata" || strType.StartsWith("tokenizeddatapairs"))
                     {
                         if (psInclude.Find(Phase.TEST, stage) != null)
                             protoTransform = layer.FindChild("transform_param");
 
-                        if (strType == "tokenizeddata" || strType == "tokenizeddatapairs")
+                        if (strType == "tokenizeddata" || strType.StartsWith("tokenizeddatapairs"))
                         {
                             bSkipTransformParam = true;
 
@@ -1645,7 +1645,7 @@ namespace MyCaffe.basecode
                     {
                         rgRemove.Add(layer);
                     }
-                    else if (strType == "tokenizeddata" || strType == "tokenizeddatapairs")
+                    else if (strType == "tokenizeddata" || strType.StartsWith("tokenizeddatapairs"))
                     {
                         if (psInclude.Count > 0 && psInclude[0].Phase == Phase.TRAIN)
                         {
