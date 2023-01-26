@@ -221,11 +221,18 @@ namespace MyCaffe.layers
             {
                 long lPos;
                 if (m_nIgnoreLabel.HasValue && m_nIgnoreLabel.Value != 0)
+                {
                     lPos = argmax(rgBottomData, i * nNumLabels, nNumLabels, m_nIgnoreLabel.Value);
+                }
                 else if (m_nIgnoreLabel.HasValue)
+                {
                     m_cuda.max(nNumLabels - 1, colBottom[0].gpu_data, out lPos, (i * nNumLabels) + 1);
+                    lPos++;
+                }
                 else
+                {
                     m_cuda.max(nNumLabels, colBottom[0].gpu_data, out lPos, i * nNumLabels);
+                }
 
                 int nTargetLabel = (int)rgBottomLabel[i];
 
