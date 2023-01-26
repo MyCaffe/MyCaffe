@@ -4085,6 +4085,7 @@ namespace MyCaffe.param
                     return LayerType.TOKENIZED_DATA_PAIRS;
 
                 case "tokenizeddatapairs_py":
+                case "tokenizeddatapairspy":
                     return LayerType.TOKENIZED_DATA_PAIRS_PY;
 
                 case "triplet_loss":
