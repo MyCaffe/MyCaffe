@@ -59,9 +59,11 @@ namespace MyCaffe.layers.python.layers.python
         public TokenizedDataPairsLayerPy(CudaDnn<T> cuda, Log log, LayerParameter p, IXImageDatabaseBase db, CancelEvent evtCancel)
             : base(cuda, log, p)
         {
+            string strPythonPath = getPythonPath(m_param.tokenized_data_pairs_param.python_param.python_path);
+
             m_type = LayerParameter.LayerType.TOKENIZED_DATA_PAIRS_PY;
             // Load the python runtime interop.
-            m_py = new PythonInterop(m_param.tokenized_data_pairs_param.python_param.python_path);
+            m_py = new PythonInterop(strPythonPath);
 
             if (m_param.tokenized_data_pairs_param.seed.HasValue)
                 m_random = new Random(m_param.tokenized_data_pairs_param.seed.Value);
@@ -79,6 +81,30 @@ namespace MyCaffe.layers.python.layers.python
             dispose(ref m_blobTriangle);
             m_py.Dispose();
             base.dispose();
+        }
+
+        private string getUserName()
+        {
+            string strUserName = System.Security.Principal.WindowsIdentity.GetCurrent().Name;
+            int nPos = strUserName.LastIndexOf('\\');
+            if (nPos >= 0)
+                strUserName = strUserName.Substring(nPos + 1);
+
+            return strUserName;
+        }
+
+        private string getPythonPath(string strPath)
+        {
+            if (string.IsNullOrEmpty(strPath) || strPath == "$Default$")
+            {
+                string strUserName = getUserName();
+                strPath = "C:\\Users\\" + strUserName + "\\AppData\\Local\\Programs\\Python\\Python39\\python39.dll";
+            }
+
+            if (!File.Exists(strPath))
+                m_log.FAIL("Could not find Python 3.9 at '" + strPath + "'!");
+
+            return strPath;
         }
 
         /// <summary>
@@ -121,7 +147,7 @@ namespace MyCaffe.layers.python.layers.python
 
             if (!File.Exists(strEncFile) || !File.Exists(strDecFile) || !File.Exists(strTrgFile))
             {
-                m_log.WriteLine("WARNING: Generating the encoder, decoder and target files - this will take several minuts.");
+                m_log.WriteLine("WARNING: Generating the encoder, decoder and target files - this will take several minuts.", true);
 
                 KeyValuePair<string, object>[] rgArg = new KeyValuePair<string, object>[]
                 {
@@ -145,16 +171,21 @@ namespace MyCaffe.layers.python.layers.python
             
             Blob<T> blob = new Blob<T>(m_cuda, m_log);
 
+            m_log.WriteLine("Loading the cached encoder input file '" + strEncFile + "'", true);
             Tuple < float[], int[]> enc = blob.LoadFromNumpy(strEncFile, false, true);
             m_rgEnc = enc.Item1;
+            m_log.WriteLine("Loading the cached decoder input file '" + strDecFile + "'", true);
             Tuple<float[], int[]> dec = blob.LoadFromNumpy(strDecFile, false, true);
             m_rgDec = dec.Item1;
+            m_log.WriteLine("Loading the cached decoder target file '" + strTrgFile + "'", true);
             Tuple<float[], int[]> trg = blob.LoadFromNumpy(strTrgFile, false, true);
             m_rgTrg = trg.Item1;
 
+            m_log.WriteLine("All cached files loaded.", true);
+
             m_lNum = enc.Item2[0];
             m_lChannels = enc.Item2[1];
-
+            
             m_nEpoch = 0;
             loadIdx((int)m_lNum);
         }
@@ -228,12 +259,12 @@ namespace MyCaffe.layers.python.layers.python
             {
                 int nIdx = m_random.Next((int)m_rgIdx.Count);
                 int nDataIdx = m_rgIdx[nIdx];
-
+                
                 m_rgIdx.Remove(nIdx);
                 if (m_rgIdx.Count == 0)
                 {
                     m_nEpoch++;
-                    m_log.WriteLine("EPOCH " + m_nEpoch.ToString());
+                    m_log.WriteLine("EPOCH " + m_nEpoch.ToString(), true);
                     loadIdx((int)m_lNum);
                 }
 
