@@ -117,7 +117,7 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
-
+        
         [TestMethod]
         public void TestForwardEnFrSentencePiecePy()
         {
@@ -127,7 +127,25 @@ namespace MyCaffe.test
             {
                 foreach (ITokenizedDataPairsLayerTest t in test.Tests)
                 {
-                    t.TestForwardPy();
+                    t.TestForwardPy(false);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardEnFrSentencePiecePyDefaultLoc()
+        {
+            TokenizedDataPairsLayerTest test = new TokenizedDataPairsLayerTest();
+
+            try
+            {
+                foreach (ITokenizedDataPairsLayerTest t in test.Tests)
+                {
+                    t.TestForwardPy(true);
                 }
             }
             finally
@@ -140,7 +158,7 @@ namespace MyCaffe.test
     interface ITokenizedDataPairsLayerTest : ITest
     {
         void TestForward(int nBatchSize, int nBlockSize, TokenizedDataPairsParameter.VOCABULARY_TYPE vocabType);
-        void TestForwardPy();
+        void TestForwardPy(bool bUseDefaultPythonLocation);
     }
 
     class TokenizedDataPairsLayerTest : TestBase
@@ -383,7 +401,7 @@ namespace MyCaffe.test
             return strUserName;
         }
 
-        public void TestForwardPy()
+        public void TestForwardPy(bool bUseDefaultLocation)
         {
             Tuple<string, string, string, string, string> dataFiles = loadDataFiles1();
             string strSrcFile = dataFiles.Item1;
@@ -402,11 +420,19 @@ namespace MyCaffe.test
             p.tokenized_data_pairs_param.target_vocab_file = strDataPath;
             p.tokenized_data_pairs_param.target = strDataPath;
             p.tokenized_data_pairs_param.seed = 1701;
-            string strUserName = getUserName();
-            p.tokenized_data_pairs_param.python_param.python_path = "C:\\Users\\" + strUserName + "\\AppData\\Local\\Programs\\Python\\Python39\\python39.dll";
 
-            if (!File.Exists(p.tokenized_data_pairs_param.python_param.python_path))
-                m_log.FAIL("Could not find Python 3.9 at '" + p.tokenized_data_pairs_param.python_param.python_path + "'!");
+            if (bUseDefaultLocation)
+            {
+                p.tokenized_data_pairs_param.python_param.python_path = "$Default$";
+            }
+            else
+            {
+                string strUserName = getUserName();
+                p.tokenized_data_pairs_param.python_param.python_path = "C:\\Users\\" + strUserName + "\\AppData\\Local\\Programs\\Python\\Python39\\python39.dll";
+
+                if (!File.Exists(p.tokenized_data_pairs_param.python_param.python_path))
+                    m_log.FAIL("Could not find Python 3.9 at '" + p.tokenized_data_pairs_param.python_param.python_path + "'!");
+            }
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
 
