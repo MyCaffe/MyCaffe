@@ -68,6 +68,8 @@ namespace MyCaffe.solvers
         /// Specifies the smoothed loss protected for derived classes to use.
         /// </summary>
         protected double m_dfSmoothedLoss = 0;
+        protected double? m_dfIterAccuracy = null;
+        Blob<T> m_blobAccuracy = null;
         CancelEvent m_evtCancel;
         AutoResetEvent m_evtForceSnapshot;
         AutoResetEvent m_evtForceTest;
@@ -510,6 +512,8 @@ namespace MyCaffe.solvers
                 net_param.solver_rank = m_nSolverRank;
                 m_net = new Net<T>(m_cuda, m_log, net_param, m_evtCancel, m_db, Phase.NONE, m_evtCompleted, shareNet, net_OnGetWorkspace, net_OnSetWorkspace);
                 m_net.OnGetIteration += net_OnGetIteration;
+
+                m_blobAccuracy = m_net.FindBlob("accuracy");
             }
             catch(Exception excpt)
             {
@@ -853,6 +857,7 @@ namespace MyCaffe.solvers
                     // accumulate the loss and gradient
                     double dfLoss = 0;
                     double dfLossTotal = 0;
+                    double? dfAccuracyTotal = null;
                     int nIterCount = 0;
 
                     Stopwatch swTiming = new Stopwatch();
@@ -863,6 +868,7 @@ namespace MyCaffe.solvers
                     for (int i = 0; i < m_param.iter_size; i++)
                     {
                         double dfLocalLoss;
+                        double? dfLocalAccuracy = null;
 
                         swTiming.Restart();
 
@@ -876,6 +882,9 @@ namespace MyCaffe.solvers
                         else
                         {
                             bFwdPassNanFree = m_net.ForwardBackward(colBottom, out dfLocalLoss, step);
+
+                            if (m_blobAccuracy != null)
+                                dfLocalAccuracy = Utility.ConvertVal<T>(m_blobAccuracy.GetData(0));                                
                         }
 
                         if (double.IsNaN(dfLocalLoss) || double.IsInfinity(dfLocalLoss))
@@ -885,6 +894,14 @@ namespace MyCaffe.solvers
                                 m_log.WriteError(new Exception("The local loss at iteration " + m_nIter.ToString() + " is invalid (NAN or INFINITY)!"));
                                 m_bFirstNanError = false;
                             }
+                        }
+                        
+                        if (dfLocalAccuracy.HasValue)
+                        {
+                            if (!dfAccuracyTotal.HasValue)
+                                dfAccuracyTotal = 0;
+
+                            dfAccuracyTotal = dfAccuracyTotal + dfLocalAccuracy.Value;
                         }
 
                         dfLossTotal += dfLocalLoss;
@@ -900,6 +917,9 @@ namespace MyCaffe.solvers
 
                     dfLoss = dfLossTotal / nIterCount;
                     dfLoss = dfLossOverride.GetValueOrDefault(dfLoss);
+
+                    if (dfAccuracyTotal.HasValue)
+                        m_dfIterAccuracy = dfAccuracyTotal.Value / nIterCount;
 
                     // average the loss across iterations for smoothed reporting
                     UpdateSmoothedLoss(dfLoss, start_iter);

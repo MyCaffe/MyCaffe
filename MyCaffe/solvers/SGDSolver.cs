@@ -197,7 +197,13 @@ namespace MyCaffe.solvers
                 dfRate = LearningRateOverride;
 
             if (m_param.display > 0 && (m_nIter % m_param.display) == 0)
-                m_log.WriteLine("Iteration " + m_nIter.ToString() + ", lr = " + dfRate.ToString() + ", Loss = " + m_dfSmoothedLoss.ToString());
+            {
+                string strOut = "Iteration " + m_nIter.ToString() + ", lr = " + dfRate.ToString() + ", Loss = " + m_dfSmoothedLoss.ToString();
+                if (m_dfIterAccuracy.HasValue)
+                    strOut += " Iter Accuracy = " + m_dfIterAccuracy.Value.ToString("P5");
+                
+                m_log.WriteLine(strOut);
+            }
 
             ClipGradients();
 
