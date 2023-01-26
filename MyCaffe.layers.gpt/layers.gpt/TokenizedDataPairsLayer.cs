@@ -272,12 +272,6 @@ namespace MyCaffe.layers.gpt
                 Tuple<float[], float[]> encData = m_encoderData.GetData((int)m_param.tokenized_data_pairs_param.batch_size, (int)m_param.tokenized_data_pairs_param.block_size, m_decoderData, out rgnIdx);
                 Tuple<float[], float[]> decData = m_decoderData.GetDataAt((int)m_param.tokenized_data_pairs_param.batch_size, (int)m_param.tokenized_data_pairs_param.block_size, rgnIdx);
 
-                float fMin1 = encData.Item1.Min();
-                float fMax1 = encData.Item1.Max();
-
-                float fMin2 = decData.Item1.Min();
-                float fMax2 = decData.Item1.Max();
-
                 colTop[0].mutable_cpu_data = convert(encData.Item1);
                 colTop[1].mutable_cpu_data = convert(decData.Item1);
                 colTop[2].mutable_cpu_data = convert(decData.Item2);
