@@ -16,7 +16,7 @@ namespace MyCaffe.param.python
     /// </remarks>
     public class PythonParameter : LayerParameterBase
     {
-        string m_strPythonPath;
+        string m_strPythonPath = "$Default$";
         
         /** @copydoc LayerParameterBase */
         public PythonParameter()
@@ -27,7 +27,7 @@ namespace MyCaffe.param.python
         /// Specifies the path to the Python runtime.
         /// </summary>
         /// <remarks>
-        /// Python path example: 
+        /// Specifying the default value of '$Default$' will use the default Python runtime path at:
         /// <code>
         /// string strPythonPath = @"C:\Users\" + strUserName + @"\AppData\Local\Programs\Python\Python39\python39.dll"
         /// </code>
