@@ -18,10 +18,21 @@ namespace MyCaffe.param
         uint m_nTopK = 1;
         int m_nAxis = 1;
         List<int> m_rgnIgnoreLabel = new List<int>();
+        bool m_bEnableSimpleAccuracy = false;
 
         /** @copydoc LayerParameterBase */
         public AccuracyParameter()
         {
+        }
+
+        /// <summary>
+        /// Enables a simple accuracy calculation where the argmax is compared with the actual.
+        /// </summary>
+        [Description("Enables a simple argmax based accuracy calculation where the argmax is compared with the actual.")]
+        public bool enable_simple_accuracy
+        {
+            get { return m_bEnableSimpleAccuracy; }
+            set { m_bEnableSimpleAccuracy = value; }
         }
 
         /// <summary>
@@ -94,6 +105,7 @@ namespace MyCaffe.param
             AccuracyParameter p = (AccuracyParameter)src;
             m_nTopK = p.m_nTopK;
             m_nAxis = p.m_nAxis;
+            m_bEnableSimpleAccuracy = p.m_bEnableSimpleAccuracy;
             m_rgnIgnoreLabel = Utility.Clone<int>(p.m_rgnIgnoreLabel);
         }
 
@@ -119,6 +131,9 @@ namespace MyCaffe.param
             
             if (axis != 1)
                 rgChildren.Add("axis", axis.ToString());
+
+            if (enable_simple_accuracy)
+                rgChildren.Add("enable_simple_accuracy", enable_simple_accuracy.ToString());
 
             if (m_rgnIgnoreLabel.Count > 0)
             {
@@ -146,6 +161,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("axis")) != null)
                 p.axis = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("enable_simple_accuracy")) != null)
+                p.enable_simple_accuracy = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("ignore_label")) != null)
             {

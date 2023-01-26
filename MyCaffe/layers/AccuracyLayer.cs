@@ -26,6 +26,7 @@ namespace MyCaffe.layers
         int? m_nIgnoreLabel = null;
         Blob<T> m_blobNumsBuffer;
         bool m_bDirectLabels = false;
+        bool m_bEnableSimpleAccuracy = false;
 
         /// <summary>
         /// Constructor.
@@ -42,7 +43,7 @@ namespace MyCaffe.layers
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.ACCURACY;
-            m_blobNumsBuffer = new Blob<T>(cuda, log);
+            m_blobNumsBuffer = new Blob<T>(cuda, log, false);
         }
 
         /** @copydoc Layer::dispose */
@@ -83,6 +84,7 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            m_bEnableSimpleAccuracy = m_param.accuracy_param.enable_simple_accuracy;
             m_nTopK = (int)m_param.accuracy_param.top_k;
             m_nIgnoreLabel = null;
             if (m_param.accuracy_param.ignore_labels.Count > 0)
@@ -163,10 +165,98 @@ namespace MyCaffe.layers
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             // Currently using cpu version for gpu version fails in the auto tests.
+            if (m_bEnableSimpleAccuracy)
+                forward_simple(colBottom, colTop);
             if (m_bDirectLabels)
                 forward_cpu_direct(colBottom, colTop);
             else
                 forward_cpu(colBottom, colTop);
+        }
+
+        /// <summary>
+        /// The simple accuracy calculates the total accuracy across all predictions using an argmax comparison
+        /// with the target label.
+        /// </summary>
+        /// <param name="colBottom">Specifies the bottom input data (length 2).
+        ///  -# @f$ (N \times C \times H \times W) @f$
+        ///     the predictions @f$ x @f$, a blob with values in
+        ///     @f$ [-\infty, +\infty] @f$ indicating the predicted score of each of
+        ///     the @f$ K = CHW @f$ classes.  Each @f$ x_n @f$ is mapped to a predicted 
+        ///     label @f$ \hat{l}_n @f$ given by its maximal index:
+        ///     @f$ \hat{l}_n = \arg\max\limits_k x_{nk} @f$
+        ///  -# @f$ (N \times 1 \times 1 \times 1) @f$
+        ///     the labels l, an integer-valued blob with values
+        ///     @f$ l_n \in [0, 1, 2, ..., K-1] @f$
+        ///     indicating the correct class label among the @f$ K @f$ classes.
+        /// </param>
+        /// <param name="colTop">Specifies the top output data where the accuracy is placed (length 1).
+        ///  -# @f$ (1 \times 1 \times 1 \times 1) @f$
+        ///     the computed accuracy: @f$
+        ///       \frac{1}{N} \sum\limits_{n=1}^N \delta\{ \hat{l}_n = l_n \}
+        ///     @f$
+        ///     where @f$ 
+        ///       \delta\{\mathrm{condition}\} = \left\{
+        ///         \begin{array}{lr}
+        ///           1 \: \mbox{if condition} \\
+        ///           0 \: \mbox{otherwise}
+        ///         \end{array} \right.
+        ///     @f$
+        /// </param>
+        protected void forward_simple(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            int nLabelDim = colBottom[1].count();
+            m_log.CHECK_EQ(nLabelDim, m_nOuterNum, "The number of labels must match the number of predictions.");
+            int nNumLabels = colBottom[0].shape(m_nLabelAxis);
+            
+            float[] rgBottomLabel = convertF(colBottom[1].mutable_cpu_data);
+            float[] rgBottomData = null;
+
+            if (m_nIgnoreLabel.HasValue)
+                rgBottomData = convertF(colBottom[0].mutable_cpu_data);
+
+            int nTotalCount = 0;
+            int nCorrectCount = 0;
+            
+            for (int i = 0; i < m_nOuterNum; i++)
+            {
+                long lPos;
+                if (m_nIgnoreLabel.HasValue)
+                    lPos = argmax(rgBottomData, i * nNumLabels, nNumLabels, m_nIgnoreLabel.Value);
+                else
+                    m_cuda.max(nNumLabels, colBottom[0].gpu_data, out lPos, i * nNumLabels);
+
+                int nTargetLabel = (int)rgBottomLabel[i];
+
+                if ((int)lPos == nTargetLabel)
+                    nCorrectCount++;
+                
+                nTotalCount++;
+            }
+
+            double dfAccuracy = (double)nCorrectCount / nTotalCount;
+            m_log.WriteLine("Accuracy = " + dfAccuracy.ToString("N5"), true);
+            colTop[0].SetData(dfAccuracy, 0);
+        }
+
+        private long argmax(float[] rgData, int nStart, int nCount, int nIgnorLabel)
+        {
+            float fMax = -float.MaxValue;
+            int nMaxIdx = 0;
+
+            for (int i = 0; i < nCount; i++)
+            {
+                if (i == nIgnorLabel)
+                    continue;
+
+                float fVal = rgData[nStart + i];
+                if (fVal > fMax)
+                {
+                    fMax = fVal;
+                    nMaxIdx = i;
+                }
+            }
+
+            return nMaxIdx;
         }
 
         /// <summary>
