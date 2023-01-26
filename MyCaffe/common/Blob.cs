@@ -3044,11 +3044,14 @@ namespace MyCaffe.common
         /// <param name="strFile">Specifies the .npy file name.</param>
         /// <param name="bLoadDiff">Specifies to load the diff, when false, the data is loaded.</param>
         /// <param name="bLoadDataOnly">Specifies to load the data and return it as an array but do not load the gpu memory.</param>
+        /// <param name="log">Optionally, specifies the output log.</param>
+        /// <param name="nMax">Optionally, specifies the maximum number of items to load.</param>
         /// <exception cref="Exception">An exception is thrown when an invalid or unsupported feature is located.</exception>
         /// <remarks>
         /// @see[A Simple File Format for NumPy Arrays](https://numpy.org/doc/1.13/neps/npy-format.html)
         /// </remarks>
-        public Tuple<float[], int[]> LoadFromNumpy(string strFile, bool bLoadDiff = false, bool bLoadDataOnly = false)
+        /// <returns>A tuple containing the float[] data and int[] shape is returned.</returns>
+        public Tuple<float[], int[]> LoadFromNumpy(string strFile, bool bLoadDiff = false, bool bLoadDataOnly = false, Log log = null, int nMax = int.MaxValue)
         {
             using (FileStream fs = File.OpenRead(strFile))
             using (BinaryReader br = new BinaryReader(fs))
@@ -3082,10 +3085,19 @@ namespace MyCaffe.common
                 bool bFortranOrder;
                 int[] rgShape;
                 Type dataType;
-                int nCount = parseHeader(strHeader, out bFortranOrder, out rgShape, out dataType);
+                int nCount = parseHeader(strHeader, out bFortranOrder, out rgShape, out dataType, nMax);
+                if (nCount < 0)
+                    throw new Exception("The file size is too large for a flat array.");
 
                 if (bFortranOrder)
                     throw new Exception("Currently the fortran ordering is not supported");
+
+                Stopwatch sw = null;
+                if (log != null)
+                {
+                    sw = new Stopwatch();
+                    sw.Start();
+                }
 
                 float[] rgData = new float[nCount];
                 for (int i = 0; i < rgData.Length; i++)
@@ -3102,6 +3114,17 @@ namespace MyCaffe.common
                         rgData[i] = (br.ReadBoolean()) ? 1 : 0;
                     else
                         throw new Exception("Unsupported data type!");
+
+                    if (log != null)
+                    {
+                        if (sw.Elapsed.TotalMilliseconds > 1000)
+                        {
+                            double dfPct = (double)i / (double)rgData.Length;
+                            string strOut = "Loading '" + strFile + "' at " + dfPct.ToString("P5") + "...";
+                            log.WriteLine(strOut, true);
+                            sw.Restart();
+                        }
+                    }
                 }
 
                 if (!bLoadDataOnly)
@@ -3118,7 +3141,105 @@ namespace MyCaffe.common
             }            
         }
 
-        private int parseHeader(string str, out bool bFortranOrder, out int[] rgShape, out Type dataType)
+        /// <summary>
+        /// Load a the data from a very large Numpy array .npy file.
+        /// </summary>
+        /// <param name="strFile">Specifies the .npy file name.</param>
+        /// <param name="log">Optionally, specifies the output log.</param>
+        /// <param name="nMax">Optionally, specifies the maximum number of items to load.</param>
+        /// <exception cref="Exception">An exception is thrown when an invalid or unsupported feature is located.</exception>
+        /// <remarks>
+        /// @see[A Simple File Format for NumPy Arrays](https://numpy.org/doc/1.13/neps/npy-format.html)
+        /// </remarks>
+        /// <returns>A tuple containing the float[,] data and int[] shape is returned.</returns>
+        public static Tuple<List<float[]>, int[]> LoadFromNumpyEx(string strFile, Log log = null, int nMax = int.MaxValue)
+        {
+            using (FileStream fs = File.OpenRead(strFile))
+            using (BinaryReader br = new BinaryReader(fs))
+            {
+                byte[] rgMagic = new byte[6];
+                for (int i = 0; i < rgMagic.Length; i++)
+                {
+                    rgMagic[i] = br.ReadByte();
+                }
+
+                if (rgMagic[0] != 0x93 || rgMagic[1] != 0x4E || rgMagic[2] != 0x55 || rgMagic[3] != 0x4D || rgMagic[4] != 0x50 || rgMagic[5] != 0x59)
+                    throw new Exception("The file is not a valid Numpy file!");
+
+                byte bMajor = br.ReadByte();
+                byte bMinor = br.ReadByte();
+
+                if (bMajor != 1 || bMinor != 0)
+                    throw new Exception("The file is not a valid Numpy file!");
+
+                byte bHeaderLen1 = br.ReadByte();
+                byte bHeaderLen2 = br.ReadByte();
+                int nHeaderLen = bHeaderLen2 << 8 | bHeaderLen1;
+
+                byte[] rgHeader = new byte[nHeaderLen];
+                for (int i = 0; i < rgHeader.Length; i++)
+                {
+                    rgHeader[i] = br.ReadByte();
+                }
+                string strHeader = Encoding.ASCII.GetString(rgHeader);
+
+                bool bFortranOrder;
+                int[] rgShape;
+                Type dataType;
+                Tuple<int,int> count = parseHeaderEx(strHeader, out bFortranOrder, out rgShape, out dataType, nMax);
+
+                if (bFortranOrder)
+                    throw new Exception("Currently the fortran ordering is not supported");
+
+                Stopwatch sw = null;
+                if (log != null)
+                {
+                    sw = new Stopwatch();
+                    sw.Start();
+                }
+
+                ulong ulIdx = 0;
+                ulong ulTotal = (ulong)count.Item1 * (ulong)count.Item2;
+                List<float[]> rgData = new List<float[]>(count.Item1);
+                for (int i = 0; i < count.Item1; i++)
+                {
+                    float[] rgItem = new float[count.Item2];
+                    for (int j = 0; j < count.Item2; j++)
+                    {
+                        if (dataType == typeof(float))
+                            rgItem[j] = br.ReadSingle();
+                        else if (dataType == typeof(double))
+                            rgItem[j] = (float)br.ReadDouble();
+                        else if (dataType == typeof(int))
+                            rgItem[j] = (float)br.ReadInt32();
+                        else if (dataType == typeof(long))
+                            rgItem[j] = (float)br.ReadInt64();
+                        else if (dataType == typeof(bool))
+                            rgItem[j] = (br.ReadBoolean()) ? 1 : 0;
+                        else
+                            throw new Exception("Unsupported data type!");
+                        
+                        if (log != null)
+                        {
+                            if (sw.Elapsed.TotalMilliseconds > 1000)
+                            {
+                                double dfPct = (double)ulIdx / (double)ulTotal;
+                                string strOut = "Loading '" + strFile + "' at " + dfPct.ToString("P5") + "...";
+                                log.WriteLine(strOut, true);
+                                sw.Restart();
+                            }
+                        }
+                        ulIdx++;
+                    }
+
+                    rgData.Add(rgItem);
+                }
+
+                return new Tuple<List<float[]>, int[]>(rgData, rgShape);
+            }
+        }
+
+        private int parseHeader(string str, out bool bFortranOrder, out int[] rgShape, out Type dataType, int nMax = int.MaxValue)
         {
             int nCount = 1;
             List<int> rgShape1 = new List<int>();
@@ -3142,11 +3263,17 @@ namespace MyCaffe.common
                 strShape = strShape.Trim(' ', '(', ')');
                 string[] rgShapeStr = strShape.Split(',');
 
-                foreach (string strShape1 in rgShapeStr)
+                for (int i=0; i<rgShapeStr.Length; i++)
                 {
+                    string strShape1 = rgShapeStr[i];
                     if (!string.IsNullOrEmpty(strShape1))
                     {
-                        rgShape1.Add(int.Parse(strShape1));
+                        int nShape = int.Parse(strShape1);
+
+                        if (i == 0 && nShape > nMax)
+                            nShape = nMax;
+
+                        rgShape1.Add(nShape);
                         nCount *= rgShape1[rgShape1.Count - 1];
                     }
                 }
@@ -3189,6 +3316,90 @@ namespace MyCaffe.common
             }
 
             return nCount;
+        }
+
+        private static Tuple<int, int> parseHeaderEx(string str, out bool bFortranOrder, out int[] rgShape, out Type dataType, int nMax = int.MaxValue)
+        {
+            int nNum = 1;
+            int nCount = 1;
+            List<int> rgShape1 = new List<int>();
+            str = str.Trim('{', '}', ' ', '\n', ',');
+
+            dataType = typeof(object);
+
+            string strShape = null;
+            string strTarget = "'shape':";
+            int nPos = str.IndexOf(strTarget);
+            if (nPos > 0)
+            {
+                strShape = str.Substring(nPos + strTarget.Length);
+                str = str.Substring(0, nPos);
+
+                nPos = strShape.IndexOf(')');
+                str += strShape.Substring(nPos + 1);
+                str = str.Trim(',', ' ');
+
+                strShape = strShape.Substring(0, nPos);
+                strShape = strShape.Trim(' ', '(', ')');
+                string[] rgShapeStr = strShape.Split(',');
+
+                for (int i=0; i<rgShapeStr.Count(); i++)
+                {
+                    string strShape1 = rgShapeStr[i];
+                    if (!string.IsNullOrEmpty(strShape1))
+                    {
+                        int nShape = int.Parse(strShape1);
+
+                        if (i == 0 && nShape > nMax)
+                            nShape = nMax;
+                        
+                        rgShape1.Add(nShape);
+
+                        if (i == 0)
+                            nNum = rgShape1[rgShape1.Count - 1];
+                        else
+                            nCount *= rgShape1[rgShape1.Count - 1];
+                    }
+                }
+            }
+
+            rgShape = rgShape1.ToArray();
+            bFortranOrder = false;
+
+            string[] rgstr = str.Split(',');
+            foreach (string str1 in rgstr)
+            {
+                string[] rgstrKeyVal = str1.Split(':');
+                if (rgstrKeyVal.Length != 2)
+                    throw new Exception("Invalid header key value, '" + str1 + "'!");
+
+                string strKey = rgstrKeyVal[0].Trim('\'', ' ');
+                string strVal = rgstrKeyVal[1].Trim('\'', ' ');
+
+                switch (strKey)
+                {
+                    case "descr":
+                        if (strVal == "<f4")
+                            dataType = typeof(float);
+                        else if (strVal == "<f8")
+                            dataType = typeof(double);
+                        else if (strVal == "<i4")
+                            dataType = typeof(int);
+                        else if (strVal == "<i8")
+                            dataType = typeof(long);
+                        else if (strVal == "|b1")
+                            dataType = typeof(bool);
+                        else
+                            throw new Exception("Unsupported data type '" + strVal + "', currenly only support '<f4'");
+                        break;
+
+                    case "fortran_order":
+                        bFortranOrder = bool.Parse(strVal);
+                        break;
+                }
+            }
+
+            return new Tuple<int, int>(nNum, nCount);
         }
 
         /// <summary>
