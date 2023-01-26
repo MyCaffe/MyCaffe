@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -23,7 +24,11 @@ namespace MyCaffe.python
         /// The constructor.
         /// </summary>
         /// <param name="strPythonDllPath">Specifies the path to the Python DLL (e.g. Python39.dll) which is usually located
-        /// at: @f$ @"C:\Users\" + strUserName + @"\AppData\Local\Programs\Python\Python39\python39.dll" @f$</param>
+        /// at: 
+        /// <code>
+        /// @"C:\Users\" + strUserName + @"\AppData\Local\Programs\Python\Python39\python39.dll"
+        /// </code>
+        /// </param>
         /// <remarks>
         /// See https://github.com/MyCaffe/MyCaffe/blob/master/MyCaffe.app/FormGptTest.cs (dowork, line 85) for an example 
         /// that demonstrates how to use the PythonInterop class to run the GPT2 pre-trained model from HuggingFace to generate text.
@@ -126,22 +131,54 @@ namespace MyCaffe.python
         /// <returns>The Python return value is returned.</returns>
         public object RunPythonCodeAndReturn(string pycode, string returnedVariableName, params KeyValuePair<string, object>[] rgArg)
         {
-            object returnedVariable = new object();
+            PyObject returnedVariable = null;
             using (Py.GIL())
             {
                 using (PyModule scope = Py.CreateScope())
                 {
-                    foreach (KeyValuePair<string, object> arg in rgArg)
+                    if (rgArg != null)
                     {
-                        scope.Set(arg.Key, arg.Value.ToPython());
+                        foreach (KeyValuePair<string, object> arg in rgArg)
+                        {
+                            scope.Set(arg.Key, arg.Value.ToPython());
+                        }
                     }
 
                     scope.Exec(pycode);
-                    returnedVariable = scope.Get<object>(returnedVariableName);
+                    returnedVariable = scope.Get<object>(returnedVariableName) as PyObject;
                 }
             }
 
             return returnedVariable;
         }
-    }
+
+        /// <summary>
+        /// Convert the Python object to a CLR dictionary.
+        /// </summary>
+        /// <param name="obj">Specifies the PyObject returned by python.</param>
+        /// <returns>A Dictionary of string,object type is returned.</returns>
+        /// <exception cref="Exception">Exception thrown when 'obj' is not a PyObject type.</exception>
+        public Dictionary<string, object> ConvertToDictionary(object obj)
+        {
+            PyObject pobj = obj as PyObject;
+            if (pobj == null)
+                throw new Exception("Invalid type, expected a PyObject!");
+            
+            var converter = new PyConverter();
+            converter.AddListType<int>();
+            converter.AddListType<long>();
+            converter.AddListType<float>();
+            converter.AddListType<double>();
+            converter.Add(new StringType());
+            converter.Add(new Int64Type());
+            converter.Add(new Int32Type());
+            converter.Add(new FloatType());
+            converter.Add(new DoubleType());
+            
+            converter.AddDictType<string, object>();
+
+            object clrObj = converter.ToClr(pobj);
+            return clrObj as Dictionary<string, object>;
+        }
+    }       
 }
