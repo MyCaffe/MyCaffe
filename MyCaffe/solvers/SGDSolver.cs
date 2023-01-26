@@ -200,7 +200,7 @@ namespace MyCaffe.solvers
             {
                 string strOut = "Iteration " + m_nIter.ToString() + ", lr = " + dfRate.ToString() + ", Loss = " + m_dfSmoothedLoss.ToString();
                 if (m_dfIterAccuracy.HasValue)
-                    strOut += " Iter Accuracy = " + m_dfIterAccuracy.Value.ToString("P5");
+                    strOut += ", Iter Accuracy = " + m_dfIterAccuracy.Value.ToString() + " (" + m_dfIterAccuracy.Value.ToString("P3") + ")";
                 
                 m_log.WriteLine(strOut);
             }
