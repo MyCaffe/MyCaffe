@@ -421,6 +421,11 @@ namespace MyCaffe.test
             p.tokenized_data_pairs_param.target = strDataPath;
             p.tokenized_data_pairs_param.seed = 1701;
 
+            RawProto proto = p.ToProto("root");
+            string strProto = proto.ToString();
+            LayerParameter p2 = LayerParameter.FromProto(proto);
+            m_log.CHECK(p2.tokenized_data_pairs_param.python_param.python_path == p.tokenized_data_pairs_param.python_param.python_path, "The python path should be the same.");
+
             if (bUseDefaultLocation)
             {
                 p.tokenized_data_pairs_param.python_param.python_path = "$Default$";
