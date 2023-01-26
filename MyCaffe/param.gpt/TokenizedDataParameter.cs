@@ -185,7 +185,7 @@ namespace MyCaffe.param.gpt
             RawProtoCollection rgChildren = new RawProtoCollection();
 
             if (m_pythonParam != null)
-                rgChildren.Add("python_param", m_pythonParam.ToProto("python_param"));
+                rgChildren.Add(m_pythonParam.ToProto("python_param"));
 
             rgChildren.Add("input_type", input_type.ToString());
             rgChildren.Add("vocabulary_type", vocabulary_type.ToString());

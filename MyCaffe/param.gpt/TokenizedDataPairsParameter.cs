@@ -128,10 +128,6 @@ namespace MyCaffe.param.gpt
             if ((strVal = rp.FindValue("source_vocab_file")) != null)
                 p.source_vocab_file = strVal;
 
-            RawProto rpPython = rp.FindChild("python_param");
-            if (rpPython != null)
-                p.python_param = PythonParameter.FromProto(rpPython);
-
             return p;
         }
     }
