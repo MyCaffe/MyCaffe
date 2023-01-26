@@ -167,7 +167,7 @@ namespace MyCaffe.layers
             // Currently using cpu version for gpu version fails in the auto tests.
             if (m_bEnableSimpleAccuracy)
                 forward_simple(colBottom, colTop);
-            if (m_bDirectLabels)
+            else if (m_bDirectLabels)
                 forward_cpu_direct(colBottom, colTop);
             else
                 forward_cpu(colBottom, colTop);
@@ -211,7 +211,7 @@ namespace MyCaffe.layers
             float[] rgBottomLabel = convertF(colBottom[1].mutable_cpu_data);
             float[] rgBottomData = null;
 
-            if (m_nIgnoreLabel.HasValue)
+            if (m_nIgnoreLabel.HasValue && m_nIgnoreLabel.Value != 0)
                 rgBottomData = convertF(colBottom[0].mutable_cpu_data);
 
             int nTotalCount = 0;
@@ -220,8 +220,10 @@ namespace MyCaffe.layers
             for (int i = 0; i < m_nOuterNum; i++)
             {
                 long lPos;
-                if (m_nIgnoreLabel.HasValue)
+                if (m_nIgnoreLabel.HasValue && m_nIgnoreLabel.Value != 0)
                     lPos = argmax(rgBottomData, i * nNumLabels, nNumLabels, m_nIgnoreLabel.Value);
+                else if (m_nIgnoreLabel.HasValue)
+                    m_cuda.max(nNumLabels - 1, colBottom[0].gpu_data, out lPos, (i * nNumLabels) + 1);
                 else
                     m_cuda.max(nNumLabels, colBottom[0].gpu_data, out lPos, i * nNumLabels);
 
@@ -234,7 +236,6 @@ namespace MyCaffe.layers
             }
 
             double dfAccuracy = (double)nCorrectCount / nTotalCount;
-            m_log.WriteLine("Accuracy = " + dfAccuracy.ToString("N5"), true);
             colTop[0].SetData(dfAccuracy, 0);
         }
 
