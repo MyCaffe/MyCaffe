@@ -523,6 +523,10 @@ namespace MyCaffe.param
             /// </summary>
             TOKENIZED_DATA_PAIRS,
             /// <summary>
+            /// Initializes a parameter for the PythonTransformerDataPairsLayer.
+            /// </summary>
+            TOKENIZED_DATA_PAIRS_PY,
+            /// <summary>
             /// Initializes a parameter for the TransposeLayer.
             /// </summary>
             TRANSPOSE,
@@ -1580,12 +1584,13 @@ namespace MyCaffe.param
                     break;
 
                 case LayerType.TOKENIZED_DATA_PAIRS:
+                case LayerType.TOKENIZED_DATA_PAIRS_PY:
                     expected_top.Add("enc");
                     expected_top.Add("dec");
                     expected_top.Add("tgt");
                     expected_top.Add("emsk");
                     expected_top.Add("dmsk");
-                    m_rgLayerParameters[lt] = new TokenizedDataPairsParameter();
+                    m_rgLayerParameters[LayerType.TOKENIZED_DATA_PAIRS] = new TokenizedDataPairsParameter();
                     break;
 
                 case LayerType.TRANSPOSE:
@@ -3100,6 +3105,9 @@ namespace MyCaffe.param
                 case LayerType.TOKENIZED_DATA_PAIRS:
                     return "TokenizedDataPairs";
 
+                case LayerType.TOKENIZED_DATA_PAIRS_PY:
+                    return "TokenizedDataPairsPy";
+
                 case LayerType.TRIPLET_LOSS:
                     return "TripletLoss";
 
@@ -4075,6 +4083,9 @@ namespace MyCaffe.param
 
                 case "tokenizeddatapairs":
                     return LayerType.TOKENIZED_DATA_PAIRS;
+
+                case "tokenizeddatapairs_py":
+                    return LayerType.TOKENIZED_DATA_PAIRS_PY;
 
                 case "triplet_loss":
                 case "tripletloss":

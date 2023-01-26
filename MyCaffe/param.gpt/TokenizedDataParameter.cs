@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.ComponentModel;
 using MyCaffe.basecode;
+using MyCaffe.param.python;
 
 namespace MyCaffe.param.gpt
 {
@@ -14,6 +15,11 @@ namespace MyCaffe.param.gpt
     /// </remarks>
     public class TokenizedDataParameter : LayerParameterBase
     {
+        /// <summary>
+        /// Python layer implementations use this parameter for Python specific settings such as the location of the runtime.
+        /// </summary>
+        protected PythonParameter m_pythonParam = new PythonParameter();
+        
         uint m_nBatchSize;
         uint m_nBlockSize;
         INPUT_TYPE m_inputType;
@@ -55,6 +61,15 @@ namespace MyCaffe.param.gpt
         /** @copydoc LayerParameterBase */
         public TokenizedDataParameter()
         {            
+        }
+
+        /// <summary>
+        /// Specifies the PythonParameter used by the python implementation of the TokenizedDataPairsLayer, otherwise this is null.
+        /// </summary>
+        public PythonParameter python_param
+        {
+            get { return m_pythonParam; }
+            set { m_pythonParam = value; }
         }
 
         /// <summary>
@@ -142,13 +157,14 @@ namespace MyCaffe.param.gpt
         {
             TokenizedDataParameter p = (TokenizedDataParameter)src;
 
+            m_pythonParam = p.python_param;
             m_inputType = p.input_type;
             m_strSource = p.source;
             m_nBatchSize = p.batch_size;
             m_nBlockSize = p.block_size;
             m_nSeed = p.seed;
             m_strDbgIdxFile = p.debug_index_file;
-            m_vocabType = p.vocabulary_type;
+            m_vocabType = p.vocabulary_type;            
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -168,6 +184,9 @@ namespace MyCaffe.param.gpt
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
+            if (m_pythonParam != null)
+                rgChildren.Add("python_param", m_pythonParam.ToProto("python_param"));
+
             rgChildren.Add("input_type", input_type.ToString());
             rgChildren.Add("vocabulary_type", vocabulary_type.ToString());
             rgChildren.Add("source", "\"" + source + "\"");
@@ -179,7 +198,7 @@ namespace MyCaffe.param.gpt
 
             if (seed != null)
                 rgChildren.Add("seed", seed.ToString());
-
+            
             return new RawProto(strName, "", rgChildren);
         }
 
@@ -188,10 +207,14 @@ namespace MyCaffe.param.gpt
         /// </summary>
         /// <param name="rp">Specifies the RawProto to parse.</param>
         /// <returns>A new instance of the parameter is returned.</returns>
-        public static TokenizedDataParameter FromProto(RawProto rp)
+        public static new TokenizedDataParameter FromProto(RawProto rp)
         {
             string strVal;
             TokenizedDataParameter p = new TokenizedDataParameter();
+
+            RawProto rpPython = rp.FindChild("python_param");
+            if (rpPython != null)
+                p.python_param = PythonParameter.FromProto(rpPython);
 
             if ((strVal = rp.FindValue("block_size")) != null)
                 p.block_size = uint.Parse(strVal);

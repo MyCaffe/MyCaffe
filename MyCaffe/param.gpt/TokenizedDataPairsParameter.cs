@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.ComponentModel;
 using MyCaffe.basecode;
+using MyCaffe.param.python;
 
 namespace MyCaffe.param.gpt
 {
@@ -23,7 +24,6 @@ namespace MyCaffe.param.gpt
         {
             vocabulary_type = VOCABULARY_TYPE.SENTENCEPIECE;
         }
-
 
         /// <summary>
         /// Specifies the data source based on the INPUT_TYPE used.  Each dataset has both a training and testing data source and target consisting of matching lines.  
@@ -98,7 +98,8 @@ namespace MyCaffe.param.gpt
             RawProto rpBase = base.ToProto("data");
             RawProtoCollection rgChildren = new RawProtoCollection();
 
-            rgChildren.Add(rpBase.Children);
+            if (rpBase != null)
+                rgChildren.Add(rpBase.Children);
             rgChildren.Add("target", "\"" + target + "\"");
             rgChildren.Add("target_vocab_file", "\"" + target_vocab_file + "\"");
             rgChildren.Add("source_vocab_file", "\"" + source_vocab_file + "\"");
@@ -126,6 +127,10 @@ namespace MyCaffe.param.gpt
 
             if ((strVal = rp.FindValue("source_vocab_file")) != null)
                 p.source_vocab_file = strVal;
+
+            RawProto rpPython = rp.FindChild("python_param");
+            if (rpPython != null)
+                p.python_param = PythonParameter.FromProto(rpPython);
 
             return p;
         }
