@@ -68,6 +68,9 @@ namespace MyCaffe.solvers
         /// Specifies the smoothed loss protected for derived classes to use.
         /// </summary>
         protected double m_dfSmoothedLoss = 0;
+        /// <summary>
+        /// Specifies the iteration accuracy calculated when a blob exists with the name 'accuracy'.
+        /// </summary>
         protected double? m_dfIterAccuracy = null;
         Blob<T> m_blobAccuracy = null;
         CancelEvent m_evtCancel;
