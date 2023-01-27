@@ -96,6 +96,28 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Return the count of items given the shape.
+        /// </summary>
+        /// <param name="rgShape">Specifies the shape to count from the start index through the end index.</param>
+        /// <param name="nStartIdx">Specifies the start index (default = 0).</param>
+        /// <param name="nEndIdx">Specifies the end index (default = -1, which uses length of rgShape).</param>
+        /// <returns>The count is returned.</returns>
+        public static int Count(int[] rgShape, int nStartIdx = 0, int nEndIdx = -1)
+        {
+            int nCount = 1;
+            
+            if (nEndIdx == -1)
+                nEndIdx = rgShape.Length;
+
+            for (int i = nStartIdx; i < nEndIdx; i++)
+            {
+                nCount *= rgShape[i];
+            }
+
+            return nCount;
+        }
+
+        /// <summary>
         /// Save a list of items to a binary writer.
         /// </summary>
         /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
