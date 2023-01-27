@@ -1,13 +1,12 @@
 ﻿using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
-using MyCaffe.param.gpt;
-using MyCaffe.python;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -19,13 +18,10 @@ namespace MyCaffe.layers.python.layers.python
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class TokenizedDataPairsLayerPy<T> : Layer<T>
     {
-        PythonInterop m_py;
         Random m_random;
         long m_lNum;
         long m_lChannels;
-        float[] m_rgEnc;
-        float[] m_rgDec;
-        float[] m_rgTrg;
+        List<Tuple<float[], float[], float[]>> m_rgRawData = new List<Tuple<float[], float[], float[]>>();        
         float[] m_rgDataEnc = null;
         float[] m_rgDataDec = null;
         float[] m_rgDataTrg = null;
@@ -59,11 +55,7 @@ namespace MyCaffe.layers.python.layers.python
         public TokenizedDataPairsLayerPy(CudaDnn<T> cuda, Log log, LayerParameter p, IXImageDatabaseBase db, CancelEvent evtCancel)
             : base(cuda, log, p)
         {
-            string strPythonPath = getPythonPath(m_param.tokenized_data_pairs_param.python_param.python_path);
-
             m_type = LayerParameter.LayerType.TOKENIZED_DATA_PAIRS_PY;
-            // Load the python runtime interop.
-            m_py = new PythonInterop(strPythonPath);
 
             if (m_param.tokenized_data_pairs_param.seed.HasValue)
                 m_random = new Random(m_param.tokenized_data_pairs_param.seed.Value);
@@ -79,32 +71,7 @@ namespace MyCaffe.layers.python.layers.python
         protected override void dispose()
         {
             dispose(ref m_blobTriangle);
-            m_py.Dispose();
             base.dispose();
-        }
-
-        private string getUserName()
-        {
-            string strUserName = System.Security.Principal.WindowsIdentity.GetCurrent().Name;
-            int nPos = strUserName.LastIndexOf('\\');
-            if (nPos >= 0)
-                strUserName = strUserName.Substring(nPos + 1);
-
-            return strUserName;
-        }
-
-        private string getPythonPath(string strPath)
-        {
-            if (string.IsNullOrEmpty(strPath) || strPath == "$Default$")
-            {
-                string strUserName = getUserName();
-                strPath = "C:\\Users\\" + strUserName + "\\AppData\\Local\\Programs\\Python\\Python39\\python39.dll";
-            }
-
-            if (!File.Exists(strPath))
-                m_log.FAIL("Could not find Python 3.9 at '" + strPath + "'!");
-
-            return strPath;
         }
 
         /// <summary>
@@ -130,75 +97,136 @@ namespace MyCaffe.layers.python.layers.python
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            string strPyCode = Properties.Resources.tokenizeddatapairs;
+            loadCacheData();
 
-            string strSrc = m_param.tokenized_data_pairs_param.source;
-            var uri = new System.Uri(strSrc);
-            var strConverted = uri.AbsoluteUri;
-
-            strSrc = strConverted.Substring(8);
-            strSrc = strSrc.TrimEnd('/');
-            strSrc += "/";
-
-            string strCache = strSrc + "cache/";
-
-            string strEncFile = strCache + "train_enc.npy";
-            string strDecFile = strCache + "train_dec.npy";
-            string strTrgFile = strCache + "train_trg.npy";
-
-            if (!File.Exists(strEncFile) || !File.Exists(strDecFile) || !File.Exists(strTrgFile))
-            {
-                m_log.WriteLine("WARNING: Generating the encoder, decoder and target files - this will take several minuts.", true);
-
-                KeyValuePair<string, object>[] rgArg = new KeyValuePair<string, object>[]
-                {
-                    new KeyValuePair<string, object>("strDataDir", strSrc),
-                    new KeyValuePair<string, object>("strCacheDir", strCache),
-                    new KeyValuePair<string, object>("nLoadLimit", int.MaxValue),
-                    new KeyValuePair<string, object>("bCacheOnly", true)
-                };
-
-                object obj = m_py.RunPythonCodeAndReturn(strPyCode, "res", rgArg);
-                Dictionary<string, object> rgRes = m_py.ConvertToDictionary(obj);
-
-                m_lNum = (long)rgRes["num"];
-                m_lChannels = (long)rgRes["channels"];
-                int nCount = (int)(m_lNum * m_lChannels);
-
-                strEncFile = (string)rgRes["encfile"];
-                strDecFile = (string)rgRes["decfile"];
-                strTrgFile = (string)rgRes["trgfile"];
-            }
-            
-            Blob<T> blob = new Blob<T>(m_cuda, m_log);
-
-            m_log.WriteLine("Loading the cached encoder input file '" + strEncFile + "'", true);
-            Tuple < float[], int[]> enc = blob.LoadFromNumpy(strEncFile, false, true);
-            m_rgEnc = enc.Item1;
-            m_log.WriteLine("Loading the cached decoder input file '" + strDecFile + "'", true);
-            Tuple<float[], int[]> dec = blob.LoadFromNumpy(strDecFile, false, true);
-            m_rgDec = dec.Item1;
-            m_log.WriteLine("Loading the cached decoder target file '" + strTrgFile + "'", true);
-            Tuple<float[], int[]> trg = blob.LoadFromNumpy(strTrgFile, false, true);
-            m_rgTrg = trg.Item1;
-
-            m_log.WriteLine("All cached files loaded.", true);
-
-            m_lNum = enc.Item2[0];
-            m_lChannels = enc.Item2[1];
-            
             m_nEpoch = 0;
-            loadIdx((int)m_lNum);
+            loadIdx();
         }
 
-        private void loadIdx(int nCount)
+        private int getIndex(string strFileName, out string strType)
+        {
+            string strFile = Path.GetFileName(strFileName);
+
+            int nPos = strFile.IndexOf('_');
+            if (nPos < 0)
+                m_log.FAIL("Invalid file name '" + strFile + "' - expected 'num_type.npy' format!");
+
+            string strNum = strFile.Substring(0, nPos);
+            int nIdx;
+            
+            if (!int.TryParse(strNum, out nIdx))
+                m_log.FAIL("Invalid file name '" + strFile + "' - expected 'num_type.npy' format!");
+
+            strType = strFile.Substring(nPos + 1);
+
+            return nIdx;
+        }
+
+        private void loadIdx()
         {
             m_rgIdx.Clear();
 
-            for (int i = 0; i < nCount; i++)
+            for (int i = 0; i < m_rgRawData.Count; i++)
             {
                 m_rgIdx.Add(i);
             }
+        }
+
+        private void loadCacheData()
+        {
+            Stopwatch sw = new Stopwatch();
+            string strPath = m_param.tokenized_data_pairs_param.source;
+            string[] rgstrFiles = Directory.GetFiles(strPath);
+
+            sw.Start();
+            Blob<T> blob = new Blob<T>(m_cuda, m_log);
+            int nBatch = 0;
+            int nChannels = 0;
+
+            float[] rgEnc = null;
+            float[] rgDec = null;
+            float[] rgTrg = null;
+
+            int nEncIdx = 0;
+            int nDecIdx = 0;
+            int nTrgIdx = 0;
+
+            for (int i = 0; i < rgstrFiles.Length; i++)
+            {
+                string strFile = rgstrFiles[i];
+                Tuple<float[], int[]> data = blob.LoadFromNumpy(strFile, false, true);
+                int nCount = Utility.Count(data.Item2);
+
+                if (nBatch == 0)
+                    nBatch = data.Item2[0];
+                else if (nBatch != data.Item2[0])
+                    continue;
+
+                if (nChannels == 0)
+                    nChannels = data.Item2[1];
+                else if (nChannels != data.Item2[1])
+                    m_log.FAIL("Data size incorrect at index " + i.ToString() + ", file '" + strFile + "'!");
+
+                string strType;
+                int nIdx = getIndex(strFile, out strType);
+
+                if (strType == "enc.npy")
+                {
+                    if (rgEnc != null)
+                        m_log.FAIL("Mismatched files - duplicate enc file found at index " + nIdx.ToString() + ", file '" + strFile + "'!");                    
+                    rgEnc = data.Item1;
+                    nEncIdx = nIdx;
+                }
+                else if (strType == "dec.npy")
+                {
+                    if (rgDec != null)
+                        m_log.FAIL("Mismatched files - duplicate dec file found at index " + nIdx.ToString() + ", file '" + strFile + "'!");
+                    rgDec = data.Item1;
+                    nDecIdx = nIdx;
+                }
+                else if (strType == "trg.npy")
+                {
+                    if (rgTrg != null)
+                        m_log.FAIL("Mismatched files - duplicate trg file found at index " + nIdx.ToString() + ", file '" + strFile + "'!");
+                    rgTrg = data.Item1;
+                    nTrgIdx = nIdx;
+                }
+
+                if (rgEnc != null && rgDec != null && rgTrg != null)
+                {
+                    if (nEncIdx != nDecIdx || nEncIdx != nTrgIdx || nDecIdx != nTrgIdx)
+                        m_log.FAIL("Mismatched files - indexes dont match at index " + nIdx.ToString() + "'!");
+
+                    for (int j = 0; j < nBatch; j++)
+                    {
+                        float[] rgEncData = new float[nChannels];
+                        float[] rgDecData = new float[nChannels];
+                        float[] rgTrgData = new float[nChannels];
+
+                        Array.Copy(rgEnc, j * nChannels, rgEncData, 0, nChannels);
+                        Array.Copy(rgDec, j * nChannels, rgDecData, 0, nChannels);
+                        Array.Copy(rgTrg, j * nChannels, rgTrgData, 0, nChannels);
+
+                        m_rgRawData.Add(new Tuple<float[], float[], float[]>(rgEncData, rgDecData, rgTrgData));
+                    }
+
+                    rgEnc = null;
+                    rgDec = null;
+                    rgTrg = null;
+                }
+
+                if (sw.Elapsed.TotalMilliseconds > 1000)
+                {
+                    double dfPct = (double)i / (double)rgstrFiles.Length;
+                    m_log.WriteLine("Loading raw data at " + dfPct.ToString("P3") + "...", true);
+                    sw.Restart();
+                }
+            }
+
+            m_lNum = nBatch;
+            m_lChannels = nChannels;
+
+            blob.Dispose();
         }
 
         /// <summary>
@@ -210,7 +238,9 @@ namespace MyCaffe.layers.python.layers.python
         {
             m_log.CHECK_EQ(m_lChannels, m_param.tokenized_data_pairs_param.block_size, "The block size must match the data channels!");
 
-            int nCount = (int)(m_param.tokenized_data_pairs_param.batch_size * m_param.tokenized_data_pairs_param.block_size);
+            int nBatch = (int)m_param.tokenized_data_pairs_param.batch_size;
+            int nBlk = (int)m_param.tokenized_data_pairs_param.block_size;
+            int nCount = nBatch * nBlk;
             if (m_rgDataEnc == null || m_rgDataEnc.Length != nCount)
                 m_rgDataEnc = new float[nCount];
             if (m_rgDataDec == null || m_rgDataDec.Length != nCount)
@@ -231,7 +261,7 @@ namespace MyCaffe.layers.python.layers.python
             rgShape.Add(1);
             rgShape.Add(1);
             
-            colTop[3].Reshape(rgShape); // B,L,1
+            colTop[3].Reshape(rgShape); // B,L,1            
 
             rgShape[2] = rgShape[1];
             
@@ -268,6 +298,7 @@ namespace MyCaffe.layers.python.layers.python
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             int nBlk = (int)m_param.tokenized_data_pairs_param.block_size;
+            int nDim = nBlk * nBlk;
 
             for (int i = 0; i < m_param.tokenized_data_pairs_param.batch_size; i++)
             {
@@ -279,12 +310,12 @@ namespace MyCaffe.layers.python.layers.python
                 {
                     m_nEpoch++;
                     m_log.WriteLine("EPOCH " + m_nEpoch.ToString(), true);
-                    loadIdx((int)m_lNum);
+                    loadIdx();
                 }
 
-                Array.Copy(m_rgEnc, nDataIdx * nBlk, m_rgDataEnc, i * nBlk, nBlk);
-                Array.Copy(m_rgDec, nDataIdx * nBlk, m_rgDataDec, i * nBlk, nBlk);
-                Array.Copy(m_rgTrg, nDataIdx * nBlk, m_rgDataTrg, i * nBlk, nBlk);
+                Array.Copy(m_rgRawData[nDataIdx].Item1, 0, m_rgDataEnc, i * nBlk, nBlk);
+                Array.Copy(m_rgRawData[nDataIdx].Item2, 0, m_rgDataDec, i * nBlk, nBlk);
+                Array.Copy(m_rgRawData[nDataIdx].Item3, 0, m_rgDataTrg, i * nBlk, nBlk);
             }
 
             colTop[0].mutable_cpu_data = convert(m_rgDataEnc);
