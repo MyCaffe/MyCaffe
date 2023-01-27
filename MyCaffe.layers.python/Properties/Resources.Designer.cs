@@ -59,41 +59,5 @@ namespace MyCaffe.layers.python.Properties {
                 resourceCulture = value;
             }
         }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to import clr
-        ///
-        ///import System
-        ///from System import Array, Single
-        ///import ctypes
-        ///
-        ///from tqdm import tqdm
-        ///import sentencepiece as spm
-        ///import numpy as np
-        ///
-        ///import sentencepiece as spm
-        ///
-        ///DATA_DIR = f&apos;en_fr/data&apos; 
-        ///SP_DIR = f&apos;{DATA_DIR}/sp&apos;
-        ///SRC_DIR = &apos;src&apos;
-        ///TRG_DIR = &apos;trg&apos;
-        ///SRC_RAW_DATA_NAME = &apos;raw_data.src&apos;
-        ///TRG_RAW_DATA_NAME = &apos;raw_data.trg&apos;
-        ///TRAIN_NAME = &apos;train.txt&apos;
-        ///VALID_NAME = &apos;valid.txt&apos;
-        ///TEST_NAME = &apos;test.txt&apos;
-        ///
-        ///pad_id = 0
-        ///sos_id = 1
-        ///eos_id = 2
-        ///unk_id = 3
-        ///src_model_prefix = &apos;src_sp&apos;
-        ///trg_model_pr [rest of string was truncated]&quot;;.
-        /// </summary>
-        internal static string tokenizeddatapairs {
-            get {
-                return ResourceManager.GetString("tokenizeddatapairs", resourceCulture);
-            }
-        }
     }
 }
