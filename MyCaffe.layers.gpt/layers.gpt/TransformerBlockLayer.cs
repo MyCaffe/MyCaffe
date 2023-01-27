@@ -17,6 +17,7 @@ namespace MyCaffe.layers.gpt
     /// </summary>
     /// <remarks>
     /// @see [GitHub:model:TransformerBlock](https://github.com/karpathy/minGPT/blob/master/mingpt/model.py) by Karpathy, 2022, GitHub:Karpathy
+    /// @see [GitHub:devjwsong:transformer-translator-pytorch](https://github.com/devjwsong/transformer-translator-pytorch/blob/master/src/layers.py) by Song, 2021, GitHub:devjwsong
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class TransformerBlockLayer<T> : Layer<T>

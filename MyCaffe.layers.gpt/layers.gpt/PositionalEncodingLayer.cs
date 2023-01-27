@@ -12,6 +12,9 @@ namespace MyCaffe.layers.gpt
     /// <summary>
     /// The PositionalEncodingLayer is a neuron layer that adds positional encoding to the input.
     /// </summary>
+    /// <remarks>
+    /// @see [GitHub:devjwsong:transformer-translator-pytorch](https://github.com/devjwsong/transformer-translator-pytorch/blob/master/src/layers.py) by Song, 2021, GitHub:devjwsong
+    /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class PositionalEncodingLayer<T> : Layer<T>
     {
