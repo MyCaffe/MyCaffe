@@ -6,7 +6,7 @@ using System.Linq;
 namespace Python.Runtime
 {
     /// <summary>
-    /// use PyClrType to convert between python object and clr object.
+    /// use PyConverter to convert between python object and clr object.
     /// </summary>
     /// <remarks>
     /// Open-source public code originally shared from:
@@ -184,6 +184,10 @@ namespace Python.Runtime
     /// <summary>
     /// The PyClrTypeBase is the base class for other types.
     /// </summary>
+    /// <remarks>
+    /// Open-source public code originally shared from:
+    /// @see [PyConverter](https://github.com/yagweb/pythonnetLab/blob/master/pynetLab/PyConverter.cs) by Wenguang Yang, 2018
+    /// </remarks>
     public abstract class PyClrTypeBase
     {
         /// <summary>
@@ -244,6 +248,10 @@ namespace Python.Runtime
     /// <summary>
     /// The PyClrType class defines a Python clr type.
     /// </summary>
+    /// <remarks>
+    /// Open-source public code originally shared from:
+    /// @see [PyConverter](https://github.com/yagweb/pythonnetLab/blob/master/pynetLab/PyConverter.cs) by Wenguang Yang, 2018
+    /// </remarks>
     public class PyClrType : PyClrTypeBase
     {
         /// <summary>
@@ -295,6 +303,10 @@ namespace Python.Runtime
     /// <summary>
     /// The StringType represents a clr string type.
     /// </summary>
+    /// <remarks>
+    /// Open-source public code originally shared from:
+    /// @see [PyConverter](https://github.com/yagweb/pythonnetLab/blob/master/pynetLab/PyConverter.cs) by Wenguang Yang, 2018
+    /// </remarks>
     public class StringType : PyClrTypeBase
     {
         /// <summary>
@@ -329,6 +341,10 @@ namespace Python.Runtime
     /// <summary>
     /// The BooleanType represents a clr bool type.
     /// </summary>
+    /// <remarks>
+    /// Open-source public code originally shared from:
+    /// @see [PyConverter](https://github.com/yagweb/pythonnetLab/blob/master/pynetLab/PyConverter.cs) by Wenguang Yang, 2018
+    /// </remarks>
     public class BooleanType : PyClrTypeBase
     {
         /// <summary>
@@ -364,6 +380,10 @@ namespace Python.Runtime
     /// <summary>
     /// The Int32Type represents a clr int type.
     /// </summary>
+    /// <remarks>
+    /// Open-source public code originally shared from:
+    /// @see [PyConverter](https://github.com/yagweb/pythonnetLab/blob/master/pynetLab/PyConverter.cs) by Wenguang Yang, 2018
+    /// </remarks>
     public class Int32Type : PyClrTypeBase
     {
         /// <summary>
@@ -398,6 +418,10 @@ namespace Python.Runtime
     /// <summary>
     /// The Int64Type represents a clr long type.
     /// </summary>
+    /// <remarks>
+    /// Open-source public code originally shared from:
+    /// @see [PyConverter](https://github.com/yagweb/pythonnetLab/blob/master/pynetLab/PyConverter.cs) by Wenguang Yang, 2018
+    /// </remarks>
     public class Int64Type : PyClrTypeBase
     {
         /// <summary>
@@ -432,6 +456,10 @@ namespace Python.Runtime
     /// <summary>
     /// The FloatType represents a clr float type.
     /// </summary>
+    /// <remarks>
+    /// Open-source public code originally shared from:
+    /// @see [PyConverter](https://github.com/yagweb/pythonnetLab/blob/master/pynetLab/PyConverter.cs) by Wenguang Yang, 2018
+    /// </remarks>
     public class FloatType : PyClrTypeBase
     {
         /// <summary>
@@ -466,6 +494,10 @@ namespace Python.Runtime
     /// <summary>
     /// The DoubleType represents a clr double type.
     /// </summary>
+    /// <remarks>
+    /// Open-source public code originally shared from:
+    /// @see [PyConverter](https://github.com/yagweb/pythonnetLab/blob/master/pynetLab/PyConverter.cs) by Wenguang Yang, 2018
+    /// </remarks>
     public class DoubleType : PyClrTypeBase
     {
         /// <summary>
@@ -500,6 +532,10 @@ namespace Python.Runtime
     /// <summary>
     /// The PyPropertyAttribute represents a Python attribute.
     /// </summary>
+    /// <remarks>
+    /// Open-source public code originally shared from:
+    /// @see [PyConverter](https://github.com/yagweb/pythonnetLab/blob/master/pynetLab/PyConverter.cs) by Wenguang Yang, 2018
+    /// </remarks>
     public class PyPropetryAttribute : Attribute
     {
         /// <summary>
@@ -552,6 +588,10 @@ namespace Python.Runtime
     /// <summary>
     /// The ClrMemberInfo represents clr information.
     /// </summary>
+    /// <remarks>
+    /// Open-source public code originally shared from:
+    /// @see [PyConverter](https://github.com/yagweb/pythonnetLab/blob/master/pynetLab/PyConverter.cs) by Wenguang Yang, 2018
+    /// </remarks>
     abstract class ClrMemberInfo
     {
         /// <summary>
@@ -597,6 +637,10 @@ namespace Python.Runtime
     /// <summary>
     /// The ClrPropertyInfo specifies the clr property information.
     /// </summary>
+    /// <remarks>
+    /// Open-source public code originally shared from:
+    /// @see [PyConverter](https://github.com/yagweb/pythonnetLab/blob/master/pynetLab/PyConverter.cs) by Wenguang Yang, 2018
+    /// </remarks>
     class ClrPropertyInfo : ClrMemberInfo
     {
         /// <summary>
@@ -656,6 +700,10 @@ namespace Python.Runtime
     /// <summary>
     /// The ClrFieldInfo defines the clr field information.
     /// </summary>
+    /// <remarks>
+    /// Open-source public code originally shared from:
+    /// @see [PyConverter](https://github.com/yagweb/pythonnetLab/blob/master/pynetLab/PyConverter.cs) by Wenguang Yang, 2018
+    /// </remarks>
     class ClrFieldInfo : ClrMemberInfo
     {
         /// <summary>
@@ -711,6 +759,10 @@ namespace Python.Runtime
     /// <summary>
     /// Convert between Python object and clr object
     /// </summary>
+    /// <remarks>
+    /// Open-source public code originally shared from:
+    /// @see [PyConverter](https://github.com/yagweb/pythonnetLab/blob/master/pynetLab/PyConverter.cs) by Wenguang Yang, 2018
+    /// </remarks>
     public class ObjectType<T> : PyClrTypeBase
     {
         /// <summary>
@@ -793,6 +845,10 @@ namespace Python.Runtime
     /// Defines a PyListType of type 'T'
     /// </summary>
     /// <typeparam name="T">Specifies the base type of the list.</typeparam>
+    /// <remarks>
+    /// Open-source public code originally shared from:
+    /// @see [PyConverter](https://github.com/yagweb/pythonnetLab/blob/master/pynetLab/PyConverter.cs) by Wenguang Yang, 2018
+    /// </remarks>
     public class PyListType<T> : PyClrTypeBase
     {
         /// <summary>
@@ -869,6 +925,10 @@ namespace Python.Runtime
     /// </summary>
     /// <typeparam name="K">Specifies the key type.</typeparam>
     /// <typeparam name="V">Specifies the value type.</typeparam>
+    /// <remarks>
+    /// Open-source public code originally shared from:
+    /// @see [PyConverter](https://github.com/yagweb/pythonnetLab/blob/master/pynetLab/PyConverter.cs) by Wenguang Yang, 2018
+    /// </remarks>
     public class PyDictType<K, V> : PyClrTypeBase
     {
         /// <summary>
