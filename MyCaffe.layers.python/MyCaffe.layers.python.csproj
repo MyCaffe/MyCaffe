@@ -76,10 +76,6 @@
       <Project>{642ba581-59cb-445e-8d7d-81e67b748d77}</Project>
       <Name>MyCaffe.db.image</Name>
     </ProjectReference>
-    <ProjectReference Include="..\MyCaffe.python\MyCaffe.python.csproj">
-      <Project>{0ed28c56-f959-44d0-8e99-db6c0be75c3a}</Project>
-      <Name>MyCaffe.python</Name>
-    </ProjectReference>
     <ProjectReference Include="..\MyCaffe\MyCaffe.csproj">
       <Project>{28e430dd-bd6c-4a4c-9454-1eeb4ad63a5c}</Project>
       <Name>MyCaffe</Name>
