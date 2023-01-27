@@ -17,7 +17,7 @@ using MyCaffe.param;
 namespace MyCaffe.solvers
 {
     /// <summary>
-    /// An interface for classes that perform optimization on Nets
+    /// An interface for classes that perform optimization on Nets - this class serves as the base class for all solvers.
     /// </summary>
     /// <remarks>
     /// Requires implementation of ApplyUpdate to compute a parameter update
