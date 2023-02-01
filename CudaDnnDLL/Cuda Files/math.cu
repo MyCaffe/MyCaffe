@@ -6002,15 +6002,15 @@ __global__ void channel_dot_kernel(const int num, const int channels, const int 
 	{
 		int n = i / spatial_dim;
 		int s = i % spatial_dim;
-		T val = 0;
+		double val = 0;
 
 		for (int c=0; c<channels; c++)
 		{
 			int nIdx = (n * channels + c) * spatial_dim + s;
-			val += (x[nIdx] * a[nIdx]);
+			val += ((double)x[nIdx] * (double)a[nIdx]);
 		}
 
-		y[i] = val;
+		y[i] = (T)val;
 	}
 }
 
