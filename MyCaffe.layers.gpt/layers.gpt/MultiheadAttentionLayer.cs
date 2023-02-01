@@ -47,7 +47,8 @@ namespace MyCaffe.layers.gpt
         Blob<T> m_blobKt1;
         Blob<T> m_blobVt;
         Blob<T> m_blobWork;
-        Blob<T> m_blobAtt;
+        Blob<T> m_blobAttA;
+        Blob<T> m_blobAttB;
         Blob<T> m_blobY;
         // The number of heads.
         int m_nHeads;
@@ -193,7 +194,7 @@ namespace MyCaffe.layers.gpt
             // Softmax
             LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX, p.name + ".softmax");
             softmax.softmax_param.axis = -1;
-            softmax.softmax_param.engine = EngineParameter.Engine.CUDNN;
+            softmax.softmax_param.engine = EngineParameter.Engine.CAFFE;
             m_softmax = Layer<T>.Create(cuda, log, convertLayerParam(softmax, p), null);
 
             m_blobX0 = new Blob<T>(cuda, log);
@@ -216,8 +217,10 @@ namespace MyCaffe.layers.gpt
             m_blobKt1.Name = m_param.name + " Kt1";
             m_blobVt = new Blob<T>(cuda, log);
             m_blobVt.Name = m_param.name + " Vt";
-            m_blobAtt = new Blob<T>(cuda, log);
-            m_blobAtt.Name = m_param.name + " Att";
+            m_blobAttA = new Blob<T>(cuda, log);
+            m_blobAttA.Name = m_param.name + " AttA";
+            m_blobAttB = new Blob<T>(cuda, log);
+            m_blobAttB.Name = m_param.name + " AttB";
             m_blobWork = new Blob<T>(cuda, log);
             m_blobWork.Name = m_param.name + " Work";
             m_blobY = new Blob<T>(cuda, log);
@@ -249,7 +252,8 @@ namespace MyCaffe.layers.gpt
             dispose(ref m_blobKt);
             dispose(ref m_blobKt1);
             dispose(ref m_blobVt);
-            dispose(ref m_blobAtt);
+            dispose(ref m_blobAttA);
+            dispose(ref m_blobAttB);
             dispose(ref m_blobWork);
             dispose(ref m_blobY);
 
@@ -272,7 +276,8 @@ namespace MyCaffe.layers.gpt
             col.Add(m_blobKt);
             col.Add(m_blobKt1);
             col.Add(m_blobVt);
-            col.Add(m_blobAtt);
+            col.Add(m_blobAttA);
+            col.Add(m_blobAttB);
             col.Add(m_blobWork);
             col.Add(m_blobY);
 
@@ -388,14 +393,17 @@ namespace MyCaffe.layers.gpt
             addInternal(m_blobQ, m_blobQt);
             m_transpose.Setup(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
 
-            shareLayerBlob(m_blobAtt, m_blobX0.shape());
-            m_blobAtt.ReshapeLike(m_blobX0);
-            addInternal(m_blobAtt, m_blobAtt);
+            shareLayerBlob(m_blobAttA, m_blobX0.shape());
+            m_blobAttA.Reshape(m_nB, m_nHeads, m_nBlockSize, m_nBlockSize);
+            shareLayerBlob(m_blobAttB, m_blobX0.shape());
+            m_blobAttB.Reshape(m_nB, m_nHeads, m_nBlockSize, m_nBlockSize);
+
+            addInternal(m_blobAttA, m_blobAttB);
             m_softmax.Setup(m_colInternalBottom, m_colInternalTop);
 
             if (m_attn_dropout != null)
             {
-                addInternal(m_blobAtt, m_blobAtt);
+                addInternal(m_blobAttB, m_blobAttB);
                 m_attn_dropout.Setup(m_colInternalBottom, m_colInternalTop);
             }
 
@@ -479,8 +487,10 @@ namespace MyCaffe.layers.gpt
             m_rgShape[2] = m_nT;
             m_rgShape[3] = m_nT;
 
-            shareLayerBlob(m_blobAtt, m_rgShape);
-            m_blobAtt.Reshape(m_rgShape);
+            shareLayerBlob(m_blobAttA, m_rgShape);
+            m_blobAttA.Reshape(m_rgShape);
+            shareLayerBlob(m_blobAttB, m_rgShape);
+            m_blobAttB.Reshape(m_rgShape);
 
             m_rgShape[0] = m_blobVt.num;
             m_rgShape[1] = m_blobVt.channels;
@@ -526,7 +536,7 @@ namespace MyCaffe.layers.gpt
             m_blobX0.CopyFrom(colBottom[0]);
             m_blobX1.CopyFrom(colBottom[1]);
             m_blobX2.CopyFrom(colBottom[2]);
-            
+
             // Calculate query, for all heads in batch and move head forward to be the batch dim.
             // q  = self.c_attnQ(x1)
             addInternal(m_blobX0, m_blobQ);
@@ -541,7 +551,7 @@ namespace MyCaffe.layers.gpt
             // v  = self.c_attnK(x3)
             addInternal(m_blobX2, m_blobV);
             m_c_attnV.Forward(m_colInternalBottom, m_colInternalTop);
-            
+
             // Transpose query, key and values along axes 1 & 2
             // k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
             // q = q.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
@@ -563,25 +573,25 @@ namespace MyCaffe.layers.gpt
                 // att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
                 addInternal(m_blobKt, m_blobKt1);
                 m_transposeQ.Forward(m_colInternalBottom, m_colInternalTop);
-                
+
                 double dfScale = 1.0 / Math.Sqrt(m_nSize);
-                m_blobAtt.MatMul(m_blobQt, m_blobKt1);
-                m_blobAtt.scale_data(dfScale);
+                m_blobAttA.MatMul(m_blobQt, m_blobKt1);
+                m_blobAttA.scale_data(dfScale);
 
                 // Apply mask to attention matrix
                 // att = att.masked_fill(self.bias[:,:,:T,:T] == 0, float('-inf'))
-                m_cuda.mask_batch(m_blobAtt.count(), m_blobAtt.num, blobMask.count(), convert(0.0), convert(-1e+09), m_blobAtt.gpu_data, blobMask.gpu_data, m_blobAtt.mutable_gpu_data); // all masked items set to -inf.
+                m_cuda.mask_batch(m_blobAttA.count(), m_blobAttA.num, blobMask.count(), convert(0.0), convert(-1e+09), m_blobAttA.gpu_data, blobMask.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.
 
                 // Take softmax of attention along the last axis.
                 // att = F.softmax(att, dim = -1)
-                addInternal(m_blobAtt, m_blobAtt);
+                addInternal(m_blobAttA, m_blobAttB);
                 m_softmax.Forward(m_colInternalBottom, m_colInternalTop);
 
                 // Apply attention dropout.
                 // att = self.attn_dropout(att)
                 if (m_attn_dropout != null)
                 {
-                    addInternal(m_blobAtt, m_blobAtt);
+                    addInternal(m_blobAttB, m_blobAttB);
                     m_attn_dropout.Forward(m_colInternalBottom, m_colInternalTop);
                 }
 
@@ -589,13 +599,13 @@ namespace MyCaffe.layers.gpt
 
                 // Multiply attention matrix with values
                 // y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
-                m_blobWork.MatMul(m_blobAtt, m_blobVt);
+                m_blobWork.MatMul(m_blobAttB, m_blobVt);
             }
 
             // Reassemble all head outputs side by side.
             // y = y.transpose(1, 2).contiguous().view(B, T, C) 
             addInternal(m_blobWork, m_blobY);
-            m_transpose.Forward(m_colInternalBottom, m_colInternalTop); 
+            m_transpose.Forward(m_colInternalBottom, m_colInternalTop);
             m_blobY.Reshape(m_nB, m_nT, m_nC, 1);
 
             // Apply output projection.
@@ -658,19 +668,19 @@ namespace MyCaffe.layers.gpt
                     // att' = y' @ v^T 
                     // Gradient with respect to vt
                     // vt' = att^T @ y' 
-                    m_blobY.MatMulGrad(m_blobAtt, m_blobVt, m_blobWork);
+                    m_blobY.MatMulGrad(m_blobAttB, m_blobVt, m_blobWork);
 
                     // Apply attention dropout.
                     // att = self.attn_dropout(att)
                     if (m_attn_dropout != null)
                     {
-                        addInternal(m_blobAtt, m_blobAtt);
+                        addInternal(m_blobAttB, m_blobAttB);
                         m_attn_dropout.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
                     }
 
                     // Take softmax of attention along the last axis.
                     // att = F.softmax(att, dim = -1)
-                    addInternal(m_blobAtt, m_blobAtt);
+                    addInternal(m_blobAttA, m_blobAttB);
                     m_softmax.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
 
                     // Multiply qt with kt^T to create attention matrix
@@ -680,7 +690,7 @@ namespace MyCaffe.layers.gpt
                     // Gradient with respect to qt
                     // qt' = att' @ kt
                     double dfScale = 1.0 / Math.Sqrt(m_nSize);
-                    m_blobAtt.MatMulGrad(m_blobQt, m_blobKt1, m_blobWork, dfScale);
+                    m_blobAttA.MatMulGrad(m_blobQt, m_blobKt1, m_blobWork, dfScale);
 
                     // Transpose Kt1 back to Kt
                     addInternal(m_blobKt, m_blobKt1);
@@ -697,12 +707,12 @@ namespace MyCaffe.layers.gpt
                 m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom); // (B, nh, T, hs)
                 addInternal(m_blobV, m_blobVt);
                 m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom); // (B, nh, T, hs)
-            
+
                 // Calculate query for all heads in batch and move head forward to be the batch dim.
                 // q = self.c_attnQ(x1)
                 addInternal(m_blobX0, m_blobQ);
                 m_c_attnQ.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
-                
+
                 // Calculate query for all heads in batch and move head forward to be the batch dim.
                 // k = self.c_attnK(x2)
                 addInternal(m_blobX1, m_blobK);
