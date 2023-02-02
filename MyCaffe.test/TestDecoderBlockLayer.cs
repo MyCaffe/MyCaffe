@@ -286,12 +286,16 @@ namespace MyCaffe.test
             base.dispose();
         }
 
+        /// <summary>
+        /// Data1 values created with 'test_decoder.py' using MyCaffe LayerNorm and Softmax layers.
+        /// </summary>
+        /// <returns>The path of the data is returned.</returns>
         private string loadTestData1()
         {
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\dec\\";
             string strFileName = "_decoder_test.zip";
             string strTestPath = "test";
-            string strTestFile = "13_out1.npy";
+            string strTestFile = "iter_0\\13_out1.npy";
             return loadTestData(strPath, strFileName, strTestPath, strTestFile);
         }
 
@@ -369,10 +373,12 @@ namespace MyCaffe.test
                 m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMaskDec.mutable_gpu_data);
                 createDecoderMask(m_blobMaskDec);
 
-                m_blobMaskDec_exp.LoadFromNumpy(strTestDataPath + "mh1.1_mask.npy");
+                strTestDataPath += "iter_0\\";
+
+                m_blobMaskDec_exp.LoadFromNumpy(strTestDataPath + "dec.mh1.1_mask.npy");
                 verify(m_blobMaskDec, m_blobMaskDec_exp, false, 1e-09);
 
-                m_blobMaskEnc_exp.LoadFromNumpy(strTestDataPath + "mh2.1_mask.npy");
+                m_blobMaskEnc_exp.LoadFromNumpy(strTestDataPath + "dec.mh2.1_mask.npy");
                 verify(m_blobMaskEnc, m_blobMaskEnc_exp, false, 1e-09);
 
                 BottomVec.Clear();
@@ -383,34 +389,35 @@ namespace MyCaffe.test
 
                 layer.Setup(BottomVec, TopVec);
 
-                layer.blobs[0].LoadFromNumpy(strTestDataPath + "mh1.w_q_weight.npy");    // multi-head query weight
-                layer.blobs[1].LoadFromNumpy(strTestDataPath + "mh1.w_q_bias.npy");      // multi-head query bias
-                layer.blobs[2].LoadFromNumpy(strTestDataPath + "mh1.w_k_weight.npy");    // multi-head key weight
-                layer.blobs[3].LoadFromNumpy(strTestDataPath + "mh1.w_k_bias.npy");      // multi-head key bias
-                layer.blobs[4].LoadFromNumpy(strTestDataPath + "mh1.w_v_weight.npy");    // multi-head value weight
-                layer.blobs[5].LoadFromNumpy(strTestDataPath + "mh1.w_v_bias.npy");      // multi-head value bias
-                layer.blobs[6].LoadFromNumpy(strTestDataPath + "mh1.w_o_weight.npy");    // multi-head output weight
-                layer.blobs[7].LoadFromNumpy(strTestDataPath + "mh1.w_o_bias.npy");      // multi-head output bias
+                layer.blobs[0].LoadFromNumpy(strTestDataPath + "dec.mh1.w_q.weight.npy");    // multi-head query weight
+                layer.blobs[1].LoadFromNumpy(strTestDataPath + "dec.mh1.w_q.bias.npy");      // multi-head query bias
+                layer.blobs[2].LoadFromNumpy(strTestDataPath + "dec.mh1.w_k.weight.npy");    // multi-head key weight
+                layer.blobs[3].LoadFromNumpy(strTestDataPath + "dec.mh1.w_k.bias.npy");      // multi-head key bias
+                layer.blobs[4].LoadFromNumpy(strTestDataPath + "dec.mh1.w_v.weight.npy");    // multi-head value weight
+                layer.blobs[5].LoadFromNumpy(strTestDataPath + "dec.mh1.w_v.bias.npy");      // multi-head value bias
+                layer.blobs[6].LoadFromNumpy(strTestDataPath + "dec.mh1.w_o.weight.npy");    // multi-head output weight
+                layer.blobs[7].LoadFromNumpy(strTestDataPath + "dec.mh1.w_o.bias.npy");      // multi-head output bias
 
-                layer.blobs[8].LoadFromNumpy(strTestDataPath + "mh2.w_q_weight.npy");    // multi-head query weight
-                layer.blobs[9].LoadFromNumpy(strTestDataPath + "mh2.w_q_bias.npy");      // multi-head query bias
-                layer.blobs[10].LoadFromNumpy(strTestDataPath + "mh2.w_k_weight.npy");   // multi-head key weight
-                layer.blobs[11].LoadFromNumpy(strTestDataPath + "mh2.w_k_bias.npy");     // multi-head key bias
-                layer.blobs[12].LoadFromNumpy(strTestDataPath + "mh2.w_v_weight.npy");   // multi-head value weight
-                layer.blobs[13].LoadFromNumpy(strTestDataPath + "mh2.w_v_bias.npy");     // multi-head value bias
-                layer.blobs[14].LoadFromNumpy(strTestDataPath + "mh2.w_o_weight.npy");   // multi-head output weight
-                layer.blobs[15].LoadFromNumpy(strTestDataPath + "mh2.w_o_bias.npy");     // multi-head output bias
+                layer.blobs[8].LoadFromNumpy(strTestDataPath + "dec.mh2.w_q.weight.npy");    // multi-head query weight
+                layer.blobs[9].LoadFromNumpy(strTestDataPath + "dec.mh2.w_q.bias.npy");      // multi-head query bias
+                layer.blobs[10].LoadFromNumpy(strTestDataPath + "dec.mh2.w_k.weight.npy");   // multi-head key weight
+                layer.blobs[11].LoadFromNumpy(strTestDataPath + "dec.mh2.w_k.bias.npy");     // multi-head key bias
+                layer.blobs[12].LoadFromNumpy(strTestDataPath + "dec.mh2.w_v.weight.npy");   // multi-head value weight
+                layer.blobs[13].LoadFromNumpy(strTestDataPath + "dec.mh2.w_v.bias.npy");     // multi-head value bias
+                layer.blobs[14].LoadFromNumpy(strTestDataPath + "dec.mh2.w_o.weight.npy");   // multi-head output weight
+                layer.blobs[15].LoadFromNumpy(strTestDataPath + "dec.mh2.w_o.bias.npy");     // multi-head output bias
 
-                layer.blobs[16].LoadFromNumpy(strTestDataPath + "ff.w_1_weight.npy");    // fc
-                layer.blobs[17].LoadFromNumpy(strTestDataPath + "ff.w_1_bias.npy");      // fc
-                layer.blobs[18].LoadFromNumpy(strTestDataPath + "ff.w_2_weight.npy");    // proj
-                layer.blobs[19].LoadFromNumpy(strTestDataPath + "ff.w_2_bias.npy");      // proj
+                layer.blobs[16].LoadFromNumpy(strTestDataPath + "dec.ff.linear_1.weight.npy");    // fc
+                layer.blobs[17].LoadFromNumpy(strTestDataPath + "dec.ff.linear_1.bias.npy");      // fc
+                layer.blobs[18].LoadFromNumpy(strTestDataPath + "dec.ff.linear_2.weight.npy");    // proj
+                layer.blobs[19].LoadFromNumpy(strTestDataPath + "dec.ff.linear_2.bias.npy");      // proj
 
                 layer.Forward(BottomVec, TopVec);
 
                 // Now, check values
                 m_blobYexp.LoadFromNumpy(strTestDataPath + "dec.12_output.npy");
-                verify(TopVec[0], m_blobYexp, false, 3e-06);
+                double dfErr = (typeof(T) == typeof(float)) ? 1e-12 : 4e-06;
+                verify(TopVec[0], m_blobYexp, false, dfErr);
 
                 Stopwatch sw = new Stopwatch();
                 sw.Start();
@@ -464,11 +471,13 @@ namespace MyCaffe.test
                 m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMaskDec.mutable_gpu_data);
                 createDecoderMask(m_blobMaskDec);
 
-                m_blobMaskDec_exp.LoadFromNumpy(strTestDataPath + "mh1.1_mask.npy");
-                verify(m_blobMaskDec, m_blobMaskDec_exp, false, 1e-09);
+                strTestDataPath += "iter_0\\";
 
-                m_blobMaskEnc_exp.LoadFromNumpy(strTestDataPath + "mh2.1_mask.npy");
-                verify(m_blobMaskEnc, m_blobMaskEnc_exp, false, 1e-09);
+                m_blobMaskDec_exp.LoadFromNumpy(strTestDataPath + "dec.mh1.1_mask.npy");
+                verify(m_blobMaskDec, m_blobMaskDec_exp, false, 1e-12);
+
+                m_blobMaskEnc_exp.LoadFromNumpy(strTestDataPath + "dec.mh2.1_mask.npy");
+                verify(m_blobMaskEnc, m_blobMaskEnc_exp, false, 1e-12);
 
                 BottomVec.Clear();
                 BottomVec.Add(m_blobX);
@@ -478,34 +487,35 @@ namespace MyCaffe.test
 
                 layer.Setup(BottomVec, TopVec);
 
-                layer.blobs[0].LoadFromNumpy(strTestDataPath + "mh1.w_q_weight.npy");    // multi-head query weight
-                layer.blobs[1].LoadFromNumpy(strTestDataPath + "mh1.w_q_bias.npy");      // multi-head query bias
-                layer.blobs[2].LoadFromNumpy(strTestDataPath + "mh1.w_k_weight.npy");    // multi-head key weight
-                layer.blobs[3].LoadFromNumpy(strTestDataPath + "mh1.w_k_bias.npy");      // multi-head key bias
-                layer.blobs[4].LoadFromNumpy(strTestDataPath + "mh1.w_v_weight.npy");    // multi-head value weight
-                layer.blobs[5].LoadFromNumpy(strTestDataPath + "mh1.w_v_bias.npy");      // multi-head value bias
-                layer.blobs[6].LoadFromNumpy(strTestDataPath + "mh1.w_o_weight.npy");    // multi-head output weight
-                layer.blobs[7].LoadFromNumpy(strTestDataPath + "mh1.w_o_bias.npy");      // multi-head output bias
+                layer.blobs[0].LoadFromNumpy(strTestDataPath + "dec.mh1.w_q.weight.npy");    // multi-head query weight
+                layer.blobs[1].LoadFromNumpy(strTestDataPath + "dec.mh1.w_q.bias.npy");      // multi-head query bias
+                layer.blobs[2].LoadFromNumpy(strTestDataPath + "dec.mh1.w_k.weight.npy");    // multi-head key weight
+                layer.blobs[3].LoadFromNumpy(strTestDataPath + "dec.mh1.w_k.bias.npy");      // multi-head key bias
+                layer.blobs[4].LoadFromNumpy(strTestDataPath + "dec.mh1.w_v.weight.npy");    // multi-head value weight
+                layer.blobs[5].LoadFromNumpy(strTestDataPath + "dec.mh1.w_v.bias.npy");      // multi-head value bias
+                layer.blobs[6].LoadFromNumpy(strTestDataPath + "dec.mh1.w_o.weight.npy");    // multi-head output weight
+                layer.blobs[7].LoadFromNumpy(strTestDataPath + "dec.mh1.w_o.bias.npy");      // multi-head output bias
 
-                layer.blobs[8].LoadFromNumpy(strTestDataPath + "mh2.w_q_weight.npy");    // multi-head query weight
-                layer.blobs[9].LoadFromNumpy(strTestDataPath + "mh2.w_q_bias.npy");      // multi-head query bias
-                layer.blobs[10].LoadFromNumpy(strTestDataPath + "mh2.w_k_weight.npy");    // multi-head key weight
-                layer.blobs[11].LoadFromNumpy(strTestDataPath + "mh2.w_k_bias.npy");      // multi-head key bias
-                layer.blobs[12].LoadFromNumpy(strTestDataPath + "mh2.w_v_weight.npy");    // multi-head value weight
-                layer.blobs[13].LoadFromNumpy(strTestDataPath + "mh2.w_v_bias.npy");      // multi-head value bias
-                layer.blobs[14].LoadFromNumpy(strTestDataPath + "mh2.w_o_weight.npy");    // multi-head output weight
-                layer.blobs[15].LoadFromNumpy(strTestDataPath + "mh2.w_o_bias.npy");      // multi-head output bias
+                layer.blobs[8].LoadFromNumpy(strTestDataPath + "dec.mh2.w_q.weight.npy");    // multi-head query weight
+                layer.blobs[9].LoadFromNumpy(strTestDataPath + "dec.mh2.w_q.bias.npy");      // multi-head query bias
+                layer.blobs[10].LoadFromNumpy(strTestDataPath + "dec.mh2.w_k.weight.npy");    // multi-head key weight
+                layer.blobs[11].LoadFromNumpy(strTestDataPath + "dec.mh2.w_k.bias.npy");      // multi-head key bias
+                layer.blobs[12].LoadFromNumpy(strTestDataPath + "dec.mh2.w_v.weight.npy");    // multi-head value weight
+                layer.blobs[13].LoadFromNumpy(strTestDataPath + "dec.mh2.w_v.bias.npy");      // multi-head value bias
+                layer.blobs[14].LoadFromNumpy(strTestDataPath + "dec.mh2.w_o.weight.npy");    // multi-head output weight
+                layer.blobs[15].LoadFromNumpy(strTestDataPath + "dec.mh2.w_o.bias.npy");      // multi-head output bias
 
-                layer.blobs[16].LoadFromNumpy(strTestDataPath + "ff.w_1_weight.npy");    // fc
-                layer.blobs[17].LoadFromNumpy(strTestDataPath + "ff.w_1_bias.npy");      // fc
-                layer.blobs[18].LoadFromNumpy(strTestDataPath + "ff.w_2_weight.npy");   // proj
-                layer.blobs[19].LoadFromNumpy(strTestDataPath + "ff.w_2_bias.npy");     // proj
+                layer.blobs[16].LoadFromNumpy(strTestDataPath + "dec.ff.linear_1.weight.npy");// fc
+                layer.blobs[17].LoadFromNumpy(strTestDataPath + "dec.ff.linear_1.bias.npy");  // fc
+                layer.blobs[18].LoadFromNumpy(strTestDataPath + "dec.ff.linear_2.weight.npy");// proj
+                layer.blobs[19].LoadFromNumpy(strTestDataPath + "dec.ff.linear_2.bias.npy");  // proj
 
                 layer.Forward(BottomVec, TopVec);
 
                 // Now, check values from forward
                 m_blobYexp.LoadFromNumpy(strTestDataPath + "dec.12_output.npy");
-                verify(TopVec[0], m_blobYexp, false, 3e-06);
+                double dfErr = (typeof(T) == typeof(float)) ? 1e-12 : 4e-06;
+                verify(TopVec[0], m_blobYexp, false, dfErr);
 
                 // Load the inbound gradients.
                 TopVec[0].LoadFromNumpy(strTestDataPath + "grad_dec.12_output.npy", true);
@@ -514,9 +524,11 @@ namespace MyCaffe.test
                 layer.Backward(TopVec, rgProp, BottomVec);
 
                 // Now, check values form backward
-                m_blobYexp.LoadFromNumpy(strTestDataPath + "grad_dec.1_x.npy", true);
-                verify(BottomVec[0], m_blobYexp, true, 1e-08);
-
+                m_blobYexp.LoadFromNumpy(strTestDataPath + "grad_dec.1_x0.npy", true);
+                verify(m_blobX, m_blobYexp, true, 2e-09);
+                m_blobYexp.LoadFromNumpy(strTestDataPath + "grad_dec.1_x1.npy", true);
+                verify(m_blobEncOut, m_blobYexp, true, 2e-09);
+                
                 Stopwatch sw = new Stopwatch();
                 sw.Start();
 
