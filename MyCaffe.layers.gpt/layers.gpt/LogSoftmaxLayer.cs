@@ -24,6 +24,7 @@ namespace MyCaffe.layers.gpt
         int m_nOuterNum;
         int m_nInnerNum;
         int m_nSoftmaxAxis;
+        Blob<T> m_blobMax;
         Blob<T> m_blobExpX;
         Blob<T> m_blobExpXSum;
         Blob<T> m_blobScale;
@@ -41,6 +42,8 @@ namespace MyCaffe.layers.gpt
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.LOG_SOFTMAX;
+            m_blobMax = new Blob<T>(m_cuda, m_log);
+            m_blobMax.Name = m_param.name + " max";
             m_blobExpX = new Blob<T>(cuda, log);
             m_blobExpX.Name = m_param.name + " exp_x";
             m_blobExpXSum = new Blob<T>(cuda, log);
@@ -54,6 +57,7 @@ namespace MyCaffe.layers.gpt
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
+            dispose(ref m_blobMax);
             dispose(ref m_blobExpX);
             dispose(ref m_blobExpXSum);
             dispose(ref m_blobScale);
@@ -66,6 +70,7 @@ namespace MyCaffe.layers.gpt
             if (col.Count > 0)
                 return;
 
+            col.Add(m_blobMax);
             col.Add(m_blobExpX);
             col.Add(m_blobExpXSum);
             col.Add(m_blobScale);
@@ -115,7 +120,9 @@ namespace MyCaffe.layers.gpt
 
             List<int> rgScaleDims = Utility.Clone<int>(colBottom[0].shape());
             rgScaleDims[m_nSoftmaxAxis] = 1;
-
+            
+            shareLayerBlob(m_blobMax, rgScaleDims);
+            m_blobMax.Reshape(rgScaleDims);
             shareLayerBlob(m_blobScale, rgScaleDims);
             m_blobScale.Reshape(rgScaleDims);
             shareLayerBlob(m_blobExpXSum, rgScaleDims);
@@ -135,6 +142,7 @@ namespace MyCaffe.layers.gpt
         {
             long hBottomData = colBottom[0].gpu_data;
             long hTopData = colTop[0].mutable_gpu_data;
+            long hMaxData = m_blobMax.mutable_gpu_data;
             long hScaleData = m_blobScale.mutable_gpu_data;
             int nCount = colBottom[0].count();
             int nChannels = colTop[0].shape(m_nSoftmaxAxis);
@@ -143,22 +151,26 @@ namespace MyCaffe.layers.gpt
 
             // We need to subtract the max to avoid numerical issues, compute the exp
             // and then normalize.
-            // c = channel max.
-            m_cuda.channel_max(m_nOuterNum * m_nInnerNum, m_nOuterNum, nChannels, m_nInnerNum, hTopData, hScaleData);
+            // c = channel max along axis.
+            m_cuda.channel_max(m_nOuterNum * m_nInnerNum, m_nOuterNum, nChannels, m_nInnerNum, hTopData, hMaxData);
 
             // xm = x - c (along each channel)
-            m_cuda.channel_sub(nCount, m_nOuterNum, nChannels, m_nInnerNum, hScaleData, hTopData);
+            m_cuda.channel_sub(nCount, m_nOuterNum, nChannels, m_nInnerNum, hMaxData, hTopData);
 
             // exp_x = exp(xm)
             m_cuda.exp(nCount, hTopData, m_blobExpX.mutable_gpu_data);
 
-            // exp_sum = exp_x.sum(dim=-1)
+            // exp_sum = exp_x.sum(dim=axis)
             m_cuda.channel_sum(m_nOuterNum * m_nInnerNum, m_nOuterNum, nChannels, m_nInnerNum, m_blobExpX.gpu_data, m_blobExpXSum.mutable_gpu_data);
 
             // exp_log = exp_sum.log()
             m_cuda.log(m_nOuterNum * m_nInnerNum, m_blobExpXSum.gpu_data, hScaleData);
+            
+            // log_z = c + exp_log
+            m_cuda.add(m_nOuterNum * m_nInnerNum, hMaxData, hScaleData, hScaleData);
 
-            // sm = xm - exp_log
+            // sm = x - log_z
+            m_cuda.copy(nCount, hBottomData, hTopData);
             m_cuda.channel_sub(nCount, m_nOuterNum, nChannels, m_nInnerNum, hScaleData, hTopData);
         }
 
@@ -184,21 +196,19 @@ namespace MyCaffe.layers.gpt
             int nChannels = colTop[0].shape(m_nSoftmaxAxis);
 
             // exp_log_grad = -1 * sum channel diff
-            m_blobScale.SetDiff(0.0);
             m_cuda.channel_sum(nCount, m_nOuterNum, nChannels, m_nInnerNum, hTopDiff, m_blobScale.mutable_gpu_diff);
-            m_blobScale.scale_diff(-1);
 
-            // exp_sum_grad = exp_sum * exp_log_grad
-            m_blobExpXSum.SetDiff(1.0);
-            m_cuda.div(m_blobExpXSum.count(), m_blobExpXSum.gpu_diff, m_blobExpXSum.gpu_data, m_blobExpXSum.mutable_gpu_diff);
-            m_cuda.mul(m_blobScale.count(), m_blobScale.gpu_diff, m_blobExpXSum.gpu_diff, m_blobScale.mutable_gpu_diff);
-
-            // exp_x_grad = exp_sum_grad filled across each channel
+            // expy = exp(y)
+            m_cuda.exp(nCount, hTopData, m_blobExpX.mutable_gpu_data);
+            
+            // Fill the expy values across each channel.
             m_cuda.channel_fillfrom(nCount, m_nOuterNum, 1, nChannels, m_blobScale.gpu_diff, m_blobExpX.mutable_gpu_diff, DIR.FWD);
 
-            // xm_grad = exp_x_grad * exp_x + sm_grad (e.g. hTopDiff)
-            m_cuda.mul(nCount, m_blobExpX.gpu_diff, m_blobExpX.gpu_data, hBottomDiff);
-            m_cuda.add(nCount, hTopDiff, hBottomDiff, hBottomDiff);
+            // expy * sumgy
+            m_cuda.mul(nCount, m_blobExpX.gpu_data, m_blobExpX.gpu_diff, m_blobExpX.mutable_gpu_diff);
+
+            // grad = gy - expy * sumgy
+            m_cuda.sub(nCount, hTopDiff, m_blobExpX.gpu_diff, hBottomDiff);
         }
     }
 }
