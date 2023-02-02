@@ -117,50 +117,77 @@ namespace MyCaffe.test
         ///         np.save(DebugFunction.out_path + "grad_" + name, grad_output.detach().cpu().numpy())
         ///         return grad_output
         /// 
-        /// class LogSoftMaxEx():
-        ///     def log_softmax(self, x):
-        ///         debug = DebugFunction.apply        
-        ///         DebugFunction.trace(x, "x")
-        ///         x = debug(x)
-        ///         
-        ///         c = torch.max(x, dim=-1)[0]
-        ///         c = torch.reshape(c, (-1, 1))
-        ///         DebugFunction.trace(c, "c")
-        ///         c = debug(c)
+        /// np.set_printoptions(precision=12, suppress=False)
         /// 
-        ///         xm = x - c
-        ///         DebugFunction.trace(xm, "xm")
-        ///         xm = debug(xm)
+        /// class LogSoftmaxFunction(torch.autograd.Function):
+        ///     @staticmethod
+        ///     def forward(ctx, x):
+        ///         m = x.max(axis=1, keepdims=True)[0]
+        ///         xmu = x - m
+        ///         expx = torch.exp(xmu)
+        ///         sumexp = torch.sum(expx, axis=1, keepdims=True)   
+        ///         log_z = m + torch.log(sumexp)
+        ///         y = x - log_z
+        ///         ctx.save_for_backward(y)
+        ///         print(y.detach().cpu().numpy())
+        ///         return y
+        ///     
+        ///     @staticmethod
+        ///     def backward(ctx, grad_output):
+        ///         gy = grad_output
+        ///         y, = ctx.saved_tensors
+        ///         sumgy = gy.sum(axis=1, keepdims=True)
+        ///         expy = torch.exp(y)
+        ///         grad = gy - expy * sumgy
+        ///         print("grad -> input")
+        ///         print(grad.detach().cpu().numpy())
+        ///         return grad
         /// 
-        ///         exp_x = torch.exp(xm)        
-        ///         DebugFunction.trace(exp_x, "exp_x")
-        ///         exp_x = debug(exp_x)
+        /// class LogSoftMaxEx(nn.Module):
+        ///     def __init__(self, axis):
+        ///         super().__init__()
+        ///         self.axis = axis
         ///         
-        ///         exp_sum = exp_x.sum(axis=-1)
-        ///         exp_sum = torch.reshape(exp_sum, (-1, 1))
-        ///         DebugFunction.trace(exp_sum, "exp_sum")
-        ///         exp_sum = debug(exp_sum)
-        ///         
-        ///         exp_log = torch.log(exp_sum)
-        ///         DebugFunction.trace(exp_log, "exp_log")
-        ///         exp_log = debug(exp_log)
-        ///         
-        ///         sm = xm - exp_log
-        ///         DebugFunction.trace(sm, "sm")
-        ///         sm = debug(sm)
-        ///         return sm
+        ///     def forward(self, x):
+        ///         softmax = LogSoftmaxFunction.apply
+        ///         return softmax(x)
         ///     
         /// torch.manual_seed(1701)
         /// input = torch.randn(3, 5, requires_grad=True)
+        /// print("input")
+        /// print(input.detach().cpu().numpy())
+        /// 
+        /// debug = DebugFunction.apply
+        /// 
         /// nllgrad = torch.zeros(3, 5)
         /// target = torch.tensor([1, 0, 4])
+        /// print("target")
+        /// print(target.detach().cpu().numpy())
         /// loss = nn.NLLLoss()
-        /// softmaxEx = LogSoftMaxEx()
         /// 
-        /// sm = softmaxEx.log_softmax(input)
+        /// softmaxEx = LogSoftMaxEx(axis=-1)
+        /// print("sm")
+        /// sm = softmaxEx(input)
+        /// 
+        /// DebugFunction.trace(sm, "sm")
+        /// sm = debug(sm)
         /// 
         /// output = loss(sm, target)
         /// output.backward()
+        /// 
+        /// softmaxPy = nn.LogSoftmax(dim=-1)
+        /// 
+        /// DebugFunction.trace(input, "input")
+        /// input = debug(input)
+        /// 
+        /// smpy = softmaxPy(input)
+        /// print("smpy")
+        /// print(smpy.detach().cpu().numpy())
+        /// output = loss(smpy, target)
+        /// print("smpy grad")
+        /// output.backward()
+        /// 
+        /// print("done!")
         /// </code>
         /// </remarks>
         public void TestForwardBackward()
@@ -177,16 +204,16 @@ namespace MyCaffe.test
                 // data from 'x.npy'
                 float[] rgX = new float[]
                 {
-                    0.4499141f,   0.7017462f,   -0.6518978f,  0.5561651f,   0.3701814f,   
-                    1.27394927f,  0.823534f,    -0.5920543f,  1.87749171f, -0.288978338f,    
-                   -0.41542238f, -0.391321629f, -1.00497425f, 1.59793139f, -0.698946834f    
+                    0.4499141f,   0.7017462f,  -0.6518978f,   0.5561651f,  0.3701814f,
+                    1.2739493f,   0.823534f,   -0.5920543f,   1.8774917f, -0.28897834f,
+                   -0.41542238f, -0.39132163f, -1.0049742f,   1.5979314f, -0.69894683f
                 };
                 // data from 'sm.npy'
                 float[] rgYexp = new float[]
                 {
-                   -1.53775132f, -1.28591919f,  -2.639563f,  -1.43150032f, -1.617484f,   
-                   -1.34292f,    -1.7933352f,   -3.20892358f,-0.7393775f,  -2.90584755f, 
-                   -2.381441f,   -2.35734034f,  -2.970993f,  -0.368087173f,-2.66496563f 
+                   -1.5377513f,  -1.2859192f,   -2.639563f,   -1.4315003f,  -1.617484f, 
+                   -1.34292f,    -1.7933352f,   -3.2089236f,  -0.7393775f,  -2.9058475f,
+                   -2.3814409f,  -2.35734f,     -2.9709928f,  -0.36808717f, -2.6649654f
                 };
                 // data from 'grad_sm.npy'
                 float[] rgYgrad = new float[]
@@ -198,18 +225,15 @@ namespace MyCaffe.test
                 // data from 'grad_x.npy'
                 float[] rgXgradExp = new float[]
                 {
-                    0.07162125f,  -0.2412012f,    0.0237974841f, 0.07965006f, 0.06613242f,  
-                   -0.246305943f,  0.0554680862f, 0.0134666925f, 0.15913704f, 0.0182341356f,
-                    0.0308057684f, 0.0315572321f, 0.0170841329f, 0.2306856f, -0.310132742f
+                    0.07162124f, -0.2412012f,    0.023797486f,   0.07965005f,  0.06613242f, 
+                   -0.24630594f,  0.055468082f,  0.0134666925f,  0.15913701f,  0.018234137f,
+                    0.030805774f, 0.031557236f,  0.017084135f,   0.23068562f, -0.31013274f
                 };
 
                 blobX.Reshape(3, 5, 1, 1);
                 blobX.mutable_cpu_data = convert(rgX);
                 blobYexp.ReshapeLike(blobX);
                 blobYexp.mutable_cpu_data = convert(rgYexp);
-                //string strPath = "...\\PythonApplication4\\PythonApplication4\\test\\";
-                // blobX.LoadFromNumpy(strPath + "x.npy");
-                // blobYexp.LoadFromNumpy(strPath + "sm.npy");
                 
                 BottomVec.Clear();
                 BottomVec.Add(blobX);
@@ -227,18 +251,16 @@ namespace MyCaffe.test
                     float fActual = rgYactual[i];
                     float fExpected = rgYexp1[i];
                     float fDiff = Math.Abs(fActual - fExpected);
-                    float fErr = (typeof(T) == typeof(float)) ? 1e-08f : 2.5e-07f;
+                    float fErr = (typeof(T) == typeof(float)) ? 1e-12f : 6e-08f;
 
                     if (fDiff > fErr)
                         m_log.FAIL("The error exeeds the expected value at i = " + i.ToString());
                 }
                 
                 blobY.mutable_cpu_diff = convert(rgYgrad);
-                //blobY.LoadFromNumpy(strPath + "grad_sm.npy", true);
                 layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
 
                 float[] rgXgradActual = convertF(blobX.mutable_cpu_diff);
-                //blobYexp.LoadFromNumpy(strPath + "grad_x.npy", true);
                 blobYexp.mutable_cpu_diff = convert(rgXgradExp);
                 float[] rgXgradExp1 = convertF(blobYexp.mutable_cpu_diff);
                 for (int i = 0; i < rgXgradActual.Length; i++)
@@ -246,7 +268,7 @@ namespace MyCaffe.test
                     float fActual = rgXgradActual[i];
                     float fExpected = rgXgradExp1[i];
                     float fDiff = Math.Abs(fActual - fExpected);
-                    float fErr = 3e-08f;
+                    float fErr = 2e-08f;
 
                     if (fDiff > fErr)
                         m_log.FAIL("The error exeeds the expected value at i = " + i.ToString());
