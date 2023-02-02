@@ -186,6 +186,7 @@ class Math
 		long add(int n, long hA, long hB, long hY, T fAlpha);
 		long add(int n, T* a, T* b, T* c);
 		long add2(int n, long hA, long hB, long hY, T fAlphaA, T fAlphaB, int AOff = 0, int nBOff = 0, int nYOff = 0);
+		long add3(int n, long hA, long hB, long hC, long hY);
 
 		long mulbsx(int n, long hA, int nAOff, long hX, int nXOff, int nChannels, int nSpatialDim, bool bTranspose, long hB, int nBOff);
 		long divbsx(int n, long hA, int nAOff, long hX, int nXOff, int nChannels, int nSpatialDim, bool bTranspose, long hB, int nBOff);

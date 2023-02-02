@@ -1062,6 +1062,7 @@ namespace MyCaffe.common
             CUDA_COPY_EXPAND = 208,
             CUDA_COPY_SEQUENCE2 = 209,
 
+            CUDA_ADD3 = 217,
             CUDA_GEAM = 218,
             CUDA_GEMM2 = 219,
             CUDA_GEMM = 220,
@@ -6840,6 +6841,25 @@ namespace MyCaffe.common
                 m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_ADD_SCALAR, m_param.AsDouble(convertD(fAlpha)), m_param.AsLong(n, 0, hY, nYOff));
             else
                 m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_ADD_SCALAR, m_param.AsFloat(convertF(fAlpha)), m_param.AsLong(n, 0, hY, nYOff));
+        }
+
+        /// <summary>
+        /// Adds A, B and C and places the result in Y.
+        /// </summary>
+        /// <remarks>
+        /// Y = A + B + C
+        /// </remarks>
+        /// <param name="n">Specifies the number of items (not bytes) in the vectors A, B and Y.</param>
+        /// <param name="hA">Specifies a handle to the vector A in GPU memory.</param>
+        /// <param name="hB">Specifies a handle to the vector B in GPU memory.</param>
+        /// <param name="hC">Specifies a handle to the vector C in GPU memory.</param>
+        /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
+        public void add(int n, long hA, long hB, long hC, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_ADD3, null, m_param.AsLong(n, hA, hB, hC, hY));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_ADD3, null, m_param.AsLong(n, hA, hB, hC, hY));
         }
 
         /// <summary>

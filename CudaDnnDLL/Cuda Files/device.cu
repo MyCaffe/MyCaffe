@@ -2188,6 +2188,27 @@ template long Device<float>::cuda_add2(long lInput, float* pfInput, long llInput
 
 
 template <class T>
+long Device<T>::cuda_add3(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 5, 5))
+		return lErr;
+
+	int n = (int)plInput[0];
+	long hA = (long)plInput[1];
+	long hB = (long)plInput[2];
+	long hC = (long)plInput[3];
+	long hY = (long)plInput[4];
+
+	return m_math.add3(n, hA, hB, hC, hY);
+}
+
+template long Device<double>::cuda_add3(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_add3(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::cuda_sub(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;

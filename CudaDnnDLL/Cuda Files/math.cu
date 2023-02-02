@@ -3185,6 +3185,50 @@ template long Math<float>::add2(int n, long hA, long hB, long hY, float dfAlphaA
 
 
 template <typename T>
+__global__ void add3_kernel(const int n, const T* a, const T* b, const T* c, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		y[i] = (T)((double)a[i] + (double)b[i] + (double)c[i]);
+	}
+}
+
+template <class T>
+long Math<T>::add3(int n, long hA, long hB, long hC, long hY)
+{
+	LONG lErr;
+	MemoryItem* pA;
+	MemoryItem* pB;
+	MemoryItem* pC;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hA, &pA))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hB, &pB))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hC, &pC))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	T* a = (T*)pA->Data();
+	T* b = (T*)pB->Data();
+	T* c = (T*)pC->Data();
+	T* y = (T*)pY->Data();
+
+	add3_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, a, b, c, y);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::add3(int n, long hA, long hB, long hC, long hY);
+template long Math<float>::add3(int n, long hA, long hB, long hC, long hY);
+
+
+template <typename T>
 __global__ void mulbsx_kernel(const int n, const T* a, const T* x, const int rows, const int cols, const bool bTrans, T* b)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)

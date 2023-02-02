@@ -515,6 +515,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, lon
 		case CUDA_FN_ADD2:
 			return m_device.cuda_add2(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
+		case CUDA_FN_ADD3:
+			return m_device.cuda_add3(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
 		case CUDA_FN_SUB:
 			return m_device.cuda_sub(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
@@ -1547,6 +1550,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_ADD2:
 		return "CUDA_FN_ADD2";
+
+	case CUDA_FN_ADD3:
+		return "CUDA_FN_ADD3";
 
 	case CUDA_FN_SUB:
 		return "CUDA_FN_SUB";
