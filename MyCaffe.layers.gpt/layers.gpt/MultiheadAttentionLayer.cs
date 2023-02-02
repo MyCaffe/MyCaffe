@@ -194,7 +194,7 @@ namespace MyCaffe.layers.gpt
             // Softmax
             LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX, p.name + ".softmax");
             softmax.softmax_param.axis = -1;
-            softmax.softmax_param.engine = EngineParameter.Engine.CAFFE;
+            softmax.softmax_param.engine = EngineParameter.Engine.CUDNN;
             m_softmax = Layer<T>.Create(cuda, log, convertLayerParam(softmax, p), null);
 
             m_blobX0 = new Blob<T>(cuda, log);
@@ -725,23 +725,19 @@ namespace MyCaffe.layers.gpt
 
                 if (colBottom[0].gpu_diff == colBottom[1].gpu_diff && colBottom[0].gpu_diff == colBottom[2].gpu_diff)
                 {
-                    colBottom[0].SetDiff(0);
+                    m_cuda.add(m_blobX0.count(), m_blobX0.gpu_diff, m_blobX1.gpu_diff, m_blobX2.gpu_diff, colBottom[0].mutable_gpu_diff);
                 }
                 else if (colBottom[1].gpu_diff == colBottom[2].gpu_diff)
                 {
-                    colBottom[0].SetDiff(0);
-                    colBottom[1].SetDiff(0);
+                    colBottom[0].CopyFrom(m_blobX0, true);
+                    m_cuda.add(m_blobX1.count(), m_blobX1.gpu_diff, m_blobX2.gpu_diff, colBottom[1].mutable_gpu_diff);
                 }
                 else
                 {
-                    colBottom[0].SetDiff(0);
-                    colBottom[1].SetDiff(0);
-                    colBottom[2].SetDiff(0);
+                    colBottom[0].CopyFrom(m_blobX0, true);
+                    colBottom[1].CopyFrom(m_blobX1, true);
+                    colBottom[2].CopyFrom(m_blobX2, true);
                 }
-
-                m_cuda.add(m_blobX0.count(), m_blobX0.gpu_diff, colBottom[0].gpu_diff, colBottom[0].mutable_gpu_diff);
-                m_cuda.add(m_blobX1.count(), m_blobX1.gpu_diff, colBottom[1].gpu_diff, colBottom[1].mutable_gpu_diff);
-                m_cuda.add(m_blobX2.count(), m_blobX2.gpu_diff, colBottom[2].gpu_diff, colBottom[2].mutable_gpu_diff);
             }
         }
     }
