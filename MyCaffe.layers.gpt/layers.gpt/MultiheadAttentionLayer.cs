@@ -102,7 +102,7 @@ namespace MyCaffe.layers.gpt
             }
             ipAttnQ.inner_product_param.axis = 2;
             ipAttnQ.parameters.Add(new ParamSpec(1.0, 1.0));
-            ipAttnQ.parameters.Add(new ParamSpec(1.0, 0.0));
+            ipAttnQ.parameters.Add(new ParamSpec(2.0, 0.0));
             m_c_attnQ = Layer<T>.Create(cuda, log, convertLayerParam(ipAttnQ, p), null);
 
             // Key projection for all heads, but in a batch.
@@ -122,7 +122,7 @@ namespace MyCaffe.layers.gpt
             }
             ipAttnK.inner_product_param.axis = 2;
             ipAttnK.parameters.Add(new ParamSpec(1.0, 1.0));
-            ipAttnK.parameters.Add(new ParamSpec(1.0, 0.0));
+            ipAttnK.parameters.Add(new ParamSpec(2.0, 0.0));
             m_c_attnK = Layer<T>.Create(cuda, log, convertLayerParam(ipAttnK, p), null);
 
             // Value projection for all heads, but in a batch.
@@ -142,7 +142,7 @@ namespace MyCaffe.layers.gpt
             }
             ipAttnV.inner_product_param.axis = 2;
             ipAttnV.parameters.Add(new ParamSpec(1.0, 1.0));
-            ipAttnV.parameters.Add(new ParamSpec(1.0, 0.0));
+            ipAttnV.parameters.Add(new ParamSpec(2.0, 0.0));
             m_c_attnV = Layer<T>.Create(cuda, log, convertLayerParam(ipAttnV, p), null);
 
             // Output projection.
@@ -162,7 +162,7 @@ namespace MyCaffe.layers.gpt
             }
             ipProj.inner_product_param.axis = 2;            
             ipProj.parameters.Add(new ParamSpec(1.0, 1.0));
-            ipProj.parameters.Add(new ParamSpec(1.0, 0.0));
+            ipProj.parameters.Add(new ParamSpec(2.0, 0.0));
             m_c_proj = Layer<T>.Create(cuda, log, convertLayerParam(ipProj, p), null);
 
             // Regularization
