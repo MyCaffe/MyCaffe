@@ -623,6 +623,44 @@ namespace MyCaffe.common
         MIN = 2
     }
 
+    /// <summary>
+    /// Specifies the SOFTMAX algorithm to use.
+    /// </summary>
+    public enum SOFTMAX_ALGORITHM
+    {
+        /// <summary>
+        /// Specifies to use the default algorithm.
+        /// </summary>
+        DEFAULT = 1,
+        /// <summary>
+        /// Specifies to use the fast algorithm.
+        /// </summary>
+        FAST = 0,
+        /// <summary>
+        /// Specifies to use the accurate algorithm.
+        /// </summary>
+        ACCURATE = 1,
+        /// <summary>
+        /// Specifies to use the log algorithm.
+        /// </summary>
+        LOG = 2
+    }
+
+    /// <summary>
+    /// Specifies the SOFTMAX mode to use.
+    /// </summary>
+    public enum SOFTMAX_MODE
+    {
+        /// <summary>
+        /// Specifies to run the softmax separately for each N, across CHW dimensions.
+        /// </summary>
+        INSTANCE,
+        /// <summary>
+        /// Specifies to run the softmax separately for each N*C, across HW dimensions.
+        /// </summary>
+        CHANNEL
+    }
+
 #pragma warning disable 1591
 
     /// <summary>
@@ -4429,24 +4467,28 @@ namespace MyCaffe.common
         /// Perform a Softmax forward pass.
         /// </summary>
         /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
+        /// <param name="alg">Specifies the SoftmaxAlgorithm to use (FAST, ACCURATE or LOG).</param>
+        /// <param name="mode">Specifies the SoftmaxMode to use (INSTANCE across NxCHW, or CHANNEL across NCxHW)</param>
         /// <param name="fAlpha">Specifies a scaling factor applied to the result.</param>
         /// <param name="hBottomDataDesc">Specifies a handle to the bottom data tensor descriptor.</param>
         /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
         /// <param name="fBeta">Specifies a scaling factor applied to the prior destination value.</param>
         /// <param name="hTopDataDesc">Specifies a handle to the top data tensor descriptor.</param>
         /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
-        public void SoftmaxForward(long hCuDnn, T fAlpha, long hBottomDataDesc, long hBottomData, T fBeta, long hTopDataDesc, long hTopData)
+        public void SoftmaxForward(long hCuDnn, SOFTMAX_ALGORITHM alg, SOFTMAX_MODE mode, T fAlpha, long hBottomDataDesc, long hBottomData, T fBeta, long hTopDataDesc, long hTopData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.SOFTMAX_FWD, m_param.AsDouble(convertD(fAlpha), convertD(fBeta)), m_param.AsLong(hCuDnn, 0, hBottomDataDesc, hBottomData, 0, hTopDataDesc, hTopData));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.SOFTMAX_FWD, m_param.AsDouble(convertD(fAlpha), convertD(fBeta)), m_param.AsLong(hCuDnn, 0, hBottomDataDesc, hBottomData, 0, hTopDataDesc, hTopData, (int)alg, (int)mode));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.SOFTMAX_FWD, m_param.AsFloat(convertF(fAlpha), convertF(fBeta)), m_param.AsLong(hCuDnn, 0, hBottomDataDesc, hBottomData, 0, hTopDataDesc, hTopData));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.SOFTMAX_FWD, m_param.AsFloat(convertF(fAlpha), convertF(fBeta)), m_param.AsLong(hCuDnn, 0, hBottomDataDesc, hBottomData, 0, hTopDataDesc, hTopData, (int)alg, (int)mode));
         }
 
         /// <summary>
         /// Perform a Softmax backward pass.
         /// </summary>
         /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
+        /// <param name="alg">Specifies the SoftmaxAlgorithm to use (FAST, ACCURATE or LOG).</param>
+        /// <param name="mode">Specifies the SoftmaxMode to use (INSTANCE across NxCHW, or CHANNEL across NCxHW)</param>
         /// <param name="fAlpha">Specifies a scaling factor applied to the result.</param>
         /// <param name="hTopDataDesc">Specifies a handle to the top data tensor descriptor.</param>
         /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
@@ -4455,12 +4497,12 @@ namespace MyCaffe.common
         /// <param name="fBeta">Specifies a scaling factor applied to the prior destination value.</param>
         /// <param name="hBottomDiffDesc">Specifies a handle to the bottom diff tensor descriptor.</param>
         /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
-        public void SoftmaxBackward(long hCuDnn, T fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, T fBeta, long hBottomDiffDesc, long hBottomDiff)
+        public void SoftmaxBackward(long hCuDnn, SOFTMAX_ALGORITHM alg, SOFTMAX_MODE mode, T fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, T fBeta, long hBottomDiffDesc, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.SOFTMAX_BWD, m_param.AsDouble(convertD(fAlpha), convertD(fBeta)), m_param.AsLong(hCuDnn, 0, hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, 0, hBottomDiffDesc, hBottomDiff));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.SOFTMAX_BWD, m_param.AsDouble(convertD(fAlpha), convertD(fBeta)), m_param.AsLong(hCuDnn, 0, hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, 0, hBottomDiffDesc, hBottomDiff, (int)alg, (int)mode));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.SOFTMAX_BWD, m_param.AsFloat(convertF(fAlpha), convertF(fBeta)), m_param.AsLong(hCuDnn, 0, hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, 0, hBottomDiffDesc, hBottomDiff));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.SOFTMAX_BWD, m_param.AsFloat(convertF(fAlpha), convertF(fBeta)), m_param.AsLong(hCuDnn, 0, hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, 0, hBottomDiffDesc, hBottomDiff, (int)alg, (int)mode));
         }
 
         /// <summary>

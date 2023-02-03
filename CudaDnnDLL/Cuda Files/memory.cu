@@ -2099,7 +2099,7 @@ template long Memory<float>::ReLUBackward(long hHandle, float fAlpha, long hTopD
 
 
 template <class T>
-long Memory<T>::SoftmaxForward(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, T fBeta, long hTopDesc, long hTopData)
+long Memory<T>::SoftmaxForward(long hHandle, SoftmaxAlgorithm alg, SoftmaxMode mode, T fAlpha, long hBottomDesc, long hBottomData, T fBeta, long hTopDesc, long hTopData)
 {
 	LONG lErr;
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
@@ -2117,18 +2117,18 @@ long Memory<T>::SoftmaxForward(long hHandle, T fAlpha, long hBottomDesc, long hB
 	T* topdata = (T*)pTopData->Data();
 	T* btmdata = (T*)pBtmData->Data();
 
-	if (lErr = cudnnSoftmaxForward(cudnn, CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL, &fAlpha, btmdesc, btmdata, &fBeta, topdesc, topdata))
+	if (lErr = cudnnSoftmaxForward(cudnn, (cudnnSoftmaxAlgorithm_t)alg, (cudnnSoftmaxMode_t)mode, &fAlpha, btmdesc, btmdata, &fBeta, topdesc, topdata))
 		return lErr | ERROR_CUDNN_OFFSET;
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Memory<double>::SoftmaxForward(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, double dfBeta, long hTopDesc, long hTopData);
-template long Memory<float>::SoftmaxForward(long hHandle, float fAlpha, long hBottomDesc, long hBottomData, float fBeta, long hTopDesc, long hTopData);
+template long Memory<double>::SoftmaxForward(long hHandle, SoftmaxAlgorithm alg, SoftmaxMode mode, double dfAlpha, long hBottomDesc, long hBottomData, double dfBeta, long hTopDesc, long hTopData);
+template long Memory<float>::SoftmaxForward(long hHandle, SoftmaxAlgorithm alg, SoftmaxMode mode, float fAlpha, long hBottomDesc, long hBottomData, float fBeta, long hTopDesc, long hTopData);
 
 
 template <class T>
-long Memory<T>::SoftmaxBackward(long hHandle, T fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, T fBeta, long hBottomDiffDesc, long hBottomDiff)
+long Memory<T>::SoftmaxBackward(long hHandle, SoftmaxAlgorithm alg, SoftmaxMode mode, T fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, T fBeta, long hBottomDiffDesc, long hBottomDiff)
 {
 	LONG lErr;
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
@@ -2152,14 +2152,14 @@ long Memory<T>::SoftmaxBackward(long hHandle, T fAlpha, long hTopDataDesc, long 
 	T* topdiff = (T*)pTopDiff->Data();
 	T* btmdiff = (T*)pBtmDiff->Data();
 
-	if (lErr = cudnnSoftmaxBackward(cudnn, CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, &fBeta, btmdiffdesc, btmdiff))
+	if (lErr = cudnnSoftmaxBackward(cudnn, (cudnnSoftmaxAlgorithm_t)alg, (cudnnSoftmaxMode_t)mode, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, &fBeta, btmdiffdesc, btmdiff))
 		return lErr | ERROR_CUDNN_OFFSET;
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Memory<double>::SoftmaxBackward(long hHandle, double dfAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, double dfBeta, long hBottomDiffDesc, long hBottomDiff);
-template long Memory<float>::SoftmaxBackward(long hHandle, float fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, float fBeta, long hBottomDiffDesc, long hBottomDiff);
+template long Memory<double>::SoftmaxBackward(long hHandle, SoftmaxAlgorithm alg, SoftmaxMode mode, double dfAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, double dfBeta, long hBottomDiffDesc, long hBottomDiff);
+template long Memory<float>::SoftmaxBackward(long hHandle, SoftmaxAlgorithm alg, SoftmaxMode mode, float fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, float fBeta, long hBottomDiffDesc, long hBottomDiff);
 
 
 template <class T>

@@ -3819,7 +3819,7 @@ inline long Device<T>::SoftmaxForward(long lInput, T* pfInput, long llInput, LON
 
 	if (lErr = verifyInput(lInput, pfInput, 2, 2))
 		return lErr;
-	if (lErr = verifyInput(llInput, plInput, 7, 7))
+	if (lErr = verifyInput(llInput, plInput, 9, 9))
 		return lErr;
 
 	long hHandle = (long)plInput[0];
@@ -3829,8 +3829,10 @@ inline long Device<T>::SoftmaxForward(long lInput, T* pfInput, long llInput, LON
 	T fBeta = pfInput[1];
 	long hTopDesc = (long)plInput[5];
 	long hTopData = (long)plInput[6];
+	SoftmaxAlgorithm alg = (SoftmaxAlgorithm)plInput[7];
+	SoftmaxMode mode = (SoftmaxMode)plInput[8];
 
-	return m_memory.SoftmaxForward(hHandle, fAlpha, hBottomDesc, hBottomData, fBeta, hTopDesc, hTopData);
+	return m_memory.SoftmaxForward(hHandle, alg, mode, fAlpha, hBottomDesc, hBottomData, fBeta, hTopDesc, hTopData);
 }
 
 template <class T>
@@ -3840,7 +3842,7 @@ inline long Device<T>::SoftmaxBackward(long lInput, T* pfInput, long llInput, LO
 
 	if (lErr = verifyInput(lInput, pfInput, 2, 2))
 		return lErr;
-	if (lErr = verifyInput(llInput, plInput, 9, 9))
+	if (lErr = verifyInput(llInput, plInput, 11, 11))
 		return lErr;
 
 	long hHandle = (long)plInput[0];
@@ -3852,8 +3854,10 @@ inline long Device<T>::SoftmaxBackward(long lInput, T* pfInput, long llInput, LO
 	T fBeta = pfInput[1];
 	long hBottomDiffDesc = (long)plInput[7];
 	long hBottomDiff = (long)plInput[8];
+	SoftmaxAlgorithm alg = (SoftmaxAlgorithm)plInput[9];
+	SoftmaxMode mode = (SoftmaxMode)plInput[10];
 
-	return m_memory.SoftmaxBackward(hHandle, fAlpha, hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, fBeta, hBottomDiffDesc, hBottomDiff);
+	return m_memory.SoftmaxBackward(hHandle, alg, mode, fAlpha, hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, fBeta, hBottomDiffDesc, hBottomDiff);
 }
 
 

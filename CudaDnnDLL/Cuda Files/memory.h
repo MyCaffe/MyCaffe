@@ -70,6 +70,19 @@ enum RnnDataLayout
 	RNN_DATALAYOUT_BATCH_MAJOR = CUDNN_RNN_DATA_LAYOUT_BATCH_MAJOR_UNPACKED
 };
 
+enum SoftmaxAlgorithm
+{
+	SOFTMAX_FAST = CUDNN_SOFTMAX_FAST,
+	SOFTMAX_ACCURATE = CUDNN_SOFTMAX_ACCURATE,
+	SOFTMAX_LOG = CUDNN_SOFTMAX_LOG
+};
+
+enum SoftmaxMode
+{
+	SOFTMAX_MODE_INSTANCE = CUDNN_SOFTMAX_MODE_INSTANCE,
+	SOFTMAX_MODE_CHANNEL = CUDNN_SOFTMAX_MODE_CHANNEL
+};
+
 
 //=============================================================================
 //	Classes
@@ -376,8 +389,8 @@ class Memory
 		long ReLUForward(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, T fBeta, long hTopDesc, long hTopData);
 		long ReLUBackward(long hHandle, T fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, T fBeta, long hBottomDiffDesc, long hBottomDiff);
 
-		long SoftmaxForward(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, T fBeta, long hTopDesc, long hTopData);
-		long SoftmaxBackward(long hHandle, T fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, T fBeta, long hBottomDiffDesc, long hBottomDiff);
+		long SoftmaxForward(long hHandle, SoftmaxAlgorithm alg, SoftmaxMode mode, T fAlpha, long hBottomDesc, long hBottomData, T fBeta, long hTopDesc, long hTopData);
+		long SoftmaxBackward(long hHandle, SoftmaxAlgorithm alg, SoftmaxMode mode, T fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, T fBeta, long hBottomDiffDesc, long hBottomDiff);
 
 		long CreateRnnDataDesc1(long* phHandle);
 		long FreeRnnDataDesc1(long hHandle);
