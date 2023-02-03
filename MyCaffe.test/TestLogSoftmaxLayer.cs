@@ -30,11 +30,30 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestGradient()
+        {
+            LogSoftmaxLayerTest test = new LogSoftmaxLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ILogSoftmaxLayerTest t in test.Tests)
+                {
+                    t.TestGradient();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface ILogSoftmaxLayerTest : ITest
     {
         void TestForwardBackward();
+        void TestGradient();
     }
 
     class LogSoftmaxLayerTest : TestBase
@@ -198,7 +217,7 @@ namespace MyCaffe.test
             Blob<T> blobX = new Blob<T>(m_cuda, m_log);
             Blob<T> blobY = new Blob<T>(m_cuda, m_log);
             Blob<T> blobYexp = new Blob<T>(m_cuda, m_log);
-            
+
             try
             {
                 // data from 'x.npy'
@@ -211,7 +230,7 @@ namespace MyCaffe.test
                 // data from 'sm.npy'
                 float[] rgYexp = new float[]
                 {
-                   -1.5377513f,  -1.2859192f,   -2.639563f,   -1.4315003f,  -1.617484f, 
+                   -1.5377513f,  -1.2859192f,   -2.639563f,   -1.4315003f,  -1.617484f,
                    -1.34292f,    -1.7933352f,   -3.2089236f,  -0.7393775f,  -2.9058475f,
                    -2.3814409f,  -2.35734f,     -2.9709928f,  -0.36808717f, -2.6649654f
                 };
@@ -225,7 +244,7 @@ namespace MyCaffe.test
                 // data from 'grad_x.npy'
                 float[] rgXgradExp = new float[]
                 {
-                    0.07162124f, -0.2412012f,    0.023797486f,   0.07965005f,  0.06613242f, 
+                    0.07162124f, -0.2412012f,    0.023797486f,   0.07965005f,  0.06613242f,
                    -0.24630594f,  0.055468082f,  0.0134666925f,  0.15913701f,  0.018234137f,
                     0.030805774f, 0.031557236f,  0.017084135f,   0.23068562f, -0.31013274f
                 };
@@ -234,7 +253,7 @@ namespace MyCaffe.test
                 blobX.mutable_cpu_data = convert(rgX);
                 blobYexp.ReshapeLike(blobX);
                 blobYexp.mutable_cpu_data = convert(rgYexp);
-                
+
                 BottomVec.Clear();
                 BottomVec.Add(blobX);
                 TopVec.Clear();
@@ -256,7 +275,7 @@ namespace MyCaffe.test
                     if (fDiff > fErr)
                         m_log.FAIL("The error exeeds the expected value at i = " + i.ToString());
                 }
-                
+
                 blobY.mutable_cpu_diff = convert(rgYgrad);
                 layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
 
@@ -279,6 +298,24 @@ namespace MyCaffe.test
                 dispose(ref blobX);
                 dispose(ref blobY);
                 dispose(ref blobYexp);
+                layer.Dispose();
+            }
+        }
+
+        public void TestGradient()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.LOG_SOFTMAX);
+            p.log_softmax_param.axis = -1;
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
+
+            try
+            {
+                m_log.CHECK(layer.layer_param.type == LayerParameter.LayerType.LOG_SOFTMAX, "The layer type should be LOG_SOFTMAX!");
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
+            }
+            finally
+            {
                 layer.Dispose();
             }
         }
