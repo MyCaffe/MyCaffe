@@ -827,6 +827,9 @@ namespace MyCaffe.test
             ip1.name = "ip1";
             ip1.inner_product_param.axis = 2;
             ip1.inner_product_param.num_output = nDecVocabSize;
+            ip1.inner_product_param.bias_term = true;
+            ip1.parameters.Add(new ParamSpec(1, 1));
+            ip1.parameters.Add(new ParamSpec(2, 0));
             ip1.bottom.Add("ln2");
             ip1.top.Add("logits");
             net.layer.Add(ip1);
@@ -1348,11 +1351,11 @@ namespace MyCaffe.test
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
                 loadInitialState(net, strPath + "iter_0\\");
 
-                blobEncIn.LoadFromNumpy(strPath + "0_src_input.npy");
-                blobDecIn.LoadFromNumpy(strPath + "0_trg_input.npy");
-                blobDecOut.LoadFromNumpy(strPath + "0_trg_output.npy");
-                blobEncMask.LoadFromNumpy(strPath + "0_e_mask.npy");
-                blobDecMask.LoadFromNumpy(strPath + "0_d_mask.npy");
+                blobEncIn.LoadFromNumpy(strPath + "src_input.npy");
+                blobDecIn.LoadFromNumpy(strPath + "trg_input.npy");
+                blobDecOut.LoadFromNumpy(strPath + "trg_output.npy");
+                blobEncMask.LoadFromNumpy(strPath + "e_mask.npy");
+                blobDecMask.LoadFromNumpy(strPath + "d_mask.npy");
 
                 blobEncMask.Reshape(blobEncMask.num, blobEncMask.height, 1, 1);
 
@@ -1439,18 +1442,18 @@ namespace MyCaffe.test
                 blobVal.LoadFromNumpy(strPath + "transformer.d_output1.npy");
                 m_log.CHECK(blobVal.Compare(net.top_vecs[nDecOutLayerO1][0], blobWork, false, 2e-06), "The blobs do not match!");
 
-                blobLoss.LoadFromNumpy(strPath + "0_loss.npy");
+                int nLogSoftmax = 23;
+                blobVal.LoadFromNumpy(strPath + "transformer.output.npy");
+                m_log.CHECK(blobVal.Compare(net.top_vecs[nLogSoftmax][0], blobWork, false, 2e-06), "The blobs do not match!");
+
+                blobLoss.LoadFromNumpy(strPath + "15_loss.npy");
                 double dfActual = Utility.ConvertVal<T>(blobLoss.GetData(0));
-                double dfErr = (typeof(T) == typeof(float)) ? 1e-08 : 1e-06;
+                double dfErr = 1e-06;
                 m_log.EXPECT_NEAR(dfLoss, dfActual, dfErr, "The loss does not match the actual.");
 
                 //---------------------------------
                 // Test the backward pass.
                 //---------------------------------
-
-                blobLoss.LoadFromNumpy(strPath + "grad_0_loss.npy", true);
-                int nOutLayer = 24;
-                net.top_vecs[nOutLayer][0].CopyFrom(blobLoss, true);
 
                 net.Backward();
 
