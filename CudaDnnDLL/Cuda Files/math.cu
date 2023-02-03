@@ -5809,13 +5809,14 @@ __global__ void channel_sum_kernel_acrosschannels(const int num, const int chann
 {
 	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<num * spatial_dim && i>=0; i += blockDim.x * gridDim.x)
 	{
-		int n = i / spatial_dim;
-		int s = i % spatial_dim;
+		const int n = i / spatial_dim;
+		const int s = i % spatial_dim;
+		const int offset = n * channels;
 		double val = 0;
 
 		for (int c=0; c<channels; c++)
 		{
-			val += (double)x[(n * channels + c) * spatial_dim + s];
+			val += (double)x[(offset + c) * spatial_dim + s];
 		}
 
 		y[i] = (T)val;
@@ -5827,11 +5828,12 @@ __global__ void channel_sum_kernel_withinchannel(const int num, const int channe
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * channels && i >= 0; i += blockDim.x * gridDim.x)
 	{
+		const T* x1 = x + (i * spatial_dim);
 		double val = 0;
 
 		for (int j = 0; j < spatial_dim; j++)
 		{
-			val += (double)x[(i * spatial_dim) + j];
+			val += (double)x1[j];
 		}
 
 		y[i] = (T)val;
