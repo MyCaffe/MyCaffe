@@ -172,6 +172,12 @@ namespace MyCaffe.layers.gpt
         /// Gradients cannot be computed with respect to the label inputs (bottom[1]),
         /// so this method ignores bottom[1] and requires !propagate_down[1], crashing
         /// if propagate_down[1] == true.
+        /// 
+        /// Gradient in desired index is set to -1/item_size, and 0 elsewhere, where the
+        /// item_size is the mumber of elements in at the specifies axis.  For example, 
+        /// when using with an NLP problem where the item_size = the vocabulary_size, the
+        /// index of the grad for the correct word is set to -1/vocabulary_size, and all other indices
+        /// are set to zero.
         /// </remarks>
         /// <param name="colTop">top output blob vector (length 1), providing the error gradient with
         /// respect to the outputs.
