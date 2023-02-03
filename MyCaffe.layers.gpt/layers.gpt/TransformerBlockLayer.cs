@@ -68,6 +68,8 @@ namespace MyCaffe.layers.gpt
             m_blobMlp.Name = m_param.name + " mlp";
             m_blobMlpOut = new Blob<T>(cuda, log);
             m_blobMlpOut.Name = m_param.name + " mlp_out";
+            m_blobX = new Blob<T>(cuda, log);
+            m_blobX.Name = m_param.name + " xB";
 
             LayerParameter ln1 = new LayerParameter(LayerParameter.LayerType.LAYERNORM, p.name + ".ln1");
             ln1.layer_norm_param.enable_cuda_impl = p.transformer_block_param.enable_layernorm_cuda_impl;
@@ -106,8 +108,6 @@ namespace MyCaffe.layers.gpt
                 m_blobAttn2.Name = m_param.name + " attn2";
                 m_blobLn3 = new Blob<T>(cuda, log);
                 m_blobLn3.Name = m_param.name + " ln3";
-                m_blobX = new Blob<T>(cuda, log);
-                m_blobX.Name = m_param.name + " xB";
 
                 LayerParameter ln3 = new LayerParameter(LayerParameter.LayerType.LAYERNORM, "ln3");
                 ln3.layer_norm_param.enable_cuda_impl = p.transformer_block_param.enable_layernorm_cuda_impl;
@@ -153,7 +153,7 @@ namespace MyCaffe.layers.gpt
                 fc.inner_product_param.bias_filler = new FillerParameter("xavier");
             }
             fc.parameters.Add(new ParamSpec(1.0, 1.0));
-            fc.parameters.Add(new ParamSpec(1.0, 0.0));
+            fc.parameters.Add(new ParamSpec(2.0, 0.0));
             m_fc = Layer<T>.Create(cuda, log, convertLayerParam(fc, p), evtCancel);
 
             LayerParameter proj = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".proj");
@@ -172,7 +172,7 @@ namespace MyCaffe.layers.gpt
                 proj.inner_product_param.bias_filler = new FillerParameter("xavier");
             }
             proj.parameters.Add(new ParamSpec(1.0, 1.0));
-            proj.parameters.Add(new ParamSpec(1.0, 0.0));
+            proj.parameters.Add(new ParamSpec(2.0, 0.0));
             m_proj = Layer<T>.Create(cuda, log, convertLayerParam(proj, p), evtCancel);
 
             // ReLU has a very similar curve, and is faster.
@@ -246,8 +246,7 @@ namespace MyCaffe.layers.gpt
                 col.Add(m_blobLn3);
             col.Add(m_blobMlp);
             col.Add(m_blobMlpOut);
-            if (m_blobX != null)
-                col.Add(m_blobX);
+            col.Add(m_blobX);
 
             col.Add(m_ln1.internal_blobs);
             col.Add(m_attn1.internal_blobs);
@@ -370,12 +369,8 @@ namespace MyCaffe.layers.gpt
             m_blobAttn1.ReshapeLike(colBottom[0]);
             shareLayerBlob(m_blobLn2, colBottom[0].shape());
             m_blobLn2.ReshapeLike(colBottom[0]);
-
-            if (m_blobX != null)
-            {
-                shareLayerBlob(m_blobX, colBottom[0].shape());
-                m_blobX.ReshapeLike(colBottom[0]);
-            }
+            shareLayerBlob(m_blobX, colBottom[0].shape());
+            m_blobX.ReshapeLike(colBottom[0]);
 
             if (m_blobAttn2 != null)
             {
@@ -480,9 +475,7 @@ namespace MyCaffe.layers.gpt
             m_blobLn1.ReshapeLike(colBottom[0]);
             m_blobAttn1.ReshapeLike(colBottom[0]);
             m_blobLn2.ReshapeLike(colBottom[0]);
-
-            if (m_blobX != null)
-                m_blobX.ReshapeLike(colBottom[0]);
+            m_blobX.ReshapeLike(colBottom[0]);
 
             if (m_blobAttn2 != null)
                 m_blobAttn2.ReshapeLike(colBottom[0]);
