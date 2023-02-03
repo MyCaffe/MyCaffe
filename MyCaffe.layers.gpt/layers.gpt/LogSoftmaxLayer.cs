@@ -145,7 +145,7 @@ namespace MyCaffe.layers.gpt
             long hMaxData = m_blobMax.mutable_gpu_data;
             long hScaleData = m_blobScale.mutable_gpu_data;
             int nCount = colBottom[0].count();
-            int nChannels = colTop[0].shape(m_nSoftmaxAxis);
+            int nChannels = colTop[0].shape(m_nSoftmaxAxis);        
 
             m_cuda.copy(nCount, hBottomData, hTopData);
 
@@ -165,7 +165,7 @@ namespace MyCaffe.layers.gpt
 
             // exp_log = exp_sum.log()
             m_cuda.log(m_nOuterNum * m_nInnerNum, m_blobExpXSum.gpu_data, hScaleData);
-            
+
             // log_z = c + exp_log
             m_cuda.add(m_nOuterNum * m_nInnerNum, hMaxData, hScaleData, hScaleData);
 
@@ -195,7 +195,7 @@ namespace MyCaffe.layers.gpt
             int nCount = colTop[0].count();
             int nChannels = colTop[0].shape(m_nSoftmaxAxis);
 
-            // exp_log_grad = -1 * sum channel diff
+            // sum channel diff
             m_cuda.channel_sum(nCount, m_nOuterNum, nChannels, m_nInnerNum, hTopDiff, m_blobScale.mutable_gpu_diff);
 
             // expy = exp(y)
