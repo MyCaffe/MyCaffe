@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.ComponentModel;
 using MyCaffe.basecode;
+using MyCaffe.common;
 
 namespace MyCaffe.param
 {
@@ -19,6 +20,8 @@ namespace MyCaffe.param
     public class SoftmaxParameter : EngineParameter 
     {
         int m_nAxis = 1;
+        SOFTMAX_ALGORITHM? m_TrainAlgorithm = null;
+        SOFTMAX_ALGORITHM m_RunAlgorithm = SOFTMAX_ALGORITHM.DEFAULT;
 
         /** @copydoc EngineParameter */
         public SoftmaxParameter()
@@ -48,6 +51,24 @@ namespace MyCaffe.param
                 return false;
 
             return true;
+        }
+
+        /// <summary>
+        /// Optionally, specifies the softmax algorithm to use during the training phase, when null, the 'algorithm' is used instead.
+        /// </summary>
+        public SOFTMAX_ALGORITHM? algorithm_train
+        {
+            get { return m_TrainAlgorithm; }
+            set { m_TrainAlgorithm = value; }
+        }
+
+        /// <summary>
+        /// Specifies the softmax algorithm to use during the running and testing.
+        /// </summary>
+        public SOFTMAX_ALGORITHM algorithm
+        {
+            get { return m_RunAlgorithm; }
+            set { m_RunAlgorithm = value; }
         }
 
         /// <summary>
@@ -83,6 +104,8 @@ namespace MyCaffe.param
             {
                 SoftmaxParameter p = (SoftmaxParameter)src;
                 m_nAxis = p.m_nAxis;
+                m_TrainAlgorithm = p.m_TrainAlgorithm;
+                m_RunAlgorithm = p.m_RunAlgorithm;
             }
         }
 
@@ -102,6 +125,9 @@ namespace MyCaffe.param
 
             rgChildren.Add(rpBase.Children);
             rgChildren.Add("axis", axis.ToString());
+            rgChildren.Add("algorithm", algorithm.ToString());
+            if (algorithm_train.HasValue)
+                rgChildren.Add("algorithm_train", algorithm_train.Value.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -120,6 +146,34 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("axis")) != null)
                 p.axis = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("algorithm")) != null)
+            {
+                if (strVal == SOFTMAX_ALGORITHM.LOG.ToString())
+                    p.algorithm = SOFTMAX_ALGORITHM.LOG;
+                else if (strVal == SOFTMAX_ALGORITHM.ACCURATE.ToString())
+                    p.algorithm = SOFTMAX_ALGORITHM.ACCURATE;
+                else if (strVal == SOFTMAX_ALGORITHM.FAST.ToString())
+                    p.algorithm = SOFTMAX_ALGORITHM.FAST;
+                else
+                    p.algorithm = SOFTMAX_ALGORITHM.DEFAULT;
+            }
+
+            if ((strVal = rp.FindValue("algorithm_train")) != null)
+            {
+                if (strVal == SOFTMAX_ALGORITHM.LOG.ToString())
+                    p.algorithm_train = SOFTMAX_ALGORITHM.LOG;
+                else if (strVal == SOFTMAX_ALGORITHM.ACCURATE.ToString())
+                    p.algorithm_train = SOFTMAX_ALGORITHM.ACCURATE;
+                else if (strVal == SOFTMAX_ALGORITHM.FAST.ToString())
+                    p.algorithm_train = SOFTMAX_ALGORITHM.FAST;
+                else
+                    p.algorithm_train = SOFTMAX_ALGORITHM.DEFAULT;
+            }
+            else
+            {
+                p.algorithm_train = null;
+            }
 
             return p;
         }
