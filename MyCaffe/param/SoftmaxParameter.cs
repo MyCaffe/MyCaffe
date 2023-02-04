@@ -42,7 +42,7 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Queries whether or not to use [NVIDIA's cuDnn](https://developer.nvidia.com/cudnn).
+        /// Queries whether or not to use [NVIDIA's cuDnn](https://developer.nvidia.com/cudnn).  Softmax uses cuDNN as the default.
         /// </summary>
         /// <returns>Returns <i>true</i> when cuDnn is to be used, <i>false</i> otherwise.</returns>
         public bool useCudnn()

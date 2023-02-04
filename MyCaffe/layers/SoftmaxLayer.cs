@@ -124,10 +124,6 @@ namespace MyCaffe.layers
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             m_algorithm = m_param.softmax_param.algorithm;
-
-            if (m_phase == Phase.TRAIN && m_param.softmax_param.algorithm_train.HasValue)
-                m_algorithm = m_param.softmax_param.algorithm_train.Value;
-
             if (m_param.softmax_param.engine == EngineParameter.Engine.CAFFE)
             {
                 if (m_algorithm != SOFTMAX_ALGORITHM.ACCURATE)
@@ -151,6 +147,9 @@ namespace MyCaffe.layers
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             m_nSoftmaxAxis = colBottom[0].CanonicalAxisIndex(m_param.softmax_param.axis);
+
+            if (m_phase == Phase.TRAIN && m_param.softmax_param.algorithm_train.HasValue)
+                m_algorithm = m_param.softmax_param.algorithm_train.Value;
 
             colTop[0].ReshapeLike(colBottom[0]);
 
@@ -343,7 +342,7 @@ namespace MyCaffe.layers
             long hBottomData = colBottom[0].gpu_data;
             long hTopData = colTop[0].mutable_gpu_data;
 
-            m_cuda.SoftmaxForward(m_hCudnn, m_param.softmax_param.algorithm, m_mode, m_tOne, m_hBottomDesc, hBottomData, m_tZero, m_hTopDesc, hTopData);
+            m_cuda.SoftmaxForward(m_hCudnn, m_algorithm, m_mode, m_tOne, m_hBottomDesc, hBottomData, m_tZero, m_hTopDesc, hTopData);
         }
 
         /// <summary>
@@ -365,7 +364,7 @@ namespace MyCaffe.layers
             long hBottomData = colBottom[0].gpu_data;
             long hBottomDiff = colBottom[0].mutable_gpu_diff;
 
-            m_cuda.SoftmaxBackward(m_hCudnn, m_param.softmax_param.algorithm, m_mode, m_tOne, m_hTopDesc, hTopData, m_hTopDesc, hTopDiff, m_tZero, m_hBottomDesc, hBottomDiff);
+            m_cuda.SoftmaxBackward(m_hCudnn, m_algorithm, m_mode, m_tOne, m_hTopDesc, hTopData, m_hTopDesc, hTopDiff, m_tZero, m_hBottomDesc, hBottomDiff);
         }
     }
 }
