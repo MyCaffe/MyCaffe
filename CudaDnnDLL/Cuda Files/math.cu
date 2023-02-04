@@ -7124,114 +7124,72 @@ long Math<float>::rng_bernoulli(int n, float fNonZeroProb, long hY)
 }
 
 template<typename T>
-__global__ void accuracy_fwd_kernel(const int nCount, const T* bottom_data, const T* label, T* acc, T* counts, const int num, const int dim, const int spatial_dim, const int num_labels, const int top_k)
+__global__ void accuracy_fwd_kernel(const int nCount, const int num_labels, const int spatial_dim, const T* bottom_data, const T* label, T* acc, T* accTotals)
 {
-	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index<nCount && index>=0; index += blockDim.x * gridDim.x)
+	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index<num_labels && index>=0; index += blockDim.x * gridDim.x)
 	{
-		const int n = index / spatial_dim;
-		const int s = index % spatial_dim;
-		const int label_value = static_cast<int>(label[n * spatial_dim + s]);
-		const T prob_of_true_class = bottom_data[n * dim + label_value * spatial_dim + s];
-		int num_better_predictions = -1; // true_class also counts as 'better'
-
-		for (int k = 0; k < num_labels && num_better_predictions < top_k; k++)
+		const int offset = index * spatial_dim;
+		const int label_value = static_cast<int>(label[index]);
+		const T* btm = bottom_data + (index * spatial_dim);
+		T maxval = -FLT_MAX;
+		int nMaxIdx = -1;
+		
+		for (int k = 0; k < spatial_dim; k++)
 		{
-			num_better_predictions += (bottom_data[n * dim + k * spatial_dim + s] >= prob_of_true_class);
+			if (btm[offset + k] > maxval)
+			{
+				maxval = btm[k];
+				nMaxIdx = k;
+			}			
 		}
 
-		acc[index] = (num_better_predictions < top_k);
-		counts[index] = 1;
+		acc[index] = (nMaxIdx == label_value) ? 1 : 0;
+		accTotals[index] = 1;
 	}
 }
 
 template<typename T>
-__global__ void accuracy_fwd_kernel_ignore(const int nCount, const T* bottom_data, const T* label, T* acc,  T* counts, const int num, const int dim, const int spatial_dim, const int num_labels, const int top_k, const int ignore_label)
+__global__ void accuracy_fwd_kernel_ignore(const int nCount, const int num_labels, const int spatial_dim, const T* bottom_data, const T* label, T* acc, T* accTotals, const int ignore_label)
 {
-	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index<nCount && index>=0; index += blockDim.x * gridDim.x)
+	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index < num_labels && index >= 0; index += blockDim.x * gridDim.x)
 	{
-		const int n = index / spatial_dim;
-		const int s = index % spatial_dim;
-		const int label_value = static_cast<int>(label[n * spatial_dim + s]);
-		const T prob_of_true_class = bottom_data[n * dim + label_value * spatial_dim + s];
-		int num_better_predictions = -1; // true_class also counts as 'better'
+		const int label_value = static_cast<int>(label[index]);
+		
+		if (label_value != ignore_label)
+		{
+			const T* btm = bottom_data + (index * spatial_dim);
+			T maxval = -FLT_MAX;
+			int nMaxIdx = -1;
 
-		if (label_value == ignore_label)
+			for (int k = 0; k < spatial_dim; k++)
+			{
+				if (btm[k] > maxval)
+				{
+					maxval = btm[k];
+					nMaxIdx = k;
+				}
+			}
+
+			acc[index] = (nMaxIdx == label_value) ? 1 : 0;
+			accTotals[index] = 1;
+		}
+		else
 		{
 			acc[index] = 0;
-			counts[index] = 0;
-		}
-		else
-		{
-			for (int k = 0; k < num_labels && num_better_predictions < top_k; k++)
-			{
-				num_better_predictions += (bottom_data[n * dim + k * spatial_dim + s] >= prob_of_true_class);
-			}
-
-			acc[index] = (num_better_predictions < top_k);
-			counts[index] = 1;
-		}
-	}
-}
-
-template<typename T>
-__global__ void accuracy_fwd_kernel_perclass(const int nCount, const T* bottom_data, const T* label, T* acc, T* counts, const int num, const int dim, const int spatial_dim, const int num_labels, const int top_k)
-{
-	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index<nCount && index>=0; index += blockDim.x * gridDim.x)
-	{
-		const int n = index / spatial_dim;
-		const int s = index % spatial_dim;
-		const int label_value = static_cast<int>(label[n * spatial_dim + s]);
-		const T prob_of_true_class = bottom_data[n * dim + label_value * spatial_dim + s];
-		int num_better_predictions = -1; // true_class also counts as 'better'
-
-		for (int k = 0; k < num_labels && num_better_predictions < top_k; k++)
-		{
-			num_better_predictions += (bottom_data[n * dim + k * spatial_dim + s] >= prob_of_true_class);
-		}
-
-		acc[label_value * nCount + index] = (num_better_predictions < top_k);
-		counts[label_value * nCount + index] = 1;
-	}
-}
-
-template<typename T>
-__global__ void accuracy_fwd_kernel_perclass_ignore(const int nCount, const T* bottom_data, const T* label, T* acc, T* counts, const int num, const int dim, const int spatial_dim, const int num_labels, const int top_k, const int ignore_label)
-{
-	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index<nCount && index>=0; index += blockDim.x * gridDim.x)
-	{
-		const int n = index / spatial_dim;
-		const int s = index % spatial_dim;
-		const int label_value = static_cast<int>(label[n * spatial_dim + s]);
-		const T prob_of_true_class = bottom_data[n * dim + label_value * spatial_dim + s];
-
-		if (label_value == ignore_label)
-		{
-			// nothing to be done.
-		}
-		else
-		{
-			int num_better_predictions = -1; // true_class also counts as 'better'
-
-			for (int k = 0; k < num_labels && num_better_predictions < top_k; k++)
-			{
-				num_better_predictions += (bottom_data[n * dim + k * spatial_dim + s] >= prob_of_true_class);
-			}
-
-			acc[label_value * nCount + index] = (num_better_predictions < top_k);
-			counts[label_value * nCount + index] = 1;
+			accTotals[index] = 0;
 		}
 	}
 }
 
 template <class T>
-long Math<T>::accuracy_fwd(int n, long hBottomData, long hBottomLabel, long hAccData, int nOuterNum, int nDim, int nInnerNum, int nNumLabels, int nTopK, long hCounts, bool bPerClass, bool bIgnoreLabel, int nIgnoreLabel)
+long Math<T>::accuracy_fwd(int n, int nOuterNum, int nInnerNum, long hBottomData, long hBottomLabel, long hAccData, long hAccTotals, bool bIgnoreLabel, int nIgnoreLabel)
 {
 	LONG lErr;
 
 	MemoryItem* pBottomData;
 	MemoryItem* pBottomLabel;
 	MemoryItem* pAccData;
-	MemoryItem* pCounts;
+	MemoryItem* pAccTotals;
 
 	if (lErr = m_pMemCol->GetData(hBottomData, &pBottomData))
 		return lErr;
@@ -7242,34 +7200,24 @@ long Math<T>::accuracy_fwd(int n, long hBottomData, long hBottomLabel, long hAcc
 	if (lErr = m_pMemCol->GetData(hAccData, &pAccData))
 		return lErr;
 
-	if (lErr = m_pMemCol->GetData(hCounts, &pCounts))
+	if (lErr = m_pMemCol->GetData(hAccTotals, &pAccTotals))
 		return lErr;
 
 	T* bottom_data = (T*)pBottomData->Data();
 	T* bottom_label = (T*)pBottomLabel->Data();
 	T* acc_data = (T*)pAccData->Data();
-	T* counts = (T*)pCounts->Data();
+	T* acc_totals = (T*)pAccTotals->Data();
 
-	if (bPerClass)
-	{
-		if (bIgnoreLabel)
-			accuracy_fwd_kernel_ignore<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, bottom_label, acc_data, counts, nOuterNum, nDim, nInnerNum, nNumLabels, nTopK, nIgnoreLabel);
-		else
-			accuracy_fwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, bottom_label, acc_data, counts, nOuterNum, nDim, nInnerNum, nNumLabels, nTopK);
-	}
+	if (bIgnoreLabel)
+		accuracy_fwd_kernel_ignore<T><<<CAFFE_GET_BLOCKS(nOuterNum), CAFFE_CUDA_NUM_THREADS>>>(n, nOuterNum, nInnerNum, bottom_data, bottom_label, acc_data, acc_totals, nIgnoreLabel);
 	else
-	{
-		if (bIgnoreLabel)
-			accuracy_fwd_kernel_perclass_ignore<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, bottom_label, acc_data, counts, nOuterNum, nDim, nInnerNum, nNumLabels, nTopK, nIgnoreLabel);
-		else
-			accuracy_fwd_kernel_perclass<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, bottom_label, acc_data, counts, nOuterNum, nDim, nInnerNum, nNumLabels, nTopK);
-	}
+		accuracy_fwd_kernel<T><<<CAFFE_GET_BLOCKS(nOuterNum), CAFFE_CUDA_NUM_THREADS>>>(n, nOuterNum, nInnerNum, bottom_data, bottom_label, acc_data, acc_totals);
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::accuracy_fwd(int nCount, long hBtmData, long hBtmLabel, long hAccData, int nOuterNum, int nDim, int nInnerNum, int nNumLabels, int nTopK, long hCounts, bool bPerClass, bool bIgnoreLabel, int nIgnoreLabel);
-template long Math<float>::accuracy_fwd(int nCount, long hBtmData, long hBtmLabel, long hAccData, int nOuterNum, int nDim, int nInnerNum, int nNumLabels, int nTopK, long hCounts, bool bPerClass, bool bIgnoreLabel, int nIgnoreLabel);
+template long Math<double>::accuracy_fwd(int nCount, int nOuterNum, int nInnerNum, long hBtmData, long hBtmLabel, long hAccData, long hAccTotals, bool bIgnoreLabel, int nIgnoreLabel);
+template long Math<float>::accuracy_fwd(int nCount, int nOuterNum, int nInnerNum, long hBtmData, long hBtmLabel, long hAccData, long hAccTotals, bool bIgnoreLabel, int nIgnoreLabel);
 
 
 template<typename T>

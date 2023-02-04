@@ -2216,30 +2216,26 @@ inline long Device<T>::cuda_accuracy_fwd(long lInput, T* pfInput, long llInput, 
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(llInput, plInput, 11, 12))
+	if (lErr = verifyInput(llInput, plInput, 7, 8))
 		return lErr;
 
 	int nCount = (int)plInput[0];
-	long hBtmData = (long)plInput[1];
-	long hBtmLabel = (long)plInput[2];
-	long hAccData = (long)plInput[3];
-	int nOuterNum = (int)plInput[4];
-	int nDim = (int)plInput[5];
-	int nInnerNum = (int)plInput[6];
-	int nNumLabels = (int)plInput[7];
-	int nTopK = (int)plInput[8];
-	long hCounts = (long)plInput[9];
-	bool bPerClass = (plInput[10] == 0) ? false : true;
+	int nOuterNum = (int)plInput[1];
+	int nInnerNum = (int)plInput[2];
+	long hBtmData = (long)plInput[3];
+	long hBtmLabel = (long)plInput[4];
+	long hAccData = (long)plInput[5];
+	long hAccTotals = (long)plInput[6];
 	int nIgnoreLabel = 0;
 	bool bIgnoreLabel = false;
 
-	if (llInput > 11)
+	if (llInput > 7)
 	{
-		nIgnoreLabel = (int)plInput[11];
+		nIgnoreLabel = (int)plInput[7];
 		bIgnoreLabel = true;
 	}
 
-	return m_math.accuracy_fwd(nCount, hBtmData, hBtmLabel, hAccData, nOuterNum, nDim, nInnerNum, nNumLabels, nTopK, hCounts, bPerClass, bIgnoreLabel, nIgnoreLabel);
+	return m_math.accuracy_fwd(nCount, nOuterNum, nInnerNum, hBtmData, hBtmLabel, hAccData, hAccTotals, bIgnoreLabel, nIgnoreLabel);
 }
 
 

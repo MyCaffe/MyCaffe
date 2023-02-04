@@ -25,6 +25,7 @@ namespace MyCaffe.layers
         int m_nTopK;
         int? m_nIgnoreLabel = null;
         Blob<T> m_blobNumsBuffer;
+        Blob<T> m_blobAccData;
         bool m_bDirectLabels = false;
         bool m_bEnableSimpleAccuracy = false;
 
@@ -44,6 +45,7 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.ACCURACY;
             m_blobNumsBuffer = new Blob<T>(cuda, log, false);
+            m_blobAccData = new Blob<T>(cuda, log);
         }
 
         /** @copydoc Layer::dispose */
@@ -89,11 +91,17 @@ namespace MyCaffe.layers
             m_nIgnoreLabel = null;
             if (m_param.accuracy_param.ignore_labels.Count > 0)
             {
-                if (m_param.accuracy_param.ignore_labels.Count > 1)
+                if (m_bEnableSimpleAccuracy && m_param.accuracy_param.ignore_labels.Count > 1)
                     m_log.WriteLine("WARNING: The accuracy layer currently only supports a single ignore label.");
                 m_nIgnoreLabel = m_param.accuracy_param.ignore_labels[0];
             }
-            
+
+            if (m_bEnableSimpleAccuracy && m_nTopK > 1)
+            {
+                m_log.WriteLine("WARNING: The accuracy layer currently only supports top_k = 1 for simple accuracy.");
+                m_nTopK = 1;
+            }
+
             m_bDirectLabels = false;
         }
 
@@ -133,6 +141,9 @@ namespace MyCaffe.layers
                 colTop[1].Reshape(rgTopShapePerClass);
                 m_blobNumsBuffer.Reshape(rgTopShapePerClass);
             }
+
+            if (m_bEnableSimpleAccuracy)
+                m_blobAccData.Reshape(m_nOuterNum, 1, 1, 1);
         }
 
         /// <summary>
@@ -166,7 +177,7 @@ namespace MyCaffe.layers
         {
             // Currently using cpu version for gpu version fails in the auto tests.
             if (m_bEnableSimpleAccuracy)
-                forward_simple(colBottom, colTop);
+                forward_gpu(colBottom, colTop);
             else if (m_bDirectLabels)
                 forward_cpu_direct(colBottom, colTop);
             else
@@ -202,167 +213,25 @@ namespace MyCaffe.layers
         ///         \end{array} \right.
         ///     @f$
         /// </param>
-        protected void forward_simple(BlobCollection<T> colBottom, BlobCollection<T> colTop)
-        {
-            int nLabelDim = colBottom[1].count();
-            m_log.CHECK_EQ(nLabelDim, m_nOuterNum, "The number of labels must match the number of predictions.");
-            int nNumLabels = colBottom[0].shape(m_nLabelAxis);
-            
-            float[] rgBottomLabel = convertF(colBottom[1].mutable_cpu_data);
-            float[] rgBottomData = null;
-
-            if (m_nIgnoreLabel.HasValue && m_nIgnoreLabel.Value != 0)
-                rgBottomData = convertF(colBottom[0].mutable_cpu_data);
-
-            int nTotalCount = 0;
-            int nCorrectCount = 0;
-            
-            for (int i = 0; i < m_nOuterNum; i++)
-            {
-                long lPos;
-                if (m_nIgnoreLabel.HasValue && m_nIgnoreLabel.Value != 0)
-                {
-                    lPos = argmax(rgBottomData, i * nNumLabels, nNumLabels, m_nIgnoreLabel.Value);
-                }
-                else if (m_nIgnoreLabel.HasValue)
-                {
-                    m_cuda.max(nNumLabels - 1, colBottom[0].gpu_data, out lPos, (i * nNumLabels) + 1);
-                    lPos++;
-                }
-                else
-                {
-                    m_cuda.max(nNumLabels, colBottom[0].gpu_data, out lPos, i * nNumLabels);
-                }
-
-                int nTargetLabel = (int)rgBottomLabel[i];
-
-                if ((int)lPos == nTargetLabel)
-                    nCorrectCount++;
-                
-                nTotalCount++;
-            }
-
-            double dfAccuracy = (double)nCorrectCount / nTotalCount;
-            colTop[0].SetData(dfAccuracy, 0);
-        }
-
-        private long argmax(float[] rgData, int nStart, int nCount, int nIgnorLabel)
-        {
-            float fMax = -float.MaxValue;
-            int nMaxIdx = 0;
-
-            for (int i = 0; i < nCount; i++)
-            {
-                if (i == nIgnorLabel)
-                    continue;
-
-                float fVal = rgData[nStart + i];
-                if (fVal > fMax)
-                {
-                    fMax = fVal;
-                    nMaxIdx = i;
-                }
-            }
-
-            return nMaxIdx;
-        }
-
-        /// <summary>
-        /// Forward compuation.
-        /// </summary>
-        /// <param name="colBottom">bottom input blob (length 2)
-        ///  -# @f$ (N \times C \times H \times W) @f$
-        ///     the predictions @f$ x @f$, a blob with values in
-        ///     @f$ [-\infty, +\infty] @f$ indicating the predicted score of each of
-        ///     the @f$ K = CHW @f$ classes.  Each @f$ x_n @f$ is mapped to a predicted 
-        ///     label @f$ \hat{l}_n @f$ given by its maximal index:
-        ///     @f$ \hat{l}_n = \arg\max\limits_k x_{nk} @f$
-        ///  -# @f$ (N \times 1 \times 1 \times 1) @f$
-        ///     the labels l, an integer-valued blob with values
-        ///     @f$ l_n \in [0, 1, 2, ..., K-1] @f$
-        ///     indicating the correct class label among the @f$ K @f$ classes.</param>
-        /// <param name="colTop">top output blob vector (length 1)
-        ///  -# @f$ (1 \times 1 \times 1 \times 1) @f$
-        ///     the computed accuracy: @f$
-        ///       \frac{1}{N} \sum\limits_{n=1}^N \delta\{ \hat{l}_n = l_n \}
-        ///     @f$
-        ///     where @f$ 
-        ///       \delta\{\mathrm{condition}\} = \left\{
-        ///         \begin{array}{lr}
-        ///           1 \: \mbox{if condition} \\
-        ///           0 \: \mbox{otherwise}
-        ///         \end{array} \right.
-        ///     @f$
-        /// </param>
         protected void forward_gpu(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            long hBottomData = colBottom[0].gpu_data;
-            long hBottomLabel = colBottom[1].gpu_data;
             int nDim = colBottom[0].count() / m_nOuterNum;
-            int nNumLabels = colBottom[0].shape(m_nLabelAxis);
-            int nThreads = m_nOuterNum * m_nInnerNum;
-
-            // Since this memory is not used for anything, we use it here to avlid having
-            // to allocate new GPU memory to accumulate intermediate results.
-            long hAccData = colBottom[0].mutable_gpu_diff;
-
-            if (colTop.Count == 1)
+            int? nIgnoreLabel = null;
+            if (m_param.accuracy_param.ignore_labels != null)
             {
-                // simple case - report only global accuracy.
-                long hCounts = colBottom[1].mutable_gpu_diff;
-
-                m_cuda.accuracy_fwd(nThreads, hBottomData, hBottomLabel, hAccData, m_nOuterNum, nDim, m_nInnerNum, nNumLabels, m_nTopK, hCounts, false, m_nIgnoreLabel);
-
-                double dfAcc = m_cuda.asum_double(nThreads, hAccData);
-                double dfValidCount = m_cuda.asum_double(nThreads, hCounts);
-
-                if (dfValidCount > 0)
-                    colTop[0].SetData(dfAcc / dfValidCount, 0);
-                else
-                    colTop[0].SetData(0, 0);
+                if (m_param.accuracy_param.ignore_labels.Count > 0)
+                    nIgnoreLabel = m_param.accuracy_param.ignore_labels[0];
+                if (m_param.accuracy_param.ignore_labels.Count > 1)
+                    m_log.WriteLine("WARNING: Only the first ignore label recognized when using the simple accuracy layer.");
             }
-            else
-            {
-                // need to report per-class accuracy as well.
+            
+            m_cuda.accuracy_fwd(colBottom[0].count(), m_nOuterNum, nDim, colBottom[0].gpu_data, colBottom[1].gpu_data, m_blobAccData.mutable_gpu_data, m_blobAccData.mutable_gpu_diff, nIgnoreLabel);
 
-                // allocate space for more detailed 'counts'
-                m_blobNumsBuffer.ReshapeLike(colBottom[0]);
-                long hCounts = m_blobNumsBuffer.mutable_gpu_data;
+            float fAccCount = m_cuda.asum_float(m_blobAccData.count(), m_blobAccData.gpu_data);
+            float fTotalCount = m_cuda.asum_float(m_blobAccData.count(), m_blobAccData.gpu_diff);
+            float fAccuracy = (fTotalCount == 0) ? 0 : fAccCount / fTotalCount;
 
-                m_cuda.set(colBottom[0].count(), hAccData, 0);
-                m_cuda.set(m_blobNumsBuffer.count(), hCounts, 0);
-
-                m_cuda.accuracy_fwd(nThreads, hBottomData, hBottomLabel, hAccData, m_nOuterNum, nDim, m_nInnerNum, nNumLabels, m_nTopK, hCounts, true, m_nIgnoreLabel);
-
-                // get the overall accuracy
-                double dfAcc = m_cuda.asum_double(nThreads, hAccData);
-                double dfValidCount = m_cuda.asum_double(nThreads, hCounts);
-
-                if (dfValidCount > 0)
-                    colTop[0].SetData(dfAcc / dfValidCount, 0);
-                else
-                    colTop[0].SetData(0, 0);
-
-                // get per-class accuracy
-                float[] rgPerClassAcc = convertF(colTop[1].mutable_cpu_data);
-                for (int l = 0; l < nNumLabels; l++)
-                {
-                    rgPerClassAcc[l] = m_cuda.asum_float(nThreads, hAccData, l * nThreads);
-                    float fValidCount = m_cuda.asum_float(nThreads, hCounts, l * nNumLabels);
-
-                    if (fValidCount > 0)
-                        rgPerClassAcc[l] /= fValidCount;
-                    else
-                        rgPerClassAcc[l] = 0;
-                }
-
-                colTop[1].mutable_cpu_data = convert(rgPerClassAcc);
-            }
-
-            // Clear scratch memory to prevent interfering with backwards (see #6202 on native Caffe Githum)
-            colBottom[0].SetDiff(0);
-
-            // Accuracy layer should not be used as a loss function.
+            colTop[0].SetData(fAccuracy, 0);
         }
 
         /// <summary>
@@ -631,17 +500,6 @@ namespace MyCaffe.layers
                 colTop[1].SetData(0);
 
             // Accuracy layer should not be used as a loss function.
-        }
-
-        private int sortDataItems(KeyValuePair<double, int> a, KeyValuePair<double, int> b)
-        {
-            if (a.Key < b.Key)
-                return 1;
-
-            if (a.Key > b.Key)
-                return -1;
-
-            return 0;
         }
 
         /// @brief Not implemented -- AccuracyLayer cannot be used as a loss.

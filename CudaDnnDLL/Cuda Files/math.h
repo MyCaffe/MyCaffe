@@ -252,7 +252,7 @@ class Math
 		long rng_gaussian(int n, T fMu, T fSigma, long hY);
 		long rng_bernoulli(int n, T fNonZeroProb, long hY);
 
-		long accuracy_fwd(int nCount, long hBtmData, long hBtmLabel, long hAccData, int nOuterNum, int nDim, int nInnerNum, int nNumLabels, int nTopK, long hCounts, bool bPerClass, bool bIgnoreLabel, int nIgnoreLabel);
+		long accuracy_fwd(int nCount, int nOuterNum, int nInnerNum, long hBtmData, long hBtmLabel, long hAccData, long hAccTotals, bool bIgnoreLabel, int nIgnoreLabel);
 
 		long batchreidx_fwd(int nCount, int nInnerDim, long hBottomData, long hPermutData, long hTopData);
 		long batchreidx_bwd(int nCount, int nInnerDim, long hTopDiff, long hTopIdx, long hBegin, long hCounts, long hBottomDiff);

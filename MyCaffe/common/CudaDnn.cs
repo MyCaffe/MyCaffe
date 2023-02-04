@@ -8207,34 +8207,30 @@ namespace MyCaffe.common
 
 #pragma warning restore 1591
 
-        
+
         /// <summary>
         /// Performs the forward pass for the accuracy layer
         /// </summary>
         /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="nOuterNum">Specifies the outer count.</param>
+        /// <param name="nInnerNum">Specifies the inner count.</param>
         /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
         /// <param name="hBottomLabel">Specifies a handle to the bottom labels in GPU memory.</param>
-        /// <param name="hAccData">Specifies a handle to temporary accuracy data in GPU memory.</param>
-        /// <param name="nOuterNum">Specifies the outer count.</param>
-        /// <param name="nDim">Specifies the dimension.</param>
-        /// <param name="nInnerNum">Specifies the inner count.</param>
-        /// <param name="nNumLabels">Specifies the number of labels.</param>
-        /// <param name="nTopK">Specifies the top items to include in the accuracy.</param>
-        /// <param name="hCounts">Specifies a handle to the counts data in GPU memory.</param>
-        /// <param name="bPerClass">Specifies whether (true) to caculate the accuracy for each class, or (false) globally.</param>
-        /// <param name="nIgnoreLabel">Optionally, specifies a label to ignore, or <i>null</i> to ignore.</param>
-        public void accuracy_fwd(int nCount, long hBottomData, long hBottomLabel, long hAccData, int nOuterNum, int nDim, int nInnerNum, int nNumLabels, int nTopK, long hCounts, bool bPerClass, int? nIgnoreLabel = null)
+        /// <param name="hAccData">Specifies a handle to temporary accuracy correct items in GPU memory.</param>
+        /// <param name="hAccTotals">Specifies a handle to the temporary accuracy totals in GPU memory.</param>
+        /// <param name="nIgnoreLabel">Optionally, specifies a label to igore.</param>
+        public void accuracy_fwd(int nCount, int nOuterNum, int nInnerNum, long hBottomData, long hBottomLabel, long hAccData, long hAccTotals, int? nIgnoreLabel)
         {
             if (m_dt == DataType.DOUBLE)
             {
-                List<long> rgArg = new List<long>() { nCount, hBottomData, hBottomLabel, hAccData, nOuterNum, nDim, nInnerNum, nNumLabels, nTopK, hCounts, (bPerClass) ? 1 : 0 };
+                List<long> rgArg = new List<long>() { nCount, nOuterNum, nInnerNum, hBottomData, hBottomLabel, hAccData, hAccTotals };
                 if (nIgnoreLabel.HasValue)
                     rgArg.Add(nIgnoreLabel.Value);
                 m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_ACCURACY_FWD, null, rgArg.ToArray());
             }
             else
             {
-                List<long> rgArg = new List<long>() { nCount, hBottomData, hBottomLabel, hAccData, nOuterNum, nDim, nInnerNum, nNumLabels, nTopK, hCounts, (bPerClass) ? 1 : 0 };
+                List<long> rgArg = new List<long>() { nCount, nOuterNum, nInnerNum, hBottomData, hBottomLabel, hAccData, hAccTotals };
                 if (nIgnoreLabel.HasValue)
                     rgArg.Add(nIgnoreLabel.Value);
                 m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_ACCURACY_FWD, null, rgArg.ToArray());
