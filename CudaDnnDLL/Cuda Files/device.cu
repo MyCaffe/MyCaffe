@@ -1565,19 +1565,21 @@ long Device<T>::cuda_gemm(long lInput, T* pfInput, long llInput, LONGLONG* plInp
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 10, 17))
+	if (lErr = verifyInput(lInput, pfInput, 2, 2))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 10, 17))
 		return lErr;
 
-	bool bTransA = (pfInput[0] == 0.0) ? false : true;
-	bool bTransB = (pfInput[1] == 0.0) ? false : true;
-	int m = (int)pfInput[2];
-	int n = (int)pfInput[3];
-	int k = (int)pfInput[4];
-	T fAlpha = pfInput[5];
-	long hA = (long)pfInput[6];
-	long hB = (long)pfInput[7];
-	T fBeta = pfInput[8];
-	long hC = (long)pfInput[9];
+	bool bTransA = (plInput[0] == 0.0) ? false : true;
+	bool bTransB = (plInput[1] == 0.0) ? false : true;
+	int m = (int)plInput[2];
+	int n = (int)plInput[3];
+	int k = (int)plInput[4];
+	T fAlpha = pfInput[0];
+	long hA = (long)plInput[6];
+	long hB = (long)plInput[7];
+	T fBeta = pfInput[1];
+	long hC = (long)plInput[9];
 	int nAOff = 0;
 	int nBOff = 0;
 	int nCOff = 0;
@@ -1586,26 +1588,26 @@ long Device<T>::cuda_gemm(long lInput, T* pfInput, long llInput, LONGLONG* plInp
 	int nGroupBOff = 0;
 	int nGroupCOff = 0;
 
-	if (lInput > 10)
-		nAOff = (int)pfInput[10];
+	if (llInput > 10)
+		nAOff = (int)plInput[10];
 
-	if (lInput > 11)
-		nBOff = (int)pfInput[11];
+	if (llInput > 11)
+		nBOff = (int)plInput[11];
 
-	if (lInput > 12)
-		nCOff = (int)pfInput[12];
+	if (llInput > 12)
+		nCOff = (int)plInput[12];
 
-	if (lInput > 13)
-		nGroups = (int)pfInput[13];
+	if (llInput > 13)
+		nGroups = (int)plInput[13];
 
-	if (lInput > 14)
-		nGroupAOff = (int)pfInput[14];
+	if (llInput > 14)
+		nGroupAOff = (int)plInput[14];
 
-	if (lInput > 15)
-		nGroupBOff = (int)pfInput[15];
+	if (llInput > 15)
+		nGroupBOff = (int)plInput[15];
 
-	if (lInput > 16)
-		nGroupCOff = (int)pfInput[16];
+	if (llInput > 16)
+		nGroupCOff = (int)plInput[16];
 
 	return m_math.gemm(bTransA, bTransB, m, n, k, fAlpha, hA, hB, fBeta, hC, nAOff, nBOff, nCOff, nGroups, nGroupAOff, nGroupBOff, nGroupCOff);
 }
@@ -1618,33 +1620,35 @@ long Device<T>::cuda_gemm2(long lInput, T* pfInput, long llInput, LONGLONG* plIn
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 13, 17))
+	if (lErr = verifyInput(lInput, pfInput, 2, 2))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 13, 17))
 		return lErr;
 
-	if (lInput != 13 && lInput != 17)
+	if (llInput != 13 && llInput != 17)
 		return ERROR_PARAM_OUT_OF_RANGE;
 
-	bool bTransA = (pfInput[0] == 0.0) ? false : true;
-	bool bTransB = (pfInput[1] == 0.0) ? false : true;
-	int m = (int)pfInput[2];
-	int n = (int)pfInput[3];
-	int k = (int)pfInput[4];
-	T fAlpha = pfInput[5];
-	long hA = (long)pfInput[6];
-	long hB = (long)pfInput[7];
-	T fBeta = pfInput[8];
-	long hC = (long)pfInput[9];
-	int lda = (int)pfInput[10];
-	int ldb = (int)pfInput[11];
-	int ldc = (int)pfInput[12];
+	bool bTransA = (plInput[0] == 0.0) ? false : true;
+	bool bTransB = (plInput[1] == 0.0) ? false : true;
+	int m = (int)plInput[2];
+	int n = (int)plInput[3];
+	int k = (int)plInput[4];
+	T fAlpha = pfInput[0];
+	long hA = (long)plInput[6];
+	long hB = (long)plInput[7];
+	T fBeta = pfInput[1];
+	long hC = (long)plInput[9];
+	int lda = (int)plInput[10];
+	int ldb = (int)plInput[11];
+	int ldc = (int)plInput[12];
 
-	if (lInput == 13)
+	if (llInput == 13)
 		return m_math.gemm2(bTransA, bTransB, m, n, k, fAlpha, hA, hB, fBeta, hC, lda, ldb, ldc);
 
-	int stridea = (int)pfInput[13];
-	int strideb = (int)pfInput[14];
-	int stridec = (int)pfInput[15];
-	int batch_count = (int)pfInput[16];
+	int stridea = (int)plInput[13];
+	int strideb = (int)plInput[14];
+	int stridec = (int)plInput[15];
+	int batch_count = (int)plInput[16];
 	
 	return m_math.gemm2(bTransA, bTransB, m, n, k, fAlpha, hA, hB, fBeta, hC, lda, ldb, ldc, stridea, strideb, stridec, batch_count);
 }
@@ -1658,29 +1662,31 @@ long Device<T>::cuda_gemv(long lInput, T* pfInput, long llInput, LONGLONG* plInp
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 8, 11))
+	if (lErr = verifyInput(lInput, pfInput, 2, 2))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 8, 11))
 		return lErr;
 
-	bool bTransA = (pfInput[0] == 0.0) ? false : true;
-	int n = (int)pfInput[1];
-	int m = (int)pfInput[2];
-	T fAlpha = pfInput[3];
-	long hA = (long)pfInput[4];
-	long hX = (long)pfInput[5];
-	T fBeta = pfInput[6];
-	long hY = (long)pfInput[7];
+	bool bTransA = (plInput[0] == 0.0) ? false : true;
+	int n = (int)plInput[1];
+	int m = (int)plInput[2];
+	T fAlpha = pfInput[0];
+	long hA = (long)plInput[4];
+	long hX = (long)plInput[5];
+	T fBeta = pfInput[1];
+	long hY = (long)plInput[7];
 	int nAOffset = 0;
 	int nXOffset = 0;
 	int nYOffset = 0;
 
-	if (lInput > 8)
-		nAOffset = (int)pfInput[8];
+	if (llInput > 8)
+		nAOffset = (int)plInput[8];
 
-	if (lInput > 9)
-		nXOffset = (int)pfInput[9];
+	if (llInput > 9)
+		nXOffset = (int)plInput[9];
 
-	if (lInput > 10)
-		nYOffset = (int)pfInput[10];
+	if (llInput > 10)
+		nYOffset = (int)plInput[10];
 
 	return m_math.gemv(bTransA, n, m, fAlpha, hA, hX, fBeta, hY, nAOffset, nXOffset, nYOffset);
 }
@@ -1694,30 +1700,32 @@ long Device<T>::cuda_geam(long lInput, T* pfInput, long llInput, LONGLONG* plInp
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 9, 12))
+	if (lErr = verifyInput(lInput, pfInput, 2, 2))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 9, 12))
 		return lErr;
 
-	bool bTransA = (pfInput[0] == 0.0) ? false : true;
-	bool bTransB = (pfInput[1] == 0.0) ? false : true;
-	int m = (int)pfInput[2];
-	int n = (int)pfInput[3];
-	T fAlpha = pfInput[4];
-	long hA = (long)pfInput[5];
-	long hB = (long)pfInput[6];
-	T fBeta = pfInput[7];
-	long hC = (long)pfInput[8];
+	bool bTransA = (plInput[0] == 0.0) ? false : true;
+	bool bTransB = (plInput[1] == 0.0) ? false : true;
+	int m = (int)plInput[2];
+	int n = (int)plInput[3];
+	T fAlpha = pfInput[0];
+	long hA = (long)plInput[5];
+	long hB = (long)plInput[6];
+	T fBeta = pfInput[1];
+	long hC = (long)plInput[8];
 	int nAOff = 0;
 	int nBOff = 0;
 	int nCOff = 0;
 
-	if (lInput > 9)
-		nAOff = (int)pfInput[9];
+	if (llInput > 9)
+		nAOff = (int)plInput[9];
 
-	if (lInput > 10)
-		nBOff = (int)pfInput[10];
+	if (llInput > 10)
+		nBOff = (int)plInput[10];
 
-	if (lInput > 11)
-		nCOff = (int)pfInput[11];
+	if (llInput > 11)
+		nCOff = (int)plInput[11];
 
 	return m_math.geam(bTransA, bTransB, m, n, fAlpha, hA, hB, fBeta, hC, nAOff, nBOff, nCOff);
 }
@@ -1731,15 +1739,17 @@ long Device<T>::cuda_ger(long lInput, T* pfInput, long llInput, LONGLONG* plInpu
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+	if (lErr = verifyInput(llInput, plInput, 6, 6))
 		return lErr;
 
-	int n = (int)pfInput[0];
-	int m = (int)pfInput[1];
-	T fAlpha = pfInput[2];
-	long hA = (long)pfInput[3];
-	long hB = (long)pfInput[4];
-	long hC = (long)pfInput[5];
+	int n = (int)plInput[0];
+	int m = (int)plInput[1];
+	T fAlpha = pfInput[0];
+	long hA = (long)plInput[3];
+	long hB = (long)plInput[4];
+	long hC = (long)plInput[5];
 
 	return m_math.ger(m, n, fAlpha, hA, hB, hC);
 }

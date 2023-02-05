@@ -5975,9 +5975,9 @@ namespace MyCaffe.common
         public void gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, long hA, long hB, T fBeta, long hC, int nAOffset = 0, int nBOffset = 0, int nCOffset = 0, int nGroups = 1, int nGroupOffsetA = 0, int nGroupOffsetB = 0, int nGroupOffsetC = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GEMM, m_param.AsDouble((bTransA) ? 1 : 0, (bTransB) ? 1 : 0, m, n, k, convertD(fAlpha), hA, hB, convertD(fBeta), hC, nAOffset, nBOffset, nCOffset, nGroups, nGroupOffsetA, nGroupOffsetB, nGroupOffsetC));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_GEMM, m_param.AsDouble(convertD(fAlpha), convertD(fBeta)), m_param.AsLong((bTransA) ? 1 : 0, (bTransB) ? 1 : 0, m, n, k, 0, hA, hB, 0, hC, nAOffset, nBOffset, nCOffset, nGroups, nGroupOffsetA, nGroupOffsetB, nGroupOffsetC));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GEMM, m_param.AsFloat((bTransA) ? 1 : 0, (bTransB) ? 1 : 0, m, n, k, convertF(fAlpha), hA, hB, convertF(fBeta), hC, nAOffset, nBOffset, nCOffset, nGroups, nGroupOffsetA, nGroupOffsetB, nGroupOffsetC));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_GEMM, m_param.AsFloat(convertF(fAlpha), convertF(fBeta)), m_param.AsLong((bTransA) ? 1 : 0, (bTransB) ? 1 : 0, m, n, k, 0, hA, hB, 0, hC, nAOffset, nBOffset, nCOffset, nGroups, nGroupOffsetA, nGroupOffsetB, nGroupOffsetC));
         }
 
         /// <summary>
@@ -6002,9 +6002,9 @@ namespace MyCaffe.common
         public void gemm(bool bTransA, bool bTransB, int m, int n, int k, double fAlpha, long hA, long hB, double fBeta, long hC, uint lda, uint ldb, uint ldc)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GEMM2, m_param.AsDouble((bTransA) ? 1 : 0, (bTransB) ? 1 : 0, m, n, k, fAlpha, hA, hB, fBeta, hC, lda, ldb, ldc));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_GEMM2, m_param.AsDouble(fAlpha, fBeta), m_param.AsLong((bTransA) ? 1 : 0, (bTransB) ? 1 : 0, m, n, k, 0, hA, hB, 0, hC, lda, ldb, ldc));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GEMM2, m_param.AsFloat((bTransA) ? 1 : 0, (bTransB) ? 1 : 0, m, n, k, (float)fAlpha, hA, hB, (float)fBeta, hC, lda, ldb, ldc));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_GEMM2, m_param.AsFloat((float)fAlpha, (float)fBeta), m_param.AsLong((bTransA) ? 1 : 0, (bTransB) ? 1 : 0, m, n, k, 0, hA, hB, 0, hC, lda, ldb, ldc));
         }
 
         /// <summary>
@@ -6033,9 +6033,9 @@ namespace MyCaffe.common
         public void gemm(bool bTransA, bool bTransB, int m, int n, int k, double fAlpha, long hA, long hB, double fBeta, long hC, uint lda, uint ldb, uint ldc, uint stridea, uint strideb, uint stridec, uint batch_count)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GEMM2, m_param.AsDouble((bTransA) ? 1 : 0, (bTransB) ? 1 : 0, m, n, k, fAlpha, hA, hB, fBeta, hC, lda, ldb, ldc, stridea, strideb, stridec, batch_count));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_GEMM2, m_param.AsDouble(fAlpha, fBeta), m_param.AsLong((bTransA) ? 1 : 0, (bTransB) ? 1 : 0, m, n, k, 0, hA, hB, 0, hC, lda, ldb, ldc, stridea, strideb, stridec, batch_count));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GEMM2, m_param.AsFloat((bTransA) ? 1 : 0, (bTransB) ? 1 : 0, m, n, k, (float)fAlpha, hA, hB, (float)fBeta, hC, lda, ldb, ldc, stridea, strideb, stridec, batch_count));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_GEMM2, m_param.AsFloat((float)fAlpha, (float)fBeta), m_param.AsLong((bTransA) ? 1 : 0, (bTransB) ? 1 : 0, m, n, k, 0, hA, hB, 0, hC, lda, ldb, ldc, stridea, strideb, stridec, batch_count));
         }
 
         /// <summary>
@@ -6099,9 +6099,9 @@ namespace MyCaffe.common
         public void geam(bool bTransA, bool bTransB, int m, int n, T fAlpha, long hA, long hB, T fBeta, long hC, int nAOffset = 0, int nBOffset = 0, int nCOffset = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GEAM, m_param.AsDouble((bTransA) ? 1 : 0, (bTransB) ? 1 : 0, m, n, convertD(fAlpha), hA, hB, convertD(fBeta), hC, nAOffset, nBOffset, nCOffset));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_GEAM, m_param.AsDouble(convertD(fAlpha), convertD(fBeta)), m_param.AsLong((bTransA) ? 1 : 0, (bTransB) ? 1 : 0, m, n, 0, hA, hB, 0, hC, nAOffset, nBOffset, nCOffset));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GEAM, m_param.AsFloat((bTransA) ? 1 : 0, (bTransB) ? 1 : 0, m, n, convertF(fAlpha), hA, hB, convertF(fBeta), hC, nAOffset, nBOffset, nCOffset));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_GEAM, m_param.AsFloat(convertF(fAlpha), convertF(fBeta)), m_param.AsLong((bTransA) ? 1 : 0, (bTransB) ? 1 : 0, m, n, 0, hA, hB, 0, hC, nAOffset, nBOffset, nCOffset));
         }
 
         /// <summary>
@@ -6162,9 +6162,9 @@ namespace MyCaffe.common
         public void gemv(bool bTransA, int m, int n, T fAlpha, long hA, long hX, T fBeta, long hY, int nAOffset = 0, int nXOffset = 0, int nYOffset = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GEMV, m_param.AsDouble((bTransA) ? 1 : 0, m, n, convertD(fAlpha), hA, hX, convertD(fBeta), hY, nAOffset, nXOffset, nYOffset));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_GEMV, m_param.AsDouble(convertD(fAlpha), convertD(fBeta)), m_param.AsLong((bTransA) ? 1 : 0, m, n, 0, hA, hX, 0, hY, nAOffset, nXOffset, nYOffset));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GEMV, m_param.AsFloat((bTransA) ? 1 : 0, m, n, convertF(fAlpha), hA, hX, convertF(fBeta), hY, nAOffset, nXOffset, nYOffset));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_GEMV, m_param.AsFloat(convertF(fAlpha), convertF(fBeta)), m_param.AsLong((bTransA) ? 1 : 0, m, n, 0, hA, hX, 0, hY, nAOffset, nXOffset, nYOffset));
         }
 
         /// <summary>
@@ -6216,9 +6216,9 @@ namespace MyCaffe.common
         public void ger(int m, int n, T fAlpha, long hX, long hY, long hA)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GER, m_param.AsDouble(m, n, convertD(fAlpha), hX, hY, hA));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_GER, m_param.AsDouble(convertD(fAlpha)), m_param.AsLong(m, n, 0, hX, hY, hA));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GER, m_param.AsFloat(m, n, convertF(fAlpha), hX, hY, hA));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_GER, m_param.AsFloat(convertF(fAlpha)), m_param.AsLong(m, n, 0, hX, hY, hA));
         }
 
         /// <summary>
