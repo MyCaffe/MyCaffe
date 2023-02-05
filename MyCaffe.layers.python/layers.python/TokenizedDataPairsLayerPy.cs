@@ -162,6 +162,9 @@ namespace MyCaffe.layers.python.layers.python
                 else if (nBatch != data.Item2[0])
                     continue;
 
+                if (m_param.tokenized_data_pairs_param.max_load > 0 && i * nBatch >= m_param.tokenized_data_pairs_param.max_load)
+                    break;
+
                 if (nChannels == 0)
                     nChannels = data.Item2[1];
                 else if (nChannels != data.Item2[1])
