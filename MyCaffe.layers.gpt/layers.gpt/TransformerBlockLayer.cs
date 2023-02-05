@@ -88,6 +88,8 @@ namespace MyCaffe.layers.gpt
                 attn.causal_self_attention_param.attn_dropout = p.transformer_block_param.attn_dropout;
                 attn.causal_self_attention_param.resid_dropout = p.transformer_block_param.resid_dropout;
                 attn.causal_self_attention_param.layers = p.transformer_block_param.layers;
+                attn.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
+                attn.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
                 m_attn1 = Layer<T>.Create(cuda, log, convertLayerParam(attn, p), evtCancel);
             }
             else if (p.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.ENCODER)
@@ -100,6 +102,8 @@ namespace MyCaffe.layers.gpt
                 attn.multihead_attention_param.resid_dropout = p.transformer_block_param.resid_dropout;
                 attn.multihead_attention_param.layers = p.transformer_block_param.layers;
                 attn.multihead_attention_param.weight_init = MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER;
+                attn.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
+                attn.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
                 m_attn1 = Layer<T>.Create(cuda, log, convertLayerParam(attn, p), evtCancel);
             }
             else if (p.transformer_block_param.block_type == TransformerBlockParameter.BLOCK_TYPE.DECODER)
@@ -121,6 +125,8 @@ namespace MyCaffe.layers.gpt
                 attn1.multihead_attention_param.resid_dropout = p.transformer_block_param.resid_dropout;
                 attn1.multihead_attention_param.layers = p.transformer_block_param.layers;
                 attn1.multihead_attention_param.weight_init = MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER;
+                attn1.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
+                attn1.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
                 m_attn1 = Layer<T>.Create(cuda, log, convertLayerParam(attn1, p), evtCancel);
 
                 LayerParameter attn2 = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION, p.name + ".attn2");
@@ -131,6 +137,8 @@ namespace MyCaffe.layers.gpt
                 attn2.multihead_attention_param.resid_dropout = p.transformer_block_param.resid_dropout;
                 attn2.multihead_attention_param.layers = p.transformer_block_param.layers;
                 attn2.multihead_attention_param.weight_init = MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER;
+                attn2.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
+                attn2.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
                 m_attn2 = Layer<T>.Create(cuda, log, convertLayerParam(attn2, p), evtCancel);
             }
             else
@@ -152,8 +160,8 @@ namespace MyCaffe.layers.gpt
                 fc.inner_product_param.weight_filler = new FillerParameter("xavier");
                 fc.inner_product_param.bias_filler = new FillerParameter("xavier");
             }
-            fc.parameters.Add(new ParamSpec(1.0, 1.0));
-            fc.parameters.Add(new ParamSpec(2.0, 0.0));
+            fc.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
+            fc.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
             m_fc = Layer<T>.Create(cuda, log, convertLayerParam(fc, p), evtCancel);
 
             LayerParameter proj = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".proj");
@@ -171,8 +179,8 @@ namespace MyCaffe.layers.gpt
                 proj.inner_product_param.weight_filler = new FillerParameter("xavier");
                 proj.inner_product_param.bias_filler = new FillerParameter("xavier");
             }
-            proj.parameters.Add(new ParamSpec(1.0, 1.0));
-            proj.parameters.Add(new ParamSpec(2.0, 0.0));
+            proj.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
+            proj.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
             m_proj = Layer<T>.Create(cuda, log, convertLayerParam(proj, p), evtCancel);
 
             // ReLU has a very similar curve, and is faster.
