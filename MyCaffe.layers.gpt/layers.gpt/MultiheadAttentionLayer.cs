@@ -441,9 +441,6 @@ namespace MyCaffe.layers.gpt
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            if (!reshapeNeeded(colBottom, colTop))
-                return;
-
             m_blobX0.ReshapeLike(colBottom[0]);
             m_blobX1.ReshapeLike(colBottom[1]);
             m_blobX2.ReshapeLike(colBottom[2]);

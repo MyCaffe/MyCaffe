@@ -384,9 +384,6 @@ namespace MyCaffe.layers.gpt
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            if (!reshapeNeeded(colBottom, colTop))
-                return;
-
             Blob<T> blobX = colBottom[0];
 
             m_nB = blobX.num;         // batch size
