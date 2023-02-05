@@ -113,7 +113,7 @@ namespace MyCaffe.layers.gpt
                 m_blobLn3 = new Blob<T>(cuda, log);
                 m_blobLn3.Name = m_param.name + " ln3";
 
-                LayerParameter ln3 = new LayerParameter(LayerParameter.LayerType.LAYERNORM, "ln3");
+                LayerParameter ln3 = new LayerParameter(LayerParameter.LayerType.LAYERNORM, p.name + ".ln3");
                 ln3.layer_norm_param.enable_cuda_impl = p.transformer_block_param.enable_layernorm_cuda_impl;
                 m_ln3 = Layer<T>.Create(cuda, log, convertLayerParam(ln3, p), evtCancel) as Layer<T>;
 
@@ -475,8 +475,8 @@ namespace MyCaffe.layers.gpt
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            if (!reshapeNeeded(colBottom, colTop))
-                return;
+            //if (!reshapeNeeded(colBottom, colTop))
+            //    return;
 
             colTop[0].ReshapeLike(colBottom[0]);
 
