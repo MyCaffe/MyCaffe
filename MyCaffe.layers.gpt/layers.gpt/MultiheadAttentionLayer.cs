@@ -570,14 +570,15 @@ namespace MyCaffe.layers.gpt
                 // att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
                 addInternal(m_blobKt, m_blobKt1);
                 m_transposeQ.Forward(m_colInternalBottom, m_colInternalTop);
-
+                
                 double dfScale = 1.0 / Math.Sqrt(m_nSize);
                 m_blobAttA.MatMul(m_blobQt, m_blobKt1);
                 m_blobAttA.scale_data(dfScale);
 
                 // Apply mask to attention matrix
                 // att = att.masked_fill(self.bias[:,:,:T,:T] == 0, float('-inf'))
-                m_cuda.mask_batch(m_blobAttA.count(), m_blobAttA.num, blobMask.count(), convert(0.0), convert(-1e+09), m_blobAttA.gpu_data, blobMask.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.
+                float fInf = -float.MaxValue;
+                m_cuda.mask_batch(m_blobAttA.count(), m_blobAttA.num, blobMask.count(), convert(0.0), convert(fInf), m_blobAttA.gpu_data, blobMask.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.
 
                 // Take softmax of attention along the last axis.
                 // att = F.softmax(att, dim = -1)
