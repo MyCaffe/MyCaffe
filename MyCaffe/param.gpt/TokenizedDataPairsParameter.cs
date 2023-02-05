@@ -18,6 +18,7 @@ namespace MyCaffe.param.gpt
         string m_strTarget = "";
         string m_strSourceVocabFile = "";
         string m_strTargetVocabFile = "";
+        int m_nMaxLoad = 0;
 
         /** @copydoc LayerParameterBase */
         public TokenizedDataPairsParameter() : base()
@@ -35,10 +36,11 @@ namespace MyCaffe.param.gpt
             get { return m_strTarget; }
             set { m_strTarget = value; }
         }
-        
+
         /// <summary>
         /// Specifies the source vocabulary file used with the SENTENCEPIECE vocabulary type.  The vocabulary file is created using the Python SentencePieceProcess.
         /// </summary>
+        [Description("Specifies the source vocabulary file used with the SENTENCEPIECE vocabulary type.  The vocabulary file is created using the Python SentencePieceProcess.")]        
         public string source_vocab_file
         {
             get { return m_strSourceVocabFile; }
@@ -48,10 +50,21 @@ namespace MyCaffe.param.gpt
         /// <summary>
         /// Specifies the target vocabulary file used with the SENTENCEPIECE vocabulary type.  The vocabulary file is created using the Python SentencePieceProcess.
         /// </summary>
+        [Description("Specifies the target vocabulary file used with the SENTENCEPIECE vocabulary type.  The vocabulary file is created using the Python SentencePieceProcess.")]
         public string target_vocab_file
         {
             get { return m_strTargetVocabFile; }
             set { m_strTargetVocabFile = value; }
+        }
+
+        /// <summary>
+        /// Specifies the maximum items to load - primarily used for testing.
+        /// </summary>
+        [Description("Specifies the maximum items to load - primarily used for testing.")]
+        public int max_load
+        {
+            get { return m_nMaxLoad; }
+            set { m_nMaxLoad = value; }
         }
         
         /** @copydoc LayerParameterBase::Load */
@@ -77,6 +90,7 @@ namespace MyCaffe.param.gpt
                 m_strTarget = p.target;
                 m_strSourceVocabFile = p.source_vocab_file;
                 m_strTargetVocabFile = p.target_vocab_file;
+                m_nMaxLoad = p.max_load;
             }
         }
 
@@ -104,6 +118,9 @@ namespace MyCaffe.param.gpt
             rgChildren.Add("target_vocab_file", "\"" + target_vocab_file + "\"");
             rgChildren.Add("source_vocab_file", "\"" + source_vocab_file + "\"");
 
+            if (max_load > 0)
+                rgChildren.Add("max_load", max_load.ToString());
+
             return new RawProto(strName, "", rgChildren);
         }
 
@@ -127,6 +144,9 @@ namespace MyCaffe.param.gpt
 
             if ((strVal = rp.FindValue("source_vocab_file")) != null)
                 p.source_vocab_file = strVal;
+
+            if ((strVal = rp.FindValue("max_load")) != null)
+                p.max_load = int.Parse(strVal);
 
             return p;
         }
