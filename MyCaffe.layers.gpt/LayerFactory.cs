@@ -54,9 +54,6 @@ namespace MyCaffe.layers.gpt
 
                 case LayerParameter.LayerType.TOKENIZED_DATA_PAIRS:
                     return new TokenizedDataPairsLayer<double>(cuda, log, p, imgDb, evtCancel);
-
-                case LayerParameter.LayerType.LOG_SOFTMAX:
-                    return new LogSoftmaxLayer<double>(cuda, log, p);
                     
                 case LayerParameter.LayerType.NLL_LOSS:
                     return new NLLLossLayer<double>(cuda, log, p);
@@ -102,9 +99,6 @@ namespace MyCaffe.layers.gpt
 
                 case LayerParameter.LayerType.TOKENIZED_DATA_PAIRS:
                     return new TokenizedDataPairsLayer<float>(cuda, log, p, imgDb, evtCancel);
-
-                case LayerParameter.LayerType.LOG_SOFTMAX:
-                    return new LogSoftmaxLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.NLL_LOSS:
                     return new NLLLossLayer<float>(cuda, log, p);

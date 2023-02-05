@@ -834,9 +834,11 @@ namespace MyCaffe.test
             ip1.top.Add("logits");
             net.layer.Add(ip1);
 
-            LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.LOG_SOFTMAX);
+            LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
             softmax.name = "softmax";
-            softmax.log_softmax_param.axis = 2;
+            softmax.softmax_param.axis = 2;
+            softmax.softmax_param.algorithm = SOFTMAX_ALGORITHM.ACCURATE;
+            softmax.softmax_param.algorithm_train = SOFTMAX_ALGORITHM.LOG;
             softmax.bottom.Add("logits");
             softmax.top.Add("prob");
             net.layer.Add(softmax);

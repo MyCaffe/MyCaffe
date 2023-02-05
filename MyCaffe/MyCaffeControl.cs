@@ -2755,12 +2755,6 @@ namespace MyCaffe
                         softmax = m_net.layers[m_net.layers.Count - 1];
                         nAxis = softmax.layer_param.softmax_param.axis;
                     }
-                    else if (m_net.layers[m_net.layers.Count - 1].layer_param.type == LayerParameter.LayerType.LOG_SOFTMAX)
-                    {
-                        softmax = m_net.layers[m_net.layers.Count - 1];
-                        nAxis = softmax.layer_param.log_softmax_param.axis;
-                        softmax = null;
-                    }
 
                     List<Tuple<string, int, double>> res;
 

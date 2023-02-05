@@ -205,7 +205,6 @@
     <Compile Include="param.gpt\LayerNormParameter.cs" />
     <Compile Include="param.gpt\PositionalEncoderParameter.cs" />
     <Compile Include="param.gpt\MultiheadAttentionParameter.cs" />
-    <Compile Include="param.gpt\LogSoftmaxParameter.cs" />
     <Compile Include="param.gpt\TokenizedDataPairsParameter.cs" />
     <Compile Include="param.gpt\TokenizedDataParameter.cs" />
     <Compile Include="param.gpt\TransformerBlockParameter.cs" />
