@@ -13,10 +13,11 @@ namespace MyCaffe.param.gpt
     /// <remarks>
     /// @see [GitHub:CyberZHG](https://github.com/CyberZHG/torch-layer-normalization/blob/master/torch_layer_normalization/layer_normalization.py) by Zhao HG (MIT Liceense).
     /// @see [LayerNorm](https://pytorch.org/docs/stable/generated/torch.nn.LayerNorm.html) PyTorch
+    /// @see [Understanding and Improving Layer Normalization](https://arxiv.org/abs/1911.07013) by Xu et al., 2019, arXiv:1911.07013
     /// </remarks>
     public class LayerNormParameter : LayerParameterBase 
     {
-        double m_dfEpsilon = 1e-10;
+        double m_dfEpsilon = 1e-05;
         bool m_bEnableCudaImplementation = false;
 
         /** @copydoc LayerParameterBase */
@@ -25,9 +26,9 @@ namespace MyCaffe.param.gpt
         }
 
         /// <summary>
-        /// Specifies the epsilon value used to avoid invalid values.
+        /// Specifies the epsilon value used to avoid invalid values (default = 1e-05).
         /// </summary>
-        [Description("Specifies the epsilon value used to avoid invalid values.")]
+        [Description("Specifies the epsilon value used to avoid invalid values (default = 1e-05).")]
         public double epsilon
         {
             get { return m_dfEpsilon; }
