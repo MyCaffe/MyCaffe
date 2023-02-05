@@ -89,7 +89,7 @@ namespace MyCaffe.layers.gpt
             // input features = m_nHeads
             LayerParameter ipAttnQ = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_attnQ");
             ipAttnQ.inner_product_param.num_output = (uint)m_nEmbed;
-            ipAttnQ.inner_product_param.bias_term = true;
+            ipAttnQ.inner_product_param.bias_term = true;            
             if (m_param.multihead_attention_param.weight_init == MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER)
             {
                 ipAttnQ.inner_product_param.weight_filler = new FillerParameter("xavier");
@@ -101,8 +101,8 @@ namespace MyCaffe.layers.gpt
                 ipAttnQ.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
             }
             ipAttnQ.inner_product_param.axis = 2;
-            ipAttnQ.parameters.Add(new ParamSpec(1.0, 1.0));
-            ipAttnQ.parameters.Add(new ParamSpec(2.0, 0.0));
+            ipAttnQ.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
+            ipAttnQ.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
             m_c_attnQ = Layer<T>.Create(cuda, log, convertLayerParam(ipAttnQ, p), null);
 
             // Key projection for all heads, but in a batch.
@@ -121,8 +121,8 @@ namespace MyCaffe.layers.gpt
                 ipAttnK.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
             }
             ipAttnK.inner_product_param.axis = 2;
-            ipAttnK.parameters.Add(new ParamSpec(1.0, 1.0));
-            ipAttnK.parameters.Add(new ParamSpec(2.0, 0.0));
+            ipAttnK.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
+            ipAttnK.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
             m_c_attnK = Layer<T>.Create(cuda, log, convertLayerParam(ipAttnK, p), null);
 
             // Value projection for all heads, but in a batch.
@@ -141,8 +141,8 @@ namespace MyCaffe.layers.gpt
                 ipAttnV.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
             }
             ipAttnV.inner_product_param.axis = 2;
-            ipAttnV.parameters.Add(new ParamSpec(1.0, 1.0));
-            ipAttnV.parameters.Add(new ParamSpec(2.0, 0.0));
+            ipAttnV.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
+            ipAttnV.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
             m_c_attnV = Layer<T>.Create(cuda, log, convertLayerParam(ipAttnV, p), null);
 
             // Output projection.
@@ -160,9 +160,9 @@ namespace MyCaffe.layers.gpt
                 ipProj.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02 / Math.Sqrt(2 * m_param.multihead_attention_param.layers));
                 ipProj.inner_product_param.bias_filler = new FillerParameter("constant", 0.0);
             }
-            ipProj.inner_product_param.axis = 2;            
-            ipProj.parameters.Add(new ParamSpec(1.0, 1.0));
-            ipProj.parameters.Add(new ParamSpec(2.0, 0.0));
+            ipProj.inner_product_param.axis = 2;
+            ipProj.parameters.Add((m_param.parameters.Count > 0) ? m_param.parameters[0] : new ParamSpec(1.0, 1.0));
+            ipProj.parameters.Add((m_param.parameters.Count > 1) ? m_param.parameters[1] : new ParamSpec(1.0, 0.0));
             m_c_proj = Layer<T>.Create(cuda, log, convertLayerParam(ipProj, p), null);
 
             // Regularization
