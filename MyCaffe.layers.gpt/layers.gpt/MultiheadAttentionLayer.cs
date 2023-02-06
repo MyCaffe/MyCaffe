@@ -577,8 +577,8 @@ namespace MyCaffe.layers.gpt
 
                 // Apply mask to attention matrix
                 // att = att.masked_fill(self.bias[:,:,:T,:T] == 0, float('-inf'))
-                float fInf = -float.MaxValue;
-                m_cuda.mask_batch(m_blobAttA.count(), m_blobAttA.num, blobMask.count(), convert(0.0), convert(fInf), m_blobAttA.gpu_data, blobMask.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.
+                float fInf = 1e+29f;
+                m_cuda.mask_batch(m_blobAttA.count(), m_blobAttA.num, blobMask.count(), convert(0.0), convert(-1 * fInf), m_blobAttA.gpu_data, blobMask.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.
 
                 // Take softmax of attention along the last axis.
                 // att = F.softmax(att, dim = -1)
