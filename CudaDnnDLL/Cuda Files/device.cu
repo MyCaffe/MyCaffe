@@ -3090,6 +3090,28 @@ template long Device<float>::cuda_channel_max(long lInput, float* pfInput, long 
 
 
 template <class T>
+long Device<T>::cuda_channel_mean(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 6, 6))
+		return lErr;
+
+	int n = (int)plInput[0];
+	int nOutNum = (int)plInput[1];
+	int nChannels = (int)plInput[2];
+	int nInNum = (int)plInput[3];
+	long hX = (long)plInput[4];
+	long hY = (long)plInput[5];
+
+	return m_math.channel_mean(n, nOutNum, nChannels, nInNum, hX, hY);
+}
+
+template long Device<double>::cuda_channel_mean(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_channel_mean(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::cuda_channel_sub(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;

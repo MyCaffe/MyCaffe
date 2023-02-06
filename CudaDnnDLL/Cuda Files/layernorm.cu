@@ -351,10 +351,7 @@ LONG LayerNormData<T>::Forward(long hXdata, long hYdata)
 	LONG lErr;
 	
 	// mean = x.mean(dim-1, keepdim=True)
-	if (lErr = m_pMath->channel_sum(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, hXdata, m_mu.gpu_data(), false))
-		return lErr;
-
-	if (lErr = m_pMath->scal(m_nCount, (T)1.0 / m_nInnerNum, m_mu.gpu_data()))
+	if (lErr = m_pMath->channel_mean(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, hXdata, m_mu.gpu_data()))
 		return lErr;
 	
 	// Copy mean values across all items in the channel.
@@ -370,10 +367,7 @@ LONG LayerNormData<T>::Forward(long hXdata, long hYdata)
 		return lErr;
 
 	// var = xmusq.mean(dim-1, keepdim=True)
-	if (lErr = m_pMath->channel_sum(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_xmusq.gpu_data(), m_var.gpu_data(), false))
-		return lErr;
-
-	if (lErr = m_pMath->scal(m_nCount, (T)1.0 / m_nInnerNum, m_var.gpu_data()))
+	if (lErr = m_pMath->channel_mean(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_xmusq.gpu_data(), m_var.gpu_data()))
 		return lErr;
 		
 	// stdev = sqrt(var + eps)

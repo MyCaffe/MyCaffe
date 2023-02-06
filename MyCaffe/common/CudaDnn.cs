@@ -794,6 +794,7 @@ namespace MyCaffe.common
         void channel_scale(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hA, long hY);
         void channel_mulv(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hA, long hX, long hC);
         void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bSumAcrossChannels = true);
+        void channel_mean(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
         void channel_copy(int nCount, int nOuterNum, int nChannels, int nBlocks, int nInnerNum, int nOffset, long hX, long hY, DIR dir);
         void channel_copyall(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
         void channel_duplicate(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
@@ -1162,6 +1163,7 @@ namespace MyCaffe.common
 
             CUDA_ACCURACY_FWD = 286,
 
+            CUDA_CHANNEL_MEAN = 287,
             CUDA_CHANNEL_MIN = 289,
             CUDA_CHANNEL_MAX = 290,
             CUDA_CHANNEL_SUB = 291,
@@ -7741,6 +7743,23 @@ namespace MyCaffe.common
                 m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MAX, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
             else
                 m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MAX, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
+        }
+
+        /// <summary>
+        /// Calculates the mean value of each channel of X and places the result in Y.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of elements in X.</param>
+        /// <param name="nOuterNum">Specifies the number of images within X.</param>
+        /// <param name="nChannels">Specifies the number of channels per image of X.</param>
+        /// <param name="nInnerNum">Specifies the dimension of each image in X.</param>
+        /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
+        /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
+        public void channel_mean(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MEAN, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MEAN, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
         }
 
         /// <summary>

@@ -267,6 +267,7 @@ const int CUDA_FN_COL2IM_ND = 283;
 
 const int CUDA_FN_ACCURACY_FWD = 286;
 
+const int CUDA_FN_CHANNEL_MEAN = 287;
 const int CUDA_FN_CHANNEL_MIN = 289;
 const int CUDA_FN_CHANNEL_MAX = 290;
 const int CUDA_FN_CHANNEL_SUB = 291;

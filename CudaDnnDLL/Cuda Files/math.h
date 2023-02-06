@@ -228,6 +228,7 @@ class Math
 
 		long channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 		long channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
+		long channel_mean(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 		long channel_sub(int n, int nOutNum, int nChannels, int nInNum, long hA, long hX, long hY);
 		long channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bSumAcrossChannels);
 		long channel_div(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nMethod = 1);
