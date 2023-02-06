@@ -197,9 +197,8 @@ namespace MyCaffe.layers.gpt
             //-----------------------------------
             // Calculate the mean across the last dim.
             // mean = x.mean(dim=-1, keepdim=True)
-            m_cuda.channel_sum(nCount, nOuterNum, nChannel, nInnerNum, colBottom[0].gpu_data, m_blobMu.mutable_gpu_data, false);
+            m_cuda.channel_mean(nCount, nOuterNum, nChannel, nInnerNum, colBottom[0].gpu_data, m_blobMu.mutable_gpu_data);
             m_blobMu.Reshape(m_blobMu.num, m_blobMu.channels, 1, 1);
-            m_blobMu.scale_data(1.0 / nInnerNum);
 
             //-----------------------------------
             // var = ((x - mean) ** 2).mean(dim=-1, keepdim=True)
@@ -218,8 +217,7 @@ namespace MyCaffe.layers.gpt
             // var = xmusq.mean(dim=-1, keepdim=True)
             // var shape = (n, c, 1)
             m_blobVar.SetData(0);
-            m_cuda.channel_sum(nCount, nOuterNum, nChannel, nInnerNum, m_blobXmuSq.gpu_data, m_blobVar.mutable_gpu_data, false);
-            m_blobVar.scale_data(1.0 / nInnerNum);
+            m_cuda.channel_mean(nCount, nOuterNum, nChannel, nInnerNum, m_blobXmuSq.gpu_data, m_blobVar.mutable_gpu_data);
             m_blobVar.Reshape(m_blobVar.num, m_blobVar.channels, 1, 1);
 
             //-----------------------------------
