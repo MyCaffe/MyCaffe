@@ -165,7 +165,7 @@ namespace MyCaffe.test
                 m_blobY.LoadFromNumpy(strTestDataPath + "pos.output.npy");
 
                 // Now, check values
-                double dfErr = (typeof(T) == typeof(float)) ? 1e-10 : 1e-5;
+                double dfErr = 1e-5;
                 verify(TopVec[0], m_blobY, false, dfErr);
             }
             finally

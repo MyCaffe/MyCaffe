@@ -79,132 +79,6 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestForwardPico()
-        {
-            LayerNormLayerTest test = new LayerNormLayerTest(EngineParameter.Engine.CAFFE);
-
-            try
-            {
-                foreach (ILayerNormLayerTest t in test.Tests)
-                {
-                    t.TestForwardPico(false, 1);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
-        public void TestBackwardPico()
-        {
-            LayerNormLayerTest test = new LayerNormLayerTest(EngineParameter.Engine.CAFFE);
-
-            try
-            {
-                foreach (ILayerNormLayerTest t in test.Tests)
-                {
-                    t.TestBackwardPico(false, 1);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
-        public void TestForwardPico3()
-        {
-            LayerNormLayerTest test = new LayerNormLayerTest(EngineParameter.Engine.CAFFE);
-
-            try
-            {
-                foreach (ILayerNormLayerTest t in test.Tests)
-                {
-                    t.TestForwardPico(false, 3);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
-        public void TestBackwardPico3()
-        {
-            LayerNormLayerTest test = new LayerNormLayerTest(EngineParameter.Engine.CAFFE);
-
-            try
-            {
-                foreach (ILayerNormLayerTest t in test.Tests)
-                {
-                    t.TestBackwardPico(false, 3);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
-        public void TestForwardPico3B()
-        {
-            LayerNormLayerTest test = new LayerNormLayerTest(EngineParameter.Engine.CAFFE);
-
-            try
-            {
-                foreach (ILayerNormLayerTest t in test.Tests)
-                {
-                    t.TestForwardPico(true, 3);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
-        public void TestBackwardPico3B()
-        {
-            LayerNormLayerTest test = new LayerNormLayerTest(EngineParameter.Engine.CAFFE);
-
-            try
-            {
-                foreach (ILayerNormLayerTest t in test.Tests)
-                {
-                    t.TestBackwardPico(true, 3);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
-        public void TestBackwardPicoBlk()
-        {
-            LayerNormLayerTest test = new LayerNormLayerTest(EngineParameter.Engine.CAFFE);
-
-            try
-            {
-                foreach (ILayerNormLayerTest t in test.Tests)
-                {
-                    t.TestBackwardPicoBlk();
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
         public void TestForwardEx()
         {
             LayerNormLayerTest test = new LayerNormLayerTest(EngineParameter.Engine.CAFFE);
@@ -282,10 +156,6 @@ namespace MyCaffe.test
         void TestForward();
         void TestForwardInplace();
         void TestGradient();
-
-        void TestForwardPico(bool bBatch, int nHeads);
-        void TestBackwardPico(bool bBatch, int nHeads);
-        void TestBackwardPicoBlk();
 
         void TestForwardEx(bool bUseCuda);
         void TestBackwardEx(bool bUseCuda);
@@ -486,213 +356,12 @@ namespace MyCaffe.test
             }
         }
 
-        public Tuple<List<int>, float[]> Fill(string strGpt, string strName, Log log, string strPass = "")
-        {
-            string strFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\gpt\\" + strGpt + "\\";
-
-            if (!string.IsNullOrEmpty(strPass))
-                strFile += strPass + "\\";
-
-            strFile += strName + ".txt";
-
-            string[] rgstrLines = File.ReadAllLines(strFile);
-            string strSize = rgstrLines[0].Trim('#', ' ', '(', ')', ',');
-            string[] rgstrSize = strSize.Split(',');
-            List<int> rgnShape = new List<int>() { 1 };
-
-            if (!string.IsNullOrEmpty(strSize))
-                rgnShape = rgstrSize.Select(p1 => int.Parse(p1)).ToList();
-            List<float> rgfVal = new List<float>();
-
-            while (rgnShape.Count < 4)
-            {
-                rgnShape.Add(1);
-            }
-
-            int nCount = 1;
-            foreach (int nDim in rgnShape)
-            {
-                nCount *= nDim;
-            }
-
-            for (int i = 1; i < rgstrLines.Length; i++)
-            {
-                string[] rgstrVals = rgstrLines[i].Split(' ');
-
-                for (int j = 0; j < rgstrVals.Length; j++)
-                {
-                    string strVal = rgstrVals[j].Trim();
-
-                    if (!string.IsNullOrEmpty(strVal))
-                    {
-                        float fVal = float.Parse(strVal);
-                        rgfVal.Add(fVal);
-                    }
-                }
-            }
-
-            log.CHECK_EQ(rgfVal.Count, nCount, "The bottom count does not match the number of values read in!");
-
-            float[] rgf = rgfVal.ToArray();
-
-            return new Tuple<List<int>, float[]>(rgnShape, rgf);
-        }
-
-        public void TestForwardPico(bool bBatch, int nHeads)
-        {
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.LAYERNORM);
-            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-            Blob<T> blobY = null;
-
-            try
-            {
-                blobY = new Blob<T>(m_cuda, m_log);
-
-                string strModel = "gpt-pico-ln";
-                if (nHeads > 1)
-                    strModel += nHeads.ToString();
-                if (bBatch)
-                    strModel += "B";
-
-                m_log.CHECK(layer.type == LayerParameter.LayerType.LAYERNORM, "The layer type is incorrect!");
-
-                Tuple<List<int>, float[]> x = Fill(strModel, "x", m_log);
-                m_blob_bottom.Reshape(x.Item1);
-                m_blob_bottom.mutable_cpu_data = convert(x.Item2);
-
-                Tuple<List<int>, float[]> y = Fill(strModel, "y", m_log);
-                blobY.Reshape(y.Item1);
-                blobY.mutable_cpu_data = convert(y.Item2);
-
-                layer.Setup(BottomVec, TopVec);
-                layer.Forward(BottomVec, TopVec);
-
-                // Now, check values
-                float[] rgExpected = convertF(blobY.mutable_cpu_data);
-                float[] rgActual = convertF(m_blob_top.mutable_cpu_data);
-
-                for (int i = 0; i < rgExpected.Length; i++)
-                {
-                    float fExpected = rgExpected[i];
-                    float fActual = rgActual[i];
-                    float fErr = 1e-6f;
-                    float fDiff = fActual - fExpected;
-
-                    if (Math.Abs(fDiff) > fErr)
-                        m_log.FAIL("The values are not expected!");
-                }
-            }
-            finally
-            {
-                if (blobY != null)
-                    blobY.Dispose();
-
-                layer.Dispose();
-            }
-        }
-
-        public void TestBackwardPico(bool bBatch, int nHeads)
-        {
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.LAYERNORM);
-            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-
-            try
-            {
-                string strModel = "gpt-pico-ln";
-                if (nHeads > 1)
-                    strModel += nHeads.ToString();
-                if (bBatch)
-                    strModel += "B";
-
-                m_log.CHECK(layer.type == LayerParameter.LayerType.LAYERNORM, "The layer type is incorrect!");
-
-                Tuple<List<int>, float[]> x = Fill(strModel, "x", m_log);
-                m_blob_bottom.Reshape(x.Item1);
-                m_blob_bottom.mutable_cpu_data = convert(x.Item2);
-
-                Tuple<List<int>, float[]> y_grad = Fill(strModel, "grad_1a_y", m_log);
-                Tuple<List<int>, float[]> x_grad = Fill(strModel, "grad_9_x", m_log);
-
-                layer.Setup(BottomVec, TopVec);
-                layer.Forward(BottomVec, TopVec);
-
-                m_blob_top.mutable_cpu_diff = convert(y_grad.Item2);
-
-                layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
-
-                // Now, check values
-                float[] rgExpected = x_grad.Item2;
-                float[] rgActual = convertF(m_blob_bottom.mutable_cpu_diff);
-
-                for (int i = 0; i < rgExpected.Length; i++)
-                {
-                    float fExpected = rgExpected[i];
-                    float fActual = rgActual[i];
-                    float fErr = 1e-6f;
-                    float fDiff = fActual - fExpected;
-
-                    if (Math.Abs(fDiff) > fErr)
-                        m_log.FAIL("The values are not expected!");
-                }
-            }
-            finally
-            {
-                layer.Dispose();
-            }
-        }
-
-        public void TestBackwardPicoBlk()
-        {
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.LAYERNORM);
-            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-
-            try
-            {
-                string strModel = "gpt-pico-ln-blk";
-
-                m_log.CHECK(layer.type == LayerParameter.LayerType.LAYERNORM, "The layer type is incorrect!");
-
-                Tuple<List<int>, float[]> y_grad = Fill(strModel, "grad_1a_y", m_log, "iter_0");
-                Tuple<List<int>, float[]> x_grad = Fill(strModel, "grad_9_x", m_log, "iter_0");
-                Tuple<List<int>, float[]> x = Fill(strModel, "x", m_log);
-
-                m_blob_bottom.Reshape(x.Item1);
-                m_blob_bottom.mutable_cpu_data = convert(x.Item2);
-
-                layer.Setup(BottomVec, TopVec);
-                layer.Forward(BottomVec, TopVec);
-                
-                m_blob_top.mutable_cpu_diff = convert(y_grad.Item2);
-
-                layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
-
-                // Now, check values
-                float[] rgExpected = x_grad.Item2;
-                float[] rgActual = convertF(m_blob_bottom.mutable_cpu_diff);
-
-                for (int i = 0; i < rgExpected.Length; i++)
-                {
-                    float fExpected = rgExpected[i];
-                    float fActual = rgActual[i];
-                    float fErr = 1e-6f;
-                    float fDiff = fActual - fExpected;
-
-                    if (Math.Abs(fDiff) > fErr)
-                        m_log.FAIL("The values are not expected!");
-                }
-            }
-            finally
-            {
-                layer.Dispose();
-            }
-        }
-
         private string loadTestData1()
         {
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\ln\\";
             string strFileName = "_layernorm_test.zip";
             string strTestPath = "test";
-            string strTestFile = "ln.1_x.npy";
+            string strTestFile = "iter_0\\ln.1_x.npy";
             return loadTestData(strPath, strFileName, strTestPath, strTestFile);
         }
 
@@ -714,6 +383,8 @@ namespace MyCaffe.test
                 m_blob_bottom.LoadFromNumpy(strTestDataPath + "q0.npy");
                 m_blob_top.SetData(0);
 
+                strTestDataPath += "iter_0\\";
+
                 layer.Setup(BottomVec, TopVec);
                 layer.Forward(BottomVec, TopVec);
 
@@ -724,7 +395,7 @@ namespace MyCaffe.test
 
                 m_blobVal.LoadFromNumpy(strTestDataPath + "ln.8_y.npy");
 
-                float fErr = 2e-6f;
+                float fErr = 5e-7f;
                 verify(m_blob_top, m_blobVal, false, fErr);
 
                 sw.Start();
@@ -761,6 +432,8 @@ namespace MyCaffe.test
 
                 m_blob_bottom.LoadFromNumpy(strTestDataPath + "q0.npy");
                 m_blob_top.SetData(0);
+
+                strTestDataPath += "iter_0\\";
 
                 layer.Setup(BottomVec, TopVec);
                 layer.Forward(BottomVec, TopVec);

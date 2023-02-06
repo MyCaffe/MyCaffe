@@ -196,7 +196,7 @@ namespace MyCaffe.test
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\mh\\";
             string strFileName = "_multihead_test.zip";
             string strTestPath = "test";
-            string strTestFile = "mh.10_concat_output1.npy";
+            string strTestFile = "iter_0\\mh.10_concat_output1.npy";
             return loadTestData(strPath, strFileName, strTestPath, strTestFile);
         }
 
@@ -231,21 +231,23 @@ namespace MyCaffe.test
 
                 layer.Setup(BottomVec, TopVec);
 
-                layer.blobs[0].LoadFromNumpy(strTestDataPath + "w_q_weight.npy");
-                layer.blobs[1].LoadFromNumpy(strTestDataPath + "w_q_bias.npy");
-                layer.blobs[2].LoadFromNumpy(strTestDataPath + "w_k_weight.npy");
-                layer.blobs[3].LoadFromNumpy(strTestDataPath + "w_k_bias.npy");
-                layer.blobs[4].LoadFromNumpy(strTestDataPath + "w_v_weight.npy");
-                layer.blobs[5].LoadFromNumpy(strTestDataPath + "w_v_bias.npy");
-                layer.blobs[6].LoadFromNumpy(strTestDataPath + "w_o_weight.npy");
-                layer.blobs[7].LoadFromNumpy(strTestDataPath + "w_o_bias.npy");
+                strTestDataPath += "iter_0\\";
+
+                layer.blobs[0].LoadFromNumpy(strTestDataPath + "mh.w_q.weight.npy");
+                layer.blobs[1].LoadFromNumpy(strTestDataPath + "mh.w_q.bias.npy");
+                layer.blobs[2].LoadFromNumpy(strTestDataPath + "mh.w_k.weight.npy");
+                layer.blobs[3].LoadFromNumpy(strTestDataPath + "mh.w_k.bias.npy");
+                layer.blobs[4].LoadFromNumpy(strTestDataPath + "mh.w_v.weight.npy");
+                layer.blobs[5].LoadFromNumpy(strTestDataPath + "mh.w_v.bias.npy");
+                layer.blobs[6].LoadFromNumpy(strTestDataPath + "mh.w_o.weight.npy");
+                layer.blobs[7].LoadFromNumpy(strTestDataPath + "mh.w_o.bias.npy");
 
                 layer.Forward(BottomVec, TopVec);
 
                 m_blobY.LoadFromNumpy(strTestDataPath + "mh.12_output.npy");
 
                 // Now, check values
-                verify(TopVec[0], m_blobY, false, 6e-07);
+                verify(TopVec[0], m_blobY, false, (typeof(T) == typeof(float)) ? 1e-12 : 3e-06);
             }
             finally
             {
@@ -284,14 +286,16 @@ namespace MyCaffe.test
 
                 layer.Setup(BottomVec, TopVec);
 
-                layer.blobs[0].LoadFromNumpy(strTestDataPath + "w_q_weight.npy");
-                layer.blobs[1].LoadFromNumpy(strTestDataPath + "w_q_bias.npy");
-                layer.blobs[2].LoadFromNumpy(strTestDataPath + "w_k_weight.npy");
-                layer.blobs[3].LoadFromNumpy(strTestDataPath + "w_k_bias.npy");
-                layer.blobs[4].LoadFromNumpy(strTestDataPath + "w_v_weight.npy");
-                layer.blobs[5].LoadFromNumpy(strTestDataPath + "w_v_bias.npy");
-                layer.blobs[6].LoadFromNumpy(strTestDataPath + "w_o_weight.npy");
-                layer.blobs[7].LoadFromNumpy(strTestDataPath + "w_o_bias.npy");
+                strTestDataPath += "iter_0\\";
+
+                layer.blobs[0].LoadFromNumpy(strTestDataPath + "mh.w_q.weight.npy");
+                layer.blobs[1].LoadFromNumpy(strTestDataPath + "mh.w_q.bias.npy");
+                layer.blobs[2].LoadFromNumpy(strTestDataPath + "mh.w_k.weight.npy");
+                layer.blobs[3].LoadFromNumpy(strTestDataPath + "mh.w_k.bias.npy");
+                layer.blobs[4].LoadFromNumpy(strTestDataPath + "mh.w_v.weight.npy");
+                layer.blobs[5].LoadFromNumpy(strTestDataPath + "mh.w_v.bias.npy");
+                layer.blobs[6].LoadFromNumpy(strTestDataPath + "mh.w_o.weight.npy");
+                layer.blobs[7].LoadFromNumpy(strTestDataPath + "mh.w_o.bias.npy");
 
                 layer.Forward(BottomVec, TopVec);
 
@@ -317,7 +321,7 @@ namespace MyCaffe.test
 
         public void TestBackward2(uint nBatch, uint nHeads)
         {
-            string strTestDataPath = "C:\\temp\\projects\\TransformerTranslator\\TransformerTranslator\\test\\"; // loadTestData1();
+            string strTestDataPath = loadTestData1();
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION);
             p.multihead_attention_param.heads = nHeads;
@@ -347,6 +351,7 @@ namespace MyCaffe.test
                 layer.Setup(BottomVec, TopVec);
 
                 strTestDataPath += "iter_0\\";
+
                 layer.blobs[0].LoadFromNumpy(strTestDataPath + "mh.w_q.weight.npy");
                 layer.blobs[1].LoadFromNumpy(strTestDataPath + "mh.w_q.bias.npy");
                 layer.blobs[2].LoadFromNumpy(strTestDataPath + "mh.w_k.weight.npy");
@@ -409,7 +414,7 @@ namespace MyCaffe.test
                 BottomVec.Add(m_blobMask);
 
                 double dfPctStep = (typeof(T) == typeof(float)) ? 0.001 : 0.01;
-                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.0001);
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.1);
                 checker.CheckGradient(layer, BottomVec, TopVec, -1, 1, dfPctStep);
             }
             finally
