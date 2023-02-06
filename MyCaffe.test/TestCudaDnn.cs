@@ -3291,6 +3291,94 @@ namespace MyCaffe.test
             }
         }
 
+
+        [TestMethod]
+        public void TestMath_channel_mean()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+            Log log = new Log("Test Channel mean within channels");
+            long hDataMatrix = 0;
+            long hDstVector = 0;
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    try
+                    {
+                        int nNum = 2;
+                        int nChannels = 3;
+                        int nSpatialDim = 3;
+                        int nCount = nNum * nChannels * nSpatialDim;
+
+                        // Data matrix is an nNum x nDim matrix.  Dst matrix is the same size.
+                        List<double> rgDataMatrix = new List<double>()
+                        {
+                            1.0, 1.1, 1.2,
+                            2.0, 2.1, 2.2,
+                            3.0, 3.1, 3.2,
+
+                            4.0, 4.1, 4.2,
+                            5.0, 5.1, 5.2,
+                            6.0, 6.1, 6.2
+                        };
+                        hDataMatrix = t.Cuda.AllocMemory(rgDataMatrix);
+                        hDstVector = t.Cuda.AllocMemory(nNum * nChannels);
+
+                        t.Cuda.channel_mean(nCount, nNum, nChannels, nSpatialDim, hDataMatrix, hDstVector);
+
+                        double[] rgDst = t.Cuda.GetMemoryDouble(hDstVector);
+                        double[] rgExpected = new double[nNum * nChannels];
+
+                        for (int n = 0; n < nNum; n++)
+                        {
+                            for (int c = 0; c < nChannels; c++)
+                            {
+                                for (int i = 0; i < nSpatialDim; i++)
+                                {
+                                    int nIdxData = n * nChannels * nSpatialDim + c * nSpatialDim + i;
+                                    int nIdxExp = n * nChannels + c;
+                                    rgExpected[nIdxExp] += rgDataMatrix[nIdxData];
+                                }
+                            }
+                        }
+
+                        for (int i = 0; i < rgExpected.Length; i++)
+                        {
+                            rgExpected[i] /= nSpatialDim;
+                        }
+
+                        for (int i = 0; i < nNum * nChannels; i++)
+                        {
+                            double dfExpected = rgExpected[i];
+                            double dfActual = rgDst[i];
+                            double dfErr = 1e-07;
+
+                            log.EXPECT_NEAR(dfExpected, dfActual, dfErr, "The values do not match!");
+                        }
+                    }
+                    finally
+                    {
+                        if (hDataMatrix != 0)
+                        {
+                            t.Cuda.FreeMemory(hDataMatrix);
+                            hDataMatrix = 0;
+                        }
+
+                        if (hDstVector != 0)
+                        {
+                            t.Cuda.FreeMemory(hDstVector);
+                            hDstVector = 0;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
         [TestMethod]
         public void TestStream()
         {
