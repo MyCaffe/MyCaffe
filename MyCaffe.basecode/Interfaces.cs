@@ -9,6 +9,25 @@ using System.Text;
 namespace MyCaffe.basecode
 {
     /// <summary>
+    /// Specifies the special tokens.
+    /// </summary>
+    public enum SPECIAL_TOKENS
+    {
+        /// <summary>
+        /// The PAD token is used to pad the input to the same length.
+        /// </summary>
+        PAD = 0,
+        /// <summary>
+        /// The BOS token indicates the begin of sequence.
+        ///</summary>
+        BOS = 1,
+        /// <summary>
+        /// The EOS token indicates the end of sequence.
+        /// </summary>
+        EOS = 2
+    }
+
+    /// <summary>
     /// Defines the category of training.
     /// </summary>
     public enum TRAINING_CATEGORY
