@@ -248,12 +248,14 @@ namespace MyCaffe.layers
         /// data into the bottom blob collection used as intput.
         /// </summary>
         /// <param name="customInput">Specifies the custom input data.</param>
+        /// <param name="nSeqLen">Returns the sequence length.</param>
         /// <param name="colBottom">Optionally, specifies the bottom data to fill.</param>
         /// <returns>The bottom data is returned.</returns>
         /// <remarks>The blobs returned should match the blob descriptions returned in the LayerParameter's
         /// overrides for 'PrepareRunModelInputs' and 'PrepareRunModel'.</remarks>
-        public virtual BlobCollection<T> PreProcessInput(PropertySet customInput, BlobCollection<T> colBottom = null)
+        public virtual BlobCollection<T> PreProcessInput(PropertySet customInput, out int nSeqLen, BlobCollection<T> colBottom = null)
         {
+            nSeqLen = 0;
             return colBottom;
         }
 
@@ -263,15 +265,19 @@ namespace MyCaffe.layers
         /// <param name="strEncInput">Specifies the encoder input.</param>
         /// <param name="nDecInput">Specifies the decoder input.</param>
         /// <param name="colBottom">Specifies the bottom blob where the preprocessed data is placed where
-        /// colBottom[0] contains the preprocessed decoder input.</param>
+        /// colBottom[0] contains the preprocessed decoder input.
         /// colBottom[1] contains the preprocessed encoder input (depending on param settings),
-        /// colBottom[2] contains the preprocessed encoder input reversed (depending on param settings), 
+        /// colBottom[2] contains the preprocessed encoder input reversed (depending on param settings)
+        /// </param>
+        /// <returns>
+        /// If nDecInput == EOS, false is returned, otherwise true.
+        /// </returns>
         /// <remarks>
         /// NOTE: the LayerSetup must be called before preprocessing input, for during LayerSetup the vocabulary is loaded.
         /// </remarks>
-        public virtual void PreProcessInput(string strEncInput, int? nDecInput, BlobCollection<T> colBottom)
+        public virtual bool PreProcessInput(string strEncInput, int? nDecInput, BlobCollection<T> colBottom)
         {
-            return;
+            return false;
         }
 
         /// <summary>
@@ -280,7 +286,7 @@ namespace MyCaffe.layers
         /// </summary>
         /// <param name="blobSofmtax">Specifies the softmax blob output by the network.</param>
         /// <param name="nK">Optionally, specifies the K top items to return (default = 1).</param>
-        /// <returns>The array of word string, index and propabilities corresponding to the softmax output is returned.</returns>
+        /// <returns>The array of word string, index, propabilities and end of squence found boolean corresponding to the softmax output is returned.</returns>
         public virtual List<Tuple<string, int, double>> PostProcessOutput(Blob<T> blobSofmtax, int nK = 1)
         {
             return null;
@@ -289,12 +295,13 @@ namespace MyCaffe.layers
         /// The PostProcessLogitsOutput allows derivative data layers to post-process the results,
         /// converting them back into text results (e.g., detokenizing).
         /// </summary>
+        /// <param name="nCurIdx">Specifies the current index being processed, or -1 for the last index.</param>
         /// <param name="blobLogits">Specifies the logits blob output by the last inner product layer of the network.</param>
         /// <param name="softmax">Specifies the softmax layer used to post process the logits.</param>
         /// <param name="nAxis">Specifies the axis of the softmax layer.</param>
         /// <param name="nK">Optionally, specifies the K top items to return (default = 1).</param>
-        /// <returns>The array of word string, index and propabilities corresponding to the softmax output is returned.</returns>
-        public virtual List<Tuple<string, int, double>> PostProcessLogitsOutput(Blob<T> blobLogits, Layer<T> softmax, int nAxis, int nK = 1)
+        /// <returns>The array of word string, index, propabilities and end of sequence found boolean corresponding to the softmax output is returned.</returns>
+        public virtual List<Tuple<string, int, double>> PostProcessLogitsOutput(int nCurIdx, Blob<T> blobLogits, Layer<T> softmax, int nAxis, int nK = 1)
         {
             return null;
         }
