@@ -5691,8 +5691,8 @@ __global__ void channel_min_kernel(const int num, const int channels, const int 
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * spatial_dim && i>=0; i += blockDim.x * gridDim.x)
 	{
-		int n = i / spatial_dim;
-		int s = i % spatial_dim;
+		const int n = i / spatial_dim;
+		const int s = i % spatial_dim;
 		T val = FLT_MAX;
 
 		for (int c = 0; c < channels; c++)
@@ -5705,7 +5705,32 @@ __global__ void channel_min_kernel(const int num, const int channels, const int 
 }
 
 template <typename T>
-long Math<T>::channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY)
+__global__ void channel_min_idx_kernel(const int num, const int channels, const int spatial_dim, const T* x, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * spatial_dim && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const int n = i / spatial_dim;
+		const int s = i % spatial_dim;
+		T val = FLT_MAX;
+		int nIdx = 0;
+
+		for (int c = 0; c < channels; c++)
+		{
+			const T val1 = x[(n * channels + c) * spatial_dim + s];
+			if (val1 < val)
+			{
+				val = val1;
+				nIdx = c;
+			}
+		}
+
+		y[i] = nIdx;
+	}
+}
+
+
+template <typename T>
+long Math<T>::channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx)
 {
 	LONG lErr;
 	MemoryItem* pX;
@@ -5717,13 +5742,16 @@ long Math<T>::channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	channel_min_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+	if (bReturnIdx)
+		channel_min_idx_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+	else
+		channel_min_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
-template long Math<float>::channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
+template long Math<double>::channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx);
+template long Math<float>::channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx);
 
 
 template <typename T>
@@ -5731,8 +5759,8 @@ __global__ void channel_max_kernel(const int num, const int channels, const int 
 {
 	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<num * spatial_dim && i>=0; i += blockDim.x * gridDim.x)
 	{
-		int n = i / spatial_dim;
-		int s = i % spatial_dim;
+		const int n = i / spatial_dim;
+		const int s = i % spatial_dim;
 		T val = -FLT_MAX;
 
 		for (int c=0; c<channels; c++)
@@ -5744,8 +5772,32 @@ __global__ void channel_max_kernel(const int num, const int channels, const int 
 	}
 }
 
+template <typename T>
+__global__ void channel_max_idx_kernel(const int num, const int channels, const int spatial_dim, const T* x, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * spatial_dim && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const int n = i / spatial_dim;
+		const int s = i % spatial_dim;
+		T val = -FLT_MAX;
+		int nIdx = 0;
+		
+		for (int c = 0; c < channels; c++)
+		{
+			const T val1 = x[(n * channels + c) * spatial_dim + s];
+			if (val1 > val)
+			{
+				val = val1;
+				nIdx = c;
+			}
+		}
+
+		y[i] = nIdx;
+	}
+}
+
 template <typename T> 
-long Math<T>::channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY)
+long Math<T>::channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx)
 {
 	LONG lErr;
 	MemoryItem* pX;
@@ -5757,13 +5809,16 @@ long Math<T>::channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	channel_max_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+	if (bReturnIdx)
+		channel_max_idx_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+	else
+		channel_max_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
-template long Math<float>::channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
+template long Math<double>::channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx);
+template long Math<float>::channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx);
 
 
 template <typename T>

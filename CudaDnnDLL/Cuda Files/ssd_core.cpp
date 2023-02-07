@@ -547,7 +547,7 @@ long SsdData<T>::softmax(SsdMemory<T>* pData, const int nOuterNum, const int nCh
 	// and then normalize.
 
 	// Compute Max
-	if (lErr = m_pMath->channel_max(nOuterNum * nInnerNum, nOuterNum, nChannels, nInnerNum, pData->gpu_handle(), m_pScale->gpu_handle()))
+	if (lErr = m_pMath->channel_max(nOuterNum * nInnerNum, nOuterNum, nChannels, nInnerNum, pData->gpu_handle(), m_pScale->gpu_handle(), false))
 		return lErr;
 
 	// Subtract

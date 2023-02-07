@@ -226,8 +226,8 @@ class Math
 		long denan(int n, long hX, T fReplacement);
 		long set_bounds(int n, T fMin, T fMax, long hX);
 
-		long channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
-		long channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
+		long channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx);
+		long channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx);
 		long channel_mean(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 		long channel_sub(int n, int nOutNum, int nChannels, int nInNum, long hA, long hX, long hY);
 		long channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bSumAcrossChannels);

@@ -3050,7 +3050,7 @@ long Device<T>::cuda_channel_min(long lInput, T* pfInput, long llInput, LONGLONG
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(llInput, plInput, 6, 6))
+	if (lErr = verifyInput(llInput, plInput, 7, 7))
 		return lErr;
 
 	int n = (int)plInput[0];
@@ -3059,8 +3059,9 @@ long Device<T>::cuda_channel_min(long lInput, T* pfInput, long llInput, LONGLONG
 	int nInNum = (int)plInput[3];
 	long hX = (long)plInput[4];
 	long hY = (long)plInput[5];
+	bool bReturnIdx = (plInput[6] == 0) ? false : true;
 
-	return m_math.channel_min(n, nOutNum, nChannels, nInNum, hX, hY);
+	return m_math.channel_min(n, nOutNum, nChannels, nInNum, hX, hY, bReturnIdx);
 }
 
 template long Device<double>::cuda_channel_min(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
@@ -3072,7 +3073,7 @@ long Device<T>::cuda_channel_max(long lInput, T* pfInput, long llInput, LONGLONG
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(llInput, plInput, 6, 6))
+	if (lErr = verifyInput(llInput, plInput, 7, 7))
 		return lErr;
 
 	int n = (int)plInput[0];
@@ -3081,8 +3082,9 @@ long Device<T>::cuda_channel_max(long lInput, T* pfInput, long llInput, LONGLONG
 	int nInNum = (int)plInput[3];
 	long hX = (long)plInput[4];
 	long hY = (long)plInput[5];
+	bool bReturnIdx = (plInput[6] == 0) ? false : true;
 
-	return m_math.channel_max(n, nOutNum, nChannels, nInNum, hX, hY);
+	return m_math.channel_max(n, nOutNum, nChannels, nInNum, hX, hY, bReturnIdx);
 }
 
 template long Device<double>::cuda_channel_max(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);

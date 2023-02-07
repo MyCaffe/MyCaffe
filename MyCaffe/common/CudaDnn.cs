@@ -7720,12 +7720,13 @@ namespace MyCaffe.common
         /// <param name="nInnerNum">Specifies the dimension of each image in X.</param>
         /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
         /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
-        public void channel_min(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY)
+        /// <param name="bReturnIdx">Optionally, specifies to return the index of the minimum value, otherwise the minimum value is returned.</param>
+        public void channel_min(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bReturnIdx = false)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MIN, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MIN, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bReturnIdx) ? 1 : 0));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MIN, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MIN, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bReturnIdx) ? 1 : 0));
         }
 
         /// <summary>
@@ -7737,12 +7738,13 @@ namespace MyCaffe.common
         /// <param name="nInnerNum">Specifies the dimension of each image in X.</param>
         /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
         /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
-        public void channel_max(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY)
+        /// <param name="bReturnIdx">Optionally, specifies to return the index of the maximum value, otherwise the maximum value is returned.</param>
+        public void channel_max(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bReturnIdx = false)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MAX, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MAX, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bReturnIdx) ? 1 : 0));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MAX, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MAX, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bReturnIdx) ? 1 : 0));
         }
 
         /// <summary>
