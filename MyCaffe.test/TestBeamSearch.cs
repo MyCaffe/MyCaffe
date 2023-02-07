@@ -286,16 +286,16 @@ namespace MyCaffe.test
 
         public override bool SupportsPreProcessing => true;
 
-        public override BlobCollection<T> PreProcessInput(PropertySet customInput, BlobCollection<T> colBottom = null)
+        public override BlobCollection<T> PreProcessInput(PropertySet customInput, out int nSeqLen, BlobCollection<T> colBottom = null)
         {
-            return m_dataLayer.PreProcessInput(customInput, colBottom);
+            return m_dataLayer.PreProcessInput(customInput, out nSeqLen, colBottom);
         }
 
-        public override void PreProcessInput(string strEncInput, int? nDecInput, BlobCollection<T> colBottom)
+        public override bool PreProcessInput(string strEncInput, int? nDecInput, BlobCollection<T> colBottom)
         {
-            m_dataLayer.PreProcessInput(strEncInput, nDecInput, colBottom);
+            return m_dataLayer.PreProcessInput(strEncInput, nDecInput, colBottom);
         }
-
+        
         public override List<Tuple<string, int, double>> PostProcessOutput(Blob<T> blobSoftmax, int nK = 1)
         {
             return m_dataLayer.PostProcessOutput(blobSoftmax, nK);
