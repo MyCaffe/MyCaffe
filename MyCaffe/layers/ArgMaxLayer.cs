@@ -147,6 +147,33 @@ namespace MyCaffe.layers
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            if (m_param.argmax_param.enable_cuda_impl)
+                forward_gpu(colBottom, colTop);
+            else
+                forward_cpu(colBottom, colTop);
+        }
+
+        private void forward_gpu(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            int nAxis = m_nAxis.GetValueOrDefault(1);
+            int nOuterNum = colBottom[0].count(0, nAxis);
+            int nChannels = colBottom[0].count(nAxis);
+            int nInnerNum = 1;
+
+            if (m_nTopK > 1)
+                m_log.WriteLine("WARNING: The gpu implementation of argmax only supports TopK = 1.");
+
+            if (m_bOutMaxVal)
+                m_log.WriteLine("WARNING: Currently the gpu implementation of argmax does now support output of the max values.");
+
+            if (m_param.argmax_param.operation == ArgMaxParameter.COMPARE_OPERATOR.MAX)
+                m_cuda.channel_max(colBottom[0].count(), nOuterNum, nChannels, nInnerNum, colBottom[0].gpu_data, colTop[0].mutable_gpu_data, true);
+            else
+                m_cuda.channel_min(colBottom[0].count(), nOuterNum, nChannels, nInnerNum, colBottom[0].gpu_data, colTop[0].mutable_gpu_data, true);
+        }
+
+        private void forward_cpu(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
             double[] rgBottomData = convertD(colBottom[0].update_cpu_data());
             double[] rgTopData = convertD(colTop[0].mutable_cpu_data);
             int nDim;
