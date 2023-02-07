@@ -112,7 +112,7 @@ namespace MyCaffe.test
             {
                 foreach (IArgMaxLayerTest t in test.Tests)
                 {
-                    t.TestCpu();
+                    t.TestForward(ArgMaxParameter.COMPARE_OPERATOR.MAX, false);
                 }
             }
             finally
@@ -241,7 +241,7 @@ namespace MyCaffe.test
             {
                 foreach (IArgMaxLayerTest t in test.Tests)
                 {
-                    t.TestCpu(ArgMaxParameter.COMPARE_OPERATOR.MIN);
+                    t.TestForward(ArgMaxParameter.COMPARE_OPERATOR.MIN, false);
                 }
             }
             finally
@@ -360,6 +360,42 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestGpu()
+        {
+            ArgMaxLayerTest test = new ArgMaxLayerTest();
+
+            try
+            {
+                foreach (IArgMaxLayerTest t in test.Tests)
+                {
+                    t.TestForward(ArgMaxParameter.COMPARE_OPERATOR.MAX, true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGpuMin()
+        {
+            ArgMaxLayerTest test = new ArgMaxLayerTest();
+
+            try
+            {
+                foreach (IArgMaxLayerTest t in test.Tests)
+                {
+                    t.TestForward(ArgMaxParameter.COMPARE_OPERATOR.MIN, true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -370,7 +406,7 @@ namespace MyCaffe.test
         void TestSetupAxis();
         void TestSetupAxisNegativeIndexing();
         void TestSetupAxisMaxVal();
-        void TestCpu(ArgMaxParameter.COMPARE_OPERATOR op = ArgMaxParameter.COMPARE_OPERATOR.MAX);
+        void TestForward(ArgMaxParameter.COMPARE_OPERATOR op = ArgMaxParameter.COMPARE_OPERATOR.MAX, bool bEnableCuda = false);
         void TestCpuMaxVal(ArgMaxParameter.COMPARE_OPERATOR op = ArgMaxParameter.COMPARE_OPERATOR.MAX);
         void TestCpuTopK(ArgMaxParameter.COMPARE_OPERATOR op = ArgMaxParameter.COMPARE_OPERATOR.MAX);
         void TestCpuMaxValTopK(ArgMaxParameter.COMPARE_OPERATOR op = ArgMaxParameter.COMPARE_OPERATOR.MAX);
@@ -505,10 +541,11 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestCpu(ArgMaxParameter.COMPARE_OPERATOR op)
+        public void TestForward(ArgMaxParameter.COMPARE_OPERATOR op, bool bEnableCuda)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.ARGMAX);
             p.argmax_param.operation = op;
+            p.argmax_param.enable_cuda_impl = bEnableCuda;
             ArgMaxLayer<T> layer = new ArgMaxLayer<T>(m_cuda, m_log, p);
 
             try
@@ -875,6 +912,6 @@ namespace MyCaffe.test
             {
                 layer.Dispose();
             }
-        }
+        }        
     }
 }
