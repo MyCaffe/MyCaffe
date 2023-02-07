@@ -19,6 +19,7 @@ namespace MyCaffe.param
         uint m_nTopK = 1;
         int? m_nAxis = null;
         COMPARE_OPERATOR m_op = COMPARE_OPERATOR.MAX;
+        bool m_bEnableCudaImplementation = false;
 
         /// <summary>
         /// Defines the compare operator to use (max or min, default = max).
@@ -38,6 +39,18 @@ namespace MyCaffe.param
         /** @copydoc LayerParameterBase */
         public ArgMaxParameter()
         {
+        }
+
+        /// <summary>
+        /// Specifies to use the low-level full cuda implementation of LayerNorm (default = false).
+        /// </summary>
+        /// <remarks>
+        /// The cuda implementation runs around 30% faster when using float base types.
+        /// </remarks>
+        public bool enable_cuda_impl
+        {
+            get { return m_bEnableCudaImplementation; }
+            set { m_bEnableCudaImplementation = value; }
         }
 
         /// <summary>
@@ -105,6 +118,7 @@ namespace MyCaffe.param
             m_nTopK = p.m_nTopK;
             m_nAxis = p.m_nAxis;
             m_op = p.m_op;
+            m_bEnableCudaImplementation = p.enable_cuda_impl;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -136,6 +150,8 @@ namespace MyCaffe.param
             if (operation != COMPARE_OPERATOR.MAX)
                 rgChildren.Add("operation", operation.ToString());
 
+            rgChildren.Add("enable_cuda_impl", m_bEnableCudaImplementation.ToString());
+
             return new RawProto(strName, "", rgChildren);
         }
 
@@ -165,6 +181,9 @@ namespace MyCaffe.param
                 else
                     p.operation = COMPARE_OPERATOR.MAX;
             }
+
+            if ((strVal = rp.FindValue("enable_cuda_impl")) != null)
+                p.m_bEnableCudaImplementation = bool.Parse(strVal);
 
             return p;
         }
