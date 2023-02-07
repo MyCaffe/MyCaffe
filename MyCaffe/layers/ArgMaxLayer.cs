@@ -130,7 +130,7 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Forward computation.
+        /// Forward computation.  When 'enable_cuda_impl' = true (default = false) the GPU version is run.
         /// </summary>
         /// <param name="colBottom">input blob vector (length 1)
         ///  -# @f$ (N \times C \times H \times W) @f$
