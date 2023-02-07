@@ -976,7 +976,7 @@ namespace MyCaffe.test
 
         private int getNextIndex(Blob<T> blob, int nVocabCount, int nTopK, Layer<T> softmax)
         {
-            List<Tuple<string, int, double>> rg = m_dataLayer.PostProcessLogitsOutput(blob, softmax, 10);
+            List<Tuple<string, int, double>> rg = m_dataLayer.PostProcessLogitsOutput(-1, blob, softmax, 10);
             return rg[0].Item2;
         }
 

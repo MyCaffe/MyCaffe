@@ -998,9 +998,9 @@ namespace MyCaffe.test
 
                 string strInput = "When is the first session";
                 PropertySet input = new PropertySet("InputData=" + strInput);
-                BlobCollection<float> colBottom = net.layers[0].PreProcessInput(input);
+                int nSeqLen;
+                BlobCollection<float> colBottom = net.layers[0].PreProcessInput(input, out nSeqLen);
 
-                int nSeqLen = (int)net.layers[0].layer_param.tokenized_data_pairs_param.block_size;
                 blobDec.Reshape(1, nSeqLen, 1, 1);
                 blobDec.SetData(0);
                 blobDec.SetData(1, 0); // BOS
