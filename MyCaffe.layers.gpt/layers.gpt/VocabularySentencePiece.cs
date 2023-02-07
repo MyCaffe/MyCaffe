@@ -183,7 +183,7 @@ namespace MyCaffe.layers.gpt
         /// </summary>
         public char BOS
         {
-            get { return (char)1; }
+            get { return (char)SPECIAL_TOKENS.BOS; }
         }
 
         /// <summary>
@@ -191,7 +191,7 @@ namespace MyCaffe.layers.gpt
         /// </summary>
         public char EOS
         {
-            get { return (char)2; }
+            get { return (char)SPECIAL_TOKENS.EOS; }
         }
 
         /// <summary>

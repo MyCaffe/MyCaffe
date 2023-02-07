@@ -239,12 +239,15 @@ namespace MyCaffe.layers.beta
         /// data into the bottom blob collection used as intput.
         /// </summary>
         /// <param name="customInput">Specifies the custom input data.</param>
+        /// <param name="nSeqLen">Specifies the sequence length.</param>
         /// <param name="colBottom">Optionally, specifies the bottom data to fill.</param>
         /// <returns>The bottom data is returned.</returns>
         /// <remarks>The blobs returned should match the blob descriptions returned in the LayerParameter's
         /// overrides for 'PrepareRunModelInputs' and 'PrepareRunModel'.</remarks>
-        public override BlobCollection<T> PreProcessInput(PropertySet customInput, BlobCollection<T> colBottom = null)
+        public override BlobCollection<T> PreProcessInput(PropertySet customInput, out int nSeqLen, BlobCollection<T> colBottom = null)
         {
+            nSeqLen = -1;
+
             if (colBottom == null)
             {
                 string strInput = m_param.PrepareRunModelInputs();
@@ -282,8 +285,11 @@ namespace MyCaffe.layers.beta
         /// <remarks>
         /// NOTE: the LayerSetup must be called before preprocessing input, for during LayerSetup the vocabulary is loaded.
         /// </remarks>
-        public override void PreProcessInput(string strEncInput, int? nDecInput, BlobCollection<T> colBottom)
+        public override bool PreProcessInput(string strEncInput, int? nDecInput, BlobCollection<T> colBottom)
         {
+            if (nDecInput.HasValue && nDecInput.Value == (int)SPECIAL_TOKENS.EOS)
+                return false;
+
             List<string> rgstrInput = null;
             if (strEncInput != null)
                 rgstrInput = preprocess(strEncInput);
@@ -356,6 +362,8 @@ namespace MyCaffe.layers.beta
 
             if (rgEncClip != null)
                 colBottom[nBtmIdx].mutable_cpu_data = convert(rgEncClip);
+
+            return true;
         }
 
         /// <summary>

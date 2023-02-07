@@ -13,6 +13,7 @@ using System.Net;
 using System.Globalization;
 using System.Diagnostics;
 using System.Xml.Linq;
+using System.Security.Cryptography;
 
 namespace MyCaffe.layers.gpt
 {
@@ -29,7 +30,10 @@ namespace MyCaffe.layers.gpt
         Blob<T> m_blobY = null;
         Blob<T> m_blobTriangle = null;
         Random m_random = new Random();
+        Blob<T> m_blobEncIn = null;
+        Blob<T> m_blobDecIn = null;
         Layer<T> m_softmax = null;
+        Layer<T> m_argmax = null;
 
         /// <summary>
         /// Defines the input source.
@@ -87,7 +91,10 @@ namespace MyCaffe.layers.gpt
             dispose(ref m_blobY);
             dispose(ref m_blobX);
             dispose(ref m_blobTriangle);
+            dispose(ref m_blobEncIn);
+            dispose(ref m_blobDecIn);
             dispose(ref m_softmax);
+            dispose(ref m_argmax);
 
             base.dispose();
         }
@@ -350,21 +357,22 @@ namespace MyCaffe.layers.gpt
         /// Preproces the input and return as a set of bottom blobs.
         /// </summary>
         /// <param name="customInput">Specifies the custom text input.</param>
+        /// <param name="nSeqLen">Specifies the sequence length.</param>
         /// <param name="colBottom">The output is placed in the bottom blobs as: tokidx, pos</param>
         /// <returns>The bottom blob collection is returned.</returns>
-        public override BlobCollection<T> PreProcessInput(PropertySet customInput, BlobCollection<T> colBottom = null)
+        public override BlobCollection<T> PreProcessInput(PropertySet customInput, out int nSeqLen, BlobCollection<T> colBottom = null)
         {
-            Blob<T> blobIdx = new Blob<T>(m_cuda, m_log, false);
+            nSeqLen = (int)m_param.tokenized_data_pairs_param.block_size;
+
+            if (m_blobEncIn == null)
+                m_blobEncIn = new Blob<T>(m_cuda, m_log);
+
+            if (m_blobDecIn == null)
+                m_blobDecIn = new Blob<T>(m_cuda, m_log);
 
             string strInput = customInput.GetProperty("InputData");
             if (string.IsNullOrEmpty(strInput))
                 throw new Exception("Could not find 'InputData' property!");
-
-            int[] rgShape = new int[2];
-            rgShape[0] = 1;
-            rgShape[1] = strInput.Length;
-
-            blobIdx.Reshape(rgShape);
 
             List<int> rgTokens = m_encoderData.Tokenize(strInput, true, true);
             float[] rgInput = new float[rgTokens.Count];
@@ -374,9 +382,19 @@ namespace MyCaffe.layers.gpt
                 rgInput[i] = rgTokens[i];
             }
 
-            blobIdx.mutable_cpu_data = convert(rgInput);
+            int[] rgShape = new int[2];
+            rgShape[0] = 1;
+            rgShape[1] = rgInput.Length;
 
-            return new BlobCollection<T>() { blobIdx };
+            m_blobEncIn.Reshape(rgShape);
+
+            rgShape[1] = 1;
+            m_blobDecIn.Reshape(rgShape);
+
+            m_blobEncIn.mutable_cpu_data = convert(rgInput);
+            m_blobDecIn.SetData((int)SPECIAL_TOKENS.BOS);
+
+            return new BlobCollection<T>() { m_blobEncIn, m_blobDecIn };
         }
 
         /// <summary>
@@ -386,25 +404,33 @@ namespace MyCaffe.layers.gpt
         /// <param name="nTokIdx">Specifies the token input.</param>
         /// <param name="colBottom">The output is placed in the bottom blobs as: tokidx, pos</param>
         /// <returns>The bottom blob collection is returned.</returns>
-        public override void PreProcessInput(string str, int? nTokIdx, BlobCollection<T> colBottom = null)
+        public override bool PreProcessInput(string str, int? nTokIdx, BlobCollection<T> colBottom = null)
         {
-            List<float> rgTok = convertF(colBottom[0].mutable_cpu_data).ToList();
+            if (nTokIdx.HasValue && nTokIdx.Value == (int)SPECIAL_TOKENS.EOS)
+                return false;
+
+            Blob<T> blobBtm = (colBottom.Count > 1) ? colBottom[1] : colBottom[0];
+
+            List<float> rgTok = convertF(blobBtm.mutable_cpu_data).ToList();
 
             rgTok.Add(nTokIdx.Value);
             if (rgTok.Count > m_param.tokenized_data_pairs_param.block_size)
                 rgTok.RemoveAt(0);
 
-            List<int> rgShape = Utility.Clone<int>(colBottom[0].shape());
+            List<int> rgShape = Utility.Clone<int>(blobBtm.shape());
             rgShape[1] = rgTok.Count;
-            colBottom[0].Reshape(rgShape);
-            
-            colBottom[0].mutable_cpu_data = convert(rgTok.ToArray());
+            blobBtm.Reshape(rgShape);
+
+            blobBtm.mutable_cpu_data = convert(rgTok.ToArray());
+
+            return true;
         }
 
         /// <summary>
         /// Allows post processing the logits output data by converting the logits to and selecting 
         /// from the probability distribution produced and detokenizing the results to the string character.
         /// </summary>
+        /// <param name="nCurIdx">Specifies the current index being processed, or -1 for the last index.</param>
         /// <param name="blobLogits">Specifies the output of the last inner product layer.</param>
         /// <param name="softmax">Specifies the softmax layer.</param>
         /// <param name="nAxis">Specifies the axis of the softmax layer.</param>
@@ -412,54 +438,19 @@ namespace MyCaffe.layers.gpt
         /// <returns>
         /// The detokenized data is returned.
         /// </returns>
-        public override List<Tuple<string, int, double>> PostProcessLogitsOutput(Blob<T> blobLogits, Layer<T> softmax, int nAxis, int nK = 1)
+        public override List<Tuple<string, int, double>> PostProcessLogitsOutput(int nCurIdx, Blob<T> blobLogits, Layer<T> softmax, int nAxis, int nK = 1)
         {
             float[] rgData = convertF(blobLogits.mutable_cpu_data);
             int nVocabCount = blobLogits.count(nAxis);
             float[] rgLogits = new float[nVocabCount];
-            int nIdxStart = blobLogits.count() - nVocabCount;
             Dictionary<int, float> rgTopK = new Dictionary<int, float>();
-
-            for (int i = nIdxStart; i < blobLogits.count(); i++)
-            {
-                float fVal = rgData[i];
-                rgTopK.Add(i - nIdxStart, fVal);
-
-                if (rgTopK.Count > nK)
-                {
-                    float fMin = float.MaxValue;
-                    int nMinIdx = -1;
-
-                    foreach (KeyValuePair<int, float> kv in rgTopK)
-                    {
-                        if (kv.Value < fMin)
-                        {
-                            fMin = kv.Value;
-                            nMinIdx = kv.Key;
-                        }
-                    }
-
-                    rgTopK.Remove(nMinIdx);
-                }
-            }
-
-            for (int i = 0; i < rgLogits.Count(); i++)
-            {
-                if (rgTopK.ContainsKey(i))
-                    rgLogits[i] = rgTopK[i];
-                else
-                    rgLogits[i] = -float.MaxValue;
-            }
-
+            
             if (m_blobX == null)
-                m_blobX = new Blob<T>(m_cuda, m_log, false);
+                m_blobX = new Blob<T>(m_cuda, m_log);
             if (m_blobY == null)
-                m_blobY = new Blob<T>(m_cuda, m_log, false);
+                m_blobY = new Blob<T>(m_cuda, m_log);
 
-            m_blobX.Reshape(1, 1, nVocabCount, 1);
-            m_blobX.mutable_cpu_data = convert(rgLogits);
-
-            BlobCollection<T> colBottom = new BlobCollection<T>() { m_blobX };
+            BlobCollection<T> colBottom = new BlobCollection<T>() { blobLogits };
             BlobCollection<T> colTop = new BlobCollection<T>() { m_blobY };
             if (softmax == null)
             {
@@ -473,27 +464,31 @@ namespace MyCaffe.layers.gpt
 
                 softmax = m_softmax;
             }
-
-            softmax.Forward(colBottom, colTop);
-
-            float[] rgProb = convertF(m_blobY.mutable_cpu_data);
-            float fRand = (float)m_random.NextDouble();
-            float fTotal = 0;
-            int nCharIdx = rgProb.Length - 1;
-
-            for (int i = 0; i < rgProb.Length; i++)
+            
+            if (m_argmax == null)
             {
-                fTotal += rgProb[i];
-
-                if (fTotal >= fRand)
-                {
-                    nCharIdx = i;
-                    break;
-                }
+                LayerParameter argmax_param = new LayerParameter(LayerParameter.LayerType.ARGMAX);
+                argmax_param.argmax_param.out_max_val = false;
+                argmax_param.argmax_param.enable_cuda_impl = true;
+                argmax_param.argmax_param.axis = nAxis;
+                m_argmax = Layer<T>.Create(m_cuda, m_log, argmax_param, null);
+                softmax.Reshape(colBottom, colTop);
+                m_blobX.ReshapeLike(colTop[0]);
+                colBottom[0] = m_blobX;
+                m_argmax.Setup(colBottom, colTop);
             }
 
-            string str = "";
-            str += m_decoderData.Detokenize(nCharIdx, true, true);
+            colBottom[0] = blobLogits;
+            softmax.Forward(colBottom, colTop);
+            m_blobX.CopyFrom(colTop[0]);
+            colBottom[0] = m_blobX;
+            m_argmax.Forward(colBottom, colTop);
+
+            float[] rgArgMax = convertF(colTop[0].mutable_cpu_data);
+            int nCharIdx = (int)rgArgMax[nCurIdx];
+
+            string str = m_decoderData.Detokenize(nCharIdx, true, true);
+            str += " ";
 
             return new List<Tuple<string, int, double>>() { new Tuple<string, int, double>(str, nCharIdx, 0) };
         }

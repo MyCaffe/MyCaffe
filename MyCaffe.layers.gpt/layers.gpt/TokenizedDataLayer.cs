@@ -294,10 +294,13 @@ namespace MyCaffe.layers.gpt
         /// Preproces the input and return as a set of bottom blobs.
         /// </summary>
         /// <param name="customInput">Specifies the custom text input.</param>
+        /// <param name="nSeqLen">Specifies the sequence length.</param>
         /// <param name="colBottom">The output is placed in the bottom blobs as: tokidx, pos</param>
         /// <returns>The bottom blob collection is returned.</returns>
-        public override BlobCollection<T> PreProcessInput(PropertySet customInput, BlobCollection<T> colBottom = null)
+        public override BlobCollection<T> PreProcessInput(PropertySet customInput, out int nSeqLen, BlobCollection<T> colBottom = null)
         {
+            nSeqLen = (int)m_param.tokenized_data_param.block_size;
+
             Blob<T> blobIdx = new Blob<T>(m_cuda, m_log, false);
 
             string strInput = customInput.GetProperty("InputData");
@@ -330,8 +333,11 @@ namespace MyCaffe.layers.gpt
         /// <param name="nTokIdx">Specifies the token input.</param>
         /// <param name="colBottom">The output is placed in the bottom blobs as: tokidx, pos</param>
         /// <returns>The bottom blob collection is returned.</returns>
-        public override void PreProcessInput(string str, int? nTokIdx, BlobCollection<T> colBottom = null)
+        public override bool PreProcessInput(string str, int? nTokIdx, BlobCollection<T> colBottom = null)
         {
+            if (nTokIdx.HasValue && nTokIdx.Value == (int)SPECIAL_TOKENS.EOS)
+                return false;
+
             List<float> rgTok = convertF(colBottom[0].mutable_cpu_data).ToList();
 
             rgTok.Add(nTokIdx.Value);
@@ -341,14 +347,17 @@ namespace MyCaffe.layers.gpt
             List<int> rgShape = Utility.Clone<int>(colBottom[0].shape());
             rgShape[1] = rgTok.Count;
             colBottom[0].Reshape(rgShape);
-            
+
             colBottom[0].mutable_cpu_data = convert(rgTok.ToArray());
+
+            return true;
         }
 
         /// <summary>
         /// Allows post processing the logits output data by converting the logits to and selecting 
         /// from the probability distribution produced and detokenizing the results to the string character.
         /// </summary>
+        /// <param name="nCurIdx">Specifies the current index being processed, or -1 for the last index.</param>
         /// <param name="blobLogits">Specifies the output of the last inner product layer.</param>
         /// <param name="softmax">Specifies the softmax layer.</param>
         /// <param name="nAxis">Specifies the axis of the softmax layer.</param>
@@ -356,7 +365,7 @@ namespace MyCaffe.layers.gpt
         /// <returns>
         /// The detokenized data is returned.
         /// </returns>
-        public override List<Tuple<string, int, double>> PostProcessLogitsOutput(Blob<T> blobLogits, Layer<T> softmax, int nAxis, int nK = 1)
+        public override List<Tuple<string, int, double>> PostProcessLogitsOutput(int nCurIdx, Blob<T> blobLogits, Layer<T> softmax, int nAxis, int nK = 1)
         {
             float[] rgData = convertF(blobLogits.mutable_cpu_data);
             int nVocabCount = blobLogits.count(nAxis);

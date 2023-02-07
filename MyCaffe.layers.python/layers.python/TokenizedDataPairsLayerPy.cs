@@ -401,10 +401,12 @@ namespace MyCaffe.layers.python.layers.python
         /// Preproces the input and return as a set of bottom blobs.
         /// </summary>
         /// <param name="customInput">Specifies the custom text input.</param>
+        /// <param name="nSeqLen">Specifies the sequence length.</param>
         /// <param name="colBottom">The output is placed in the bottom blobs as: tokidx, pos</param>
         /// <returns>The bottom blob collection is returned.</returns>
-        public override BlobCollection<T> PreProcessInput(PropertySet customInput, BlobCollection<T> colBottom = null)
+        public override BlobCollection<T> PreProcessInput(PropertySet customInput, out int nSeqLen, BlobCollection<T> colBottom = null)
         {
+            nSeqLen = 0;
             return null;
         }
 
@@ -414,15 +416,17 @@ namespace MyCaffe.layers.python.layers.python
         /// <param name="str">Specifies the string input, can be null.</param>
         /// <param name="nTokIdx">Specifies the token input.</param>
         /// <param name="colBottom">The output is placed in the bottom blobs as: tokidx, pos</param>
-        /// <returns>The bottom blob collection is returned.</returns>
-        public override void PreProcessInput(string str, int? nTokIdx, BlobCollection<T> colBottom = null)
+        /// <returns>Returns false if nTokIdx = the special EOS(2) token, otherwise true to continue.</returns>
+        public override bool PreProcessInput(string str, int? nTokIdx, BlobCollection<T> colBottom = null)
         {
+            return false;
         }
 
         /// <summary>
         /// Allows post processing the logits output data by converting the logits to and selecting 
         /// from the probability distribution produced and detokenizing the results to the string character.
         /// </summary>
+        /// <param name="nCurIdx">Specifies the current index being processed, or -1 for the last index.</param>
         /// <param name="blobLogits">Specifies the output of the last inner product layer.</param>
         /// <param name="softmax">Specifies the softmax layer.</param>
         /// <param name="nAxis">Specifies the axis of the softmax layer.</param>
@@ -430,7 +434,7 @@ namespace MyCaffe.layers.python.layers.python
         /// <returns>
         /// The detokenized data is returned.
         /// </returns>
-        public override List<Tuple<string, int, double>> PostProcessLogitsOutput(Blob<T> blobLogits, Layer<T> softmax, int nAxis, int nK = 1)
+        public override List<Tuple<string, int, double>> PostProcessLogitsOutput(int nCurIdx, Blob<T> blobLogits, Layer<T> softmax, int nAxis, int nK = 1)
         {
             return null;
         }

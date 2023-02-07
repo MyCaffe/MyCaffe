@@ -18,6 +18,8 @@ using MyCaffe.data;
 using MyCaffe.layers;
 using System.Globalization;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Net;
 
 /// <summary>
 /// The MyCaffe namespace contains the main body of MyCaffe code that closesly tracks the C++ Caffe open-source project.  
@@ -2723,6 +2725,7 @@ namespace MyCaffe
             string strInput = customInput.GetProperty("InputData");
             string[] rgstrInput = strInput.Split('|');
             List<string> rgstrOutput = new List<string>();
+            int nSeqLen = nMax;
 
             foreach (string strInput1 in rgstrInput)
             {
@@ -2733,17 +2736,19 @@ namespace MyCaffe
                 {
                     foreach (Layer<T> layer in m_net.layers)
                     {
-                        colBottom = layer.PreProcessInput(input, colBottom);
+                        int nSeqLen1;
+                        colBottom = layer.PreProcessInput(input, out nSeqLen1, colBottom);
                         if (colBottom != null)
                         {
                             layerInput = layer;
+                            nSeqLen = nSeqLen1;
                             break;
                         }
                     }
 
                     if (colBottom == null)
                         throw new Exception("At least one layer must support the 'PreprocessInput' method!");
-                    
+
                     double dfLoss;
                     int nAxis = 1;
                     BlobCollection<T> colTop = m_net.Forward(colBottom, out dfLoss, layerInput.SupportsPostProcessingLogits);
@@ -2756,49 +2761,50 @@ namespace MyCaffe
                         nAxis = softmax.layer_param.softmax_param.axis;
                     }
 
+                    List<string> rgOutput = new List<string>();
                     List<Tuple<string, int, double>> res;
-
-                    if (layerInput.SupportsPostProcessingLogits)
-                    {
-                        nK = 10;
-                        blobTop = m_net.FindBlob("logits");
-                        if (blobTop == null)
-                            throw new Exception("Could not find the 'logits' blob!");
-                        res = layerInput.PostProcessLogitsOutput(blobTop, softmax, nAxis, nK);
-                    }
-                    else
-                        res = layerInput.PostProcessOutput(colTop[0]);
-                        
                     int nCount = 0;
                     Stopwatch sw = new Stopwatch();
                     sw.Start();
 
-                    int nSkipCount = 0;
-                    if (layerInput.layer_param.tokenized_data_param != null)
-                        nSkipCount = (int)layerInput.layer_param.tokenized_data_param.block_size;
-                    
-                    while (res[0].Item1.Length > 0 && nCount < nMax + nSkipCount)
+                    for (int i = 0; i < nSeqLen; i++)
                     {
-                        if (nCount > nSkipCount)
-                            strOut += res[0].Item1;
-
-                        if (!layerInput.SupportsPostProcessingLogits)
-                            strOut += " ";
-
-                        layerInput.PreProcessInput(null, res[0].Item2, colBottom);
-                        colTop = m_net.Forward(colBottom, out dfLoss, layerInput.SupportsPostProcessingLogits);
-                        
+                        if (i == nMax)
+                            break;
+                       
                         if (layerInput.SupportsPostProcessingLogits)
-                            res = layerInput.PostProcessLogitsOutput(blobTop, softmax, nK);
+                        {
+                            nK = 10;
+                            blobTop = m_net.FindBlob("logits");
+                            if (blobTop == null)
+                                throw new Exception("Could not find the 'logits' blob!");
+                            res = layerInput.PostProcessLogitsOutput(i, blobTop, softmax, nAxis, nK);
+                        }
                         else
                             res = layerInput.PostProcessOutput(blobTop);
-                        nCount++;
+
+                        if (i == nSeqLen - 1)
+                            break;
+
+                        if (!layerInput.PreProcessInput(null, res[0].Item2, colBottom))
+                            break;
+
+                        rgOutput.Add(res[0].Item1);
+
+                        colTop = m_net.Forward(colBottom, out dfLoss, layerInput.SupportsPostProcessingLogits);
+                        blobTop = colTop[0];
 
                         if (sw.Elapsed.TotalMilliseconds > 1000)
                         {
-                            double dfPct = (double)nCount / (nMax + nSkipCount);
+                            double dfPct = (double)nCount / nMax;
                             m_log.WriteLine("Generating response at " + dfPct.ToString("P") + "...");
                         }
+                    }
+
+                    strOut = "";
+                    foreach (string str in rgOutput)
+                    {
+                        strOut += str;
                     }
 
                     colBottom.Dispose();
@@ -3004,13 +3010,27 @@ namespace MyCaffe
 
                 if (m_net != null && m_bOwnRunNet)
                 {
-                    loadWeights(m_net, m_solver.net.SaveWeights(m_persist));
+                    m_log.CHECK_EQ(m_solver.net.learnable_parameters.Count, m_net.learnable_parameters.Count, "The number of learnable parameters in the run net does not match the training net!");
 
-                    if (bVerifyWeights)
+                    for (int i = 0; i < m_solver.net.learnable_parameters.Count; i++)
                     {
-                        if (!CompareWeights(m_net, m_solver.net))
-                            m_log.WriteLine("WARNING: The run weights differ from the training weights!");
+                        Blob<T> b = m_solver.net.learnable_parameters[i];
+                        Blob<T> bRun = m_net.learnable_parameters[i];
+
+                        m_log.CHECK_EQ(b.count(), bRun.count(), "The number of learnable parameters in the run net does not match the training net!");
+                        m_log.CHECK(b.Name == bRun.Name, "The learnable parameter names do not match!");
+                        m_log.CHECK(b.CompareShape(bRun.shape()), "The learnable parameter shapes do not match!");
+                        
+                        bRun.CopyFrom(b);
                     }
+                }
+
+                //loadWeights(m_net, m_solver.net.SaveWeights(m_persist));
+
+                if (bVerifyWeights)
+                {
+                    if (!CompareWeights(m_net, m_solver.net))
+                        m_log.WriteLine("WARNING: The run weights differ from the training weights!");
                 }
             }
             finally

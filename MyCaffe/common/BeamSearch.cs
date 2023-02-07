@@ -57,8 +57,9 @@ namespace MyCaffe.common
         {
             List<Tuple<double, bool, List<Tuple<string, int, double>>>> rgSequences = new List<Tuple<double, bool, List<Tuple<string, int, double>>>>();
             rgSequences.Add(new Tuple<double, bool, List<Tuple<string, int, double>>>(0, false, new List<Tuple<string, int, double>>()));
+            int nSeqLen;
 
-            BlobCollection<T> colBottom = m_layer.PreProcessInput(input, null);
+            BlobCollection<T> colBottom = m_layer.PreProcessInput(input, out nSeqLen, null);
             double dfLoss;
             string strInput = input.GetProperty("InputData");
             bool bDone = false;
