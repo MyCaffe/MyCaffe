@@ -103,7 +103,7 @@ namespace MyCaffe.layers.gpt
             m_rgShape[2] = m_nEmbed;
 
             shareLayerBlob(m_blobPosEnc, m_rgShape);
-            if (!m_blobPosEnc.CompareShape(m_rgShape))
+            if (!m_blobPosEnc.CompareShape(m_rgShape, true))
             {
                 m_blobPosEnc.Reshape(m_rgShape);
                 m_blobPosEnc.Reshape(1, m_rgShape[1], m_rgShape[2], 1);
