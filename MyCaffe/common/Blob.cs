@@ -1963,8 +1963,9 @@ namespace MyCaffe.common
         /// Compares the shape of this blob to another shape.
         /// </summary>
         /// <param name="rgShape">Specifies the shape to compare with.</param>
+        /// <param name="bCompareCpuDataLen">Optionally, compare the CPU data length.</param>
         /// <returns>If the shapes are the same, return <i>true</i>, othewise <i>false</i>.</returns>
-        public bool CompareShape(List<int> rgShape)
+        public bool CompareShape(List<int> rgShape, bool bCompareCpuDataLen = false)
         {
             while (rgShape.Count < num_axes)
             {
@@ -1975,6 +1976,18 @@ namespace MyCaffe.common
             while (rgShape1.Count < rgShape.Count)
             {
                 rgShape1.Add(1);
+            }
+
+            if (bCompareCpuDataLen)
+            {
+                int nCount = 1;
+                for (int i = 0; i < rgShape.Count; i++)
+                {
+                    nCount *= rgShape[i];
+                }
+
+                if (cpu_data == null || cpu_data.Length != nCount)
+                    return false;
             }
 
             return Utility.Compare<int>(rgShape1, rgShape);
