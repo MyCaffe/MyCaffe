@@ -2806,9 +2806,6 @@ namespace MyCaffe
                     {
                         strOut += str;
                     }
-
-                    colBottom.Dispose();
-                    colBottom = null;
                 }
                 else
                 {
