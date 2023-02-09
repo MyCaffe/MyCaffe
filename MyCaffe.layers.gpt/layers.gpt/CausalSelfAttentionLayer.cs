@@ -38,13 +38,12 @@ namespace MyCaffe.layers.gpt
         Blob<T> m_blobK;
         Blob<T> m_blobV;
         Blob<T> m_blobQt;
-        Blob<T> m_blobQt1;
         Blob<T> m_blobKt;
         Blob<T> m_blobKt1;
         Blob<T> m_blobVt;
-        Blob<T> m_blobVt1;
         Blob<T> m_blobWork;
-        Blob<T> m_blobAtt;
+        Blob<T> m_blobAttA;
+        Blob<T> m_blobAttB;
         Blob<T> m_blobIpAttn;
         Blob<T> m_blobY;
         // The number of heads.
@@ -155,18 +154,16 @@ namespace MyCaffe.layers.gpt
             m_blobV.Name = m_param.name + " V";
             m_blobQt = new Blob<T>(cuda, log);
             m_blobQt.Name = m_param.name + " Qt";
-            m_blobQt1 = new Blob<T>(cuda, log, false);
-            m_blobQt1.Name = m_param.name + " Qt1";
             m_blobKt = new Blob<T>(cuda, log);
             m_blobKt.Name = m_param.name + " Kt";
             m_blobKt1 = new Blob<T>(cuda, log);
             m_blobKt1.Name = m_param.name + " Kt1";
             m_blobVt = new Blob<T>(cuda, log);
             m_blobVt.Name = m_param.name + " Vt";
-            m_blobVt1 = new Blob<T>(cuda, log, false);
-            m_blobVt1.Name = m_param.name + " Vt1";
-            m_blobAtt = new Blob<T>(cuda, log);
-            m_blobAtt.Name = m_param.name + " Att";
+            m_blobAttA = new Blob<T>(cuda, log);
+            m_blobAttA.Name = m_param.name + " AttA";
+            m_blobAttB = new Blob<T>(cuda, log);
+            m_blobAttB.Name = m_param.name + " AttB";
             m_blobWork = new Blob<T>(cuda, log);
             m_blobWork.Name = m_param.name + " Work";
 
@@ -194,12 +191,11 @@ namespace MyCaffe.layers.gpt
             dispose(ref m_blobK);
             dispose(ref m_blobV);
             dispose(ref m_blobQt);
-            dispose(ref m_blobQt1);
             dispose(ref m_blobKt);
             dispose(ref m_blobKt1);
             dispose(ref m_blobVt);
-            dispose(ref m_blobVt1);
-            dispose(ref m_blobAtt);
+            dispose(ref m_blobAttA);
+            dispose(ref m_blobAttB);
             dispose(ref m_blobWork);
             dispose(ref m_blobIpAttn);
             dispose(ref m_blobY);
@@ -218,12 +214,11 @@ namespace MyCaffe.layers.gpt
             col.Add(m_blobK);
             col.Add(m_blobV);
             col.Add(m_blobQt);
-            col.Add(m_blobQt1);
             col.Add(m_blobKt);
             col.Add(m_blobKt1);
             col.Add(m_blobVt);
-            col.Add(m_blobVt1);
-            col.Add(m_blobAtt);
+            col.Add(m_blobAttA);
+            col.Add(m_blobAttB);
             col.Add(m_blobWork);
             col.Add(m_blobIpAttn);
             col.Add(m_blobY);
@@ -339,14 +334,16 @@ namespace MyCaffe.layers.gpt
             addInternal(m_blobQ, m_blobQt);
             m_transpose.Setup(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
 
-            shareLayerBlob(m_blobAtt, blobX.shape());
-            m_blobAtt.ReshapeLike(blobX);
-            addInternal(m_blobAtt, m_blobAtt);
+            shareLayerBlob(m_blobAttA, blobX.shape());
+            m_blobAttA.ReshapeLike(blobX);
+            shareLayerBlob(m_blobAttB, blobX.shape());
+            m_blobAttB.ReshapeLike(blobX);
+            addInternal(m_blobAttA, m_blobAttB);
             m_softmax.Setup(m_colInternalBottom, m_colInternalTop);
 
             if (m_attn_dropout != null)
             {
-                addInternal(m_blobAtt, m_blobAtt);
+                addInternal(m_blobAttB, m_blobAttB);
                 m_attn_dropout.Setup(m_colInternalBottom, m_colInternalTop);
             }
             
@@ -408,32 +405,28 @@ namespace MyCaffe.layers.gpt
 
             shareLayerBlob(m_blobQ, m_rgShape);
             m_blobQ.Reshape(m_rgShape);
-            shareLayerBlob(m_blobQt1, m_rgShape);
-            m_blobQt1.Reshape(m_rgShape);
             shareLayerBlob(m_blobQt, m_rgShape);
 
             addInternal(m_blobQ, m_blobQt);
             m_transpose.Reshape(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
-            m_blobQt1.ReshapeLike(m_blobQt);
 
             shareLayerBlob(m_blobV, m_rgShape);
             m_blobV.Reshape(m_rgShape);
-            shareLayerBlob(m_blobVt1, m_rgShape);
-            m_blobVt1.Reshape(m_rgShape);
             shareLayerBlob(m_blobVt, m_rgShape);
 
             m_blobV.Reshape(m_nB, m_nT, m_nHeads, m_nSize);
             addInternal(m_blobV, m_blobVt);
             m_transpose.Reshape(m_colInternalBottom, m_colInternalTop); // (B, nh, T, hs)
-            m_blobVt1.ReshapeLike(m_blobVt);
 
             m_rgShape[0] = m_nB;
             m_rgShape[1] = m_nHeads;
             m_rgShape[2] = m_nT;
             m_rgShape[3] = m_nT;
 
-            shareLayerBlob(m_blobAtt, m_rgShape);
-            m_blobAtt.Reshape(m_rgShape);
+            shareLayerBlob(m_blobAttA, m_rgShape);
+            m_blobAttA.Reshape(m_rgShape);
+            shareLayerBlob(m_blobAttB, m_rgShape);
+            m_blobAttB.Reshape(m_rgShape);
 
             m_rgShape[0] = m_blobVt.num;
             m_rgShape[1] = m_blobVt.channels;
@@ -464,66 +457,6 @@ namespace MyCaffe.layers.gpt
             }
         }
 
-        private void gemm_fwd(double dfScale, Blob<T> blobA, Blob<T> blobB, Blob<T> blobC)
-        {
-            int nAxis = 2;
-            int nM = blobA.height;
-            int nN = blobB.width;
-            int nK = blobB.height;
-
-            int nOuterDim = blobA.count(0, nAxis);
-            uint lda = (uint)nN;
-            uint ldb = (uint)nK;
-            uint ldc = (uint)nN;
-            uint strideb = (uint)(nM * nK);
-            uint stridea = (uint)(nK * nN);
-            uint stridec = (uint)(nM * nN);
-
-            // cuBlas performs gemm in col-maj, performing Kt1(rm) x Qt(rm) = Att(rm), (e.g. reverse of att = q @ k)
-            // @see [How to transpose a matrix in CUDA/cublas](https://stackoverflow.com/questions/13782012/how-to-transpose-a-matrix-in-cuda-cublas)
-            m_cuda.gemm(false, false, nN, nM, nK, dfScale, blobB.gpu_data, blobA.gpu_data, 0.0, blobC.mutable_gpu_data, lda, ldb, ldc, stridea, strideb, stridec, (uint)nOuterDim);
-        }
-
-        private void gemm_bwd1(double dfScale, Blob<T> blobA, Blob<T> blobB, Blob<T> blobC)
-        {
-            int nM = blobA.height;
-            int nN = blobB.width;
-            int nK = blobB.height;
-
-            int nAxis = 2;
-            int nOuterDim = blobA.count(0, nAxis);
-            uint lda = (uint)nN;
-            uint ldb = (uint)nK;
-            uint ldc = (uint)nN;
-            uint strideb = (uint)(nM * nK);
-            uint stridea = (uint)(nK * nN);
-            uint stridec = (uint)(nM * nN);
-
-            // cuBlas performs gemm in col-maj, performing B(rm) x A'(rm) = C'(rm), (e.g. reverse of c' = a' @ b)
-            // @see [How to transpose a matrix in CUDA/cublas](https://stackoverflow.com/questions/13782012/how-to-transpose-a-matrix-in-cuda-cublas)
-            m_cuda.gemm(false, false, nN, nM, nK, dfScale, blobB.gpu_data, blobA.gpu_diff, 0.0, blobC.mutable_gpu_diff, lda, ldb, ldc, stridea, strideb, stridec, (uint)nOuterDim);
-        }
-
-        private void gemm_bwd2(double dfScale, bool bTransposeA, Blob<T> blobA, Blob<T> blobB, Blob<T> blobC)
-        {
-            int nM = blobA.height;
-            int nN = blobB.width;
-            int nK = blobB.height;
-
-            int nAxis = 2;
-            int nOuterDim = blobA.count(0, nAxis);
-            uint lda = (uint)nN;
-            uint ldb = (uint)nK;
-            uint ldc = (uint)nN;
-            uint strideb = (uint)(nM * nK);
-            uint stridea = (uint)(nK * nN);
-            uint stridec = (uint)(nM * nN);
-
-            // cuBlas performs gemm in col-maj, performing B'(rm) x A(rm)^T = C'(rm), (e.g. reverse of c' = a^T @ b')
-            // @see [How to transpose a matrix in CUDA/cublas](https://stackoverflow.com/questions/13782012/how-to-transpose-a-matrix-in-cuda-cublas)
-            m_cuda.gemm(false, bTransposeA, nN, nM, nK, dfScale, blobB.gpu_diff, blobA.gpu_data, 0.0, blobC.mutable_gpu_diff, lda, ldb, ldc, stridea, strideb, stridec, (uint)nOuterDim);
-        }
-
         /// <summary>
         /// The forward computation.
         /// </summary>
@@ -542,7 +475,7 @@ namespace MyCaffe.layers.gpt
             // q, k ,v  = self.c_attn(x).split(self.n_embd, dim=2)
             addInternal(blobX, m_blobIpAttn);
             m_c_attn.Forward(m_colInternalBottom, m_colInternalTop);
-            
+
             // Split IP output (3 * nEmbed) into query, key, values.
             int nCount = m_blobQ.count();            
             m_cuda.channel_copy(nCount, m_blobIpAttn.num, m_blobIpAttn.channels, 3, m_nEmbed, 0, m_blobIpAttn.gpu_data, m_blobQ.mutable_gpu_data, DIR.FWD);
@@ -565,32 +498,33 @@ namespace MyCaffe.layers.gpt
 
             addInternal(m_blobKt, m_blobKt1);
             m_transposeQ.Forward(m_colInternalBottom, m_colInternalTop);
-            
-            double dfScale = 1.0 / Math.Sqrt(m_nSize);
-            gemm_fwd(dfScale, m_blobQt, m_blobKt1, m_blobAtt);
+
+            double dfScale = 1.0 / Math.Sqrt(m_nC);
+            m_blobAttA.MatMul(m_blobQt, m_blobKt1);
+            m_blobAttA.scale_data(dfScale);
 
             // Apply mask to attention matrix
             // att = att.masked_fill(self.bias[:,:,:T,:T] == 0, float('-inf'))
-            m_cuda.mask(m_blobAtt.count(), m_blobBias.count(), convert(0.0), convert(double.NegativeInfinity), m_blobAtt.gpu_data, m_blobBias.gpu_data, m_blobAtt.mutable_gpu_data); // all masked items set to -inf.
+            m_cuda.mask(m_blobAttA.count(), m_blobBias.count(), convert(0.0), convert(double.NegativeInfinity), m_blobAttA.gpu_data, m_blobBias.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.
 
             // Take softmax of attention along the last axis.
             // att = F.softmax(att, dim = -1)
-            addInternal(m_blobAtt, m_blobAtt);
+            addInternal(m_blobAttA, m_blobAttB);
             m_softmax.Forward(m_colInternalBottom, m_colInternalTop);
 
             // Apply attention dropout.
             // att = self.attn_dropout(att)
             if (m_attn_dropout != null)
             {
-                addInternal(m_blobAtt, m_blobAtt);
+                addInternal(m_blobAttB, m_blobAttB);
                 m_attn_dropout.Forward(m_colInternalBottom, m_colInternalTop);
             }
-
+            
             m_blobWork.Reshape(m_blobVt.num, m_blobVt.channels, m_blobVt.height, m_blobVt.width);
 
             // Multiply attention matrix with values
             // y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
-            gemm_fwd(1.0, m_blobAtt, m_blobVt, m_blobWork);
+            m_blobWork.MatMul(m_blobAttB, m_blobVt);
 
             // Reassemble all head outputs side by side.
             // y = y.transpose(1, 2).contiguous().view(B, T, C) 
@@ -646,57 +580,46 @@ namespace MyCaffe.layers.gpt
                 addInternal(m_blobWork, m_blobY);
                 m_transpose.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
 
-                // Multiply attention matrix with values
-                // y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
-                m_blobY.CopyFrom(m_blobWork, true, true);
-
-                // Transpose Vt
-                addInternal(m_blobVt, m_blobVt1);
-                m_transposeQ.Forward(m_colInternalBottom, m_colInternalTop);
-
-                // Multiply attention matrix with values
-                // y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
-
-                // Gradient with respect to att
-                // att' = y' @ v^T 
-                gemm_bwd1(1.0, m_blobY, m_blobVt1, m_blobAtt);
-
-                // Gradient with respect to vt
-                // vt' = att^T @ y' 
-                gemm_bwd2(1.0, true, m_blobAtt, m_blobY, m_blobVt);
-
-                // Apply attention dropout.
-                // att = self.attn_dropout(att)
-                if (m_attn_dropout != null)
+                // Perform Self Attention backward pass
                 {
-                    addInternal(m_blobAtt, m_blobAtt);
-                    m_attn_dropout.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+                    // Multiply attention matrix with values
+                    // y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
+                    m_blobY.CopyFrom(m_blobWork, true, true);
+
+                    // Multiply attention matrix with values
+                    // y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
+                    // Gradient with respect to att
+                    // att' = y' @ v^T 
+                    // Gradient with respect to vt
+                    // vt' = att^T @ y' 
+                    m_blobY.MatMulGrad(m_blobAttB, m_blobVt, m_blobWork);
+
+                    // Apply attention dropout.
+                    // att = self.attn_dropout(att)
+                    if (m_attn_dropout != null)
+                    {
+                        addInternal(m_blobAttB, m_blobAttB);
+                        m_attn_dropout.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+                    }
+
+                    // Take softmax of attention along the last axis.
+                    // att = F.softmax(att, dim = -1)
+                    addInternal(m_blobAttA, m_blobAttB);
+                    m_softmax.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
+
+                    // Multiply qt with kt^T to create attention matrix
+                    // att = qt @ kt^T
+                    // Gradient with respect to qt
+                    // qt' = att' @ kt
+                    // Gradient with respect to qt
+                    // qt' = att' @ kt
+                    double dfScale = 1.0 / Math.Sqrt(m_nC);
+                    m_blobAttA.MatMulGrad(m_blobQt, m_blobKt1, m_blobWork, dfScale);
+
+                    // Transpose Kt1 back to Kt
+                    addInternal(m_blobKt, m_blobKt1);
+                    m_transposeQ.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
                 }
-
-                // Take softmax of attention along the last axis.
-                // att = F.softmax(att, dim = -1)
-                addInternal(m_blobAtt, m_blobAtt);
-                m_softmax.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
-
-                // Multiply qt with kt^T to create attention matrix
-                // att = qt @ kt^T
-                double dfScale = 1.0 / Math.Sqrt(m_nSize);
-
-                // Gradient with respect to qt
-                // qt' = att' @ kt
-                gemm_bwd1(dfScale, m_blobAtt, m_blobKt, m_blobQt);
-                
-                // Transpose Qt
-                addInternal(m_blobQt, m_blobQt1);
-                m_transposeQ.Forward(m_colInternalBottom, m_colInternalTop);
-
-                // Gradient with respect to kt^T
-                // kt^T' = qt^T @ att'
-                gemm_bwd2(dfScale, false, m_blobQt1, m_blobAtt, m_blobKt1);
-
-                // Transpose Kt1 back to Kt
-                addInternal(m_blobKt, m_blobKt1);
-                m_transposeQ.Backward(m_colInternalTop, rgbPropagate, m_colInternalBottom);
 
                 // Transpose query, key and values along axes 1 & 2
                 // k = k.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
