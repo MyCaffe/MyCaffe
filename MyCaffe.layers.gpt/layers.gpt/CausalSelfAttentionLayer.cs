@@ -52,6 +52,7 @@ namespace MyCaffe.layers.gpt
         int m_nBlockSize;
         double m_dfAttnDropout;
         double m_dfResidDropout;
+        double m_dfIgnoreVal = -1e+29;
 
         int m_nSize;
         int m_nB;
@@ -499,13 +500,13 @@ namespace MyCaffe.layers.gpt
             addInternal(m_blobKt, m_blobKt1);
             m_transposeQ.Forward(m_colInternalBottom, m_colInternalTop);
 
-            double dfScale = 1.0 / Math.Sqrt(m_nC);
+            double dfScale = 1.0 / Math.Sqrt(m_nSize);
             m_blobAttA.MatMul(m_blobQt, m_blobKt1);
             m_blobAttA.scale_data(dfScale);
 
             // Apply mask to attention matrix
             // att = att.masked_fill(self.bias[:,:,:T,:T] == 0, float('-inf'))
-            m_cuda.mask(m_blobAttA.count(), m_blobBias.count(), convert(0.0), convert(double.NegativeInfinity), m_blobAttA.gpu_data, m_blobBias.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.
+            m_cuda.mask(m_blobAttA.count(), m_blobBias.count(), convert(0.0), convert(m_dfIgnoreVal), m_blobAttA.gpu_data, m_blobBias.gpu_data, m_blobAttA.mutable_gpu_data); // all masked items set to -inf.
 
             // Take softmax of attention along the last axis.
             // att = F.softmax(att, dim = -1)
@@ -613,7 +614,7 @@ namespace MyCaffe.layers.gpt
                     // qt' = att' @ kt
                     // Gradient with respect to qt
                     // qt' = att' @ kt
-                    double dfScale = 1.0 / Math.Sqrt(m_nC);
+                    double dfScale = 1.0 / Math.Sqrt(m_nSize);
                     m_blobAttA.MatMulGrad(m_blobQt, m_blobKt1, m_blobWork, dfScale);
 
                     // Transpose Kt1 back to Kt
