@@ -75,19 +75,9 @@ namespace MyCaffe.layers
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
-            m_blobBiasMultiplier.Dispose();
-
-            if (m_blobEpsilonBias != null)
-            {
-                m_blobEpsilonBias.Dispose();
-                m_blobEpsilonBias = null;
-            }
-
-            if (m_blobEpsilonWeight != null)
-            {
-                m_blobEpsilonWeight.Dispose();
-                m_blobEpsilonWeight = null;
-            }
+            dispose(ref m_blobBiasMultiplier);
+            dispose(ref m_blobEpsilonWeight);
+            dispose(ref m_blobEpsilonBias);
 
             base.dispose();
         }
@@ -98,7 +88,8 @@ namespace MyCaffe.layers
             if (col.Count > 0)
                 return;
 
-            col.Add(m_blobBiasMultiplier);
+            if (m_param.inner_product_param.bias_term)
+                col.Add(m_blobBiasMultiplier);
 
             if (m_blobEpsilonWeight != null)
                 col.Add(m_blobEpsilonWeight);
