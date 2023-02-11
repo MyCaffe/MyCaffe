@@ -161,8 +161,7 @@ namespace MyCaffe.layers
                 shareLayerBlob(m_blobScale, colBottom[0].shape());
                 m_blobScale.ReshapeLike(colBottom[0]);
 
-                if (m_rgScaleDims == null)
-                    m_rgScaleDims = Utility.Clone<int>(colBottom[0].shape());
+                m_rgScaleDims = Utility.Clone<int>(colBottom[0].shape());
                 m_rgScaleDims[m_nSoftmaxAxis] = 1;
                 
                 m_blobScale.Reshape(m_rgScaleDims);
