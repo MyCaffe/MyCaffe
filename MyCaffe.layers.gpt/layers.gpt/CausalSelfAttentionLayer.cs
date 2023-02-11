@@ -135,7 +135,7 @@ namespace MyCaffe.layers.gpt
             // Softmax
             LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
             softmax.softmax_param.axis = -1;
-            softmax.softmax_param.engine = EngineParameter.Engine.CUDNN;
+            softmax.softmax_param.engine = EngineParameter.Engine.CAFFE;
             m_softmax = Layer<T>.Create(cuda, log, convertLayerParam(softmax, p), null);
 
             // Causal mask to ensure that atttention is only applied to the left in the input sequence.
