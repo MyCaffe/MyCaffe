@@ -38,7 +38,7 @@ namespace MyCaffe.test
             {
                 foreach (ITransformerBlockLayerTest t in test.Tests)
                 {
-                    t.TestForward();
+                    t.TestForward(null);
                 }
             }
             finally
@@ -56,7 +56,7 @@ namespace MyCaffe.test
             {
                 foreach (ITransformerBlockLayerTest t in test.Tests)
                 {
-                    t.TestBackward();
+                    t.TestBackward(null);
                 }
             }
             finally
@@ -92,7 +92,7 @@ namespace MyCaffe.test
             {
                 foreach (ITransformerBlockLayerTest t in test.Tests)
                 {
-                    t.TestForwardPico(false, 1);
+                    t.TestForward("pico");
                 }
             }
             finally
@@ -109,8 +109,8 @@ namespace MyCaffe.test
             try
             {
                 foreach (ITransformerBlockLayerTest t in test.Tests)
-                {                    
-                    t.TestBackwardPico(false, 1);
+                {
+                    t.TestBackward("pico");
                 }
             }
             finally
@@ -340,8 +340,8 @@ namespace MyCaffe.test
 
     interface ITransformerBlockLayerTest : ITest
     {
-        void TestForward();
-        void TestBackward();
+        void TestForward(string strModel);
+        void TestBackward(string strModel);
         void TestGradient();
 
         void TestForwardPico(bool bBatch, uint nHeads);
@@ -507,15 +507,15 @@ namespace MyCaffe.test
                 blobY.Reshape(y.Item1);
                 blobY.mutable_cpu_data = convert(y.Item2);
                 
-                Tuple<List<int>, float[]> attnBias = Fill(strModel, "attn_bias", m_log);
-                Tuple<List<int>, float[]> attnWt = Fill(strModel, "attn_weight", m_log);
-                Tuple<List<int>, float[]> attnProjBias = Fill(strModel, "attn_proj_bias", m_log);
-                Tuple<List<int>, float[]> attnProjWt = Fill(strModel, "attn_proj_weight", m_log);
+                Tuple<List<int>, float[]> attnBias = Fill(strModel, "blk_attn_bias", m_log);
+                Tuple<List<int>, float[]> attnWt = Fill(strModel, "blk_attn_weight", m_log);
+                Tuple<List<int>, float[]> attnProjBias = Fill(strModel, "blk_attn_proj_bias", m_log);
+                Tuple<List<int>, float[]> attnProjWt = Fill(strModel, "blk_attn_proj_weight", m_log);
 
-                Tuple<List<int>, float[]> fcBias = Fill(strModel, "fc_bias", m_log);
-                Tuple<List<int>, float[]> fcWt = Fill(strModel, "fc_weight", m_log);
-                Tuple<List<int>, float[]> projBias = Fill(strModel, "proj_bias", m_log);
-                Tuple<List<int>, float[]> projWt = Fill(strModel, "proj_weight", m_log);
+                Tuple<List<int>, float[]> fcBias = Fill(strModel, "blk_fc_bias", m_log);
+                Tuple<List<int>, float[]> fcWt = Fill(strModel, "blk_fc_weight", m_log);
+                Tuple<List<int>, float[]> projBias = Fill(strModel, "blk_proj_bias", m_log);
+                Tuple<List<int>, float[]> projWt = Fill(strModel, "blk_proj_weight", m_log);
 
                 layer.Setup(BottomVec, TopVec);
 
@@ -1493,12 +1493,23 @@ namespace MyCaffe.test
             RawProto proto = p.ToProto("root");
             return proto.ToString();
         }
-        private string loadTestData1()
+        
+        private string loadTestData1(string strModel)
         {
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\trfb\\";
-            string strFileName = "_transformer_test.zip";
+
+            if (!string.IsNullOrEmpty(strModel))
+                strPath += strModel + "\\";
+
+            string strFileName = "_transformer_test";
+
+            if (!string.IsNullOrEmpty(strModel))
+                strFileName += "_" + strModel;
+
+            strFileName += ".zip";
+
             string strTestPath = "test\\iter_0";
-            string strTestFile = "blk0.1_x.npy";
+            string strTestFile = "1_x.npy";
             return loadTestData(strPath, strFileName, strTestPath, strTestFile);
         }
 
@@ -1524,14 +1535,24 @@ namespace MyCaffe.test
         /// 3.) test_transformer.py - run up to line 59.
         /// 4.) MyCaffe CausalSelfAttention configured to use CAFFE version of Softmax
         /// </remarks>
-        public void TestForward()
+        public void TestForward(string strModel)
         {
-            string strPath = loadTestData1();
+            string strPath = loadTestData1(strModel);
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
             p.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION;
-            p.transformer_block_param.heads = 6;
-            p.transformer_block_param.embed = 192;
-            p.transformer_block_param.block_size = 128;
+
+            if (strModel == "pico")
+            {
+                p.transformer_block_param.heads = 1;
+                p.transformer_block_param.embed = 3;
+                p.transformer_block_param.block_size = 4;
+            }
+            else
+            {
+                p.transformer_block_param.heads = 6;
+                p.transformer_block_param.embed = 192;
+                p.transformer_block_param.block_size = 128;
+            }
             p.transformer_block_param.attn_dropout = 0.0;
             p.transformer_block_param.resid_dropout = 0.0;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
@@ -1544,7 +1565,11 @@ namespace MyCaffe.test
                 BlobCollection<T> colBtm = new BlobCollection<T>();
                 BlobCollection<T> colTop = new BlobCollection<T>();
 
-                blobX.LoadFromNumpy(strPath + "1_x_emb1.npy");
+                if (strModel == "pico")
+                    blobX.LoadFromNumpy(strPath + "blk0.x.npy");
+                else
+                    blobX.LoadFromNumpy(strPath + "1_x_emb1.npy");
+
                 colBtm.Add(blobX);
                 colTop.Add(blobY);
 
@@ -1553,7 +1578,11 @@ namespace MyCaffe.test
 
                 layer.Forward(colBtm, colTop);
 
-                blobVal.LoadFromNumpy(strPath + "12b_out2.npy");
+                if (strModel == "pico")
+                    blobVal.LoadFromNumpy(strPath + "blk0.y.npy");
+                else
+                    blobVal.LoadFromNumpy(strPath + "12b_out2.npy");
+
                 double dfErr = (typeof(T) == typeof(float)) ? 1e-12 : 2e-06;
                 verify(blobY, blobVal, false, dfErr);
             }
@@ -1576,14 +1605,23 @@ namespace MyCaffe.test
         /// 3.) test_transformer.py - run up to line 59.
         /// 4.) MyCaffe CausalSelfAttention configured to use CAFFE version of Softmax
         /// </remarks>
-        public void TestBackward()
+        public void TestBackward(string strModel)
         {
-            string strPath = loadTestData1();
+            string strPath = "C:\\temp\\projects\\2023.minGpt\\minGPT\\minGPT\\test\\iter_0\\"; // loadTestData1(strModel);
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
             p.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION;
-            p.transformer_block_param.heads = 6;
-            p.transformer_block_param.embed = 192;
-            p.transformer_block_param.block_size = 128;
+            if (strModel == "pico")
+            {
+                p.transformer_block_param.heads = 1;
+                p.transformer_block_param.embed = 3;
+                p.transformer_block_param.block_size = 4;
+            }
+            else
+            {
+                p.transformer_block_param.heads = 6;
+                p.transformer_block_param.embed = 192;
+                p.transformer_block_param.block_size = 128;
+            }
             p.transformer_block_param.attn_dropout = 0.0;
             p.transformer_block_param.resid_dropout = 0.0;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
@@ -1596,7 +1634,10 @@ namespace MyCaffe.test
                 BlobCollection<T> colBtm = new BlobCollection<T>();
                 BlobCollection<T> colTop = new BlobCollection<T>();
 
-                blobX.LoadFromNumpy(strPath + "1_x_emb1.npy");
+                if (strModel == "pico")
+                    blobX.LoadFromNumpy(strPath + "1_x_emb1.npy");
+                else
+                    blobX.LoadFromNumpy(strPath + "blk0.x.npy");
                 colBtm.Add(blobX);
                 colTop.Add(blobY);
 
@@ -1605,14 +1646,25 @@ namespace MyCaffe.test
 
                 layer.Forward(colBtm, colTop);
 
-                blobVal.LoadFromNumpy(strPath + "12b_out2.npy");
+                if (strModel == "pico")
+                    blobVal.LoadFromNumpy(strPath + "12b_out2.npy");
+                else
+                    blobVal.LoadFromNumpy(strPath + "blk0.y.npy");
                 double dfErr = (typeof(T) == typeof(float)) ? 1e-12 : 2e-06;
                 verify(blobY, blobVal, false, dfErr);
 
-                colTop[0].LoadFromNumpy(strPath + "grad_12b_out2.npy", true);
+                if (strModel == "pico")
+                    colTop[0].LoadFromNumpy(strPath + "grad_12b_out2.npy", true);
+                else
+                    colTop[0].LoadFromNumpy(strPath + "grad_blk0.y.npy", true);
+
                 layer.Backward(colTop, new List<bool>() { true }, colBtm);
 
-                blobVal.LoadFromNumpy(strPath + "grad_1_x_emb1.npy", true);
+                if (strModel == "pico")
+                    blobVal.LoadFromNumpy(strPath + "grad_1_x_emb1.npy", true);
+                else
+                    blobVal.LoadFromNumpy(strPath + "grad_blk0.x.npy", true);
+
                 dfErr = (typeof(T) == typeof(float)) ? 1e-12 : 3e-06;
                 verify(colBtm[0], blobVal, true, dfErr);
             }
@@ -1627,7 +1679,7 @@ namespace MyCaffe.test
 
         public void TestGradient()
         {
-            string strPath = loadTestData1();
+            string strPath = loadTestData1(null);
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
             p.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION;
             p.transformer_block_param.heads = 6;
