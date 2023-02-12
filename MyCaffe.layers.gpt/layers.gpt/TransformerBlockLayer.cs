@@ -250,11 +250,11 @@ namespace MyCaffe.layers.gpt
             col.Add(m_blobLn2);
             if (m_blobAttn2 != null)
                 col.Add(m_blobAttn2);
+            col.Add(m_blobX);
             if (m_blobLn3 != null)
                 col.Add(m_blobLn3);
             col.Add(m_blobMlp);
             col.Add(m_blobMlpOut);
-            col.Add(m_blobX);
 
             col.Add(m_ln1.internal_blobs);
             col.Add(m_attn1.internal_blobs);
@@ -264,8 +264,8 @@ namespace MyCaffe.layers.gpt
             if (m_ln3 != null)
                 col.Add(m_ln3.internal_blobs);
             col.Add(m_fc.internal_blobs);
-            col.Add(m_proj.internal_blobs);
             col.Add(m_act.internal_blobs);
+            col.Add(m_proj.internal_blobs);
             if (m_dropout != null)
                 col.Add(m_dropout.internal_blobs);
         }
