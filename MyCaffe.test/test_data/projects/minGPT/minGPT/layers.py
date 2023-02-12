@@ -197,8 +197,63 @@ class FeedFowardLayer(nn.Module):
         x = self.linear_2(x) # (B, L, d_model)
 
         return x
-    
+ 
 
+class BlockFunction(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x):
+        tag = tag_list[-1]
+        y = mycaffe.tfb_fwd(tag, x)
+        ctx.save_for_backward(y)
+        return y
+    
+    @staticmethod
+    def backward(ctx, grad_output):
+        y, = ctx.saved_tensors
+        tag = tag_list.pop()
+        return mycaffe.tfb_bwd(tag, y, grad_output)
+
+class BlockEx(nn.Module):
+    """ an unassuming Transformer block """
+    
+    def __init__(self, tag, config):
+        super().__init__()
+        self.tag = tag
+
+    def forward(self, x):
+        tfb = BlockFunction.apply
+        tag_list.append(self.tag)
+        y = tfb(x)
+        return y
+
+
+class BlockAllFunction(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x):
+        tag = tag_list[-1]
+        y = mycaffe.tfb_fwd_all(tag, x)
+        ctx.save_for_backward(y)
+        return y
+    
+    @staticmethod
+    def backward(ctx, grad_output):
+        y, = ctx.saved_tensors
+        tag = tag_list.pop()
+        return mycaffe.tfb_bwd_all(tag, y, grad_output)
+
+class BlockAllEx(nn.Module):
+    """ an unassuming Transformer block """
+    
+    def __init__(self, tag, config):
+        super().__init__()
+        self.tag = tag
+
+    def forward(self, x):
+        tfb = BlockAllFunction.apply
+        tag_list.append(self.tag)
+        y = tfb(x)
+        return y
+   
 #
 # LayerNormEx
 #     
@@ -246,6 +301,8 @@ class LayerNormEx(nn.Module):
             self.beta.data.zero_()
 
     def forward(self, x):
+        if disable_layernorm:
+            return x
         if self.use_mycaffe:
             layernorm = LayerNormFunction.apply
             tag_list.append(self.tag)
@@ -320,6 +377,10 @@ class LinearEx(nn.Module):
         if self.use_mycaffe:
             mycaffe.innerproduct_setup(self.tag, self.axis, self.in_features, self.out_features, self.weight, self.bias)
    
+    def save_internal_state(self):
+        DebugFunction.trace(self.weight, self.tag + ".weight")
+        DebugFunction.trace(self.bias, self.tag + ".bias")
+
     def forward(self, input):
         if self.use_mycaffe:
             innerproduct = InnerproductFunction.apply

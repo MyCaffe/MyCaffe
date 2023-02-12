@@ -7,6 +7,8 @@ Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "minGPT", "minGPT\minGPT.pyp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyCaffeConnector", "MyCaffeConnector\MyCaffeConnector.csproj", "{214B7A52-0880-4332-A12C-0798B0B86EF7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OptimizerLib", "OptimizerLib\OptimizerLib\OptimizerLib.csproj", "{29A9053D-61CF-4AF6-A586-E05213415C29}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -19,6 +21,10 @@ Global
 		{214B7A52-0880-4332-A12C-0798B0B86EF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{214B7A52-0880-4332-A12C-0798B0B86EF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{214B7A52-0880-4332-A12C-0798B0B86EF7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{29A9053D-61CF-4AF6-A586-E05213415C29}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{29A9053D-61CF-4AF6-A586-E05213415C29}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{29A9053D-61CF-4AF6-A586-E05213415C29}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{29A9053D-61CF-4AF6-A586-E05213415C29}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

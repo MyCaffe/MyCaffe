@@ -53,7 +53,12 @@ class DebugFunction(torch.autograd.Function):
         if name == "15_loss":
             grad_output = grad_output * loss_weight
 
-        np.save(DebugFunction.out_path + "grad_" + name, grad_output.detach().cpu().numpy())
+        if name == "1_x_emb2":
+            gradsum = grad_output.sum()
+            print(name + " gradsum = " + str(gradsum))
+
+        if save_for_testing:
+            np.save(DebugFunction.out_path + "grad_" + name, grad_output.detach().cpu().numpy())
         return grad_output
     
     @staticmethod

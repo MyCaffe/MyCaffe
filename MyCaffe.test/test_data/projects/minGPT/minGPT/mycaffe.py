@@ -36,6 +36,67 @@ class MyCaffe():
                 name1 += char
         return name1
 
+    def tfb_fwd(self, tag, x):
+        rgShape = x.shape
+        nN = x.shape[0]
+        nC = x.shape[1]
+        nH = x.shape[2]
+        nW = x.shape[3] if len(x.shape) > 3 else 1
+        rgOut = self.mycaffe.tfb_fwd(tag, nN, nC, nH, nW, list(x.detach().cpu().numpy().flatten().data))        
+        out = asNumpyArray(rgOut)
+        y = torch.from_numpy(out).float()
+        y = y.reshape(rgShape)
+        y = y.to(device)
+        del rgOut
+        del out
+        return y
+    
+    def tfb_bwd(self, tag, y, ygrad):
+        rgShape = y.shape
+        nN = y.shape[0]
+        nC = y.shape[1]
+        nH = y.shape[2]
+        nW = y.shape[3] if len(y.shape) > 3 else 1
+        rgOut = self.mycaffe.tfb_bwd(tag, nN, nC, nH, nW, list(y.detach().cpu().numpy().flatten().data), list(ygrad.detach().cpu().numpy().flatten().data))
+        out = asNumpyArray(rgOut)
+        xgrad = torch.from_numpy(out).float()
+        xgrad = xgrad.reshape(rgShape)
+        xgrad = xgrad.to(device)
+        del rgOut
+        del out
+        return xgrad
+
+    def tfb_fwd_all(self, tag, x):
+        rgShape = x.shape
+        nN = x.shape[0]
+        nC = x.shape[1]
+        nH = x.shape[2]
+        nW = x.shape[3] if len(x.shape) > 3 else 1
+        rgOut = self.mycaffe.tfb_fwd_all(tag, nN, nC, nH, nW, list(x.detach().cpu().numpy().flatten().data))        
+        out = asNumpyArray(rgOut)
+        y = torch.from_numpy(out).float()
+        y = y.reshape(rgShape)
+        y = y.to(device)
+        del rgOut
+        del out
+        return y
+    
+    def tfb_bwd_all(self, tag, y, ygrad):
+        rgShape = y.shape
+        nN = y.shape[0]
+        nC = y.shape[1]
+        nH = y.shape[2]
+        nW = y.shape[3] if len(y.shape) > 3 else 1
+        rgOut = self.mycaffe.tfb_bwd_all(tag, nN, nC, nH, nW, list(y.detach().cpu().numpy().flatten().data), list(ygrad.detach().cpu().numpy().flatten().data))
+        out = asNumpyArray(rgOut)
+        xgrad = torch.from_numpy(out).float()
+        xgrad = xgrad.reshape(rgShape)
+        xgrad = xgrad.to(device)
+        del rgOut
+        del out
+        return xgrad
+
+
     def softmax_fwd(self, tag, x):
         rgShape = x.shape
         nN = x.shape[0]
@@ -188,8 +249,8 @@ class MyCaffe():
         del out
         return y
 
-    def step(self, iter, enc, dec, trg, e_mask, d_mask):
-        rgOut = self.mycaffe.Step(iter, list(enc.detach().cpu().numpy().flatten().data), list(dec.detach().cpu().numpy().flatten().data), list(trg.detach().cpu().numpy().flatten().data), list(e_mask.detach().cpu().numpy().flatten().data), list(d_mask.detach().cpu().numpy().flatten().data))
+    def step(self, iter, enc, trg):
+        rgOut = self.mycaffe.Step(iter, list(enc.detach().cpu().numpy().flatten().data), list(trg.detach().cpu().numpy().flatten().data))
         out = asNumpyArray(rgOut)        
         tensorOutput = torch.from_numpy(out).float()
         tensorOutput = tensorOutput.reshape(batch_size, seq_len, sp_vocab_size);

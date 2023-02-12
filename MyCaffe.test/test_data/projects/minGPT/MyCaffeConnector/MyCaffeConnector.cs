@@ -25,14 +25,12 @@ namespace MyCaffeConnector
         Dictionary<string, Layer<float>> m_rgLayers = new Dictionary<string, Layer<float>>();
         Dictionary<string, List<int>> m_rgTopShapes = new Dictionary<string, List<int>>();
         Dictionary<string, List<int>> m_rgBtmShapes = new Dictionary<string, List<int>>();
+        Dictionary<string, Blob<float>> m_rgBtm = new Dictionary<string, Blob<float>>();
+        Dictionary<string, Blob<float>> m_rgTop = new Dictionary<string, Blob<float>>();
         BlobCollection<float> m_colTop = new BlobCollection<float>();
         BlobCollection<float> m_colBtm = new BlobCollection<float>();
         Blob<float> m_blobEncIn;
-        Blob<float> m_blobDecIn;
-        Blob<float> m_blobDecOut;
-        Blob<float> m_blobEncMask;
-        Blob<float> m_blobDecMask;
-        Blob<float> m_blobLoss;
+        Blob<float> m_blobTgt;
         Blob<float> m_blobBtm;
         Blob<float> m_blobTop;
         float m_fLastAccuracy = 0;
@@ -58,172 +56,12 @@ namespace MyCaffeConnector
 
         private string buildSolver()
         {
-            SolverParameter solver = new SolverParameter();
-            solver.base_lr = 1e-4;
-            solver.type = SolverParameter.SolverType.ADAM;
-            solver.lr_policy = "fixed";
-            solver.test_initialization = false;
-
-            return solver.ToProto("root").ToString();
+            return File.ReadAllText("C:\\temp\\projects\\2023.minGpt\\minGPT\\models\\gpt\\solver.prototxt");
         }
 
-        private string buildModelEx(NetParameter net, uint nBatch, uint nBlockSize, uint nEmbed, uint nEncVocabSize, uint nDecVocabSize, double dfDropout, bool bAddInput = false, Phase phase = Phase.TRAIN)
+        private string buildModel()
         {
-            if (bAddInput)
-            {
-                LayerParameter input = new LayerParameter(LayerParameter.LayerType.INPUT);
-                input.name = "input";
-                input.input_param.shape.Add(new BlobShape() { dim = new List<int>() { (int)nBatch, (int)nBlockSize } });
-                input.input_param.shape.Add(new BlobShape() { dim = new List<int>() { (int)nBatch, (int)nBlockSize } });
-                input.input_param.shape.Add(new BlobShape() { dim = new List<int>() { (int)nBatch, (int)nBlockSize } });
-                input.input_param.shape.Add(new BlobShape() { dim = new List<int>() { (int)nBatch, (int)nBlockSize } });
-                input.input_param.shape.Add(new BlobShape() { dim = new List<int>() { (int)nBatch, (int)nBlockSize, (int)nBlockSize } });
-                input.top.Add("enc");
-                input.top.Add("dec");
-                input.top.Add("tgt");
-                input.top.Add("emsk");
-                input.top.Add("dmsk");
-                net.layer.Add(input);
-            }
-
-            LayerParameter emb1 = new LayerParameter(LayerParameter.LayerType.EMBED);
-            emb1.name = "embed1";
-            emb1.embed_param.bias_term = false;
-            emb1.embed_param.input_dim = nEncVocabSize;
-            emb1.embed_param.num_output = nEmbed;
-            emb1.bottom.Add("enc");
-            emb1.top.Add("emb1");
-            net.layer.Add(emb1);
-
-            LayerParameter emb2 = new LayerParameter(LayerParameter.LayerType.EMBED);
-            emb2.name = "embed2";
-            emb2.embed_param.bias_term = false;
-            emb2.embed_param.input_dim = nDecVocabSize;
-            emb2.embed_param.num_output = nEmbed;
-            emb2.bottom.Add("dec");
-            emb2.top.Add("emb2");
-            net.layer.Add(emb2);
-
-            LayerParameter pos1 = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODER);
-            pos1.positional_encoder_param.block_size = nBlockSize;
-            pos1.positional_encoder_param.embed = nEmbed;
-            pos1.name = "posenc1";
-            pos1.bottom.Add("emb1");
-            pos1.top.Add("pos1");
-            net.layer.Add(pos1);
-
-            LayerParameter pos2 = new LayerParameter(LayerParameter.LayerType.POSITIONAL_ENCODER);
-            pos2.positional_encoder_param.block_size = nBlockSize;
-            pos2.positional_encoder_param.embed = nEmbed;
-            pos2.name = "posenc2";
-            pos2.bottom.Add("emb2");
-            pos2.top.Add("pos2");
-            net.layer.Add(pos2);
-
-            string strEncBtm = "pos1";
-            int nLayers = 6;
-            for (int i = 0; i < nLayers; i++)
-            {
-                LayerParameter enc = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
-                enc.name = "enc" + (i + 1).ToString();
-                enc.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.ENCODER;
-                enc.transformer_block_param.heads = 8;
-                enc.transformer_block_param.embed = nEmbed;
-                enc.transformer_block_param.block_size = nBlockSize;
-                enc.transformer_block_param.layers = (uint)nLayers;
-                enc.transformer_block_param.activation = TransformerBlockParameter.ACTIVATION.RELU;
-                enc.transformer_block_param.attn_dropout = dfDropout;
-                enc.transformer_block_param.resid_dropout = dfDropout;
-                enc.bottom.Add(strEncBtm);
-                enc.bottom.Add("emsk");
-                enc.top.Add(enc.name);
-                net.layer.Add(enc);
-
-                strEncBtm = enc.name;
-            }
-
-            LayerParameter ln1 = new LayerParameter(LayerParameter.LayerType.LAYERNORM);
-            ln1.name = "ln1";
-            ln1.layer_norm_param.enable_cuda_impl = false;
-            ln1.bottom.Add(strEncBtm);
-            ln1.top.Add("ln1");
-            net.layer.Add(ln1);
-
-            string strDecBtm = "pos2";
-            for (int i = 0; i < nLayers; i++)
-            {
-                LayerParameter dec = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
-                dec.name = "dec" + (i + 1).ToString();
-                dec.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.DECODER;
-                dec.transformer_block_param.heads = 8;
-                dec.transformer_block_param.embed = nEmbed;
-                dec.transformer_block_param.block_size = nBlockSize;
-                dec.transformer_block_param.layers = (uint)nLayers;
-                dec.transformer_block_param.activation = TransformerBlockParameter.ACTIVATION.RELU;
-                dec.transformer_block_param.attn_dropout = dfDropout;
-                dec.transformer_block_param.resid_dropout = dfDropout;
-                dec.bottom.Add(strDecBtm);
-                dec.bottom.Add("dmsk");
-                dec.bottom.Add("ln1");
-                dec.bottom.Add("emsk");
-                dec.top.Add(dec.name);
-                net.layer.Add(dec);
-
-                strDecBtm = dec.name;
-            }
-
-            LayerParameter ln2 = new LayerParameter(LayerParameter.LayerType.LAYERNORM);
-            ln2.name = "ln2";
-            ln2.layer_norm_param.enable_cuda_impl = false;
-            ln2.bottom.Add(strDecBtm);
-            ln2.top.Add("ln2");
-            net.layer.Add(ln2);
-
-            LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
-            ip1.name = "ip1";
-            ip1.inner_product_param.axis = 2;
-            ip1.inner_product_param.num_output = nDecVocabSize;
-            ip1.bottom.Add("ln2");
-            ip1.top.Add("logits");
-            net.layer.Add(ip1);
-
-            LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
-            softmax.name = "softmax";
-            softmax.softmax_param.axis = 2;
-            softmax.softmax_param.algorithm = SOFTMAX_ALGORITHM.LOG;
-            softmax.softmax_param.algorithm_train = SOFTMAX_ALGORITHM.LOG;
-            softmax.bottom.Add("logits");
-            softmax.top.Add("prob");
-            net.layer.Add(softmax);
-
-            if (phase == Phase.TRAIN)
-            {
-                LayerParameter loss = new LayerParameter(LayerParameter.LayerType.NLL_LOSS);
-                loss.name = "loss";
-                loss.nll_loss_param.axis = 2;
-                loss.loss_param.normalization = LossParameter.NormalizationMode.VALID;
-                loss.bottom.Add("prob");
-                loss.bottom.Add("tgt");
-                loss.top.Add("loss");
-                loss.include.Add(new NetStateRule(Phase.TRAIN));
-                net.layer.Add(loss);
-            }
-
-            if (phase == Phase.TRAIN)
-            {
-                LayerParameter accuracy = new LayerParameter(LayerParameter.LayerType.ACCURACY);
-                accuracy.name = "accuracy";
-                accuracy.accuracy_param.axis = 2;
-                accuracy.accuracy_param.ignore_labels.Add(0);
-                accuracy.accuracy_param.enable_simple_accuracy = true;
-                accuracy.bottom.Add("prob");
-                accuracy.bottom.Add("tgt");
-                accuracy.top.Add("accuracy");
-                accuracy.include.Add(new NetStateRule(Phase.TRAIN));
-                net.layer.Add(accuracy);
-            }
-
-            return net.ToProto("root").ToString();
+            return File.ReadAllText("C:\\temp\\projects\\2023.minGpt\\minGPT\\models\\gpt\\train_test.prototxt");
         }
 
         public void Initialize()
@@ -232,28 +70,33 @@ namespace MyCaffeConnector
             m_colTop.Add(m_blobTop);
             m_colBtm.Clear();
             m_colBtm.Add(m_blobBtm);
+
+            for (int i = 0; i < 6; i++)
+            {
+                string strName = "blk" + i.ToString();
+                m_rgBtm.Add(strName, m_mycaffe.CreateBlob(strName));
+                m_rgTop.Add(strName, m_mycaffe.CreateBlob(strName));
+            }
         }
 
         public void InitializeEx(uint nBatch, uint nBlockSize, uint nEmbed, uint nEncVocabSize, uint nDecVocabSize, double dfDropout)
         {
-            NetParameter net_param = new NetParameter();
             string strSolver = buildSolver();
-            string strModel = buildModelEx(net_param, nBatch, nBlockSize, nEmbed, nEncVocabSize, nDecVocabSize, dfDropout, true);
+            string strModel = buildModel();
 
             m_mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
             
             m_blobEncIn = m_mycaffe.CreateBlob("encin");
             m_blobEncIn.Reshape((int)nBatch, (int)nBlockSize, 1, 1);
-            m_blobDecIn = m_mycaffe.CreateBlob("decin");
-            m_blobDecIn.Reshape((int)nBatch, (int)nBlockSize, 1, 1);
-            m_blobDecOut = m_mycaffe.CreateBlob("decout");
-            m_blobDecOut.Reshape((int)nBatch, (int)nBlockSize, 1, 1);
-            m_blobEncMask = m_mycaffe.CreateBlob("e_mask");
-            m_blobEncMask.Reshape((int)nBatch, (int)nBlockSize, 1, 1);
-            m_blobDecMask = m_mycaffe.CreateBlob("d_mask");
-            m_blobDecMask.Reshape((int)nBatch, (int)nBlockSize, (int)nBlockSize, 1);
-            m_blobLoss = m_mycaffe.CreateBlob("loss");
-            m_blobLoss.Reshape(1, 1, 1, 1);
+            m_blobTgt = m_mycaffe.CreateBlob("tgt");
+            m_blobTgt.Reshape((int)nBatch, (int)nBlockSize, 1, 1);
+
+            for (int i = 0; i < 6; i++)
+            {
+                string strName = "blk" + i.ToString();
+                m_rgBtm.Add(strName, m_mycaffe.CreateBlob(strName));
+                m_rgTop.Add(strName, m_mycaffe.CreateBlob(strName));
+            }
         }
 
         public static string AssemblyDirectory
@@ -267,15 +110,167 @@ namespace MyCaffeConnector
             }
         }
 
+        public float[] tfb_fwd(string strTag, int nN, int nC, int nH, int nW, float[] rg)
+        {
+            List<int> rgShape = new List<int>() { nN, nC, nH };
+            if (nW > 1)
+                rgShape.Add(nW);
+
+            m_blobBtm.Reshape(rgShape);
+            m_blobBtm.mutable_cpu_data = rg;
+
+            if (!m_rgLayers.ContainsKey(strTag))
+            {
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
+                p.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION;
+                p.transformer_block_param.heads = 6;
+                p.transformer_block_param.embed = 192;
+                p.transformer_block_param.block_size = 128;
+                p.transformer_block_param.attn_dropout = 0.0;
+                p.transformer_block_param.resid_dropout = 0.0;
+                p.transformer_block_param.layers = 6;
+                Layer<float> layer1 = Layer<float>.Create(m_mycaffe.Cuda, m_mycaffe.Log, p, null);
+
+                layer1.Setup(m_colBtm, m_colTop);
+                m_rgLayers.Add(strTag, layer1);
+            }
+
+            Layer<float> layer = m_rgLayers[strTag];
+            layer.Forward(m_colBtm, m_colTop);
+
+            return m_blobTop.mutable_cpu_data;
+        }
+
+        public float[] tfb_bwd(string strTag, int nN, int nC, int nH, int nW, float[] rgY, float[] rgYGrad)
+        {
+            List<int> rgShape = new List<int>() { nN, nC, nH };
+            if (nW > 1)
+                rgShape.Add(nW);
+
+            m_blobTop.Reshape(rgShape);
+            m_blobBtm.Reshape(rgShape);
+            m_blobTop.mutable_cpu_data = rgY;
+            m_blobTop.mutable_cpu_diff = rgYGrad;
+
+            Layer<float> layer = m_rgLayers[strTag];
+            layer.Backward(m_colTop, new List<bool>() { true }, m_colBtm);
+
+            return m_blobBtm.mutable_cpu_diff;
+        }
+
+        public float[] tfb_fwd_all(string strTag, int nN, int nC, int nH, int nW, float[] rg)
+        {
+            List<int> rgShape = new List<int>() { nN, nC, nH };
+            if (nW > 1)
+                rgShape.Add(nW);
+
+            BlobCollection<float> colBtm = new BlobCollection<float>();
+            BlobCollection<float> colTop = new BlobCollection<float>();
+
+            Blob<float> blobLastTop = null;
+
+            for (int i = 0; i < 6; i++)
+            {
+                string strName = "blk" + i.ToString();
+                Blob<float> blobBtm = m_rgBtm[strName];
+                Blob<float> blobTop = m_rgTop[strName];
+
+                colBtm.Clear();
+                colBtm.Add(blobBtm);
+                colTop.Clear();
+                colTop.Add(blobTop);
+
+                blobBtm.Reshape(rgShape);
+
+                if (i == 0)
+                    blobBtm.mutable_cpu_data = rg;
+                else
+                    blobBtm.CopyFrom(blobLastTop);    
+
+                if (!m_rgLayers.ContainsKey(strName))
+                {
+                    LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
+                    p.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION;
+                    p.transformer_block_param.heads = 6;
+                    p.transformer_block_param.embed = 192;
+                    p.transformer_block_param.block_size = 128;
+                    p.transformer_block_param.attn_dropout = 0.0;
+                    p.transformer_block_param.resid_dropout = 0.0;
+                    p.transformer_block_param.layers = 6;
+                    p.name = "tfb" + i.ToString();
+                    Layer<float> layer1 = Layer<float>.Create(m_mycaffe.Cuda, m_mycaffe.Log, p, null);
+
+                    layer1.Setup(colBtm, colTop);
+                    m_rgLayers.Add(strName, layer1);
+                }
+
+                Layer<float> layer = m_rgLayers[strName];
+                layer.Forward(colBtm, colTop);
+
+                blobLastTop = blobTop;
+            }
+
+            return blobLastTop.mutable_cpu_data;
+        }
+
+        public float[] tfb_bwd_all(string strTag, int nN, int nC, int nH, int nW, float[] rgY, float[] rgYGrad)
+        {
+            List<int> rgShape = new List<int>() { nN, nC, nH };
+            if (nW > 1)
+                rgShape.Add(nW);
+
+            BlobCollection<float> colBtm = new BlobCollection<float>();
+            BlobCollection<float> colTop = new BlobCollection<float>();
+
+            Blob<float> blobLastBtm = null;
+
+            for (int i = 0; i < 6; i++)
+            {
+                string strName = "blk" + i.ToString();
+                Blob<float> blobBtm = m_rgBtm[strName];
+                Blob<float> blobTop = m_rgTop[strName];
+
+                colBtm.Clear();
+                colBtm.Add(blobBtm);
+                colTop.Clear();
+                colTop.Add(blobTop);
+
+                blobTop.Reshape(rgShape);
+                blobBtm.Reshape(rgShape);
+
+                if (i == 0)
+                {
+                    blobTop.mutable_cpu_diff = rgY;
+                    blobTop.mutable_cpu_diff = rgYGrad;
+                }
+                else
+                {
+                    blobTop.CopyFrom(blobLastBtm, true);
+                }
+
+                Layer<float> layer = m_rgLayers[strName];
+                layer.Backward(colTop, new List<bool>() { true }, colBtm);
+
+                blobLastBtm = blobBtm;
+            }
+
+            return blobLastBtm.mutable_cpu_diff;
+        }
+
+
         public float[] softmax_fwd(string strTag, int nN, int nC, int nH, int nW, float[] rg)
         {
-            m_blobBtm.Reshape(nN, nC, nH, nW);
+            List<int> rgShape = new List<int>() { nN, nC, nH };
+            if (nW > 1)
+                rgShape.Add(nW);
+
+            m_blobBtm.Reshape(rgShape);
             m_blobBtm.mutable_cpu_data = rg;
 
             if (!m_rgLayers.ContainsKey(strTag))
             {
                 LayerParameter p = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
-                p.softmax_param.engine = EngineParameter.Engine.CUDNN;
+                p.softmax_param.engine = EngineParameter.Engine.CAFFE;
                 p.softmax_param.axis = -1;
                 Layer<float> layer1 = Layer<float>.Create(m_mycaffe.Cuda, m_mycaffe.Log, p, null);
 
@@ -291,8 +286,12 @@ namespace MyCaffeConnector
 
         public float[] softmax_bwd(string strTag, int nN, int nC, int nH, int nW, float[] rgY, float[] rgYGrad)
         {
-            m_blobTop.Reshape(nN, nC, nH, nW);
-            m_blobBtm.Reshape(nN, nC, nH, nW);
+            List<int> rgShape = new List<int>() { nN, nC, nH };
+            if (nW > 1)
+                rgShape.Add(nW);
+
+            m_blobTop.Reshape(rgShape);
+            m_blobBtm.Reshape(rgShape);
             m_blobTop.mutable_cpu_data = rgY;
             m_blobTop.mutable_cpu_diff = rgYGrad;
 
@@ -304,7 +303,11 @@ namespace MyCaffeConnector
 
         public float[] logsoftmax_fwd(string strTag, int nN, int nC, int nH, int nW, float[] rg)
         {
-            m_blobBtm.Reshape(nN, nC, nH, nW);
+            List<int> rgShape = new List<int>() { nN, nC, nH };
+            if (nW > 1)
+                rgShape.Add(nW);
+
+            m_blobBtm.Reshape(rgShape);
             m_blobBtm.mutable_cpu_data = rg;
 
             if (!m_rgLayers.ContainsKey(strTag))
@@ -327,8 +330,12 @@ namespace MyCaffeConnector
 
         public float[] logsoftmax_bwd(string strTag, int nN, int nC, int nH, int nW, float[] rgY, float[] rgYGrad)
         {
-            m_blobTop.Reshape(nN, nC, nH, nW);
-            m_blobBtm.Reshape(nN, nC, nH, nW);
+            List<int> rgShape = new List<int>() { nN, nC, nH };
+            if (nW > 1)
+                rgShape.Add(nW);
+
+            m_blobTop.Reshape(rgShape);
+            m_blobBtm.Reshape(rgShape);
             m_blobTop.mutable_cpu_data = rgY;
             m_blobTop.mutable_cpu_diff = rgYGrad;
 
@@ -340,13 +347,17 @@ namespace MyCaffeConnector
 
         public float[] layernorm_fwd(string strTag, int nN, int nC, int nH, int nW, float[] rg)
         {
-            m_blobBtm.Reshape(nN, nC, nH, nW);
+            List<int> rgShape = new List<int>() { nN, nC, nH };
+            if (nW > 1)
+                rgShape.Add(nW);
+
+            m_blobBtm.Reshape(rgShape);
             m_blobBtm.mutable_cpu_data = rg;
 
             if (!m_rgLayers.ContainsKey(strTag))
             {
                 LayerParameter p = new LayerParameter(LayerParameter.LayerType.LAYERNORM);
-                p.layer_norm_param.enable_cuda_impl = true;
+                p.layer_norm_param.enable_cuda_impl = false;
                 Layer<float> layer1 = Layer<float>.Create(m_mycaffe.Cuda, m_mycaffe.Log, p, null);
 
                 layer1.Setup(m_colBtm, m_colTop);
@@ -361,8 +372,12 @@ namespace MyCaffeConnector
 
         public float[] layernorm_bwd(string strTag, int nN, int nC, int nH, int nW, float[] rgY, float[] rgYGrad)
         {
-            m_blobTop.Reshape(nN, nC, nH, nW);
-            m_blobBtm.Reshape(nN, nC, nH, nW);
+            List<int> rgShape = new List<int>() { nN, nC, nH };
+            if (nW > 1)
+                rgShape.Add(nW);
+
+            m_blobTop.Reshape(rgShape);
+            m_blobBtm.Reshape(rgShape);
             m_blobTop.mutable_cpu_data = rgY;
             m_blobTop.mutable_cpu_diff = rgYGrad;
 
@@ -489,22 +504,16 @@ namespace MyCaffeConnector
             get { return m_fLastAccuracy; }
         }
 
-        public float[] Step(int nIter, float[] rgEncIn, float[] rgDecIn, float[] rgDecOut, float[] rgEncMask, float[] rgDecMask)
+        public float[] Step(int nIter, float[] rgEncIn, float[] rgTgt)
         {
             m_blobEncIn.mutable_cpu_data = rgEncIn;
-            m_blobDecIn.mutable_cpu_data = rgDecIn;
-            m_blobDecOut.mutable_cpu_data = rgDecOut;
-            m_blobEncMask.mutable_cpu_data = rgEncMask;
-            m_blobDecMask.mutable_cpu_data = rgDecMask;
+            m_blobTgt.mutable_cpu_data = rgTgt;
 
             Net<float> net = m_mycaffe.GetInternalNet(Phase.TRAIN);
 
             BlobCollection<float> colInput = new BlobCollection<float>();
             colInput.Add(m_blobEncIn);
-            colInput.Add(m_blobDecIn);
-            colInput.Add(m_blobDecOut);
-            colInput.Add(m_blobEncMask);
-            colInput.Add(m_blobDecMask);
+            colInput.Add(m_blobTgt);
 
             net.ClearParamDiffs();
 
@@ -535,11 +544,7 @@ namespace MyCaffeConnector
         public void CleanUp()
         {
             dispose(ref m_blobEncIn);
-            dispose(ref m_blobDecIn);
-            dispose(ref m_blobDecOut);
-            dispose(ref m_blobEncMask);
-            dispose(ref m_blobDecMask);
-            dispose(ref m_blobLoss);
+            dispose(ref m_blobTgt);
             dispose(ref m_blobBtm);
             dispose(ref m_blobTop);
 

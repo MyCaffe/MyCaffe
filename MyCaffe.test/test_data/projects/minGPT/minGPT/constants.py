@@ -8,6 +8,12 @@ mycaffe_layernorm = False
 mycaffe_softmax = False
 mycaffe_logsoftmax = False
 mycaffe_innerproduct = False
+mycaffe_innerproduct_proj = False
+mycaffe_innerproduct_fc = False
+mycaffe_transformerblock = False
+mycaffe_transformerblock_all = False
+mycaffe_adamw = False
+disable_layernorm = False
 act_relu = True
 clip_grad = False
 
@@ -18,9 +24,12 @@ save_for_testing = False
 
 drop_out_rate = 0.0 if save_for_testing else 0.1
 
+sp_vocab_size = 65
 seq_len = 128
 batch_size = 64
 loss_weight = 1
+d_model = 192
+n_head = 6
 working_dir = './out/chargpt'
 
 pad_id = 0

@@ -9,6 +9,7 @@ https://github.com/huggingface/transformers/blob/main/src/transformers/models/gp
 """
 
 import math
+from pickle import TRUE
 import numpy as np
 
 import torch
@@ -17,10 +18,13 @@ from torch.nn import functional as F
 
 from utils import CfgNode as CN
 
+from adamw import AdamW2
 from layers import LinearEx
 from layers import LayerNormEx
 from layers import SoftmaxEx
 from layers import LogSoftmaxEx
+from layers import BlockEx
+from layers import BlockAllEx
 from test_base import DebugFunction
 from constants import *
 
@@ -92,7 +96,8 @@ class CausalSelfAttention(nn.Module):
 
         # causal self-attention; Self-attend: (B, nh, T, hs) x (B, nh, hs, T) -> (B, nh, T, T)
         att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
-        att = att.masked_fill(self.bias[:,:,:T,:T] == 0, float('-inf'))
+        inf = 1e+29
+        att = att.masked_fill(self.bias[:,:,:T,:T] == 0, -inf) # float('-inf'))
         att = self.softmax(att) 
         att = self.attn_dropout(att)
         y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
@@ -105,25 +110,42 @@ class CausalSelfAttention(nn.Module):
 class Block(nn.Module):
     """ an unassuming Transformer block """
     
-    def __init__(self, tag, config):
+    def __init__(self, tag, config, use_mycaffe=False):
         super().__init__()
         self.tag = tag
         self.ln_1 = LayerNormEx(tag + ".ln1", config.n_embd)
         self.attn = CausalSelfAttention(tag + ".attn", config)
         self.ln_2 = LayerNormEx(tag + ".ln2", config.n_embd)
-        self.mlp = nn.ModuleDict(dict(
-            c_fc    = LinearEx(tag + ".c_fc", config.n_embd, 4 * config.n_embd),
-            c_proj  = LinearEx(tag + ".c_proj", 4 * config.n_embd, config.n_embd),
-            act     = NewGELU(),
-            dropout = nn.Dropout(config.resid_pdrop),
-        ))
-        m = self.mlp
-        self.mlpf = lambda x: m.dropout(m.c_proj(m.act(m.c_fc(x)))) # MLP forward
 
-    def forward(self, x):
+        self.c_fc = LinearEx(tag + ".c_fc", config.n_embd, 4 * config.n_embd, use_mycaffe = mycaffe_innerproduct_fc)
+        self.c_proj = LinearEx(tag + ".c_proj", 4 * config.n_embd, config.n_embd, use_mycaffe=mycaffe_innerproduct_proj)
+        self.act = NewGELU()
+        self.dropout = nn.Dropout(config.resid_pdrop)
+        
+        #self.mlp = nn.ModuleDict(dict(
+        #    c_fc    = LinearEx(tag + ".c_fc", config.n_embd, 4 * config.n_embd),
+        #    c_proj  = LinearEx(tag + ".c_proj", 4 * config.n_embd, config.n_embd, use_mycaffe=mycaffe_innerproduct_proj),
+        #    act     = NewGELU(),
+        #    dropout = nn.Dropout(config.resid_pdrop),
+        #))
+        #m = self.mlp
+        #self.mlpf = lambda x: m.dropout(m.c_proj(m.act(m.c_fc(x)))) # MLP forward
+
+    def forwardOriginal(self, x):
         x = x + self.attn(self.ln_1(x))
         x = x + self.mlpf(self.ln_2(x))
         return x
+
+    def forward(self, x):
+        x1 = x + self.attn(self.ln_1(x))
+        ln2_x = self.ln_2(x1)
+        fc_x = self.c_fc(ln2_x)
+        act_x = self.act(fc_x)
+        proj_x = self.c_proj(act_x)
+        dropout_x = self.dropout(proj_x)
+        x2 = x1 + dropout_x
+        return x2
+
 
 class GPT(nn.Module):
     """ GPT Language Model """
@@ -169,18 +191,36 @@ class GPT(nn.Module):
                 'gopher-44m':   dict(n_layer=8, n_head=16, n_embd=512),
                 # (there are a number more...)
                 # I made these tiny models up
+                'gpt-mini1':     dict(n_layer=1, n_head=6, n_embd=192),
                 'gpt-mini':     dict(n_layer=6, n_head=6, n_embd=192),
                 'gpt-micro':    dict(n_layer=4, n_head=4, n_embd=128),
                 'gpt-nano':     dict(n_layer=3, n_head=3, n_embd=48),
             }[config.model_type])
 
-        self.transformer = nn.ModuleDict(dict(
-            wte = nn.Embedding(config.vocab_size, config.n_embd),
-            wpe = nn.Embedding(config.block_size, config.n_embd),
-            drop = nn.Dropout(config.embd_pdrop),
-            h = nn.ModuleList([Block("blk%d" % (i), config) for i in range(config.n_layer)]),
-            ln_f = LayerNormEx("ln_f", config.n_embd),
-        ))
+        if mycaffe_transformerblock_all:        
+            self.transformer = nn.ModuleDict(dict(
+                wte = nn.Embedding(config.vocab_size, config.n_embd),
+                wpe = nn.Embedding(config.block_size, config.n_embd),
+                drop = nn.Dropout(config.embd_pdrop),
+                h = BlockAllEx("blkall", config),
+                ln_f = LayerNormEx("ln_f", config.n_embd),
+            ))
+        elif mycaffe_transformerblock:
+            self.transformer = nn.ModuleDict(dict(
+                wte = nn.Embedding(config.vocab_size, config.n_embd),
+                wpe = nn.Embedding(config.block_size, config.n_embd),
+                drop = nn.Dropout(config.embd_pdrop),
+                h = nn.ModuleList([BlockEx("blk%d" % (i), config) for i in range(config.n_layer)]),
+                ln_f = LayerNormEx("ln_f", config.n_embd),
+            ))
+        else:
+            self.transformer = nn.ModuleDict(dict(
+                wte = nn.Embedding(config.vocab_size, config.n_embd),
+                wpe = nn.Embedding(config.block_size, config.n_embd),
+                drop = nn.Dropout(config.embd_pdrop),
+                h = nn.ModuleList([Block("blk%d" % (i), config) for i in range(config.n_layer)]),
+                ln_f = LayerNormEx("ln_f", config.n_embd),
+            ))
         self.lm_head = LinearEx("lm_head", config.n_embd, config.vocab_size, bias=False)
         self.softmax = LogSoftmaxEx("f_smx", dim = -1)
         self.criterion = nn.NLLLoss()
@@ -289,7 +329,10 @@ class GPT(nn.Module):
             {"params": [param_dict[pn] for pn in sorted(list(decay))], "weight_decay": train_config.weight_decay},
             {"params": [param_dict[pn] for pn in sorted(list(no_decay))], "weight_decay": 0.0},
         ]
-        optimizer = torch.optim.AdamW(optim_groups, lr=train_config.learning_rate, betas=train_config.betas)
+        if mycaffe_adamw:
+            optimizer = AdamW2(optim_groups, lr=train_config.learning_rate, betas=train_config.betas)
+        else:
+            optimizer = torch.optim.AdamW(optim_groups, lr=train_config.learning_rate, betas=train_config.betas)
         return optimizer
 
     def calculate_accuracy(self, output, trg):
@@ -302,10 +345,9 @@ class GPT(nn.Module):
         total = 0;
         for i in range(len(output)):
             for j in range(len(output[i])):
-                if trg[i][j] != 0:
-                    if output[i][j] == trg[i][j]:
-                        correct += 1
-                    total += 1
+                if output[i][j] == trg[i][j]:
+                    correct += 1
+                total += 1
         accuracy = correct / total
 
         return accuracy
@@ -333,12 +375,18 @@ class GPT(nn.Module):
             DebugFunction.trace(targets, "1_targets")
 
         idx = 0
-        for block in self.transformer.h:
-            x = block(x)
+        if mycaffe_transformerblock_all:
+            x = self.transformer.h(x)
             if save_for_testing1:
-                DebugFunction.trace(x, "%d_blk_x" % (idx))
+                DebugFunction.trace(x, "2_x")
                 x = debug(x)
-                idx = idx + 1
+        else:
+            for block in self.transformer.h:
+                x = block(x)
+                if save_for_testing1:
+                    DebugFunction.trace(x, "%d_blk_x" % (idx))
+                    x = debug(x)
+                    idx = idx + 1
             
         ln_x = self.transformer.ln_f(x)
         if save_for_testing1:
@@ -355,12 +403,12 @@ class GPT(nn.Module):
         acc = None
         if targets is not None:
             prob = self.softmax(logits)
-            if save_for_testing1:
+            if save_for_testing1 or True:
                 DebugFunction.trace(prob, "14_prob")
                 prob = debug(prob)
             
             loss = self.criterion(prob.view(-1, prob.size(-1)), targets.view(-1))
-            if save_for_testing1:
+            if save_for_testing1 or True:
                 DebugFunction.trace(loss, "15_loss")
                 loss = debug(loss)
             

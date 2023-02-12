@@ -21,7 +21,9 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="adamw.py" />
     <Compile Include="bpe.py" />
+    <Compile Include="mainMycaffe.py" />
     <Compile Include="main.py" />
     <Compile Include="constants.py" />
     <Compile Include="layers.py" />
@@ -29,6 +31,8 @@
     <Compile Include="mycaffe.py" />
     <Compile Include="test_base.py" />
     <Compile Include="test_causalselfattention.py" />
+    <Compile Include="test_transformer.py" />
+    <Compile Include="trainerMycaffe.py" />
     <Compile Include="trainer.py" />
     <Compile Include="utils.py" />
     <Compile Include="__init__.py" />

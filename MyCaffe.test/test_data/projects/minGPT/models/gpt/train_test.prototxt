@@ -1,0 +1,287 @@
+name: "GptMiniNet"
+layer 
+{
+   name: "tokdata1"
+   type: "TokenizedData"
+   top: "tokdata"
+   top: "pos"
+   top: "tgt"
+   tokenized_data_param 
+   {
+      python_param 
+      {
+         python_path: $Default$
+      }
+      input_type: TEXT_FILE
+      vocabulary_type: CHARACTER
+      source: "$ProgramData$\MyCaffe\test_data\data\text\input.txt"
+      batch_size: 64
+      block_size: 128
+   }
+}
+layer 
+{
+   name: "wte"
+   type: "Embed"
+   bottom: "tokdata"
+   top: "tok_emb"
+   param 
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   embed_param 
+   {
+      num_output: 192
+      input_dim: 65
+      bias_term: False
+      weight_filler 
+      {
+         type: "gaussian"
+         mean: 0
+         std: 0.02
+      }
+   }
+}
+layer 
+{
+   name: "wpe"
+   type: "Embed"
+   bottom: "pos"
+   top: "pos_emb"
+   param 
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   embed_param 
+   {
+      num_output: 192
+      input_dim: 128
+      bias_term: False
+      weight_filler 
+      {
+         type: "gaussian"
+         mean: 0
+         std: 0.02
+      }
+   }
+}
+layer 
+{
+   name: "eltwise1"
+   type: "Eltwise"
+   bottom: "tok_emb"
+   bottom: "pos_emb"
+   top: "eltwise1"
+   eltwise_param 
+   {
+      operation: SUM
+   }
+}
+layer 
+{
+   name: "dropout1"
+   type: "Dropout"
+   bottom: "eltwise1"
+   top: "eltwise1"
+   dropout_param 
+   {
+      dropout_ratio: 0.1
+   }
+}
+layer 
+{
+   name: "tfb1"
+   type: "TransformerBlock"
+   bottom: "eltwise1"
+   top: "tfb1"
+   transformer_block_param 
+   {
+      layers: 6
+      heads: 6
+      embed: 192
+      block_size: 128
+      attn_dropout: 0.1
+      resid_dropout: 0.1
+      activation: RELU
+      block_type: CAUSAL_SELF_ATTENTION
+      enable_ln_cuda_impl: False
+   }
+}
+layer 
+{
+   name: "tfb2"
+   type: "TransformerBlock"
+   bottom: "tfb1"
+   top: "tfb2"
+   transformer_block_param 
+   {
+      layers: 6
+      heads: 6
+      embed: 192
+      block_size: 128
+      attn_dropout: 0.1
+      resid_dropout: 0.1
+      activation: RELU
+      block_type: CAUSAL_SELF_ATTENTION
+      enable_ln_cuda_impl: False
+   }
+}
+layer 
+{
+   name: "tfb3"
+   type: "TransformerBlock"
+   bottom: "tfb2"
+   top: "tfb3"
+   transformer_block_param 
+   {
+      layers: 6
+      heads: 6
+      embed: 192
+      block_size: 128
+      attn_dropout: 0.1
+      resid_dropout: 0.1
+      activation: RELU
+      block_type: CAUSAL_SELF_ATTENTION
+      enable_ln_cuda_impl: False
+   }
+}
+layer 
+{
+   name: "tfb4"
+   type: "TransformerBlock"
+   bottom: "tfb3"
+   top: "tfb4"
+   transformer_block_param 
+   {
+      layers: 6
+      heads: 6
+      embed: 192
+      block_size: 128
+      attn_dropout: 0.1
+      resid_dropout: 0.1
+      activation: RELU
+      block_type: CAUSAL_SELF_ATTENTION
+      enable_ln_cuda_impl: False
+   }
+}
+layer 
+{
+   name: "tfb5"
+   type: "TransformerBlock"
+   bottom: "tfb4"
+   top: "tfb5"
+   transformer_block_param 
+   {
+      layers: 6
+      heads: 6
+      embed: 192
+      block_size: 128
+      attn_dropout: 0.1
+      resid_dropout: 0.1
+      activation: RELU
+      block_type: CAUSAL_SELF_ATTENTION
+      enable_ln_cuda_impl: False
+   }
+}
+layer 
+{
+   name: "tfb6"
+   type: "TransformerBlock"
+   bottom: "tfb5"
+   top: "tfb6"
+   transformer_block_param 
+   {
+      layers: 6
+      heads: 6
+      embed: 192
+      block_size: 128
+      attn_dropout: 0.1
+      resid_dropout: 0.1
+      activation: RELU
+      block_type: CAUSAL_SELF_ATTENTION
+      enable_ln_cuda_impl: False
+   }
+}
+layer 
+{
+   name: "ln1"
+   type: "LayerNorm"
+   bottom: "tfb6"
+   top: "ln1"
+}
+layer 
+{
+   name: "ip1"
+   type: "InnerProduct"
+   bottom: "ln1"
+   top: "logits"
+   param 
+   {
+      lr_mult: 1
+   }
+   inner_product_param 
+   {
+      num_output: 65
+      bias_term: False
+      weight_filler 
+      {
+         type: "gaussian"
+         mean: 0
+         std: 0.02
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+      axis: 2
+   }
+}
+layer 
+{
+   name: "softmax1"
+   type: "Softmax"
+   bottom: "logits"
+   top: "prob"
+   softmax_param 
+   {
+      axis: 2
+      algorithm: ACCURATE
+      algorithm_train: LOG
+   }
+}
+layer 
+{
+   name: "nllloss1"
+   type: "NLLLoss"
+   bottom: "prob"
+   bottom: "tgt"
+   top: "nllloss1"
+   loss_param 
+   {
+      normalization: VALID
+   }
+   nll_loss_param 
+   {
+      axis: 2
+   }
+}
+layer 
+{
+   name: "accuracy"
+   type: "Accuracy"
+   bottom: "prob"
+   bottom: "tgt"
+   top: "accuracy"
+   exclude 
+   {
+      phase: RUN
+   }
+   accuracy_param 
+   {
+      axis: 2
+      enable_simple_accuracy: True
+   }
+}

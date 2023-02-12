@@ -13,10 +13,10 @@ from layers import SoftmaxEx
 from layers import LayerNormEx
 
 class TestCausalSelfAttention:
-    def __init__(self, vocab_size, n_embd, n_head, block_size, attn_pdrop, resid_pdrop):
+    def __init__(self, tag, vocab_size, n_embd, n_head, block_size, attn_pdrop, resid_pdrop):
         super().__init__()
-        self.attn = CausalSelfAttentionEx("blk0" + ".attn", n_embd, n_head, block_size, attn_pdrop, resid_pdrop).to(device)
-        self.ln_f = LayerNormEx("ln_f", n_embd).to(device)
+        self.tag = tag
+        self.attn = CausalSelfAttentionEx(self.tag + ".attn", n_embd, n_head, block_size, attn_pdrop, resid_pdrop).to(device)
         self.lm_head = LinearEx("lm_head", n_embd, vocab_size, bias=False).to(device)
         self.softmax = nn.LogSoftmax(dim=-1).to(device)
         self.criterion = nn.NLLLoss().to(device)
@@ -104,7 +104,14 @@ class CausalSelfAttentionEx(nn.Module):
         self.c_attn.set_parameters(DebugFunction.load(self.tag + ".c_attn.weight"), DebugFunction.load(self.tag + ".c_attn.bias"))
         self.c_proj.set_parameters(DebugFunction.load(self.tag + ".c_proj.weight"), DebugFunction.load(self.tag + ".c_proj.bias"))
 
-    def forward(self, x, mask):
+    def save_internal_state(self):
+        DebugFunction.trace(self.c_attn.weight, self.tag + ".c_attn.weight")
+        DebugFunction.trace(self.c_attn.bias, self.tag + ".c_attn.bias")
+        DebugFunction.trace(self.c_proj.weight, self.tag + ".c_proj.weight")
+        DebugFunction.trace(self.c_proj.bias, self.tag + ".c_proj.bias")
+
+
+    def forward(self, x):
         debug = DebugFunction.apply
         
         B, T, C = x.size() # batch size, sequence length, embedding dimensionality (n_embd)
@@ -151,12 +158,17 @@ class CausalSelfAttentionEx(nn.Module):
         DebugFunction.trace(att1, self.tag + ".5_att1")
         att1 = debug(att1)
 
-        att = att1 * (1.0 / math.sqrt(k.size(-1)))
+        att = att1 * (1.0 / math.sqrt(kt.size(-1)))
         
         DebugFunction.trace(att, self.tag + ".6_att")
         att = debug(att)
         
-        attm = att.masked_fill(self.bias[:,:,:T,:T] == 0, float('-inf'))
+        mask = self.bias[:, :, :T, :T]
+        mask = mask.float()
+        DebugFunction.trace(mask, self.tag + ".7_mask")
+
+        inf = -1e+29
+        attm = att.masked_fill(self.bias[:,:,:T,:T] == 0, inf)
         
         DebugFunction.trace(attm, self.tag + ".7_attm")
         attm = debug(attm)
@@ -173,13 +185,13 @@ class CausalSelfAttentionEx(nn.Module):
         DebugFunction.trace(yt, self.tag + ".9_yt")
         yt = debug(yt)
         
-        y = yt.transpose(1, 2).contiguous().view(B, T, C) # re-assemble all head outputs side by side
+        yt1 = yt.transpose(1, 2).contiguous().view(B, T, C) # re-assemble all head outputs side by side
 
-        DebugFunction.trace(y, self.tag + ".10_y")
-        y = debug(y)
+        DebugFunction.trace(yt1, self.tag + ".10_y")
+        yt1 = debug(yt1)
         
         # output projection
-        y = self.c_proj(y)
+        y = self.c_proj(yt1)
 
         DebugFunction.trace(y, self.tag + ".11_y")
         y = debug(y)
@@ -187,23 +199,23 @@ class CausalSelfAttentionEx(nn.Module):
         #y = self.resid_dropout(y)
         return y
 
-vocab_size = 65
-n_embd = 192
-n_head = 6
-block_size = seq_len
-attn_pdrop = 0
-resid_pdrop = 0
-    
-DebugFunction.set_seed(1701)    
-test = TestCausalSelfAttention(vocab_size, n_embd, n_head, block_size, attn_pdrop, resid_pdrop)
-test.test()
-
-if os.path.isfile("test/_causalselfattn_test.zip"):
-    os.remove('test/_causalselfattn_test.zip')
-
-with zipfile.ZipFile('test/_causalselfattn_test.zip', 'w') as myzip:
-    for file in os.listdir('test'):
-        if file.endswith('.npy'):
-            myzip.write(os.path.join('test', file))
-
-print("Done")
+#vocab_size = 65
+#n_embd = 192
+#n_head = 6
+#block_size = seq_len
+#attn_pdrop = 0
+#resid_pdrop = 0
+#    
+#DebugFunction.set_seed(1701)    
+#test = TestCausalSelfAttention(vocab_size, n_embd, n_head, block_size, attn_pdrop, resid_pdrop)
+#test.test()
+#
+#if os.path.isfile("test/_causalselfattn_test.zip"):
+#    os.remove('test/_causalselfattn_test.zip')
+#
+#with zipfile.ZipFile('test/_causalselfattn_test.zip', 'w') as myzip:
+#    for file in os.listdir('test'):
+#        if file.endswith('.npy'):
+#            myzip.write(os.path.join('test', file))
+#
+#print("Done")

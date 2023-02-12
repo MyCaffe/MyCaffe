@@ -8,12 +8,14 @@ from collections import defaultdict
 
 from constants import *
 
+import numpy as np
 import torch
 from torch.utils.data.dataloader import DataLoader
 from utils import CfgNode as CN
 from test_base import DebugFunction
+from mycaffe import MyCaffe
 
-class Trainer:
+class TrainerMyCaffe:
 
     @staticmethod
     def get_default_config():
@@ -31,17 +33,18 @@ class Trainer:
         C.grad_norm_clip = 1.0
         return C
 
-    def __init__(self, config, model, train_dataset):
+    def __init__(self, config, train_dataset):
         self.config = config
-        self.model = model
+        #self.model = model
         self.optimizer = None
         self.train_dataset = train_dataset
         self.callbacks = defaultdict(list)
         self.last_output = None
         self.last_target = None
+        self.mycaffe = MyCaffe(True)
         
         # determine the device we'll train on
-        self.model = self.model.to(device)
+        #self.model = self.model.to(device)
         print("running on device", device)
 
         # variables that will be assigned to trainer class later for logging and etc
@@ -59,14 +62,35 @@ class Trainer:
         for callback in self.callbacks.get(onevent, []):
             callback(self)
 
+    def loss(self):
+        return self.mycaffe.current_loss()
+
+    def accuracy(self):
+        return self.mycaffe.current_accuracy()
+
     def calculate_accuracy(self):
-        return self.model.calculate_accuracy(self.last_output, self.last_target)
+        output = self.last_output.detach().cpu().numpy()
+        trg = self.last_target.detach().cpu().numpy()
+        
+        output = np.argmax(output, axis=-1)        
+
+        correct = 0;
+        total = 0;
+        for i in range(len(output)):
+            for j in range(len(output[i])):
+                if output[i][j] == trg[i][j]:
+                    correct += 1
+                total += 1
+        accuracy = correct / total
+
+        return accuracy
 
     def run(self):
-        model, config = self.model, self.config
+        config = self.config;
+        #model, config = self.model, self.config
 
         # setup the optimizer
-        self.optimizer = model.configure_optimizers(config)
+        #self.optimizer = model.configure_optimizers(config)
 
         # setup the dataloader
         train_loader = DataLoader(
@@ -78,10 +102,11 @@ class Trainer:
             num_workers=config.num_workers,
         )
         
-        model.train()
+        #model.train()
         self.iter_num = 0
         self.iter_time = time.time()
         data_iter = iter(train_loader)
+
         while True:
             if save_for_testing:
                 DebugFunction.set_output_path(self.iter_num)
@@ -96,16 +121,17 @@ class Trainer:
             x, y = batch
 
             # forward the model
-            logits, self.loss = model(x, y)            
+            prob = self.mycaffe.step(self.iter_num, x, y) 
+            #logits, self.loss = model(x, y)            
 
             # backprop and update the parameters
-            model.zero_grad(set_to_none=True)
-            self.loss.backward()
-            if clip_grad:
-                torch.nn.utils.clip_grad_norm_(model.parameters(), config.grad_norm_clip)
-            self.optimizer.step()
+            #model.zero_grad(set_to_none=True)
+            #self.loss.backward()
+            #if clip_grad:
+            #    torch.nn.utils.clip_grad_norm_(model.parameters(), config.grad_norm_clip)
+            #self.optimizer.step()
 
-            self.last_output = logits
+            self.last_output = prob
             self.last_target = y
 
             self.trigger_callbacks('on_batch_end')
