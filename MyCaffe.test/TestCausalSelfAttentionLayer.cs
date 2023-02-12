@@ -11,6 +11,7 @@ using MyCaffe.layers;
 using System.Diagnostics;
 using System.IO;
 using MyCaffe.param.gpt;
+using MyCaffe.layers.gpt;
 
 namespace MyCaffe.test
 {
@@ -70,6 +71,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestGradient2()
+        {
+            CausalSelfAttentionLayerTest test = new CausalSelfAttentionLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ICausalSelfAttentionLayerTest t in test.Tests)
+                {
+                    t.TestGradient2();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface ICausalSelfAttentionLayerTest : ITest
@@ -77,6 +96,7 @@ namespace MyCaffe.test
         void TestForward();
         void TestBackward();
         void TestGradient();
+        void TestGradient2();
     }
 
     class CausalSelfAttentionLayerTest : TestBase
@@ -123,15 +143,6 @@ namespace MyCaffe.test
         protected override FillerParameter getFillerParam()
         {
             return base.getFillerParam();
-        }
-
-        private void dispose1(ref Blob<T> b)
-        {
-            if (b != null)
-            {
-                b.Dispose();
-                b = null;
-            }
         }
 
         protected override void dispose()
@@ -268,8 +279,44 @@ namespace MyCaffe.test
                 layer.Setup(colBtm, colTop);
                 load_state(layer, strPath);
 
-                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.0001);
-                checker.CheckGradient(layer, colBtm, colTop, -1, 200);
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradient(layer, colBtm, colTop, -1, 1, 0.05);
+            }
+            finally
+            {
+                dispose(ref blobX);
+                dispose(ref blobY);
+                layer.Dispose();
+            }
+        }
+
+        public void TestGradient2()
+        {
+            string strPath = loadTestData1();
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CAUSAL_SELF_ATTENTION);
+            p.causal_self_attention_param.heads = 6;
+            p.causal_self_attention_param.embed = 192;
+            p.causal_self_attention_param.block_size = 128;
+            p.causal_self_attention_param.attn_dropout = 0.0;
+            p.causal_self_attention_param.resid_dropout = 0.0;
+            Layer<T> layer = new CausalSelfAttentionLayer2<T>(m_cuda, m_log, p);
+            Blob<T> blobX = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobY = new Blob<T>(m_cuda, m_log);
+
+            try
+            {
+                BlobCollection<T> colBtm = new BlobCollection<T>();
+                BlobCollection<T> colTop = new BlobCollection<T>();
+
+                blobX.LoadFromNumpy(strPath + "1_x_in.npy");
+                colBtm.Add(blobX);
+                colTop.Add(blobY);
+
+                layer.Setup(colBtm, colTop);
+                load_state(layer, strPath);
+
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradient(layer, colBtm, colTop, -1, 1, 0.05);
             }
             finally
             {
