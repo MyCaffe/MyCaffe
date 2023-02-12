@@ -726,6 +726,14 @@ namespace MyCaffe.test
 
         protected void verify(Blob<T> b1, Blob<T> b1exp, bool bCompareDiff, double dfErr = 1e-08)
         {
+            if (typeof(T) == typeof(float))
+                verifyF(b1, b1exp, bCompareDiff, dfErr);
+            else
+                verifyD(b1, b1exp, bCompareDiff, dfErr);
+        }
+
+        protected void verifyF(Blob<T> b1, Blob<T> b1exp, bool bCompareDiff, double dfErr = 1e-08)
+        {
             float[] rgExpected = (bCompareDiff) ? convertF(b1exp.mutable_cpu_diff) : convertF(b1exp.mutable_cpu_data);
             float[] rgActual = (bCompareDiff) ? convertF(b1.mutable_cpu_diff) : convertF(b1.mutable_cpu_data);
 
@@ -733,14 +741,37 @@ namespace MyCaffe.test
             {
                 float fExpected = rgExpected[i];
                 float fActual = rgActual[i];
+                float fDiff = Math.Abs(fExpected - fActual);
 
-                m_log.EXPECT_NEAR_FLOAT(fExpected, fActual, dfErr, "The values are not as expected!");
+                if (fDiff > dfErr)
+                    m_log.FAIL("The values are not as expected!");
             }
 
             bool bRes = b1.Compare(b1exp, m_blobWork, bCompareDiff, dfErr);
             if (!bRes)
                 m_log.FAIL("The blobs are not equal!");
         }
+
+        protected void verifyD(Blob<T> b1, Blob<T> b1exp, bool bCompareDiff, double dfErr = 1e-08)
+        {
+            double[] rgExpected = (bCompareDiff) ? convert(b1exp.mutable_cpu_diff) : convert(b1exp.mutable_cpu_data);
+            double[] rgActual = (bCompareDiff) ? convert(b1.mutable_cpu_diff) : convert(b1.mutable_cpu_data);
+
+            for (int i = 0; i < rgExpected.Length; i++)
+            {
+                double fExpected = rgExpected[i];
+                double fActual = rgActual[i];
+                double fDiff = Math.Abs(fExpected - fActual);
+
+                if (fDiff > dfErr)
+                    m_log.FAIL("The values are not as expected!");
+            }
+
+            bool bRes = b1.Compare(b1exp, m_blobWork, bCompareDiff, dfErr);
+            if (!bRes)
+                m_log.FAIL("The blobs are not equal!");
+        }
+
 
         protected void verify(Blob<T> b1, Blob<T> b1exp, int nOffset, bool bCompareDiff, double dfErr = 1e-08)
         {
