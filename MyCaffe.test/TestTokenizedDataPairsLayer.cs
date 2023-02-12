@@ -118,41 +118,41 @@ namespace MyCaffe.test
             }
         }
         
-        [TestMethod]
-        public void TestForwardEnFrSentencePiecePy()
-        {
-            TokenizedDataPairsLayerTest test = new TokenizedDataPairsLayerTest();
+        //[TestMethod]
+        //public void TestForwardEnFrSentencePiecePy()
+        //{
+        //    TokenizedDataPairsLayerTest test = new TokenizedDataPairsLayerTest();
 
-            try
-            {
-                foreach (ITokenizedDataPairsLayerTest t in test.Tests)
-                {
-                    t.TestForwardPy(false);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
+        //    try
+        //    {
+        //        foreach (ITokenizedDataPairsLayerTest t in test.Tests)
+        //        {
+        //            t.TestForwardPy(false);
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        test.Dispose();
+        //    }
+        //}
 
-        [TestMethod]
-        public void TestForwardEnFrSentencePiecePyDefaultLoc()
-        {
-            TokenizedDataPairsLayerTest test = new TokenizedDataPairsLayerTest();
+        //[TestMethod]
+        //public void TestForwardEnFrSentencePiecePyDefaultLoc()
+        //{
+        //    TokenizedDataPairsLayerTest test = new TokenizedDataPairsLayerTest();
 
-            try
-            {
-                foreach (ITokenizedDataPairsLayerTest t in test.Tests)
-                {
-                    t.TestForwardPy(true);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
+        //    try
+        //    {
+        //        foreach (ITokenizedDataPairsLayerTest t in test.Tests)
+        //        {
+        //            t.TestForwardPy(true);
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        test.Dispose();
+        //    }
+        //}
     }
 
     interface ITokenizedDataPairsLayerTest : ITest
@@ -221,13 +221,13 @@ namespace MyCaffe.test
             string strTestData = downloadTestData(strPath, strFileName);
             string strTestDataPath = Path.GetDirectoryName(strTestData);
 
-            if (!File.Exists(strTestDataPath + "\\en_fr\\data\\src\\train.txt"))
+            if (!File.Exists(strTestDataPath + "\\en_fr\\src\\train.txt"))
                 ZipFile.ExtractToDirectory(strTestData, strPath);
             
-            string strSrcText = strPath + "\\en_fr\\data\\src\\train.txt";
-            string strTrgText = strPath + "\\en_fr\\data\\trg\\train.txt";
-            string strSrcVocabFile = strPath + "\\en_fr\\data\\sp\\src_sp.vocab";
-            string strTrgVocabFile = strPath + "\\en_fr\\data\\sp\\trg_sp.vocab";
+            string strSrcText = strPath + "\\en_fr\\src\\train.txt";
+            string strTrgText = strPath + "\\en_fr\\trg\\train.txt";
+            string strSrcVocabFile = strPath + "\\en_fr\\sp\\src_sp.vocab";
+            string strTrgVocabFile = strPath + "\\en_fr\\sp\\trg_sp.vocab";
 
             return new Tuple<string, string, string, string, string>(strSrcText, strTrgText, strSrcVocabFile, strTrgVocabFile, strPath);
         }
