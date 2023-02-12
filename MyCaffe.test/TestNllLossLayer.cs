@@ -292,7 +292,7 @@ namespace MyCaffe.test
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\mh\\";
             string strFileName = "_multihead_test.zip";
             string strTestPath = "test";
-            string strTestFile = "mh.10_concat_output1.npy";
+            string strTestFile = "iter_0\\mh.10_concat_output1.npy";
             return loadTestData(strPath, strFileName, strTestPath, strTestFile);
         }
 
@@ -310,8 +310,10 @@ namespace MyCaffe.test
 
             try
             {
-                blobX.LoadFromNumpy(strPath + "14_out2.npy");
                 blobTarget.LoadFromNumpy(strPath + "trg_output.npy");
+
+                strPath += "iter_0\\";
+                blobX.LoadFromNumpy(strPath + "14_out2.npy");
 
                 BottomVec.Clear();
                 BottomVec.Add(blobX);
