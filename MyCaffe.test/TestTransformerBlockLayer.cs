@@ -30,6 +30,60 @@ namespace MyCaffe.test
     public class TestTransformerBlockLayer
     {
         [TestMethod]
+        public void TestForward()
+        {
+            TransformerBlockLayerTest test = new TransformerBlockLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ITransformerBlockLayerTest t in test.Tests)
+                {
+                    t.TestForward();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestBackward()
+        {
+            TransformerBlockLayerTest test = new TransformerBlockLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ITransformerBlockLayerTest t in test.Tests)
+                {
+                    t.TestBackward();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradient()
+        {
+            TransformerBlockLayerTest test = new TransformerBlockLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ITransformerBlockLayerTest t in test.Tests)
+                {
+                    t.TestGradient();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestForwardPico()
         {
             TransformerBlockLayerTest test = new TransformerBlockLayerTest(EngineParameter.Engine.CAFFE);
@@ -286,6 +340,10 @@ namespace MyCaffe.test
 
     interface ITransformerBlockLayerTest : ITest
     {
+        void TestForward();
+        void TestBackward();
+        void TestGradient();
+
         void TestForwardPico(bool bBatch, uint nHeads);
         void TestBackwardPico(bool bBatch, uint nHeads);
         void TestGradientPico(bool bBatch, uint nHeads);
@@ -1434,6 +1492,174 @@ namespace MyCaffe.test
 
             RawProto proto = p.ToProto("root");
             return proto.ToString();
+        }
+        private string loadTestData1()
+        {
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\trfb\\";
+            string strFileName = "_transformer_test.zip";
+            string strTestPath = "test\\iter_0";
+            string strTestFile = "blk0.1_x.npy";
+            return loadTestData(strPath, strFileName, strTestPath, strTestFile);
+        }
+
+        private void load_state(Layer<T> layer, string strPath)
+        {
+            layer.blobs[0].LoadFromNumpy(strPath + "blk0.attn.c_attn.weight.npy");
+            layer.blobs[1].LoadFromNumpy(strPath + "blk0.attn.c_attn.bias.npy");
+            layer.blobs[2].LoadFromNumpy(strPath + "blk0.attn.c_proj.weight.npy");
+            layer.blobs[3].LoadFromNumpy(strPath + "blk0.attn.c_proj.bias.npy");
+            layer.blobs[4].LoadFromNumpy(strPath + "blk0.c_fc.weight.npy");
+            layer.blobs[5].LoadFromNumpy(strPath + "blk0.c_fc.bias.npy");
+            layer.blobs[6].LoadFromNumpy(strPath + "blk0.c_proj.weight.npy");
+            layer.blobs[7].LoadFromNumpy(strPath + "blk0.c_proj.bias.npy");
+        }
+
+        /// <summary>
+        /// Test the forward pass of the TransformerBlockLayer using the CausalSelfAttention.
+        /// </summary>
+        /// <remarks>
+        /// To regenerate test data, take the following steps:
+        /// 1.) constants.py - set mycaffe_layernorm = True, mycaffe_softmax = True, loss_weight = 1, disable_layernorm = False
+        /// 2.) main.py - run up to line 104 in trainer.py
+        /// 3.) test_transformer.py - run up to line 59.
+        /// 4.) MyCaffe CausalSelfAttention configured to use CAFFE version of Softmax
+        /// </remarks>
+        public void TestForward()
+        {
+            string strPath = loadTestData1();
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
+            p.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION;
+            p.transformer_block_param.heads = 6;
+            p.transformer_block_param.embed = 192;
+            p.transformer_block_param.block_size = 128;
+            p.transformer_block_param.attn_dropout = 0.0;
+            p.transformer_block_param.resid_dropout = 0.0;
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+            Blob<T> blobX = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobY = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobVal = new Blob<T>(m_cuda, m_log);
+
+            try
+            {
+                BlobCollection<T> colBtm = new BlobCollection<T>();
+                BlobCollection<T> colTop = new BlobCollection<T>();
+
+                blobX.LoadFromNumpy(strPath + "1_x_emb1.npy");
+                colBtm.Add(blobX);
+                colTop.Add(blobY);
+
+                layer.Setup(colBtm, colTop);
+                load_state(layer, strPath);
+
+                layer.Forward(colBtm, colTop);
+
+                blobVal.LoadFromNumpy(strPath + "12b_out2.npy");
+                double dfErr = (typeof(T) == typeof(float)) ? 1e-12 : 2e-06;
+                verify(blobY, blobVal, false, dfErr);
+            }
+            finally
+            {
+                dispose(ref blobX);
+                dispose(ref blobY);
+                dispose(ref blobVal);
+                layer.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Test the backward pass of the TransformerBlockLayer using the CausalSelfAttention.
+        /// </summary>
+        /// <remarks>
+        /// To regenerate test data, take the following steps:
+        /// 1.) constants.py - set mycaffe_layernorm = True, mycaffe_softmax = True, loss_weight = 1, disable_layernorm = False
+        /// 2.) main.py - run up to line 104 in trainer.py
+        /// 3.) test_transformer.py - run up to line 59.
+        /// 4.) MyCaffe CausalSelfAttention configured to use CAFFE version of Softmax
+        /// </remarks>
+        public void TestBackward()
+        {
+            string strPath = loadTestData1();
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
+            p.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION;
+            p.transformer_block_param.heads = 6;
+            p.transformer_block_param.embed = 192;
+            p.transformer_block_param.block_size = 128;
+            p.transformer_block_param.attn_dropout = 0.0;
+            p.transformer_block_param.resid_dropout = 0.0;
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+            Blob<T> blobX = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobY = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobVal = new Blob<T>(m_cuda, m_log);
+
+            try
+            {
+                BlobCollection<T> colBtm = new BlobCollection<T>();
+                BlobCollection<T> colTop = new BlobCollection<T>();
+
+                blobX.LoadFromNumpy(strPath + "1_x_emb1.npy");
+                colBtm.Add(blobX);
+                colTop.Add(blobY);
+
+                layer.Setup(colBtm, colTop);
+                load_state(layer, strPath);
+
+                layer.Forward(colBtm, colTop);
+
+                blobVal.LoadFromNumpy(strPath + "12b_out2.npy");
+                double dfErr = (typeof(T) == typeof(float)) ? 1e-12 : 2e-06;
+                verify(blobY, blobVal, false, dfErr);
+
+                colTop[0].LoadFromNumpy(strPath + "grad_12b_out2.npy", true);
+                layer.Backward(colTop, new List<bool>() { true }, colBtm);
+
+                blobVal.LoadFromNumpy(strPath + "grad_1_x_emb1.npy", true);
+                dfErr = (typeof(T) == typeof(float)) ? 1e-12 : 3e-06;
+                verify(colBtm[0], blobVal, true, dfErr);
+            }
+            finally
+            {
+                dispose(ref blobX);
+                dispose(ref blobY);
+                dispose(ref blobVal);
+                layer.Dispose();
+            }
+        }
+
+        public void TestGradient()
+        {
+            string strPath = loadTestData1();
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
+            p.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION;
+            p.transformer_block_param.heads = 6;
+            p.transformer_block_param.embed = 192;
+            p.transformer_block_param.block_size = 128;
+            p.transformer_block_param.attn_dropout = 0.0;
+            p.transformer_block_param.resid_dropout = 0.0;
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+            Blob<T> blobX = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobY = new Blob<T>(m_cuda, m_log);
+
+            try
+            {
+                BlobCollection<T> colBtm = new BlobCollection<T>();
+                BlobCollection<T> colTop = new BlobCollection<T>();
+
+                blobX.LoadFromNumpy(strPath + "1_x_emb1.npy");
+                colBtm.Add(blobX);
+                colTop.Add(blobY);
+
+                layer.Setup(colBtm, colTop);
+                load_state(layer, strPath);
+
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
+                checker.CheckGradient(layer, colBtm, colTop, -1, 200);
+            }
+            finally
+            {
+                dispose(ref blobX);
+                dispose(ref blobY);
+                layer.Dispose();
+            }
         }
     }
 }
