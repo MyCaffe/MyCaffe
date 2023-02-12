@@ -210,29 +210,29 @@ namespace MyCaffe.layers.gpt
             if (col.Count > 0)
                 return;
 
-            col.Add(m_blobBias);
+            col.Add(m_blobIpAttn);
             col.Add(m_blobQ);
             col.Add(m_blobK);
             col.Add(m_blobV);
             col.Add(m_blobQt);
             col.Add(m_blobKt);
-            col.Add(m_blobKt1);
             col.Add(m_blobVt);
+            col.Add(m_blobKt1);
             col.Add(m_blobAttA);
+            col.Add(m_blobBias);
             col.Add(m_blobAttB);
             col.Add(m_blobWork);
-            col.Add(m_blobIpAttn);
             col.Add(m_blobY);
 
             col.Add(m_c_attn.internal_blobs);
-            col.Add(m_c_proj.internal_blobs);
-            if (m_attn_dropout != null)
-                col.Add(m_attn_dropout.internal_blobs);
-            if (m_resid_dropout != null)
-                col.Add(m_resid_dropout.internal_blobs);
             col.Add(m_transpose.internal_blobs);
             col.Add(m_transposeQ.internal_blobs);
             col.Add(m_softmax.internal_blobs);
+            if (m_attn_dropout != null)
+                col.Add(m_attn_dropout.internal_blobs);
+            col.Add(m_c_proj.internal_blobs);
+            if (m_resid_dropout != null)
+                col.Add(m_resid_dropout.internal_blobs);
         }
 
         private void fillBias(Blob<T> b)
