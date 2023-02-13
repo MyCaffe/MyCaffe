@@ -572,19 +572,22 @@ namespace MyCaffe.layers
         /// <returns>If a reshape is needed, returns <i>true</i> otherwise returns <i>fasle</i>.</returns>
         protected bool reshapeNeeded(BlobCollection<T> colBottom, BlobCollection<T> colTop, bool bReset = true)
         {
-            if (!bReset)
-                return m_bReshapeOnForwardNeeded;
+            return true;
 
-            if (!compareShapes(colBottom, colTop))
-            {
-                m_bReshapeOnForwardNeeded = true;
-                return true;
-            }
-            else
-            {
-                m_bReshapeOnForwardNeeded = false;
-                return false;
-            }
+            // Memory optimizations require reshaping now on each pass.
+            //if (!bReset)
+            //    return m_bReshapeOnForwardNeeded;
+
+            //if (!compareShapes(colBottom, colTop))
+            //{
+            //    m_bReshapeOnForwardNeeded = true;
+            //    return true;
+            //}
+            //else
+            //{
+            //    m_bReshapeOnForwardNeeded = false;
+            //    return false;
+            //}
         }
 
         /// <summary>
