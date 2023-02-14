@@ -16,19 +16,32 @@ using System.Threading;
 using MyCaffe.layers.gpt;
 using MyCaffe.solvers;
 using MyCaffe.basecode.descriptors;
-using System.Dynamic;
-using static MyCaffe.param.beta.DecodeParameter;
-using System.Collections.Concurrent;
 using System.IO.Compression;
-using Google.Protobuf.WellKnownTypes;
 using System.Net;
-using static System.Net.WebRequestMethods;
 
 namespace MyCaffe.test
 {
     [TestClass]
     public class TestTransformerBlockLayer
     {
+        [TestMethod]
+        public void TestTrain()
+        {
+            TransformerBlockLayerTest test = new TransformerBlockLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ITransformerBlockLayerTest t in test.Tests)
+                {
+                    t.TestTrain();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
         [TestMethod]
         public void TestForward()
         {
@@ -340,6 +353,7 @@ namespace MyCaffe.test
 
     interface ITransformerBlockLayerTest : ITest
     {
+        void TestTrain();
         void TestForward(string strModel);
         void TestBackward(string strModel);
         void TestGradient();
@@ -1711,6 +1725,411 @@ namespace MyCaffe.test
                 dispose(ref blobX);
                 dispose(ref blobY);
                 layer.Dispose();
+            }
+        }
+
+        private string loadTestData2()
+        {
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\trfb2\\";
+            string strFileName = "_transformer_test2";
+
+            strFileName += ".zip";
+
+            string strTestPath = "test";
+            string strTestFile = "iter_0\\1_x.npy";
+            return loadTestData(strPath, strFileName, strTestPath, strTestFile);
+        }
+
+        private string buildModelEx(NetParameter net, uint nBatch, uint nBlockSize, uint nEmbed, uint nEncVocabSize, double dfDropout)
+        {
+            LayerParameter tok = new LayerParameter(LayerParameter.LayerType.TOKENIZED_DATA);
+            tok.tokenized_data_param.input_type = TokenizedDataParameter.INPUT_TYPE.TEXT_FILE;
+            tok.tokenized_data_param.vocabulary_type = TokenizedDataParameter.VOCABULARY_TYPE.CHARACTER;
+            tok.tokenized_data_param.source = "$ProgramData$\\MyCaffe\\test_data\\data\\text\\input.txt";
+            tok.tokenized_data_param.batch_size = nBatch;
+            tok.tokenized_data_param.block_size = nBlockSize;
+            tok.top.Add("tokdata");
+            tok.top.Add("pos");
+            tok.top.Add("tgt");
+            net.layer.Add(tok);
+
+            LayerParameter emb1 = new LayerParameter(LayerParameter.LayerType.EMBED);
+            emb1.name = "wte";
+            emb1.embed_param.bias_term = false;
+            emb1.embed_param.input_dim = nEncVocabSize;
+            emb1.embed_param.num_output = nEmbed;
+            emb1.embed_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02);
+            emb1.parameters.Add(new ParamSpec(1.0, 0.0));
+            emb1.bottom.Add("tokdata");
+            emb1.top.Add("tok_emb");
+            net.layer.Add(emb1);
+
+            LayerParameter emb2 = new LayerParameter(LayerParameter.LayerType.EMBED);
+            emb2.name = "wpe";
+            emb2.embed_param.bias_term = false;
+            emb2.embed_param.input_dim = nBlockSize;
+            emb2.embed_param.num_output = nEmbed;
+            emb2.embed_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02);
+            emb2.parameters.Add(new ParamSpec(1.0, 0.0));
+            emb2.bottom.Add("pos");
+            emb2.top.Add("tok_pos");
+            net.layer.Add(emb2);
+
+            LayerParameter elt = new LayerParameter(LayerParameter.LayerType.ELTWISE);
+            elt.name = "eltwise1";
+            elt.eltwise_param.operation = EltwiseParameter.EltwiseOp.SUM;
+            elt.eltwise_param.allow_single_batch_input = true;
+            elt.bottom.Add("tok_emb");
+            elt.bottom.Add("tok_pos");
+            elt.top.Add("eltwise1");
+            net.layer.Add(elt);
+
+            string strEncBtm = "eltwise1";
+            int nLayers = 1;
+            for (int i = 0; i < nLayers; i++)
+            {
+                LayerParameter enc = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
+                enc.name = "tfb" + (i + 1).ToString();
+                enc.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION;
+                enc.transformer_block_param.heads = 1;
+                enc.transformer_block_param.embed = nEmbed;
+                enc.transformer_block_param.block_size = nBlockSize;
+                enc.transformer_block_param.layers = (uint)nLayers;
+                enc.transformer_block_param.activation = TransformerBlockParameter.ACTIVATION.RELU;
+                enc.transformer_block_param.attn_dropout = dfDropout;
+                enc.transformer_block_param.resid_dropout = dfDropout;
+                enc.parameters.Add(new ParamSpec(1, 1));
+                enc.parameters.Add(new ParamSpec(1, 0));
+                enc.parameters.Add(new ParamSpec(1, 1));
+                enc.parameters.Add(new ParamSpec(1, 0));
+                enc.parameters.Add(new ParamSpec(1, 1));
+                enc.parameters.Add(new ParamSpec(1, 0));
+                enc.parameters.Add(new ParamSpec(1, 1));
+                enc.parameters.Add(new ParamSpec(1, 0));
+                enc.bottom.Add(strEncBtm);
+                enc.top.Add(enc.name);
+                net.layer.Add(enc);
+
+                strEncBtm = enc.name;
+            }
+
+            LayerParameter ln1 = new LayerParameter(LayerParameter.LayerType.LAYERNORM);
+            ln1.name = "ln1";
+            ln1.layer_norm_param.enable_cuda_impl = false;
+            ln1.bottom.Add(strEncBtm);
+            ln1.top.Add("ln1");
+            net.layer.Add(ln1);
+
+            LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
+            ip1.name = "ip1";
+            ip1.inner_product_param.axis = 2;
+            ip1.inner_product_param.num_output = nEncVocabSize;
+            ip1.inner_product_param.bias_term = false;
+            ip1.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02);
+            ip1.parameters.Add(new ParamSpec(1, 1));
+            ip1.bottom.Add("ln1");
+            ip1.top.Add("logits");
+            net.layer.Add(ip1);
+
+            LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
+            softmax.name = "softmax";
+            softmax.softmax_param.axis = 2;
+            softmax.softmax_param.algorithm = SOFTMAX_ALGORITHM.ACCURATE;
+            softmax.softmax_param.algorithm_train = SOFTMAX_ALGORITHM.LOG;
+            softmax.bottom.Add("logits");
+            softmax.top.Add("prob");
+            net.layer.Add(softmax);
+
+            LayerParameter loss = new LayerParameter(LayerParameter.LayerType.NLL_LOSS);
+            loss.name = "loss";
+            loss.nll_loss_param.axis = 2;
+            loss.loss_param.normalization = LossParameter.NormalizationMode.VALID;
+            loss.bottom.Add("prob");
+            loss.bottom.Add("tgt");
+            loss.top.Add("loss");
+            net.layer.Add(loss);
+
+            LayerParameter accuracy = new LayerParameter(LayerParameter.LayerType.ACCURACY);
+            accuracy.name = "accuracy";
+            accuracy.accuracy_param.axis = 2;
+            accuracy.bottom.Add("prob");
+            accuracy.bottom.Add("tgt");
+            accuracy.top.Add("accuracy");
+            net.layer.Add(accuracy);
+
+            return net.ToProto("root").ToString();
+        }
+
+        private string buildSolver()
+        {
+            SolverParameter solver = new SolverParameter();
+            solver.base_lr = 5e-04;
+            solver.weight_decay = 0;
+            solver.adamw_decay = 0.1;
+            solver.momentum = 0.9;
+            solver.momentum2 = 0.95;
+            solver.delta = 1e-08;
+            solver.type = SolverParameter.SolverType.ADAMW;
+            solver.lr_policy = "fixed";
+            solver.test_initialization = false;
+
+            return solver.ToProto("root").ToString();
+        }
+
+        /// <summary>
+        /// Test the training cycle of the TransformerBlockLayer using the CausalSelfAttention.
+        /// </summary>
+        /// <remarks>
+        /// To regenerate test data, take the following steps:
+        /// 1.) constants.py - set mycaffe_layernorm = True, mycaffe_softmax = True, loss_weight = 1, disable_layernorm = False
+        /// 2.) main.py - run up to line 104 in trainer.py
+        /// 3.) test_transformer.py - run up to line 59.
+        /// 4.) MyCaffe CausalSelfAttention configured to use CAFFE version of Softmax
+        /// </remarks>
+        public void TestTrain()
+        {
+            string strPath = loadTestData2();
+            SettingsCaffe s = new SettingsCaffe();
+            s.GpuIds = "0";
+            MyCaffeControl<float> mycaffe = new MyCaffeControl<float>(s, m_log, m_evtCancel);
+
+            try
+            {
+                NetParameter net_param = new NetParameter();
+                string strSolver = buildSolver();
+                string strModel = buildModelEx(net_param, 1, 64, 128, 65, 0.0);
+
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
+                Blob<float> blobVal = mycaffe.CreateBlob("val");
+                Blob<float> blobWork = mycaffe.CreateBlob("work");
+
+                Net<float> net = mycaffe.GetInternalNet(Phase.TRAIN);
+                Solver<float> solver = mycaffe.GetInternalSolver();
+
+                net.learnable_parameters[0].LoadFromNumpy(strPath + "iter_0\\1_wte.weight.npy");
+                net.learnable_parameters[1].LoadFromNumpy(strPath + "iter_0\\1_wpe.weight.npy");
+                net.learnable_parameters[2].LoadFromNumpy(strPath + "iter_0\\blk0.csa.c_attn.weight.npy");
+                net.learnable_parameters[3].LoadFromNumpy(strPath + "iter_0\\blk0.csa.c_attn.bias.npy");
+                net.learnable_parameters[4].LoadFromNumpy(strPath + "iter_0\\blk0.csa.c_proj.weight.npy");
+                net.learnable_parameters[5].LoadFromNumpy(strPath + "iter_0\\blk0.csa.c_proj.bias.npy");
+                net.learnable_parameters[6].LoadFromNumpy(strPath + "iter_0\\blk0.c_fc.weight.npy");
+                net.learnable_parameters[7].LoadFromNumpy(strPath + "iter_0\\blk0.c_fc.bias.npy");
+                net.learnable_parameters[8].LoadFromNumpy(strPath + "iter_0\\blk0.c_proj.weight.npy");
+                net.learnable_parameters[9].LoadFromNumpy(strPath + "iter_0\\blk0.c_proj.bias.npy");
+                net.learnable_parameters[10].LoadFromNumpy(strPath + "iter_0\\13_lm_head.weight.npy");
+
+                for (int i = 0; i < 1; i++)
+                {
+                    string strPath1 = strPath + "iter_" + i.ToString() + "\\";
+
+                    blobVal.LoadFromNumpy(strPath1 + "1_wte.weight.npy");
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[0], blobWork, false, 1e-08));
+                    blobVal.LoadFromNumpy(strPath1 + "1_wpe.weight.npy");
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[1], blobWork, false, 1e-08));
+                    blobVal.LoadFromNumpy(strPath1 + "blk0.csa.c_attn.weight.npy");
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[2], blobWork, false, 1e-08));
+                    blobVal.LoadFromNumpy(strPath1 + "blk0.csa.c_attn.bias.npy");
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[3], blobWork, false, 1e-08));
+                    blobVal.LoadFromNumpy(strPath1 + "blk0.csa.c_proj.weight.npy");
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[4], blobWork, false, 1e-08));
+                    blobVal.LoadFromNumpy(strPath1 + "blk0.csa.c_proj.bias.npy");
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[5], blobWork, false, 1e-08));
+                    blobVal.LoadFromNumpy(strPath1 + "blk0.c_fc.weight.npy");
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[6], blobWork, false, 1e-08));
+                    blobVal.LoadFromNumpy(strPath1 + "blk0.c_fc.bias.npy");
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[7], blobWork, false, 1e-08));
+                    blobVal.LoadFromNumpy(strPath1 + "blk0.c_proj.weight.npy");
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[8], blobWork, false, 1e-08));
+                    blobVal.LoadFromNumpy(strPath1 + "blk0.c_proj.bias.npy");
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[9], blobWork, false, 1e-08));
+
+                    net.ClearParamDiffs();
+
+                    double dfLoss = 0;
+                    for (int j = 0; j < net.layers.Count; j++)
+                    {
+                        BlobCollection<float> colTop = net.top_vecs[j];
+                        BlobCollection<float> colBottom = net.bottom_vecs[j];
+
+                        if (j == 3)
+                        {
+                            blobVal.LoadFromNumpy(strPath1 + "1_wpe.weight.npy");
+                            Trace.Assert(blobVal.Compare(net.layers[j].blobs[0], blobWork, false, 1e-08));
+                        }
+
+                        double dfLayerLoss = net.layers[j].Forward(colBottom, colTop);
+                        dfLoss += dfLayerLoss;
+
+                        string strTopData = null;
+                        string strBottomData = null;
+                        string strLayer = net.layers[j].layer_param.name;
+                        Trace.WriteLine("LAYER: " + strLayer);
+                        switch (j)
+                        {
+                            case 0:
+                                colTop[0].LoadFromNumpy(strPath1 + "1_x.npy");
+                                colTop[2].LoadFromNumpy(strPath1 + "1_targets.npy");
+                                break;
+
+                            case 2:
+                                strBottomData = "1_x.npy";
+                                strTopData = "0_tok_emb.npy";
+                                break;
+
+                            case 3:
+                                strBottomData = "0_pos.npy";
+                                strTopData = "0_pos_emb.npy";
+                                break;
+
+                            case 4:
+                                strTopData = "0_x.npy";
+                                break;
+
+                            case 5:
+                                strBottomData = "0_x.npy";
+                                strTopData = "0_blk_x.npy";
+                                break;
+
+                            case 6:
+                                strBottomData = "0_blk_x.npy";
+                                strTopData = "12_ln_x.npy";
+                                break;
+
+                            case 7:
+                                strBottomData = "12_ln_x.npy";
+                                strTopData = "13_logits.npy";
+                                break;
+                        }
+
+                        if (!string.IsNullOrEmpty(strBottomData))
+                        {
+                            blobVal.LoadFromNumpy(strPath1 + strBottomData);
+                            Trace.Assert(blobVal.Compare(colBottom[0], blobWork, false, 1e-08));
+                        }
+
+                        if (!string.IsNullOrEmpty(strTopData))
+                        {
+                            blobVal.LoadFromNumpy(strPath1 + strTopData);
+                            Trace.Assert(blobVal.Compare(colTop[0], blobWork, false, 1e-08));
+                        }
+                    }
+
+                    net.blobs[net.blobs.Count - 1].SetDiff(1);
+
+                    for (int j = net.layer_need_backward.Count-1; j >= 0; j--)
+                    {
+                        if (net.layer_need_backward[j])
+                        {
+                            BlobCollection<float> colTop = net.top_vecs[j];
+                            BlobCollection<float> colBottom = net.bottom_vecs[j];
+                            List<bool> rgNeedBackward = net.bottom_need_backward[j];
+
+                            net.layers[j].Backward(colTop, rgNeedBackward, colBottom);
+
+                            string strBottomDiff = null;
+                            string strTopData = null;
+                            string strBottomData = null;
+                            switch (j)
+                            {
+                                case 10:
+                                    strBottomDiff = "grad_14_prob.npy"; // NLLLoss -> prob
+                                    break;
+
+                                case 8:
+                                    strBottomDiff = "grad_13_logits.npy"; // LogSoftmax -> logits
+                                    strBottomData = "13_logits.npy";
+                                    strTopData = "14_prob.npy";
+                                    break;
+
+                                case 7:
+                                    strBottomDiff = "grad_12_ln_x.npy"; // Linear -> LayerNorm
+                                    strBottomData = "12_ln_x.npy";
+                                    strTopData = "13_logits.npy";
+                                    break;
+                            }
+
+                            if (!string.IsNullOrEmpty(strBottomDiff))
+                            {
+                                blobVal.LoadFromNumpy(strPath1 + strBottomDiff, true);
+                                Trace.Assert(blobVal.Compare(colBottom[0], blobWork, true, 1e-08));
+
+                                if (!string.IsNullOrEmpty(strTopData))
+                                {
+                                    blobVal.LoadFromNumpy(strPath1 + strTopData);
+                                    Trace.Assert(blobVal.Compare(colTop[0], blobWork, false, 1e-08));
+                                }
+
+                                if (!string.IsNullOrEmpty(strBottomData))
+                                {
+                                    blobVal.LoadFromNumpy(strPath1 + strBottomData);
+                                    Trace.Assert(blobVal.Compare(colBottom[0], blobWork, false, 1e-08));
+                                }
+                            }
+                        }
+                    }
+
+                    blobVal.LoadFromNumpy(strPath1 + "____.grad_lm_head.wt.npy", true);
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[10], blobWork, true, 1e-08));
+
+                    blobVal.LoadFromNumpy(strPath1 + "____.grad_blk0.c_proj.bias.npy", true);
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[9], blobWork, true, 6e-08)); //<<-bug
+                    blobVal.LoadFromNumpy(strPath1 + "____.grad_blk0.c_proj.wt.npy", true);
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[8], blobWork, true, 1e-08));
+
+                    blobVal.LoadFromNumpy(strPath1 + "____.grad_blk0.c_fc.bias.npy", true);
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[7], blobWork, true, 1e-08));
+                    blobVal.LoadFromNumpy(strPath1 + "____.grad_blk0.c_fc.wt.npy", true);
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[6], blobWork, true, 1e-08));
+
+                    blobVal.LoadFromNumpy(strPath1 + "____.grad_blk0.csa.c_proj.bias.npy", true);
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[5], blobWork, true, 3e-07)); //<<-bug?
+                    blobVal.LoadFromNumpy(strPath1 + "____.grad_blk0.csa.c_proj.wt.npy", true);
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[4], blobWork, true, 1e-08));
+
+                    blobVal.LoadFromNumpy(strPath1 + "____.grad_blk0.csa.c_attn.bias.npy", true);
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[3], blobWork, true, 3e-08)); //<<-bug?
+                    blobVal.LoadFromNumpy(strPath1 + "____.grad_blk0.csa.c_attn.wt.npy", true);
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[2], blobWork, true, 3e-08)); //<<-bug?
+
+                    blobVal.LoadFromNumpy(strPath1 + "____.grad_tfb.wpe.wt.npy", true);
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[1], blobWork, true, 2e-07)); //<<-bug?
+                    blobVal.LoadFromNumpy(strPath1 + "____.grad_tfb.wte.wt.npy", true);
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[0], blobWork, true, 3e-07)); //<<-bug?
+
+                    solver.ApplyUpdate(i);
+
+                    blobVal.LoadFromNumpy(strPath1 + "____.param_lm_head.wt.npy");
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[10], blobWork, false, 2e-08));
+
+                    blobVal.LoadFromNumpy(strPath1 + "____.param_blk0.c_proj.bias.npy");
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[9], blobWork));
+                    blobVal.LoadFromNumpy(strPath1 + "____.param_blk0.c_proj.wt.npy");
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[8], blobWork));
+
+                    blobVal.LoadFromNumpy(strPath1 + "____.param_blk0.c_fc.bias.npy");
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[7], blobWork));
+                    blobVal.LoadFromNumpy(strPath1 + "____.param_blk0.c_fc.wt.npy");
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[6], blobWork, false, 2e-08));
+
+                    blobVal.LoadFromNumpy(strPath1 + "____.param_blk0.csa.c_proj.bias.npy");
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[5], blobWork)); 
+                    blobVal.LoadFromNumpy(strPath1 + "____.param_blk0.csa.c_proj.wt.npy");
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[4], blobWork));
+
+                    blobVal.LoadFromNumpy(strPath1 + "____.param_blk0.csa.c_attn.bias.npy");
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[3], blobWork, false, 2e-04)); //<<-bug?
+                    blobVal.LoadFromNumpy(strPath1 + "____.param_blk0.csa.c_attn.wt.npy");
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[2], blobWork, false, 2e-08)); 
+
+                    blobVal.LoadFromNumpy(strPath1 + "____.param_tfb.wpe.wt.npy");
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[1], blobWork));
+                    blobVal.LoadFromNumpy(strPath1 + "____.param_tfb.wte.wt.npy");
+                    Trace.Assert(blobVal.Compare(net.learnable_parameters[0], blobWork));
+                }
+            }
+            finally
+            {
+                mycaffe.Dispose();
             }
         }
     }
