@@ -53,6 +53,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="layers.gpt\CausalSelfAttentionLayer2.cs" />
     <Compile Include="layers.gpt\Interfaces.cs" />
     <Compile Include="layers.gpt\PositionalEncodingLayer.cs" />
     <Compile Include="layers.gpt\MultiheadAttentionLayer.cs" />
