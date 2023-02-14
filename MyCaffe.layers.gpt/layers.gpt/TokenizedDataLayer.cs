@@ -429,25 +429,45 @@ namespace MyCaffe.layers.gpt
             softmax.Forward(colBottom, colTop);
 
             float[] rgProb = convertF(m_blobY.mutable_cpu_data);
-            float fRand = (float)m_random.NextDouble();
-            float fTotal = 0;
-            int nCharIdx = rgProb.Length - 1;
-
-            for (int i = 0; i < rgProb.Length; i++)
-            {
-                fTotal += rgProb[i];
-
-                if (fTotal >= fRand)
-                {
-                    nCharIdx = i;
-                    break;
-                }
-            }
+            int nCharIdx = (m_param.tokenized_data_param.sample_method == TokenizedDataParameter.SAMPLE_METHOD.PROBABILITY) ? sample(rgProb) : argmax(rgProb);
 
             string str = "";
             str += m_data.Detokenize(nCharIdx, true, true);
 
             return new List<Tuple<string, int, double>>() { new Tuple<string, int, double>(str, nCharIdx, 0) };
+        }
+
+        private int argmax(float[] rgData)
+        {
+            int nMaxIdx = 0;
+            float fMax = rgData[0];
+
+            for (int i = 1; i < rgData.Length; i++)
+            {
+                if (rgData[i] > fMax)
+                {
+                    fMax = rgData[i];
+                    nMaxIdx = i;
+                }
+            }
+
+            return nMaxIdx;
+        }
+
+        private int sample(float[] rgData)
+        {
+            float fTotal = 0;
+            float fRand = (float)m_random.NextDouble();
+
+            for (int i = 0; i < rgData.Length; i++)
+            {
+                fTotal += rgData[i];
+
+                if (fTotal >= fRand)
+                    return i;
+            }
+
+            return rgData.Length - 1;
         }
     }
 
