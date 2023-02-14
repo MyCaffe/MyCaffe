@@ -267,6 +267,10 @@
       <Project>{c14bedc8-ff66-4118-be66-675f26be7ee0}</Project>
       <Name>MyCaffe.gym</Name>
     </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.layers.alpha\MyCaffe.layers.alpha.csproj">
+      <Project>{4e057228-71d3-4575-ae50-71e6fc970501}</Project>
+      <Name>MyCaffe.layers.alpha</Name>
+    </ProjectReference>
     <ProjectReference Include="..\MyCaffe.python\MyCaffe.python.csproj">
       <Project>{0ED28C56-F959-44D0-8E99-DB6C0BE75C3A}</Project>
       <Name>MyCaffe.python</Name>
