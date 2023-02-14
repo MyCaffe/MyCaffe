@@ -7222,7 +7222,6 @@ __global__ void accuracy_fwd_kernel(const int nCount, const int num_labels, cons
 {
 	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index<num_labels && index>=0; index += blockDim.x * gridDim.x)
 	{
-		const int offset = index * spatial_dim;
 		const int label_value = static_cast<int>(label[index]);
 		const T* btm = bottom_data + (index * spatial_dim);
 		T maxval = -FLT_MAX;
@@ -7230,7 +7229,7 @@ __global__ void accuracy_fwd_kernel(const int nCount, const int num_labels, cons
 		
 		for (int k = 0; k < spatial_dim; k++)
 		{
-			if (btm[offset + k] > maxval)
+			if (btm[k] > maxval)
 			{
 				maxval = btm[k];
 				nMaxIdx = k;
@@ -12802,39 +12801,38 @@ template long Math<float>::adam_update(int nCount, long hNetParamDiff, long hVal
 
 
 template <typename T>
-__global__ void adamw_update_kernel_withdecay(int n, T* g, T* m, T* v, T beta1, T beta2, T eps_hat, T learning_rate, T step_size, T correction2_sqrt, T decay_rate, T* w)
+__global__ void adamw_update_kernel_withdecay(const int n, T* g, T* m, T* v, const double beta1, const double beta2, const double eps_hat, const double learning_rate, const double step_size, const double correction2_sqrt, const double decay_rate, T* w)
 {
-
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
 		w[i] *= (1 - learning_rate * decay_rate);
-		const T fGi = g[i];
-		const T fMi = m[i] * beta1 + fGi * (1 - beta1);
-		const T fVi = v[i] * beta2 + fGi * fGi * (1 - beta2);
+		const double fGi = (double)g[i];
+		const double fMi = (double)m[i] * beta1 + fGi * (1 - beta1);
+		const double fVi = (double)v[i] * beta2 + fGi * fGi * (1 - beta2);
 
-		const T fDenom = sqrt(fVi) / correction2_sqrt + eps_hat;
-		g[i] = step_size * fMi / fDenom;
+		const double fDenom = sqrt(fVi) / correction2_sqrt + eps_hat;
+		g[i] = (T)(step_size * fMi / fDenom);
 
-		m[i] = fMi;
-		v[i] = fVi;
+		m[i] = (T)fMi;
+		v[i] = (T)fVi;
 	}
 }
 
 template <typename T>
-__global__ void adamw_update_kernel(int n, T* g, T* m, T* v, T beta1, T beta2, T eps_hat, T learning_rate, T step_size, T correction2_sqrt)
+__global__ void adamw_update_kernel(const int n, T* g, T* m, T* v, const double beta1, const double beta2, const double eps_hat, const double learning_rate, const double step_size, const double correction2_sqrt)
 {
 
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		const T fGi = g[i];
-		const T fMi = m[i] * beta1 + fGi * (1 - beta1);
-		const T fVi = v[i] * beta2 + fGi * fGi * (1 - beta2);
+		const double fGi = (double)g[i];
+		const double fMi = (double)m[i] * beta1 + fGi * (1 - beta1);
+		const double fVi = (double)v[i] * beta2 + fGi * fGi * (1 - beta2);
 
-		const T fDenom = sqrt(fVi) / correction2_sqrt + eps_hat;
-		g[i] = step_size * fMi / fDenom;
+		const double fDenom = sqrt(fVi) / correction2_sqrt + eps_hat;
+		g[i] = (T)(step_size * fMi / fDenom);
 
-		m[i] = fMi;
-		v[i] = fVi;
+		m[i] = (double)fMi;
+		v[i] = (double)fVi;
 	}
 }
 
@@ -12869,15 +12867,15 @@ long Math<T>::adamw_update(int n, long hNetParamDiff, long hValM, long hValV, T 
 		net_param_data = (T*)pNetParamData->Data();
 	}
 
-	T fBiasCorrection1 = (T)(1 - pow(fBeta1, nStep));
-	T fBiasCorrection2 = (T)(1 - pow(fBeta2, nStep));
-	T fStepSize = fLearningRate / fBiasCorrection1;
-	T fBiasCorrection2Sqrt = std::sqrt(fBiasCorrection2);
+	double fBiasCorrection1 = (1 - pow((double)fBeta1, nStep));
+	double fBiasCorrection2 = (1 - pow((double)fBeta2, nStep));
+	double fStepSize = (double)fLearningRate / fBiasCorrection1;
+	double fBiasCorrection2Sqrt = std::sqrt(fBiasCorrection2);
 
 	if (fDecayRate != 0 && hNetParamData != 0)
-		adamw_update_kernel_withdecay<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, net_param_diff, val_m, val_v, fBeta1, fBeta2, fEpsHat, fLearningRate, fStepSize, fBiasCorrection2Sqrt, fDecayRate, net_param_data);
+		adamw_update_kernel_withdecay<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, net_param_diff, val_m, val_v, (double)fBeta1, (double)fBeta2, (double)fEpsHat, (double)fLearningRate, fStepSize, fBiasCorrection2Sqrt, (double)fDecayRate, net_param_data);
 	else
-		adamw_update_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, net_param_diff, val_m, val_v, fBeta1, fBeta2, fEpsHat, fLearningRate, fStepSize, fBiasCorrection2Sqrt);
+		adamw_update_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, net_param_diff, val_m, val_v, (double)fBeta1, (double)fBeta2, (double)fEpsHat, (double)fLearningRate, fStepSize, fBiasCorrection2Sqrt);
 
 	return cudaStreamSynchronize(0);
 }
