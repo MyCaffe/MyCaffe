@@ -29,8 +29,7 @@ namespace MyCaffe.layers.gpt
         /// </summary>
         /// <param name="cuda">Specifies the CudaDnn connection to Cuda.</param>
         /// <param name="log">Specifies the Log for output.</param>
-        /// <param name="p">Specifies the LayerParameter of type Mish with parameter Mish_param
-        /// </param>
+        /// <param name="p">Specifies the LayerParameter of type Gelu with parameter gelu_param</param>
         public GeluLayer(CudaDnn<T> cuda, Log log, LayerParameter p)
             : base(cuda, log, p)
         {
