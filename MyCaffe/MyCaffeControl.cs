@@ -2760,6 +2760,11 @@ namespace MyCaffe
                         softmax = m_net.layers[m_net.layers.Count - 1];
                         nAxis = softmax.layer_param.softmax_param.axis;
                     }
+                    else if (m_net.layers[m_net.layers.Count - 2].layer_param.type == LayerParameter.LayerType.SOFTMAX)
+                    {
+                        softmax = m_net.layers[m_net.layers.Count - 2];
+                        nAxis = softmax.layer_param.softmax_param.axis;
+                    }
 
                     List<string> rgOutput = new List<string>();
                     List<Tuple<string, int, double>> res;
@@ -2793,6 +2798,7 @@ namespace MyCaffe
 
                         colTop = m_net.Forward(colBottom, out dfLoss, layerInput.SupportsPostProcessingLogits);
                         blobTop = colTop[0];
+                        nCount++;
 
                         if (sw.Elapsed.TotalMilliseconds > 1000)
                         {
