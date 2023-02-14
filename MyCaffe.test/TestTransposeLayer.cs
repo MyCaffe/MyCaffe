@@ -60,6 +60,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestForwardEx()
+        {
+            TransposeLayerTest test = new TransposeLayerTest();
+
+            try
+            {
+                foreach (ITransposeLayerTest t in test.Tests)
+                {
+                    t.TestForwardEx();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestForwardBackward()
         {
             TransposeLayerTest test = new TransposeLayerTest();
@@ -100,6 +118,7 @@ namespace MyCaffe.test
     {
         void TestForward();
         void TestForward2();
+        void TestForwardEx();
         void TestForwardBackward();
         void TestGradient();
     }
@@ -271,6 +290,62 @@ namespace MyCaffe.test
             }
             finally
             {
+                layer.Dispose();
+            }
+        }
+
+        private string loadTestData2()
+        {
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\trfb2\\";
+            string strFileName = "_transformer_test2";
+
+            strFileName += ".zip";
+
+            string strTestPath = "test\\iter_0";
+            string strTestFile = "1_x.npy";
+            return loadTestData(strPath, strFileName, strTestPath, strTestFile);
+        }
+
+        public void TestForwardEx()
+        {
+            List<int> rgDim = new List<int>() { 0, 2, 1, 3 };
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSPOSE);
+            p.transpose_param.dim = new List<int>(rgDim);
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
+
+            string strPath = loadTestData2();
+            Blob<T> blobVal = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobWork = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobYexp = new Blob<T>(m_cuda, m_log);
+
+            try
+            {
+                m_blob_bottom.LoadFromNumpy(strPath + "blk0.csa.q1.npy");
+                blobYexp.LoadFromNumpy(strPath + "blk0.csa.qt.npy");
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(m_blob_bottom.count(), m_blob_top.count(), "The top and bottom should have the same count!");
+                m_log.CHECK_EQ(m_blob_bottom.num_axes, rgDim.Count, "The bottom must have the same number of axes as the rgDim!");
+                m_log.CHECK_EQ(m_blob_top.num_axes, rgDim.Count, "The bottom must have the same number of axes as the rgDim!");
+
+                for (int i = 0; i < rgDim.Count; i++)
+                {
+                    int nAxis = rgDim[i];
+                    int nDim = m_blob_bottom.shape()[nAxis];
+
+                    m_log.CHECK_EQ(m_blob_top.shape()[i], nDim, "The top dimension at index " + i.ToString() + " is not correct!");
+                }
+
+                verify(blobYexp, m_blob_top, false);
+            }
+            finally
+            {
+                dispose(ref blobVal);
+                dispose(ref blobWork);
+                dispose(ref blobYexp);
+
                 layer.Dispose();
             }
         }
