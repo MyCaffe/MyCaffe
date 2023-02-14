@@ -1037,6 +1037,7 @@ namespace MyCaffe.common
         /// <param name="work">Specifies a temporary work blob.</param>
         /// <param name="bDiff">Specifies to compare the diff.</param>
         /// <param name="dfTol">Specifies the accepted tolerance.</param>
+        /// <param name="bZeroCheck">Optionally, specifies to check for all zeros (default = false).</param>
         /// <returns>If all data (or diff) values fall within the tolerance, true is returned, otherwise false.</returns>
         public bool Compare(Blob<T> other, Blob<T> work, bool bDiff = false, double dfTol = 1e-8, bool bZeroCheck = false)
         {
