@@ -22,6 +22,7 @@ import torch
 from torch import Tensor
 from torch.optim.optimizer import Optimizer
 from typing import List, Optional
+from test_base import DebugFunction
 
 input_dict = { None : "" }
 
@@ -242,7 +243,7 @@ def adamw(params: List[Tensor],
     if foreach and not torch.jit.is_scripting():
         func = _multi_tensor_adamw
     else:
-        func = _single_tensor_adamw_Custom
+        func = _single_tensor_adamw_OriginalSimple
 
     func(params,
          grads,
@@ -387,8 +388,18 @@ def _single_tensor_adamw_OriginalSimple(params: List[Tensor],
                          maximize: bool,
                          capturable: bool):
 
+    nCount = len(params)
+    if nCount == 5:
+        names = ['lm_head.wt', 'blk0.csa.c_attn.wt', 'blk0.csa.c_proj.wt', 'blk0.c_fc.wt', 'blk0.c_proj.wt']
+    else:
+        names = ['blk0.csa.c_attn.bias', 'blk0.csa.c_proj.bias', 'blk0.c_fc.bias', 'blk0.c_proj.bias', 'tfb.wpe.wt', 'tfb.wte.wt']
+
     for i, param in enumerate(params):
         grad = grads[i] if not maximize else -grads[i]
+
+        name = names[i]
+        DebugFunction.trace(grad.data, '____.grad_' + name)
+
         exp_avg = exp_avgs[i]
         exp_avg_sq = exp_avg_sqs[i]
         step_t = state_steps[i]
@@ -415,6 +426,9 @@ def _single_tensor_adamw_OriginalSimple(params: List[Tensor],
         denom = (exp_avg_sq.sqrt() / bias_correction2_sqrt).add_(eps)
                          
         param.addcdiv_(exp_avg, denom, value=-step_size)
+
+        DebugFunction.trace(param.data, '____.param_' + name)
+
             
 #
 # Requires OptimilerLib C# Project for custom AdamW in C#    

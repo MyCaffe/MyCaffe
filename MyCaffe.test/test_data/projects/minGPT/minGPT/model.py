@@ -75,6 +75,12 @@ class CausalSelfAttention(nn.Module):
         DebugFunction.trace(self.c_attn.bias, self.tag + ".c_attn.bias")
         DebugFunction.trace(self.c_proj.weight, self.tag + ".c_proj.weight")
         DebugFunction.trace(self.c_proj.bias, self.tag + ".c_proj.bias")
+
+    def save_internal_stateD(self):
+        DebugFunction.traceD(self.c_attn.weight, self.tag + ".c_attn.weight")
+        DebugFunction.traceD(self.c_attn.bias, self.tag + ".c_attn.bias")
+        DebugFunction.traceD(self.c_proj.weight, self.tag + ".c_proj.weight")
+        DebugFunction.traceD(self.c_proj.bias, self.tag + ".c_proj.bias")
         
     def load_internal_state(self):
         self.c_attn.weight = DebugFunction.load(self.tag + ".c_attn.weight")
@@ -82,9 +88,15 @@ class CausalSelfAttention(nn.Module):
         self.c_proj.weight = DebugFunction.load(self.tag + ".c_proj.weight")
         self.c_proj.bias = DebugFunction.load(self.tag + ".c_proj.bias")
 
-    def forward(self, x):
+    def forwardOriginal(self, x):
+        debug = DebugFunction.apply
+        if save_for_testing:
+            DebugFunction.trace(x, self.tag + ".x")
+            x = debug(x)
+
         if save_for_testing:
             self.save_internal_state()
+            self.save_internal_stateD()
         
         B, T, C = x.size() # batch size, sequence length, embedding dimensionality (n_embd)
 
@@ -107,6 +119,95 @@ class CausalSelfAttention(nn.Module):
         y = self.resid_dropout(self.c_proj(y))
         return y
 
+    def forward(self, x):
+        debug = DebugFunction.apply
+        if save_for_testing:
+            DebugFunction.trace(x, self.tag + ".x")
+            x = debug(x)
+
+        if save_for_testing:
+            self.save_internal_state()
+        
+        B, T, C = x.size() # batch size, sequence length, embedding dimensionality (n_embd)
+
+        # calculate query, key, values for all heads in batch and move head forward to be the batch dim
+        x1 = self.c_attn(x)
+        if save_for_testing:
+            DebugFunction.trace(x1, self.tag + ".x1")
+            x1 = debug(x1)
+
+        q, k ,v  = x1.split(self.n_embd, dim=2)
+        if save_for_testing:
+            DebugFunction.trace(q, self.tag + ".q")
+            q = debug(q)
+            DebugFunction.trace(k, self.tag + ".k")
+            k = debug(k)
+            DebugFunction.trace(v, self.tag + ".v")
+            v = debug(v)
+
+        k1 = k.view(B, T, self.n_head, C // self.n_head)
+        kt = k1.transpose(1, 2) # (B, nh, T, hs)
+        q1 = q.view(B, T, self.n_head, C // self.n_head)
+        qt = q1.transpose(1, 2) # (B, nh, T, hs)
+        v1 = v.view(B, T, self.n_head, C // self.n_head)
+        vt = v1.transpose(1, 2) # (B, nh, T, hs)
+
+        if save_for_testing:
+            DebugFunction.trace(q1, self.tag + ".q1")
+            q1 = debug(q1)
+            DebugFunction.trace(k1, self.tag + ".k1")
+            k1 = debug(k1)
+            DebugFunction.trace(v1, self.tag + ".v1")
+            v1 = debug(v1)
+            DebugFunction.trace(qt, self.tag + ".qt")
+            qt = debug(qt)
+            DebugFunction.trace(kt, self.tag + ".kt")
+            kt = debug(kt)
+            DebugFunction.trace(vt, self.tag + ".vt")
+            vt = debug(vt)
+
+        # causal self-attention; Self-attend: (B, nh, T, hs) x (B, nh, hs, T) -> (B, nh, T, T)
+        att = (qt @ kt.transpose(-2, -1)) * (1.0 / math.sqrt(k1.size(-1)))
+
+        if save_for_testing:
+            DebugFunction.trace(att, self.tag + ".att")
+            att = debug(att)
+
+        inf = 1e+29
+        attm = att.masked_fill(self.bias[:,:,:T,:T] == 0, -inf) # float('-inf'))
+        if save_for_testing:
+            DebugFunction.trace(attm, self.tag + ".attm")
+            attm = debug(attm)
+
+        atts = self.softmax(attm) 
+        if save_for_testing:
+            DebugFunction.trace(atts, self.tag + ".atts")
+            atts = debug(atts)
+
+        att1 = self.attn_dropout(atts)
+        if save_for_testing:
+            DebugFunction.trace(att1, self.tag + ".att1")
+            att1 = debug(att1)
+
+        y1 = att1 @ vt# (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
+        if save_for_testing:
+            DebugFunction.trace(y1, self.tag + ".y1")
+            y1 = debug(y1)
+
+        yt = y1.transpose(1, 2).contiguous().view(B, T, C) # re-assemble all head outputs side by side
+        if save_for_testing:
+            DebugFunction.trace(yt, self.tag + ".yt")
+            yt = debug(yt)
+
+        # output projection
+        y = self.resid_dropout(self.c_proj(yt))
+        if save_for_testing:
+            DebugFunction.trace(y, self.tag + ".y")
+            y = debug(y)
+
+        return y
+
+
 class Block(nn.Module):
     """ an unassuming Transformer block """
     
@@ -114,7 +215,7 @@ class Block(nn.Module):
         super().__init__()
         self.tag = tag
         self.ln_1 = LayerNormEx(tag + ".ln1", config.n_embd)
-        self.attn = CausalSelfAttention(tag + ".attn", config)
+        self.attn = CausalSelfAttention(tag + ".csa", config)
         self.ln_2 = LayerNormEx(tag + ".ln2", config.n_embd)
 
         self.c_fc = LinearEx(tag + ".c_fc", config.n_embd, 4 * config.n_embd, use_mycaffe = mycaffe_innerproduct_fc)
@@ -136,15 +237,71 @@ class Block(nn.Module):
         x = x + self.mlpf(self.ln_2(x))
         return x
 
+    def save_internal_state(self):
+        self.attn.save_internal_state()
+        self.c_fc.save_internal_state()
+        self.c_proj.save_internal_state()
+
+    def save_internal_stateD(self):
+        self.attn.save_internal_stateD()
+        self.c_fc.save_internal_stateD()
+        self.c_proj.save_internal_stateD()
+
     def forward(self, x):
-        x1 = x + self.attn(self.ln_1(x))
+        if save_for_testing:
+            self.save_internal_state()
+            self.save_internal_stateD()
+
+        debug = DebugFunction.apply
+        if save_for_testing:
+            DebugFunction.trace(x, self.tag + ".x")
+            x = debug(x)
+
+        ln1_x = self.ln_1(x)
+        if save_for_testing:
+            DebugFunction.trace(ln1_x, self.tag + ".ln1_x")
+            ln1_x = debug(ln1_x)
+
+        attn_x = self.attn(ln1_x)
+        if save_for_testing:
+            DebugFunction.trace(attn_x, self.tag + ".attn_x")
+            attn_x = debug(attn_x)
+
+        x1 = x + attn_x
+        if save_for_testing:
+            DebugFunction.trace(x1, self.tag + ".x1")
+            x1 = debug(x1)
+
         ln2_x = self.ln_2(x1)
+        if save_for_testing:
+            DebugFunction.trace(ln2_x, self.tag + ".ln2_x")
+            ln2_x = debug(ln2_x)
+
         fc_x = self.c_fc(ln2_x)
+        if save_for_testing:
+            DebugFunction.trace(fc_x, self.tag + ".fc_x")
+            fc_x = debug(fc_x)
+
         act_x = self.act(fc_x)
+        if save_for_testing:
+            DebugFunction.trace(act_x, self.tag + ".act_x")
+            act_x = debug(act_x)
+
         proj_x = self.c_proj(act_x)
+        if save_for_testing:
+            DebugFunction.trace(proj_x, self.tag + ".proj_x")
+            proj_x = debug(proj_x)
+
         dropout_x = self.dropout(proj_x)
-        x2 = x1 + dropout_x
-        return x2
+        if save_for_testing:
+            DebugFunction.trace(dropout_x, self.tag + ".dropout_x")
+            dropout_x = debug(dropout_x)
+
+        y = x1 + dropout_x
+        if save_for_testing:
+            DebugFunction.trace(y, self.tag + ".y")
+            y = debug(y)
+        return y
 
 
 class GPT(nn.Module):
@@ -195,6 +352,13 @@ class GPT(nn.Module):
                 'gpt-mini':     dict(n_layer=6, n_head=6, n_embd=192),
                 'gpt-micro':    dict(n_layer=4, n_head=4, n_embd=128),
                 'gpt-nano':     dict(n_layer=3, n_head=3, n_embd=48),
+                'gpt-nano1':     dict(n_layer=n_layers, n_head=n_head, n_embd=n_embed),
+                # testing only
+                'gpt-pico':     dict(n_layer=1, n_head=1, n_embd=3),
+                'gpt-pico3':     dict(n_layer=1, n_head=3, n_embd=3),
+                'gpt-picoB':     dict(n_layer=1, n_head=1, n_embd=3),
+                'gpt-pico3B':     dict(n_layer=1, n_head=3, n_embd=3),
+                'gpt-pico3B5':     dict(n_layer=1, n_head=3, n_embd=3)
             }[config.model_type])
 
         if mycaffe_transformerblock_all:        
@@ -325,9 +489,11 @@ class GPT(nn.Module):
                                                     % (str(param_dict.keys() - union_params), )
 
         # create the pytorch optimizer object
+        decay_list = sorted(list(decay))
+        no_decay_list = sorted(list(no_decay))
         optim_groups = [
-            {"params": [param_dict[pn] for pn in sorted(list(decay))], "weight_decay": train_config.weight_decay},
-            {"params": [param_dict[pn] for pn in sorted(list(no_decay))], "weight_decay": 0.0},
+            {"params": [param_dict[pn] for pn in decay_list], "weight_decay": train_config.weight_decay},
+            {"params": [param_dict[pn] for pn in no_decay_list], "weight_decay": 0.0},
         ]
         if mycaffe_adamw:
             optimizer = AdamW2(optim_groups, lr=train_config.learning_rate, betas=train_config.betas)
@@ -365,14 +531,31 @@ class GPT(nn.Module):
 
         # forward the GPT model itself
         tok_emb = self.transformer.wte(idx) # token embeddings of shape (b, t, n_embd)
+
+        if save_for_testing:
+            DebugFunction.trace(tok_emb, "0_tok_emb");
+            tok_emb = debug(tok_emb)
+
         pos_emb = self.transformer.wpe(pos) # position embeddings of shape (1, t, n_embd)
+
+        if save_for_testing:
+            DebugFunction.trace(pos, "0_pos")
+            DebugFunction.trace(pos_emb, "0_pos_emb");
+            pos_emb = debug(pos_emb)
+
         x = self.transformer.drop(tok_emb + pos_emb)
+
+        if save_for_testing:
+            DebugFunction.trace(x, "0_x");
+            x = debug(x)
 
         if save_for_testing1:
             DebugFunction.trace(idx, "1_x")
             DebugFunction.trace(x, "1_x_emb")
             x = debug(x)
             DebugFunction.trace(targets, "1_targets")
+            DebugFunction.trace(self.transformer.wte.weight.data, "1_wte.weight")
+            DebugFunction.trace(self.transformer.wpe.weight.data, "1_wpe.weight")
 
         idx = 0
         if mycaffe_transformerblock_all:
@@ -395,6 +578,7 @@ class GPT(nn.Module):
         
         logits = self.lm_head(ln_x)
         if save_for_testing1:
+            DebugFunction.trace(self.lm_head.weight.data, "13_lm_head.weight")
             DebugFunction.trace(logits, "13_logits")
             logits = debug(logits)
         

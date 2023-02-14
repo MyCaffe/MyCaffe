@@ -29,8 +29,8 @@ class TestTransformer:
         x = debug(x)
 
         # Create the transformer
-        model = BlockEx("blk0", self.vocab_size, d_model, n_head, seq_len, drop_out_rate, drop_out_rate).to(device)
-        lm_head = LinearEx("lm_head", d_model, self.vocab_size, bias=False).to(device)
+        model = BlockEx("blk0", self.vocab_size, n_embed, n_head, seq_len, drop_out_rate, drop_out_rate).to(device)
+        lm_head = LinearEx("lm_head", n_embed, self.vocab_size, bias=False).to(device)
         softmax = LogSoftmaxEx("f_smx", dim = -1).to(device)
         criterion = nn.NLLLoss()
 

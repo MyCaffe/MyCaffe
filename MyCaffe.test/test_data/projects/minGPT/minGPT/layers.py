@@ -95,15 +95,15 @@ class MultiheadAttention(nn.Module):
         self.inf = 1e29 #1e9
         
         # W^Q, W^K, W^V in the paper
-        self.w_q = LinearEx(d_model, d_model)
-        self.w_k = LinearEx(d_model, d_model)
-        self.w_v = LinearEx(d_model, d_model)
+        self.w_q = LinearEx(n_embed, n_embed)
+        self.w_k = LinearEx(n_embed, n_embed)
+        self.w_v = LinearEx(n_embed, n_embed)
 
         self.dropout = nn.Dropout(drop_out_rate)
         self.attn_softmax = SoftmaxEx(tag=self.tag + ".smx", dim=-1)
 
         # Final output linear transformation
-        self.w_0 = LinearEx(d_model, d_model)
+        self.w_0 = LinearEx(n_embed, n_embed)
 
     def save_internal_state(self):
         DebugFunction.trace(self.w_q.weight, self.tag + ".w_q.weight")
@@ -147,7 +147,7 @@ class MultiheadAttention(nn.Module):
         # Conduct self-attention
         attn_values = self.self_attention(q, k, v, mask=mask) # (B, num_heads, L, d_k)
         concat_output = attn_values.transpose(1, 2)\
-            .contiguous().view(input_shape[0], -1, d_model) # (B, L, d_model)
+            .contiguous().view(input_shape[0], -1, n_embed) # (B, L, d_model)
 
         output = self.w_0(concat_output)
 
@@ -180,9 +180,9 @@ class FeedFowardLayer(nn.Module):
     def __init__(self, tag):
         super().__init__()
         self.tag = tag
-        self.linear_1 = LinearEx(d_model, d_ff, bias=True)
+        self.linear_1 = LinearEx(n_embed, d_ff, bias=True)
         self.relu = nn.ReLU()
-        self.linear_2 = LinearEx(d_ff, d_model, bias=True)
+        self.linear_2 = LinearEx(d_ff, n_embed, bias=True)
         self.dropout = nn.Dropout(drop_out_rate)
         
     def save_internal_state(self):
@@ -381,16 +381,58 @@ class LinearEx(nn.Module):
         DebugFunction.trace(self.weight, self.tag + ".weight")
         DebugFunction.trace(self.bias, self.tag + ".bias")
 
+    def save_internal_stateD(self):
+        DebugFunction.traceD(self.weight, self.tag + ".weight")
+        DebugFunction.traceD(self.bias, self.tag + ".bias")
+
     def forward(self, input):
         if self.use_mycaffe:
             innerproduct = InnerproductFunction.apply
             tag_list.append(self.tag)
             return innerproduct(input)
+        elif custom_innerproduct:
+            return InnerproductFunctionEx.apply(input, self.weight, self.bias)
         else:            
             x = torch.matmul(input, self.weight.t())       
-            if self.bias is not None:
-                x += self.bias
+
+            debug = DebugFunction.apply
+            if save_for_testing:
+                DebugFunction.trace(x, self.tag + ".x1")
+                x = debug(x)
+
+            if self.bias is not None:            
+                x2 = x + self.bias
+                if save_for_testing:
+                    DebugFunction.trace(x2, self.tag + ".x2")
+                    x2 = debug(x2)
+                x = x2
+
         return x
+
+# See https://github.com/uchida-takumi/CustomizedLinear/blob/master/CustomizedLinear.py
+class InnerproductFunctionEx(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x, weight, bias=None):
+        y = torch.matmul(x, weight.t())
+        if bias is not None:
+            y += bias.unsqueeze(0).expand_as(y)
+        ctx.save_for_backward(x, weight, bias)
+        return y
+    
+    @staticmethod
+    def backward(ctx, grad_output):
+        x, weight, bias = ctx.saved_tensors
+        if ctx.needs_input_grad[0]:
+            gx = torch.matmul(grad_output, weight)
+        if ctx.needs_input_grad[1]:
+            gyt = grad_output.transpose(-1, -2)
+            wtx = torch.matmul(gyt, x)
+        if ctx.needs_input_grad[2]:
+            gys = grad_output.squeeze(0)
+            bx = gys.sum(0)
+        else:
+            bx = None
+        return gx, wtx, bx
 
 class InnerproductFunction(torch.autograd.Function):
     @staticmethod
@@ -414,6 +456,9 @@ class SoftmaxEx(nn.Module):
         self.use_mycaffe = use_mycaffe
         
     def forward(self, x):
+        if disable_softmax:
+            return x
+
         if save_for_testing:
             debug = DebugFunction.apply
             DebugFunction.trace(x, "softmax.x")
@@ -557,21 +602,21 @@ class PositionalEncoder(nn.Module):
     def __init__(self):
         super().__init__()
         # Make initial positional encoding matrix with 0
-        pe_matrix= torch.zeros(seq_len, d_model) # (L, d_model)
+        pe_matrix= torch.zeros(seq_len, n_embed) # (L, d_model)
 
         # Calculating position encoding values
         for pos in range(seq_len):
-            for i in range(d_model):
+            for i in range(n_embed):
                 if i % 2 == 0:
-                    pe_matrix[pos, i] = math.sin(pos / (10000 ** (2 * i / d_model)))
+                    pe_matrix[pos, i] = math.sin(pos / (10000 ** (2 * i / n_embed)))
                 elif i % 2 == 1:
-                    pe_matrix[pos, i] = math.cos(pos / (10000 ** (2 * i / d_model)))
+                    pe_matrix[pos, i] = math.cos(pos / (10000 ** (2 * i / n_embed)))
 
         pe_matrix = pe_matrix.unsqueeze(0) # (1, L, d_model)
         self.positional_encoding = pe_matrix.to(device=device).requires_grad_(False)
 
     def forward(self, x):
-        x = x * math.sqrt(d_model) # (B, L, d_model)
+        x = x * math.sqrt(n_embed) # (B, L, d_model)
         pos_enc = self.positional_encoding
         x = x + pos_enc # (B, L, d_model)
 

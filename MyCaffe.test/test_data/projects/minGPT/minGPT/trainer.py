@@ -23,7 +23,7 @@ class Trainer:
         # dataloder parameters
         C.num_workers = num_workers
         # optimizer parameters
-        C.max_iters = None
+        C.max_iters = max_iters
         C.batch_size = batch_size
         C.learning_rate = 3e-4
         C.betas = (0.9, 0.95)
@@ -82,6 +82,7 @@ class Trainer:
         self.iter_num = 0
         self.iter_time = time.time()
         data_iter = iter(train_loader)
+        
         while True:
             if save_for_testing:
                 DebugFunction.set_output_path(self.iter_num)

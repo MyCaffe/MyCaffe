@@ -110,7 +110,7 @@ namespace MyCaffeConnector
             }
         }
 
-        public float[] tfb_fwd(string strTag, int nN, int nC, int nH, int nW, float[] rg)
+        public float[] tfb_fwd(string strTag, int nLayers, int nHeads, int nEmbed, int nBlkSize, int nN, int nC, int nH, int nW, float[] rg)
         {
             List<int> rgShape = new List<int>() { nN, nC, nH };
             if (nW > 1)
@@ -123,12 +123,12 @@ namespace MyCaffeConnector
             {
                 LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
                 p.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION;
-                p.transformer_block_param.heads = 6;
-                p.transformer_block_param.embed = 192;
-                p.transformer_block_param.block_size = 128;
+                p.transformer_block_param.heads = (uint)nHeads;
+                p.transformer_block_param.embed = (uint)nEmbed;
+                p.transformer_block_param.block_size = (uint)nBlkSize;
                 p.transformer_block_param.attn_dropout = 0.0;
                 p.transformer_block_param.resid_dropout = 0.0;
-                p.transformer_block_param.layers = 6;
+                p.transformer_block_param.layers = (uint)nLayers;
                 Layer<float> layer1 = Layer<float>.Create(m_mycaffe.Cuda, m_mycaffe.Log, p, null);
 
                 layer1.Setup(m_colBtm, m_colTop);

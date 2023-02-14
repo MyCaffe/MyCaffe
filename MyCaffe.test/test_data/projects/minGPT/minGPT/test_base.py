@@ -38,6 +38,13 @@ class DebugFunction(torch.autograd.Function):
         np.save(DebugFunction.out_path + name + ".npy", t.detach().cpu().numpy())
 
     @staticmethod
+    def traceD(t, name):
+        if not os.path.exists(DebugFunction.out_path):
+            os.makedirs(DebugFunction.out_path)
+        input_dict.update({t: name})
+        np.save(DebugFunction.out_path + name + ".d.npy", t.detach().type(torch.cuda.DoubleTensor).cpu().numpy())
+
+    @staticmethod
     def forward(ctx, input):
         ctx.save_for_backward(input)       
         return input
@@ -52,10 +59,6 @@ class DebugFunction(torch.autograd.Function):
             
         if name == "15_loss":
             grad_output = grad_output * loss_weight
-
-        if name == "1_x_emb2":
-            gradsum = grad_output.sum()
-            print(name + " gradsum = " + str(gradsum))
 
         if save_for_testing:
             np.save(DebugFunction.out_path + "grad_" + name, grad_output.detach().cpu().numpy())

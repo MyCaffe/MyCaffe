@@ -18,7 +18,7 @@ class MyCaffe():
         print("OS PID = {%d}" % (pid))
         self.mycaffe = MyCaffeConnector()
         if bFullInit:
-            self.mycaffe.InitializeEx(batch_size, seq_len, d_model, sp_vocab_size, sp_vocab_size, 0.0)
+            self.mycaffe.InitializeEx(batch_size, seq_len, n_embed, sp_vocab_size, sp_vocab_size, 0.0)
         else:
             self.mycaffe.Initialize()
         print("Loaded MyCaffe.")
@@ -42,7 +42,7 @@ class MyCaffe():
         nC = x.shape[1]
         nH = x.shape[2]
         nW = x.shape[3] if len(x.shape) > 3 else 1
-        rgOut = self.mycaffe.tfb_fwd(tag, nN, nC, nH, nW, list(x.detach().cpu().numpy().flatten().data))        
+        rgOut = self.mycaffe.tfb_fwd(tag, n_layers, n_head, n_embed, seq_len, nN, nC, nH, nW, list(x.detach().cpu().numpy().flatten().data))        
         out = asNumpyArray(rgOut)
         y = torch.from_numpy(out).float()
         y = y.reshape(rgShape)

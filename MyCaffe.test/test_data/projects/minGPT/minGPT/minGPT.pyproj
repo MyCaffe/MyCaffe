@@ -31,6 +31,7 @@
     <Compile Include="mycaffe.py" />
     <Compile Include="test_base.py" />
     <Compile Include="test_causalselfattention.py" />
+    <Compile Include="test_grad.py" />
     <Compile Include="test_transformer.py" />
     <Compile Include="trainerMycaffe.py" />
     <Compile Include="trainer.py" />
