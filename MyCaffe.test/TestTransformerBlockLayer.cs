@@ -1881,7 +1881,7 @@ namespace MyCaffe.test
         /// </summary>
         /// <remarks>
         /// To regenerate test data, take the following steps:
-        /// 1.) constants.py - set mycaffe_layernorm = True, mycaffe_softmax = True, loss_weight = 1, disable_layernorm = False
+        /// 1.) constants.py - set mycaffe_layernorm = True, mycaffe_softmax = True, loss_weight = 1, disable_layernorm = False, model_type = 'gpt_nano1'
         /// 2.) main.py - run up to line 104 in trainer.py
         /// 3.) test_transformer.py - run up to line 59.
         /// 4.) MyCaffe CausalSelfAttention configured to use CAFFE version of Softmax
