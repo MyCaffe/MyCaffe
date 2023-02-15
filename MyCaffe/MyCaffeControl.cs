@@ -3028,8 +3028,6 @@ namespace MyCaffe
                     }
                 }
 
-                //loadWeights(m_net, m_solver.net.SaveWeights(m_persist));
-
                 if (bVerifyWeights)
                 {
                     if (!CompareWeights(m_net, m_solver.net))
