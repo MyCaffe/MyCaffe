@@ -44,7 +44,7 @@ namespace MyCaffe.layers.gpt
         /// </summary>
         public int Count
         {
-            get { return m_rgVocabKeyToIdx.Count + 1; }
+            get { return m_rgVocabKeyToIdx.Count + ((m_bEnablePad) ? 1 : 0); }
         }
 
         /// <summary>
