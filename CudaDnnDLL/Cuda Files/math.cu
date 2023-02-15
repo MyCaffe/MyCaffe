@@ -7274,8 +7274,75 @@ __global__ void accuracy_fwd_kernel_ignore(const int nCount, const int num_label
 	}
 }
 
+template<typename T>
+__global__ void accuracy_fwd_kernel_lastonly(const int nCount, const int num_labels, const int spatial_dim, const T* bottom_data, const T* label, T* acc, T* accTotals, const int nBatch)
+{
+	const int nSeqLen = num_labels / nBatch;
+
+	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index < num_labels && index >= 0; index += blockDim.x * gridDim.x)
+	{
+		if (index == 0 || index % (nSeqLen - 1) != 0)
+			continue;
+
+		const int label_value = static_cast<int>(label[index]);
+		const T* btm = bottom_data + (index * spatial_dim);
+		T maxval = -FLT_MAX;
+		int nMaxIdx = -1;
+
+		for (int k = 0; k < spatial_dim; k++)
+		{
+			if (btm[k] > maxval)
+			{
+				maxval = btm[k];
+				nMaxIdx = k;
+			}
+		}
+
+		acc[index] = (nMaxIdx == label_value) ? 1 : 0;
+		accTotals[index] = 1;
+	}
+}
+
+template<typename T>
+__global__ void accuracy_fwd_kernel_ignore_lastonly(const int nCount, const int num_labels, const int spatial_dim, const T* bottom_data, const T* label, T* acc, T* accTotals, const int ignore_label, const int nBatch)
+{
+	const int nSeqLen = num_labels / nBatch;
+
+	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index < num_labels && index >= 0; index += blockDim.x * gridDim.x)
+	{
+		if (index == 0 || index % (nSeqLen - 1) != 0)
+			continue;
+
+		const int label_value = static_cast<int>(label[index]);
+
+		if (label_value != ignore_label)
+		{
+			const T* btm = bottom_data + (index * spatial_dim);
+			T maxval = -FLT_MAX;
+			int nMaxIdx = -1;
+
+			for (int k = 0; k < spatial_dim; k++)
+			{
+				if (btm[k] > maxval)
+				{
+					maxval = btm[k];
+					nMaxIdx = k;
+				}
+			}
+
+			acc[index] = (nMaxIdx == label_value) ? 1 : 0;
+			accTotals[index] = 1;
+		}
+		else
+		{
+			acc[index] = 0;
+			accTotals[index] = 0;
+		}
+	}
+}
+
 template <class T>
-long Math<T>::accuracy_fwd(int n, int nOuterNum, int nInnerNum, long hBottomData, long hBottomLabel, long hAccData, long hAccTotals, bool bIgnoreLabel, int nIgnoreLabel)
+long Math<T>::accuracy_fwd(int n, int nOuterNum, int nInnerNum, long hBottomData, long hBottomLabel, long hAccData, long hAccTotals, bool bIgnoreLabel, int nIgnoreLabel, bool bLastElementOnly, int nBatch)
 {
 	LONG lErr;
 
@@ -7302,15 +7369,25 @@ long Math<T>::accuracy_fwd(int n, int nOuterNum, int nInnerNum, long hBottomData
 	T* acc_totals = (T*)pAccTotals->Data();
 
 	if (bIgnoreLabel)
-		accuracy_fwd_kernel_ignore<T><<<CAFFE_GET_BLOCKS(nOuterNum), CAFFE_CUDA_NUM_THREADS>>>(n, nOuterNum, nInnerNum, bottom_data, bottom_label, acc_data, acc_totals, nIgnoreLabel);
+	{
+		if (bLastElementOnly)
+			accuracy_fwd_kernel_ignore_lastonly<T> << <CAFFE_GET_BLOCKS(nOuterNum), CAFFE_CUDA_NUM_THREADS >> > (n, nOuterNum, nInnerNum, bottom_data, bottom_label, acc_data, acc_totals, nIgnoreLabel, nBatch);
+		else
+			accuracy_fwd_kernel_ignore<T> << <CAFFE_GET_BLOCKS(nOuterNum), CAFFE_CUDA_NUM_THREADS >> > (n, nOuterNum, nInnerNum, bottom_data, bottom_label, acc_data, acc_totals, nIgnoreLabel);
+	}
 	else
-		accuracy_fwd_kernel<T><<<CAFFE_GET_BLOCKS(nOuterNum), CAFFE_CUDA_NUM_THREADS>>>(n, nOuterNum, nInnerNum, bottom_data, bottom_label, acc_data, acc_totals);
+	{
+		if (bLastElementOnly)
+			accuracy_fwd_kernel_lastonly<T> << <CAFFE_GET_BLOCKS(nOuterNum), CAFFE_CUDA_NUM_THREADS >> > (n, nOuterNum, nInnerNum, bottom_data, bottom_label, acc_data, acc_totals, nBatch);
+		else
+			accuracy_fwd_kernel<T> << <CAFFE_GET_BLOCKS(nOuterNum), CAFFE_CUDA_NUM_THREADS >> > (n, nOuterNum, nInnerNum, bottom_data, bottom_label, acc_data, acc_totals);
+	}
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::accuracy_fwd(int nCount, int nOuterNum, int nInnerNum, long hBtmData, long hBtmLabel, long hAccData, long hAccTotals, bool bIgnoreLabel, int nIgnoreLabel);
-template long Math<float>::accuracy_fwd(int nCount, int nOuterNum, int nInnerNum, long hBtmData, long hBtmLabel, long hAccData, long hAccTotals, bool bIgnoreLabel, int nIgnoreLabel);
+template long Math<double>::accuracy_fwd(int nCount, int nOuterNum, int nInnerNum, long hBtmData, long hBtmLabel, long hAccData, long hAccTotals, bool bIgnoreLabel, int nIgnoreLabel, bool bLastElementOnly, int nBatch);
+template long Math<float>::accuracy_fwd(int nCount, int nOuterNum, int nInnerNum, long hBtmData, long hBtmLabel, long hAccData, long hAccTotals, bool bIgnoreLabel, int nIgnoreLabel, bool bLastElementOnly, int nBatch);
 
 
 template<typename T>

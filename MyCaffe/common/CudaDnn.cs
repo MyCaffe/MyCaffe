@@ -8240,18 +8240,20 @@ namespace MyCaffe.common
         /// <param name="hAccData">Specifies a handle to temporary accuracy correct items in GPU memory.</param>
         /// <param name="hAccTotals">Specifies a handle to the temporary accuracy totals in GPU memory.</param>
         /// <param name="nIgnoreLabel">Optionally, specifies a label to igore.</param>
-        public void accuracy_fwd(int nCount, int nOuterNum, int nInnerNum, long hBottomData, long hBottomLabel, long hAccData, long hAccTotals, int? nIgnoreLabel)
+        /// <param name="bLastElementOnly">Optionally specifies to only test the last element in each set.</param>
+        /// <param name="nBatch">Optionally specifies the batch size.</param>
+        public void accuracy_fwd(int nCount, int nOuterNum, int nInnerNum, long hBottomData, long hBottomLabel, long hAccData, long hAccTotals, int? nIgnoreLabel, bool bLastElementOnly, int nBatch)
         {
             if (m_dt == DataType.DOUBLE)
             {
-                List<long> rgArg = new List<long>() { nCount, nOuterNum, nInnerNum, hBottomData, hBottomLabel, hAccData, hAccTotals };
+                List<long> rgArg = new List<long>() { nCount, nOuterNum, nInnerNum, hBottomData, hBottomLabel, hAccData, hAccTotals, (bLastElementOnly) ? 1 : 0, nBatch };
                 if (nIgnoreLabel.HasValue)
                     rgArg.Add(nIgnoreLabel.Value);
                 m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_ACCURACY_FWD, null, rgArg.ToArray());
             }
             else
             {
-                List<long> rgArg = new List<long>() { nCount, nOuterNum, nInnerNum, hBottomData, hBottomLabel, hAccData, hAccTotals };
+                List<long> rgArg = new List<long>() { nCount, nOuterNum, nInnerNum, hBottomData, hBottomLabel, hAccData, hAccTotals, (bLastElementOnly) ? 1 : 0, nBatch };
                 if (nIgnoreLabel.HasValue)
                     rgArg.Add(nIgnoreLabel.Value);
                 m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_ACCURACY_FWD, null, rgArg.ToArray());

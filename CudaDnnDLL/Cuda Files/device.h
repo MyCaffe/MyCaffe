@@ -2217,7 +2217,7 @@ inline long Device<T>::cuda_accuracy_fwd(long lInput, T* pfInput, long llInput, 
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(llInput, plInput, 7, 8))
+	if (lErr = verifyInput(llInput, plInput, 9, 10))
 		return lErr;
 
 	int nCount = (int)plInput[0];
@@ -2228,15 +2228,17 @@ inline long Device<T>::cuda_accuracy_fwd(long lInput, T* pfInput, long llInput, 
 	long hAccData = (long)plInput[5];
 	long hAccTotals = (long)plInput[6];
 	int nIgnoreLabel = 0;
+	bool bLastElementOnly = (plInput[7] == 0) ? false : true;
+	int nBatch = (int)plInput[8];
 	bool bIgnoreLabel = false;
 
-	if (llInput > 7)
+	if (llInput > 9)
 	{
 		nIgnoreLabel = (int)plInput[7];
 		bIgnoreLabel = true;
 	}
 
-	return m_math.accuracy_fwd(nCount, nOuterNum, nInnerNum, hBtmData, hBtmLabel, hAccData, hAccTotals, bIgnoreLabel, nIgnoreLabel);
+	return m_math.accuracy_fwd(nCount, nOuterNum, nInnerNum, hBtmData, hBtmLabel, hAccData, hAccTotals, bIgnoreLabel, nIgnoreLabel, bLastElementOnly, nBatch);
 }
 
 

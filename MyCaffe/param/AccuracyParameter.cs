@@ -19,6 +19,7 @@ namespace MyCaffe.param
         int m_nAxis = 1;
         List<int> m_rgnIgnoreLabel = new List<int>();
         bool m_bEnableSimpleAccuracy = false;
+        bool m_bEnableLastElementOnly = false;
 
         /** @copydoc LayerParameterBase */
         public AccuracyParameter()
@@ -33,6 +34,16 @@ namespace MyCaffe.param
         {
             get { return m_bEnableSimpleAccuracy; }
             set { m_bEnableSimpleAccuracy = value; }
+        }
+
+        /// <summary>
+        /// When computing accuracy, only count the last element of the prediction blob.
+        /// </summary>
+        [Description("When computing accuracy, only count the last element of the prediction blob.")]
+        public bool enable_last_element_only
+        {
+            get { return m_bEnableLastElementOnly; }
+            set { m_bEnableLastElementOnly = value; }
         }
 
         /// <summary>
@@ -106,6 +117,7 @@ namespace MyCaffe.param
             m_nTopK = p.m_nTopK;
             m_nAxis = p.m_nAxis;
             m_bEnableSimpleAccuracy = p.m_bEnableSimpleAccuracy;
+            m_bEnableLastElementOnly = p.m_bEnableLastElementOnly;
             m_rgnIgnoreLabel = Utility.Clone<int>(p.m_rgnIgnoreLabel);
         }
 
@@ -134,6 +146,9 @@ namespace MyCaffe.param
 
             if (enable_simple_accuracy)
                 rgChildren.Add("enable_simple_accuracy", enable_simple_accuracy.ToString());
+
+            if (enable_last_element_only)
+                rgChildren.Add("enable_last_element_only", enable_last_element_only.ToString());
 
             if (m_rgnIgnoreLabel.Count > 0)
             {
@@ -164,6 +179,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("enable_simple_accuracy")) != null)
                 p.enable_simple_accuracy = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("enable_last_element_only")) != null)
+                p.enable_last_element_only = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("ignore_label")) != null)
             {

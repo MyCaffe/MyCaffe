@@ -28,6 +28,7 @@ namespace MyCaffe.layers
         Blob<T> m_blobAccData;
         bool m_bDirectLabels = false;
         bool m_bEnableSimpleAccuracy = false;
+        bool m_bEnableLastElementOnly = false;
 
         /// <summary>
         /// Constructor.
@@ -87,6 +88,11 @@ namespace MyCaffe.layers
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             m_bEnableSimpleAccuracy = m_param.accuracy_param.enable_simple_accuracy;
+            m_bEnableLastElementOnly = m_param.accuracy_param.enable_last_element_only;
+
+            if (!m_bEnableSimpleAccuracy && m_bEnableLastElementOnly)
+                m_log.WriteLine("WARNING: The accuracy layer currently only supports last element accuracy when using the simple accuracy.");
+
             m_nTopK = (int)m_param.accuracy_param.top_k;
             m_nIgnoreLabel = null;
             if (m_param.accuracy_param.ignore_labels.Count > 0)
@@ -225,7 +231,7 @@ namespace MyCaffe.layers
                     m_log.WriteLine("WARNING: Only the first ignore label recognized when using the simple accuracy layer.");
             }
             
-            m_cuda.accuracy_fwd(colBottom[0].count(), m_nOuterNum, nDim, colBottom[0].gpu_data, colBottom[1].gpu_data, m_blobAccData.mutable_gpu_data, m_blobAccData.mutable_gpu_diff, nIgnoreLabel);
+            m_cuda.accuracy_fwd(colBottom[0].count(), m_nOuterNum, nDim, colBottom[0].gpu_data, colBottom[1].gpu_data, m_blobAccData.mutable_gpu_data, m_blobAccData.mutable_gpu_diff, nIgnoreLabel, m_bEnableLastElementOnly, colBottom[0].num);
 
             float fAccCount = m_cuda.asum_float(m_blobAccData.count(), m_blobAccData.gpu_data);
             float fTotalCount = m_cuda.asum_float(m_blobAccData.count(), m_blobAccData.gpu_diff);
