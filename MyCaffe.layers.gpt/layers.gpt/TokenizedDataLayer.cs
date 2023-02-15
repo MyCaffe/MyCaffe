@@ -52,6 +52,8 @@ namespace MyCaffe.layers.gpt
         {
             m_evtCancel = evtCancel;
             m_type = LayerParameter.LayerType.TOKENIZED_DATA;
+
+            m_blobX = new Blob<T>(m_cuda, m_log);
         }
 
         /// <summary>
@@ -87,7 +89,7 @@ namespace MyCaffe.layers.gpt
         /// </summary>
         public override int ExactNumTopBlobs
         {
-            get { return 3; }
+            get { return (m_phase == Phase.RUN) ? 2 : 3; }
         }
 
         /// <summary>
@@ -141,7 +143,10 @@ namespace MyCaffe.layers.gpt
 
                 Blob<T> blobData = colTop[0];
                 Blob<T> blobPos = colTop[1];
-                Blob<T> blobTarget = colTop[2];
+                Blob<T> blobTarget = null;
+                
+                if (colTop.Count > 2)
+                    blobTarget = colTop[2];
 
                 int nCount = 3;
                 if (nTokenSize == 1)
@@ -161,7 +166,8 @@ namespace MyCaffe.layers.gpt
                     rgShape[2] = nTokenSize;
 
                 blobData.Reshape(rgShape);
-                blobTarget.Reshape(rgShape);
+                if (blobTarget != null)
+                    blobTarget.Reshape(rgShape);
 
                 if (blobPos.count() < nBlockSize)
                 {
@@ -175,6 +181,8 @@ namespace MyCaffe.layers.gpt
                 rgShape[0] = nBatchSize;
                 rgShape[1] = nC;
                 blobPos.Reshape(rgShape);
+
+                m_blobX.Reshape(1, nBlockSize, 1, 1);
             }
             else
             {
@@ -382,7 +390,7 @@ namespace MyCaffe.layers.gpt
                 {
                     float fMin = float.MaxValue;
                     int nMinIdx = -1;
-                    
+
                     foreach (KeyValuePair<int, float> kv in rgTopK)
                     {
                         if (kv.Value < fMin)
