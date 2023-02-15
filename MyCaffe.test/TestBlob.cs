@@ -11,6 +11,7 @@ using System.Drawing;
 using System.IO;
 using MyCaffe.layers;
 using System.Text.RegularExpressions;
+using System.Diagnostics;
 
 namespace MyCaffe.test
 {
@@ -412,6 +413,25 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestMatMulEx()
+        {
+            BlobSimpleTest test = new BlobSimpleTest();
+
+            try
+            {
+                foreach (IBlobSimpleTest t in test.Tests)
+                {
+                    t.TestMatMulEx();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
         [TestMethod]
         public void TestMatMulBatch()
         {
@@ -505,6 +525,7 @@ namespace MyCaffe.test
         void TestSaveToNumpy();
         void TestChannelDuplicate();
         void TestMatMul(int nBatch, int nChannels, bool bTransA, bool bTransB);
+        void TestMatMulEx();
         void TestMatMulGrad(int nBatch, int nChannels);
     }
 
@@ -1492,14 +1513,18 @@ namespace MyCaffe.test
                 {
                     for (int n = 0; n < nN; n++)
                     {
+                        int nIdxC = (i * nM * nN) + m * nN + n;
+                        float fSum = 0;
+
                         for (int k = 0; k < nK; k++)
                         {
                             int nIdxA = (i * nM * nK) + m * nK + k;
                             int nIdxB = (i * nK * nN) + k * nN + n;
-                            int nIdxC = (i * nM * nN) + m * nN + n;
 
-                            rgC[nIdxC] += rgA[nIdxA] * rgB[nIdxB];
+                            fSum += rgA[nIdxA] * rgB[nIdxB];
                         }
+
+                        rgC[nIdxC] = fSum;
                     }
                 }
             }
@@ -1544,6 +1569,16 @@ namespace MyCaffe.test
         }
 
         private void compare(float[] rg1, float[] rg2)
+        {
+            m_log.CHECK_EQ(rg1.Length, rg2.Length, "The lengths should be equal!");
+
+            for (int i = 0; i < rg1.Length; i++)
+            {
+                m_log.CHECK_EQ(rg1[i], rg2[i], "The items at index '" + i.ToString() + "' should be equal!");
+            }
+        }
+
+        private void compare(double[] rg1, float[] rg2)
         {
             m_log.CHECK_EQ(rg1.Length, rg2.Length, "The lengths should be equal!");
 
@@ -1771,6 +1806,61 @@ namespace MyCaffe.test
                 blobWork.Dispose();
 
                 transpose.Dispose();
+            }
+        }
+
+        public void TestMatMulEx()
+        {
+            Blob<T> blobA = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobB = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobC = new Blob<T>(m_cuda, m_log);
+
+            try
+            {
+                int nM = 13;
+                int nN = 13;
+                int nK = 32;
+
+                blobA.Reshape(1, 1, nM, nK);
+                blobB.Reshape(1, 1, nK, nN);
+
+                float[] rgA = Utility.ConvertVecF<T>(blobA.mutable_cpu_data);
+                float[] rgB = Utility.ConvertVecF<T>(blobB.mutable_cpu_data);
+
+                for (int i = 0; i < nM * nK; i++)
+                {
+                    rgA[i] = i;
+                }
+
+                for (int i = 0; i < nK * nN; i++)
+                {
+                    rgB[i] = i * 2;
+                }
+
+                blobA.mutable_cpu_data = Utility.ConvertVec<T>(rgA);
+                blobB.mutable_cpu_data = Utility.ConvertVec<T>(rgB);
+
+                blobC.MatMul(blobA, blobB, true);
+
+                float[] rgC = Utility.ConvertVecF(blobC.mutable_cpu_data);
+                float[] rgC1 = matmul(1, 1, nM, nK, nN, rgA, rgB);
+
+                for (int i = 0; i < rgC.Length; i++)
+                {
+                    float fC = rgC[i];
+                    float fC1 = rgC1[i];
+                    float fDiff = Math.Abs(fC - fC1);
+                    float fErr = 1e-08f;
+
+                    if (fDiff > fErr)
+                        m_log.FAIL("The values of the matmul are not as expected!");
+                }
+            }
+            finally
+            {
+                blobA.Dispose();
+                blobB.Dispose();
+                blobC.Dispose();
             }
         }
     }
