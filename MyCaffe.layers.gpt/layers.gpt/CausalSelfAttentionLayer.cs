@@ -143,10 +143,9 @@ namespace MyCaffe.layers.gpt
             m_blobBias.Name = m_param.name + " bias";
 
             List<int> rgShape = new List<int>() { 1, 1, m_nBlockSize, m_nBlockSize };
-            shareLayerBlob(m_blobBias, rgShape);
             m_blobBias.Reshape(rgShape);
             fillBias(m_blobBias);
-           
+
             m_blobQ = new Blob<T>(cuda, log);
             m_blobQ.Name = m_param.name + " Q";
             m_blobK = new Blob<T>(cuda, log);
@@ -456,6 +455,13 @@ namespace MyCaffe.layers.gpt
                 addInternal(colTop[0], colTop[0]);
                 m_resid_dropout.Reshape(m_colInternalBottom, m_colInternalTop);
             }
+
+            if (m_blobBias.height != m_nT || m_blobBias.width != m_nT)
+            {
+                List<int> rgShape = new List<int>() { 1, 1, m_nT, m_nT };
+                m_blobBias.Reshape(rgShape);
+                fillBias(m_blobBias);
+            }
         }
 
         /// <summary>
@@ -520,7 +526,7 @@ namespace MyCaffe.layers.gpt
                 addInternal(m_blobAttB, m_blobAttB);
                 m_attn_dropout.Forward(m_colInternalBottom, m_colInternalTop);
             }
-            
+
             m_blobWork.Reshape(m_blobVt.num, m_blobVt.channels, m_blobVt.height, m_blobVt.width);
 
             // Multiply attention matrix with values
