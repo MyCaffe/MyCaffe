@@ -891,6 +891,18 @@ namespace MyCaffe.common
         /// </returns>
         public long CopyFrom(Blob<T> src, bool bCopyDiff = false, bool bReshape = false, long hDstHostBuffer = 0, bool bIgnoreShape = false)
         {
+            // Ignore copy if the data points to the same handle.
+            if (bCopyDiff)
+            {
+                if (src.gpu_diff == gpu_diff)
+                    return 0;
+            }
+            else
+            {
+                if (src.gpu_data == gpu_data)
+                    return 0;
+            }
+
             if (src.count() != m_nCount || (!bIgnoreShape && !CompareShape(src.m_rgShape)))
             {
                 if (bReshape)
