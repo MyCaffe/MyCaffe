@@ -198,12 +198,7 @@ namespace MyCaffe.layers.gpt
         /// <returns>The detokenized string is returned (which may just be a character).</returns>
         public string Detokenize(int nIdxToken, bool bIgnoreBos, bool bIgnoreEos)
         {
-            string str = null;
-            
-            if (nIdxToken == 0)
-                return str;
-
-            str = "";
+            string str = "";
 
             if (m_bAddBos && nIdxToken == BOS)
             {
