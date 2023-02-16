@@ -84,7 +84,7 @@ namespace MyCaffe.layers.gpt
 
             // Key, query, value projections for all heads, but in a batch.
             // input features = m_nHeads
-            LayerParameter ipAttn = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "c_attn");
+            LayerParameter ipAttn = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".c_attn");
             ipAttn.inner_product_param.num_output = (uint)(3 * m_nEmbed);
             ipAttn.inner_product_param.bias_term = true;
             ipAttn.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02); 
@@ -96,7 +96,7 @@ namespace MyCaffe.layers.gpt
 
             // Output projection.
             // input features = m_nEmbed
-            LayerParameter ipProj = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "c_proj");
+            LayerParameter ipProj = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".c_proj");
             ipProj.inner_product_param.num_output = (uint)m_nEmbed;
             ipProj.inner_product_param.bias_term = true;
             ipProj.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02 / Math.Sqrt(2 * m_param.causal_self_attention_param.layers)); 
