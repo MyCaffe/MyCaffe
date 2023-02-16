@@ -2772,11 +2772,8 @@ namespace MyCaffe
                     Stopwatch sw = new Stopwatch();
                     sw.Start();
 
-                    for (int i = 0; i < nSeqLen; i++)
+                    for (int i = 0; i < nMax; i++)
                     {
-                        if (i == nMax)
-                            break;
-                       
                         if (layerInput.SupportsPostProcessingLogits)
                         {
                             nK = 10;
@@ -2787,9 +2784,6 @@ namespace MyCaffe
                         }
                         else
                             res = layerInput.PostProcessOutput(blobTop);
-
-                        if (i == nSeqLen - 1)
-                            break;
 
                         if (!layerInput.PreProcessInput(null, res[0].Item2, colBottom))
                             break;
