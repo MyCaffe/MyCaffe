@@ -25,6 +25,8 @@ namespace MyCaffe.layers.gpt
         Blob<T> m_blobY = null;
         Random m_random = new Random();
         Layer<T> m_softmax = null;
+        bool m_bEnableEos = false;
+        bool m_bEnableBos = false;
 
         /// <summary>
         /// The TokenizedDataLayer constructor.
@@ -281,6 +283,8 @@ namespace MyCaffe.layers.gpt
         /// <returns>A list of tokens corresponding to the input is returned.</returns>
         public List<int> Tokenize(string str, bool bAddBos, bool bAddEos)
         {
+            m_bEnableBos = bAddBos;
+            m_bEnableEos = bAddEos;
             return m_data.Tokenize(str, bAddBos, bAddEos);
         }
 
@@ -343,7 +347,7 @@ namespace MyCaffe.layers.gpt
         /// <returns>The bottom blob collection is returned.</returns>
         public override bool PreProcessInput(string str, int? nTokIdx, BlobCollection<T> colBottom = null)
         {
-            if (nTokIdx.HasValue && nTokIdx.Value == (int)SPECIAL_TOKENS.EOS)
+            if (nTokIdx.HasValue && m_bEnableEos && nTokIdx.Value == (int)SPECIAL_TOKENS.EOS)
                 return false;
 
             List<float> rgTok = convertF(colBottom[0].mutable_cpu_data).ToList();
