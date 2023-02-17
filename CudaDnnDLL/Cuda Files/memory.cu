@@ -870,16 +870,6 @@ long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterD
 	if (lErr = cudnnGetConvolutionBackwardFilterWorkspaceSize(cudnn, bottom, top, conv, filter, algoBwdFilter, &szBwdFilter))
 		return lErr | ERROR_CUDNN_OFFSET;
 
-	// Due to a known bug in cuDNN 8.7 and cuDNN 8.8, the ALGO_3 causes a parameter error failure on the 
-	// cudnnConvolutionBackwardFilter call on line 1086 during the backward pass.
-#ifdef CUDNN_8
-	if (algoBwdFilter == CUDNN_CONVOLUTION_BWD_FILTER_ALGO_3)
-	{
-		algoBwdFilter = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_0;
-		szBwdFilter = 0;
-	}
-#endif
-
 	// Choose backward data algorithm.
 	cudnnConvolutionBwdDataAlgo_t algoBwdData;
 #ifdef CUDA10_2
