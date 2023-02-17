@@ -55,7 +55,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestArgMaxParameter()
         {
-            string str = "argmax_param { out_max_val: True axis: -1 }";
+            string str = "argmax_param { out_max_val: True axis: -1 enable_cuda_impl: False }";
             RawProto proto = RawProto.Parse(str).FindChild("argmax_param");
             ArgMaxParameter p = ArgMaxParameter.FromProto(proto);
 
@@ -980,7 +980,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestSoftmaxParameter()
         {
-            string str = "softmax_param { engine: CAFFE axis: -4 }";
+            string str = "softmax_param { engine: CAFFE axis: -4 algorithm: ACCURATE }";
             RawProto proto = RawProto.Parse(str).FindChild("softmax_param");
             SoftmaxParameter p = SoftmaxParameter.FromProto(proto);
 
