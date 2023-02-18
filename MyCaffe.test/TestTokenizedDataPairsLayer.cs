@@ -65,6 +65,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestForwardEnFrSentencePieceDownload()
+        {
+            TokenizedDataPairsLayerTest test = new TokenizedDataPairsLayerTest();
+
+            try
+            {
+                foreach (ITokenizedDataPairsLayerTest t in test.Tests)
+                {
+                    t.TestForwardEx(10, 128, TokenizedDataParameter.VOCABULARY_TYPE.SENTENCEPIECE);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestForwardEnFrSentencePieceSmall()
         {
             TokenizedDataPairsLayerTest test = new TokenizedDataPairsLayerTest();
@@ -158,6 +176,7 @@ namespace MyCaffe.test
     interface ITokenizedDataPairsLayerTest : ITest
     {
         void TestForward(int nBatchSize, int nBlockSize, TokenizedDataPairsParameter.VOCABULARY_TYPE vocabType);
+        void TestForwardEx(int nBatchSize, int nBlockSize, TokenizedDataPairsParameter.VOCABULARY_TYPE vocabType);
         void TestForwardPy(bool bUseDefaultPythonLocation);
     }
 
@@ -365,6 +384,149 @@ namespace MyCaffe.test
                     {
                         blob.SaveToImage(strPath + i.ToString() + "_internal_" + name.ToString() + blob.Name + ".png");
                     }                }
+            }
+            finally
+            {
+                layer.Dispose();
+            }
+        }
+
+        public void TestForwardEx(int nBatchSize, int nBlockSize, TokenizedDataPairsParameter.VOCABULARY_TYPE vocabType)
+        {
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\text\\encdec";
+            string strSrcFile = strPath + "\\en_fr\\src\\train.txt";
+            string strTrgFile = strPath + "\\en_fr\\trg\\train.txt";
+            string strSrcVocabFile = strPath + "\\en_fr\\sp\\src_sp.vocab";
+            string strTrgVocabFile = strPath + "\\en_fr\\sp\\trg_sp.vocab";
+            string strDataPath = strPath;
+
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.TOKENIZED_DATA_PAIRS);
+            p.tokenized_data_pairs_param.batch_size = (uint)nBatchSize;
+            p.tokenized_data_pairs_param.block_size = (uint)nBlockSize;
+            p.tokenized_data_pairs_param.input_type = TokenizedDataParameter.INPUT_TYPE.TEXT_FILE;
+            p.tokenized_data_pairs_param.vocabulary_type = vocabType;
+            p.tokenized_data_pairs_param.source_vocab_file = strSrcVocabFile;
+            p.tokenized_data_pairs_param.source = strSrcFile;
+            p.tokenized_data_pairs_param.target_vocab_file = strTrgVocabFile;
+            p.tokenized_data_pairs_param.target = strTrgFile;
+            p.tokenized_data_pairs_param.vocab_data_url = "https://signalpopcdn.blob.core.windows.net/mycaffesupport/en_fr.zip";
+            p.tokenized_data_pairs_param.vocab_data_dst_file = "$ProgramData$\\MyCaffe\\test_data\\data\\text\\encdec\\en_fr.zip";
+            p.tokenized_data_pairs_param.seed = 1701;
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
+
+            try
+            {
+                BottomVec.Clear();
+                TopVec.Clear();
+
+                TopVec.Add(m_blobEncInput);
+                m_blobEncInput.Name = "enc_in";
+                TopVec.Add(m_blobDecInput);
+                m_blobDecInput.Name = "dec_in";
+                TopVec.Add(m_blobDecOutput);
+                m_blobDecOutput.Name = "dec_out";
+                TopVec.Add(m_blobEncMask);
+                m_blobEncMask.Name = "enc_mask";
+                TopVec.Add(m_blobDecMask);
+                m_blobDecMask.Name = "dec_mask";
+
+                layer.Setup(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(TopVec.Count, 5, "The top vector should contain 5 blobs.");
+
+                // EncInput
+                m_log.CHECK_EQ(TopVec[0].num, nBatchSize, "The top[0].num should equal the batch size of " + nBatchSize.ToString());
+                m_log.CHECK_EQ(TopVec[0].channels, nBlockSize, "The top[0].channels should equal the block size of " + nBlockSize.ToString());
+                //                m_log.CHECK_EQ(TopVec[0].height, 1, "The top[0].height should equal 1.");
+
+                // DecInput
+                m_log.CHECK_EQ(TopVec[1].num, nBatchSize, "The top[1].num should equal the batch size of " + nBatchSize.ToString());
+                m_log.CHECK_EQ(TopVec[1].channels, nBlockSize, "The top[1].channels should equal the block size of " + nBlockSize.ToString());
+                //                m_log.CHECK_EQ(TopVec[1].height, 1, "The top[1].height should equal 1.");
+
+                // DecTarget
+                m_log.CHECK_EQ(TopVec[2].num, nBatchSize, "The top[2].num should equal the batch size of " + nBatchSize.ToString());
+                m_log.CHECK_EQ(TopVec[2].channels, nBlockSize, "The top[2].channels should equal the block size of " + nBlockSize.ToString());
+                //                m_log.CHECK_EQ(TopVec[2].height, 1, "The top[2].height should equal 1.");
+
+                // EncMask
+                m_log.CHECK_EQ(TopVec[3].num, nBatchSize, "The top[2].num should equal the batch size of " + nBatchSize.ToString());
+                m_log.CHECK_EQ(TopVec[3].channels, nBlockSize, "The top[2].channels should equal the block size of " + nBlockSize.ToString());
+                m_log.CHECK_EQ(TopVec[3].height, 1, "The top[2].channels should equal to 1.");
+
+                // DecMask
+                m_log.CHECK_EQ(TopVec[4].num, nBatchSize, "The top[4].num should equal the batch size of " + nBatchSize.ToString());
+                m_log.CHECK_EQ(TopVec[4].channels, nBlockSize, "The top[4].channels should equal the block size of " + nBlockSize.ToString());
+                m_log.CHECK_EQ(TopVec[4].height, nBlockSize, "The top[4].channels should equal the block size of " + nBlockSize.ToString());
+
+                layer.Forward(BottomVec, TopVec);
+
+                float[] rgDecInput = convertF(TopVec[1].mutable_cpu_data);
+                float[] rgDecOutput = convertF(TopVec[2].mutable_cpu_data);
+
+                for (int i = 0; i < nBatchSize; i++)
+                {
+                    for (int j = 0; j < nBlockSize - 1; j++)
+                    {
+                        float fExpected = rgDecInput[i * nBlockSize + j + 1];
+                        float fActual = rgDecOutput[i * nBlockSize + j];
+
+                        if (fExpected != 0 && fActual != 2)
+                            m_log.CHECK_EQ(fActual, fExpected, "The token in batch " + i.ToString() + " at block " + j.ToString() + " is not correct.");
+                    }
+                }
+
+                float[] rgEncInput = convertF(TopVec[0].mutable_cpu_data);
+                rgDecInput = convertF(TopVec[1].mutable_cpu_data);
+                rgDecOutput = convertF(TopVec[2].mutable_cpu_data);
+                List<Tuple<string, string, string>> rgDataOut = new List<Tuple<string, string, string>>();
+
+                for (int i = 0; i < nBatchSize; i++)
+                {
+                    string strEncInput = ((TokenizedDataPairsLayer<T>)layer).Detokenize(rgEncInput, i * nBlockSize, nBlockSize, TokenizedDataPairsLayer<T>.VOCABULARY.ENCODER);
+                    string strDecInput = ((TokenizedDataPairsLayer<T>)layer).Detokenize(rgDecInput, i * nBlockSize, nBlockSize, TokenizedDataPairsLayer<T>.VOCABULARY.DECODER);
+                    string strDecOutput = ((TokenizedDataPairsLayer<T>)layer).Detokenize(rgDecOutput, i * nBlockSize, nBlockSize, TokenizedDataPairsLayer<T>.VOCABULARY.DECODER);
+
+                    rgDataOut.Add(new Tuple<string, string, string>(strEncInput, strDecInput, strDecOutput));
+                }
+
+                m_log.EnableTrace = true;
+                for (int i = 0; i < rgDataOut.Count; i++)
+                {
+                    m_log.WriteLine("-------------");
+                    m_log.WriteLine("EncInput: " + rgDataOut[i].Item1);
+                    m_log.WriteLine("DecInput: " + rgDataOut[i].Item2);
+                    m_log.WriteLine("DecOutput: " + rgDataOut[i].Item3);
+                }
+
+                m_log.WriteLine("Source Vocabulary Size = " + ((TokenizedDataPairsLayer<T>)layer).GetVocabuarySize(TokenizedDataPairsLayer<T>.VOCABULARY.ENCODER).ToString());
+                m_log.WriteLine("Target Vocabulary Size = " + ((TokenizedDataPairsLayer<T>)layer).GetVocabuarySize(TokenizedDataPairsLayer<T>.VOCABULARY.DECODER).ToString());
+
+                strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\mycaffe\\test_data\\results\\tokenized_data_test\\";
+                if (!Directory.Exists(strPath))
+                    Directory.CreateDirectory(strPath);
+
+                for (int i = 0; i < 10; i++)
+                {
+                    Dictionary<float, Color> rgSpecialColors = new Dictionary<float, Color>();
+                    rgSpecialColors.Add(1, Color.Fuchsia);
+                    rgSpecialColors.Add(2, Color.Blue);
+
+                    layer.Forward(BottomVec, TopVec);
+
+                    for (int j = 0; j < TopVec.Count; j++)
+                    {
+                        TopVec[j].SaveToImage(strPath + i.ToString() + "_top_" + name.ToString() + TopVec[j].Name + ".png", true, false, rgSpecialColors);
+
+                        if (j >= 2)
+                            rgSpecialColors = null;
+                    }
+
+                    foreach (Blob<T> blob in layer.internal_blobs)
+                    {
+                        blob.SaveToImage(strPath + i.ToString() + "_internal_" + name.ToString() + blob.Name + ".png");
+                    }
+                }
             }
             finally
             {
