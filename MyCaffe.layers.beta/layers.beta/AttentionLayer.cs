@@ -132,49 +132,49 @@ namespace MyCaffe.layers
             m_ipV = new InnerProductLayer<T>(cuda, log, ipVParam);
 
             m_blobX = new Blob<T>(cuda, log);
-            m_blobX.Name = "x";
+            m_blobX.Name = m_param.name + ".x";
 
             m_blobClip = new Blob<T>(cuda, log);
-            m_blobClip.Name = "clip";
+            m_blobClip.Name = m_param.name + ".clip";
 
             m_blobX1 = new Blob<T>(cuda, log);
-            m_blobX1.Name = "x1";
+            m_blobX1.Name = m_param.name + ".x1";
 
             m_blobState = new Blob<T>(cuda, log);
-            m_blobState.Name = "state";
+            m_blobState.Name = m_param.name + ".state";
 
             m_blobUh = new Blob<T>(cuda, log);
-            m_blobUh.Name = "Uh";
+            m_blobUh.Name = m_param.name + ".Uh";
 
             m_blobWc = new Blob<T>(cuda, log);
-            m_blobWc.Name = "Wc";
+            m_blobWc.Name = m_param.name + ".Wc";
 
             m_blobFullWc = new Blob<T>(cuda, log);
-            m_blobFullWc.Name = "Full Wc";
+            m_blobFullWc.Name = m_param.name + ".Full Wc";
 
             m_blobAddOutput = new Blob<T>(cuda, log);
-            m_blobAddOutput.Name = "addOut";
+            m_blobAddOutput.Name = m_param.name + ".addOut";
 
             m_blobGG = new Blob<T>(cuda, log);
-            m_blobGG.Name = "gg";
+            m_blobGG.Name = m_param.name + ".gg";
 
             m_blobAA = new Blob<T>(cuda, log);
-            m_blobAA.Name = "aa";
+            m_blobAA.Name = m_param.name + ".aa";
 
             m_blobScale = new Blob<T>(cuda, log, false);
-            m_blobScale.Name = "scale";
+            m_blobScale.Name = m_param.name + ".scale";
 
             m_blobSoftmax = new Blob<T>(cuda, log);
-            m_blobSoftmax.Name = "softmax";
+            m_blobSoftmax.Name = m_param.name + ".softmax";
 
             m_blobFocusedInput = new Blob<T>(cuda, log);
-            m_blobFocusedInput.Name = "softmax_full";
+            m_blobFocusedInput.Name = m_param.name + ".softmax_full";
 
             m_blobContext = new Blob<T>(cuda, log);
-            m_blobContext.Name = "context";
+            m_blobContext.Name = m_param.name + ".context";
 
             m_blobWork = new Blob<T>(cuda, log);
-            m_blobWork.Name = "work";
+            m_blobWork.Name = m_param.name + ".work";
         }
 
         /** @copydoc Layer::dispose */

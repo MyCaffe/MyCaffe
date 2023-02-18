@@ -41,7 +41,7 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.BIAS;
             m_blobBiasMultiplier = new Blob<T>(cuda, log);
-            m_blobBiasMultiplier.Name = "bias_biasmult";
+            m_blobBiasMultiplier.Name = m_param.name + " bias_mult";
         }
 
         /** @copydoc Layer::dispose */

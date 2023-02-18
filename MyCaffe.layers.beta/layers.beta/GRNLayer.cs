@@ -36,9 +36,13 @@ namespace MyCaffe.layers.beta
         {
             m_type = LayerParameter.LayerType.GRN;
             m_blobSumMultiplier = new common.Blob<T>(cuda, log, false);
+            m_blobSumMultiplier.Name = m_param.name + " sum mult";
             m_blobSquare = new common.Blob<T>(cuda, log, false);
+            m_blobSquare.Name = m_param.name + " sqr";
             m_blobNorm = new common.Blob<T>(cuda, log, false);
+            m_blobNorm.Name = m_param.name + " norm";
             m_blobTempDot = new common.Blob<T>(cuda, log, false);
+            m_blobTempDot.Name = m_param.name + " temp dot";
         }
 
         /** @copydoc Layer::dispose */

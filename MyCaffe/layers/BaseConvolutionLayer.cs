@@ -128,16 +128,25 @@ namespace MyCaffe.layers
             : base(cuda, log, p)
         {
             m_blobKernelShape = new Blob<T>(cuda, log);
+            m_blobKernelShape.Name = m_param.name + " kernel_shape";
+
             m_blobStride = new Blob<T>(cuda, log);
+            m_blobStride.Name = m_param.name + " stride";
+
             m_blobPad = new Blob<T>(cuda, log);
+            m_blobPad.Name = m_param.name + " pad";
+
             m_blobDilation = new Blob<T>(cuda, log);
+            m_blobDilation.Name = m_param.name + " dilation";
+
             m_blobConvInputShape = new Blob<T>(cuda, log);
+            m_blobConvInputShape.Name = m_param.name + " conv_input_shape";
 
             m_blobColBuffer = new Blob<T>(cuda, log);
-            m_blobColBuffer.Name = "conv_col_buffer";
+            m_blobColBuffer.Name = m_param.name + " conv_col_buffer";
 
             m_blobBiasMultiplier = new Blob<T>(cuda, log);
-            m_blobBiasMultiplier.Name = "conv_bias_mult";
+            m_blobBiasMultiplier.Name = m_param.name + "conv_bias_mult";
         }
 
         /** @copydoc Layer::dispose */

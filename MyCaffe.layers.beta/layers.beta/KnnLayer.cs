@@ -65,7 +65,7 @@ namespace MyCaffe.layers.beta
             m_nK = p.knn_param.k;
             m_nMaxBatches = p.knn_param.max_stored_batches;
             m_blobCompare = new common.Blob<T>(m_cuda, m_log, false);
-            m_blobCompare.Name = "compare";
+            m_blobCompare.Name = m_param.name + " compare";
         }
 
         /** @copydoc Layer::dispose */
