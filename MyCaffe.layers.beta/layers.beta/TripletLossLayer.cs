@@ -65,6 +65,36 @@ namespace MyCaffe.layers.beta
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.TRIPLET_LOSS;
+
+            m_blobDiffAP = new Blob<T>(m_cuda, m_log);
+            m_blobDiffAP.Name = m_param.name + ".positive delta";
+
+            m_blobDiffSqAP = new Blob<T>(m_cuda, m_log, false);
+            m_blobDiffSqAP.Name = m_param.name + ".positive delta sq";
+
+            m_blobDistSqAP = new Blob<T>(m_cuda, m_log, false);
+            m_blobDistSqAP.Name = m_param.name + ".positive dist sq";
+
+            m_blobDiffAN = new Blob<T>(m_cuda, m_log);
+            m_blobDiffAN.Name = m_param.name + ".negative delta";
+
+            m_blobDiffSqAN = new Blob<T>(m_cuda, m_log, false);
+            m_blobDiffSqAN.Name = m_param.name + ".negative delta sq";
+
+            m_blobDistSqAN = new Blob<T>(m_cuda, m_log, false);
+            m_blobDistSqAN.Name = m_param.name + ".negative dist sq";
+
+            m_blobDiffPN = new Blob<T>(m_cuda, m_log);
+            m_blobDiffPN.Name = m_param.name + ".pos/neg delta";
+
+            m_blobSumVec = new Blob<T>(m_cuda, m_log, false);
+            m_blobSumVec.Name = m_param.name + ".summer vec";
+
+            m_blobLossVec = new Blob<T>(m_cuda, m_log, false);
+            m_blobLossVec.Name = m_param.name + ".loss vec";
+
+            m_blobWork = new Blob<T>(m_cuda, m_log);
+            m_blobWork.Name = m_param.name + ".work";
         }
 
         /** @copydoc Layer::dispose */
@@ -223,36 +253,6 @@ namespace MyCaffe.layers.beta
         {
             base.LayerSetUp(colBottom, colTop);
             m_dfAlpha = m_param.triplet_loss_param.alpha;
-
-            m_blobDiffAP = new Blob<T>(m_cuda, m_log);
-            m_blobDiffAP.Name = "positive delta";
-
-            m_blobDiffSqAP = new Blob<T>(m_cuda, m_log, false);
-            m_blobDiffSqAP.Name = "positive delta sq";
-
-            m_blobDistSqAP = new Blob<T>(m_cuda, m_log, false);
-            m_blobDistSqAP.Name = "positive dist sq";
-
-            m_blobDiffAN = new Blob<T>(m_cuda, m_log);
-            m_blobDiffAN.Name = "negative delta";
-
-            m_blobDiffSqAN = new Blob<T>(m_cuda, m_log, false);
-            m_blobDiffSqAN.Name = "negative delta sq";
-
-            m_blobDistSqAN = new Blob<T>(m_cuda, m_log, false);
-            m_blobDistSqAN.Name = "negative dist sq";
-
-            m_blobDiffPN = new Blob<T>(m_cuda, m_log);
-            m_blobDiffPN.Name = "pos/neg delta";
-
-            m_blobSumVec = new Blob<T>(m_cuda, m_log, false);
-            m_blobSumVec.Name = "summer vec";
-
-            m_blobLossVec = new Blob<T>(m_cuda, m_log, false);
-            m_blobLossVec.Name = "loss vec";
-
-            m_blobWork = new Blob<T>(m_cuda, m_log);
-            m_blobWork.Name = "work";
 
             // If the fifth bottom exists (the centroids) initialize the pregen targets.
             if (colBottom.Count == 5)
