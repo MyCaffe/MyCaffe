@@ -59,13 +59,15 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Content Include="python\tokenizeddatapairs.txt" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="mycaffe.layers.python.pfx" />
+    <None Include="python\ReadMe.md" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="MainIcon.ico" />
+    <Content Include="python\generate_data.py" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MyCaffe.basecode\MyCaffe.basecode.csproj">
