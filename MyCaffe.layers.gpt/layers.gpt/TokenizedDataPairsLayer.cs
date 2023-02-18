@@ -218,8 +218,8 @@ namespace MyCaffe.layers.gpt
                     m_dfLastProgress = e.ProgressPercentage;
                     string strFile = e.UserState.ToString();
 
-                    m_log.Progress = e.ProgressPercentage / 100.0;
-                    m_log.WriteLine("Downloading '" + strFile + "' at " + m_log.Progress.ToString("P") + "...", true);
+                    double dfPct = e.ProgressPercentage / 100.0;
+                    m_log.WriteLine("Downloading '" + strFile + "' at " + dfPct.ToString("P") + "...", true);
                 }
 
                 m_swUpdateTimer.Restart();
