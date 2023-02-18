@@ -726,7 +726,7 @@ namespace MyCaffe.test
         /// </remarks>
         public void TestBackward(string strModel)
         {
-            string strPath = "C:\\temp\\projects\\2023.minGpt\\minGPT\\minGPT\\test\\iter_0\\"; // loadTestData1(strModel);
+            string strPath = loadTestData1(strModel);
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
             p.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.CAUSAL_SELF_ATTENTION;
             if (strModel == "pico")
@@ -753,10 +753,7 @@ namespace MyCaffe.test
                 BlobCollection<T> colBtm = new BlobCollection<T>();
                 BlobCollection<T> colTop = new BlobCollection<T>();
 
-                if (strModel == "pico")
-                    blobX.LoadFromNumpy(strPath + "1_x_emb1.npy");
-                else
-                    blobX.LoadFromNumpy(strPath + "blk0.x.npy");
+                blobX.LoadFromNumpy(strPath + "1_x_emb1.npy");
                 colBtm.Add(blobX);
                 colTop.Add(blobY);
 
@@ -765,24 +762,15 @@ namespace MyCaffe.test
 
                 layer.Forward(colBtm, colTop);
 
-                if (strModel == "pico")
-                    blobVal.LoadFromNumpy(strPath + "12b_out2.npy");
-                else
-                    blobVal.LoadFromNumpy(strPath + "blk0.y.npy");
+                blobVal.LoadFromNumpy(strPath + "12b_out2.npy");
                 double dfErr = (typeof(T) == typeof(float)) ? 1e-12 : 2e-06;
                 verify(blobY, blobVal, false, dfErr);
 
-                if (strModel == "pico")
-                    colTop[0].LoadFromNumpy(strPath + "grad_12b_out2.npy", true);
-                else
-                    colTop[0].LoadFromNumpy(strPath + "grad_blk0.y.npy", true);
+                colTop[0].LoadFromNumpy(strPath + "grad_12b_out2.npy", true);
 
                 layer.Backward(colTop, new List<bool>() { true }, colBtm);
 
-                if (strModel == "pico")
-                    blobVal.LoadFromNumpy(strPath + "grad_1_x_emb1.npy", true);
-                else
-                    blobVal.LoadFromNumpy(strPath + "grad_blk0.x.npy", true);
+                blobVal.LoadFromNumpy(strPath + "grad_1_x_emb1.npy", true);
 
                 dfErr = (typeof(T) == typeof(float)) ? 1e-12 : 3e-06;
                 verify(colBtm[0], blobVal, true, dfErr);
