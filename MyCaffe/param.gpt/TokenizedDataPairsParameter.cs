@@ -19,6 +19,8 @@ namespace MyCaffe.param.gpt
         string m_strSourceVocabFile = "";
         string m_strTargetVocabFile = "";
         int m_nMaxLoad = 0;
+        string m_strVocabDataUrl = "";
+        string m_strVocabDataDstFile = "";
 
         /** @copydoc LayerParameterBase */
         public TokenizedDataPairsParameter() : base()
@@ -35,6 +37,25 @@ namespace MyCaffe.param.gpt
         {
             get { return m_strTarget; }
             set { m_strTarget = value; }
+        }
+
+        /// <summary>
+        /// Specifies the URL to the vocabulary data file used with the SENTENCEPIECE vocabulary type.  This pre-created vocabulary file is also created using the Python SentencePieceProcess.
+        /// </summary>
+        [Description("Specifies the URL to the vocabulary data file used with the SENTENCEPIECE vocabulary type.  This pre-created vocabulary file is also created using the Python SentencePieceProcess.")]
+        public string vocab_data_url
+        {
+            get { return m_strVocabDataUrl; }
+            set { m_strVocabDataUrl = value; }
+        }
+
+        /// <summary>
+        /// Specifies the destination file where the vocabulary data file data is downloaded.  This pre-created vocabulary file is also created using the Python SentencePieceProcess.
+        /// </summary>
+        public string vocab_data_dst_file
+        {
+            get { return m_strVocabDataDstFile; }
+            set { m_strVocabDataDstFile = value; }
         }
 
         /// <summary>
@@ -91,6 +112,8 @@ namespace MyCaffe.param.gpt
                 m_strSourceVocabFile = p.source_vocab_file;
                 m_strTargetVocabFile = p.target_vocab_file;
                 m_nMaxLoad = p.max_load;
+                m_strVocabDataUrl = p.vocab_data_url;
+                m_strVocabDataDstFile = p.vocab_data_dst_file;
             }
         }
 
@@ -117,6 +140,8 @@ namespace MyCaffe.param.gpt
             rgChildren.Add("target", "\"" + target + "\"");
             rgChildren.Add("target_vocab_file", "\"" + target_vocab_file + "\"");
             rgChildren.Add("source_vocab_file", "\"" + source_vocab_file + "\"");
+            rgChildren.Add("vocab_data_url", "\"" + vocab_data_url + "\"");
+            rgChildren.Add("vocab_data_dst_file", "\"" + vocab_data_dst_file + "\"");
 
             if (max_load > 0)
                 rgChildren.Add("max_load", max_load.ToString());
@@ -147,6 +172,12 @@ namespace MyCaffe.param.gpt
 
             if ((strVal = rp.FindValue("max_load")) != null)
                 p.max_load = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("vocab_data_url")) != null)
+                p.vocab_data_url = strVal;
+
+            if ((strVal = rp.FindValue("vocab_data_dst_file")) != null)
+                p.vocab_data_dst_file = strVal;
 
             return p;
         }

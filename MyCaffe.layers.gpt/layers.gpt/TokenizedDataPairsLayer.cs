@@ -14,6 +14,8 @@ using System.Globalization;
 using System.Diagnostics;
 using System.Xml.Linq;
 using System.Security.Cryptography;
+using System.Threading;
+using System.IO.Compression;
 
 namespace MyCaffe.layers.gpt
 {
@@ -34,6 +36,9 @@ namespace MyCaffe.layers.gpt
         Blob<T> m_blobDecIn = null;
         Layer<T> m_softmax = null;
         Layer<T> m_argmax = null;
+        Stopwatch m_swUpdateTimer = new Stopwatch();
+        double m_dfLastProgress = 0;
+        AutoResetEvent m_evtDownloadDone = new AutoResetEvent(false);
 
         /// <summary>
         /// Defines the input source.
@@ -134,6 +139,7 @@ namespace MyCaffe.layers.gpt
             switch (m_param.tokenized_data_pairs_param.input_type)
             {
                 case TokenizedDataParameter.INPUT_TYPE.TEXT_FILE:
+                    download_vocab_data();
                     m_encoderData = new TextListData(m_log, m_param.tokenized_data_pairs_param.source, m_param.tokenized_data_pairs_param.source_vocab_file, false, m_param.tokenized_data_pairs_param.vocabulary_type, m_param.tokenized_data_pairs_param.seed, m_param.phase);
                     m_decoderData = new TextListData(m_log, m_param.tokenized_data_pairs_param.target, m_param.tokenized_data_pairs_param.target_vocab_file, true, m_param.tokenized_data_pairs_param.vocabulary_type, m_param.tokenized_data_pairs_param.seed, m_param.phase);
                     m_log.WriteLine("Encoder Vocabulary: " + m_encoderData.VocabularySize.ToString());
@@ -142,6 +148,88 @@ namespace MyCaffe.layers.gpt
 
                 default:
                     throw new Exception("Unknown input type '" + m_param.tokenized_data_pairs_param.input_type.ToString() + "'");
+            }
+        }
+
+        private void download_vocab_data()
+        {
+            if (string.IsNullOrEmpty(m_param.tokenized_data_pairs_param.vocab_data_url))
+                return;
+
+            string strProgData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+            string strDataFile = Utility.ReplaceMacro(m_param.tokenized_data_pairs_param.vocab_data_dst_file, "$ProgramData$", strProgData);
+            string strVocabFile = Utility.ReplaceMacro(m_param.tokenized_data_pairs_param.source, "$ProgramData$", strProgData);
+
+            if (string.IsNullOrEmpty(strDataFile))
+                m_log.FAIL("You must specify a 'vocab_data_dst_file' when using 'vocab_data_url'.");
+
+            string strPath = Path.GetDirectoryName(strDataFile);
+            if (!Directory.Exists(strPath))
+                Directory.CreateDirectory(strPath);
+
+            string strFile1 = Path.GetFileName(strDataFile);
+            string strFile = downloadData(m_param.tokenized_data_pairs_param.vocab_data_url, strPath, strFile1);
+            if (!File.Exists(strFile))
+                return;
+
+            if (!File.Exists(strVocabFile))
+                ZipFile.ExtractToDirectory(strFile, strPath);
+        }
+
+        private string downloadData(string strUrl, string strPath, string strFileName)
+        {
+            if (!Directory.Exists(strPath))
+                Directory.CreateDirectory(strPath);
+
+            string strDataFile = strPath + "\\" + strFileName;
+            if (!File.Exists(strDataFile))
+            {
+                using (WebClient webClient = new WebClient())
+                {
+                    string strFile1 = strFileName;
+                    string strFile = strPath + "\\" + strFile1;
+
+                    m_swUpdateTimer.Start();
+                    m_dfLastProgress = 0;
+
+                    webClient.DownloadProgressChanged += WebClient_DownloadProgressChanged;
+                    webClient.DownloadFileCompleted += WebClient_DownloadFileCompleted;
+                    webClient.DownloadFileAsync(new Uri(strUrl), strFile, strFile1);
+
+                    m_evtDownloadDone.WaitOne();
+                }
+            }
+
+            return strDataFile;
+        }
+
+        private void WebClient_DownloadFileCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
+        {
+            bool bTraceEnabled = m_log.EnableTrace;
+            m_log.EnableTrace = true;
+            m_log.WriteLine("Downloading done.");
+            m_log.EnableTrace = bTraceEnabled;
+
+            m_evtDownloadDone.Set();
+        }
+
+        private void WebClient_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+        {
+            if (m_swUpdateTimer.Elapsed.TotalMilliseconds >= 1000)
+            {
+                if (m_dfLastProgress != e.ProgressPercentage)
+                {
+                    m_dfLastProgress = e.ProgressPercentage;
+                    string strFile = e.UserState.ToString();
+                    bool bTraceEnabled = m_log.EnableTrace;
+                    m_log.EnableTrace = true;
+
+                    m_log.Progress = e.ProgressPercentage / 100.0;
+                    m_log.WriteLine("Downloading '" + strFile + "' at " + m_log.Progress.ToString("P") + "...");
+                    m_log.EnableTrace = bTraceEnabled;
+                }
+
+                m_swUpdateTimer.Restart();
             }
         }
 
