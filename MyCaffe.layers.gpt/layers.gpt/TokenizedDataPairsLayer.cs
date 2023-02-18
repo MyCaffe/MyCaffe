@@ -205,11 +205,7 @@ namespace MyCaffe.layers.gpt
 
         private void WebClient_DownloadFileCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
         {
-            bool bTraceEnabled = m_log.EnableTrace;
-            m_log.EnableTrace = true;
-            m_log.WriteLine("Downloading done.");
-            m_log.EnableTrace = bTraceEnabled;
-
+            m_log.WriteLine("Downloading done.", true);
             m_evtDownloadDone.Set();
         }
 
@@ -221,12 +217,9 @@ namespace MyCaffe.layers.gpt
                 {
                     m_dfLastProgress = e.ProgressPercentage;
                     string strFile = e.UserState.ToString();
-                    bool bTraceEnabled = m_log.EnableTrace;
-                    m_log.EnableTrace = true;
 
                     m_log.Progress = e.ProgressPercentage / 100.0;
-                    m_log.WriteLine("Downloading '" + strFile + "' at " + m_log.Progress.ToString("P") + "...");
-                    m_log.EnableTrace = bTraceEnabled;
+                    m_log.WriteLine("Downloading '" + strFile + "' at " + m_log.Progress.ToString("P") + "...", true);
                 }
 
                 m_swUpdateTimer.Restart();
