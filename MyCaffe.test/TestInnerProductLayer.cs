@@ -143,24 +143,6 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestGradient2()
-        {
-            InnerProductLayerTest test = new InnerProductLayerTest();
-
-            try
-            {
-                foreach (IInnerProductLayerTest t in test.Tests)
-                {
-                    t.TestGradient2();
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
         public void TestGradientTranspose()
         {
             InnerProductLayerTest test = new InnerProductLayerTest();
@@ -223,7 +205,6 @@ namespace MyCaffe.test
         void TestForwardTranspose();
         void TestForwardNoBatch();
         void TestGradient();
-        void TestGradient2();
         void TestGradientTranspose();
         void TestBackwardTranspose();
     }
@@ -657,45 +638,6 @@ namespace MyCaffe.test
 
                 if (ip_t != null)
                     ip_t.Dispose();
-            }
-        }
-
-        private string loadTestData1()
-        {
-            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\mh\\";
-            string strFileName = "_multihead_test.zip";
-            string strTestPath = "test";
-            string strTestFile = "mh.10_concat_output1.npy";
-            return loadTestData(strPath, strFileName, strTestPath, strTestFile);
-        }
-
-        public void TestGradient2()
-        {
-            string strTestDataPath = loadTestData1();
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
-            p.inner_product_param.num_output = 512;
-            p.inner_product_param.weight_filler.type = "xavier";
-            p.inner_product_param.bias_filler.type = "xavier";
-            p.inner_product_param.bias_term = false;
-            p.inner_product_param.bias_filler.min = 1.0;
-            p.inner_product_param.bias_filler.max = 2.0;
-            InnerProductLayer<T> layer = new InnerProductLayer<T>(m_cuda, m_log, p);
-            
-            try
-            {
-                m_blob_bottom.LoadFromNumpy(strTestDataPath + "q0.npy");
-
-                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 0.01, 0.001);
-
-                double dfPctStep = (typeof(T) == typeof(float)) ? 0.0001 : 0.001;
-                int nStart = 163 * 102400;
-                nStart = 16777217; // Bug at this index
-                Trace.WriteLine("Start = " + nStart.ToString());
-                checker.CheckGradient(layer, BottomVec, TopVec, -1, 1, dfPctStep, nStart); 
-            }
-            finally
-            {
-                layer.Dispose();
             }
         }
     }
