@@ -214,9 +214,6 @@ namespace MyCaffe.layers.gpt
 
             else
             {
-                if (nIdxToken == 0)
-                    return str;
-
                 if (!m_rgVocabIdxToKey.ContainsKey(nIdxToken))
                     throw new Exception("The token '" + nIdxToken.ToString() + "' is not in the vocabulary!");
 
