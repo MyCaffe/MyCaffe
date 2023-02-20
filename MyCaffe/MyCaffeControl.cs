@@ -3009,16 +3009,21 @@ namespace MyCaffe
                 {
                     m_log.CHECK_EQ(m_solver.net.learnable_parameters.Count, m_net.learnable_parameters.Count, "The number of learnable parameters in the run net does not match the training net!");
 
-                    for (int i = 0; i < m_solver.net.learnable_parameters.Count; i++)
+                    try
                     {
-                        Blob<T> b = m_solver.net.learnable_parameters[i];
-                        Blob<T> bRun = m_net.learnable_parameters[i];
+                        for (int i = 0; i < m_solver.net.learnable_parameters.Count; i++)
+                        {
+                            Blob<T> b = m_solver.net.learnable_parameters[i];
+                            Blob<T> bRun = m_net.learnable_parameters[i];
 
-                        m_log.CHECK_EQ(b.count(), bRun.count(), "The number of learnable parameters in the run net does not match the training net!");
-                        m_log.CHECK(b.Name == bRun.Name, "The learnable parameter names do not match!");
-                        m_log.CHECK(b.CompareShape(bRun.shape()), "The learnable parameter shapes do not match!");
-                        
-                        bRun.CopyFrom(b);
+                            m_log.CHECK(b.Name == bRun.Name, "The learnable parameter names do not match!");
+                            bRun.CopyFrom(b, false, true);
+                        }
+                    }
+                    catch (Exception excpt)
+                    {
+                        m_log.WriteLine("WARING: " + excpt.Message + ", attempting to load with legacy (slower method)...");
+                        loadWeights(m_net, m_solver.net.SaveWeights(m_persist));
                     }
                 }
 
