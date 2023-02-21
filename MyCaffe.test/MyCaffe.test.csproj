@@ -72,11 +72,11 @@
       <HintPath>..\packages\Microsoft.VisualStudio.QualityTools.UnitTestFramework.Updated.15.0.26228\lib\Microsoft.VisualStudio.QualityTools.UnitTestFramework.dll\Microsoft.VisualStudio.QualityTools.UnitTestFramework.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="OnnxControl, Version=1.12.0.56, Culture=neutral, PublicKeyToken=666204c5f16cdcaa, processorArchitecture=MSIL">
-      <HintPath>..\packages\OnnxControl.1.12.0.56\lib\net40\OnnxControl.dll</HintPath>
+    <Reference Include="OnnxControl, Version=1.12.0.60, Culture=neutral, PublicKeyToken=666204c5f16cdcaa, processorArchitecture=MSIL">
+      <HintPath>..\packages\OnnxControl.1.12.0.60\lib\net40\OnnxControl.dll</HintPath>
     </Reference>
-    <Reference Include="SimpleGraphing, Version=1.12.0.56, Culture=neutral, PublicKeyToken=db1fd361618e40f6, processorArchitecture=MSIL">
-      <HintPath>..\packages\SimpleGraphingControl.1.12.0.56\lib\net40\SimpleGraphing.dll</HintPath>
+    <Reference Include="SimpleGraphing, Version=1.12.0.60, Culture=neutral, PublicKeyToken=db1fd361618e40f6, processorArchitecture=MSIL">
+      <HintPath>..\packages\SimpleGraphingControl.1.12.0.60\lib\net40\SimpleGraphing.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
