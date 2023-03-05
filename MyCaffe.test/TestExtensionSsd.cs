@@ -727,49 +727,53 @@ namespace MyCaffe.test
                 string strPath;
                 if (strVersion.Length > 0)
                 {
-                    if (strVersion != "12.0" && strVersion.Contains("12.0"))
-                        strVersion = "12.0";
+                    if (strVersion != "12.1" && strVersion.Contains("12.1"))
+                        strVersion = "12.1";
 
                     strPath = AssemblyDirectory + "\\MyCaffe.test.extension." + strVersion + ".dll";
                 }
                 else
                 {
-                    strPath = AssemblyDirectory + "\\MyCaffe.test.extension.12.0.dll";
+                    strPath = AssemblyDirectory + "\\MyCaffe.test.extension.12.1.dll";
                     if (!File.Exists(strPath))
                     {
-                        strPath = AssemblyDirectory + "\\MyCaffe.test.extension.11.8.dll";
+                        strPath = AssemblyDirectory + "\\MyCaffe.test.extension.12.0.dll";
                         if (!File.Exists(strPath))
                         {
-                            strPath = AssemblyDirectory + "\\MyCaffe.test.extension.11.7.dll";
+                            strPath = AssemblyDirectory + "\\MyCaffe.test.extension.11.8.dll";
                             if (!File.Exists(strPath))
                             {
-                                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.11.6.dll";
+                                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.11.7.dll";
                                 if (!File.Exists(strPath))
                                 {
-                                    strPath = AssemblyDirectory + "\\MyCaffe.test.extension.11.5.dll";
+                                    strPath = AssemblyDirectory + "\\MyCaffe.test.extension.11.6.dll";
                                     if (!File.Exists(strPath))
                                     {
-                                        strPath = AssemblyDirectory + "\\MyCaffe.test.extension.11.4.dll";
+                                        strPath = AssemblyDirectory + "\\MyCaffe.test.extension.11.5.dll";
                                         if (!File.Exists(strPath))
                                         {
-                                            strPath = AssemblyDirectory + "\\MyCaffe.test.extension.11.3.dll";
+                                            strPath = AssemblyDirectory + "\\MyCaffe.test.extension.11.4.dll";
                                             if (!File.Exists(strPath))
                                             {
-                                                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.11.2.dll";
+                                                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.11.3.dll";
                                                 if (!File.Exists(strPath))
                                                 {
-                                                    strPath = AssemblyDirectory + "\\MyCaffe.test.extension.11.1.dll";
+                                                    strPath = AssemblyDirectory + "\\MyCaffe.test.extension.11.2.dll";
                                                     if (!File.Exists(strPath))
                                                     {
-                                                        strPath = AssemblyDirectory + "\\MyCaffe.test.extension.11.0.dll";
+                                                        strPath = AssemblyDirectory + "\\MyCaffe.test.extension.11.1.dll";
                                                         if (!File.Exists(strPath))
                                                         {
-                                                            strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.2.dll";
+                                                            strPath = AssemblyDirectory + "\\MyCaffe.test.extension.11.0.dll";
                                                             if (!File.Exists(strPath))
                                                             {
-                                                                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+                                                                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.2.dll";
                                                                 if (!File.Exists(strPath))
-                                                                    strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+                                                                {
+                                                                    strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+                                                                    if (!File.Exists(strPath))
+                                                                        strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+                                                                }
                                                             }
                                                         }
                                                     }

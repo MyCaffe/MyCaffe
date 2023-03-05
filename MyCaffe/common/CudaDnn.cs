@@ -1533,93 +1533,104 @@ namespace MyCaffe.common
         {
             FileInfo fi = new FileInfo(Process.GetCurrentProcess().MainModule.FileName);
 
-            string strPath = fi.DirectoryName + "\\cuda_12.0\\CudaDnnDll.12.0.dll";
+            string strPath = fi.DirectoryName + "\\cuda_12.1\\CudaDnnDll.12.1.dll";
 
             if (!File.Exists(strPath))
             {
-                strPath = fi.DirectoryName + "\\CudaDnnDll.12.0.dll";
+                strPath = fi.DirectoryName + "\\CudaDnnDll.12.1.dll";
                 if (!File.Exists(strPath))
                 {
-                    strPath = fi.DirectoryName + "\\cuda_11.8\\CudaDnnDll.11.8.dll";
+                    strPath = fi.DirectoryName + "\\cuda_12.0\\CudaDnnDll.12.0.dll";
                     if (!File.Exists(strPath))
                     {
-                        strPath = fi.DirectoryName + "\\CudaDnnDll.11.8.dll";
+                        strPath = fi.DirectoryName + "\\CudaDnnDll.12.0.dll";
                         if (!File.Exists(strPath))
                         {
-                            strPath = fi.DirectoryName + "\\cuda_11.7\\CudaDnnDll.11.7.dll";
                             if (!File.Exists(strPath))
                             {
-                                strPath = fi.DirectoryName + "\\CudaDnnDll.11.7.dll";
+                                strPath = fi.DirectoryName + "\\cuda_11.8\\CudaDnnDll.11.8.dll";
                                 if (!File.Exists(strPath))
                                 {
-                                    strPath = fi.DirectoryName + "\\cuda_11.6\\CudaDnnDll.11.6.dll";
+                                    strPath = fi.DirectoryName + "\\CudaDnnDll.11.8.dll";
                                     if (!File.Exists(strPath))
                                     {
-                                        strPath = fi.DirectoryName + "\\CudaDnnDll.11.6.dll";
+                                        strPath = fi.DirectoryName + "\\cuda_11.7\\CudaDnnDll.11.7.dll";
                                         if (!File.Exists(strPath))
                                         {
-                                            strPath = fi.DirectoryName + "\\cuda_11.5\\CudaDnnDll.11.5.dll";
+                                            strPath = fi.DirectoryName + "\\CudaDnnDll.11.7.dll";
                                             if (!File.Exists(strPath))
                                             {
-                                                strPath = fi.DirectoryName + "\\CudaDnnDll.11.5.dll";
+                                                strPath = fi.DirectoryName + "\\cuda_11.6\\CudaDnnDll.11.6.dll";
                                                 if (!File.Exists(strPath))
                                                 {
-                                                    strPath = fi.DirectoryName + "\\cuda_11.4\\CudaDnnDll.11.4.dll";
+                                                    strPath = fi.DirectoryName + "\\CudaDnnDll.11.6.dll";
                                                     if (!File.Exists(strPath))
                                                     {
-                                                        strPath = fi.DirectoryName + "\\CudaDnnDll.11.4.dll";
+                                                        strPath = fi.DirectoryName + "\\cuda_11.5\\CudaDnnDll.11.5.dll";
                                                         if (!File.Exists(strPath))
                                                         {
-                                                            strPath = fi.DirectoryName + "\\cuda_11.3\\CudaDnnDll.11.3.dll";
+                                                            strPath = fi.DirectoryName + "\\CudaDnnDll.11.5.dll";
                                                             if (!File.Exists(strPath))
                                                             {
-                                                                strPath = fi.DirectoryName + "\\CudaDnnDll.11.3.dll";
+                                                                strPath = fi.DirectoryName + "\\cuda_11.4\\CudaDnnDll.11.4.dll";
                                                                 if (!File.Exists(strPath))
                                                                 {
-                                                                    strPath = fi.DirectoryName + "\\cuda_11.2\\CudaDnnDll.11.2.dll";
+                                                                    strPath = fi.DirectoryName + "\\CudaDnnDll.11.4.dll";
                                                                     if (!File.Exists(strPath))
                                                                     {
-                                                                        strPath = fi.DirectoryName + "\\CudaDnnDll.11.2.dll";
+                                                                        strPath = fi.DirectoryName + "\\cuda_11.3\\CudaDnnDll.11.3.dll";
                                                                         if (!File.Exists(strPath))
                                                                         {
-                                                                            strPath = fi.DirectoryName + "\\cuda_11.1\\CudaDnnDll.11.1.dll";
+                                                                            strPath = fi.DirectoryName + "\\CudaDnnDll.11.3.dll";
                                                                             if (!File.Exists(strPath))
                                                                             {
-                                                                                strPath = fi.DirectoryName + "\\CudaDnnDll.11.1.dll";
+                                                                                strPath = fi.DirectoryName + "\\cuda_11.2\\CudaDnnDll.11.2.dll";
                                                                                 if (!File.Exists(strPath))
                                                                                 {
-                                                                                    strPath = fi.DirectoryName + "\\cuda_11.0\\CudaDnnDll.11.0.dll";
+                                                                                    strPath = fi.DirectoryName + "\\CudaDnnDll.11.2.dll";
                                                                                     if (!File.Exists(strPath))
                                                                                     {
-                                                                                        strPath = fi.DirectoryName + "\\CudaDnnDll.11.0.dll";
+                                                                                        strPath = fi.DirectoryName + "\\cuda_11.1\\CudaDnnDll.11.1.dll";
                                                                                         if (!File.Exists(strPath))
                                                                                         {
-                                                                                            strPath = fi.DirectoryName + "\\cuda_10.2\\CudaDnnDll.10.2.dll";
+                                                                                            strPath = fi.DirectoryName + "\\CudaDnnDll.11.1.dll";
                                                                                             if (!File.Exists(strPath))
                                                                                             {
-                                                                                                strPath = fi.DirectoryName + "\\CudaDnnDll.10.2.dll";
+                                                                                                strPath = fi.DirectoryName + "\\cuda_11.0\\CudaDnnDll.11.0.dll";
                                                                                                 if (!File.Exists(strPath))
                                                                                                 {
-                                                                                                    strPath = fi.DirectoryName + "\\cuda_10.2.3_5\\CudaDnnDll.10.2.dll";
+                                                                                                    strPath = fi.DirectoryName + "\\CudaDnnDll.11.0.dll";
                                                                                                     if (!File.Exists(strPath))
                                                                                                     {
-                                                                                                        strPath = fi.DirectoryName + "\\CudaDnnDll.10.2.3_5.dll";
+                                                                                                        strPath = fi.DirectoryName + "\\cuda_10.2\\CudaDnnDll.10.2.dll";
                                                                                                         if (!File.Exists(strPath))
                                                                                                         {
-                                                                                                            strPath = fi.DirectoryName + "\\CudaDnnDll.10.1.dll";
+                                                                                                            strPath = fi.DirectoryName + "\\CudaDnnDll.10.2.dll";
                                                                                                             if (!File.Exists(strPath))
                                                                                                             {
-                                                                                                                strPath = fi.DirectoryName + "\\CudaDnnDll.10.0.dll";
+                                                                                                                strPath = fi.DirectoryName + "\\cuda_10.2.3_5\\CudaDnnDll.10.2.dll";
                                                                                                                 if (!File.Exists(strPath))
                                                                                                                 {
-                                                                                                                    strPath = fi.DirectoryName + "\\CudaDnnDll.9.2.dll";
+                                                                                                                    strPath = fi.DirectoryName + "\\CudaDnnDll.10.2.3_5.dll";
                                                                                                                     if (!File.Exists(strPath))
                                                                                                                     {
-                                                                                                                        strPath = fi.DirectoryName + "\\CudaDnnDll.9.1.dll";
+                                                                                                                        strPath = fi.DirectoryName + "\\CudaDnnDll.10.1.dll";
                                                                                                                         if (!File.Exists(strPath))
                                                                                                                         {
+                                                                                                                            strPath = fi.DirectoryName + "\\CudaDnnDll.10.0.dll";
                                                                                                                             if (!File.Exists(strPath))
-                                                                                                                                strPath = fi.DirectoryName + "\\CudaDnnDll.8.dll";
+                                                                                                                            {
+                                                                                                                                strPath = fi.DirectoryName + "\\CudaDnnDll.9.2.dll";
+                                                                                                                                if (!File.Exists(strPath))
+                                                                                                                                {
+                                                                                                                                    strPath = fi.DirectoryName + "\\CudaDnnDll.9.1.dll";
+                                                                                                                                    if (!File.Exists(strPath))
+                                                                                                                                    {
+                                                                                                                                        if (!File.Exists(strPath))
+                                                                                                                                            strPath = fi.DirectoryName + "\\CudaDnnDll.8.dll";
+                                                                                                                                    }
+                                                                                                                                }
+                                                                                                                            }
                                                                                                                         }
                                                                                                                     }
                                                                                                                 }
