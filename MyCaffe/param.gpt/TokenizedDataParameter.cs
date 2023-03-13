@@ -45,7 +45,11 @@ namespace MyCaffe.param.gpt
             /// <summary>
             /// Specifies to use pre-generated SentencePiece vocabulary.
             /// </summary>
-            SENTENCEPIECE
+            SENTENCEPIECE,
+            /// <summary>
+            /// Specifies to use a custom vocabulary.
+            /// </summary>
+            CUSTOM
         }
 
         /// <summary>
@@ -72,7 +76,11 @@ namespace MyCaffe.param.gpt
             /// <summary>
             /// Specifies that the source is a text filename.
             /// </summary>
-            TEXT_FILE
+            TEXT_FILE,
+            /// <summary>
+            /// Specifies that the source is the filename of an assembly DLL supporting the IXCustomTokenInput interface used for custom token input.
+            /// </summary>
+            CUSTOM              
         }
 
         /** @copydoc LayerParameterBase */
@@ -264,6 +272,8 @@ namespace MyCaffe.param.gpt
             {
                 if (strVal == INPUT_TYPE.TEXT_FILE.ToString())
                     p.input_type = INPUT_TYPE.TEXT_FILE;
+                else if (strVal == INPUT_TYPE.CUSTOM.ToString())
+                    p.input_type = INPUT_TYPE.CUSTOM;
                 else
                     throw new Exception("Unknown input type '" + strVal + "'");
             }

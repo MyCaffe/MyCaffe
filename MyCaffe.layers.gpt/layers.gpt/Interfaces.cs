@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MyCaffe.basecode;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -78,6 +79,31 @@ namespace MyCaffe.layers.gpt
         /// <param name="bIgnoreEos">Specifies to ignore the EOS token.</param>
         /// <returns>The detokenized string is returned (which may just be a character).</returns>
         string Detokenize(int nIdxToken, bool bIgnoreBos, bool bIgnoreEos);
+    }
+
+    /// <summary>
+    /// The ICustomTokenInput interface specifies the interface that all custom token inputs implement.
+    /// </summary>
+    public interface ICustomTokenInput
+    {
+        /// <summary>
+        /// Load all encoder tokens and their associated date/time.
+        /// <paramref name="evtCancel">Specifies the cancel event.</paramref>
+        /// <paramref name="log">Specifies the output log.</paramref>
+        /// <paramref name="phase">Specifies the phase where the call is running.</paramref>
+        /// <paramref name="nVocabSize">Specifies the source vocabulary size.</paramref>
+        /// </summary>
+        /// <returns>A tuple containing the encoder source, target and their date/time values is returned.</returns>
+        List<Tuple<DateTime, int[], int[]>> LoadAllEncoderTokens(CancelEvent evtCancel, Log log, Phase phase, out int nVocabSize);
+        /// <summary>
+        /// Load all decoder tokens and their associated date/time.
+        /// <paramref name="evtCancel">Specifies the cancel event.</paramref>
+        /// <paramref name="log">Specifies the output log.</paramref>
+        /// <paramref name="phase">Specifies the phase where the call is running.</paramref>
+        /// <paramref name="nVocabSize">Specifies the target vocabulary size.</paramref>
+        /// </summary>
+        /// <returns>A tuple containing the decoder source, target and their date/time values is returned.</returns>
+        List<Tuple<DateTime, int[], int[]>> LoadAllDecoderTokens(CancelEvent evtCancel, Log log, Phase phase, out int nVocabSize);
     }
 
     /// <summary>

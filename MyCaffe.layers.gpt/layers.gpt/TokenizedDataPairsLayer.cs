@@ -16,6 +16,7 @@ using System.Xml.Linq;
 using System.Security.Cryptography;
 using System.Threading;
 using System.IO.Compression;
+using System.Reflection;
 
 namespace MyCaffe.layers.gpt
 {
@@ -144,6 +145,11 @@ namespace MyCaffe.layers.gpt
                     m_decoderData = new TextListData(m_log, m_param.tokenized_data_pairs_param.target, m_param.tokenized_data_pairs_param.target_vocab_file, true, m_param.tokenized_data_pairs_param.vocabulary_type, m_param.tokenized_data_pairs_param.seed, m_param.phase);
                     m_log.WriteLine("Encoder Vocabulary: " + m_encoderData.VocabularySize.ToString());
                     m_log.WriteLine("Decoder Vocabulary: " + m_decoderData.VocabularySize.ToString());
+                    break;
+
+                case TokenizedDataParameter.INPUT_TYPE.CUSTOM:
+                    m_encoderData = new CustomListData(m_evtCancel, m_log, m_param.tokenized_data_pairs_param.source, "ENC", (int)m_param.tokenized_data_pairs_param.block_size, m_param.tokenized_data_pairs_param.seed, m_param.phase);
+                    m_decoderData = new CustomListData(m_evtCancel, m_log, m_param.tokenized_data_pairs_param.source, "DEC", (int)m_param.tokenized_data_pairs_param.block_size, m_param.tokenized_data_pairs_param.seed, m_param.phase);
                     break;
 
                 default:
@@ -922,6 +928,303 @@ namespace MyCaffe.layers.gpt
         public override char EOS
         {
             get { return m_vocab.EOS; }
+        }
+    }
+
+    /// <summary>
+    /// The CustomData supports external data input via an external Assembly DLL that supports the ICustomTokenInput interface.
+    /// </summary>
+    public class CustomListData : InputData
+    {
+        List<Tuple<DateTime, int[], int[]>> m_rgnData = new List<Tuple<DateTime, int[], int[]>>();
+        List<int> m_rgVocabulary = new List<int>();
+        ICustomTokenInput m_iTokenInput;
+        string m_strVocabInfo;
+        float[] m_rgData = null;
+        float[] m_rgTgt = null;
+        Phase m_phase;
+        Log m_log;
+        int m_nVocabularySize;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="evtCancel">Specifies the cancel event.</param>
+        /// <param name="log">Specifies the output log.</param>
+        /// <param name="strCustomDllFile">Specifies the path to the custom assembly DLL.</param>
+        /// <param name="strVocabInfo">Specifies the vocab info and shoudl be set to "ENC" or "DEC"</param>
+        /// <param name="nBlockSizeSrc">Specifies the block size.</param>
+        /// <param name="nRandomSeed">Specifies a random see.d</param>
+        /// <param name="phase">Specifies the running phase.</param>
+        /// <exception cref="Exception">An exception is thrown on error.</exception>
+        /// <remarks>
+        /// Note the source and target token sets must have matching DateTime[] arrays.
+        /// </remarks>
+        public CustomListData(CancelEvent evtCancel, Log log, string strCustomDllFile, string strVocabInfo, int nBlockSizeSrc, int? nRandomSeed = null, Phase phase = Phase.NONE) : base(nRandomSeed)
+        {
+            m_log = log;
+            m_phase = phase;
+            m_strVocabInfo = strVocabInfo;
+
+            string strProgData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+            strCustomDllFile = Utility.ReplaceMacro(strCustomDllFile, "$ProgramData$", strProgData);
+
+            m_iTokenInput = loadCustomInput(strCustomDllFile);
+
+            m_rgnData = (strVocabInfo == "ENC") ? m_iTokenInput.LoadAllEncoderTokens(evtCancel, m_log, phase, out m_nVocabularySize) : m_iTokenInput.LoadAllDecoderTokens(evtCancel, m_log, phase, out m_nVocabularySize);
+            if (m_rgnData.Count < nBlockSizeSrc + nBlockSizeSrc)
+                throw new Exception("Insufficient number of tokens, must have at least " + (nBlockSizeSrc + nBlockSizeSrc).ToString() + " tokens.");
+
+            log.WriteLine(strVocabInfo + " vocabulary size = " + m_nVocabularySize.ToString());
+        }
+
+        private ICustomTokenInput loadCustomInput(string strCustomDllFile)
+        {
+            try
+            {
+                Assembly a = Assembly.LoadFile(strCustomDllFile);
+                AssemblyName aName = a.GetName();
+
+                foreach (Type t in a.GetTypes())
+                {
+                    if (t.IsPublic)
+                    {
+                        Type iface = t.GetInterface("ICustomTokenInput");
+
+                        if (iface != null)
+                        {
+                            object obj = Activator.CreateInstance(t);
+                            return (ICustomTokenInput)obj;
+                        }
+                    }
+                }
+
+                return null;
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+        }
+
+        /// <summary>
+        /// Returns the raw data.
+        /// </summary>
+        public override List<string> RawData
+        {
+            get { throw new NotImplementedException("Raw data not supported by Custom Input"); }
+        }
+
+        /// <summary>
+        /// Returns the token size.
+        /// </summary>
+        public override uint TokenSize
+        {
+            get { return 1; }
+        }
+
+        /// <summary>
+        /// Returns the vocabulary size.
+        /// </summary>
+        public override uint VocabularySize
+        {
+            get { return (uint)m_nVocabularySize; }
+        }
+
+        /// <summary>
+        /// Returns true if data is available at the given index.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index to check</param>
+        /// <param name="bIncludeSrc">Specifies to include the source in the check.</param>
+        /// <param name="bIncludeTrg">Specifies to include the target in the check.</param>
+        /// <returns>If the data is available, true is returned.</returns>
+        public override bool GetDataAvailabilityAt(int nIdx, bool bIncludeSrc, bool bIncludeTrg)
+        {
+            if (bIncludeSrc && m_rgnData[nIdx].Item2.Length == 0)
+                return false;
+
+            if (bIncludeTrg && m_rgnData[nIdx].Item3.Length == 0)
+                return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Retrieve random blocks from the source data where the data and target are the same
+        /// but offset by one element where the target is offset +1 from the data.
+        /// </summary>
+        /// <param name="nBatchSize">Specifies the batch size.</param>
+        /// <param name="nBlockSize">Specifies teh block size.</param>
+        /// <param name="trgData">Specifies the matching target data used to verify that both source and target have data at each chosen index.</param>
+        /// <param name="rgnIdx">Returns an array of the indexes of the data returned.</param>
+        /// <returns>A tuple containing the data and target is returned.</returns>
+        public override Tuple<float[], float[]> GetData(int nBatchSize, int nBlockSize, InputData trgData, out int[] rgnIdx)
+        {
+            int nSize = nBatchSize * nBlockSize;
+
+            if (m_rgData == null || m_rgData.Length != nSize)
+                m_rgData = new float[nSize];
+            else
+                Array.Clear(m_rgData, 0, m_rgData.Length);
+
+            if (m_rgTgt == null || m_rgTgt.Length != nSize)
+                m_rgTgt = new float[nSize];
+            else
+                Array.Clear(m_rgTgt, 0, m_rgTgt.Length);
+
+            rgnIdx = new int[nBatchSize];
+
+            for (int i = 0; i < nBatchSize; i++)
+            {
+                int nDataIdx = m_random.Next(m_rgnData.Count);
+                int[] rgSrc = m_rgnData[nDataIdx].Item2;
+                int nRetryCount = 0;
+
+                while (rgSrc.Length == 0 || !trgData.GetDataAvailabilityAt(nDataIdx, true, true))
+                {
+                    nDataIdx = m_random.Next(m_rgnData.Count);
+                    rgSrc = m_rgnData[nDataIdx].Item2;
+
+                    nRetryCount++;
+                    if (nRetryCount > 20 && (rgSrc.Length == 0 || !trgData.GetDataAvailabilityAt(nDataIdx, true, true)))
+                        throw new Exception("Could not find a non-empty source data item!");
+                }
+
+                int[] rgTrg = m_rgnData[nDataIdx].Item3;
+                int nDstIdx = i * nBlockSize;
+
+                rgnIdx[i] = nDataIdx;
+
+
+                for (int j = 0; j < nBlockSize; j++)
+                {
+                    if (j < rgSrc.Length)
+                        m_rgData[nDstIdx + j] = rgSrc[j];
+
+                    if (rgTrg != null && j < rgTrg.Length)
+                        m_rgTgt[nDstIdx + j] = rgTrg[j];
+                }
+
+                if (rgTrg != null &&
+                    rgTrg[rgTrg.Length - 1] == EOS &&
+                    m_rgTgt[nDstIdx + nBlockSize - 1] != 0 &&
+                    m_rgTgt[nDstIdx + nBlockSize - 1] != EOS)
+                    m_rgTgt[nDstIdx + nBlockSize - 1] = EOS;
+
+                if (rgSrc[rgSrc.Length - 1] == EOS &&
+                    m_rgData[nDstIdx + nBlockSize - 1] != 0 &&
+                    m_rgData[nDstIdx + nBlockSize - 1] != EOS)
+                    m_rgData[nDstIdx + nBlockSize - 1] = EOS;
+            }
+
+            return new Tuple<float[], float[]>(m_rgData, m_rgTgt);
+        }
+
+        /// <summary>
+        /// Fill a batch of data from a specified array of indexes.
+        /// </summary>
+        /// <param name="nBatchSize">Specifies the number of blocks in the batch.</param>
+        /// <param name="nBlockSize">Specifies the size of each block.</param>
+        /// <param name="rgnIdx">Specifies the array of indexes to the data to be retrieved.</param>
+        /// <returns>A tuple containing the data and target is returned.</returns>
+        public override Tuple<float[], float[]> GetDataAt(int nBatchSize, int nBlockSize, int[] rgnIdx)
+        {
+            int nSize = nBatchSize * nBlockSize;
+
+            if (m_rgData == null || m_rgData.Length != nSize)
+                m_rgData = new float[nSize];
+            else
+                Array.Clear(m_rgData, 0, m_rgData.Length);
+
+            if (m_rgTgt == null || m_rgTgt.Length != nSize)
+                m_rgTgt = new float[nSize];
+            else
+                Array.Clear(m_rgTgt, 0, m_rgTgt.Length);
+
+            for (int i = 0; i < rgnIdx.Length; i++)
+            {
+                int nDataIdx = rgnIdx[i];
+                int nDstIdx = i * nBlockSize;
+
+                int[] rgSrc = m_rgnData[nDataIdx].Item2;
+                int[] rgTrg = m_rgnData[nDataIdx].Item3;
+
+                for (int j = 0; j < nBlockSize; j++)
+                {
+                    if (j < rgSrc.Length)
+                        m_rgData[nDstIdx + j] = rgSrc[j];
+
+                    if (j < rgTrg.Length && rgTrg != null)
+                        m_rgTgt[nDstIdx + j] = rgTrg[j];
+                }
+
+                if (rgTrg != null &&
+                    rgTrg[rgTrg.Length - 1] == EOS &&
+                    m_rgTgt[nDstIdx + nBlockSize - 1] != 0 &&
+                    m_rgTgt[nDstIdx + nBlockSize - 1] != EOS)
+                    m_rgTgt[nDstIdx + nBlockSize - 1] = EOS;
+
+                if (rgSrc[rgSrc.Length - 1] == EOS &&
+                    m_rgData[nDstIdx + nBlockSize - 1] != 0 &&
+                    m_rgData[nDstIdx + nBlockSize - 1] != EOS)
+                    m_rgData[nDstIdx + nBlockSize - 1] = EOS;
+            }
+
+            return new Tuple<float[], float[]>(m_rgData, m_rgTgt);
+        }
+
+        /// <summary>
+        /// Tokenize an input string using the internal vocabulary.
+        /// </summary>
+        /// <param name="str">Specifies the string to tokenize.</param>
+        /// <param name="bAddBos">Add the begin of sequence token.</param>
+        /// <param name="bAddEos">Add the end of sequence token.</param>
+        /// <returns>A list of tokens corresponding to the input is returned.</returns>
+        public override List<int> Tokenize(string str, bool bAddBos, bool bAddEos)
+        {
+            throw new NotImplementedException("Tokenize not supported by Custom Input.");
+        }
+
+        /// <summary>
+        /// Detokenize an array into a string.
+        /// </summary>
+        /// <param name="rgfTokIdx">Specifies the array of tokens to detokenize.</param>
+        /// <param name="nStartIdx">Specifies the starting index where detokenizing begins.</param>
+        /// <param name="nCount">Specifies the number of tokens to detokenize.</param>
+        /// <param name="bIgnoreBos">Specifies to ignore the BOS token.</param>
+        /// <param name="bIgnoreEos">Specifies to ignore the EOS token.</param>
+        /// <returns>The detokenized string is returned.</returns>
+        public override string Detokenize(float[] rgfTokIdx, int nStartIdx, int nCount, bool bIgnoreBos, bool bIgnoreEos)
+        {
+            throw new NotImplementedException("Detokenize not supported by Custom Input.");
+        }
+
+        /// <summary>
+        /// Detokenize a single token.
+        /// </summary>
+        /// <param name="nTokIdx">Specifies an index to the token to be detokenized.</param>
+        /// <param name="bIgnoreBos">Specifies to ignore the BOS token.</param>
+        /// <param name="bIgnoreEos">Specifies to ignore the EOS token.</param>
+        /// <returns>The detokenized character is returned.</returns>
+        public override string Detokenize(int nTokIdx, bool bIgnoreBos, bool bIgnoreEos)
+        {
+            throw new NotImplementedException("Detokenize not supported by Custom Input.");
+        }
+
+        /// <summary>
+        /// Return the special begin of sequence character.
+        /// </summary>
+        public override char BOS
+        {
+            get { return (char)SPECIAL_TOKENS.BOS; }
+        }
+
+        /// <summary>
+        /// Return the special end of sequence character.
+        /// </summary>
+        public override char EOS
+        {
+            get { return (char)SPECIAL_TOKENS.EOS; }
         }
     }
 }

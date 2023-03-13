@@ -17,6 +17,8 @@ using MyCaffe.param.gpt;
 using System.IO.Compression;
 using System.IO;
 using System.Drawing;
+using System.Reflection;
+using System.Diagnostics;
 
 /// <summary>
 /// Testing the tokenized data layer.
@@ -135,7 +137,25 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
-        
+
+        [TestMethod]
+        public void TestForwardCustom()
+        {
+            TokenizedDataPairsLayerTest test = new TokenizedDataPairsLayerTest();
+
+            try
+            {
+                foreach (ITokenizedDataPairsLayerTest t in test.Tests)
+                {
+                    t.TestForwardCustom(10, 128);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
         //[TestMethod]
         //public void TestForwardEnFrSentencePiecePy()
         //{
@@ -178,6 +198,7 @@ namespace MyCaffe.test
         void TestForward(int nBatchSize, int nBlockSize, TokenizedDataPairsParameter.VOCABULARY_TYPE vocabType);
         void TestForwardEx(int nBatchSize, int nBlockSize, TokenizedDataPairsParameter.VOCABULARY_TYPE vocabType);
         void TestForwardPy(bool bUseDefaultPythonLocation);
+        void TestForwardCustom(int nBatchSize, int nBlockSize);
     }
 
     class TokenizedDataPairsLayerTest : TestBase
@@ -529,6 +550,59 @@ namespace MyCaffe.test
                 }
             }
             finally
+            {
+                layer.Dispose();
+            }
+        }
+
+        public void TestForwardCustom(int nBatchSize, int nBlockSize)
+        {
+            string strSrcFile = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\MyCaffe.layers.gpt.custom_input.dll";
+
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.TOKENIZED_DATA_PAIRS);
+            p.tokenized_data_pairs_param.batch_size = (uint)nBatchSize;
+            p.tokenized_data_pairs_param.block_size = (uint)nBlockSize;
+            p.tokenized_data_pairs_param.input_type = TokenizedDataParameter.INPUT_TYPE.CUSTOM;
+            p.tokenized_data_pairs_param.vocabulary_type = TokenizedDataParameter.VOCABULARY_TYPE.CUSTOM;
+            p.tokenized_data_pairs_param.source_vocab_file = null;
+            p.tokenized_data_pairs_param.source = strSrcFile;
+            p.tokenized_data_pairs_param.target_vocab_file = null;
+            p.tokenized_data_pairs_param.target = null;
+            p.tokenized_data_pairs_param.seed = 1701;
+            p.phase = Phase.TRAIN;
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
+
+            try
+            {
+                BottomVec.Clear();
+                TopVec.Clear();
+
+                TopVec.Add(m_blobEncInput);
+                m_blobEncInput.Name = "enc_in";
+                TopVec.Add(m_blobDecInput);
+                m_blobDecInput.Name = "dec_in";
+                TopVec.Add(m_blobDecOutput);
+                m_blobDecOutput.Name = "dec_out";
+                TopVec.Add(m_blobEncMask);
+                m_blobEncMask.Name = "enc_mask";
+                TopVec.Add(m_blobDecMask);
+                m_blobDecMask.Name = "dec_mask";
+
+                layer.Setup(BottomVec, TopVec);
+
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
+
+                for (int i = 0; i < 1000; i++)
+                {
+                    layer.Forward(BottomVec, TopVec);
+                }
+
+                sw.Stop();
+                double dfMs = sw.Elapsed.TotalMilliseconds / 1000;
+                m_log.WriteLine("Timing = " + dfMs.ToString("N3") + " ms. per forward pass.");
+            }
+            catch (Exception e)
             {
                 layer.Dispose();
             }
