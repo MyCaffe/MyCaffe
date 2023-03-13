@@ -1020,25 +1020,25 @@ namespace MyCaffe.test
                     string strPath1 = strPath + "iter_" + i.ToString() + "\\";
 
                     blobVal.LoadFromNumpy(strPath1 + "1_wte.weight.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[0], blobWork, false, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[0], blobWork, false, 1e-08), "1_wte.weight.npy does not match!");
                     blobVal.LoadFromNumpy(strPath1 + "1_wpe.weight.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[1], blobWork, false, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[1], blobWork, false, 1e-08), "1_wpe.weight.npy does not match!");
                     blobVal.LoadFromNumpy(strPath1 + "blk0.csa.c_attn.weight.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[2], blobWork, false, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[2], blobWork, false, 1e-08), "blk0.csa.c_attn.weight.npy does not match!");
                     blobVal.LoadFromNumpy(strPath1 + "blk0.csa.c_attn.bias.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[3], blobWork, false, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[3], blobWork, false, 1e-08), "blk0.csa.c_attn.bias.npy does not match!");
                     blobVal.LoadFromNumpy(strPath1 + "blk0.csa.c_proj.weight.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[4], blobWork, false, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[4], blobWork, false, 1e-08), "blk0.csa.c_proj.weight.npy does not match!");
                     blobVal.LoadFromNumpy(strPath1 + "blk0.csa.c_proj.bias.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[5], blobWork, false, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[5], blobWork, false, 1e-08), "blk0.csa.c_proj.bias.npy does not match!");
                     blobVal.LoadFromNumpy(strPath1 + "blk0.c_fc.weight.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[6], blobWork, false, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[6], blobWork, false, 1e-08), "blk0.c_fc.weight.npy does not match!");
                     blobVal.LoadFromNumpy(strPath1 + "blk0.c_fc.bias.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[7], blobWork, false, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[7], blobWork, false, 1e-08), "blk0.c_fc.bias.npy does not match!");
                     blobVal.LoadFromNumpy(strPath1 + "blk0.c_proj.weight.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[8], blobWork, false, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[8], blobWork, false, 1e-08), "blk0.c_proj.weight.npy does not match!");
                     blobVal.LoadFromNumpy(strPath1 + "blk0.c_proj.bias.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[9], blobWork, false, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[9], blobWork, false, 1e-08), "blk0.c_proj.bias.npy does not match!");
 
                     net.ClearParamDiffs();
 
@@ -1051,7 +1051,7 @@ namespace MyCaffe.test
                         if (j == 3)
                         {
                             blobVal.LoadFromNumpy(strPath1 + "1_wpe.weight.npy");
-                            Trace.Assert(blobVal.Compare(net.layers[j].blobs[0], blobWork, false, 1e-08));
+                            m_log.CHECK(blobVal.Compare(net.layers[j].blobs[0], blobWork, false, 1e-08), "1_wpe.weight.npy does not match!");
                         }
 
                         double dfLayerLoss = net.layers[j].Forward(colBottom, colTop);
@@ -1101,13 +1101,13 @@ namespace MyCaffe.test
                         if (!string.IsNullOrEmpty(strBottomData))
                         {
                             blobVal.LoadFromNumpy(strPath1 + strBottomData);
-                            Trace.Assert(blobVal.Compare(colBottom[0], blobWork, false, 1e-08));
+                            m_log.CHECK(blobVal.Compare(colBottom[0], blobWork, false, 1e-08), strBottomData + " does not match!");
                         }
 
                         if (!string.IsNullOrEmpty(strTopData))
                         {
                             blobVal.LoadFromNumpy(strPath1 + strTopData);
-                            Trace.Assert(blobVal.Compare(colTop[0], blobWork, false, 1e-08));
+                            m_log.CHECK(blobVal.Compare(colTop[0], blobWork, false, 1e-08), strTopData + " does not match!");
                         }
                     }
 
@@ -1148,80 +1148,80 @@ namespace MyCaffe.test
                             if (!string.IsNullOrEmpty(strBottomDiff))
                             {
                                 blobVal.LoadFromNumpy(strPath1 + strBottomDiff, true);
-                                Trace.Assert(blobVal.Compare(colBottom[0], blobWork, true, 1e-08));
+                                m_log.CHECK(blobVal.Compare(colBottom[0], blobWork, true, 1e-08), strBottomDiff + " does not match!");
 
                                 if (!string.IsNullOrEmpty(strTopData))
                                 {
                                     blobVal.LoadFromNumpy(strPath1 + strTopData);
-                                    Trace.Assert(blobVal.Compare(colTop[0], blobWork, false, 1e-08));
+                                    m_log.CHECK(blobVal.Compare(colTop[0], blobWork, false, 1e-08), strTopData + " does not match!");
                                 }
 
                                 if (!string.IsNullOrEmpty(strBottomData))
                                 {
                                     blobVal.LoadFromNumpy(strPath1 + strBottomData);
-                                    Trace.Assert(blobVal.Compare(colBottom[0], blobWork, false, 1e-08));
+                                    m_log.CHECK(blobVal.Compare(colBottom[0], blobWork, false, 1e-08), strBottomData + " does not match!");
                                 }
                             }
                         }
                     }
 
                     blobVal.LoadFromNumpy(strPath1 + "____.grad_lm_head.wt.npy", true);
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[10], blobWork, true, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[10], blobWork, true, 1e-08), "___.grad_lm_head.wt.npy does not match!");
 
                     blobVal.LoadFromNumpy(strPath1 + "____.grad_blk0.c_proj.bias.npy", true);
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[9], blobWork, true, 6e-08)); //<<-bug
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[9], blobWork, true, 6e-08), "___.grad_blk0.c_proj.bias.npy does not match!"); //<<-bug
                     blobVal.LoadFromNumpy(strPath1 + "____.grad_blk0.c_proj.wt.npy", true);
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[8], blobWork, true, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[8], blobWork, true, 1e-08), "___.grad_blk0.c_proj.wt.npy does not match!");
 
                     blobVal.LoadFromNumpy(strPath1 + "____.grad_blk0.c_fc.bias.npy", true);
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[7], blobWork, true, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[7], blobWork, true, 1e-08), "___.grad_blk0.c_fc.bias.npy does not match!");
                     blobVal.LoadFromNumpy(strPath1 + "____.grad_blk0.c_fc.wt.npy", true);
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[6], blobWork, true, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[6], blobWork, true, 1e-08), "___.grad_blk0.c_fc.wt.npy does not match!");
 
                     blobVal.LoadFromNumpy(strPath1 + "____.grad_blk0.csa.c_proj.bias.npy", true);
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[5], blobWork, true, 3e-07)); //<<-bug?
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[5], blobWork, true, 3e-07), "___.grad_blk0.csa.c_proj.bias.npy does not match!"); //<<-bug?
                     blobVal.LoadFromNumpy(strPath1 + "____.grad_blk0.csa.c_proj.wt.npy", true);
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[4], blobWork, true, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[4], blobWork, true, 1e-08), "___.grad_blk0.csa.c_proj.wt.npy does not match!");
 
                     blobVal.LoadFromNumpy(strPath1 + "____.grad_blk0.csa.c_attn.bias.npy", true);
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[3], blobWork, true, 3e-08)); //<<-bug?
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[3], blobWork, true, 3e-08), "___.grad_blk0.csa.c_attn.bias.npy does not match!"); //<<-bug?
                     blobVal.LoadFromNumpy(strPath1 + "____.grad_blk0.csa.c_attn.wt.npy", true);
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[2], blobWork, true, 3e-08)); //<<-bug?
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[2], blobWork, true, 3e-08), "___.grad_blk0.csa.c_attn.wt.npy does not match!"); //<<-bug?
 
                     blobVal.LoadFromNumpy(strPath1 + "____.grad_tfb.wpe.wt.npy", true);
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[1], blobWork, true, 2e-07)); //<<-bug?
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[1], blobWork, true, 2e-07), "___.grad_tfb.wpe.wt.npy does not match!"); //<<-bug?
                     blobVal.LoadFromNumpy(strPath1 + "____.grad_tfb.wte.wt.npy", true);
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[0], blobWork, true, 3e-07)); //<<-bug?
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[0], blobWork, true, 3e-07), "___.grad.tfb.wte.wt.npy does not match!"); //<<-bug?
 
                     solver.ApplyUpdate(i);
 
                     blobVal.LoadFromNumpy(strPath1 + "____.param_lm_head.wt.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[10], blobWork, false, 2e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[10], blobWork, false, 2e-08), "___.param_lm_head.wt.npy does not match!");
 
                     blobVal.LoadFromNumpy(strPath1 + "____.param_blk0.c_proj.bias.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[9], blobWork));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[9], blobWork), "___.param_blk0.c_proj.bias.npy does not match!");
                     blobVal.LoadFromNumpy(strPath1 + "____.param_blk0.c_proj.wt.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[8], blobWork));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[8], blobWork), "___.param_blk0.c_proj.wt.npy does not match!");
 
                     blobVal.LoadFromNumpy(strPath1 + "____.param_blk0.c_fc.bias.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[7], blobWork));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[7], blobWork), "___.param_blk0.c_fc.bias.npy does not match!");
                     blobVal.LoadFromNumpy(strPath1 + "____.param_blk0.c_fc.wt.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[6], blobWork, false, 2e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[6], blobWork, false, 2e-08), "___.param_blk0.c_fc.wt.npy does not match!");
 
                     blobVal.LoadFromNumpy(strPath1 + "____.param_blk0.csa.c_proj.bias.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[5], blobWork)); 
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[5], blobWork), "___.param_blk0.csa.c_proj.bias.npy does not match!"); 
                     blobVal.LoadFromNumpy(strPath1 + "____.param_blk0.csa.c_proj.wt.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[4], blobWork));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[4], blobWork), "___.param_blk0.csa.c_proj.wt.npy does not match!");
 
                     blobVal.LoadFromNumpy(strPath1 + "____.param_blk0.csa.c_attn.bias.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[3], blobWork, false, 2e-04)); //<<-bug?
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[3], blobWork, false, 2e-04), "___.param_blk0.csa.c_attn.bias.npy does not match!"); //<<-bug?
                     blobVal.LoadFromNumpy(strPath1 + "____.param_blk0.csa.c_attn.wt.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[2], blobWork, false, 2e-08)); 
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[2], blobWork, false, 2e-08), "___.param_blk0.csa.c_attn.wt.npy does not match!"); 
 
                     blobVal.LoadFromNumpy(strPath1 + "____.param_tfb.wpe.wt.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[1], blobWork));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[1], blobWork), "___.param_tfb.wpe.wt.npy does not match!");
                     blobVal.LoadFromNumpy(strPath1 + "____.param_tfb.wte.wt.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[0], blobWork));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[0], blobWork), "___.param_tfb.wte.wt.npy does not match!");
                 }
             }
             finally
@@ -1292,25 +1292,25 @@ namespace MyCaffe.test
                     string strPath1 = strPath;
 
                     blobVal.LoadFromNumpy(strPath1 + "1_wte.weight.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[0], blobWork, false, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[0], blobWork, false, 1e-08), "1_wte.weight.npy does not match");
                     blobVal.LoadFromNumpy(strPath1 + "1_wpe.weight.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[1], blobWork, false, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[1], blobWork, false, 1e-08), "1_wpe.weight.npy does not match");
                     blobVal.LoadFromNumpy(strPath1 + "blk0.csa.c_attn.weight.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[2], blobWork, false, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[2], blobWork, false, 1e-08), "blk0.csa.c_attn.weight.npy does not match");
                     blobVal.LoadFromNumpy(strPath1 + "blk0.csa.c_attn.bias.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[3], blobWork, false, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[3], blobWork, false, 1e-08), "blk0.csa.c_attn.bias.npy does not match");
                     blobVal.LoadFromNumpy(strPath1 + "blk0.csa.c_proj.weight.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[4], blobWork, false, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[4], blobWork, false, 1e-08), "blk0.csa.c_proj.weight.npy does not match");
                     blobVal.LoadFromNumpy(strPath1 + "blk0.csa.c_proj.bias.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[5], blobWork, false, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[5], blobWork, false, 1e-08), "blk0.csa.c_proj.bias.npy does not match.");
                     blobVal.LoadFromNumpy(strPath1 + "blk0.c_fc.weight.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[6], blobWork, false, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[6], blobWork, false, 1e-08), "blk0.c_fc.weight.npy does not match");
                     blobVal.LoadFromNumpy(strPath1 + "blk0.c_fc.bias.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[7], blobWork, false, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[7], blobWork, false, 1e-08), "blk0.c_fc.bias.npy does not match");
                     blobVal.LoadFromNumpy(strPath1 + "blk0.c_proj.weight.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[8], blobWork, false, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[8], blobWork, false, 1e-08), "blk0.c_proj.weight.npy does not match");
                     blobVal.LoadFromNumpy(strPath1 + "blk0.c_proj.bias.npy");
-                    Trace.Assert(blobVal.Compare(net.learnable_parameters[9], blobWork, false, 1e-08));
+                    m_log.CHECK(blobVal.Compare(net.learnable_parameters[9], blobWork, false, 1e-08), "blk0.c_proj.bias.npy does not match");
 
                     double dfLoss = 0;
                     for (int j = 0; j < net.layers.Count; j++)
@@ -1333,7 +1333,7 @@ namespace MyCaffe.test
                         if (j == 2)
                         {
                             blobVal.LoadFromNumpy(strPath1 + "1_wpe.weight.npy");
-                            Trace.Assert(blobVal.Compare(net.layers[j].blobs[0], blobWork, false, 1e-08));
+                            m_log.CHECK(blobVal.Compare(net.layers[j].blobs[0], blobWork, false, 1e-08), "1_wpe.weight.npy does not match");
                         }
 
                         double dfLayerLoss = net.layers[j].Forward(colBottom, colTop);
@@ -1392,19 +1392,19 @@ namespace MyCaffe.test
                         if (!string.IsNullOrEmpty(strBottomData))
                         {
                             blobVal.LoadFromNumpy(strPath1 + strBottomData);
-                            Trace.Assert(blobVal.Compare(colBottom[0], blobWork, false, dfBtmErr));
+                            m_log.CHECK(blobVal.Compare(colBottom[0], blobWork, false, dfBtmErr), strBottomData + " does not match");
                         }
 
                         if (!string.IsNullOrEmpty(strTopData0))
                         {
                             blobVal.LoadFromNumpy(strPath1 + strTopData0);
-                            Trace.Assert(blobVal.Compare(colTop[0], blobWork, false, dfTopErr0));
+                            m_log.CHECK(blobVal.Compare(colTop[0], blobWork, false, dfTopErr0), strTopData0 + " does not match");
                         }
 
                         if (!string.IsNullOrEmpty(strTopData1))
                         {
                             blobVal.LoadFromNumpy(strPath1 + strTopData1);
-                            Trace.Assert(blobVal.Compare(colTop[1], blobWork, false, dfTopErr1));
+                            m_log.CHECK(blobVal.Compare(colTop[1], blobWork, false, dfTopErr1), strTopData1 + " does not match");
                         }
                     }
                 }
