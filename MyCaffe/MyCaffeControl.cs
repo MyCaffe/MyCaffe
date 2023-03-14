@@ -20,6 +20,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Net;
+using System.Collections.Concurrent;
 
 /// <summary>
 /// The MyCaffe namespace contains the main body of MyCaffe code that closesly tracks the C++ Caffe open-source project.  
@@ -2835,6 +2836,17 @@ namespace MyCaffe
 
             strFinal = clean(strFinal);
             return new PropertySet("Results=" + strFinal);
+        }
+
+        /// <summary>
+        /// Run the network forward on the bottom blobs.
+        /// </summary>
+        /// <param name="colBottom">Specifies the input blobs.</param>
+        /// <returns>The top output blobs are returned.</returns>
+        public BlobCollection<T> Run(BlobCollection<T> colBottom)
+        {
+            double dfLoss;
+            return m_net.Forward(colBottom, out dfLoss, true);
         }
 
         private string clean(string strFinal)
