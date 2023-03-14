@@ -286,6 +286,8 @@ namespace MyCaffe.param.gpt
                     p.vocabulary_type = VOCABULARY_TYPE.WORD;
                 else if (strVal == VOCABULARY_TYPE.SENTENCEPIECE.ToString())
                     p.vocabulary_type = VOCABULARY_TYPE.SENTENCEPIECE;
+                else if (strVal == VOCABULARY_TYPE.CUSTOM.ToString())
+                    p.vocabulary_type = VOCABULARY_TYPE.CUSTOM;
                 else
                     throw new Exception("Unknown vocabulary type '" + strVal + "'");
             }
