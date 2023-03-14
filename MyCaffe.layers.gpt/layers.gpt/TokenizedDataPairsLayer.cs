@@ -356,8 +356,8 @@ namespace MyCaffe.layers.gpt
         {
             if (m_phase == Phase.RUN)
             {
-                colTop[0].CopyFromAndPad(colBottom[0]);
-                colTop[1].CopyFromAndPad(colBottom[1]);
+                colTop[0].CopyFromAndPad(colBottom[0]); // enc data
+                colTop[1].CopyFromAndPad(colBottom[1]); // dec data (with BOS token, initially)
                 // colTop[2] NO Dec target data when running.
             }
             else
