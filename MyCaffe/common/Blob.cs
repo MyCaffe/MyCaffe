@@ -447,10 +447,13 @@ namespace MyCaffe.common
 
             if (m_shape == null)
                 m_shape = new SyncedMemory<T>(m_cuda, m_log, rgShape.Length);
-            else if (m_shape.Count < rgShape.Length)
+            else if (m_shape.Capacity < rgShape.Length)
                 m_shape.Allocate(rgShape.Length);
             else if (m_shape.Count != rgShape.Length)
+            {
+                m_shape.Count = rgShape.Length;
                 m_shape.ZeroAll();
+            }
 
             if (rgShape.Length > 0)
             {
