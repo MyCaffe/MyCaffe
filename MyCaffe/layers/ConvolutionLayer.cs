@@ -242,6 +242,31 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Tests the shapes of both the bottom and top blobs and if they are the same as the previous sizing, returns <i>false</i> indicating that no reshape is needed.
+        /// </summary>
+        /// <param name="colBottom">Specifies the bottom blobs.</param>
+        /// <param name="colTop">Specifies the top blobs.</param>
+        /// <param name="bReset">Specifies to reset the test (set to <i>false</i> when using in second derivative classes, e.g. set to true in BaseConvolutionLayer, and false in ConvolutionLayer).</param>
+        /// <returns>If a reshape is needed, returns <i>true</i> otherwise returns <i>fasle</i>.</returns>
+        protected override bool reshapeNeeded(BlobCollection<T> colBottom, BlobCollection<T> colTop, bool bReset = true)
+        {
+            // Memory optimizations require reshaping now on each pass.
+            if (!bReset)
+                return m_bReshapeOnForwardNeeded;
+
+            if (!compareShapes(colBottom, colTop))
+            {
+                m_bReshapeOnForwardNeeded = true;
+                return true;
+            }
+            else
+            {
+                m_bReshapeOnForwardNeeded = false;
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Reshape the bottom (input) and top (output) blobs.
         /// </summary>
         /// <param name="colBottom">Specifies the collection of bottom (input) Blobs.</param>
@@ -251,6 +276,8 @@ namespace MyCaffe.layers
             base.Reshape(colBottom, colTop);
             if (!reshapeNeeded(colBottom, colTop, false))
                 return;
+
+            setShapes(colBottom, colTop);
 
             if (!m_param.convolution_param.useCudnn(m_nNumSpatialAxes))
                 return;

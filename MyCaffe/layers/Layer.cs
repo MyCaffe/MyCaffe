@@ -570,7 +570,7 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the top blobs.</param>
         /// <param name="bReset">Specifies to reset the test (set to <i>false</i> when using in second derivative classes, e.g. set to true in BaseConvolutionLayer, and false in ConvolutionLayer).</param>
         /// <returns>If a reshape is needed, returns <i>true</i> otherwise returns <i>fasle</i>.</returns>
-        protected bool reshapeNeeded(BlobCollection<T> colBottom, BlobCollection<T> colTop, bool bReset = true)
+        protected virtual bool reshapeNeeded(BlobCollection<T> colBottom, BlobCollection<T> colTop, bool bReset = true)
         {
             return true;
 
@@ -628,7 +628,7 @@ namespace MyCaffe.layers
             return true;
         }
 
-        private void setShapes(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        protected void setShapes(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             setShapes(colBottom, ref m_rgrgLastBottomShape);
             setShapes(colTop, ref m_rgrgLastTopShape);
