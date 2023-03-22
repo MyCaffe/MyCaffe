@@ -27,8 +27,8 @@ namespace MyCaffe.layers.gpt
     public class TokenizedDataPairsLayer<T> : Layer<T>
     {
         CancelEvent m_evtCancel;
-        InputData m_encoderData;
-        InputData m_decoderData;
+        InputData m_encoderData = null;
+        InputData m_decoderData = null;
         Blob<T> m_blobX = null;
         Blob<T> m_blobY = null;
         Blob<T> m_blobTriangle = null;
@@ -966,16 +966,19 @@ namespace MyCaffe.layers.gpt
             m_phase = phase;
             m_strVocabInfo = strVocabInfo;
 
-            string strProgData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-            strCustomDllFile = Utility.ReplaceMacro(strCustomDllFile, "$ProgramData$", strProgData);
+            if (phase != Phase.RUN)
+            {
+                string strProgData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+                strCustomDllFile = Utility.ReplaceMacro(strCustomDllFile, "$ProgramData$", strProgData);
 
-            m_iTokenInput = loadCustomInput(strCustomDllFile);
+                m_iTokenInput = loadCustomInput(strCustomDllFile);
 
-            m_rgnData = (strVocabInfo == "ENC") ? m_iTokenInput.LoadAllEncoderTokens(evtCancel, m_log, phase, out m_nVocabularySize) : m_iTokenInput.LoadAllDecoderTokens(evtCancel, m_log, phase, out m_nVocabularySize);
-            if (m_rgnData.Count < nBlockSizeSrc + nBlockSizeSrc)
-                throw new Exception("Insufficient number of tokens, must have at least " + (nBlockSizeSrc + nBlockSizeSrc).ToString() + " tokens.");
+                m_rgnData = (strVocabInfo == "ENC") ? m_iTokenInput.LoadAllEncoderTokens(evtCancel, m_log, phase, out m_nVocabularySize) : m_iTokenInput.LoadAllDecoderTokens(evtCancel, m_log, phase, out m_nVocabularySize);
+                if (m_rgnData.Count < nBlockSizeSrc + nBlockSizeSrc)
+                    throw new Exception("Insufficient number of tokens, must have at least " + (nBlockSizeSrc + nBlockSizeSrc).ToString() + " tokens.");
 
-            log.WriteLine(strVocabInfo + " vocabulary size = " + m_nVocabularySize.ToString());
+                log.WriteLine(strVocabInfo + " vocabulary size = " + m_nVocabularySize.ToString());
+            }
         }
 
         private ICustomTokenInput loadCustomInput(string strCustomDllFile)
