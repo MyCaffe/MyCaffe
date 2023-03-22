@@ -20,7 +20,6 @@ using System.Globalization;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Net;
-using System.Collections.Concurrent;
 
 /// <summary>
 /// The MyCaffe namespace contains the main body of MyCaffe code that closesly tracks the C++ Caffe open-source project.  
