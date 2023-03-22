@@ -913,6 +913,7 @@ namespace MyCaffe.common
         object m_memSync = new object();
         bool m_bEnableRnnExtendedVersion = false;
         static object m_createSync = new object();
+        static object m_getconvSync = new object();
 
         /// <summary>
         /// Specifies the type of string information to quer from the Cuda C++ layer.
@@ -3685,25 +3686,28 @@ namespace MyCaffe.common
         /// <param name="preferredFwdAlgo">Optionally, specifies a preferred forward algo to attempt to use for forward convolution.  The new algo is only used if the current device supports it.</param>
         public void GetConvolutionInfo(long hCuDnn, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, ulong lWorkspaceSizeLimitInBytes, bool bUseTensorCores, out CONV_FWD_ALGO algoFwd, out ulong lWsSizeFwd, out CONV_BWD_FILTER_ALGO algoBwdFilter, out ulong lWsSizeBwdFilter, out CONV_BWD_DATA_ALGO algoBwdData, out ulong lWsSizeBwdData, CONV_FWD_ALGO preferredFwdAlgo = CONV_FWD_ALGO.NONE)
         {
-            if (m_dt == DataType.DOUBLE)
+            lock (m_getconvSync)
             {
-                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.GET_CONVINFO, null, m_param.AsLong(hCuDnn, hBottomDesc, hFilterDesc, hConvDesc, hTopDesc, (long)lWorkspaceSizeLimitInBytes, (bUseTensorCores) ? 1 : 0, (int)preferredFwdAlgo));
-                algoFwd = (CONV_FWD_ALGO)rg[0];
-                lWsSizeFwd = (ulong)rg[1];
-                algoBwdFilter = (CONV_BWD_FILTER_ALGO)rg[2];
-                lWsSizeBwdFilter = (ulong)rg[3];
-                algoBwdData = (CONV_BWD_DATA_ALGO)rg[4];
-                lWsSizeBwdData = (ulong)rg[5];
-            }
-            else
-            {
-                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.GET_CONVINFO, null, m_param.AsLong(hCuDnn, hBottomDesc, hFilterDesc, hConvDesc, hTopDesc, (long)lWorkspaceSizeLimitInBytes, (bUseTensorCores) ? 1 : 0, (int)preferredFwdAlgo));
-                algoFwd = (CONV_FWD_ALGO)rg[0];
-                lWsSizeFwd = (ulong)rg[1];
-                algoBwdFilter = (CONV_BWD_FILTER_ALGO)rg[2];
-                lWsSizeBwdFilter = (ulong)rg[3];
-                algoBwdData = (CONV_BWD_DATA_ALGO)rg[4];
-                lWsSizeBwdData = (ulong)rg[5];
+                if (m_dt == DataType.DOUBLE)
+                {
+                    double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.GET_CONVINFO, null, m_param.AsLong(hCuDnn, hBottomDesc, hFilterDesc, hConvDesc, hTopDesc, (long)lWorkspaceSizeLimitInBytes, (bUseTensorCores) ? 1 : 0, (int)preferredFwdAlgo));
+                    algoFwd = (CONV_FWD_ALGO)rg[0];
+                    lWsSizeFwd = (ulong)rg[1];
+                    algoBwdFilter = (CONV_BWD_FILTER_ALGO)rg[2];
+                    lWsSizeBwdFilter = (ulong)rg[3];
+                    algoBwdData = (CONV_BWD_DATA_ALGO)rg[4];
+                    lWsSizeBwdData = (ulong)rg[5];
+                }
+                else
+                {
+                    float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.GET_CONVINFO, null, m_param.AsLong(hCuDnn, hBottomDesc, hFilterDesc, hConvDesc, hTopDesc, (long)lWorkspaceSizeLimitInBytes, (bUseTensorCores) ? 1 : 0, (int)preferredFwdAlgo));
+                    algoFwd = (CONV_FWD_ALGO)rg[0];
+                    lWsSizeFwd = (ulong)rg[1];
+                    algoBwdFilter = (CONV_BWD_FILTER_ALGO)rg[2];
+                    lWsSizeBwdFilter = (ulong)rg[3];
+                    algoBwdData = (CONV_BWD_DATA_ALGO)rg[4];
+                    lWsSizeBwdData = (ulong)rg[5];
+                }
             }
         }
 
