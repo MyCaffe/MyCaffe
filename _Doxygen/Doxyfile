@@ -38,7 +38,7 @@ PROJECT_NAME           = MyCaffe
 # could be handy for archiving the generated documentation or if some version
 # control system is used.
 
-PROJECT_NUMBER         = 1.12.0.60
+PROJECT_NUMBER         = 1.12.1.38
 
 # Using the PROJECT_BRIEF tag one can provide an optional one line description
 # for a project that appears at the top of each page and should give viewer a
@@ -890,7 +890,8 @@ INPUT                  = ../MyCaffe \
                          ../MyCaffe.layers.hdf5 \
                          ../MyCaffe.python \
                          ../MyCaffe.preprocessor \
-                         ../MyCaffe.layers.gpt
+                         ../MyCaffe.layers.gpt \
+                         ../MyCaffe.layers.tft
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
