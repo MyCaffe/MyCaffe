@@ -628,6 +628,11 @@ namespace MyCaffe.layers
             return true;
         }
 
+        /// <summary>
+        /// Set the internal shape sizes - used when determining if a Reshape is necessary.
+        /// </summary>
+        /// <param name="colBottom">Specifies the bottom input blobs.</param>
+        /// <param name="colTop">Specifies the top output blobs.</param>
         protected void setShapes(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             setShapes(colBottom, ref m_rgrgLastBottomShape);
