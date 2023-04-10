@@ -49,14 +49,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="LayerFactory.cs" />
+    <Compile Include="layers.tft\NumericTransformationLayer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="mycaffe.layers.tft.pfx" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="layers.tft\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <ProjectReference Include="..\MyCaffe.basecode\MyCaffe.basecode.csproj">
       <Project>{d168418c-cdcc-4f5b-bf55-292a38cc2429}</Project>

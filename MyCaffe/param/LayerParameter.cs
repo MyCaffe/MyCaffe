@@ -9,6 +9,7 @@ using MyCaffe.param.nt;
 using MyCaffe.param.ssd;
 using MyCaffe.param.beta;
 using MyCaffe.param.gpt;
+using MyCaffe.param.tft;
 
 namespace MyCaffe.param
 {
@@ -366,6 +367,10 @@ namespace MyCaffe.param
             /// Initializes a parameter for the NLLLossLayer
             /// </summary>
             NLL_LOSS,
+            /// <summary>
+            /// Initializes a parameter for the NumericInputTransformationLayer
+            /// </summary>
+            NUMERIC_TRANS,
             /// <summary>
             /// Initializes a parameter for the OneHotLayer.
             /// </summary>
@@ -1315,6 +1320,12 @@ namespace MyCaffe.param
                     expected_top.Add("loss");
                     m_rgLayerParameters[LayerType.LOSS] = new LossParameter();
                     m_rgLayerParameters[lt] = new NLLLossParameter();
+                    break;
+
+                case LayerType.NUMERIC_TRANS:
+                    expected_bottom.Add("x");
+                    expected_top.Add("proj");
+                    m_rgLayerParameters[lt] = new NumericTransformationParameter();
                     break;
 
                 case LayerType.ONEHOT:
@@ -2288,6 +2299,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.NUM_INPUT_TRANS
+        /// </summary>
+        public NumericTransformationParameter numeric_trans_param
+        {
+            get { return (NumericTransformationParameter)m_rgLayerParameters[LayerType.NUMERIC_TRANS]; }
+            set { m_rgLayerParameters[LayerType.NUMERIC_TRANS] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.ONEHOT
         /// </summary>
         public OneHotParameter onehot_param
@@ -2960,6 +2980,9 @@ namespace MyCaffe.param
                 case LayerType.NLL_LOSS:
                     return "NLLLoss";
 
+                case LayerType.NUMERIC_TRANS:
+                    return "NumericTrans";
+
                 case LayerType.ONEHOT:
                     return "OneHot";
 
@@ -3256,6 +3279,9 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(tokenized_data_param, "tokenized_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(tokenized_data_pairs_param, "tokenized_data_pairs_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(nll_loss_param, "nll_loss_param"));
+
+            // TFT Layers
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(numeric_trans_param, "numeric_trans_param"));
 
             // Nt layers.
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gram_param, "gram_param"));
@@ -3616,6 +3642,10 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("nll_loss_param")) != null)
                 p.nll_loss_param = NLLLossParameter.FromProto(rpp);
 
+            // TFT layers.
+            if ((rpp = rp.FindChild("numeric_trans_param")) != null)
+                p.numeric_trans_param = NumericTransformationParameter.FromProto(rpp);
+
             // Nt layers.
             if ((rpp = rp.FindChild("gram_param")) != null)
                 p.gram_param = GramParameter.FromProto(rpp);
@@ -3921,6 +3951,10 @@ namespace MyCaffe.param
                 case "nllloss":
                 case "nll_loss":
                     return LayerType.NLL_LOSS;
+
+                case "numerictrans":
+                case "numeric_trans":
+                    return LayerType.NUMERIC_TRANS;
 
                 case "onehot":
                     return LayerType.ONEHOT;
