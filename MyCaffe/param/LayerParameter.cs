@@ -148,6 +148,10 @@ namespace MyCaffe.param
             /// </summary>
             BNLL,
             /// <summary>
+            /// Initializes a parameter for the CategoricalTransformationLayer
+            /// </summary>
+            CATEGORICAL_TRANS,
+            /// <summary>
             /// Initializes a parameter for the CausalSelfAttentionLayer.
             /// </summary>
             CAUSAL_SELF_ATTENTION,
@@ -368,7 +372,7 @@ namespace MyCaffe.param
             /// </summary>
             NLL_LOSS,
             /// <summary>
-            /// Initializes a parameter for the NumericInputTransformationLayer
+            /// Initializes a parameter for the NumericTransformationLayer
             /// </summary>
             NUMERIC_TRANS,
             /// <summary>
@@ -937,6 +941,12 @@ namespace MyCaffe.param
                 case LayerType.BNLL:
                     expected_bottom.Add("input");
                     expected_top.Add("bnll");
+                    break;
+
+                case LayerType.CATEGORICAL_TRANS:
+                    expected_bottom.Add("x");
+                    expected_top.Add("proj");
+                    m_rgLayerParameters[lt] = new CategoricalTransformationParameter();
                     break;
 
                 case LayerType.CLIP:
@@ -1947,6 +1957,16 @@ namespace MyCaffe.param
             set { m_rgLayerParameters[LayerType.ATTENTION] = value; }
         }
 
+
+        /// <summary>
+        /// Returns the parameter set when initialized with LayerType.CATEGORICAL_TRANS
+        /// </summary>
+        public CategoricalTransformationParameter categorical_trans_param
+        {
+            get { return (CategoricalTransformationParameter)m_rgLayerParameters[LayerType.CATEGORICAL_TRANS]; }
+            set { m_rgLayerParameters[LayerType.CATEGORICAL_TRANS] = value; }
+        }
+
         /// <summary>
         /// Returns the parameter set when initialized with LayerType.CAUSAL_SELF_ATTENTION
         /// </summary>
@@ -2299,7 +2319,7 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Returns the parameter set when initialized with LayerType.NUM_INPUT_TRANS
+        /// Returns the parameter set when initialized with LayerType.NUMERIC_TRANS
         /// </summary>
         public NumericTransformationParameter numeric_trans_param
         {
@@ -2809,6 +2829,9 @@ namespace MyCaffe.param
                 case LayerType.BNLL:
                     return "BNLL";
 
+                case LayerType.CATEGORICAL_TRANS:
+                    return "CategoricalTrans";
+
                 case LayerType.CAUSAL_SELF_ATTENTION:
                     return "CausalSelfAttention";
 
@@ -3281,6 +3304,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(nll_loss_param, "nll_loss_param"));
 
             // TFT Layers
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(categorical_trans_param, "categorical_trans_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(numeric_trans_param, "numeric_trans_param"));
 
             // Nt layers.
@@ -3617,7 +3641,6 @@ namespace MyCaffe.param
                 p.hdf5_data_param = HDF5DataParameter.FromProto(rpp);
 
             // GPT layers.
-
             if ((rpp = rp.FindChild("causal_self_attention_param")) != null)
                 p.causal_self_attention_param = CausalSelfAttentionParameter.FromProto(rpp);
 
@@ -3643,6 +3666,9 @@ namespace MyCaffe.param
                 p.nll_loss_param = NLLLossParameter.FromProto(rpp);
 
             // TFT layers.
+            if ((rpp = rp.FindChild("categorical_trans_param")) != null)
+                p.categorical_trans_param = CategoricalTransformationParameter.FromProto(rpp);
+
             if ((rpp = rp.FindChild("numeric_trans_param")) != null)
                 p.numeric_trans_param = NumericTransformationParameter.FromProto(rpp);
 
@@ -3765,6 +3791,10 @@ namespace MyCaffe.param
 
                 case "bnll":
                     return LayerType.BNLL;
+
+                case "categoricaltrans":
+                case "categorical_trans":
+                    return LayerType.CATEGORICAL_TRANS;
 
                 case "clip":
                     return LayerType.CLIP;

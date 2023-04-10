@@ -9,21 +9,21 @@ using MyCaffe.param;
 namespace MyCaffe.layers.tft
 {
     /// <summary>
-    /// The NumericTransformationLayer implements the transforming/embeddings for the set of numeric input variables from a single input channel.
-    /// Each input variable is projected using a dedicated inner product layer to a vector of width state_size.  The result of applying this module
+    /// The CategoricalTransformationLayer implements the transforming/embeddings for the set of categorical input variables from a single input channel.
+    /// Each input variable is projected using a dedicated embedding layer to a vector of width state_size.  The result of applying this module
     /// is a list, with length num_inputs, that contians the embedding of each input variable for all observations and time steps.
     /// </summary>
     /// <remarks>
     /// @see [Github - PlaytikaOSS/tft-torch](https://github.com/PlaytikaOSS/tft-torch) by Playtika Research, 2021.
-    /// @see [Github - PlaytikaOSS/tft-torch tft.py](https://github.com/PlaytikaOSS/tft-torch/blob/f226b30e6357c7cf2ea7c8c657d0d2aacb5efda4/tft_torch/tft.py#L333) by Playtika Research, 2021.
+    /// @see [Github - PlaytikaOSS/tft-torch tft.py](https://github.com/PlaytikaOSS/tft-torch/blob/f226b30e6357c7cf2ea7c8c657d0d2aacb5efda4/tft_torch/tft.py#L367) by Playtika Research, 2021.
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
-    public class NumericTransformationLayer<T> : Layer<T>
+    public class CategoricalTransformationLayer<T> : Layer<T>
     {
-        List<Layer<T>> m_rgIpLayers = new List<Layer<T>>();
+        List<Layer<T>> m_rgEmbLayers = new List<Layer<T>>();
         BlobCollection<T> m_rgBtm = new BlobCollection<T>();
-        BlobCollection<T> m_rgIpBtm = new BlobCollection<T>();
-        BlobCollection<T> m_rgIpTop = new BlobCollection<T>();
+        BlobCollection<T> m_rgEmbBtm = new BlobCollection<T>();
+        BlobCollection<T> m_rgEmbTop = new BlobCollection<T>();
 
         /// <summary>
         /// The constructor.
@@ -31,10 +31,10 @@ namespace MyCaffe.layers.tft
         /// <param name="cuda">Specifies the CudaDnn connection to Cuda.</param>
         /// <param name="log">Specifies the Log for output.</param>
         /// <param name="p">Specifies the LayerParameter of type Gelu with parameter gelu_param</param>
-        public NumericTransformationLayer(CudaDnn<T> cuda, Log log, LayerParameter p)
+        public CategoricalTransformationLayer(CudaDnn<T> cuda, Log log, LayerParameter p)
             : base(cuda, log, p)
         {
-            m_type = LayerParameter.LayerType.NUMERIC_TRANS;
+            m_type = LayerParameter.LayerType.CATEGORICAL_TRANS;
         }
 
         /** @copydoc Layer::dispose */
@@ -62,7 +62,7 @@ namespace MyCaffe.layers.tft
         /// </summary>
         public override int ExactNumTopBlobs
         {
-            get { return (int)m_param.numeric_trans_param.num_input; }
+            get { return (int)m_param.categorical_trans_param.num_input; }
         }
 
         /// <summary>
@@ -77,29 +77,34 @@ namespace MyCaffe.layers.tft
             List<int> rgShape = new List<int>() { nDim, nSpatialDim };
             Blob<T> blobBtm = null;
 
-            m_rgIpBtm.Clear();
-            m_rgIpBtm.Add(blobBtm);
-            m_rgIpTop.Clear();
-            m_rgIpTop.Add(colTop[0]);
+            m_log.CHECK_EQ(m_param.categorical_trans_param.num_input, m_param.categorical_trans_param.cardinalities.Count, "The num_input must match the number of cardinalities!");
 
-            for (int i = 0; i < m_param.numeric_trans_param.num_input; i++)
+            m_rgEmbBtm.Clear();
+            m_rgEmbBtm.Add(blobBtm);
+            m_rgEmbTop.Clear();
+            m_rgEmbTop.Add(colTop[0]);
+
+            int nNumInput = m_param.categorical_trans_param.cardinalities.Count;
+            for (int i = 0; i < nNumInput; i++)
             {
                 blobBtm = new Blob<T>(m_cuda, m_log);
                 blobBtm.Reshape(rgShape);
                 m_rgBtm.Add(blobBtm);
 
-                m_rgIpBtm[0] = m_rgBtm[i];
-                m_rgIpTop[0] = colTop[i];
+                m_rgEmbBtm[0] = m_rgBtm[i];
+                m_rgEmbTop[0] = colTop[i];
 
-                LayerParameter p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
-                p.inner_product_param.num_output = m_param.numeric_trans_param.state_size;
-                p.inner_product_param.axis = 1;
+                int nCardinality = m_param.categorical_trans_param.cardinalities[i];
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.EMBED);
+                p.embed_param.num_output = m_param.categorical_trans_param.state_size;
+                p.embed_param.input_dim = (uint)nCardinality;
+                p.embed_param.bias_term = false;
 
-                Layer<T> ip_layer = Layer<T>.Create(m_cuda, m_log, p, null);
-                m_rgIpLayers.Add(ip_layer);
+                Layer<T> emb_layer = Layer<T>.Create(m_cuda, m_log, p, null);
+                m_rgEmbLayers.Add(emb_layer);
 
-                ip_layer.LayerSetUp(m_rgIpBtm, m_rgIpTop);
-                blobs.Add(ip_layer.blobs);
+                emb_layer.LayerSetUp(m_rgEmbBtm, m_rgEmbTop);
+                blobs.Add(emb_layer.blobs);
             }
         }
 
@@ -110,11 +115,12 @@ namespace MyCaffe.layers.tft
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            for (int i = 0; i < m_param.numeric_trans_param.num_input; i++)
+            int nNumInput = m_param.categorical_trans_param.cardinalities.Count;
+            for (int i = 0; i < nNumInput; i++)
             {
-                m_rgIpBtm[0] = m_rgBtm[i];
-                m_rgIpTop[0] = colTop[i];
-                m_rgIpLayers[i].Reshape(m_rgIpBtm, m_rgIpTop);
+                m_rgEmbBtm[0] = m_rgBtm[i];
+                m_rgEmbTop[0] = colTop[i];
+                m_rgEmbLayers[i].Reshape(m_rgEmbBtm, m_rgEmbTop);
             }
         }
 
@@ -122,51 +128,53 @@ namespace MyCaffe.layers.tft
         /// Forward computation
         /// </summary>
         /// <param name="colBottom">inpub Blob vector (length 1)
-        ///  -# @f$ (N \times C \times num_input \times 1) @f$ 
+        ///  -# @f$ (N \times C \times H \times 1) @f$ 
         ///     the inputs @f$ x @f$
         ///  </param>
-        /// <param name="colTop">top output Blob vector (length num_input)
+        /// <param name="colTop">top output Blob vector (length len(cardinalities))
         ///  -# @f$ (N \times C \times 1 \times 1) @f$
-        ///     the computed outputs
+        ///     the computed outputs 
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            for (int i = 0; i < m_param.numeric_trans_param.num_input; i++)
+            int nNumInput = m_param.categorical_trans_param.cardinalities.Count;
+            for (int i = 0; i < nNumInput; i++)
             {
                 int nCount = m_rgBtm[i].count();
-                m_cuda.channel_copy(nCount, nCount, 1, (int)m_param.numeric_trans_param.num_input, 1, i, colBottom[0].gpu_data, m_rgBtm[i].mutable_gpu_data, DIR.FWD);
+                m_cuda.channel_copy(nCount, nCount, 1, nNumInput, 1, i, colBottom[0].gpu_data, m_rgBtm[i].mutable_gpu_data, DIR.FWD);
 
-                m_rgIpBtm[0] = m_rgBtm[i];
-                m_rgIpTop[0] = colTop[i];
-                m_rgIpLayers[i].Forward(m_rgIpBtm, m_rgIpTop);
+                m_rgEmbBtm[0] = m_rgBtm[i];
+                m_rgEmbTop[0] = colTop[i];
+                m_rgEmbLayers[i].Forward(m_rgEmbBtm, m_rgEmbTop);
             }
         }
 
         /// <summary>
-        /// Computes the error gradient w.r.t. the numeric value inputs.
+        /// Computes the error gradient w.r.t. the cardinality value inputs.
         /// </summary>
-        /// <param name="colTop">top output blob vector (length num_input), providing the error gradient
+        /// <param name="colTop">top output blob vector (length 1), providing the error gradient
         /// with respect to outputs
-        ///  -# @f$ (N \times C \times 1 \times 1) @f$
+        ///  -# @f$ (N \times C \times H \times W) @f$
         ///     containing error gradients @f$ \frac{\partial E}{\partial y} @f$
         ///     with respect to computed outputs @f$ y @f$
         /// </param>
         /// <param name="rgbPropagateDown">propagate_down see Layer::Backward.</param>
         /// <param name="colBottom">bottom input blob vector (length 1)
-        ///  -# @f$ (N \times C \times num_input \times 1) @f$
-        ///     the inputs @f$ x @f$; Backward fills their diff
+        ///  -# @f$ (N \times C \times H \times W) @f$
+        ///     the inputs @f$ x @f$; Backward fills their diff 
         ///     @f$ if propagate_down[0]
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
-            for (int i = 0; i < m_param.numeric_trans_param.num_input; i++)
+            int nNumInput = m_param.categorical_trans_param.cardinalities.Count;
+            for (int i = 0; i < nNumInput; i++)
             {
-                m_rgIpBtm[0] = m_rgBtm[i];
-                m_rgIpTop[0] = colTop[i];
-                m_rgIpLayers[i].Backward(m_rgIpTop, rgbPropagateDown, m_rgIpBtm);
+                m_rgEmbBtm[0] = m_rgBtm[i];
+                m_rgEmbTop[0] = colTop[i];
+                m_rgEmbLayers[i].Backward(m_rgEmbTop, rgbPropagateDown, m_rgEmbBtm);
 
-                int nCount = m_rgIpBtm[0].count();
-                m_cuda.channel_copy(nCount, nCount, 1, (int)m_param.numeric_trans_param.num_input, 1, i, colBottom[0].mutable_gpu_diff, m_rgIpBtm[0].gpu_diff, DIR.BWD);
+                int nCount = m_rgEmbBtm[0].count();
+                m_cuda.channel_copy(nCount, nCount, 1, nNumInput, 1, i, colBottom[0].mutable_gpu_diff, m_rgEmbBtm[0].gpu_diff, DIR.BWD);
             }
         }
     }

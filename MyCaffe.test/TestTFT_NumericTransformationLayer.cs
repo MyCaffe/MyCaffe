@@ -17,7 +17,7 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
 /// <summary>
 /// Testing the Numeric Transformation layer.
 /// 
-/// NumericTransformation Layer - layer converts inputs into embeddings using inner product layers.
+/// NumericTransformation Layer - layer converts numerical inputs into embeddings using inner product layers.
 /// </remarks> 
 namespace MyCaffe.test
 {

@@ -31,6 +31,9 @@ namespace MyCaffe.layers.tft
         {
             switch (p.type)
             {
+                case LayerParameter.LayerType.CATEGORICAL_TRANS:
+                    return new CategoricalTransformationLayer<double>(cuda, log, p);
+
                 case LayerParameter.LayerType.NUMERIC_TRANS:
                     return new NumericTransformationLayer<double>(cuda, log, p);
 
@@ -52,6 +55,9 @@ namespace MyCaffe.layers.tft
         {
             switch (p.type)
             {
+                case LayerParameter.LayerType.CATEGORICAL_TRANS:
+                    return new CategoricalTransformationLayer<float>(cuda, log, p);
+
                 case LayerParameter.LayerType.NUMERIC_TRANS:
                     return new NumericTransformationLayer<float>(cuda, log, p);
 
