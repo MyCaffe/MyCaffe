@@ -20,6 +20,12 @@ namespace MyCaffe.layers.tft
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class NumericTransformationLayer<T> : Layer<T>
     {
+        List<Layer<T>> m_rgIpLayers = new List<Layer<T>>();
+        BlobCollection<T> m_rgBtm = new BlobCollection<T>();
+        BlobCollection<T> m_rgIpBtm = new BlobCollection<T>();
+        BlobCollection<T> m_rgIpTop = new BlobCollection<T>();
+        List<int> m_rgOriginalShape = new List<int>();
+
         /// <summary>
         /// The constructor.
         /// </summary>
@@ -57,7 +63,7 @@ namespace MyCaffe.layers.tft
         /// </summary>
         public override int ExactNumTopBlobs
         {
-            get { return 1; }
+            get { return (int)m_param.numeric_trans_param.num_input; }
         }
 
         /// <summary>
@@ -67,6 +73,37 @@ namespace MyCaffe.layers.tft
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            int nDim = colBottom[0].count(0, 2);
+            int nSpatialDim = 1;
+            List<int> rgShape = new List<int>() { nDim, nSpatialDim };
+            Blob<T> blobBtm = null;
+
+            m_rgOriginalShape = new List<int>() { colBottom[0].num, colBottom[0].channels, nSpatialDim };
+
+            m_rgIpBtm.Clear();
+            m_rgIpBtm.Add(blobBtm);
+            m_rgIpTop.Clear();
+            m_rgIpTop.Add(colTop[0]);
+
+            for (int i = 0; i < m_param.numeric_trans_param.num_input; i++)
+            {
+                blobBtm = new Blob<T>(m_cuda, m_log);
+                blobBtm.Reshape(rgShape);
+                m_rgBtm.Add(blobBtm);
+
+                m_rgIpBtm[0] = m_rgBtm[i];
+                m_rgIpTop[0] = colTop[i];
+
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
+                p.inner_product_param.num_output = m_param.numeric_trans_param.state_size;
+                p.inner_product_param.axis = 1;
+
+                Layer<T> ip_layer = Layer<T>.Create(m_cuda, m_log, p, null);
+                m_rgIpLayers.Add(ip_layer);
+
+                ip_layer.LayerSetUp(m_rgIpBtm, m_rgIpTop);
+                blobs.Add(ip_layer.blobs);
+            }
         }
 
         /// <summary>
@@ -76,6 +113,12 @@ namespace MyCaffe.layers.tft
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            for (int i = 0; i < m_param.numeric_trans_param.num_input; i++)
+            {
+                m_rgIpBtm[0] = m_rgBtm[i];
+                m_rgIpTop[0] = colTop[i];
+                m_rgIpLayers[i].Reshape(m_rgIpBtm, m_rgIpTop);
+            }
         }
 
         /// <summary>
@@ -93,9 +136,15 @@ namespace MyCaffe.layers.tft
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            long hBottomData = colBottom[0].gpu_data;
-            long hTopData = colTop[0].mutable_gpu_data;
-            int nCount = colBottom[0].count();
+            for (int i = 0; i < m_param.numeric_trans_param.num_input; i++)
+            {
+                int nCount = m_rgBtm[i].count();
+                m_cuda.channel_copy(nCount, nCount, 1, (int)m_param.numeric_trans_param.num_input, 1, i, colBottom[0].gpu_data, m_rgBtm[i].mutable_gpu_data, DIR.FWD);
+
+                m_rgIpBtm[0] = m_rgBtm[i];
+                m_rgIpTop[0] = colTop[i];
+                m_rgIpLayers[i].Forward(m_rgIpBtm, m_rgIpTop);
+            }
         }
 
         /// <summary>
@@ -117,11 +166,15 @@ namespace MyCaffe.layers.tft
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
-            long hTopData = colTop[0].gpu_data;
-            long hTopDiff = colTop[0].gpu_diff;
-            long hBottomDiff = colBottom[0].mutable_gpu_diff;
-            long hBottomData = colBottom[0].gpu_data;
-            int nCount = colBottom[0].count();
+            for (int i = 0; i < m_param.numeric_trans_param.num_input; i++)
+            {
+                m_rgIpBtm[0] = m_rgBtm[i];
+                m_rgIpTop[0] = colTop[i];
+                m_rgIpLayers[i].Backward(m_rgIpTop, rgbPropagateDown, m_rgIpBtm);
+
+                int nCount = m_rgIpBtm[0].count();
+                m_cuda.channel_copy(nCount, nCount, 1, (int)m_param.numeric_trans_param.num_input, 1, i, colBottom[0].mutable_gpu_diff, m_rgIpBtm[0].gpu_diff, DIR.BWD);
+            }
         }
     }
 }
