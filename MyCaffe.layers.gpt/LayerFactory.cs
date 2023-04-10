@@ -14,7 +14,7 @@ using MyCaffe.param;
 namespace MyCaffe.layers.gpt
 {
     /// <summary>
-    /// The LayerFactor is responsible for creating all layers implemented in the MyCaffe.layers.ssd namespace.
+    /// The LayerFactor is responsible for creating all layers implemented in the MyCaffe.layers.gpt namespace.
     /// </summary>
     public class LayerFactory : ILayerCreator
     {
