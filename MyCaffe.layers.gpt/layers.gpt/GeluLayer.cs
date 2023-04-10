@@ -60,7 +60,7 @@ namespace MyCaffe.layers.gpt
         }
 
         /// <summary>
-        /// Computes the error gradient w.r.t. the Mish value inputs.
+        /// Computes the error gradient w.r.t. the GELU value inputs.
         /// </summary>
         /// <param name="colTop">top output blob vector (length 1), providing the error gradient
         /// with respect to outputs
