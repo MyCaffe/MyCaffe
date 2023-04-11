@@ -12,7 +12,7 @@ namespace MyCaffe.param.tft
     /// </summary>
     /// <remarks>
     /// @see [Github - PlaytikaOSS/tft-torch](https://github.com/PlaytikaOSS/tft-torch) by Playtika Research, 2021.
-    /// @see [Github - PlaytikaOSS/tft-torch tft.py](https://github.com/PlaytikaOSS/tft-torch/blob/f226b30e6357c7cf2ea7c8c657d0d2aacb5efda4/tft_torch/tft.py#L367) by Playtika Research, 2021.
+    /// @see [Github - PlaytikaOSS/tft-torch tft.py](https://github.com/PlaytikaOSS/tft-torch/blob/main/tft_torch/tft.py#L367) by Playtika Research, 2021.
     /// </remarks>
     public class CategoricalTransformationParameter : LayerParameterBase
     {
