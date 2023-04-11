@@ -21,6 +21,7 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
 /// </remarks> 
 namespace MyCaffe.test
 {
+    // WORK IN PROGRESS
     [TestClass]
     public class TestTFT_ChannelEmbeddingLayer
     {
@@ -42,6 +43,7 @@ namespace MyCaffe.test
             }
         }
 
+        // WORK IN PROGRESS
         [TestMethod]
         public void TestBackward()
         {
@@ -60,6 +62,7 @@ namespace MyCaffe.test
             }
         }
 
+        // WORK IN PROGRESS
         [TestMethod]
         public void TestGradient()
         {
