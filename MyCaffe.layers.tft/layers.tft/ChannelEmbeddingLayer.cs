@@ -134,6 +134,7 @@ namespace MyCaffe.layers.tft
 
             if (blobNumeric != null)
             {
+                m_colNumericTop.Clear();
                 for (int i=0; i<m_param.numeric_trans_param.num_input; i++)
                 {
                     Blob<T> blobTop = new Blob<T>(m_cuda, m_log);
@@ -152,6 +153,7 @@ namespace MyCaffe.layers.tft
 
             if (blobCategorical != null)
             {
+                m_colCategoricalTop.Clear();
                 for (int i = 0; i < m_param.categorical_trans_param.num_input; i++)
                 {
                     Blob<T> blobTop = new Blob<T>(m_cuda, m_log);
@@ -238,7 +240,7 @@ namespace MyCaffe.layers.tft
 
                 for (int i=0; i<m_colNumericTop.Count; i++)
                 {
-                    m_cuda.channel_copy(nCount, blobNumeric.num, 1, nBlocks, nEmb, nIdx, colTop[0].mutable_gpu_data, m_colNumericTop[i].gpu_data, DIR.FWD);
+                    m_cuda.channel_copy(nCount, m_colNumericTop[0].num, 1, nBlocks, nEmb, nIdx, colTop[0].mutable_gpu_data, m_colNumericTop[i].gpu_data, DIR.BWD);
                     nIdx++;
                 }
             }
@@ -252,7 +254,7 @@ namespace MyCaffe.layers.tft
 
                 for (int i = 0; i < m_colCategoricalTop.Count; i++)
                 {
-                    m_cuda.channel_copy(nCount, blobCategorical.num, 1, nBlocks, nEmb, nIdx, colTop[0].mutable_gpu_data, m_colCategoricalTop[i].gpu_data, DIR.FWD);
+                    m_cuda.channel_copy(nCount, m_colCategoricalTop[0].num, 1, nBlocks, nEmb, nIdx, colTop[0].mutable_gpu_data, m_colCategoricalTop[i].gpu_data, DIR.BWD);
                     nIdx++;
                 }
             }
@@ -280,11 +282,23 @@ namespace MyCaffe.layers.tft
         {
             Blob<T> blobNumeric = null;
             Blob<T> blobCategorical = null;
+            int nCount;
+            int nBlocks = (int)m_param.numeric_trans_param.num_input + (int)m_param.categorical_trans_param.num_input;
+            int nEmb = (int)m_param.numeric_trans_param.state_size;
+            int nIdx = 0;
 
             getBlobs(colBottom, out blobNumeric, out blobCategorical);
 
             if (blobNumeric != null)
             {
+                nCount = m_colNumericTop[0].count();
+
+                for (int i = 0; i < m_colNumericTop.Count; i++)
+                {
+                    m_cuda.channel_copy(nCount, m_colNumericTop[0].num, 1, nBlocks, nEmb, nIdx, colTop[0].mutable_gpu_diff, m_colNumericTop[i].gpu_diff, DIR.FWD);
+                    nIdx++;
+                }
+
                 m_colBtm.Clear();
                 m_colBtm.Add(blobNumeric);
                 m_numericLayer.Backward(m_colNumericTop, new List<bool>() { true }, m_colBtm);
@@ -292,6 +306,14 @@ namespace MyCaffe.layers.tft
 
             if (blobCategorical != null)
             {
+                nCount = m_colCategoricalTop[0].count();
+
+                for (int i = 0; i < m_colCategoricalTop.Count; i++)
+                {
+                    m_cuda.channel_copy(nCount, m_colCategoricalTop[0].num, 1, nBlocks, nEmb, nIdx, colTop[0].mutable_gpu_diff, m_colCategoricalTop[i].gpu_diff, DIR.FWD);
+                    nIdx++;
+                }
+
                 m_colBtm.Clear();
                 m_colBtm.Add(blobCategorical);
                 m_categoricalLayer.Backward(m_colCategoricalTop, new List<bool>() { true }, m_colBtm);
