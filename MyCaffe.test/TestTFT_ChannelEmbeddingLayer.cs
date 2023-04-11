@@ -21,7 +21,6 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
 /// </remarks> 
 namespace MyCaffe.test
 {
-    // WORK IN PROGRESS
     [TestClass]
     public class TestTFT_ChannelEmbeddingLayer
     {
@@ -43,7 +42,6 @@ namespace MyCaffe.test
             }
         }
 
-        // WORK IN PROGRESS
         [TestMethod]
         public void TestBackward()
         {
@@ -62,7 +60,6 @@ namespace MyCaffe.test
             }
         }
 
-        // WORK IN PROGRESS
         [TestMethod]
         public void TestGradient()
         {
@@ -168,7 +165,7 @@ namespace MyCaffe.test
                 blobWork = new Blob<T>(m_cuda, m_log);
 
                 m_log.CHECK(layer != null, "The layer was not created correctly.");
-                m_log.CHECK(layer.type == LayerParameter.LayerType.CATEGORICAL_TRANS, "The layer type is incorrect.");
+                m_log.CHECK(layer.type == LayerParameter.LayerType.CHANNEL_EMBEDDING, "The layer type is incorrect.");
 
                 blobX_numeric.LoadFromNumpy(strPath + "x_numeric.npy");
                 blobX_categorical.LoadFromNumpy(strPath + "x_categorical.npy");
@@ -189,13 +186,13 @@ namespace MyCaffe.test
                 layer.blobs[6].LoadFromNumpy(strPathWts + "numeric_transform.module.numeric_projection_layers.3.weight.npy");
                 layer.blobs[7].LoadFromNumpy(strPathWts + "numeric_transform.module.numeric_projection_layers.3.bias.npy");
 
-                layer.blobs[0].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.0.weight.npy");
-                layer.blobs[1].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.1.weight.npy");
-                layer.blobs[2].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.2.weight.npy");
-                layer.blobs[3].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.3.weight.npy");
-                layer.blobs[4].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.4.weight.npy");
-                layer.blobs[5].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.5.weight.npy");
-                layer.blobs[6].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.6.weight.npy");
+                layer.blobs[8].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.0.weight.npy");
+                layer.blobs[9].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.1.weight.npy");
+                layer.blobs[10].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.2.weight.npy");
+                layer.blobs[11].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.3.weight.npy");
+                layer.blobs[12].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.4.weight.npy");
+                layer.blobs[13].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.5.weight.npy");
+                layer.blobs[14].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.6.weight.npy");
 
                 layer.Forward(BottomVec, TopVec);
 
@@ -245,7 +242,7 @@ namespace MyCaffe.test
                 blobWork = new Blob<T>(m_cuda, m_log);
 
                 m_log.CHECK(layer != null, "The layer was not created correctly.");
-                m_log.CHECK(layer.type == LayerParameter.LayerType.CATEGORICAL_TRANS, "The layer type is incorrect.");
+                m_log.CHECK(layer.type == LayerParameter.LayerType.CHANNEL_EMBEDDING, "The layer type is incorrect.");
 
                 blobX_numeric.LoadFromNumpy(strPath + "x_numeric.npy");
                 blobX_categorical.LoadFromNumpy(strPath + "x_categorical.npy");
@@ -266,13 +263,13 @@ namespace MyCaffe.test
                 layer.blobs[6].LoadFromNumpy(strPathWts + "numeric_transform.module.numeric_projection_layers.3.weight.npy");
                 layer.blobs[7].LoadFromNumpy(strPathWts + "numeric_transform.module.numeric_projection_layers.3.bias.npy");
 
-                layer.blobs[0].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.0.weight.npy");
-                layer.blobs[1].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.1.weight.npy");
-                layer.blobs[2].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.2.weight.npy");
-                layer.blobs[3].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.3.weight.npy");
-                layer.blobs[4].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.4.weight.npy");
-                layer.blobs[5].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.5.weight.npy");
-                layer.blobs[6].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.6.weight.npy");
+                layer.blobs[8].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.0.weight.npy");
+                layer.blobs[9].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.1.weight.npy");
+                layer.blobs[10].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.2.weight.npy");
+                layer.blobs[11].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.3.weight.npy");
+                layer.blobs[12].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.4.weight.npy");
+                layer.blobs[13].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.5.weight.npy");
+                layer.blobs[14].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.6.weight.npy");
 
                 layer.Forward(BottomVec, TopVec);
 
@@ -372,7 +369,7 @@ namespace MyCaffe.test
                 blobWork = new Blob<T>(m_cuda, m_log);
 
                 m_log.CHECK(layer != null, "The layer was not created correctly.");
-                m_log.CHECK(layer.type == LayerParameter.LayerType.CATEGORICAL_TRANS, "The layer type is incorrect.");
+                m_log.CHECK(layer.type == LayerParameter.LayerType.CHANNEL_EMBEDDING, "The layer type is incorrect.");
 
                 blobX_numeric.LoadFromNumpy(strPath + "x_numeric.npy");
                 blobX_categorical.LoadFromNumpy(strPath + "x_categorical.npy");
@@ -393,13 +390,13 @@ namespace MyCaffe.test
                 layer.blobs[6].LoadFromNumpy(strPathWts + "numeric_transform.module.numeric_projection_layers.3.weight.npy");
                 layer.blobs[7].LoadFromNumpy(strPathWts + "numeric_transform.module.numeric_projection_layers.3.bias.npy");
 
-                layer.blobs[0].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.0.weight.npy");
-                layer.blobs[1].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.1.weight.npy");
-                layer.blobs[2].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.2.weight.npy");
-                layer.blobs[3].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.3.weight.npy");
-                layer.blobs[4].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.4.weight.npy");
-                layer.blobs[5].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.5.weight.npy");
-                layer.blobs[6].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.6.weight.npy");
+                layer.blobs[8].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.0.weight.npy");
+                layer.blobs[9].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.1.weight.npy");
+                layer.blobs[10].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.2.weight.npy");
+                layer.blobs[11].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.3.weight.npy");
+                layer.blobs[12].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.4.weight.npy");
+                layer.blobs[13].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.5.weight.npy");
+                layer.blobs[14].LoadFromNumpy(strPathWts + "categorical_transform.module.categorical_embedding_layers.6.weight.npy");
 
                 GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
                 checker.CheckGradient(layer, BottomVec, TopVec, -1, 1, 0.5);
