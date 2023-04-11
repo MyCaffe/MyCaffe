@@ -15,7 +15,7 @@ namespace MyCaffe.layers.tft
     /// </summary>
     /// <remarks>
     /// @see [Github - PlaytikaOSS/tft-torch](https://github.com/PlaytikaOSS/tft-torch) by Playtika Research, 2021.
-    /// @see [Github - PlaytikaOSS/tft-torch tft.py](https://github.com/PlaytikaOSS/tft-torch/blob/f226b30e6357c7cf2ea7c8c657d0d2aacb5efda4/tft_torch/tft.py#L367) by Playtika Research, 2021.
+    /// @see [Github - PlaytikaOSS/tft-torch tft.py](https://github.com/PlaytikaOSS/tft-torch/blob/main/tft_torch/tft.py#L367) by Playtika Research, 2021.
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class CategoricalTransformationLayer<T> : Layer<T>
