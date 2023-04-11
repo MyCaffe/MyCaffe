@@ -117,6 +117,8 @@
     <Compile Include="TestActivations.cs" />
     <Compile Include="TestAccuracyEncodingLayer.cs" />
     <Compile Include="TestAnnotatedDataLayer.cs" />
+    <Compile Include="TestTFT_ChannelEmbeddingLayer.cs" />
+    <Compile Include="TestTFT_CategoricalTransformationLayer.cs" />
     <Compile Include="TestTFT_NumericTransformationLayer.cs" />
     <Compile Include="TestDecoderBlockLayer.cs" />
     <Compile Include="TestEncoderBlockLayer.cs" />

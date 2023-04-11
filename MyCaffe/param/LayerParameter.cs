@@ -156,6 +156,10 @@ namespace MyCaffe.param
             /// </summary>
             CAUSAL_SELF_ATTENTION,
             /// <summary>
+            /// Initializes a parameter for the ChannelEmbeddingLayer.
+            /// </summary>
+            CHANNEL_EMBEDDING,
+            /// <summary>
             /// Initializes a parameter for the ClipLayer.
             /// </summary>
             CLIP,
@@ -947,6 +951,14 @@ namespace MyCaffe.param
                     expected_bottom.Add("x");
                     expected_top.Add("proj");
                     m_rgLayerParameters[lt] = new CategoricalTransformationParameter();
+                    break;
+
+                case LayerType.CHANNEL_EMBEDDING:
+                    expected_bottom.Add("x_num");
+                    expected_bottom.Add("x_cat");
+                    expected_top.Add("emb");
+                    m_rgLayerParameters[LayerType.CATEGORICAL_TRANS] = new CategoricalTransformationParameter();
+                    m_rgLayerParameters[LayerType.NUMERIC_TRANS] = new NumericTransformationParameter();
                     break;
 
                 case LayerType.CLIP:
@@ -2835,6 +2847,9 @@ namespace MyCaffe.param
                 case LayerType.CAUSAL_SELF_ATTENTION:
                     return "CausalSelfAttention";
 
+                case LayerType.CHANNEL_EMBEDDING:
+                    return "ChannelEmbedding";
+
                 case LayerType.CLIP:
                     return "Clip";
 
@@ -3801,6 +3816,9 @@ namespace MyCaffe.param
 
                 case "causalselfattention":
                     return LayerType.CAUSAL_SELF_ATTENTION;
+
+                case "channelemgedding":
+                    return LayerType.CHANNEL_EMBEDDING;
 
                 case "concat":
                     return LayerType.CONCAT;

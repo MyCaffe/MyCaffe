@@ -49,6 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="LayerFactory.cs" />
+    <Compile Include="layers.tft\ChannelEmbeddingLayer.cs" />
     <Compile Include="layers.tft\CategoricalTransformationLayer.cs" />
     <Compile Include="layers.tft\NumericTransformationLayer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
