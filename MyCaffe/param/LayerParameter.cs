@@ -268,6 +268,10 @@ namespace MyCaffe.param
             /// </summary>
             GELU,
             /// <summary>
+            /// Initializes a parameter for the GLULayer (Gated Linear Unit)
+            /// </summary>
+            GLU,
+            /// <summary>
             /// Initializes a parameter for the GradScaleLayer (used for gradient reversal)
             /// </summary>
             GRADIENTSCALER,
@@ -1159,6 +1163,12 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("gelu");
                     m_rgLayerParameters[lt] = new GeluParameter();
+                    break;
+
+                case LayerType.GLU:
+                    expected_bottom.Add("input");
+                    expected_top.Add("glu");
+                    m_rgLayerParameters[lt] = new GluParameter();
                     break;
 
                 case LayerType.GRADIENTSCALER:
@@ -2142,6 +2152,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.GLU
+        /// </summary>
+        public GluParameter glu_param
+        {
+            get { return (GluParameter)m_rgLayerParameters[LayerType.GLU]; }
+            set { m_rgLayerParameters[LayerType.GLU] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.GSL
         /// </summary>
         public GradientScaleParameter gradient_scale_param
@@ -2934,6 +2953,9 @@ namespace MyCaffe.param
                 case LayerType.GELU:
                     return "GELU";
 
+                case LayerType.GLU:
+                    return "GLU";
+
                 case LayerType.GRN:
                     return "GRN";
 
@@ -3321,6 +3343,7 @@ namespace MyCaffe.param
             // TFT Layers
             rgParam.Add(new KeyValuePair<BaseParameter, string>(categorical_trans_param, "categorical_trans_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(numeric_trans_param, "numeric_trans_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(glu_param, "glu_param"));
 
             // Nt layers.
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gram_param, "gram_param"));
@@ -3687,6 +3710,9 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("numeric_trans_param")) != null)
                 p.numeric_trans_param = NumericTransformationParameter.FromProto(rpp);
 
+            if ((rpp = rp.FindChild("glu_param")) != null)
+                p.glu_param = GluParameter.FromProto(rpp);
+
             // Nt layers.
             if ((rpp = rp.FindChild("gram_param")) != null)
                 p.gram_param = GramParameter.FromProto(rpp);
@@ -3907,6 +3933,9 @@ namespace MyCaffe.param
                     
                 case "gelu":
                     return LayerType.GELU;
+
+                case "glu":
+                    return LayerType.GLU;
 
                 case "grn":
                     return LayerType.GRN;
