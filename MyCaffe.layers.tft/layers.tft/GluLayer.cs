@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using MyCaffe.basecode;
 using MyCaffe.common;
@@ -118,7 +119,7 @@ namespace MyCaffe.layers.tft
 
             if (m_ip1Layer == null)
             {
-                LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
+                LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "fc1");
                 ip1.inner_product_param.num_output = (uint)m_param.glu_param.input_dim;
                 ip1.inner_product_param.axis = m_param.glu_param.axis;
                 ip1.inner_product_param.bias_term = m_param.glu_param.bias_term;
@@ -139,7 +140,7 @@ namespace MyCaffe.layers.tft
             {
                 if (m_param.glu_param.modulation == param.tft.GluParameter.MODULATION.SIGMOID)
                 {
-                    LayerParameter mod = new LayerParameter(LayerParameter.LayerType.SIGMOID);
+                    LayerParameter mod = new LayerParameter(LayerParameter.LayerType.SIGMOID, "mod");
                     mod.sigmoid_param.engine = EngineParameter.Engine.DEFAULT;
 
                     m_blobMod = new Blob<T>(m_cuda, m_log);
@@ -156,7 +157,7 @@ namespace MyCaffe.layers.tft
 
             if (m_ip2Layer == null)
             {
-                LayerParameter ip2 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
+                LayerParameter ip2 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "fc2");
                 ip2.inner_product_param.num_output = (uint)m_param.glu_param.input_dim;
                 ip2.inner_product_param.axis = m_param.glu_param.axis;
                 ip2.inner_product_param.bias_term = m_param.glu_param.bias_term;
@@ -210,37 +211,18 @@ namespace MyCaffe.layers.tft
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            Blob<T> blobVal = new Blob<T>(m_cuda, m_log);
-            Blob<T> blobWork = new Blob<T>(m_cuda, m_log);
-            string strPath = "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\iter_0\\";
-
-            blobVal.LoadFromNumpy(strPath + "glu_x.npy");
-            Trace.Assert(blobVal.Compare(colBottom[0], blobWork));
-
             m_blobBtm.CopyFrom(colBottom[0]);
 
             addBtmTop(colBottom[0], m_blobIp1);
             m_ip1Layer.Forward(m_colBtm, m_colTop); // x1 = fc1(x)
 
-            blobVal.LoadFromNumpy(strPath + "glu_x1.npy");
-            Trace.Assert(blobVal.Compare(m_blobIp1, blobWork));
-
             addBtmTop(m_blobIp1, m_blobMod);
             m_modLayer.Forward(m_colBtm, m_colTop);  // sig = sigmoid(x1)
-
-            blobVal.LoadFromNumpy(strPath + "glu_sig.npy");
-            Trace.Assert(blobVal.Compare(m_blobMod, blobWork));
 
             addBtmTop(colBottom[0], m_blobIp2);
             m_ip2Layer.Forward(m_colBtm, m_colTop);   // x2 = fc2(x)
 
-            blobVal.LoadFromNumpy(strPath + "glu_x2.npy");
-            Trace.Assert(blobVal.Compare(m_blobIp2, blobWork));
-
             m_cuda.mul(colTop[0].count(), m_blobIp2.gpu_data, m_blobMod.gpu_data, colTop[0].mutable_gpu_data);
-
-            blobVal.LoadFromNumpy(strPath + "glu_y.npy");
-            Trace.Assert(blobVal.Compare(colTop[0], blobWork));
         }
 
         /// <summary>
@@ -259,24 +241,11 @@ namespace MyCaffe.layers.tft
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
-            Blob<T> blobVal = new Blob<T>(m_cuda, m_log);
-            Blob<T> blobWork = new Blob<T>(m_cuda, m_log);
-            string strPath = "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\iter_0\\";
-
-            blobVal.LoadFromNumpy(strPath + "grad_glu_y.npy", true);
-            Trace.Assert(blobVal.Compare(colTop[0], blobWork, true));
-
             // sig grad = y grad * x2
             m_cuda.mul(colTop[0].count(), colTop[0].gpu_diff, m_blobIp2.gpu_data, m_blobMod.mutable_gpu_diff);
 
-            blobVal.LoadFromNumpy(strPath + "grad_glu_sig.npy", true);
-            Trace.Assert(blobVal.Compare(m_blobMod, blobWork, true));
-
             // x2 grad = y grad * sig
             m_cuda.mul(colTop[0].count(), colTop[0].gpu_diff, m_blobMod.gpu_data, m_blobIp2.mutable_gpu_diff);
-
-            blobVal.LoadFromNumpy(strPath + "grad_glu_x2.npy", true);
-            Trace.Assert(blobVal.Compare(m_blobIp2, blobWork, true));
 
             addBtmTop(m_blobBtm, m_blobIp2);
             m_ip2Layer.Backward(m_colTop, rgbPropagateDown, m_colBtm);
@@ -289,9 +258,6 @@ namespace MyCaffe.layers.tft
 
             // Add gradients from x1 and x2
             m_cuda.add(colBottom[0].count(), m_blobBtm.gpu_diff, colBottom[0].gpu_diff, colBottom[0].mutable_gpu_diff);
-
-            blobVal.LoadFromNumpy(strPath + "grad_glu_x.npy", true);
-            Trace.Assert(blobVal.Compare(colBottom[0], blobWork, true));
         }
     }
 }
