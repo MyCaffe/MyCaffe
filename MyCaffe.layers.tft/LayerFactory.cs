@@ -40,6 +40,9 @@ namespace MyCaffe.layers.tft
                 case LayerParameter.LayerType.GLU:
                     return new GluLayer<double>(cuda, log, p);
 
+                case LayerParameter.LayerType.GRN:
+                    return new GrnLayer<double>(cuda, log, p);
+
                 case LayerParameter.LayerType.NUMERIC_TRANS:
                     return new NumericTransformationLayer<double>(cuda, log, p);
 
@@ -69,6 +72,9 @@ namespace MyCaffe.layers.tft
 
                 case LayerParameter.LayerType.GLU:
                     return new GluLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.GRN:
+                    return new GrnLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.NUMERIC_TRANS:
                     return new NumericTransformationLayer<float>(cuda, log, p);

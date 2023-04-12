@@ -268,9 +268,13 @@ namespace MyCaffe.param
             /// </summary>
             GELU,
             /// <summary>
-            /// Initializes a parameter for the GLULayer (Gated Linear Unit)
+            /// Initializes a parameter for the GluLayer (Gated Linear Unit)
             /// </summary>
             GLU,
+            /// <summary>
+            /// Initializes a parameter for the GrnLayer (Gated Response Network)
+            /// </summary>
+            GRN,
             /// <summary>
             /// Initializes a parameter for the GradScaleLayer (used for gradient reversal)
             /// </summary>
@@ -282,7 +286,7 @@ namespace MyCaffe.param
             /// <summary>
             /// Initializes a parameter for the GRNLayer (global response normalization L2)
             /// </summary>
-            GRN,
+            GLOBRES_NORM,
             /// <summary>
             /// Initializes a parameter for the HDF5DataLayer.
             /// </summary>
@@ -1171,15 +1175,21 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new GluParameter();
                     break;
 
+                case LayerType.GRN:
+                    expected_bottom.Add("input");
+                    expected_top.Add("grn");
+                    m_rgLayerParameters[lt] = new GrnParameter();
+                    break;
+
                 case LayerType.GRADIENTSCALER:
                     expected_bottom.Add("input");
                     expected_top.Add("identity");
                     m_rgLayerParameters[lt] = new GradientScaleParameter();
                     break;
 
-                case LayerType.GRN:
+                case LayerType.GLOBRES_NORM:
                     expected_bottom.Add("input");
-                    expected_top.Add("grn");
+                    expected_top.Add("gresnet");
                     m_rgLayerParameters[lt] = new FlattenParameter();
                     break;
 
@@ -2161,6 +2171,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.GLU
+        /// </summary>
+        public GrnParameter grn_param
+        {
+            get { return (GrnParameter)m_rgLayerParameters[LayerType.GRN]; }
+            set { m_rgLayerParameters[LayerType.GRN] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.GSL
         /// </summary>
         public GradientScaleParameter gradient_scale_param
@@ -2959,6 +2978,9 @@ namespace MyCaffe.param
                 case LayerType.GRN:
                     return "GRN";
 
+                case LayerType.GLOBRES_NORM:
+                    return "GlobResNorm";
+
                 case LayerType.GRADIENTSCALER:
                     return "GSL";
 
@@ -3344,6 +3366,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(categorical_trans_param, "categorical_trans_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(numeric_trans_param, "numeric_trans_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(glu_param, "glu_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(grn_param, "grn_param"));
 
             // Nt layers.
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gram_param, "gram_param"));
@@ -3713,6 +3736,9 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("glu_param")) != null)
                 p.glu_param = GluParameter.FromProto(rpp);
 
+            if ((rpp = rp.FindChild("grn_param")) != null)
+                p.grn_param = GrnParameter.FromProto(rpp);
+
             // Nt layers.
             if ((rpp = rp.FindChild("gram_param")) != null)
                 p.gram_param = GramParameter.FromProto(rpp);
@@ -3939,6 +3965,9 @@ namespace MyCaffe.param
 
                 case "grn":
                     return LayerType.GRN;
+
+                case "globresnet":
+                    return LayerType.GLOBRES_NORM;
 
                 case "gsl":
                     return LayerType.GRADIENTSCALER;
