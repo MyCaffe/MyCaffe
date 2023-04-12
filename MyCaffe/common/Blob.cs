@@ -1053,8 +1053,9 @@ namespace MyCaffe.common
         /// <param name="bDiff">Specifies to compare the diff.</param>
         /// <param name="dfTol">Specifies the accepted tolerance.</param>
         /// <param name="bZeroCheck">Optionally, specifies to check for all zeros (default = false).</param>
+        /// <param name="bFullCompare">Optionally, compare each item individually (default = false).</param>
         /// <returns>If all data (or diff) values fall within the tolerance, true is returned, otherwise false.</returns>
-        public bool Compare(Blob<T> other, Blob<T> work, bool bDiff = false, double dfTol = 1e-8, bool bZeroCheck = false)
+        public bool Compare(Blob<T> other, Blob<T> work, bool bDiff = false, double dfTol = 1e-8, bool bZeroCheck = false, bool bFullCompare = false)
         {
             int nCount = count();
             if (nCount != other.count())
@@ -1086,6 +1087,22 @@ namespace MyCaffe.common
                 double dfZero = m_cuda.asum_double(nCount, h2);
                 if (dfZero == 0)
                     return false;
+            }
+
+            if (bFullCompare)
+            {
+                float[] rgf1 = Utility.ConvertVecF<T>((bDiff) ? mutable_cpu_diff : mutable_cpu_data);
+                float[] rgf2 = Utility.ConvertVecF<T>((bDiff) ? other.mutable_cpu_diff : other.mutable_cpu_data);
+
+                for (int i = 0; i < rgf1.Length; i++)
+                {
+                    float f1 = rgf1[i];
+                    float f2 = rgf2[i];
+                    float fDiff = Math.Abs(f1 - f2);
+
+                    if (fDiff > dfTol)
+                        return false;
+                }
             }
 
             return true;
