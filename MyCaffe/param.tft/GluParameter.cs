@@ -8,7 +8,7 @@ using MyCaffe.basecode;
 namespace MyCaffe.param.tft
 {
     /// <summary>
-    /// Specifies the parameters for the GluLayer.  
+    /// Specifies the parameters for the GluLayer (Gated Linear Unit).  
     /// </summary>
     /// <remarks>
     /// The output of the layer is a linear projection (X * W + b) modulated by the gates **sigmoid** (X * V + c).  These
