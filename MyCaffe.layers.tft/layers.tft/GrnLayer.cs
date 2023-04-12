@@ -178,7 +178,7 @@ namespace MyCaffe.layers.tft
             // otherwise we need to project the input for creating the residual connection.
             if (m_param.grn_param.input_dim != m_param.grn_param.output_dim)
             {
-                LayerParameter ip = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
+                LayerParameter ip = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "skip");
                 ip.inner_product_param.num_output = (uint)m_param.grn_param.output_dim;
                 ip.inner_product_param.axis = m_param.grn_param.axis;
                 ip.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
@@ -192,7 +192,7 @@ namespace MyCaffe.layers.tft
             }
 
             // Create the linear layer for projecting the primary input (across time if necessary)
-            LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
+            LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "fc1");
             ip1.inner_product_param.num_output = (uint)m_param.grn_param.hidden_dim;
             ip1.inner_product_param.axis = m_param.grn_param.axis;
             ip1.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
@@ -208,7 +208,7 @@ namespace MyCaffe.layers.tft
             // If a context input exists, project the context as well.
             if (colBottom.Count > 1)
             {
-                LayerParameter ip = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
+                LayerParameter ip = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "context");
                 ip.inner_product_param.num_output = (uint)m_param.grn_param.hidden_dim;
                 ip.inner_product_param.axis = m_param.grn_param.axis;
                 ip.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
@@ -225,7 +225,7 @@ namespace MyCaffe.layers.tft
             }
 
             // non-linear activation function applied to the sum of projections.
-            LayerParameter act = new LayerParameter(LayerParameter.LayerType.ELU);
+            LayerParameter act = new LayerParameter(LayerParameter.LayerType.ELU, "act");
             act.elu_param.engine = EngineParameter.Engine.CAFFE;
             act.elu_param.alpha = 1.0;
             m_act = Layer<T>.Create(m_cuda, m_log, act, null);
@@ -238,7 +238,7 @@ namespace MyCaffe.layers.tft
             //-------------------------------------------------------
 
             // Create the linear layer for projecting top of the activation function
-            LayerParameter ip2 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
+            LayerParameter ip2 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "fc2");
             ip2.inner_product_param.num_output = (uint)m_param.grn_param.output_dim;
             ip2.inner_product_param.axis = m_param.grn_param.axis;
             ip2.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
@@ -256,7 +256,7 @@ namespace MyCaffe.layers.tft
 
             if (m_param.grn_param.dropout > 0)
             {
-                LayerParameter drop = new LayerParameter(LayerParameter.LayerType.DROPOUT);
+                LayerParameter drop = new LayerParameter(LayerParameter.LayerType.DROPOUT, "drop");
                 drop.dropout_param.dropout_ratio = m_param.grn_param.dropout;
                 m_dropout = Layer<T>.Create(m_cuda, m_log, drop, null);
 
@@ -264,7 +264,7 @@ namespace MyCaffe.layers.tft
                 m_dropout.Setup(m_colBtm, m_colTop);
             }
 
-            LayerParameter gate = new LayerParameter(LayerParameter.LayerType.GLU);
+            LayerParameter gate = new LayerParameter(LayerParameter.LayerType.GLU, "glu");
             gate.glu_param.input_dim = m_param.grn_param.output_dim;
             gate.glu_param.axis = m_param.grn_param.axis;
             gate.glu_param.weight_filler = m_param.grn_param.weight_filler;
@@ -278,7 +278,7 @@ namespace MyCaffe.layers.tft
 
             m_blobGatePlusResidual = new Blob<T>(m_cuda, m_log);
 
-            LayerParameter layerNorm = new LayerParameter(LayerParameter.LayerType.LAYERNORM);
+            LayerParameter layerNorm = new LayerParameter(LayerParameter.LayerType.LAYERNORM, "layernorm");
             layerNorm.layer_norm_param.epsilon = 1e-10;
             m_layerNorm = Layer<T>.Create(m_cuda, m_log, layerNorm, null);
 
