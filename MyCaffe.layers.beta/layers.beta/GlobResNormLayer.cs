@@ -17,7 +17,7 @@ namespace MyCaffe.layers.beta
     /// @see [Layer Normalization](https://arxiv.org/abs/1607.06450) by Jimmy Lei Ba, Jamie Ryan Kiros, and Geoffrey E. Hinton, 2016.
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
-    public class GRNLayer<T> : Layer<T>
+    public class GlobResNormLayer<T> : Layer<T>
     {
         Blob<T> m_blobSumMultiplier;
         Blob<T> m_blobSquare;
@@ -31,10 +31,10 @@ namespace MyCaffe.layers.beta
         /// <param name="log">Specifies the Log for output.</param>
         /// <param name="p">Specifies the LayerParameter of type GRN.
         /// </param>
-        public GRNLayer(CudaDnn<T> cuda, Log log, LayerParameter p)
+        public GlobResNormLayer(CudaDnn<T> cuda, Log log, LayerParameter p)
             : base(cuda, log, p)
         {
-            m_type = LayerParameter.LayerType.GRN;
+            m_type = LayerParameter.LayerType.GLOBRES_NORM;
             m_blobSumMultiplier = new common.Blob<T>(cuda, log, false);
             m_blobSumMultiplier.Name = m_param.name + " sum mult";
             m_blobSquare = new common.Blob<T>(cuda, log, false);

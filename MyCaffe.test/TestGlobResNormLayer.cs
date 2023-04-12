@@ -13,16 +13,16 @@ using MyCaffe.layers.beta;
 namespace MyCaffe.test
 {
     [TestClass]
-    public class TestGRNLayer
+    public class TestGlobResNormLayer
     {
         [TestMethod]
         public void TestForward()
         {
-            GRNLayerTest test = new GRNLayerTest();
+            GlobResNormLayerTest test = new GlobResNormLayerTest();
 
             try
             {
-                foreach (IGRNLayerTest t in test.Tests)
+                foreach (IGlobResNormLayerTest t in test.Tests)
                 {
                     t.TestForward();
                 }
@@ -36,11 +36,11 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestGradient()
         {
-            GRNLayerTest test = new GRNLayerTest();
+            GlobResNormLayerTest test = new GlobResNormLayerTest();
 
             try
             {
-                foreach (IGRNLayerTest t in test.Tests)
+                foreach (IGlobResNormLayerTest t in test.Tests)
                 {
                     t.TestGradient();
                 }
@@ -52,31 +52,31 @@ namespace MyCaffe.test
         }
     }
 
-    interface IGRNLayerTest : ITest
+    interface IGlobResNormLayerTest : ITest
     {
         void TestForward();
         void TestGradient();
     }
 
-    class GRNLayerTest : TestBase
+    class GlobResNormLayerTest : TestBase
     {
-        public GRNLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
-            : base("GRN Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
+        public GlobResNormLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
+            : base("GlobResNorm Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
 
         protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
         {
             if (dt == common.DataType.DOUBLE)
-                return new GRNLayerTest<double>(strName, nDeviceID, engine);
+                return new GlobResNormLayerTest<double>(strName, nDeviceID, engine);
             else
-                return new GRNLayerTest<float>(strName, nDeviceID, engine);
+                return new GlobResNormLayerTest<float>(strName, nDeviceID, engine);
         }
     }
 
-    class GRNLayerTest<T> : TestEx<T>, IGRNLayerTest
+    class GlobResNormLayerTest<T> : TestEx<T>, IGlobResNormLayerTest
     {
-        public GRNLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
+        public GlobResNormLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, new List<int>() { 2, 10, 4, 5 }, nDeviceID)
         {
             m_engine = engine;
@@ -94,8 +94,8 @@ namespace MyCaffe.test
 
         public void TestForward()
         {
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.GRN);
-            GRNLayer<T> layer = new GRNLayer<T>(m_cuda, m_log, p);
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.GLOBRES_NORM);
+            GlobResNormLayer<T> layer = new GlobResNormLayer<T>(m_cuda, m_log, p);
 
             try
             { 
@@ -152,8 +152,8 @@ namespace MyCaffe.test
 
         public void TestGradient()
         {
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.GRN);
-            GRNLayer<T> layer = new GRNLayer<T>(m_cuda, m_log, p);
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.GLOBRES_NORM);
+            GlobResNormLayer<T> layer = new GlobResNormLayer<T>(m_cuda, m_log, p);
 
             try
             { 

@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using MyCaffe.basecode;
+﻿using MyCaffe.basecode;
 using MyCaffe.common;
-using MyCaffe.db.image;
 using MyCaffe.param;
 
 /// <summary>
@@ -55,8 +49,8 @@ namespace MyCaffe.layers.beta
                 case LayerParameter.LayerType.GATHER:
                     return new GatherLayer<double>(cuda, log, p);
                     
-                case LayerParameter.LayerType.GRN:
-                    return new GRNLayer<double>(cuda, log, p);
+                case LayerParameter.LayerType.GLOBRES_NORM:
+                    return new GlobResNormLayer<double>(cuda, log, p);
 
                 case LayerParameter.LayerType.INTERP:
                     return new InterpLayer<double>(cuda, log, p);
@@ -148,8 +142,8 @@ namespace MyCaffe.layers.beta
                 case LayerParameter.LayerType.GATHER:
                     return new GatherLayer<float>(cuda, log, p);
 
-                case LayerParameter.LayerType.GRN:
-                    return new GRNLayer<float>(cuda, log, p);
+                case LayerParameter.LayerType.GLOBRES_NORM:
+                    return new GlobResNormLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.INTERP:
                     return new InterpLayer<float>(cuda, log, p);

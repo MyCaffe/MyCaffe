@@ -76,7 +76,7 @@
     <Compile Include="layers.beta\SqueezeLayer.cs" />
     <Compile Include="layers.beta\TransposeLayer.cs" />
     <Compile Include="layers.beta\GatherLayer.cs" />
-    <Compile Include="layers.beta\GRNLayer.cs" />
+    <Compile Include="layers.beta\GlobResNormLayer.cs" />
     <Compile Include="layers.beta\DataSequenceLayer.cs" />
     <Compile Include="layers.beta\KnnLayer.cs" />
     <Compile Include="layers.beta\Normalization1Layer.cs" />

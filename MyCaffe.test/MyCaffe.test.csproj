@@ -184,7 +184,7 @@
     <Compile Include="TestCropLayer.cs" />
     <Compile Include="TestDebugLayer.cs" />
     <Compile Include="TestMyCaffePreProcessor.cs" />
-    <Compile Include="TestGRNLayer.cs" />
+    <Compile Include="TestGlobResNormLayer.cs" />
     <Compile Include="TestMyCaffeCustomTrainer.cs" />
     <Compile Include="TestMyCaffeGym.cs" />
     <Compile Include="TestMyCaffeStreamDatabase.cs" />
