@@ -264,6 +264,10 @@ namespace MyCaffe.param
             /// </summary>
             GATHER,
             /// <summary>
+            /// Initializes a parameter for the GateAddNormLayer.
+            /// </summary>
+            GATEADDNORM,
+            /// <summary>
             /// Initializes a parameter for the GeluLayer.
             /// </summary>
             GELU,
@@ -1161,6 +1165,14 @@ namespace MyCaffe.param
                     expected_top.Add("gthr");
                     m_rgLayerParameters[lt] = new GatherParameter();
                     m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE_AND_TRAINING;
+                    break;
+
+                case LayerType.GATEADDNORM:
+                    expected_bottom.Add("input");
+                    expected_top.Add("gan");
+                    m_rgLayerParameters[LayerType.GLU] = new GluParameter();
+                    m_rgLayerParameters[LayerType.DROPOUT] = new DropoutParameter();
+                    m_rgLayerParameters[LayerType.LAYERNORM] = new LayerNormParameter();
                     break;
 
                 case LayerType.GELU:
@@ -2969,6 +2981,9 @@ namespace MyCaffe.param
                 case LayerType.GATHER:
                     return "Gather";
 
+                case LayerType.GATEADDNORM:
+                    return "GateAddNorm";
+
                 case LayerType.GELU:
                     return "GELU";
 
@@ -3956,7 +3971,10 @@ namespace MyCaffe.param
 
                 case "gather":
                     return LayerType.GATHER;
-                    
+
+                case "gateaddnorm":
+                    return LayerType.GATEADDNORM;
+
                 case "gelu":
                     return LayerType.GELU;
 

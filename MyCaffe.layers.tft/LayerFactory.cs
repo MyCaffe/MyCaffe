@@ -37,6 +37,9 @@ namespace MyCaffe.layers.tft
                 case LayerParameter.LayerType.CHANNEL_EMBEDDING:
                     return new ChannelEmbeddingLayer<double>(cuda, log, p);
 
+                case LayerParameter.LayerType.GATEADDNORM:
+                    return new GateAddNormLayer<double>(cuda, log, p);
+
                 case LayerParameter.LayerType.GLU:
                     return new GluLayer<double>(cuda, log, p);
 
@@ -69,6 +72,9 @@ namespace MyCaffe.layers.tft
 
                 case LayerParameter.LayerType.CHANNEL_EMBEDDING:
                     return new ChannelEmbeddingLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.GATEADDNORM:
+                    return new GateAddNormLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.GLU:
                     return new GluLayer<float>(cuda, log, p);
