@@ -21,8 +21,8 @@ namespace MyCaffe.layers.tft
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class ChannelEmbeddingLayer<T> : Layer<T>
     {
-        NumericTransformationLayer<T> m_numericLayer = null;
-        CategoricalTransformationLayer<T> m_categoricalLayer = null;
+        Layer<T> m_numericLayer = null;
+        Layer<T> m_categoricalLayer = null;
         BlobCollection<T> m_colBtm = new BlobCollection<T>();
         BlobCollection<T> m_colNumericTop = new BlobCollection<T>();
         BlobCollection<T> m_colCategoricalTop = new BlobCollection<T>();
@@ -42,17 +42,8 @@ namespace MyCaffe.layers.tft
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
-            if (m_numericLayer != null)
-            {
-                m_numericLayer.Dispose();
-                m_numericLayer = null;
-            }
-
-            if (m_categoricalLayer != null)
-            {
-                m_categoricalLayer.Dispose();
-                m_categoricalLayer = null;
-            }
+            dispose(ref m_numericLayer);
+            dispose(ref m_categoricalLayer);
 
             m_colNumericTop.Dispose();
             m_colCategoricalTop.Dispose();

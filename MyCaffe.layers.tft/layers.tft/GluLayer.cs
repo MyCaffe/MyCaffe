@@ -57,23 +57,9 @@ namespace MyCaffe.layers.tft
             dispose(ref m_blobMod);
             dispose(ref m_blobBtm);
 
-            if (m_ip1Layer != null)
-            {
-                m_ip1Layer.Dispose();
-                m_ip1Layer = null;
-            }
-
-            if (m_ip2Layer != null)
-            {
-                m_ip2Layer.Dispose();
-                m_ip2Layer = null;
-            }
-
-            if (m_modLayer != null)
-            {
-                m_modLayer.Dispose();
-                m_modLayer = null;
-            }
+            dispose(ref m_ip1Layer);
+            dispose(ref m_ip2Layer);
+            dispose(ref m_modLayer);
         }
 
         /** @copydoc Layer::setup_internal_blobs */

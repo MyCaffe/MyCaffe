@@ -40,6 +40,20 @@ namespace MyCaffe.layers.tft
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
+            if (m_rgIpLayers != null)
+            {
+                foreach (Layer<T> layer in m_rgIpLayers)
+                {
+                    layer.Dispose();
+                }
+                m_rgIpLayers = null;
+            }
+
+            if (m_rgBtm != null)
+            {
+                m_rgBtm.Dispose();
+                m_rgBtm = null;
+            }
         }
 
         /** @copydoc Layer::setup_internal_blobs */

@@ -51,23 +51,9 @@ namespace MyCaffe.layers.tft
             dispose(ref m_blobGate);
             dispose(ref m_blobDrop);
 
-            if (m_dropout != null)
-            {
-                m_dropout.Dispose();
-                m_dropout = null;
-            }
-
-            if (m_gate != null)
-            {
-                m_gate.Dispose();
-                m_gate = null;
-            }
-
-            if (m_layerNorm != null)
-            {
-                m_layerNorm.Dispose();
-                m_layerNorm = null;
-            }
+            dispose(ref m_dropout);
+            dispose(ref m_gate);
+            dispose(ref m_layerNorm);
         }
 
         /** @copydoc Layer::setup_internal_blobs */

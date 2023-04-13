@@ -66,53 +66,14 @@ namespace MyCaffe.layers.tft
             dispose(ref m_blobGatePlusResidual);
             dispose(ref m_blobBtm);
 
-            if (m_ipSkipLayer != null)
-            {
-                m_ipSkipLayer.Dispose();
-                m_ipSkipLayer = null;
-            }
-
-            if (m_ipFc1 != null)
-            {
-                m_ipFc1.Dispose();
-                m_ipFc1 = null;
-            }
-
-            if (m_ipContext != null)
-            {
-                m_ipContext.Dispose();
-                m_ipContext = null;
-            }
-
-            if (m_act != null)
-            {
-                m_act.Dispose();
-                m_act = null;
-            }
-
-            if (m_ipFc2 != null)
-            {
-                m_ipFc2.Dispose();
-                m_ipFc2 = null;
-            }
-
-            if (m_dropout != null)
-            {
-                m_dropout.Dispose();
-                m_dropout = null;    
-            }
-
-            if (m_gate != null)
-            {
-                m_gate.Dispose();
-                m_gate = null;
-            }
-
-            if (m_layerNorm != null)
-            {
-                m_layerNorm.Dispose(); 
-                m_layerNorm = null;
-            }
+            dispose(ref m_ipSkipLayer);
+            dispose(ref m_ipFc1);
+            dispose(ref m_ipContext);
+            dispose(ref m_act);
+            dispose(ref m_ipFc2);
+            dispose(ref m_dropout);
+            dispose(ref m_gate);
+            dispose(ref m_layerNorm);
         }
 
         /** @copydoc Layer::setup_internal_blobs */
