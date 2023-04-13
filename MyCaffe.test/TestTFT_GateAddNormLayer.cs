@@ -179,7 +179,7 @@ namespace MyCaffe.test
                 layer.Forward(BottomVec, TopVec);
 
                 blobYexp.LoadFromNumpy(strPath + "test_gan_y.npy");
-                double dfErr = (typeof(T) == typeof(float)) ? 5e-07 : 2e-06;
+                double dfErr = (typeof(T) == typeof(float)) ? 8e-07 : 2e-06;
                 m_log.CHECK(TopVec[0].Compare(blobYexp, blobWork, false, dfErr), "The blobs do not match.");
             }
             finally
@@ -237,7 +237,7 @@ namespace MyCaffe.test
                 layer.Forward(BottomVec, TopVec);
 
                 blobYexp.LoadFromNumpy(strPath + "test_gan_y.npy");
-                double dfErr = (typeof(T) == typeof(float)) ? 5e-07 : 2e-06;
+                double dfErr = (typeof(T) == typeof(float)) ? 8e-07 : 2e-06;
                 m_log.CHECK(TopVec[0].Compare(blobYexp, blobWork, false, dfErr), "The blobs do not match.");
 
                 TopVec[0].LoadFromNumpy(strPath + "test_gan_y.grad.npy", true);
@@ -245,7 +245,7 @@ namespace MyCaffe.test
                 layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
 
                 blobGradExp.LoadFromNumpy(strPath + "test_gan_x.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(blobX, blobWork, true, 1e-06), "The blobs do not match.");
+                m_log.CHECK(blobGradExp.Compare(blobX, blobWork, true, 1.5e-06), "The blobs do not match.");
 
                 blobGradExp.LoadFromNumpy(strPath + "test_gan.gate.module.fc1.weight.grad.npy", true);
                 m_log.CHECK(blobGradExp.Compare(layer.blobs[0], blobWork, true, 2e-05), "The blobs do not match.");

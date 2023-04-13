@@ -298,37 +298,37 @@ namespace MyCaffe.test
                     m_log.CHECK(TopVec[i].Compare(col[i], blobWork, false, dfErr), "The blobs do not match.");
                 }
 
-                TopVec[0].LoadFromNumpy(strPath + "grad_processed_numeric_0.npy", true);
-                TopVec[1].LoadFromNumpy(strPath + "grad_processed_numeric_1.npy", true);
-                TopVec[2].LoadFromNumpy(strPath + "grad_processed_numeric_2.npy", true);
-                TopVec[3].LoadFromNumpy(strPath + "grad_processed_numeric_3.npy", true);
+                TopVec[0].LoadFromNumpy(strPath + "processed_numeric_0.grad.npy", true);
+                TopVec[1].LoadFromNumpy(strPath + "processed_numeric_1.grad.npy", true);
+                TopVec[2].LoadFromNumpy(strPath + "processed_numeric_2.grad.npy", true);
+                TopVec[3].LoadFromNumpy(strPath + "processed_numeric_3.grad.npy", true);
 
                 layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
 
-                blobGradExp.LoadFromNumpy(strPath + "grad_x_numeric.npy", true);
+                blobGradExp.LoadFromNumpy(strPath + "x_numeric.grad.npy", true);
                 m_log.CHECK(blobGradExp.Compare(blobX, blobWork, true, dfErr), "The blobs do not match.");
 
                 if (typeof(T) == typeof(double))
                     dfErr = 0.03;
 
-                blobGradExp.LoadFromNumpy(strPath + "proj_layer.0.weight_grad.npy", true);
+                blobGradExp.LoadFromNumpy(strPath + "proj_layer.0.weight.grad.npy", true);
                 m_log.CHECK(blobGradExp.Compare(layer.blobs[0], blobWork, true, dfErr), "The blobs do not match.");
-                blobGradExp.LoadFromNumpy(strPath + "proj_layer.0.bias_grad.npy", true);
+                blobGradExp.LoadFromNumpy(strPath + "proj_layer.0.bias.grad.npy", true);
                 m_log.CHECK(blobGradExp.Compare(layer.blobs[1], blobWork, true, dfErr), "The blobs do not match.");
 
-                blobGradExp.LoadFromNumpy(strPath + "proj_layer.1.weight_grad.npy", true);
+                blobGradExp.LoadFromNumpy(strPath + "proj_layer.1.weight.grad.npy", true);
                 m_log.CHECK(blobGradExp.Compare(layer.blobs[2], blobWork, true, dfErr), "The blobs do not match.");
-                blobGradExp.LoadFromNumpy(strPath + "proj_layer.1.bias_grad.npy", true);
+                blobGradExp.LoadFromNumpy(strPath + "proj_layer.1.bias.grad.npy", true);
                 m_log.CHECK(blobGradExp.Compare(layer.blobs[3], blobWork, true, dfErr), "The blobs do not match.");
 
-                blobGradExp.LoadFromNumpy(strPath + "proj_layer.2.weight_grad.npy", true);
+                blobGradExp.LoadFromNumpy(strPath + "proj_layer.2.weight.grad.npy", true);
                 m_log.CHECK(blobGradExp.Compare(layer.blobs[4], blobWork, true, dfErr), "The blobs do not match.");
-                blobGradExp.LoadFromNumpy(strPath + "proj_layer.2.bias_grad.npy", true);
+                blobGradExp.LoadFromNumpy(strPath + "proj_layer.2.bias.grad.npy", true);
                 m_log.CHECK(blobGradExp.Compare(layer.blobs[5], blobWork, true, dfErr), "The blobs do not match.");
 
-                blobGradExp.LoadFromNumpy(strPath + "proj_layer.3.weight_grad.npy", true);
+                blobGradExp.LoadFromNumpy(strPath + "proj_layer.3.weight.grad.npy", true);
                 m_log.CHECK(blobGradExp.Compare(layer.blobs[6], blobWork, true, dfErr), "The blobs do not match.");
-                blobGradExp.LoadFromNumpy(strPath + "proj_layer.3.bias_grad.npy", true);
+                blobGradExp.LoadFromNumpy(strPath + "proj_layer.3.bias.grad.npy", true);
                 m_log.CHECK(blobGradExp.Compare(layer.blobs[7], blobWork, true, dfErr), "The blobs do not match.");
             }
             finally
