@@ -224,6 +224,7 @@
     <Compile Include="param.hdf5\HDF5DataParameter.cs" />
     <Compile Include="param.python\PythonParameter.cs" />
     <Compile Include="param.tft\CategoricalTransformationParameter.cs" />
+    <Compile Include="param.tft\VarSetLnetParameter.cs" />
     <Compile Include="param.tft\GrnParameter.cs" />
     <Compile Include="param.tft\GluParameter.cs" />
     <Compile Include="param.tft\NumericTransformationParameter.cs" />

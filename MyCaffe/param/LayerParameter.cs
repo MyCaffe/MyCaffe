@@ -611,6 +611,10 @@ namespace MyCaffe.param
             /// Initializes a parameter for the VideoDataLayer.
             /// </summary>
             VIDEO_DATA,
+            /// <summary>
+            /// Initializes a parameter for the VariableSelectionNetworkLayer
+            /// </summary>
+            VARSELNET,
 #pragma warning disable 1591
             _MAX
 #pragma warning restore 1591
@@ -1709,6 +1713,14 @@ namespace MyCaffe.param
                     m_rgLayerParameters[LayerType.DATA] = new DataParameter();
                     m_rgLayerParameters[LayerType.TRANSFORM] = new TransformationParameter();
                     break;
+
+                case LayerType.VARSELNET:
+                    expected_bottom.Add("flatemb");
+                    expected_bottom.Add("ctx");
+                    expected_top.Add("outsum");
+                    expected_top.Add("sprcwts");
+                    m_rgLayerParameters[lt] = new VarSelNetParameter();
+                    break;
             }
         } 
 
@@ -2733,6 +2745,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.VARSELNET
+        /// </summary>
+        public VarSelNetParameter varselnet_param
+        {
+            get { return (VarSelNetParameter)m_rgLayerParameters[LayerType.VARSELNET]; }
+            set { m_rgLayerParameters[LayerType.VARSELNET] = value; }
+        }
+
+        /// <summary>
         /// Clears the collection of Blobs used by this layer.
         /// </summary>
         public void clear_blobs()
@@ -3231,6 +3252,9 @@ namespace MyCaffe.param
                 case LayerType.VIDEO_DATA:
                     return "VideoData";
 
+                case LayerType.VARSELNET:
+                    return "VarSelNet";
+
                 default:
                     return "Unknown";
             }
@@ -3382,6 +3406,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(numeric_trans_param, "numeric_trans_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(glu_param, "glu_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(grn_param, "grn_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(varselnet_param, "varselnet_param"));
 
             // Nt layers.
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gram_param, "gram_param"));
@@ -3753,6 +3778,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("grn_param")) != null)
                 p.grn_param = GrnParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("varselnet_param")) != null)
+                p.varselnet_param = VarSelNetParameter.FromProto(rpp);
 
             // Nt layers.
             if ((rpp = rp.FindChild("gram_param")) != null)
@@ -4248,6 +4276,9 @@ namespace MyCaffe.param
                 case "videodata":
                 case "video_data":
                     return LayerType.VIDEO_DATA;
+
+                case "varselnet":
+                    return LayerType.VARSELNET;
 
                 default:
                     throw new Exception("Unknown 'layertype' value: " + str);
