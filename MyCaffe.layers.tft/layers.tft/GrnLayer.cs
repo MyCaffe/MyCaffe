@@ -139,7 +139,7 @@ namespace MyCaffe.layers.tft
             // otherwise we need to project the input for creating the residual connection.
             if (m_param.grn_param.input_dim != m_param.grn_param.output_dim)
             {
-                LayerParameter ip = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "skip");
+                LayerParameter ip = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".skip");
                 ip.inner_product_param.num_output = (uint)m_param.grn_param.output_dim;
                 ip.inner_product_param.axis = m_param.grn_param.axis;
                 ip.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
@@ -153,7 +153,7 @@ namespace MyCaffe.layers.tft
             }
 
             // Create the linear layer for projecting the primary input (across time if necessary)
-            LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "fc1");
+            LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".fc1");
             ip1.inner_product_param.num_output = (uint)m_param.grn_param.hidden_dim;
             ip1.inner_product_param.axis = m_param.grn_param.axis;
             ip1.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
@@ -169,11 +169,11 @@ namespace MyCaffe.layers.tft
             // If a context input exists, project the context as well.
             if (colBottom.Count > 1)
             {
-                LayerParameter ip = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "context");
+                LayerParameter ip = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".context");
                 ip.inner_product_param.num_output = (uint)m_param.grn_param.hidden_dim;
                 ip.inner_product_param.axis = m_param.grn_param.axis;
                 ip.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
-                ip.inner_product_param.bias_filler = m_param.grn_param.bias_filler;
+                ip.inner_product_param.bias_term = false;
                 m_ipContext = Layer<T>.Create(m_cuda, m_log, ip, null);
                 m_blobContext = new Blob<T>(m_cuda, m_log);
 
@@ -186,7 +186,7 @@ namespace MyCaffe.layers.tft
             }
 
             // non-linear activation function applied to the sum of projections.
-            LayerParameter act = new LayerParameter(LayerParameter.LayerType.ELU, "act");
+            LayerParameter act = new LayerParameter(LayerParameter.LayerType.ELU, m_param.name + ".act");
             act.elu_param.engine = EngineParameter.Engine.CAFFE;
             act.elu_param.alpha = 1.0;
             m_act = Layer<T>.Create(m_cuda, m_log, act, null);
@@ -199,7 +199,7 @@ namespace MyCaffe.layers.tft
             //-------------------------------------------------------
 
             // Create the linear layer for projecting top of the activation function
-            LayerParameter ip2 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "fc2");
+            LayerParameter ip2 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".fc2");
             ip2.inner_product_param.num_output = (uint)m_param.grn_param.output_dim;
             ip2.inner_product_param.axis = m_param.grn_param.axis;
             ip2.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
@@ -217,7 +217,7 @@ namespace MyCaffe.layers.tft
 
             if (m_param.grn_param.dropout > 0)
             {
-                LayerParameter drop = new LayerParameter(LayerParameter.LayerType.DROPOUT, "drop");
+                LayerParameter drop = new LayerParameter(LayerParameter.LayerType.DROPOUT, m_param.name + ".drop");
                 drop.dropout_param.dropout_ratio = m_param.grn_param.dropout;
                 m_dropout = Layer<T>.Create(m_cuda, m_log, drop, null);
 
@@ -225,7 +225,7 @@ namespace MyCaffe.layers.tft
                 m_dropout.Setup(m_colBtm, m_colTop);
             }
 
-            LayerParameter gate = new LayerParameter(LayerParameter.LayerType.GLU, "glu");
+            LayerParameter gate = new LayerParameter(LayerParameter.LayerType.GLU, m_param.name + ".gate");
             gate.glu_param.input_dim = m_param.grn_param.output_dim;
             gate.glu_param.axis = m_param.grn_param.axis;
             gate.glu_param.weight_filler = m_param.grn_param.weight_filler;
@@ -239,7 +239,7 @@ namespace MyCaffe.layers.tft
 
             m_blobGatePlusResidual = new Blob<T>(m_cuda, m_log);
 
-            LayerParameter layerNorm = new LayerParameter(LayerParameter.LayerType.LAYERNORM, "layernorm");
+            LayerParameter layerNorm = new LayerParameter(LayerParameter.LayerType.LAYERNORM, m_param.name + ".layernorm");
             layerNorm.layer_norm_param.epsilon = 1e-10;
             m_layerNorm = Layer<T>.Create(m_cuda, m_log, layerNorm, null);
 
@@ -420,6 +420,7 @@ namespace MyCaffe.layers.tft
 
             if (m_ipContext != null)
             {
+                m_blobContext.CopyFrom(m_blobIp1, true);
                 addBtmTop(colBottom[1], m_blobContext);
                 m_ipContext.Backward(m_colTop, rgbPropagateDown, m_colBtm);
             }
