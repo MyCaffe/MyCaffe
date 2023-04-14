@@ -1054,8 +1054,9 @@ namespace MyCaffe.common
         /// <param name="dfTol">Specifies the accepted tolerance.</param>
         /// <param name="bZeroCheck">Optionally, specifies to check for all zeros (default = false).</param>
         /// <param name="bFullCompare">Optionally, compare each item individually (default = false).</param>
+        /// <param name="bDetectNans">Optionally, detect NAN's (default = true).</param>
         /// <returns>If all data (or diff) values fall within the tolerance, true is returned, otherwise false.</returns>
-        public bool Compare(Blob<T> other, Blob<T> work, bool bDiff = false, double dfTol = 1e-8, bool bZeroCheck = false, bool bFullCompare = false)
+        public bool Compare(Blob<T> other, Blob<T> work, bool bDiff = false, double dfTol = 1e-8, bool bZeroCheck = false, bool bFullCompare = false, bool bDetectNans = true)
         {
             int nCount = count();
             if (nCount != other.count())
@@ -1082,6 +1083,17 @@ namespace MyCaffe.common
             if (dfMax > dfTol)
                 return false;
 
+            if (bDetectNans)
+            {
+                Tuple<double, double, double, double> minmax1 = m_cuda.minmax(nCount, h1, work.gpu_data, work.gpu_diff, true);
+                if (minmax1.Item3 > 0 || minmax1.Item4 > 0)
+                    return false;
+
+                Tuple<double, double, double, double> minmax2 = m_cuda.minmax(nCount, h2, work.gpu_data, work.gpu_diff, true);
+                if (minmax2.Item3 > 0 || minmax2.Item4 > 0)
+                    return false;
+            }
+
             if (bZeroCheck)
             {
                 double dfZero = m_cuda.asum_double(nCount, h2);
@@ -1104,6 +1116,26 @@ namespace MyCaffe.common
                         return false;
                 }
             }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Validate the data or diff looking for NAN or Inf.
+        /// </summary>
+        /// <param name="work">Specifies the work blob.</param>
+        /// <param name="bDiff">Specifies to validate the diff (true) or the data (false).</param>
+        /// <returns>True is returned if the data (or diff) contains no NAN or Inf.</returns>
+        public bool ValidateData(Blob<T> work, bool bDiff = false)
+        {
+            int nCount = count();
+            long h1 = (bDiff) ? gpu_diff : gpu_data;
+
+            work.ReshapeLike(this);
+
+            Tuple<double, double, double, double> minmax1 = m_cuda.minmax(nCount, h1, work.gpu_data, work.gpu_diff, true);
+            if (minmax1.Item3 > 0 || minmax1.Item4 > 0)
+                return false;
 
             return true;
         }
