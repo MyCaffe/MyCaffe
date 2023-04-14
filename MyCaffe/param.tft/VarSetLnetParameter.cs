@@ -43,8 +43,8 @@ namespace MyCaffe.param.tft
         [Description("Specifies the quantity of input variables, including both numeric and categorical for the relevant channel.")]
         public int num_inputs
         {
-            get { return m_nInputDim; }
-            set { m_nInputDim = value; }
+            get { return m_nNumInputs; }
+            set { m_nNumInputs = value; }
         }
 
         /// <summary>
