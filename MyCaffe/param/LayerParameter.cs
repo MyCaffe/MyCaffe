@@ -376,6 +376,10 @@ namespace MyCaffe.param
             /// </summary>
             MULTIHEAD_ATTENTION,
             /// <summary>
+            /// Initializes a parameter for the MultiheadAttentionInterpretableLayer
+            /// </summary>
+            MULTIHEAD_ATTENTION_INTERP,
+            /// <summary>
             /// Initializes a parameter for the MultinomialLogisticLossLayer.
             /// </summary>
             MULTINOMIALLOGISTIC_LOSS,
@@ -1359,6 +1363,17 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new MultiheadAttentionParameter();
                     break;
 
+                case LayerType.MULTIHEAD_ATTENTION_INTERP:
+                    expected_bottom.Add("q");
+                    expected_bottom.Add("k");
+                    expected_bottom.Add("v");
+                    expected_top.Add("attn");
+                    expected_top.Add("y");
+                    expected_top.Add("attn_out");
+                    expected_top.Add("attn_scores");
+                    m_rgLayerParameters[lt] = new MultiHeadAttentionInterpParameter();
+                    break;
+
                 case LayerType.MULTINOMIALLOGISTIC_LOSS:
                     expected_bottom.Add("pred");
                     expected_bottom.Add("label");
@@ -2039,6 +2054,15 @@ namespace MyCaffe.param
         {
             get { return (MultiheadAttentionParameter)m_rgLayerParameters[LayerType.MULTIHEAD_ATTENTION]; }
             set { m_rgLayerParameters[LayerType.MULTIHEAD_ATTENTION] = value; }
+        }
+
+        /// <summary>
+        /// Returns the parameter set when initialized with LayerType.MULTIHEAD_ATTENTION_INTERP
+        /// </summary>
+        public MultiHeadAttentionInterpParameter multihead_attention_interp_param
+        {
+            get { return (MultiHeadAttentionInterpParameter)m_rgLayerParameters[LayerType.MULTIHEAD_ATTENTION_INTERP]; }
+            set { m_rgLayerParameters[LayerType.MULTIHEAD_ATTENTION_INTERP] = value; }
         }
 
         /// <summary>
@@ -3083,6 +3107,9 @@ namespace MyCaffe.param
                 case LayerType.MULTIHEAD_ATTENTION:
                     return "MultiheadAttention";
 
+                case LayerType.MULTIHEAD_ATTENTION_INTERP:
+                    return "MultiheadAttentionInterp";
+
                 case LayerType.MEMORY_LOSS:
                     return "MemoryLoss";
 
@@ -3407,6 +3434,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(glu_param, "glu_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(grn_param, "grn_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(varselnet_param, "varselnet_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(multihead_attention_interp_param, "multihead_attention_interp_param"));
 
             // Nt layers.
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gram_param, "gram_param"));
@@ -3782,6 +3810,9 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("varselnet_param")) != null)
                 p.varselnet_param = VarSelNetParameter.FromProto(rpp);
 
+            if ((rpp = rp.FindChild("multihead_attention_interp_param")) != null)
+                p.multihead_attention_interp_param = MultiHeadAttentionInterpParameter.FromProto(rpp);
+
             // Nt layers.
             if ((rpp = rp.FindChild("gram_param")) != null)
                 p.gram_param = GramParameter.FromProto(rpp);
@@ -4085,6 +4116,9 @@ namespace MyCaffe.param
 
                 case "multiheadattention":
                     return LayerType.MULTIHEAD_ATTENTION;
+
+                case "multiheadattentioninterp":
+                    return LayerType.MULTIHEAD_ATTENTION_INTERP;
 
                 case "memoryloss":
                 case "memory_loss":

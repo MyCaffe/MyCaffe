@@ -118,6 +118,7 @@
     <Compile Include="TestAccuracyEncodingLayer.cs" />
     <Compile Include="TestAnnotatedDataLayer.cs" />
     <Compile Include="TestTFT_GateAddNormLayer.cs" />
+    <Compile Include="TestTFT_MultiHeadAttentionInterpLayer.cs" />
     <Compile Include="TestTFT_VarSelNetLayer.cs" />
     <Compile Include="TestTFT_GrnLayer.cs" />
     <Compile Include="TestTFT_GluLayer.cs" />

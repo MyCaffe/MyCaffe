@@ -49,6 +49,9 @@ namespace MyCaffe.layers.tft
                 case LayerParameter.LayerType.NUMERIC_TRANS:
                     return new NumericTransformationLayer<double>(cuda, log, p);
 
+                case LayerParameter.LayerType.MULTIHEAD_ATTENTION_INTERP:
+                    return new MultiHeadAttentionInterpLayer<double>(cuda, log, p);
+
                 case LayerParameter.LayerType.VARSELNET:
                     return new VarSetNetLayer<double>(cuda, log, p);
 
@@ -87,6 +90,9 @@ namespace MyCaffe.layers.tft
 
                 case LayerParameter.LayerType.NUMERIC_TRANS:
                     return new NumericTransformationLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.MULTIHEAD_ATTENTION_INTERP:
+                    return new MultiHeadAttentionInterpLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.VARSELNET:
                     return new VarSetNetLayer<float>(cuda, log, p);
