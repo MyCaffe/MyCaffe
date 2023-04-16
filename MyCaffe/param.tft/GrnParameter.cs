@@ -18,6 +18,7 @@ namespace MyCaffe.param.tft
     /// no context vector is used, the GRN treats the context input as zero.  During training dropout is applied before
     /// gating.
     /// 
+    /// @see [Temporal Fusion Transformers for Interpretable Multi-horizon Time Series Forecasting](https://arxiv.org/abs/1912.09363) by Bryan Lim, Sercan O. Arik, Nicolas Loeff, and Tomas Pfister, 2019, arXiv 1912.09363
     /// @see [Github - PlaytikaOSS/tft-torch](https://github.com/PlaytikaOSS/tft-torch) by Playtika Research, 2021.
     /// @see [Github - PlaytikaOSS/tft-torch tft.py](https://github.com/PlaytikaOSS/tft-torch/blob/main/tft_torch/tft.py#L44) by Playtika Research, 2021.
     /// </remarks>

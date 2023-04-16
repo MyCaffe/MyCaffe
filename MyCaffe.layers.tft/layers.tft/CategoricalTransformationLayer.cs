@@ -14,6 +14,7 @@ namespace MyCaffe.layers.tft
     /// is a list, with length num_inputs, that contians the embedding of each input variable for all observations and time steps.
     /// </summary>
     /// <remarks>
+    /// @see [Temporal Fusion Transformers for Interpretable Multi-horizon Time Series Forecasting](https://arxiv.org/abs/1912.09363) by Bryan Lim, Sercan O. Arik, Nicolas Loeff, and Tomas Pfister, 2019, arXiv 1912.09363
     /// @see [Github - PlaytikaOSS/tft-torch](https://github.com/PlaytikaOSS/tft-torch) by Playtika Research, 2021.
     /// @see [Github - PlaytikaOSS/tft-torch tft.py](https://github.com/PlaytikaOSS/tft-torch/blob/main/tft_torch/tft.py#L367) by Playtika Research, 2021.
     /// </remarks>

@@ -17,6 +17,7 @@ namespace MyCaffe.param.tft
     /// units couypled to the gates.  This retains the non-linear capabilities of the layer while allowing the gradient
     /// to propagate through the linear unit without scaling.
     /// 
+    /// @see [Temporal Fusion Transformers for Interpretable Multi-horizon Time Series Forecasting](https://arxiv.org/abs/1912.09363) by Bryan Lim, Sercan O. Arik, Nicolas Loeff, and Tomas Pfister, 2019, arXiv 1912.09363
     /// @see [Github - PlaytikaOSS/tft-torch](https://github.com/PlaytikaOSS/tft-torch) by Playtika Research, 2021.
     /// @see [Github - PlaytikaOSS/tft-torch tft.py](https://github.com/PlaytikaOSS/tft-torch/blob/main/tft_torch/tft.py#L11) by Playtika Research, 2021.
     /// @see ["Language modeling with gated convolution networks](https://arxiv.org/abs/1612.08083) by Dauphin, Yann N., et al., International conference on machine learning, PMLR, 2017
@@ -90,6 +91,7 @@ namespace MyCaffe.param.tft
             get { return m_dfSigmaInit; }
             set { m_dfSigmaInit = value; }
         }
+
         /// <summary>
         /// Whether to have bias terms or not.
         /// </summary>

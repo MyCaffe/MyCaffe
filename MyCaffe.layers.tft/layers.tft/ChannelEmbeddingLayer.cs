@@ -15,6 +15,7 @@ namespace MyCaffe.layers.tft
     /// Both the numeric_trans_param and categorical_trans_param's should be filled out for this layer.
     /// </summary>
     /// <remarks>
+    /// @see [Temporal Fusion Transformers for Interpretable Multi-horizon Time Series Forecasting](https://arxiv.org/abs/1912.09363) by Bryan Lim, Sercan O. Arik, Nicolas Loeff, and Tomas Pfister, 2019, arXiv 1912.09363
     /// @see [Github - PlaytikaOSS/tft-torch](https://github.com/PlaytikaOSS/tft-torch) by Playtika Research, 2021.
     /// @see [Github - PlaytikaOSS/tft-torch tft.py](https://github.com/PlaytikaOSS/tft-torch/blob/main/tft_torch/tft.py#L249) by Playtika Research, 2021.
     /// </remarks>
