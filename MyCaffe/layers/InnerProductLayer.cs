@@ -31,6 +31,7 @@ namespace MyCaffe.layers
         Blob<T> m_blobEpsilonWeight = null;
         Blob<T> m_blobEpsilonBias = null;
         Filler<T> m_fillerEpsilon = null;
+        double m_dfBiasGradScale = 1.0;
 
         /// <summary>
         /// The InnerProductLayer constructor.
@@ -164,6 +165,7 @@ namespace MyCaffe.layers
             m_bTranspose = m_param.inner_product_param.transpose;
             m_bEnableNoise = m_param.inner_product_param.enable_noise;
             m_dfSigmaInit = m_param.inner_product_param.sigma_init;
+            m_dfBiasGradScale = m_param.inner_product_param.bias_grad_scale;
             m_nN = nNumOutput;
 
             List<int> rgShape = colBottom[0].shape();
@@ -421,7 +423,17 @@ namespace MyCaffe.layers
             // Gradient with respect to bias.
             if (m_bBiasTerm && m_rgbParamPropagateDown[1])
             {
+                if (m_dfBiasGradScale != 1)
+                    m_blobBiasMultiplier.scale_data(m_dfBiasGradScale);
+
                 m_cuda.gemv(true, m_nM, m_nN, m_tOne, hTopDiff, m_blobBiasMultiplier.gpu_data, m_tOne, m_colBlobs[1].mutable_gpu_diff);
+
+                if (m_dfBiasGradScale != 1)
+                {
+                    double dfUnScale = 1.0 / m_dfBiasGradScale;
+                    m_blobBiasMultiplier.scale_data(dfUnScale);
+                    m_colBlobs[1].scale_diff(dfUnScale);
+                }
             }
 
             // Gradient with respect to bottom data.

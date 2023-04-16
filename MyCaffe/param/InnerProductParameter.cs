@@ -24,10 +24,21 @@ namespace MyCaffe.param
         bool m_bTranspose = false;
         bool m_bEnableNoise = false;
         double m_dfSigmaInit = 0.017;
+        double m_dfBiasGradScale = 1.0;
 
         /** @copydoc LayerParameterBase */
         public InnerProductParameter()
         {
+        }
+
+        /// <summary>
+        /// Specifies a scaling value applied to the bias mutliplier and then unapplied after calculating the bias - used to help improve float accuracy (default = 1.0).  A value of 1.0 is ignored.
+        /// </summary>
+        [Description("Specifies a scaling value applied to the bias mutliplier and then unapplied after calculating the bias - used to help improve float accuracy (default = 1.0).  A value of 1.0 is ignored.")]
+        public double bias_grad_scale
+        {
+            get { return m_dfBiasGradScale; }
+            set { m_dfBiasGradScale = value;}
         }
 
         /// <summary>
@@ -164,6 +175,7 @@ namespace MyCaffe.param
             m_nMinTopAxes = p.m_nMinTopAxes;
             m_bEnableNoise = p.m_bEnableNoise;
             m_dfSigmaInit = p.m_dfSigmaInit;
+            m_dfBiasGradScale = p.m_dfBiasGradScale;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -206,6 +218,9 @@ namespace MyCaffe.param
                 rgChildren.Add("sigma_init", m_dfSigmaInit.ToString());
             }
 
+            if (bias_grad_scale != 1.0)
+                rgChildren.Add("bias_grad_scale", m_dfBiasGradScale.ToString());
+
             return new RawProto(strName, "", rgChildren);
         }
 
@@ -247,6 +262,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("sigma_init")) != null)
                 p.sigma_init = ParseDouble(strVal);
+
+            if ((strVal = rp.FindValue("bias_grad_scale")) != null)
+                p.bias_grad_scale = ParseDouble(strVal);
 
             return p;
         }
