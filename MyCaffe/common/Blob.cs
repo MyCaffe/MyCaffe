@@ -222,6 +222,21 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Copy the parameters from another blob.
+        /// </summary>
+        /// <param name="b">Specifies the blob whose parameters are to be copied.</param>
+        public void CopyParameters(Blob<T> b)
+        {
+            foreach (KeyValuePair<string, double> kv in b.m_rgParam)
+            {
+                if (!m_rgParam.ContainsKey(kv.Key))
+                    m_rgParam.Add(kv.Key, kv.Value);
+                else
+                    m_rgParam[kv.Key] = kv.Value;
+            }
+        }
+
+        /// <summary>
         /// Returns Zero (0) in type T.
         /// </summary>
         public static T Zero
