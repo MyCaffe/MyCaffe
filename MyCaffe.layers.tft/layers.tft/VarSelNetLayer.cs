@@ -130,8 +130,13 @@ namespace MyCaffe.layers.tft
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             List<int> rgShape = new List<int>();
+            Blob<T> blobStaticSelection = null;
+
+            if (colBottom.Count > 1)
+                blobStaticSelection = colBottom[1];
 
             m_blobBtm = new Blob<T>(m_cuda, m_log);
+            m_blobBtm.Name = "btm";
 
             // This GRN is applied on the flat concatenation of the input representation (all inputs together),
             // possibly provided with context information.
@@ -148,8 +153,8 @@ namespace MyCaffe.layers.tft
             m_blobSparseWts = new Blob<T>(m_cuda, m_log);
 
             addBtmTop(colBottom[0], m_blobSparseWts);
-            if (colBottom.Count > 1)
-                m_colBtm.Add(colBottom[1]);
+            if (blobStaticSelection != null)
+                m_colBtm.Add(blobStaticSelection);
             m_grnFlatten.Setup(m_colBtm, m_colTop);
             blobs.Add(m_grnFlatten.blobs);
 
@@ -159,6 +164,7 @@ namespace MyCaffe.layers.tft
             p.softmax_param.engine = EngineParameter.Engine.DEFAULT;
             m_softmax = Layer<T>.Create(m_cuda, m_log, p, null);
             m_blobSparseWtsSmx = new Blob<T>(m_cuda, m_log);
+            m_blobSparseWtsSmx.Name = "sparse_wts_smx";
 
             addBtmTop(m_blobSparseWts, m_blobSparseWtsSmx);
             m_softmax.Setup(m_colBtm, m_colTop);
@@ -174,6 +180,7 @@ namespace MyCaffe.layers.tft
             p.transpose_param.dim[2] = 1;
             m_transpose = Layer<T>.Create(m_cuda, m_log, p, null);
             m_blobSparseWtsSmxT = new Blob<T>(m_cuda, m_log);
+            m_blobSparseWtsSmxT.Name = "sparse_wts_smxT";
 
             addBtmTop(m_blobSparseWtsSmx, m_blobSparseWtsSmxT);
             m_transpose.Setup(m_colBtm, m_colTop);
@@ -213,9 +220,11 @@ namespace MyCaffe.layers.tft
             rgShape.Add(colBottom[0].channels / m_param.varselnet_param.num_inputs);
             rgShape.Add(m_param.varselnet_param.num_inputs);
             m_blobProcessedInputs = new Blob<T>(m_cuda, m_log);
+            m_blobProcessedInputs.Name = "processed_inputs";
             m_blobProcessedInputs.Reshape(rgShape);
             m_blobProcessedInputs1 = new Blob<T>(m_cuda, m_log);
             m_blobProcessedInputs1.Reshape(rgShape);
+            m_blobProcessedInputs1.Name = "processed_inputs1";
         }
 
         /// <summary>
@@ -226,12 +235,16 @@ namespace MyCaffe.layers.tft
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             List<int> rgShape;
+            Blob<T> blobStaticSelection = null;
+
+            if (colBottom.Count > 1)
+                blobStaticSelection = colBottom[1];
 
             m_blobBtm.ReshapeLike(colBottom[0]);
 
             addBtmTop(colBottom[0], m_blobSparseWts);
             if (colBottom.Count > 1)
-                m_colBtm.Add(colBottom[1]);
+                m_colBtm.Add(blobStaticSelection);
             m_grnFlatten.Reshape(m_colBtm, m_colTop);
 
             addBtmTop(m_blobSparseWts, m_blobSparseWtsSmx);
@@ -258,15 +271,12 @@ namespace MyCaffe.layers.tft
                 m_rgSingleVarGrn[i].Reshape(m_colBtm, m_colTop);
             }
 
-            rgShape.Clear();
-            rgShape.Add(colBottom[0].num);
-            rgShape.Add(colBottom[0].channels / m_param.varselnet_param.num_inputs);
+            rgShape = Utility.Clone<int>(m_colSingleVarGrn[0].shape());
             rgShape.Add(m_param.varselnet_param.num_inputs);
             m_blobProcessedInputs.Reshape(rgShape);
             m_blobProcessedInputs1.Reshape(rgShape);
 
-            rgShape.RemoveAt(rgShape.Count - 1);
-            colTop[0].Reshape(rgShape);
+            colTop[0].ReshapeLike(m_colSingleVarGrn[0]);
             colTop[1].ReshapeLike(m_blobSparseWts);
         }
 
@@ -284,6 +294,10 @@ namespace MyCaffe.layers.tft
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             m_blobBtm.CopyFrom(colBottom[0]);
+            Blob<T> blobStaticSelection = null;
+
+            if (colBottom.Count > 1)
+                blobStaticSelection = colBottom[1];
 
             // Infer variable selection weights using flattened embedding run through GRN.  The flattened embedding
             // should have shape [(num_samples * num_temporal_steps) x (num_inputs x input_dim)] where the 
@@ -291,7 +305,7 @@ namespace MyCaffe.layers.tft
             // is set to 1.
             addBtmTop(colBottom[0], m_blobSparseWts);
             if (colBottom.Count > 1)
-                m_colBtm.Add(colBottom[1]);
+                m_colBtm.Add(blobStaticSelection);
             m_grnFlatten.Forward(m_colBtm, m_colTop);
 
             // Sparse weights are of shape [(num_samples * num_temporal_steps) x num_inputs x 1]
