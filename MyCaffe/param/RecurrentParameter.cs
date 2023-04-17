@@ -25,6 +25,7 @@ namespace MyCaffe.param
         long m_lDropoutSeed = 0; // cuDnn only
         bool m_bBidirectional = false; // cuDnn only
         bool m_bCudnnEnableTensorCores = false; // cuDnn only
+        bool m_bBatchFirst = false; // input and output have the batch in the first dim.
 
 
         /** @copydoc LayerParameterBase */
@@ -42,6 +43,16 @@ namespace MyCaffe.param
                 return "The engine setting is set on CAFFE or DEFAULT.";
 
             return "";
+        }
+
+        /// <summary>
+        /// The input and outputs are shaped with the batch in the first dimension.
+        /// </summary>
+        [Description("The input and outputs are shaped with the batch in the first dimension.")]
+        public bool batch_first
+        {
+            get { return m_bBatchFirst; }
+            set { m_bBatchFirst = value; }
         }
 
         /// <summary>
@@ -219,6 +230,7 @@ namespace MyCaffe.param
                 m_nNumLayers = p.num_layers;
                 m_bBidirectional = p.bidirectional;
                 m_bCudnnEnableTensorCores = p.m_bCudnnEnableTensorCores;
+                m_bBatchFirst = p.batch_first;
             }
         }
 
@@ -245,6 +257,7 @@ namespace MyCaffe.param
             rgChildren.Add("expose_hidden", (expose_hidden_input && expose_hidden_output).ToString());
             rgChildren.Add("expose_hidden_input", expose_hidden_input.ToString());
             rgChildren.Add("expose_hidden_output", expose_hidden_output.ToString());
+            rgChildren.Add("batch_first", batch_first.ToString());
 
             if (engine != Engine.CAFFE)
             {
@@ -311,6 +324,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("cudnn_enable_tensor_cores")) != null)
                 p.cudnn_enable_tensor_cores = bool.Parse(strVal);
+
+            if ((strVal= rp.FindValue("batch_first")) != null)
+                p.batch_first = bool.Parse(strVal);
 
             return p;
         }
