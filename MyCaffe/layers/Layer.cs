@@ -411,6 +411,17 @@ namespace MyCaffe.layers
                 Reshape(colBottom, colTop);
                 setShapes(colBottom, colTop);
                 SetLossWeights(colTop);
+
+                if (colBottom != colTop)
+                {
+                    for (int i = 0; i < colBottom.Count; i++)
+                    {
+                        if (i < colTop.Count && colBottom[i] != colTop[i])
+                        {
+                            colTop[i].CopyParameters(colBottom[i]);
+                        }
+                    }
+                }
             }
             catch (Exception excpt)
             {
