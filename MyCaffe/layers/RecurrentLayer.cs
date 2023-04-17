@@ -21,8 +21,10 @@ namespace MyCaffe.layers
     /// <typeparam name="T"></typeparam>
     public abstract class RecurrentLayer<T> : Layer<T>
     {
-        Layer<T> m_transpose = null;
-        Blob<T> m_blobBtm = null;
+        Layer<T> m_transposeData = null;
+        Layer<T> m_transposeClip = null;
+        Blob<T> m_blobBtmData = null;
+        Blob<T> m_blobBtmClip = null;
         Blob<T> m_blobTop = null;
         BlobCollection<T> m_colBtm = null;
         BlobCollection<T> m_colTop = null;
@@ -146,7 +148,8 @@ namespace MyCaffe.layers
             dispose(ref m_blobHy);
             dispose(ref m_blobCy);
             dispose(ref m_blobWts);
-            dispose(ref m_blobBtm);
+            dispose(ref m_blobBtmData);
+            dispose(ref m_blobBtmClip);
             dispose(ref m_blobTop);
 
             free_tensor(ref m_hHxDesc);
@@ -208,10 +211,16 @@ namespace MyCaffe.layers
                 m_hCuDnn = 0;
             }
 
-            if (m_transpose != null)
+            if (m_transposeData != null)
             {
-                m_transpose.Dispose();
-                m_transpose = null;
+                m_transposeData.Dispose();
+                m_transposeData = null;
+            }
+
+            if (m_transposeClip != null)
+            {
+                m_transposeClip.Dispose();
+                m_transposeClip = null;
             }
         }
 
@@ -264,7 +273,8 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            Blob<T> blobBtm = colBottom[0];
+            Blob<T> blobBtm0 = colBottom[0];
+            Blob<T> blobBtm1 = colBottom[1];
 
             if (m_param.recurrent_param.batch_first)
             {
@@ -274,27 +284,45 @@ namespace MyCaffe.layers
                 LayerParameter transpose = new LayerParameter(LayerParameter.LayerType.TRANSPOSE, m_param.name + ".trans");
                 transpose.transpose_param.dim[0] = 1;
                 transpose.transpose_param.dim[1] = 0;
-                m_transpose = Layer<T>.Create(m_cuda, m_log, convertLayerParam(transpose, m_param), null);
-                m_blobBtm = new Blob<T>(m_cuda, m_log);
+
+                while (transpose.transpose_param.dim.Count > colBottom[0].num_axes)
+                {
+                    transpose.transpose_param.dim.RemoveAt(transpose.transpose_param.dim.Count - 1);
+                }
+
+                m_transposeData = Layer<T>.Create(m_cuda, m_log, convertLayerParam(transpose, m_param), null);
+                m_blobBtmData = new Blob<T>(m_cuda, m_log);
                 m_blobTop = new Blob<T>(m_cuda, m_log);
 
-                addBtmTop(colBottom[0], m_blobBtm);
-                m_transpose.Setup(m_colBtm, m_colTop);
-                blobBtm = m_blobBtm;
+                addBtmTop(colBottom[0], m_blobBtmData);
+                m_transposeData.Setup(m_colBtm, m_colTop);
+                blobBtm0 = m_blobBtmData;
+
+                while (transpose.transpose_param.dim.Count > colBottom[1].num_axes)
+                {
+                    transpose.transpose_param.dim.RemoveAt(transpose.transpose_param.dim.Count - 1);
+                }
+
+                m_transposeClip = Layer<T>.Create(m_cuda, m_log, convertLayerParam(transpose, m_param), null);
+                m_blobBtmClip = new Blob<T>(m_cuda, m_log);
+
+                addBtmTop(colBottom[1], m_blobBtmClip);
+                m_transposeClip.Setup(m_colBtm, m_colTop);
+                blobBtm1 = m_blobBtmClip;
             }
 
-            m_log.CHECK_GE(blobBtm.num_axes, 2, "Bottom[0] must have at least 2 axes -- (#timesteps, #streams, ...)");
-            m_nT = blobBtm.shape(0);
-            m_nN = blobBtm.shape(1);
+            m_log.CHECK_GE(blobBtm0.num_axes, 2, "Bottom[0] must have at least 2 axes -- (#timesteps, #streams, ...)");
+            m_nT = blobBtm0.shape(0);
+            m_nN = blobBtm0.shape(1);
 
-            if (blobBtm.num_axes > 2)
+            if (blobBtm0.num_axes > 2)
                 m_nInputSize = colBottom[0].count(2);
 
             m_log.WriteLine("Initializing recurrent layer: assuming input batch contains " + m_nT.ToString() + " timesteps of " + m_nN.ToString() + " independent streams.");
 
-            m_log.CHECK_EQ(colBottom[1].num_axes, 2, "Bottom[1] must have exactly 2 axes -- (#timesteps, #streams)");
-            m_log.CHECK_EQ(m_nT, colBottom[1].shape(0), "The bottom[1].shape(0) must equal T = " + m_nT.ToString());
-            m_log.CHECK_EQ(m_nN, colBottom[1].shape(1), "The bottom[1].shape(1) must equal N = " + m_nN.ToString());
+            m_log.CHECK_EQ(blobBtm1.num_axes, 2, "Bottom[1] must have exactly 2 axes -- (#timesteps, #streams)");
+            m_log.CHECK_EQ(m_nT, blobBtm1.shape(0), "The bottom[1].shape(0) must equal T = " + m_nT.ToString());
+            m_log.CHECK_EQ(m_nN, blobBtm1.shape(1), "The bottom[1].shape(1) must equal N = " + m_nN.ToString());
 
             // If expose_hidden is set, we take as input and produce as output
             // the hidden state blobs at the first and last timesteps.
@@ -356,7 +384,7 @@ namespace MyCaffe.layers
 
                 Blob<T> blobBtm0 = colBottom[0];
                 if (m_param.recurrent_param.batch_first)
-                    blobBtm0 = m_blobBtm;
+                    blobBtm0 = m_blobBtmData;
 
                 m_blobX.ReshapeLike(blobBtm0);
                 m_blobX.ShareData(blobBtm0);
@@ -488,6 +516,14 @@ namespace MyCaffe.layers
 
         private void layerSetUpCaffe(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            Blob<T> blobBtm0 = colBottom[0];
+            Blob<T> blobBtm1 = colBottom[1];
+            if (m_param.recurrent_param.batch_first)
+            {
+                blobBtm0 = m_blobBtmData;
+                blobBtm1 = m_blobBtmClip;
+            }
+
             // Get (recurrent) input/output names.
             List<string> rgOutputNames = new List<string>();
             OutputBlobNames(rgOutputNames);
@@ -522,17 +558,17 @@ namespace MyCaffe.layers
             LayerParameter input_layer = new LayerParameter(LayerParameter.LayerType.INPUT);
             input_layer.top.Add("x");
             BlobShape input_shape1 = new param.BlobShape();
-            for (int i = 0; i < colBottom[0].num_axes; i++)
+            for (int i = 0; i < blobBtm0.num_axes; i++)
             {
-                input_shape1.dim.Add(colBottom[0].shape(i));
+                input_shape1.dim.Add(blobBtm0.shape(i));
             }
             input_layer.input_param.shape.Add(input_shape1);
 
             input_layer.top.Add("cont");
             BlobShape input_shape2 = new param.BlobShape();
-            for (int i = 0; i < colBottom[1].num_axes; i++)
+            for (int i = 0; i < blobBtm1.num_axes; i++)
             {
-                input_shape2.dim.Add(colBottom[1].shape(i));
+                input_shape2.dim.Add(blobBtm1.shape(i));
             }
             input_layer.input_param.shape.Add(input_shape2);
 
@@ -711,20 +747,25 @@ namespace MyCaffe.layers
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             Blob<T> blobBtm0 = colBottom[0];
+            Blob<T> blobBtm1 = colBottom[1];
 
             if (m_param.recurrent_param.batch_first)
             {
-                addBtmTop(colBottom[0], m_blobBtm);
-                m_transpose.Reshape(m_colBtm, m_colTop);
-                blobBtm0 = m_blobBtm;
+                addBtmTop(colBottom[0], m_blobBtmData);
+                m_transposeData.Reshape(m_colBtm, m_colTop);
+                blobBtm0 = m_blobBtmData;
+
+                addBtmTop(colBottom[1], m_blobBtmClip);
+                m_transposeClip.Reshape(m_colBtm, m_colTop);
+                blobBtm1 = m_blobBtmClip;
             }
 
             m_log.CHECK_GE(blobBtm0.num_axes, 2, "bottom[0] must have at least 2 axes -- (#timesteps, #streams, ...)");
             m_log.CHECK_EQ(m_nT, blobBtm0.shape(0), "input number of timesteps changed.");
             m_nN = blobBtm0.shape(1);
-            m_log.CHECK_EQ(colBottom[1].num_axes, 2, "bottom[1] must have exactly 2 axes -- (#timesteps, #streams)");
-            m_log.CHECK_EQ(m_nT, colBottom[1].shape(0), "bottom[1].shape(0) should equal the timesteps T (" + m_nT.ToString() + ")");
-            m_log.CHECK_EQ(m_nN, colBottom[1].shape(1), "bottom[1].shape(1) should equal the streams N (" + m_nN + ")");
+            m_log.CHECK_EQ(blobBtm1.num_axes, 2, "bottom[1] must have exactly 2 axes -- (#timesteps, #streams)");
+            m_log.CHECK_EQ(m_nT, blobBtm1.shape(0), "bottom[1].shape(0) should equal the timesteps T (" + m_nT.ToString() + ")");
+            m_log.CHECK_EQ(m_nN, blobBtm1.shape(1), "bottom[1].shape(1) should equal the streams N (" + m_nN + ")");
 
             if (m_param.recurrent_param.useCudnn())
                 reshapeCuDnn(colBottom, colTop);
@@ -734,7 +775,7 @@ namespace MyCaffe.layers
             if (m_param.recurrent_param.batch_first)
             {
                 addBtmTop(m_blobTop, colTop[0]);
-                m_transpose.Reshape(m_colBtm, m_colTop);
+                m_transposeData.Reshape(m_colBtm, m_colTop);
             }
         }
 
@@ -745,7 +786,7 @@ namespace MyCaffe.layers
 
             if (m_param.recurrent_param.batch_first)
             {
-                blobBtm0 = m_blobBtm;
+                blobBtm0 = m_blobBtmData;
                 blobTop0 = m_blobTop;
             }
 
@@ -780,16 +821,18 @@ namespace MyCaffe.layers
         private void reshapeCaffe(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             Blob<T> blobBtm0 = colBottom[0];
+            Blob<T> blobBtm1 = colBottom[1];
             Blob<T> blobTop0 = colTop[0];
 
             if (m_param.recurrent_param.batch_first)
             {
-                blobBtm0 = m_blobBtm;
+                blobBtm0 = m_blobBtmData;
+                blobBtm1 = m_blobBtmClip;
                 blobTop0 = m_blobTop;
             }
 
             m_blobXInputBlob.ReshapeLike(blobBtm0);
-            List<int> rgContShape = colBottom[1].shape();
+            List<int> rgContShape = blobBtm1.shape();
             m_blobContInputBlob.Reshape(rgContShape);
 
             if (m_bStaticInput)
@@ -808,7 +851,7 @@ namespace MyCaffe.layers
 
             m_blobXInputBlob.ShareData(blobBtm0);
             m_blobXInputBlob.ShareDiff(blobBtm0);
-            m_blobContInputBlob.ShareData(colBottom[1]);
+            m_blobContInputBlob.ShareData(blobBtm1);
 
             int nStaticInput = 0;
 
@@ -1045,8 +1088,10 @@ namespace MyCaffe.layers
         {
             if (m_param.recurrent_param.batch_first)
             {
-                addBtmTop(colBottom[0], m_blobBtm);
-                m_transpose.Forward(m_colBtm, m_colTop);
+                addBtmTop(colBottom[0], m_blobBtmData);
+                m_transposeData.Forward(m_colBtm, m_colTop);
+                addBtmTop(colBottom[1], m_blobBtmClip);
+                m_transposeClip.Forward(m_colBtm, m_colTop);
             }
 
             if (m_param.recurrent_param.useCudnn())
@@ -1057,13 +1102,17 @@ namespace MyCaffe.layers
             if (m_param.recurrent_param.batch_first)
             {
                 addBtmTop(m_blobTop, colTop[0]);
-                m_transpose.Forward(m_colBtm, m_colTop);
+                m_transposeData.Forward(m_colBtm, m_colTop);
             }
         }
 
         private void forward_cudnn(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            double dfClip = Utility.ConvertVal<T>(colBottom[1].GetData(0));
+            Blob<T> blobBtm1 = colBottom[1];
+            if (m_param.recurrent_param.batch_first)
+                blobBtm1 = m_blobBtmClip;
+
+            double dfClip = Utility.ConvertVal<T>(blobBtm1.GetData(0));
 
             if (dfClip > 0 || colBottom.Count > 2)
             {
@@ -1146,7 +1195,7 @@ namespace MyCaffe.layers
             if (m_param.recurrent_param.batch_first)
             {
                 addBtmTop(m_blobTop, colTop[0]);
-                m_transpose.Backward(m_colTop, rgbPropagateDown, m_colBtm);
+                m_transposeData.Backward(m_colTop, rgbPropagateDown, m_colBtm);
             }
 
             if (m_param.recurrent_param.useCudnn())
@@ -1156,8 +1205,8 @@ namespace MyCaffe.layers
 
             if (m_param.recurrent_param.batch_first)
             {
-                addBtmTop(colBottom[0], m_blobBtm);
-                m_transpose.Backward(m_colTop, rgbPropagateDown, m_colBtm);
+                addBtmTop(colBottom[0], m_blobBtmData);
+                m_transposeData.Backward(m_colTop, rgbPropagateDown, m_colBtm);
             }
         }
 
