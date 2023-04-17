@@ -180,18 +180,18 @@ namespace MyCaffe.layers.tft
         {
             int nN = bBtm.num;
             int nC = bBtm.channels;
-            int nSpatialDimSrc = bBtm.count(2);
+            int nSpatialDim = bBtm.count(2);
             int nSpatialDimDst = bTop.count(1);
 
             m_log.CHECK_EQ(bTop.num, nN, "Both src and dst must have same 'num'.");
-            m_log.CHECK_EQ(nSpatialDimDst, nSpatialDimSrc, "Both src and dst must have the same spatial dim.");
+            m_log.CHECK_EQ(nSpatialDim, bTop.count(1), "Both src and dst must have the same spatial dim.");
 
             bTop.SetData(0);
             m_blobWork.ReshapeLike(bTop);
 
             for (int i = 0; i < nC; i++)
             {
-                m_cuda.channel_copy(m_blobWork.count(), nN, 1, nC, nSpatialDimSrc, i, bBtm.gpu_data, m_blobWork.gpu_data, DIR.FWD);
+                m_cuda.channel_copy(m_blobWork.count(), nN, 1, nC, nSpatialDim, i, bBtm.gpu_data, m_blobWork.gpu_data, DIR.FWD);
                 m_cuda.add(m_blobWork.count(), m_blobWork.gpu_data, bTop.gpu_data, bTop.mutable_gpu_data);
             }
 
@@ -202,17 +202,16 @@ namespace MyCaffe.layers.tft
         {
             int nN = bBtm.num;
             int nC = bBtm.channels;
-            int nSpatialDimSrc = bBtm.count(2);
-            int nSpatialDimDst = bTop.count(1);
+            int nSpatialDim = bBtm.count(2);
 
             m_log.CHECK_EQ(bTop.num, nN, "Both src and dst must have same 'num'.");
-            m_log.CHECK_EQ(nSpatialDimDst, nSpatialDimSrc, "Both src and dst must have the same spatial dim.");
+            m_log.CHECK_EQ(nSpatialDim, bTop.count(1), "Both src and dst must have the same spatial dim.");
 
             bBtm.SetDiff(0);
 
             for (int i = 0; i < nC; i++)
             {
-                m_cuda.channel_copy(bTop.count(), nN, 1, nC, nSpatialDimSrc, i, bBtm.gpu_diff, bTop.gpu_diff, DIR.BWD);
+                m_cuda.channel_copy(bTop.count(), nN, 1, nC, nSpatialDim, i, bBtm.gpu_diff, bTop.gpu_diff, DIR.BWD);
             }
 
             bBtm.scale_diff(1.0 / nC);
@@ -240,6 +239,7 @@ namespace MyCaffe.layers.tft
                 ip1.inner_product_param.sigma_init = m_param.multihead_attention_interp_param.sigma_init;
                 ip1.inner_product_param.bias_filler = m_param.multihead_attention_interp_param.bias_filler;
                 ip1.inner_product_param.weight_filler = m_param.multihead_attention_interp_param.weight_filler;
+                ip1.inner_product_param.bias_grad_scale = 1000000.0; // helps improve bias gradient accuracy.
 
                 m_blobIpQ = new Blob<T>(m_cuda, m_log);
                 m_ipQLayer = Layer<T>.Create(m_cuda, m_log, ip1, null);
@@ -259,6 +259,7 @@ namespace MyCaffe.layers.tft
                 ip1.inner_product_param.sigma_init = m_param.multihead_attention_interp_param.sigma_init;
                 ip1.inner_product_param.bias_filler = m_param.multihead_attention_interp_param.bias_filler;
                 ip1.inner_product_param.weight_filler = m_param.multihead_attention_interp_param.weight_filler;
+                ip1.inner_product_param.bias_grad_scale = 1000000.0; // helps improve bias gradient accuracy.
 
                 m_blobIpK = new Blob<T>(m_cuda, m_log);
                 m_ipKLayer = Layer<T>.Create(m_cuda, m_log, ip1, null);
@@ -514,6 +515,7 @@ namespace MyCaffe.layers.tft
             addBtmTop(m_blobIpVfull, m_blobIpVt);
             m_transpose.Forward(m_colBtm, m_colTop);
 
+
             //-----------------------------------------
             // Calculate the attention
             //-----------------------------------------
@@ -588,6 +590,7 @@ namespace MyCaffe.layers.tft
                 addBtmTop(m_blobAttnScores1, m_blobAttnScoresAllHeads);
                 m_softmax.Backward(m_colTop, rgbPropagateDown, m_colBtm);
 
+
                 // Calculate the Qt and Kt1 gradients.
                 m_blobAttnScores1.MatMulGrad(m_blobIpQt, m_blobIpKt1, m_blobWork, m_dfScale);
 
@@ -607,10 +610,14 @@ namespace MyCaffe.layers.tft
 
             // Copy each IpVFull block to IpV
             m_blobIpV.SetDiff(0);
-            reshapeBwd(m_blobWork, m_nNumHeads, m_blobIpV.shape());
             m_blobWork.SetDiff(0);
+
+            reshapeBwd(m_blobWork, m_nNumHeads, m_blobIpV.shape());
+
             int nOuterNum = m_blobIpVfull.count(0, 2);
-            for (int i = 0; i < m_nNumHeads; i++)
+            m_cuda.channel_copy(m_blobIpV.count(), nOuterNum, 1, m_nNumHeads, m_blobIpVfull.width, 0, m_blobIpVfull.gpu_diff, m_blobIpV.mutable_gpu_diff, DIR.FWD);
+
+            for (int i = 1; i < m_nNumHeads; i++)
             {
                 m_cuda.channel_copy(m_blobWork.count(), nOuterNum, 1, m_nNumHeads, m_blobIpVfull.width, i, m_blobIpVfull.gpu_diff, m_blobWork.mutable_gpu_diff, DIR.FWD);
                 m_cuda.add(m_blobWork.count(), m_blobIpV.gpu_diff, m_blobWork.gpu_diff, m_blobIpV.mutable_gpu_diff);
