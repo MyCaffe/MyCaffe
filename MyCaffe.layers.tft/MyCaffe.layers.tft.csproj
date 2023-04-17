@@ -51,6 +51,7 @@
     <Compile Include="LayerFactory.cs" />
     <Compile Include="layers.tft\GateAddNormLayer.cs" />
     <Compile Include="layers.tft\MultiHeadAttentionInterpLayer.cs" />
+    <Compile Include="layers.tft\ReshapeTemporalLayer.cs" />
     <Compile Include="layers.tft\VarSelNetLayer.cs" />
     <Compile Include="layers.tft\GrnLayer.cs" />
     <Compile Include="layers.tft\GluLayer.cs" />

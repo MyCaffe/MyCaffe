@@ -440,6 +440,10 @@ namespace MyCaffe.param
             /// </summary>
             RESHAPE,
             /// <summary>
+            /// Initializes a parameter for the ReshapeTemporalLayer.
+            /// </summary>
+            RESHAPE_TEMPORAL,
+            /// <summary>
             /// Initializes a parameter for the ScalarLayer.
             /// </summary>
             SCALAR,
@@ -1498,6 +1502,12 @@ namespace MyCaffe.param
                     m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE_AND_TRAINING;
                     break;
 
+                case LayerType.RESHAPE_TEMPORAL:
+                    expected_bottom.Add("input");
+                    expected_top.Add("reshape_t");
+                    m_rgLayerParameters[lt] = new ReshapeTemporalParameter();
+                    break;
+
                 case LayerType.SQUEEZE:
                     expected_bottom.Add("input");
                     expected_top.Add("squeeze");
@@ -2543,6 +2553,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.RESHAPE_TEMPORAL
+        /// </summary>
+        public ReshapeTemporalParameter reshape_temporal_param
+        {
+            get { return (ReshapeTemporalParameter)m_rgLayerParameters[LayerType.RESHAPE_TEMPORAL]; }
+            set { m_rgLayerParameters[LayerType.RESHAPE_TEMPORAL] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.RESHAPE
         /// </summary>
         public SqueezeParameter squeeze_param
@@ -3173,6 +3192,9 @@ namespace MyCaffe.param
                 case LayerType.RESHAPE:
                     return "Reshape";
 
+                case LayerType.RESHAPE_TEMPORAL:
+                    return "ReshapeTemporal";
+
                 case LayerType.SQUEEZE:
                     return "Squeeze";
 
@@ -3435,6 +3457,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(grn_param, "grn_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(varselnet_param, "varselnet_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(multihead_attention_interp_param, "multihead_attention_interp_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(reshape_temporal_param, "reshape_temporal_param"));
 
             // Nt layers.
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gram_param, "gram_param"));
@@ -3813,6 +3836,9 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("multihead_attention_interp_param")) != null)
                 p.multihead_attention_interp_param = MultiHeadAttentionInterpParameter.FromProto(rpp);
 
+            if ((rpp = rp.FindChild("reshape_temporal_param")) != null)
+                p.reshape_temporal_param = ReshapeTemporalParameter.FromProto(rpp);
+
             // Nt layers.
             if ((rpp = rp.FindChild("gram_param")) != null)
                 p.gram_param = GramParameter.FromProto(rpp);
@@ -4187,6 +4213,9 @@ namespace MyCaffe.param
 
                 case "reshape":
                     return LayerType.RESHAPE;
+
+                case "reshapetemporal":
+                    return LayerType.RESHAPE_TEMPORAL;
 
                 case "squeeze":
                     return LayerType.SQUEEZE;
