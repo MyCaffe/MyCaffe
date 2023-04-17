@@ -57,6 +57,9 @@ namespace MyCaffe.layers.tft
         {
             if (col.Count > 0)
                 return;
+
+            if (m_blobTimeDistributedContext != null)
+                col.Add(m_blobTimeDistributedContext);
         }
 
         /// <summary>

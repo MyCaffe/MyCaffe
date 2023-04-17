@@ -88,6 +88,14 @@ namespace MyCaffe.layers.tft
         {
             if (col.Count > 0)
                 return;
+
+            col.Add(m_blobSparseWts);
+            col.Add(m_blobSparseWtsSmx);
+            col.Add(m_blobSparseWtsSmxT);
+            col.Add(m_blobGrn1);
+            col.Add(m_blobProcessedInputs);
+            col.Add(m_blobProcessedInputs1);
+            col.Add(m_blobBtm);
         }
 
         /// <summary>

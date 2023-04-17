@@ -99,6 +99,19 @@ namespace MyCaffe.layers.tft
         {
             if (col.Count > 0)
                 return;
+
+            col.Add(m_blobIpQ);
+            col.Add(m_blobIpK);
+            col.Add(m_blobIpV);
+            col.Add(m_blobIpVfull);
+            col.Add(m_blobIpQt);
+            col.Add(m_blobIpKt);
+            col.Add(m_blobIpKt1);
+            col.Add(m_blobIpVt);
+            col.Add(m_blobAttnScores1);
+            col.Add(m_blobAttnScoresAllHeads);
+            col.Add(m_blobAttnOutputAllHeads);
+            col.Add(m_blobWork);
         }
 
         /// <summary>

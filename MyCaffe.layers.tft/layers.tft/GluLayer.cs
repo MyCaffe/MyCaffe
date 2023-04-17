@@ -68,6 +68,11 @@ namespace MyCaffe.layers.tft
         {
             if (col.Count > 0)
                 return;
+
+            col.Add(m_blobIp1);
+            col.Add(m_blobIp2);
+            col.Add(m_blobMod);
+            col.Add(m_blobBtm);
         }
 
         /// <summary>
