@@ -141,7 +141,7 @@ namespace MyCaffe.layers.gpt
 
             if (m_param.layer_norm_param.enable_cuda_impl)
             {
-                if (colBottom[0].count() != m_nCount || colBottom[0].num != m_nOuterNum || colBottom[0].channels != m_nChannels || colBottom[0].count(2) != m_nInnerNum)
+                if (m_hLayerNorm == 0 || colBottom[0].count() != m_nCount || colBottom[0].num != m_nOuterNum || colBottom[0].channels != m_nChannels || colBottom[0].count(2) != m_nInnerNum)
                 {
                     if (m_hLayerNorm != 0)
                         m_cuda.FreeLayerNorm(m_hLayerNorm);
@@ -258,7 +258,7 @@ namespace MyCaffe.layers.gpt
             if (rgbPropagateDown[0])
             {
                 if (m_param.layer_norm_param.enable_cuda_impl)
-                    m_cuda.LayerNormBackward(m_hLayerNorm, colTop[0].gpu_diff, colBottom[0].mutable_gpu_diff);
+                    m_cuda.LayerNormBackward(m_hLayerNorm, colTop[0].gpu_data, colTop[0].gpu_diff, colBottom[0].mutable_gpu_diff);
                 else
                     backward_local(colTop, rgbPropagateDown, colBottom);
             }
