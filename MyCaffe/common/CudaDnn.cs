@@ -5577,14 +5577,15 @@ namespace MyCaffe.common
         /// Run the LayerNorm backward pass.
         /// </summary>
         /// <param name="hLayerNorm">Specifies the handle to the LayerNorm instance.</param>
+        /// <param name="hYdiff">Specifies the normalized output data.</param>
         /// <param name="hYdiff">Specifies the input diff to be un-normalized.</param>
         /// <param name="hXdiff">Specifies the un-normalized output diff.</param>
-        public void LayerNormBackward(long hLayerNorm, long hYdiff, long hXdiff)
+        public void LayerNormBackward(long hLayerNorm, long hYdata, long hYdiff, long hXdiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_LAYERNORM_BWD, null, m_param.AsLong(hLayerNorm, hYdiff, hXdiff));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_LAYERNORM_BWD, null, m_param.AsLong(hLayerNorm, hYdata, hYdiff, hXdiff));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_LAYERNORM_BWD, null, m_param.AsLong(hLayerNorm, hYdiff, hXdiff));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_LAYERNORM_BWD, null, m_param.AsLong(hLayerNorm, hYdata, hYdiff, hXdiff));
         }
 
         #endregion
