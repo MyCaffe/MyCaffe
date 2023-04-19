@@ -26,6 +26,7 @@ namespace MyCaffe.layers
         Blob<T> m_blobBtmData = null;
         Blob<T> m_blobBtmClip = null;
         Blob<T> m_blobTop = null;
+        Blob<T> m_blobWork = null;
         BlobCollection<T> m_colBtm = null;
         BlobCollection<T> m_colTop = null;
         /// <summary>
@@ -151,6 +152,7 @@ namespace MyCaffe.layers
             dispose(ref m_blobBtmData);
             dispose(ref m_blobBtmClip);
             dispose(ref m_blobTop);
+            dispose(ref m_blobWork);
 
             free_tensor(ref m_hHxDesc);
             free_tensor(ref m_hCxDesc);
@@ -328,6 +330,8 @@ namespace MyCaffe.layers
             // the hidden state blobs at the first and last timesteps.
             m_bExposeHiddenInput = m_param.recurrent_param.expose_hidden_input;
             m_bExposeHiddenOutput = m_param.recurrent_param.expose_hidden_output;
+
+            m_blobWork = new Blob<T>(m_cuda, m_log);
 
             if (m_param.recurrent_param.useCudnn())
                 layerSetUpCuDnn(colBottom, colTop);
@@ -516,6 +520,9 @@ namespace MyCaffe.layers
 
         private void layerSetUpCaffe(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            if (m_param.recurrent_param.auto_repeat_hidden_states_across_layers)
+                m_log.FAIL("The 'auto_repeat_hidden_states_across_layers' setting is not supported in the Caffe implementation, use the cuDNN implementation instead.");
+
             Blob<T> blobBtm0 = colBottom[0];
             Blob<T> blobBtm1 = colBottom[1];
             if (m_param.recurrent_param.batch_first)
@@ -925,6 +932,7 @@ namespace MyCaffe.layers
                     List<string> rgInputs = new List<string>();
                     RecurrentInputBlobNames(rgInputs);
                     nMinBottoms += rgInputs.Count;
+                    nMinBottoms -= 1;
                 }
 
                 return nMinBottoms;
@@ -1106,6 +1114,50 @@ namespace MyCaffe.layers
             }
         }
 
+        private void copy_or_repeat_fwd(Blob<T> bBtm, Blob<T> bTop) 
+        {
+            if (!m_param.recurrent_param.auto_repeat_hidden_states_across_layers || bBtm.count() == bTop.count())
+            {
+                m_log.CHECK_EQ(bBtm.count(), bTop.count(), "The '" + bBtm.Name.ToString() + "' should have the same shape as '" + bTop.Name.ToString() + "' which has a shape = " + bTop.shape_string);
+                m_cuda.copy(bBtm.count(), bBtm.gpu_data, bTop.mutable_gpu_data);
+            }
+            else
+            {
+                // Repeat the hidden for each layer
+                m_log.CHECK_EQ(bBtm.count(1), bTop.count(1), "The '" + bBtm.Name.ToString() + "' should have the same shape as '" + bTop.Name.ToString() + "' which has a shape after the first axis = " + bTop.shape_string);
+                m_cuda.channel_copy(bBtm.count(), 1, 1, bTop.num, bBtm.count(), 0, bTop.mutable_gpu_data, bBtm.gpu_data, DIR.BWD);
+                for (int i = 1; i < bTop.num; i++)
+                {
+                    m_cuda.channel_copy(bBtm.count(), 1, 1, bTop.num, bBtm.count(), i, bTop.mutable_gpu_data, bBtm.gpu_data, DIR.BWD);
+                }
+            }
+        }
+
+        private void copy_or_repeat_bwd(Blob<T> bBtm, Blob<T> bTop)
+        {
+            if (!m_param.recurrent_param.auto_repeat_hidden_states_across_layers || bBtm.count() == bTop.count())
+            {
+                m_log.CHECK_EQ(bBtm.count(), bTop.count(), "The '" + bBtm.Name.ToString() + "' should have the same shape as '" + bTop.Name.ToString() + "' which has a shape = " + bTop.shape_string);
+                m_cuda.copy(bBtm.count(), bBtm.gpu_data, bTop.mutable_gpu_data);
+            }
+            else
+            {
+                // Repeat the hidden for each layer
+                m_log.CHECK_EQ(bBtm.count(1), bTop.count(1), "The '" + bBtm.Name.ToString() + "' should have the same shape as '" + bTop.Name.ToString() + "' which has a shape after the first axis = " + bTop.shape_string);
+                m_cuda.channel_copy(bBtm.count(), 1, 1, bTop.num, bBtm.count(), 0, bTop.gpu_diff, bBtm.mutable_gpu_diff, DIR.FWD);
+                m_blobWork.ReshapeLike(bBtm);
+
+                for (int i = 1; i < bTop.num; i++)
+                {
+                    m_cuda.channel_copy(bBtm.count(), 1, 1, bTop.num, bBtm.count(), i, bTop.gpu_diff, m_blobWork.mutable_gpu_diff, DIR.FWD);
+                    m_cuda.add(bBtm.count(), bBtm.gpu_diff, m_blobWork.gpu_diff, bBtm.mutable_gpu_diff);
+                }
+
+                double dfScale = 1.0 / bTop.num;
+                bBtm.scale_diff(dfScale);
+            }
+        }
+
         private void forward_cudnn(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             Blob<T> blobBtm1 = colBottom[1];
@@ -1118,15 +1170,10 @@ namespace MyCaffe.layers
             {
                 // Allow for setting initial state used with cuDnn LSTM
                 if (colBottom.Count > 2)
-                {
-                    m_log.CHECK_LE(colBottom[2].count(), m_blobHy.count(), "The bottom(2) should have the same shape as 'hy' which has a shape = " + m_blobHy.shape_string);
-                    m_cuda.copy(colBottom[2].count(), colBottom[2].gpu_data, m_blobHy.mutable_gpu_data);
-                }
+                    copy_or_repeat_fwd(colBottom[2], m_blobHy);
+
                 if (colBottom.Count > 3)
-                {
-                    m_log.CHECK_LE(colBottom[3].count(), m_blobCy.count(), "The bottom(3) should have the same shape as 'cy' which has a shape = " + m_blobCy.shape_string);
-                    m_cuda.copy(colBottom[3].count(), colBottom[3].gpu_data, m_blobCy.mutable_gpu_data);                    
-                }
+                    copy_or_repeat_fwd(colBottom[3], m_blobCy);
 
                 m_blobCx.CopyFrom(m_blobCy); // initialized with previous state in LayerSetup when colBottom.Count > 2
                 m_blobHx.CopyFrom(m_blobHy); // initialized with previous state in LayerSetup when colBottom.Count > 3
@@ -1278,15 +1325,10 @@ namespace MyCaffe.layers
             {
                 // Copy state diffs back to previous LSTM
                 if (colBottom.Count > 2)
-                {
-                    m_log.CHECK_EQ(colBottom[2].count(), m_blobHx.count(), "The bottom(2) should have the same shape as 'hx' which has a shape = " + m_blobHx.shape_string);
-                    m_cuda.copy(colBottom[2].count(), colBottom[2].gpu_diff, m_blobHx.mutable_gpu_diff);
-                }
+                    copy_or_repeat_bwd(colBottom[2], m_blobHx);
+
                 if (colBottom.Count > 3)
-                {
-                    m_log.CHECK_EQ(colBottom[3].count(), m_blobCx.count(), "The bottom(3) should have the same shape as 'cx' which has a shape = " + m_blobCx.shape_string);
-                    m_cuda.copy(colBottom[3].count(), colBottom[3].gpu_diff, m_blobCx.mutable_gpu_diff);
-                }
+                    copy_or_repeat_bwd(colBottom[3], m_blobCx);
             }
         }
 
