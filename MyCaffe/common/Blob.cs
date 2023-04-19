@@ -1071,7 +1071,7 @@ namespace MyCaffe.common
         /// <param name="bFullCompare">Optionally, compare each item individually (default = false).</param>
         /// <param name="bDetectNans">Optionally, detect NAN's (default = true).</param>
         /// <returns>If all data (or diff) values fall within the tolerance, true is returned, otherwise false.</returns>
-        public bool Compare(Blob<T> other, Blob<T> work, bool bDiff = false, double dfTol = 1e-8, bool bZeroCheck = false, bool bFullCompare = false, bool bDetectNans = true)
+        public bool Compare(Blob<T> other, Blob<T> work, bool bDiff = false, double dfTol = 1e-8, bool bZeroCheck = true, bool bFullCompare = false, bool bDetectNans = true)
         {
             int nCount = count();
             if (nCount != other.count())
@@ -1111,8 +1111,10 @@ namespace MyCaffe.common
 
             if (bZeroCheck)
             {
-                double dfZero = m_cuda.asum_double(nCount, h2);
-                if (dfZero == 0)
+                double dfZero1 = m_cuda.asum_double(nCount, h1);
+                double dfZero2 = m_cuda.asum_double(nCount, h2);
+
+                if ((dfZero1 == 0 && dfZero2 != 0) || (dfZero1 != 0 && dfZero2 == 0))
                     return false;
             }
 
