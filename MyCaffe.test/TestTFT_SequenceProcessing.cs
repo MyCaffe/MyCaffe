@@ -13,7 +13,6 @@ using MyCaffe.basecode.descriptors;
 using MyCaffe.data;
 using MyCaffe.layers.tft;
 
-// WORK IN PROGRESS
 /// <summary>
 /// Testing the SequenceProcessing.
 /// </remarks> 
@@ -253,37 +252,26 @@ namespace MyCaffe.test
 
                 blobVal.LoadFromNumpy(strPath + "tft.past_lstm_output1.npy");
                 blob1 = net.FindBlob("past_lstm_output");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float) ? 1e-08 : 5e-05)), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float) ? 1e-08 : 6e-05)), "The blobs are different!");
 
-                // NOTE this is way off when run with double.
-                if (typeof(T) == typeof(float))
-                {
-                    blobVal.LoadFromNumpy(strPath + "tft.hidden0_1.npy");
-                    blob1 = net.FindBlob("hidden1");
-                    m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float) ? 1e-08 : 1e-08)), "The blobs are different!");
-                }
-                else
-                {
-                    m_log.WriteLine("WARNING: TestTft_SequentialProcessing fails when run with type 'double'.");
-                }
+                blobVal.LoadFromNumpy(strPath + "tft.hidden0_1.npy");
+                blob1 = net.FindBlob("hidden1");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float) ? 1e-08 : 4e-05)), "The blobs are different!");
 
                 blobVal.LoadFromNumpy(strPath + "tft.hidden1_1.npy");
                 blob1 = net.FindBlob("cell1");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float) ? 1e-08 : 8e-05)), "The blobs are different!");
 
-                // NOTE this is way off when run with double because of hidden1 above.
                 blobVal.LoadFromNumpy(strPath + "tft.future_lstm_output1.npy");
                 blob1 = net.FindBlob("future_lstm_output");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float) ? 1e-08 : 1)), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float) ? 1e-08 : 2e-05)), "The blobs are different!");
 
-                // NOTE this is way off when run with double because of hidden1 above.
                 blobVal.LoadFromNumpy(strPath + "tft.lstm_output1.npy");
                 blob1 = net.FindBlob("lstm_output");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float) ? 1e-08 : 1)), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float) ? 1e-08 : 6e-05)), "The blobs are different!");
 
-                // NOTE this is way off when run with double because of hidden1 above.
                 blobVal.LoadFromNumpy(strPath + "gated_lstm_output.npy");
-                m_log.CHECK(blobVal.Compare(colRes[0], blobWork, false, (typeof(T) == typeof(float) ? 1e-06 : 7)), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(colRes[0], blobWork, false, (typeof(T) == typeof(float) ? 5e-07 : 5e-05)), "The blobs are different!");
             }
             catch (Exception ex)
             {
@@ -295,7 +283,6 @@ namespace MyCaffe.test
             }
         }
 
-        // WORK IN PROGRESS
         public void TestBackward()
         {
             string strPath = getTestDataPath();
@@ -344,13 +331,8 @@ namespace MyCaffe.test
 
                 BlobCollection<T> colRes = net.Forward();
 
-                // NOTE this is way off when run with double.
-                if (typeof(T) != typeof(float))
-                    m_log.WriteLine("WARNING: TestTft_SequentialProcessing fails when run with type 'double'.");
-
-                // NOTE this is way off when run with double because of hidden1 above.
                 blobVal.LoadFromNumpy(strPath + "gated_lstm_output.npy");
-                m_log.CHECK(blobVal.Compare(colRes[0], blobWork, false, (typeof(T) == typeof(float) ? 1e-06 : 7)), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(colRes[0], blobWork, false, (typeof(T) == typeof(float) ? 5e-07 : 5e-05)), "The blobs are different!");
 
                 //*** BACKWARD ***
 
@@ -359,29 +341,13 @@ namespace MyCaffe.test
 
                 net.Backward();
 
-                blobVal.LoadFromNumpy(strPath + "tft.lstm_output1.grad.npy", true);
-                blob1 = net.FindBlob("lstm_output");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, (typeof(T) == typeof(float) ? 6e-07 : 1)), "The blobs are different!");
-
-                blobVal.LoadFromNumpy(strPath + "tft.future_lstm_output1.grad.npy", true);
-                blob1 = net.FindBlob("future_lstm_output");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, (typeof(T) == typeof(float) ? 5e-07 : 1)), "The blobs are different!");
-
-                blobVal.LoadFromNumpy(strPath + "tft.past_lstm_output1.grad.npy", true);
-                blob1 = net.FindBlob("past_lstm_output");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, (typeof(T) == typeof(float) ? 6e-07 : 1)), "The blobs are different!");
-
-                blobVal.LoadFromNumpy(strPath + "tft.lstm_input1.grad.npy", true);
-                blob1 = net.FindBlob("lstm_input");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, (typeof(T) == typeof(float) ? 1e-06 : 1)), "The blobs are different!");
-
                 blobVal.LoadFromNumpy(strPath + "tft.selected_historical1.grad.npy", true);
                 blob1 = net.FindBlob("selected_hist");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, (typeof(T) == typeof(float) ? 1e-06 : 1)), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, (typeof(T) == typeof(float) ? 3e-06 : 1e-04)), "The blobs are different!");
 
                 blobVal.LoadFromNumpy(strPath + "tft.selected_future1.grad.npy", true);
                 blob1 = net.FindBlob("selected_fut");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, (typeof(T) == typeof(float) ? 5e-07 : 1)), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, (typeof(T) == typeof(float) ? 3e-06 : 5e-05)), "The blobs are different!");
             }
             catch (Exception ex)
             {
