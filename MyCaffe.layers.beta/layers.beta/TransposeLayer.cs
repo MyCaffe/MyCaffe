@@ -24,6 +24,7 @@ namespace MyCaffe.layers.beta
         Blob<T> m_blobBackwardMap;
         Blob<T> m_blobBuffer;
         bool m_bForceReshape = false;
+        List<int> m_rgShape = new List<int>(4);
 
         /// <summary>
         /// The TransposeLayer constructor.
@@ -126,11 +127,22 @@ namespace MyCaffe.layers.beta
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            m_log.CHECK_GT(colBottom[0].shape().Count, 0, "The dimension of the transposed blob should be greater than zero.");
-            m_log.CHECK_LE(colBottom[0].shape().Count, Blob<T>.MAX_BLOB_AXES, "The dimension of the transposed blob should be less than " + Blob<T>.MAX_BLOB_AXES.ToString() + ".");
-            m_log.CHECK_EQ(colBottom[0].shape().Count, m_param.transpose_param.dim.Count, "The dimension of the bottom blob must equal the number of dimensions in the transpose parameter.");
+            m_rgShape.Clear();
+            for (int i = 0; i < colBottom[0].num_axes; i++)
+            {
+                m_rgShape.Add(colBottom[0].shape(i));
+            }
 
-            List<int> rgTopShape = permute(colBottom[0].shape());
+            while (m_rgShape.Count > 1 && m_rgShape[m_rgShape.Count - 1] == 1)
+            {
+                m_rgShape.RemoveAt(m_rgShape.Count - 1);
+            }
+
+            m_log.CHECK_GT(m_rgShape.Count, 0, "The dimension of the transposed blob should be greater than zero.");
+            m_log.CHECK_LE(m_rgShape.Count, Blob<T>.MAX_BLOB_AXES, "The dimension of the transposed blob should be less than " + Blob<T>.MAX_BLOB_AXES.ToString() + ".");
+            m_log.CHECK_EQ(m_rgShape.Count, m_param.transpose_param.dim.Count, "The dimension of the bottom blob must equal the number of dimensions in the transpose parameter.");
+
+            List<int> rgTopShape = permute(m_rgShape);
             colTop[0].Reshape(rgTopShape);
 
             int nNumAxes = m_param.transpose_param.dim.Count;
