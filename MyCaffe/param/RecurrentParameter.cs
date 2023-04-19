@@ -26,7 +26,7 @@ namespace MyCaffe.param
         bool m_bBidirectional = false; // cuDnn only
         bool m_bCudnnEnableTensorCores = false; // cuDnn only
         bool m_bBatchFirst = false; // input and output have the batch in the first dim.
-
+        bool m_bAutoRepeatHiddenStatesAcrossLayers = false;
 
         /** @copydoc LayerParameterBase */
         public RecurrentParameter()
@@ -43,6 +43,16 @@ namespace MyCaffe.param
                 return "The engine setting is set on CAFFE or DEFAULT.";
 
             return "";
+        }
+
+        /// <summary>
+        /// Auto repeat the hidden and cell states so that a separate state is fed to each layer.
+        /// </summary>
+        [Description("Auto repeat the hidden and cell states so that a separate state is fed to each layer.")]
+        public bool auto_repeat_hidden_states_across_layers
+        {
+            get { return m_bAutoRepeatHiddenStatesAcrossLayers; }
+            set { m_bAutoRepeatHiddenStatesAcrossLayers = value; }
         }
 
         /// <summary>
@@ -231,6 +241,7 @@ namespace MyCaffe.param
                 m_bBidirectional = p.bidirectional;
                 m_bCudnnEnableTensorCores = p.m_bCudnnEnableTensorCores;
                 m_bBatchFirst = p.batch_first;
+                m_bAutoRepeatHiddenStatesAcrossLayers = p.auto_repeat_hidden_states_across_layers;
             }
         }
 
@@ -258,6 +269,7 @@ namespace MyCaffe.param
             rgChildren.Add("expose_hidden_input", expose_hidden_input.ToString());
             rgChildren.Add("expose_hidden_output", expose_hidden_output.ToString());
             rgChildren.Add("batch_first", batch_first.ToString());
+            rgChildren.Add("auto_repeat_hidden_states_across_layers", auto_repeat_hidden_states_across_layers.ToString());
 
             if (engine != Engine.CAFFE)
             {
@@ -327,6 +339,9 @@ namespace MyCaffe.param
 
             if ((strVal= rp.FindValue("batch_first")) != null)
                 p.batch_first = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("auto_repeat_hidden_states_across_layers")) != null)
+                p.auto_repeat_hidden_states_across_layers = bool.Parse(strVal);
 
             return p;
         }
