@@ -33,6 +33,7 @@ namespace MyCaffe.layers.tft
         Blob<T> m_blobGate = null;
         BlobCollection<T> m_colTop = new BlobCollection<T>();
         BlobCollection<T> m_colBtm = new BlobCollection<T>();
+        List<int> m_rgShape = new List<int>(4);
 
         /// <summary>
         /// The constructor.
@@ -213,13 +214,15 @@ namespace MyCaffe.layers.tft
             List<int> rgShape = reshapeAcrossTime(blobBtm, m_blobGate);
             addBtmTop(blobBtm, m_blobGate);
             m_gate.Forward(m_colBtm, m_colTop);
-            reshape(rgShape, blobBtm, m_blobGate);
 
             if (colBottom.Count > 1)
                 m_cuda.add(m_blobGate.count(), m_blobGate.gpu_data, colBottom[1].gpu_data, m_blobGate.mutable_gpu_data);
 
             addBtmTop(m_blobGate, colTop[0]);
             m_layerNorm.Forward(m_colBtm, m_colTop);
+
+            reshape(rgShape, blobBtm, m_blobGate);
+            colTop[0].ReshapeLike(m_blobGate);
         }
 
         /// <summary>
@@ -238,25 +241,27 @@ namespace MyCaffe.layers.tft
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
+            List<int> rgShape = reshapeAcrossTime(colTop[0], m_blobGate);
+
             addBtmTop(m_blobGate, colTop[0]);
             m_layerNorm.Backward(m_colTop, rgbPropagateDown, m_colBtm);
 
             if (colBottom.Count > 1)
-                colBottom[1].CopyFrom(m_blobGate, true);
+            {
+                int nCount = colBottom[1].count();
+                m_log.CHECK_EQ(nCount, m_blobGate.count(), "The gate and bottom(1) have different counts!");
+                m_cuda.copy(nCount, m_blobGate.gpu_diff, colBottom[1].mutable_gpu_diff);
+            }
 
-            Blob<T> blobBtm = colBottom[0];
-            if (m_dropout != null)
-                blobBtm = m_blobDrop;
-
-            List<int> rgShape = reshapeAcrossTime(blobBtm, m_blobGate);
-            addBtmTop(blobBtm, m_blobGate);
+            addBtmTop(colBottom[0], m_blobGate);
             m_gate.Backward(m_colTop, rgbPropagateDown, m_colBtm);
-            reshape(rgShape, blobBtm, m_blobGate);
+            reshape(rgShape, colBottom[0], m_blobGate);
 
             if (m_dropout != null)
             {
                 addBtmTop(m_blobDrop, colBottom[0]);
                 m_dropout.Backward(m_colTop, rgbPropagateDown, m_colBtm);
+                colBottom[0].CopyFrom(m_blobDrop, true);
             }
         }
     }
