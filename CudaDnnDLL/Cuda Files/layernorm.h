@@ -80,7 +80,7 @@ public:
 	long CleanUp();
 
 	long Forward(long hXdata, long hYdata);
-	long Backward(long hYdiff, long hXdiff);
+	long Backward(long hYdata, long hYdiff, long hXdiff);
 };
 
 

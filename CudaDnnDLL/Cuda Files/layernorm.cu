@@ -138,7 +138,7 @@ public:
 	void CleanUp();
 
 	LONG Forward(long hXdata, long hYdata);
-	LONG Backward(long hYdiff, long hXdiff);
+	LONG Backward(long hYdata, long hYdiff, long hXdiff);
 };
 
 
@@ -150,7 +150,6 @@ template <class T>
 LONG LayerNormMemory<T>::Initialize(int nGpuID, int nCount, int nOuterNum, int nChannels, int nInnerNum)
 {
 	LONG lErr;
-	T* pSrc = NULL;
 
 	if (nCount != nOuterNum * nChannels * nInnerNum)
 		return ERROR_PARAM_OUT_OF_RANGE;
@@ -395,85 +394,54 @@ template LONG LayerNormData<float>::Forward(long hXdata, long hYdata);
 
 
 template <class T>
-LONG LayerNormData<T>::Backward(long hYdiff, long hXdiff)
+LONG LayerNormData<T>::Backward(long hYdata, long hYdiff, long hXdiff)
 {
 	LONG lErr;
 
-	// y = (x - mean) / std
-	// xmu' = y' / std
-	if (lErr = m_pMath->div(m_nCount, hYdiff, m_stdevfull.gpu_data(), m_xmu.gpu_diff()))
-		return lErr;
-	
-	// std' = y' * -xmu / std^2
-	if (lErr = m_pMath->powx(m_nCount, m_stdevfull.gpu_data(), (T)2.0, m_stdevfull.gpu_diff()))
+	// Multiply previous dx by dy (grad) 
+	// dx1 = dx * dy
+	if (lErr = m_pMath->mul(m_nCount, hYdata, hYdiff, m_work.gpu_diff()))
 		return lErr;
 
-	if (lErr = m_pMath->div(m_nCount, m_xmu.gpu_data(), m_stdevfull.gpu_diff(), m_work.gpu_diff()))
+	// Average (dx * dy) across channel, dx1 = dx1.mean()
+	if (lErr = m_pMath->channel_mean(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_work.gpu_diff(), m_var.gpu_diff()))
 		return lErr;
 
-	if (lErr = m_pMath->scal(m_nCount, -1, m_work.gpu_diff()))
+	// Average dy across channel, dx2 = dy.mean()
+	if (lErr = m_pMath->channel_mean(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, hYdiff, m_stdev.gpu_diff()))
 		return lErr;
 
-	if (lErr = m_pMath->mul(m_nCount, hYdiff, m_work.gpu_diff(), m_stdevfull.gpu_diff()))
+	// Multiply previous dx with dx1 (average across channel of dx * dy)
+	if (lErr = m_pMath->channel_fillfrom(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_var.gpu_diff(), m_stdevfull.gpu_diff(), 0))
 		return lErr;
 
-	// std' = channel_sum(stdfull')
-	if (lErr = m_pMath->channel_sum(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_stdevfull.gpu_diff(), m_stdev.gpu_diff(), false))
+	if (lErr = m_pMath->mul(m_nCount, hYdata, m_stdevfull.gpu_diff(), m_work.gpu_diff()))
 		return lErr;
 
-	// var' = std' * 0.5 * std^-1
-	if (lErr = m_pMath->set(m_nCount, m_work.gpu_diff(), -1, 0))
+	// Add in dy average dx2
+	if (lErr = m_pMath->channel_fillfrom(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_stdev.gpu_diff(), m_stdevfull.gpu_diff(), 0))
 		return lErr;
 
-	if (lErr = m_pMath->powx(m_nOuterNum * m_nChannels, m_stdev.gpu_data(), (T)-1.0, m_work.gpu_diff()))
+	if (lErr = m_pMath->add(m_nCount, m_work.gpu_diff(), m_stdevfull.gpu_diff(), m_work.gpu_diff(), 1))
 		return lErr;
 
-	if (lErr = m_pMath->scal(m_nOuterNum * m_nChannels, (T)0.5, m_work.gpu_diff()))
+	// Subtract from original dy gradient
+	// dy - ((dx * dx1) + dx2)
+	if (lErr = m_pMath->sub(m_nCount, hYdiff, m_work.gpu_diff(), m_work.gpu_diff()))
 		return lErr;
 
-	if (lErr = m_pMath->mul(m_nOuterNum * m_nChannels, m_stdev.gpu_diff(), m_work.gpu_diff(), m_var.gpu_diff()))
+	// Divide by the original stdev std, dx = (dy - ((dx * dx1) + dx2))/std
+	if (lErr = m_pMath->add_scalar(m_nOuterNum * m_nChannels, m_fEps, m_stdevfull.gpu_data()))
 		return lErr;
 
-	// xmusq' = 1 / n * var'
-	if (lErr = m_pMath->channel_fillfrom(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_var.gpu_diff(), m_xmusq.gpu_diff(), 0))
-		return lErr;
-
-	if (lErr = m_pMath->scal(m_nCount, (T)1.0 / m_nInnerNum, m_xmusq.gpu_diff()))
-		return lErr;
-
-	// xmu' = 2 * xmu * xmusq' + previous xmu' (xmu' = y' / std)
-	if (lErr = m_pMath->mul(m_nCount, m_xmu.gpu_data(), m_xmusq.gpu_diff(), m_work.gpu_diff()))
-		return lErr;
-
-	if (lErr = m_pMath->scal(m_nCount, (T)2.0, m_work.gpu_diff()))
-		return lErr;
-
-	if (lErr = m_pMath->add(m_nCount, m_xmu.gpu_diff(), m_work.gpu_diff(), m_xmu.gpu_diff(), (T)1.0))
-		return lErr;
-
-	// x' = xmu'
-	// mean' = -channel_sum(xmu')
-	if (lErr = m_pMath->channel_sum(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_xmu.gpu_diff(), m_mu.gpu_diff(), false))
-		return lErr;
-
-	if (lErr = m_pMath->scal(m_nOuterNum * m_nChannels, -1, m_mu.gpu_diff()))
-		return lErr;
-
-	// x' = 1 / n * mean' + x'
-	if (lErr = m_pMath->channel_fillfrom(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_mu.gpu_diff(), m_work.gpu_diff(), 0))
-		return lErr;
-
-	if (lErr = m_pMath->scal(m_nCount, (T)1.0 / m_nInnerNum, m_work.gpu_diff()))
-		return lErr;
-
-	if (lErr = m_pMath->add(m_nCount, m_xmu.gpu_diff(), m_work.gpu_diff(), hXdiff, (T)1.0))
+	if (lErr = m_pMath->div(m_nCount, m_work.gpu_diff(), m_stdevfull.gpu_data(), hXdiff))
 		return lErr;
 
 	return 0;
 }
 
-template LONG LayerNormData<double>::Backward(long hYdiff, long hXdiff);
-template LONG LayerNormData<float>::Backward(long hYdiff, long hXdiff);
+template LONG LayerNormData<double>::Backward(long hYdata, long hYdiff, long hXdiff);
+template LONG LayerNormData<float>::Backward(long hYdata, long hYdiff, long hXdiff);
 
 
 //=============================================================================
@@ -549,13 +517,13 @@ template long layernormHandle<float>::Forward(long hXdata, long hYdata);
 
 
 template <class T>
-long layernormHandle<T>::Backward(long hYdiff, long hXdiff)
+long layernormHandle<T>::Backward(long hYdata, long hYdiff, long hXdiff)
 {
-	return m_pData->Backward(hYdiff, hXdiff);
+	return m_pData->Backward(hYdata, hYdiff, hXdiff);
 }
 
-template long layernormHandle<double>::Backward(long hYdiff, long hXdiff);
-template long layernormHandle<float>::Backward(long hYdiff, long hXdiff);
+template long layernormHandle<double>::Backward(long hYdata, long hYdiff, long hXdiff);
+template long layernormHandle<float>::Backward(long hYdata, long hYdiff, long hXdiff);
 
 
 // end

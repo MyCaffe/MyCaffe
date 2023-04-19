@@ -468,7 +468,7 @@ class Memory
 		long FreeLayerNorm(long hHandle);
 		layernormHandle<T>* GetLayerNorm(long hHandle);
 		long LayerNormForward(long hLayerNorm, long hXdata, long hYdata);
-		long LayerNormBackward(long hLayerNorm, long hXdiff, long hYdiff);
+		long LayerNormBackward(long hLayerNorm, long hYdata, long hXdiff, long hYdiff);
 
 		long CreateExtensionFloat(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle);
 		long CreateExtensionDouble(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle);
@@ -1851,13 +1851,13 @@ inline long Memory<T>::LayerNormForward(long hLayerNorm, long hYdata, long hXdat
 }
 
 template <class T>
-inline long Memory<T>::LayerNormBackward(long hLayerNorm, long hYdiff, long hXdiff)
+inline long Memory<T>::LayerNormBackward(long hLayerNorm, long hYdata, long hYdiff, long hXdiff)
 {
 	layernormHandle<T>* pLn = (layernormHandle<T>*)m_layernorm.GetData(hLayerNorm);
 	if (pLn == NULL)
 		return ERROR_LAYERNORM_NOT_INITIALIZED;
 
-	return pLn->Backward(hYdiff, hXdiff);
+	return pLn->Backward(hYdata, hYdiff, hXdiff);
 }
 
 

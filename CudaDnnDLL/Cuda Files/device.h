@@ -3633,14 +3633,15 @@ inline long Device<T>::LayerNormBackward(long lInput, T* pfInput, long llInput, 
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(llInput, plInput, 3, 3))
+	if (lErr = verifyInput(llInput, plInput, 4, 4))
 		return lErr;
 
 	long hLayerNorm = (long)plInput[0];
-	long hXdiff = (long)plInput[1];
-	long hYdiff = (long)plInput[2];
+	long hYdata = (long)plInput[1];
+	long hXdiff = (long)plInput[2];
+	long hYdiff = (long)plInput[3];
 
-	if (lErr = m_memory.LayerNormBackward(hLayerNorm, hXdiff, hYdiff))
+	if (lErr = m_memory.LayerNormBackward(hLayerNorm, hYdata, hXdiff, hYdiff))
 		return lErr;
 
 	return 0;
