@@ -17,7 +17,7 @@ namespace MyCaffe.param.gpt
     /// </remarks>
     public class LayerNormParameter : LayerParameterBase 
     {
-        double m_dfEpsilon = 1e-05;
+        double m_dfEpsilon = 1e-10;
         bool m_bEnableCudaImplementation = false;
 
         /** @copydoc LayerParameterBase */
@@ -26,9 +26,9 @@ namespace MyCaffe.param.gpt
         }
 
         /// <summary>
-        /// Specifies the epsilon value used to avoid invalid values (default = 1e-05).
+        /// Specifies the epsilon value used to avoid invalid values (default = 1e-10).
         /// </summary>
-        [Description("Specifies the epsilon value used to avoid invalid values (default = 1e-05).")]
+        [Description("Specifies the epsilon value used to avoid invalid values (default = 1e-10).")]
         public double epsilon
         {
             get { return m_dfEpsilon; }
