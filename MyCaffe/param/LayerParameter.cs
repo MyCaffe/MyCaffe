@@ -1182,6 +1182,7 @@ namespace MyCaffe.param
                 case LayerType.GATEADDNORM:
                     expected_bottom.Add("input");
                     expected_top.Add("gan");
+                    m_rgLayerParameters[lt] = new GateAddNormParameter();
                     m_rgLayerParameters[LayerType.GLU] = new GluParameter();
                     m_rgLayerParameters[LayerType.DROPOUT] = new DropoutParameter();
                     m_rgLayerParameters[LayerType.LAYERNORM] = new LayerNormParameter();
@@ -2208,6 +2209,15 @@ namespace MyCaffe.param
         {
             get { return (GatherParameter)m_rgLayerParameters[LayerType.GATHER]; }
             set { m_rgLayerParameters[LayerType.GATHER] = value; }
+        }
+
+        /// <summary>
+        /// Returns the parameter set when initialized with LayerType.GLU
+        /// </summary>
+        public GateAddNormParameter gateaddnorm_param
+        {
+            get { return (GateAddNormParameter)m_rgLayerParameters[LayerType.GATEADDNORM]; }
+            set { m_rgLayerParameters[LayerType.GATEADDNORM] = value; }
         }
 
         /// <summary>
@@ -3453,6 +3463,7 @@ namespace MyCaffe.param
             // TFT Layers
             rgParam.Add(new KeyValuePair<BaseParameter, string>(categorical_trans_param, "categorical_trans_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(numeric_trans_param, "numeric_trans_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(gateaddnorm_param, "gateaddnorm_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(glu_param, "glu_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(grn_param, "grn_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(varselnet_param, "varselnet_param"));
@@ -3823,6 +3834,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("numeric_trans_param")) != null)
                 p.numeric_trans_param = NumericTransformationParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("gateaddnorm_param")) != null)
+                p.gateaddnorm_param = GateAddNormParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("glu_param")) != null)
                 p.glu_param = GluParameter.FromProto(rpp);
