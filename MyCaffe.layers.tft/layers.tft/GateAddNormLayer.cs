@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using MyCaffe.basecode;
 using MyCaffe.common;
@@ -26,9 +27,11 @@ namespace MyCaffe.layers.tft
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class GateAddNormLayer<T> : Layer<T>
     {
+        int m_nBlocks;
         Layer<T> m_dropout = null;
         Layer<T> m_gate = null;
         Layer<T> m_layerNorm = null;
+        Blob<T> m_blobResidual = null;
         Blob<T> m_blobDrop = null;
         Blob<T> m_blobGate = null;
         BlobCollection<T> m_colTop = new BlobCollection<T>();
@@ -52,6 +55,8 @@ namespace MyCaffe.layers.tft
                 m_blobDrop.Name = p.name + ".drop";
             }
 
+            m_blobResidual = new Blob<T>(cuda, log);
+            m_blobResidual.Name = p.name + ".residual";
             m_blobGate = new Blob<T>(cuda, log);
             m_blobGate.Name = p.name + ".gate";
         }
@@ -59,6 +64,7 @@ namespace MyCaffe.layers.tft
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
+            dispose(ref m_blobResidual);
             dispose(ref m_blobGate);
             dispose(ref m_blobDrop);
 
@@ -76,6 +82,7 @@ namespace MyCaffe.layers.tft
             if (m_blobDrop != null)
                 col.Add(m_blobDrop);
             col.Add(m_blobGate);
+            col.Add(m_blobResidual);
         }
 
         /// <summary>
@@ -143,6 +150,13 @@ namespace MyCaffe.layers.tft
             LayerParameter p;
             Blob<T> blobBtm = colBottom[0];
 
+            if (m_param.gateaddnorm_param.residual_channel_offset > 0)
+            {
+                int nDiff = colBottom[1].channels - m_param.gateaddnorm_param.residual_channel_offset;
+                if (colBottom[1].channels % nDiff != 0)
+                    m_log.FAIL("The number bottom(1).channels must be divisible by the bottom(1).channels - the residual channel offset. For example if bottom(1).channels = 120 and redidual_channel_offset = 90, the difference = 30 which is a factor of both 120 and 90.");
+            }
+
             if (m_param.dropout_param != null && m_param.dropout_param.dropout_ratio > 0)
             {
                 p = new LayerParameter(LayerParameter.LayerType.DROPOUT, "drop");
@@ -182,6 +196,27 @@ namespace MyCaffe.layers.tft
         {
             Blob<T> blobBtm = colBottom[0];
 
+            if (colBottom.Count > 1)
+            {
+                if (m_param.gateaddnorm_param.residual_channel_offset > 0)
+                {
+                    int nDiff = colBottom[1].channels - m_param.gateaddnorm_param.residual_channel_offset;
+                    m_log.CHECK_EQ(colBottom[1].channels % nDiff, 0, "The bottom(1).channels must be divisible by the bottom(1).channels - residual_channel_offset!");
+                    m_nBlocks = colBottom[1].channels / nDiff;
+
+                    int nQTimeSteps = nDiff;
+                    m_rgShape.Clear();
+                    m_rgShape.Add(colBottom[0].num);
+                    m_rgShape.Add(nQTimeSteps);
+                    m_rgShape.Add(colBottom[0].count(2));
+                    m_blobResidual.Reshape(m_rgShape);
+                }
+                else
+                {
+                    m_blobResidual.ReshapeLike(colBottom[1]);
+                }
+            }
+
             if (m_dropout != null)
             {
                 addBtmTop(colBottom[0], m_blobDrop);
@@ -198,6 +233,50 @@ namespace MyCaffe.layers.tft
             m_layerNorm.Reshape(m_colBtm, m_colTop);
         }
 
+        private void copy_to_fwd(BlobCollection<T> colBtm, Blob<T> bTop)
+        {
+            if (colBtm.Count < 2)
+                return;
+
+            Blob<T> bBtm = colBtm[1];
+
+            if (m_param.gateaddnorm_param.residual_channel_offset > 0)
+            {
+                // Copy just the future items to the top, so if future = 30,
+                // with input shape is btm(256,120,64) just the last (256,30,64) are copied to top 
+                int nOuterNum = bBtm.num;
+                int nChannels = m_nBlocks;
+                int nInnerNum = (bBtm.channels / m_nBlocks) * bBtm.count(2);
+                m_cuda.channel_copy(bTop.count(), nOuterNum, nChannels, m_nBlocks, nInnerNum, m_nBlocks-1, bBtm.gpu_data, bTop.mutable_gpu_data, DIR.FWD);
+            }
+            else
+            {
+                bTop.CopyFrom(bBtm);
+            }
+        }
+
+        private void copy_to_bwd(BlobCollection<T> colBtm, Blob<T> bTop)
+        {
+            if (colBtm.Count < 2)
+                return;
+
+            Blob<T> bBtm = colBtm[1];
+
+            if (m_param.gateaddnorm_param.residual_channel_offset > 0)
+            {
+                // Copy just the future items to the top, so if future = 30,
+                // with input shape is btm(256,120,64) just the last (256,30,64) are copied to top 
+                int nOuterNum = bBtm.num;
+                int nChannels = m_nBlocks;
+                int nInnerNum = (bBtm.channels / m_nBlocks) * bBtm.count(2);
+                m_cuda.channel_add(bBtm.count(), nOuterNum, nChannels, m_nBlocks, nInnerNum, m_nBlocks-1, bBtm.mutable_gpu_diff, bTop.gpu_diff, DIR.BWD);
+            }
+            else
+            {
+                bTop.CopyFrom(bBtm, true);
+            }
+        }
+
         /// <summary>
         /// Forward computation
         /// </summary>
@@ -211,6 +290,7 @@ namespace MyCaffe.layers.tft
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            copy_to_fwd(colBottom, m_blobResidual);
             Blob<T> blobBtm = colBottom[0];
 
             if (m_dropout != null)
@@ -225,7 +305,7 @@ namespace MyCaffe.layers.tft
             m_gate.Forward(m_colBtm, m_colTop);
 
             if (colBottom.Count > 1)
-                m_cuda.add(m_blobGate.count(), m_blobGate.gpu_data, colBottom[1].gpu_data, m_blobGate.mutable_gpu_data);
+                m_cuda.add(m_blobGate.count(), m_blobGate.gpu_data, m_blobResidual.gpu_data, m_blobGate.mutable_gpu_data);
 
             addBtmTop(m_blobGate, colTop[0]);
             m_layerNorm.Forward(m_colBtm, m_colTop);
@@ -255,12 +335,7 @@ namespace MyCaffe.layers.tft
             addBtmTop(m_blobGate, colTop[0]);
             m_layerNorm.Backward(m_colTop, rgbPropagateDown, m_colBtm);
 
-            if (colBottom.Count > 1)
-            {
-                int nCount = colBottom[1].count();
-                m_log.CHECK_EQ(nCount, m_blobGate.count(), "The gate and bottom(1) have different counts!");
-                m_cuda.copy(nCount, m_blobGate.gpu_diff, colBottom[1].mutable_gpu_diff);
-            }
+            copy_to_bwd(colBottom, m_blobResidual);
 
             addBtmTop(colBottom[0], m_blobGate);
             m_gate.Backward(m_colTop, rgbPropagateDown, m_colBtm);
