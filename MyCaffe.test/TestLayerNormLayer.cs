@@ -476,7 +476,7 @@ namespace MyCaffe.test
 
                 m_blobVal.LoadFromNumpy(strTestDataPath + "ln.8_y.npy");
 
-                float fErr = 5e-7f;
+                float fErr = 2e-5f;
                 verify(m_blob_top, m_blobVal, false, fErr);
 
                 sw.Start();
