@@ -268,11 +268,11 @@ namespace MyCaffe.layers.tft
                 int nOuterNum = bBtm.num;
                 int nChannels = m_nBlocks;
                 int nInnerNum = (bBtm.channels / m_nBlocks) * bBtm.count(2);
-                m_cuda.channel_add(bBtm.count(), nOuterNum, nChannels, m_nBlocks, nInnerNum, m_nBlocks-1, bBtm.mutable_gpu_diff, bTop.gpu_diff, DIR.BWD);
+                m_cuda.channel_copy(bTop.count(), nOuterNum, nChannels, m_nBlocks, nInnerNum, m_nBlocks - 1, bBtm.gpu_diff, bTop.mutable_gpu_diff, DIR.BWD);
             }
             else
             {
-                bTop.CopyFrom(bBtm, true);
+                bBtm.CopyFrom(bTop, true);
             }
         }
 
@@ -289,8 +289,9 @@ namespace MyCaffe.layers.tft
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            copy_to_fwd(colBottom, m_blobResidual);
             Blob<T> blobBtm = colBottom[0];
+
+            copy_to_fwd(colBottom, m_blobResidual);
 
             if (m_dropout != null)
             {
@@ -334,7 +335,8 @@ namespace MyCaffe.layers.tft
             addBtmTop(m_blobGate, colTop[0]);
             m_layerNorm.Backward(m_colTop, rgbPropagateDown, m_colBtm);
 
-            copy_to_bwd(colBottom, m_blobResidual);
+            // Copy grad to the residual if it exists.
+            copy_to_bwd(colBottom, m_blobGate);
 
             addBtmTop(colBottom[0], m_blobGate);
             m_gate.Backward(m_colTop, rgbPropagateDown, m_colBtm);
