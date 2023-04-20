@@ -240,6 +240,7 @@ class Math
 		long channel_fill(int n, int nOutNum, int nChannels, int nInNum, long hX, int nLabelDim, long hLabels, long hY);
 		long channel_fillfrom(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nDir);
 		long channel_copy(int n, int nOutNum, int nChannels, int nBlocks, int nInNum, int nOffset, long hX, long hY, int nDir);
+		long channel_add(int n, int nOutNum, int nChannels, int nBlocks, int nInNum, int nOffset, long hX, long hY, int nDir);
 		long channel_copyall(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 		long channel_duplicate(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 

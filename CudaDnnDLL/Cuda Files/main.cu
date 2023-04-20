@@ -647,6 +647,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, lon
 		case CUDA_FN_CHANNEL_COPY:
 			return m_device.cuda_channel_copy(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
+		case CUDA_FN_CHANNEL_ADD:
+			return m_device.cuda_channel_add(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
 		case CUDA_FN_CHANNEL_COPYALL:
 			return m_device.cuda_channel_copyall(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 			
@@ -1679,6 +1682,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_CHANNEL_COPY:
 		return "CUDA_FN_CHANNEL_COPY";
+
+	case CUDA_FN_CHANNEL_ADD:
+		return "CUDA_FN_CHANNEL_ADD";
 
 	case CUDA_FN_CHANNEL_COPYALL:
 		return "CUDA_FN_CHANNEL_COPYALL";

@@ -1180,6 +1180,7 @@ namespace MyCaffe.common
             CUDA_CHANNEL_FILLFROM = 301,
             CUDA_CHANNEL_COPYALL = 302,
             CUDA_CHANNEL_DUP = 303,
+            CUDA_CHANNEL_ADD = 304,
 
             CUDA_RNG_SETSEED = 349,
             CUDA_RNG_UNIFORM = 350,
@@ -8001,6 +8002,26 @@ namespace MyCaffe.common
                 m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_DUP, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
             else
                 m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_DUP, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
+        }
+
+        /// <summary>
+        /// Add data along channels similar to numpy split function but where the data is added instead of copied.
+        /// </summary>
+        /// <param name="nCount">Specifies the total number of elements in Y which = count(X)/nBlocks in length.</param>
+        /// <param name="nOuterNum">Specifies the number of items.</param>
+        /// <param name="nChannels">Specifies the number of channels.</param>
+        /// <param name="nBlocks">Specifies the number of blocks in each channel.</param>
+        /// <param name="nInnerNum">Specifies the dimension of each inner dim within the channel.</param>
+        /// <param name="nOffset">Specifies the offset of the inner dim.</param>
+        /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
+        /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
+        /// <param name="dir">Specifies the direction of data flow (0 = fwd X->Y, 1 = bwd Y->X).</param>
+        public void channel_add(int nCount, int nOuterNum, int nChannels, int nBlocks, int nInnerNum, int nOffset, long hX, long hY, DIR dir)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_ADD, null, m_param.AsLong(nCount, nOuterNum, nChannels, nBlocks, nInnerNum, nOffset, hX, hY, (int)dir));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_ADD, null, m_param.AsLong(nCount, nOuterNum, nChannels, nBlocks, nInnerNum, nOffset, hX, hY, (int)dir));
         }
 
         /// <summary>
