@@ -30,10 +30,32 @@ namespace MyCaffe.param.tft
         double m_dfSigmaInit = 0.017;
         int m_nEmbedDim;
         int m_nNumHeads;
+        int m_nNumHistoricalSteps = 0;  
+        int m_nNumFutureSteps = 0;      
 
         /** @copydoc LayerParameterBase */
         public MultiHeadAttentionInterpParameter()
         {
+        }
+
+        /// <summary>
+        /// Optionally specifies the number of historical steps
+        /// </summary>
+        [Description("Optionally specifies the number of historical steps - only used when colBottom.Count = 1")]
+        public int num_historical_steps
+        {
+            get { return m_nNumHistoricalSteps; }
+            set { m_nNumHistoricalSteps = value; }
+        }
+
+        /// <summary>
+        /// Optionally specifies the number of future steps
+        /// </summary>
+        [Description("Optionally specifies the number of future steps - only used when colBottom.Count = 1")]
+        public int num_future_steps
+        {
+            get { return m_nNumFutureSteps; }
+            set { m_nNumFutureSteps = value; }
         }
 
         /// <summary>
@@ -118,6 +140,9 @@ namespace MyCaffe.param.tft
         {
             MultiHeadAttentionInterpParameter p = (MultiHeadAttentionInterpParameter)src;
 
+            m_nNumHistoricalSteps = p.num_historical_steps;
+            m_nNumFutureSteps = p.num_future_steps;
+
             m_nEmbedDim = p.embed_dim;
             m_nNumHeads = p.num_heads;
 
@@ -148,6 +173,9 @@ namespace MyCaffe.param.tft
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
+            rgChildren.Add("num_historical_steps", num_historical_steps.ToString());
+            rgChildren.Add("num_future_steps", num_future_steps.ToString());
+
             rgChildren.Add("embed_dim", embed_dim.ToString());
             rgChildren.Add("num_heads", num_heads.ToString());
 
@@ -176,7 +204,7 @@ namespace MyCaffe.param.tft
             string strVal;
             MultiHeadAttentionInterpParameter p = new MultiHeadAttentionInterpParameter();
 
-            if ((strVal = rp.FindValue("state_size")) != null)
+            if ((strVal = rp.FindValue("embed_dim")) != null)
                 p.embed_dim = int.Parse(strVal);
 
             if ((strVal = rp.FindValue("num_heads")) != null)
@@ -195,6 +223,12 @@ namespace MyCaffe.param.tft
 
             if ((strVal = rp.FindValue("sigma_init")) != null)
                 p.sigma_init = ParseDouble(strVal);
+
+            if ((strVal = rp.FindValue("num_historical_steps")) != null)
+                p.num_historical_steps = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("num_future_steps")) != null)
+                p.num_future_steps = int.Parse(strVal);
 
             return p;
         }
