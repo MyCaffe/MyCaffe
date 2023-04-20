@@ -33,6 +33,7 @@ namespace MyCaffe.layers.gpt
         int m_nOuterNum = 0;
         int m_nChannels = 0;
         int m_nInnerNum = 0;
+        List<int> m_rgShape = new List<int>(4);
 
         /// <summary>
         /// The LayerNormalizationLayer constructor.
@@ -137,7 +138,7 @@ namespace MyCaffe.layers.gpt
             m_nCount = colBottom[0].count();
             m_nOuterNum = colBottom[0].num;
             m_nChannels = (nAxes == 2) ? 1 : colBottom[0].channels;
-            m_nInnerNum = (nAxes == 2) ? colBottom[0].count(1) : colBottom[0].count(2);
+            m_nInnerNum = (nAxes == 2) ? colBottom[0].channels : colBottom[0].count(2);
 
             if (m_param.layer_norm_param.enable_cuda_impl)
             {
@@ -169,11 +170,14 @@ namespace MyCaffe.layers.gpt
                 shareLayerBlob(m_blobStdevFull, colBottom[0].shape());
                 m_blobStdevFull.ReshapeLike(colBottom[0]);
 
-                List<int> rgShape = Utility.Clone<int>(colBottom[0].shape());
-                rgShape[rgShape.Count - 1] = 1;
-                m_blobMu.Reshape(rgShape);
-                m_blobVar.Reshape(rgShape);
-                m_blobStdev.Reshape(rgShape);
+                m_rgShape.Clear();
+                m_rgShape.Add(m_nOuterNum);
+                m_rgShape.Add(m_nChannels);
+                if (nAxes > 2)
+                    m_rgShape.Add(1);
+                m_blobMu.Reshape(m_rgShape);
+                m_blobVar.Reshape(m_rgShape);
+                m_blobStdev.Reshape(m_rgShape);
             }
 
             colTop[0].ReshapeLike(colBottom[0]);
@@ -222,7 +226,6 @@ namespace MyCaffe.layers.gpt
             // Calculate the mean across the last dim.
             // var = xmusq.mean(dim=-1, keepdim=True)
             // var shape = (n, c, 1)
-            m_blobVar.SetData(0);
             m_cuda.channel_mean(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_blobXmuSq.gpu_data, m_blobVar.mutable_gpu_data);
             m_blobVar.Reshape(m_blobVar.num, m_blobVar.channels, 1, 1);
 
