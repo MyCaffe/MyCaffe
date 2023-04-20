@@ -99,24 +99,24 @@ namespace MyCaffe.layers.tft
         /// and replicates it along time for 'time_step' number of times to create a new shape
         /// [num_samples x time_steps x num_features]
         /// </summary>
-        /// <param name="bSrc">Specifies the source blob</param>
-        /// <param name="bDst">Specifies the destination blob.</param>
+        /// <param name="bBtm">Specifies the source blob</param>
+        /// <param name="bTop">Specifies the destination blob.</param>
         /// <param name="nTimeSteps">Specifies the time steps.</param>
         /// <param name="bReshapeOnly">Specifies to reshape the destination only.</param>
-        private void replicate_along_time_fwd(Blob<T> bSrc, Blob<T> bDst, int nTimeSteps, bool bReshapeOnly = false)
+        private void replicate_along_time_fwd(Blob<T> bBtm, Blob<T> bTop, int nTimeSteps, bool bReshapeOnly = false)
         {
             m_rgShape.Clear();
             m_rgShape.Add(m_nNumSamples);
             m_rgShape.Add(nTimeSteps);
-            m_rgShape.Add(bSrc.shape(1));
-            bDst.Reshape(m_rgShape);
+            m_rgShape.Add(bBtm.shape(1));
+            bTop.Reshape(m_rgShape);
 
             if (!bReshapeOnly)
             {
-                int nInnerNum = bSrc.count(1);
+                int nInnerNum = bBtm.count(1);
                 for (int i = 0; i < nTimeSteps; i++)
                 {
-                    m_cuda.channel_copy(bSrc.count(), m_nNumSamples, 1, nTimeSteps, nInnerNum, i, bDst.mutable_gpu_data, bSrc.gpu_data, DIR.BWD);
+                    m_cuda.channel_copy(bBtm.count(), m_nNumSamples, 1, nTimeSteps, nInnerNum, i, bTop.mutable_gpu_data, bBtm.gpu_data, DIR.BWD);
                 }
             }
         }
@@ -126,32 +126,35 @@ namespace MyCaffe.layers.tft
         /// and replicates it along time for 'time_step' number of times to create a new shape
         /// [num_samples x time_steps x num_features]
         /// </summary>
-        /// <param name="bSrc">Specifies the source blob</param>
-        /// <param name="bDst">Specifies the destination blob.</param>
+        /// <param name="bBtm">Specifies the source blob</param>
+        /// <param name="bTop">Specifies the destination blob.</param>
         /// <param name="nTimeSteps">Specifies the time steps.</param>
-        private void replicate_along_time_bwd(Blob<T> bSrc, Blob<T> bDst, int nTimeSteps)
+        private void replicate_along_time_bwd(Blob<T> bBtm, Blob<T> bTop, int nTimeSteps)
         {
-            int nInnerNum = bSrc.count(1);
-            m_cuda.channel_copy(bSrc.count(), m_nNumSamples, 1, nTimeSteps, nInnerNum, 0, bDst.mutable_gpu_diff, bSrc.gpu_diff, DIR.FWD);
+            int nInnerNum = bBtm.count(1);
+            m_cuda.channel_copy(bBtm.count(), m_nNumSamples, 1, nTimeSteps, nInnerNum, 0, bTop.mutable_gpu_diff, bBtm.gpu_diff, DIR.FWD);
 
             for (int i = 0; i < nTimeSteps; i++)
             {
-                m_cuda.channel_copy(bSrc.count(), m_nNumSamples, 1, nTimeSteps, nInnerNum, i, bDst.mutable_gpu_diff, m_blobWork.gpu_diff, DIR.FWD);
-                m_cuda.add(bSrc.count(), bSrc.gpu_diff, m_blobWork.gpu_diff, bSrc.mutable_gpu_diff);
+                m_cuda.channel_copy(bBtm.count(), m_nNumSamples, 1, nTimeSteps, nInnerNum, i, bTop.mutable_gpu_diff, m_blobWork.gpu_diff, DIR.FWD);
+                m_cuda.add(bBtm.count(), bBtm.gpu_diff, m_blobWork.gpu_diff, bBtm.mutable_gpu_diff);
             }
-
-            bSrc.scale_diff(1.0 / nTimeSteps);
         }
 
-        private void stack_time_steps_along_batch(Blob<T> bSrc, Blob<T> bDst, bool? bDiff)
+        private void stack_time_steps_along_batch_fwd(Blob<T> bBtm, Blob<T> bTop, bool bResizeOnly = false)
         {
-            if (bDiff.HasValue)
-                bDst.CopyFrom(bSrc, bDiff.Value, true);
+            if (!bResizeOnly)
+                bTop.CopyFrom(bBtm, false, true);
 
             m_rgShape.Clear();
-            m_rgShape.Add(bSrc.shape(0) * bSrc.shape(1));
-            m_rgShape.Add(bSrc.count(2));
-            bDst.Reshape(m_rgShape);
+            m_rgShape.Add(bBtm.shape(0) * bBtm.shape(1));
+            m_rgShape.Add(bBtm.count(2));
+            bTop.Reshape(m_rgShape);
+        }
+
+        private void stack_time_steps_along_batch_bwd(Blob<T> bBtm, Blob<T> bTop)
+        {
+            bBtm.CopyFrom(bTop, true, false, 0, true);
         }
 
         /// <summary>
@@ -178,13 +181,13 @@ namespace MyCaffe.layers.tft
                     m_blobTimeDistributedContext.Name = "time_distributed_context";
 
                     replicate_along_time_fwd(colBottom[1], m_blobTimeDistributedContext, m_nNumTemporalSteps, true);
-                    stack_time_steps_along_batch(m_blobTimeDistributedContext, colTop[1], null);
+                    stack_time_steps_along_batch_fwd(m_blobTimeDistributedContext, colTop[1], true);
                     colTop[1].SetParameter("num_samples", m_nNumSamples);
                     colTop[1].SetParameter("num_temporal_steps", m_nNumTemporalSteps);
                 }
 
                 // Apply the same selection module on all timesteps by stacking the time dimension with the batch dimension
-                stack_time_steps_along_batch(colBottom[0], colTop[0], null);
+                stack_time_steps_along_batch_fwd(colBottom[0], colTop[0], true);
                 colTop[0].SetParameter("num_samples", m_nNumSamples);
                 colTop[0].SetParameter("num_temporal_steps", m_nNumTemporalSteps);
             }
@@ -208,6 +211,8 @@ namespace MyCaffe.layers.tft
                     colTop[1].Reshape(m_rgShape);
                 }
             }
+
+            setup_internal_blobs(m_colInternalBlobs);
         }
 
         /// <summary>
@@ -224,11 +229,11 @@ namespace MyCaffe.layers.tft
                 {
                     replicate_along_time_fwd(colBottom[1], m_blobTimeDistributedContext, m_nNumTemporalSteps, true);
                     m_blobWork.ReshapeLike(colBottom[1]);
-                    stack_time_steps_along_batch(m_blobTimeDistributedContext, colTop[1], null);
+                    stack_time_steps_along_batch_fwd(m_blobTimeDistributedContext, colTop[1], true);
                 }
 
                 // Apply the same selection module on all timesteps by stacking the time dimension with the batch dimension
-                stack_time_steps_along_batch(colBottom[0], colTop[0], null);
+                stack_time_steps_along_batch_fwd(colBottom[0], colTop[0], true);
             }
             else
             {
@@ -268,11 +273,11 @@ namespace MyCaffe.layers.tft
                 {
                     // replicate the selection signal along time
                     replicate_along_time_fwd(colBottom[1], m_blobTimeDistributedContext, m_nNumTemporalSteps);
-                    stack_time_steps_along_batch(m_blobTimeDistributedContext, colTop[1], false);
+                    stack_time_steps_along_batch_fwd(m_blobTimeDistributedContext, colTop[1]);
                 }
 
                 // Apply the same selection module on all timesteps by stacking the time dimension with the batch dimension
-                stack_time_steps_along_batch(colBottom[0], colTop[0], false);
+                stack_time_steps_along_batch_fwd(colBottom[0], colTop[0]);
             }
             else
             {
@@ -314,12 +319,12 @@ namespace MyCaffe.layers.tft
             if (m_mode == ReshapeTemporalParameter.MODE.BEFORE)
             {
                 // Apply the same selection module on all timesteps by stacking the time dimension with the batch dimension
-                stack_time_steps_along_batch(colBottom[0], colTop[0], true);
+                stack_time_steps_along_batch_bwd(colBottom[0], colTop[0]);
 
                 // replicate the static selection signal along time
                 if (colBottom.Count > 1)
                 {
-                    stack_time_steps_along_batch(m_blobTimeDistributedContext, colTop[1], true);
+                    stack_time_steps_along_batch_bwd(m_blobTimeDistributedContext, colTop[1]);
                     replicate_along_time_bwd(colBottom[1], m_blobTimeDistributedContext, m_nNumTemporalSteps);
                 }
             }
