@@ -104,7 +104,7 @@ namespace MyCaffe.param.tft
             string strVal;
             ReshapeTemporalParameter p = new ReshapeTemporalParameter();
 
-            if ((strVal = rp.FindValue("input_dim")) != null)
+            if ((strVal = rp.FindValue("mode")) != null)
             {
                 if (strVal == MODE.BEFORE.ToString())
                     p.mode = MODE.BEFORE;
