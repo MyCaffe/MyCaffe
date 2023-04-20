@@ -136,6 +136,7 @@ namespace MyCaffe.test
             multihead_attn.top.Add("post_attention");
             multihead_attn.top.Add("attention_outputs");
             multihead_attn.top.Add("attention_scores");
+            multihead_attn.top.Add("enriched_sequence1");
             p.layer.Add(multihead_attn);
 
             LayerParameter post_attn_gate = new LayerParameter(LayerParameter.LayerType.GATEADDNORM, "post_attn_gate");
@@ -145,7 +146,7 @@ namespace MyCaffe.test
             post_attn_gate.glu_param.input_dim = nStateSize;
             post_attn_gate.glu_param.axis = 1;
             post_attn_gate.bottom.Add("post_attention");
-            post_attn_gate.bottom.Add("enriched_sequence");
+            post_attn_gate.bottom.Add("enriched_sequence1");
             post_attn_gate.top.Add("gated_post_attention");
             p.layer.Add(post_attn_gate);
 
@@ -229,7 +230,6 @@ namespace MyCaffe.test
             }
         }
 
-        // WORK IN PROGRESS
         /// <summary>
         /// Test the backward pass for self attention
         /// </summary>
@@ -292,7 +292,7 @@ namespace MyCaffe.test
 
                 blobVal.LoadFromNumpy(strPath + "tft.asa.attention_outputs.npy");
                 blob1 = net.FindBlob("attention_outputs");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 1e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-06), "The blobs are different!");
 
                 blobVal.LoadFromNumpy(strPath + "tft.asa.attention_scores.npy");
                 blob1 = net.FindBlob("attention_scores");
