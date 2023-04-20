@@ -35,6 +35,9 @@ namespace MyCaffe.layers.tft
         int m_nNumHeads;
         int m_nDModel;
         int m_nAllHeadsDim;
+        int m_nNumFut = 0;
+        int m_nNumHist = 0;
+        int m_nBlocks = 0;
         double m_dfScale;
         Layer<T> m_ipQLayer;
         Layer<T> m_ipKLayer;
@@ -42,9 +45,13 @@ namespace MyCaffe.layers.tft
         Layer<T> m_transpose;
         Layer<T> m_softmax;
         Layer<T> m_ipOutLayer;
+        Blob<T> m_blobQ;
+        Blob<T> m_blobK;
+        Blob<T> m_blobV;
         Blob<T> m_blobIpQ;
         Blob<T> m_blobIpK;
         Blob<T> m_blobIpV;
+        Blob<T> m_blobMask;
         Blob<T> m_blobIpVfull;
         Blob<T> m_blobIpQt;
         Blob<T> m_blobIpKt;
@@ -69,26 +76,50 @@ namespace MyCaffe.layers.tft
         {
             m_type = LayerParameter.LayerType.MULTIHEAD_ATTENTION_INTERP;
 
+            m_blobQ = new Blob<T>(cuda, log);
+            m_blobQ.Name = p.name + ".q";
+            m_blobK = new Blob<T>(cuda, log);
+            m_blobQ.Name = p.name + ".k";
+            m_blobV = new Blob<T>(cuda, log);
+            m_blobV.Name = p.name + ".v";
             m_blobIpQ = new Blob<T>(cuda, log);
+            m_blobIpQ.Name = p.name + ".ipq";
             m_blobIpK = new Blob<T>(cuda, log);
+            m_blobIpK.Name = p.name + ".ipk";
             m_blobIpV = new Blob<T>(cuda, log);
+            m_blobIpV.Name = p.name + ".ipv";
+            m_blobMask = new Blob<T>(cuda, log, false);
+            m_blobMask.Name = p.name + ".mask";
             m_blobIpVfull = new Blob<T>(cuda, log);
+            m_blobIpVfull.Name = p.name + ".ipvfull";
             m_blobIpQt = new Blob<T>(cuda, log);
+            m_blobIpQt.Name = p.name + ".ipqt";
             m_blobIpKt = new Blob<T>(cuda, log);
+            m_blobIpKt.Name = p.name + ".ipkt";
             m_blobIpKt1 = new Blob<T>(cuda, log);
+            m_blobIpKt1.Name = p.name + ".ipkt1";
             m_blobIpVt = new Blob<T>(cuda, log);
+            m_blobIpVt.Name = p.name + ".ipvt";
             m_blobAttnScores1 = new Blob<T>(cuda, log);
+            m_blobAttnScores1.Name = p.name + ".attn_scores";
             m_blobAttnScoresAllHeads = new Blob<T>(cuda, log);
+            m_blobAttnScoresAllHeads.Name = p.name + ".attn_scr_allhd";
             m_blobAttnOutputAllHeads = new Blob<T>(cuda, log);
+            m_blobAttnOutputAllHeads.Name = p.name + ".attn_out_allhd";
             m_blobWork = new Blob<T>(cuda, log);
+            m_blobWork.Name = p.name + ".work";
         }
 
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
+            dispose(ref m_blobQ);
+            dispose(ref m_blobK);
+            dispose(ref m_blobV);
             dispose(ref m_blobIpQ);
             dispose(ref m_blobIpK);
             dispose(ref m_blobIpV);
+            dispose(ref m_blobMask);
             dispose(ref m_blobIpVfull);
             dispose(ref m_blobIpQt);
             dispose(ref m_blobIpKt);
@@ -113,9 +144,13 @@ namespace MyCaffe.layers.tft
             if (col.Count > 0)
                 return;
 
+            col.Add(m_blobQ);
+            col.Add(m_blobK);
+            col.Add(m_blobV);
             col.Add(m_blobIpQ);
             col.Add(m_blobIpK);
             col.Add(m_blobIpV);
+            col.Add(m_blobMask);
             col.Add(m_blobIpVfull);
             col.Add(m_blobIpQt);
             col.Add(m_blobIpKt);
@@ -128,11 +163,11 @@ namespace MyCaffe.layers.tft
         }
 
         /// <summary>
-        /// Returns the min number of required bottom (input) Blobs: q, k, v
+        /// Returns the min number of required bottom (input) Blobs: input -> q,k,v, mask is generated
         /// </summary>
         public override int MinBottomBlobs
         {
-            get { return 3; }
+            get { return 1; }
         }
 
         /// <summary>
@@ -243,6 +278,31 @@ namespace MyCaffe.layers.tft
             bBtm.scale_diff(1.0 / nC);
         }
 
+        private void generate_mask(Blob<T> mask)
+        {
+            m_rgShape.Clear();
+            m_rgShape.Add(m_nNumFut);
+            m_rgShape.Add(m_nNumFut + m_nNumHist);
+            mask.Reshape(m_rgShape);
+
+            int nRow = m_nNumFut + m_nNumHist;
+            int nOutSeqLen = m_nNumFut; //- m_nTargetWindowStartIdx;  not used
+            float[] rgData = new float[mask.count()];
+
+            for (int i = 0; i < m_nNumFut; i++)
+            {
+                for (int j = 0; j < m_nNumHist + nOutSeqLen; j++)
+                {
+                    int nIdx = i * nRow + j;
+
+                    if (j > m_nNumHist && j-m_nNumHist > i)
+                        rgData[nIdx] = 1;
+                }
+            }
+
+            mask.mutable_cpu_data = convert(rgData);
+        }
+
         /// <summary>
         /// Setup the layer.
         /// </summary>
@@ -254,6 +314,21 @@ namespace MyCaffe.layers.tft
             m_nDModel = m_param.multihead_attention_interp_param.embed_dim;
             m_nAllHeadsDim = m_nNumHeads * m_nDModel;
             m_dfScale = 1.0 / Math.Sqrt(m_nDModel);
+
+            m_log.CHECK(colBottom.Count == 1 || colBottom.Count == 4, "The bottom count must be 1 (input ->q,k,v, mask generated) or 4 for q,k,q,mask");
+
+            m_nNumFut = m_param.multihead_attention_interp_param.num_future_steps;
+            m_log.CHECK_GT(m_nNumFut, 0, "The number of future steps must be greater than zero.");
+            m_nNumHist = m_param.multihead_attention_interp_param.num_historical_steps;
+            m_log.CHECK_GT(m_nNumHist, 0, "The number of historical steps must be greater than zero.");
+            m_log.CHECK_EQ(m_nNumFut + m_nNumHist, colBottom[0].channels, "The number of future + historical steps must equal the bottom(0).channels.");
+            m_log.CHECK_EQ(m_nNumHist % m_nNumFut, 0, "The historical steps must be a multiple of the future steps!  For example, historical steps = 90 and future steps = 30.");
+            m_nBlocks = (m_nNumHist + m_nNumFut) / m_nNumFut;
+
+            if (colBottom.Count == 1)
+                generate_mask(m_blobMask);
+            else
+                m_blobMask.ShareData(colBottom[3]);
 
             if (m_ipQLayer == null)
             {
@@ -269,7 +344,20 @@ namespace MyCaffe.layers.tft
 
                 m_ipQLayer = Layer<T>.Create(m_cuda, m_log, ip1, null);
 
-                addBtmTop(colBottom[0], m_blobIpQ);
+                if (colBottom.Count == 1)
+                {
+                    m_rgShape.Clear();
+                    m_rgShape.Add(colBottom[0].num);
+                    m_rgShape.Add(m_nNumFut);
+                    m_rgShape.Add(colBottom[0].count(2));
+                    m_blobQ.Reshape(m_rgShape);
+                }
+                else
+                {
+                    m_blobQ.ReshapeLike(colBottom[0]);
+                }
+
+                addBtmTop(m_blobQ, m_blobIpQ);
                 m_ipQLayer.Setup(m_colBtm, m_colTop);
                 blobs.Add(m_ipQLayer.blobs);
             }
@@ -287,8 +375,9 @@ namespace MyCaffe.layers.tft
                 ip1.inner_product_param.bias_grad_scale = 1000000.0; // helps improve bias gradient accuracy.
 
                 m_ipKLayer = Layer<T>.Create(m_cuda, m_log, ip1, null);
+                m_blobK.ReshapeLike((colBottom.Count == 1) ? colBottom[0] : colBottom[1]);
 
-                addBtmTop(colBottom[1], m_blobIpK);
+                addBtmTop(m_blobK, m_blobIpK);
                 m_ipKLayer.Setup(m_colBtm, m_colTop);
                 blobs.Add(m_ipKLayer.blobs);
             }
@@ -305,8 +394,9 @@ namespace MyCaffe.layers.tft
                 ip1.inner_product_param.weight_filler = m_param.multihead_attention_interp_param.weight_filler;
 
                 m_ipVLayer = Layer<T>.Create(m_cuda, m_log, ip1, null);
+                m_blobV.ReshapeLike((colBottom.Count == 1) ? colBottom[0] : colBottom[1]);
 
-                addBtmTop(colBottom[2], m_blobIpV);
+                addBtmTop(m_blobV, m_blobIpV);
                 m_ipVLayer.Setup(m_colBtm, m_colTop);
                 blobs.Add(m_ipVLayer.blobs);
             }
@@ -337,7 +427,7 @@ namespace MyCaffe.layers.tft
             }
 
             // Transpose
-            if (m_blobIpKt1 == null)
+            if (m_blobIpKt1.count() == 0)
             { 
                 List<int> rgShape = Utility.Clone<int>(m_blobIpKt.shape());
                 int nTemp = rgShape[2];
@@ -397,13 +487,18 @@ namespace MyCaffe.layers.tft
                 return true;
 
             bool bShapeQDirty = m_rgShapeQ == null || !colBottom[0].CompareShape(m_rgShapeQ);
-            bool bShapeKDirty = m_rgShapeK == null || !colBottom[1].CompareShape(m_rgShapeK);
-            bool bShapeVDirty = m_rgShapeV == null || !colBottom[2].CompareShape(m_rgShapeV);
+            bool bShapeKDirty = (colBottom.Count == 1) ? bShapeQDirty : m_rgShapeK == null || !colBottom[1].CompareShape(m_rgShapeK);
+            bool bShapeVDirty = (colBottom.Count == 1) ? bShapeQDirty : m_rgShapeV == null || !colBottom[2].CompareShape(m_rgShapeV);
             bool bShapeMaskDirty = false;
 
             m_rgShapeQ = Utility.Clone<int>(colBottom[0].shape());
-            m_rgShapeK = Utility.Clone<int>(colBottom[1].shape());
-            m_rgShapeV = Utility.Clone<int>(colBottom[2].shape());
+            m_rgShapeK = m_rgShapeQ;
+            m_rgShapeV = m_rgShapeQ;
+
+            if (colBottom.Count > 1)
+                m_rgShapeK = Utility.Clone<int>(colBottom[1].shape());
+            if (colBottom.Count > 2)
+                m_rgShapeV = Utility.Clone<int>(colBottom[2].shape());
 
             if (colBottom.Count > 3)
             {
@@ -427,13 +522,28 @@ namespace MyCaffe.layers.tft
             if (!reshapeNeeded(colBottom, colTop))
                 return;
 
-            addBtmTop(colBottom[0], m_blobIpQ);
+            if (colBottom.Count == 1)
+            {
+                m_rgShape.Clear();
+                m_rgShape.Add(colBottom[0].num);
+                m_rgShape.Add(m_nNumFut);
+                m_rgShape.Add(colBottom[0].count(2));
+                m_blobQ.Reshape(m_rgShape);
+            }
+            else
+            {
+                m_blobQ.ReshapeLike(colBottom[0]);
+            }
+
+            addBtmTop(m_blobQ, m_blobIpQ);
             m_ipQLayer.Reshape(m_colBtm, m_colTop);
 
-            addBtmTop(colBottom[1], m_blobIpK);
+            m_blobK.ReshapeLike((colBottom.Count == 1) ? colBottom[0] : colBottom[1]);
+            addBtmTop(m_blobK, m_blobIpK);
             m_ipKLayer.Reshape(m_colBtm, m_colTop);
 
-            addBtmTop(colBottom[2], m_blobIpV);
+            m_blobV.ReshapeLike((colBottom.Count == 1) ? colBottom[0] : colBottom[2]);
+            addBtmTop(m_blobV, m_blobIpV);
             m_ipVLayer.Reshape(m_colBtm, m_colTop);
 
             // Reshape q, k, v projections to the following sizes
@@ -475,6 +585,40 @@ namespace MyCaffe.layers.tft
             m_ipOutLayer.Reshape(m_colBtm, m_colTop);
         }
 
+        private void copy_to_q_fwd(int nCount, Blob<T> bBtm, Blob<T> bTop)
+        {
+            if (nCount == 1)
+            {
+                // Copy just the future items to the top, so if future = 30,
+                // with input shape is btm(256,120,64) just the last (256,30,64) are copied to top 
+                int nOuterNum = bBtm.num;
+                int nChannels = m_nBlocks;
+                int nInnerNum = (bBtm.channels / m_nBlocks) * bBtm.count(2);
+                m_cuda.channel_copy(bTop.count(), nOuterNum, nChannels, m_nBlocks, nInnerNum, m_nBlocks-1, bBtm.gpu_data, bTop.mutable_gpu_data, DIR.FWD);
+            }
+            else
+            {
+                bTop.CopyFrom(bBtm);
+            }
+        }
+
+        private void copy_to_q_bwd(int nCount, Blob<T> bBtm, Blob<T> bTop)
+        {
+            if (nCount == 1)
+            {
+                // Copy just the future items to the top, so if future = 30,
+                // with input shape is btm(256,120,64) just the last (256,30,64) are copied to top 
+                int nOuterNum = bBtm.num;
+                int nChannels = m_nBlocks;
+                int nInnerNum = (bBtm.channels / m_nBlocks) * bBtm.count(2);
+                m_cuda.channel_add(bBtm.count(), nOuterNum, nChannels, m_nBlocks, nInnerNum, m_nBlocks-1, bBtm.mutable_gpu_diff, bTop.gpu_diff, DIR.BWD);
+            }
+            else
+            {
+                bTop.CopyFrom(bBtm, true);
+            }
+        }
+
         /// <summary>
         /// Forward computation
         /// </summary>
@@ -489,13 +633,19 @@ namespace MyCaffe.layers.tft
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             // Calculate q, k, v projections
-            addBtmTop(colBottom[0], m_blobIpQ);
+            copy_to_q_fwd(colBottom.Count, colBottom[0], m_blobQ);
+
+            addBtmTop(m_blobQ, m_blobIpQ);
             m_ipQLayer.Forward(m_colBtm, m_colTop);
 
-            addBtmTop(colBottom[1], m_blobIpK);
+            m_blobK.CopyFrom((colBottom.Count == 1) ? colBottom[0] : colBottom[1]);
+
+            addBtmTop(m_blobK, m_blobIpK);
             m_ipKLayer.Forward(m_colBtm, m_colTop);
 
-            addBtmTop(colBottom[2], m_blobIpV);
+            m_blobV.CopyFrom((colBottom.Count == 1) ? colBottom[0] : colBottom[2]);
+
+            addBtmTop(m_blobV, m_blobIpV);
             m_ipVLayer.Forward(m_colBtm, m_colTop);
 
             // Reshape q, k, v projections to the following sizes
@@ -528,25 +678,24 @@ namespace MyCaffe.layers.tft
             addBtmTop(m_blobIpVfull, m_blobIpVt);
             m_transpose.Forward(m_colBtm, m_colTop);
 
-
             //-----------------------------------------
             // Calculate the attention
             //-----------------------------------------
             {
                 // Apply the scaled dot product
                 m_blobIpKt1.CopyFromAndTransposeHeightWidth(m_blobIpKt);
-                m_blobAttnScores1.MatMul(m_blobIpQt, m_blobIpKt1);
+                m_blobAttnScores1.MatMul(m_blobIpQt, m_blobIpKt1, true);
                 m_blobAttnScores1.scale_data(m_dfScale);
 
                 // Decoder masking is applied to the multi-head attention layer to ensure that each temporal dimension can
                 // only attend to the preceding features.
-                if (colBottom.Count > 3)
-                {
+                if (m_blobMask != null)
+                { 
                     // Apply mask to attention matrix
                     // att = att.masked_fill(self.bias[:,:,:T,:T] == 0, float('-inf'))
                     float fInf = 1e29f;
                     // all masked items set to -inf.
-                    m_cuda.mask_batch(m_blobAttnScores1.count(), 1, colBottom[3].count(), convert(1.0), convert(-1 * fInf), m_blobAttnScores1.gpu_data, colBottom[3].gpu_data, m_blobAttnScores1.mutable_gpu_data);
+                    m_cuda.mask_batch(m_blobAttnScores1.count(), 1, m_blobMask.count(), convert(1.0), convert(-1 * fInf), m_blobAttnScores1.gpu_data, m_blobMask.gpu_data, m_blobAttnScores1.mutable_gpu_data);
                 }
 
                 // Calculate the softmax to find the most imporant parts of the data (e.g. where to focus the attention)
@@ -645,14 +794,27 @@ namespace MyCaffe.layers.tft
             reshapeBwd(m_blobIpV, m_nNumHeads);
 
             // Calculate q, k, v projection gradients
-            addBtmTop(colBottom[0], m_blobIpQ);
+            addBtmTop(m_blobQ, m_blobIpQ);
             m_ipQLayer.Backward(m_colTop, rgbPropagateDown, m_colBtm);
 
-            addBtmTop(colBottom[1], m_blobIpK);
+            addBtmTop(m_blobK, m_blobIpK);
             m_ipKLayer.Backward(m_colTop, rgbPropagateDown, m_colBtm);
 
-            addBtmTop(colBottom[2], m_blobIpV);
+            addBtmTop(m_blobV, m_blobIpV);
             m_ipVLayer.Backward(m_colTop, rgbPropagateDown, m_colBtm);
+
+            if (colBottom.Count == 1)
+            {
+                copy_to_q_bwd(colBottom.Count, colBottom[0], m_blobQ);
+                m_cuda.add(colBottom[0].count(), colBottom[0].gpu_diff, m_blobK.gpu_diff, colBottom[0].mutable_gpu_diff);
+                m_cuda.add(colBottom[0].count(), colBottom[0].gpu_diff, m_blobV.gpu_diff, colBottom[0].mutable_gpu_diff);
+            }
+            else
+            {
+                colBottom[0].CopyFrom(m_blobQ, true);
+                colBottom[1].CopyFrom(m_blobK, true);
+                colBottom[2].CopyFrom(m_blobV, true);
+            }
         }
     }
 }
