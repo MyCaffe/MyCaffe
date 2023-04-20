@@ -68,6 +68,19 @@ namespace MyCaffe.layers.tft
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.MULTIHEAD_ATTENTION_INTERP;
+
+            m_blobIpQ = new Blob<T>(cuda, log);
+            m_blobIpK = new Blob<T>(cuda, log);
+            m_blobIpV = new Blob<T>(cuda, log);
+            m_blobIpVfull = new Blob<T>(cuda, log);
+            m_blobIpQt = new Blob<T>(cuda, log);
+            m_blobIpKt = new Blob<T>(cuda, log);
+            m_blobIpKt1 = new Blob<T>(cuda, log);
+            m_blobIpVt = new Blob<T>(cuda, log);
+            m_blobAttnScores1 = new Blob<T>(cuda, log);
+            m_blobAttnScoresAllHeads = new Blob<T>(cuda, log);
+            m_blobAttnOutputAllHeads = new Blob<T>(cuda, log);
+            m_blobWork = new Blob<T>(cuda, log);
         }
 
         /** @copydoc Layer::dispose */
@@ -254,7 +267,6 @@ namespace MyCaffe.layers.tft
                 ip1.inner_product_param.weight_filler = m_param.multihead_attention_interp_param.weight_filler;
                 ip1.inner_product_param.bias_grad_scale = 1000000.0; // helps improve bias gradient accuracy.
 
-                m_blobIpQ = new Blob<T>(m_cuda, m_log);
                 m_ipQLayer = Layer<T>.Create(m_cuda, m_log, ip1, null);
 
                 addBtmTop(colBottom[0], m_blobIpQ);
@@ -274,7 +286,6 @@ namespace MyCaffe.layers.tft
                 ip1.inner_product_param.weight_filler = m_param.multihead_attention_interp_param.weight_filler;
                 ip1.inner_product_param.bias_grad_scale = 1000000.0; // helps improve bias gradient accuracy.
 
-                m_blobIpK = new Blob<T>(m_cuda, m_log);
                 m_ipKLayer = Layer<T>.Create(m_cuda, m_log, ip1, null);
 
                 addBtmTop(colBottom[1], m_blobIpK);
@@ -293,8 +304,6 @@ namespace MyCaffe.layers.tft
                 ip1.inner_product_param.bias_filler = m_param.multihead_attention_interp_param.bias_filler;
                 ip1.inner_product_param.weight_filler = m_param.multihead_attention_interp_param.weight_filler;
 
-                m_blobIpV = new Blob<T>(m_cuda, m_log);
-                m_blobIpVfull = new Blob<T>(m_cuda, m_log);
                 m_ipVLayer = Layer<T>.Create(m_cuda, m_log, ip1, null);
 
                 addBtmTop(colBottom[2], m_blobIpV);
@@ -319,10 +328,6 @@ namespace MyCaffe.layers.tft
                 transpose.transpose_param.dim[2] = 1;
                 m_transpose = Layer<T>.Create(m_cuda, m_log, convertLayerParam(transpose, m_param), null);
 
-                m_blobIpQt = new Blob<T>(m_cuda, m_log);
-                m_blobIpKt = new Blob<T>(m_cuda, m_log);
-                m_blobIpVt = new Blob<T>(m_cuda, m_log);
-
                 addBtmTop(m_blobIpQ, m_blobIpQt);
                 m_transpose.Setup(m_colBtm, m_colTop);
                 addBtmTop(m_blobIpK, m_blobIpKt);
@@ -334,14 +339,12 @@ namespace MyCaffe.layers.tft
             // Transpose
             if (m_blobIpKt1 == null)
             { 
-                m_blobIpKt1 = new Blob<T>(m_cuda, m_log);
                 List<int> rgShape = Utility.Clone<int>(m_blobIpKt.shape());
                 int nTemp = rgShape[2];
                 rgShape[2] = rgShape[3];
                 rgShape[3] = nTemp;
                 m_blobIpKt1.Reshape(rgShape);
 
-                m_blobAttnScores1 = new Blob<T>(m_cuda, m_log);
                 m_blobAttnScores1.MatMul(m_blobIpQt, m_blobIpKt1, true);
             }
 
@@ -352,14 +355,11 @@ namespace MyCaffe.layers.tft
                 softmax.softmax_param.axis = -1;
                 softmax.softmax_param.engine = EngineParameter.Engine.CUDNN;
                 m_softmax = Layer<T>.Create(m_cuda, m_log, convertLayerParam(softmax, m_param), null);
-                m_blobAttnScoresAllHeads = new Blob<T>(m_cuda, m_log);
-                m_blobAttnOutputAllHeads = new Blob<T>(m_cuda, m_log);
 
                 addBtmTop(m_blobAttnScores1, m_blobAttnScoresAllHeads);
                 m_softmax.Setup(m_colBtm, m_colTop);
 
                 m_blobAttnOutputAllHeads.MatMul(m_blobAttnScoresAllHeads, m_blobIpVt, true);
-                m_blobWork = new Blob<T>(m_cuda, m_log);
             }
 
             if (m_ipOutLayer == null)

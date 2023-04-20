@@ -45,6 +45,15 @@ namespace MyCaffe.layers.tft
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.GATEADDNORM;
+
+            if (m_param.dropout_param != null && m_param.dropout_param.dropout_ratio > 0)
+            {
+                m_blobDrop = new Blob<T>(cuda, log);
+                m_blobDrop.Name = p.name + ".drop";
+            }
+
+            m_blobGate = new Blob<T>(cuda, log);
+            m_blobGate.Name = p.name + ".gate";
         }
 
         /** @copydoc Layer::dispose */
@@ -139,7 +148,6 @@ namespace MyCaffe.layers.tft
                 p = new LayerParameter(LayerParameter.LayerType.DROPOUT, "drop");
                 p.dropout_param.Copy(m_param.dropout_param);
                 m_dropout = Layer<T>.Create(m_cuda, m_log, p, null);
-                m_blobDrop = new Blob<T>(m_cuda, m_log);
 
                 addBtmTop(colBottom[0], m_blobDrop);
                 m_dropout.Setup(m_colBtm, m_colTop);
@@ -149,7 +157,6 @@ namespace MyCaffe.layers.tft
             p = new LayerParameter(LayerParameter.LayerType.GLU, "glu");
             p.glu_param.Copy(m_param.glu_param);
             m_gate = Layer<T>.Create(m_cuda, m_log, p, null);
-            m_blobGate = new Blob<T>(m_cuda, m_log);
 
             List<int> rgShape = reshapeAcrossTime(blobBtm, m_blobGate);
             addBtmTop(blobBtm, m_blobGate);
@@ -162,6 +169,8 @@ namespace MyCaffe.layers.tft
             m_layerNorm = Layer<T>.Create(m_cuda, m_log, p, null);
             addBtmTop(m_blobGate, colTop[0]);
             m_layerNorm.Setup(m_colBtm, m_colTop);
+
+            setup_internal_blobs(m_colInternalBlobs);
         }
 
         /// <summary>

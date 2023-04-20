@@ -48,6 +48,15 @@ namespace MyCaffe.layers.tft
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.GLU;
+
+            m_blobIp1 = new Blob<T>(cuda, log);
+            m_blobIp1.Name = p.name + ".ip1";
+            m_blobIp2 = new Blob<T>(cuda, log);
+            m_blobIp2.Name = p.name + ".ip2";
+            m_blobMod = new Blob<T>(cuda, log);
+            m_blobMod.Name = p.name + ".mod";
+            m_blobBtm = new Blob<T>(cuda, log);
+            m_blobBtm.Name = p.name + ".btm";
         }
 
         /** @copydoc Layer::dispose */
@@ -106,7 +115,6 @@ namespace MyCaffe.layers.tft
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            m_blobBtm = new Blob<T>(m_cuda, m_log);
             m_blobBtm.ReshapeLike(colBottom[0]);
 
             if (m_ip1Layer == null)
@@ -120,7 +128,6 @@ namespace MyCaffe.layers.tft
                 ip1.inner_product_param.bias_filler = m_param.glu_param.bias_filler;
                 ip1.inner_product_param.weight_filler = m_param.glu_param.weight_filler;
 
-                m_blobIp1 = new Blob<T>(m_cuda, m_log);
                 m_ip1Layer = Layer<T>.Create(m_cuda, m_log, ip1, null);
 
                 addBtmTop(colBottom[0], m_blobIp1);
@@ -135,7 +142,6 @@ namespace MyCaffe.layers.tft
                     LayerParameter mod = new LayerParameter(LayerParameter.LayerType.SIGMOID, m_param.name + ".mod");
                     mod.sigmoid_param.engine = EngineParameter.Engine.DEFAULT;
 
-                    m_blobMod = new Blob<T>(m_cuda, m_log);
                     m_modLayer = Layer<T>.Create(m_cuda, m_log, mod, null);
 
                     addBtmTop(m_blobIp1, m_blobMod);
@@ -158,7 +164,6 @@ namespace MyCaffe.layers.tft
                 ip2.inner_product_param.bias_filler = m_param.glu_param.bias_filler;
                 ip2.inner_product_param.weight_filler = m_param.glu_param.weight_filler;
 
-                m_blobIp2 = new Blob<T>(m_cuda, m_log);
                 m_ip2Layer = Layer<T>.Create(m_cuda, m_log, ip2, null);
 
                 addBtmTop(colBottom[0], m_blobIp2);

@@ -52,6 +52,21 @@ namespace MyCaffe.layers.tft
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.VARSELNET;
+
+            m_blobSparseWts = new Blob<T>(cuda, log);
+            m_blobSparseWts.Name = p.name + ".spwts";
+            m_blobSparseWtsSmx = new Blob<T>(cuda, log);
+            m_blobSparseWtsSmx.Name = p.name + ".spwts_smx";
+            m_blobSparseWtsSmxT = new Blob<T>(cuda, log);
+            m_blobSparseWtsSmxT.Name = p.name + ".spwts_smxT";
+            m_blobGrn1 = new Blob<T>(cuda, log);
+            m_blobGrn1.Name = p.name + ".grn1";
+            m_blobProcessedInputs = new Blob<T>(cuda, log);
+            m_blobProcessedInputs.Name = p.name + ".proc_in";
+            m_blobProcessedInputs1 = new Blob<T>(cuda, log);
+            m_blobProcessedInputs1.Name = p.name + ".proc_in1";
+            m_blobBtm = new Blob<T>(cuda, log);
+            m_blobBtm.Name = p.name + ".btm";
         }
 
         /** @copydoc Layer::dispose */
@@ -143,9 +158,6 @@ namespace MyCaffe.layers.tft
             if (colBottom.Count > 1)
                 blobStaticSelection = colBottom[1];
 
-            m_blobBtm = new Blob<T>(m_cuda, m_log);
-            m_blobBtm.Name = "btm";
-
             // This GRN is applied on the flat concatenation of the input representation (all inputs together),
             // possibly provided with context information.
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.GRN, m_param.name + ".flat");
@@ -158,7 +170,6 @@ namespace MyCaffe.layers.tft
             p.grn_param.output_dim = m_param.varselnet_param.num_inputs;
             p.grn_param.context_dim = m_param.varselnet_param.context_dim;
             m_grnFlatten = Layer<T>.Create(m_cuda, m_log, p, null);
-            m_blobSparseWts = new Blob<T>(m_cuda, m_log);
 
             addBtmTop(colBottom[0], m_blobSparseWts);
             if (blobStaticSelection != null)
@@ -171,8 +182,6 @@ namespace MyCaffe.layers.tft
             p.softmax_param.axis = m_param.varselnet_param.axis;
             p.softmax_param.engine = EngineParameter.Engine.DEFAULT;
             m_softmax = Layer<T>.Create(m_cuda, m_log, p, null);
-            m_blobSparseWtsSmx = new Blob<T>(m_cuda, m_log);
-            m_blobSparseWtsSmx.Name = "sparse_wts_smx";
 
             addBtmTop(m_blobSparseWts, m_blobSparseWtsSmx);
             m_softmax.Setup(m_colBtm, m_colTop);
@@ -187,14 +196,11 @@ namespace MyCaffe.layers.tft
             p.transpose_param.dim[1] = 2;
             p.transpose_param.dim[2] = 1;
             m_transpose = Layer<T>.Create(m_cuda, m_log, p, null);
-            m_blobSparseWtsSmxT = new Blob<T>(m_cuda, m_log);
-            m_blobSparseWtsSmxT.Name = "sparse_wts_smxT";
 
             addBtmTop(m_blobSparseWtsSmx, m_blobSparseWtsSmxT);
             m_transpose.Setup(m_colBtm, m_colTop);
 
             // Each input variable (after transformation into its wide represenation) goes through its own GRN
-            m_blobGrn1 = new Blob<T>(m_cuda, m_log);
             rgShape.Clear();
             rgShape.Add(colBottom[0].num);
             rgShape.Add(colBottom[0].channels / m_param.varselnet_param.num_inputs);
@@ -227,12 +233,8 @@ namespace MyCaffe.layers.tft
             rgShape.Add(colBottom[0].num);
             rgShape.Add(colBottom[0].channels / m_param.varselnet_param.num_inputs);
             rgShape.Add(m_param.varselnet_param.num_inputs);
-            m_blobProcessedInputs = new Blob<T>(m_cuda, m_log);
-            m_blobProcessedInputs.Name = "processed_inputs";
             m_blobProcessedInputs.Reshape(rgShape);
-            m_blobProcessedInputs1 = new Blob<T>(m_cuda, m_log);
             m_blobProcessedInputs1.Reshape(rgShape);
-            m_blobProcessedInputs1.Name = "processed_inputs1";
         }
 
         /// <summary>

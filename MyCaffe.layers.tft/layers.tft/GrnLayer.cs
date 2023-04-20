@@ -37,6 +37,7 @@ namespace MyCaffe.layers.tft
         Blob<T> m_blobResidual = null;
         Blob<T> m_blobIp1 = null;
         Blob<T> m_blobContext = null;
+        Blob<T> m_blobContextAdd = null;
         Blob<T> m_blobIp2 = null;
         Blob<T> m_blobGate = null;
         Blob<T> m_blobGatePlusResidual = null;
@@ -54,6 +55,20 @@ namespace MyCaffe.layers.tft
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.GRN;
+
+            if (m_param.grn_param.input_dim != m_param.grn_param.output_dim)
+                m_blobResidual = new Blob<T>(cuda, log);
+
+            m_blobIp1 = new Blob<T>(cuda, log);
+            m_blobIp1.Name = p.name + ".ip1";
+            m_blobIp2 = new Blob<T>(cuda, log);
+            m_blobIp2.Name = p.name + ".ip2";
+            m_blobGate = new Blob<T>(cuda, log);
+            m_blobGate.Name = p.name + ".gate";
+            m_blobGatePlusResidual = new Blob<T>(cuda, log);
+            m_blobGatePlusResidual.Name = p.name + ".gate_p_res";
+            m_blobBtm = new Blob<T>(cuda, log);
+            m_blobBtm.Name = p.name + ".btm";
         }
 
         /** @copydoc Layer::dispose */
@@ -62,6 +77,7 @@ namespace MyCaffe.layers.tft
             dispose(ref m_blobResidual);
             dispose(ref m_blobIp1);
             dispose(ref m_blobContext);
+            dispose(ref m_blobContextAdd);
             dispose(ref m_blobIp2);
             dispose(ref m_blobGate);
             dispose(ref m_blobGatePlusResidual);
@@ -85,6 +101,8 @@ namespace MyCaffe.layers.tft
 
             if (m_blobContext != null)
                 col.Add(m_blobContext);
+            if (m_blobContextAdd != null)
+                col.Add(m_blobContextAdd);
             if (m_blobResidual != null)
                 col.Add(m_blobResidual);
             col.Add(m_blobIp1);
@@ -146,7 +164,6 @@ namespace MyCaffe.layers.tft
                 ip.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
                 ip.inner_product_param.bias_filler = m_param.grn_param.bias_filler;
                 m_ipSkipLayer = Layer<T>.Create(m_cuda, m_log, ip, null);
-                m_blobResidual = new Blob<T>(m_cuda, m_log);
 
                 addBtmTop(colBottom[0], m_blobResidual);
                 m_ipSkipLayer.Setup(m_colBtm, m_colTop);
@@ -177,6 +194,9 @@ namespace MyCaffe.layers.tft
                 ip.inner_product_param.bias_term = false;
                 m_ipContext = Layer<T>.Create(m_cuda, m_log, ip, null);
                 m_blobContext = new Blob<T>(m_cuda, m_log);
+                m_blobContext.Name = m_param.name + ".ctx";
+                m_blobContextAdd = new Blob<T>(m_cuda, m_log);
+                m_blobContextAdd.Name = m_param.name + ".ctx_add";
 
                 addBtmTop(colBottom[1], m_blobContext);
                 m_ipContext.Setup(m_colBtm, m_colTop);
@@ -206,7 +226,6 @@ namespace MyCaffe.layers.tft
             ip2.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
             ip2.inner_product_param.bias_filler = m_param.grn_param.bias_filler;
             m_ipFc2 = Layer<T>.Create(m_cuda, m_log, ip2, null);
-            m_blobIp2 = new Blob<T>(m_cuda, m_log);
 
             addBtmTop(blobIp1, m_blobIp2);
             m_ipFc2.Setup(m_colBtm, m_colTop);
@@ -232,13 +251,10 @@ namespace MyCaffe.layers.tft
             gate.glu_param.weight_filler = m_param.grn_param.weight_filler;
             gate.glu_param.bias_filler = m_param.grn_param.bias_filler;
             m_gate = Layer<T>.Create(m_cuda, m_log, gate, null);
-            m_blobGate = new Blob<T>(m_cuda, m_log);
 
             addBtmTop(m_blobIp2, m_blobGate);
             m_gate.Setup(m_colBtm, m_colTop);
             blobs.Add(m_gate.blobs);
-
-            m_blobGatePlusResidual = new Blob<T>(m_cuda, m_log);
 
             LayerParameter layerNorm = new LayerParameter(LayerParameter.LayerType.LAYERNORM, m_param.name + ".layernorm");
             layerNorm.layer_norm_param.epsilon = 1e-10;
@@ -247,7 +263,7 @@ namespace MyCaffe.layers.tft
             addBtmTop(m_blobGate, colTop[0]);
             m_layerNorm.Setup(m_colBtm, m_colTop);
 
-            m_blobBtm = new Blob<T>(m_cuda, m_log);
+            setup_internal_blobs(m_colInternalBlobs);
         }
 
         /// <summary>
@@ -271,6 +287,7 @@ namespace MyCaffe.layers.tft
             {
                 addBtmTop(colBottom[1], m_blobContext);
                 m_ipContext.Reshape(m_colBtm, m_colTop);
+                m_blobContextAdd.ReshapeLike(m_blobContext);
                 blobIp1 = m_blobContext;
             }
 
@@ -328,8 +345,8 @@ namespace MyCaffe.layers.tft
                 addBtmTop(colBottom[1], m_blobContext);
                 m_ipContext.Forward(m_colBtm, m_colTop);
 
-                m_cuda.add(m_blobContext.count(), m_blobIp1.gpu_data, m_blobContext.gpu_data, m_blobContext.gpu_data);
-                blobIp1 = m_blobContext;
+                m_cuda.add(m_blobContext.count(), m_blobIp1.gpu_data, m_blobContext.gpu_data, m_blobContextAdd.gpu_data);
+                blobIp1 = m_blobContextAdd;
             }
 
             // act
@@ -355,17 +372,8 @@ namespace MyCaffe.layers.tft
             m_cuda.add(m_blobGatePlusResidual.count(), m_blobGate.gpu_data, blobResidual.gpu_data, m_blobGatePlusResidual.mutable_gpu_data);
 
             // layernorm
-            List<int> rgShape = Utility.Clone<int>(m_blobGatePlusResidual.shape());
-            rgShape.Insert(1, 1);
-            m_blobGatePlusResidual.Reshape(rgShape);
-
             addBtmTop(m_blobGatePlusResidual, colTop[0]);
             m_layerNorm.Forward(m_colBtm, m_colTop);
-
-            rgShape = Utility.Clone<int>(colTop[0].shape());
-            rgShape.RemoveAt(1);
-            m_blobGatePlusResidual.Reshape(rgShape);
-            colTop[0].Reshape(rgShape);
         }
 
         /// <summary>
@@ -395,10 +403,10 @@ namespace MyCaffe.layers.tft
             }
             else
             {
-                colBottom[0].CopyFrom(m_blobGatePlusResidual, true);
+                colBottom[0].CopyFrom(m_blobGatePlusResidual, true, false, 0, true);
             }
 
-            m_blobGate.CopyFrom(m_blobGatePlusResidual, true);
+            m_blobGate.CopyFrom(m_blobGatePlusResidual, true, false, 0, true);
 
             // gate
             addBtmTop(m_blobIp2, m_blobGate);
@@ -419,15 +427,17 @@ namespace MyCaffe.layers.tft
             addBtmTop(m_blobIp1, m_blobIp1);
             m_act.Backward(m_colTop, rgbPropagateDown, m_colBtm);
 
+            m_blobContext.CopyFrom(m_blobIp1, true);
+
             if (m_ipContext != null)
             {
-                m_blobContext.CopyFrom(m_blobIp1, true);
                 addBtmTop(colBottom[1], m_blobContext);
                 m_ipContext.Backward(m_colTop, rgbPropagateDown, m_colBtm);
             }
 
             addBtmTop(m_blobBtm, m_blobIp1);
             m_ipFc1.Backward(m_colTop, rgbPropagateDown, m_colBtm);
+
             m_cuda.add(colBottom[0].count(), colBottom[0].gpu_diff, m_blobBtm.gpu_diff, colBottom[0].mutable_gpu_diff);
 
             if (m_ipSkipLayer != null)
