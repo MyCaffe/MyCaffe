@@ -28,10 +28,10 @@ namespace MyCaffe.param.tft
         FillerParameter m_fillerParam_bias = new FillerParameter("constant", 0.1);
         bool m_bEnableNoise = false;
         double m_dfSigmaInit = 0.017;
-        int m_nEmbedDim;
-        int m_nNumHeads;
-        int m_nNumHistoricalSteps = 0;  
-        int m_nNumFutureSteps = 0;      
+        uint m_nEmbedDim;
+        uint m_nNumHeads;
+        uint m_nNumHistoricalSteps = 0;  
+        uint m_nNumFutureSteps = 0;      
 
         /** @copydoc LayerParameterBase */
         public MultiHeadAttentionInterpParameter()
@@ -39,20 +39,20 @@ namespace MyCaffe.param.tft
         }
 
         /// <summary>
-        /// Optionally specifies the number of historical steps
+        /// Specifies the number of historical steps
         /// </summary>
-        [Description("Optionally specifies the number of historical steps - only used when colBottom.Count = 1")]
-        public int num_historical_steps
+        [Description("Specifies the number of historical steps.")]
+        public uint num_historical_steps
         {
             get { return m_nNumHistoricalSteps; }
             set { m_nNumHistoricalSteps = value; }
         }
 
         /// <summary>
-        /// Optionally specifies the number of future steps
+        /// Specifies the number of future steps
         /// </summary>
-        [Description("Optionally specifies the number of future steps - only used when colBottom.Count = 1")]
-        public int num_future_steps
+        [Description("Specifies the number of future steps.")]
+        public uint num_future_steps
         {
             get { return m_nNumFutureSteps; }
             set { m_nNumFutureSteps = value; }
@@ -62,7 +62,7 @@ namespace MyCaffe.param.tft
         /// Specifies the state size corresponding to both the input and output sizes.
         /// </summary>
         [Description("Specifies the state size corresponding to both the input and output sizes.")]
-        public int embed_dim
+        public uint embed_dim
         {
             get { return m_nEmbedDim; }
             set { m_nEmbedDim = value; }
@@ -72,7 +72,7 @@ namespace MyCaffe.param.tft
         /// Specifies number of attention heads used in the multi-attention.
         /// </summary>
         [Description("Specifies number of attention heads used in the multi-attention.")]
-        public int num_heads
+        public uint num_heads
         {
             get { return m_nNumHeads; }
             set { m_nNumHeads = value; }
@@ -205,10 +205,10 @@ namespace MyCaffe.param.tft
             MultiHeadAttentionInterpParameter p = new MultiHeadAttentionInterpParameter();
 
             if ((strVal = rp.FindValue("embed_dim")) != null)
-                p.embed_dim = int.Parse(strVal);
+                p.embed_dim = uint.Parse(strVal);
 
             if ((strVal = rp.FindValue("num_heads")) != null)
-                p.num_heads = int.Parse(strVal);
+                p.num_heads = uint.Parse(strVal);
 
             RawProto rpWeightFiller = rp.FindChild("weight_filler");
             if (rpWeightFiller != null)
@@ -225,10 +225,10 @@ namespace MyCaffe.param.tft
                 p.sigma_init = ParseDouble(strVal);
 
             if ((strVal = rp.FindValue("num_historical_steps")) != null)
-                p.num_historical_steps = int.Parse(strVal);
+                p.num_historical_steps = uint.Parse(strVal);
 
             if ((strVal = rp.FindValue("num_future_steps")) != null)
-                p.num_future_steps = int.Parse(strVal);
+                p.num_future_steps = uint.Parse(strVal);
 
             return p;
         }
