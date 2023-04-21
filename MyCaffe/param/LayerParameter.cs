@@ -220,8 +220,12 @@ namespace MyCaffe.param
             /// </summary>
             DATA_SEQUENCE,
             /// <summary>
-            /// Initializes a parameter for the DropoutLayer.
+            /// Initializes a parameter for the DataTemporalLayer used with TFT models.
             /// </summary>
+            DATA_TEMPORAL,
+            /// <summary>
+            /// Initializes a parameter for the DropoutLayer.
+            /// </summary>            
             DROPOUT,
             /// <summary>
             /// Initializes a parameter for the DummyDataLayer.
@@ -1094,6 +1098,11 @@ namespace MyCaffe.param
                     expected_top.Add("anchor");
                     expected_top.Add("datax");
                     m_rgLayerParameters[lt] = new DataSequenceParameter();
+                    break;
+
+                case LayerType.DATA_TEMPORAL:
+                    expected_top.Add("data");
+                    m_rgLayerParameters[lt] = new DataTemporalParameter();
                     break;
 
                 case LayerType.DEBUG:
@@ -2131,6 +2140,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.DATA_TEMPORAL
+        /// </summary>
+        public DataTemporalParameter data_temporal_param
+        {
+            get { return (DataTemporalParameter)m_rgLayerParameters[LayerType.DATA_TEMPORAL]; }
+            set { m_rgLayerParameters[LayerType.DATA_TEMPORAL] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.DEBUG
         /// </summary>
         public DebugParameter debug_param
@@ -3010,6 +3028,9 @@ namespace MyCaffe.param
                 case LayerType.DATA_SEQUENCE:
                     return "DataSequence";
 
+                case LayerType.DATA_TEMPORAL:
+                    return "DataTemporal";
+
                 case LayerType.DEBUG:
                     return "Debug";
 
@@ -3461,6 +3482,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(nll_loss_param, "nll_loss_param"));
 
             // TFT Layers
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(data_temporal_param, "data_temporal_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(categorical_trans_param, "categorical_trans_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(numeric_trans_param, "numeric_trans_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gateaddnorm_param, "gateaddnorm_param"));
@@ -3829,6 +3851,9 @@ namespace MyCaffe.param
                 p.nll_loss_param = NLLLossParameter.FromProto(rpp);
 
             // TFT layers.
+            if ((rpp = rp.FindChild("data_temporal_param")) != null)
+                p.data_temporal_param = DataTemporalParameter.FromProto(rpp);
+
             if ((rpp = rp.FindChild("categorical_trans_param")) != null)
                 p.categorical_trans_param = CategoricalTransformationParameter.FromProto(rpp);
 
@@ -4022,6 +4047,10 @@ namespace MyCaffe.param
                 case "datasequence":
                 case "data_sequence":
                     return LayerType.DATA_SEQUENCE;
+
+                case "datatemporal":
+                case "data_temporal":
+                    return LayerType.DATA_TEMPORAL;
 
                 case "debug":
                     return LayerType.DEBUG;

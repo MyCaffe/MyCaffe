@@ -49,6 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="LayerFactory.cs" />
+    <Compile Include="layers.tft\DataTemporalLayer.cs" />
     <Compile Include="layers.tft\GateAddNormLayer.cs" />
     <Compile Include="layers.tft\MultiHeadAttentionInterpLayer.cs" />
     <Compile Include="layers.tft\ReshapeTemporalLayer.cs" />
