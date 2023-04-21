@@ -128,10 +128,10 @@ namespace MyCaffe.test
             //  Temporal Self-attention
             //---------------------------------
             LayerParameter multihead_attn = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION_INTERP, "mh_attn");
-            multihead_attn.multihead_attention_interp_param.embed_dim = nStateSize;
-            multihead_attn.multihead_attention_interp_param.num_heads = nNumHeads;
-            multihead_attn.multihead_attention_interp_param.num_historical_steps = nNumHist;
-            multihead_attn.multihead_attention_interp_param.num_future_steps = nNumFuture;
+            multihead_attn.multihead_attention_interp_param.embed_dim = (uint)nStateSize;
+            multihead_attn.multihead_attention_interp_param.num_heads = (uint)nNumHeads;
+            multihead_attn.multihead_attention_interp_param.num_historical_steps = (uint)nNumHist;
+            multihead_attn.multihead_attention_interp_param.num_future_steps = (uint)nNumFuture;
             multihead_attn.bottom.Add("enriched_sequence");
             multihead_attn.top.Add("post_attention");
             multihead_attn.top.Add("attention_outputs");

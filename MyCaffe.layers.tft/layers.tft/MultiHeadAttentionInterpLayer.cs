@@ -318,16 +318,16 @@ namespace MyCaffe.layers.tft
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            m_nNumHeads = m_param.multihead_attention_interp_param.num_heads;
-            m_nDModel = m_param.multihead_attention_interp_param.embed_dim;
+            m_nNumHeads = (int)m_param.multihead_attention_interp_param.num_heads;
+            m_nDModel = (int)m_param.multihead_attention_interp_param.embed_dim;
             m_nAllHeadsDim = m_nNumHeads * m_nDModel;
             m_dfScale = 1.0 / Math.Sqrt(m_nDModel);
 
             m_log.CHECK(colBottom.Count == 1 || colBottom.Count == 4, "The bottom count must be 1 (input ->q,k,v, mask generated) or 4 for q,k,q,mask");
 
-            m_nNumFut = m_param.multihead_attention_interp_param.num_future_steps;
+            m_nNumFut = (int)m_param.multihead_attention_interp_param.num_future_steps;
             m_log.CHECK_GT(m_nNumFut, 0, "The number of future steps must be greater than zero.");
-            m_nNumHist = m_param.multihead_attention_interp_param.num_historical_steps;
+            m_nNumHist = (int)m_param.multihead_attention_interp_param.num_historical_steps;
             m_log.CHECK_GT(m_nNumHist, 0, "The number of historical steps must be greater than zero.");
             m_log.CHECK_EQ(m_nNumFut + m_nNumHist, colBottom[0].channels, "The number of future + historical steps must equal the bottom(0).channels.");
             m_log.CHECK_EQ(m_nNumHist % m_nNumFut, 0, "The historical steps must be a multiple of the future steps!  For example, historical steps = 90 and future steps = 30.");
