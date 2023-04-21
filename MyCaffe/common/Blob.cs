@@ -2061,6 +2061,12 @@ namespace MyCaffe.common
                 rgShape.Add(1);
             }
 
+            if (shape().Count == 0 && rgShape.Count == 0)
+                return true;
+
+            if (shape().Count == 0 && rgShape.Count == 1 && rgShape[0] == 0)
+                return true;
+
             List<int> rgShape1 = new List<int>(shape());
             while (rgShape1.Count < rgShape.Count)
             {
@@ -3254,7 +3260,7 @@ namespace MyCaffe.common
         /// @see[A Simple File Format for NumPy Arrays](https://numpy.org/doc/1.13/neps/npy-format.html)
         /// </remarks>
         /// <returns>A tuple containing the float[,] data and int[] shape is returned.</returns>
-        public static Tuple<List<float[]>, int[]> LoadFromNumpyEx(string strFile, Log log = null, int nMax = int.MaxValue)
+        public static Tuple<List<float[]>, int[], List<string>> LoadFromNumpyEx(string strFile, Log log = null, int nMax = int.MaxValue)
         {
             using (FileStream fs = File.OpenRead(strFile))
             using (BinaryReader br = new BinaryReader(fs))
@@ -3288,7 +3294,8 @@ namespace MyCaffe.common
                 bool bFortranOrder;
                 int[] rgShape;
                 Type dataType;
-                Tuple<int,int> count = parseHeaderEx(strHeader, out bFortranOrder, out rgShape, out dataType, nMax);
+                int nDataTypeSize;
+                Tuple<int,int> count = parseHeaderEx(strHeader, out bFortranOrder, out rgShape, out dataType, out nDataTypeSize, nMax);
 
                 if (bFortranOrder)
                     throw new Exception("Currently the fortran ordering is not supported");
@@ -3300,9 +3307,11 @@ namespace MyCaffe.common
                     sw.Start();
                 }
 
+                string strVal;
                 ulong ulIdx = 0;
                 ulong ulTotal = (ulong)count.Item1 * (ulong)count.Item2;
                 List<float[]> rgData = new List<float[]>(count.Item1);
+                List<string> rgStrData = new List<string>(count.Item1);
                 for (int i = 0; i < count.Item1; i++)
                 {
                     float[] rgItem = new float[count.Item2];
@@ -3314,6 +3323,19 @@ namespace MyCaffe.common
                             rgItem[j] = (float)br.ReadDouble();
                         else if (dataType == typeof(int))
                             rgItem[j] = (float)br.ReadInt32();
+                        else if (dataType == typeof(string))
+                        {
+                            List<byte> bytes = new List<byte>();
+                            byte addByte = 0x00;
+                            for (int c = 0; c < nDataTypeSize * 4; c++)
+                            {
+                                addByte = br.ReadByte();
+                                if (addByte != 0x00)
+                                    bytes.Add(addByte);
+                            }
+                            strVal = Encoding.UTF8.GetString(bytes.ToArray());
+                            rgStrData.Add(strVal);
+                        }
                         else if (dataType == typeof(long))
                             rgItem[j] = (float)br.ReadInt64();
                         else if (dataType == typeof(bool))
@@ -3337,7 +3359,7 @@ namespace MyCaffe.common
                     rgData.Add(rgItem);
                 }
 
-                return new Tuple<List<float[]>, int[]>(rgData, rgShape);
+                return new Tuple<List<float[]>, int[], List<string>>(rgData, rgShape, rgStrData);
             }
         }
 
@@ -3420,7 +3442,7 @@ namespace MyCaffe.common
             return nCount;
         }
 
-        private static Tuple<int, int> parseHeaderEx(string str, out bool bFortranOrder, out int[] rgShape, out Type dataType, int nMax = int.MaxValue)
+        private static Tuple<int, int> parseHeaderEx(string str, out bool bFortranOrder, out int[] rgShape, out Type dataType, out int nDataTypeSize, int nMax = int.MaxValue)
         {
             int nNum = 1;
             int nCount = 1;
@@ -3428,6 +3450,7 @@ namespace MyCaffe.common
             str = str.Trim('{', '}', ' ', '\n', ',');
 
             dataType = typeof(object);
+            nDataTypeSize = 1;
 
             string strShape = null;
             string strTarget = "'shape':";
@@ -3491,6 +3514,12 @@ namespace MyCaffe.common
                             dataType = typeof(long);
                         else if (strVal == "|b1")
                             dataType = typeof(bool);
+                        else if (strVal.StartsWith("<U"))
+                        {
+                            strVal = strVal.Substring(2);
+                            nDataTypeSize = int.Parse(strVal);
+                            dataType = typeof(string);
+                        }
                         else
                             throw new Exception("Unsupported data type '" + strVal + "', currenly only support '<f4'");
                         break;
