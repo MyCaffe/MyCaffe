@@ -244,7 +244,7 @@ namespace MyCaffe.param
             /// </summary>
             EMBED,
             /// <summary>
-            /// Initializes a parameter for the EuclideanLossLayer.
+            /// Initializes a parameter for the QuantileLossLayer.
             /// </summary>
             EUCLIDEAN_LOSS,
             /// <summary>
@@ -431,6 +431,10 @@ namespace MyCaffe.param
             /// Initializes a parameter for the PriorBoxLayer.
             /// </summary>
             PRIORBOX,
+            /// <summary>
+            /// Initializes a parameter for the QuantileLossLayer used in TFT models.
+            /// </summary>
+            QUANTILE_LOSS,
             /// <summary>
             /// Initializes a parameter for the ReductionLayer.
             /// </summary>
@@ -1489,6 +1493,14 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("priorbox");
                     m_rgLayerParameters[lt] = new PriorBoxParameter();
+                    break;
+
+                case LayerType.QUANTILE_LOSS:
+                    expected_bottom.Add("x");
+                    expected_bottom.Add("trgt");
+                    expected_top.Add("loss");
+                    m_rgLayerParameters[LayerType.LOSS] = new LossParameter(LossParameter.NormalizationMode.BATCH_SIZE);
+                    m_rgLayerParameters[lt] = new QuantileLossParameter();
                     break;
 
                 case LayerType.REDUCTION:
@@ -2554,6 +2566,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.QUANTILE_LOSS
+        /// </summary>
+        public QuantileLossParameter quantile_loss_param
+        {
+            get { return (QuantileLossParameter)m_rgLayerParameters[LayerType.QUANTILE_LOSS]; }
+            set { m_rgLayerParameters[LayerType.QUANTILE_LOSS] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.REDUCTION
         /// </summary>
         public ReductionParameter reduction_param
@@ -3059,7 +3080,7 @@ namespace MyCaffe.param
                     return "Embed";
 
                 case LayerType.EUCLIDEAN_LOSS:
-                    return "EuclideanLoss";
+                    return "QuantileLoss";
 
                 case LayerType.EVENT:
                     return "Event";
@@ -3213,6 +3234,9 @@ namespace MyCaffe.param
 
                 case LayerType.PRIORBOX:
                     return "PriorBox";
+
+                case LayerType.QUANTILE_LOSS:
+                    return "QuantileLoss";
 
                 case LayerType.REDUCTION:
                     return "Reduction";
@@ -3491,6 +3515,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(varselnet_param, "varselnet_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(multihead_attention_interp_param, "multihead_attention_interp_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(reshape_temporal_param, "reshape_temporal_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(quantile_loss_param, "quantile_loss_param"));
 
             // Nt layers.
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gram_param, "gram_param"));
@@ -3878,6 +3903,9 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("reshape_temporal_param")) != null)
                 p.reshape_temporal_param = ReshapeTemporalParameter.FromProto(rpp);
 
+            if ((rpp = rp.FindChild("quantile_loss_param")) != null)
+                p.quantile_loss_param = QuantileLossParameter.FromProto(rpp);
+
             // Nt layers.
             if ((rpp = rp.FindChild("gram_param")) != null)
                 p.gram_param = GramParameter.FromProto(rpp);
@@ -4081,7 +4109,7 @@ namespace MyCaffe.param
                 case "embed":
                     return LayerType.EMBED;
 
-                case "euclideanloss":
+                case "QuantileLoss":
                 case "euclidean_loss":
                     return LayerType.EUCLIDEAN_LOSS;
 
@@ -4247,6 +4275,10 @@ namespace MyCaffe.param
 
                 case "priorbox":
                     return LayerType.PRIORBOX;
+
+                case "quantileloss":
+                case "quantile_loss":
+                    return LayerType.QUANTILE_LOSS;
 
                 case "reduction":
                     return LayerType.REDUCTION;
