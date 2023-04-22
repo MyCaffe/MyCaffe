@@ -2842,6 +2842,27 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Calculate the sum of the blob data.
+        /// </summary>
+        /// <param name="rgDf">Optionally, specifies the CPU data to use (default = <i>null</i>).</param>
+        /// <param name="bDiff">Optionally, specifies to use the diff instead of the data.</param>
+        /// <returns>The mean is returned.</returns>
+        public double sum(float[] rgDf = null, bool bDiff = false)
+        {
+            double dfSum = 0;
+
+            if (rgDf == null)
+                rgDf = Utility.ConvertVecF<T>((bDiff) ? update_cpu_diff() : update_cpu_data());
+
+            for (int i = 0; i < rgDf.Length; i++)
+            {
+                dfSum += rgDf[i];
+            }
+
+            return dfSum;
+        }
+
+        /// <summary>
         /// Calculate the standard deviation of the blob data.
         /// </summary>
         /// <param name="dfMean">Optionally, specifies the mean to use (default = <i>null</i>).</param>
