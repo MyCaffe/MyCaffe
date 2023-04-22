@@ -569,6 +569,15 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, lon
 		case CUDA_FN_DENAN:
 			return m_device.cuda_denan(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
+		case CUDA_FN_MAX:
+			return m_device.cuda_max(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDA_FN_MAX_BWD2:
+			return m_device.cuda_max_bwd2(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDA_FN_MIN:
+			return m_device.cuda_min(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
 		case CUDA_FN_MAXVAL:
 			return m_device.cuda_maxval(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
@@ -1613,6 +1622,15 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_DENAN:
 		return "CUDA_FN_DENAN";
+
+	case CUDA_FN_MAX:
+		return "CUDA_FN_MAX";
+
+	case CUDA_FN_MAX_BWD2:
+		return "CUDA_FN_MAX_BWD2";
+
+	case CUDA_FN_MIN:
+		return "CUDA_FN_MIN";
 
 	case CUDA_FN_MAXVAL:
 		return "CUDA_FN_MAXVAL";

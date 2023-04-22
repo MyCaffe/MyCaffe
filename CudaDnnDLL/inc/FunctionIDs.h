@@ -257,8 +257,13 @@ const int CUDA_FN_INTERP2 = 265;
 const int CUDA_FN_MASK_BATCH = 266;
 const int CUDA_FN_TRANSPOSE_HW = 267;
 
+const int CUDA_FN_MAX = 268;
+const int CUDA_FN_MIN = 269;
+
 const int CUDA_FN_MULBSX = 270;
 const int CUDA_FN_DIVBSX = 271;
+
+const int CUDA_FN_MAX_BWD2 = 272;
 
 const int CUDA_FN_IM2COL = 280;
 const int CUDA_FN_IM2COL_ND = 281;

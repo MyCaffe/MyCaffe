@@ -3407,6 +3407,130 @@ long Math<float>::compare_signs(int n, long hA, long hB, long hY)
 	return cudaStreamSynchronize(0);
 }
 
+template <typename T>
+__global__ void max1_kernel(const int n, T* a, T* b, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		y[i] = max(a[i], b[i]);
+	}
+}
+
+
+template <class T>
+long Math<T>::max1(int n, long hA, long hB, long hY)
+{
+	LONG lErr;
+	MemoryItem* pA;
+	MemoryItem* pB;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hA, &pA))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hB, &pB))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	max1_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, (T*)pA->Data(), (T*)pB->Data(), (T*)pY->Data());
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::max1(int n, long hA, long hB, long hY);
+template long Math<float>::max1(int n, long hA, long hB, long hY);
+
+
+template <typename T>
+__global__ void max_bwd2_kernel(const int n, const T* a, const T* b, const T* y_diff, T* a_diff, T* b_diff)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		if (a[i] > b[i])
+		{
+			a_diff[i] = y_diff[i];
+			b_diff[i] = 0;
+		}
+		else
+		{
+			b_diff[i] = y_diff[i];
+			a_diff[i] = 0;
+		}
+	}
+}
+
+
+template <class T>
+long Math<T>::max_bwd2(int n, long hAdata, long hBdata, long hYdiff, long hAdiff, long hBdiff)
+{
+	LONG lErr;
+	MemoryItem* pAdata;
+	MemoryItem* pBdata;
+	MemoryItem* pAdiff;
+	MemoryItem* pBdiff;
+	MemoryItem* pYdiff;
+
+	if (lErr = m_pMemCol->GetData(hAdata, &pAdata))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBdata, &pBdata))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hAdiff, &pAdiff))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBdiff, &pBdiff))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hYdiff, &pYdiff))
+		return lErr;
+
+	max_bwd2_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, (T*)pAdata->Data(), (T*)pBdata->Data(), (T*)pYdiff->Data(), (T*)pAdiff->Data(), (T*)pBdiff->Data());
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::max_bwd2(int n, long hAdata, long hBdata, long hYdiff, long hAdiff, long hBdiff);
+template long Math<float>::max_bwd2(int n, long hAdata, long hBdata, long hYdiff, long hAdiff, long hBdiff);
+
+
+template <typename T>
+__global__ void min1_kernel(const int n, T* a, T* b, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		y[i] = min(a[i], b[i]);
+	}
+}
+
+
+template <class T>
+long Math<T>::min1(int n, long hA, long hB, long hY)
+{
+	LONG lErr;
+	MemoryItem* pA;
+	MemoryItem* pB;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hA, &pA))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hB, &pB))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	min1_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, (T*)pA->Data(), (T*)pB->Data(), (T*)pY->Data());
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::min1(int n, long hA, long hB, long hY);
+template long Math<float>::min1(int n, long hA, long hB, long hY);
+
 
 template <class T>
 long Math<T>::maxval(int n, long hA, T* pOut, int nAOff, long* plPos)

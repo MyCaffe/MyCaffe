@@ -2630,6 +2630,68 @@ template long Device<float>::cuda_compare_signs(long lInput, float* pfInput, lon
 
 
 template <class T>
+long Device<T>::cuda_max(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 4, 4))
+		return lErr;
+
+	int n = (int)plInput[0];
+	long hA = (long)plInput[1];
+	long hB = (long)plInput[2];
+	long hY = (long)plInput[3];
+
+	return m_math.max1(n, hA, hB, hY);
+}
+
+template long Device<double>::cuda_max(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_max(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
+long Device<T>::cuda_max_bwd2(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 6, 6))
+		return lErr;
+
+	int n = (int)plInput[0];
+	long hAdata = (long)plInput[1];
+	long hBdata = (long)plInput[2];
+	long hYdiff = (long)plInput[3];
+	long hAdiff = (long)plInput[4];
+	long hBdiff = (long)plInput[5];
+
+	return m_math.max_bwd2(n, hAdata, hBdata, hYdiff, hAdiff, hBdiff);
+}
+
+template long Device<double>::cuda_max_bwd2(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_max_bwd2(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
+long Device<T>::cuda_min(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 4, 4))
+		return lErr;
+
+	int n = (int)plInput[0];
+	long hA = (long)plInput[1];
+	long hB = (long)plInput[2];
+	long hY = (long)plInput[3];
+
+	return m_math.min1(n, hA, hB, hY);
+}
+
+template long Device<double>::cuda_min(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_min(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::cuda_maxval(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;

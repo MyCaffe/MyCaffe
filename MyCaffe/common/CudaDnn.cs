@@ -1154,8 +1154,13 @@ namespace MyCaffe.common
             CUDA_MASK_BATCH = 266,
             CUDA_TRANSPOSE_HW = 267,
 
+            CUDA_MAX = 268,
+            CUDA_MIN = 269,
+
             CUDA_MULBSX = 270,
             CUDA_DIVBSX = 271,
+
+            CUDA_MAX_BWD2 = 272,
 
             CUDA_IM2COL = 280,
             CUDA_IM2COL_ND = 281,
@@ -7368,6 +7373,55 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Calculates the max of A and B and places the result in Y.  This max is only computed on a per item basis,
+        /// so the shape of Y = the shape of A and B and Y(0) contains the max of A(0) and B(0), etc.
+        /// </summary>
+        /// <param name="n">Specifies the number of items (not bytes) in the vectors A, B and Y.</param>
+        /// <param name="hA">Specifies a handle to the vector A in GPU memory.</param>
+        /// <param name="hB">Specifies a handle to the vector B in GPU memory.</param>
+        /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
+        public void max(int n, long hA, long hB, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_MAX, null, m_param.AsLong(n, hA, hB, hY));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_MAX, null, m_param.AsLong(n, hA, hB, hY));
+        }
+
+        /// <summary>
+        /// Propagates the Y diff  back to the max of A or B and places the result in A if its data has the max, or B if its data has the max.
+        /// </summary>
+        /// <param name="n">Specifies the number of items (not bytes) in the vectors A, B and Y.</param>
+        /// <param name="hAdata">Specifies a handle to the data vector A in GPU memory.</param>
+        /// <param name="hBdata">Specifies a handle to the data vector B in GPU memory.</param>
+        /// <param name="hYdiff">Specifies a handle to the diff vector Y in GPU memory.</param>
+        /// <param name="hAdiff">Specifies a handle to the mutable diff vector A in GPU memory.</param>
+        /// <param name="hBdiff">Specifies a handle to the mutable diff vector B in GPU memory.</param>
+        public void max_bwd(int n, long hAdata, long hBdata, long hYdiff, long hAdiff, long hBdiff)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_MAX_BWD2, null, m_param.AsLong(n, hAdata, hBdata, hYdiff, hAdiff, hBdiff));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_MAX_BWD2, null, m_param.AsLong(n, hAdata, hBdata, hYdiff, hAdiff, hBdiff));
+        }
+
+        /// <summary>
+        /// Calculates the min of A and B and places the result in Y.  This min is only computed on a per item basis,
+        /// so the shape of Y = the shape of A and B and Y(0) contains the min of A(0) and B(0), etc.
+        /// </summary>
+        /// <param name="n">Specifies the number of items (not bytes) in the vectors A, B and Y.</param>
+        /// <param name="hA">Specifies a handle to the vector A in GPU memory.</param>
+        /// <param name="hB">Specifies a handle to the vector B in GPU memory.</param>
+        /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
+        public void min(int n, long hA, long hB, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_MIN, null, m_param.AsLong(n, hA, hB, hY));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_MIN, null, m_param.AsLong(n, hA, hB, hY));
+        }
+
+        /// <summary>
         /// Finds the maximum value of A.
         /// </summary>
         /// <remarks>
@@ -7936,13 +7990,13 @@ namespace MyCaffe.common
         /// <summary>
         /// Multiplies the values in vector X by each channel in matrix A and places the result in matrix C.
         /// </summary>
-        /// <param name="nCount">Specifies the number of elements in X.</param>
-        /// <param name="nOuterNum">Specifies the number of images within X.</param>
-        /// <param name="nChannels">Specifies the number of channels per image of X.</param>
-        /// <param name="nInnerNum">Specifies the dimension of each image in X.</param>
-        /// <param name="hA">Specifies a handle to the matrix X in GPU memory.</param>
+        /// <param name="nCount">Specifies the number of elements in A.</param>
+        /// <param name="nOuterNum">Specifies the number of items within A.</param>
+        /// <param name="nChannels">Specifies the number of channels per item of A.</param>
+        /// <param name="nInnerNum">Specifies the dimension of each item in A and X.</param>
+        /// <param name="hA">Specifies a handle to the matrix A in GPU memory.</param>
         /// <param name="hX">Specifies a handle to the vector X in GPU memory (must be of length nInnerDim).</param>
-        /// <param name="hC">Specifies a handle to the matrix C in GPU memory where the results are placed.</param>
+        /// <param name="hC">Specifies a handle to the matrix C in GPU memory where the results are placed (matrix A and C are the same shape).</param>
         public void channel_mulv(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hA, long hX, long hC)
         {
             if (m_dt == DataType.DOUBLE)

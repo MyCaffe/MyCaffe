@@ -208,6 +208,9 @@ class Math
 		long logistic1(int n, long hX, long hY);
 		long logistic2(int n, long hX, long hY);
 		long compare_signs(int n, long hA, long hB, long hY);
+		long max1(int n, long hA, long hB, long hY);
+		long max_bwd2(int n, long hAdata, long hBdata, long hYdiff, long hAdiff, long hBdiff);
+		long min1(int n, long hA, long hB, long hY);
 		long maxval(int n, long hA, T* pOut, int nAOff = 0, long* plPos = NULL);
 		long minval(int n, long hA, T* pOut, int nAOff = 0, long* plPos = NULL);
 		long maxvalEx(int n, long hA, long hWork1, T* pOut, int nAOff = 0);
