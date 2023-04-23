@@ -50,6 +50,8 @@ namespace MyCaffe.layers.tft
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
+            dispose(ref m_blobTimeDistributedContext);
+            dispose(ref m_blobWork);
         }
 
         /** @copydoc Layer::setup_internal_blobs */
@@ -87,11 +89,11 @@ namespace MyCaffe.layers.tft
         }
 
         /// <summary>
-        /// Returns the exact number of required top (output) Blobs: temporal_selection_output, temporal_selection_wts
+        /// Returns the exact number of required top (output) Blobs: temporal_selection_output, temporal_selection_output_clip, temporal_selection_wts
         /// </summary>
         public override int MaxTopBlobs
         {
-            get { return 2; }
+            get { return 3; }
         }
 
         /// <summary>
@@ -178,7 +180,7 @@ namespace MyCaffe.layers.tft
                     m_blobWork.Name = "work";
 
                     m_blobTimeDistributedContext = new Blob<T>(m_cuda, m_log);
-                    m_blobTimeDistributedContext.Name = "time_distributed_context";
+                    m_blobTimeDistributedContext.Name = m_param.name + ".tdctx";
 
                     replicate_along_time_fwd(colBottom[1], m_blobTimeDistributedContext, m_nNumTemporalSteps, true);
                     stack_time_steps_along_batch_fwd(m_blobTimeDistributedContext, colTop[1], true);
@@ -204,11 +206,21 @@ namespace MyCaffe.layers.tft
                 m_rgShape.Add(nCount / nDim);
                 colTop[0].Reshape(m_rgShape);
 
-                if (colTop.Count > 1)
+                int nIdx = 1;
+                if (m_param.reshape_temporal_param.enable_clip_output)
                 {
+                    m_log.CHECK_GT(colTop.Count, nIdx, "There must be at least " + (nIdx + 1).ToString() + " tops for the enable clip output!");
+                    m_rgShape[2] = 1;
+                    colTop[nIdx].Reshape(m_rgShape);
+                    nIdx++;
+                }
+
+                if (m_param.reshape_temporal_param.enable_weight_output)
+                {
+                    m_log.CHECK_GT(colTop.Count, nIdx, "There must be at least " + (nIdx + 1).ToString() + " tops for the enable clip output!");
                     nCount = colBottom[1].count();
                     m_rgShape[2] = nCount / nDim;
-                    colTop[1].Reshape(m_rgShape);
+                    colTop[nIdx].Reshape(m_rgShape);
                 }
             }
 
@@ -245,11 +257,21 @@ namespace MyCaffe.layers.tft
                 m_rgShape.Add(nCount / nDim);
                 colTop[0].Reshape(m_rgShape);
 
-                if (colTop.Count > 1)
+                int nIdx = 1;
+                if (m_param.reshape_temporal_param.enable_clip_output)
                 {
+                    m_log.CHECK_GT(colTop.Count, nIdx, "There must be at least " + (nIdx + 1).ToString() + " tops for the enable clip output!");
+                    m_rgShape[2] = 1;
+                    colTop[nIdx].Reshape(m_rgShape);
+                    nIdx++;
+                }
+
+                if (m_param.reshape_temporal_param.enable_weight_output)
+                {
+                    m_log.CHECK_GT(colTop.Count, nIdx, "There must be at least " + (nIdx + 1).ToString() + " tops for the enable clip output!");
                     nCount = colBottom[1].count();
                     m_rgShape[2] = nCount / nDim;
-                    colTop[1].Reshape(m_rgShape);
+                    colTop[nIdx].Reshape(m_rgShape);
                 }
             }
         }
@@ -281,21 +303,18 @@ namespace MyCaffe.layers.tft
             }
             else
             {
-                int nCount = colBottom[0].count();
-                int nDim = m_nNumSamples * m_nNumTemporalSteps;
-                m_rgShape.Clear();
-                m_rgShape.Add(m_nNumSamples);
-                m_rgShape.Add(m_nNumTemporalSteps);
-                m_rgShape.Add(nCount / nDim);
-                colTop[0].Reshape(m_rgShape);
                 colTop[0].CopyFrom(colBottom[0], false, false, 0, true);
 
-                if (colTop.Count > 1)
+                int nIdx = 1;
+                if (m_param.reshape_temporal_param.enable_clip_output)
                 {
-                    nCount = colTop[1].count();
-                    m_rgShape[2] = nCount / nDim;
-                    colTop[1].Reshape(m_rgShape);
-                    colTop[1].CopyFrom(colBottom[1], false, false, 0, true);
+                    colTop[nIdx].SetData(1);
+                    nIdx++;
+                }
+
+                if (m_param.reshape_temporal_param.enable_weight_output)
+                {
+                    colTop[nIdx].CopyFrom(colBottom[1], false, false, 0, true);
                 }
             }
         }
@@ -331,8 +350,13 @@ namespace MyCaffe.layers.tft
             else
             {
                 colBottom[0].CopyFrom(colTop[0], true, false, 0, true);
+                int nIdx = 1;
+
+                if (m_param.reshape_temporal_param.enable_clip_output)
+                    nIdx++;
+
                 if (colBottom.Count > 1)
-                    colBottom[1].CopyFrom(colTop[1], true, false, 0, true);
+                    colBottom[1].CopyFrom(colTop[nIdx], true, false, 0, true);
             }
         }
     }
