@@ -106,7 +106,7 @@ namespace MyCaffe.layers.tft
                 m_rgIpBtm[0] = m_rgBtm[i];
                 m_rgIpTop[0] = colTop[i];
 
-                LayerParameter p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".ip" + i.ToString());
                 p.inner_product_param.num_output = m_param.numeric_trans_param.state_size;
                 p.inner_product_param.axis = 1;
 
