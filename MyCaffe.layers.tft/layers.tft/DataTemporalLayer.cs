@@ -190,6 +190,10 @@ namespace MyCaffe.layers.tft
         }
     }
 
+    /// <summary>
+    /// The RawFileData object is used to load raw NPY file data.
+    /// </summary>
+    /// <typeparam name="T">Specifies the base data type of 'float' or 'double'.</typeparam>
     class RawFileData<T>
     {
         List<string> m_rgstrCombinationID;
@@ -212,23 +216,61 @@ namespace MyCaffe.layers.tft
         int m_nTargetCount = 0;
         float[] m_rgTargetBatch = null;
 
+        /// <summary>
+        /// Defines the data type.
+        /// </summary>
         public enum DATA_TYPE
         {
+            /// <summary>
+            /// Specifies the ID of the combination.
+            /// </summary>
             COMBINATION_ID,
+            /// <summary>
+            /// Specifies the timestamp in UnixTime.
+            /// </summary>
             TIME_INDEX,
+            /// <summary>
+            /// Specifies the static feature numerical values.
+            /// </summary>
             STATIC_FEAT_NUMERIC,
+            /// <summary>
+            /// Specifies the static features categorical values.
+            /// </summary>
             STATIC_FEAT_CATEGORICAL,
+            /// <summary>
+            /// Specifies the historical numerical values.
+            /// </summary>
             HISTORICAL_NUMERIC,
+            /// <summary>
+            /// Specifies the historical categorical values.
+            /// </summary>
             HISTORICAL_CATEGORICAL,
+            /// <summary>
+            /// Specifies the future numerical values.
+            /// </summary>
             FUTURE_NUMERIC,
+            /// <summary>
+            /// Specifies the future categorical values.
+            /// </summary>
             FUTURE_CATEGORICAL,
+            /// <summary>
+            /// Specifies the target values.
+            /// </summary>
             TARGET
         }
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
         public RawFileData() 
         { 
         }
 
+        /// <summary>
+        /// Converts the unix time values to DateTime values.
+        /// </summary>
+        /// <param name="unixTimeStamp">Specififies the Unix Time value to convert.</param>
+        /// <returns>The DateTime value associated with the unix time value is returned.</returns>
         public static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
         {
             // Unix timestamp is seconds past epoch
@@ -254,6 +296,12 @@ namespace MyCaffe.layers.tft
             return nCount;
         }
 
+        /// <summary>
+        /// Loads all data values for the phase specified.
+        /// </summary>
+        /// <param name="phase">Specifies the phase to load.</param>
+        /// <param name="strPath">Specifies the base path for all data.</param>
+        /// <param name="log">Specifies the output log.</param>
         public void LoadData(Phase phase, string strPath, Log log)
         {
             string strFile;
@@ -335,6 +383,9 @@ namespace MyCaffe.layers.tft
             }
         }
 
+        /// <summary>
+        /// Accesses the Dictionary of data values loaded.
+        /// </summary>
         public Dictionary<DATA_TYPE, Tuple<List<float[]>, int[], List<string>>> Data
         {
             get { return m_rgData; }
@@ -351,6 +402,12 @@ namespace MyCaffe.layers.tft
 
             return rg;
         }
+
+        /// <summary>
+        /// Loads a batch of data items into the BlobCollection.
+        /// </summary>
+        /// <param name="nBatchSize">Specifies the batch size.</param>
+        /// <param name="col">Specifies the blob collection to load the batch into.</param>
         public void LoadBatch(int nBatchSize, BlobCollection<T> col)
         {
             List<float[]> rgStaticNumeric = m_rgData[DATA_TYPE.STATIC_FEAT_NUMERIC].Item1;
