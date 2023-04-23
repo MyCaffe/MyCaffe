@@ -86,27 +86,21 @@ namespace MyCaffe.layers.tft
             blobNumeric = null;
             blobCategorical = null;
 
-            if (colBottom.Count == 2)
+            m_log.CHECK_EQ(colBottom.Count, 2, "The bottom must have a count = 2.");
+
+            if (m_param.numeric_trans_param.num_input > 0)
             {
+                m_log.CHECK_GT(colBottom[0].count(), 0, "The bottom(0) must have a count > 0!");
                 blobNumeric = colBottom[0];
+            }
+            else if (m_param.categorical_trans_param.num_input > 0)
+            {
+                m_log.CHECK_GT(colBottom[1].count(), 0, "The bottom(1) must have a count > 0!");
                 blobCategorical = colBottom[1];
             }
             else
             {
-                if (m_param.numeric_trans_param.num_input > 0)
-                {
-                    m_log.CHECK_EQ(m_param.categorical_trans_param.num_input, 0, "The categorical num input should be 0.");
-                    blobNumeric = colBottom[0];
-                }
-                else if (m_param.categorical_trans_param.num_input > 0)
-                {
-                    m_log.CHECK_EQ(m_param.categorical_trans_param.num_input, 0, "The categorical num input should be 0.");
-                    blobNumeric = colBottom[0];
-                }
-                else
-                {
-                    m_log.FAIL("At least one of the numeric or categorical num_input must be > 0.");
-                }
+                m_log.FAIL("At least one of the numeric or categorical num_input must be > 0.");
             }
         }
 
