@@ -27,6 +27,7 @@ namespace MyCaffe.layers.tft
         BlobCollection<T> m_colBtm = new BlobCollection<T>();
         BlobCollection<T> m_colNumericTop = new BlobCollection<T>();
         BlobCollection<T> m_colCategoricalTop = new BlobCollection<T>();
+        List<int> m_rgShape = new List<int>(4);
 
         /// <summary>
         /// The constructor.
@@ -93,15 +94,14 @@ namespace MyCaffe.layers.tft
                 m_log.CHECK_GT(colBottom[0].count(), 0, "The bottom(0) must have a count > 0!");
                 blobNumeric = colBottom[0];
             }
-            else if (m_param.categorical_trans_param.num_input > 0)
+            if (m_param.categorical_trans_param.num_input > 0)
             {
                 m_log.CHECK_GT(colBottom[1].count(), 0, "The bottom(1) must have a count > 0!");
                 blobCategorical = colBottom[1];
             }
-            else
-            {
+            
+            if (blobNumeric == null && blobCategorical == null)
                 m_log.FAIL("At least one of the numeric or categorical num_input must be > 0.");
-            }
         }
 
         /// <summary>
@@ -127,7 +127,7 @@ namespace MyCaffe.layers.tft
                     m_colNumericTop.Add(blobTop);
                 }
 
-                LayerParameter p = new LayerParameter(LayerParameter.LayerType.NUMERIC_TRANS);
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.NUMERIC_TRANS, m_param.name + ".numeric");
                 p.numeric_trans_param.Copy(m_param.numeric_trans_param);
                 m_numericLayer = Layer<T>.Create(m_cuda, m_log, p, null) as NumericTransformationLayer<T>;
 
@@ -146,7 +146,7 @@ namespace MyCaffe.layers.tft
                     m_colCategoricalTop.Add(blobTop);
                 }
 
-                LayerParameter p = new LayerParameter(LayerParameter.LayerType.CATEGORICAL_TRANS);
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.CATEGORICAL_TRANS, m_param.name + ".categorical");
                 p.categorical_trans_param.Copy(m_param.categorical_trans_param);
                 m_categoricalLayer = Layer<T>.Create(m_cuda, m_log, p, null) as CategoricalTransformationLayer<T>;
 
@@ -166,31 +166,73 @@ namespace MyCaffe.layers.tft
         {
             Blob<T> blobNumeric = null;
             Blob<T> blobCategorical = null;
-            int nH = 0;
+            int nN = 0;
+            int nC = 0;
+            int? nH = null;
 
             getBlobs(colBottom, out blobNumeric, out blobCategorical);
 
             if (blobNumeric != null)
             {
+                nN = colBottom[0].num;
                 m_colBtm.Clear();
                 m_colBtm.Add(blobNumeric);
                 m_numericLayer.Reshape(m_colBtm, m_colNumericTop);
-                nH += (int)m_param.numeric_trans_param.num_input;
+
+                if (colBottom[0].num_axes > 2)
+                {
+                    nC = colBottom[0].channels;
+                    nH = (int)m_param.numeric_trans_param.num_input;
+                }
+                else
+                {
+                    nC += (int)m_param.numeric_trans_param.num_input;
+                }
             }
 
             if (blobCategorical != null)
             {
+                if (nN != 0)
+                    m_log.CHECK_EQ(colBottom[1].num, nN, "The bottom(0).num and bottom(1).num must be equal!");
+
+                nN = colBottom[1].num;
                 m_colBtm.Clear();
                 m_colBtm.Add(blobCategorical);
                 m_categoricalLayer.Reshape(m_colBtm, m_colCategoricalTop);
-                nH += (int)m_param.categorical_trans_param.num_input;
+
+                if (colBottom[0].num_axes > 2)
+                {
+                    if (nC != 0)
+                        m_log.CHECK_EQ(colBottom[1].channels, nC, "The bottom(0).channels and bottom(1).channels must be equal!");
+
+                    nC = colBottom[1].channels;
+
+                    if (!nH.HasValue)
+                        nH = 0;
+                    nH += (int)m_param.categorical_trans_param.num_input;
+                }
+                else
+                {
+                    nC += (int)m_param.categorical_trans_param.num_input;
+                }
             }
 
-            int nN = colBottom[0].num;
-            int nC = colBottom[0].channels;
             int nEmb = (int)m_param.categorical_trans_param.state_size;
 
-            colTop[0].Reshape(nN, nC, nH, nEmb);
+            m_rgShape.Clear();
+            m_rgShape.Add(nN);
+
+            if (!nH.HasValue)
+            {
+                m_rgShape.Add(nC * nEmb);
+            }
+            else
+            {
+                m_rgShape.Add(nC);
+                m_rgShape.Add(nH.Value * nEmb);
+            }
+
+            colTop[0].Reshape(m_rgShape);
         }
 
         /// <summary>
