@@ -163,7 +163,7 @@ namespace MyCaffe.layers.tft
         /// <param name="colBottom">bottom input blob vector (length 1)
         ///  -# @f$ (N \times C \times H \times W) @f$
         ///     the inputs @f$ x @f$; Backward fills their diff 
-        ///     @f$ if propagate_down[0]
+        ///     if propagate_down[0]
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {

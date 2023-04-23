@@ -72,9 +72,9 @@ namespace MyCaffe.layers.gpt
         /// <param name="colBottom">bottom input blob vector (length 1)
         ///  -# @f$ (N \times C \times H \times W) @f$
         ///     the inputs @f$ x @f$; Backward fills their diff with 
-        ///     gradients f$ y' = 0.5 * tanh(0.797885 * (x + 0.044715 * x^3)) + 
-        ///                       (0.0535161 * x^3 + 0.398942 * x) * sech^2(0.797885 * (x + 0.044715 * x^3)) + 0.5
-        ///     @f$ if propagate_down[0]
+        ///     gradients @f$ y' = 0.5 * tanh(0.797885 * (x + 0.044715 * x^3)) + 
+        ///                       (0.0535161 * x^3 + 0.398942 * x) * sech^2(0.797885 * (x + 0.044715 * x^3)) + 0.5 @f$
+        ///     if propagate_down[0]
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {

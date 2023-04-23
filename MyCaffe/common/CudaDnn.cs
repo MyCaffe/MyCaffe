@@ -5583,7 +5583,7 @@ namespace MyCaffe.common
         /// Run the LayerNorm backward pass.
         /// </summary>
         /// <param name="hLayerNorm">Specifies the handle to the LayerNorm instance.</param>
-        /// <param name="hYdiff">Specifies the normalized output data.</param>
+        /// <param name="hYdata">Specifies the normalized output data.</param>
         /// <param name="hYdiff">Specifies the input diff to be un-normalized.</param>
         /// <param name="hXdiff">Specifies the un-normalized output diff.</param>
         public void LayerNormBackward(long hLayerNorm, long hYdata, long hYdiff, long hXdiff)
