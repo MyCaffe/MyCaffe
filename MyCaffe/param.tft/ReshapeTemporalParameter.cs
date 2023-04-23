@@ -21,6 +21,8 @@ namespace MyCaffe.param.tft
     public class ReshapeTemporalParameter : LayerParameterBase
     {
         MODE m_mode = MODE.BEFORE;
+        bool m_bEnableClipOutput = false;
+        bool m_bEnableWtsOutput = false;
 
         /// <summary>
         /// Defines the modulation type.
@@ -40,6 +42,26 @@ namespace MyCaffe.param.tft
         /** @copydoc LayerParameterBase */
         public ReshapeTemporalParameter()
         {
+        }
+
+        /// <summary>
+        /// Specifies to output the clip for the data output in the AFTER mode.
+        /// </summary>
+        [Description("Specifies to output the clip for the data ouptut in the AFTER mode.")]
+        public bool enable_clip_output
+        {
+            get { return m_bEnableClipOutput; }
+            set { m_bEnableClipOutput = value; }
+        }
+
+        /// <summary>
+        /// Specifies to output the weights for the data output in the AFTER mode.
+        /// </summary>
+        [Description("Specifies to output the weights for the data ouptut in the AFTER mode.")]
+        public bool enable_weight_output
+        {
+            get { return m_bEnableWtsOutput; }
+            set { m_bEnableWtsOutput = value; }
         }
 
         /// <summary>
@@ -70,6 +92,8 @@ namespace MyCaffe.param.tft
             ReshapeTemporalParameter p = (ReshapeTemporalParameter)src;
 
             m_mode = p.mode;
+            m_bEnableClipOutput = p.enable_clip_output;
+            m_bEnableWtsOutput = p.enable_weight_output;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -90,6 +114,8 @@ namespace MyCaffe.param.tft
             RawProtoCollection rgChildren = new RawProtoCollection();
 
             rgChildren.Add("mode", mode.ToString());
+            rgChildren.Add("enable_clip_output", enable_clip_output.ToString());
+            rgChildren.Add("enable_weight_output", enable_weight_output.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -113,6 +139,12 @@ namespace MyCaffe.param.tft
                 else
                     throw new Exception("Invalid mode '" + strVal + "'.");
             }
+
+            if ((strVal = rp.FindValue("enable_clip_output")) != null)
+                p.enable_clip_output = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("enable_weight_output")) != null)
+                p.enable_weight_output = bool.Parse(strVal);
 
             return p;
         }
