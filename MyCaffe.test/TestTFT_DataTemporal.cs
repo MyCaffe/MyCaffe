@@ -101,7 +101,7 @@ namespace MyCaffe.test
 
 
             //---------------------------------
-            //  Temporal Self-attention
+            //  Data Temporal Input
             //---------------------------------
             LayerParameter data = new LayerParameter(LayerParameter.LayerType.DATA_TEMPORAL, "data");
             data.data_temporal_param.batch_size = (uint)nNumSamples;
