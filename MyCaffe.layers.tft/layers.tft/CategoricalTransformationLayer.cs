@@ -73,7 +73,7 @@ namespace MyCaffe.layers.tft
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            int nDim = colBottom[0].count(0, 2);
+            int nDim = colBottom[0].count(0, colBottom[0].num_axes - 1);
             int nSpatialDim = 1;
             List<int> rgShape = new List<int>() { nDim, nSpatialDim };
             Blob<T> blobBtm = null;
@@ -96,7 +96,7 @@ namespace MyCaffe.layers.tft
                 m_rgEmbTop[0] = colTop[i];
 
                 int nCardinality = m_param.categorical_trans_param.cardinalities[i];
-                LayerParameter p = new LayerParameter(LayerParameter.LayerType.EMBED);
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.EMBED, m_param.name + ".emb" + i.ToString());
                 p.embed_param.num_output = m_param.categorical_trans_param.state_size;
                 p.embed_param.input_dim = (uint)nCardinality;
                 p.embed_param.bias_term = false;
