@@ -244,7 +244,7 @@ namespace MyCaffe.param
             /// </summary>
             EMBED,
             /// <summary>
-            /// Initializes a parameter for the QuantileLossLayer.
+            /// Initializes a parameter for the EuclideanLossLayer.
             /// </summary>
             EUCLIDEAN_LOSS,
             /// <summary>
@@ -3080,7 +3080,7 @@ namespace MyCaffe.param
                     return "Embed";
 
                 case LayerType.EUCLIDEAN_LOSS:
-                    return "QuantileLoss";
+                    return "EuclideanLoss";
 
                 case LayerType.EVENT:
                     return "Event";
@@ -4036,7 +4036,7 @@ namespace MyCaffe.param
                 case "causalselfattention":
                     return LayerType.CAUSAL_SELF_ATTENTION;
 
-                case "channelemgedding":
+                case "channelembedding":
                     return LayerType.CHANNEL_EMBEDDING;
 
                 case "concat":
@@ -4109,7 +4109,7 @@ namespace MyCaffe.param
                 case "embed":
                     return LayerType.EMBED;
 
-                case "QuantileLoss":
+                case "euclideanloss":
                 case "euclidean_loss":
                     return LayerType.EUCLIDEAN_LOSS;
 
