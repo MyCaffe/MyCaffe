@@ -122,6 +122,7 @@
     <Compile Include="TestTFT_DataTemporal.cs" />
     <Compile Include="TestTFT_SelfAttention.cs" />
     <Compile Include="TestTFT_QuartileLoss.cs" />
+    <Compile Include="TestTFT_TransformInputs.cs" />
     <Compile Include="TestTFT_StaticEnrichment.cs" />
     <Compile Include="TestTFT_SequenceProcessing.cs" />
     <Compile Include="TestTFT_TemporalFustionTransformer.cs" />
