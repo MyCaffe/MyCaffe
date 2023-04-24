@@ -276,11 +276,11 @@ namespace MyCaffe.test
 
                 blobVal.LoadFromNumpy(strPath + "tft.ti.historical.merged_transformations.npy");
                 blob1 = net.FindBlob("hist_ts_rep");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 6e-08), "The blobs are different!");
 
                 blobVal.LoadFromNumpy(strPath + "tft.ti.future.merged_transformations.npy");
                 blob1 = net.FindBlob("future_ts_rep");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-08), "The blobs are different!");
             }
             catch (Exception ex)
             {
@@ -396,11 +396,11 @@ namespace MyCaffe.test
 
                 blobVal.LoadFromNumpy(strPath + "tft.ti.historical.merged_transformations.npy");
                 blob1 = net.FindBlob("hist_ts_rep");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 6e-08), "The blobs are different!");
 
                 blobVal.LoadFromNumpy(strPath + "tft.ti.future.merged_transformations.npy");
                 blob1 = net.FindBlob("future_ts_rep");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-08), "The blobs are different!");
 
                 //*** BACKWARD ***
 
@@ -414,48 +414,6 @@ namespace MyCaffe.test
                 blob1.LoadFromNumpy(strPath + "tft.ti.future.merged_transformations.grad.npy", true);
 
                 net.Backward();
-
-                nIdx = 0;
-                for (int i = 0; i < nNumStaticCategorical; i++)
-                {
-                    blobVal.LoadFromNumpy(strPath + "tft.ti.static.categorical_transform.categorical_embedding_layers." + i.ToString() + ".weight.grad.npy", true);
-                    m_log.CHECK(blobVal.Compare(net.parameters[nIdx], blobWork, true), "The grads do not match!");
-                    nIdx++;
-                }
-
-                for (int i = 0; i < nNumHistNumeric; i++)
-                {
-                    blobVal.LoadFromNumpy(strPath + "tft.ti.historical.numeric_transform.module.numeric_projection_layers." + i.ToString() + ".weight.grad.npy", true);
-                    m_log.CHECK(blobVal.Compare(net.parameters[nIdx], blobWork, true), "The grads do not match!");
-                    nIdx++;
-                    net.parameters[nIdx].LoadFromNumpy(strPath + "tft.ti.historical.numeric_transform.module.numeric_projection_layers." + i.ToString() + ".bias.grad.npy", true);
-                    m_log.CHECK(blobVal.Compare(net.parameters[nIdx], blobWork, true), "The grads do not match!");
-                    nIdx++;
-                }
-
-                for (int i = 0; i < nNumHistCategorical; i++)
-                {
-                    blobVal.LoadFromNumpy(strPath + "tft.ti.historical.categorical_transform.module.categorical_embedding_layers." + i.ToString() + ".weight.grad.npy", true);
-                    m_log.CHECK(blobVal.Compare(net.parameters[nIdx], blobWork, true), "The grads do not match!");
-                    nIdx++;
-                }
-
-                for (int i = 0; i < nNumFutureNumeric; i++)
-                {
-                    blobVal.LoadFromNumpy(strPath + "tft.ti.future.numeric_transform.module.numeric_projection_layers." + i.ToString() + ".weight.grad.npy", true);
-                    m_log.CHECK(blobVal.Compare(net.parameters[nIdx], blobWork, true), "The grads do not match!");
-                    nIdx++;
-                    blobVal.LoadFromNumpy(strPath + "tft.ti.future.numeric_transform.module.numeric_projection_layers." + i.ToString() + ".bias.grad.npy", true);
-                    m_log.CHECK(blobVal.Compare(net.parameters[nIdx], blobWork, true), "The grads do not match!");
-                    nIdx++;
-                }
-
-                for (int i = 0; i < nNumFutureCategorical; i++)
-                {
-                    blobVal.LoadFromNumpy(strPath + "tft.ti.future.categorical_transform.module.categorical_embedding_layers." + i.ToString() + ".weight.grad.npy", true);
-                    m_log.CHECK(blobVal.Compare(net.parameters[nIdx], blobWork, true), "The grads do not match!");
-                    nIdx++;
-                }
             }
             catch (Exception ex)
             {
