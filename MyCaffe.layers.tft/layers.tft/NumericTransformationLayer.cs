@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using MyCaffe.basecode;
@@ -180,8 +181,9 @@ namespace MyCaffe.layers.tft
                 m_rgIpTop[0] = colTop[i];
                 m_rgIpLayers[i].Backward(m_rgIpTop, rgbPropagateDown, m_rgIpBtm);
 
-                int nCount = m_rgIpBtm[0].count();
-                m_cuda.channel_copy(nCount, nCount, 1, (int)m_param.numeric_trans_param.num_input, 1, i, colBottom[0].mutable_gpu_diff, m_rgIpBtm[0].gpu_diff, DIR.BWD);
+                // data fields do not have gradients so no gradients are output.
+                //int nCount = m_rgIpBtm[0].count();
+                //m_cuda.channel_copy(nCount, nCount, 1, (int)m_param.numeric_trans_param.num_input, 1, i, colBottom[0].mutable_gpu_diff, m_rgIpBtm[0].gpu_diff, DIR.BWD);
             }
         }
     }

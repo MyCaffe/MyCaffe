@@ -174,8 +174,9 @@ namespace MyCaffe.layers.tft
                 m_rgEmbTop[0] = colTop[i];
                 m_rgEmbLayers[i].Backward(m_rgEmbTop, rgbPropagateDown, m_rgEmbBtm);
 
-                int nCount = m_rgEmbBtm[0].count();
-                m_cuda.channel_copy(nCount, nCount, 1, nNumInput, 1, i, colBottom[0].mutable_gpu_diff, m_rgEmbBtm[0].gpu_diff, DIR.BWD);
+                // data fields do not have gradients so no gradients are output.
+                //int nCount = m_rgEmbBtm[0].count();
+                //m_cuda.channel_copy(nCount, nCount, 1, nNumInput, 1, i, colBottom[0].mutable_gpu_diff, m_rgEmbBtm[0].gpu_diff, DIR.BWD);
             }
         }
     }
