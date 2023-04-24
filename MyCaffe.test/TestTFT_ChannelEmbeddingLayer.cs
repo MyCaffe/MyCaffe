@@ -89,7 +89,7 @@ namespace MyCaffe.test
     class ChannelEmbeddingLayerTest : TestBase
     {
         public ChannelEmbeddingLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
-            : base("ChannelEmbedding Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
+            : base("ChannelEmbedding(hist) Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
 
