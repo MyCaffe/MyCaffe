@@ -133,7 +133,7 @@ namespace MyCaffe.layers.beta
                 m_rgShape.Add(colBottom[0].shape(i));
             }
 
-            while (m_rgShape.Count > 1 && m_rgShape[m_rgShape.Count - 1] == 1)
+            while (m_rgShape.Count > m_param.transpose_param.dim.Count && m_rgShape[m_rgShape.Count - 1] == 1)
             {
                 m_rgShape.RemoveAt(m_rgShape.Count - 1);
             }
