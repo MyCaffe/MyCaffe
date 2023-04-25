@@ -137,9 +137,17 @@ namespace MyCaffe.layers.tft
         }
 
         /// <summary>
+        /// Returns the exact number of required top (output) Blobs: outputs_sum
+        /// </summary>
+        public override int MinTopBlobs
+        {
+            get { return 1; }
+        }
+
+        /// <summary>
         /// Returns the exact number of required top (output) Blobs: outputs_sum, sparse_wts
         /// </summary>
-        public override int ExactNumTopBlobs
+        public override int MaxTopBlobs
         {
             get { return 2; }
         }
@@ -297,7 +305,8 @@ namespace MyCaffe.layers.tft
             m_blobProcessedInputs1.Reshape(rgShape);
 
             colTop[0].ReshapeLike(m_colSingleVarGrn[0]);
-            colTop[1].ReshapeLike(m_blobSparseWts);
+            if (colTop.Count > 1)
+                colTop[1].ReshapeLike(m_blobSparseWts);
 
             if (m_rgShapeOringal.Count > 0)
                 colBottom[0].Reshape(m_rgShapeOringal);
@@ -370,7 +379,8 @@ namespace MyCaffe.layers.tft
             // Sum up the weights to create a weighted sum representation of width state_size for each time-step and
             // dimension [(num_samples * num_temporal_steps) x state_size x num_inputs]
             m_cuda.channel_sum(m_blobProcessedInputs1.count(), m_blobProcessedInputs1.num, m_blobProcessedInputs1.channels, nInnerNum, m_blobProcessedInputs1.gpu_data, colTop[0].mutable_gpu_data, false);
-            colTop[1].CopyFrom(m_blobSparseWts);
+            if (colTop.Count > 1)
+                colTop[1].CopyFrom(m_blobSparseWts);
 
             if (m_rgShapeOringal.Count > 0)
                 colBottom[0].Reshape(m_rgShapeOringal);
