@@ -427,10 +427,9 @@ namespace MyCaffe.layers.tft
             addBtmTop(m_blobIp1, m_blobIp1);
             m_act.Backward(m_colTop, rgbPropagateDown, m_colBtm);
 
-            m_blobContext.CopyFrom(m_blobIp1, true);
-
             if (m_ipContext != null)
             {
+                m_blobContext.CopyFrom(m_blobIp1, true);
                 addBtmTop(colBottom[1], m_blobContext);
                 m_ipContext.Backward(m_colTop, rgbPropagateDown, m_colBtm);
             }
