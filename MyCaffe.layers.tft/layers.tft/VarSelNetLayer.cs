@@ -35,12 +35,15 @@ namespace MyCaffe.layers.tft
         Blob<T> m_blobSparseWtsSmxT;
         Blob<T> m_blobGrn1;
         Blob<T> m_blobProcessedInputs;
+        Blob<T> m_blobProcessedInputsT;
         Blob<T> m_blobProcessedInputs1;
         Blob<T> m_blobBtm;
         List<Layer<T>> m_rgSingleVarGrn = new List<Layer<T>>();
         BlobCollection<T> m_colSingleVarGrn = new BlobCollection<T>();
         BlobCollection<T> m_colTop = new BlobCollection<T>();
         BlobCollection<T> m_colBtm = new BlobCollection<T>();
+        List<int> m_rgShape = new List<int>(4);
+        List<int> m_rgShapeOringal = new List<int>(4);
 
         /// <summary>
         /// The constructor.
@@ -63,6 +66,8 @@ namespace MyCaffe.layers.tft
             m_blobGrn1.Name = p.name + ".grn1";
             m_blobProcessedInputs = new Blob<T>(cuda, log);
             m_blobProcessedInputs.Name = p.name + ".proc_in";
+            m_blobProcessedInputsT = new Blob<T>(cuda, log);
+            m_blobProcessedInputsT.Name = p.name + ".proc_inT";
             m_blobProcessedInputs1 = new Blob<T>(cuda, log);
             m_blobProcessedInputs1.Name = p.name + ".proc_in1";
             m_blobBtm = new Blob<T>(cuda, log);
@@ -77,6 +82,7 @@ namespace MyCaffe.layers.tft
             dispose(ref m_blobSparseWtsSmxT);
             dispose(ref m_blobGrn1);
             dispose(ref m_blobProcessedInputs);
+            dispose(ref m_blobProcessedInputsT);
             dispose(ref m_blobProcessedInputs1);
             dispose(ref m_blobBtm);
 
@@ -109,6 +115,7 @@ namespace MyCaffe.layers.tft
             col.Add(m_blobSparseWtsSmxT);
             col.Add(m_blobGrn1);
             col.Add(m_blobProcessedInputs);
+            col.Add(m_blobProcessedInputsT);
             col.Add(m_blobProcessedInputs1);
             col.Add(m_blobBtm);
         }
@@ -252,6 +259,9 @@ namespace MyCaffe.layers.tft
 
             m_blobBtm.ReshapeLike(colBottom[0]);
 
+            m_rgShape.Clear();
+            m_rgShapeOringal.Clear();
+
             addBtmTop(colBottom[0], m_blobSparseWts);
             if (colBottom.Count > 1)
                 m_colBtm.Add(blobStaticSelection);
@@ -288,6 +298,9 @@ namespace MyCaffe.layers.tft
 
             colTop[0].ReshapeLike(m_colSingleVarGrn[0]);
             colTop[1].ReshapeLike(m_blobSparseWts);
+
+            if (m_rgShapeOringal.Count > 0)
+                colBottom[0].Reshape(m_rgShapeOringal);
         }
 
         /// <summary>
@@ -358,6 +371,19 @@ namespace MyCaffe.layers.tft
             // dimension [(num_samples * num_temporal_steps) x state_size x num_inputs]
             m_cuda.channel_sum(m_blobProcessedInputs1.count(), m_blobProcessedInputs1.num, m_blobProcessedInputs1.channels, nInnerNum, m_blobProcessedInputs1.gpu_data, colTop[0].mutable_gpu_data, false);
             colTop[1].CopyFrom(m_blobSparseWts);
+
+            if (m_rgShapeOringal.Count > 0)
+                colBottom[0].Reshape(m_rgShapeOringal);
+        }
+
+        private void copyShape(List<int> rg, Blob<T> b)
+        {
+            rg.Clear();
+
+            for (int i = 0; i < b.shape().Count; i++)
+            {
+                rg.Add(b.shape(i));
+            }
         }
 
         /// <summary>
@@ -376,8 +402,6 @@ namespace MyCaffe.layers.tft
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
-            m_blobSparseWts.CopyFrom(colTop[1], true);
-
             // Expand the top(0) diff to each channel in the processed inputs.
             int nInnerNum = m_blobProcessedInputs.count(2);
             m_cuda.channel_fillfrom(m_blobProcessedInputs1.count(), m_blobProcessedInputs1.num, m_blobProcessedInputs1.channels, nInnerNum, colTop[0].gpu_diff, m_blobProcessedInputs1.mutable_gpu_diff, DIR.FWD);
@@ -385,6 +409,25 @@ namespace MyCaffe.layers.tft
             // Apply the transposed smx weightings to the processed inputs.
             m_cuda.channel_mulv(m_blobProcessedInputs.count(), m_blobProcessedInputs.num, m_blobProcessedInputs.channels, nInnerNum, m_blobProcessedInputs1.gpu_diff, m_blobSparseWtsSmxT.gpu_data, m_blobProcessedInputs.mutable_gpu_diff);
 
+            // Calculate the SparseWtsT gradient as
+            // sparseWtsT.grad = ProcessedInput.dataT * colTop[0].diff
+            copyShape(m_rgShapeOringal, m_blobProcessedInputs);
+            copyShape(m_rgShape, m_blobProcessedInputs);
+            m_rgShape.Insert(1, 1);
+            m_blobProcessedInputs.Reshape(m_rgShape);
+            m_blobProcessedInputsT.CopyFromAndTransposeHeightWidth(m_blobProcessedInputs);
+            m_blobProcessedInputs.Reshape(m_rgShapeOringal);
+
+            copyShape(m_rgShapeOringal, colTop[0]);
+            copyShape(m_rgShape, colTop[0]);
+            m_rgShape.Insert(1, 1);
+            m_rgShape.Add(1);
+            colTop[0].Reshape(m_rgShape);
+
+            m_blobSparseWtsSmxT.MatMul(m_blobProcessedInputsT, colTop[0], true, false, false, 1, false, true, true);
+            colTop[0].Reshape(m_rgShapeOringal);
+
+            // Apply the transposed smx weightings to the processed inputs.
             // GRN is applied ot each transformed input.
             for (int i = 0; i < m_param.varselnet_param.num_inputs; i++)
             {
@@ -421,7 +464,7 @@ namespace MyCaffe.layers.tft
             m_grnFlatten.Backward(m_colTop, rgbPropagateDown, m_colBtm);
 
             // Add gradient accumulation from individual variable GRN's.
-            m_cuda.add(colBottom[0].count(), colBottom[0].gpu_data, m_blobBtm.gpu_data, colBottom[0].mutable_gpu_data);                        
+            m_cuda.add(colBottom[0].count(), colBottom[0].gpu_diff, m_blobBtm.gpu_diff, colBottom[0].mutable_gpu_diff);
         }
     }
 }
