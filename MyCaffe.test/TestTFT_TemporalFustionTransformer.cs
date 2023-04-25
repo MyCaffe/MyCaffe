@@ -356,7 +356,7 @@ namespace MyCaffe.test
             post_lstm_gating.layer_norm_param.enable_cuda_impl = false;
             post_lstm_gating.layer_norm_param.epsilon = 1e-10;
             post_lstm_gating.glu_param.input_dim = nStateSize;
-            post_lstm_gating.glu_param.axis = 1;
+            post_lstm_gating.glu_param.axis = 2;
             post_lstm_gating.bottom.Add("lstm_output");
             post_lstm_gating.bottom.Add("lstm_input");
             post_lstm_gating.top.Add("gated_lstm_output");
@@ -382,12 +382,12 @@ namespace MyCaffe.test
             static_enrich_grn.grn_param.dropout = fDropout;
             static_enrich_grn.bottom.Add("gated_lstm_output1");
             static_enrich_grn.bottom.Add("c_enrichment1");
-            static_enrich_grn.top.Add("enriched_sequence1");
+            static_enrich_grn.top.Add("enriched_sequence1a");
             p.layer.Add(static_enrich_grn);
 
             LayerParameter static_enrich_grn_reshape_after = new LayerParameter(LayerParameter.LayerType.RESHAPE_TEMPORAL, "reshtmp_statenr_b");
             static_enrich_grn_reshape_after.reshape_temporal_param.mode = param.tft.ReshapeTemporalParameter.MODE.AFTER;
-            static_enrich_grn_reshape_after.bottom.Add("enriched_sequence1");
+            static_enrich_grn_reshape_after.bottom.Add("enriched_sequence1a");
             static_enrich_grn_reshape_after.top.Add("enriched_sequence");
             p.layer.Add(static_enrich_grn_reshape_after);
 
@@ -412,7 +412,7 @@ namespace MyCaffe.test
             post_attn_gate.dropout_param.dropout_ratio = fDropout;
             post_attn_gate.layer_norm_param.enable_cuda_impl = false;
             post_attn_gate.glu_param.input_dim = nStateSize;
-            post_attn_gate.glu_param.axis = 1;
+            post_attn_gate.glu_param.axis = 2;
             post_attn_gate.bottom.Add("post_attention");
             post_attn_gate.bottom.Add("enriched_sequence1");
             post_attn_gate.top.Add("gated_post_attention");
@@ -431,6 +431,7 @@ namespace MyCaffe.test
             pos_wise_ff_grn.grn_param.hidden_dim = nStateSize;
             pos_wise_ff_grn.grn_param.output_dim = nStateSize;
             pos_wise_ff_grn.grn_param.context_dim = nStateSize;
+            pos_wise_ff_grn.grn_param.axis = 2;
             pos_wise_ff_grn.grn_param.dropout = fDropout;
             pos_wise_ff_grn.bottom.Add("gated_post_attention");
             pos_wise_ff_grn.top.Add("post_poswise_ff_grn");
@@ -440,7 +441,7 @@ namespace MyCaffe.test
             pos_wise_ff_gate.dropout_param.dropout_ratio = fDropout;
             pos_wise_ff_gate.layer_norm_param.enable_cuda_impl = false;
             pos_wise_ff_gate.glu_param.input_dim = nStateSize;
-            pos_wise_ff_gate.glu_param.axis = 1;
+            pos_wise_ff_gate.glu_param.axis = 2;
             pos_wise_ff_gate.bottom.Add("post_poswise_ff_grn");
             pos_wise_ff_gate.bottom.Add("gated_lstm_output");
             pos_wise_ff_gate.top.Add("gated_poswise_ff");
@@ -452,6 +453,8 @@ namespace MyCaffe.test
             //---------------------------------
             LayerParameter output = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "output");
             output.inner_product_param.num_output = (uint)nNumOutputs;
+            output.inner_product_param.axis = 2;
+            output.inner_product_param.bias_term = true;
             output.bottom.Add("gated_poswise_ff");
             output.top.Add("predicted_quantiles");
             p.layer.Add(output);
@@ -475,7 +478,9 @@ namespace MyCaffe.test
             return p.ToProto("root").ToString();
         }
 
-
+        /// <summary>
+        /// WORK IN PROGRESS
+        /// </summary>
         public void TestForward()
         {
             string strPath = getTestDataPath();
@@ -539,6 +544,9 @@ namespace MyCaffe.test
             }
         }
 
+        /// <summary>
+        /// WORK IN PROGRESS
+        /// </summary>
         public void TestBackward()
         {
             string strPath = getTestDataPath();
