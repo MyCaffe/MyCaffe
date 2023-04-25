@@ -8,6 +8,7 @@ using MyCaffe.db.image;
 using MyCaffe.common;
 using MyCaffe.param;
 using MyCaffe.fillers;
+using System.Diagnostics;
 
 namespace MyCaffe.layers
 {
@@ -104,6 +105,7 @@ namespace MyCaffe.layers
         ulong m_nReservedCount;
         RNN_MODE m_rnnMode;
         bool m_bUseTensors = false;
+        List<int> m_rgShape = new List<int>(4);
 
         /// <summary>
         /// The RecurrentLayer constructor.
@@ -310,6 +312,12 @@ namespace MyCaffe.layers
 
                 addBtmTop(colBottom[1], m_blobBtmClip);
                 m_transposeClip.Setup(m_colBtm, m_colTop);
+
+                m_rgShape.Clear();
+                m_rgShape.Add(m_blobBtmClip.num);
+                m_rgShape.Add(m_blobBtmClip.channels);
+                m_blobBtmClip.Reshape(m_rgShape);
+
                 blobBtm1 = m_blobBtmClip;
             }
 
@@ -764,6 +772,12 @@ namespace MyCaffe.layers
 
                 addBtmTop(colBottom[1], m_blobBtmClip);
                 m_transposeClip.Reshape(m_colBtm, m_colTop);
+
+                m_rgShape.Clear();
+                m_rgShape.Add(m_blobBtmClip.num);
+                m_rgShape.Add(m_blobBtmClip.channels);
+                m_blobBtmClip.Reshape(m_rgShape);
+
                 blobBtm1 = m_blobBtmClip;
             }
 
