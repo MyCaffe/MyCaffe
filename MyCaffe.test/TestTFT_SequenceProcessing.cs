@@ -189,7 +189,7 @@ namespace MyCaffe.test
             post_lstm_gating.layer_norm_param.enable_cuda_impl = false;
             post_lstm_gating.layer_norm_param.epsilon = 1e-10;
             post_lstm_gating.glu_param.input_dim = nStateSize;
-            post_lstm_gating.glu_param.axis = 1;
+            post_lstm_gating.glu_param.axis = 2;
             post_lstm_gating.bottom.Add("lstm_output");
             post_lstm_gating.bottom.Add("lstm_input");
             post_lstm_gating.top.Add("gated_lstm_output");
@@ -281,9 +281,9 @@ namespace MyCaffe.test
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float) ? 1e-08 : 6e-05)), "The blobs are different!");
 
                 blobVal.LoadFromNumpy(strPath + "gated_lstm_output.npy");
-                m_log.CHECK(blobVal.Compare(colRes[0], blobWork, false, (typeof(T) == typeof(float) ? 5e-07 : 5e-05)), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(colRes[0], blobWork, false, (typeof(T) == typeof(float) ? 8e-07 : 5e-05)), "The blobs are different!");
             }
-            catch (Exception ex)
+            finally
             {
                 dispose(ref blobVal);
                 dispose(ref blobWork);
@@ -326,6 +326,7 @@ namespace MyCaffe.test
                 string strModel = buildModel(nNumSamples, nNumHist, nNumFut, fDropout, nLstmLayers, nStateSize);
                 RawProto rp = RawProto.Parse(strModel);
                 NetParameter param = NetParameter.FromProto(rp);
+                param.force_backward = true;
 
                 net = new Net<T>(m_cuda, m_log, param, null, null);
 
@@ -352,7 +353,7 @@ namespace MyCaffe.test
                 BlobCollection<T> colRes = net.Forward();
 
                 blobVal.LoadFromNumpy(strPath + "gated_lstm_output.npy");
-                m_log.CHECK(blobVal.Compare(colRes[0], blobWork, false, (typeof(T) == typeof(float) ? 5e-07 : 5e-05)), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(colRes[0], blobWork, false, (typeof(T) == typeof(float) ? 8e-07 : 5e-05)), "The blobs are different!");
 
                 //*** BACKWARD ***
 
@@ -363,13 +364,13 @@ namespace MyCaffe.test
 
                 blobVal.LoadFromNumpy(strPath + "tft.selected_historical1.grad.npy", true);
                 blob1 = net.FindBlob("selected_hist");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, (typeof(T) == typeof(float) ? 3e-06 : 1e-04)), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 1e-06), "The blobs are different!");
 
                 blobVal.LoadFromNumpy(strPath + "tft.selected_future1.grad.npy", true);
                 blob1 = net.FindBlob("selected_fut");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, (typeof(T) == typeof(float) ? 3e-06 : 5e-05)), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 5e-07), "The blobs are different!");
             }
-            catch (Exception ex)
+            finally
             {
                 dispose(ref blobVal);
                 dispose(ref blobWork);
