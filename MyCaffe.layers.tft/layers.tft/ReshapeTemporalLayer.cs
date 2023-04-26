@@ -261,7 +261,7 @@ namespace MyCaffe.layers.tft
                 if (m_param.reshape_temporal_param.enable_clip_output)
                 {
                     m_log.CHECK_GT(colTop.Count, nIdx, "There must be at least " + (nIdx + 1).ToString() + " tops for the enable clip output!");
-                    m_rgShape[2] = 1;
+                    m_rgShape.RemoveAt(m_rgShape.Count - 1);
                     colTop[nIdx].Reshape(m_rgShape);
                     nIdx++;
                 }
