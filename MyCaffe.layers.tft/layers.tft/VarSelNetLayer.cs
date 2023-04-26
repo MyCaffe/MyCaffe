@@ -307,9 +307,6 @@ namespace MyCaffe.layers.tft
             colTop[0].ReshapeLike(m_colSingleVarGrn[0]);
             if (colTop.Count > 1)
                 colTop[1].ReshapeLike(m_blobSparseWts);
-
-            if (m_rgShapeOringal.Count > 0)
-                colBottom[0].Reshape(m_rgShapeOringal);
         }
 
         /// <summary>
@@ -381,9 +378,6 @@ namespace MyCaffe.layers.tft
             m_cuda.channel_sum(m_blobProcessedInputs1.count(), m_blobProcessedInputs1.num, m_blobProcessedInputs1.channels, nInnerNum, m_blobProcessedInputs1.gpu_data, colTop[0].mutable_gpu_data, false);
             if (colTop.Count > 1)
                 colTop[1].CopyFrom(m_blobSparseWts);
-
-            if (m_rgShapeOringal.Count > 0)
-                colBottom[0].Reshape(m_rgShapeOringal);
         }
 
         private void copyShape(List<int> rg, Blob<T> b)
