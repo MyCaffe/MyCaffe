@@ -207,10 +207,18 @@ namespace MyCaffe.layers.tft
             }
 
             // non-linear activation function applied to the sum of projections.
-            LayerParameter act = new LayerParameter(LayerParameter.LayerType.ELU, m_param.name + ".act");
-            act.elu_param.engine = EngineParameter.Engine.CAFFE;
-            act.elu_param.alpha = 1.0;
-            m_act = Layer<T>.Create(m_cuda, m_log, act, null);
+            if (m_param.grn_param.activation == param.tft.GrnParameter.ACTIVATION.RELU)
+            {
+                LayerParameter act = new LayerParameter(LayerParameter.LayerType.RELU, m_param.name + ".act");
+                m_act = Layer<T>.Create(m_cuda, m_log, act, null);
+            }
+            else
+            {
+                LayerParameter act = new LayerParameter(LayerParameter.LayerType.ELU, m_param.name + ".act");
+                act.elu_param.engine = EngineParameter.Engine.CAFFE;
+                act.elu_param.alpha = 1.0;
+                m_act = Layer<T>.Create(m_cuda, m_log, act, null);
+            }
 
             addBtmTop(blobIp1, blobIp1);
             m_act.Setup(m_colBtm, m_colTop);
@@ -419,22 +427,27 @@ namespace MyCaffe.layers.tft
                 m_dropout.Backward(m_colTop, rgbPropagateDown, m_colBtm);
             }
 
+            Blob<T> blobIp1 = m_blobIp1;
+            if (m_ipContext != null)
+                blobIp1 = m_blobContextAdd;
+
             // Fc2
-            addBtmTop(m_blobIp1, m_blobIp2);
+            addBtmTop(blobIp1, m_blobIp2);
             m_ipFc2.Backward(m_colTop, rgbPropagateDown, m_colBtm);
 
             // act
-            addBtmTop(m_blobIp1, m_blobIp1);
+            addBtmTop(blobIp1, blobIp1);
             m_act.Backward(m_colTop, rgbPropagateDown, m_colBtm);
 
             if (m_ipContext != null)
             {
-                m_blobContext.CopyFrom(m_blobIp1, true);
+                m_blobContext.CopyFrom(blobIp1, true);
+
                 addBtmTop(colBottom[1], m_blobContext);
                 m_ipContext.Backward(m_colTop, rgbPropagateDown, m_colBtm);
             }
 
-            addBtmTop(m_blobBtm, m_blobIp1);
+            addBtmTop(m_blobBtm, blobIp1);
             m_ipFc1.Backward(m_colTop, rgbPropagateDown, m_colBtm);
 
             m_cuda.add(colBottom[0].count(), colBottom[0].gpu_diff, m_blobBtm.gpu_diff, colBottom[0].mutable_gpu_diff);
