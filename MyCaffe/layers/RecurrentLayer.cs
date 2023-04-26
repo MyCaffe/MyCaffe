@@ -1157,14 +1157,12 @@ namespace MyCaffe.layers
             else
             {
                 // Repeat the hidden for each layer
-                m_log.CHECK_EQ(bBtm.count(1), bTop.count(1), "The '" + bBtm.Name.ToString() + "' should have the same shape as '" + bTop.Name.ToString() + "' which has a shape after the first axis = " + bTop.shape_string);
+                m_log.CHECK_EQ(bBtm.count(), bTop.count(1), "The '" + bBtm.Name.ToString() + "' should have the same shape as '" + bTop.Name.ToString() + "' which has a shape after the first axis = " + bTop.shape_string);
                 m_cuda.channel_copy(bBtm.count(), 1, 1, bTop.num, bBtm.count(), 0, bTop.gpu_diff, bBtm.mutable_gpu_diff, DIR.FWD);
-                m_blobWork.ReshapeLike(bBtm);
 
                 for (int i = 1; i < bTop.num; i++)
                 {
-                    m_cuda.channel_copy(bBtm.count(), 1, 1, bTop.num, bBtm.count(), i, bTop.gpu_diff, m_blobWork.mutable_gpu_diff, DIR.FWD);
-                    m_cuda.add(bBtm.count(), bBtm.gpu_diff, m_blobWork.gpu_diff, bBtm.mutable_gpu_diff);
+                    m_cuda.channel_add(bBtm.count(), 1, 1, bTop.num, bBtm.count(), i, bTop.gpu_diff, bBtm.mutable_gpu_diff, DIR.FWD);
                 }
 
                 double dfScale = 1.0 / bTop.num;
