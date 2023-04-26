@@ -116,29 +116,6 @@ namespace MyCaffe.layers.tft
             m_colTop.Add(top);
         }
 
-        private List<int> reshapeAcrossTime(params Blob<T>[] rgb)
-        {
-            List<int> rgOriginalShape = Utility.Clone<int>(rgb[0].shape());
-            int nOuter = rgb[0].count(0, rgb[0].num_axes - 1);
-            int nInner = rgb[0].shape().Last();
-            List<int> rgShape = new List<int>() { nOuter, nInner };
-
-            foreach (Blob<T> b in rgb)
-            {
-                b.Reshape(rgShape);
-            }
-
-            return rgOriginalShape;
-        }
-
-        private void reshape(List<int> rgShape, params Blob<T>[] rgb)
-        {
-            foreach (Blob<T> b in rgb)
-            {
-                b.Reshape(rgShape);
-            }
-        }
-
         /// <summary>
         /// Setup the layer.
         /// </summary>
@@ -171,10 +148,8 @@ namespace MyCaffe.layers.tft
             p.glu_param.Copy(m_param.glu_param);
             m_gate = Layer<T>.Create(m_cuda, m_log, p, null);
 
-            List<int> rgShape = reshapeAcrossTime(blobBtm, m_blobGate);
             addBtmTop(blobBtm, m_blobGate);
             m_gate.Setup(m_colBtm, m_colTop);
-            reshape(rgShape, blobBtm, m_blobGate);
             blobs.Add(m_gate.blobs);
 
             p = new LayerParameter(LayerParameter.LayerType.LAYERNORM, "layernorm");
@@ -223,10 +198,8 @@ namespace MyCaffe.layers.tft
                 blobBtm = m_blobDrop;
             }
 
-            List<int> rgShape = reshapeAcrossTime(blobBtm, m_blobGate);
             addBtmTop(blobBtm, m_blobGate);
             m_gate.Reshape(m_colBtm, m_colTop);
-            reshape(rgShape, blobBtm, m_blobGate);
 
             addBtmTop(m_blobGate, colTop[0]);
             m_layerNorm.Reshape(m_colBtm, m_colTop);
@@ -300,7 +273,6 @@ namespace MyCaffe.layers.tft
                 blobBtm = m_blobDrop;
             }
 
-            List<int> rgShape = reshapeAcrossTime(blobBtm, m_blobGate);
             addBtmTop(blobBtm, m_blobGate);
             m_gate.Forward(m_colBtm, m_colTop);
 
@@ -310,7 +282,6 @@ namespace MyCaffe.layers.tft
             addBtmTop(m_blobGate, colTop[0]);
             m_layerNorm.Forward(m_colBtm, m_colTop);
 
-            reshape(rgShape, blobBtm, m_blobGate);
             colTop[0].ReshapeLike(m_blobGate);
         }
 
@@ -330,7 +301,7 @@ namespace MyCaffe.layers.tft
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
-            List<int> rgShape = reshapeAcrossTime(colTop[0], m_blobGate);
+            //List<int> rgShape = reshapeAcrossTime(colTop[0], m_blobGate);
 
             addBtmTop(m_blobGate, colTop[0]);
             m_layerNorm.Backward(m_colTop, rgbPropagateDown, m_colBtm);
@@ -340,7 +311,6 @@ namespace MyCaffe.layers.tft
 
             addBtmTop(colBottom[0], m_blobGate);
             m_gate.Backward(m_colTop, rgbPropagateDown, m_colBtm);
-            reshape(rgShape, colBottom[0], m_blobGate);
 
             if (m_dropout != null)
             {
