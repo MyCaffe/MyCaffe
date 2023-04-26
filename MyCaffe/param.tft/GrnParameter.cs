@@ -33,10 +33,37 @@ namespace MyCaffe.param.tft
         FillerParameter m_fillerParam_weights = new FillerParameter("xavier");
         FillerParameter m_fillerParam_bias = new FillerParameter("constant", 0.1);
         int m_nAxis = 1;
+        ACTIVATION m_activaiton = ACTIVATION.ELU;
+
+        /// <summary>
+        /// Defines the activation type.
+        /// </summary>
+        public enum ACTIVATION
+        {
+            /// <summary>
+            /// Specifies to use an ELU activation (default).
+            /// </summary>
+            ELU,
+
+            /// <summary>
+            /// Specifies to use a RELU activation.
+            /// </summary>
+            RELU
+        }
 
         /** @copydoc LayerParameterBase */
         public GrnParameter()
         {
+        }
+
+        /// <summary>
+        /// Specifies the activation type to use (default=ELU)
+        /// </summary>
+        [Description("Specifies the activation type to use (default=ELU)")]
+        public ACTIVATION activation
+        {
+            get { return m_activaiton; }
+            set { m_activaiton = value; }
         }
 
         /// <summary>
@@ -157,6 +184,7 @@ namespace MyCaffe.param.tft
             m_fDropout = p.dropout;
             m_bBatchFirst = p.batch_first;
             m_nAxis = p.m_nAxis;
+            m_activaiton = p.activation;
 
             if (p.m_fillerParam_bias != null)
                 m_fillerParam_bias = p.m_fillerParam_bias.Clone();
@@ -197,6 +225,7 @@ namespace MyCaffe.param.tft
                 rgChildren.Add(bias_filler.ToProto("bias_filler"));
 
             rgChildren.Add("axis", axis.ToString());
+            rgChildren.Add("activation", activation.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -239,6 +268,14 @@ namespace MyCaffe.param.tft
 
             if ((strVal = rp.FindValue("axis")) != null)
                 p.axis = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("activation")) != null)
+            {
+                if (strVal == ACTIVATION.RELU.ToString())
+                    p.activation = ACTIVATION.RELU;
+                else
+                    p.activation = ACTIVATION.ELU;
+            }
 
             return p;
         }
