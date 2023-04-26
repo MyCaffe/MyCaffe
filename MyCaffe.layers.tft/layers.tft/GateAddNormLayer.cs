@@ -301,8 +301,6 @@ namespace MyCaffe.layers.tft
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
-            //List<int> rgShape = reshapeAcrossTime(colTop[0], m_blobGate);
-
             addBtmTop(m_blobGate, colTop[0]);
             m_layerNorm.Backward(m_colTop, rgbPropagateDown, m_colBtm);
 
