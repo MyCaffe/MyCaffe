@@ -1137,8 +1137,8 @@ namespace MyCaffe.layers
             }
             else
             {
-                // Repeat the hidden for each layer
-                m_log.CHECK_EQ(bBtm.count(1), bTop.count(1), "The '" + bBtm.Name.ToString() + "' should have the same shape as '" + bTop.Name.ToString() + "' which has a shape after the first axis = " + bTop.shape_string);
+                // Repeat the hidden for each layer               
+                m_log.CHECK_EQ(bBtm.count(bBtm.num_axes - 2), bTop.count(1), "The '" + bBtm.Name.ToString() + "' should have the same shape as '" + bTop.Name.ToString() + "' which has a shape after the first axis = " + bTop.shape_string);
                 m_cuda.channel_copy(bBtm.count(), 1, 1, bTop.num, bBtm.count(), 0, bTop.mutable_gpu_data, bBtm.gpu_data, DIR.BWD);
                 for (int i = 1; i < bTop.num; i++)
                 {
@@ -1273,7 +1273,8 @@ namespace MyCaffe.layers
 
         private void backward_cudnn(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
-            m_log.CHECK(!rgbPropagateDown[1], "Cannot backpropagate to sequence indicators.");
+            if (rgbPropagateDown[1])
+                m_log.WriteLine("WARNING: Cannot backpropagate to sequence indicators, sequence backprop will be ignored.");
 
             // Copy top diffs to timestep T diffs
             if (colTop.Count > 2)
