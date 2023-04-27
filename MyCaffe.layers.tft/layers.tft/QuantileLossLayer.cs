@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using MyCaffe.basecode;
@@ -28,12 +29,13 @@ namespace MyCaffe.layers
         int m_nCount;
         int m_nChannels;
         Blob<T> m_blobTargetsFull;
-        Blob<T> m_blobDiff;
+        Blob<T> m_blobErrors;
         Blob<T> m_blobQuantile1;
         Blob<T> m_blobQuantile2;
         Blob<T> m_blobDesiredQuantiles;
         Blob<T> m_blobLoss;
         Blob<T> m_blobLossSum;
+        Blob<T> m_blobLossSumMean;
         Blob<T> m_blobWork;
 
         /// <summary>
@@ -47,8 +49,8 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.QUANTILE_LOSS;
 
-            m_blobDiff = new Blob<T>(cuda, log);
-            m_blobDiff.Name = m_param.name + ".diff";
+            m_blobErrors = new Blob<T>(cuda, log);
+            m_blobErrors.Name = m_param.name + ".diff";
             m_blobTargetsFull = new Blob<T>(cuda, log);
             m_blobTargetsFull.Name = m_param.name + ".trgtfull";
             m_blobQuantile1 = new Blob<T>(cuda, log);
@@ -61,6 +63,8 @@ namespace MyCaffe.layers
             m_blobLoss.Name = m_param.name + ".loss";
             m_blobLossSum = new Blob<T>(cuda, log);
             m_blobLossSum.Name = m_param.name + ".losssum";
+            m_blobLossSumMean = new Blob<T>(cuda, log);
+            m_blobLossSumMean.Name = m_param.name + ".losssum.mean";
             m_blobWork = new Blob<T>(m_cuda, m_log);
             m_blobWork.Name = m_param.name + ".work";
         }
@@ -68,13 +72,14 @@ namespace MyCaffe.layers
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
-            dispose(ref m_blobDiff);
+            dispose(ref m_blobErrors);
             dispose(ref m_blobQuantile1);
             dispose(ref m_blobQuantile2);
             dispose(ref m_blobTargetsFull);
             dispose(ref m_blobDesiredQuantiles);
             dispose(ref m_blobLoss);
             dispose(ref m_blobLossSum);
+            dispose(ref m_blobLossSumMean);
             dispose(ref m_blobWork);
 
             base.dispose();
@@ -134,7 +139,7 @@ namespace MyCaffe.layers
             for (int i = 0; i < rgDeqQtl1.Length; i++)
             {
                 rgDeqQtl1[i] = m_param.quantile_loss_param.desired_quantiles[i];
-                rgDeqQtl2[i] = (float)Math.Round(rgDeqQtl1[i] - 1, 4);
+                rgDeqQtl2[i] = rgDeqQtl1[i] - 1;
             }
 
             m_blobDesiredQuantiles.mutable_cpu_data = convert(rgDeqQtl1);
@@ -160,7 +165,7 @@ namespace MyCaffe.layers
             m_log.CHECK_EQ(colBottom[0].channels, colBottom[1].channels, "Input and target must have same 'channel' size.");
             m_log.CHECK_EQ(colBottom[0].height, colBottom[1].height * m_param.quantile_loss_param.desired_quantiles.Count, "Input must have 'desired_quantile.Count' * target 'height' size.");
 
-            m_blobDiff.ReshapeLike(colBottom[0]);
+            m_blobErrors.ReshapeLike(colBottom[0]);
             m_blobTargetsFull.ReshapeLike(colBottom[0]);
             m_blobQuantile1.ReshapeLike(colBottom[0]);
             m_blobQuantile2.ReshapeLike(colBottom[0]);
@@ -171,6 +176,10 @@ namespace MyCaffe.layers
             m_rgShape.Add(m_nOuterNum);
             m_rgShape.Add(m_nChannels);
             m_blobLossSum.Reshape(m_rgShape);
+
+            m_rgShape.Clear();
+            m_rgShape.Add(m_nOuterNum);
+            m_blobLossSumMean.Reshape(m_rgShape);
 
             m_rgShape.Clear();
             m_rgShape.Add(1);
@@ -204,21 +213,25 @@ namespace MyCaffe.layers
             m_cuda.channel_fillfrom(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, colBottom[1].gpu_data, m_blobTargetsFull.mutable_gpu_data, DIR.FWD);
 
             // Compute the actual error between the observed target and each predicted quantile
-            m_cuda.sub(m_nCount, m_blobTargetsFull.gpu_data, colBottom[0].gpu_data, m_blobDiff.mutable_gpu_data);
+            m_cuda.sub(m_nCount, m_blobTargetsFull.gpu_data, colBottom[0].gpu_data, m_blobErrors.mutable_gpu_data);
 
             // Compute the loss separately for each sample, time-step, quantile
             m_cuda.channel_copyall(m_nCount, m_nOuterNum * m_nChannels, 1, m_nInnerNum, m_blobDesiredQuantiles.gpu_diff, m_blobWork.mutable_gpu_data);
-            m_cuda.mul(m_nCount, m_blobWork.gpu_data, m_blobDiff.gpu_data, m_blobQuantile1.mutable_gpu_data);
+            m_cuda.mul(m_nCount, m_blobWork.gpu_data, m_blobErrors.gpu_data, m_blobQuantile1.mutable_gpu_data);
 
             m_cuda.channel_copyall(m_nCount, m_nOuterNum * m_nChannels, 1, m_nInnerNum, m_blobDesiredQuantiles.gpu_data, m_blobWork.mutable_gpu_data);
-            m_cuda.mul(m_nCount, m_blobWork.gpu_data, m_blobDiff.gpu_data, m_blobQuantile2.mutable_gpu_data);
+            m_cuda.mul(m_nCount, m_blobWork.gpu_data, m_blobErrors.gpu_data, m_blobQuantile2.mutable_gpu_data);
 
             m_cuda.max(m_nCount, m_blobQuantile2.gpu_data, m_blobQuantile1.gpu_data, m_blobLoss.mutable_gpu_data);
 
             // Sum losses over the quantiles
             m_cuda.channel_sum(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_blobLoss.gpu_data, m_blobLossSum.mutable_gpu_data, false);
+
+            // Mean of Sum losses over time
+            m_cuda.channel_mean(m_blobLossSum.count(), m_nOuterNum, 1, m_nChannels, m_blobLossSum.gpu_data, m_blobLossSumMean.mutable_gpu_data);
+
             // Average across time and observations
-            double dfQLoss = m_blobLossSum.mean();
+            double dfQLoss = m_blobLossSumMean.mean();
             colTop[0].SetData(dfQLoss, 0);
 
             // Calculate the q-risk for each quantile
@@ -226,6 +239,7 @@ namespace MyCaffe.layers
             {
                 double dfTargetSum = convertD(colBottom[1].asum_data());
                 m_cuda.channel_sum(m_blobLossSum.count(), 1, m_nOuterNum, m_nChannels, m_blobLossSum.gpu_data, colTop[1].mutable_gpu_data, true);
+
                 colTop[1].scale_data(2.0 / dfTargetSum);
             }
         }
@@ -270,10 +284,10 @@ namespace MyCaffe.layers
             m_cuda.channel_copyall(m_nCount, m_nOuterNum * m_nChannels, 1, m_nInnerNum, m_blobDesiredQuantiles.gpu_diff, m_blobWork.mutable_gpu_data);
             m_cuda.mul(m_nCount, m_blobWork.gpu_data, m_blobQuantile1.gpu_diff, m_blobQuantile1.mutable_gpu_diff);
 
-            m_cuda.add(m_nCount, m_blobQuantile1.gpu_diff, m_blobQuantile2.gpu_diff, m_blobDiff.mutable_gpu_diff);
+            m_cuda.add(m_nCount, m_blobQuantile1.gpu_diff, m_blobQuantile2.gpu_diff, m_blobErrors.mutable_gpu_diff);
 
             // Compute the actual grad between the observed target and each predicted quantile
-            m_cuda.scale(m_nCount, -1.0, m_blobDiff.gpu_diff, colBottom[0].mutable_gpu_diff);
+            m_cuda.scale(m_nCount, -1.0, m_blobErrors.gpu_diff, colBottom[0].mutable_gpu_diff);
         }
     }
 }
