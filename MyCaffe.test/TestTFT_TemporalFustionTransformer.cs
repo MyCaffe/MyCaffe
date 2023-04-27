@@ -12,8 +12,8 @@ using MyCaffe.db.image;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.data;
 using MyCaffe.layers.tft;
+using MyCaffe.solvers;
 
-// WORK IN PROGRESS
 /// <summary>
 /// Testing the TemporalFusionTransformer network.
 /// </remarks> 
@@ -75,6 +75,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestTrainingFull()
+        {
+            TemporalFusionTransformerTest test = new TemporalFusionTransformerTest();
+
+            try
+            {
+                foreach (ITemporalFusionTransformerTest t in test.Tests)
+                {
+                    t.TestTrainingFull();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface ITemporalFusionTransformerTest : ITest
@@ -82,6 +100,7 @@ namespace MyCaffe.test
         void TestForward();
         void TestBackward();
         void TestTraining();
+        void TestTrainingFull();
     }
 
     class TemporalFusionTransformerTest : TestBase
@@ -105,6 +124,7 @@ namespace MyCaffe.test
         Blob<T> m_blobBottomLabels;
         BlobCollection<T> m_colData = new BlobCollection<T>();
         BlobCollection<T> m_colLabels = new BlobCollection<T>();
+        CalculationArray m_rgLoss = new CalculationArray(50);
 
         public TemporalFusionTransformerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, null, nDeviceID)
@@ -152,6 +172,14 @@ namespace MyCaffe.test
                 data.data_temporal_param.num_future_steps = (uint)nNumFutureSteps;
                 data.data_temporal_param.source = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\favorita";
                 data.data_temporal_param.source_type = param.tft.DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE;
+                data.top.Add("x_numeric_static");
+                data.top.Add("x_categorical_static");
+                data.top.Add("x_numeric_hist");
+                data.top.Add("x_categorical_hist");
+                data.top.Add("x_numeric_future");
+                data.top.Add("x_categorical_future");
+                data.top.Add("target");
+                p.layer.Add(data);
             }
             else
             {
@@ -484,7 +512,8 @@ namespace MyCaffe.test
             loss.quantile_loss_param.desired_quantiles.Add(0.5f);
             loss.quantile_loss_param.desired_quantiles.Add(0.9f);
             loss.loss_weight.Add(1); // for loss
-            loss.loss_weight.Add(1); // for q_risk
+            loss.loss_weight.Add(0); // for q_risk
+            loss.loss_param.normalization = LossParameter.NormalizationMode.NONE;
             loss.bottom.Add("predicted_quantiles");
             loss.bottom.Add("target");
             loss.top.Add("loss");
@@ -494,7 +523,7 @@ namespace MyCaffe.test
             return p.ToProto("root").ToString();
         }
 
-        private void load_weights(Net<T> net, string strPath, int nNumStaticNumeric, int nNumStaticCategorical, int nNumHistNumeric, int nNumHistCategorical, int nNumFutureNumeric, int nNumFutureCategorical)
+        private void load_weights(string strTag, Net<T> net, string strPath, int nNumStaticNumeric, int nNumStaticCategorical, int nNumHistNumeric, int nNumHistCategorical, int nNumFutureNumeric, int nNumFutureCategorical)
         {
             //-------------------------------------------
             // Load input channel embedding weights.
@@ -502,356 +531,356 @@ namespace MyCaffe.test
             int nIdx = 0;
             for (int i = 0; i < nNumStaticCategorical; i++)
             {
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_transform.categorical_transform.categorical_embedding_layers." + i.ToString() + ".weight.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_transform.categorical_transform.categorical_embedding_layers." + i.ToString() + ".weight.npy");
                 nIdx++;
             }
 
             for (int i = 0; i < nNumHistNumeric; i++)
             {
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.historical_ts_transform.numeric_transform.module.numeric_projection_layers." + i.ToString() + ".weight.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".historical_ts_transform.numeric_transform.module.numeric_projection_layers." + i.ToString() + ".weight.npy");
                 nIdx++;
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.historical_ts_transform.numeric_transform.module.numeric_projection_layers." + i.ToString() + ".bias.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".historical_ts_transform.numeric_transform.module.numeric_projection_layers." + i.ToString() + ".bias.npy");
                 nIdx++;
             }
 
             for (int i = 0; i < nNumHistCategorical; i++)
             {
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.historical_ts_transform.categorical_transform.module.categorical_embedding_layers." + i.ToString() + ".weight.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".historical_ts_transform.categorical_transform.module.categorical_embedding_layers." + i.ToString() + ".weight.npy");
                 nIdx++;
             }
 
             for (int i = 0; i < nNumFutureNumeric; i++)
             {
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.future_ts_transform.numeric_transform.module.numeric_projection_layers." + i.ToString() + ".weight.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".future_ts_transform.numeric_transform.module.numeric_projection_layers." + i.ToString() + ".weight.npy");
                 nIdx++;
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.future_ts_transform.numeric_transform.module.numeric_projection_layers." + i.ToString() + ".bias.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".future_ts_transform.numeric_transform.module.numeric_projection_layers." + i.ToString() + ".bias.npy");
                 nIdx++;
             }
 
             for (int i = 0; i < nNumFutureCategorical; i++)
             {
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.future_ts_transform.categorical_transform.module.categorical_embedding_layers." + i.ToString() + ".weight.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".future_ts_transform.categorical_transform.module.categorical_embedding_layers." + i.ToString() + ".weight.npy");
                 nIdx++;
             }
 
             //-------------------------------------------
             // Load varselnet weights - static (idx=33)
             //-------------------------------------------
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_selection.flattened_grn.skip_layer.module.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_selection.flattened_grn.skip_layer.module.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_selection.flattened_grn.skip_layer.module.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_selection.flattened_grn.skip_layer.module.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_selection.flattened_grn.fc1.module.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_selection.flattened_grn.fc1.module.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_selection.flattened_grn.fc1.module.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_selection.flattened_grn.fc1.module.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_selection.flattened_grn.fc2.module.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_selection.flattened_grn.fc2.module.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_selection.flattened_grn.fc2.module.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_selection.flattened_grn.fc2.module.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_selection.flattened_grn.gate.module.fc1.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_selection.flattened_grn.gate.module.fc1.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_selection.flattened_grn.gate.module.fc1.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_selection.flattened_grn.gate.module.fc1.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_selection.flattened_grn.gate.module.fc2.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_selection.flattened_grn.gate.module.fc2.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_selection.flattened_grn.gate.module.fc2.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_selection.flattened_grn.gate.module.fc2.bias.npy");
             nIdx++;
 
             for (int i = 0; i < nNumStaticNumeric + nNumStaticCategorical; i++)
             {
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_selection.single_variable_grns." + i.ToString() + ".fc1.module.weight.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_selection.single_variable_grns." + i.ToString() + ".fc1.module.weight.npy");
                 nIdx++;
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_selection.single_variable_grns." + i.ToString() + ".fc1.module.bias.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_selection.single_variable_grns." + i.ToString() + ".fc1.module.bias.npy");
                 nIdx++;
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_selection.single_variable_grns." + i.ToString() + ".fc2.module.weight.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_selection.single_variable_grns." + i.ToString() + ".fc2.module.weight.npy");
                 nIdx++;
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_selection.single_variable_grns." + i.ToString() + ".fc2.module.bias.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_selection.single_variable_grns." + i.ToString() + ".fc2.module.bias.npy");
                 nIdx++;
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_selection.single_variable_grns." + i.ToString() + ".gate.module.fc1.weight.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_selection.single_variable_grns." + i.ToString() + ".gate.module.fc1.weight.npy");
                 nIdx++;
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_selection.single_variable_grns." + i.ToString() + ".gate.module.fc1.bias.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_selection.single_variable_grns." + i.ToString() + ".gate.module.fc1.bias.npy");
                 nIdx++;
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_selection.single_variable_grns." + i.ToString() + ".gate.module.fc2.weight.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_selection.single_variable_grns." + i.ToString() + ".gate.module.fc2.weight.npy");
                 nIdx++;
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_selection.single_variable_grns." + i.ToString() + ".gate.module.fc2.bias.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_selection.single_variable_grns." + i.ToString() + ".gate.module.fc2.bias.npy");
                 nIdx++;
             }
 
             //---------------------------------
             //  Static covariate encoders (idx=115)
             //---------------------------------
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_selection.fc1.module.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_selection.fc1.module.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_selection.fc1.module.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_selection.fc1.module.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_selection.fc2.module.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_selection.fc2.module.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_selection.fc2.module.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_selection.fc2.module.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_selection.gate.module.fc1.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_selection.gate.module.fc1.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_selection.gate.module.fc1.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_selection.gate.module.fc1.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_selection.gate.module.fc2.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_selection.gate.module.fc2.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_selection.gate.module.fc2.bias.npy");
-            nIdx++;
-
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_enrichment.fc1.module.weight.npy");
-            nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_enrichment.fc1.module.bias.npy");
-            nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_enrichment.fc2.module.weight.npy");
-            nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_enrichment.fc2.module.bias.npy");
-            nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_enrichment.gate.module.fc1.weight.npy");
-            nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_enrichment.gate.module.fc1.bias.npy");
-            nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_enrichment.gate.module.fc2.weight.npy");
-            nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_enrichment.gate.module.fc2.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_selection.gate.module.fc2.bias.npy");
             nIdx++;
 
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_sequential_cell_init.fc1.module.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_enrichment.fc1.module.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_sequential_cell_init.fc1.module.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_enrichment.fc1.module.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_sequential_cell_init.fc2.module.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_enrichment.fc2.module.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_sequential_cell_init.fc2.module.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_enrichment.fc2.module.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_sequential_cell_init.gate.module.fc1.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_enrichment.gate.module.fc1.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_sequential_cell_init.gate.module.fc1.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_enrichment.gate.module.fc1.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_sequential_cell_init.gate.module.fc2.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_enrichment.gate.module.fc2.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_sequential_cell_init.gate.module.fc2.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_enrichment.gate.module.fc2.bias.npy");
             nIdx++;
 
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_sequential_state_init.fc1.module.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_sequential_cell_init.fc1.module.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_sequential_state_init.fc1.module.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_sequential_cell_init.fc1.module.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_sequential_state_init.fc2.module.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_sequential_cell_init.fc2.module.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_sequential_state_init.fc2.module.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_sequential_cell_init.fc2.module.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_sequential_state_init.gate.module.fc1.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_sequential_cell_init.gate.module.fc1.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_sequential_state_init.gate.module.fc1.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_sequential_cell_init.gate.module.fc1.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_sequential_state_init.gate.module.fc2.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_sequential_cell_init.gate.module.fc2.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_encoder_sequential_state_init.gate.module.fc2.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_sequential_cell_init.gate.module.fc2.bias.npy");
+            nIdx++;
+
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_sequential_state_init.fc1.module.weight.npy");
+            nIdx++;
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_sequential_state_init.fc1.module.bias.npy");
+            nIdx++;
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_sequential_state_init.fc2.module.weight.npy");
+            nIdx++;
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_sequential_state_init.fc2.module.bias.npy");
+            nIdx++;
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_sequential_state_init.gate.module.fc1.weight.npy");
+            nIdx++;
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_sequential_state_init.gate.module.fc1.bias.npy");
+            nIdx++;
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_sequential_state_init.gate.module.fc2.weight.npy");
+            nIdx++;
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_encoder_sequential_state_init.gate.module.fc2.bias.npy");
             nIdx++;
 
             //-------------------------------------------
             // Load varselnet weights - historical (idx=147)
             //-------------------------------------------
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.historical_ts_selection.flattened_grn.skip_layer.module.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".historical_ts_selection.flattened_grn.skip_layer.module.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.historical_ts_selection.flattened_grn.skip_layer.module.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".historical_ts_selection.flattened_grn.skip_layer.module.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.historical_ts_selection.flattened_grn.fc1.module.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".historical_ts_selection.flattened_grn.fc1.module.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.historical_ts_selection.flattened_grn.fc1.module.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".historical_ts_selection.flattened_grn.fc1.module.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.historical_ts_selection.flattened_grn.context_projection.module.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".historical_ts_selection.flattened_grn.context_projection.module.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.historical_ts_selection.flattened_grn.fc2.module.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".historical_ts_selection.flattened_grn.fc2.module.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.historical_ts_selection.flattened_grn.fc2.module.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".historical_ts_selection.flattened_grn.fc2.module.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.historical_ts_selection.flattened_grn.gate.module.fc1.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".historical_ts_selection.flattened_grn.gate.module.fc1.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.historical_ts_selection.flattened_grn.gate.module.fc1.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".historical_ts_selection.flattened_grn.gate.module.fc1.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.historical_ts_selection.flattened_grn.gate.module.fc2.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".historical_ts_selection.flattened_grn.gate.module.fc2.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.historical_ts_selection.flattened_grn.gate.module.fc2.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".historical_ts_selection.flattened_grn.gate.module.fc2.bias.npy");
             nIdx++;
 
             for (int i = 0; i < nNumHistNumeric + nNumHistCategorical; i++)
             {
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.historical_ts_selection.single_variable_grns." + i.ToString() + ".fc1.module.weight.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".historical_ts_selection.single_variable_grns." + i.ToString() + ".fc1.module.weight.npy");
                 nIdx++;
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.historical_ts_selection.single_variable_grns." + i.ToString() + ".fc1.module.bias.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".historical_ts_selection.single_variable_grns." + i.ToString() + ".fc1.module.bias.npy");
                 nIdx++;
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.historical_ts_selection.single_variable_grns." + i.ToString() + ".fc2.module.weight.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".historical_ts_selection.single_variable_grns." + i.ToString() + ".fc2.module.weight.npy");
                 nIdx++;
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.historical_ts_selection.single_variable_grns." + i.ToString() + ".fc2.module.bias.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".historical_ts_selection.single_variable_grns." + i.ToString() + ".fc2.module.bias.npy");
                 nIdx++;
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.historical_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc1.weight.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".historical_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc1.weight.npy");
                 nIdx++;
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.historical_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc1.bias.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".historical_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc1.bias.npy");
                 nIdx++;
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.historical_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc2.weight.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".historical_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc2.weight.npy");
                 nIdx++;
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.historical_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc2.bias.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".historical_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc2.bias.npy");
                 nIdx++;
             }
 
             //-------------------------------------------
             // Load varselnet weights - future (idx=246)
             //-------------------------------------------
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.future_ts_selection.flattened_grn.skip_layer.module.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".future_ts_selection.flattened_grn.skip_layer.module.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.future_ts_selection.flattened_grn.skip_layer.module.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".future_ts_selection.flattened_grn.skip_layer.module.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.future_ts_selection.flattened_grn.fc1.module.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".future_ts_selection.flattened_grn.fc1.module.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.future_ts_selection.flattened_grn.fc1.module.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".future_ts_selection.flattened_grn.fc1.module.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.future_ts_selection.flattened_grn.context_projection.module.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".future_ts_selection.flattened_grn.context_projection.module.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.future_ts_selection.flattened_grn.fc2.module.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".future_ts_selection.flattened_grn.fc2.module.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.future_ts_selection.flattened_grn.fc2.module.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".future_ts_selection.flattened_grn.fc2.module.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.future_ts_selection.flattened_grn.gate.module.fc1.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".future_ts_selection.flattened_grn.gate.module.fc1.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.future_ts_selection.flattened_grn.gate.module.fc1.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".future_ts_selection.flattened_grn.gate.module.fc1.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.future_ts_selection.flattened_grn.gate.module.fc2.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".future_ts_selection.flattened_grn.gate.module.fc2.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.future_ts_selection.flattened_grn.gate.module.fc2.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".future_ts_selection.flattened_grn.gate.module.fc2.bias.npy");
             nIdx++;
 
             for (int i = 0; i < nNumFutureNumeric + nNumFutureCategorical; i++)
             {
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.future_ts_selection.single_variable_grns." + i.ToString() + ".fc1.module.weight.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".future_ts_selection.single_variable_grns." + i.ToString() + ".fc1.module.weight.npy");
                 nIdx++;
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.future_ts_selection.single_variable_grns." + i.ToString() + ".fc1.module.bias.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".future_ts_selection.single_variable_grns." + i.ToString() + ".fc1.module.bias.npy");
                 nIdx++;
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.future_ts_selection.single_variable_grns." + i.ToString() + ".fc2.module.weight.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".future_ts_selection.single_variable_grns." + i.ToString() + ".fc2.module.weight.npy");
                 nIdx++;
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.future_ts_selection.single_variable_grns." + i.ToString() + ".fc2.module.bias.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".future_ts_selection.single_variable_grns." + i.ToString() + ".fc2.module.bias.npy");
                 nIdx++;
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.future_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc1.weight.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".future_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc1.weight.npy");
                 nIdx++;
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.future_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc1.bias.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".future_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc1.bias.npy");
                 nIdx++;
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.future_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc2.weight.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".future_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc2.weight.npy");
                 nIdx++;
-                net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.future_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc2.bias.npy");
+                net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".future_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc2.bias.npy");
                 nIdx++;
             }
 
             //---------------------------------
             //  Locality Enhancement with Seq2Seq processing (idx=321)
             //---------------------------------
-            net.parameters[nIdx].LoadFromNumpy(strPath + "ZZZ.YYY.past_lstm.lstm.wt0.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".ZZZ.YYY.past_lstm.lstm.wt0.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "ZZZ.YYY.future_lstm.lstm.wt0.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".ZZZ.YYY.future_lstm.lstm.wt0.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.post_lstm_gating.gate.module.fc1.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".post_lstm_gating.gate.module.fc1.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.post_lstm_gating.gate.module.fc1.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".post_lstm_gating.gate.module.fc1.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.post_lstm_gating.gate.module.fc2.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".post_lstm_gating.gate.module.fc2.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.post_lstm_gating.gate.module.fc2.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".post_lstm_gating.gate.module.fc2.bias.npy");
             nIdx++;
 
 
             //---------------------------------
             //  Temporal Static Enrichment (idx=327)
             //---------------------------------
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_enrichment_grn.fc1.module.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_enrichment_grn.fc1.module.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_enrichment_grn.fc1.module.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_enrichment_grn.fc1.module.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_enrichment_grn.context_projection.module.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_enrichment_grn.context_projection.module.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_enrichment_grn.fc2.module.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_enrichment_grn.fc2.module.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_enrichment_grn.fc2.module.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_enrichment_grn.fc2.module.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_enrichment_grn.gate.module.fc1.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_enrichment_grn.gate.module.fc1.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_enrichment_grn.gate.module.fc1.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_enrichment_grn.gate.module.fc1.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_enrichment_grn.gate.module.fc2.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_enrichment_grn.gate.module.fc2.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.static_enrichment_grn.gate.module.fc2.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".static_enrichment_grn.gate.module.fc2.bias.npy");
             nIdx++;
 
 
             //---------------------------------
             //  Temporal Self-attention (idx=336)
             //---------------------------------
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.multihead_attn.w_q.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".multihead_attn.w_q.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.multihead_attn.w_q.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".multihead_attn.w_q.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.multihead_attn.w_k.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".multihead_attn.w_k.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.multihead_attn.w_k.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".multihead_attn.w_k.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.multihead_attn.w_v.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".multihead_attn.w_v.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.multihead_attn.w_v.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".multihead_attn.w_v.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.multihead_attn.out.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".multihead_attn.out.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.multihead_attn.out.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".multihead_attn.out.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.post_attention_gating.gate.module.fc1.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".post_attention_gating.gate.module.fc1.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.post_attention_gating.gate.module.fc1.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".post_attention_gating.gate.module.fc1.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.post_attention_gating.gate.module.fc2.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".post_attention_gating.gate.module.fc2.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.post_attention_gating.gate.module.fc2.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".post_attention_gating.gate.module.fc2.bias.npy");
             nIdx++;
 
             //---------------------------------
             //  Pos wise FF (idx=348)
             //---------------------------------
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.pos_wise_ff_grn.fc1.module.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".pos_wise_ff_grn.fc1.module.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.pos_wise_ff_grn.fc1.module.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".pos_wise_ff_grn.fc1.module.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.pos_wise_ff_grn.fc2.module.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".pos_wise_ff_grn.fc2.module.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.pos_wise_ff_grn.fc2.module.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".pos_wise_ff_grn.fc2.module.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.pos_wise_ff_grn.gate.module.fc1.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".pos_wise_ff_grn.gate.module.fc1.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.pos_wise_ff_grn.gate.module.fc1.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".pos_wise_ff_grn.gate.module.fc1.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.pos_wise_ff_grn.gate.module.fc2.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".pos_wise_ff_grn.gate.module.fc2.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.pos_wise_ff_grn.gate.module.fc2.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".pos_wise_ff_grn.gate.module.fc2.bias.npy");
             nIdx++;
 
             //---------------------------------
             //  Pos wise FF Gate (idx=356)
             //---------------------------------
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.pos_wise_ff_gating.gate.module.fc1.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".pos_wise_ff_gating.gate.module.fc1.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.pos_wise_ff_gating.gate.module.fc1.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".pos_wise_ff_gating.gate.module.fc1.bias.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.pos_wise_ff_gating.gate.module.fc2.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".pos_wise_ff_gating.gate.module.fc2.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.pos_wise_ff_gating.gate.module.fc2.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".pos_wise_ff_gating.gate.module.fc2.bias.npy");
             nIdx++;
 
             //---------------------------------
             //  Output (idx=360)
             //---------------------------------
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.output_layer.weight.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".output_layer.weight.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + "tft.full.output_layer.bias.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".output_layer.bias.npy");
             nIdx++;
         }
 
         /// <summary>
-        /// Test the forward pass for sequence processing
+        /// Test the forward pass for full model
         /// </summary>
         /// <remarks>
         /// To generate test data:
@@ -886,6 +915,7 @@ namespace MyCaffe.test
             int nNumFutureNumeric = 1;
             int nNumFutureCategorical = 7;
             List<int> rgFutureCardinalities = new List<int>() { 2, 3, 8, 13, 72, 6, 28 };
+            string strTag = "tft.full";
 
             try
             {
@@ -898,7 +928,7 @@ namespace MyCaffe.test
 
                 net = new Net<T>(m_cuda, m_log, param, null, null);
 
-                load_weights(net, strPath, nNumStaticNumeric, nNumStaticCategorical, nNumHistNumeric, nNumHistCategorical, nNumFutureNumeric, nNumFutureCategorical);
+                load_weights(strTag, net, strPath, nNumStaticNumeric, nNumStaticCategorical, nNumHistNumeric, nNumHistCategorical, nNumFutureNumeric, nNumFutureCategorical);
 
                 // inputs
                 blob1 = net.FindBlob("x_numeric_static");
@@ -920,83 +950,83 @@ namespace MyCaffe.test
 
 
                 // Transform all input channels
-                blobVal.LoadFromNumpy(strPath + "tft.full.future_ts_rep.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".future_ts_rep.npy");
                 blob1 = net.FindBlob("future_ts_rep");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-08), "The blobs are different!");
 
-                blobVal.LoadFromNumpy(strPath + "tft.full.historical_ts_rep.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".historical_ts_rep.npy");
                 blob1 = net.FindBlob("hist_ts_rep");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 6e-08), "The blobs are different!");
 
-                blobVal.LoadFromNumpy(strPath + "tft.full.static_rep.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".static_rep.npy");
                 blob1 = net.FindBlob("static_rep");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork), "The blobs are different!");
 
 
                 // Select static
-                blobVal.LoadFromNumpy(strPath + "tft.full.selected_static.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".selected_static.npy");
                 blob1 = net.FindBlob("selected_static");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 5e-07), "The blobs are different!");
 
 
                 // Static Covariate Encoding
-                blobVal.LoadFromNumpy(strPath + "tft.full.c_enrichment.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".c_enrichment.npy");
                 blob1 = net.FindBlob("c_enrichment");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 2e-06), "The blobs are different!");
 
-                blobVal.LoadFromNumpy(strPath + "tft.full.c_selection.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".c_selection.npy");
                 blob1 = net.FindBlob("c_selection");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
 
-                blobVal.LoadFromNumpy(strPath + "tft.full.c_seq_cell.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_cell.npy");
                 blob1 = net.FindBlob("c_seq_cell");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
 
-                blobVal.LoadFromNumpy(strPath + "tft.full.c_seq_hidden.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_hidden.npy");
                 blob1 = net.FindBlob("c_seq_hidden");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
 
 
                 // Historical varaible selection
-                blobVal.LoadFromNumpy(strPath + "tft.full.selected_historical.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".selected_historical.npy");
                 blob1 = net.FindBlob("selected_hist");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 2e-06), "The blobs are different!");
 
                 // Future variable selection
-                blobVal.LoadFromNumpy(strPath + "tft.full.selected_future.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".selected_future.npy");
                 blob1 = net.FindBlob("selected_fut");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 2e-06), "The blobs are different!");
 
                 // Locality enhancement - seq procesing
-                blobVal.LoadFromNumpy(strPath + "tft.full.gated_lstm_output.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".gated_lstm_output.npy");
                 blob1 = net.FindBlob("gated_lstm_output");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 7e-06 : 6e-05), "The blobs are different!");
 
                 // Static enrichment
-                blobVal.LoadFromNumpy(strPath + "tft.full.enriched_sequence.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".enriched_sequence.npy");
                 blob1 = net.FindBlob("enriched_sequence");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 7e-06 : 5e-05), "The blobs are different!");
 
                 // Self attention
-                blobVal.LoadFromNumpy(strPath + "tft.full.gated_post_attention.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".gated_post_attention.npy");
                 blob1 = net.FindBlob("gated_post_attention");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 4e-06 : 2e-05), "The blobs are different!");
 
-                blobVal.LoadFromNumpy(strPath + "tft.full.attention_scores.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".attention_scores.npy");
                 blob1 = net.FindBlob("attention_scores");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 2e-08 : 8e-08), "The blobs are different!");
 
                 // Position-wise feed-forward
-                blobVal.LoadFromNumpy(strPath + "tft.full.post_poswise_ff_grn.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".post_poswise_ff_grn.npy");
                 blob1 = net.FindBlob("post_poswise_ff_grn");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 4e-06 : 2e-05), "The blobs are different!");
 
-                blobVal.LoadFromNumpy(strPath + "tft.full.gated_poswise_ff.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".gated_poswise_ff.npy");
                 blob1 = net.FindBlob("gated_poswise_ff");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 5e-06 : 2e-05), "The blobs are different!");
 
                 // Output
-                blobVal.LoadFromNumpy(strPath + "tft.full.predicted_quantiles.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".predicted_quantiles.npy");
                 blob1 = net.FindBlob("predicted_quantiles");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 6e-06 : 2e-05), "The blobs are different!");
             }
@@ -1011,7 +1041,7 @@ namespace MyCaffe.test
         }
 
         /// <summary>
-        /// Test the backward pass for sequence processing
+        /// Test the backward pass for for full model
         /// </summary>
         /// <remarks>
         /// To generate test data:
@@ -1046,6 +1076,7 @@ namespace MyCaffe.test
             int nNumFutureNumeric = 1;
             int nNumFutureCategorical = 7;
             List<int> rgFutureCardinalities = new List<int>() { 2, 3, 8, 13, 72, 6, 28 };
+            string strTag = "tft.full";
 
             try
             {
@@ -1059,7 +1090,7 @@ namespace MyCaffe.test
 
                 net = new Net<T>(m_cuda, m_log, param, null, null);
 
-                load_weights(net, strPath, nNumStaticNumeric, nNumStaticCategorical, nNumHistNumeric, nNumHistCategorical, nNumFutureNumeric, nNumFutureCategorical);
+                load_weights(strTag, net, strPath, nNumStaticNumeric, nNumStaticCategorical, nNumHistNumeric, nNumHistCategorical, nNumFutureNumeric, nNumFutureCategorical);
 
                 // inputs
                 blob1 = net.FindBlob("x_numeric_static");
@@ -1081,151 +1112,151 @@ namespace MyCaffe.test
 
 
                 // Transform all input channels
-                blobVal.LoadFromNumpy(strPath + "tft.full.future_ts_rep.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".future_ts_rep.npy");
                 blob1 = net.FindBlob("future_ts_rep");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-08), "The blobs are different!");
 
-                blobVal.LoadFromNumpy(strPath + "tft.full.historical_ts_rep.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".historical_ts_rep.npy");
                 blob1 = net.FindBlob("hist_ts_rep");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 6e-08), "The blobs are different!");
 
-                blobVal.LoadFromNumpy(strPath + "tft.full.static_rep.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".static_rep.npy");
                 blob1 = net.FindBlob("static_rep");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork), "The blobs are different!");
 
 
                 // Select static
-                blobVal.LoadFromNumpy(strPath + "tft.full.selected_static.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".selected_static.npy");
                 blob1 = net.FindBlob("selected_static");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 5e-07), "The blobs are different!");
 
 
                 // Static Covariate Encoding
-                blobVal.LoadFromNumpy(strPath + "tft.full.c_enrichment.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".c_enrichment.npy");
                 blob1 = net.FindBlob("c_enrichment");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 2e-06), "The blobs are different!");
 
-                blobVal.LoadFromNumpy(strPath + "tft.full.c_selection.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".c_selection.npy");
                 blob1 = net.FindBlob("c_selection");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
 
-                blobVal.LoadFromNumpy(strPath + "tft.full.c_seq_cell.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_cell.npy");
                 blob1 = net.FindBlob("c_seq_cell");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
 
-                blobVal.LoadFromNumpy(strPath + "tft.full.c_seq_hidden.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_hidden.npy");
                 blob1 = net.FindBlob("c_seq_hidden");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
 
 
                 // Historical varaible selection
-                blobVal.LoadFromNumpy(strPath + "tft.full.selected_historical.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".selected_historical.npy");
                 blob1 = net.FindBlob("selected_hist");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 2e-06), "The blobs are different!");
 
                 // Future variable selection
-                blobVal.LoadFromNumpy(strPath + "tft.full.selected_future.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".selected_future.npy");
                 blob1 = net.FindBlob("selected_fut");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 2e-06), "The blobs are different!");
 
                 // Locality enhancement - seq procesing
-                blobVal.LoadFromNumpy(strPath + "tft.full.gated_lstm_output.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".gated_lstm_output.npy");
                 blob1 = net.FindBlob("gated_lstm_output");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 7e-06 : 6e-05), "The blobs are different!");
 
                 // Static enrichment
-                blobVal.LoadFromNumpy(strPath + "tft.full.enriched_sequence.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".enriched_sequence.npy");
                 blob1 = net.FindBlob("enriched_sequence");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 7e-06 : 5e-05), "The blobs are different!");
 
                 // Self attention
-                blobVal.LoadFromNumpy(strPath + "tft.full.gated_post_attention.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".gated_post_attention.npy");
                 blob1 = net.FindBlob("gated_post_attention");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 4e-06 : 2e-05), "The blobs are different!");
 
-                blobVal.LoadFromNumpy(strPath + "tft.full.attention_scores.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".attention_scores.npy");
                 blob1 = net.FindBlob("attention_scores");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 2e-08 : 8e-08), "The blobs are different!");
 
                 // Position-wise feed-forward
-                blobVal.LoadFromNumpy(strPath + "tft.full.post_poswise_ff_grn.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".post_poswise_ff_grn.npy");
                 blob1 = net.FindBlob("post_poswise_ff_grn");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 4e-06 : 2e-05), "The blobs are different!");
 
-                blobVal.LoadFromNumpy(strPath + "tft.full.gated_poswise_ff.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".gated_poswise_ff.npy");
                 blob1 = net.FindBlob("gated_poswise_ff");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 5e-06 : 2e-05), "The blobs are different!");
 
                 // Output
-                blobVal.LoadFromNumpy(strPath + "tft.full.predicted_quantiles.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".predicted_quantiles.npy");
                 blob1 = net.FindBlob("predicted_quantiles");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 6e-06 : 2e-05), "The blobs are different!");
 
                 //*** BACKWARD ***
 
-                blob1.LoadFromNumpy(strPath + "tft.full.predicted_quantiles.grad.npy", true);
+                blob1.LoadFromNumpy(strPath + strTag + ".predicted_quantiles.grad.npy", true);
 
                 net.Backward(net.layers.Count - 2);
 
                 // Position-wise feed-forward
-                blobVal.LoadFromNumpy(strPath + "tft.full.gated_poswise_ff.grad.npy", true);
+                blobVal.LoadFromNumpy(strPath + strTag + ".gated_poswise_ff.grad.npy", true);
                 blob1 = net.FindBlob("gated_poswise_ff");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The gradients are different!");
 
-                blobVal.LoadFromNumpy(strPath + "tft.full.post_poswise_ff_grn.grad.npy", true);
+                blobVal.LoadFromNumpy(strPath + strTag + ".post_poswise_ff_grn.grad.npy", true);
                 blob1 = net.FindBlob("post_poswise_ff_grn");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The gradients are different!");
 
                 // Self-attention
-                blobVal.LoadFromNumpy(strPath + "tft.full.gated_post_attention.grad.npy", true);
+                blobVal.LoadFromNumpy(strPath + strTag + ".gated_post_attention.grad.npy", true);
                 blob1 = net.FindBlob("gated_post_attention");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The gradients are different!");
 
                 // Static enrichment
-                blobVal.LoadFromNumpy(strPath + "tft.full.enriched_sequence.grad.npy", true);
+                blobVal.LoadFromNumpy(strPath + strTag + ".enriched_sequence.grad.npy", true);
                 blob1 = net.FindBlob("enriched_sequence");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The gradients are different!");
 
                 // Locality enhancement - seq processing
-                blobVal.LoadFromNumpy(strPath + "tft.full.gated_lstm_output.grad.npy", true);
+                blobVal.LoadFromNumpy(strPath + strTag + ".gated_lstm_output.grad.npy", true);
                 blob1 = net.FindBlob("gated_lstm_output");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The gradients are different!");
 
                 // Future variable selection
-                blobVal.LoadFromNumpy(strPath + "tft.full.selected_future.grad.npy", true);
+                blobVal.LoadFromNumpy(strPath + strTag + ".selected_future.grad.npy", true);
                 blob1 = net.FindBlob("selected_fut");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The gradients are different!");
 
                 // Historical variable selection
-                blobVal.LoadFromNumpy(strPath + "tft.full.selected_historical.grad.npy", true);
+                blobVal.LoadFromNumpy(strPath + strTag + ".selected_historical.grad.npy", true);
                 blob1 = net.FindBlob("selected_hist");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The gradients are different!");
 
                 // Static Covariate Encoding
-                blobVal.LoadFromNumpy(strPath + "tft.full.c_enrichment.grad.npy", true);
+                blobVal.LoadFromNumpy(strPath + strTag + ".c_enrichment.grad.npy", true);
                 blob1 = net.FindBlob("c_enrichment");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 2e-06), "The grad are different!");
 
-                blobVal.LoadFromNumpy(strPath + "tft.full.c_selection.grad.npy", true);
+                blobVal.LoadFromNumpy(strPath + strTag + ".c_selection.grad.npy", true);
                 blob1 = net.FindBlob("c_selection");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 8e-05), "The grad are different!");
 
                 // Select static
                 // Currently mycaffe/python LSTM does not return c_hidden.grad or c_cell.grad
-                //blobVal.LoadFromNumpy(strPath + "tft.full.selected_static.grad.npy", true);
+                //blobVal.LoadFromNumpy(strPath + strTag + ".selected_static.grad.npy", true);
                 //blob1 = net.FindBlob("selected_static");
                 //m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The grad are different!");
 
                 // Transform all input channels
-                blobVal.LoadFromNumpy(strPath + "tft.full.future_ts_rep.grad.npy", true);
+                blobVal.LoadFromNumpy(strPath + strTag + ".future_ts_rep.grad.npy", true);
                 blob1 = net.FindBlob("future_ts_rep");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The grad are different!");
 
-                blobVal.LoadFromNumpy(strPath + "tft.full.historical_ts_rep.grad.npy", true);
+                blobVal.LoadFromNumpy(strPath + strTag + ".historical_ts_rep.grad.npy", true);
                 blob1 = net.FindBlob("hist_ts_rep");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The grad are different!");
 
-                //blobVal.LoadFromNumpy(strPath + "tft.full.static_rep.npy", true);
+                //blobVal.LoadFromNumpy(strPath + strTag + ".static_rep.npy", true);
                 //blob1 = net.FindBlob("static_rep");
                 //m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The grad are different!");
             }
@@ -1239,10 +1270,30 @@ namespace MyCaffe.test
             }
         }
 
-        // WORK IN PROGRESS
+        /// <summary>
+        /// Test the training 
+        /// </summary>
+        /// <remarks>
+        /// To generate test data:
+        /// Run training.py on fresh 'test\iter_0' data with the following settings (at top of file):
+        ///     debug = True
+        ///     use_mycaffe = True
+        ///     tag = 'tft.all'
+        /// 
+        /// Fresh test\iter_0 data generated by running:
+        /// training.py with TemporalFusionTransformer options: debug=True, tag='tft.full', use_mycaffe=True
+        /// </remarks>
         public void TestTraining()
         {
-            Net<T> net = null;
+            string strPath = getTestDataPath();
+            string strPathWt = getTestWtsPath();
+            Blob<T> blobVal = null;
+            Blob<T> blobWork = null;
+            Blob<T> blob1 = null;
+
+            SettingsCaffe s = new SettingsCaffe();
+            s.GpuIds = "0";
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, new CancelEvent());
             int nNumSamples = 256;
             int nNumHeads = 4;
             float fDropout = 0;
@@ -1260,16 +1311,211 @@ namespace MyCaffe.test
             int nNumFutureNumeric = 1;
             int nNumFutureCategorical = 7;
             List<int> rgFutureCardinalities = new List<int>() { 2, 3, 8, 13, 72, 6, 28 };
+            string strTag = "tft.all";
 
             try
             {
                 string strModel = buildModel(true, nNumSamples, nNumHeads, fDropout, nLstmLayers, nNumOutputs, nStateSize, nNumHistSteps, nNumFutureSteps, nNumStaticNumeric, nNumStaticCategorical, rgStaticCardinalities, nNumHistNumeric, nNumHistCategorical, rgHistCardinalities, nNumFutureNumeric, nNumFutureCategorical, rgFutureCardinalities);
+
+                SolverParameter solverParam = new SolverParameter();
+                solverParam.base_lr = 0.001;
+                solverParam.type = SolverParameter.SolverType.ADAM;
+                solverParam.test_initialization = false;
+                solverParam.test_interval = 10000;
+                solverParam.test_iter.Add(1);
+                string strSolver = solverParam.ToProto("root").ToString();
+
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
+
+                blobVal = mycaffe.CreateBlob("val");
+                blobWork = mycaffe.CreateBlob("work");
+
+                Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
+                Solver<T> solver = mycaffe.GetInternalSolver();
+                double dfLoss;
+
+                load_weights(strTag, net, strPath, nNumStaticNumeric, nNumStaticCategorical, nNumHistNumeric, nNumHistCategorical, nNumFutureNumeric, nNumFutureCategorical);
+
+                CalculationArray rgLoss = new CalculationArray(50);
+
+                for (int i = 0; i < 1000; i++)
+                {
+                    blob1 = net.FindBlob("x_numeric_static");
+                    //blob1.LoadFromNumpy(strPath + i.ToString() + "_static_feats_numeric.npy");
+                    blob1 = net.FindBlob("x_categorical_static");
+                    blob1.LoadFromNumpy(strPath + "data\\" + i.ToString() + "_static_feats_categorical.npy");
+                    blob1 = net.FindBlob("x_numeric_hist");
+                    blob1.LoadFromNumpy(strPath + "data\\" + i.ToString() + "_historical_ts_numeric.npy");
+                    blob1 = net.FindBlob("x_categorical_hist");
+                    blob1.LoadFromNumpy(strPath + "data\\" + i.ToString() + "_historical_ts_categorical.npy");
+                    blob1 = net.FindBlob("x_numeric_future");
+                    blob1.LoadFromNumpy(strPath + "data\\" + i.ToString() + "_future_ts_numeric.npy");
+                    blob1 = net.FindBlob("x_categorical_future");
+                    blob1.LoadFromNumpy(strPath + "data\\" + i.ToString() + "_future_ts_categorical.npy");
+                    blob1 = net.FindBlob("target");
+                    blob1.LoadFromNumpy(strPath + "data\\" + i.ToString() + "_target.npy");
+
+                    dfLoss = net.ForwardFromTo(1);
+                    rgLoss.Add(dfLoss);
+                    m_log.WriteLine("Iter " + i.ToString() + ", Loss = " + rgLoss.Average.ToString());
+
+                    // Transform all input channels
+                    blobVal.LoadFromNumpy(strPath + strTag + ".future_ts_rep.npy");
+                    blob1 = net.FindBlob("future_ts_rep");
+                    m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-08), "The blobs are different!");
+
+                    blobVal.LoadFromNumpy(strPath + strTag + ".historical_ts_rep.npy");
+                    blob1 = net.FindBlob("hist_ts_rep");
+                    m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 6e-08), "The blobs are different!");
+
+                    blobVal.LoadFromNumpy(strPath + strTag + ".static_rep.npy");
+                    blob1 = net.FindBlob("static_rep");
+                    m_log.CHECK(blobVal.Compare(blob1, blobWork), "The blobs are different!");
+
+
+                    // Select static
+                    blobVal.LoadFromNumpy(strPath + strTag + ".selected_static.npy");
+                    blob1 = net.FindBlob("selected_static");
+                    m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 5e-07), "The blobs are different!");
+
+
+                    // Static Covariate Encoding
+                    blobVal.LoadFromNumpy(strPath + strTag + ".c_enrichment.npy");
+                    blob1 = net.FindBlob("c_enrichment");
+                    m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 2e-06), "The blobs are different!");
+
+                    blobVal.LoadFromNumpy(strPath + strTag + ".c_selection.npy");
+                    blob1 = net.FindBlob("c_selection");
+                    m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
+
+                    blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_cell.npy");
+                    blob1 = net.FindBlob("c_seq_cell");
+                    m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
+
+                    blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_hidden.npy");
+                    blob1 = net.FindBlob("c_seq_hidden");
+                    m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
+
+
+                    // Historical varaible selection
+                    blobVal.LoadFromNumpy(strPath + strTag + ".selected_historical.npy");
+                    blob1 = net.FindBlob("selected_hist");
+                    m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 2e-06), "The blobs are different!");
+
+                    // Future variable selection
+                    blobVal.LoadFromNumpy(strPath + strTag + ".selected_future.npy");
+                    blob1 = net.FindBlob("selected_fut");
+                    m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 2e-06), "The blobs are different!");
+
+                    // Locality enhancement - seq procesing
+                    blobVal.LoadFromNumpy(strPath + strTag + ".gated_lstm_output.npy");
+                    blob1 = net.FindBlob("gated_lstm_output");
+                    m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 7e-06 : 6e-05), "The blobs are different!");
+
+                    // Static enrichment
+                    blobVal.LoadFromNumpy(strPath + strTag + ".enriched_sequence.npy");
+                    blob1 = net.FindBlob("enriched_sequence");
+                    m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 7e-06 : 5e-05), "The blobs are different!");
+
+                    // Self attention
+                    blobVal.LoadFromNumpy(strPath + strTag + ".gated_post_attention.npy");
+                    blob1 = net.FindBlob("gated_post_attention");
+                    m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 4e-06 : 2e-05), "The blobs are different!");
+
+                    blobVal.LoadFromNumpy(strPath + strTag + ".attention_scores.npy");
+                    blob1 = net.FindBlob("attention_scores");
+                    m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 2e-08 : 8e-08), "The blobs are different!");
+
+                    // Position-wise feed-forward
+                    blobVal.LoadFromNumpy(strPath + strTag + ".post_poswise_ff_grn.npy");
+                    blob1 = net.FindBlob("post_poswise_ff_grn");
+                    m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 4e-06 : 2e-05), "The blobs are different!");
+
+                    blobVal.LoadFromNumpy(strPath + strTag + ".gated_poswise_ff.npy");
+                    blob1 = net.FindBlob("gated_poswise_ff");
+                    m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 5e-06 : 2e-05), "The blobs are different!");
+
+                    // Output
+                    blobVal.LoadFromNumpy(strPath + strTag + ".predicted_quantiles.npy");
+                    blob1 = net.FindBlob("predicted_quantiles");
+                    m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 6e-06 : 2e-05), "The blobs are different!");
+
+                    blobVal.LoadFromNumpy(strPath + strTag + ".loss.npy");
+                    blob1 = net.FindBlob("loss");
+                    m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 5e-07), "The blobs are different!");
+
+                    net.Backward();
+                    solver.Step(1);
+                }
             }
-            catch (Exception ex)
+            finally
             {
-                if (net != null)
-                    net.Dispose();
+                dispose(ref blobVal);
+                dispose(ref blobWork);
+
+                if (mycaffe != null)
+                    mycaffe.Dispose();
             }
+        }
+
+        public void TestTrainingFull()
+        {
+            string strPath = getTestDataPath();
+            string strPathWt = getTestWtsPath();
+
+            SettingsCaffe s = new SettingsCaffe();
+            s.GpuIds = "0";
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, new CancelEvent());
+            int nNumSamples = 256;
+            int nNumHeads = 4;
+            float fDropout = 0;
+            int nLstmLayers = 2;
+            int nNumOutputs = 3;
+            int nStateSize = 64;
+            int nNumHistSteps = 90;
+            int nNumFutureSteps = 30;
+            int nNumStaticNumeric = 0;
+            int nNumStaticCategorical = 9;
+            List<int> rgStaticCardinalities = new List<int>() { 54, 3627, 23, 17, 6, 18, 33, 320, 3 };
+            int nNumHistNumeric = 4;
+            int nNumHistCategorical = 7;
+            List<int> rgHistCardinalities = new List<int>() { 2, 3, 8, 13, 72, 6, 28 };
+            int nNumFutureNumeric = 1;
+            int nNumFutureCategorical = 7;
+            List<int> rgFutureCardinalities = new List<int>() { 2, 3, 8, 13, 72, 6, 28 };
+            string strTag = "tft.all";
+
+            try
+            {
+                string strModel = buildModel(true, nNumSamples, nNumHeads, fDropout, nLstmLayers, nNumOutputs, nStateSize, nNumHistSteps, nNumFutureSteps, nNumStaticNumeric, nNumStaticCategorical, rgStaticCardinalities, nNumHistNumeric, nNumHistCategorical, rgHistCardinalities, nNumFutureNumeric, nNumFutureCategorical, rgFutureCardinalities);
+
+                SolverParameter solverParam = new SolverParameter();
+                solverParam.base_lr = 0.001;
+                solverParam.type = SolverParameter.SolverType.ADAM;
+                solverParam.test_initialization = false;
+                solverParam.test_interval = 10000;
+                solverParam.test_iter.Add(1);
+                string strSolver = solverParam.ToProto("root").ToString();
+
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
+                mycaffe.OnTrainingIteration += Mycaffe_OnTrainingIteration;
+
+                Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
+                load_weights(strTag, net, strPath, nNumStaticNumeric, nNumStaticCategorical, nNumHistNumeric, nNumHistCategorical, nNumFutureNumeric, nNumFutureCategorical);
+
+                mycaffe.Train(10);
+            }
+            finally
+            {
+                if (mycaffe != null)
+                    mycaffe.Dispose();
+            }
+        }
+
+        private void Mycaffe_OnTrainingIteration(object sender, TrainingIterationArgs<T> e)
+        {
+            m_rgLoss.Add(e.Loss);
+            m_log.WriteLine("Iter = " + e.Iteration.ToString() + ", Loss = " + m_rgLoss.Average.ToString());
         }
     }
 }
