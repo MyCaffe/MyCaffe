@@ -191,7 +191,7 @@ namespace MyCaffe.layers
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
             if (rgbPropagateDown[1])
-                m_log.FAIL(type.ToString() + " Layer cannot backpropagate to laabel inputs.");
+                m_log.FAIL(type.ToString() + " Layer cannot backpropagate to label inputs.");
 
             if (rgbPropagateDown[0])
             {
