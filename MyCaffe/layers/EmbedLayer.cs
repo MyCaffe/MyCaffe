@@ -25,6 +25,7 @@ namespace MyCaffe.layers
         int m_nN;
         bool m_bBiasTerm;
         Blob<T> m_blobBiasMultiplier;
+        bool m_bWarningShown = false;
 
         /// <summary>
         /// The EmbedLayer constructor
@@ -133,6 +134,8 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            m_bWarningShown = false;
+
             if (colBottom.Count > 1)
                 m_param.embed_param.input_dim = (uint)convertF(colBottom[1].GetData(0));
 
@@ -241,8 +244,11 @@ namespace MyCaffe.layers
         /// <param name="colBottom">bottom input Blob vector (length 1).</param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
-            if (rgbPropagateDown[0])
+            if (rgbPropagateDown[0] && !m_bWarningShown)
+            {
                 m_log.WriteLine("WARNING: Can't backpropagate to EmbedLayer input.");
+                m_bWarningShown = true;
+            }
 
             if (m_rgbParamPropagateDown[0])
             {

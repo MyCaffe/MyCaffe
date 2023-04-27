@@ -106,6 +106,7 @@ namespace MyCaffe.layers
         RNN_MODE m_rnnMode;
         bool m_bUseTensors = false;
         List<int> m_rgShape = new List<int>(4);
+        bool m_bWarningShown = false;
 
         /// <summary>
         /// The RecurrentLayer constructor.
@@ -279,6 +280,8 @@ namespace MyCaffe.layers
         {
             Blob<T> blobBtm0 = colBottom[0];
             Blob<T> blobBtm1 = colBottom[1];
+
+            m_bWarningShown = false;
 
             if (m_param.recurrent_param.batch_first)
             {
@@ -1271,8 +1274,11 @@ namespace MyCaffe.layers
 
         private void backward_cudnn(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
-            if (rgbPropagateDown[1])
+            if (rgbPropagateDown[1] && !m_bWarningShown)
+            {
                 m_log.WriteLine("WARNING: Cannot backpropagate to sequence indicators, sequence backprop will be ignored.");
+                m_bWarningShown = true;
+            }
 
             // Copy top diffs to timestep T diffs
             if (colTop.Count > 2)
