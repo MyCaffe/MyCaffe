@@ -2127,15 +2127,20 @@ namespace MyCaffe.test
 
     class CalculationArray
     {
+        int? m_nMax = null;
         List<double> m_rgValues = new List<double>();
 
-        public CalculationArray()
+        public CalculationArray(int? nMax = null)
         {
+            m_nMax = nMax;
         }
 
         public void Add(double dfVal)
         {
             m_rgValues.Add(dfVal);
+
+            if (m_nMax.HasValue && m_rgValues.Count > m_nMax.Value)
+                m_rgValues.RemoveAt(0);
         }
 
         public double Average
