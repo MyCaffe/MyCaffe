@@ -12,6 +12,7 @@ using MyCaffe.db.image;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.data;
 using MyCaffe.layers.tft;
+using System.Threading;
 
 /// <summary>
 /// Testing the DataTemporal.
@@ -133,6 +134,7 @@ namespace MyCaffe.test
         /// </remarks>
         public void TestForward()
         {
+            CancelEvent evtCancel = new CancelEvent();
             string strPath = getTestDataPath();
             string strPathWt = getTestWtsPath();
             Blob<T> blobVal = null;
@@ -153,7 +155,7 @@ namespace MyCaffe.test
                 RawProto rp = RawProto.Parse(strModel);
                 NetParameter param = NetParameter.FromProto(rp);
 
-                net = new Net<T>(m_cuda, m_log, param, null, null);
+                net = new Net<T>(m_cuda, m_log, param, evtCancel, null);
 
                 BlobCollection<T> colRes = net.Forward();
 
@@ -185,8 +187,11 @@ namespace MyCaffe.test
                 m_log.CHECK(blob1 != null, "Could not find the blob 'target'!");
                 m_log.CHECK(blob1.CompareShape(new List<int>() { 256, 30 }), "The blob shape is different than expected");
             }
-            catch (Exception ex)
+            finally
             {
+                evtCancel.Set();
+                Thread.Sleep(1000);
+                
                 dispose(ref blobVal);
                 dispose(ref blobWork);
 
