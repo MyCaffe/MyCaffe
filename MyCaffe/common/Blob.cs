@@ -3275,13 +3275,15 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="strFile">Specifies the .npy file name.</param>
         /// <param name="log">Optionally, specifies the output log.</param>
-        /// <param name="nMax">Optionally, specifies the maximum number of items to load.</param>
+        /// <param name="nMax">Optionally, specifies the maximum number of items to load (default = MaxValue).</param>
+        /// <param name="nStartIdx">Optionally, specifies a start index of items to ready (default = 0).</param>
+        /// <param name="nCount">Optionally, specifies the number of items to load from the start index (default = MaxValue).</param>
         /// <exception cref="Exception">An exception is thrown when an invalid or unsupported feature is located.</exception>
         /// <remarks>
         /// @see[A Simple File Format for NumPy Arrays](https://numpy.org/doc/1.13/neps/npy-format.html)
         /// </remarks>
         /// <returns>A tuple containing the float[,] data and int[] shape is returned.</returns>
-        public static Tuple<List<float[]>, int[], List<string>> LoadFromNumpyEx(string strFile, Log log = null, int nMax = int.MaxValue)
+        public static Tuple<List<float[]>, int[], List<string>> LoadFromNumpyEx(string strFile, Log log = null, int nMax = int.MaxValue, int nStartIdx = 0, int nCount = int.MaxValue)
         {
             using (FileStream fs = File.OpenRead(strFile))
             using (BinaryReader br = new BinaryReader(fs))
@@ -3330,10 +3332,23 @@ namespace MyCaffe.common
 
                 string strVal;
                 ulong ulIdx = 0;
-                ulong ulTotal = (ulong)count.Item1 * (ulong)count.Item2;
-                List<float[]> rgData = new List<float[]>(count.Item1);
-                List<string> rgStrData = new List<string>(count.Item1);
-                for (int i = 0; i < count.Item1; i++)
+
+                if (nCount == int.MaxValue)
+                {
+                    nCount = count.Item1;
+                }
+                else
+                {
+                    if (nStartIdx + nCount > count.Item1)
+                        nCount = count.Item1 - nStartIdx;
+
+                    rgShape[0] = nCount;
+                }
+
+                ulong ulTotal = (ulong)nCount * (ulong)count.Item2;
+                List<float[]> rgData = new List<float[]>(nCount);
+                List<string> rgStrData = new List<string>(nCount);
+                for (int i = nStartIdx; i < nStartIdx + nCount && i < count.Item1; i++)
                 {
                     float[] rgItem = new float[count.Item2];
                     for (int j = 0; j < count.Item2; j++)
