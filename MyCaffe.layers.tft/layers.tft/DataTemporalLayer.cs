@@ -323,7 +323,7 @@ namespace MyCaffe.layers.tft
                                 Thread.Sleep(50);
                                 nWaitCount++;
 
-                                if (nWaitCount > nMaxLoadCount)
+                                if (nWaitCount > nDripRefreshRateInSec)
                                     break;
                             }
                         }
@@ -339,7 +339,7 @@ namespace MyCaffe.layers.tft
                         Thread.Sleep(50);
                         nWaitCount++;
 
-                        if (nWaitCount > nMaxLoadCount)
+                        if (nWaitCount > nDripRefreshRateInSec)
                             break;
                     }
 
