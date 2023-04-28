@@ -301,6 +301,14 @@ namespace MyCaffe.layers.tft
                         if (sw.Elapsed.TotalMilliseconds > 1000)
                         {
                             double dfPct = (double)nStartIdx / (double)nTotalCount;
+                            if (nMaxLoadCount > 0)
+                            {
+                                if (nStartIdx > nMaxLoadCount)
+                                    dfPct = 1;
+                                else
+                                    dfPct = (double)nStartIdx / (double)nMaxLoadCount;
+                            }
+
                             log.WriteLine("Background data loading '" + strType + "' data at " + dfPct.ToString("P") + "...");
                             sw.Restart();
                         }
@@ -478,6 +486,8 @@ namespace MyCaffe.layers.tft
         /// The constructor.
         /// </summary>
         /// <param name="log">Specifies the output log.</param>
+        /// <param name="nHistoricalSteps">Specifies the number of historical steps.</param>
+        /// <param name="nFutureSteps">Specifies the number of future steps.</param>
         public Data(Log log, int nHistoricalSteps, int nFutureSteps)
         {
             m_log = log;
