@@ -2,7 +2,10 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Policy;
 using System.Text;
+using System.Threading;
+using System.Xml.Linq;
 using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
@@ -31,6 +34,7 @@ namespace MyCaffe.layers.tft
         uint m_nNumFutureNumeric;
         uint m_nNumFutureCategorical;
         RawFileData<T> m_data = new RawFileData<T>();
+        CancelEvent m_evtCancel;
 
         /// <summary>
         /// The constructor.
@@ -38,9 +42,10 @@ namespace MyCaffe.layers.tft
         /// <param name="cuda">Specifies the CudaDnn connection to Cuda.</param>
         /// <param name="log">Specifies the Log for output.</param>
         /// <param name="p">Specifies the LayerParameter of type Gelu with parameter gelu_param</param>
-        public DataTemporalLayer(CudaDnn<T> cuda, Log log, LayerParameter p)
+        public DataTemporalLayer(CudaDnn<T> cuda, Log log, LayerParameter p, CancelEvent evtCancel)
             : base(cuda, log, p)
         {
+            m_evtCancel = evtCancel;
             m_type = LayerParameter.LayerType.DATA_TEMPORAL;
         }
 
@@ -91,32 +96,20 @@ namespace MyCaffe.layers.tft
             m_nNumHistoricalSteps = m_param.data_temporal_param.num_historical_steps;
             m_nNumFutureSteps = m_param.data_temporal_param.num_future_steps;
 
-            m_data.LoadData(m_phase, m_param.data_temporal_param.source, m_log);
+            if (!m_data.LoadData(m_phase, m_param.data_temporal_param.source, (int)m_nNumHistoricalSteps, (int)m_nNumFutureSteps, m_log, m_evtCancel))
+                throw new Exception("DataTemporalLayer data loading aborted!");
 
-            int nTotalSize = m_data.Data[RawFileData<T>.DATA_TYPE.STATIC_FEAT_NUMERIC].Item2[0];
-            m_log.CHECK_GT(nTotalSize, m_nBatchSize, "There must be enough items for at least one batch - items found = " + nTotalSize.ToString() + ", batch size = " + m_nBatchSize.ToString());            
+            int nTotalSize = m_data.GetTotalSize();
+            m_log.CHECK_GT(nTotalSize, m_nBatchSize, "There must be enough items for at least one batch - items found = " + nTotalSize.ToString() + ", batch size = " + m_nBatchSize.ToString());
 
-            m_nNumStaticFeatsNumeric = (uint)m_data.Data[RawFileData<T>.DATA_TYPE.STATIC_FEAT_NUMERIC].Item2[1];
-            m_log.CHECK_EQ(m_data.Data[RawFileData<T>.DATA_TYPE.STATIC_FEAT_NUMERIC].Item2[0], nTotalSize, "The batch sizes do not match!");
+            m_nNumStaticFeatsNumeric = (uint)m_data.GetCount(Data<T>.DATA_TYPE.STATIC_FEAT_NUMERIC, nTotalSize);
+            m_nNumStaticFeatsCategorical = (uint)m_data.GetCount(Data<T>.DATA_TYPE.STATIC_FEAT_CATEGORICAL, nTotalSize);
 
-            m_nNumStaticFeatsCategorical = (uint)m_data.Data[RawFileData<T>.DATA_TYPE.STATIC_FEAT_CATEGORICAL].Item2[1];
-            m_log.CHECK_EQ(m_data.Data[RawFileData<T>.DATA_TYPE.STATIC_FEAT_CATEGORICAL].Item2[0], nTotalSize, "The batch sizes do not match!");
+            m_nNumHistoricalNumeric = (uint)m_data.GetCount(Data<T>.DATA_TYPE.HISTORICAL_NUMERIC, nTotalSize);
+            m_nNumHistoricalCategorical = (uint)m_data.GetCount(Data<T>.DATA_TYPE.HISTORICAL_CATEGORICAL, nTotalSize);
 
-            m_nNumHistoricalNumeric = (uint)m_data.Data[RawFileData<T>.DATA_TYPE.HISTORICAL_NUMERIC].Item2[2];
-            m_log.CHECK_EQ(m_data.Data[RawFileData<T>.DATA_TYPE.HISTORICAL_NUMERIC].Item2[0], nTotalSize, "The batch sizes do not match!");
-            m_log.CHECK_EQ(m_data.Data[RawFileData<T>.DATA_TYPE.HISTORICAL_NUMERIC].Item2[1], m_nNumHistoricalSteps, "The num historical steps do not match!");
-
-            m_nNumHistoricalCategorical = (uint)m_data.Data[RawFileData<T>.DATA_TYPE.HISTORICAL_CATEGORICAL].Item2[2];
-            m_log.CHECK_EQ(m_data.Data[RawFileData<T>.DATA_TYPE.HISTORICAL_CATEGORICAL].Item2[0], nTotalSize, "The batch sizes do not match!");
-            m_log.CHECK_EQ(m_data.Data[RawFileData<T>.DATA_TYPE.HISTORICAL_CATEGORICAL].Item2[1], m_nNumHistoricalSteps, "The num historical steps do not match!");
-
-            m_nNumFutureNumeric = (uint)m_data.Data[RawFileData<T>.DATA_TYPE.FUTURE_NUMERIC].Item2[2];
-            m_log.CHECK_EQ(m_data.Data[RawFileData<T>.DATA_TYPE.FUTURE_NUMERIC].Item2[0], nTotalSize, "The batch sizes do not match!");
-            m_log.CHECK_EQ(m_data.Data[RawFileData<T>.DATA_TYPE.FUTURE_NUMERIC].Item2[1], m_nNumFutureSteps, "The num future steps do not match!");
-
-            m_nNumFutureCategorical = (uint)m_data.Data[RawFileData<T>.DATA_TYPE.FUTURE_CATEGORICAL].Item2[2];
-            m_log.CHECK_EQ(m_data.Data[RawFileData<T>.DATA_TYPE.FUTURE_CATEGORICAL].Item2[0], nTotalSize, "The batch sizes do not match!");
-            m_log.CHECK_EQ(m_data.Data[RawFileData<T>.DATA_TYPE.FUTURE_CATEGORICAL].Item2[1], m_nNumFutureSteps, "The num future steps do not match!");
+            m_nNumFutureNumeric = (uint)m_data.GetCount(Data<T>.DATA_TYPE.FUTURE_NUMERIC, nTotalSize);
+            m_nNumFutureCategorical = (uint)m_data.GetCount(Data<T>.DATA_TYPE.FUTURE_CATEGORICAL, nTotalSize);
         }
 
         /// <summary>
@@ -196,10 +189,163 @@ namespace MyCaffe.layers.tft
     /// <typeparam name="T">Specifies the base data type of 'float' or 'double'.</typeparam>
     class RawFileData<T>
     {
-        List<string> m_rgstrCombinationID;
-        List<DateTime> m_rgTimestamps = new List<DateTime>();
+        Data<T> m_data;
         Random m_random = new Random();
+
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        public RawFileData() 
+        { 
+        }
+
+        /// <summary>
+        /// Loads all data values for the phase specified.
+        /// </summary>
+        /// <param name="phase">Specifies the phase to load.</param>
+        /// <param name="strPath">Specifies the base path for all data.</param>
+        /// <param name="log">Specifies the output log.</param>
+        /// <param name="evtCancel">Specifies the cancel event.</param>
+        public bool LoadData(Phase phase, string strPath, int nHistoricalSteps, int nFutureSteps, Log log, CancelEvent evtCancel)
+        {
+            m_data = new Data<T>(log, nHistoricalSteps, nFutureSteps);
+
+            ManualResetEvent evtReady = new ManualResetEvent(false);
+            ManualResetEvent evtDone = new ManualResetEvent(false);
+            Thread threadLoad = new Thread(new ParameterizedThreadStart(loadDataFunction));
+            threadLoad.Start(new DataLoadParameters(phase, strPath, nHistoricalSteps, nFutureSteps, log, evtCancel, evtReady, evtDone));
+
+            while (!evtReady.WaitOne(1000))
+            {
+                if (evtCancel.WaitOne(0))
+                    return false;
+
+                Thread.Sleep(50);
+            }
+
+            return true;
+        }
+
+        private void loadDataFunction(object obj)
+        {
+            DataLoadParameters arg = obj as DataLoadParameters;
+            string strPath = arg.Path;
+            Phase phase = arg.Phase;
+            Log log = arg.Log;
+            int nNumHistSteps = arg.HistoricalSteps;
+            int nNumFutureSteps = arg.FutureSteps;
+            CancelEvent evtCancel = arg.CancelEvent;
+            ManualResetEvent evtReady = arg.ReadyEvent;
+            ManualResetEvent evtDone = arg.DoneEvent;
+
+            try
+            {
+                string strFile;
+                string strType = "train";
+                strPath = strPath.TrimEnd('\\', '/');
+                strPath += "\\";
+
+                if (phase == Phase.TEST)
+                    strType = "validation";
+
+                strFile = strPath + strType + "_time_index.npy";
+                Tuple<List<float[]>, int[], List<string>> rgTimeRaw = Blob<float>.LoadFromNumpyEx(strFile, log);
+
+                int nTotalCount = rgTimeRaw.Item1.Count;
+                int nStartIdx = 0;
+                int nCount = 1000;
+                Data<T> dataChunk = new Data<T>(m_data.Log, nNumHistSteps, nNumFutureSteps);
+
+                while (dataChunk.Load(strPath, strType, nStartIdx, nCount))
+                {
+                    m_data.Add(dataChunk);
+                    dataChunk.Clear();
+
+                    if (evtCancel.WaitOne(0))
+                        break;
+
+                    evtReady.Set();
+
+                    nStartIdx += nCount;
+
+                    if (nStartIdx + nCount > nTotalCount)
+                        nCount = nTotalCount - nStartIdx;
+
+                    if (nCount <= 0)
+                        break;
+                }
+            }
+            finally
+            {
+                evtDone.Set();
+            }
+        }
+
+        /// <summary>
+        /// Loads a batch of data items into the BlobCollection.
+        /// </summary>
+        /// <param name="nBatchSize">Specifies the batch size.</param>
+        /// <param name="col">Specifies the blob collection to load the batch into.</param>
+        public void LoadBatch(int nBatchSize, BlobCollection<T> col)
+        {
+            m_data.LoadBatch(nBatchSize, col);
+        }
+
+        public int GetTotalSize()
+        {
+            return m_data.GetTotalSize();
+        }
+
+        public int GetCount(Data<T>.DATA_TYPE dtype, int nTotalSize)
+        {
+            return m_data.GetCount(dtype, nTotalSize);
+        }
+    }
+
+#pragma warning disable 1591
+
+    class DataLoadParameters /** @private */
+    {
+        Phase m_phase;
+        string m_strPath;
+        int m_nNumHistSteps;
+        int m_nNumFutureSteps;
+        Log m_log;
+        CancelEvent m_evtCancel;
+        ManualResetEvent m_evtReady;
+        ManualResetEvent m_evtDone;
+
+        public DataLoadParameters(Phase phase, string strPath, int nNumHistSteps, int nNumFutureSteps, Log log, CancelEvent evtCancel, ManualResetEvent evtReady, ManualResetEvent evtDone)
+        {
+            m_phase = phase;
+            m_strPath = strPath;
+            m_nNumHistSteps = nNumHistSteps;
+            m_nNumFutureSteps = nNumFutureSteps;
+            m_log = log;
+            m_evtCancel = evtCancel;
+            m_evtReady = evtReady;
+            m_evtDone = evtDone;
+        }
+
+        public Phase Phase { get { return m_phase; } }
+        public string Path { get { return m_strPath; } }
+        public int HistoricalSteps {  get { return m_nNumHistSteps; } }
+        public int FutureSteps { get { return m_nNumFutureSteps; } }
+        public Log Log { get { return m_log; } }
+        public CancelEvent CancelEvent { get { return m_evtCancel; } }
+        public ManualResetEvent ReadyEvent { get { return m_evtReady; } }
+        public ManualResetEvent DoneEvent { get { return m_evtDone; } } 
+    }
+
+    class Data<T> /** @private */
+    {
+        Random m_random = new Random();
+        int m_nHistoricalSteps = 1;
+        int m_nFutureSteps = 1;
         int m_nTotalCount = 0;
+        List<string> m_rgstrCombinationID = new List<string>();
+        List<DateTime> m_rgTimestamps = new List<DateTime>();
         Dictionary<DATA_TYPE, Tuple<List<float[]>, int[], List<string>>> m_rgData = new Dictionary<DATA_TYPE, Tuple<List<float[]>, int[], List<string>>>();
         int m_nStaticNumericCount = 0;
         float[] m_rgStaticNumericBatch = null;
@@ -215,6 +361,8 @@ namespace MyCaffe.layers.tft
         float[] m_rgFutureCategoricalBatch = null;
         int m_nTargetCount = 0;
         float[] m_rgTargetBatch = null;
+        Log m_log;
+        object m_syncObj = new object();
 
         /// <summary>
         /// Defines the data type.
@@ -262,8 +410,68 @@ namespace MyCaffe.layers.tft
         /// <summary>
         /// The constructor.
         /// </summary>
-        public RawFileData() 
-        { 
+        /// <param name="log">Specifies the output log.</param>
+        public Data(Log log, int nHistoricalSteps, int nFutureSteps)
+        {
+            m_log = log;
+            m_nHistoricalSteps = nHistoricalSteps;
+            m_nFutureSteps = nFutureSteps;
+        }
+
+        public int GetTotalSize()
+        {
+            lock (m_syncObj)
+            {
+                return m_rgData[DATA_TYPE.STATIC_FEAT_NUMERIC].Item2[0];
+            }
+        }
+
+        public int GetCount(DATA_TYPE dtype, int nTotalSize)
+        {
+            lock (m_syncObj)
+            {
+                switch (dtype)
+                {
+                    case DATA_TYPE.STATIC_FEAT_NUMERIC:
+                        m_log.CHECK_EQ(m_rgData[DATA_TYPE.STATIC_FEAT_NUMERIC].Item2[0], nTotalSize, "The batch sizes do not match!");
+                        return m_rgData[DATA_TYPE.STATIC_FEAT_NUMERIC].Item2.Last();
+
+                    case DATA_TYPE.STATIC_FEAT_CATEGORICAL:
+                        m_log.CHECK_EQ(m_rgData[DATA_TYPE.STATIC_FEAT_CATEGORICAL].Item2[0], nTotalSize, "The batch sizes do not match!");
+                        return m_rgData[DATA_TYPE.STATIC_FEAT_CATEGORICAL].Item2.Last();
+
+                    case DATA_TYPE.HISTORICAL_NUMERIC:
+                        m_log.CHECK_EQ(m_rgData[DATA_TYPE.HISTORICAL_NUMERIC].Item2[0], nTotalSize, "The batch sizes do not match!");
+                        return m_rgData[DATA_TYPE.HISTORICAL_NUMERIC].Item2.Last();
+
+                    case DATA_TYPE.HISTORICAL_CATEGORICAL:
+                        m_log.CHECK_EQ(m_rgData[DATA_TYPE.HISTORICAL_CATEGORICAL].Item2[0], nTotalSize, "The batch sizes do not match!");
+                        return m_rgData[DATA_TYPE.HISTORICAL_CATEGORICAL].Item2.Last();
+
+                    case DATA_TYPE.FUTURE_NUMERIC:
+                        m_log.CHECK_EQ(m_rgData[DATA_TYPE.FUTURE_NUMERIC].Item2[0], nTotalSize, "The batch sizes do not match!");
+                        return m_rgData[DATA_TYPE.FUTURE_NUMERIC].Item2.Last();
+
+                    case DATA_TYPE.FUTURE_CATEGORICAL:
+                        m_log.CHECK_EQ(m_rgData[DATA_TYPE.FUTURE_CATEGORICAL].Item2[0], nTotalSize, "The batch sizes do not match!");
+                        return m_rgData[DATA_TYPE.FUTURE_CATEGORICAL].Item2.Last();
+
+                    case DATA_TYPE.TARGET:
+                        m_log.CHECK_EQ(m_rgData[DATA_TYPE.TARGET].Item2[0], nTotalSize, "The batch sizes do not match!");
+                        return m_rgData[DATA_TYPE.TARGET].Item2.Last();
+
+                    default:
+                        throw new Exception("Unsupported count '" + dtype.ToString() + "'!");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Return the log object.
+        /// </summary>
+        public Log Log
+        {
+            get { return m_log; }
         }
 
         /// <summary>
@@ -281,126 +489,167 @@ namespace MyCaffe.layers.tft
 
         private int calculateCount(DATA_TYPE dtype)
         {
-            int[] rg = m_rgData[dtype].Item2;
-
-            if (rg == null || rg.Length < 2)
-                return 0;
-
-            int nCount = rg[1];
-
-            for (int i = 2; i < rg.Length; i++)
-            {
-                nCount *= rg[i];
-            }
-
-            return nCount;
+            return m_rgData[dtype].Item2.Last();
         }
 
-        /// <summary>
-        /// Loads all data values for the phase specified.
-        /// </summary>
-        /// <param name="phase">Specifies the phase to load.</param>
-        /// <param name="strPath">Specifies the base path for all data.</param>
-        /// <param name="log">Specifies the output log.</param>
-        public void LoadData(Phase phase, string strPath, Log log)
-        {
-            string strFile;
-            string strType = "train";
-            strPath = strPath.TrimEnd('\\', '/');
-            strPath += "\\";
-
-            if (phase == Phase.TEST)
-                strType = "validation";
-
-            if (!m_rgData.ContainsKey(DATA_TYPE.COMBINATION_ID))
-            {
-                strFile = strPath + strType + "_combination_id.npy";
-                m_rgData.Add(DATA_TYPE.COMBINATION_ID, Blob<float>.LoadFromNumpyEx(strFile, log));
-                m_nTotalCount = m_rgData[DATA_TYPE.COMBINATION_ID].Item2[0];
-                m_rgstrCombinationID = m_rgData[DATA_TYPE.COMBINATION_ID].Item3;                
-            }
-
-            if (!m_rgData.ContainsKey(DATA_TYPE.TIME_INDEX))
-            {
-                strFile = strPath + strType + "_time_index.npy";
-                m_rgData.Add(DATA_TYPE.TIME_INDEX, Blob<float>.LoadFromNumpyEx(strFile, log));
-
-                List<float[]> rgTime = m_rgData[DATA_TYPE.TIME_INDEX].Item1;
-                foreach (float[] rgTime2 in rgTime)
-                {
-                    DateTime dt = UnixTimeStampToDateTime(rgTime2[0]);
-                    m_rgTimestamps.Add(dt);
-                }
-            }
-
-            if (!m_rgData.ContainsKey(DATA_TYPE.STATIC_FEAT_NUMERIC))
-            {
-                strFile = strPath + strType + "_static_feats_numeric.npy";
-                m_rgData.Add(DATA_TYPE.STATIC_FEAT_NUMERIC, Blob<float>.LoadFromNumpyEx(strFile, log));
-                m_nStaticNumericCount = calculateCount(DATA_TYPE.STATIC_FEAT_NUMERIC);
-            }
-
-            if (!m_rgData.ContainsKey(DATA_TYPE.STATIC_FEAT_CATEGORICAL))
-            {
-                strFile = strPath + strType + "_static_feats_categorical.npy";
-                m_rgData.Add(DATA_TYPE.STATIC_FEAT_CATEGORICAL, Blob<float>.LoadFromNumpyEx(strFile, log));
-                m_nStaticCategoricalCount = calculateCount(DATA_TYPE.STATIC_FEAT_CATEGORICAL);
-            }
-
-            if (!m_rgData.ContainsKey(DATA_TYPE.HISTORICAL_NUMERIC))
-            {
-                strFile = strPath + strType + "_historical_ts_numeric.npy";
-                m_rgData.Add(DATA_TYPE.HISTORICAL_NUMERIC, Blob<float>.LoadFromNumpyEx(strFile, log));
-                m_nHistoricalNumericCount = calculateCount(DATA_TYPE.HISTORICAL_NUMERIC);
-            }
-
-            if (!m_rgData.ContainsKey(DATA_TYPE.HISTORICAL_CATEGORICAL))
-            {
-                strFile = strPath + strType + "_historical_ts_categorical.npy";
-                m_rgData.Add(DATA_TYPE.HISTORICAL_CATEGORICAL, Blob<float>.LoadFromNumpyEx(strFile, log));
-                m_nHistoricalCategoricalCount = calculateCount(DATA_TYPE.HISTORICAL_CATEGORICAL);
-            }
-
-            if (!m_rgData.ContainsKey(DATA_TYPE.FUTURE_NUMERIC))
-            {
-                strFile = strPath + strType + "_future_ts_numeric.npy";
-                m_rgData.Add(DATA_TYPE.FUTURE_NUMERIC, Blob<float>.LoadFromNumpyEx(strFile, log));
-                m_nFutureNumericCount = calculateCount(DATA_TYPE.FUTURE_NUMERIC);
-            }
-
-            if (!m_rgData.ContainsKey(DATA_TYPE.FUTURE_CATEGORICAL))
-            {
-                strFile = strPath + strType + "_future_ts_categorical.npy";
-                m_rgData.Add(DATA_TYPE.FUTURE_CATEGORICAL, Blob<float>.LoadFromNumpyEx(strFile, log));
-                m_nFutureCategoricalCount = calculateCount(DATA_TYPE.FUTURE_CATEGORICAL);
-            }
-
-            if (!m_rgData.ContainsKey(DATA_TYPE.TARGET))
-            {
-                strFile = strPath + strType + "_target.npy";
-                m_rgData.Add(DATA_TYPE.TARGET, Blob<float>.LoadFromNumpyEx(strFile, log));
-                m_nTargetCount = calculateCount(DATA_TYPE.TARGET);
-            }
-        }
-
-        /// <summary>
-        /// Accesses the Dictionary of data values loaded.
-        /// </summary>
-        public Dictionary<DATA_TYPE, Tuple<List<float[]>, int[], List<string>>> Data
-        {
-            get { return m_rgData; }
-        }
-
-        private float[] createBatchBuffer(float[] rg, int nBatchSize, int nCount)
+        private float[] createBatchBuffer(float[] rg, int nBatchSize, int nSteps, int nCount)
         {
             if (nCount == 0)
                 return rg;
 
-            int nDim = nBatchSize * nCount;
+            int nDim = nBatchSize * nSteps * nCount;
             if (rg == null || rg.Length != nDim)
                 return new float[nDim];
 
             return rg;
+        }
+
+        private void add(DATA_TYPE type, Data<T> data)
+        {
+            if (!m_rgData.ContainsKey(type))
+            {
+                if (type == DATA_TYPE.COMBINATION_ID)
+                    m_rgstrCombinationID.AddRange(data.m_rgstrCombinationID);
+                if (type == DATA_TYPE.TIME_INDEX)
+                    m_rgTimestamps.AddRange(data.m_rgTimestamps);
+                m_rgData.Add(type, data.m_rgData[type]);
+            }
+            else
+            {
+                if (type == DATA_TYPE.COMBINATION_ID)
+                    m_rgstrCombinationID.AddRange(data.m_rgstrCombinationID);
+                if (type == DATA_TYPE.TIME_INDEX)
+                    m_rgTimestamps.AddRange(data.m_rgTimestamps);
+                m_rgData[type].Item1.AddRange(data.m_rgData[type].Item1);
+                m_rgData[type].Item2[0] += data.m_rgData[type].Item2[0];
+                m_rgData[type].Item3.AddRange(data.m_rgData[type].Item3);
+            }
+        }
+
+        public void Add(Data<T> data)
+        {
+            lock (m_syncObj)
+            {
+                add(DATA_TYPE.TIME_INDEX, data);
+                add(DATA_TYPE.COMBINATION_ID, data);
+                add(DATA_TYPE.STATIC_FEAT_NUMERIC, data);
+                add(DATA_TYPE.STATIC_FEAT_CATEGORICAL, data);
+                add(DATA_TYPE.HISTORICAL_NUMERIC, data);
+                add(DATA_TYPE.HISTORICAL_CATEGORICAL, data);
+                add(DATA_TYPE.FUTURE_CATEGORICAL, data);
+                add(DATA_TYPE.FUTURE_NUMERIC, data);
+                add(DATA_TYPE.TARGET, data);
+
+                m_nStaticNumericCount = data.m_nStaticNumericCount;
+                m_nStaticCategoricalCount = data.m_nStaticCategoricalCount;
+                m_nHistoricalNumericCount = data.m_nHistoricalNumericCount;
+                m_nHistoricalCategoricalCount = data.m_nHistoricalCategoricalCount;
+                m_nFutureNumericCount = data.m_nFutureNumericCount;
+                m_nFutureCategoricalCount = data.m_nFutureCategoricalCount;
+                m_nTargetCount = data.m_nTargetCount;
+
+                m_nTotalCount += data.m_nTotalCount;
+            }
+        }
+
+        public void Clear()
+        {
+            m_rgData.Clear();
+            m_rgTimestamps.Clear();
+            m_rgstrCombinationID.Clear();
+            m_nStaticCategoricalCount = 0;
+            m_nStaticNumericCount = 0;
+            m_nHistoricalCategoricalCount = 0;
+            m_nHistoricalNumericCount = 0;
+            m_nFutureCategoricalCount = 0;
+            m_nFutureNumericCount = 0;
+            m_nTargetCount = 0;
+            m_nTotalCount = 0;
+        }
+
+        public bool Load(string strPath, string strType, int nStartIdx, int nCount)
+        {
+            Log log = m_log;
+            string strFile;
+
+            try
+            {
+                if (!m_rgData.ContainsKey(DATA_TYPE.TIME_INDEX))
+                {
+                    strFile = strPath + strType + "_time_index.npy";
+                    m_rgData.Add(DATA_TYPE.TIME_INDEX, Blob<float>.LoadFromNumpyEx(strFile, log, int.MaxValue, nStartIdx, nCount));
+
+                    List<float[]> rgTime = m_rgData[DATA_TYPE.TIME_INDEX].Item1;
+                    foreach (float[] rgTime2 in rgTime)
+                    {
+                        DateTime dt = UnixTimeStampToDateTime(rgTime2[0]);
+                        m_rgTimestamps.Add(dt);
+                    }
+                }
+
+                if (!m_rgData.ContainsKey(DATA_TYPE.COMBINATION_ID))
+                {
+                    strFile = strPath + strType + "_combination_id.npy";
+                    m_rgData.Add(DATA_TYPE.COMBINATION_ID, Blob<float>.LoadFromNumpyEx(strFile, log, int.MaxValue, nStartIdx, nCount));
+                    m_nTotalCount = m_rgData[DATA_TYPE.COMBINATION_ID].Item2[0];
+                    m_rgstrCombinationID = m_rgData[DATA_TYPE.COMBINATION_ID].Item3;
+                }
+
+                if (!m_rgData.ContainsKey(DATA_TYPE.STATIC_FEAT_NUMERIC))
+                {
+                    strFile = strPath + strType + "_static_feats_numeric.npy";
+                    m_rgData.Add(DATA_TYPE.STATIC_FEAT_NUMERIC, Blob<float>.LoadFromNumpyEx(strFile, log, int.MaxValue, nStartIdx, nCount));
+                    m_nStaticNumericCount = calculateCount(DATA_TYPE.STATIC_FEAT_NUMERIC);
+                }
+
+                if (!m_rgData.ContainsKey(DATA_TYPE.STATIC_FEAT_CATEGORICAL))
+                {
+                    strFile = strPath + strType + "_static_feats_categorical.npy";
+                    m_rgData.Add(DATA_TYPE.STATIC_FEAT_CATEGORICAL, Blob<float>.LoadFromNumpyEx(strFile, log, int.MaxValue, nStartIdx, nCount));
+                    m_nStaticCategoricalCount = calculateCount(DATA_TYPE.STATIC_FEAT_CATEGORICAL);
+                }
+
+                if (!m_rgData.ContainsKey(DATA_TYPE.HISTORICAL_NUMERIC))
+                {
+                    strFile = strPath + strType + "_historical_ts_numeric.npy";
+                    m_rgData.Add(DATA_TYPE.HISTORICAL_NUMERIC, Blob<float>.LoadFromNumpyEx(strFile, log, int.MaxValue, nStartIdx, nCount));
+                    m_nHistoricalNumericCount = calculateCount(DATA_TYPE.HISTORICAL_NUMERIC);
+                }
+
+                if (!m_rgData.ContainsKey(DATA_TYPE.HISTORICAL_CATEGORICAL))
+                {
+                    strFile = strPath + strType + "_historical_ts_categorical.npy";
+                    m_rgData.Add(DATA_TYPE.HISTORICAL_CATEGORICAL, Blob<float>.LoadFromNumpyEx(strFile, log, int.MaxValue, nStartIdx, nCount));
+                    m_nHistoricalCategoricalCount = calculateCount(DATA_TYPE.HISTORICAL_CATEGORICAL);
+                }
+
+                if (!m_rgData.ContainsKey(DATA_TYPE.FUTURE_NUMERIC))
+                {
+                    strFile = strPath + strType + "_future_ts_numeric.npy";
+                    m_rgData.Add(DATA_TYPE.FUTURE_NUMERIC, Blob<float>.LoadFromNumpyEx(strFile, log, int.MaxValue, nStartIdx, nCount));
+                    m_nFutureNumericCount = calculateCount(DATA_TYPE.FUTURE_NUMERIC);
+                }
+
+                if (!m_rgData.ContainsKey(DATA_TYPE.FUTURE_CATEGORICAL))
+                {
+                    strFile = strPath + strType + "_future_ts_categorical.npy";
+                    m_rgData.Add(DATA_TYPE.FUTURE_CATEGORICAL, Blob<float>.LoadFromNumpyEx(strFile, log, int.MaxValue, nStartIdx, nCount));
+                    m_nFutureCategoricalCount = calculateCount(DATA_TYPE.FUTURE_CATEGORICAL);
+                }
+
+                if (!m_rgData.ContainsKey(DATA_TYPE.TARGET))
+                {
+                    strFile = strPath + strType + "_target.npy";
+                    m_rgData.Add(DATA_TYPE.TARGET, Blob<float>.LoadFromNumpyEx(strFile, log, int.MaxValue, nStartIdx, nCount));
+                    m_nTargetCount = calculateCount(DATA_TYPE.TARGET);
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
         }
 
         /// <summary>
@@ -418,58 +667,69 @@ namespace MyCaffe.layers.tft
             List<float[]> rgFutureCategorical = m_rgData[DATA_TYPE.FUTURE_CATEGORICAL].Item1;
             List<float[]> rgTarget = m_rgData[DATA_TYPE.TARGET].Item1;
 
-            m_rgStaticNumericBatch = createBatchBuffer(m_rgStaticNumericBatch, nBatchSize, m_nStaticNumericCount);
-            m_rgStaticCategoricalBatch = createBatchBuffer(m_rgStaticCategoricalBatch, nBatchSize, m_nStaticCategoricalCount);
-            m_rgHistoricalNumericBatch = createBatchBuffer(m_rgHistoricalNumericBatch, nBatchSize, m_nHistoricalNumericCount);
-            m_rgHistoricalCategoricalBatch = createBatchBuffer(m_rgHistoricalCategoricalBatch, nBatchSize, m_nHistoricalCategoricalCount);
-            m_rgFutureNumericBatch = createBatchBuffer(m_rgFutureNumericBatch, nBatchSize, m_nFutureNumericCount);
-            m_rgFutureCategoricalBatch = createBatchBuffer(m_rgFutureCategoricalBatch, nBatchSize, m_nFutureCategoricalCount);
-            m_rgTargetBatch = createBatchBuffer(m_rgTargetBatch, nBatchSize, m_nTargetCount);
+            m_rgStaticNumericBatch = createBatchBuffer(m_rgStaticNumericBatch, nBatchSize, 1, m_nStaticNumericCount);
+            m_rgStaticCategoricalBatch = createBatchBuffer(m_rgStaticCategoricalBatch, nBatchSize, 1, m_nStaticCategoricalCount);
+            m_rgHistoricalNumericBatch = createBatchBuffer(m_rgHistoricalNumericBatch, nBatchSize, m_nHistoricalSteps, m_nHistoricalNumericCount);
+            m_rgHistoricalCategoricalBatch = createBatchBuffer(m_rgHistoricalCategoricalBatch, nBatchSize, m_nHistoricalSteps, m_nHistoricalCategoricalCount);
+            m_rgFutureNumericBatch = createBatchBuffer(m_rgFutureNumericBatch, nBatchSize, m_nFutureSteps, m_nFutureNumericCount);
+            m_rgFutureCategoricalBatch = createBatchBuffer(m_rgFutureCategoricalBatch, nBatchSize, m_nFutureSteps, m_nFutureCategoricalCount);
+            m_rgTargetBatch = createBatchBuffer(m_rgTargetBatch, nBatchSize, 1,m_nTargetCount);
 
-            for (int i=0; i<nBatchSize; i++)
+            int nStaticNumericSize = m_nStaticNumericCount;
+            int nStaticCategoricalSize = m_nStaticCategoricalCount;
+            int nHistoricalNumericSize = m_nHistoricalNumericCount * m_nHistoricalSteps;
+            int nHistoricalCategoricalSize = m_nHistoricalCategoricalCount * m_nHistoricalSteps;
+            int nFutureNumericSize = m_nFutureNumericCount * m_nFutureSteps;
+            int nFutureCategoricalSize = m_nFutureCategoricalCount * m_nFutureSteps;
+            int nTargetSize = m_nTargetCount;
+
+            lock (m_syncObj)
             {
-                int nIdx = m_random.Next(m_nTotalCount);
-
-                if (m_rgStaticNumericBatch != null)
+                for (int i = 0; i < nBatchSize; i++)
                 {
-                    float[] rgStaticNumeric1 = rgStaticNumeric[nIdx];
-                    Array.Copy(rgStaticNumeric1, 0, m_rgStaticNumericBatch, i * m_nStaticNumericCount, m_nStaticNumericCount);
-                }
+                    int nIdx = m_random.Next(m_nTotalCount);
 
-                if (m_rgStaticCategoricalBatch != null)
-                {
-                    float[] rgStaticCategorical1 = rgStaticCategorical[nIdx];
-                    Array.Copy(rgStaticCategorical1, 0, m_rgStaticCategoricalBatch, i * m_nStaticCategoricalCount, m_nStaticCategoricalCount);
-                }
+                    if (m_rgStaticNumericBatch != null)
+                    {
+                        float[] rgStaticNumeric1 = rgStaticNumeric[nIdx];
+                        Array.Copy(rgStaticNumeric1, 0, m_rgStaticNumericBatch, i * nStaticNumericSize, nStaticNumericSize);
+                    }
 
-                if (m_rgHistoricalNumericBatch != null)
-                {
-                    float[] rgHistoricalNumeric1 = rgHistoricalNumeric[nIdx];
-                    Array.Copy(rgHistoricalNumeric1, 0, m_rgHistoricalNumericBatch, i * m_nHistoricalNumericCount, m_nHistoricalNumericCount);
-                }
+                    if (m_rgStaticCategoricalBatch != null)
+                    {
+                        float[] rgStaticCategorical1 = rgStaticCategorical[nIdx];
+                        Array.Copy(rgStaticCategorical1, 0, m_rgStaticCategoricalBatch, i * nStaticCategoricalSize, nStaticCategoricalSize);
+                    }
 
-                if (m_rgHistoricalCategoricalBatch != null)
-                {
-                    float[] rgHistoricalCategorical1 = rgHistoricalCategorical[nIdx];
-                    Array.Copy(rgHistoricalCategorical1, 0, m_rgHistoricalCategoricalBatch, i * m_nHistoricalCategoricalCount, m_nHistoricalCategoricalCount);
-                }
+                    if (m_rgHistoricalNumericBatch != null)
+                    {
+                        float[] rgHistoricalNumeric1 = rgHistoricalNumeric[nIdx];
+                        Array.Copy(rgHistoricalNumeric1, 0, m_rgHistoricalNumericBatch, i * nHistoricalNumericSize, nHistoricalNumericSize);
+                    }
 
-                if (m_rgFutureNumericBatch != null)
-                {
-                    float[] rgFutureNumeric1 = rgFutureNumeric[nIdx];
-                    Array.Copy(rgFutureNumeric1, 0, m_rgFutureNumericBatch, i * m_nFutureNumericCount, m_nFutureNumericCount);
-                }
+                    if (m_rgHistoricalCategoricalBatch != null)
+                    {
+                        float[] rgHistoricalCategorical1 = rgHistoricalCategorical[nIdx];
+                        Array.Copy(rgHistoricalCategorical1, 0, m_rgHistoricalCategoricalBatch, i * nHistoricalCategoricalSize, nHistoricalCategoricalSize);
+                    }
 
-                if (m_rgFutureCategoricalBatch != null)
-                {
-                    float[] rgFutureCategorical1 = rgFutureCategorical[nIdx];
-                    Array.Copy(rgFutureCategorical1, 0, m_rgFutureCategoricalBatch, i * m_nFutureCategoricalCount, m_nFutureCategoricalCount);
-                }
+                    if (m_rgFutureNumericBatch != null)
+                    {
+                        float[] rgFutureNumeric1 = rgFutureNumeric[nIdx];
+                        Array.Copy(rgFutureNumeric1, 0, m_rgFutureNumericBatch, i * nFutureNumericSize, nFutureNumericSize);
+                    }
 
-                if (m_rgTargetBatch != null && col.Count > 6)
-                {
-                    float[] rgTarget1 = rgTarget[nIdx];
-                    Array.Copy(rgTarget1, 0, m_rgTargetBatch, i * m_nTargetCount, m_nTargetCount);
+                    if (m_rgFutureCategoricalBatch != null)
+                    {
+                        float[] rgFutureCategorical1 = rgFutureCategorical[nIdx];
+                        Array.Copy(rgFutureCategorical1, 0, m_rgFutureCategoricalBatch, i * nFutureCategoricalSize, nFutureCategoricalSize);
+                    }
+
+                    if (m_rgTargetBatch != null && col.Count > 6)
+                    {
+                        float[] rgTarget1 = rgTarget[nIdx];
+                        Array.Copy(rgTarget1, 0, m_rgTargetBatch, i * nTargetSize, nTargetSize);
+                    }
                 }
             }
 
@@ -488,4 +748,6 @@ namespace MyCaffe.layers.tft
                 col[6].mutable_cpu_data = Utility.ConvertVec<T>(m_rgTargetBatch);
         }
     }
+
+#pragma warning restore 1591
 }
