@@ -31,11 +31,22 @@ namespace MyCaffe.param.tft
         uint m_nEmbedDim;
         uint m_nNumHeads;
         uint m_nNumHistoricalSteps = 0;  
-        uint m_nNumFutureSteps = 0;      
+        uint m_nNumFutureSteps = 0;
+        bool m_bEnableSelfAttention = true;
 
         /** @copydoc LayerParameterBase */
         public MultiHeadAttentionInterpParameter()
         {
+        }
+
+        /// <summary>
+        /// Specifies to enable self attention (one input, default = true).
+        /// </summary>
+        [Description("Specifies to enable self attention (one input, default = true).")]
+        public bool enable_self_attention
+        {
+            get { return m_bEnableSelfAttention; }
+            set { m_bEnableSelfAttention = value; }
         }
 
         /// <summary>
@@ -140,6 +151,7 @@ namespace MyCaffe.param.tft
         {
             MultiHeadAttentionInterpParameter p = (MultiHeadAttentionInterpParameter)src;
 
+            m_bEnableSelfAttention = p.enable_self_attention;
             m_nNumHistoricalSteps = p.num_historical_steps;
             m_nNumFutureSteps = p.num_future_steps;
 
@@ -173,6 +185,7 @@ namespace MyCaffe.param.tft
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
+            rgChildren.Add("enable_self_attention", enable_self_attention.ToString());
             rgChildren.Add("num_historical_steps", num_historical_steps.ToString());
             rgChildren.Add("num_future_steps", num_future_steps.ToString());
 
@@ -203,6 +216,9 @@ namespace MyCaffe.param.tft
         {
             string strVal;
             MultiHeadAttentionInterpParameter p = new MultiHeadAttentionInterpParameter();
+
+            if ((strVal = rp.FindValue("enable_self_attention")) != null)
+                p.enable_self_attention = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("embed_dim")) != null)
                 p.embed_dim = uint.Parse(strVal);
