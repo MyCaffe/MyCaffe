@@ -1105,7 +1105,13 @@ namespace MyCaffe.param
                     break;
 
                 case LayerType.DATA_TEMPORAL:
-                    expected_top.Add("data");
+                    expected_top.Add("sn");
+                    expected_top.Add("sc");
+                    expected_top.Add("hn");
+                    expected_top.Add("hc");
+                    expected_top.Add("fn");
+                    expected_top.Add("fc");
+                    expected_top.Add("t");
                     m_rgLayerParameters[lt] = new DataTemporalParameter();
                     break;
 
@@ -1387,8 +1393,8 @@ namespace MyCaffe.param
                     expected_bottom.Add("v");
                     expected_top.Add("attn");
                     expected_top.Add("y");
-                    expected_top.Add("attn_out");
-                    expected_top.Add("attn_scores");
+                    expected_top.Add("out");
+                    expected_top.Add("scr");
                     m_rgLayerParameters[lt] = new MultiHeadAttentionInterpParameter();
                     break;
 
