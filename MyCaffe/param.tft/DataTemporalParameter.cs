@@ -21,6 +21,8 @@ namespace MyCaffe.param.tft
         uint m_nNumHistoricalSteps;
         uint m_nNumFutureSteps;
         SOURCE_TYPE m_srcType = SOURCE_TYPE.PATH_NPY_FILE;
+        int m_nMaxLoadItems = 300000;
+        bool m_bEnableDripRefresh = false;
 
         /// <summary>
         /// Defines the type of source data.
@@ -46,6 +48,26 @@ namespace MyCaffe.param.tft
         /** @copydoc LayerParameterBase */
         public DataTemporalParameter()
         {
+        }
+
+        /// <summary>
+        /// Specifies the maximum number of items to load (default = 300,000).
+        /// </summary>
+        [Description("Specifies the maximum number of items to load (default = 300,000).")]
+        public int max_load_count
+        {
+            get { return m_nMaxLoadItems; }
+            set { m_nMaxLoadItems = value; }
+        }
+
+        /// <summary>
+        /// Specifies to enable the drip-refresh.
+        /// </summary>
+        [Description("Specifies to enable the drip-refresh.")]
+        public bool enable_drip_refresh
+        {
+            get { return m_bEnableDripRefresh; }
+            set { m_bEnableDripRefresh= value; }
         }
 
         /// <summary>
@@ -124,6 +146,9 @@ namespace MyCaffe.param.tft
 
             m_nNumHistoricalSteps = p.num_historical_steps;
             m_nNumFutureSteps = p.num_future_steps;
+
+            m_nMaxLoadItems = p.max_load_count;
+            m_bEnableDripRefresh = p.enable_drip_refresh;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -149,6 +174,9 @@ namespace MyCaffe.param.tft
 
             rgChildren.Add("num_historical_steps", num_historical_steps.ToString());
             rgChildren.Add("num_future_steps", num_future_steps.ToString());
+
+            rgChildren.Add("max_load_count", max_load_count.ToString());
+            rgChildren.Add("enable_drip_refesh", enable_drip_refresh.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -182,6 +210,12 @@ namespace MyCaffe.param.tft
 
             if ((strVal = rp.FindValue("num_future_steps")) != null)
                 p.num_future_steps = uint.Parse(strVal);
+
+            if ((strVal = rp.FindValue("max_load_count")) != null)
+                p.max_load_count = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("enable_drop_refresh")) != null)
+                p.enable_drip_refresh = bool.Parse(strVal);
 
             return p;
         }

@@ -41,7 +41,8 @@ namespace MyCaffe.layers.tft
         /// </summary>
         /// <param name="cuda">Specifies the CudaDnn connection to Cuda.</param>
         /// <param name="log">Specifies the Log for output.</param>
-        /// <param name="p">Specifies the LayerParameter of type Gelu with parameter gelu_param</param>
+        /// <param name="p">Specifies the LayerParameter of type DATA_TEMPORAL with parameter data_temporal_param</param>
+        /// <param name="evtCancel">Specifies the cancel event used to cancel background data loading.</param>
         public DataTemporalLayer(CudaDnn<T> cuda, Log log, LayerParameter p, CancelEvent evtCancel)
             : base(cuda, log, p)
         {
@@ -96,7 +97,7 @@ namespace MyCaffe.layers.tft
             m_nNumHistoricalSteps = m_param.data_temporal_param.num_historical_steps;
             m_nNumFutureSteps = m_param.data_temporal_param.num_future_steps;
 
-            if (!m_data.LoadData(m_phase, m_param.data_temporal_param.source, (int)m_nNumHistoricalSteps, (int)m_nNumFutureSteps, m_log, m_evtCancel))
+            if (!m_data.LoadData(m_phase, m_param.data_temporal_param.source, (int)m_param.data_temporal_param.batch_size, (int)m_nNumHistoricalSteps, (int)m_nNumFutureSteps, m_param.data_temporal_param.max_load_count, m_param.data_temporal_param.enable_drip_refresh, m_log, m_evtCancel))
                 throw new Exception("DataTemporalLayer data loading aborted!");
 
             int nTotalSize = m_data.GetTotalSize();
@@ -191,6 +192,7 @@ namespace MyCaffe.layers.tft
     {
         Data<T> m_data;
         Random m_random = new Random();
+        int m_nBatchSize;
 
 
         /// <summary>
@@ -205,16 +207,22 @@ namespace MyCaffe.layers.tft
         /// </summary>
         /// <param name="phase">Specifies the phase to load.</param>
         /// <param name="strPath">Specifies the base path for all data.</param>
+        /// <param name="nBatchSize">Specifies the batch size.</param>
+        /// <param name="nHistoricalSteps">Specifies the number of historical steps.</param>
+        /// <param name="nFutureSteps">Specifies the number of future steps.</param>
+        /// <param name="nMaxLoadCount">Specifies the max items to load in background (default = 10000).</param>
+        /// <param name="bEnableDripRefresh">Specifies to continually drip refresh the data in the background.</param>
         /// <param name="log">Specifies the output log.</param>
         /// <param name="evtCancel">Specifies the cancel event.</param>
-        public bool LoadData(Phase phase, string strPath, int nHistoricalSteps, int nFutureSteps, Log log, CancelEvent evtCancel)
+        public bool LoadData(Phase phase, string strPath, int nBatchSize, int nHistoricalSteps, int nFutureSteps, int nMaxLoadCount, bool bEnableDripRefresh, Log log, CancelEvent evtCancel)
         {
+            m_nBatchSize = nBatchSize;
             m_data = new Data<T>(log, nHistoricalSteps, nFutureSteps);
 
             ManualResetEvent evtReady = new ManualResetEvent(false);
             ManualResetEvent evtDone = new ManualResetEvent(false);
             Thread threadLoad = new Thread(new ParameterizedThreadStart(loadDataFunction));
-            threadLoad.Start(new DataLoadParameters(phase, strPath, nHistoricalSteps, nFutureSteps, log, evtCancel, evtReady, evtDone));
+            threadLoad.Start(new DataLoadParameters(phase, strPath, nHistoricalSteps, nFutureSteps, nMaxLoadCount, bEnableDripRefresh, log, evtCancel, evtReady, evtDone));
 
             while (!evtReady.WaitOne(1000))
             {
@@ -235,9 +243,13 @@ namespace MyCaffe.layers.tft
             Log log = arg.Log;
             int nNumHistSteps = arg.HistoricalSteps;
             int nNumFutureSteps = arg.FutureSteps;
+            int nMaxLoadCount = arg.MaxLoadCount;
+            bool bEnableDripRefresh = arg.EnableDripRefresh;
             CancelEvent evtCancel = arg.CancelEvent;
             ManualResetEvent evtReady = arg.ReadyEvent;
             ManualResetEvent evtDone = arg.DoneEvent;
+            // each batch is roughly 300 milliseconds, so we wait around 5 minutes to start refreshing data.
+            int nMaxWaitCountInSeconds = (int)((nMaxLoadCount / m_nBatchSize) * 300/1000.0);
 
             try
             {
@@ -247,6 +259,8 @@ namespace MyCaffe.layers.tft
                 strPath += "\\";
 
                 if (phase == Phase.TEST)
+                    strType = "test";
+                else if (phase == Phase.RUN)
                     strType = "validation";
 
                 strFile = strPath + strType + "_time_index.npy";
@@ -255,25 +269,72 @@ namespace MyCaffe.layers.tft
                 int nTotalCount = rgTimeRaw.Item1.Count;
                 int nStartIdx = 0;
                 int nCount = 1000;
+                int nWaitCount = 0;
                 Data<T> dataChunk = new Data<T>(m_data.Log, nNumHistSteps, nNumFutureSteps);
+                Stopwatch sw = new Stopwatch();
 
-                while (dataChunk.Load(strPath, strType, nStartIdx, nCount))
+                sw.Start();
+
+                while (!evtCancel.WaitOne(0))
                 {
-                    m_data.Add(dataChunk);
-                    dataChunk.Clear();
+                    while (dataChunk.Load(strPath, strType, nStartIdx, nCount))
+                    {
+                        bool bRefreshed = m_data.Add(dataChunk, nMaxLoadCount);
+                        dataChunk.Clear();
 
-                    if (evtCancel.WaitOne(0))
+                        if (evtCancel.WaitOne(0))
+                        {
+                            log.WriteLine("Background data loading for '" + strType + "' aborted.");
+                            break;
+                        }
+
+                        evtReady.Set();
+
+                        nStartIdx += nCount;
+
+                        if (nStartIdx + nCount > nTotalCount)
+                            nCount = nTotalCount - nStartIdx;
+
+                        if (nCount <= 0)
+                            break;
+
+                        if (sw.Elapsed.TotalMilliseconds > 1000)
+                        {
+                            double dfPct = (double)nStartIdx / (double)nTotalCount;
+                            log.WriteLine("Background data loading '" + strType + "' data at " + dfPct.ToString("P") + "...");
+                            sw.Restart();
+                        }
+
+                        if (bRefreshed)
+                        {
+                            // Wait roughly 5 minutes before refreshing the data;
+                            nWaitCount = 0;
+                            while (!evtCancel.WaitOne(1000))
+                            {
+                                Thread.Sleep(50);
+                                nWaitCount++;
+
+                                if (nWaitCount > nMaxLoadCount)
+                                    break;
+                            }
+                        }
+                    }
+
+                    if (!bEnableDripRefresh)
                         break;
 
-                    evtReady.Set();
+                    // Wait roughly 5 minutes before refreshing the data;
+                    nWaitCount = 0;
+                    while (!evtCancel.WaitOne(1000))
+                    {
+                        Thread.Sleep(50);
+                        nWaitCount++;
 
-                    nStartIdx += nCount;
+                        if (nWaitCount > nMaxLoadCount)
+                            break;
+                    }
 
-                    if (nStartIdx + nCount > nTotalCount)
-                        nCount = nTotalCount - nStartIdx;
-
-                    if (nCount <= 0)
-                        break;
+                    nStartIdx = 0;
                 }
             }
             finally
@@ -311,17 +372,21 @@ namespace MyCaffe.layers.tft
         string m_strPath;
         int m_nNumHistSteps;
         int m_nNumFutureSteps;
+        int m_nMaxLoadCount;
+        bool m_bEnableDripRefresh;
         Log m_log;
         CancelEvent m_evtCancel;
         ManualResetEvent m_evtReady;
         ManualResetEvent m_evtDone;
 
-        public DataLoadParameters(Phase phase, string strPath, int nNumHistSteps, int nNumFutureSteps, Log log, CancelEvent evtCancel, ManualResetEvent evtReady, ManualResetEvent evtDone)
+        public DataLoadParameters(Phase phase, string strPath, int nNumHistSteps, int nNumFutureSteps, int nMaxLoadCount, bool bEnableDripRefresh, Log log, CancelEvent evtCancel, ManualResetEvent evtReady, ManualResetEvent evtDone)
         {
             m_phase = phase;
             m_strPath = strPath;
             m_nNumHistSteps = nNumHistSteps;
             m_nNumFutureSteps = nNumFutureSteps;
+            m_nMaxLoadCount = nMaxLoadCount;
+            m_bEnableDripRefresh = bEnableDripRefresh;
             m_log = log;
             m_evtCancel = evtCancel;
             m_evtReady = evtReady;
@@ -332,6 +397,8 @@ namespace MyCaffe.layers.tft
         public string Path { get { return m_strPath; } }
         public int HistoricalSteps {  get { return m_nNumHistSteps; } }
         public int FutureSteps { get { return m_nNumFutureSteps; } }
+        public int MaxLoadCount { get { return m_nMaxLoadCount; } }
+        public bool EnableDripRefresh { get { return m_bEnableDripRefresh; } }
         public Log Log { get { return m_log; } }
         public CancelEvent CancelEvent { get { return m_evtCancel; } }
         public ManualResetEvent ReadyEvent { get { return m_evtReady; } }
@@ -504,8 +571,10 @@ namespace MyCaffe.layers.tft
             return rg;
         }
 
-        private void add(DATA_TYPE type, Data<T> data)
+        private bool add(DATA_TYPE type, Data<T> data, int nMax)
         {
+            bool bRefreshed = false;
+
             if (!m_rgData.ContainsKey(type))
             {
                 if (type == DATA_TYPE.COMBINATION_ID)
@@ -523,22 +592,55 @@ namespace MyCaffe.layers.tft
                 m_rgData[type].Item1.AddRange(data.m_rgData[type].Item1);
                 m_rgData[type].Item2[0] += data.m_rgData[type].Item2[0];
                 m_rgData[type].Item3.AddRange(data.m_rgData[type].Item3);
+
+                // Clip to max if needed.
+                if (nMax > 0)
+                {
+                    if (type == DATA_TYPE.COMBINATION_ID)
+                    {
+                        while (m_rgstrCombinationID.Count > nMax)
+                        {
+                            if (m_rgstrCombinationID.Count > 0)
+                                m_rgstrCombinationID.RemoveAt(0);
+                        }
+                    }
+                    if (type == DATA_TYPE.TIME_INDEX)
+                    {
+                        while (m_rgTimestamps.Count > nMax)
+                        {
+                            if (m_rgTimestamps.Count > 0)
+                                m_rgTimestamps.RemoveAt(0);
+                        }
+                    }
+
+                    while (m_rgData[type].Item1.Count > nMax)
+                    {
+                        if (m_rgData[type].Item1.Count > 0)
+                            m_rgData[type].Item1.RemoveAt(0);
+                        m_rgData[type].Item2[0] -= 1;
+                        if (m_rgData[type].Item3.Count > 0)
+                            m_rgData[type].Item3.RemoveAt(0);
+                        bRefreshed = true;
+                    }
+                }
             }
+
+            return bRefreshed;
         }
 
-        public void Add(Data<T> data)
+        public bool Add(Data<T> data, int nMax)
         {
             lock (m_syncObj)
             {
-                add(DATA_TYPE.TIME_INDEX, data);
-                add(DATA_TYPE.COMBINATION_ID, data);
-                add(DATA_TYPE.STATIC_FEAT_NUMERIC, data);
-                add(DATA_TYPE.STATIC_FEAT_CATEGORICAL, data);
-                add(DATA_TYPE.HISTORICAL_NUMERIC, data);
-                add(DATA_TYPE.HISTORICAL_CATEGORICAL, data);
-                add(DATA_TYPE.FUTURE_CATEGORICAL, data);
-                add(DATA_TYPE.FUTURE_NUMERIC, data);
-                add(DATA_TYPE.TARGET, data);
+                add(DATA_TYPE.TIME_INDEX, data, nMax);
+                add(DATA_TYPE.COMBINATION_ID, data, nMax);
+                add(DATA_TYPE.STATIC_FEAT_NUMERIC, data, nMax);
+                add(DATA_TYPE.STATIC_FEAT_CATEGORICAL, data, nMax);
+                add(DATA_TYPE.HISTORICAL_NUMERIC, data, nMax);
+                add(DATA_TYPE.HISTORICAL_CATEGORICAL, data, nMax);
+                add(DATA_TYPE.FUTURE_CATEGORICAL, data, nMax);
+                add(DATA_TYPE.FUTURE_NUMERIC, data, nMax);
+                bool bRefreshed = add(DATA_TYPE.TARGET, data, nMax);
 
                 m_nStaticNumericCount = data.m_nStaticNumericCount;
                 m_nStaticCategoricalCount = data.m_nStaticCategoricalCount;
@@ -548,7 +650,12 @@ namespace MyCaffe.layers.tft
                 m_nFutureCategoricalCount = data.m_nFutureCategoricalCount;
                 m_nTargetCount = data.m_nTargetCount;
 
-                m_nTotalCount += data.m_nTotalCount;
+                if (!bRefreshed)
+                    m_nTotalCount += data.m_nTotalCount;
+                else
+                    m_nTotalCount = nMax;
+
+                return bRefreshed;
             }
         }
 
