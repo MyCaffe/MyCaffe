@@ -97,7 +97,7 @@ namespace MyCaffe.layers.tft
             m_nNumHistoricalSteps = m_param.data_temporal_param.num_historical_steps;
             m_nNumFutureSteps = m_param.data_temporal_param.num_future_steps;
 
-            if (!m_data.LoadData(m_phase, m_param.data_temporal_param.source, (int)m_param.data_temporal_param.batch_size, (int)m_nNumHistoricalSteps, (int)m_nNumFutureSteps, m_param.data_temporal_param.max_load_count, m_param.data_temporal_param.enable_drip_refresh, m_log, m_evtCancel))
+            if (!m_data.LoadData(m_phase, m_param.data_temporal_param.source, (int)m_param.data_temporal_param.batch_size, (int)m_nNumHistoricalSteps, (int)m_nNumFutureSteps, m_param.data_temporal_param.max_load_count, m_param.data_temporal_param.drip_refresh_rate_in_sec, m_log, m_evtCancel))
                 throw new Exception("DataTemporalLayer data loading aborted!");
 
             int nTotalSize = m_data.GetTotalSize();
@@ -211,10 +211,10 @@ namespace MyCaffe.layers.tft
         /// <param name="nHistoricalSteps">Specifies the number of historical steps.</param>
         /// <param name="nFutureSteps">Specifies the number of future steps.</param>
         /// <param name="nMaxLoadCount">Specifies the max items to load in background (default = 10000).</param>
-        /// <param name="bEnableDripRefresh">Specifies to continually drip refresh the data in the background.</param>
+        /// <param name="nDripRefreshRateInSec">Specifies the rate in seconds to refresh the data.</param>
         /// <param name="log">Specifies the output log.</param>
         /// <param name="evtCancel">Specifies the cancel event.</param>
-        public bool LoadData(Phase phase, string strPath, int nBatchSize, int nHistoricalSteps, int nFutureSteps, int nMaxLoadCount, bool bEnableDripRefresh, Log log, CancelEvent evtCancel)
+        public bool LoadData(Phase phase, string strPath, int nBatchSize, int nHistoricalSteps, int nFutureSteps, int nMaxLoadCount, int nDripRefreshRateInSec, Log log, CancelEvent evtCancel)
         {
             m_nBatchSize = nBatchSize;
             m_data = new Data<T>(log, nHistoricalSteps, nFutureSteps);
@@ -222,7 +222,7 @@ namespace MyCaffe.layers.tft
             ManualResetEvent evtReady = new ManualResetEvent(false);
             ManualResetEvent evtDone = new ManualResetEvent(false);
             Thread threadLoad = new Thread(new ParameterizedThreadStart(loadDataFunction));
-            threadLoad.Start(new DataLoadParameters(phase, strPath, nHistoricalSteps, nFutureSteps, nMaxLoadCount, bEnableDripRefresh, log, evtCancel, evtReady, evtDone));
+            threadLoad.Start(new DataLoadParameters(phase, strPath, nHistoricalSteps, nFutureSteps, nMaxLoadCount, nDripRefreshRateInSec, log, evtCancel, evtReady, evtDone));
 
             while (!evtReady.WaitOne(1000))
             {
@@ -244,12 +244,11 @@ namespace MyCaffe.layers.tft
             int nNumHistSteps = arg.HistoricalSteps;
             int nNumFutureSteps = arg.FutureSteps;
             int nMaxLoadCount = arg.MaxLoadCount;
-            bool bEnableDripRefresh = arg.EnableDripRefresh;
+            int nDripRefreshRateInSec = arg.DripRefreshRateInSec;
             CancelEvent evtCancel = arg.CancelEvent;
             ManualResetEvent evtReady = arg.ReadyEvent;
             ManualResetEvent evtDone = arg.DoneEvent;
-            // each batch is roughly 300 milliseconds, so we wait around 5 minutes to start refreshing data.
-            int nMaxWaitCountInSeconds = (int)((nMaxLoadCount / m_nBatchSize) * 300/1000.0);
+            int nMaxWaitCountInSeconds = nDripRefreshRateInSec;
 
             try
             {
@@ -315,6 +314,8 @@ namespace MyCaffe.layers.tft
 
                         if (bRefreshed)
                         {
+                            log.WriteLine("Background data loading '" + strType + "' refreshed...");
+
                             // Wait roughly 5 minutes before refreshing the data;
                             nWaitCount = 0;
                             while (!evtCancel.WaitOne(1000))
@@ -328,7 +329,7 @@ namespace MyCaffe.layers.tft
                         }
                     }
 
-                    if (!bEnableDripRefresh)
+                    if (nDripRefreshRateInSec <= 0)
                         break;
 
                     // Wait roughly 5 minutes before refreshing the data;
@@ -381,20 +382,20 @@ namespace MyCaffe.layers.tft
         int m_nNumHistSteps;
         int m_nNumFutureSteps;
         int m_nMaxLoadCount;
-        bool m_bEnableDripRefresh;
+        int m_nDripRrefreshRateInSec;
         Log m_log;
         CancelEvent m_evtCancel;
         ManualResetEvent m_evtReady;
         ManualResetEvent m_evtDone;
 
-        public DataLoadParameters(Phase phase, string strPath, int nNumHistSteps, int nNumFutureSteps, int nMaxLoadCount, bool bEnableDripRefresh, Log log, CancelEvent evtCancel, ManualResetEvent evtReady, ManualResetEvent evtDone)
+        public DataLoadParameters(Phase phase, string strPath, int nNumHistSteps, int nNumFutureSteps, int nMaxLoadCount, int nDripRefreshRateInSec, Log log, CancelEvent evtCancel, ManualResetEvent evtReady, ManualResetEvent evtDone)
         {
             m_phase = phase;
             m_strPath = strPath;
             m_nNumHistSteps = nNumHistSteps;
             m_nNumFutureSteps = nNumFutureSteps;
             m_nMaxLoadCount = nMaxLoadCount;
-            m_bEnableDripRefresh = bEnableDripRefresh;
+            m_nDripRrefreshRateInSec = nDripRefreshRateInSec;
             m_log = log;
             m_evtCancel = evtCancel;
             m_evtReady = evtReady;
@@ -406,7 +407,7 @@ namespace MyCaffe.layers.tft
         public int HistoricalSteps {  get { return m_nNumHistSteps; } }
         public int FutureSteps { get { return m_nNumFutureSteps; } }
         public int MaxLoadCount { get { return m_nMaxLoadCount; } }
-        public bool EnableDripRefresh { get { return m_bEnableDripRefresh; } }
+        public int DripRefreshRateInSec { get { return m_nDripRrefreshRateInSec; } }
         public Log Log { get { return m_log; } }
         public CancelEvent CancelEvent { get { return m_evtCancel; } }
         public ManualResetEvent ReadyEvent { get { return m_evtReady; } }

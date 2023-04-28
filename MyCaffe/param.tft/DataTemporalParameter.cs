@@ -22,7 +22,7 @@ namespace MyCaffe.param.tft
         uint m_nNumFutureSteps;
         SOURCE_TYPE m_srcType = SOURCE_TYPE.PATH_NPY_FILE;
         int m_nMaxLoadItems = 300000;
-        bool m_bEnableDripRefresh = false;
+        int m_nDripRefreshRate = 0;
 
         /// <summary>
         /// Defines the type of source data.
@@ -61,13 +61,13 @@ namespace MyCaffe.param.tft
         }
 
         /// <summary>
-        /// Specifies to enable the drip-refresh.
+        /// Specifies rate the drip refresh occurs in seconds (default = 0, disabled).
         /// </summary>
-        [Description("Specifies to enable the drip-refresh.")]
-        public bool enable_drip_refresh
+        [Description("Specifies rate the drip refresh occurs in seconds (default = 0, disabled).")]
+        public int drip_refresh_rate_in_sec
         {
-            get { return m_bEnableDripRefresh; }
-            set { m_bEnableDripRefresh= value; }
+            get { return m_nDripRefreshRate; }
+            set { m_nDripRefreshRate= value; }
         }
 
         /// <summary>
@@ -148,7 +148,7 @@ namespace MyCaffe.param.tft
             m_nNumFutureSteps = p.num_future_steps;
 
             m_nMaxLoadItems = p.max_load_count;
-            m_bEnableDripRefresh = p.enable_drip_refresh;
+            m_nDripRefreshRate = p.drip_refresh_rate_in_sec;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -176,7 +176,7 @@ namespace MyCaffe.param.tft
             rgChildren.Add("num_future_steps", num_future_steps.ToString());
 
             rgChildren.Add("max_load_count", max_load_count.ToString());
-            rgChildren.Add("enable_drip_refesh", enable_drip_refresh.ToString());
+            rgChildren.Add("drip_refresh_rate_in_sec", drip_refresh_rate_in_sec.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -214,8 +214,8 @@ namespace MyCaffe.param.tft
             if ((strVal = rp.FindValue("max_load_count")) != null)
                 p.max_load_count = int.Parse(strVal);
 
-            if ((strVal = rp.FindValue("enable_drop_refresh")) != null)
-                p.enable_drip_refresh = bool.Parse(strVal);
+            if ((strVal = rp.FindValue("drip_refresh_rate_in_sec")) != null)
+                p.drip_refresh_rate_in_sec = int.Parse(strVal);
 
             return p;
         }
