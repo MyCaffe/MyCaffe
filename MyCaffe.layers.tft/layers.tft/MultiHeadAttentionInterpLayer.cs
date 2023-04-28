@@ -318,6 +318,11 @@ namespace MyCaffe.layers.tft
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            if (m_param.multihead_attention_interp_param.enable_self_attention)
+                m_log.CHECK_EQ(colBottom.Count, 1, "When using self-attention, there should only be one bottom.");
+            else
+                m_log.CHECK_EQ(colBottom.Count, 3, "When not using self-attention, there should be three bottom values: q, k, v");
+
             m_nNumHeads = (int)m_param.multihead_attention_interp_param.num_heads;
             m_nDModel = (int)m_param.multihead_attention_interp_param.embed_dim;
             m_nAllHeadsDim = m_nNumHeads * m_nDModel;
