@@ -61,6 +61,9 @@ namespace MyCaffe.layers.tft
                 case LayerParameter.LayerType.VARSELNET:
                     return new VarSetNetLayer<double>(cuda, log, p);
 
+                case LayerParameter.LayerType.QUANTILE_ACCURACY:
+                    return new QuantileAccuracyLayer<double>(cuda, log, p);
+
                 case LayerParameter.LayerType.QUANTILE_LOSS:
                     return new QuantileLossLayer<double>(cuda, log, p);
 
@@ -111,6 +114,9 @@ namespace MyCaffe.layers.tft
 
                 case LayerParameter.LayerType.VARSELNET:
                     return new VarSetNetLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.QUANTILE_ACCURACY:
+                    return new QuantileAccuracyLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.QUANTILE_LOSS:
                     return new QuantileLossLayer<float>(cuda, log, p);

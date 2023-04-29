@@ -432,6 +432,10 @@ namespace MyCaffe.param
             /// </summary>
             PRIORBOX,
             /// <summary>
+            /// Initializes a parameter for the QuantileAccuracyLayer used in TFT models.
+            /// </summary>
+            QUANTILE_ACCURACY,
+            /// <summary>
             /// Initializes a parameter for the QuantileLossLayer used in TFT models.
             /// </summary>
             QUANTILE_LOSS,
@@ -1499,6 +1503,13 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("priorbox");
                     m_rgLayerParameters[lt] = new PriorBoxParameter();
+                    break;
+
+                case LayerType.QUANTILE_ACCURACY:
+                    expected_bottom.Add("x");
+                    expected_bottom.Add("trgt");
+                    expected_top.Add("accuracy");
+                    m_rgLayerParameters[lt] = new QuantileAccuracyParameter();
                     break;
 
                 case LayerType.QUANTILE_LOSS:
@@ -2572,6 +2583,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.QUANTILE_ACCURACY
+        /// </summary>
+        public QuantileAccuracyParameter quantile_accuracy_param
+        {
+            get { return (QuantileAccuracyParameter)m_rgLayerParameters[LayerType.QUANTILE_ACCURACY]; }
+            set { m_rgLayerParameters[LayerType.QUANTILE_ACCURACY] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.QUANTILE_LOSS
         /// </summary>
         public QuantileLossParameter quantile_loss_param
@@ -3241,6 +3261,9 @@ namespace MyCaffe.param
                 case LayerType.PRIORBOX:
                     return "PriorBox";
 
+                case LayerType.QUANTILE_ACCURACY:
+                    return "QuantileAccuracy";
+
                 case LayerType.QUANTILE_LOSS:
                     return "QuantileLoss";
 
@@ -3522,6 +3545,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(multihead_attention_interp_param, "multihead_attention_interp_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(reshape_temporal_param, "reshape_temporal_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(quantile_loss_param, "quantile_loss_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(quantile_accuracy_param, "quantile_accuracy_param"));
 
             // Nt layers.
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gram_param, "gram_param"));
@@ -3912,6 +3936,9 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("quantile_loss_param")) != null)
                 p.quantile_loss_param = QuantileLossParameter.FromProto(rpp);
 
+            if ((rpp = rp.FindChild("quantile_accuracy_param")) != null)
+                p.quantile_accuracy_param = QuantileAccuracyParameter.FromProto(rpp);
+
             // Nt layers.
             if ((rpp = rp.FindChild("gram_param")) != null)
                 p.gram_param = GramParameter.FromProto(rpp);
@@ -4281,6 +4308,10 @@ namespace MyCaffe.param
 
                 case "priorbox":
                     return LayerType.PRIORBOX;
+
+                case "quantileaccuracy":
+                case "quantile_accuracy":
+                    return LayerType.QUANTILE_ACCURACY;
 
                 case "quantileloss":
                 case "quantile_loss":

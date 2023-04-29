@@ -51,6 +51,7 @@
   <ItemGroup>
     <Compile Include="LayerFactory.cs" />
     <Compile Include="layers.tft\DataTemporalLayer.cs" />
+    <Compile Include="layers.tft\QuantileAccuracyLayer.cs" />
     <Compile Include="layers.tft\QuantileLossLayer.cs" />
     <Compile Include="layers.tft\GateAddNormLayer.cs" />
     <Compile Include="layers.tft\MultiHeadAttentionInterpLayer.cs" />
