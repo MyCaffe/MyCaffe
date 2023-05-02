@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using MyCaffe.basecode;
 using System.IO;
+using System.Globalization;
 
 namespace MyCaffe.common
 {
@@ -462,6 +463,38 @@ namespace MyCaffe.common
             }
 
             return bRequested;
+        }
+
+        /// <summary>
+        /// Collect all min/max, inf and nan values from all Blobs in the collection.
+        /// </summary>
+        /// <param name="blobWork">Specifies a work blob.</param>
+        /// <param name="bDiff">Specifies to collect the values on the diff (true) vs. the data (false).</param>
+        /// <returns>A dictionary of the values with associated blob names is returned.</returns>
+        public Dictionary<string, Tuple<double, double, double, double>> CollectMinMax(Blob<T> blobWork, bool bDiff = false)
+        {
+            Dictionary<string, Tuple<double, double, double, double>> rgMinMax = new Dictionary<string, Tuple<double, double, double, double>>();
+            Dictionary<string, int> rgDuplicates = new Dictionary<string, int>();
+
+            foreach (Blob<T> b in m_rgBlobs)
+            {
+                Tuple<double, double, double, double> minmax = bDiff ? b.minmax_diff(blobWork, true) : b.minmax_data(blobWork, true);
+                string strName = b.Name;
+
+                if (rgMinMax.ContainsKey(strName))
+                {
+                    if (!rgDuplicates.ContainsKey(strName))
+                        rgDuplicates.Add(strName, 1);
+                    else
+                        rgDuplicates[strName]++;
+
+                    strName = b.Name + "_DUPLICATE_NAME_" + rgDuplicates[strName].ToString();
+                }    
+
+                rgMinMax.Add(strName, minmax);
+            }
+
+            return rgMinMax;
         }
 
         /// <summary>
