@@ -252,6 +252,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
     <ClInclude Include="Cuda Files\memtest.h" />
     <ClInclude Include="Cuda Files\nccl.h" />
     <ClInclude Include="Cuda Files\pca.h" />
+    <ClInclude Include="Cuda Files\rnn8.h" />
     <ClInclude Include="Cuda Files\rnnData.h" />
     <ClInclude Include="Cuda Files\ssd.h" />
     <ClInclude Include="Cuda Files\ssd_core.h" />
@@ -281,6 +282,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
       </Include>
     </CudaCompile>
     <CudaCompile Include="Cuda Files\pca.cu" />
+    <CudaCompile Include="Cuda Files\rnn8.cu" />
     <CudaCompile Include="Cuda Files\rnnData.cu" />
     <CudaCompile Include="Cuda Files\ssd_core.cu" />
     <CudaCompile Include="Cuda Files\tsne_g.cu" />
