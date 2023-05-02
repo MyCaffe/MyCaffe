@@ -83,6 +83,11 @@ Memory<T>::~Memory()
 		FreeRnnDataDesc2(i);
 	}
 
+	for (int i = 0; i < m_rnn.GetCount(); i++)
+	{
+		FreeRnn8(i);
+	}
+
 	for (int i=0; i<m_lrnDesc.GetCount(); i++)
 	{
 		FreeLRNDesc(i);
@@ -2994,8 +2999,8 @@ long Memory<T>::RnnBackwardData(long hHandle, long hRnnDesc, long hYDesc, long h
 	cudnnTensorDescriptor_t descCxd = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hdCxDesc);
 	MemoryItem* pYData;
 	MemoryItem* pYDiff;
-	MemoryItem* pHyDiff;
-	MemoryItem* pCyDiff;
+	MemoryItem* pHyDiff = NULL;
+	MemoryItem* pCyDiff = NULL;
 	MemoryItem* pWtData;
 	MemoryItem* pHxData;
 	MemoryItem* pCxData;
@@ -3014,11 +3019,17 @@ long Memory<T>::RnnBackwardData(long hHandle, long hRnnDesc, long hYDesc, long h
 	if (lErr = m_memory.GetData(hYDiff, &pYDiff))
 		return lErr;
 
-	if (lErr = m_memory.GetData(hHyDiff, &pHyDiff))
-		return lErr;
+	if (hHyDiff != 0)
+	{
+		if (lErr = m_memory.GetData(hHyDiff, &pHyDiff))
+			return lErr;
+	}
 
-	if (lErr = m_memory.GetData(hCyDiff, &pCyDiff))
-		return lErr;
+	if (hCyDiff != 0)
+	{
+		if (lErr = m_memory.GetData(hCyDiff, &pCyDiff))
+			return lErr;
+	}
 
 	if (lErr = m_memory.GetData(hWtData, &pWtData))
 		return lErr;
@@ -3052,9 +3063,9 @@ long Memory<T>::RnnBackwardData(long hHandle, long hRnnDesc, long hYDesc, long h
 		descY->SeqTensors(),
 		pYDiff->Data(),
 		descHy,
-		pHyDiff->Data(),
+		(pHyDiff == NULL) ? NULL : pHyDiff->Data(),
 		descCy,
-		pCyDiff->Data(),
+		(pCyDiff == NULL) ? NULL : pCyDiff->Data(),
 		descWt,
 		pWtData->Data(),
 		descHx,
@@ -3295,5 +3306,6 @@ long Memory<T>::RnnBackwardWeightsEx(long hHandle, long hRnnDesc, long hXDesc, l
 
 template long Memory<double>::RnnBackwardWeightsEx(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspace, size_t nWsCount, long hWtDesc, long hWtDiff, long hReserved, size_t nResCount);
 template long Memory<float>::RnnBackwardWeightsEx(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspace, size_t nWsCount, long hWtDesc, long hWtDiff, long hReserved, size_t nResCount);
+
 
 //end memory.cu

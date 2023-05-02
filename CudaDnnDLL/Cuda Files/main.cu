@@ -377,6 +377,30 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, lon
 		case CUDNN_FN_RNN_BWD_WTS:
 			return m_device.RnnBackwardWeights(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
+		case CUDNN_FN_RNN8_IS_SUPPORTED:
+			return m_device.IsRnn8Supported(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDNN_FN_RNN8_CREATE:
+			return m_device.CreateRnn8(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDNN_FN_RNN8_FREE:
+			return m_device.FreeRnn8(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDNN_FN_RNN8_SET:
+			return m_device.SetRnn8(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDNN_FN_RNN8_GET_MEMORY_SIZES:
+			return m_device.GetRnn8MemorySizes(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDNN_FN_RNN8_INIT_WEIGHTS:
+			return m_device.InitializeRnn8Weights(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDNN_FN_RNN8_FWD:
+			return m_device.Rnn8Forward(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDNN_FN_RNN8_BWD:
+			return m_device.Rnn8Backward(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
 		case CUDNN_FN_LRN_CC_FWD:
 			return m_device.LRNForwardCC(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
@@ -1427,6 +1451,30 @@ char* GetApiName(long lfnIdx)
 
 	case CUDNN_FN_RNN_BWD_WTS:
 		return "CUDNN_FN_RNN_BWD_WTS";
+
+	case CUDNN_FN_RNN8_IS_SUPPORTED:
+		return "CUDNN_FN_RNN8_IS_SUPPORTED";
+
+	case CUDNN_FN_RNN8_CREATE:
+		return "CUDNN_FN_RNN8_CREATE";
+
+	case CUDNN_FN_RNN8_FREE:
+		return "CUDNN_FN_RNN8_FREE";
+
+	case CUDNN_FN_RNN8_SET:
+		return "CUDNN_FN_RNN8_SET";
+
+	case CUDNN_FN_RNN8_GET_MEMORY_SIZES:
+		return "CUDNN_FN_RNN8_GET_MEMORY_SIZES";
+
+	case CUDNN_FN_RNN8_INIT_WEIGHTS:
+		return "CUDNN_FN_RNN8_INIT_WEIGHTS";
+
+	case CUDNN_FN_RNN8_FWD:
+		return "CUDNN_FN_RNN8_FWD";
+
+	case CUDNN_FN_RNN8_BWD:
+		return "CUDNN_FN_RNN8_BWD";
 
 	case CUDNN_FN_LRN_CC_FWD:
 		return "CUDNN_FN_LRN_CC_FWD";

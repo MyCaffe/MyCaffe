@@ -99,6 +99,7 @@ namespace MyCaffe.layers
         long m_hDropoutStates;
         long m_hWeightDesc;
         long m_hRnnDesc;
+        long m_hRnn8;
         long m_hWorkspace;
         ulong m_nWorkspaceCount;
         long m_hReserved;
@@ -107,6 +108,8 @@ namespace MyCaffe.layers
         bool m_bUseTensors = false;
         List<int> m_rgShape = new List<int>(4);
         bool m_bWarningShown = false;
+        bool m_bCudnnRnn8Supported = false;
+        bool m_bUseCudnnRnn8 = false;
 
         /// <summary>
         /// The RecurrentLayer constructor.
@@ -282,6 +285,9 @@ namespace MyCaffe.layers
             Blob<T> blobBtm1 = colBottom[1];
 
             m_bWarningShown = false;
+            m_bCudnnRnn8Supported = m_cuda.IsRnn8Supported();
+            if (m_bCudnnRnn8Supported && m_param.recurrent_param.use_cudnn_rnn8_if_supported)
+                m_bUseCudnnRnn8 = true;
 
             if (m_param.recurrent_param.batch_first)
             {
@@ -352,6 +358,151 @@ namespace MyCaffe.layers
 
         private void layerSetUpCuDnn(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            if (m_bUseCudnnRnn8)
+                layerSetupCudnnRnn8(colBottom, colTop);
+            else
+                layerSetupCudnnRnn(colBottom, colTop);
+        }
+
+        private void layerSetupCudnnRnn8(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            try
+            {
+                if (m_param.recurrent_param.cudnn_enable_tensor_cores)
+                    m_log.WriteLine("WARNING: RNN8 currently does not support Tensor Cores, disabling Tensor Cores for RNN8.");
+
+                m_nHiddenSize = (int)m_param.recurrent_param.num_output;
+                m_nNumLayers = (int)m_param.recurrent_param.num_layers;
+
+                m_hCuDnn = m_cuda.CreateCuDNN();
+
+                m_blobX = new Blob<T>(m_cuda, m_log);
+                m_blobX.Name = m_param.name + " x";
+                m_blobY = new Blob<T>(m_cuda, m_log);
+                m_blobY.Name = m_param.name + " y";
+
+                m_blobHx = new Blob<T>(m_cuda, m_log);
+                m_blobHx.Name = m_param.name + " hx";
+                m_blobCx = new Blob<T>(m_cuda, m_log);
+                m_blobCx.Name = m_param.name + " cx";
+                m_blobHy = new Blob<T>(m_cuda, m_log);
+                m_blobHy.Name = m_param.name + " hy";
+                m_blobCy = new Blob<T>(m_cuda, m_log);
+                m_blobCy.Name = m_param.name + " cy";
+                m_blobWts = new Blob<T>(m_cuda, m_log);
+                m_blobWts.Name = m_param.name + " weights";
+
+                blobs.Clear();
+                blobs.Add(m_blobWts);
+
+                int nBidirectionalScale = (m_param.recurrent_param.bidirectional) ? 2 : 1;
+
+                m_hRnn8 = m_cuda.CreateRnn8();
+                m_cuda.SetRnn8(m_hCuDnn,
+                               m_hRnn8,
+                               (m_phase == Phase.TRAIN) ? true : false,
+                               RNN_DATALAYOUT.RNN_SEQ_MAJOR_PACKED,
+                               m_rnnMode,
+                               RNN_BIAS_MODE.RNN_DOUBLE_BIAS,
+                               m_nT,
+                               m_nN,
+                               m_nInputSize,
+                               m_nHiddenSize,
+                               m_nHiddenSize * nBidirectionalScale, // Outputs
+                               m_nHiddenSize,                       // Projection
+                               m_nNumLayers,
+                               (float)m_param.recurrent_param.dropout_ratio,
+                               (ulong)m_param.recurrent_param.dropout_seed,
+                               m_param.recurrent_param.bidirectional);
+
+                Blob<T> blobBtm0 = colBottom[0];
+                if (m_param.recurrent_param.batch_first)
+                    blobBtm0 = m_blobBtmData;
+
+                m_blobX.ReshapeLike(blobBtm0);
+                m_blobX.ShareData(blobBtm0);
+                m_blobX.ShareDiff(blobBtm0);
+                m_log.CHECK_EQ(m_blobX.count(), m_nT * m_nN * m_nInputSize, "The input should be Sequence * Batch * InputSize in length.");
+
+                int nDir = (m_param.recurrent_param.bidirectional) ? 2 : 1;
+                m_blobHx.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, nDir);
+                m_blobCx.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, nDir);
+
+                m_blobY.Reshape(m_nT, m_nN, m_nHiddenSize, nDir);
+                m_blobHy.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, nDir);
+                m_blobCy.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, nDir);
+
+                m_blobHx.SetData(0);
+                m_blobCx.SetData(0);
+                m_blobHy.SetData(0);
+                m_blobCy.SetData(0);
+
+                // Setup parameters - do this after the rnn descriptor is set
+                // otherwise we will not know how many parameters we have to allocate.
+                ulong szWt;
+                m_cuda.GetRnn8MemorySizes(m_hCuDnn, m_hRnn8, out szWt, out m_nWorkspaceCount, out m_nReservedCount);
+
+                List<int> rgWtShape = new List<int>() { (int)szWt, 1, 1 };
+                m_blobWts.Reshape(rgWtShape);
+
+                // Setup the workspace and reserved memory.
+                m_hWorkspace = m_cuda.AllocMemory((long)m_nWorkspaceCount);
+                if (m_nReservedCount > 0)
+                    m_hReserved = m_cuda.AllocMemory((long)m_nReservedCount);
+                else
+                    m_nReservedCount = 0;
+
+                // Fill the weights.
+                if (!shareParameter(m_blobWts, rgWtShape))
+                {
+                    double dfWtVal = 0;
+                    double dfWtVal2 = 0;
+                    RNN_FILLER_TYPE ftWt = RNN_FILLER_TYPE.RNN_CONSTANT_FILLER;
+                    if (m_param.recurrent_param.weight_filler.type == "xavier")
+                        ftWt = RNN_FILLER_TYPE.RNN_XAVIER_FILLER;
+                    else if (m_param.recurrent_param.weight_filler.type == "gaussian")
+                    {
+                        dfWtVal = m_param.recurrent_param.weight_filler.mean;
+                        dfWtVal2 = m_param.recurrent_param.weight_filler.std;
+                        ftWt = RNN_FILLER_TYPE.RNN_GAUSSIAN_FILLER;
+                    }
+                    else if (m_param.recurrent_param.weight_filler.type == "constant")
+                        dfWtVal = m_param.recurrent_param.weight_filler.value;
+                    else
+                        throw new Exception("Currently the RNN2 weights only support 'constant' and 'xavier' fillers.");
+
+                    double dfBiasVal = 0;
+                    double dfBiasVal2 = 0;
+                    RNN_FILLER_TYPE ftBias = RNN_FILLER_TYPE.RNN_CONSTANT_FILLER;
+                    if (m_param.recurrent_param.bias_filler.type == "xavier")
+                        ftBias = RNN_FILLER_TYPE.RNN_XAVIER_FILLER;
+                    else if (m_param.recurrent_param.bias_filler.type == "gaussian")
+                    {
+                        dfBiasVal = m_param.recurrent_param.bias_filler.mean;
+                        dfBiasVal2 = m_param.recurrent_param.bias_filler.std;
+                        ftBias = RNN_FILLER_TYPE.RNN_GAUSSIAN_FILLER;
+                    }
+                    else if (m_param.recurrent_param.bias_filler.type == "constant")
+                        dfBiasVal = m_param.recurrent_param.bias_filler.value;
+                    else
+                        throw new Exception("Currently the RNN2 bias' only support 'constant' and 'xavier' fillers.");
+
+                    m_cuda.InitializeRnn8Weights(m_hCuDnn, m_hRnn8, m_blobWts.mutable_gpu_data, ftWt, dfWtVal, dfWtVal2, ftBias, dfBiasVal, dfBiasVal2);
+                }
+
+                m_blobWts.SetDiff(0);
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+            }
+        }
+
+        private void layerSetupCudnnRnn(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
             try
             {
                 m_bUseTensors = m_param.recurrent_param.cudnn_enable_tensor_cores;
@@ -420,8 +571,8 @@ namespace MyCaffe.layers
                 m_blobCy.SetData(0);
 
                 // Set the input/output data descriptors
-                m_cuda.SetRnnDataDesc(m_hXDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, m_nT, m_nN, m_nInputSize, false);
-                m_cuda.SetRnnDataDesc(m_hYDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, m_nT, m_nN, m_nHiddenSize, m_param.recurrent_param.bidirectional);
+                m_cuda.SetRnnDataDesc(m_hXDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR_UNPACKED, m_nT, m_nN, m_nInputSize, false);
+                m_cuda.SetRnnDataDesc(m_hYDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR_UNPACKED, m_nT, m_nN, m_nHiddenSize, m_param.recurrent_param.bidirectional);
 
                 int[] rgDimA = new int[3];
                 int[] rgStrideA = new int[3];
@@ -805,6 +956,64 @@ namespace MyCaffe.layers
 
         private void reshapeCuDnn(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            if (m_bUseCudnnRnn8)
+                reshapeCudnnRnn8(colBottom, colTop);
+            else
+                reshapeCudnnRnn(colBottom, colTop);
+        }
+
+        private void reshapeCudnnRnn8(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            Blob<T> blobBtm0 = colBottom[0];
+            Blob<T> blobTop0 = colTop[0];
+
+            if (m_param.recurrent_param.batch_first)
+            {
+                blobBtm0 = m_blobBtmData;
+                blobTop0 = m_blobTop;
+            }
+
+            m_blobX.ShareData(blobBtm0);
+            m_blobX.ShareDiff(blobBtm0);
+            m_log.CHECK_EQ(m_blobX.count(), m_nT * m_nN * m_nInputSize, "The input should be Sequence * Batch * InputSize in length.");
+
+            if (colBottom.Count > 2)
+            {
+                m_blobHx.ShareData(colBottom[1]);
+                m_blobHx.ShareDiff(colBottom[1]);
+                m_blobCx.ShareData(colBottom[2]);
+                m_blobCx.ShareDiff(colBottom[2]);
+            }
+            else
+            {
+                m_blobHx.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
+                m_blobHx.SetData(0);
+                m_blobCx.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
+                m_blobCx.SetData(0);
+            }
+
+            m_blobY.Reshape(m_nT, m_nN, m_nHiddenSize, 1);
+            m_blobHy.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
+            m_blobCy.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
+
+            blobTop0.ReshapeLike(m_blobY);
+            blobTop0.ShareData(m_blobY);
+            blobTop0.ShareDiff(m_blobY);
+
+            if (m_param.recurrent_param.expose_hidden_output)
+            {
+                colTop[1].ReshapeLike(m_blobHy);
+                colTop[1].ShareData(m_blobHy);
+                colTop[1].ShareDiff(m_blobHy);
+
+                colTop[2].ReshapeLike(m_blobCy);
+                colTop[2].ShareData(m_blobCy);
+                colTop[2].ShareDiff(m_blobCy);
+            }
+        }
+
+        private void reshapeCudnnRnn(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
             Blob<T> blobBtm0 = colBottom[0];
             Blob<T> blobTop0 = colTop[0];
 
@@ -1175,6 +1384,29 @@ namespace MyCaffe.layers
 
         private void forward_cudnn(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            if (m_bUseCudnnRnn8)
+                forward_cudnnRnn8(colBottom, colTop);
+            else
+                forward_cudnnRnn(colBottom, colTop);
+        }
+
+        private void forward_cudnnRnn8(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            m_cuda.Rnn8Forward(m_hCuDnn,
+                               m_hRnn8,
+                               m_blobX.gpu_data,
+                               m_blobY.mutable_gpu_data,
+                               m_blobHx.gpu_data,
+                               m_blobHy.mutable_gpu_data,
+                               m_blobCx.gpu_data,
+                               m_blobCy.mutable_gpu_data,
+                               m_blobWts.gpu_data,
+                               m_hWorkspace,
+                               m_hReserved);
+        }
+
+        private void forward_cudnnRnn(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
             Blob<T> blobBtm1 = colBottom[1];
             if (m_param.recurrent_param.batch_first)
                 blobBtm1 = m_blobBtmClip;
@@ -1273,6 +1505,34 @@ namespace MyCaffe.layers
         }
 
         private void backward_cudnn(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
+        {
+            if (m_bUseCudnnRnn8)
+                backward_cudnnRnn8(colTop, rgbPropagateDown, colBottom);
+            else
+                backward_cudnnRnn(colTop, rgbPropagateDown, colBottom);
+        }
+
+        private void backward_cudnnRnn8(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
+        {
+            m_cuda.Rnn8Backward(m_hCuDnn,
+                                m_hRnn8,
+                                m_blobY.gpu_data,
+                                m_blobY.gpu_diff,
+                                m_blobX.gpu_data,
+                                m_blobX.mutable_gpu_diff,
+                                m_blobHx.gpu_data,
+                                m_blobHy.gpu_diff,
+                                m_blobHx.mutable_gpu_diff,
+                                m_blobCx.gpu_data,
+                                m_blobCy.gpu_diff,
+                                m_blobCx.mutable_gpu_diff,
+                                m_blobWts.gpu_data,
+                                m_blobWts.mutable_gpu_diff,
+                                m_hWorkspace,
+                                m_hReserved);
+        }
+
+        private void backward_cudnnRnn(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
             if (rgbPropagateDown[1] && !m_bWarningShown)
             {

@@ -343,6 +343,15 @@ class Device
 		long RnnBackwardData(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long RnnBackwardWeights(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 
+		long IsRnn8Supported(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long CreateRnn8(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long FreeRnn8(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long SetRnn8(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long GetRnn8MemorySizes(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long InitializeRnn8Weights(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long Rnn8Forward(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long Rnn8Backward(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+
 		long CreatePCA(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long FreePCA(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long RunPCA(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
@@ -2214,6 +2223,183 @@ inline long Device<T>::RnnBackwardWeights(long lInput, T* pfInput, long llInput,
 		return m_memory.RnnBackwardWeightsEx(hHandle, hRnnDesc, hXDesc, hXData, hHxDesc, hHxData, hYDesc, hYData, hWorkspace, nWsCount, hWtDesc, hWtDiff, hReserved, nResCount);
 
 	return m_memory.RnnBackwardWeights(hHandle, hRnnDesc, hXDesc, hXData, hHxDesc, hHxData, hYDesc, hYData, hWorkspace, nWsCount, hWtDesc, hWtDiff, hReserved, nResCount);
+}
+
+template <class T>
+inline long Device<T>::IsRnn8Supported(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr = m_memory.IsRnn8Supported();
+
+	int nSupported = 0;
+	if (lErr == ERROR_SUCCESS)
+		nSupported = 1;
+
+	return setOutput((long)nSupported, plOutput, ppfOutput);
+}
+
+template <class T>
+inline long Device<T>::CreateRnn8(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+	long hHandle = 0;
+
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+
+	if (lErr = m_memory.CreateRnn8(&hHandle, &m_math))
+		return lErr;
+
+	return setOutput(hHandle, plOutput, ppfOutput);
+}
+
+template <class T>
+inline long Device<T>::FreeRnn8(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+
+	return m_memory.FreeRnn8(hHandle);
+}
+
+template <class T>
+inline long Device<T>::SetRnn8(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 15, 15))
+		return lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+
+	long hCuda = (long)plInput[0];
+	long hRnn = (long)plInput[1];
+	bool bTraining = (plInput[2] != 0) ? true : false;
+	RnnDataLayout layout = (RnnDataLayout)plInput[3];
+	RnnMode cellMode = (RnnMode)plInput[4];
+	RnnBiasMode biasMode = (RnnBiasMode)plInput[5];
+	int nSequenceLen = (int)plInput[6];
+	int nBatchSize = (int)plInput[7];
+	int nInputs = (int)plInput[8];
+	int nHidden = (int)plInput[9];
+	int nOutputs = (int)plInput[10];
+	int nProjection = (int)plInput[11];
+	int nNumLayers = (int)plInput[12];
+	float fDropout = (float)pfInput[0];
+	size_t lSeed = (size_t)plInput[13];
+	bool bBidirectional = (plInput[14] != 0) ? true : false;
+
+	return m_memory.SetRnn8(hCuda, hRnn, bTraining, layout, cellMode, biasMode, nSequenceLen, nBatchSize, nInputs, nHidden, nOutputs, nProjection, nNumLayers, fDropout, lSeed, bBidirectional);
+}
+
+template <class T>
+inline long Device<T>::GetRnn8MemorySizes(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 2, 2))
+		return lErr;
+
+	long hHandle = (long)plInput[0];
+	long hRnn = (long)plInput[1];
+
+	size_t szWt;
+	size_t szWork;
+	size_t szReserved;
+
+	if (lErr = m_memory.GetRnn8MemorySizes(hHandle, hRnn, &szWt, &szWork, &szReserved))
+		return lErr;
+
+	// ppfOutput has up to MAX_OUTPUT(16) pre-allocated items
+	T* pOutput = *ppfOutput;
+
+	pOutput[0] = (T)szWt;
+	pOutput[1] = (T)szWork;
+	pOutput[2] = (T)szReserved;
+
+	*plOutput = 3;
+	*ppfOutput = pOutput;
+
+	return 0;
+}
+
+template <class T>
+inline long Device<T>::InitializeRnn8Weights(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 5, 5))
+		return lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 4, 4))
+		return lErr;
+
+	long hCuda = (long)plInput[0];
+	long hRnn = (long)plInput[1];
+	long hWt = (long)plInput[2];
+	FillerType ftWt = (FillerType)plInput[3];
+	T fWtVal = (T)pfInput[0];
+	T fWtVal2 = (T)pfInput[1];
+	FillerType ftBias = (FillerType)plInput[4];
+	T fBiasVal = (T)pfInput[2];
+	T fBiasVal2 = (T)pfInput[3];
+
+	return m_memory.InitializeRnn8Weights(hCuda, hRnn, hWt, ftWt, fWtVal, fWtVal2, ftBias, fBiasVal, fBiasVal2);
+}
+
+template <class T>
+inline long Device<T>::Rnn8Forward(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 11, 11))
+		return lErr;
+
+	long hCuda = (long)plInput[0];
+	long hRnn = (long)plInput[1];
+	long hX = (long)plInput[2];
+	long hY = (long)plInput[3];
+	long hhX = (long)plInput[4];
+	long hhY = (long)plInput[5];
+	long hcX = (long)plInput[6];
+	long hcY = (long)plInput[7];
+	long hWt = (long)plInput[8];
+	long hWork = (long)plInput[9];
+	long hReserved = (long)plInput[10];
+
+	return m_memory.ForwardRnn8(hCuda, hRnn, hX, hY, hhX, hhY, hcX, hcY, hWt, hWork, hReserved);
+}
+
+template <class T>
+inline long Device<T>::Rnn8Backward(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 16, 16))
+		return lErr;
+
+	long hCuda = (long)plInput[0];
+	long hRnn = (long)plInput[1];
+	long hY = (long)plInput[2];
+	long hdY = (long)plInput[3];
+	long hX = (long)plInput[4];
+	long hdX = (long)plInput[5];
+	long hhX = (long)plInput[6];
+	long hdhY = (long)plInput[7];
+	long hdhX = (long)plInput[8];
+	long hcX = (long)plInput[9];
+	long hdcY = (long)plInput[10];
+	long hdcX = (long)plInput[11];
+	long hWt = (long)plInput[12];
+	long hdWt = (long)plInput[13];
+	long hWork = (long)plInput[14];
+	long hReserved = (long)plInput[15];
+
+	return m_memory.BackwardRnn8(hCuda, hRnn, hY, hdY, hX, hdX, hhX, hdhY, hdhX, hcX, hdcY, hdcX, hWt, hdWt, hWork, hReserved);
 }
 
 template <class T>

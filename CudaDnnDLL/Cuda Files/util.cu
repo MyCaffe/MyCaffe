@@ -268,6 +268,22 @@ bool GetErrorString(long lKernel, long lErr, char* szErr, long lMaxErr)
 		case ERROR_LAYERNORM_NOT_INITIALIZED:
 			_snprintf(szErr, lMaxErr, "LAYERNORM: The LayerNorm is not initialized. (%ld), Kernel = %ld", lErr, lKernel);
 			return true;
+
+		case ERROR_RNN8:
+			_snprintf(szErr, lMaxErr, "RNN8: A general Rnn8 error occurred. (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
+
+		case ERROR_RNN8_NOT_INITIALIZED:
+			_snprintf(szErr, lMaxErr, "RNN8: The RNN8 is not initialized. (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
+
+		case ERROR_RNN8_INCOMPATIBLE_CUDNN_VER:
+			_snprintf(szErr, lMaxErr, "RNN8: The RNN8 requires cuDNN version 8.0+ to run. (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
+
+		case ERROR_RNN8_INVALID_FILLER:
+			_snprintf(szErr, lMaxErr, "RNN8: The RNN8 does not support the filler specified. (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
 	}
 
 	return false;

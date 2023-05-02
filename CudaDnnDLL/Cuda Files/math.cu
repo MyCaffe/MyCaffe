@@ -248,6 +248,16 @@ __global__ void set_kernel(const int n, const T alpha, T* y)
 }
 
 template <class T>
+long Math<T>::set(int nCount, T* pMem, T fVal)
+{
+	set_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, fVal, pMem);
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::set(int nCount, double* pMem, double fVal);
+template long Math<float>::set(int nCount, float* pMem, float fVal);
+
+template <class T>
 long Math<T>::set(int nCount, long hDst, T fVal, int nIdx, int nXOff)
 {
 	LONG lErr;
@@ -7274,8 +7284,8 @@ long Math<float>::rng_setseed(long lSeed)
 }
 
 
-template <>
-long Math<double>::rng_uniform(int n, double fMin, double fMax, long hY)
+template <class T>
+long Math<T>::rng_uniform(int n, T fMin, T fMax, long hY)
 {
 	if (m_cublas == NULL)
 		return ERROR_CUBLAS_NULL;
@@ -7286,54 +7296,65 @@ long Math<double>::rng_uniform(int n, double fMin, double fMax, long hY)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	if (lErr = curandGenerateUniformDouble(m_curand, (double*)pY->Data(), n))
+	rng_uniform(n, fMin, fMax, (T*)pY->Data());
+}
+
+template long Math<double>::rng_uniform(int n, double fMin, double fMax, long hY);
+template long Math<float>::rng_uniform(int n, float fMin, float fMax, long hY);
+
+
+template <>
+long Math<double>::rng_uniform(int n, double fMin, double fMax, double* pMem)
+{
+	LONG lErr;
+
+	if (m_cublas == NULL)
+		return ERROR_CUBLAS_NULL;
+
+	if (lErr = curandGenerateUniformDouble(m_curand, pMem, n))
 		return lErr;
 
 	double fRange = fMax - fMin;
 	if (fRange != 1.0)
 	{
-		if (lErr = cublasDscal(m_cublas, n, &fRange, (double*)pY->Data(), 1))
+		if (lErr = cublasDscal(m_cublas, n, &fRange, pMem, 1))
 			return lErr | ERROR_CUBLAS_OFFSET;
 	}
 
 	if (fMin != 0)
-		add_scalar_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fMin, (double*)pY->Data());
+		add_scalar_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fMin, pMem);
 
 	return cudaStreamSynchronize(0);
 }
 
 
 template <>
-long Math<float>::rng_uniform(int n, float fMin, float fMax, long hY)
+long Math<float>::rng_uniform(int n, float fMin, float fMax, float* pMem)
 {
 	if (m_cublas == NULL)
 		return ERROR_CUBLAS_NULL;
 
 	LONG lErr;
-	MemoryItem* pY;
 
-	if (lErr = m_pMemCol->GetData(hY, &pY))
-		return lErr;
-
-	if (lErr = curandGenerateUniform(m_curand, (float*)pY->Data(), n))
+	if (lErr = curandGenerateUniform(m_curand, pMem, n))
 		return lErr;
 
 	float fRange = fMax - fMin;
 	if (fRange != 1.0)
 	{
-		if (lErr = cublasSscal(m_cublas, n, &fRange, (float*)pY->Data(), 1))
+		if (lErr = cublasSscal(m_cublas, n, &fRange, pMem, 1))
 			return lErr | ERROR_CUBLAS_OFFSET;
 	}
 
 	if (fMin != 0)
-		add_scalar_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fMin, (float*)pY->Data());
+		add_scalar_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fMin, pMem);
 
 	return cudaStreamSynchronize(0);
 }
 
 
-template <>
-long Math<double>::rng_gaussian(int n, double fMu, double fSigma, long hY)
+template <class T>
+long Math<T>::rng_gaussian(int n, T fMu, T fSigma, long hY)
 {
 	if (m_cublas == NULL)
 		return ERROR_CUBLAS_NULL;
@@ -7344,29 +7365,36 @@ long Math<double>::rng_gaussian(int n, double fMu, double fSigma, long hY)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	if (((n % 2) != 0) && ((n+1) * sizeof(double)) <= pY->Size())
+	rng_gaussian(n, fMu, fSigma, (T*)pY->Data(), pY->Size());
+}
+
+template long Math<double>::rng_gaussian(int n, double fMu, double fSigma, long hY);
+template long Math<float>::rng_gaussian(int n, float fMu, float fSigma, long hY);
+
+
+template <>
+long Math<double>::rng_gaussian(int n, double fMu, double fSigma, double* pMem, size_t sz)
+{
+	if (m_cublas == NULL)
+		return ERROR_CUBLAS_NULL;
+
+	if (((n % 2) != 0) && ((n+1) * sizeof(double)) <= sz)
 		n++;
 
-	return curandGenerateNormalDouble(m_curand, (double*)pY->Data(), n, fMu, fSigma);
+	return curandGenerateNormalDouble(m_curand, pMem, n, fMu, fSigma);
 }
 
 
 template <>
-long Math<float>::rng_gaussian(int n, float fMu, float fSigma, long hY)
+long Math<float>::rng_gaussian(int n, float fMu, float fSigma, float* pMem, size_t sz)
 {
 	if (m_cublas == NULL)
 		return ERROR_CUBLAS_NULL;
 
-	LONG lErr;
-	MemoryItem* pY;
-
-	if (lErr = m_pMemCol->GetData(hY, &pY))
-		return lErr;
-
-	if (((n % 2) != 0) && ((n+1) * sizeof(float)) <= pY->Size())
+	if (((n % 2) != 0) && ((n+1) * sizeof(float)) <= sz)
 		n++;
 
-	return curandGenerateNormal(m_curand, (float*)pY->Data(), n, fMu, fSigma);
+	return curandGenerateNormal(m_curand, pMem, n, fMu, fSigma);
 }
 
 

@@ -145,6 +145,7 @@ class Math
 			m_curand = curand;
 		}
 
+		long set(int nCount, T* pMem, T fVal);
 		long set(int nCount, long hDst, T fVal, int nIdx, int nXOff = 0);
 		long get(int nCount, long hSrc, int nIdx, T* pfOutput);
 		long copy(int nCount, long hSrc, long hDst, int nSrcOffset, int nDstOffset, long hAsyncStream, int nSrcHalfSizeOverride = -1, int nDstHalfSizeOverride = -1);
@@ -256,6 +257,8 @@ class Math
 		long rng_uniform(int n, T fMin, T fMax, long hY);
 		long rng_gaussian(int n, T fMu, T fSigma, long hY);
 		long rng_bernoulli(int n, T fNonZeroProb, long hY);
+		long rng_uniform(int n, T fMin, T fMax, T* pMem);
+		long rng_gaussian(int n, T fMu, T fSigma, T* pMem, size_t sz);
 
 		long accuracy_fwd(int nCount, int nOuterNum, int nInnerNum, long hBtmData, long hBtmLabel, long hAccData, long hAccTotals, bool bIgnoreLabel, int nIgnoreLabel, bool bLastElementOnly, int nBatch);
 

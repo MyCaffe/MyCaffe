@@ -27,6 +27,7 @@ namespace MyCaffe.param
         bool m_bCudnnEnableTensorCores = false; // cuDnn only
         bool m_bBatchFirst = false; // input and output have the batch in the first dim.
         bool m_bAutoRepeatHiddenStatesAcrossLayers = false;
+        bool m_bUseCudnnRnn8IfSupported = false; // cuDnn only
 
         /** @copydoc LayerParameterBase */
         public RecurrentParameter()
@@ -43,6 +44,15 @@ namespace MyCaffe.param
                 return "The engine setting is set on CAFFE or DEFAULT.";
 
             return "";
+        }
+
+        /// <summary>
+        /// Specifies to use cuDnn RNN8 if supported (requires cuDnn 8.0 or higher), (default = false).
+        /// </summary>
+        public bool use_cudnn_rnn8_if_supported
+        {
+            get { return m_bUseCudnnRnn8IfSupported; }
+            set { m_bUseCudnnRnn8IfSupported = value; }
         }
 
         /// <summary>
@@ -242,6 +252,7 @@ namespace MyCaffe.param
                 m_bCudnnEnableTensorCores = p.m_bCudnnEnableTensorCores;
                 m_bBatchFirst = p.batch_first;
                 m_bAutoRepeatHiddenStatesAcrossLayers = p.auto_repeat_hidden_states_across_layers;
+                m_bUseCudnnRnn8IfSupported = p.use_cudnn_rnn8_if_supported;
             }
         }
 
@@ -270,6 +281,7 @@ namespace MyCaffe.param
             rgChildren.Add("expose_hidden_output", expose_hidden_output.ToString());
             rgChildren.Add("batch_first", batch_first.ToString());
             rgChildren.Add("auto_repeat_hidden_states_across_layers", auto_repeat_hidden_states_across_layers.ToString());
+            rgChildren.Add("use_cudnn_rnn8_if_supported", use_cudnn_rnn8_if_supported.ToString());
 
             if (engine != Engine.CAFFE)
             {
@@ -342,6 +354,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("auto_repeat_hidden_states_across_layers")) != null)
                 p.auto_repeat_hidden_states_across_layers = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("use_cudnn_rnn8_if_supported")) != null)
+                p.use_cudnn_rnn8_if_supported = bool.Parse(strVal);
 
             return p;
         }

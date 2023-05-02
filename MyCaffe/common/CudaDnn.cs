@@ -11,6 +11,7 @@ using System.ComponentModel;
 using System.Runtime.Remoting.Channels;
 using System.Xml.Linq;
 using System.Security.Cryptography.X509Certificates;
+using static MyCaffe.param.tft.ReshapeTemporalParameter;
 
 namespace MyCaffe.common
 {
@@ -370,18 +371,45 @@ namespace MyCaffe.common
     }
 
     /// <summary>
+    /// Specifies the RNN bias mode to use with the Recurrent Layer when using the cuDNN engine.
+    /// </summary>
+    public enum RNN_BIAS_MODE
+    {
+        /// <summary>
+        /// Specifies to use no bias in the RNN cells.
+        /// </summary>
+        RNN_NO_BIAS = 0,
+        /// <summary>
+        /// Specifies to use one bias in the input Gemm of the rnn cell.
+        /// </summary>
+        RNN_SINGLE_INP_BIAS = 1,
+        /// <summary>
+        /// Specifies to use two bias in the input Gemm and recurrent Gemm of the rnn cell (default).
+        /// </summary>
+        RNN_DOUBLE_BIAS = 2,
+        /// <summary>
+        /// Specifies to use one recurrent bias in the recurrent Gemm of the rnn cell.
+        /// </summary>
+        RNN_SINGLE_REC_BIAS = 3
+    }
+
+    /// <summary>
     /// Specifies the RNN data layout of the data input.
     /// </summary>
     public enum RNN_DATALAYOUT
     {
         /// <summary>
-        /// Specifies ordering with sequence major ordering.
+        /// Specifies ordering with sequence major ordering, and padded outer stride from one time-step to the next.
         /// </summary>
-        RNN_SEQ_MAJOR = 0,
+        RNN_SEQ_MAJOR_UNPACKED = 0,
         /// <summary>
-        /// Specifies ordering with batch major ordering.
+        /// Specifies ordering with sequence major ordering, and sequence length sorted and packed.
         /// </summary>
-        RNN_BATCH_MAJOR = 2
+        RNN_SEQ_MAJOR_PACKED = 1,
+        /// <summary>
+        /// Specifies ordering with batch major ordering, padded, outer stride from one batch to the next.
+        /// </summary>
+        RNN_BATCH_MAJOR_UNPACKED = 2
     }
 
     /// <summary>
@@ -397,6 +425,25 @@ namespace MyCaffe.common
         /// Specifies a bi-direction RNN where the output is concatinated at each layer.
         /// </summary>
         RNN_BIDIRECTIONAL
+    }
+
+    /// <summary>
+    /// Defines the filler types used to fill the RNN8 weights.
+    /// </summary>
+    public enum RNN_FILLER_TYPE
+    {
+        /// <summary>
+        /// Specifies to fill with a constant value.
+        /// </summary>
+        RNN_CONSTANT_FILLER,
+        /// <summary>
+        /// Specifies to fill with a uniform distribution.
+        /// </summary>
+        RNN_XAVIER_FILLER,
+        /// <summary>
+        /// Specifies to fill with a gaussian distribution.
+        /// </summary>
+        RNN_GAUSSIAN_FILLER
     }
 
     /// <summary>
@@ -1073,14 +1120,17 @@ namespace MyCaffe.common
             LCN_CC_FWD = 122,
             LCN_CC_BWD = 123,
 
+            // DEPRECIATED, use RNN8 instead
             CREATE_RNN_DATA_DESC = 130,
             FREE_RNN_DATA_DESC = 131,
             SET_RNN_DATA_DESC = 132,
 
+            // DEPRECIATED, use RNN8 instead
             CREATE_RNN_DATA_DESCEX = 135,
             FREE_RNN_DATA_DESCEX = 136,
             SET_RNN_DATA_DESCEX = 137,
 
+            // DEPRECIATED, use RNN8 instead
             CREATE_RNN_DESC = 140,
             FREE_RNN_DESC = 141,
             SET_RNN_DESC = 142,
@@ -1090,6 +1140,15 @@ namespace MyCaffe.common
             FWD_RNN = 146,
             BWD_RNN_DATA = 147,
             BWD_RNN_WTS = 148,
+
+            RNN8_IS_SUPPORTED = 150,
+            RNN8_CREATE = 151,
+            RNN8_FREE = 152,
+            RNN8_SET = 153,
+            RNN8_GET_MEMORY_SIZES = 154,
+            RNN8_INIT_WEIGHTS = 155,
+            RNN8_FWD = 156,
+            RNN8_BWD = 157,
 
             CUDA_SET = 200,
             CUDA_GET = 201,
@@ -4574,7 +4633,7 @@ namespace MyCaffe.common
         /// <param name="rgSeqLen">Specifies the sequence lengths - currently this should be <i>null</i> which sets all sequence lengths to nMaxSeqLen.</param>
         public void SetRnnDataDesc(long hRnnDataDesc, RNN_DATALAYOUT layout, int nMaxSeqLen, int nBatchSize, int nVectorSize, bool bBidirectional = false, int[] rgSeqLen = null)
         {
-            if (!m_bEnableRnnExtendedVersion && layout != RNN_DATALAYOUT.RNN_SEQ_MAJOR)
+            if (!m_bEnableRnnExtendedVersion && layout != RNN_DATALAYOUT.RNN_SEQ_MAJOR_UNPACKED)
                 throw new Exception("The non-extended functions only support RNN_SEQ_MAJOR ordering.");
 
             int nFn = (m_bEnableRnnExtendedVersion) ? (int)CUDAFN.SET_RNN_DATA_DESCEX : (int)CUDAFN.SET_RNN_DATA_DESC;
@@ -5018,6 +5077,175 @@ namespace MyCaffe.common
             }
         }
 
+
+        /// <summary>
+        /// Returns whether or not RNN8 is supported.
+        /// </summary>
+        public bool IsRnn8Supported()
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.RNN8_IS_SUPPORTED, null);
+                return (rg[0] == 1) ? true : false;
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.RNN8_IS_SUPPORTED, null);
+                return (rg[0] == 1) ? true : false;
+            }
+        }
+
+        /// <summary>
+        /// Create the RNN8.
+        /// </summary>
+        /// <returns>A handle to the RNN8 is returned.</returns>
+        public long CreateRnn8()
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.RNN8_CREATE, null);
+                return (long)rg[0];
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.RNN8_CREATE, null);
+                return (long)rg[0];
+            }
+        }
+
+        /// <summary>
+        /// Free an existing RNN8.
+        /// </summary>
+        /// <param name="h">Specifies the handle to the RNN8 created with CreateRnn8</param>
+        public void FreeRnn8(long h)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.RNN8_FREE, m_param.AsDouble(h));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.RNN8_FREE, m_param.AsFloat(h));
+        }
+
+        /// <summary>
+        /// Set the RNN8 parameters.
+        /// </summary>
+        /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
+        /// <param name="hRnn">Specifies the handle to the RNN8 created with CreateRnn8.</param>
+        /// <param name="bTraining">Specifies true for training and false for inference.</param>
+        /// <param name="layout">Specifies the data layout ordering.</param>
+        /// <param name="cellMode">Specifies the cell mode (RELU, TANH, LSTM or GRU), </param>
+        /// <param name="biasMode">Specifies the bias mode (default = RNN_DOUBLE_BIAS)</param>
+        /// <param name="nSequenceLen">Specifies the sequence length.</param>
+        /// <param name="nBatchSize">Specifies the batch size.</param>
+        /// <param name="nInputs">Specifies the number of inputs. X input is of size (SeqLen, BatchSize, Inputs)</param>
+        /// <param name="nHidden">Specifies the number of hidden. H and C are of size (BatchSize, Hidden)</param>
+        /// <param name="nOutputs">Specifies the number of outputs. Y output is of size (SeqLen, BatchSize, Outputs)</param>
+        /// <param name="nProjection">Specifies the projection size.</param>
+        /// <param name="nNumLayers">Specifies the number of layers.</param>
+        /// <param name="fDropout">Specifies the dropout ratio.</param>
+        /// <param name="lSeed">Specifies the dropout seed.</param>
+        /// <param name="bBidirectional">Specifies unidirectional (false) or bidirectional (true), (default = false)</param>
+        public void SetRnn8(long hCuDnn, long hRnn, bool bTraining, RNN_DATALAYOUT layout, RNN_MODE cellMode, RNN_BIAS_MODE biasMode, int nSequenceLen, int nBatchSize, int nInputs, int nHidden, int nOutputs, int nProjection, int nNumLayers, float fDropout, ulong lSeed, bool bBidirectional = false)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.RNN8_SET, m_param.AsDouble((double)fDropout), m_param.AsLong(hCuDnn, hRnn, (bTraining) ? 1 : 0, (int)layout, (int)cellMode, (int)biasMode, nSequenceLen, nBatchSize, nInputs, nHidden, nOutputs, nProjection, nNumLayers, (long)lSeed, (bBidirectional) ? 1 : 0));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.RNN8_SET, m_param.AsFloat(fDropout), m_param.AsLong(hCuDnn, hRnn, (bTraining) ? 1 : 0, (int)layout, (int)cellMode, (int)biasMode, nSequenceLen, nBatchSize, nInputs, nHidden, nOutputs, nProjection, nNumLayers, (long)lSeed, (bBidirectional) ? 1 : 0));
+        }
+
+        /// <summary>
+        /// Returns the memory sizes required for the RNN8.
+        /// </summary>
+        /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
+        /// <param name="hRnn">Specifies the handle to the RNN8 created with CreateRnn8.</param>
+        /// <param name="szWt">Returns the required weight size.</param>
+        /// <param name="szWork">Returns the rquired work size.</param>
+        /// <param name="szReserved">Returns the required reserved size.</param>
+        public void GetRnn8MemorySizes(long hCuDnn, long hRnn, out ulong szWt, out ulong szWork, out ulong szReserved)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.RNN8_GET_MEMORY_SIZES, null, m_param.AsLong(hCuDnn, hRnn));
+                szWt = (ulong)rg[0];
+                szWork = (ulong)rg[1];
+                szReserved = (ulong)rg[2];
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.RNN8_GET_MEMORY_SIZES, null, m_param.AsLong(hCuDnn, hRnn));
+                szWt = (ulong)rg[0];
+                szWork = (ulong)rg[1];
+                szReserved = (ulong)rg[2];
+            }   
+        }
+
+        /// <summary>
+        /// Initialize the RNN8 weights
+        /// </summary>
+        /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
+        /// <param name="hRnn">Specifies the handle to the RNN8 created with CreateRnn8.</param>
+        /// <param name="hWt">Specifies the handle to the GPU data containing the weights to be initialized.</param>
+        /// <param name="wtFt">Specifies the weight filler type.</param>
+        /// <param name="fWtVal">Specifies the weight filler value.</param>
+        /// <param name="fWtVal2">Specifies a secondary weight filler value.</param>
+        /// <param name="biasFt">Specifies the bias filler type.</param>
+        /// <param name="fBiasVal">Specifies the bias filler value.</param>
+        /// <param name="fBiasVal2">Specifies a secondary bias filler value.</param>
+        public void InitializeRnn8Weights(long hCuDnn, long hRnn, long hWt, RNN_FILLER_TYPE wtFt, double fWtVal, double fWtVal2, RNN_FILLER_TYPE biasFt, double fBiasVal, double fBiasVal2)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.RNN8_INIT_WEIGHTS, m_param.AsDouble(fWtVal, fWtVal2, fBiasVal, fBiasVal2), m_param.AsLong(hCuDnn, hRnn, hWt, (int)wtFt, (int)biasFt));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.RNN8_INIT_WEIGHTS, m_param.AsFloat((float)fWtVal, (float)fWtVal2, (float)fBiasVal, (float)fBiasVal2), m_param.AsLong(hCuDnn, hRnn, hWt, (int)wtFt, (int)biasFt));
+        }
+
+        /// <summary>
+        /// Calculate the forward pass through the RNN8.
+        /// </summary>
+        /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
+        /// <param name="hRnn">Specifies the handle to the RNN8 created with CreateRnn8.</param>
+        /// <param name="hX">Specifies a handle to the GPU memory of shape (SeqLen, BatchSize, Inputs) containing the inputs.</param>
+        /// <param name="hY">Specifies a handle to the GPU memory of shape (SeqLen, BatchSize, Outputs) where the outputs are placed.</param>
+        /// <param name="hhX">Specifies a handle to the GPU memory of shape (BatchSize, Hidden) containing the hidden inputs.</param>
+        /// <param name="hhY">Specifies a handle to the GPU memory of shape (BatchSize, Hidden) where the hidden outputs are placed.</param>
+        /// <param name="hcX">Specifies a handle to the GPU memory of shape (BatchSize, Hidden) containing the hidden cell inputs.</param>
+        /// <param name="hcY">Specifies a handle to the GPU memory of shape (BatchSize, Hidden) where the hidden cell outputs are placed.</param>
+        /// <param name="hWts">Specifies a handle to the GPU memory of size szWt calculated with GetRnn8MemorySizes, containing the weights.</param>
+        /// <param name="hWork">Specifies a handle to the GPU memory of size szWork calculated with GetRnn8MemorySizes, used as temporary work data.</param>
+        /// <param name="hReserved">Specifies a handle to the GPU memory of size szReserved calculated with GetRnn8MemorySizes, used as temporary reserve data.</param>
+        public void Rnn8Forward(long hCuDnn, long hRnn, long hX, long hY, long hhX, long hhY, long hcX, long hcY, long hWts, long hWork, long hReserved)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.RNN8_FWD, null, m_param.AsLong(hCuDnn, hRnn, hX, hY, hhX, hhY, hcX, hcY, hWts, hWork, hReserved));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.RNN8_FWD, null, m_param.AsLong(hCuDnn, hRnn, hX, hY, hhX, hhY, hcX, hcY, hWts, hWork, hReserved));
+        }
+
+        /// <summary>
+        /// Calculate the backward pass through the RNN8 for both data and weights.
+        /// </summary>
+        /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
+        /// <param name="hRnn">Specifies the handle to the RNN8 created with CreateRnn8.</param>
+        /// <param name="hY">Specifies a handle to the GPU memory of shape (SeqLen, BatchSize, Outputs) containing the outputs from the forward.</param>
+        /// <param name="hdY">Specifies a handle to the GPU memory of shape (SeqLen, BatchSize, Outputs) containing the inbound gradients for Y.</param>
+        /// <param name="hX">Specifies a handle to the GPU memory of shape (SeqLen, BatchSize, Inputs) containing the inputs.</param>
+        /// <param name="hdX">Specifies a handle to the GPU memory of shape (SeqLen, BatchSize, Outputs) where the outbound, calculated gradients for X are placed.</param>
+        /// <param name="hhX">Specifies a handle to the GPU memory of shape (BatchSize, Hidden) containing the hidden inputs.</param>
+        /// <param name="hdhY">Specifies a handle to the GPU memory of shape (BatchSize, Hidden) containing the inbound gradients for hidden.</param>
+        /// <param name="hdhX">Specifies a handle to the GPU memory of shape (BatchSize, Hidden) where the outbound, calculated gradients for hidden are placed.</param>
+        /// <param name="hcX">Specifies a handle to the GPU memory of shape (BatchSize, Hidden) containing the hidden cell inputs.</param>
+        /// <param name="hdcY">Specifies a handle to the GPU memory of shape (BatchSize, Hidden) containing the inbound sgradients for the cell hidden.</param>
+        /// <param name="hdcX">Specifies a handle to the GPU memory of shape (BatchSize, Hidden) where the outbound, calculated gradients for cell hidden are placed.</param>
+        /// <param name="hWt">Specifies a handle to the GPU memory of size szWt calculated with GetRnn8MemorySizes, containing the weights.</param>
+        /// <param name="hdWt">Specifies a handle to the GPU memory of size szWt calculated with GetRnn8MemorySizes, where the weight gradients are placed.</param>
+        /// <param name="hWork">Specifies a handle to the GPU memory of size szWork calculated with GetRnn8MemorySizes, used as temporary work data.</param>
+        /// <param name="hReserved">Specifies a handle to the GPU memory of size szReserved calculated with GetRnn8MemorySizes, used as temporary reserve data.</param>
+        public void Rnn8Backward(long hCuDnn, long hRnn, long hY, long hdY, long hX, long hdX, long hhX, long hdhY, long hdhX, long hcX, long hdcY, long hdcX, long hWt, long hdWt, long hWork, long hReserved)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.RNN8_BWD, null, m_param.AsLong(hCuDnn, hRnn, hY, hdY, hX, hdX, hhX, hdhY, hdhX, hcX, hdcY, hdcX, hWt, hdWt, hWork, hReserved));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.RNN8_BWD, null, m_param.AsLong(hCuDnn, hRnn, hY, hdY, hX, hdX, hhX, hdhY, hdhX, hcX, hdcY, hdcX, hWt, hdWt, hWork, hReserved));
+        }
 
         /// <summary>
         /// Allocates the GPU memory for the PCA Data.

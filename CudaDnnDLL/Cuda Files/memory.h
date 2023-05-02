@@ -10,9 +10,11 @@
 #include "handlecol.h"
 #include "memorycol.h"
 #include "memtest.h"
+#include "math.h"
 #include "imgop.h"
 #include "pca.h"
 #include "rnnData.h"
+#include "rnn8.h"
 #include "tsne_gp.h"
 #include "tsne_g.h"
 #include "nccl.h"
@@ -66,8 +68,17 @@ enum RnnDirection
 
 enum RnnDataLayout
 {
-	RNN_DATALAYOUT_SEQ_MAJOR = CUDNN_RNN_DATA_LAYOUT_SEQ_MAJOR_UNPACKED,
-	RNN_DATALAYOUT_BATCH_MAJOR = CUDNN_RNN_DATA_LAYOUT_BATCH_MAJOR_UNPACKED
+	RNN_DATALAYOUT_SEQ_MAJOR_UNPACKED = CUDNN_RNN_DATA_LAYOUT_SEQ_MAJOR_UNPACKED,
+	RNN_DATALAYOUT_SEQ_MAJOR_PACKED = CUDNN_RNN_DATA_LAYOUT_SEQ_MAJOR_PACKED,
+	RNN_DATALAYOUT_BATCH_MAJOR_UNPACKED = CUDNN_RNN_DATA_LAYOUT_BATCH_MAJOR_UNPACKED
+};
+
+enum RnnBiasMode
+{
+	RNN_NO_BIAS = CUDNN_RNN_NO_BIAS,
+	RNN_SINGLE_INP_BIAS = CUDNN_RNN_SINGLE_INP_BIAS,
+	RNN_DOUBLE_BIAS = CUDNN_RNN_DOUBLE_BIAS,
+	RNN_SINGLE_REC_BIAS = CUDNN_RNN_SINGLE_REC_BIAS
 };
 
 enum SoftmaxAlgorithm
@@ -81,6 +92,13 @@ enum SoftmaxMode
 {
 	SOFTMAX_MODE_INSTANCE = CUDNN_SOFTMAX_MODE_INSTANCE,
 	SOFTMAX_MODE_CHANNEL = CUDNN_SOFTMAX_MODE_CHANNEL
+};
+
+enum FillerType
+{
+	FILLER_TYPE_CONSTANT = FT_CONSTANT,
+	FILLER_TYPE_XAVIER = FT_XAVIER,
+	FILLER_TYPE_GAUSSIAN = FT_GAUSSIAN,
 };
 
 
@@ -136,7 +154,8 @@ class Memory
 		HandleCollection<MID_HANDLES> m_rnnDesc;
 		HandleCollection<MID_HANDLES> m_rnnDataDesc1;
 		HandleCollection<MID_HANDLES> m_rnnDataDesc2;
-		HandleCollection<MAX_HANDLES> m_cudnn; 
+		HandleCollection<MID_HANDLES> m_rnn;
+		HandleCollection<MAX_HANDLES> m_cudnn;
 		HandleCollection<MIN_HANDLES> m_pca;
 		HandleCollection<MIN_HANDLES> m_tsnegp;
 		HandleCollection<MIN_HANDLES> m_tsneg;
@@ -418,6 +437,16 @@ class Memory
 		long RnnForwardEx(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspace, size_t nWsCount, long hReserved, size_t nResCount, bool bTraining);
 		long RnnBackwardDataEx(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspace, size_t nWsCount, long hReserved, size_t nResCount);
 		long RnnBackwardWeightsEx(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspace, size_t nWsCount, long hWtDesc, long hWtDiff, long hReserved, size_t nResCount);
+
+		long IsRnn8Supported();
+		long CreateRnn8(long* phHandle, Math<T>* pMath);
+		long FreeRnn8(long hRnn);
+		rnn8Handle<T>* GetRnn8(long hRnn);
+		long SetRnn8(long hCuda, long hRnn, bool bTraining, RnnDataLayout layout, RnnMode cellMode, RnnBiasMode biasMode, int nSequenceLen, int nBatchSize, int nInputs, int nHidden, int nOutputs, int nProjection, int nNumLayers, float fDropout, size_t lSeed, bool bBidirectional);
+		long GetRnn8MemorySizes(long hCuda, long hRnn, size_t* pWeightSize, size_t* pWorkSize, size_t* pReserveSize);
+		long InitializeRnn8Weights(long hCuda, long hRnn, long hWt, FillerType ftWt, T fWtVal, T fWtVal2, FillerType ftBias, T fBiasVal, T fBiasVal2);
+		long ForwardRnn8(long hCuda, long hRnn, long hX, long hY, long hhX, long hhY, long hcX, long hcY, long hWt, long hWork, long hReserved);
+		long BackwardRnn8(long hCuda, long hRnn, long hY, long hdY, long hX, long hdX, long hhX, long hdhY, long hdhX, long hcX, long hdcY, long hdcX, long hWt, long hdWt, long hWork, long hReserved);
 
 		long CreatePCA(int nMaxIterations, int nM, int nN, int nK, long hData, long hScoresResult, long hLoadsResult, long hResiduals, long hEigenvalues, Math<T>* pMath, long* phHandle);
 		long FreePCA(long hHandle);
@@ -1349,6 +1378,109 @@ inline long Memory<T>::SetRnnDataDesc2(long hRnnDataDesc, RnnDataLayout layout, 
 	return CUDNN_STATUS_SUCCESS;
 }
 
+template <class T>
+inline long Memory<T>::IsRnn8Supported()
+{
+#ifndef CUDNN_8
+	return ERROR_NOT_SUPPORTED;
+#else
+	return ERROR_SUCCESS;
+#endif
+}
+
+template <class T>
+inline long Memory<T>::CreateRnn8(long* phHandle, Math<T>* pMath)
+{
+	LONG lErr;
+	rnn8Handle<T>* rnn = NULL;
+
+	if (phHandle == NULL)
+		return ERROR_PARAM_NULL;
+
+	if ((rnn = new rnn8Handle<T>()) == NULL)
+		return ERROR_MEMORY_OUT;
+
+	if (lErr = rnn->Initialize(this, pMath))
+	{
+		delete rnn;
+		return lErr;
+	}
+
+	long hHandle = m_rnn.Allocate(rnn);
+	if (hHandle < 0)
+	{
+		delete rnn;
+		return ERROR_MEMORY_OUT;
+	}
+
+	*phHandle = hHandle;
+	return 0;
+}
+
+template <class T>
+inline long Memory<T>::FreeRnn8(long hHandle)
+{
+	rnn8Handle<T>* rnn = (rnn8Handle<T>*)m_rnn.Free(hHandle);
+
+	if (rnn != NULL)
+	{
+		rnn->CleanUp();
+		delete rnn;
+	}
+
+	return 0;
+}
+
+template <class T>
+inline rnn8Handle<T>* Memory<T>::GetRnn8(long hHandle)
+{
+	return (rnn8Handle<T>*)m_rnn.GetData(hHandle);
+}
+
+template <class T>
+inline long Memory<T>::SetRnn8(long hCuda, long hRnn, bool bTraining, RnnDataLayout layout, RnnMode cellMode, RnnBiasMode biasMode, int nSequenceLen, int nBatchSize, int nInputs, int nHidden, int nOutputs, int nProjection, int nNumLayers, float fDropout, size_t lSeed, bool bBidirectional)
+{
+	LONG lErr;
+	rnn8Handle<T>* rnn = (rnn8Handle<T>*)m_rnn.GetData(hRnn);
+	cudnnDataType_t computeType = (sizeof(T) == sizeof(double)) ? CUDNN_DATA_DOUBLE : CUDNN_DATA_FLOAT;
+	cudnnForwardMode_t fwdMode = (bTraining) ? CUDNN_FWD_MODE_TRAINING : CUDNN_FWD_MODE_INFERENCE;
+	cudnnRNNDataLayout_t rnnLayout = (cudnnRNNDataLayout_t)layout;
+	cudnnRNNMode_t rnnMode = (cudnnRNNMode_t)cellMode;
+	cudnnRNNBiasMode_t rnnBiasMode = (cudnnRNNBiasMode_t)biasMode;
+
+	if (lErr = rnn->Set(hCuda, fwdMode, computeType, rnnLayout, rnnMode, rnnBiasMode, nSequenceLen, nBatchSize, nInputs, nHidden, nOutputs, nProjection, nNumLayers, fDropout, (unsigned long long)lSeed, bBidirectional))
+		return lErr | ERROR_CUDNN_OFFSET;
+
+	return CUDNN_STATUS_SUCCESS;
+}
+
+template <class T>
+inline long Memory<T>::InitializeRnn8Weights(long hCuda, long hRnn, long hWt, FillerType ftWt, T fWtVal, T fWtVal2, FillerType ftBias, T fBiasVal, T fBiasVal2)
+{
+	rnn8Handle<T>* rnn = (rnn8Handle<T>*)m_rnn.GetData(hRnn);
+	return rnn->InitializeWeights(hCuda, hWt, (FILLER_TYPE)ftWt, fWtVal, fWtVal2, (FILLER_TYPE)ftBias, fBiasVal, fBiasVal2);
+}
+
+template <class T>
+inline long Memory<T>::GetRnn8MemorySizes(long hCuda, long hRnn, size_t* pWeightSize, size_t* pWorkSize, size_t* pReserveSize)
+{
+	rnn8Handle<T>* rnn = (rnn8Handle<T>*)m_rnn.GetData(hRnn);
+	return rnn->GetMemorySizes(hCuda, pWeightSize, pWorkSize, pReserveSize);
+}
+
+template <class T>
+inline long Memory<T>::ForwardRnn8(long hCuda, long hRnn, long hX, long hY, long hhX, long hhY, long hcX, long hcY, long hWt, long hWork, long hReserved)
+{
+	rnn8Handle<T>* rnn = (rnn8Handle<T>*)m_rnn.GetData(hRnn);
+	return rnn->Forward(hCuda, hX, hY, hhX, hhY, hcX, hcY, hWt, hWork, hReserved);
+}
+
+template <class T>
+inline long Memory<T>::BackwardRnn8(long hCuda, long hRnn, long hY, long hdY, long hX, long hdX, long hhX, long hdhY, long hdhX, long hcX, long hdcY, long hdcX, long hWt, long hdWt, long hWork, long hReserved)
+{
+	rnn8Handle<T>* rnn = (rnn8Handle<T>*)m_rnn.GetData(hRnn);
+	return rnn->Backward(hCuda, hY, hdY, hX, hdX, hhX, hdhY, hdhX, hcX, hdcY, hdcX, hWt, hdWt, hWork, hReserved);
+}
 
 template <class T>
 inline long Memory<T>::CreatePCA(int nMaxIterations, int nM, int nN, int nK, long hData, long hScoresResult, long hLoadsResult, long hResiduals, long hEigenvalues, Math<T>* pMath, long* phHandle)
