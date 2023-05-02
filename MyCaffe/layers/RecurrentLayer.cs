@@ -1364,7 +1364,7 @@ namespace MyCaffe.layers
             if (!m_param.recurrent_param.auto_repeat_hidden_states_across_layers || bBtm.count() == bTop.count())
             {
                 m_log.CHECK_EQ(bBtm.count(), bTop.count(), "The '" + bBtm.Name.ToString() + "' should have the same shape as '" + bTop.Name.ToString() + "' which has a shape = " + bTop.shape_string);
-                m_cuda.copy(bBtm.count(), bBtm.gpu_data, bTop.mutable_gpu_data);
+                m_cuda.copy(bBtm.count(), bTop.gpu_diff, bBtm.mutable_gpu_diff);
             }
             else
             {
@@ -1528,8 +1528,8 @@ namespace MyCaffe.layers
         private void backward_cudnnRnn8(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
             // Copy top diffs to timestep T diffs
-            m_blobHy.SetDiff(1);
-            m_blobCy.SetDiff(1);
+            long hhYDiff = 0;
+            long hcYDiff = 0;
 
             if (colTop.Count > 2)
             {
@@ -1538,11 +1538,13 @@ namespace MyCaffe.layers
                 {
                     m_log.CHECK_EQ(colTop[1].count(), m_blobHy.count(), "The bottom(1) should have the same shape as 'hy' which has a shape = " + m_blobHy.shape_string);
                     m_blobHy.CopyFrom(colTop[1], true);
+                    hhYDiff = m_blobHy.gpu_diff;
                 }
                 if (colTop.Count > 2)
                 {
                     m_log.CHECK_EQ(colTop[2].count(), m_blobCy.count(), "The bottom(2) should have the same shape as 'cy' which has a shape = " + m_blobCy.shape_string);
                     m_blobCy.CopyFrom(colTop[2], true);
+                    hcYDiff = m_blobCy.gpu_diff;
                 }
             }
 
@@ -1553,10 +1555,10 @@ namespace MyCaffe.layers
                                 m_blobX.gpu_data,
                                 m_blobX.mutable_gpu_diff,
                                 m_blobHx.gpu_data,
-                                m_blobHy.gpu_diff,
+                                hhYDiff,
                                 m_blobHx.mutable_gpu_diff,
                                 m_blobCx.gpu_data,
-                                m_blobCy.gpu_diff,
+                                hcYDiff,
                                 m_blobCx.mutable_gpu_diff,
                                 m_blobWts.gpu_data,
                                 m_blobWts.mutable_gpu_diff,
