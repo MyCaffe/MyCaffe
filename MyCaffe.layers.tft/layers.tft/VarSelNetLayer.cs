@@ -440,6 +440,8 @@ namespace MyCaffe.layers.tft
             // GRN is applied ot each transformed input.
             for (int i = 0; i < m_param.varselnet_param.num_inputs; i++)
             {
+                // Copy the variable specific data to the GRN input.
+                m_cuda.channel_copy(m_blobGrn1.count(), m_blobGrn1.num, 1, m_param.varselnet_param.num_inputs, m_blobGrn1.channels, i, colBottom[0].gpu_data, m_blobGrn1.mutable_gpu_data, DIR.FWD);
                 // Combine the outputs of the state var GRNs along an additional axis with 
                 // dimension [(num_samples * num_temporal_steps) x state_size x num_inputs]
                 m_cuda.channel_copy(m_blobGrn1.count(), m_blobGrn1.num, m_blobGrn1.channels, m_param.varselnet_param.num_inputs, 1, i, m_blobProcessedInputs.mutable_gpu_diff, m_colSingleVarGrn[i].gpu_diff, DIR.FWD);
