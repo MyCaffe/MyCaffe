@@ -39,6 +39,7 @@
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\memtest.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\nccl.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\pca.h" />
+    <ClInclude Include="..\CudaDnnDLL\Cuda Files\rnn8.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\ssd.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\ssd_core.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\tsne_g.h" />
@@ -61,6 +62,7 @@
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\memtest.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\nccl.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\pca.cu" />
+    <CudaCompile Include="..\CudaDnnDLL\Cuda Files\rnn8.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\ssd_core.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\tsne_g.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\tsne_gp.cu" />
