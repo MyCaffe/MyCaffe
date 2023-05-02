@@ -261,7 +261,7 @@ namespace MyCaffe.test
             {
                 foreach (ILSTMLayerTest t in test.Tests)
                 {
-                    t.TestCuDnn(false);
+                    t.TestCuDnnRnn(false);
                 }
             }
             finally
@@ -279,7 +279,7 @@ namespace MyCaffe.test
             {
                 foreach (ILSTMLayerTest t in test.Tests)
                 {
-                    t.TestCuDnn(true);
+                    t.TestCuDnnRnn(true);
                 }
             }
             finally
@@ -575,14 +575,105 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestSetupCuDnnRnn8()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestSetup(true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardCuDnnRnn8()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestForward(Phase.TEST, true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardCuDnnRnn8Training()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestForward(Phase.TRAIN, true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientCuDnnRnn8()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestGradient(true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestCuDnnRnn8()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestCuDnnRnn8();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface ILSTMLayerTest : ITest
     {
-        void TestCuDnn(bool bUseTensorCores);
-        void TestSetup();
-        void TestForward(Phase phase = Phase.NONE);
-        void TestGradient();
+        void TestCuDnnRnn(bool bUseTensorCores);
+        void TestCuDnnRnn8();
+        void TestSetup(bool bUseRnn8 = false);
+        void TestForward(Phase phase = Phase.NONE, bool bUseRnn8 = false);
+        void TestGradient(bool bUseRnn8 = false);
         void TestGradientNonZeroCont();
         void TestGradientNonZeroContBufferSize2();
         void TestGradientNonZeroContBufferSize2WithStaticInput();
@@ -652,10 +743,9 @@ namespace MyCaffe.test
 
             m_param = new LayerParameter(LayerParameter.LayerType.LSTM);
             m_param.recurrent_param.num_output = (uint)m_nNumOutput;
-            m_param.recurrent_param.weight_filler = new FillerParameter("gaussian");
-            m_param.recurrent_param.weight_filler.std = 0.2;
-            m_param.recurrent_param.bias_filler = new FillerParameter("gaussian");
-            m_param.recurrent_param.bias_filler.std = 0.1;
+            m_param.recurrent_param.weight_filler = new FillerParameter("xavier");
+            m_param.recurrent_param.bias_filler = new FillerParameter("constant");
+            m_param.recurrent_param.bias_filler.value = 0.1;
 
             m_param.phase = Phase.TEST;
         }
@@ -705,9 +795,10 @@ namespace MyCaffe.test
             filler.Fill(m_blobUnit_bottom_x);
         }
 
-        public void TestSetup()
+        public void TestSetup(bool bUseRnn8)
         {
             m_param.recurrent_param.engine = m_engine;
+            m_param.recurrent_param.use_cudnn_rnn8_if_supported = bUseRnn8;
             LSTMLayer<T> layer = new LSTMLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
 
             try
@@ -728,7 +819,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestForward(Phase phase)
+        public void TestForward(Phase phase, bool bUseRnn8)
         {
             int kNumTimesteps = 3;
             int nNum = m_blob_bottom.shape(1);
@@ -760,6 +851,7 @@ namespace MyCaffe.test
             sequence_filler.Fill(m_blob_bottom);
 
             m_param.recurrent_param.engine = m_engine;
+            m_param.recurrent_param.use_cudnn_rnn8_if_supported = bUseRnn8;
 
             if (phase != Phase.NONE)
                 m_param.phase = phase;
@@ -949,9 +1041,10 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestGradient()
+        public void TestGradient(bool bUseRnn8)
         {
             m_param.recurrent_param.engine = m_engine;
+            m_param.recurrent_param.use_cudnn_rnn8_if_supported = bUseRnn8;
             m_param.phase = Phase.TRAIN;
             LSTMLayer<T> layer = new LSTMLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
 
@@ -1057,7 +1150,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestCuDnn(bool bUseTensorCores)
+        public void TestCuDnnRnn(bool bUseTensorCores)
         {
             int nBatchSize = 64;
             int nSeqLen = 20;
@@ -1103,9 +1196,9 @@ namespace MyCaffe.test
 
                 // Setup tensor descriptors where there is one tensor per time step (tensors are set internall by m_cuda)
                 hXDesc = m_cuda.CreateRnnDataDesc();
-                m_cuda.SetRnnDataDesc(hXDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nSeqLen, nBatchSize, nInputSize);
+                m_cuda.SetRnnDataDesc(hXDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR_UNPACKED, nSeqLen, nBatchSize, nInputSize);
                 hYDesc = m_cuda.CreateRnnDataDesc();
-                m_cuda.SetRnnDataDesc(hYDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nSeqLen, nBatchSize, nHiddenSize);
+                m_cuda.SetRnnDataDesc(hYDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR_UNPACKED, nSeqLen, nBatchSize, nHiddenSize);
 
                 int[] rgDimA = new int[3];
                 rgDimA[0] = nNumLayers;
@@ -1371,6 +1464,130 @@ namespace MyCaffe.test
 
                 if (hYDesc != 0)
                     m_cuda.FreeRnnDataDesc(hYDesc);
+
+                if (hCuDnn != 0)
+                    m_cuda.FreeCuDNN(hCuDnn);
+            }
+        }
+
+        public void TestCuDnnRnn8()
+        {
+            string strPath = "c:\\temp\\projects\\TFT\\";
+            int nBatchSize = 256;
+            int nSeqLen = 30;
+            int nNumLayers = 2;
+            int nHiddenSize = 64;
+            int nInputSize = nHiddenSize;
+            long hCuDnn = 0;
+            long hRnn = 0;
+            long hWorkspace = 0;
+            long hReserved = 0;
+            float fDropout = 0.0f;
+            Blob<T> blobX = null;
+            Blob<T> blobHx = null;
+            Blob<T> blobCx = null;
+            Blob<T> blobY = null;
+            Blob<T> blobHy = null;
+            Blob<T> blobCy = null;
+            Blob<T> blobWt = null;
+            BlobCollection<T> colBtm = new BlobCollection<T>();
+            BlobCollection<T> colTop = new BlobCollection<T>();
+
+            try
+            {
+                bool bRnn8Supported = m_cuda.IsRnn8Supported();
+
+                // Create cudnn context
+                hCuDnn = m_cuda.CreateCuDNN();
+
+                // Setup inputs and outputs.
+
+                blobX = Blob<T>.LoadBinary(m_cuda, m_log, strPath + "rnn.data.x.bin", true, true);
+                blobHx = Blob<T>.LoadBinary(m_cuda, m_log, strPath + "rnn.data.hx.bin", true, true);
+                blobCx = Blob<T>.LoadBinary(m_cuda, m_log, strPath + "rnn.data.cx.bin", true, true);
+
+                blobY = Blob<T>.LoadBinary(m_cuda, m_log, strPath + "rnn.data.y.bin", true, true);
+                blobHy = new Blob<T>(m_cuda, m_log, nNumLayers, nBatchSize, nHiddenSize, 1);
+                blobCy = new Blob<T>(m_cuda, m_log, nNumLayers, nBatchSize, nHiddenSize, 1);
+
+                blobWt = Blob<T>.LoadBinary(m_cuda, m_log, strPath + "rnn.data.wts.bin", true, true);
+
+                nSeqLen = blobX.num;
+                nBatchSize = blobX.channels;
+                nInputSize = blobX.height;
+                nHiddenSize = blobX.height;
+
+                hRnn = m_cuda.CreateRnn8();
+                m_cuda.SetRnn8(hCuDnn, hRnn, true, RNN_DATALAYOUT.RNN_SEQ_MAJOR_PACKED, RNN_MODE.LSTM, RNN_BIAS_MODE.RNN_DOUBLE_BIAS, nSeqLen, nBatchSize, nInputSize, nHiddenSize, nInputSize, nHiddenSize, nNumLayers, fDropout, 0, false);
+
+                ulong szWt;
+                ulong szWork;
+                ulong szReserved;
+                m_cuda.GetRnn8MemorySizes(hCuDnn, hRnn, out szWt, out szWork, out szReserved);
+
+                blobWt = new Blob<T>(m_cuda, m_log, new List<int>() { (int)szWt, 1, 1 });
+
+                // Setup the workspace and reserved memory.
+                hWorkspace = m_cuda.AllocMemory((long)szWork);
+                hReserved = m_cuda.AllocMemory((long)szReserved);
+
+
+                //-------------------------------------------------
+                // Initialize weights and inputs.
+                //-------------------------------------------------
+
+                m_cuda.InitializeRnn8Weights(hCuDnn, hRnn, blobWt.mutable_gpu_data, RNN_FILLER_TYPE.RNN_XAVIER_FILLER, 0, 0, RNN_FILLER_TYPE.RNN_CONSTANT_FILLER, 0.1, 0);
+
+                m_cuda.Rnn8Forward(hCuDnn, hRnn, blobX.gpu_data, blobY.mutable_gpu_data, blobHx.gpu_data, blobHy.mutable_gpu_data, blobCx.gpu_data, blobCy.mutable_gpu_data, blobWt.gpu_data, hWorkspace, hReserved);
+
+                blobCy.SetDiff(1);
+                blobHy.SetDiff(1);
+                long hHyDiff = blobHy.mutable_gpu_diff;
+                long hCyDiff = blobCy.mutable_gpu_diff;
+
+                m_cuda.Rnn8Backward(hCuDnn, hRnn, blobY.gpu_data, blobY.gpu_diff, blobX.gpu_data, blobX.mutable_gpu_diff, blobHx.gpu_data, hHyDiff, blobHx.mutable_gpu_diff, blobCx.gpu_data, hCyDiff, blobCx.mutable_gpu_diff, blobWt.gpu_data, blobWt.mutable_gpu_diff, hWorkspace, hReserved);
+
+                Tuple<double, double, double, double> minmax;
+                minmax = blobX.minmax_diff(m_blobWork, true, true);
+                m_log.CHECK_NE(minmax.Item1, 0, "The min value should not be zero!");
+                m_log.CHECK_NE(minmax.Item2, 0, "The max value should not be zero!");
+                m_log.CHECK_EQ(minmax.Item3, 0, "The nan count should be zero!");
+                m_log.CHECK_EQ(minmax.Item4, 0, "The inf count should be zero!");
+
+                minmax = blobHx.minmax_diff(m_blobWork, true, true);
+                m_log.CHECK_NE(minmax.Item1, 0, "The min value should not be zero!");
+                m_log.CHECK_NE(minmax.Item2, 0, "The max value should not be zero!");
+                m_log.CHECK_EQ(minmax.Item3, 0, "The nan count should be zero!");
+                m_log.CHECK_EQ(minmax.Item4, 0, "The inf count should be zero!");
+
+                minmax = blobCx.minmax_diff(m_blobWork, true, true);
+                m_log.CHECK_NE(minmax.Item1, 0, "The min value should not be zero!");
+                m_log.CHECK_NE(minmax.Item2, 0, "The max value should not be zero!");
+                m_log.CHECK_EQ(minmax.Item3, 0, "The nan count should be zero!");
+                m_log.CHECK_EQ(minmax.Item4, 0, "The inf count should be zero!");
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                dispose(ref blobX);
+                dispose(ref blobY);
+                dispose(ref blobHx);
+                dispose(ref blobHy);
+                dispose(ref blobCx);
+                dispose(ref blobCy);
+                dispose(ref blobWt);
+
+                if (hWorkspace != 0)
+                    m_cuda.FreeMemory(hWorkspace);
+
+                if (hReserved != 0)
+                    m_cuda.FreeMemory(hReserved);
+
+                if (hRnn != 0)
+                    m_cuda.FreeRnn8(hRnn);
 
                 if (hCuDnn != 0)
                     m_cuda.FreeCuDNN(hCuDnn);
