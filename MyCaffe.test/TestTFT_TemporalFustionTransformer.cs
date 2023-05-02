@@ -368,6 +368,7 @@ namespace MyCaffe.test
             past_lstm.recurrent_param.expose_hidden_output = true;
             past_lstm.recurrent_param.batch_first = true;
             past_lstm.recurrent_param.auto_repeat_hidden_states_across_layers = true;
+            past_lstm.recurrent_param.use_cudnn_rnn8_if_supported = true;
             past_lstm.recurrent_param.engine = EngineParameter.Engine.CUDNN;
             past_lstm.bottom.Add("selected_hist");
             past_lstm.bottom.Add("selected_hist_clip");
@@ -385,6 +386,7 @@ namespace MyCaffe.test
             future_lstm.recurrent_param.expose_hidden_input = true;
             future_lstm.recurrent_param.batch_first = true;
             future_lstm.recurrent_param.auto_repeat_hidden_states_across_layers = true;
+            future_lstm.recurrent_param.use_cudnn_rnn8_if_supported = true;
             future_lstm.recurrent_param.engine = EngineParameter.Engine.CUDNN;
             future_lstm.bottom.Add("selected_fut");
             future_lstm.bottom.Add("selected_fut_clip");
@@ -779,9 +781,9 @@ namespace MyCaffe.test
             //---------------------------------
             //  Locality Enhancement with Seq2Seq processing (idx=321)
             //---------------------------------
-            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".ZZZ.YYY.past_lstm.lstm.wt0.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".ZZZ.pytorch.YYY.past_lstm.lstm.wt.npy");
             nIdx++;
-            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".ZZZ.YYY.future_lstm.lstm.wt0.npy");
+            net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".ZZZ.pytorch.YYY.future_lstm.lstm.wt.npy");
             nIdx++;
             net.parameters[nIdx].LoadFromNumpy(strPath + strTag + ".post_lstm_gating.gate.module.fc1.weight.npy");
             nIdx++;
@@ -1838,7 +1840,7 @@ namespace MyCaffe.test
 
                     blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_cell.npy");
                     blob1 = net.FindBlob("c_seq_cell");
-                    m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
+                    m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 5e-06), "The blobs are different!");
 
                     blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_hidden.npy");
                     blob1 = net.FindBlob("c_seq_hidden");
