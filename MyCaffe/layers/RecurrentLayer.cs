@@ -26,7 +26,7 @@ namespace MyCaffe.layers
         Layer<T> m_transposeClip = null;
         Blob<T> m_blobBtmData = null;
         Blob<T> m_blobBtmClip = null;
-        Blob<T> m_blobTop = null;
+        Blob<T> m_blobTopData = null;
         Blob<T> m_blobWork = null;
         BlobCollection<T> m_colBtm = null;
         BlobCollection<T> m_colTop = null;
@@ -157,7 +157,7 @@ namespace MyCaffe.layers
             dispose(ref m_blobWts);
             dispose(ref m_blobBtmData);
             dispose(ref m_blobBtmClip);
-            dispose(ref m_blobTop);
+            dispose(ref m_blobTopData);
             dispose(ref m_blobWork);
 
             free_tensor(ref m_hHxDesc);
@@ -305,7 +305,7 @@ namespace MyCaffe.layers
 
                 m_transposeData = Layer<T>.Create(m_cuda, m_log, convertLayerParam(transpose, m_param), null);
                 m_blobBtmData = new Blob<T>(m_cuda, m_log);
-                m_blobTop = new Blob<T>(m_cuda, m_log);
+                m_blobTopData = new Blob<T>(m_cuda, m_log);
 
                 addBtmTop(colBottom[0], m_blobBtmData);
                 m_transposeData.Setup(m_colBtm, m_colTop);
@@ -328,6 +328,16 @@ namespace MyCaffe.layers
                 m_blobBtmClip.Reshape(m_rgShape);
 
                 blobBtm1 = m_blobBtmClip;
+            }
+            else
+            {
+                m_blobBtmData.ReshapeLike(colBottom[0]);
+                m_blobBtmData.ShareData(colBottom[0]);
+                m_blobBtmData.ShareDiff(colBottom[0]);
+
+                m_blobTopData.ReshapeLike(colTop[0]);
+                m_blobTopData.ShareData(colTop[0]);
+                m_blobTopData.ShareDiff(colTop[0]);
             }
 
             m_log.CHECK_GE(blobBtm0.num_axes, 2, "Bottom[0] must have at least 2 axes -- (#timesteps, #streams, ...)");
@@ -949,7 +959,7 @@ namespace MyCaffe.layers
 
             if (m_param.recurrent_param.batch_first)
             {
-                addBtmTop(m_blobTop, colTop[0]);
+                addBtmTop(m_blobTopData, colTop[0]);
                 m_transposeData.Reshape(m_colBtm, m_colTop);
             }
         }
@@ -970,27 +980,17 @@ namespace MyCaffe.layers
             if (m_param.recurrent_param.batch_first)
             {
                 blobBtm0 = m_blobBtmData;
-                blobTop0 = m_blobTop;
+                blobTop0 = m_blobTopData;
             }
 
             m_blobX.ShareData(blobBtm0);
             m_blobX.ShareDiff(blobBtm0);
             m_log.CHECK_EQ(m_blobX.count(), m_nT * m_nN * m_nInputSize, "The input should be Sequence * Batch * InputSize in length.");
 
-            if (colBottom.Count > 2)
-            {
-                m_blobHx.ShareData(colBottom[1]);
-                m_blobHx.ShareDiff(colBottom[1]);
-                m_blobCx.ShareData(colBottom[2]);
-                m_blobCx.ShareDiff(colBottom[2]);
-            }
-            else
-            {
-                m_blobHx.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
-                m_blobHx.SetData(0);
-                m_blobCx.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
-                m_blobCx.SetData(0);
-            }
+            m_blobHx.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
+            m_blobHx.SetData(0);
+            m_blobCx.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
+            m_blobCx.SetData(0);
 
             m_blobY.Reshape(m_nT, m_nN, m_nHiddenSize, 1);
             m_blobHy.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
@@ -1020,7 +1020,7 @@ namespace MyCaffe.layers
             if (m_param.recurrent_param.batch_first)
             {
                 blobBtm0 = m_blobBtmData;
-                blobTop0 = m_blobTop;
+                blobTop0 = m_blobTopData;
             }
 
             m_blobX.ReshapeLike(blobBtm0);
@@ -1061,7 +1061,7 @@ namespace MyCaffe.layers
             {
                 blobBtm0 = m_blobBtmData;
                 blobBtm1 = m_blobBtmClip;
-                blobTop0 = m_blobTop;
+                blobTop0 = m_blobTopData;
             }
 
             m_blobXInputBlob.ReshapeLike(blobBtm0);
@@ -1335,7 +1335,7 @@ namespace MyCaffe.layers
 
             if (m_param.recurrent_param.batch_first)
             {
-                addBtmTop(m_blobTop, colTop[0]);
+                addBtmTop(m_blobTopData, colTop[0]);
                 m_transposeData.Forward(m_colBtm, m_colTop);
             }
         }
@@ -1392,6 +1392,19 @@ namespace MyCaffe.layers
 
         private void forward_cudnnRnn8(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            if (colBottom.Count > 2)
+            {
+                // Allow for setting initial state used with cuDnn LSTM
+                if (colBottom.Count > 2)
+                    copy_or_repeat_fwd(colBottom[2], m_blobHx);
+
+                if (colBottom.Count > 3)
+                    copy_or_repeat_fwd(colBottom[3], m_blobCx);
+
+                m_blobHy.CopyFrom(m_blobHx); // initialized with previous state in LayerSetup when colBottom.Count > 3
+                m_blobCy.CopyFrom(m_blobCx); // initialized with previous state in LayerSetup when colBottom.Count > 2
+            }
+
             m_cuda.Rnn8Forward(m_hCuDnn,
                                m_hRnn8,
                                m_blobX.gpu_data,
@@ -1488,7 +1501,7 @@ namespace MyCaffe.layers
         {
             if (m_param.recurrent_param.batch_first)
             {
-                addBtmTop(m_blobTop, colTop[0]);
+                addBtmTop(m_blobTopData, colTop[0]);
                 m_transposeData.Backward(m_colTop, rgbPropagateDown, m_colBtm);
             }
 
@@ -1514,6 +1527,25 @@ namespace MyCaffe.layers
 
         private void backward_cudnnRnn8(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
+            // Copy top diffs to timestep T diffs
+            m_blobHy.SetDiff(1);
+            m_blobCy.SetDiff(1);
+
+            if (colTop.Count > 2)
+            {
+                // Copy state diffs back to previous LSTM
+                if (colTop.Count > 1)
+                {
+                    m_log.CHECK_EQ(colTop[1].count(), m_blobHy.count(), "The bottom(1) should have the same shape as 'hy' which has a shape = " + m_blobHy.shape_string);
+                    m_blobHy.CopyFrom(colTop[1], true);
+                }
+                if (colTop.Count > 2)
+                {
+                    m_log.CHECK_EQ(colTop[2].count(), m_blobCy.count(), "The bottom(2) should have the same shape as 'cy' which has a shape = " + m_blobCy.shape_string);
+                    m_blobCy.CopyFrom(colTop[2], true);
+                }
+            }
+
             m_cuda.Rnn8Backward(m_hCuDnn,
                                 m_hRnn8,
                                 m_blobY.gpu_data,
@@ -1530,6 +1562,17 @@ namespace MyCaffe.layers
                                 m_blobWts.mutable_gpu_diff,
                                 m_hWorkspace,
                                 m_hReserved);
+
+            // Copy timestep 0 diff to bottom diffs
+            if (colBottom.Count > 2)
+            {
+                // Copy state diffs back to previous LSTM
+                if (colBottom.Count > 2)
+                    copy_or_repeat_bwd(colBottom[2], m_blobHx);
+
+                if (colBottom.Count > 3)
+                    copy_or_repeat_bwd(colBottom[3], m_blobCx);
+            }
         }
 
         private void backward_cudnnRnn(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
