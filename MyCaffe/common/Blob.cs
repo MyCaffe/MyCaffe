@@ -1073,6 +1073,29 @@ namespace MyCaffe.common
         /// <returns>If all data (or diff) values fall within the tolerance, true is returned, otherwise false.</returns>
         public bool Compare(Blob<T> other, Blob<T> work, bool bDiff = false, double dfTol = 1e-8, bool bZeroCheck = true, bool bFullCompare = false, bool bDetectNans = true)
         {
+            double dfMin;
+            double dfMax;
+            return CompareEx(other, work, out dfMin, out dfMax, bDiff, dfTol, bZeroCheck, bFullCompare, bDetectNans);
+        }
+
+        /// <summary>
+        /// Compare the data (or diff) of one blob to another and return true if all items fall within the specified tolerance or not.
+        /// </summary>
+        /// <param name="other">Specifies the other blob to compare.</param>
+        /// <param name="work">Specifies a temporary work blob.</param>
+        /// <param name="dfMin">Returns the min difference.</param>
+        /// <param name="dfMax">Returns the max difference.</param>
+        /// <param name="bDiff">Specifies to compare the diff.</param>
+        /// <param name="dfTol">Specifies the accepted tolerance.</param>
+        /// <param name="bZeroCheck">Optionally, specifies to check for all zeros (default = false).</param>
+        /// <param name="bFullCompare">Optionally, compare each item individually (default = false).</param>
+        /// <param name="bDetectNans">Optionally, detect NAN's (default = true).</param>
+        /// <returns>If all data (or diff) values fall within the tolerance, true is returned, otherwise false.</returns>
+        public bool CompareEx(Blob<T> other, Blob<T> work, out double dfMin, out double dfMax, bool bDiff = false, double dfTol = 1e-8, bool bZeroCheck = true, bool bFullCompare = false, bool bDetectNans = true)
+        {
+            dfMin = -1;
+            dfMax = -1;
+
             int nCount = count();
             if (nCount != other.count())
                 return false;
@@ -1082,7 +1105,7 @@ namespace MyCaffe.common
 
             if (Cuda.KernelHandle != work.Cuda.KernelHandle)
                 throw new Exception("The work blob has a different Cuda Kernel Handle!");
-            
+
             work.ReshapeLike(this);
 
             long h1 = (bDiff) ? gpu_diff : gpu_data;
@@ -1090,11 +1113,12 @@ namespace MyCaffe.common
             long lPos;
 
             m_cuda.sub(nCount, h1, h2, work.mutable_gpu_data);
-            double dfMin = m_cuda.min(nCount, work.gpu_data, out lPos, 0, work.mutable_gpu_diff);
+            dfMin = m_cuda.min(nCount, work.gpu_data, out lPos, 0, work.mutable_gpu_diff);
+            dfMax = m_cuda.max(nCount, work.gpu_data, out lPos, 0, work.mutable_gpu_diff);
+
             if (Math.Abs(dfMin) > dfTol)
                 return false;
-            
-            double dfMax = m_cuda.max(nCount, work.gpu_data, out lPos, 0, work.mutable_gpu_diff);
+
             if (dfMax > dfTol)
                 return false;
 
@@ -2211,16 +2235,41 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Saves the blob to a binary file.
+        /// </summary>
+        /// <param name="strFile">Specifies the file to save the data/diff into.</param>
+        /// <param name="bData">Specifies to save the data.</param>
+        /// <param name="bDiff">Specifies to save the diff.</param>
+        /// <param name="bIncludeName">Specifies whether or not to include the name.</param>
+        public void SaveBinary(string strFile, bool bData, bool bDiff, bool bIncludeName = true)
+        {
+            using (FileStream fs = File.OpenWrite(strFile))
+            using (BinaryWriter bw = new BinaryWriter(fs))
+            {
+                Save(bw, bData, bDiff, bIncludeName);
+            }
+        }
+
+        /// <summary>
         /// Saves this Blob to a binary stream.
         /// </summary>
         /// <param name="bw">Specifies the binary writer.</param>
         /// <param name="bData">Specifies whether or not to save the data.</param>
         /// <param name="bDiff">Specifies whether or not to save the diff.</param>
-        public void Save(BinaryWriter bw, bool bData, bool bDiff)
+        /// <param name="bIncludeName">Specifies whether or not to include the name.</param>
+        public void Save(BinaryWriter bw, bool bData, bool bDiff, bool bIncludeName = true)
         {
-            bw.Write(m_strName);
-            bw.Write(m_rgShape.Count);
+            if (!bIncludeName)
+            {
+                bw.Write(0);
+            }
+            else
+            {
+                bw.Write(m_strName.Length);
+                bw.Write(m_strName);
+            }
 
+            bw.Write(m_rgShape.Count);
             for (int i = 0; i < m_rgShape.Count; i++)
             {
                 bw.Write(m_rgShape[i]);
@@ -2262,6 +2311,23 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Loads a blob from a binary file (previously saved with SaveBinary).
+        /// </summary>
+        /// <param name="cuda">Specifies the instance of the CudaDnn connection to use.</param>
+        /// <param name="log">Specifies the Log for output.</param>
+        /// <param name="strFile">Specifies the file to load the data/diff from.</param>
+        /// <param name="bData">Specifies to load the data.</param>
+        /// <param name="bDiff">Specifies to load the diff.</param>
+        public static Blob<T> LoadBinary(CudaDnn<T> cuda, Log log, string strFile, bool bData, bool bDiff)
+        {
+            using (FileStream fs = File.OpenRead(strFile))
+            using (BinaryReader br = new BinaryReader(fs))
+            {
+                return Load(cuda, log, br, bData, bDiff);
+            }
+        }
+
+        /// <summary>
         /// Lods a new Blob from a binary reader.
         /// </summary>
         /// <param name="cuda">Specifies the instance of the CudaDnn connection to use.</param>
@@ -2274,7 +2340,9 @@ namespace MyCaffe.common
         {
             Blob<T> b = new Blob<T>(cuda, log);
 
-            b.Name = br.ReadString();
+            int nNameLen = br.ReadInt32();
+            if (nNameLen > 0)
+                b.Name = br.ReadString();
 
             List<int> rgShape = new List<int>();
             int nCount = br.ReadInt32();
