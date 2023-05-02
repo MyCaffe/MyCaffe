@@ -447,6 +447,7 @@ namespace MyCaffe.layers.tft
                 m_ipContext.Backward(m_colTop, rgbPropagateDown, m_colBtm);
             }
 
+            m_blobBtm.CopyFrom(colBottom[0]);
             addBtmTop(m_blobBtm, blobIp1);
             m_ipFc1.Backward(m_colTop, rgbPropagateDown, m_colBtm);
 
