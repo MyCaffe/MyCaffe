@@ -3598,7 +3598,7 @@ namespace MyCaffe.test
 
                     try
                     {
-                        t.Cuda.SetRnnDataDesc(hDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nMaxSeqLen, nBatchLen, nVectorLen);
+                        t.Cuda.SetRnnDataDesc(hDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR_UNPACKED, nMaxSeqLen, nBatchLen, nVectorLen);
                     }
                     finally
                     {
@@ -3692,7 +3692,7 @@ namespace MyCaffe.test
                     try
                     {
                         t.Cuda.SetRnnDesc(hCudnn, hDesc, nHiddenSize, nNumLayers, 0, RNN_MODE.LSTM, bUseTensorCores);
-                        t.Cuda.SetRnnDataDesc(hDataDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nSeqLen, nBatchSize, nHiddenSize);
+                        t.Cuda.SetRnnDataDesc(hDataDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR_UNPACKED, nSeqLen, nBatchSize, nHiddenSize);
 
                         int nCount = t.Cuda.GetRnnParamCount(hCudnn, hDesc, hDataDesc);
                     }
@@ -3745,7 +3745,7 @@ namespace MyCaffe.test
                     try
                     {
                         t.Cuda.SetRnnDesc(hCudnn, hDesc, nHiddenSize, nNumLayers, 0, RNN_MODE.LSTM, bUseTensorCores);
-                        t.Cuda.SetRnnDataDesc(hDataDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nSeqLen, nBatchSize, nHiddenSize);
+                        t.Cuda.SetRnnDataDesc(hDataDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR_UNPACKED, nSeqLen, nBatchSize, nHiddenSize);
 
                         ulong nReservedCount;
                         ulong nWorkspaceCount = t.Cuda.GetRnnWorkspaceCount(hCudnn, hDesc, hDataDesc, out nReservedCount);
@@ -3803,7 +3803,7 @@ namespace MyCaffe.test
                     try
                     {
                         t.Cuda.SetRnnDesc(hCudnn, hDesc, nHiddenSize, nNumLayers, 0, RNN_MODE.LSTM, bUseTensorCores);
-                        t.Cuda.SetRnnDataDesc(hDataDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nSeqLen, nBatchSize, nHiddenSize);
+                        t.Cuda.SetRnnDataDesc(hDataDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR_UNPACKED, nSeqLen, nBatchSize, nHiddenSize);
 
                         int nAllWtCount = t.Cuda.GetRnnParamCount(hCudnn, hDesc, hDataDesc);
                         hWtDesc = t.Cuda.CreateFilterDesc();
