@@ -1376,9 +1376,6 @@ namespace MyCaffe.layers
                 {
                     m_cuda.channel_add(bBtm.count(), 1, 1, bTop.num, bBtm.count(), i, bTop.gpu_diff, bBtm.mutable_gpu_diff, DIR.FWD);
                 }
-
-                double dfScale = 1.0 / bTop.num;
-                bBtm.scale_diff(dfScale);
             }
         }
 
