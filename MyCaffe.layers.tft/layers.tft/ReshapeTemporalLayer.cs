@@ -29,7 +29,8 @@ namespace MyCaffe.layers.tft
         ReshapeTemporalParameter.MODE m_mode;
         int m_nNumInputs;
         int m_nNumSamples;
-        int m_nNumTemporalSteps;
+        int m_nNumRepeatCount;
+        int m_nForcedRepeatCount;
         List<int> m_rgShape = new List<int>(4);
         Dictionary<string, List<int>> m_rgShapes = new Dictionary<string, List<int>>();
         Blob<T> m_blobTimeDistributedContext;
@@ -104,21 +105,42 @@ namespace MyCaffe.layers.tft
         /// <param name="bBtm">Specifies the source blob</param>
         /// <param name="bTop">Specifies the destination blob.</param>
         /// <param name="nTimeSteps">Specifies the time steps.</param>
+        /// <param name="bTemporalRepeat">Specifies to repeat along temporal axis, otherwise full blob is repeated.</param>
         /// <param name="bReshapeOnly">Specifies to reshape the destination only.</param>
-        private void replicate_along_time_fwd(Blob<T> bBtm, Blob<T> bTop, int nTimeSteps, bool bReshapeOnly = false)
+        private void replicate_along_time_fwd(Blob<T> bBtm, Blob<T> bTop, int nTimeSteps, bool bTemporalRepeat, bool bReshapeOnly = false)
         {
             m_rgShape.Clear();
-            m_rgShape.Add(m_nNumSamples);
-            m_rgShape.Add(nTimeSteps);
-            m_rgShape.Add(bBtm.shape(1));
-            bTop.Reshape(m_rgShape);
 
-            if (!bReshapeOnly)
+            if (bTemporalRepeat)
             {
-                int nInnerNum = bBtm.count(1);
-                for (int i = 0; i < nTimeSteps; i++)
+                m_rgShape.Add(m_nNumSamples);
+                m_rgShape.Add(nTimeSteps);
+                m_rgShape.Add(bBtm.shape(1));
+                bTop.Reshape(m_rgShape);
+
+                if (!bReshapeOnly)
                 {
-                    m_cuda.channel_copy(bBtm.count(), m_nNumSamples, 1, nTimeSteps, nInnerNum, i, bTop.mutable_gpu_data, bBtm.gpu_data, DIR.BWD);
+                    int nInnerNum = bBtm.count(1);
+                    for (int i = 0; i < nTimeSteps; i++)
+                    {
+                        m_cuda.channel_copy(bBtm.count(), m_nNumSamples, 1, nTimeSteps, nInnerNum, i, bTop.mutable_gpu_data, bBtm.gpu_data, DIR.BWD);
+                    }
+                }
+            }
+            else
+            {
+                m_rgShape.Add(nTimeSteps);
+                m_rgShape.Add(m_nNumSamples);
+                m_rgShape.Add(bBtm.shape(1));
+                bTop.Reshape(m_rgShape);
+
+                if (!bReshapeOnly)
+                {
+                    int nInnerNum = bBtm.count(1);
+                    for (int i = 0; i < nTimeSteps; i++)
+                    {
+                        m_cuda.channel_copy(bBtm.count(), 1, 1, nTimeSteps, m_nNumSamples * nInnerNum, i, bTop.mutable_gpu_data, bBtm.gpu_data, DIR.BWD);
+                    }
                 }
             }
         }
@@ -131,16 +153,22 @@ namespace MyCaffe.layers.tft
         /// <param name="bBtm">Specifies the source blob</param>
         /// <param name="bTop">Specifies the destination blob.</param>
         /// <param name="nTimeSteps">Specifies the time steps.</param>
-        private void replicate_along_time_bwd(Blob<T> bBtm, Blob<T> bTop, int nTimeSteps)
+        /// <param name="bTemporalRepeat">Specifies to repeat along temporal axis, otherwise full blob is repeated.</param>
+        private void replicate_along_time_bwd(Blob<T> bBtm, Blob<T> bTop, int nTimeSteps, bool bTemporalRepeat)
         {
             int nInnerNum = bBtm.count(1);
-            m_cuda.channel_copy(bBtm.count(), m_nNumSamples, 1, nTimeSteps, nInnerNum, 0, bTop.mutable_gpu_diff, bBtm.gpu_diff, DIR.FWD);
 
-            for (int i = 0; i < nTimeSteps; i++)
-            {
-                m_cuda.channel_copy(bBtm.count(), m_nNumSamples, 1, nTimeSteps, nInnerNum, i, bTop.mutable_gpu_diff, m_blobWork.gpu_diff, DIR.FWD);
-                m_cuda.add(bBtm.count(), bBtm.gpu_diff, m_blobWork.gpu_diff, bBtm.mutable_gpu_diff);
-            }
+            if (bTemporalRepeat)    
+                m_cuda.channel_sum(bTop.count(), m_nNumSamples, nTimeSteps, nInnerNum, bTop.gpu_diff, bBtm.mutable_gpu_diff, true);
+            else
+                m_cuda.channel_sum(bTop.count(), 1, nTimeSteps, m_nNumSamples * nInnerNum, bTop.gpu_diff, bBtm.mutable_gpu_diff, true);
+
+            //m_cuda.channel_copy(bBtm.count(), m_nNumSamples, 1, nTimeSteps, nInnerNum, 0, bTop.mutable_gpu_diff, bBtm.gpu_diff, DIR.FWD);
+
+            //for (int i = 1; i < nTimeSteps; i++)
+            //{
+            //    m_cuda.channel_add(bBtm.count(), m_nNumSamples, 1, nTimeSteps, nInnerNum, i, bTop.mutable_gpu_diff, bBtm.mutable_gpu_diff, DIR.FWD);
+            //}
         }
 
         private void stack_time_steps_along_batch_fwd(Blob<T> bBtm, Blob<T> bTop, bool bResizeOnly = false)
@@ -171,7 +199,12 @@ namespace MyCaffe.layers.tft
             if (m_mode == param.tft.ReshapeTemporalParameter.MODE.BEFORE)
             {
                 m_nNumSamples = colBottom[0].num;
-                m_nNumTemporalSteps = colBottom[0].channels;
+                m_nForcedRepeatCount = m_param.reshape_temporal_param.forced_repeat_count;
+
+                if (m_nForcedRepeatCount >= 0)
+                    m_nNumRepeatCount = m_nForcedRepeatCount;
+                else
+                    m_nNumRepeatCount = colBottom[0].shape(1);
 
                 // replicate the selection signal along time
                 if (colBottom.Count > 1)
@@ -179,30 +212,38 @@ namespace MyCaffe.layers.tft
                     m_blobWork = new Blob<T>(m_cuda, m_log);
                     m_blobWork.Name = "work";
 
-                    m_blobTimeDistributedContext = new Blob<T>(m_cuda, m_log);
-                    m_blobTimeDistributedContext.Name = m_param.name + ".tdctx";
+                    if (m_nNumRepeatCount > 0)
+                    {
+                        m_blobTimeDistributedContext = new Blob<T>(m_cuda, m_log);
+                        m_blobTimeDistributedContext.Name = m_param.name + ".tdctx";
+                        replicate_along_time_fwd(colBottom[1], m_blobTimeDistributedContext, m_nNumRepeatCount, m_nForcedRepeatCount < 0, true);
+                        stack_time_steps_along_batch_fwd(m_blobTimeDistributedContext, colTop[1], true);
+                    }
+                    else
+                    {
+                        stack_time_steps_along_batch_fwd(colBottom[1], colTop[1], true);
+                    }
 
-                    replicate_along_time_fwd(colBottom[1], m_blobTimeDistributedContext, m_nNumTemporalSteps, true);
-                    stack_time_steps_along_batch_fwd(m_blobTimeDistributedContext, colTop[1], true);
                     colTop[1].SetParameter("num_samples", m_nNumSamples);
-                    colTop[1].SetParameter("num_temporal_steps", m_nNumTemporalSteps);
+                    colTop[1].SetParameter("num_temporal_steps", m_nNumRepeatCount);
+                    colTop[1].SetParameter("forced_temporal_steps", m_nForcedRepeatCount);
                 }
 
                 // Apply the same selection module on all timesteps by stacking the time dimension with the batch dimension
                 stack_time_steps_along_batch_fwd(colBottom[0], colTop[0], true);
                 colTop[0].SetParameter("num_samples", m_nNumSamples);
-                colTop[0].SetParameter("num_temporal_steps", m_nNumTemporalSteps);
+                colTop[0].SetParameter("num_temporal_steps", colBottom[0].shape(1));
             }
             else
             {
                 m_nNumSamples = (int)colBottom[0].GetParameter("num_samples");
-                m_nNumTemporalSteps = (int)colBottom[0].GetParameter("num_temporal_steps");
+                int nTemporalSteps = (int)colBottom[0].GetParameter("num_temporal_steps");
 
                 int nCount = colBottom[0].count();
-                int nDim = m_nNumSamples * m_nNumTemporalSteps;
+                int nDim = m_nNumSamples * nTemporalSteps;
                 m_rgShape.Clear();
                 m_rgShape.Add(m_nNumSamples);
-                m_rgShape.Add(m_nNumTemporalSteps);
+                m_rgShape.Add(nTemporalSteps);
                 m_rgShape.Add(nCount / nDim);
                 colTop[0].Reshape(m_rgShape);
 
@@ -210,17 +251,39 @@ namespace MyCaffe.layers.tft
                 if (m_param.reshape_temporal_param.enable_clip_output)
                 {
                     m_log.CHECK_GT(colTop.Count, nIdx, "There must be at least " + (nIdx + 1).ToString() + " tops for the enable clip output!");
-                    m_rgShape[2] = 1;
+                    m_rgShape.Clear();
+                    m_rgShape.Add(m_nNumSamples);
+                    m_rgShape.Add(nTemporalSteps);
                     colTop[nIdx].Reshape(m_rgShape);
                     nIdx++;
                 }
 
-                if (m_param.reshape_temporal_param.enable_weight_output)
+                if (colBottom.Count > 1)
                 {
-                    m_log.CHECK_GT(colTop.Count, nIdx, "There must be at least " + (nIdx + 1).ToString() + " tops for the enable clip output!");
-                    nCount = colBottom[1].count();
-                    m_rgShape[2] = nCount / nDim;
-                    colTop[nIdx].Reshape(m_rgShape);
+                    m_nNumRepeatCount = (int)colBottom[1].GetParameter("num_temporal_steps");
+                    m_nForcedRepeatCount = (int)colBottom[1].GetParameter("forced_temporal_steps");
+
+                    if (m_param.reshape_temporal_param.enable_weight_output)
+                    {
+                        m_log.CHECK_GT(colTop.Count, nIdx, "There must be at least " + (nIdx + 1).ToString() + " tops for the enable clip output!");
+                        nCount = colBottom[1].count();
+                        m_rgShape.Clear();
+
+                        if (m_nForcedRepeatCount >= 0)
+                        {
+                            m_rgShape.Add(m_nNumSamples);
+                            m_rgShape.Add(nCount / nDim);
+                        }
+                        else
+                        {
+                            m_rgShape.Add(m_nNumSamples);
+                            if (m_nNumRepeatCount > 0)
+                                m_rgShape.Add(m_nNumRepeatCount);
+                            m_rgShape.Add(nCount / nDim);
+                        }
+
+                        colTop[nIdx].Reshape(m_rgShape);
+                    }
                 }
             }
 
@@ -234,14 +297,24 @@ namespace MyCaffe.layers.tft
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            if (layer_param.name == "reshtmp_hist_a")
+                Trace.WriteLine("found it.");
+
             if (m_mode == ReshapeTemporalParameter.MODE.BEFORE)
             {
                 // replicate the selection signal along time
                 if (colBottom.Count > 1)
                 {
-                    replicate_along_time_fwd(colBottom[1], m_blobTimeDistributedContext, m_nNumTemporalSteps, true);
-                    m_blobWork.ReshapeLike(colBottom[1]);
-                    stack_time_steps_along_batch_fwd(m_blobTimeDistributedContext, colTop[1], true);
+                    if (m_nNumRepeatCount > 0)
+                    {
+                        replicate_along_time_fwd(colBottom[1], m_blobTimeDistributedContext, m_nNumRepeatCount, m_nForcedRepeatCount < 0, true);
+                        m_blobWork.ReshapeLike(colBottom[1]);
+                        stack_time_steps_along_batch_fwd(m_blobTimeDistributedContext, colTop[1], true);
+                    }
+                    else
+                    {
+                        stack_time_steps_along_batch_fwd(colBottom[1], colTop[1], true);
+                    }
                 }
 
                 // Apply the same selection module on all timesteps by stacking the time dimension with the batch dimension
@@ -249,11 +322,12 @@ namespace MyCaffe.layers.tft
             }
             else
             {
+                int nTemporalSteps = (int)colBottom[0].GetParameter("num_temporal_steps");
                 int nCount = colBottom[0].count();
-                int nDim = m_nNumSamples * m_nNumTemporalSteps;
+                int nDim = m_nNumSamples * nTemporalSteps;
                 m_rgShape.Clear();
                 m_rgShape.Add(m_nNumSamples);
-                m_rgShape.Add(m_nNumTemporalSteps);
+                m_rgShape.Add(nTemporalSteps);
                 m_rgShape.Add(nCount / nDim);
                 colTop[0].Reshape(m_rgShape);
 
@@ -261,17 +335,39 @@ namespace MyCaffe.layers.tft
                 if (m_param.reshape_temporal_param.enable_clip_output)
                 {
                     m_log.CHECK_GT(colTop.Count, nIdx, "There must be at least " + (nIdx + 1).ToString() + " tops for the enable clip output!");
-                    m_rgShape.RemoveAt(m_rgShape.Count - 1);
+                    m_rgShape.Clear();
+                    m_rgShape.Add(m_nNumSamples);
+                    m_rgShape.Add(nTemporalSteps);
                     colTop[nIdx].Reshape(m_rgShape);
                     nIdx++;
                 }
 
-                if (m_param.reshape_temporal_param.enable_weight_output)
+                if (colBottom.Count > 1)
                 {
-                    m_log.CHECK_GT(colTop.Count, nIdx, "There must be at least " + (nIdx + 1).ToString() + " tops for the enable clip output!");
-                    nCount = colBottom[1].count();
-                    m_rgShape[2] = nCount / nDim;
-                    colTop[nIdx].Reshape(m_rgShape);
+                    m_nNumRepeatCount = (int)colBottom[1].GetParameter("num_temporal_steps");
+                    m_nForcedRepeatCount = (int)colBottom[1].GetParameter("forced_temporal_steps");
+
+                    if (m_param.reshape_temporal_param.enable_weight_output)
+                    {
+                        m_log.CHECK_GT(colTop.Count, nIdx, "There must be at least " + (nIdx + 1).ToString() + " tops for the enable clip output!");
+                        nCount = colBottom[1].count();
+                        m_rgShape.Clear();
+
+                        if (m_nForcedRepeatCount >= 0)
+                        {
+                            m_rgShape.Add(m_nNumSamples);
+                            m_rgShape.Add(nCount / nDim);
+                        }
+                        else
+                        {
+                            m_rgShape.Add(m_nNumSamples);
+                            if (m_nNumRepeatCount > 0)
+                                m_rgShape.Add(m_nNumRepeatCount);
+                            m_rgShape.Add(nCount / nDim);
+                        }
+
+                        colTop[nIdx].Reshape(m_rgShape);
+                    }
                 }
             }
         }
@@ -294,8 +390,15 @@ namespace MyCaffe.layers.tft
                 if (colBottom.Count > 1)
                 {
                     // replicate the selection signal along time
-                    replicate_along_time_fwd(colBottom[1], m_blobTimeDistributedContext, m_nNumTemporalSteps);
-                    stack_time_steps_along_batch_fwd(m_blobTimeDistributedContext, colTop[1]);
+                    if (m_nNumRepeatCount > 0)
+                    {
+                        replicate_along_time_fwd(colBottom[1], m_blobTimeDistributedContext, m_nNumRepeatCount, m_nForcedRepeatCount < 0);
+                        stack_time_steps_along_batch_fwd(m_blobTimeDistributedContext, colTop[1]);
+                    }
+                    else
+                    {
+                        stack_time_steps_along_batch_fwd(colBottom[1], colTop[1]);
+                    }
                 }
 
                 // Apply the same selection module on all timesteps by stacking the time dimension with the batch dimension
@@ -343,8 +446,15 @@ namespace MyCaffe.layers.tft
                 // replicate the static selection signal along time
                 if (colBottom.Count > 1)
                 {
-                    stack_time_steps_along_batch_bwd(m_blobTimeDistributedContext, colTop[1]);
-                    replicate_along_time_bwd(colBottom[1], m_blobTimeDistributedContext, m_nNumTemporalSteps);
+                    if (m_nNumRepeatCount > 0)
+                    {
+                        stack_time_steps_along_batch_bwd(m_blobTimeDistributedContext, colTop[1]);
+                        replicate_along_time_bwd(colBottom[1], m_blobTimeDistributedContext, m_nNumRepeatCount, m_nForcedRepeatCount < 0);
+                    }
+                    else
+                    {
+                        stack_time_steps_along_batch_bwd(colBottom[1], colTop[1]);
+                    }
                 }
             }
             else
