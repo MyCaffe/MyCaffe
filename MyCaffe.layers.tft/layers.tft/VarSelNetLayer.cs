@@ -236,6 +236,7 @@ namespace MyCaffe.layers.tft
                 p.grn_param.input_dim = m_param.varselnet_param.input_dim;
                 p.grn_param.hidden_dim = m_param.varselnet_param.hidden_dim;
                 p.grn_param.output_dim = m_param.varselnet_param.hidden_dim;
+                p.grn_param.dropout = m_param.varselnet_param.dropout;
                 Layer<T> grn = Layer<T>.Create(m_cuda, m_log, p, null);
 
                 Blob<T> blobGrn = new Blob<T>(m_cuda, m_log);
