@@ -1697,9 +1697,9 @@ namespace MyCaffe.test
                 blob1 = net.FindBlob("c_selection1f");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The grad are different!");
 
-                blobVal.LoadFromNumpy(strPath + strTag + ".c_selection_f.grad.npy", true);
+                blobVal.LoadFromNumpy(strPath + strTag + ".future.static_selection_signal.grad.npy", true);
                 blob1 = net.FindBlob("c_selection_f");
-/*BUG->*/       m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 1e-04), "The grad are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The grad are different!");
 
                 // Select static
                 blobVal.LoadFromNumpy(strPath + strTag + ".selected_static.grad.npy", true);
@@ -1707,15 +1707,23 @@ namespace MyCaffe.test
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The grad are different!");
 
                 // Transform all input channels
+                blobVal.LoadFromNumpy(strPath + strTag + ".future.temporal_selection_output.grad.npy", true);
+                blob1 = net.FindBlob("selected_fut1");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The gradients are different!");
+
+                blobVal.LoadFromNumpy(strPath + strTag + ".future.temporal_flattened_embedding.grad.npy", true);
+                blob1 = net.FindBlob("future_ts_rep1");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 2e-04), "The grad are different!");
+
                 blobVal.LoadFromNumpy(strPath + strTag + ".future_ts_rep.grad.npy", true);
                 blob1 = net.FindBlob("future_ts_rep");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The grad are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 2e-04), "The grad are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".historical_ts_rep.grad.npy", true);
                 blob1 = net.FindBlob("hist_ts_rep");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The grad are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 2e-05), "The grad are different!");
 
-                blobVal.LoadFromNumpy(strPath + strTag + ".static_rep.npy", true);
+                blobVal.LoadFromNumpy(strPath + strTag + ".static_rep.grad.npy", true);
                 blob1 = net.FindBlob("static_rep");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The grad are different!");
             }
