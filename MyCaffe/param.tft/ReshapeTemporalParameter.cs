@@ -23,6 +23,7 @@ namespace MyCaffe.param.tft
         MODE m_mode = MODE.BEFORE;
         bool m_bEnableClipOutput = false;
         bool m_bEnableWtsOutput = false;
+        int m_nForcedRepeatCount = -1;
 
         /// <summary>
         /// Defines the modulation type.
@@ -42,6 +43,16 @@ namespace MyCaffe.param.tft
         /** @copydoc LayerParameterBase */
         public ReshapeTemporalParameter()
         {
+        }
+
+        /// <summary>
+        /// Specifies the forced repeat steps bottom(1).  A value of -1 specifies to use the temporal axis as the repeat count (default), otherwise the forced count is used to compy the entire blob that number of times.
+        /// </summary>
+        [Description("Specifies the forced repeat steps bottom(1).  A value of -1 specifies to use the temporal axis as the repeat count (default), otherwise the forced count is used to compy the entire blob that number of times.")]
+        public int forced_repeat_count
+        {
+            get { return m_nForcedRepeatCount; }
+            set { m_nForcedRepeatCount = value; }
         }
 
         /// <summary>
@@ -94,6 +105,7 @@ namespace MyCaffe.param.tft
             m_mode = p.mode;
             m_bEnableClipOutput = p.enable_clip_output;
             m_bEnableWtsOutput = p.enable_weight_output;
+            m_nForcedRepeatCount = p.forced_repeat_count;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -116,6 +128,7 @@ namespace MyCaffe.param.tft
             rgChildren.Add("mode", mode.ToString());
             rgChildren.Add("enable_clip_output", enable_clip_output.ToString());
             rgChildren.Add("enable_weight_output", enable_weight_output.ToString());
+            rgChildren.Add("forced_repeat_count", forced_repeat_count.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -145,6 +158,9 @@ namespace MyCaffe.param.tft
 
             if ((strVal = rp.FindValue("enable_weight_output")) != null)
                 p.enable_weight_output = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("forced_repeat_count")) != null)
+                p.forced_repeat_count = int.Parse(strVal);
 
             return p;
         }
