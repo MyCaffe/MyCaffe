@@ -297,9 +297,6 @@ namespace MyCaffe.layers.tft
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            if (layer_param.name == "reshtmp_hist_a")
-                Trace.WriteLine("found it.");
-
             if (m_mode == ReshapeTemporalParameter.MODE.BEFORE)
             {
                 // replicate the selection signal along time
