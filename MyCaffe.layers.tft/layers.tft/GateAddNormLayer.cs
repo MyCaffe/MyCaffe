@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
@@ -33,6 +34,7 @@ namespace MyCaffe.layers.tft
         Blob<T> m_blobResidual = null;
         Blob<T> m_blobDrop = null;
         Blob<T> m_blobGate = null;
+        Blob<T> m_blobGateAddResidual = null;
         BlobCollection<T> m_colTop = new BlobCollection<T>();
         BlobCollection<T> m_colBtm = new BlobCollection<T>();
         List<int> m_rgShape = new List<int>(4);
@@ -58,6 +60,8 @@ namespace MyCaffe.layers.tft
             m_blobResidual.Name = p.name + ".residual";
             m_blobGate = new Blob<T>(cuda, log);
             m_blobGate.Name = p.name + ".gate";
+            m_blobGateAddResidual = new Blob<T>(cuda, log);
+            m_blobGateAddResidual.Name = p.name + ".gateres";
         }
 
         /** @copydoc Layer::dispose */
@@ -65,6 +69,7 @@ namespace MyCaffe.layers.tft
         {
             dispose(ref m_blobResidual);
             dispose(ref m_blobGate);
+            dispose(ref m_blobGateAddResidual);
             dispose(ref m_blobDrop);
 
             dispose(ref m_dropout);
@@ -126,11 +131,14 @@ namespace MyCaffe.layers.tft
             LayerParameter p;
             Blob<T> blobBtm = colBottom[0];
 
-            if (m_param.gateaddnorm_param.residual_channel_offset > 0)
+            if (colBottom.Count > 1)
             {
-                int nDiff = colBottom[1].channels - m_param.gateaddnorm_param.residual_channel_offset;
-                if (colBottom[1].channels % nDiff != 0)
-                    m_log.FAIL("The number bottom(1).channels must be divisible by the bottom(1).channels - the residual channel offset. For example if bottom(1).channels = 120 and redidual_channel_offset = 90, the difference = 30 which is a factor of both 120 and 90.");
+                if (m_param.gateaddnorm_param.residual_channel_offset > 0)
+                {
+                    int nDiff = colBottom[1].channels - m_param.gateaddnorm_param.residual_channel_offset;
+                    if (colBottom[1].channels % nDiff != 0)
+                        m_log.FAIL("The number bottom(1).channels must be divisible by the bottom(1).channels - the residual channel offset. For example if bottom(1).channels = 120 and redidual_channel_offset = 90, the difference = 30 which is a factor of both 120 and 90.");
+                }
             }
 
             if (m_param.dropout_param != null && m_param.dropout_param.dropout_ratio > 0)
@@ -151,6 +159,7 @@ namespace MyCaffe.layers.tft
             addBtmTop(blobBtm, m_blobGate);
             m_gate.Setup(m_colBtm, m_colTop);
             blobs.Add(m_gate.blobs);
+            m_blobGateAddResidual.ReshapeLike(m_blobGate);
 
             p = new LayerParameter(LayerParameter.LayerType.LAYERNORM, "layernorm");
             p.layer_norm_param.Copy(m_param.layer_norm_param);
@@ -200,6 +209,7 @@ namespace MyCaffe.layers.tft
 
             addBtmTop(blobBtm, m_blobGate);
             m_gate.Reshape(m_colBtm, m_colTop);
+            m_blobGateAddResidual.ReshapeLike(m_blobGate);
 
             addBtmTop(m_blobGate, colTop[0]);
             m_layerNorm.Reshape(m_colBtm, m_colTop);
@@ -263,7 +273,6 @@ namespace MyCaffe.layers.tft
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             Blob<T> blobBtm = colBottom[0];
-
             copy_to_fwd(colBottom, m_blobResidual);
 
             if (m_dropout != null)
@@ -277,9 +286,11 @@ namespace MyCaffe.layers.tft
             m_gate.Forward(m_colBtm, m_colTop);
 
             if (colBottom.Count > 1)
-                m_cuda.add(m_blobGate.count(), m_blobGate.gpu_data, m_blobResidual.gpu_data, m_blobGate.mutable_gpu_data);
+                m_cuda.add(m_blobGateAddResidual.count(), m_blobGate.gpu_data, m_blobResidual.gpu_data, m_blobGateAddResidual.mutable_gpu_data);
+            else
+                m_blobGateAddResidual.CopyFrom(m_blobGate);
 
-            addBtmTop(m_blobGate, colTop[0]);
+            addBtmTop(m_blobGateAddResidual, colTop[0]);
             m_layerNorm.Forward(m_colBtm, m_colTop);
 
             colTop[0].ReshapeLike(m_blobGate);
@@ -301,11 +312,13 @@ namespace MyCaffe.layers.tft
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
-            addBtmTop(m_blobGate, colTop[0]);
+            addBtmTop(m_blobGateAddResidual, colTop[0]);
             m_layerNorm.Backward(m_colTop, rgbPropagateDown, m_colBtm);
 
             // Copy grad to the residual if it exists.
-            copy_to_bwd(colBottom, m_blobGate);
+            copy_to_bwd(colBottom, m_blobGateAddResidual);
+            m_blobGate.CopyFrom(m_blobGateAddResidual, true);
+            m_blobResidual.CopyFrom(m_blobGateAddResidual, true);
 
             addBtmTop(colBottom[0], m_blobGate);
             m_gate.Backward(m_colTop, rgbPropagateDown, m_colBtm);
