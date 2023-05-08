@@ -627,7 +627,7 @@ namespace MyCaffe.layers.tft
                 int nOuterNum = bBtm.num;
                 int nChannels = m_nBlocks;
                 int nInnerNum = (bBtm.channels / m_nBlocks) * bBtm.count(2);
-                m_cuda.channel_add(bBtm.count(), nOuterNum, nChannels, m_nBlocks, nInnerNum, m_nBlocks-1, bBtm.mutable_gpu_diff, bTop.gpu_diff, DIR.BWD);
+                m_cuda.channel_add(bTop.count(), nOuterNum, nChannels, m_nBlocks, nInnerNum, m_nBlocks-1, bBtm.mutable_gpu_diff, bTop.gpu_diff, DIR.BWD);
             }
             else
             {
@@ -681,7 +681,7 @@ namespace MyCaffe.layers.tft
             }
 
             // Transpose to get the new shapes
-            // queries tensor - q: [num_samples x num_heds x num_future_steps x state_size]
+            // queries tensor - q: [num_samples x num_heads x num_future_steps x state_size]
             // keys tensor    - k: [num_samples x num_heads x num_total_steps x state_size]
             // values tensor  - v: [num_samples x num_heads x num_total_steps x state_size]
 
@@ -792,17 +792,13 @@ namespace MyCaffe.layers.tft
 
             // Copy each IpVFull block to IpV
             m_blobIpV.SetDiff(0);
-            m_blobWork.SetDiff(0);
-
-            reshapeBwd(m_blobWork, m_nNumHeads, m_blobIpV.shape());
 
             int nOuterNum = m_blobIpVfull.count(0, 2);
             m_cuda.channel_copy(m_blobIpV.count(), nOuterNum, 1, m_nNumHeads, m_blobIpVfull.width, 0, m_blobIpVfull.gpu_diff, m_blobIpV.mutable_gpu_diff, DIR.FWD);
 
             for (int i = 1; i < m_nNumHeads; i++)
             {
-                m_cuda.channel_copy(m_blobWork.count(), nOuterNum, 1, m_nNumHeads, m_blobIpVfull.width, i, m_blobIpVfull.gpu_diff, m_blobWork.mutable_gpu_diff, DIR.FWD);
-                m_cuda.add(m_blobWork.count(), m_blobIpV.gpu_diff, m_blobWork.gpu_diff, m_blobIpV.mutable_gpu_diff);
+                m_cuda.channel_add(m_blobIpV.count(), nOuterNum, 1, m_nNumHeads, m_blobIpVfull.width, i, m_blobIpVfull.gpu_diff, m_blobIpV.mutable_gpu_diff, DIR.FWD);
             }
 
             // Reshape back to original q, k, v projection shapes
