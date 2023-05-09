@@ -19,6 +19,7 @@ namespace MyCaffe.param.gpt
     {
         double m_dfEpsilon = 1e-10;
         bool m_bEnableCudaImplementation = false;
+        bool m_bEnablePassThrough = false;
 
         /** @copydoc LayerParameterBase */
         public LayerNormParameter()
@@ -36,11 +37,22 @@ namespace MyCaffe.param.gpt
         }
 
         /// <summary>
+        /// Specifies to pass-through the data on the forward and backward pass (e.g. skip the layer norm, used only for debugging. default = false).
+        /// </summary>
+        [Description("Specifies to pass-through the data on the forward and backward pass (e.g. skip the layer norm, used only for debugging. default = false).")]
+        public bool enable_passthrough
+        {
+            get { return m_bEnablePassThrough; }
+            set { m_bEnablePassThrough = value; }
+        }
+
+        /// <summary>
         /// Specifies to use the low-level full cuda implementation of LayerNorm (default = false).
         /// </summary>
         /// <remarks>
         /// The cuda implementation runs around 30% faster when using float base types.
         /// </remarks>
+        [Description("Specifies to use the low-level full cuda implementation of LayerNorm (default = false).")]
         public bool enable_cuda_impl
         {
             get { return m_bEnableCudaImplementation; }
@@ -73,6 +85,7 @@ namespace MyCaffe.param.gpt
             LayerNormParameter p = (LayerNormParameter)src;
             m_dfEpsilon = p.epsilon;
             m_bEnableCudaImplementation = p.enable_cuda_impl;
+            m_bEnablePassThrough = p.enable_passthrough;
         }
 
         /// <summary>
@@ -98,6 +111,9 @@ namespace MyCaffe.param.gpt
             rgChildren.Add("epsilon", m_dfEpsilon.ToString());
             rgChildren.Add("enable_cuda_impl", m_bEnableCudaImplementation.ToString());
 
+            if (m_bEnablePassThrough)
+                rgChildren.Add("enable_passthrough", m_bEnablePassThrough.ToString());
+
             return new RawProto(strName, "", rgChildren);
         }
 
@@ -116,6 +132,9 @@ namespace MyCaffe.param.gpt
 
             if ((strVal = rp.FindValue("enable_cuda_impl")) != null)
                 p.m_bEnableCudaImplementation = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("enable_passthrough")) != null)
+                p.m_bEnablePassThrough = bool.Parse(strVal);
 
             return p;
         }

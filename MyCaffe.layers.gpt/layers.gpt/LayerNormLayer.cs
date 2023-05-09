@@ -125,6 +125,8 @@ namespace MyCaffe.layers.gpt
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            if (m_param.layer_norm_param.enable_passthrough)
+                m_log.WriteLine("WARNING: LayerNormLayer '" + m_param.name + "' is using passthrough mode which is only used when debugging.");
         }
 
         /// <summary>
@@ -192,6 +194,12 @@ namespace MyCaffe.layers.gpt
         ///  -# @f$ (N \times C \times H \times W) @f$ the outputs.</param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            if (m_param.layer_norm_param.enable_passthrough)
+            {
+                colTop[0].CopyFrom(colBottom[0]);
+                return;
+            }
+
             if (m_param.layer_norm_param.enable_cuda_impl)
                 m_cuda.LayerNormForward(m_hLayerNorm, colBottom[0].gpu_data, colTop[0].mutable_gpu_data);
             else
@@ -260,6 +268,12 @@ namespace MyCaffe.layers.gpt
         {
             if (rgbPropagateDown[0])
             {
+                if (m_param.layer_norm_param.enable_passthrough)
+                {
+                    colBottom[0].CopyFrom(colTop[0], true);
+                    return;
+                }
+
                 if (m_param.layer_norm_param.enable_cuda_impl)
                     m_cuda.LayerNormBackward(m_hLayerNorm, colTop[0].gpu_data, colTop[0].gpu_diff, colBottom[0].mutable_gpu_diff);
                 else

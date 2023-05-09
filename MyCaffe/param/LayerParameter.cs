@@ -3529,6 +3529,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(multihead_attention_param, "multihead_attention_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(positional_encoder_param, "positional_encoder_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gelu_param, "gelu_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(layer_norm_param, "layer_norm_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(transformer_block_param, "transformer_block_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(tokenized_data_param, "tokenized_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(tokenized_data_pairs_param, "tokenized_data_pairs_param"));
@@ -3892,6 +3893,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("gelu_param")) != null)
                 p.gelu_param = GeluParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("layer_norm_param")) != null)
+                p.layer_norm_param = LayerNormParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("transformer_block_param")) != null)
                 p.transformer_block_param = TransformerBlockParameter.FromProto(rpp);
