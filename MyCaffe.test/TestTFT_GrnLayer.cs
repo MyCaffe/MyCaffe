@@ -145,7 +145,7 @@ namespace MyCaffe.test
             p.grn_param.output_dim = 9;
             p.grn_param.context_dim = null;
             p.grn_param.hidden_dim = 64;
-            p.grn_param.dropout = 0.0f;
+            p.grn_param.dropout_ratio = 0.0f;
             p.grn_param.batch_first = true;
             GrnLayer<T> layer = null;
             Blob<T> blobX = null;
@@ -210,7 +210,7 @@ namespace MyCaffe.test
             p.grn_param.output_dim = 9;
             p.grn_param.context_dim = null;
             p.grn_param.hidden_dim = 64;
-            p.grn_param.dropout = 0.0f;
+            p.grn_param.dropout_ratio = 0.0f;
             p.grn_param.batch_first = true;
             GrnLayer<T> layer = null;
             Blob<T> blobGradExp = null;
@@ -310,7 +310,7 @@ namespace MyCaffe.test
             p.grn_param.output_dim = 9;
             p.grn_param.context_dim = null;
             p.grn_param.hidden_dim = 64;
-            p.grn_param.dropout = 0.0f;
+            p.grn_param.dropout_ratio = 0.0f;
             p.grn_param.batch_first = true;
             GrnLayer<T> layer = null;
             Blob<T> blobX = null;

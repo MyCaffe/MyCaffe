@@ -265,7 +265,7 @@ namespace MyCaffe.test
             static_cov_enc.grn_param.input_dim = nStateSize;
             static_cov_enc.grn_param.hidden_dim = nStateSize;
             static_cov_enc.grn_param.output_dim = nStateSize;
-            static_cov_enc.grn_param.dropout = fDropout;
+            static_cov_enc.grn_param.dropout_ratio = fDropout;
 
             LayerParameter static_enc_sel = static_cov_enc.Clone(false);
             static_enc_sel.name = "enc_sel";
@@ -435,7 +435,7 @@ namespace MyCaffe.test
             static_enrich_grn.grn_param.hidden_dim = nStateSize;
             static_enrich_grn.grn_param.output_dim = nStateSize;
             static_enrich_grn.grn_param.context_dim = nStateSize;
-            static_enrich_grn.grn_param.dropout = fDropout;
+            static_enrich_grn.grn_param.dropout_ratio = fDropout;
             static_enrich_grn.bottom.Add("gated_lstm_output1");
             static_enrich_grn.bottom.Add("c_enrichment1");
             static_enrich_grn.top.Add("enriched_sequence1a");
@@ -488,7 +488,7 @@ namespace MyCaffe.test
             pos_wise_ff_grn.grn_param.output_dim = nStateSize;
             pos_wise_ff_grn.grn_param.context_dim = nStateSize;
             pos_wise_ff_grn.grn_param.axis = 2;
-            pos_wise_ff_grn.grn_param.dropout = fDropout;
+            pos_wise_ff_grn.grn_param.dropout_ratio = fDropout;
             pos_wise_ff_grn.bottom.Add("gated_post_attention");
             pos_wise_ff_grn.top.Add("post_poswise_ff_grn");
             p.layer.Add(pos_wise_ff_grn);

@@ -142,7 +142,7 @@ namespace MyCaffe.test
             static_enrich_grn.grn_param.hidden_dim = nStateSize;
             static_enrich_grn.grn_param.output_dim = nStateSize;
             static_enrich_grn.grn_param.context_dim = nStateSize;
-            static_enrich_grn.grn_param.dropout = fDropout;
+            static_enrich_grn.grn_param.dropout_ratio = fDropout;
             static_enrich_grn.bottom.Add("gated_lstm_output1");
             static_enrich_grn.bottom.Add("c_enrichment1");
             static_enrich_grn.top.Add("enriched_sequence1");
