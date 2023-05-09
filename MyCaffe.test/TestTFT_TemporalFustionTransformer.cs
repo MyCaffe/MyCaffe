@@ -451,16 +451,21 @@ namespace MyCaffe.test
             //---------------------------------
             //  Temporal Self-attention
             //---------------------------------
+            LayerParameter statenr_split = new LayerParameter(LayerParameter.LayerType.SPLIT, "statenr_split");
+            statenr_split.bottom.Add("enriched_sequence");
+            statenr_split.top.Add("enr_seq_a");
+            statenr_split.top.Add("enr_seq_b");
+            p.layer.Add(statenr_split);
+
             LayerParameter multihead_attn = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION_INTERP, "mh_attn");
             multihead_attn.multihead_attention_interp_param.embed_dim = (uint)nStateSize;
             multihead_attn.multihead_attention_interp_param.num_heads = (uint)nNumHeads;
             multihead_attn.multihead_attention_interp_param.num_historical_steps = (uint)nNumHistSteps;
             multihead_attn.multihead_attention_interp_param.num_future_steps = (uint)nNumFutureSteps;
-            multihead_attn.bottom.Add("enriched_sequence");
+            multihead_attn.bottom.Add("enr_seq_a");
             multihead_attn.top.Add("post_attention");
             multihead_attn.top.Add("attention_outputs");
             multihead_attn.top.Add("attention_scores");
-            multihead_attn.top.Add("enriched_sequence1");
             p.layer.Add(multihead_attn);
 
             LayerParameter post_attn_gate = new LayerParameter(LayerParameter.LayerType.GATEADDNORM, "post_attn_gate");
@@ -470,7 +475,7 @@ namespace MyCaffe.test
             post_attn_gate.glu_param.input_dim = nStateSize;
             post_attn_gate.glu_param.axis = 2;
             post_attn_gate.bottom.Add("post_attention");
-            post_attn_gate.bottom.Add("enriched_sequence1");
+            post_attn_gate.bottom.Add("enr_seq_b");
             post_attn_gate.top.Add("gated_post_attention");
             p.layer.Add(post_attn_gate);
 
