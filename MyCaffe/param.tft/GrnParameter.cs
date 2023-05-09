@@ -110,7 +110,7 @@ namespace MyCaffe.param.tft
         /// Specifies the dropout ratio (default = 0.05 or 5%).
         /// </summary>
         [Description("Specifies the dropout ratio (default = 0.05 or 5%).")]
-        public float dropout
+        public float dropout_ratio
         {
             get { return m_fDropout; }
             set { m_fDropout = value; }
@@ -181,7 +181,7 @@ namespace MyCaffe.param.tft
             m_nHiddenDim = p.hidden_dim;
             m_nOutputDim = p.output_dim;
             m_nContextDim = p.context_dim;
-            m_fDropout = p.dropout;
+            m_fDropout = p.dropout_ratio;
             m_bBatchFirst = p.batch_first;
             m_nAxis = p.m_nAxis;
             m_activaiton = p.activation;
@@ -215,7 +215,7 @@ namespace MyCaffe.param.tft
             rgChildren.Add("output_dim", output_dim.ToString());
             if (context_dim.HasValue)
                 rgChildren.Add("context_dim", context_dim.Value.ToString());
-            rgChildren.Add("dropout", dropout.ToString());
+            rgChildren.Add("dropout_ratio", dropout_ratio.ToString());
             rgChildren.Add("batch_first", batch_first.ToString());
 
             if (weight_filler != null)
@@ -252,8 +252,8 @@ namespace MyCaffe.param.tft
             if ((strVal = rp.FindValue("context_dim")) != null)
                 p.context_dim = int.Parse(strVal);
 
-            if ((strVal = rp.FindValue("dropout")) != null)
-                p.dropout = float.Parse(strVal);
+            if ((strVal = rp.FindValue("dropout_ratio")) != null)
+                p.dropout_ratio = float.Parse(strVal);
 
             if ((strVal = rp.FindValue("batch_first")) != null)
                 p.batch_first = bool.Parse(strVal);
