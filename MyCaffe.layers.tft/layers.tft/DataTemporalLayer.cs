@@ -33,7 +33,7 @@ namespace MyCaffe.layers.tft
         uint m_nNumHistoricalCategorical;
         uint m_nNumFutureNumeric;
         uint m_nNumFutureCategorical;
-        RawFileData<T> m_data = new RawFileData<T>();
+        RawFileData<T> m_data = null;
         CancelEvent m_evtCancel;
 
         /// <summary>
@@ -96,6 +96,9 @@ namespace MyCaffe.layers.tft
             m_nBatchSize = m_param.data_temporal_param.batch_size;
             m_nNumHistoricalSteps = m_param.data_temporal_param.num_historical_steps;
             m_nNumFutureSteps = m_param.data_temporal_param.num_future_steps;
+
+            if (m_data == null)
+                m_data = new RawFileData<T>(m_param.data_temporal_param.seed);
 
             if (!m_data.LoadData(m_phase, m_param.data_temporal_param.source, (int)m_param.data_temporal_param.batch_size, (int)m_nNumHistoricalSteps, (int)m_nNumFutureSteps, m_param.data_temporal_param.max_load_count, m_param.data_temporal_param.drip_refresh_rate_in_sec, m_log, m_evtCancel))
                 throw new Exception("DataTemporalLayer data loading aborted!");
@@ -191,15 +194,19 @@ namespace MyCaffe.layers.tft
     class RawFileData<T>
     {
         Data<T> m_data;
-        Random m_random = new Random();
+        Random m_random;
         int m_nBatchSize;
 
 
         /// <summary>
         /// The constructor.
         /// </summary>
-        public RawFileData() 
-        { 
+        public RawFileData(uint? nSeed) 
+        {
+            if (nSeed.HasValue)
+                m_random = new Random((int)nSeed.Value);
+            else
+                m_random = new Random();
         }
 
         /// <summary>
@@ -326,6 +333,9 @@ namespace MyCaffe.layers.tft
                                 if (nWaitCount > nDripRefreshRateInSec)
                                     break;
                             }
+
+                            if (nDripRefreshRateInSec == 0)
+                                break;
                         }
                     }
 

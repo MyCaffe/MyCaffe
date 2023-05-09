@@ -23,6 +23,7 @@ namespace MyCaffe.param.tft
         SOURCE_TYPE m_srcType = SOURCE_TYPE.PATH_NPY_FILE;
         int m_nMaxLoadItems = 300000;
         int m_nDripRefreshRate = 0;
+        uint? m_nSeed = null;
 
         /// <summary>
         /// Defines the type of source data.
@@ -48,6 +49,16 @@ namespace MyCaffe.param.tft
         /** @copydoc LayerParameterBase */
         public DataTemporalParameter()
         {
+        }
+
+        /// <summary>
+        /// Specifies the random seed used to shuffle the data.  When not specified, the default seed is used.
+        /// </summary>
+        [Description("Specifies the random seed used to shuffle the data.  When not specified, the default seed is used.")]
+        public uint? seed
+        {
+            get { return m_nSeed; }
+            set { m_nSeed = value; }
         }
 
         /// <summary>
@@ -149,6 +160,7 @@ namespace MyCaffe.param.tft
 
             m_nMaxLoadItems = p.max_load_count;
             m_nDripRefreshRate = p.drip_refresh_rate_in_sec;
+            m_nSeed = p.seed;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -177,6 +189,9 @@ namespace MyCaffe.param.tft
 
             rgChildren.Add("max_load_count", max_load_count.ToString());
             rgChildren.Add("drip_refresh_rate_in_sec", drip_refresh_rate_in_sec.ToString());
+
+            if (seed.HasValue)
+                rgChildren.Add("seed", seed.Value.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -216,6 +231,9 @@ namespace MyCaffe.param.tft
 
             if ((strVal = rp.FindValue("drip_refresh_rate_in_sec")) != null)
                 p.drip_refresh_rate_in_sec = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("seed")) != null)
+                p.seed = uint.Parse(strVal);
 
             return p;
         }
