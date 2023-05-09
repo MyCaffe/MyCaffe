@@ -251,7 +251,7 @@ namespace MyCaffe.layers.tft
                 int nOuterNum = bBtm.num;
                 int nChannels = m_nBlocks;
                 int nInnerNum = (bBtm.channels / m_nBlocks) * bBtm.count(2);
-                m_cuda.channel_copy(bTop.count(), nOuterNum, nChannels, m_nBlocks, nInnerNum, m_nBlocks - 1, bBtm.gpu_diff, bTop.mutable_gpu_diff, DIR.BWD);
+                m_cuda.channel_copy(bTop.count(), nOuterNum, nChannels, m_nBlocks, nInnerNum, m_nBlocks - 1, bBtm.mutable_gpu_diff, bTop.gpu_diff, DIR.BWD);
             }
             else
             {
