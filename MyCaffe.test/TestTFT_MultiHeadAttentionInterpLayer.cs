@@ -365,7 +365,8 @@ namespace MyCaffe.test
         private string buildModel(bool bAddDataLayer, int nNumSamples, int nNumHeads, float fDropout, int nLstmLayers, int nNumOutputs, int nStateSize, int nNumHistSteps, int nNumFutureSteps,
             int nNumStaticNumeric, int nNumStaticCategorical, List<int> rgStaticCardinalities,
             int nNumHistNumeric, int nNumHistCategorical, List<int> rgHistCardinalities,
-            int nNumFutureNumeric, int nNumFutureCategorical, List<int> rgFutureCardinalities)
+            int nNumFutureNumeric, int nNumFutureCategorical, List<int> rgFutureCardinalities,
+            bool bEnableLayerNormPassthrough)
         {
             NetParameter p = new NetParameter();
             p.name = "tft_net";
@@ -379,26 +380,32 @@ namespace MyCaffe.test
             //---------------------------------
             //  Temporal Self-attention
             //---------------------------------
+            LayerParameter statenr_split = new LayerParameter(LayerParameter.LayerType.SPLIT, "statenr_split");
+            statenr_split.bottom.Add("enriched_sequence");
+            statenr_split.top.Add("enr_seq_a");
+            statenr_split.top.Add("enr_seq_b");
+            p.layer.Add(statenr_split);
+
             LayerParameter multihead_attn = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION_INTERP, "mh_attn");
             multihead_attn.multihead_attention_interp_param.embed_dim = (uint)nStateSize;
             multihead_attn.multihead_attention_interp_param.num_heads = (uint)nNumHeads;
             multihead_attn.multihead_attention_interp_param.num_historical_steps = (uint)nNumHistSteps;
             multihead_attn.multihead_attention_interp_param.num_future_steps = (uint)nNumFutureSteps;
-            multihead_attn.bottom.Add("enriched_sequence");
+            multihead_attn.bottom.Add("enr_seq_a");
             multihead_attn.top.Add("post_attention");
             multihead_attn.top.Add("attention_outputs");
             multihead_attn.top.Add("attention_scores");
-            multihead_attn.top.Add("enriched_sequence1");
             p.layer.Add(multihead_attn);
 
             LayerParameter post_attn_gate = new LayerParameter(LayerParameter.LayerType.GATEADDNORM, "post_attn_gate");
             post_attn_gate.gateaddnorm_param.residual_channel_offset = nNumHistSteps;
             post_attn_gate.dropout_param.dropout_ratio = fDropout;
             post_attn_gate.layer_norm_param.enable_cuda_impl = false;
+            post_attn_gate.layer_norm_param.enable_passthrough = bEnableLayerNormPassthrough;
             post_attn_gate.glu_param.input_dim = nStateSize;
             post_attn_gate.glu_param.axis = 2;
             post_attn_gate.bottom.Add("post_attention");
-            post_attn_gate.bottom.Add("enriched_sequence1");
+            post_attn_gate.bottom.Add("enr_seq_b");
             post_attn_gate.top.Add("gated_post_attention");
             p.layer.Add(post_attn_gate);
 
@@ -539,7 +546,8 @@ namespace MyCaffe.test
                 blobVal = new Blob<T>(m_cuda, m_log);
                 blobWork = new Blob<T>(m_cuda, m_log);
 
-                string strModel = buildModel(false, nNumSamples, nNumHeads, fDropout, nLstmLayers, nNumOutputs, nStateSize, nNumHistSteps, nNumFutureSteps, nNumStaticNumeric, nNumStaticCategorical, rgStaticCardinalities, nNumHistNumeric, nNumHistCategorical, rgHistCardinalities, nNumFutureNumeric, nNumFutureCategorical, rgFutureCardinalities);
+                bool bEnableLayerNormPassthrough = true;
+                string strModel = buildModel(false, nNumSamples, nNumHeads, fDropout, nLstmLayers, nNumOutputs, nStateSize, nNumHistSteps, nNumFutureSteps, nNumStaticNumeric, nNumStaticCategorical, rgStaticCardinalities, nNumHistNumeric, nNumHistCategorical, rgHistCardinalities, nNumFutureNumeric, nNumFutureCategorical, rgFutureCardinalities, bEnableLayerNormPassthrough);
                 RawProto rp = RawProto.Parse(strModel);
                 NetParameter param = NetParameter.FromProto(rp);
 
@@ -548,8 +556,7 @@ namespace MyCaffe.test
                 load_weights(strTag, net, strPathWt, nNumStaticNumeric, nNumStaticCategorical, nNumHistNumeric, nNumHistCategorical, nNumFutureNumeric, nNumFutureCategorical);
 
                 // inputs
-                net.FindBlob("enriched_sequence").LoadFromNumpy(strPath + "tft.ada.enriched_sequence1.npy");
-                net.FindBlob("enriched_sequence1").LoadFromNumpy(strPath + "tft.ada.enriched_sequence1.npy");
+                net.FindBlob("enriched_sequence").LoadFromNumpy(strPath + "tft.asa.enriched_sequence.npy");
 
                 BlobCollection<T> colRes = net.Forward();
 
@@ -614,7 +621,8 @@ namespace MyCaffe.test
                 blobVal = new Blob<T>(m_cuda, m_log);
                 blobWork = new Blob<T>(m_cuda, m_log);
 
-                string strModel = buildModel(false, nNumSamples, nNumHeads, fDropout, nLstmLayers, nNumOutputs, nStateSize, nNumHistSteps, nNumFutureSteps, nNumStaticNumeric, nNumStaticCategorical, rgStaticCardinalities, nNumHistNumeric, nNumHistCategorical, rgHistCardinalities, nNumFutureNumeric, nNumFutureCategorical, rgFutureCardinalities);
+                bool bEnableLayerNormPassthrough = true;
+                string strModel = buildModel(false, nNumSamples, nNumHeads, fDropout, nLstmLayers, nNumOutputs, nStateSize, nNumHistSteps, nNumFutureSteps, nNumStaticNumeric, nNumStaticCategorical, rgStaticCardinalities, nNumHistNumeric, nNumHistCategorical, rgHistCardinalities, nNumFutureNumeric, nNumFutureCategorical, rgFutureCardinalities, bEnableLayerNormPassthrough);
                 RawProto rp = RawProto.Parse(strModel);
                 NetParameter param = NetParameter.FromProto(rp);
                 param.force_backward = true;
@@ -624,15 +632,14 @@ namespace MyCaffe.test
                 load_weights(strTag, net, strPathWt, nNumStaticNumeric, nNumStaticCategorical, nNumHistNumeric, nNumHistCategorical, nNumFutureNumeric, nNumFutureCategorical);
 
                 // inputs
-                net.FindBlob("enriched_sequence").LoadFromNumpy(strPath + "tft.ada.enriched_sequence1.npy");
-                net.FindBlob("enriched_sequence1").LoadFromNumpy(strPath + "tft.ada.enriched_sequence1.npy");
+                net.FindBlob("enriched_sequence").LoadFromNumpy(strPath + "tft.asa.enriched_sequence.npy");
 
                 BlobCollection<T> colRes = net.Forward();
 
                 // Transform all input channels
-                blobVal.LoadFromNumpy(strPath + "tft.ada.gated_post_attention.npy");
+                blobVal.LoadFromNumpy(strPath + "tft.asa.gated_post_attention.npy");
                 blob1 = net.FindBlob("gated_post_attention");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork), "The blobs are different!");
 
                 blobVal.LoadFromNumpy(strPath + "tft.ada.attention_scores.npy");
                 blob1 = net.FindBlob("attention_scores");
@@ -653,7 +660,7 @@ namespace MyCaffe.test
 
                 net.Backward();
 
-                blobVal.LoadFromNumpy(strPath + "tft.ada.enriched_sequence1.grad.npy", true);
+                blobVal.LoadFromNumpy(strPath + "tft.asa.enriched_sequence.grad.npy", true);
                 blob1 = net.FindBlob("enriched_sequence");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 4e-07), "The blobs are different!");
 
