@@ -181,17 +181,9 @@ namespace MyCaffe.layers.tft
         /// <summary>
         /// Returns the exact number of required top (output) Blobs: y, attn_out, attn_scores
         /// </summary>
-        public override int MinTopBlobs
+        public override int ExactNumTopBlobs
         {
             get { return 3; }
-        }
-
-        /// <summary>
-        /// Returns the exact number of required top (output) Blobs: y, attn_out, attn_scores, x (passthrough)
-        /// </summary>
-        public override int MaxTopBlobs
-        {
-            get { return 4; }
         }
 
         private void addBtmTop(Blob<T> btm, Blob<T> top)
@@ -596,9 +588,6 @@ namespace MyCaffe.layers.tft
 
             addBtmTop(colTop[1], colTop[0]);
             m_ipOutLayer.Reshape(m_colBtm, m_colTop);
-
-            if (colBottom.Count == 1 && colTop.Count == 4)
-                colTop[3].ReshapeLike(colBottom[0]);
         }
 
         private void copy_to_q_fwd(int nCount, Blob<T> bBtm, Blob<T> bTop)
@@ -732,10 +721,6 @@ namespace MyCaffe.layers.tft
             // Weight the attention outputs (in colTop[1]) placing the results in colTop[0]
             addBtmTop(colTop[1], colTop[0]);
             m_ipOutLayer.Forward(m_colBtm, m_colTop);
-
-            // Pass x through when 4 tops exist.
-            if (colBottom.Count == 1 && colTop.Count == 4)
-                colTop[3].CopyFrom(colBottom[0]);
         }
 
         /// <summary>
