@@ -324,7 +324,7 @@ namespace MyCaffe.layers.tft
 
                 for (int i = 0; i < m_colNumericTop.Count; i++)
                 {
-                    m_cuda.channel_copy(nCount, m_colNumericTop[0].num, 1, nBlocks, nEmb, nIdx, colTop[0].mutable_gpu_diff, m_colNumericTop[i].gpu_diff, DIR.FWD);
+                    m_cuda.channel_copy(nCount, m_colNumericTop[0].num, 1, nBlocks, nEmb, nIdx, colTop[0].gpu_diff, m_colNumericTop[i].mutable_gpu_diff, DIR.FWD);
                     nIdx++;
                 }
 
@@ -339,7 +339,7 @@ namespace MyCaffe.layers.tft
 
                 for (int i = 0; i < m_colCategoricalTop.Count; i++)
                 {
-                    m_cuda.channel_copy(nCount, m_colCategoricalTop[0].num, 1, nBlocks, nEmb, nIdx, colTop[0].mutable_gpu_diff, m_colCategoricalTop[i].gpu_diff, DIR.FWD);
+                    m_cuda.channel_copy(nCount, m_colCategoricalTop[0].num, 1, nBlocks, nEmb, nIdx, colTop[0].gpu_diff, m_colCategoricalTop[i].mutable_gpu_diff, DIR.FWD);
                     nIdx++;
                 }
 
