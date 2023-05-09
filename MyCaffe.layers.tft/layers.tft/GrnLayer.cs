@@ -243,10 +243,10 @@ namespace MyCaffe.layers.tft
             // Output gating components (Eq.2 in original paper)
             //-------------------------------------------------------
 
-            if (m_param.grn_param.dropout > 0)
+            if (m_param.grn_param.dropout_ratio > 0)
             {
                 LayerParameter drop = new LayerParameter(LayerParameter.LayerType.DROPOUT, m_param.name + ".drop");
-                drop.dropout_param.dropout_ratio = m_param.grn_param.dropout;
+                drop.dropout_param.dropout_ratio = m_param.grn_param.dropout_ratio;
                 m_dropout = Layer<T>.Create(m_cuda, m_log, drop, null);
 
                 addBtmTop(m_blobIp2, m_blobIp2);
