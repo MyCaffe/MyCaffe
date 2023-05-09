@@ -285,7 +285,7 @@ namespace MyCaffe.test
             p.varselnet_param.input_dim = 64;
             p.varselnet_param.hidden_dim = 64;
             p.varselnet_param.num_inputs = 8;
-            p.varselnet_param.dropout = 0;
+            p.varselnet_param.dropout_ratio = 0;
             p.varselnet_param.context_dim = 64;
             p.varselnet_param.axis = 1;
             Layer<T> layer = null;
@@ -385,7 +385,7 @@ namespace MyCaffe.test
             p.varselnet_param.input_dim = 64;
             p.varselnet_param.hidden_dim = 64;
             p.varselnet_param.num_inputs = 8;
-            p.varselnet_param.dropout = 0;
+            p.varselnet_param.dropout_ratio = 0;
             p.varselnet_param.context_dim = 64;
             p.varselnet_param.axis = 1;
             Layer<T> layer = null;
@@ -498,7 +498,7 @@ namespace MyCaffe.test
             p.varselnet_param.input_dim = 64;
             p.varselnet_param.hidden_dim = 64;
             p.varselnet_param.num_inputs = 8;
-            p.varselnet_param.dropout = 0;
+            p.varselnet_param.dropout_ratio = 0;
             p.varselnet_param.context_dim = 64;
             p.varselnet_param.axis = 1;
             Layer<T> layer = null;
@@ -603,7 +603,7 @@ namespace MyCaffe.test
             p.varselnet_param.input_dim = nStateSize;
             p.varselnet_param.hidden_dim = nStateSize;
             p.varselnet_param.num_inputs = nNumHistNumeric + nNumHistCategorical;
-            p.varselnet_param.dropout = 0;
+            p.varselnet_param.dropout_ratio = 0;
             p.varselnet_param.context_dim = nStateSize;
             p.varselnet_param.axis = 1;
             Layer<T> layer = null;
@@ -774,7 +774,7 @@ namespace MyCaffe.test
             p.varselnet_param.input_dim = nStateSize;
             p.varselnet_param.hidden_dim = nStateSize;
             p.varselnet_param.num_inputs = nNumHistNumeric + nNumHistCategorical;
-            p.varselnet_param.dropout = 0;
+            p.varselnet_param.dropout_ratio = 0;
             p.varselnet_param.context_dim = nStateSize;
             p.varselnet_param.axis = 1;
             Layer<T> layer = null;
@@ -980,7 +980,7 @@ namespace MyCaffe.test
             static_vsn.varselnet_param.input_dim = nStateSize;
             static_vsn.varselnet_param.num_inputs = nNumStaticNumeric + nNumStaticCategorical;
             static_vsn.varselnet_param.hidden_dim = nStateSize;
-            static_vsn.varselnet_param.dropout = fDropout;
+            static_vsn.varselnet_param.dropout_ratio = fDropout;
             static_vsn.bottom.Add("static_rep");
             static_vsn.top.Add("selected_static");
             static_vsn.top.Add("static_wts");
@@ -1230,7 +1230,7 @@ namespace MyCaffe.test
             hist_vsn.varselnet_param.input_dim = nStateSize;
             hist_vsn.varselnet_param.num_inputs = nNumHistoricalNumeric + nNumHistoricalCategorical;
             hist_vsn.varselnet_param.hidden_dim = nStateSize;
-            hist_vsn.varselnet_param.dropout = fDropout;
+            hist_vsn.varselnet_param.dropout_ratio = fDropout;
             hist_vsn.varselnet_param.context_dim = nStateSize;
             hist_vsn.bottom.Add("hist_ts_rep1");
             hist_vsn.bottom.Add("c_selection1");
@@ -1503,7 +1503,7 @@ namespace MyCaffe.test
             future_vsn.varselnet_param.input_dim = nStateSize;
             future_vsn.varselnet_param.num_inputs = nNumFutureNumeric + nNumFutureCategorical;
             future_vsn.varselnet_param.hidden_dim = nStateSize;
-            future_vsn.varselnet_param.dropout = fDropout;
+            future_vsn.varselnet_param.dropout_ratio = fDropout;
             future_vsn.varselnet_param.context_dim = nStateSize;
             future_vsn.bottom.Add("future_ts_rep1");
             future_vsn.bottom.Add("c_selection1");
