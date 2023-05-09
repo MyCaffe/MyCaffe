@@ -27,7 +27,7 @@ namespace MyCaffe.param.tft
         int m_nInputDim;
         int m_nHiddenDim;
         int m_nOutputDim;
-        float m_fDropout = 0.05f;
+        float m_fDropoutRatio = 0.05f;
         int? m_nContextDim = null;
         bool m_bBatchFirst = true;
         FillerParameter m_fillerParam_weights = new FillerParameter("xavier");
@@ -112,8 +112,8 @@ namespace MyCaffe.param.tft
         [Description("Specifies the dropout ratio (default = 0.05 or 5%).")]
         public float dropout_ratio
         {
-            get { return m_fDropout; }
-            set { m_fDropout = value; }
+            get { return m_fDropoutRatio; }
+            set { m_fDropoutRatio = value; }
         }
 
         /// <summary>
@@ -181,7 +181,7 @@ namespace MyCaffe.param.tft
             m_nHiddenDim = p.hidden_dim;
             m_nOutputDim = p.output_dim;
             m_nContextDim = p.context_dim;
-            m_fDropout = p.dropout_ratio;
+            m_fDropoutRatio = p.dropout_ratio;
             m_bBatchFirst = p.batch_first;
             m_nAxis = p.m_nAxis;
             m_activaiton = p.activation;
