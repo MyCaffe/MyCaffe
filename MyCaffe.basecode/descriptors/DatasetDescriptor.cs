@@ -155,7 +155,15 @@ namespace MyCaffe.basecode.descriptors
         /// </summary>
         public bool IsModelData
         {
-            get { return (Name == "MODEL") ? true : false; }
+            get { return Name.StartsWith("MODEL") ? true : false; }
+        }
+
+        /// <summary>
+        /// Returns whether or not this dataset is from the model itself and is temporal.
+        /// </summary>
+        public bool IsModelDataTemporal
+        {
+            get { return IsModelData && Name.Contains("TEMPORAL"); }
         }
 
         /// <summary>
@@ -183,11 +191,18 @@ namespace MyCaffe.basecode.descriptors
         /// Returns whether or not the name directs to use data from the model itself.
         /// </summary>
         /// <param name="str">Specifies the name.</param>
+        /// <param name="bTemporal">Specifies type type of the MODEL data, bTemporal=true for temporal TFT type models.</param>
         /// <returns>If the name is from a model, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
-        public static bool IsModelDataName(string str)
+        public static bool IsModelDataName(string str, out bool bTemporal)
         {
-            if (str == "MODEL")
+            bTemporal = false;
+
+            if (str.StartsWith("MODEL"))
+            {
+                if (str.Contains(":TEMPORAL"))
+                    bTemporal = true;
                 return true;
+            }
 
             return false;
         }
