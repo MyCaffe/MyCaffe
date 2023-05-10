@@ -104,7 +104,7 @@ namespace MyCaffe.layers.tft
                 throw new Exception("DataTemporalLayer data loading aborted!");
 
             int nTotalSize = m_data.GetTotalSize();
-            m_log.CHECK_GT(nTotalSize, m_nBatchSize, "There must be enough items for at least one batch - items found = " + nTotalSize.ToString() + ", batch size = " + m_nBatchSize.ToString());
+            m_log.CHECK_GE(nTotalSize, m_nBatchSize, "There must be enough items for at least one batch - items found = " + nTotalSize.ToString() + ", batch size = " + m_nBatchSize.ToString());
 
             m_nNumStaticFeatsNumeric = (uint)m_data.GetCount(Data<T>.DATA_TYPE.STATIC_FEAT_NUMERIC, nTotalSize);
             m_nNumStaticFeatsCategorical = (uint)m_data.GetCount(Data<T>.DATA_TYPE.STATIC_FEAT_CATEGORICAL, nTotalSize);
