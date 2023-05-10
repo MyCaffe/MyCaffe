@@ -22,6 +22,7 @@ namespace MyCaffe.param.tft
         uint m_nNumFutureSteps;
         SOURCE_TYPE m_srcType = SOURCE_TYPE.PATH_NPY_FILE;
         int m_nMaxLoadItems = 300000;
+        uint m_nChunkCount = 1024;
         int m_nDripRefreshRate = 0;
         uint? m_nSeed = null;
 
@@ -49,6 +50,19 @@ namespace MyCaffe.param.tft
         /** @copydoc LayerParameterBase */
         public DataTemporalParameter()
         {
+        }
+
+        /// <summary>
+        /// Specifies the number of items to load per cycle when background loading (default = 1024).
+        /// </summary>
+        /// <remarks>
+        /// Note the chunk count must be larger than the batch size.
+        /// </remarks>
+        [Description("Specifies the number of items to load per cycle when background loading (default = 1024).")]
+        public uint chunk_count
+        {
+            get { return m_nChunkCount; }
+            set { m_nChunkCount = value; }
         }
 
         /// <summary>
@@ -161,6 +175,7 @@ namespace MyCaffe.param.tft
             m_nMaxLoadItems = p.max_load_count;
             m_nDripRefreshRate = p.drip_refresh_rate_in_sec;
             m_nSeed = p.seed;
+            m_nChunkCount = p.chunk_count;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -189,6 +204,7 @@ namespace MyCaffe.param.tft
 
             rgChildren.Add("max_load_count", max_load_count.ToString());
             rgChildren.Add("drip_refresh_rate_in_sec", drip_refresh_rate_in_sec.ToString());
+            rgChildren.Add("chunk_count", chunk_count.ToString());
 
             if (seed.HasValue)
                 rgChildren.Add("seed", seed.Value.ToString());
@@ -231,6 +247,12 @@ namespace MyCaffe.param.tft
 
             if ((strVal = rp.FindValue("drip_refresh_rate_in_sec")) != null)
                 p.drip_refresh_rate_in_sec = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("chunk_count")) != null)
+                p.chunk_count = uint.Parse(strVal);
+
+            if (p.chunk_count == 0)
+                p.chunk_count = 1;
 
             if ((strVal = rp.FindValue("seed")) != null)
                 p.seed = uint.Parse(strVal);
