@@ -1891,8 +1891,19 @@ namespace MyCaffe
             double dfThreshold = customInput.GetPropertyAsDouble("Threshold", 0.2);
             int nMax = customInput.GetPropertyAsInt("Max", 80);
             int nK = customInput.GetPropertyAsInt("K", 1);
+            PropertySet res;
 
-            return Run(customInput, nK, dfThreshold, nMax);
+            if (customInput.GetProperty("Temporal") == "True")
+            {
+                res = RunModel(customInput);
+                res.SetProperty("Temporal", "True");
+            }
+            else
+            {
+                res = Run(customInput, nK, dfThreshold, nMax);
+            }
+
+            return res;
         }
 
         /// <summary>
@@ -2705,6 +2716,29 @@ namespace MyCaffe
         public ResultCollection Run(SimpleDatum d, bool bSort = true, bool bPad = true)
         {
             return Run(d, bSort, false, bPad);
+        }
+
+        /// <summary>
+        /// Run the model using data from the model itself - requires a Data layer with the RUN phase.
+        /// </summary>
+        /// <param name="customInput">Specifies custom inputs.</param>
+        /// <returns>The results are returned in a property set, where each blob is stored as a byte array packed with the 'float' values from each blob.</returns>
+        public PropertySet RunModel(PropertySet customInput)
+        {
+            BlobCollection<T> colTop = m_net.Forward();
+
+            PropertySet res = new PropertySet();
+
+            foreach (Blob<T> blob in colTop)
+            {
+                string strName = blob.Name;
+                float[] rgData = Utility.ConvertVecF<T>(blob.mutable_cpu_data);
+                byte[] rgBytes = blob.ToByteArray();
+
+                res.SetPropertyBlob(strName, rgBytes);
+            }
+
+            return res;
         }
 
         /// <summary>
