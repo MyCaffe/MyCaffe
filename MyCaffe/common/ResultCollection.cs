@@ -40,7 +40,11 @@ namespace MyCaffe.common
             /// <summary>
             /// Specifies that the results represent multibox results.
             /// </summary>
-            MULTIBOX
+            MULTIBOX,
+            /// <summary>
+            /// Specifies that the results represent temporal results.
+            /// </summary>
+            TEMPORAL
         }
 
         /// <summary>
