@@ -434,6 +434,8 @@ namespace MyCaffe.layers.tft
         List<DateTime> m_rgTimestamps = new List<DateTime>();
         Dictionary<DATA_TYPE, Tuple<List<float[]>, int[], List<string>>> m_rgData = new Dictionary<DATA_TYPE, Tuple<List<float[]>, int[], List<string>>>();
         int m_nStaticNumericCount = 0;
+        float[] m_rgTimeIndexBatch = null;
+        int m_nTimeIndexCount = 0;
         float[] m_rgStaticNumericBatch = null;
         int m_nStaticCategoricalCount = 0;
         float[] m_rgStaticCategoricalBatch = null;
@@ -663,6 +665,7 @@ namespace MyCaffe.layers.tft
                 add(DATA_TYPE.FUTURE_NUMERIC, data, nMax);
                 bool bRefreshed = add(DATA_TYPE.TARGET, data, nMax);
 
+                m_nTimeIndexCount = data.m_nTimeIndexCount;
                 m_nStaticNumericCount = data.m_nStaticNumericCount;
                 m_nStaticCategoricalCount = data.m_nStaticCategoricalCount;
                 m_nHistoricalNumericCount = data.m_nHistoricalNumericCount;
@@ -702,19 +705,6 @@ namespace MyCaffe.layers.tft
 
             try
             {
-                if (!m_rgData.ContainsKey(DATA_TYPE.TIME_INDEX))
-                {
-                    strFile = strPath + strType + "_time_index.npy";
-                    m_rgData.Add(DATA_TYPE.TIME_INDEX, Blob<float>.LoadFromNumpyEx(strFile, log, int.MaxValue, nStartIdx, nCount));
-
-                    List<float[]> rgTime = m_rgData[DATA_TYPE.TIME_INDEX].Item1;
-                    foreach (float[] rgTime2 in rgTime)
-                    {
-                        DateTime dt = UnixTimeStampToDateTime(rgTime2[0]);
-                        m_rgTimestamps.Add(dt);
-                    }
-                }
-
                 if (!m_rgData.ContainsKey(DATA_TYPE.COMBINATION_ID))
                 {
                     strFile = strPath + strType + "_combination_id.npy";
@@ -772,6 +762,21 @@ namespace MyCaffe.layers.tft
                     m_nTargetCount = calculateCount(DATA_TYPE.TARGET);
                 }
 
+                if (!m_rgData.ContainsKey(DATA_TYPE.TIME_INDEX))
+                {
+                    strFile = strPath + strType + "_time_index.npy";
+                    m_rgData.Add(DATA_TYPE.TIME_INDEX, Blob<float>.LoadFromNumpyEx(strFile, log, int.MaxValue, nStartIdx, nCount));
+
+                    List<float[]> rgTime = m_rgData[DATA_TYPE.TIME_INDEX].Item1;
+                    foreach (float[] rgTime2 in rgTime)
+                    {
+                        DateTime dt = UnixTimeStampToDateTime(rgTime2[0]);
+                        m_rgTimestamps.Add(dt);
+                    }
+
+                    m_nTimeIndexCount = 1;
+                }
+
                 return true;
             }
             catch (Exception ex)
@@ -787,6 +792,7 @@ namespace MyCaffe.layers.tft
         /// <param name="col">Specifies the blob collection to load the batch into.</param>
         public void LoadBatch(int nBatchSize, BlobCollection<T> col)
         {
+            List<float[]> rgTimeIndex = m_rgData[DATA_TYPE.TIME_INDEX].Item1;
             List<float[]> rgStaticNumeric = m_rgData[DATA_TYPE.STATIC_FEAT_NUMERIC].Item1;
             List<float[]> rgStaticCategorical = m_rgData[DATA_TYPE.STATIC_FEAT_CATEGORICAL].Item1;
             List<float[]> rgHistoricalNumeric = m_rgData[DATA_TYPE.HISTORICAL_NUMERIC].Item1;
@@ -795,6 +801,7 @@ namespace MyCaffe.layers.tft
             List<float[]> rgFutureCategorical = m_rgData[DATA_TYPE.FUTURE_CATEGORICAL].Item1;
             List<float[]> rgTarget = m_rgData[DATA_TYPE.TARGET].Item1;
 
+            m_rgTimeIndexBatch = createBatchBuffer(m_rgTimeIndexBatch, nBatchSize, 1, m_nTimeIndexCount);
             m_rgStaticNumericBatch = createBatchBuffer(m_rgStaticNumericBatch, nBatchSize, 1, m_nStaticNumericCount);
             m_rgStaticCategoricalBatch = createBatchBuffer(m_rgStaticCategoricalBatch, nBatchSize, 1, m_nStaticCategoricalCount);
             m_rgHistoricalNumericBatch = createBatchBuffer(m_rgHistoricalNumericBatch, nBatchSize, m_nHistoricalSteps, m_nHistoricalNumericCount);
@@ -803,6 +810,7 @@ namespace MyCaffe.layers.tft
             m_rgFutureCategoricalBatch = createBatchBuffer(m_rgFutureCategoricalBatch, nBatchSize, m_nFutureSteps, m_nFutureCategoricalCount);
             m_rgTargetBatch = createBatchBuffer(m_rgTargetBatch, nBatchSize, 1,m_nTargetCount);
 
+            int nTimeIndexSize = m_nTimeIndexCount;
             int nStaticNumericSize = m_nStaticNumericCount;
             int nStaticCategoricalSize = m_nStaticCategoricalCount;
             int nHistoricalNumericSize = m_nHistoricalNumericCount * m_nHistoricalSteps;
@@ -815,7 +823,13 @@ namespace MyCaffe.layers.tft
             {
                 for (int i = 0; i < nBatchSize; i++)
                 {
-                    int nIdx = m_random.Next(m_nTotalCount);
+                    int nIdx = i; // m_random.Next(m_nTotalCount);
+
+                    if (m_rgTimeIndexBatch != null)
+                    {
+                        float[] rgTimeIndex1 = rgTimeIndex[nIdx];
+                        Array.Copy(rgTimeIndex1, 0, m_rgTimeIndexBatch, i * nTimeIndexSize, nTimeIndexSize);
+                    }
 
                     if (m_rgStaticNumericBatch != null)
                     {
