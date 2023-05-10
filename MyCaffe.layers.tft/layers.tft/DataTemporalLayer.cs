@@ -100,7 +100,7 @@ namespace MyCaffe.layers.tft
             if (m_data == null)
                 m_data = new RawFileData<T>(m_param.data_temporal_param.seed);
 
-            if (!m_data.LoadData(m_phase, m_param.data_temporal_param.source, (int)m_param.data_temporal_param.batch_size, (int)m_nNumHistoricalSteps, (int)m_nNumFutureSteps, m_param.data_temporal_param.max_load_count, m_param.data_temporal_param.drip_refresh_rate_in_sec, m_param.data_temporal_param.chunk_count, m_log, m_evtCancel))
+            if (!m_data.LoadData(m_phase, m_param.data_temporal_param.source, m_param.data_temporal_param.shuffle_data, (int)m_param.data_temporal_param.batch_size, (int)m_nNumHistoricalSteps, (int)m_nNumFutureSteps, m_param.data_temporal_param.max_load_count, m_param.data_temporal_param.drip_refresh_rate_in_sec, m_param.data_temporal_param.chunk_count, m_log, m_evtCancel))
                 throw new Exception("DataTemporalLayer data loading aborted!");
 
             int nTotalSize = m_data.GetTotalSize();
@@ -214,6 +214,7 @@ namespace MyCaffe.layers.tft
         /// </summary>
         /// <param name="phase">Specifies the phase to load.</param>
         /// <param name="strPath">Specifies the base path for all data.</param>
+        /// <param name="bShuffleData">Specifies to randomly select from the data.</param>
         /// <param name="nBatchSize">Specifies the batch size.</param>
         /// <param name="nHistoricalSteps">Specifies the number of historical steps.</param>
         /// <param name="nFutureSteps">Specifies the number of future steps.</param>
@@ -222,15 +223,15 @@ namespace MyCaffe.layers.tft
         /// <param name="nChunkCount">Specifies the number of items to load on each cycle.</param>
         /// <param name="log">Specifies the output log.</param>
         /// <param name="evtCancel">Specifies the cancel event.</param>
-        public bool LoadData(Phase phase, string strPath, int nBatchSize, int nHistoricalSteps, int nFutureSteps, int nMaxLoadCount, int nDripRefreshRateInSec, uint nChunkCount, Log log, CancelEvent evtCancel)
+        public bool LoadData(Phase phase, string strPath, bool bShuffleData, int nBatchSize, int nHistoricalSteps, int nFutureSteps, int nMaxLoadCount, int nDripRefreshRateInSec, uint nChunkCount, Log log, CancelEvent evtCancel)
         {
             m_nBatchSize = nBatchSize;
-            m_data = new Data<T>(log, nHistoricalSteps, nFutureSteps);
+            m_data = new Data<T>(log, nHistoricalSteps, nFutureSteps, bShuffleData);
 
             ManualResetEvent evtReady = new ManualResetEvent(false);
             ManualResetEvent evtDone = new ManualResetEvent(false);
             Thread threadLoad = new Thread(new ParameterizedThreadStart(loadDataFunction));
-            threadLoad.Start(new DataLoadParameters(phase, strPath, nHistoricalSteps, nFutureSteps, nMaxLoadCount, nDripRefreshRateInSec, nChunkCount, log, evtCancel, evtReady, evtDone));
+            threadLoad.Start(new DataLoadParameters(phase, strPath, nHistoricalSteps, nFutureSteps, nMaxLoadCount, nDripRefreshRateInSec, nChunkCount, bShuffleData, log, evtCancel, evtReady, evtDone));
 
             while (!evtReady.WaitOne(1000))
             {
@@ -254,6 +255,7 @@ namespace MyCaffe.layers.tft
             int nMaxLoadCount = arg.MaxLoadCount;
             int nDripRefreshRateInSec = arg.DripRefreshRateInSec;
             uint nChunkCount = arg.ChunkCount;
+            bool bShuffleData = arg.ShuffleData;
             CancelEvent evtCancel = arg.CancelEvent;
             ManualResetEvent evtReady = arg.ReadyEvent;
             ManualResetEvent evtDone = arg.DoneEvent;
@@ -278,7 +280,7 @@ namespace MyCaffe.layers.tft
                 int nStartIdx = 0;
                 int nCount = (int)nChunkCount;
                 int nWaitCount = 0;
-                Data<T> dataChunk = new Data<T>(m_data.Log, nNumHistSteps, nNumFutureSteps);
+                Data<T> dataChunk = new Data<T>(m_data.Log, nNumHistSteps, nNumFutureSteps, bShuffleData);
                 Stopwatch sw = new Stopwatch();
 
                 sw.Start();
@@ -396,12 +398,13 @@ namespace MyCaffe.layers.tft
         int m_nMaxLoadCount;
         int m_nDripRrefreshRateInSec;
         uint m_nChunkCount;
+        bool m_bShuffleData;
         Log m_log;
         CancelEvent m_evtCancel;
         ManualResetEvent m_evtReady;
         ManualResetEvent m_evtDone;
 
-        public DataLoadParameters(Phase phase, string strPath, int nNumHistSteps, int nNumFutureSteps, int nMaxLoadCount, int nDripRefreshRateInSec, uint nChunkCount, Log log, CancelEvent evtCancel, ManualResetEvent evtReady, ManualResetEvent evtDone)
+        public DataLoadParameters(Phase phase, string strPath, int nNumHistSteps, int nNumFutureSteps, int nMaxLoadCount, int nDripRefreshRateInSec, uint nChunkCount, bool bShuffleData, Log log, CancelEvent evtCancel, ManualResetEvent evtReady, ManualResetEvent evtDone)
         {
             m_phase = phase;
             m_strPath = strPath;
@@ -410,6 +413,7 @@ namespace MyCaffe.layers.tft
             m_nMaxLoadCount = nMaxLoadCount;
             m_nDripRrefreshRateInSec = nDripRefreshRateInSec;
             m_nChunkCount = nChunkCount;
+            m_bShuffleData = bShuffleData;
             m_log = log;
             m_evtCancel = evtCancel;
             m_evtReady = evtReady;
@@ -423,6 +427,7 @@ namespace MyCaffe.layers.tft
         public int MaxLoadCount { get { return m_nMaxLoadCount; } }
         public int DripRefreshRateInSec { get { return m_nDripRrefreshRateInSec; } }
         public uint ChunkCount { get { return m_nChunkCount; } }
+        public bool ShuffleData { get { return m_bShuffleData; } }
         public Log Log { get { return m_log; } }
         public CancelEvent CancelEvent { get { return m_evtCancel; } }
         public ManualResetEvent ReadyEvent { get { return m_evtReady; } }
@@ -431,6 +436,7 @@ namespace MyCaffe.layers.tft
 
     class Data<T> /** @private */
     {
+        int m_nIdx = 0;
         Random m_random = new Random();
         int m_nHistoricalSteps = 1;
         int m_nFutureSteps = 1;
@@ -456,6 +462,7 @@ namespace MyCaffe.layers.tft
         float[] m_rgTargetBatch = null;
         Log m_log;
         object m_syncObj = new object();
+        bool m_bShuffleData = true;
 
         /// <summary>
         /// Defines the data type.
@@ -506,11 +513,13 @@ namespace MyCaffe.layers.tft
         /// <param name="log">Specifies the output log.</param>
         /// <param name="nHistoricalSteps">Specifies the number of historical steps.</param>
         /// <param name="nFutureSteps">Specifies the number of future steps.</param>
-        public Data(Log log, int nHistoricalSteps, int nFutureSteps)
+        /// <param name="bShuffleData">Specifies to randomly select from the data.</param>
+        public Data(Log log, int nHistoricalSteps, int nFutureSteps, bool bShuffleData)
         {
             m_log = log;
             m_nHistoricalSteps = nHistoricalSteps;
             m_nFutureSteps = nFutureSteps;
+            m_bShuffleData = bShuffleData;
         }
 
         public int GetTotalSize()
@@ -828,7 +837,11 @@ namespace MyCaffe.layers.tft
             {
                 for (int i = 0; i < nBatchSize; i++)
                 {
-                    int nIdx = i; // m_random.Next(m_nTotalCount);
+                    int nIdx = (m_bShuffleData) ? m_random.Next(m_nTotalCount) : m_nIdx;
+                    m_nIdx++;
+
+                    if (m_nIdx == m_nTotalCount)
+                        m_nIdx = 0;
 
                     if (m_rgTimeIndexBatch != null)
                     {

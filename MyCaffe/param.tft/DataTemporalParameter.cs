@@ -25,6 +25,7 @@ namespace MyCaffe.param.tft
         uint m_nChunkCount = 1024;
         int m_nDripRefreshRate = 0;
         uint? m_nSeed = null;
+        bool m_bShuffleData = true;
 
         /// <summary>
         /// Defines the type of source data.
@@ -50,6 +51,16 @@ namespace MyCaffe.param.tft
         /** @copydoc LayerParameterBase */
         public DataTemporalParameter()
         {
+        }
+
+        /// <summary>
+        /// Specifies to randomly select from the data (default = true).
+        /// </summary>
+        [Description("Specifies to randomly select from the data (default = true).")]
+        public bool shuffle_data
+        {
+            get { return m_bShuffleData; }
+            set { m_bShuffleData = value; }
         }
 
         /// <summary>
@@ -176,6 +187,7 @@ namespace MyCaffe.param.tft
             m_nDripRefreshRate = p.drip_refresh_rate_in_sec;
             m_nSeed = p.seed;
             m_nChunkCount = p.chunk_count;
+            m_bShuffleData = p.shuffle_data;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -205,6 +217,7 @@ namespace MyCaffe.param.tft
             rgChildren.Add("max_load_count", max_load_count.ToString());
             rgChildren.Add("drip_refresh_rate_in_sec", drip_refresh_rate_in_sec.ToString());
             rgChildren.Add("chunk_count", chunk_count.ToString());
+            rgChildren.Add("shuffle_data", shuffle_data.ToString());
 
             if (seed.HasValue)
                 rgChildren.Add("seed", seed.Value.ToString());
@@ -256,6 +269,9 @@ namespace MyCaffe.param.tft
 
             if ((strVal = rp.FindValue("seed")) != null)
                 p.seed = uint.Parse(strVal);
+
+            if ((strVal = rp.FindValue("shuffle_data")) != null)
+                p.shuffle_data = bool.Parse(strVal);
 
             return p;
         }
