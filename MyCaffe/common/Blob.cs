@@ -2392,6 +2392,36 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Saves this Blob to a byte array.
+        /// </summary>
+        /// <returns>The byte array containing all data of the blob is returned.</returns>
+        public byte[] ToByteArray()
+        {
+            using (MemoryStream ms = new MemoryStream())
+            using (BinaryWriter bw = new BinaryWriter(ms))
+            {
+                Save(bw, true, false, true);
+                return ms.ToArray();
+            }
+        }
+
+        /// <summary>
+        /// A new Blob is created from the byte array, previously saved with ToByteArray.
+        /// </summary>
+        /// <param name="cuda">Specifies the cuda connection.</param>
+        /// <param name="log">Specifies the output log.</param>
+        /// <param name="rg">Specifies the byte array to convert.</param>
+        /// <returns>The new Blob loaded with the data in the byte array is returned.</returns>
+        public static Blob<T> FromByteArray(CudaDnn<T> cuda, Log log, byte[] rg)
+        {
+            using (MemoryStream ms = new MemoryStream(rg))
+            using (BinaryReader br = new BinaryReader(ms))
+            {
+                return Load(cuda, log, br, true, true);
+            }
+        }
+
+        /// <summary>
         /// Returns a string representation of the Blob.
         /// </summary>
         /// <returns></returns>
