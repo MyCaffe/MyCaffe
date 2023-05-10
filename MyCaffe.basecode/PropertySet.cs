@@ -60,6 +60,22 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Returns the list of property names contained in the property set.
+        /// </summary>
+        public List<string> PropertyNames
+        {
+            get { return m_rgProperties.Keys.ToList(); }
+        }
+
+        /// <summary>
+        /// Returns the list of blob names contained in the property set.
+        /// </summary>
+        public List<string> PropertyBlobNames
+        {
+            get { return m_rgBlobs.Keys.ToList(); }
+        }
+
+        /// <summary>
         /// Move the property from the list of properties to the list of blobs, storing the blob as a 0 terminated string of bytes.
         /// </summary>
         /// <param name="strName">Specifies the name of the property to move.</param>
