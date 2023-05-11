@@ -757,7 +757,6 @@ namespace MyCaffe.layers.tft
                 addBtmTop(m_blobAttnScores1, m_blobAttnScoresAllHeads);
                 m_softmax.Backward(m_colTop, rgbPropagateDown, m_colBtm);
 
-
                 // Calculate the Qt and Kt1 gradients.
                 m_blobAttnScores1.MatMulGrad(m_blobIpQt, m_blobIpKt1, m_blobWork, m_dfScale);
 
