@@ -319,9 +319,6 @@ namespace MyCaffe.layers.tft
             copy_to_bwd(colBottom, m_blobGateAddResidual);
             m_blobGate.CopyFrom(m_blobGateAddResidual, true);
 
-            if (colBottom.Count > 1)
-                m_blobResidual.CopyFrom(m_blobGateAddResidual, true);
-
             addBtmTop(colBottom[0], m_blobGate);
             m_gate.Backward(m_colTop, rgbPropagateDown, m_colBtm);
 
