@@ -1350,7 +1350,7 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// The FromTo variant of forward and backwarde operate on the
+        /// The FromTo variant of forward and backward operate on the
         /// (topological) ordering by which the net is specified.  For general DAG
         /// netowrks, note that (1) computing from one layer to another might entail
         /// extra computation on unrelated branches, and (2) computation starting in
