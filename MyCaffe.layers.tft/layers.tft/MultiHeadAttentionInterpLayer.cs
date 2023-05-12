@@ -805,13 +805,10 @@ namespace MyCaffe.layers.tft
 
             if (colBottom.Count == 1)
             {
+                colBottom[0].SetDiff(0);
                 copy_to_q_bwd(colBottom.Count, colBottom[0], m_blobQ);
                 m_cuda.add(colBottom[0].count(), colBottom[0].gpu_diff, m_blobK.gpu_diff, colBottom[0].mutable_gpu_diff);
                 m_cuda.add(colBottom[0].count(), colBottom[0].gpu_diff, m_blobV.gpu_diff, colBottom[0].mutable_gpu_diff);
-
-                // Add any passthrough grads (from residual).
-                if (colTop.Count == 4)
-                    m_cuda.add(colBottom[0].count(), colBottom[0].gpu_diff, colTop[3].gpu_diff, colBottom[0].mutable_gpu_diff);
             }
             else
             {
