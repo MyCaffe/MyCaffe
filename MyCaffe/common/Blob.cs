@@ -1146,6 +1146,7 @@ namespace MyCaffe.common
             {
                 float[] rgf1 = Utility.ConvertVecF<T>((bDiff) ? mutable_cpu_diff : mutable_cpu_data);
                 float[] rgf2 = Utility.ConvertVecF<T>((bDiff) ? other.mutable_cpu_diff : other.mutable_cpu_data);
+                Dictionary<int, float> rgErr = new Dictionary<int, float>();
 
                 for (int i = 0; i < rgf1.Length; i++)
                 {
@@ -1154,8 +1155,11 @@ namespace MyCaffe.common
                     float fDiff = Math.Abs(f1 - f2);
 
                     if (fDiff > dfTol)
-                        return false;
+                        rgErr.Add(i, fDiff);
                 }
+
+                if (rgErr.Count > 0)
+                    return false;
             }
 
             return true;
