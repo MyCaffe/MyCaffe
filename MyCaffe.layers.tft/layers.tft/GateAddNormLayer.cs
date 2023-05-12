@@ -143,7 +143,7 @@ namespace MyCaffe.layers.tft
 
             if (m_param.dropout_param != null && m_param.dropout_param.dropout_ratio > 0)
             {
-                p = new LayerParameter(LayerParameter.LayerType.DROPOUT, "drop");
+                p = new LayerParameter(LayerParameter.LayerType.DROPOUT, m_param.name + ".drop");
                 p.dropout_param.Copy(m_param.dropout_param);
                 m_dropout = Layer<T>.Create(m_cuda, m_log, p, null);
 
@@ -152,7 +152,7 @@ namespace MyCaffe.layers.tft
                 blobBtm = m_blobDrop;
             }
 
-            p = new LayerParameter(LayerParameter.LayerType.GLU, "glu");
+            p = new LayerParameter(LayerParameter.LayerType.GLU, m_param.name + ".glu");
             p.glu_param.Copy(m_param.glu_param);
             m_gate = Layer<T>.Create(m_cuda, m_log, p, null);
 
@@ -161,7 +161,7 @@ namespace MyCaffe.layers.tft
             blobs.Add(m_gate.blobs);
             m_blobGateAddResidual.ReshapeLike(m_blobGate);
 
-            p = new LayerParameter(LayerParameter.LayerType.LAYERNORM, "layernorm");
+            p = new LayerParameter(LayerParameter.LayerType.LAYERNORM, m_param.name + ".layernorm");
             p.layer_norm_param.Copy(m_param.layer_norm_param);
             m_layerNorm = Layer<T>.Create(m_cuda, m_log, p, null);
             addBtmTop(m_blobGate, colTop[0]);
@@ -318,7 +318,9 @@ namespace MyCaffe.layers.tft
             // Copy grad to the residual if it exists.
             copy_to_bwd(colBottom, m_blobGateAddResidual);
             m_blobGate.CopyFrom(m_blobGateAddResidual, true);
-            m_blobResidual.CopyFrom(m_blobGateAddResidual, true);
+
+            if (colBottom.Count > 1)
+                m_blobResidual.CopyFrom(m_blobGateAddResidual, true);
 
             addBtmTop(colBottom[0], m_blobGate);
             m_gate.Backward(m_colTop, rgbPropagateDown, m_colBtm);
