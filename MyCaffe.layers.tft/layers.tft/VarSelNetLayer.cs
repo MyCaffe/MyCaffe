@@ -353,12 +353,6 @@ namespace MyCaffe.layers.tft
             rgShape.Add(1);
             m_blobSparseWtsSmx.Reshape(rgShape);
 
-            // Weigh the processed inputs with the weights viewed as [(num_samples * num_temporal_steps) x 1 x num_inputs]
-            // so that the weight given to each variable (for each time-step/observation) multiplies the entire state
-            // vector representing the specific input variable on the specific time-step
-            addBtmTop(m_blobSparseWtsSmx, m_blobSparseWtsSmxT);
-            m_transpose.Forward(m_colBtm, m_colTop);
-
             // Before weighting the variables, a GRN is applied ot each transformed input.
             for (int i = 0; i < m_param.varselnet_param.num_inputs; i++)
             {
@@ -374,6 +368,12 @@ namespace MyCaffe.layers.tft
                 // dimension [(num_samples * num_temporal_steps) x state_size x num_inputs]
                 m_cuda.channel_copy(m_blobGrn1.count(), m_blobGrn1.num, m_blobGrn1.channels, m_param.varselnet_param.num_inputs, 1, i, m_blobProcessedInputs.mutable_gpu_data, m_colSingleVarGrn[i].gpu_data, DIR.BWD);
             }
+
+            // Weigh the processed inputs with the weights viewed as [(num_samples * num_temporal_steps) x 1 x num_inputs]
+            // so that the weight given to each variable (for each time-step/observation) multiplies the entire state
+            // vector representing the specific input variable on the specific time-step
+            addBtmTop(m_blobSparseWtsSmx, m_blobSparseWtsSmxT);
+            m_transpose.Forward(m_colBtm, m_colTop);
 
             // Apply the transposed smx weightings to the processed inputs
             int nInnerNum = m_blobProcessedInputs.count(2);
