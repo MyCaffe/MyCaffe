@@ -100,7 +100,14 @@ namespace MyCaffe.layers.tft
             if (m_data == null)
                 m_data = new RawFileData<T>(m_param.data_temporal_param.seed);
 
-            if (!m_data.LoadData(m_phase, m_param.data_temporal_param.source, m_param.data_temporal_param.shuffle_data, (int)m_param.data_temporal_param.batch_size, (int)m_nNumHistoricalSteps, (int)m_nNumFutureSteps, m_param.data_temporal_param.max_load_count, m_param.data_temporal_param.drip_refresh_rate_in_sec, m_param.data_temporal_param.chunk_count, m_log, m_evtCancel))
+            Phase phase = m_phase;
+            if (m_param.data_temporal_param.forced_phase.HasValue)
+            {
+                m_log.WriteLine("INFO: Using forced phase = " + m_param.data_temporal_param.forced_phase.Value.ToString() + ".");
+                phase = m_param.data_temporal_param.forced_phase.Value;
+            }
+
+            if (!m_data.LoadData(phase, m_param.data_temporal_param.source, m_param.data_temporal_param.shuffle_data, (int)m_param.data_temporal_param.batch_size, (int)m_nNumHistoricalSteps, (int)m_nNumFutureSteps, m_param.data_temporal_param.max_load_count, m_param.data_temporal_param.drip_refresh_rate_in_sec, m_param.data_temporal_param.chunk_count, m_log, m_evtCancel))
                 throw new Exception("DataTemporalLayer data loading aborted!");
 
             int nTotalSize = m_data.GetTotalSize();

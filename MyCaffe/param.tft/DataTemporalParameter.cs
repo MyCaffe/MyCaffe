@@ -21,6 +21,7 @@ namespace MyCaffe.param.tft
         uint m_nNumHistoricalSteps;
         uint m_nNumFutureSteps;
         SOURCE_TYPE m_srcType = SOURCE_TYPE.PATH_NPY_FILE;
+        Phase? m_forcedPhase = null;
         int m_nMaxLoadItems = 300000;
         uint m_nChunkCount = 1024;
         int m_nDripRefreshRate = 0;
@@ -51,6 +52,16 @@ namespace MyCaffe.param.tft
         /** @copydoc LayerParameterBase */
         public DataTemporalParameter()
         {
+        }
+
+        /// <summary>
+        /// Optionally, specifies the phase to use when loading data.
+        /// </summary>
+        [Description("Optionally, specifies the phase to use when loading data.")]
+        public Phase? forced_phase
+        {
+            get { return m_forcedPhase; }
+            set { m_forcedPhase = value; }
         }
 
         /// <summary>
@@ -188,6 +199,7 @@ namespace MyCaffe.param.tft
             m_nSeed = p.seed;
             m_nChunkCount = p.chunk_count;
             m_bShuffleData = p.shuffle_data;
+            m_forcedPhase = p.forced_phase;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -221,6 +233,9 @@ namespace MyCaffe.param.tft
 
             if (seed.HasValue)
                 rgChildren.Add("seed", seed.Value.ToString());
+
+            if (forced_phase.HasValue)
+                rgChildren.Add("forced_phase", forced_phase.Value.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -272,6 +287,18 @@ namespace MyCaffe.param.tft
 
             if ((strVal = rp.FindValue("shuffle_data")) != null)
                 p.shuffle_data = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("forced_phase")) != null)
+            {
+                if (strVal == Phase.TRAIN.ToString())
+                    p.forced_phase = Phase.TRAIN;
+                else if (strVal == Phase.TEST.ToString())
+                    p.forced_phase = Phase.TEST;
+                else if (strVal == Phase.RUN.ToString())
+                    p.forced_phase = Phase.RUN;
+                else
+                    throw new Exception("Unknown forced_phase '" + strVal + "'!");
+            }
 
             return p;
         }
