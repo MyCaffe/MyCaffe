@@ -2721,10 +2721,32 @@ namespace MyCaffe
         /// <summary>
         /// Run the model using data from the model itself - requires a Data layer with the RUN phase.
         /// </summary>
-        /// <param name="customInput">Specifies custom inputs.</param>
+        /// <param name="customInput">Specifies custom inputs.  Properties used: 'Phase' specifies the phase for which to run the model (e.g. which net to use), when missing, the default run net is used.</param>
         /// <returns>The results are returned in a property set, where each blob is stored as a byte array packed with the 'float' values from each blob.</returns>
         public PropertySet RunModel(PropertySet customInput)
         {
+            Net<T> net = m_net;
+
+            string strPhase = customInput.GetProperty("Phase", false);
+            if (!string.IsNullOrEmpty(strPhase))
+            {
+                if (strPhase == Phase.TRAIN.ToString())
+                {
+                    m_log.WriteLine("INFO: Running TestMany with the TRAIN phase.");
+                    net = GetInternalNet(Phase.TRAIN);
+                }
+                else if (strPhase == Phase.TEST.ToString())
+                {
+                    m_log.WriteLine("INFO: Running TestMany with the TEST phase.");
+                    net = GetInternalNet(Phase.TEST);
+                }
+                else if (strPhase == Phase.RUN.ToString())
+                {
+                    m_log.WriteLine("INFO: Running TestMany with the RUN phase.");
+                    net = GetInternalNet(Phase.RUN);
+                }
+            }
+
             BlobCollection<T> colTop = m_net.Forward();
 
             PropertySet res = new PropertySet();
