@@ -145,7 +145,7 @@ namespace MyCaffe.layers.tft
             {
                 p = new LayerParameter(LayerParameter.LayerType.DROPOUT, m_param.name + ".drop");
                 p.dropout_param.Copy(m_param.dropout_param);
-                m_dropout = Layer<T>.Create(m_cuda, m_log, p, null);
+                m_dropout = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
 
                 addBtmTop(colBottom[0], m_blobDrop);
                 m_dropout.Setup(m_colBtm, m_colTop);
@@ -154,7 +154,7 @@ namespace MyCaffe.layers.tft
 
             p = new LayerParameter(LayerParameter.LayerType.GLU, m_param.name + ".glu");
             p.glu_param.Copy(m_param.glu_param);
-            m_gate = Layer<T>.Create(m_cuda, m_log, p, null);
+            m_gate = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
 
             addBtmTop(blobBtm, m_blobGate);
             m_gate.Setup(m_colBtm, m_colTop);
@@ -163,7 +163,7 @@ namespace MyCaffe.layers.tft
 
             p = new LayerParameter(LayerParameter.LayerType.LAYERNORM, m_param.name + ".layernorm");
             p.layer_norm_param.Copy(m_param.layer_norm_param);
-            m_layerNorm = Layer<T>.Create(m_cuda, m_log, p, null);
+            m_layerNorm = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
             addBtmTop(m_blobGate, colTop[0]);
             m_layerNorm.Setup(m_colBtm, m_colTop);
 

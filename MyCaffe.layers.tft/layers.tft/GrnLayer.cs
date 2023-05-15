@@ -163,7 +163,7 @@ namespace MyCaffe.layers.tft
                 ip.inner_product_param.axis = m_param.grn_param.axis;
                 ip.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
                 ip.inner_product_param.bias_filler = m_param.grn_param.bias_filler;
-                m_ipSkipLayer = Layer<T>.Create(m_cuda, m_log, ip, null);
+                m_ipSkipLayer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ip, m_param), null);
 
                 addBtmTop(colBottom[0], m_blobResidual);
                 m_ipSkipLayer.Setup(m_colBtm, m_colTop);
@@ -176,7 +176,7 @@ namespace MyCaffe.layers.tft
             ip1.inner_product_param.axis = m_param.grn_param.axis;
             ip1.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
             ip1.inner_product_param.bias_filler = m_param.grn_param.bias_filler;
-            m_ipFc1 = Layer<T>.Create(m_cuda, m_log, ip1, null);
+            m_ipFc1 = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ip1, m_param), null);
             m_blobIp1 = new Blob<T>(m_cuda, m_log);
 
             addBtmTop(colBottom[0], m_blobIp1);
@@ -192,7 +192,7 @@ namespace MyCaffe.layers.tft
                 ip.inner_product_param.axis = m_param.grn_param.axis;
                 ip.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
                 ip.inner_product_param.bias_term = false;
-                m_ipContext = Layer<T>.Create(m_cuda, m_log, ip, null);
+                m_ipContext = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ip, m_param), null);
                 m_blobContext = new Blob<T>(m_cuda, m_log);
                 m_blobContext.Name = m_param.name + ".ctx";
                 m_blobContextAdd = new Blob<T>(m_cuda, m_log);
@@ -210,14 +210,14 @@ namespace MyCaffe.layers.tft
             if (m_param.grn_param.activation == param.tft.GrnParameter.ACTIVATION.RELU)
             {
                 LayerParameter act = new LayerParameter(LayerParameter.LayerType.RELU, m_param.name + ".act");
-                m_act = Layer<T>.Create(m_cuda, m_log, act, null);
+                m_act = Layer<T>.Create(m_cuda, m_log, convertLayerParam(act, m_param), null);
             }
             else
             {
                 LayerParameter act = new LayerParameter(LayerParameter.LayerType.ELU, m_param.name + ".act");
                 act.elu_param.engine = EngineParameter.Engine.CAFFE;
                 act.elu_param.alpha = 1.0;
-                m_act = Layer<T>.Create(m_cuda, m_log, act, null);
+                m_act = Layer<T>.Create(m_cuda, m_log, convertLayerParam(act, m_param), null);
             }
 
             addBtmTop(blobIp1, blobIp1);
@@ -233,7 +233,7 @@ namespace MyCaffe.layers.tft
             ip2.inner_product_param.axis = m_param.grn_param.axis;
             ip2.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
             ip2.inner_product_param.bias_filler = m_param.grn_param.bias_filler;
-            m_ipFc2 = Layer<T>.Create(m_cuda, m_log, ip2, null);
+            m_ipFc2 = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ip2, m_param), null);
 
             addBtmTop(blobIp1, m_blobIp2);
             m_ipFc2.Setup(m_colBtm, m_colTop);
@@ -247,7 +247,7 @@ namespace MyCaffe.layers.tft
             {
                 LayerParameter drop = new LayerParameter(LayerParameter.LayerType.DROPOUT, m_param.name + ".drop");
                 drop.dropout_param.dropout_ratio = m_param.grn_param.dropout_ratio;
-                m_dropout = Layer<T>.Create(m_cuda, m_log, drop, null);
+                m_dropout = Layer<T>.Create(m_cuda, m_log, convertLayerParam(drop, m_param), null);
 
                 addBtmTop(m_blobIp2, m_blobIp2);
                 m_dropout.Setup(m_colBtm, m_colTop);
@@ -258,7 +258,7 @@ namespace MyCaffe.layers.tft
             gate.glu_param.axis = m_param.grn_param.axis;
             gate.glu_param.weight_filler = m_param.grn_param.weight_filler;
             gate.glu_param.bias_filler = m_param.grn_param.bias_filler;
-            m_gate = Layer<T>.Create(m_cuda, m_log, gate, null);
+            m_gate = Layer<T>.Create(m_cuda, m_log, convertLayerParam(gate, m_param), null);
 
             addBtmTop(m_blobIp2, m_blobGate);
             m_gate.Setup(m_colBtm, m_colTop);
@@ -266,7 +266,7 @@ namespace MyCaffe.layers.tft
 
             LayerParameter layerNorm = new LayerParameter(LayerParameter.LayerType.LAYERNORM, m_param.name + ".layernorm");
             layerNorm.layer_norm_param.epsilon = 1e-10;
-            m_layerNorm = Layer<T>.Create(m_cuda, m_log, layerNorm, null);
+            m_layerNorm = Layer<T>.Create(m_cuda, m_log, convertLayerParam(layerNorm, m_param), null);
 
             addBtmTop(m_blobGate, colTop[0]);
             m_layerNorm.Setup(m_colBtm, m_colTop);

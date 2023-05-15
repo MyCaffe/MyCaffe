@@ -128,7 +128,7 @@ namespace MyCaffe.layers.tft
                 ip1.inner_product_param.bias_filler = m_param.glu_param.bias_filler;
                 ip1.inner_product_param.weight_filler = m_param.glu_param.weight_filler;
 
-                m_ip1Layer = Layer<T>.Create(m_cuda, m_log, ip1, null);
+                m_ip1Layer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ip1, m_param), null);
 
                 addBtmTop(colBottom[0], m_blobIp1);
                 m_ip1Layer.Setup(m_colBtm, m_colTop);
@@ -142,7 +142,7 @@ namespace MyCaffe.layers.tft
                     LayerParameter mod = new LayerParameter(LayerParameter.LayerType.SIGMOID, m_param.name + ".mod");
                     mod.sigmoid_param.engine = EngineParameter.Engine.DEFAULT;
 
-                    m_modLayer = Layer<T>.Create(m_cuda, m_log, mod, null);
+                    m_modLayer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(mod, m_param), null);
 
                     addBtmTop(m_blobIp1, m_blobMod);
                     m_modLayer.Setup(m_colBtm, m_colTop);
@@ -164,7 +164,7 @@ namespace MyCaffe.layers.tft
                 ip2.inner_product_param.bias_filler = m_param.glu_param.bias_filler;
                 ip2.inner_product_param.weight_filler = m_param.glu_param.weight_filler;
 
-                m_ip2Layer = Layer<T>.Create(m_cuda, m_log, ip2, null);
+                m_ip2Layer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ip2, m_param), null);
 
                 addBtmTop(colBottom[0], m_blobIp2);
                 m_ip2Layer.Setup(m_colBtm, m_colTop);

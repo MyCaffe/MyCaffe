@@ -337,17 +337,17 @@ namespace MyCaffe.layers.tft
 
             if (m_ipQLayer == null)
             {
-                LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".ipQ");
-                ip1.inner_product_param.num_output = (uint)m_nAllHeadsDim;
-                ip1.inner_product_param.axis = 2;
-                ip1.inner_product_param.bias_term = true;
-                ip1.inner_product_param.enable_noise = m_param.multihead_attention_interp_param.enable_noise;
-                ip1.inner_product_param.sigma_init = m_param.multihead_attention_interp_param.sigma_init;
-                ip1.inner_product_param.bias_filler = m_param.multihead_attention_interp_param.bias_filler;
-                ip1.inner_product_param.weight_filler = m_param.multihead_attention_interp_param.weight_filler;
-                ip1.inner_product_param.bias_grad_scale = 1000000.0; // helps improve bias gradient accuracy.
+                LayerParameter ipQ = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".ipQ");
+                ipQ.inner_product_param.num_output = (uint)m_nAllHeadsDim;
+                ipQ.inner_product_param.axis = 2;
+                ipQ.inner_product_param.bias_term = true;
+                ipQ.inner_product_param.enable_noise = m_param.multihead_attention_interp_param.enable_noise;
+                ipQ.inner_product_param.sigma_init = m_param.multihead_attention_interp_param.sigma_init;
+                ipQ.inner_product_param.bias_filler = m_param.multihead_attention_interp_param.bias_filler;
+                ipQ.inner_product_param.weight_filler = m_param.multihead_attention_interp_param.weight_filler;
+                ipQ.inner_product_param.bias_grad_scale = 1000000.0; // helps improve bias gradient accuracy.
 
-                m_ipQLayer = Layer<T>.Create(m_cuda, m_log, ip1, null);
+                m_ipQLayer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ipQ, m_param), null);
 
                 if (colBottom.Count == 1)
                 {
@@ -369,17 +369,17 @@ namespace MyCaffe.layers.tft
 
             if (m_ipKLayer == null)
             {
-                LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".ipK");
-                ip1.inner_product_param.num_output = (uint)m_nAllHeadsDim;
-                ip1.inner_product_param.axis = 2;
-                ip1.inner_product_param.bias_term = true;
-                ip1.inner_product_param.enable_noise = m_param.multihead_attention_interp_param.enable_noise;
-                ip1.inner_product_param.sigma_init = m_param.multihead_attention_interp_param.sigma_init;
-                ip1.inner_product_param.bias_filler = m_param.multihead_attention_interp_param.bias_filler;
-                ip1.inner_product_param.weight_filler = m_param.multihead_attention_interp_param.weight_filler;
-                ip1.inner_product_param.bias_grad_scale = 1000000.0; // helps improve bias gradient accuracy.
+                LayerParameter ipK = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".ipK");
+                ipK.inner_product_param.num_output = (uint)m_nAllHeadsDim;
+                ipK.inner_product_param.axis = 2;
+                ipK.inner_product_param.bias_term = true;
+                ipK.inner_product_param.enable_noise = m_param.multihead_attention_interp_param.enable_noise;
+                ipK.inner_product_param.sigma_init = m_param.multihead_attention_interp_param.sigma_init;
+                ipK.inner_product_param.bias_filler = m_param.multihead_attention_interp_param.bias_filler;
+                ipK.inner_product_param.weight_filler = m_param.multihead_attention_interp_param.weight_filler;
+                ipK.inner_product_param.bias_grad_scale = 1000000.0; // helps improve bias gradient accuracy.
 
-                m_ipKLayer = Layer<T>.Create(m_cuda, m_log, ip1, null);
+                m_ipKLayer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ipK, m_param), null);
                 m_blobK.ReshapeLike((colBottom.Count == 1) ? colBottom[0] : colBottom[1]);
 
                 addBtmTop(m_blobK, m_blobIpK);
@@ -389,16 +389,16 @@ namespace MyCaffe.layers.tft
 
             if (m_ipVLayer == null)
             {
-                LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".ipV");
-                ip1.inner_product_param.num_output = (uint)m_param.multihead_attention_interp_param.embed_dim;
-                ip1.inner_product_param.axis = 2;
-                ip1.inner_product_param.bias_term = true;
-                ip1.inner_product_param.enable_noise = m_param.multihead_attention_interp_param.enable_noise;
-                ip1.inner_product_param.sigma_init = m_param.multihead_attention_interp_param.sigma_init;
-                ip1.inner_product_param.bias_filler = m_param.multihead_attention_interp_param.bias_filler;
-                ip1.inner_product_param.weight_filler = m_param.multihead_attention_interp_param.weight_filler;
+                LayerParameter ipV = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".ipV");
+                ipV.inner_product_param.num_output = (uint)m_param.multihead_attention_interp_param.embed_dim;
+                ipV.inner_product_param.axis = 2;
+                ipV.inner_product_param.bias_term = true;
+                ipV.inner_product_param.enable_noise = m_param.multihead_attention_interp_param.enable_noise;
+                ipV.inner_product_param.sigma_init = m_param.multihead_attention_interp_param.sigma_init;
+                ipV.inner_product_param.bias_filler = m_param.multihead_attention_interp_param.bias_filler;
+                ipV.inner_product_param.weight_filler = m_param.multihead_attention_interp_param.weight_filler;
 
-                m_ipVLayer = Layer<T>.Create(m_cuda, m_log, ip1, null);
+                m_ipVLayer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ipV, m_param), null);
                 m_blobV.ReshapeLike((colBottom.Count == 1) ? colBottom[0] : colBottom[1]);
 
                 addBtmTop(m_blobV, m_blobIpV);
@@ -459,16 +459,16 @@ namespace MyCaffe.layers.tft
 
             if (m_ipOutLayer == null)
             {
-                LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".ipOut");
-                ip1.inner_product_param.num_output = (uint)m_param.multihead_attention_interp_param.embed_dim;
-                ip1.inner_product_param.axis = 2;
-                ip1.inner_product_param.bias_term = true;
-                ip1.inner_product_param.enable_noise = m_param.multihead_attention_interp_param.enable_noise;
-                ip1.inner_product_param.sigma_init = m_param.multihead_attention_interp_param.sigma_init;
-                ip1.inner_product_param.bias_filler = m_param.multihead_attention_interp_param.bias_filler;
-                ip1.inner_product_param.weight_filler = m_param.multihead_attention_interp_param.weight_filler;
+                LayerParameter ipOut = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".ipOut");
+                ipOut.inner_product_param.num_output = (uint)m_param.multihead_attention_interp_param.embed_dim;
+                ipOut.inner_product_param.axis = 2;
+                ipOut.inner_product_param.bias_term = true;
+                ipOut.inner_product_param.enable_noise = m_param.multihead_attention_interp_param.enable_noise;
+                ipOut.inner_product_param.sigma_init = m_param.multihead_attention_interp_param.sigma_init;
+                ipOut.inner_product_param.bias_filler = m_param.multihead_attention_interp_param.bias_filler;
+                ipOut.inner_product_param.weight_filler = m_param.multihead_attention_interp_param.weight_filler;
 
-                m_ipOutLayer = Layer<T>.Create(m_cuda, m_log, ip1, null);
+                m_ipOutLayer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ipOut, m_param), null);
 
                 reshapeSansHead(colTop[1], m_blobAttnOutputAllHeads.shape());
                 reshapeSansHead(colTop[2], m_blobAttnScoresAllHeads.shape());

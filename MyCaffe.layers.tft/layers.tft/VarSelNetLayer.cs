@@ -189,7 +189,7 @@ namespace MyCaffe.layers.tft
             p.grn_param.hidden_dim = m_param.varselnet_param.hidden_dim;
             p.grn_param.output_dim = m_param.varselnet_param.num_inputs;
             p.grn_param.context_dim = m_param.varselnet_param.context_dim;
-            m_grnFlatten = Layer<T>.Create(m_cuda, m_log, p, null);
+            m_grnFlatten = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
 
             addBtmTop(colBottom[0], m_blobSparseWts);
             if (blobStaticSelection != null)
@@ -201,7 +201,7 @@ namespace MyCaffe.layers.tft
             p = new LayerParameter(LayerParameter.LayerType.SOFTMAX, m_param.name + ".smx");
             p.softmax_param.axis = m_param.varselnet_param.axis;
             p.softmax_param.engine = EngineParameter.Engine.DEFAULT;
-            m_softmax = Layer<T>.Create(m_cuda, m_log, p, null);
+            m_softmax = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
 
             addBtmTop(m_blobSparseWts, m_blobSparseWtsSmx);
             m_softmax.Setup(m_colBtm, m_colTop);
@@ -215,7 +215,7 @@ namespace MyCaffe.layers.tft
             p = new LayerParameter(LayerParameter.LayerType.TRANSPOSE, m_param.name + ".trfm");
             p.transpose_param.dim[1] = 2;
             p.transpose_param.dim[2] = 1;
-            m_transpose = Layer<T>.Create(m_cuda, m_log, p, null);
+            m_transpose = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
 
             addBtmTop(m_blobSparseWtsSmx, m_blobSparseWtsSmxT);
             m_transpose.Setup(m_colBtm, m_colTop);
@@ -237,7 +237,7 @@ namespace MyCaffe.layers.tft
                 p.grn_param.hidden_dim = m_param.varselnet_param.hidden_dim;
                 p.grn_param.output_dim = m_param.varselnet_param.hidden_dim;
                 p.grn_param.dropout_ratio = m_param.varselnet_param.dropout_ratio;
-                Layer<T> grn = Layer<T>.Create(m_cuda, m_log, p, null);
+                Layer<T> grn = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
 
                 Blob<T> blobGrn = new Blob<T>(m_cuda, m_log);
                 blobGrn.ReshapeLike(m_blobGrn1);

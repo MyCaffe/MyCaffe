@@ -101,7 +101,7 @@ namespace MyCaffe.layers.tft
                 p.embed_param.input_dim = (uint)nCardinality;
                 p.embed_param.bias_term = false;
 
-                Layer<T> emb_layer = Layer<T>.Create(m_cuda, m_log, p, null);
+                Layer<T> emb_layer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
                 m_rgEmbLayers.Add(emb_layer);
 
                 emb_layer.LayerSetUp(m_rgEmbBtm, m_rgEmbTop);

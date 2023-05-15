@@ -130,7 +130,7 @@ namespace MyCaffe.layers.tft
 
                 LayerParameter p = new LayerParameter(LayerParameter.LayerType.NUMERIC_TRANS, m_param.name + ".numeric");
                 p.numeric_trans_param.Copy(m_param.numeric_trans_param);
-                m_numericLayer = Layer<T>.Create(m_cuda, m_log, p, null) as NumericTransformationLayer<T>;
+                m_numericLayer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null) as NumericTransformationLayer<T>;
 
                 m_colBtm.Clear();
                 m_colBtm.Add(blobNumeric);
@@ -149,7 +149,7 @@ namespace MyCaffe.layers.tft
 
                 LayerParameter p = new LayerParameter(LayerParameter.LayerType.CATEGORICAL_TRANS, m_param.name + ".categorical");
                 p.categorical_trans_param.Copy(m_param.categorical_trans_param);
-                m_categoricalLayer = Layer<T>.Create(m_cuda, m_log, p, null) as CategoricalTransformationLayer<T>;
+                m_categoricalLayer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null) as CategoricalTransformationLayer<T>;
 
                 m_colBtm.Clear();
                 m_colBtm.Add(blobCategorical);

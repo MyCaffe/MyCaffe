@@ -111,7 +111,7 @@ namespace MyCaffe.layers.tft
                 p.inner_product_param.num_output = m_param.numeric_trans_param.state_size;
                 p.inner_product_param.axis = 1;
 
-                Layer<T> ip_layer = Layer<T>.Create(m_cuda, m_log, p, null);
+                Layer<T> ip_layer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
                 m_rgIpLayers.Add(ip_layer);
 
                 ip_layer.LayerSetUp(m_rgIpBtm, m_rgIpTop);
