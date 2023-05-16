@@ -85,7 +85,7 @@ namespace MyCaffe.param.python
         /// </summary>
         /// <param name="rp">Specifies the RawProto to parse.</param>
         /// <returns>A new instance of the parameter is returned.</returns>
-        public static new PythonParameter FromProto(RawProto rp)
+        public static PythonParameter FromProto(RawProto rp)
         {
             string strVal;
             PythonParameter p = new PythonParameter();
