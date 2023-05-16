@@ -1023,6 +1023,29 @@ namespace MyCaffe
             }
         }
 
+        private bool verifySharedWeights()
+        {
+            Net<T> netTrain = m_solver.TrainingNet;
+            Net<T> netTest = m_solver.TestingNet;
+
+            if (netTrain.parameters.Count != netTest.parameters.Count)
+            {
+                m_log.WriteLine("WARNING: Training net has a different number of parameters than the testing net!");
+                return false;
+            }
+
+            for (int i = 0; i < netTrain.parameters.Count; i++)
+            {
+                if (netTrain.parameters[i].gpu_data != netTest.parameters[i].gpu_data)
+                {
+                    m_log.WriteLine("WARNING: Training net parameter " + i.ToString() + " is not shared with the testing net!");
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// Load a project and optionally the MyCaffeImageDatabase.
         /// </summary>
@@ -1145,6 +1168,8 @@ namespace MyCaffe
                     m_solver.OnTrainingIteration += new EventHandler<TrainingIterationArgs<T>>(m_solver_OnTrainingIteration);
                     m_solver.OnTestingIteration += new EventHandler<TestingIterationArgs<T>>(m_solver_OnTestingIteration);
                     m_log.WriteLine("Solver created.", true);
+
+                    verifySharedWeights();
                 }
 
                 if (m_imgDb is IXImageDatabase1)
