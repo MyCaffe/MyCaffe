@@ -120,7 +120,6 @@
     <Compile Include="TestTFT_GateAddNormLayer.cs" />
     <Compile Include="TestTFT_MultiHeadAttentionInterpLayer.cs" />
     <Compile Include="TestTFT_DataTemporal.cs" />
-    <Compile Include="TestTFT_SelfAttention.cs" />
     <Compile Include="TestTFT_QuartileLoss.cs" />
     <Compile Include="TestTFT_TransformInputs.cs" />
     <Compile Include="TestTFT_StaticEnrichment.cs" />
