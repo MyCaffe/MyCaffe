@@ -38,7 +38,7 @@ template long rnn8Handle<double>::setupSeqArray(int nBatchSize, int nSequenceLen
 template long rnn8Handle<float>::setupSeqArray(int nBatchSize, int nSequenceLength);
 
 template <class T>
-long rnn8Handle<T>::Set(long hCuda, cudnnForwardMode_t fwdmode, cudnnDataType_t type, cudnnRNNDataLayout_t layout, cudnnRNNMode_t cellmode, cudnnRNNBiasMode_t biasMode, int nSequenceLength, int nBatchSize, int nInputSize, int nHiddenSize, int nOutputSize, int nProjectionSize, int nNumLayers, float fDropout, unsigned long long lSeed, bool bBidirectional = false)
+long rnn8Handle<T>::Set(long hCuda, cudnnForwardMode_t fwdmode, cudnnDataType_t type, cudnnRNNDataLayout_t layout, cudnnRNNMode_t cellmode, cudnnRNNBiasMode_t biasMode, int nSequenceLength, int nBatchSize, int nInputSize, int nHiddenSize, int nOutputSize, int nProjectionSize, int nNumLayers, float fDropout, unsigned long long lSeed, bool bBidirectional)
 {
 	LONG lErr;
 
@@ -182,7 +182,7 @@ long rnn8Handle<T>::Set(long hCuda, cudnnForwardMode_t fwdmode, cudnnDataType_t 
 		return lErr;
 	}
 
-	if (lErr = cudnnSetDropoutDescriptor(m_dropoutDesc, cuda, m_dfDropout, m_states, m_stateSize, m_lSeed))
+	if (lErr = cudnnSetDropoutDescriptor(m_dropoutDesc, cuda, (float)m_dfDropout, m_states, m_stateSize, m_lSeed))
 	{
 		CleanUp();
 		return lErr;
@@ -213,8 +213,8 @@ long rnn8Handle<T>::Set(long hCuda, cudnnForwardMode_t fwdmode, cudnnDataType_t 
 	return cudaStreamSynchronize(0);
 }
 
-template long rnn8Handle<double>::Set(long hCuda, cudnnForwardMode_t fwdmode, cudnnDataType_t type, cudnnRNNDataLayout_t layout, cudnnRNNMode_t cellmode, cudnnRNNBiasMode_t biasMode, int nSequenceLength, int nBatchSize, int nInputSize, int nHiddenSize, int nOutputSize, int nProjectionSize, int nNumLayers, float fDropout, unsigned long long lSeed, bool bBidirectional = false);
-template long rnn8Handle<float>::Set(long hCuda, cudnnForwardMode_t fwdmode, cudnnDataType_t type, cudnnRNNDataLayout_t layout, cudnnRNNMode_t cellmode, cudnnRNNBiasMode_t biasMode, int nSequenceLength, int nBatchSize, int nInputSize, int nHiddenSize, int nOutputSize, int nProjectionSize, int nNumLayers, float fDropout, unsigned long long lSeed, bool bBidirectional = false);
+template long rnn8Handle<double>::Set(long hCuda, cudnnForwardMode_t fwdmode, cudnnDataType_t type, cudnnRNNDataLayout_t layout, cudnnRNNMode_t cellmode, cudnnRNNBiasMode_t biasMode, int nSequenceLength, int nBatchSize, int nInputSize, int nHiddenSize, int nOutputSize, int nProjectionSize, int nNumLayers, float fDropout, unsigned long long lSeed, bool bBidirectional);
+template long rnn8Handle<float>::Set(long hCuda, cudnnForwardMode_t fwdmode, cudnnDataType_t type, cudnnRNNDataLayout_t layout, cudnnRNNMode_t cellmode, cudnnRNNBiasMode_t biasMode, int nSequenceLength, int nBatchSize, int nInputSize, int nHiddenSize, int nOutputSize, int nProjectionSize, int nNumLayers, float fDropout, unsigned long long lSeed, bool bBidirectional);
 
 template <class T>
 long rnn8Handle<T>::CleanUp()
