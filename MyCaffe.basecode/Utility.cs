@@ -545,7 +545,6 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Convert an array of <i>float</i> to an array of generics.
         /// </summary>
-        /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
         /// <param name="rgf">Specifies the array of <i>float</i>.</param>
         /// <returns>The array of generics is returned.</returns>
         public static double[] ConvertVec(float[] rgf)
