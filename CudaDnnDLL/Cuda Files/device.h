@@ -1460,7 +1460,7 @@ inline long Device<T>::ConvolutionBackwardBias(long lInput, T* pfInput, long llI
 		return lErr;
 
 	long hHandle = (long)plInput[0];
-	T fAlpha = plInput[0];
+	T fAlpha = pfInput[0];
 	long hTopDesc = (long)plInput[2];
 	long hTopDiff = (long)plInput[3];
 	int nTopOffset = (int)plInput[4];
