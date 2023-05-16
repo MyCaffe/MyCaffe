@@ -486,8 +486,6 @@ namespace MyCaffe.common
 
                 for (int i = 0; i < rgShape.Length; i++)
                 {
-//                    m_log.CHECK_GE(rgShape[i], 0, "The shape value at " + i.ToString() + " must be >= 0.");
-
                     if (rgShape[i] < 0)
                     {
                         string strBlobName = (!string.IsNullOrEmpty(m_strName)) ? "Blob '" + m_strName + "': " : "";
@@ -496,8 +494,6 @@ namespace MyCaffe.common
 
                     if (m_nCount != 0)
                     {
-//                        m_log.CHECK_LE(rgShape[i], int.MaxValue / m_nCount, "The blob size exceeds int.MaxValue!");
-
                         if (rgShape[i] > int.MaxValue / m_nCount)
                         {
                             string strBlobName = (!string.IsNullOrEmpty(m_strName)) ? "Blob '" + m_strName + "': " : "";
@@ -3382,7 +3378,9 @@ namespace MyCaffe.common
         /// <param name="nCount">Optionally, specifies the number of items to load from the start index (default = MaxValue).</param>
         /// <exception cref="Exception">An exception is thrown when an invalid or unsupported feature is located.</exception>
         /// <remarks>
-        /// @see[A Simple File Format for NumPy Arrays](https://numpy.org/doc/1.13/neps/npy-format.html)
+        /// @see[A Simple File Format for NumPy Arrays](https://numpy.org/doc/1.13/neps/npy-format.html)  Note, when loading at a 
+        /// given start index, only the 'nCount' number of items are loaded from the start or the file is read to the end, whichever 
+        /// is sooner.
         /// </remarks>
         /// <returns>A tuple containing the float[,] data and int[] shape is returned.</returns>
         public static Tuple<List<float[]>, int[], List<string>> LoadFromNumpyEx(string strFile, Log log = null, int nMax = int.MaxValue, int nStartIdx = 0, int nCount = int.MaxValue)
@@ -3442,59 +3440,105 @@ namespace MyCaffe.common
                 else
                 {
                     if (nStartIdx + nCount > count.Item1)
+                    {
                         nCount = count.Item1 - nStartIdx;
 
+                        if (nCount < 0)
+                            nCount = 0;
+                    }
+
                     rgShape[0] = nCount;
+                }
+
+                // Skip ahead to start index (if greater than zero).
+                if (nStartIdx > 0)
+                {
+                    long nSeekPos = fs.Position;
+                    long nItemSize = 0;
+                    long nItems = 1;
+
+                    for (int i = 1; i < rgShape.Length; i++)
+                    {
+                        nItems *= rgShape[i];
+                    }
+
+                    if (nItems > 0)
+                    {
+                        if (dataType == typeof(float))
+                            nItemSize = sizeof(float);
+                        else if (dataType == typeof(double))
+                            nItemSize = sizeof(double);
+                        else if (dataType == typeof(int))
+                            nItemSize = sizeof(int);
+                        else if (dataType == typeof(string))
+                        {
+                            if (nStartIdx > 0)
+                                throw new Exception("String data types do not support starting at an index > 0!");
+                        }
+                        else if (dataType == typeof(long))
+                            nItemSize = sizeof(long);
+                        else if (dataType == typeof(bool))
+                            nItemSize = sizeof(bool);
+                        else
+                            throw new Exception("Unsupported data type!");
+
+                        nSeekPos += nItemSize * nItems * nStartIdx;
+
+                        fs.Seek(nSeekPos, SeekOrigin.Begin);
+                    }
                 }
 
                 ulong ulTotal = (ulong)nCount * (ulong)count.Item2;
                 List<float[]> rgData = new List<float[]>(nCount);
                 List<string> rgStrData = new List<string>(nCount);
-                for (int i = nStartIdx; i < nStartIdx + nCount && i < count.Item1; i++)
+                if (ulTotal > 0)
                 {
-                    float[] rgItem = new float[count.Item2];
-                    for (int j = 0; j < count.Item2; j++)
+                    for (int i = nStartIdx; i < nStartIdx + nCount && i < count.Item1; i++)
                     {
-                        if (dataType == typeof(float))
-                            rgItem[j] = br.ReadSingle();
-                        else if (dataType == typeof(double))
-                            rgItem[j] = (float)br.ReadDouble();
-                        else if (dataType == typeof(int))
-                            rgItem[j] = (float)br.ReadInt32();
-                        else if (dataType == typeof(string))
+                        float[] rgItem = new float[count.Item2];
+                        for (int j = 0; j < count.Item2; j++)
                         {
-                            List<byte> bytes = new List<byte>();
-                            byte addByte = 0x00;
-                            for (int c = 0; c < nDataTypeSize * 4; c++)
+                            if (dataType == typeof(float))
+                                rgItem[j] = br.ReadSingle();
+                            else if (dataType == typeof(double))
+                                rgItem[j] = (float)br.ReadDouble();
+                            else if (dataType == typeof(int))
+                                rgItem[j] = (float)br.ReadInt32();
+                            else if (dataType == typeof(string))
                             {
-                                addByte = br.ReadByte();
-                                if (addByte != 0x00)
-                                    bytes.Add(addByte);
+                                List<byte> bytes = new List<byte>();
+                                byte addByte = 0x00;
+                                for (int c = 0; c < nDataTypeSize * 4; c++)
+                                {
+                                    addByte = br.ReadByte();
+                                    if (addByte != 0x00)
+                                        bytes.Add(addByte);
+                                }
+                                strVal = Encoding.UTF8.GetString(bytes.ToArray());
+                                rgStrData.Add(strVal);
                             }
-                            strVal = Encoding.UTF8.GetString(bytes.ToArray());
-                            rgStrData.Add(strVal);
-                        }
-                        else if (dataType == typeof(long))
-                            rgItem[j] = (float)br.ReadInt64();
-                        else if (dataType == typeof(bool))
-                            rgItem[j] = (br.ReadBoolean()) ? 1 : 0;
-                        else
-                            throw new Exception("Unsupported data type!");
-                        
-                        if (log != null)
-                        {
-                            if (sw.Elapsed.TotalMilliseconds > 1000)
-                            {
-                                double dfPct = (double)ulIdx / (double)ulTotal;
-                                string strOut = "Loading '" + strFile + "' at " + dfPct.ToString("P5") + "...";
-                                log.WriteLine(strOut, true);
-                                sw.Restart();
-                            }
-                        }
-                        ulIdx++;
-                    }
+                            else if (dataType == typeof(long))
+                                rgItem[j] = (float)br.ReadInt64();
+                            else if (dataType == typeof(bool))
+                                rgItem[j] = (br.ReadBoolean()) ? 1 : 0;
+                            else
+                                throw new Exception("Unsupported data type!");
 
-                    rgData.Add(rgItem);
+                            if (log != null)
+                            {
+                                if (sw.Elapsed.TotalMilliseconds > 1000)
+                                {
+                                    double dfPct = (double)ulIdx / (double)ulTotal;
+                                    string strOut = "Loading '" + strFile + "' at " + dfPct.ToString("P5") + "...";
+                                    log.WriteLine(strOut, true);
+                                    sw.Restart();
+                                }
+                            }
+                            ulIdx++;
+                        }
+
+                        rgData.Add(rgItem);
+                    }
                 }
 
                 return new Tuple<List<float[]>, int[], List<string>>(rgData, rgShape, rgStrData);
