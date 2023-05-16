@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Security.Policy;
 using System.Text;
 using System.Threading;
@@ -217,6 +219,33 @@ namespace MyCaffe.layers.tft
         }
 
         /// <summary>
+        /// Verify that the data files exist.
+        /// </summary>
+        /// <param name="phase">Specifies the phase.</param>
+        /// <param name="strPath">Specifies the file path.</param>
+        /// <exception cref="Exception">An exception is thrown if the file is missing.</exception>
+        public void VerifyFiles(Phase phase, string strPath)
+        {
+            string strFile;
+            string strType = "train";
+            strPath = strPath.TrimEnd('\\', '/');
+            strPath += "\\";
+
+            if (phase == Phase.TEST)
+                strType = "test";
+            else if (phase == Phase.RUN)
+                strType = "validation";
+
+            strFile = strPath + strType + "_time_index.npy";
+            if (!File.Exists(strFile))
+                throw new Exception("Could not find the data file '" + strFile + "'.  You may need to run the data generation scripts.");
+
+            Data<T>.VerifyFiles(strPath, strType);
+
+            return;
+        }
+
+        /// <summary>
         /// Loads all data values for the phase specified.
         /// </summary>
         /// <param name="phase">Specifies the phase to load.</param>
@@ -234,6 +263,8 @@ namespace MyCaffe.layers.tft
         {
             m_nBatchSize = nBatchSize;
             m_data = new Data<T>(log, nHistoricalSteps, nFutureSteps, bShuffleData);
+
+            VerifyFiles(phase, strPath);
 
             ManualResetEvent evtReady = new ManualResetEvent(false);
             ManualResetEvent evtDone = new ManualResetEvent(false);
@@ -282,6 +313,8 @@ namespace MyCaffe.layers.tft
 
                 strFile = strPath + strType + "_time_index.npy";
                 Tuple<List<float[]>, int[], List<string>> rgTimeRaw = Blob<float>.LoadFromNumpyEx(strFile, log);
+                strFile = strPath + strType + "_combination_id.npy";
+                Tuple<List<float[]>, int[], List<string>> rgCombinationIdRaw = Blob<float>.LoadFromNumpyEx(strFile, log);
 
                 int nTotalCount = rgTimeRaw.Item1.Count;
                 int nStartIdx = 0;
@@ -292,9 +325,12 @@ namespace MyCaffe.layers.tft
 
                 sw.Start();
 
+                if (nMaxLoadCount > rgTimeRaw.Item1.Count)
+                    nMaxLoadCount = rgTimeRaw.Item1.Count;
+
                 while (!evtCancel.WaitOne(0))
                 {
-                    while (dataChunk.Load(strPath, strType, nStartIdx, nCount))
+                    while (dataChunk.Load(strPath, strType, nStartIdx, nCount, rgTimeRaw, rgCombinationIdRaw))
                     {
                         bool bRefreshed = m_data.Add(dataChunk, nMaxLoadCount);
                         dataChunk.Clear();
@@ -448,12 +484,11 @@ namespace MyCaffe.layers.tft
         int m_nHistoricalSteps = 1;
         int m_nFutureSteps = 1;
         int m_nTotalCount = 0;
-        List<string> m_rgstrCombinationID = new List<string>();
-        List<DateTime> m_rgTimestamps = new List<DateTime>();
         Dictionary<DATA_TYPE, Tuple<List<float[]>, int[], List<string>>> m_rgData = new Dictionary<DATA_TYPE, Tuple<List<float[]>, int[], List<string>>>();
         int m_nStaticNumericCount = 0;
         float[] m_rgTimeIndexBatch = null;
         int m_nTimeIndexCount = 0;
+        int m_nCombinationIdCount = 0;
         float[] m_rgStaticNumericBatch = null;
         int m_nStaticCategoricalCount = 0;
         float[] m_rgStaticCategoricalBatch = null;
@@ -543,6 +578,14 @@ namespace MyCaffe.layers.tft
             {
                 switch (dtype)
                 {
+                    case DATA_TYPE.TIME_INDEX:
+                        m_log.CHECK_EQ(m_rgData[DATA_TYPE.TIME_INDEX].Item2[0], nTotalSize, "The batch sizes do not match!");
+                        return m_rgData[DATA_TYPE.TIME_INDEX].Item2.Last();
+
+                    case DATA_TYPE.COMBINATION_ID:
+                        m_log.CHECK_EQ(m_rgData[DATA_TYPE.COMBINATION_ID].Item2[0], nTotalSize, "The batch sizes do not match!");
+                        return m_rgData[DATA_TYPE.COMBINATION_ID].Item2.Last();
+
                     case DATA_TYPE.STATIC_FEAT_NUMERIC:
                         m_log.CHECK_EQ(m_rgData[DATA_TYPE.STATIC_FEAT_NUMERIC].Item2[0], nTotalSize, "The batch sizes do not match!");
                         return m_rgData[DATA_TYPE.STATIC_FEAT_NUMERIC].Item2.Last();
@@ -615,24 +658,16 @@ namespace MyCaffe.layers.tft
             return rg;
         }
 
-        private bool add(DATA_TYPE type, Data<T> data, int nMax)
+        private bool add(DATA_TYPE type, Data<T> data, int nMax, out int nCount)
         {
             bool bRefreshed = false;
 
             if (!m_rgData.ContainsKey(type))
             {
-                if (type == DATA_TYPE.COMBINATION_ID)
-                    m_rgstrCombinationID.AddRange(data.m_rgstrCombinationID);
-                if (type == DATA_TYPE.TIME_INDEX)
-                    m_rgTimestamps.AddRange(data.m_rgTimestamps);
                 m_rgData.Add(type, data.m_rgData[type]);
             }
             else
             {
-                if (type == DATA_TYPE.COMBINATION_ID)
-                    m_rgstrCombinationID.AddRange(data.m_rgstrCombinationID);
-                if (type == DATA_TYPE.TIME_INDEX)
-                    m_rgTimestamps.AddRange(data.m_rgTimestamps);
                 m_rgData[type].Item1.AddRange(data.m_rgData[type].Item1);
                 m_rgData[type].Item2[0] += data.m_rgData[type].Item2[0];
                 m_rgData[type].Item3.AddRange(data.m_rgData[type].Item3);
@@ -640,23 +675,6 @@ namespace MyCaffe.layers.tft
                 // Clip to max if needed.
                 if (nMax > 0)
                 {
-                    if (type == DATA_TYPE.COMBINATION_ID)
-                    {
-                        while (m_rgstrCombinationID.Count > nMax)
-                        {
-                            if (m_rgstrCombinationID.Count > 0)
-                                m_rgstrCombinationID.RemoveAt(0);
-                        }
-                    }
-                    if (type == DATA_TYPE.TIME_INDEX)
-                    {
-                        while (m_rgTimestamps.Count > nMax)
-                        {
-                            if (m_rgTimestamps.Count > 0)
-                                m_rgTimestamps.RemoveAt(0);
-                        }
-                    }
-
                     while (m_rgData[type].Item1.Count > nMax)
                     {
                         if (m_rgData[type].Item1.Count > 0)
@@ -669,6 +687,10 @@ namespace MyCaffe.layers.tft
                 }
             }
 
+            nCount = 1;
+            if (m_rgData[type].Item2.Length > 1)
+                nCount = m_rgData[type].Item2.Last();
+
             return bRefreshed;
         }
 
@@ -676,24 +698,15 @@ namespace MyCaffe.layers.tft
         {
             lock (m_syncObj)
             {
-                add(DATA_TYPE.TIME_INDEX, data, nMax);
-                add(DATA_TYPE.COMBINATION_ID, data, nMax);
-                add(DATA_TYPE.STATIC_FEAT_NUMERIC, data, nMax);
-                add(DATA_TYPE.STATIC_FEAT_CATEGORICAL, data, nMax);
-                add(DATA_TYPE.HISTORICAL_NUMERIC, data, nMax);
-                add(DATA_TYPE.HISTORICAL_CATEGORICAL, data, nMax);
-                add(DATA_TYPE.FUTURE_CATEGORICAL, data, nMax);
-                add(DATA_TYPE.FUTURE_NUMERIC, data, nMax);
-                bool bRefreshed = add(DATA_TYPE.TARGET, data, nMax);
-
-                m_nTimeIndexCount = data.m_nTimeIndexCount;
-                m_nStaticNumericCount = data.m_nStaticNumericCount;
-                m_nStaticCategoricalCount = data.m_nStaticCategoricalCount;
-                m_nHistoricalNumericCount = data.m_nHistoricalNumericCount;
-                m_nHistoricalCategoricalCount = data.m_nHistoricalCategoricalCount;
-                m_nFutureNumericCount = data.m_nFutureNumericCount;
-                m_nFutureCategoricalCount = data.m_nFutureCategoricalCount;
-                m_nTargetCount = data.m_nTargetCount;
+                add(DATA_TYPE.TIME_INDEX, data, nMax, out m_nTimeIndexCount);
+                add(DATA_TYPE.COMBINATION_ID, data, nMax, out m_nCombinationIdCount);
+                add(DATA_TYPE.STATIC_FEAT_NUMERIC, data, nMax, out m_nStaticNumericCount);
+                add(DATA_TYPE.STATIC_FEAT_CATEGORICAL, data, nMax, out m_nStaticCategoricalCount);
+                add(DATA_TYPE.HISTORICAL_NUMERIC, data, nMax, out m_nHistoricalNumericCount);
+                add(DATA_TYPE.HISTORICAL_CATEGORICAL, data, nMax, out m_nHistoricalCategoricalCount);
+                add(DATA_TYPE.FUTURE_NUMERIC, data, nMax, out m_nFutureNumericCount);
+                add(DATA_TYPE.FUTURE_CATEGORICAL, data, nMax, out m_nFutureCategoricalCount);
+                bool bRefreshed = add(DATA_TYPE.TARGET, data, nMax, out m_nTargetCount);
 
                 if (!bRefreshed)
                     m_nTotalCount += data.m_nTotalCount;
@@ -707,8 +720,7 @@ namespace MyCaffe.layers.tft
         public void Clear()
         {
             m_rgData.Clear();
-            m_rgTimestamps.Clear();
-            m_rgstrCombinationID.Clear();
+            m_nTimeIndexCount = 0;
             m_nStaticCategoricalCount = 0;
             m_nStaticNumericCount = 0;
             m_nHistoricalCategoricalCount = 0;
@@ -719,19 +731,76 @@ namespace MyCaffe.layers.tft
             m_nTotalCount = 0;
         }
 
-        public bool Load(string strPath, string strType, int nStartIdx, int nCount)
+        public static bool VerifyFiles(string strPath, string strType)
+        {
+            string strFile;
+
+            strFile = strPath + strType + "_static_feats_numeric.npy";
+            if (!File.Exists(strFile))
+                throw new Exception("Missing data file '" + strFile + "'!");
+
+            strFile = strPath + strType + "_static_feats_categorical.npy";
+            if (!File.Exists(strFile))
+                throw new Exception("Missing data file '" + strFile + "'!");
+
+            strFile = strPath + strType + "_historical_ts_numeric.npy";
+            if (!File.Exists(strFile))
+                throw new Exception("Missing data file '" + strFile + "'!");
+
+            strFile = strPath + strType + "_historical_ts_categorical.npy";
+            if (!File.Exists(strFile))
+                throw new Exception("Missing data file '" + strFile + "'!");
+
+            strFile = strPath + strType + "_future_ts_numeric.npy";
+            if (!File.Exists(strFile))
+                throw new Exception("Missing data file '" + strFile + "'!");
+
+            strFile = strPath + strType + "_future_ts_categorical.npy";
+            if (!File.Exists(strFile))
+                throw new Exception("Missing data file '" + strFile + "'!");
+
+            strFile = strPath + strType + "_target.npy";
+            if (!File.Exists(strFile))
+                throw new Exception("Missing data file '" + strFile + "'!");
+
+            return true;
+        }
+
+        private Tuple<List<float[]>, int[], List<string>> clone(Tuple<List<float[]>, int[], List<string>> rg, int nStartIdx, int nCount)
+        {
+            List<float[]> rgData = new List<float[]>();
+            List<string> rgstr = new List<string>();
+
+            for (int i = 0; i < nCount; i++)
+            {
+                int nIdx = nStartIdx + i;
+
+                if (nIdx < rg.Item1.Count)
+                    rgData.Add(rg.Item1[nIdx]);
+                if (nIdx < rg.Item3.Count)
+                    rgstr.Add(rg.Item3[nIdx]);
+            }
+
+            nCount = Math.Max(rgData.Count(), rgstr.Count());
+
+            return new Tuple<List<float[]>, int[], List<string>>(rgData, new int[] { nCount }, rgstr);
+        }
+
+        public bool Load(string strPath, string strType, int nStartIdx, int nCount, Tuple<List<float[]>, int[], List<string>> rgTimeIdx, Tuple<List<float[]>, int[], List<string>> rgComboId)
         {
             Log log = m_log;
             string strFile;
 
             try
             {
+                if (!m_rgData.ContainsKey(DATA_TYPE.TIME_INDEX))
+                {
+                    m_rgData.Add(DATA_TYPE.TIME_INDEX, clone(rgTimeIdx, nStartIdx, nCount));
+                }
+
                 if (!m_rgData.ContainsKey(DATA_TYPE.COMBINATION_ID))
                 {
-                    strFile = strPath + strType + "_combination_id.npy";
-                    m_rgData.Add(DATA_TYPE.COMBINATION_ID, Blob<float>.LoadFromNumpyEx(strFile, log, int.MaxValue, nStartIdx, nCount));
-                    m_nTotalCount = m_rgData[DATA_TYPE.COMBINATION_ID].Item2[0];
-                    m_rgstrCombinationID = m_rgData[DATA_TYPE.COMBINATION_ID].Item3;
+                    m_rgData.Add(DATA_TYPE.COMBINATION_ID, clone(rgComboId, nStartIdx, nCount));
                 }
 
                 if (!m_rgData.ContainsKey(DATA_TYPE.STATIC_FEAT_NUMERIC))
@@ -781,21 +850,6 @@ namespace MyCaffe.layers.tft
                     strFile = strPath + strType + "_target.npy";
                     m_rgData.Add(DATA_TYPE.TARGET, Blob<float>.LoadFromNumpyEx(strFile, log, int.MaxValue, nStartIdx, nCount));
                     m_nTargetCount = calculateCount(DATA_TYPE.TARGET);
-                }
-
-                if (!m_rgData.ContainsKey(DATA_TYPE.TIME_INDEX))
-                {
-                    strFile = strPath + strType + "_time_index.npy";
-                    m_rgData.Add(DATA_TYPE.TIME_INDEX, Blob<float>.LoadFromNumpyEx(strFile, log, int.MaxValue, nStartIdx, nCount));
-
-                    List<float[]> rgTime = m_rgData[DATA_TYPE.TIME_INDEX].Item1;
-                    foreach (float[] rgTime2 in rgTime)
-                    {
-                        DateTime dt = UnixTimeStampToDateTime(rgTime2[0]);
-                        m_rgTimestamps.Add(dt);
-                    }
-
-                    m_nTimeIndexCount = 1;
                 }
 
                 return true;
