@@ -128,9 +128,9 @@ namespace MyCaffe.test
             return new FillerParameter("gaussian");
         }
 
-        private string getTestDataPath()
+        private string getTestDataPath(string strSubPath)
         {
-            return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\iter_0\\";
+            return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\" + strSubPath + "\\iter_0\\";
         }
 
         private string getTestWtsPath()
@@ -138,21 +138,32 @@ namespace MyCaffe.test
             return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\favorita\\weights\\hist_ts_transform\\";
         }
 
+        /// <summary>
+        /// Test GRN foward
+        /// </summary>
+        /// <remarks>
+        /// To generate the test data, run the following:
+        /// 
+        /// Code: test_3b_grn.py
+        /// Path: grn
+        /// Base: iter_0.base_set
+        /// </remarks>
         public void TestForward()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.GRN);
-            p.grn_param.input_dim = 576;
-            p.grn_param.output_dim = 9;
+            p.grn_param.input_dim = 64;
+            p.grn_param.output_dim = 64;
             p.grn_param.context_dim = null;
             p.grn_param.hidden_dim = 64;
             p.grn_param.dropout_ratio = 0.0f;
             p.grn_param.batch_first = true;
+            p.grn_param.axis = 2;
             GrnLayer<T> layer = null;
             Blob<T> blobX = null;
             Blob<T> blobY = null;
             Blob<T> blobYexp = null;
             Blob<T> blobWork = null;
-            string strPath = getTestDataPath();
+            string strPath = getTestDataPath("grn");
             string strPathWts = getTestWtsPath();
 
             try
@@ -166,7 +177,7 @@ namespace MyCaffe.test
                 m_log.CHECK(layer != null, "The layer was not created correctly.");
                 m_log.CHECK(layer.type == LayerParameter.LayerType.GRN, "The layer type is incorrect.");
 
-                blobX.LoadFromNumpy(strPath + "grn_x.npy");
+                blobX.LoadFromNumpy(strPath + "test_grn_x.npy");
                 BottomVec.Clear();
                 BottomVec.Add(blobX);
                 TopVec.Clear();
@@ -174,21 +185,19 @@ namespace MyCaffe.test
 
                 layer.Setup(BottomVec, TopVec);
 
-                layer.blobs[0].LoadFromNumpy(strPath + "test_grn_skip_layer.module.weight.npy");
-                layer.blobs[1].LoadFromNumpy(strPath + "test_grn_skip_layer.module.bias.npy");
-                layer.blobs[2].LoadFromNumpy(strPath + "test_grn_fc1.module.weight.npy");
-                layer.blobs[3].LoadFromNumpy(strPath + "test_grn_fc1.module.bias.npy");
-                layer.blobs[4].LoadFromNumpy(strPath + "test_grn_fc2.module.weight.npy");
-                layer.blobs[5].LoadFromNumpy(strPath + "test_grn_fc2.module.bias.npy");
-                layer.blobs[6].LoadFromNumpy(strPath + "test_grn_gate.module.fc1.weight.npy");
-                layer.blobs[7].LoadFromNumpy(strPath + "test_grn_gate.module.fc1.bias.npy");
-                layer.blobs[8].LoadFromNumpy(strPath + "test_grn_gate.module.fc2.weight.npy");
-                layer.blobs[9].LoadFromNumpy(strPath + "test_grn_gate.module.fc2.bias.npy");
+                layer.blobs[0].LoadFromNumpy(strPath + "test_grn_fc1.module.weight.npy");
+                layer.blobs[1].LoadFromNumpy(strPath + "test_grn_fc1.module.bias.npy");
+                layer.blobs[2].LoadFromNumpy(strPath + "test_grn_fc2.module.weight.npy");
+                layer.blobs[3].LoadFromNumpy(strPath + "test_grn_fc2.module.bias.npy");
+                layer.blobs[4].LoadFromNumpy(strPath + "test_grn_gate.module.fc1.weight.npy");
+                layer.blobs[5].LoadFromNumpy(strPath + "test_grn_gate.module.fc1.bias.npy");
+                layer.blobs[6].LoadFromNumpy(strPath + "test_grn_gate.module.fc2.weight.npy");
+                layer.blobs[7].LoadFromNumpy(strPath + "test_grn_gate.module.fc2.bias.npy");
 
                 layer.Forward(BottomVec, TopVec);
 
                 blobYexp.LoadFromNumpy(strPath + "test_grn_y.npy");
-                double dfErr = (typeof(T) == typeof(float)) ? 3e-07 : 8e-07;
+                double dfErr = (typeof(T) == typeof(float)) ? 1e-08 : 1e-06;
                 m_log.CHECK(TopVec[0].Compare(blobYexp, blobWork, false, dfErr), "The blobs do not match.");
             }
             finally
@@ -203,14 +212,25 @@ namespace MyCaffe.test
             }
         }
 
+        /// <summary>
+        /// Test GRN backward
+        /// </summary>
+        /// <remarks>
+        /// To generate the test data, run the following:
+        /// 
+        /// Code: test_3b_grn.py
+        /// Path: grn
+        /// Base: iter_0.base_set
+        /// </remarks>
         public void TestBackward()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.GRN);
-            p.grn_param.input_dim = 576;
-            p.grn_param.output_dim = 9;
+            p.grn_param.input_dim = 64;
+            p.grn_param.output_dim = 64;
             p.grn_param.context_dim = null;
             p.grn_param.hidden_dim = 64;
             p.grn_param.dropout_ratio = 0.0f;
+            p.grn_param.axis = 2;
             p.grn_param.batch_first = true;
             GrnLayer<T> layer = null;
             Blob<T> blobGradExp = null;
@@ -218,7 +238,7 @@ namespace MyCaffe.test
             Blob<T> blobY = null;
             Blob<T> blobYexp = null;
             Blob<T> blobWork = null;
-            string strPath = getTestDataPath();
+            string strPath = getTestDataPath("grn");
             string strPathWts = getTestWtsPath();
 
             try
@@ -241,21 +261,19 @@ namespace MyCaffe.test
 
                 layer.Setup(BottomVec, TopVec);
 
-                layer.blobs[0].LoadFromNumpy(strPath + "test_grn_skip_layer.module.weight.npy");
-                layer.blobs[1].LoadFromNumpy(strPath + "test_grn_skip_layer.module.bias.npy");
-                layer.blobs[2].LoadFromNumpy(strPath + "test_grn_fc1.module.weight.npy");
-                layer.blobs[3].LoadFromNumpy(strPath + "test_grn_fc1.module.bias.npy");
-                layer.blobs[4].LoadFromNumpy(strPath + "test_grn_fc2.module.weight.npy");
-                layer.blobs[5].LoadFromNumpy(strPath + "test_grn_fc2.module.bias.npy");
-                layer.blobs[6].LoadFromNumpy(strPath + "test_grn_gate.module.fc1.weight.npy");
-                layer.blobs[7].LoadFromNumpy(strPath + "test_grn_gate.module.fc1.bias.npy");
-                layer.blobs[8].LoadFromNumpy(strPath + "test_grn_gate.module.fc2.weight.npy");
-                layer.blobs[9].LoadFromNumpy(strPath + "test_grn_gate.module.fc2.bias.npy");
+                layer.blobs[0].LoadFromNumpy(strPath + "test_grn_fc1.module.weight.npy");
+                layer.blobs[1].LoadFromNumpy(strPath + "test_grn_fc1.module.bias.npy");
+                layer.blobs[2].LoadFromNumpy(strPath + "test_grn_fc2.module.weight.npy");
+                layer.blobs[3].LoadFromNumpy(strPath + "test_grn_fc2.module.bias.npy");
+                layer.blobs[4].LoadFromNumpy(strPath + "test_grn_gate.module.fc1.weight.npy");
+                layer.blobs[5].LoadFromNumpy(strPath + "test_grn_gate.module.fc1.bias.npy");
+                layer.blobs[6].LoadFromNumpy(strPath + "test_grn_gate.module.fc2.weight.npy");
+                layer.blobs[7].LoadFromNumpy(strPath + "test_grn_gate.module.fc2.bias.npy");
 
                 layer.Forward(BottomVec, TopVec);
 
                 blobYexp.LoadFromNumpy(strPath + "test_grn_y.npy");
-                double dfErr = (typeof(T) == typeof(float)) ? 3e-07 : 8e-07;
+                double dfErr = (typeof(T) == typeof(float)) ? 1e-08 : 1e-06;
                 m_log.CHECK(TopVec[0].Compare(blobYexp, blobWork, false, dfErr), "The blobs do not match.");
 
                 TopVec[0].LoadFromNumpy(strPath + "test_grn_y.grad.npy", true);
@@ -263,32 +281,31 @@ namespace MyCaffe.test
                 layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
 
                 blobGradExp.LoadFromNumpy(strPath + "test_grn_x.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(blobX, blobWork, true, 5.5e-08), "The blobs do not match.");
-
-                blobGradExp.LoadFromNumpy(strPath + "test_grn.skip_layer.module.weight.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(layer.blobs[0], blobWork, true), "The blobs do not match.");
-                blobGradExp.LoadFromNumpy(strPath + "test_grn.skip_layer.module.bias.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(layer.blobs[1], blobWork, true), "The blobs do not match.");
+                m_log.CHECK(blobGradExp.Compare(blobX, blobWork, true), "The blobs do not match.");
 
                 blobGradExp.LoadFromNumpy(strPath + "test_grn.fc1.module.weight.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(layer.blobs[2], blobWork, true), "The blobs do not match.");
+                dfErr = (typeof(T) == typeof(float)) ? 1e-08 : 8e-07;
+                m_log.CHECK(blobGradExp.Compare(layer.blobs[0], blobWork, true, dfErr), "The blobs do not match.");
                 blobGradExp.LoadFromNumpy(strPath + "test_grn.fc1.module.bias.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(layer.blobs[3], blobWork, true), "The blobs do not match.");
+                m_log.CHECK(blobGradExp.Compare(layer.blobs[1], blobWork, true, 3e-08), "The blobs do not match.");
 
                 blobGradExp.LoadFromNumpy(strPath + "test_grn.fc2.module.weight.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(layer.blobs[4], blobWork, true), "The blobs do not match.");
+                dfErr = (typeof(T) == typeof(float)) ? 1e-08 : 1e-07;
+                m_log.CHECK(blobGradExp.Compare(layer.blobs[2], blobWork, true, dfErr), "The blobs do not match.");
                 blobGradExp.LoadFromNumpy(strPath + "test_grn.fc2.module.bias.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(layer.blobs[5], blobWork, true), "The blobs do not match.");
+                m_log.CHECK(blobGradExp.Compare(layer.blobs[3], blobWork, true, 3e-08), "The blobs do not match.");
 
                 blobGradExp.LoadFromNumpy(strPath + "test_grn.gate.module.fc1.weight.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(layer.blobs[6], blobWork, true), "The blobs do not match.");
+                dfErr = (typeof(T) == typeof(float)) ? 1e-08 : 1e-07;
+                m_log.CHECK(blobGradExp.Compare(layer.blobs[4], blobWork, true, dfErr), "The blobs do not match.");
                 blobGradExp.LoadFromNumpy(strPath + "test_grn.gate.module.fc1.bias.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(layer.blobs[7], blobWork, true), "The blobs do not match.");
+                m_log.CHECK(blobGradExp.Compare(layer.blobs[5], blobWork, true, 3e-08), "The blobs do not match.");
 
                 blobGradExp.LoadFromNumpy(strPath + "test_grn.gate.module.fc2.weight.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(layer.blobs[8], blobWork, true), "The blobs do not match.");
+                dfErr = (typeof(T) == typeof(float)) ? 1e-08 : 2e-07;
+                m_log.CHECK(blobGradExp.Compare(layer.blobs[6], blobWork, true, dfErr), "The blobs do not match.");
                 blobGradExp.LoadFromNumpy(strPath + "test_grn.gate.module.fc2.bias.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(layer.blobs[9], blobWork, true), "The blobs do not match.");
+                m_log.CHECK(blobGradExp.Compare(layer.blobs[7], blobWork, true, 5e-08), "The blobs do not match.");
             }
             finally
             {
@@ -303,21 +320,32 @@ namespace MyCaffe.test
             }
         }
 
+        /// <summary>
+        /// Test GRN gradient check
+        /// </summary>
+        /// <remarks>
+        /// To generate the test data, run the following:
+        /// 
+        /// Code: test_3b_grn.py
+        /// Path: grn
+        /// Base: iter_0.base_set
+        /// </remarks>
         public void TestGradient()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.GRN);
-            p.grn_param.input_dim = 576;
-            p.grn_param.output_dim = 9;
+            p.grn_param.input_dim = 64;
+            p.grn_param.output_dim = 64;
             p.grn_param.context_dim = null;
             p.grn_param.hidden_dim = 64;
             p.grn_param.dropout_ratio = 0.0f;
             p.grn_param.batch_first = true;
+            p.grn_param.axis = 2;
             GrnLayer<T> layer = null;
             Blob<T> blobX = null;
             Blob<T> blobY = null;
             Blob<T> blobYexp = null;
             Blob<T> blobWork = null;
-            string strPath = getTestDataPath();
+            string strPath = getTestDataPath("grn");
             string strPathWts = getTestWtsPath();
 
             try
@@ -331,7 +359,7 @@ namespace MyCaffe.test
                 m_log.CHECK(layer != null, "The layer was not created correctly.");
                 m_log.CHECK(layer.type == LayerParameter.LayerType.GRN, "The layer type is incorrect.");
 
-                blobX.LoadFromNumpy(strPath + "grn_x.npy");
+                blobX.LoadFromNumpy(strPath + "test_grn_x.npy");
                 BottomVec.Clear();
                 BottomVec.Add(blobX);
                 TopVec.Clear();
@@ -339,16 +367,14 @@ namespace MyCaffe.test
 
                 layer.Setup(BottomVec, TopVec);
 
-                layer.blobs[0].LoadFromNumpy(strPath + "test_grn_skip_layer.module.weight.npy");
-                layer.blobs[1].LoadFromNumpy(strPath + "test_grn_skip_layer.module.bias.npy");
-                layer.blobs[2].LoadFromNumpy(strPath + "test_grn_fc1.module.weight.npy");
-                layer.blobs[3].LoadFromNumpy(strPath + "test_grn_fc1.module.bias.npy");
-                layer.blobs[4].LoadFromNumpy(strPath + "test_grn_fc2.module.weight.npy");
-                layer.blobs[5].LoadFromNumpy(strPath + "test_grn_fc2.module.bias.npy");
-                layer.blobs[6].LoadFromNumpy(strPath + "test_grn_gate.module.fc1.weight.npy");
-                layer.blobs[7].LoadFromNumpy(strPath + "test_grn_gate.module.fc1.bias.npy");
-                layer.blobs[8].LoadFromNumpy(strPath + "test_grn_gate.module.fc2.weight.npy");
-                layer.blobs[9].LoadFromNumpy(strPath + "test_grn_gate.module.fc2.bias.npy");
+                layer.blobs[0].LoadFromNumpy(strPath + "test_grn_fc1.module.weight.npy");
+                layer.blobs[1].LoadFromNumpy(strPath + "test_grn_fc1.module.bias.npy");
+                layer.blobs[2].LoadFromNumpy(strPath + "test_grn_fc2.module.weight.npy");
+                layer.blobs[3].LoadFromNumpy(strPath + "test_grn_fc2.module.bias.npy");
+                layer.blobs[4].LoadFromNumpy(strPath + "test_grn_gate.module.fc1.weight.npy");
+                layer.blobs[5].LoadFromNumpy(strPath + "test_grn_gate.module.fc1.bias.npy");
+                layer.blobs[6].LoadFromNumpy(strPath + "test_grn_gate.module.fc2.weight.npy");
+                layer.blobs[7].LoadFromNumpy(strPath + "test_grn_gate.module.fc2.bias.npy");
 
                 GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
                 checker.CheckGradient(layer, BottomVec, TopVec, -1, 1, 0.01);

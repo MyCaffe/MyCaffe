@@ -128,9 +128,9 @@ namespace MyCaffe.test
             return new FillerParameter("gaussian");
         }
 
-        private string getTestDataPath()
+        private string getTestDataPath(string strSubPath)
         {
-            return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\iter_0\\";
+            return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\" + strSubPath + "\\iter_0\\";
         }
 
         private string getTestWtsPath()
@@ -138,6 +138,16 @@ namespace MyCaffe.test
             return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\favorita\\weights\\hist_ts_transform\\";
         }
 
+        /// <summary>
+        /// Test categorical transformation forward.
+        /// </summary>
+        /// <remarks>
+        /// To generate the test data run the following:
+        /// 
+        /// Code: test_1a_categoricalinputtransformation.py
+        /// Path: cattrx
+        /// Base: iter_0.base_set
+        /// </remarks>
         public void TestForward()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CATEGORICAL_TRANS);
@@ -161,7 +171,7 @@ namespace MyCaffe.test
             Blob<T> blobProcessedCategorical5 = null;
             Blob<T> blobProcessedCategorical6 = null;
             Blob<T> blobWork = null;
-            string strPath = getTestDataPath();
+            string strPath = getTestDataPath("cattrx");
             string strPathWts = getTestWtsPath();
 
             try
@@ -250,6 +260,16 @@ namespace MyCaffe.test
             }
         }
 
+        /// <summary>
+        /// Test categorical transformation backward.
+        /// </summary>
+        /// <remarks>
+        /// To generate the test data run the following:
+        /// 
+        /// Code: test_1a_categoricalinputtransformation.py
+        /// Path: cattrx
+        /// Base: iter_0.base_set
+        /// </remarks>
         public void TestBackward()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CATEGORICAL_TRANS);
@@ -274,7 +294,7 @@ namespace MyCaffe.test
             Blob<T> blobProcessedCategorical5 = null;
             Blob<T> blobProcessedCategorical6 = null;
             Blob<T> blobWork = null;
-            string strPath = getTestDataPath();
+            string strPath = getTestDataPath("cattrx");
             string strPathWts = getTestWtsPath();
 
             try
@@ -350,6 +370,7 @@ namespace MyCaffe.test
 
                 layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
 
+                // Data does not have a grad.
                 //blobGradExp.LoadFromNumpy(strPath + "grad_x_categorical.npy", true);
                 //m_log.CHECK(blobGradExp.Compare(blobX, blobWork, true, dfErr), "The blobs do not match.");
 
@@ -402,6 +423,16 @@ namespace MyCaffe.test
             }
         }
 
+        /// <summary>
+        /// Test categorical transformation gradient check.
+        /// </summary>
+        /// <remarks>
+        /// To generate the test data run the following:
+        /// 
+        /// Code: test_1a_categoricalinputtransformation.py
+        /// Path: cattrx
+        /// Base: iter_0.base_set
+        /// </remarks>
         public void TestGradient()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CATEGORICAL_TRANS);
@@ -417,7 +448,7 @@ namespace MyCaffe.test
             Blob<T> blobY4 = null;
             Blob<T> blobY5 = null;
             Blob<T> blobY6 = null;
-            string strPath = getTestDataPath();
+            string strPath = getTestDataPath("cattrx");
             string strPathWts = getTestWtsPath();
 
             try

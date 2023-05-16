@@ -14,6 +14,7 @@ using MyCaffe.data;
 using MyCaffe.layers.tft;
 using System.Threading;
 using System.Diagnostics;
+using MyCaffe.param.tft;
 
 /// <summary>
 /// Testing the DataTemporal.
@@ -110,13 +111,16 @@ namespace MyCaffe.test
             data.data_temporal_param.num_historical_steps = (uint)nNumHist;
             data.data_temporal_param.num_future_steps = (uint)nNumFuture;
             data.data_temporal_param.source = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\favorita";
-            data.data_temporal_param.source_type = param.tft.DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE;
-            data.top.Add("static_numeric");
-            data.top.Add("static_categorical");
-            data.top.Add("historical_numeric");
-            data.top.Add("historical_categorical");
-            data.top.Add("future_numeric");
-            data.top.Add("future_categorical");
+            data.data_temporal_param.source_type = DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE;
+            data.data_temporal_param.shuffle_data = false;
+            data.data_temporal_param.seed = 1704;
+            data.include.Add(new NetStateRule(Phase.TRAIN));
+            data.top.Add("x_numeric_static");
+            data.top.Add("x_categorical_static");
+            data.top.Add("x_numeric_hist");
+            data.top.Add("x_categorical_hist");
+            data.top.Add("x_numeric_future");
+            data.top.Add("x_categorical_future");
             data.top.Add("target");
             p.layer.Add(data);
 
@@ -171,12 +175,12 @@ namespace MyCaffe.test
 
                 BlobCollection<T> colRes = net.Forward();
 
-                blob1 = net.FindBlob("static_numeric");
-                m_log.CHECK(blob1 != null, "Could not find the blob 'static_numeric'!");
+                blob1 = net.FindBlob("x_numeric_static");
+                m_log.CHECK(blob1 != null, "Could not find the blob 'x_numeric_static'!");
                 m_log.CHECK(blob1.CompareShape(new List<int>() { 0 }), "The blob shape is different than expected");
 
-                blob1 = net.FindBlob("static_categorical");
-                m_log.CHECK(blob1 != null, "Could not find the blob 'static_categorical'!");
+                blob1 = net.FindBlob("x_categorical_static");
+                m_log.CHECK(blob1 != null, "Could not find the blob 'x_categorical_static'!");
                 m_log.CHECK(blob1.CompareShape(new List<int>() { 256, 9 }), "The blob shape is different than expected");
 
                 blobVal.LoadFromNumpy(strPath + "0_static_feats_categorical.npy");
@@ -184,8 +188,8 @@ namespace MyCaffe.test
                 m_log.CHECK_EQ(dfMin, 0, "The min value is not as expected.");
                 m_log.CHECK_EQ(dfMax, 0, "The max value is not as expected.");
 
-                blob1 = net.FindBlob("historical_numeric");
-                m_log.CHECK(blob1 != null, "Could not find the blob 'historical_numeric'!");
+                blob1 = net.FindBlob("x_numeric_hist");
+                m_log.CHECK(blob1 != null, "Could not find the blob 'x_numeric_hist'!");
                 m_log.CHECK(blob1.CompareShape(new List<int>() { 256, 90, 4 }), "The blob shape is different than expected");
 
                 blobVal.LoadFromNumpy(strPath + "0_historical_ts_numeric.npy");
@@ -193,8 +197,8 @@ namespace MyCaffe.test
                 m_log.CHECK_EQ(dfMin, 0, "The min value is not as expected.");
                 m_log.CHECK_EQ(dfMax, 0, "The max value is not as expected.");
 
-                blob1 = net.FindBlob("historical_categorical");
-                m_log.CHECK(blob1 != null, "Could not find the blob 'historical_categorical'!");
+                blob1 = net.FindBlob("x_categorical_hist");
+                m_log.CHECK(blob1 != null, "Could not find the blob 'x_categorical_hist'!");
                 m_log.CHECK(blob1.CompareShape(new List<int>() { 256, 90, 7 }), "The blob shape is different than expected");
 
                 blobVal.LoadFromNumpy(strPath + "0_historical_ts_categorical.npy");
@@ -202,8 +206,8 @@ namespace MyCaffe.test
                 m_log.CHECK_EQ(dfMin, 0, "The min value is not as expected.");
                 m_log.CHECK_EQ(dfMax, 0, "The max value is not as expected.");
 
-                blob1 = net.FindBlob("future_numeric");
-                m_log.CHECK(blob1 != null, "Could not find the blob 'future_numeric'!");
+                blob1 = net.FindBlob("x_numeric_future");
+                m_log.CHECK(blob1 != null, "Could not find the blob 'x_numeric_future'!");
                 m_log.CHECK(blob1.CompareShape(new List<int>() { 256, 30, 1 }), "The blob shape is different than expected");
 
                 blobVal.LoadFromNumpy(strPath + "0_future_ts_numeric.npy");
@@ -211,8 +215,8 @@ namespace MyCaffe.test
                 m_log.CHECK_EQ(dfMin, 0, "The min value is not as expected.");
                 m_log.CHECK_EQ(dfMax, 0, "The max value is not as expected.");
 
-                blob1 = net.FindBlob("future_categorical");
-                m_log.CHECK(blob1 != null, "Could not find the blob 'future_categorical'!");
+                blob1 = net.FindBlob("x_categorical_future");
+                m_log.CHECK(blob1 != null, "Could not find the blob 'x_categorical_future'!");
                 m_log.CHECK(blob1.CompareShape(new List<int>() { 256, 30, 7 }), "The blob shape is different than expected");
 
                 blobVal.LoadFromNumpy(strPath + "0_future_ts_categorical.npy");

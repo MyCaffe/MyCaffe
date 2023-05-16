@@ -128,9 +128,9 @@ namespace MyCaffe.test
             return new FillerParameter("gaussian");
         }
 
-        private string getTestDataPath()
+        private string getTestDataPath(string strSubPath)
         {
-            return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\iter_0\\";
+            return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\" + strSubPath + "\\iter_0\\";
         }
 
         private string getTestWtsPath()
@@ -138,6 +138,16 @@ namespace MyCaffe.test
             return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\favorita\\weights\\hist_ts_transform\\";
         }
 
+        /// <summary>
+        /// Test GLU foward
+        /// </summary>
+        /// <remarks>
+        /// To generate the test data, run the following:
+        /// 
+        /// Code: test_8a_glu_imha.py
+        /// Path: imha
+        /// Base: iter_0.base_set
+        /// </remarks>
         public void TestForward()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.GLU);
@@ -148,7 +158,7 @@ namespace MyCaffe.test
             Blob<T> blobY = null;
             Blob<T> blobYexp = null;
             Blob<T> blobWork = null;
-            string strPath = getTestDataPath();
+            string strPath = getTestDataPath("imha");
             string strPathWts = getTestWtsPath();
 
             try
@@ -162,7 +172,7 @@ namespace MyCaffe.test
                 m_log.CHECK(layer != null, "The layer was not created correctly.");
                 m_log.CHECK(layer.type == LayerParameter.LayerType.GLU, "The layer type is incorrect.");
 
-                blobX.LoadFromNumpy(strPath + "glu_x.npy");
+                blobX.LoadFromNumpy(strPath + "tft.asa.gan_gan_glu_x.npy");
                 BottomVec.Clear();
                 BottomVec.Add(blobX);
                 TopVec.Clear();
@@ -170,16 +180,15 @@ namespace MyCaffe.test
 
                 layer.Setup(BottomVec, TopVec);
 
-                layer.blobs[0].LoadFromNumpy(strPath + "test1_glu.fc1.weight.npy");
-                layer.blobs[1].LoadFromNumpy(strPath + "test1_glu.fc1.bias.npy");
-                layer.blobs[2].LoadFromNumpy(strPath + "test1_glu.fc2.weight.npy");
-                layer.blobs[3].LoadFromNumpy(strPath + "test1_glu.fc2.bias.npy");
+                layer.blobs[0].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc1.weight.npy");
+                layer.blobs[1].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc1.bias.npy");
+                layer.blobs[2].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc2.weight.npy");
+                layer.blobs[3].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc2.bias.npy");
 
                 layer.Forward(BottomVec, TopVec);
 
-                blobYexp.LoadFromNumpy(strPath + "test1_glu_y.npy");
-                double dfErr = (typeof(T) == typeof(float)) ? 4e-07 : 4.5e-07;
-                m_log.CHECK(TopVec[0].Compare(blobYexp, blobWork, false, dfErr), "The blobs do not match.");
+                blobYexp.LoadFromNumpy(strPath + "tft.asa.gan_gan_glu_y.npy");
+                m_log.CHECK(TopVec[0].Compare(blobYexp, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-06), "The blobs do not match.");
             }
             finally
             {
@@ -193,6 +202,16 @@ namespace MyCaffe.test
             }
         }
 
+        /// <summary>
+        /// Test GLU backward
+        /// </summary>
+        /// <remarks>
+        /// To generate the test data, run the following:
+        /// 
+        /// Code: test_8a_glu_imha.py
+        /// Path: imha
+        /// Base: iter_0.base_set
+        /// </remarks>
         public void TestBackward()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.GLU);
@@ -204,7 +223,7 @@ namespace MyCaffe.test
             Blob<T> blobY = null;
             Blob<T> blobYexp = null;
             Blob<T> blobWork = null;
-            string strPath = getTestDataPath();
+            string strPath = getTestDataPath("imha");
             string strPathWts = getTestWtsPath();
 
             try
@@ -219,7 +238,7 @@ namespace MyCaffe.test
                 m_log.CHECK(layer != null, "The layer was not created correctly.");
                 m_log.CHECK(layer.type == LayerParameter.LayerType.GLU, "The layer type is incorrect.");
 
-                blobX.LoadFromNumpy(strPath + "glu_x.npy");
+                blobX.LoadFromNumpy(strPath + "tft.asa.gan_gan_glu_x.npy");
                 BottomVec.Clear();
                 BottomVec.Add(blobX);
                 TopVec.Clear();
@@ -227,35 +246,33 @@ namespace MyCaffe.test
 
                 layer.Setup(BottomVec, TopVec);
 
-                layer.blobs[0].LoadFromNumpy(strPath + "test1_glu.fc1.weight.npy");
-                layer.blobs[1].LoadFromNumpy(strPath + "test1_glu.fc1.bias.npy");
-                layer.blobs[2].LoadFromNumpy(strPath + "test1_glu.fc2.weight.npy");
-                layer.blobs[3].LoadFromNumpy(strPath + "test1_glu.fc2.bias.npy");
+                layer.blobs[0].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc1.weight.npy");
+                layer.blobs[1].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc1.bias.npy");
+                layer.blobs[2].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc2.weight.npy");
+                layer.blobs[3].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc2.bias.npy");
 
                 layer.Forward(BottomVec, TopVec);
 
-                blobYexp.LoadFromNumpy(strPath + "test1_glu_y.npy");
-                double dfErr = (typeof(T) == typeof(float)) ? 4e-07 : 4.5e-07;
-                m_log.CHECK(TopVec[0].Compare(blobYexp, blobWork, false, dfErr), "The blobs do not match.");
+                blobYexp.LoadFromNumpy(strPath + "tft.asa.gan_gan_glu_y.npy");
+                m_log.CHECK(TopVec[0].Compare(blobYexp, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-06), "The blobs do not match.");
 
-                TopVec[0].LoadFromNumpy(strPath + "test1_glu_y.grad.npy", true);
+                //** BACKWARD **
+
+                TopVec[0].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu_y.grad.npy", true);
 
                 layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
 
                 blobGradExp.LoadFromNumpy(strPath + "test1_glu_x.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(blobX, blobWork, true, dfErr), "The blobs do not match.");
+                m_log.CHECK(blobGradExp.Compare(blobX, blobWork, true), "The blobs do not match.");
 
-                if (typeof(T) == typeof(double))
-                    dfErr = 0.03;
+                blobGradExp.LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc1.weight.grad.npy", true);
+                m_log.CHECK(blobGradExp.Compare(layer.blobs[0], blobWork, true, (typeof(T) == typeof(float)) ? 1e-06 : 3e-05), "The blobs do not match.");
+                blobGradExp.LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc1.bias.grad.npy", true);
+                m_log.CHECK(blobGradExp.Compare(layer.blobs[1], blobWork, true, 1e-05), "The blobs do not match.");
 
-                blobGradExp.LoadFromNumpy(strPath + "test1_glu.fc1.weight.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(layer.blobs[0], blobWork, true, 1e-06), "The blobs do not match.");
-                blobGradExp.LoadFromNumpy(strPath + "test1_glu.fc1.bias.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(layer.blobs[1], blobWork, true, 2e-06), "The blobs do not match.");
-
-                blobGradExp.LoadFromNumpy(strPath + "test1_glu.fc2.weight.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(layer.blobs[2], blobWork, true, (typeof(T) == typeof(float)) ? 1e-8 : 2.5e-06), "The blobs do not match.");
-                blobGradExp.LoadFromNumpy(strPath + "test1_glu.fc2.bias.grad.npy", true);
+                blobGradExp.LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc2.weight.grad.npy", true);
+                m_log.CHECK(blobGradExp.Compare(layer.blobs[2], blobWork, true, (typeof(T) == typeof(float)) ? 1e-8 : 5e-05), "The blobs do not match.");
+                blobGradExp.LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc2.bias.grad.npy", true);
                 m_log.CHECK(blobGradExp.Compare(layer.blobs[3], blobWork, true, 2e-05), "The blobs do not match.");
             }
             finally
@@ -271,6 +288,16 @@ namespace MyCaffe.test
             }
         }
 
+        /// <summary>
+        /// Test GLU gradient check
+        /// </summary>
+        /// <remarks>
+        /// To generate the test data, run the following:
+        /// 
+        /// Code: test_8a_glu_imha.py
+        /// Path: imha
+        /// Base: iter_0.base_set
+        /// </remarks>
         public void TestGradient()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.GLU);
@@ -281,7 +308,7 @@ namespace MyCaffe.test
             Blob<T> blobY = null;
             Blob<T> blobYexp = null;
             Blob<T> blobWork = null;
-            string strPath = getTestDataPath();
+            string strPath = getTestDataPath("imha");
             string strPathWts = getTestWtsPath();
 
             try
@@ -295,7 +322,7 @@ namespace MyCaffe.test
                 m_log.CHECK(layer != null, "The layer was not created correctly.");
                 m_log.CHECK(layer.type == LayerParameter.LayerType.GLU, "The layer type is incorrect.");
 
-                blobX.LoadFromNumpy(strPath + "glu_x.npy");
+                blobX.LoadFromNumpy(strPath + "tft.asa.gan_gan_glu_x.npy");
                 BottomVec.Clear();
                 BottomVec.Add(blobX);
                 TopVec.Clear();
@@ -303,10 +330,10 @@ namespace MyCaffe.test
 
                 layer.Setup(BottomVec, TopVec);
 
-                layer.blobs[0].LoadFromNumpy(strPath + "test1_glu.fc1.weight.npy");
-                layer.blobs[1].LoadFromNumpy(strPath + "test1_glu.fc1.bias.npy");
-                layer.blobs[2].LoadFromNumpy(strPath + "test1_glu.fc2.weight.npy");
-                layer.blobs[3].LoadFromNumpy(strPath + "test1_glu.fc2.bias.npy");
+                layer.blobs[0].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc1.weight.npy");
+                layer.blobs[1].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc1.bias.npy");
+                layer.blobs[2].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc2.weight.npy");
+                layer.blobs[3].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc2.bias.npy");
 
                 GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
                 checker.CheckGradient(layer, BottomVec, TopVec, -1, 1, 0.01);

@@ -128,9 +128,9 @@ namespace MyCaffe.test
             return new FillerParameter("gaussian");
         }
 
-        private string getTestDataPath()
+        private string getTestDataPath(string strSubPath)
         {
-            return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\iter_0\\";
+            return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\" + strSubPath + "\\iter_0\\";
         }
 
         private string getTestWtsPath()
@@ -138,18 +138,30 @@ namespace MyCaffe.test
             return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\favorita\\weights\\hist_ts_transform\\";
         }
 
+        /// <summary>
+        /// Test GAN foward
+        /// </summary>
+        /// <remarks>
+        /// To generate the test data, run the following:
+        /// 
+        /// Code: test_8b_gateaddnorm_imha.py
+        /// Path: imha
+        /// Base: iter_0.base_set
+        /// </remarks>
         public void TestForward()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.GATEADDNORM);
             p.glu_param.input_dim = 64;
+            p.glu_param.axis = 2;
             p.dropout_param.dropout_ratio = 0.0;
             p.layer_norm_param.epsilon = 1e-10;
+            p.layer_norm_param.enable_cuda_impl = false;
             GateAddNormLayer<T> layer = null;
             Blob<T> blobX = null;
             Blob<T> blobY = null;
             Blob<T> blobYexp = null;
             Blob<T> blobWork = null;
-            string strPath = getTestDataPath();
+            string strPath = getTestDataPath("imha");
             string strPathWts = getTestWtsPath();
 
             try
@@ -163,7 +175,7 @@ namespace MyCaffe.test
                 m_log.CHECK(layer != null, "The layer was not created correctly.");
                 m_log.CHECK(layer.type == LayerParameter.LayerType.GATEADDNORM, "The layer type is incorrect.");
 
-                blobX.LoadFromNumpy(strPath + "gan_x.npy");
+                blobX.LoadFromNumpy(strPath + "test_.gan_x.npy");
                 BottomVec.Clear();
                 BottomVec.Add(blobX);
                 TopVec.Clear();
@@ -171,16 +183,15 @@ namespace MyCaffe.test
 
                 layer.Setup(BottomVec, TopVec);
 
-                layer.blobs[0].LoadFromNumpy(strPath + "test_gan_gate.module.fc1.weight.npy");
-                layer.blobs[1].LoadFromNumpy(strPath + "test_gan_gate.module.fc1.bias.npy");
-                layer.blobs[2].LoadFromNumpy(strPath + "test_gan_gate.module.fc2.weight.npy");
-                layer.blobs[3].LoadFromNumpy(strPath + "test_gan_gate.module.fc2.bias.npy");
+                layer.blobs[0].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc1.weight.npy");
+                layer.blobs[1].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc1.bias.npy");
+                layer.blobs[2].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc2.weight.npy");
+                layer.blobs[3].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc2.bias.npy");
 
                 layer.Forward(BottomVec, TopVec);
 
-                blobYexp.LoadFromNumpy(strPath + "test_gan_y.npy");
-                double dfErr = (typeof(T) == typeof(float)) ? 8e-07 : 2e-06;
-                m_log.CHECK(TopVec[0].Compare(blobYexp, blobWork, false, dfErr), "The blobs do not match.");
+                blobYexp.LoadFromNumpy(strPath + "test_.gan_y.npy");
+                m_log.CHECK(TopVec[0].Compare(blobYexp, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 3e-06), "The blobs do not match.");
             }
             finally
             {
@@ -194,19 +205,31 @@ namespace MyCaffe.test
             }
         }
 
+        /// <summary>
+        /// Test GAN backward
+        /// </summary>
+        /// <remarks>
+        /// To generate the test data, run the following:
+        /// 
+        /// Code: test_8b_gateaddnorm_imha.py
+        /// Path: imha
+        /// Base: iter_0.base_set
+        /// </remarks>
         public void TestBackward()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.GATEADDNORM);
             p.glu_param.input_dim = 64;
+            p.glu_param.axis = 2;
             p.dropout_param.dropout_ratio = 0.0;
             p.layer_norm_param.epsilon = 1e-10;
+            p.layer_norm_param.enable_cuda_impl = false;
             GateAddNormLayer<T> layer = null;
             Blob<T> blobGradExp = null;
             Blob<T> blobX = null;
             Blob<T> blobY = null;
             Blob<T> blobYexp = null;
             Blob<T> blobWork = null;
-            string strPath = getTestDataPath();
+            string strPath = getTestDataPath("imha");
             string strPathWts = getTestWtsPath();
 
             try
@@ -221,7 +244,7 @@ namespace MyCaffe.test
                 m_log.CHECK(layer != null, "The layer was not created correctly.");
                 m_log.CHECK(layer.type == LayerParameter.LayerType.GATEADDNORM, "The layer type is incorrect.");
 
-                blobX.LoadFromNumpy(strPath + "gan_x.npy");
+                blobX.LoadFromNumpy(strPath + "test_.gan_x.npy");
                 BottomVec.Clear();
                 BottomVec.Add(blobX);
                 TopVec.Clear();
@@ -229,33 +252,34 @@ namespace MyCaffe.test
 
                 layer.Setup(BottomVec, TopVec);
 
-                layer.blobs[0].LoadFromNumpy(strPath + "test_gan_gate.module.fc1.weight.npy");
-                layer.blobs[1].LoadFromNumpy(strPath + "test_gan_gate.module.fc1.bias.npy");
-                layer.blobs[2].LoadFromNumpy(strPath + "test_gan_gate.module.fc2.weight.npy");
-                layer.blobs[3].LoadFromNumpy(strPath + "test_gan_gate.module.fc2.bias.npy");
+                layer.blobs[0].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc1.weight.npy");
+                layer.blobs[1].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc1.bias.npy");
+                layer.blobs[2].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc2.weight.npy");
+                layer.blobs[3].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc2.bias.npy");
 
                 layer.Forward(BottomVec, TopVec);
 
-                blobYexp.LoadFromNumpy(strPath + "test_gan_y.npy");
-                double dfErr = (typeof(T) == typeof(float)) ? 8e-07 : 2e-06;
-                m_log.CHECK(TopVec[0].Compare(blobYexp, blobWork, false, dfErr), "The blobs do not match.");
+                blobYexp.LoadFromNumpy(strPath + "test_.gan_y.npy");
+                m_log.CHECK(TopVec[0].Compare(blobYexp, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 3e-06), "The blobs do not match.");
 
-                TopVec[0].LoadFromNumpy(strPath + "test_gan_y.grad.npy", true);
+                //** BACKWARD **
+
+                TopVec[0].LoadFromNumpy(strPath + "test_.gan_y.grad.npy", true);
 
                 layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
 
-                blobGradExp.LoadFromNumpy(strPath + "test_gan_x.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(blobX, blobWork, true, 1.5e-06), "The blobs do not match.");
+                blobGradExp.LoadFromNumpy(strPath + "test_.gan_x.grad.npy", true);
+                m_log.CHECK(blobGradExp.Compare(blobX, blobWork, true, (typeof(T) == typeof(float)) ? 1e-08 : 1.5e-06), "The blobs do not match.");
 
-                blobGradExp.LoadFromNumpy(strPath + "test_gan.gate.module.fc1.weight.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(layer.blobs[0], blobWork, true, 2e-05), "The blobs do not match.");
-                blobGradExp.LoadFromNumpy(strPath + "test_gan.gate.module.fc1.bias.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(layer.blobs[1], blobWork, true, 2e-05), "The blobs do not match.");
+                blobGradExp.LoadFromNumpy(strPath + "tft.asa.gan_gate_gan_glu.internal.fc1.weight.grad.npy", true);
+                m_log.CHECK(blobGradExp.Compare(layer.blobs[0], blobWork, true, (typeof(T) == typeof(float)) ? 1e-08 : 5e-05), "The blobs do not match.");
+                blobGradExp.LoadFromNumpy(strPath + "tft.asa.gan_gate_gan_glu.internal.fc1.bias.grad.npy", true);
+                m_log.CHECK(blobGradExp.Compare(layer.blobs[1], blobWork, true, (typeof(T) == typeof(float)) ? 8e-06 : 2e-05), "The blobs do not match.");
 
-                blobGradExp.LoadFromNumpy(strPath + "test_gan.gate.module.fc2.weight.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(layer.blobs[2], blobWork, true, 4e-05), "The blobs do not match.");
-                blobGradExp.LoadFromNumpy(strPath + "test_gan.gate.module.fc2.bias.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(layer.blobs[3], blobWork, true, 4e-05), "The blobs do not match.");
+                blobGradExp.LoadFromNumpy(strPath + "tft.asa.gan_gate_gan_glu.internal.fc2.weight.grad.npy", true);
+                m_log.CHECK(blobGradExp.Compare(layer.blobs[2], blobWork, true, (typeof(T) == typeof(float)) ? 1e-08 : 1e-04), "The blobs do not match.");
+                blobGradExp.LoadFromNumpy(strPath + "tft.asa.gan_gate_gan_glu.internal.fc2.bias.grad.npy", true);
+                m_log.CHECK(blobGradExp.Compare(layer.blobs[3], blobWork, true, (typeof(T) == typeof(float)) ? 2e-05 : 2e-05), "The blobs do not match.");
             }
             finally
             {
@@ -270,18 +294,30 @@ namespace MyCaffe.test
             }
         }
 
+        /// <summary>
+        /// Test GAN gradient check
+        /// </summary>
+        /// <remarks>
+        /// To generate the test data, run the following:
+        /// 
+        /// Code: test_8b_gateaddnorm_imha.py
+        /// Path: imha
+        /// Base: iter_0.base_set
+        /// </remarks>
         public void TestGradient()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.GATEADDNORM);
             p.glu_param.input_dim = 64;
+            p.glu_param.axis = 2;
             p.dropout_param.dropout_ratio = 0.0;
             p.layer_norm_param.epsilon = 1e-10;
+            p.layer_norm_param.enable_cuda_impl = false;
             GateAddNormLayer<T> layer = null;
             Blob<T> blobX = null;
             Blob<T> blobY = null;
             Blob<T> blobYexp = null;
             Blob<T> blobWork = null;
-            string strPath = getTestDataPath();
+            string strPath = getTestDataPath("imha");
             string strPathWts = getTestWtsPath();
 
             try
@@ -295,7 +331,7 @@ namespace MyCaffe.test
                 m_log.CHECK(layer != null, "The layer was not created correctly.");
                 m_log.CHECK(layer.type == LayerParameter.LayerType.GATEADDNORM, "The layer type is incorrect.");
 
-                blobX.LoadFromNumpy(strPath + "gan_x.npy");
+                blobX.LoadFromNumpy(strPath + "tft.asa.gan_.gan_x.npy");
                 BottomVec.Clear();
                 BottomVec.Add(blobX);
                 TopVec.Clear();
@@ -303,10 +339,10 @@ namespace MyCaffe.test
 
                 layer.Setup(BottomVec, TopVec);
 
-                layer.blobs[0].LoadFromNumpy(strPath + "test_gan_gate.module.fc1.weight.npy");
-                layer.blobs[1].LoadFromNumpy(strPath + "test_gan_gate.module.fc1.bias.npy");
-                layer.blobs[2].LoadFromNumpy(strPath + "test_gan_gate.module.fc2.weight.npy");
-                layer.blobs[3].LoadFromNumpy(strPath + "test_gan_gate.module.fc2.bias.npy");
+                layer.blobs[0].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc1.weight.npy");
+                layer.blobs[1].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc1.bias.npy");
+                layer.blobs[2].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc2.weight.npy");
+                layer.blobs[3].LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc2.bias.npy");
 
                 GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
                 checker.CheckGradient(layer, BottomVec, TopVec, -1, 1, 0.01);

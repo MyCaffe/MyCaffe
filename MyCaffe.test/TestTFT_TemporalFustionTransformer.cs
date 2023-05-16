@@ -15,6 +15,7 @@ using MyCaffe.layers.tft;
 using MyCaffe.solvers;
 using System.Diagnostics;
 using System.IO;
+using MyCaffe.param.tft;
 
 /// <summary>
 /// Testing the TemporalFusionTransformer network.
@@ -160,7 +161,7 @@ namespace MyCaffe.test
             return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\" + strTag + "\\iter_" + nIter.ToString() + "\\weights\\";
         }
 
-        private string buildModel(bool bAddDataLayer, int nNumSamples, int nNumHeads, float fDropout, int nLstmLayers, int nNumOutputs, int nStateSize, int nNumHistSteps, int nNumFutureSteps, 
+        private string buildModel(bool bAddDataLayer, int nNumSamples, int nNumHeads, float fDropout, int nLstmLayers, int nNumOutputs, int nStateSize, int nNumHistSteps, int nNumFutureSteps,
             int nNumStaticNumeric, int nNumStaticCategorical, List<int> rgStaticCardinalities,
             int nNumHistNumeric, int nNumHistCategorical, List<int> rgHistCardinalities,
             int nNumFutureNumeric, int nNumFutureCategorical, List<int> rgFutureCardinalities)
@@ -178,7 +179,10 @@ namespace MyCaffe.test
                 data.data_temporal_param.num_historical_steps = (uint)nNumHistSteps;
                 data.data_temporal_param.num_future_steps = (uint)nNumFutureSteps;
                 data.data_temporal_param.source = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\favorita";
-                data.data_temporal_param.source_type = param.tft.DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE;
+                data.data_temporal_param.source_type = DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE;
+                data.data_temporal_param.shuffle_data = false;
+                data.data_temporal_param.seed = 1704;
+                data.include.Add(new NetStateRule(Phase.TRAIN));
                 data.top.Add("x_numeric_static");
                 data.top.Add("x_categorical_static");
                 data.top.Add("x_numeric_hist");
@@ -261,6 +265,14 @@ namespace MyCaffe.test
             //---------------------------------
             //  Static covariate encoders
             //---------------------------------
+            LayerParameter selstat_split = new LayerParameter(LayerParameter.LayerType.SPLIT, "selstat_split");
+            selstat_split.bottom.Add("selected_static");
+            selstat_split.top.Add("selstat_a");
+            selstat_split.top.Add("selstat_b");
+            selstat_split.top.Add("selstat_c");
+            selstat_split.top.Add("selstat_d");
+            p.layer.Add(selstat_split);
+
             LayerParameter static_cov_enc = new LayerParameter(LayerParameter.LayerType.GRN, "static_cov_enc");
             static_cov_enc.grn_param.input_dim = nStateSize;
             static_cov_enc.grn_param.hidden_dim = nStateSize;
@@ -269,25 +281,25 @@ namespace MyCaffe.test
 
             LayerParameter static_enc_sel = static_cov_enc.Clone(false);
             static_enc_sel.name = "enc_sel";
-            static_enc_sel.bottom.Add("selected_static");
+            static_enc_sel.bottom.Add("selstat_a");
             static_enc_sel.top.Add("c_selection");
             p.layer.Add(static_enc_sel);
 
             LayerParameter static_enc_enrich = static_cov_enc.Clone(false);
             static_enc_enrich.name = "enc_enr";
-            static_enc_enrich.bottom.Add("selected_static");
+            static_enc_enrich.bottom.Add("selstat_b");
             static_enc_enrich.top.Add("c_enrichment");
             p.layer.Add(static_enc_enrich);
 
             LayerParameter static_enc_seq_cell_init = static_cov_enc.Clone(false);
             static_enc_seq_cell_init.name = "enc_seq_cell_init";
-            static_enc_seq_cell_init.bottom.Add("selected_static");
+            static_enc_seq_cell_init.bottom.Add("selstat_c");
             static_enc_seq_cell_init.top.Add("c_seq_cell");
             p.layer.Add(static_enc_seq_cell_init);
 
             LayerParameter static_enc_seq_state_init = static_cov_enc.Clone(false);
             static_enc_seq_state_init.name = "enc_seq_state_init";
-            static_enc_seq_state_init.bottom.Add("selected_static");
+            static_enc_seq_state_init.bottom.Add("selstat_d");
             static_enc_seq_state_init.top.Add("c_seq_hidden");
             p.layer.Add(static_enc_seq_state_init);
 
@@ -301,7 +313,7 @@ namespace MyCaffe.test
             //  Variable Selection Networks - Temporal
             //---------------------------------
             LayerParameter hist_vsh_reshape_before = new LayerParameter(LayerParameter.LayerType.RESHAPE_TEMPORAL, "reshtmp_hist_b");
-            hist_vsh_reshape_before.reshape_temporal_param.mode = param.tft.ReshapeTemporalParameter.MODE.BEFORE;
+            hist_vsh_reshape_before.reshape_temporal_param.mode = ReshapeTemporalParameter.MODE.BEFORE;
             hist_vsh_reshape_before.bottom.Add("hist_ts_rep");
             hist_vsh_reshape_before.bottom.Add("c_selection_h");
             hist_vsh_reshape_before.top.Add("hist_ts_rep1");
@@ -320,7 +332,7 @@ namespace MyCaffe.test
             p.layer.Add(hist_vsn);
 
             LayerParameter hist_vsh_reshape_after = new LayerParameter(LayerParameter.LayerType.RESHAPE_TEMPORAL, "reshtmp_hist_a");
-            hist_vsh_reshape_after.reshape_temporal_param.mode = param.tft.ReshapeTemporalParameter.MODE.AFTER;
+            hist_vsh_reshape_after.reshape_temporal_param.mode = ReshapeTemporalParameter.MODE.AFTER;
             hist_vsh_reshape_after.reshape_temporal_param.enable_clip_output = true;
             hist_vsh_reshape_after.bottom.Add("selected_hist1");
             hist_vsh_reshape_after.top.Add("selected_hist");
@@ -328,7 +340,7 @@ namespace MyCaffe.test
             p.layer.Add(hist_vsh_reshape_after);
 
             LayerParameter future_vsh_reshape_before = new LayerParameter(LayerParameter.LayerType.RESHAPE_TEMPORAL, "reshtmp_fut_b");
-            future_vsh_reshape_before.reshape_temporal_param.mode = param.tft.ReshapeTemporalParameter.MODE.BEFORE;
+            future_vsh_reshape_before.reshape_temporal_param.mode = ReshapeTemporalParameter.MODE.BEFORE;
             future_vsh_reshape_before.bottom.Add("future_ts_rep");
             future_vsh_reshape_before.bottom.Add("c_selection_f");
             future_vsh_reshape_before.top.Add("future_ts_rep1");
@@ -347,7 +359,7 @@ namespace MyCaffe.test
             p.layer.Add(fut_vsn);
 
             LayerParameter future_vsh_reshape_after = new LayerParameter(LayerParameter.LayerType.RESHAPE_TEMPORAL, "reshtmp_fut_a");
-            future_vsh_reshape_after.reshape_temporal_param.mode = param.tft.ReshapeTemporalParameter.MODE.AFTER;
+            future_vsh_reshape_after.reshape_temporal_param.mode = ReshapeTemporalParameter.MODE.AFTER;
             future_vsh_reshape_after.reshape_temporal_param.enable_clip_output = true;
             future_vsh_reshape_after.bottom.Add("selected_fut1");
             future_vsh_reshape_after.top.Add("selected_fut");
@@ -358,10 +370,22 @@ namespace MyCaffe.test
             //---------------------------------
             //  Locality Enhancement with Seq2Seq processing
             //---------------------------------
+            LayerParameter selhist_split = new LayerParameter(LayerParameter.LayerType.SPLIT, "selhist_split");
+            selhist_split.bottom.Add("selected_hist");
+            selhist_split.top.Add("selhist_a");
+            selhist_split.top.Add("selhist_b");
+            p.layer.Add(selhist_split);
+
+            LayerParameter selfut_split = new LayerParameter(LayerParameter.LayerType.SPLIT, "selfut_split");
+            selfut_split.bottom.Add("selected_fut");
+            selfut_split.top.Add("selfut_a");
+            selfut_split.top.Add("selfut_b");
+            p.layer.Add(selfut_split);
+
             LayerParameter lstm_input = new LayerParameter(LayerParameter.LayerType.CONCAT, "lstm_input");
             lstm_input.concat_param.axis = 1;
-            lstm_input.bottom.Add("selected_hist");
-            lstm_input.bottom.Add("selected_fut");
+            lstm_input.bottom.Add("selhist_a");
+            lstm_input.bottom.Add("selfut_a");
             lstm_input.top.Add("lstm_input");
             p.layer.Add(lstm_input);
 
@@ -375,7 +399,7 @@ namespace MyCaffe.test
             past_lstm.recurrent_param.auto_repeat_hidden_states_across_layers = true;
             past_lstm.recurrent_param.use_cudnn_rnn8_if_supported = true;
             past_lstm.recurrent_param.engine = EngineParameter.Engine.CUDNN;
-            past_lstm.bottom.Add("selected_hist");
+            past_lstm.bottom.Add("selhist_b");
             past_lstm.bottom.Add("selected_hist_clip");
             past_lstm.bottom.Add("c_seq_hidden");
             past_lstm.bottom.Add("c_seq_cell");
@@ -393,7 +417,7 @@ namespace MyCaffe.test
             future_lstm.recurrent_param.auto_repeat_hidden_states_across_layers = true;
             future_lstm.recurrent_param.use_cudnn_rnn8_if_supported = true;
             future_lstm.recurrent_param.engine = EngineParameter.Engine.CUDNN;
-            future_lstm.bottom.Add("selected_fut");
+            future_lstm.bottom.Add("selfut_b");
             future_lstm.bottom.Add("selected_fut_clip");
             future_lstm.bottom.Add("hidden1");
             future_lstm.bottom.Add("cell1");
@@ -422,9 +446,15 @@ namespace MyCaffe.test
             //---------------------------------
             //  Static enrichment
             //---------------------------------
+            LayerParameter glstmout_split = new LayerParameter(LayerParameter.LayerType.SPLIT, "glstmout_split");
+            glstmout_split.bottom.Add("gated_lstm_output");
+            glstmout_split.top.Add("glstmout_a");
+            glstmout_split.top.Add("glstmout_b");
+            p.layer.Add(glstmout_split);
+
             LayerParameter static_enrich_grn_reshape_before = new LayerParameter(LayerParameter.LayerType.RESHAPE_TEMPORAL, "reshtmp_statenr_a");
-            static_enrich_grn_reshape_before.reshape_temporal_param.mode = param.tft.ReshapeTemporalParameter.MODE.BEFORE;
-            static_enrich_grn_reshape_before.bottom.Add("gated_lstm_output");
+            static_enrich_grn_reshape_before.reshape_temporal_param.mode = ReshapeTemporalParameter.MODE.BEFORE;
+            static_enrich_grn_reshape_before.bottom.Add("glstmout_a");
             static_enrich_grn_reshape_before.bottom.Add("c_enrichment");
             static_enrich_grn_reshape_before.top.Add("gated_lstm_output1");
             static_enrich_grn_reshape_before.top.Add("c_enrichment1");
@@ -442,7 +472,7 @@ namespace MyCaffe.test
             p.layer.Add(static_enrich_grn);
 
             LayerParameter static_enrich_grn_reshape_after = new LayerParameter(LayerParameter.LayerType.RESHAPE_TEMPORAL, "reshtmp_statenr_b");
-            static_enrich_grn_reshape_after.reshape_temporal_param.mode = param.tft.ReshapeTemporalParameter.MODE.AFTER;
+            static_enrich_grn_reshape_after.reshape_temporal_param.mode = ReshapeTemporalParameter.MODE.AFTER;
             static_enrich_grn_reshape_after.bottom.Add("enriched_sequence1a");
             static_enrich_grn_reshape_after.top.Add("enriched_sequence");
             p.layer.Add(static_enrich_grn_reshape_after);
@@ -505,7 +535,7 @@ namespace MyCaffe.test
             pos_wise_ff_gate.glu_param.input_dim = nStateSize;
             pos_wise_ff_gate.glu_param.axis = 2;
             pos_wise_ff_gate.bottom.Add("post_poswise_ff_grn");
-            pos_wise_ff_gate.bottom.Add("gated_lstm_output");
+            pos_wise_ff_gate.bottom.Add("glstmout_b");
             pos_wise_ff_gate.top.Add("gated_poswise_ff");
             p.layer.Add(pos_wise_ff_gate);
 
