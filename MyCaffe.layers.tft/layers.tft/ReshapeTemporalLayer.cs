@@ -27,7 +27,6 @@ namespace MyCaffe.layers.tft
     public class ReshapeTemporalLayer<T> : Layer<T>
     {
         ReshapeTemporalParameter.MODE m_mode;
-        int m_nNumInputs;
         int m_nNumSamples;
         int m_nNumRepeatCount;
         int m_nForcedRepeatCount;
