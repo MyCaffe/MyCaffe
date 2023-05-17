@@ -675,6 +675,9 @@ namespace MyCaffe.layers.tft
                 // Clip to max if needed.
                 if (nMax > 0)
                 {
+                    if (m_rgData[type].Item1.Count == nMax)
+                        bRefreshed = true;
+
                     while (m_rgData[type].Item1.Count > nMax)
                     {
                         if (m_rgData[type].Item1.Count > 0)
