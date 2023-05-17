@@ -41,11 +41,31 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestBlobLoadNumpyPartial()
+        {
+            DataTemporalTest test = new DataTemporalTest();
+
+            try
+            {
+                foreach (IDataTemporalTest t in test.Tests)
+                {
+                    t.TestBlobLoadNumpyPartial();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
     }
 
     interface IDataTemporalTest : ITest
     {
         void TestForward();
+        void TestBlobLoadNumpyPartial();
     }
 
     class DataTemporalTest : TestBase
@@ -244,6 +264,47 @@ namespace MyCaffe.test
                 if (net != null)
                     net.Dispose();
             }
+        }
+
+        public void TestBlobLoadNumpyPartial()
+        {
+            Blob<T> blobVal = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobData = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobWork = new Blob<T>(m_cuda, m_log);
+            string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\favorita\\";
+            string strFile;
+
+            strFile = strPath + "validation_static_feats_categorical.npy";
+            blobVal.LoadFromNumpy(strFile);
+            blobData.ReshapeLike(blobVal);
+
+            int nStartIdx = 0;
+            int nCount = 1024;
+
+            float[] rgData = Utility.ConvertVecF<T>(blobVal.mutable_cpu_data);
+            Array.Clear(rgData, 0, rgData.Length);
+
+            while (nStartIdx < blobVal.num)
+            {
+                Tuple<List<float[]>, int[], List<string>> data = Blob<T>.LoadFromNumpyEx(strFile, null, int.MaxValue, nStartIdx, nCount);
+
+                for (int i = 0; i < data.Item1.Count; i++)
+                {
+                    int nItems = data.Item2.Last();
+                    int nIdx = (nStartIdx + i) * nItems;
+                    
+                    Array.Copy(data.Item1[i], 0, rgData, nIdx, nItems);
+                }
+
+                nStartIdx += nCount;
+            }
+
+            blobData.mutable_cpu_data = convert(rgData);
+
+            double dfMin;
+            double dfMax;
+            double dfErr = 1e-12;
+            m_log.CHECK(blobVal.CompareEx(blobData, blobWork, out dfMin, out dfMax, false, dfErr), "The blobs are not the same.");
         }
     }
 }
