@@ -3266,6 +3266,156 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Save a blob with data to a Numpy .npy file.
+        /// </summary>
+        /// <param name="strFile">Specifies the .npy file name where the data is saved.</param>
+        /// <param name="rgData">Specifies the data to be saved.</param>
+        /// <param name="rgShape">Specifies the shape of the data to be saved.</param>
+        /// <remarks>
+        /// @see[A Simple File Format for NumPy Arrays](https://numpy.org/doc/1.13/neps/npy-format.html)
+        /// </remarks>
+        public static void SaveToNumpy(string strFile, float[] rgData, int[] rgShape)
+        {
+            using (FileStream fs = File.Open(strFile, FileMode.Create))
+            using (BinaryWriter bw = new BinaryWriter(fs))
+            {
+                bw.Write((byte)0x93);
+                bw.Write((byte)0x4E); // N
+                bw.Write((byte)0x55); // U
+                bw.Write((byte)0x4D); // M
+                bw.Write((byte)0x50); // P
+                bw.Write((byte)0x59); // Y
+                bw.Write((byte)0x01);
+                bw.Write((byte)0x00);
+
+                string strHeader = "{'descr': '<f4', 'fortran_order': False, 'shape': (";
+                for (int i = 0; i < rgShape.Length; i++)
+                {
+                    strHeader += rgShape[i].ToString() + ",";
+                }
+
+                strHeader = strHeader.TrimEnd(',');
+                strHeader += ")";
+                strHeader = strHeader.PadRight(117, ' ');
+                strHeader += "\n";
+
+                byte bLen = (byte)strHeader.Length;
+                bw.Write(bLen);
+                bw.Write((byte)0x00);
+
+                foreach (char ch in strHeader)
+                {
+                    bw.Write((byte)ch);
+                }
+
+                for (int i = 0; i < rgData.Length; i++)
+                {
+                    bw.Write(rgData[i]);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Save a blob with data to a Numpy .npy file.
+        /// </summary>
+        /// <param name="strFile">Specifies the .npy file name where the data is saved.</param>
+        /// <param name="rgData">Specifies the data to be saved.</param>
+        /// <param name="rgShape">Specifies the shape of the data to be saved.</param>
+        /// <remarks>
+        /// @see[A Simple File Format for NumPy Arrays](https://numpy.org/doc/1.13/neps/npy-format.html)
+        /// </remarks>
+        public static void SaveToNumpy(string strFile, int[] rgData, int[] rgShape)
+        {
+            using (FileStream fs = File.Open(strFile, FileMode.Create))
+            using (BinaryWriter bw = new BinaryWriter(fs))
+            {
+                bw.Write((byte)0x93);
+                bw.Write((byte)0x4E); // N
+                bw.Write((byte)0x55); // U
+                bw.Write((byte)0x4D); // M
+                bw.Write((byte)0x50); // P
+                bw.Write((byte)0x59); // Y
+                bw.Write((byte)0x01);
+                bw.Write((byte)0x00);
+
+                string strHeader = "{'descr': '<i4', 'fortran_order': False, 'shape': (";
+                for (int i = 0; i < rgShape.Length; i++)
+                {
+                    strHeader += rgShape[i].ToString() + ",";
+                }
+
+                strHeader = strHeader.TrimEnd(',');
+                strHeader += ")";
+                strHeader = strHeader.PadRight(117, ' ');
+                strHeader += "\n";
+
+                byte bLen = (byte)strHeader.Length;
+                bw.Write(bLen);
+                bw.Write((byte)0x00);
+
+                foreach (char ch in strHeader)
+                {
+                    bw.Write((byte)ch);
+                }
+
+                for (int i = 0; i < rgData.Length; i++)
+                {
+                    bw.Write(rgData[i]);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Save a blob with data to a Numpy .npy file.
+        /// </summary>
+        /// <param name="strFile">Specifies the .npy file name where the data is saved.</param>
+        /// <param name="rgData">Specifies the data to be saved.</param>
+        /// <param name="rgShape">Specifies the shape of the data to be saved.</param>
+        /// <remarks>
+        /// @see[A Simple File Format for NumPy Arrays](https://numpy.org/doc/1.13/neps/npy-format.html)
+        /// </remarks>
+        public static void SaveToNumpy(string strFile, long[] rgData, int[] rgShape)
+        {
+            using (FileStream fs = File.Open(strFile, FileMode.Create))
+            using (BinaryWriter bw = new BinaryWriter(fs))
+            {
+                bw.Write((byte)0x93);
+                bw.Write((byte)0x4E); // N
+                bw.Write((byte)0x55); // U
+                bw.Write((byte)0x4D); // M
+                bw.Write((byte)0x50); // P
+                bw.Write((byte)0x59); // Y
+                bw.Write((byte)0x01);
+                bw.Write((byte)0x00);
+
+                string strHeader = "{'descr': '<i8', 'fortran_order': False, 'shape': (";
+                for (int i = 0; i < rgShape.Length; i++)
+                {
+                    strHeader += rgShape[i].ToString() + ",";
+                }
+
+                strHeader = strHeader.TrimEnd(',');
+                strHeader += ")";
+                strHeader = strHeader.PadRight(117, ' ');
+                strHeader += "\n";
+
+                byte bLen = (byte)strHeader.Length;
+                bw.Write(bLen);
+                bw.Write((byte)0x00);
+
+                foreach (char ch in strHeader)
+                {
+                    bw.Write((byte)ch);
+                }
+
+                for (int i = 0; i < rgData.Length; i++)
+                {
+                    bw.Write(rgData[i]);
+                }
+            }
+        }
+
+        /// <summary>
         /// Load a blob with data from a Numpy array .npy file.
         /// </summary>
         /// <param name="strFile">Specifies the .npy file name.</param>
