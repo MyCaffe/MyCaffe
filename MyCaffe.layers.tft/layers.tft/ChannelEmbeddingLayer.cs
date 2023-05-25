@@ -115,7 +115,7 @@ namespace MyCaffe.layers.tft
             Blob<T> blobNumeric = null;
             Blob<T> blobCategorical = null;
 
-            m_log.CHECK_EQ(m_param.numeric_trans_param.state_size, m_param.categorical_trans_param.state_size, "The numeric and categorical parameters must have the smae sate_size.");
+            m_log.CHECK_EQ(m_param.numeric_trans_param.state_size, m_param.categorical_trans_param.state_size, "The numeric and categorical parameters must have the same sate_size.");
 
             getBlobs(colBottom, out blobNumeric, out blobCategorical);
 
