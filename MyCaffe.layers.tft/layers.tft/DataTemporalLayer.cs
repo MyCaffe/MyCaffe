@@ -228,7 +228,7 @@ namespace MyCaffe.layers.tft
         /// <param name="nBatchSize">Specifies the batch size.</param>
         /// <param name="nHistoricalSteps">Specifies the number of historical steps.</param>
         /// <param name="nFutureSteps">Specifies the number of future steps.</param>
-        /// <param name="nMaxLoadCount">Specifies the max items to load in background (default = 10000).</param>
+        /// <param name="dfPctMaxLoad">Specifies the percent of total items to load in background (default = 1, or 100%).</param>
         /// <param name="nDripRefreshRateInSec">Specifies the rate in seconds to refresh the data.</param>
         /// <param name="nChunkCount">Specifies the number of items to load on each cycle.</param>
         /// <param name="log">Specifies the output log.</param>
@@ -387,11 +387,20 @@ namespace MyCaffe.layers.tft
             m_data.LoadBatch(nBatchSize, col);
         }
 
+        /// <summary>
+        /// Returns the total size of the data.
+        /// </summary>
+        /// <returns>The total size is returned.</returns>
         public int GetTotalSize()
         {
             return m_data.GetTotalSize();
         }
 
+        /// <summary>
+        /// Returns the shape of a given output type.
+        /// </summary>
+        /// <param name="ot">Specifies the output type.</param>
+        /// <returns>The shape returned can be used to reshape the Blob used to store the data on the GPU.</returns>
         public int[] GetShape(Data<T>.OUTPUT_TYPE ot)
         {
             return m_data.GetShape(ot);
