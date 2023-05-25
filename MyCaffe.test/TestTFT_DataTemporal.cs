@@ -38,7 +38,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath);
+                    t.TestForward(Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100);
                 }
             }
             finally
@@ -57,7 +57,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath);
+                    t.TestForward(Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100);
                 }
             }
             finally
@@ -76,7 +76,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath);
+                    t.TestForward(Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100);
                 }
             }
             finally
@@ -107,7 +107,7 @@ namespace MyCaffe.test
 
     interface IDataTemporalTest : ITest
     {
-        void TestForward(Phase phase, DataTemporalParameter.SOURCE_TYPE srcType, string srcPath);
+        void TestForward(Phase phase, DataTemporalParameter.SOURCE_TYPE srcType, string srcPath, int nBatchSize);
         void TestBlobLoadNumpyPartial();
     }
 
@@ -193,6 +193,127 @@ namespace MyCaffe.test
             return p.ToProto("root").ToString();
         }
 
+        private Tuple<long[], int[]> load(string strPath, string strType, string strFile)
+        {
+            string strFile1 = strPath + "\\" + strType + "_" + strFile;
+            NumpyFile<long> npy = new NumpyFile<long>(m_log);
+            npy.OpenRead(strFile1);
+
+            long[] rgData = new long[npy.TotalCount];
+            int nOffset = 0;
+            long[] rgVal = null;
+
+            for (int i = 0; i < npy.Rows; i++)
+            {
+                rgVal = npy.LoadRow(rgVal, i);
+                Array.Copy(rgVal, 0, rgData, nOffset, rgVal.Length);
+                nOffset += rgVal.Length;
+            }
+
+            npy.Dispose();
+
+            return new Tuple<long[], int[]>(rgData, npy.Shape);
+        }
+
+        private void load(Blob<T> blob, string strPath, string strType, string strFile)
+        {
+            string strFile1 = strPath + "\\" + strType + "_" + strFile;
+            NumpyFile<float> npy = new NumpyFile<float>(m_log);
+            npy.OpenRead(strFile1);
+
+            float[] rgData = new float[npy.TotalCount];
+            int nOffset = 0;
+            float[] rgVal = null;
+
+            for (int i = 0; i < npy.Rows; i++)
+            {
+                rgVal = npy.LoadRow(rgVal, i);
+                Array.Copy(rgVal, 0, rgData, nOffset, rgVal.Length);
+                nOffset += rgVal.Length;
+            }
+
+            blob.Reshape(npy.Shape);
+            blob.mutable_cpu_data = convert(rgData);
+
+            npy.Dispose();
+        }
+
+        private void loadNum(ref int nRowIdx, ref int nColIdx, DataSchema schema, Blob<T> blobObsNum, Blob<T> blobKnownNum, Blob<T> blobHistNum, Blob<T> blobFutNum, Blob<T> blobTarget, int nNumHist, int nNumFut, int nBatchSize)
+        {
+            float[] rgObsNum = convertF(blobObsNum.mutable_cpu_data);
+            float[] rgKnownNum = convertF(blobKnownNum.mutable_cpu_data);
+
+            int nObsFields = schema.Data.ObservedNum.Count;
+            int nKnownFields = schema.Data.KnownNum.Count;
+            int nFields = nObsFields + nKnownFields;
+
+            blobHistNum.Reshape(nBatchSize, nNumHist, nObsFields + nKnownFields, 1);
+            blobFutNum.Reshape(nBatchSize, nNumFut, nKnownFields, 1);
+            blobTarget.Reshape(nBatchSize, nNumFut, 1, 1);
+
+            float[] rgHistNum = convertF(blobHistNum.mutable_cpu_data);
+            float[] rgFutNum = convertF(blobFutNum.mutable_cpu_data);
+            float[] rgTarget = convertF(blobTarget.mutable_cpu_data);
+
+            int nTargetIndex = schema.Data.TargetIndex;
+            if (nTargetIndex < 0)
+                m_log.FAIL("Could not find the target index in the schema!");
+
+            for (int i = 0; i < nBatchSize; i++)
+            {
+                int nRowOffset = nRowIdx * schema.Data.Columns;
+                int nStartIdx = schema.Lookups[0][nRowIdx].ValidRangeStartIndex;
+                int nStartIdx1 = nRowOffset + nStartIdx + nColIdx;
+
+                for (int j = 0; j < nNumHist + nNumFut; j++)
+                {
+                    int nIdxSrc = nStartIdx1 + j;
+
+                    if (j < nNumHist)
+                    {
+                        int nIdxDst = (i * nNumHist * nFields) + (j * nFields);
+
+                        for (int k = 0; k < nObsFields; k++)
+                        {
+                            rgHistNum[nIdxDst + k] = rgObsNum[nIdxSrc * nObsFields + k];
+                        }
+
+                        for (int k = 0; k < nKnownFields; k++)
+                        {
+                            rgHistNum[nIdxDst + nObsFields + k] = rgKnownNum[nIdxSrc * nKnownFields + k];
+                        }
+                    }
+                    else
+                    {
+                        int nLocalJ = j - nNumHist;
+                        int nIdxDst = (i * nNumFut * nKnownFields) + (nLocalJ * nKnownFields);
+                        int nIdxDst1 = (i * nNumFut) + nLocalJ;
+
+                        rgTarget[nIdxDst1] = rgObsNum[nIdxSrc * nObsFields + nTargetIndex];
+
+                        for (int k = 0; k < nKnownFields; k++)
+                        {
+                            rgFutNum[nIdxDst + k] = rgKnownNum[nIdxSrc * nKnownFields + k];
+                        }
+                    }
+                }
+
+                nColIdx++;
+                if (nColIdx + nNumHist + nNumFut > schema.Lookups[0][nRowIdx].ValidRangeCount)
+                {
+                    nColIdx = 0;
+                    nRowIdx++;
+
+                    if (nRowIdx >= schema.Lookups[0].Count)
+                        nRowIdx = 0;
+                }
+            }
+
+            blobHistNum.mutable_cpu_data = convert(rgHistNum);
+            blobFutNum.mutable_cpu_data = convert(rgFutNum);
+            blobTarget.mutable_cpu_data = convert(rgTarget);
+        }
+
         /// <summary>
         /// Test the forward pass for self attention
         /// </summary>
@@ -212,7 +333,7 @@ namespace MyCaffe.test
         /// Fresh test\iter_0 data generated by running:
         /// training.py with TemporalFusionTransformer options: debug=True, tag='tft', use_mycaffe=True
         /// </remarks>
-        public void TestForward(Phase phase, DataTemporalParameter.SOURCE_TYPE srcType, string strSrcPath)
+        public void TestForward(Phase phase, DataTemporalParameter.SOURCE_TYPE srcType, string strSrcPath, int nBatchSize)
         {
             CancelEvent evtCancel = new CancelEvent();
             string strPath = getTestDataPath();
@@ -220,19 +341,38 @@ namespace MyCaffe.test
             Blob<T> blobVal = null;
             Blob<T> blobWork = null;
             Blob<T> blob1 = null;
-            Blob<T> blobSync = null;
+            Blob<T> blobObsNum = null;
+            Blob<T> blobKnownNum = null;
+            Blob<T> blobTarget = null;
+            Blob<T> blobHistNum = null;
+            Blob<T> blobFutNum = null;
 
             Net<T> net = null;
-            int nNumSamples = 256;
+            int nNumSamples = nBatchSize;
             int nNumHist = 90;
             int nNumFuture = 30;
-            int nMaxIter = 1000;
+            int nMaxIter = 200;
+            int nRowIdx = 0;
+            int nColIdx = 0;
 
             try
             {
                 blobVal = new Blob<T>(m_cuda, m_log);
                 blobWork = new Blob<T>(m_cuda, m_log);
-                blobSync = new Blob<T>(m_cuda, m_log);
+                blobObsNum = new Blob<T>(m_cuda, m_log);
+                blobKnownNum = new Blob<T>(m_cuda, m_log);
+                blobTarget = new Blob<T>(m_cuda, m_log);
+                blobHistNum = new Blob<T>(m_cuda, m_log);
+                blobFutNum = new Blob<T>(m_cuda, m_log);
+
+                string strType = phase.ToString().ToLower();
+                if (strType == "run")
+                    strType = "validation";
+
+                DataSchema schema = DataSchema.Load(strSrcPath + "\\" + strType + "_schema.xml");
+                Tuple<long[], int[]> sync = load(strSrcPath, strType, "sync.npy");
+                load(blobObsNum, strSrcPath, strType, "observed_num.npy");
+                load(blobKnownNum, strSrcPath, strType, "known_num.npy");   
 
                 string strModel = buildModel(nNumSamples, nNumHist, nNumFuture, srcType, strSrcPath);
                 RawProto rp = RawProto.Parse(strModel);
@@ -244,17 +384,20 @@ namespace MyCaffe.test
                 {
                     BlobCollection<T> colRes = net.Forward();
 
+                    loadNum(ref nRowIdx, ref nColIdx, schema, blobObsNum, blobKnownNum, blobHistNum, blobFutNum, blobTarget, nNumHist, nNumFuture, nBatchSize);
+
                     blob1 = net.FindBlob("x_numeric_static");
                     m_log.CHECK(blob1 != null, "Could not find the blob 'x_numeric_static'!");
                     m_log.CHECK(blob1.CompareShape(new List<int>() { 0 }), "The blob shape is different than expected");
 
                     blob1 = net.FindBlob("x_categorical_static");
                     m_log.CHECK(blob1 != null, "Could not find the blob 'x_categorical_static'!");
-                    m_log.CHECK(blob1.CompareShape(new List<int>() { 256, 1 }), "The blob shape is different than expected");
+                    m_log.CHECK(blob1.CompareShape(new List<int>() { nBatchSize, 1 }), "The blob shape is different than expected");
 
                     blob1 = net.FindBlob("x_numeric_hist");
                     m_log.CHECK(blob1 != null, "Could not find the blob 'x_numeric_hist'!");
-                    m_log.CHECK(blob1.CompareShape(new List<int>() { 256, 90, 3 }), "The blob shape is different than expected");
+                    m_log.CHECK(blob1.CompareShape(new List<int>() { nBatchSize, 90, 3 }), "The blob shape is different than expected");
+                    m_log.CHECK(blobHistNum.Compare(blob1, blobWork, false, 0), "The blob is different than expected.");
 
                     blob1 = net.FindBlob("x_categorical_hist");
                     m_log.CHECK(blob1 != null, "Could not find the blob 'x_categorical_hist'!");
@@ -262,7 +405,8 @@ namespace MyCaffe.test
 
                     blob1 = net.FindBlob("x_numeric_future");
                     m_log.CHECK(blob1 != null, "Could not find the blob 'x_numeric_future'!");
-                    m_log.CHECK(blob1.CompareShape(new List<int>() { 256, 30, 2 }), "The blob shape is different than expected");
+                    m_log.CHECK(blob1.CompareShape(new List<int>() { nBatchSize, 30, 2 }), "The blob shape is different than expected");
+                    m_log.CHECK(blobFutNum.Compare(blob1, blobWork, false, 0), "The blob is different than expected.");
 
                     blob1 = net.FindBlob("x_categorical_future");
                     m_log.CHECK(blob1 != null, "Could not find the blob 'x_categorical_future'!");
@@ -270,7 +414,11 @@ namespace MyCaffe.test
 
                     blob1 = net.FindBlob("target");
                     m_log.CHECK(blob1 != null, "Could not find the blob 'target'!");
-                    m_log.CHECK(blob1.CompareShape(new List<int>() { 256, 30 }), "The blob shape is different than expected");
+                    m_log.CHECK(blob1.CompareShape(new List<int>() { nBatchSize, 30 }), "The blob shape is different than expected");
+                    m_log.CHECK(blobTarget.Compare(blob1, blobWork, false, 0), "The blob is different than expected.");
+
+                    double dfPct = (double)i / nMaxIter;
+                    m_log.WriteLine("Testing batch " + i.ToString() + " (" + dfPct.ToString("P") + ")");
                 }
             }
             finally
@@ -280,7 +428,10 @@ namespace MyCaffe.test
                 
                 dispose(ref blobVal);
                 dispose(ref blobWork);
-                dispose(ref blobSync);
+                dispose(ref blobObsNum);
+                dispose(ref blobTarget);
+                dispose(ref blobHistNum);
+                dispose(ref blobFutNum);
 
                 if (net != null)
                     net.Dispose();
