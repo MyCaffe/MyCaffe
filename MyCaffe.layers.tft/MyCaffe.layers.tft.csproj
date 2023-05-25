@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="LayerFactory.cs" />
+    <Compile Include="layers.tft\DataSchema.cs" />
     <Compile Include="layers.tft\DataTemporalLayer.cs" />
     <Compile Include="layers.tft\QuantileAccuracyLayer.cs" />
     <Compile Include="layers.tft\QuantileLossLayer.cs" />
