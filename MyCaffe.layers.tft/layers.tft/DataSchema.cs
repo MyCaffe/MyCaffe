@@ -39,6 +39,8 @@ namespace MyCaffe.layers.tft
                 return null;
 
             XmlNode dataNode = node.SelectSingleNode("Data");
+            XmlAttribute colAtt = dataNode.Attributes["Columns"];
+            schema.Data.Columns = int.Parse(colAtt.Value);
 
             XmlNode syncNode = dataNode.SelectSingleNode("Sync");
             schema.m_data.LoadSync(syncNode);
@@ -89,6 +91,7 @@ namespace MyCaffe.layers.tft
     /// </summary>
     public class Data
     {
+        int m_nColumns = 0;
         FieldCollection m_sync = new FieldCollection();
         FieldCollection m_numKnown = new FieldCollection();
         FieldCollection m_catKnown = new FieldCollection();
@@ -165,6 +168,23 @@ namespace MyCaffe.layers.tft
         public void LoadStaticCat(XmlNode node)
         {
             m_catStatic = FieldCollection.Load(node);
+        }
+
+        /// <summary>
+        /// Returns the index of the target field within the Observed fields.
+        /// </summary>
+        public int TargetIndex
+        {
+            get { return m_numObserved.FindFieldIndex(Field.INPUT_TYPE.TARGET); }
+        }
+
+        /// <summary>
+        /// Returns the number of columns in the data.
+        /// </summary>
+        public int Columns
+        {
+            get { return m_nColumns; }
+            set { m_nColumns = value; }
         }
 
         /// <summary>
@@ -471,7 +491,7 @@ namespace MyCaffe.layers.tft
         }
 
         /// <summary>
-        /// Specifies the valid data range start index or -1 to ignore.
+        /// Returns the valid data range start index or -1 to ignore.
         /// </summary>
         public int ValidRangeStartIndex
         {
@@ -479,11 +499,19 @@ namespace MyCaffe.layers.tft
         }
 
         /// <summary>
-        /// Specifies the valid data range end index or -1 to ignore.
+        /// Returns the valid data range end index or -1 to ignore.
         /// </summary>
         public int ValidRangeEndIndex
         {
             get { return m_nValidRangeEndIndex; }
+        }
+
+        /// <summary>
+        /// Returns the number of valid data items in the range or -1 if the range is not set.
+        /// </summary>
+        public int ValidRangeCount
+        {
+            get { return (m_nValidRangeStartIndex == -1) ? -1 : (m_nValidRangeEndIndex - m_nValidRangeStartIndex) + 1; }
         }
 
         /// <summary>
