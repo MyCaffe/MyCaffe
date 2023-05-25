@@ -80,7 +80,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestTrainingFull()
+        public void TestTrainingFull_electricity()
         {
             TemporalFusionTransformerTest test = new TemporalFusionTransformerTest();
 
@@ -88,7 +88,7 @@ namespace MyCaffe.test
             {
                 foreach (ITemporalFusionTransformerTest t in test.Tests)
                 {
-                    t.TestTrainingFull();
+                    t.TestTrainingFull_electricity();
                 }
             }
             finally
@@ -103,7 +103,8 @@ namespace MyCaffe.test
         void TestForward();
         void TestBackward();
         void TestTraining();
-        void TestTrainingFull();
+        void TestTrainingFull_electricity();
+        void TestTrainingFull_favorita();
     }
 
     class TemporalFusionTransformerTest : TestBase
@@ -161,7 +162,7 @@ namespace MyCaffe.test
             return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\" + strTag + "\\iter_" + nIter.ToString() + "\\weights\\";
         }
 
-        private string buildModel(bool bAddDataLayer, int nNumSamples, int nNumHeads, float fDropout, int nLstmLayers, int nNumOutputs, int nStateSize, int nNumHistSteps, int nNumFutureSteps,
+        private string buildModel(string strSrc, bool bAddDataLayer, int nNumSamples, int nNumHeads, float fDropout, int nLstmLayers, int nNumOutputs, int nStateSize, int nNumHistSteps, int nNumFutureSteps,
             int nNumStaticNumeric, int nNumStaticCategorical, List<int> rgStaticCardinalities,
             int nNumHistNumeric, int nNumHistCategorical, List<int> rgHistCardinalities,
             int nNumFutureNumeric, int nNumFutureCategorical, List<int> rgFutureCardinalities)
@@ -178,11 +179,47 @@ namespace MyCaffe.test
                 data.data_temporal_param.batch_size = (uint)nNumSamples;
                 data.data_temporal_param.num_historical_steps = (uint)nNumHistSteps;
                 data.data_temporal_param.num_future_steps = (uint)nNumFutureSteps;
-                data.data_temporal_param.source = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\favorita";
+                data.data_temporal_param.source = strSrc;
                 data.data_temporal_param.source_type = DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE;
                 data.data_temporal_param.shuffle_data = false;
                 data.data_temporal_param.seed = 1704;
                 data.include.Add(new NetStateRule(Phase.TRAIN));
+                data.top.Add("x_numeric_static");
+                data.top.Add("x_categorical_static");
+                data.top.Add("x_numeric_hist");
+                data.top.Add("x_categorical_hist");
+                data.top.Add("x_numeric_future");
+                data.top.Add("x_categorical_future");
+                data.top.Add("target");
+                p.layer.Add(data);
+
+                data = new LayerParameter(LayerParameter.LayerType.DATA_TEMPORAL, "data");
+                data.data_temporal_param.batch_size = (uint)nNumSamples;
+                data.data_temporal_param.num_historical_steps = (uint)nNumHistSteps;
+                data.data_temporal_param.num_future_steps = (uint)nNumFutureSteps;
+                data.data_temporal_param.source = strSrc;
+                data.data_temporal_param.source_type = DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE;
+                data.data_temporal_param.shuffle_data = false;
+                data.data_temporal_param.seed = 1704;
+                data.include.Add(new NetStateRule(Phase.TEST));
+                data.top.Add("x_numeric_static");
+                data.top.Add("x_categorical_static");
+                data.top.Add("x_numeric_hist");
+                data.top.Add("x_categorical_hist");
+                data.top.Add("x_numeric_future");
+                data.top.Add("x_categorical_future");
+                data.top.Add("target");
+                p.layer.Add(data);
+
+                data = new LayerParameter(LayerParameter.LayerType.DATA_TEMPORAL, "data");
+                data.data_temporal_param.batch_size = (uint)nNumSamples;
+                data.data_temporal_param.num_historical_steps = (uint)nNumHistSteps;
+                data.data_temporal_param.num_future_steps = (uint)nNumFutureSteps;
+                data.data_temporal_param.source = strSrc;
+                data.data_temporal_param.source_type = DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE;
+                data.data_temporal_param.shuffle_data = false;
+                data.data_temporal_param.seed = 1704;
+                data.include.Add(new NetStateRule(Phase.RUN));
                 data.top.Add("x_numeric_static");
                 data.top.Add("x_categorical_static");
                 data.top.Add("x_numeric_hist");
@@ -1375,6 +1412,7 @@ namespace MyCaffe.test
         /// </remarks>
         public void TestForward()
         {
+            string strSrc = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\favorita";
             string strPathBase = getTestBaseDataPath();
             string strPath = getTestDataPath("full");
             string strPathWt = getTestWtsPath("full");
@@ -1407,7 +1445,7 @@ namespace MyCaffe.test
                 blobVal = new Blob<T>(m_cuda, m_log);
                 blobWork = new Blob<T>(m_cuda, m_log);
 
-                string strModel = buildModel(false, nNumSamples, nNumHeads, fDropout, nLstmLayers, nNumOutputs, nStateSize, nNumHistSteps, nNumFutureSteps, nNumStaticNumeric, nNumStaticCategorical, rgStaticCardinalities, nNumHistNumeric, nNumHistCategorical, rgHistCardinalities, nNumFutureNumeric, nNumFutureCategorical, rgFutureCardinalities);
+                string strModel = buildModel(strSrc, false, nNumSamples, nNumHeads, fDropout, nLstmLayers, nNumOutputs, nStateSize, nNumHistSteps, nNumFutureSteps, nNumStaticNumeric, nNumStaticCategorical, rgStaticCardinalities, nNumHistNumeric, nNumHistCategorical, rgHistCardinalities, nNumFutureNumeric, nNumFutureCategorical, rgFutureCardinalities);
                 RawProto rp = RawProto.Parse(strModel);
                 NetParameter param = NetParameter.FromProto(rp);
 
@@ -1537,6 +1575,7 @@ namespace MyCaffe.test
         /// </remarks>
         public void TestBackward()
         {
+            string strSrc = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\favorita";
             string strPathBase = getTestBaseDataPath();
             string strPath = getTestDataPath("full");
             string strPathWt = getTestWtsPath("full");
@@ -1569,7 +1608,7 @@ namespace MyCaffe.test
                 blobVal = new Blob<T>(m_cuda, m_log);
                 blobWork = new Blob<T>(m_cuda, m_log);
 
-                string strModel = buildModel(false, nNumSamples, nNumHeads, fDropout, nLstmLayers, nNumOutputs, nStateSize, nNumHistSteps, nNumFutureSteps, nNumStaticNumeric, nNumStaticCategorical, rgStaticCardinalities, nNumHistNumeric, nNumHistCategorical, rgHistCardinalities, nNumFutureNumeric, nNumFutureCategorical, rgFutureCardinalities);
+                string strModel = buildModel(strSrc, false, nNumSamples, nNumHeads, fDropout, nLstmLayers, nNumOutputs, nStateSize, nNumHistSteps, nNumFutureSteps, nNumStaticNumeric, nNumStaticCategorical, rgStaticCardinalities, nNumHistNumeric, nNumHistCategorical, rgHistCardinalities, nNumFutureNumeric, nNumFutureCategorical, rgFutureCardinalities);
                 RawProto rp = RawProto.Parse(strModel);
                 NetParameter param = NetParameter.FromProto(rp);
                 param.force_backward = true;
@@ -1789,6 +1828,7 @@ namespace MyCaffe.test
         /// </remarks>
         public void TestTraining()
         {
+            string strSrc = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\favorita";
             string strPath = getTestDataPath("all");
             string strPathWt = getTestWtsPath("all");
             Blob<T> blobVal = null;
@@ -1819,7 +1859,7 @@ namespace MyCaffe.test
 
             try
             {
-                string strModel = buildModel(true, nNumSamples, nNumHeads, fDropout, nLstmLayers, nNumOutputs, nStateSize, nNumHistSteps, nNumFutureSteps, nNumStaticNumeric, nNumStaticCategorical, rgStaticCardinalities, nNumHistNumeric, nNumHistCategorical, rgHistCardinalities, nNumFutureNumeric, nNumFutureCategorical, rgFutureCardinalities);
+                string strModel = buildModel(strSrc, true, nNumSamples, nNumHeads, fDropout, nLstmLayers, nNumOutputs, nStateSize, nNumHistSteps, nNumFutureSteps, nNumStaticNumeric, nNumStaticCategorical, rgStaticCardinalities, nNumHistNumeric, nNumHistCategorical, rgHistCardinalities, nNumFutureNumeric, nNumFutureCategorical, rgFutureCardinalities);
 
                 SolverParameter solverParam = new SolverParameter();
                 solverParam.base_lr = 0.001;
@@ -2037,8 +2077,9 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestTrainingFull()
+        public void TestTrainingFull_favorita()
         {
+            string strSrc = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\favorita";
             string strPath = getTestDataPath("all");
             string strPathWt = getTestWtsPath("all");
 
@@ -2062,11 +2103,10 @@ namespace MyCaffe.test
             int nNumFutureNumeric = 1;
             int nNumFutureCategorical = 7;
             List<int> rgFutureCardinalities = new List<int>() { 2, 3, 8, 13, 72, 6, 28 };
-            string strTag = "tft.all";
 
             try
             {
-                string strModel = buildModel(true, nNumSamples, nNumHeads, fDropout, nLstmLayers, nNumOutputs, nStateSize, nNumHistSteps, nNumFutureSteps, nNumStaticNumeric, nNumStaticCategorical, rgStaticCardinalities, nNumHistNumeric, nNumHistCategorical, rgHistCardinalities, nNumFutureNumeric, nNumFutureCategorical, rgFutureCardinalities);
+                string strModel = buildModel(strSrc, true, nNumSamples, nNumHeads, fDropout, nLstmLayers, nNumOutputs, nStateSize, nNumHistSteps, nNumFutureSteps, nNumStaticNumeric, nNumStaticCategorical, rgStaticCardinalities, nNumHistNumeric, nNumHistCategorical, rgHistCardinalities, nNumFutureNumeric, nNumFutureCategorical, rgFutureCardinalities);
 
                 SolverParameter solverParam = new SolverParameter();
                 solverParam.base_lr = 0.001;
@@ -2082,7 +2122,62 @@ namespace MyCaffe.test
                 mycaffe.OnTrainingIteration += Mycaffe_OnTrainingIteration;
 
                 Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
-                load_weights(strTag, net, strPathWt, nNumStaticNumeric, nNumStaticCategorical, nNumHistNumeric, nNumHistCategorical, nNumFutureNumeric, nNumFutureCategorical);
+
+                mycaffe.Train(10);
+            }
+            finally
+            {
+                if (mycaffe != null)
+                    mycaffe.Dispose();
+            }
+        }
+
+        public void TestTrainingFull_electricity()
+        {
+            // Preprocessed data created using the SignalPop AI Designer (see https://www.signalpop.com)
+            string strSrc = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\electricity\\preprocessed";
+            string strPath = getTestDataPath("all");
+            string strPathWt = getTestWtsPath("all");
+
+            SettingsCaffe s = new SettingsCaffe();
+            s.GpuIds = "0";
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, new CancelEvent());
+            int nNumSamples = 256;
+            int nNumHeads = 4;
+            float fDropout = 0;
+            int nLstmLayers = 2;
+            int nNumOutputs = 3;
+            int nStateSize = 64;
+            int nNumHistSteps = 90;
+            int nNumFutureSteps = 30;
+            int nNumStaticNumeric = 0;
+            int nNumStaticCategorical = 1;  // customer id
+            List<int> rgStaticCardinalities = new List<int>() { 370 };
+            int nNumHistNumeric = 3;        // log observed power usage, hour, hours from start (target is also log observed power usage)
+            int nNumHistCategorical = 0;
+            List<int> rgHistCardinalities = new List<int>() {};
+            int nNumFutureNumeric = 2;      // hour, hours from start 
+            int nNumFutureCategorical = 0;
+            List<int> rgFutureCardinalities = new List<int>() {};
+
+            try
+            {
+                string strModel = buildModel(strSrc, true, nNumSamples, nNumHeads, fDropout, nLstmLayers, nNumOutputs, nStateSize, nNumHistSteps, nNumFutureSteps, nNumStaticNumeric, nNumStaticCategorical, rgStaticCardinalities, nNumHistNumeric, nNumHistCategorical, rgHistCardinalities, nNumFutureNumeric, nNumFutureCategorical, rgFutureCardinalities);
+
+                SolverParameter solverParam = new SolverParameter();
+                solverParam.base_lr = 0.001;
+                solverParam.type = SolverParameter.SolverType.ADAM;
+                solverParam.test_initialization = false;
+                solverParam.test_interval = 10000;
+                solverParam.test_iter.Add(1);
+                solverParam.weight_decay = 0;
+                solverParam.adamw_decay = 0;
+                string strSolver = solverParam.ToProto("root").ToString();
+
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
+                mycaffe.OnTrainingIteration += Mycaffe_OnTrainingIteration;
+
+                Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
 
                 mycaffe.Train(10);
             }
