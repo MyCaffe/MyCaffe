@@ -3519,12 +3519,12 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Load a the data from a very large Numpy array .npy file.
+        /// Load the long, int, bool, float, or double data from a very large Numpy array .npy file, reading in col order.
         /// </summary>
         /// <param name="strFile">Specifies the .npy file name.</param>
         /// <param name="log">Optionally, specifies the output log.</param>
         /// <param name="nMax">Optionally, specifies the maximum number of items to load (default = MaxValue).</param>
-        /// <param name="nStartIdx">Optionally, specifies a start index of items to ready (default = 0).</param>
+        /// <param name="nStartIdx">Optionally, specifies a start index of items to read (default = 0).</param>
         /// <param name="nCount">Optionally, specifies the number of items to load from the start index (default = MaxValue).</param>
         /// <exception cref="Exception">An exception is thrown when an invalid or unsupported feature is located.</exception>
         /// <remarks>
@@ -3533,7 +3533,7 @@ namespace MyCaffe.common
         /// is sooner.
         /// </remarks>
         /// <returns>A tuple containing the float[,] data and int[] shape is returned.</returns>
-        public static Tuple<List<float[]>, int[], List<string>> LoadFromNumpyEx(string strFile, Log log = null, int nMax = int.MaxValue, int nStartIdx = 0, int nCount = int.MaxValue)
+        public static Tuple<List<float[]>, int[], List<string>> LoadFromNumpy(string strFile, Log log = null, int nMax = int.MaxValue, int nStartIdx = 0, int nCount = int.MaxValue)
         {
             using (FileStream fs = File.OpenRead(strFile))
             using (BinaryReader br = new BinaryReader(fs))
