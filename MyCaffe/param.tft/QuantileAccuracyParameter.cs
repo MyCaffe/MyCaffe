@@ -16,6 +16,7 @@ namespace MyCaffe.param.tft
     public class QuantileAccuracyParameter : LayerParameterBase
     {
         List<float> m_rgAccuracyRanges = new List<float>();
+        uint m_nAveragePeriod = 30;
 
         /** @copydoc LayerParameterBase */
         public QuantileAccuracyParameter()
@@ -30,6 +31,16 @@ namespace MyCaffe.param.tft
         {
             get { return m_rgAccuracyRanges; }
             set { m_rgAccuracyRanges = value; }
+        }
+
+        /// <summary>
+        /// Specifies the period over which the accuracy is averaged (default = 30).
+        /// </summary>
+        [Description("Specifies the period over which the accuracy is averaged (default = 30).")]
+        public uint average_period
+        {
+            get { return m_nAveragePeriod; }
+            set { m_nAveragePeriod = value; }
         }
 
         /** @copydoc LayerParameterBase::Load */
@@ -49,6 +60,7 @@ namespace MyCaffe.param.tft
         {
             QuantileAccuracyParameter p = (QuantileAccuracyParameter)src;
             m_rgAccuracyRanges = Utility.Clone<float>(p.accuracy_ranges);
+            m_nAveragePeriod = p.m_nAveragePeriod;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -69,6 +81,7 @@ namespace MyCaffe.param.tft
             RawProtoCollection rgChildren = new RawProtoCollection();
 
             rgChildren.Add<float>("accuracy_range", accuracy_ranges);
+            rgChildren.Add("average_period", average_period.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -80,9 +93,13 @@ namespace MyCaffe.param.tft
         /// <returns>A new instance of the parameter is returned.</returns>
         public static QuantileAccuracyParameter FromProto(RawProto rp)
         {
+            string strVal;
             QuantileAccuracyParameter p = new QuantileAccuracyParameter();
 
             p.accuracy_ranges = rp.FindArray<float>("accuracy_range");
+
+            if ((strVal = rp.FindValue("average_period")) != null)
+                p.average_period = uint.Parse(strVal);
 
             return p;
         }
