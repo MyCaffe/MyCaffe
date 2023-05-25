@@ -268,6 +268,7 @@ namespace MyCaffe.layers.tft
             ManualResetEvent evtReady = arg.ReadyEvent;
             ManualResetEvent evtDone = arg.DoneEvent;
             Data<T> dataChunk = null;
+            int nIteration = 0;
 
             try
             {
@@ -295,7 +296,7 @@ namespace MyCaffe.layers.tft
                 {
                     bool bEndOfData = false;
 
-                    while (dataChunk.Load(nRowIdx, out bEndOfData) || !bEndOfData)
+                    while (dataChunk.Load(nRowIdx, out bEndOfData) && !bEndOfData)
                     {
                         bool bRefreshed = m_data.Add(dataChunk, nMaxLoadCount);
 
@@ -345,9 +346,16 @@ namespace MyCaffe.layers.tft
                         }
                     }
 
+                    if (nIteration == 0)
+                        log.WriteLine("Background data load completed.");
+
                     if (nDripRefreshRateInSec <= 0)
                         break;
 
+                    if (nIteration == 0)
+                        log.WriteLine("Starting drip refresing...");
+
+                    nIteration++;
                     nWaitCount = 0;
                     while (!evtCancel.WaitOne(1000))
                     {
@@ -883,15 +891,24 @@ namespace MyCaffe.layers.tft
             return m_rgBatchBuffers[ot];
         }
 
-        private void loadSyncBatch(int nIdx, long[] rg, int nStartIdx, int nCount)
+        private bool loadSyncBatch(int nIdx, long[] rg, int nStartIdx, int nCount)
         {
             if (rg == null)
-                return;
+                return false;
 
             int nStartIdx1 = m_nColIdx + nStartIdx;
             int nFields = m_rgFields[DATA_TYPE.SYNC];
             long[] rgSrc = m_rgCatData[DATA_TYPE.SYNC][m_nRowIdx];
+
+            if (nStartIdx1 * nFields + nCount * nFields > rgSrc.Length)
+            {
+                m_log.WriteLine("WARNING: Row " + m_nRowIdx.ToString() + ", Col " + m_nColIdx.ToString() + " does not have enough data to load sync batch at index " + nStartIdx1.ToString() + " with count " + nCount.ToString() + ".");
+                return false;
+            }
+
             Array.Copy(rgSrc, nStartIdx1 * nFields, rg, nIdx * nCount * nFields, nCount * nFields);
+
+            return true;
         }
 
         private void loadStaticCatBatch(int nIdx, float[] rg, DATA_TYPE dt)
@@ -1030,19 +1047,20 @@ namespace MyCaffe.layers.tft
 
                 for (int i = 0; i < nBatchSize; i++)
                 {
-                    loadSyncBatch(i, rgHistSync, 0, m_nHistoricalSteps);
-                    loadSyncBatch(i, rgFutSync, m_nHistoricalSteps, m_nFutureSteps);
+                    if (loadSyncBatch(i, rgHistSync, 0, m_nHistoricalSteps) &&
+                        loadSyncBatch(i, rgFutSync, m_nHistoricalSteps, m_nFutureSteps))
+                    {
+                        loadStaticCatBatch(i, rgStatCat, DATA_TYPE.STATIC_CATEGORICAL);
+                        loadStaticNumBatch(i, rgStatNum, DATA_TYPE.STATIC_NUMERIC);
 
-                    loadStaticCatBatch(i, rgStatCat, DATA_TYPE.STATIC_CATEGORICAL);
-                    loadStaticNumBatch(i, rgStatNum, DATA_TYPE.STATIC_NUMERIC);
+                        loadCatBatch(i, rgHistCat, 0, m_nHistoricalSteps, DATA_TYPE.OBSERVED_CATEGORICAL, DATA_TYPE.KNOWN_CATEGORICAL);
+                        loadNumBatch(i, rgHistNum, 0, m_nHistoricalSteps, DATA_TYPE.OBSERVED_NUMERIC, DATA_TYPE.KNOWN_NUMERIC);
 
-                    loadCatBatch(i, rgHistCat, 0, m_nHistoricalSteps, DATA_TYPE.OBSERVED_CATEGORICAL, DATA_TYPE.KNOWN_CATEGORICAL);
-                    loadNumBatch(i, rgHistNum, 0, m_nHistoricalSteps, DATA_TYPE.OBSERVED_NUMERIC, DATA_TYPE.KNOWN_NUMERIC);
+                        loadCatBatch(i, rgFutCat, m_nHistoricalSteps, m_nFutureSteps, DATA_TYPE.KNOWN_CATEGORICAL);
+                        loadNumBatch(i, rgFutNum, m_nHistoricalSteps, m_nFutureSteps, DATA_TYPE.KNOWN_NUMERIC);
 
-                    loadCatBatch(i, rgFutCat, m_nHistoricalSteps, m_nFutureSteps, DATA_TYPE.KNOWN_CATEGORICAL);
-                    loadNumBatch(i, rgFutNum, m_nHistoricalSteps, m_nFutureSteps, DATA_TYPE.KNOWN_NUMERIC);
-
-                    loadNumBatch(i, rgTarget, m_nHistoricalSteps, m_nFutureSteps, m_nTargetFieldIdx, DATA_TYPE.OBSERVED_NUMERIC);
+                        loadNumBatch(i, rgTarget, m_nHistoricalSteps, m_nFutureSteps, m_nTargetFieldIdx, DATA_TYPE.OBSERVED_NUMERIC);
+                    }
 
                     stepNext();
                 }
