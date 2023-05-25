@@ -109,6 +109,22 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Returns the total number of items * fields in the data.
+        /// </summary>
+        public int TotalCount
+        {
+            get 
+            {
+                int nCount = 1;
+                for (int i=0; i<m_rgShape.Length; i++)
+                {
+                    nCount *= m_rgShape[i];
+                }
+                return nCount;
+            }
+        }
+
+        /// <summary>
         /// Open the numpy file for reading, and read in the header information.
         /// </summary>
         /// <param name="strFile">Specifies the numpy file to read.</param>
