@@ -22,7 +22,7 @@ namespace MyCaffe.param.tft
         uint m_nNumFutureSteps;
         SOURCE_TYPE m_srcType = SOURCE_TYPE.PATH_NPY_FILE;
         Phase? m_forcedPhase = null;
-        int m_nMaxLoadItems = 300000;
+        double m_dfMaxLoadPercent = 1;
         uint m_nChunkCount = 1024;
         int m_nDripRefreshRate = 0;
         uint? m_nSeed = null;
@@ -35,16 +35,22 @@ namespace MyCaffe.param.tft
         {
             /// <summary>
             /// Specifies the source is a path to a set of *.npy files where a npy file exists for the following:
-            /// [type]_combination_id.npy               - meta data for the combination ordering
-            /// [type]_time_index.npy                   - meta data for the time of each time based item.
-            /// [type]_static_feats_numeric.npy         - static features numeric
-            /// [type]_static_feats_categorical.npy     - static features categorical
-            /// [type]_historical_ts_numeric.npy        - historical numeric data
-            /// [type]_historical_ts_categorical.npy    - historical categorical data
-            /// [type]_future_ts_numeric.npy            - future numeric data
-            /// [type]_future_ts_categorical.npy        - future categorical data
-            /// [type]_target.npy                       - target data
+            /// name_[type]_schema.xml                  - schema data for the data set  files.
+            /// [type]_known_num.npy                    - known numeric data (used in past and future)
+            /// [type]_known_cat.npy                    - known categorical data (used in past and future)
+            /// [type]_observed_num.npy                 - observed numeric data (used in past and one used for target)
+            /// [type]_observed_cat.npy                 - observed categorical data (used in past)
+            /// [type]_static_num.npy                   - static numeric data (used in static)
+            /// [type]_static_cat.npy                   - static categorical data (used in static)
             /// Where 'type' = 'test', 'train' or 'validation'
+            /// 
+            /// All data files contain data streams for time and category ID and all data streams are in the same 
+            /// order: category ID, field, time and contain 'float' types.  The schema.xml file defines the fields
+            /// contained within each file as well as the target field within the observed_num.npy file.  In addition,
+            /// the schema.xml file contains lookup tables for all categorical data and for the the category ID.  
+            /// For the category ID, the lookup table also contains the start and end index of valid data in each
+            /// data stream.  If one of the npy files above does not exist, not data for that class of data exists.
+            /// NOTE: TIME and ID fields are only used for reference and debugging and are not used as input data.
             /// </summary>
             PATH_NPY_FILE
         }
@@ -98,13 +104,13 @@ namespace MyCaffe.param.tft
         }
 
         /// <summary>
-        /// Specifies the maximum number of items to load (default = 300,000).
+        /// Specifies the maximum percent of data rows to load (default = 1.0 = 100%).
         /// </summary>
-        [Description("Specifies the maximum number of items to load (default = 300,000).")]
-        public int max_load_count
+        [Description("Specifies the maximum percent of data rows to load (default = 1.0 = 100%).")]
+        public double max_load_percent
         {
-            get { return m_nMaxLoadItems; }
-            set { m_nMaxLoadItems = value; }
+            get { return m_dfMaxLoadPercent; }
+            set { m_dfMaxLoadPercent = value; }
         }
 
         /// <summary>
@@ -194,7 +200,7 @@ namespace MyCaffe.param.tft
             m_nNumHistoricalSteps = p.num_historical_steps;
             m_nNumFutureSteps = p.num_future_steps;
 
-            m_nMaxLoadItems = p.max_load_count;
+            m_dfMaxLoadPercent = p.max_load_percent;
             m_nDripRefreshRate = p.drip_refresh_rate_in_sec;
             m_nSeed = p.seed;
             m_nChunkCount = p.chunk_count;
@@ -226,7 +232,7 @@ namespace MyCaffe.param.tft
             rgChildren.Add("num_historical_steps", num_historical_steps.ToString());
             rgChildren.Add("num_future_steps", num_future_steps.ToString());
 
-            rgChildren.Add("max_load_count", max_load_count.ToString());
+            rgChildren.Add("max_load_percent", max_load_percent.ToString());
             rgChildren.Add("drip_refresh_rate_in_sec", drip_refresh_rate_in_sec.ToString());
             rgChildren.Add("chunk_count", chunk_count.ToString());
             rgChildren.Add("shuffle_data", shuffle_data.ToString());
@@ -270,8 +276,8 @@ namespace MyCaffe.param.tft
             if ((strVal = rp.FindValue("num_future_steps")) != null)
                 p.num_future_steps = uint.Parse(strVal);
 
-            if ((strVal = rp.FindValue("max_load_count")) != null)
-                p.max_load_count = int.Parse(strVal);
+            if ((strVal = rp.FindValue("max_load_percent")) != null)
+                p.max_load_percent = double.Parse(strVal);
 
             if ((strVal = rp.FindValue("drip_refresh_rate_in_sec")) != null)
                 p.drip_refresh_rate_in_sec = int.Parse(strVal);
