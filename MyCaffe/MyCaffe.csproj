@@ -100,6 +100,7 @@
     <Compile Include="common\Interfaces.cs" />
     <Compile Include="common\InternalThread.cs" />
     <Compile Include="common\Net.cs" />
+    <Compile Include="common\NumpyFile.cs" />
     <Compile Include="common\PersistCaffe.cs" />
     <Compile Include="common\PropertyTree.cs" />
     <Compile Include="common\ResultCollection.cs" />
