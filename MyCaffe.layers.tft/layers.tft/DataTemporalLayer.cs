@@ -682,6 +682,7 @@ namespace MyCaffe.layers.tft
             }
 
             int nStartIdx = m_schema.Lookups[0][nRowIdx].ValidRangeStartIndex;
+            int nFields = m_rgFields[DATA_TYPE.SYNC];
             if (nStartIdx < 0 || m_rgCatFiles[DATA_TYPE.SYNC].Columns - nStartIdx < (m_nHistoricalSteps + m_nFutureSteps))
                 return false;
             
@@ -776,6 +777,7 @@ namespace MyCaffe.layers.tft
                 }
                 data.m_rgBatchBuffers.Clear();
 
+                m_schema = data.m_schema;
                 m_nBatchSize = data.m_nBatchSize;
                 m_nMaxRowIdx = getMaxRowIdx(m_nBatchSize);
                 m_nRows = m_rgNumData[DATA_TYPE.OBSERVED_NUMERIC].Count();
@@ -862,7 +864,7 @@ namespace MyCaffe.layers.tft
             else
             {
                 m_nColIdx++;
-                if (m_nColIdx >= m_rgNumData[DATA_TYPE.OBSERVED_NUMERIC][m_nRowIdx].Length - (m_nHistoricalSteps + m_nFutureSteps))
+                if (m_nColIdx + m_nHistoricalSteps + m_nFutureSteps > m_schema.Lookups[0][m_nRowIdx].ValidRangeCount)
                 {
                     m_nColIdx = 0;
 
