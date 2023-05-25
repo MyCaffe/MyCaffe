@@ -21,6 +21,11 @@ namespace MyCaffe.layers.tft
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class QuantileAccuracyLayer<T> : Layer<T>
     {
+        float m_fLastAverage = 0;
+        Dictionary<float, List<float>> m_rgAccuracies = new Dictionary<float, List<float>>();
+        Dictionary<float, List<float>> m_rgAcccuracyAverages = new Dictionary<float, List<float>>();
+        Dictionary<float, int> m_rgWithinTargetCounts;
+
         /// <summary>
         /// The constructor.
         /// </summary>
@@ -68,7 +73,18 @@ namespace MyCaffe.layers.tft
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            int nN = colBottom[0].num;
+            int nC = colBottom[0].channels;
             m_log.CHECK_EQ(colBottom[0].height, 3, "Currently, the Quantile Accuracy Layer only supports 3 quantile predictions (upper, center, lower).");
+
+            m_rgWithinTargetCounts = new Dictionary<float, int>(nC);
+
+            foreach (float fRange in m_param.quantile_accuracy_param.accuracy_ranges)
+            {
+                m_rgAccuracies.Add(fRange, new List<float>(nN));
+                m_rgAcccuracyAverages.Add(fRange, new List<float>((int)m_param.quantile_accuracy_param.average_period));
+                m_rgWithinTargetCounts.Add(fRange, 0);
+            }
         }
 
         /// <summary>
@@ -104,14 +120,21 @@ namespace MyCaffe.layers.tft
             int nQ = colBottom[0].height;
             float[] rgX = convertF(colBottom[0].update_cpu_data());
             float[] rgTgt = convertF(colBottom[1].update_cpu_data());
-            Dictionary<float, List<float>> rgAccuracies = new Dictionary<float, List<float>>();
 
             if (nQ != 3)
                 throw new Exception("There should only be 3 quantile predictions (upper, center, lower).");
 
+            foreach (KeyValuePair<float, List<float>> kv in m_rgAccuracies)
+            {
+                kv.Value.Clear();
+            }
+
             for (int i = 0; i < nN; i++)
             {
-                Dictionary<float, int> rgWithinTargetCounts = new Dictionary<float, int>();
+                foreach (float fRange in m_param.quantile_accuracy_param.accuracy_ranges)
+                {
+                    m_rgWithinTargetCounts[fRange] = 0;
+                }
 
                 for (int c = 0; c < nC; c++)
                 {
@@ -129,31 +152,53 @@ namespace MyCaffe.layers.tft
                         float fLowerTarget = fCenter - fLowerRange * m_param.quantile_accuracy_param.accuracy_ranges[r];
                         float fTarget = rgTgt[i * nC + c];
 
-                        if (!rgWithinTargetCounts.ContainsKey(m_param.quantile_accuracy_param.accuracy_ranges[r]))
-                            rgWithinTargetCounts.Add(m_param.quantile_accuracy_param.accuracy_ranges[r], 0);
-
-                        if (!rgAccuracies.ContainsKey(m_param.quantile_accuracy_param.accuracy_ranges[r]))
-                            rgAccuracies.Add(m_param.quantile_accuracy_param.accuracy_ranges[r], new List<float>());
-
                         if (fTarget <= fUpperTarget && fTarget >= fLowerTarget)
-                            rgWithinTargetCounts[m_param.quantile_accuracy_param.accuracy_ranges[r]]++;
+                            m_rgWithinTargetCounts[m_param.quantile_accuracy_param.accuracy_ranges[r]]++;
                     }
                 }
 
-                foreach (KeyValuePair<float, int> kvp in rgWithinTargetCounts)
+                foreach (KeyValuePair<float, int> kvp in m_rgWithinTargetCounts)
                 {
                     float fAccuracy = (float)kvp.Value / nC;
-                    rgAccuracies[kvp.Key].Add(fAccuracy);
+                    m_rgAccuracies[kvp.Key].Add(fAccuracy);
                 }
             }
 
             int nIdx1 = 0;
-            foreach (KeyValuePair<float, List<float>> kvp in rgAccuracies)
+            foreach (KeyValuePair<float, List<float>> kvp in m_rgAccuracies)
             {
-                float fAveAccuracy = kvp.Value.Average();
+                float fAccuracy = kvp.Value.Average();
+
+                m_rgAcccuracyAverages[kvp.Key].Add(fAccuracy);
+                if (m_rgAcccuracyAverages[kvp.Key].Count > m_param.quantile_accuracy_param.average_period)
+                    m_rgAcccuracyAverages[kvp.Key].RemoveAt(0);
+            }
+
+            foreach (KeyValuePair<float, List<float>> kvp in m_rgAcccuracyAverages)
+            {
+                float fAveAccuracy = average(kvp.Value, m_param.quantile_accuracy_param.average_period);
                 colTop[nIdx1].SetData(fAveAccuracy);
                 nIdx1++;
             }
+        }
+
+        private float average(List<float> rg, uint nN)
+        {
+            if (rg.Count == 0)
+                m_fLastAverage = 0;
+            else if (rg.Count == 1)
+                m_fLastAverage = rg[0];
+            else if (rg.Count < nN)
+            {
+                m_fLastAverage = (((float)nN - 1) / (float)nN) * m_fLastAverage;
+                m_fLastAverage += (1.0f / (float)nN) * rg[rg.Count - 1];
+            }
+            else
+            {
+                m_fLastAverage = rg.Average();
+            }
+
+            return m_fLastAverage;
         }
 
         /// @brief Not implemented -- AccuracyLayer cannot be used as a loss.
