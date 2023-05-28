@@ -2307,19 +2307,19 @@ inline long Device<T>::GetRnn8MemorySizes(long lInput, T* pfInput, long llInput,
 	long hHandle = (long)plInput[0];
 	long hRnn = (long)plInput[1];
 
-	size_t szWt;
-	size_t szWork;
-	size_t szReserved;
+	size_t szWtCount;
+	size_t szWorkSize;
+	size_t szReservedSize;
 
-	if (lErr = m_memory.GetRnn8MemorySizes(hHandle, hRnn, &szWt, &szWork, &szReserved))
+	if (lErr = m_memory.GetRnn8MemorySizes(hHandle, hRnn, &szWtCount, &szWorkSize, &szReservedSize))
 		return lErr;
 
 	// ppfOutput has up to MAX_OUTPUT(16) pre-allocated items
 	T* pOutput = *ppfOutput;
 
-	pOutput[0] = (T)szWt;
-	pOutput[1] = (T)szWork;
-	pOutput[2] = (T)szReserved;
+	pOutput[0] = (T)szWtCount;
+	pOutput[1] = (T)szWorkSize;
+	pOutput[2] = (T)szReservedSize;
 
 	*plOutput = 3;
 	*ppfOutput = pOutput;

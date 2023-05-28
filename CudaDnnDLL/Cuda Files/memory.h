@@ -1462,10 +1462,10 @@ inline long Memory<T>::InitializeRnn8Weights(long hCuda, long hRnn, long hWt, Fi
 }
 
 template <class T>
-inline long Memory<T>::GetRnn8MemorySizes(long hCuda, long hRnn, size_t* pWeightSize, size_t* pWorkSize, size_t* pReserveSize)
+inline long Memory<T>::GetRnn8MemorySizes(long hCuda, long hRnn, size_t* pWeightCount, size_t* pWorkSize, size_t* pReserveSize)
 {
 	rnn8Handle<T>* rnn = (rnn8Handle<T>*)m_rnn.GetData(hRnn);
-	return rnn->GetMemorySizes(hCuda, pWeightSize, pWorkSize, pReserveSize);
+	return rnn->GetMemorySizes(hCuda, pWeightCount, pWorkSize, pReserveSize);
 }
 
 template <class T>

@@ -52,9 +52,9 @@ class rnn8Handle
 	int m_nNumLinLayers;
 	int m_nBidirectionalScale;
 
-	size_t m_szWeightSize;
-	size_t m_szWorkSize;
-	size_t m_szReserveSize;
+	size_t m_szWeightSizeInBytes;
+	size_t m_szWorkSizeInBytes;
+	size_t m_szReserveSizeInBytes;
 
 	double m_dfDropout;
 	unsigned long long m_lSeed;
@@ -77,9 +77,9 @@ public:
 	{
 		m_pMem = NULL;
 		m_pMath = NULL;
-		m_szWeightSize = 0;
-		m_szWorkSize = 0;
-		m_szReserveSize = 0;
+		m_szWeightSizeInBytes = 0;
+		m_szWorkSizeInBytes = 0;
+		m_szReserveSizeInBytes = 0;
 		m_dataType = CUDNN_DATA_FLOAT;
 		m_mathPrecision = CUDNN_DATA_FLOAT;
 		m_mathType = CUDNN_DEFAULT_MATH;
@@ -130,14 +130,14 @@ public:
 
 	long Set(long hCuda, cudnnForwardMode_t fwdmode, cudnnDataType_t type, cudnnRNNDataLayout_t layout, cudnnRNNMode_t cellmode, cudnnRNNBiasMode_t biasMode, int nSequenceLength, int nBatchSize, int nInputSize, int nHiddenSize, int nOutputSize, int nProjectionSize, int nNumLayers, float fDropout, unsigned long long lSeed, bool bBidirectional = false);
 
-	long GetMemorySizes(long hCuda, size_t* pWeightSize, size_t* pWorkSize, size_t* pReserveSize)
+	long GetMemorySizes(long hCuda, size_t* pWeightCount, size_t* pWorkSize, size_t* pReserveSize)
 	{
 		if (m_pMem == NULL)
 			return ERROR_RNN8_NOT_INITIALIZED;
 
-		*pWeightSize = m_szWeightSize / sizeof(T);
-		*pWorkSize = m_szWorkSize / sizeof(T);
-		*pReserveSize = m_szReserveSize / sizeof(T);
+		*pWeightCount = m_szWeightSizeInBytes / sizeof(T);
+		*pWorkSize = m_szWorkSizeInBytes;
+		*pReserveSize = m_szReserveSizeInBytes;
 
 		return 0;
 	}

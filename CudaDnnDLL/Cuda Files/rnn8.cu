@@ -204,11 +204,14 @@ long rnn8Handle<T>::Set(long hCuda, cudnnForwardMode_t fwdmode, cudnnDataType_t 
 		return lErr;
 	}
 
-	if (lErr = cudnnGetRNNWeightSpaceSize(cuda, m_rnnDesc, &m_szWeightSize))
+	if (lErr = cudnnGetRNNWeightSpaceSize(cuda, m_rnnDesc, &m_szWeightSizeInBytes))
 		return lErr;
 
-	if (lErr = cudnnGetRNNTempSpaceSizes(cuda, m_rnnDesc, m_fwdmode, m_xDesc, &m_szWorkSize, &m_szReserveSize))
+	if (lErr = cudnnGetRNNTempSpaceSizes(cuda, m_rnnDesc, m_fwdmode, m_xDesc, &m_szWorkSizeInBytes, &m_szReserveSizeInBytes))
 		return lErr;
+
+	m_szWorkSizeInBytes *= 2;
+	m_szReserveSizeInBytes *= 2;
 
 	return cudaStreamSynchronize(0);
 }
@@ -348,7 +351,7 @@ long rnn8Handle<T>::InitializeWeights(long hCuda, long hWts, FILLER_TYPE ftWt, T
 			T* pLinLayerWt = NULL;
 			T* pLinLayerBias = NULL;
 
-			if (lErr = cudnnGetRNNWeightParams(cuda, m_rnnDesc, nLayer, m_szWeightSize, wt, nLinLayer, wDesc, (void**)&pLinLayerWt, bDesc, (void**)&pLinLayerBias))
+			if (lErr = cudnnGetRNNWeightParams(cuda, m_rnnDesc, nLayer, m_szWeightSizeInBytes, wt, nLinLayer, wDesc, (void**)&pLinLayerWt, bDesc, (void**)&pLinLayerBias))
 			{
 				cudnnDestroyTensorDescriptor(wDesc);
 				cudnnDestroyTensorDescriptor(bDesc);
