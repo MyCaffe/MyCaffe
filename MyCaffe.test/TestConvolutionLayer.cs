@@ -903,7 +903,7 @@ namespace MyCaffe.test
         Blob<T> m_blob_top2;
         Blob<T> m_ref_blob_top;
         long m_hWorkspaceData = 0;
-        ulong m_lWorkspaceSize = 0;
+        ulong m_lWorkspaceSizeInBytes = 0;
         
         public ConvolutionLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine, bool bHalf)
             : base(strName, new List<int>() { 2, 3, 6, 4 }, nDeviceID, bHalf)
@@ -1328,23 +1328,23 @@ namespace MyCaffe.test
 
         private void layer_OnSetWorkspace(object sender, WorkspaceArgs e)
         {
-            if (e.Size < m_lWorkspaceSize)
+            if (e.WorkspaceSizeInBytes < m_lWorkspaceSizeInBytes)
                 return;
 
-            m_lWorkspaceSize = e.Size;
+            m_lWorkspaceSizeInBytes = e.WorkspaceSizeInBytes;
             m_cuda.DisableGhostMemory();
 
             if (m_hWorkspaceData != 0)
                 m_cuda.FreeMemory(m_hWorkspaceData);
 
-            m_hWorkspaceData = m_cuda.AllocMemory((long)m_lWorkspaceSize);
+            m_hWorkspaceData = m_cuda.AllocMemory((long)m_lWorkspaceSizeInBytes);
             m_cuda.ResetGhostMemory();
         }
 
         private void layer_OnGetWorkspace(object sender, WorkspaceArgs e)
         {
-            e.Data = m_hWorkspaceData;
-            e.Size = m_lWorkspaceSize;
+            e.WorkspaceData = m_hWorkspaceData;
+            e.WorkspaceSizeInBytes = m_lWorkspaceSizeInBytes;
         }
 
         public void TestSimpleConvolutionGroup(bool bUseTensorCores)
