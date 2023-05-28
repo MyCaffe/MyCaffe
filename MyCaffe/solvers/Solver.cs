@@ -107,7 +107,7 @@ namespace MyCaffe.solvers
         SNAPSHOT_WEIGHT_UPDATE_METHOD m_snapshotWeightUpdatemMethod = SNAPSHOT_WEIGHT_UPDATE_METHOD.FAVOR_ACCURACY;
         int m_nTrainingTimeLimitInMinutes = 0;
         long m_hWorkspaceData = 0;  // shared among the layers and nets, only grows in size.
-        ulong m_lWorkspaceSize = 0;
+        ulong m_lWorkspaceSizeInBytes = 0;
         bool m_bFirstNanError = true;
         List<double> m_rgAverageAccuracyWindow = null;
 
@@ -336,9 +336,11 @@ namespace MyCaffe.solvers
 
             if (m_hWorkspaceData != 0)
             {
+                m_cuda.DisableGhostMemory();
                 m_cuda.FreeMemory(m_hWorkspaceData);
+                m_cuda.ResetGhostMemory();
                 m_hWorkspaceData = 0;
-                m_lWorkspaceSize = 0;
+                m_lWorkspaceSizeInBytes = 0;
             }
         }
 
@@ -532,16 +534,19 @@ namespace MyCaffe.solvers
                 return;
             }
 
-            if (e.Size <= m_lWorkspaceSize)
-                return;
-
-            m_lWorkspaceSize = e.Size;
             m_cuda.DisableGhostMemory();
 
-            if (m_hWorkspaceData != 0)
-                m_cuda.FreeMemory(m_hWorkspaceData);
+            if (e.WorkspaceSizeInBytes > m_lWorkspaceSizeInBytes)
+            {
+                m_lWorkspaceSizeInBytes = e.WorkspaceSizeInBytes;
 
-            m_hWorkspaceData = m_cuda.AllocMemory((long)m_lWorkspaceSize);
+                if (m_hWorkspaceData != 0)
+                    m_cuda.FreeMemory(m_hWorkspaceData);
+
+                ulong lCount = CudaDnn<T>.ConvertByteSizeToCount(m_lWorkspaceSizeInBytes);
+                m_hWorkspaceData = m_cuda.AllocMemory((long)lCount);
+            }
+
             m_cuda.ResetGhostMemory();
         }
 
@@ -553,8 +558,8 @@ namespace MyCaffe.solvers
                 return;
             }
 
-            e.Data = m_hWorkspaceData;
-            e.Size = m_lWorkspaceSize;
+            e.WorkspaceData = m_hWorkspaceData;
+            e.WorkspaceSizeInBytes = m_lWorkspaceSizeInBytes;
         }
 
         private void net_OnGetIteration(object sender, GetIterationArgs e)

@@ -480,14 +480,14 @@ namespace MyCaffe.layers
 
             ulong lSize = (ulong)nCount * CudaDnn<T>.basetype_size(false);
             WorkspaceArgs args = getWorkspace();
-            if (args.Size < lSize)
+            if (args.WorkspaceSizeInBytes < lSize)
             {
                 setWorkspace(lSize);
                 args = getWorkspace();
             }
 
-            m_cuda.copy(nCount, hMem, args.Data, 0, 0, -1, null, false);
-            return args.Data;
+            m_cuda.copy(nCount, hMem, args.WorkspaceData, 0, 0, -1, null, false);
+            return args.WorkspaceData;
         }
 
         /// <summary>
@@ -519,7 +519,7 @@ namespace MyCaffe.layers
                 throw new Exception("The OnGetWorkSpace and OnSetWorkspace events must be connected!");
 
             WorkspaceArgs args = getWorkspace();
-            if (args.Size < lMaxSize)
+            if (args.WorkspaceSizeInBytes < lMaxSize)
             {
                 setWorkspace(lMaxSize);
                 args = getWorkspace();
@@ -528,9 +528,9 @@ namespace MyCaffe.layers
             foreach (Blob<T> b in col)
             {
                 if (m_bUseHalfSize && !b.HalfSize)
-                    b.ConvertToHalf(args.Data, args.Size, true, true);
+                    b.ConvertToHalf(args.WorkspaceData, args.WorkspaceSizeInBytes, true, true);
                 else if (!m_bUseHalfSize && b.HalfSize)
-                    b.ConvertToBase(args.Data, args.Size, true, true);
+                    b.ConvertToBase(args.WorkspaceData, args.WorkspaceSizeInBytes, true, true);
             }
         }
 
@@ -562,7 +562,7 @@ namespace MyCaffe.layers
                 return;
 
             WorkspaceArgs args = getWorkspace();
-            if (args.Size < lMaxSize)
+            if (args.WorkspaceSizeInBytes < lMaxSize)
             {
                 setWorkspace(lMaxSize);
                 args = getWorkspace();
@@ -570,7 +570,7 @@ namespace MyCaffe.layers
 
             foreach (Blob<T> b in col)
             {
-                b.ConvertToBase(args.Data, args.Size, true, true);
+                b.ConvertToBase(args.WorkspaceData, args.WorkspaceSizeInBytes, true, true);
             }
         }
 
@@ -1257,14 +1257,14 @@ namespace MyCaffe.layers
         /// <summary>
         /// Sets the workspace size (in items) and returns <i>true</i> if set, <i>false</i> otherwise.
         /// </summary>
-        /// <param name="lSize"></param>
-        /// <returns></returns>
-        protected virtual bool setWorkspace(ulong lSize)
+        /// <param name="lSizeInBytes">Specifies the size of the workspace data in bytes.</param>
+        /// <returns>If the OnSetWorkspace event is set, true is returned, otherwise false.</returns>
+        protected virtual bool setWorkspace(ulong lSizeInBytes)
         {
             if (OnSetWorkspace == null)
                 return false;
 
-            OnSetWorkspace(this, new WorkspaceArgs(0, lSize));
+            OnSetWorkspace(this, new WorkspaceArgs(0, lSizeInBytes));
             return true;
         }
 

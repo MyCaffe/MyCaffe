@@ -101,9 +101,11 @@ namespace MyCaffe.layers
         long m_hRnnDesc;
         long m_hRnn8;
         long m_hWorkspace;
-        ulong m_nWorkspaceCount;
+        ulong m_nWorkspaceSizeInBytes;
+        bool m_bWorkspaceOwned = true;
         long m_hReserved;
-        ulong m_nReservedCount;
+        ulong m_nReservedSizeInBytes;
+        bool m_bReservedOwned = true;
         RNN_MODE m_rnnMode;
         bool m_bUseTensors = false;
         List<int> m_rgShape = new List<int>(4);
@@ -203,13 +205,15 @@ namespace MyCaffe.layers
 
             if (m_hWorkspace != 0)
             {
-                m_cuda.FreeMemory(m_hWorkspace);
+                if (m_bWorkspaceOwned)
+                    m_cuda.FreeMemory(m_hWorkspace);
                 m_hWorkspace = 0;
             }
 
             if (m_hReserved != 0)
             {
-                m_cuda.FreeMemory(m_hReserved);
+                if (m_bReservedOwned)
+                    m_cuda.FreeMemory(m_hReserved);
                 m_hReserved = 0;
             }
 
@@ -374,6 +378,39 @@ namespace MyCaffe.layers
                 layerSetupCudnnRnn(colBottom, colTop);
         }
 
+        private void setupSharedWorkspaceAndReserved(ulong ulWsInBytes, ulong ulResInBytes)
+        {
+            // This is the total amount of storage needed over all groups + streams.
+            WorkspaceArgs wsArgs = getWorkspace();
+            if (wsArgs != null)
+            {
+                if (ulWsInBytes > wsArgs.WorkspaceSizeInBytes)
+                {
+                    setWorkspace(ulWsInBytes);
+                    wsArgs = getWorkspace();
+                }
+
+                m_hWorkspace = wsArgs.WorkspaceData;
+                m_nWorkspaceSizeInBytes = ulWsInBytes;
+                m_bWorkspaceOwned = false;
+            }
+            else
+            {
+                ulong lCount = CudaDnn<T>.ConvertByteSizeToCount(ulWsInBytes);
+                m_hWorkspace = m_cuda.AllocMemory((long)lCount);
+                m_nWorkspaceSizeInBytes = ulWsInBytes;
+                m_bWorkspaceOwned = true;
+            }
+
+            if (ulResInBytes > 0)
+            {
+                ulong lCount = CudaDnn<T>.ConvertByteSizeToCount(ulResInBytes);
+                m_hReserved = m_cuda.AllocMemory((long)lCount);
+            }
+            m_nReservedSizeInBytes = ulResInBytes;
+            m_bReservedOwned = true;
+        }
+
         private void layerSetupCudnnRnn8(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             try
@@ -449,18 +486,16 @@ namespace MyCaffe.layers
 
                 // Setup parameters - do this after the rnn descriptor is set
                 // otherwise we will not know how many parameters we have to allocate.
-                ulong szWt;
-                m_cuda.GetRnn8MemorySizes(m_hCuDnn, m_hRnn8, out szWt, out m_nWorkspaceCount, out m_nReservedCount);
+                ulong szWtCount;
+                ulong ulWorkspaceSizeInBytes;
+                ulong ulReservedSizeInBytes;
+                m_cuda.GetRnn8MemorySizes(m_hCuDnn, m_hRnn8, out szWtCount, out ulWorkspaceSizeInBytes, out ulReservedSizeInBytes);
 
-                List<int> rgWtShape = new List<int>() { (int)szWt, 1, 1 };
+                List<int> rgWtShape = new List<int>() { (int)szWtCount, 1, 1 };
                 m_blobWts.Reshape(rgWtShape);
 
                 // Setup the workspace and reserved memory.
-                m_hWorkspace = m_cuda.AllocMemory((long)m_nWorkspaceCount);
-                if (m_nReservedCount > 0)
-                    m_hReserved = m_cuda.AllocMemory((long)m_nReservedCount);
-                else
-                    m_nReservedCount = 0;
+                setupSharedWorkspaceAndReserved(ulWorkspaceSizeInBytes, ulReservedSizeInBytes);
 
                 // Fill the weights.
                 if (!shareParameter(m_blobWts, rgWtShape))
@@ -625,9 +660,11 @@ namespace MyCaffe.layers
                 m_cuda.SetFilterNdDesc(m_hWeightDesc, rgDimW);
 
                 // Setup the workspace and reserved memory.
-                m_nWorkspaceCount = m_cuda.GetRnnWorkspaceCount(m_hCuDnn, m_hRnnDesc, m_hXDesc, out m_nReservedCount);
-                m_hWorkspace = m_cuda.AllocMemory((long)m_nWorkspaceCount);
-                m_hReserved = m_cuda.AllocMemory((long)m_nReservedCount);
+                ulong ulReservedSizeInBytes;
+                ulong ulWorkspaceSizeInBytes = m_cuda.GetRnnWorkspaceCount(m_hCuDnn, m_hRnnDesc, m_hXDesc, out ulReservedSizeInBytes);
+
+                // Setup the workspace and reserved memory.
+                setupSharedWorkspaceAndReserved(ulWorkspaceSizeInBytes, m_nReservedSizeInBytes);
 
                 // Fill the weights.
                 if (!shareParameter(m_blobWts, rgWtShape))
@@ -1453,9 +1490,9 @@ namespace MyCaffe.layers
                               m_hCyDesc,
                               m_blobCy.mutable_gpu_data,
                               m_hWorkspace,
-                              m_nWorkspaceCount,
+                              m_nWorkspaceSizeInBytes,
                               m_hReserved,
-                              m_nReservedCount,
+                              m_nReservedSizeInBytes,
                               (m_phase == Phase.TRAIN) ? true : false);
 
             // Tops are shared with cy and hy in Reshape
@@ -1620,9 +1657,9 @@ namespace MyCaffe.layers
                               m_hCxDesc,
                               m_blobCx.mutable_gpu_diff,
                               m_hWorkspace,
-                              m_nWorkspaceCount,
+                              m_nWorkspaceSizeInBytes,
                               m_hReserved,
-                              m_nReservedCount);
+                              m_nReservedSizeInBytes);
             // cudnnBackwardWeights adds to the data in weight diff.
             m_blobWts.SetDiff(0);
 
@@ -1635,11 +1672,11 @@ namespace MyCaffe.layers
                               m_hYDesc,
                               m_blobY.gpu_data,
                               m_hWorkspace,
-                              m_nWorkspaceCount,
+                              m_nWorkspaceSizeInBytes,
                               m_hWeightDesc,
                               m_blobWts.mutable_gpu_diff,
                               m_hReserved,
-                              m_nReservedCount);
+                              m_nReservedSizeInBytes);
 
             // Copy timestep 0 diff to bottom diffs
             if (colBottom.Count > 2)

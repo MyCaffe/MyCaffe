@@ -961,6 +961,7 @@ namespace MyCaffe.common
         bool m_bEnableRnnExtendedVersion = false;
         static object m_createSync = new object();
         static object m_getconvSync = new object();
+        static ulong m_lBaseSize = (ulong)((typeof(T) == typeof(float)) ? sizeof(float) : sizeof(double));
 
         /// <summary>
         /// Specifies the type of string information to quer from the Cuda C++ layer.
@@ -2380,6 +2381,24 @@ namespace MyCaffe.common
                 string strDevice = GetDeviceName(m_nDeviceId);
                 throw new Exception("Out of memory!  You are currently using " + strMemory + " of memory on " + strDevice + ".  You may need to use a different GPU that has more memory.", excpt);
             }
+        }
+
+        /// <summary>
+        /// Returns the base data type size (e.g. float= 4, double = 8).
+        /// </summary>
+        public static ulong BaseSize
+        {
+            get { return m_lBaseSize; }
+        }
+
+        /// <summary>
+        /// Converts the byte size into the number of items in the base data type of float or double.
+        /// </summary>
+        /// <param name="ulSizeInBytes">Specifies the size in bytes to convert.</param>
+        /// <returns>The number of items is returned.</returns>
+        public static ulong ConvertByteSizeToCount(ulong ulSizeInBytes)
+        {
+            return ulSizeInBytes / m_lBaseSize;
         }
 
         /// <summary>
@@ -5157,24 +5176,24 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
         /// <param name="hRnn">Specifies the handle to the RNN8 created with CreateRnn8.</param>
-        /// <param name="szWt">Returns the required weight size.</param>
-        /// <param name="szWork">Returns the rquired work size.</param>
-        /// <param name="szReserved">Returns the required reserved size.</param>
-        public void GetRnn8MemorySizes(long hCuDnn, long hRnn, out ulong szWt, out ulong szWork, out ulong szReserved)
+        /// <param name="szWtCount">Returns the required weight count (in items).</param>
+        /// <param name="szWorkSize">Returns the rquired work size (in bytes).</param>
+        /// <param name="szReservedSize">Returns the required reserved size (in bytes).</param>
+        public void GetRnn8MemorySizes(long hCuDnn, long hRnn, out ulong szWtCount, out ulong szWorkSize, out ulong szReservedSize)
         {
             if (m_dt == DataType.DOUBLE)
             {
                 double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.RNN8_GET_MEMORY_SIZES, null, m_param.AsLong(hCuDnn, hRnn));
-                szWt = (ulong)rg[0];
-                szWork = (ulong)rg[1];
-                szReserved = (ulong)rg[2];
+                szWtCount = (ulong)rg[0];
+                szWorkSize = (ulong)rg[1];
+                szReservedSize = (ulong)rg[2];
             }
             else
             {
                 float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.RNN8_GET_MEMORY_SIZES, null, m_param.AsLong(hCuDnn, hRnn));
-                szWt = (ulong)rg[0];
-                szWork = (ulong)rg[1];
-                szReserved = (ulong)rg[2];
+                szWtCount = (ulong)rg[0];
+                szWorkSize = (ulong)rg[1];
+                szReservedSize = (ulong)rg[2];
             }   
         }
 

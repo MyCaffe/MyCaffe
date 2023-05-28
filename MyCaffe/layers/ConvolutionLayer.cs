@@ -343,8 +343,7 @@ namespace MyCaffe.layers
             WorkspaceArgs wsArgs = getWorkspace();
 
             // This is the total amount of storage needed over all groups + streams.
-            if (lTotalMaxWorkspace > wsArgs.Size)
-                setWorkspace(lTotalMaxWorkspace);
+            setWorkspace(lTotalMaxWorkspace);
 
             // if we succedd in the allocation, set the offsets for the workspaces.
             for (int g = 0; g < (m_nGroup * CUDNN_STREAMS_PER_GROUP); g++)
@@ -522,7 +521,7 @@ namespace MyCaffe.layers
                                               hWeight, m_nWeightOffset * g,
                                               m_rghConvDesc[i],
                                               m_rgfwdAlgo[i],
-                                              wsArgs.Data, (int)m_rglWorkspaceFwdOffsets[g], m_rglWorkspaceFwdSizes[i],
+                                              wsArgs.WorkspaceData, (int)m_rglWorkspaceFwdOffsets[g], m_rglWorkspaceFwdSizes[i],
                                               m_tZero,
                                               m_rghTopDesc[i],
                                               hTopData, m_nTopOffset * g,
@@ -614,7 +613,7 @@ namespace MyCaffe.layers
                                                        m_rghTopDesc[i], hTopDiff, m_nTopOffset * g,
                                                        m_rghConvDesc[i], 
                                                        m_rgbwdFilterAlgo[i], 
-                                                       wsArgs.Data, (int)m_rglWorkspaceBwdFilterOffsets[1 * m_nGroup + g],
+                                                       wsArgs.WorkspaceData, (int)m_rglWorkspaceBwdFilterOffsets[1 * m_nGroup + g],
                                                        m_rglWorkspaceBwdFilterSizes[i],
                                                        m_tOne,
                                                        m_hFilterDesc, hWeightDiff, m_nWeightOffset * g,
@@ -647,7 +646,7 @@ namespace MyCaffe.layers
                                                       m_rghTopDesc[i], hTopDiff, m_nTopOffset * g,
                                                       m_rghConvDesc[i],
                                                       m_rgbwdDataAlgo[i],
-                                                      wsArgs.Data, (int)m_rglWorkspaceBwdDataOffsets[2 * m_nGroup + g],
+                                                      wsArgs.WorkspaceData, (int)m_rglWorkspaceBwdDataOffsets[2 * m_nGroup + g],
                                                       m_rglWorkspaceBwdDataSizes[i],
                                                       m_tZero,
                                                       m_rghBottomDesc[i], hBottomDiff, m_nBottomOffset * g,

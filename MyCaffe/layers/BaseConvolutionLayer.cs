@@ -241,19 +241,19 @@ namespace MyCaffe.layers
         /// <summary>
         /// If not already set, allocates the workspace needed in GPU memory.
         /// </summary>
-        /// <param name="lSize">Specifies the size (in items) of workspace needed.</param>
+        /// <param name="lSizeInBytes">Specifies the size (in bytes) of workspace needed.</param>
         /// <returns>This method always returns <i>true</i>.</returns>
-        protected override bool setWorkspace(ulong lSize)
+        protected override bool setWorkspace(ulong lSizeInBytes)
         {
-            if (!m_bWorkspaceOwner && base.setWorkspace(lSize))
+            if (!m_bWorkspaceOwner && base.setWorkspace(lSizeInBytes))
                 return true;
 
             m_bWorkspaceOwner = true;
 
-            if (lSize < m_lWorkspaceSize)
+            if (lSizeInBytes < m_lWorkspaceSize)
                 return true;
 
-            m_lWorkspaceSize = lSize;
+            m_lWorkspaceSize = lSizeInBytes;
             m_cuda.DisableGhostMemory();
 
             if (m_hWorkspaceData != 0)

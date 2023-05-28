@@ -15,36 +15,36 @@ namespace MyCaffe.common
     /// </remarks>
     public class WorkspaceArgs : EventArgs
     {
-        ulong m_lWorkspaceSizeInBytes = 0;
+        ulong m_lWorkspaceSize = 0;
         long m_hWorkspaceData = 0;  // underlying storage.
 
         /// <summary>
         /// The WorkspaceArgs constructor.
         /// </summary>
-        /// <param name="hData">Specifies a handle to the GPU memory.</param>
+        /// <param name="hData">Specifies a handle to the GPU memory for workspace data.</param>
         /// <param name="lSize">Specifies the size of the workspace memory (in bytes).</param>
         public WorkspaceArgs(long hData, ulong lSize)
         {
             m_hWorkspaceData = hData;
-            m_lWorkspaceSizeInBytes = lSize;
+            m_lWorkspaceSize = lSize;
         }
 
         /// <summary>
         /// Get/set the handle to workspace data in GPU memory.
         /// </summary>
-        public long Data
+        public long WorkspaceData
         {
             get { return m_hWorkspaceData; }
             set { m_hWorkspaceData = value; }
         }
 
         /// <summary>
-        /// Get/set the size of the workspace memory (in bytes).
+        /// Get/set the workspace memory size in bytes.
         /// </summary>
-        public ulong Size
+        public ulong WorkspaceSizeInBytes
         {
-            get { return m_lWorkspaceSizeInBytes; }
-            set { m_lWorkspaceSizeInBytes = value; }
+            get { return m_lWorkspaceSize; }
+            set { m_lWorkspaceSize = value; }
         }
     }
 

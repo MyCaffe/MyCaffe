@@ -108,7 +108,7 @@ namespace MyCaffe.common
         BEST_RESULT_TYPE m_nBestResultType = BEST_RESULT_TYPE.BY_CHANNEL;
 
         long m_hWorkspaceData = 0;  // shared among the layers, only grows in size.
-        ulong m_lWorkspaceSize = 0;
+        ulong m_lWorkspaceSizeInBytes = 0;
 
         Net<T> m_sharedNet = null;
         bool m_bBreakOnFirstNan = false;
@@ -242,6 +242,7 @@ namespace MyCaffe.common
                 m_cuda.FreeMemory(m_hWorkspaceData);
                 m_cuda.ResetGhostMemory();
                 m_hWorkspaceData = 0;
+                m_lWorkspaceSizeInBytes = 0;
             }
 
             if (m_blobWork != null)
@@ -754,16 +755,19 @@ namespace MyCaffe.common
                 return;
             }
 
-            if (e.Size <= m_lWorkspaceSize)
-                return;
-
-            m_lWorkspaceSize = e.Size;
             m_cuda.DisableGhostMemory();
 
-            if (m_hWorkspaceData != 0)
-                m_cuda.FreeMemory(m_hWorkspaceData);
+            if (e.WorkspaceSizeInBytes > m_lWorkspaceSizeInBytes)
+            {
+                m_lWorkspaceSizeInBytes = e.WorkspaceSizeInBytes;
 
-            m_hWorkspaceData = m_cuda.AllocMemory((long)m_lWorkspaceSize);
+                if (m_hWorkspaceData != 0)
+                    m_cuda.FreeMemory(m_hWorkspaceData);
+
+                ulong lCount = CudaDnn<T>.ConvertByteSizeToCount(m_lWorkspaceSizeInBytes);
+                m_hWorkspaceData = m_cuda.AllocMemory((long)lCount);
+            }
+
             m_cuda.ResetGhostMemory();
         }
 
@@ -775,8 +779,8 @@ namespace MyCaffe.common
                 return;
             }
 
-            e.Data = m_hWorkspaceData;
-            e.Size = m_lWorkspaceSize;
+            e.WorkspaceData = m_hWorkspaceData;
+            e.WorkspaceSizeInBytes = m_lWorkspaceSizeInBytes;
         }
 
         /// <summary>
