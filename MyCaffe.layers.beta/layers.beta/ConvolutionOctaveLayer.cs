@@ -43,7 +43,7 @@ namespace MyCaffe.layers.beta
         BlobCollection<T> m_rgTop = new BlobCollection<T>();
         BlobCollection<T> m_rgBtm = new BlobCollection<T>();
         long m_hWorkspaceData = 0;
-        ulong m_lWorkspaceSize = 0;
+        ulong m_lWorkspaceSizeInBytes = 0;
 
         /// <summary>
         /// The ConvolutionOctaveLayer constructor.
@@ -429,23 +429,23 @@ namespace MyCaffe.layers.beta
 
         private void layer_OnSetWorkspace(object sender, WorkspaceArgs e)
         {
-            if (e.Size < m_lWorkspaceSize)
+            if (e.WorkspaceSizeInBytes < m_lWorkspaceSizeInBytes)
                 return;
 
-            m_lWorkspaceSize = e.Size;
+            m_lWorkspaceSizeInBytes = e.WorkspaceSizeInBytes;
             m_cuda.DisableGhostMemory();
 
             if (m_hWorkspaceData != 0)
                 m_cuda.FreeMemory(m_hWorkspaceData);
 
-            m_hWorkspaceData = m_cuda.AllocMemory((long)m_lWorkspaceSize);
+            m_hWorkspaceData = m_cuda.AllocMemory((long)m_lWorkspaceSizeInBytes);
             m_cuda.ResetGhostMemory();
         }
 
         private void layer_OnGetWorkspace(object sender, WorkspaceArgs e)
         {
-            e.Data = m_hWorkspaceData;
-            e.Size = m_lWorkspaceSize;
+            e.WorkspaceData = m_hWorkspaceData;
+            e.WorkspaceSizeInBytes = m_lWorkspaceSizeInBytes;
         }
 
         private void setupBtmTop(Blob<T> btm, Blob<T> top)
