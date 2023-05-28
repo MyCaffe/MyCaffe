@@ -64,7 +64,7 @@ namespace MyCaffe.extras
         bool m_bAllowHalfSizeOnLoss = true;
         bool m_bAllowHalfSizeOnScalar = true;
         long m_hWorkspaceData = 0;  
-        ulong m_lWorkspaceSize = 0;
+        ulong m_lWorkspaceSizeInBytes = 0;
 
         /// <summary>
         /// Specifies the event fired after producing intermediate output (e.g. when m_nIntermediateOutput > 0)
@@ -194,7 +194,7 @@ namespace MyCaffe.extras
             {
                 m_cuda.FreeMemory(m_hWorkspaceData);
                 m_hWorkspaceData = 0;
-                m_lWorkspaceSize = 0;
+                m_lWorkspaceSizeInBytes = 0;
             }
 
             if (m_transformer != null)
@@ -891,23 +891,23 @@ namespace MyCaffe.extras
 
         private void net_OnSetWorkspace(object sender, WorkspaceArgs e)
         {
-            if (e.Size < m_lWorkspaceSize)
+            if (e.WorkspaceSizeInBytes < m_lWorkspaceSizeInBytes)
                 return;
 
-            m_lWorkspaceSize = e.Size;
+            m_lWorkspaceSizeInBytes = e.WorkspaceSizeInBytes;
             m_cuda.DisableGhostMemory();
 
             if (m_hWorkspaceData != 0)
                 m_cuda.FreeMemory(m_hWorkspaceData);
 
-            m_hWorkspaceData = m_cuda.AllocMemory((long)m_lWorkspaceSize);
+            m_hWorkspaceData = m_cuda.AllocMemory((long)m_lWorkspaceSizeInBytes);
             m_cuda.ResetGhostMemory();
         }
 
         private void net_OnGetWorkspace(object sender, WorkspaceArgs e)
         {
-            e.Data = m_hWorkspaceData;
-            e.Size = m_lWorkspaceSize;
+            e.WorkspaceData = m_hWorkspaceData;
+            e.WorkspaceSizeInBytes = m_lWorkspaceSizeInBytes;
         }
 
         /// <summary>
