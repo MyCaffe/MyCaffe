@@ -25,11 +25,18 @@ using System.Data.Entity.ModelConfiguration.Conventions;
 /// </remarks> 
 namespace MyCaffe.test
 {
+    enum SOURCE
+    {
+        ELECTRICITY,
+        TRAFFIC,
+        VOLATILITY
+    }
+
     [TestClass]
     public class TestTFT_DataTemporal
     {
         [TestMethod]
-        public void TestForwardTrainElectricity2()
+        public void TestForwardTrainElectricity()
         {
             DataTemporalTest test = new DataTemporalTest();
             string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\electricity\\preprocessed";
@@ -38,7 +45,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100);
+                    t.TestForward(Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100, SOURCE.ELECTRICITY);
                 }
             }
             finally
@@ -48,7 +55,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestForwardTestElectricity2()
+        public void TestForwardTestElectricity()
         {
             DataTemporalTest test = new DataTemporalTest();
             string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\electricity\\preprocessed";
@@ -57,7 +64,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100);
+                    t.TestForward(Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100, SOURCE.ELECTRICITY);
                 }
             }
             finally
@@ -67,7 +74,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestForwardRunElectricity2()
+        public void TestForwardRunElectricity()
         {
             DataTemporalTest test = new DataTemporalTest();
             string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\electricity\\preprocessed";
@@ -76,7 +83,121 @@ namespace MyCaffe.test
             {
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100);
+                    t.TestForward(Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100, SOURCE.ELECTRICITY);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardTrainTraffic()
+        {
+            DataTemporalTest test = new DataTemporalTest();
+            string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\traffic\\preprocessed";
+
+            try
+            {
+                foreach (IDataTemporalTest t in test.Tests)
+                {
+                    t.TestForward(Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100, SOURCE.TRAFFIC);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardTestTraffic()
+        {
+            DataTemporalTest test = new DataTemporalTest();
+            string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\traffic\\preprocessed";
+
+            try
+            {
+                foreach (IDataTemporalTest t in test.Tests)
+                {
+                    t.TestForward(Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100, SOURCE.TRAFFIC);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardRunTraffic()
+        {
+            DataTemporalTest test = new DataTemporalTest();
+            string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\traffic\\preprocessed";
+
+            try
+            {
+                foreach (IDataTemporalTest t in test.Tests)
+                {
+                    t.TestForward(Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100, SOURCE.TRAFFIC);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardTrainVolatility()
+        {
+            DataTemporalTest test = new DataTemporalTest();
+            string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\volatility\\preprocessed";
+
+            try
+            {
+                foreach (IDataTemporalTest t in test.Tests)
+                {
+                    t.TestForward(Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100, SOURCE.VOLATILITY);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardTestVolatility()
+        {
+            DataTemporalTest test = new DataTemporalTest();
+            string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\volatility\\preprocessed";
+
+            try
+            {
+                foreach (IDataTemporalTest t in test.Tests)
+                {
+                    t.TestForward(Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100, SOURCE.VOLATILITY);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardRunVolatility()
+        {
+            DataTemporalTest test = new DataTemporalTest();
+            string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\volatility\\preprocessed";
+
+            try
+            {
+                foreach (IDataTemporalTest t in test.Tests)
+                {
+                    t.TestForward(Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100, SOURCE.VOLATILITY);
                 }
             }
             finally
@@ -107,7 +228,7 @@ namespace MyCaffe.test
 
     interface IDataTemporalTest : ITest
     {
-        void TestForward(Phase phase, DataTemporalParameter.SOURCE_TYPE srcType, string srcPath, int nBatchSize);
+        void TestForward(Phase phase, DataTemporalParameter.SOURCE_TYPE srcType, string srcPath, int nBatchSize, SOURCE src);
         void TestBlobLoadNumpyPartial();
     }
 
@@ -215,9 +336,12 @@ namespace MyCaffe.test
             return new Tuple<long[], int[]>(rgData, npy.Shape);
         }
 
-        private void load(Blob<T> blob, string strPath, string strType, string strFile)
+        private void loadFloat(Blob<T> blob, string strPath, string strType, string strFile)
         {
             string strFile1 = strPath + "\\" + strType + "_" + strFile;
+            if (!File.Exists(strFile1))
+                return;
+
             NumpyFile<float> npy = new NumpyFile<float>(m_log);
             npy.OpenRead(strFile1);
 
@@ -238,17 +362,98 @@ namespace MyCaffe.test
             npy.Dispose();
         }
 
+        private void loadLong(Blob<T> blob, string strPath, string strType, string strFile)
+        {
+            string strFile1 = strPath + "\\" + strType + "_" + strFile;
+            if (!File.Exists(strFile1))
+                return;
+
+            NumpyFile<long> npy = new NumpyFile<long>(m_log);
+            npy.OpenRead(strFile1);
+
+            float[] rgData = new float[npy.TotalCount];
+            int nOffset = 0;
+            long[] rgVal = null;
+
+            for (int i = 0; i < npy.Rows; i++)
+            {
+                rgVal = npy.LoadRow(rgVal, i);
+                Array.Copy(rgVal, 0, rgData, nOffset, rgVal.Length);
+                nOffset += rgVal.Length;
+            }
+
+            blob.Reshape(npy.Shape);
+            blob.mutable_cpu_data = convert(rgData);
+
+            npy.Dispose();
+        }
+
+        private void loadStat(ref int nRowIdx, ref int nColIdx, DataSchema schema, Blob<T> blobStatNum1, Blob<T> blobStatCat1, Blob<T> blobStatNum, Blob<T> blobStatCat, int nNumHist, int nNumFut, int nBatchSize)
+        {
+            float[] rgStatNum1 = convertF(blobStatNum1.mutable_cpu_data);
+            float[] rgStatCat1 = convertF(blobStatCat1.mutable_cpu_data);
+
+            int nStatNumFields = schema.Data.StaticNum.Count;
+            int nStatCatFields = schema.Data.StaticCat.Count;
+            int nFields = nStatNumFields + nStatCatFields;
+
+            blobStatNum.Reshape(nBatchSize, 1, nStatNumFields, 1);
+            blobStatCat.Reshape(nBatchSize, 1, nStatCatFields, 1);
+
+            float[] rgStatNum = convertF(blobStatNum.mutable_cpu_data);
+            float[] rgStatCat = convertF(blobStatCat.mutable_cpu_data);
+
+            for (int i = 0; i < nBatchSize; i++)
+            {
+                int nRowOffset = nRowIdx;
+                int nStartIdx = 0;
+                int nStartIdx1 = nRowOffset + nStartIdx;
+
+                for (int j = 0; j < 1; j++)
+                {
+                    int nIdxSrc = nStartIdx1 + j;
+                    int nIdxDst = (i * 1 * nFields) + (j * nFields);
+
+                    for (int k = 0; k < nStatNumFields; k++)
+                    {
+                        rgStatNum[nIdxDst + k] = rgStatNum1[nIdxSrc * nStatNumFields + k];
+                    }
+
+                    for (int k = 0; k < nStatCatFields; k++)
+                    {
+                        rgStatCat[nIdxDst + k] = rgStatCat1[nIdxSrc * nStatCatFields + k];
+                    }
+                }
+
+                nColIdx++;
+                if (nColIdx + nNumHist + nNumFut > schema.Lookups[0][nRowIdx].ValidRangeCount)
+                {
+                    nColIdx = 0;
+                    nRowIdx++;
+
+                    if (nRowIdx >= schema.Lookups[0].Count)
+                        nRowIdx = 0;
+                }
+            }
+
+            if (rgStatNum.Length > 0)
+                blobStatNum.mutable_cpu_data = convert(rgStatNum);
+            if (rgStatCat.Length > 0)
+                blobStatCat.mutable_cpu_data = convert(rgStatCat);
+        }
+
         private void loadNum(ref int nRowIdx, ref int nColIdx, DataSchema schema, Blob<T> blobObsNum, Blob<T> blobKnownNum, Blob<T> blobHistNum, Blob<T> blobFutNum, Blob<T> blobTarget, int nNumHist, int nNumFut, int nBatchSize)
         {
             float[] rgObsNum = convertF(blobObsNum.mutable_cpu_data);
             float[] rgKnownNum = convertF(blobKnownNum.mutable_cpu_data);
 
-            int nObsFields = schema.Data.ObservedNum.Count;
-            int nKnownFields = schema.Data.KnownNum.Count;
-            int nFields = nObsFields + nKnownFields;
+            int nObsNumFields = schema.Data.ObservedNum.Count;
+            int nKnownNumFields = schema.Data.KnownNum.Count;
+            int nFields = nObsNumFields + nKnownNumFields;
+            int nFutNumFields = nKnownNumFields;
 
-            blobHistNum.Reshape(nBatchSize, nNumHist, nObsFields + nKnownFields, 1);
-            blobFutNum.Reshape(nBatchSize, nNumFut, nKnownFields, 1);
+            blobHistNum.Reshape(nBatchSize, nNumHist, nObsNumFields + nKnownNumFields, 1);
+            blobFutNum.Reshape(nBatchSize, nNumFut, nKnownNumFields, 1);
             blobTarget.Reshape(nBatchSize, nNumFut, 1, 1);
 
             float[] rgHistNum = convertF(blobHistNum.mutable_cpu_data);
@@ -273,27 +478,27 @@ namespace MyCaffe.test
                     {
                         int nIdxDst = (i * nNumHist * nFields) + (j * nFields);
 
-                        for (int k = 0; k < nObsFields; k++)
+                        for (int k = 0; k < nObsNumFields; k++)
                         {
-                            rgHistNum[nIdxDst + k] = rgObsNum[nIdxSrc * nObsFields + k];
+                            rgHistNum[nIdxDst + k] = rgObsNum[nIdxSrc * nObsNumFields + k];
                         }
 
-                        for (int k = 0; k < nKnownFields; k++)
+                        for (int k = 0; k < nKnownNumFields; k++)
                         {
-                            rgHistNum[nIdxDst + nObsFields + k] = rgKnownNum[nIdxSrc * nKnownFields + k];
+                            rgHistNum[nIdxDst + nObsNumFields + k] = rgKnownNum[nIdxSrc * nKnownNumFields + k];
                         }
                     }
                     else
                     {
                         int nLocalJ = j - nNumHist;
-                        int nIdxDst = (i * nNumFut * nKnownFields) + (nLocalJ * nKnownFields);
+                        int nIdxDst = (i * nNumFut * nKnownNumFields) + (nLocalJ * nKnownNumFields);
                         int nIdxDst1 = (i * nNumFut) + nLocalJ;
 
-                        rgTarget[nIdxDst1] = rgObsNum[nIdxSrc * nObsFields + nTargetIndex];
+                        rgTarget[nIdxDst1] = rgObsNum[nIdxSrc * nObsNumFields + nTargetIndex];
 
-                        for (int k = 0; k < nKnownFields; k++)
+                        for (int k = 0; k < nKnownNumFields; k++)
                         {
-                            rgFutNum[nIdxDst + k] = rgKnownNum[nIdxSrc * nKnownFields + k];
+                            rgFutNum[nIdxDst + k] = rgKnownNum[nIdxSrc * nKnownNumFields + k];
                         }
                     }
                 }
@@ -309,9 +514,82 @@ namespace MyCaffe.test
                 }
             }
 
-            blobHistNum.mutable_cpu_data = convert(rgHistNum);
-            blobFutNum.mutable_cpu_data = convert(rgFutNum);
-            blobTarget.mutable_cpu_data = convert(rgTarget);
+            if (rgHistNum.Length > 0)
+                blobHistNum.mutable_cpu_data = convert(rgHistNum);
+            if (rgFutNum.Length > 0)
+                blobFutNum.mutable_cpu_data = convert(rgFutNum);
+            if (rgTarget.Length > 0)
+                blobTarget.mutable_cpu_data = convert(rgTarget);
+        }
+
+        private void loadCat(ref int nRowIdx, ref int nColIdx, DataSchema schema, Blob<T> blobObsCat, Blob<T> blobKnownCat, Blob<T> blobHistCat, Blob<T> blobFutCat, int nNumHist, int nNumFut, int nBatchSize)
+        {
+            float[] rgObsCat = convertF(blobObsCat.mutable_cpu_data);
+            float[] rgKnownCat = convertF(blobKnownCat.mutable_cpu_data);
+
+            int nObsCatFields = schema.Data.ObservedCat.Count;
+            int nKnownCatFields = schema.Data.KnownCat.Count;
+            int nFields = nObsCatFields + nKnownCatFields;
+            int nFutCatFields = nKnownCatFields;
+
+            blobHistCat.Reshape(nBatchSize, nNumHist, nObsCatFields + nKnownCatFields, 1);
+            blobFutCat.Reshape(nBatchSize, nNumFut, nKnownCatFields, 1);
+
+            float[] rgHistCat = convertF(blobHistCat.mutable_cpu_data);
+            float[] rgFutCat = convertF(blobFutCat.mutable_cpu_data);
+
+            for (int i = 0; i < nBatchSize; i++)
+            {
+                int nRowOffset = nRowIdx * schema.Data.Columns;
+                int nStartIdx = schema.Lookups[0][nRowIdx].ValidRangeStartIndex;
+                int nStartIdx1 = nRowOffset + nStartIdx + nColIdx;
+
+                for (int j = 0; j < nNumHist + nNumFut; j++)
+                {
+                    int nIdxSrc = nStartIdx1 + j;
+
+                    if (j < nNumHist)
+                    {
+                        int nIdxDst = (i * nNumHist * nFields) + (j * nFields);
+
+                        for (int k = 0; k < nObsCatFields; k++)
+                        {
+                            rgHistCat[nIdxDst + k] = rgObsCat[nIdxSrc * nObsCatFields + k];
+                        }
+
+                        for (int k = 0; k < nKnownCatFields; k++)
+                        {
+                            rgHistCat[nIdxDst + nObsCatFields + k] = rgKnownCat[nIdxSrc * nKnownCatFields + k];
+                        }
+                    }
+                    else
+                    {
+                        int nLocalJ = j - nNumHist;
+                        int nIdxDst = (i * nNumFut * nKnownCatFields) + (nLocalJ * nKnownCatFields);
+                        int nIdxDst1 = (i * nNumFut) + nLocalJ;
+
+                        for (int k = 0; k < nKnownCatFields; k++)
+                        {
+                            rgFutCat[nIdxDst + k] = rgKnownCat[nIdxSrc * nKnownCatFields + k];
+                        }
+                    }
+                }
+
+                nColIdx++;
+                if (nColIdx + nNumHist + nNumFut > schema.Lookups[0][nRowIdx].ValidRangeCount)
+                {
+                    nColIdx = 0;
+                    nRowIdx++;
+
+                    if (nRowIdx >= schema.Lookups[0].Count)
+                        nRowIdx = 0;
+                }
+            }
+
+            if (rgHistCat.Length > 0)
+                blobHistCat.mutable_cpu_data = convert(rgHistCat);
+            if (rgFutCat.Length > 0)
+                blobFutCat.mutable_cpu_data = convert(rgFutCat);
         }
 
         /// <summary>
@@ -333,7 +611,7 @@ namespace MyCaffe.test
         /// Fresh test\iter_0 data generated by running:
         /// training.py with TemporalFusionTransformer options: debug=True, tag='tft', use_mycaffe=True
         /// </remarks>
-        public void TestForward(Phase phase, DataTemporalParameter.SOURCE_TYPE srcType, string strSrcPath, int nBatchSize)
+        public void TestForward(Phase phase, DataTemporalParameter.SOURCE_TYPE srcType, string strSrcPath, int nBatchSize, SOURCE src)
         {
             CancelEvent evtCancel = new CancelEvent();
             string strPath = getTestDataPath();
@@ -341,11 +619,19 @@ namespace MyCaffe.test
             Blob<T> blobVal = null;
             Blob<T> blobWork = null;
             Blob<T> blob1 = null;
+            Blob<T> blobStatNum1 = null;
+            Blob<T> blobStatCat1 = null;
             Blob<T> blobObsNum = null;
+            Blob<T> blobObsCat = null;
             Blob<T> blobKnownNum = null;
+            Blob<T> blobKnownCat = null;
             Blob<T> blobTarget = null;
+            Blob<T> blobStatNum = null;
+            Blob<T> blobStatCat = null;
             Blob<T> blobHistNum = null;
+            Blob<T> blobHistCat = null;
             Blob<T> blobFutNum = null;
+            Blob<T> blobFutCat = null;
 
             Net<T> net = null;
             int nNumSamples = nBatchSize;
@@ -359,11 +645,19 @@ namespace MyCaffe.test
             {
                 blobVal = new Blob<T>(m_cuda, m_log);
                 blobWork = new Blob<T>(m_cuda, m_log);
+                blobStatNum1 = new Blob<T>(m_cuda, m_log);
+                blobStatCat1 = new Blob<T>(m_cuda, m_log);
                 blobObsNum = new Blob<T>(m_cuda, m_log);
+                blobObsCat = new Blob<T>(m_cuda, m_log);
                 blobKnownNum = new Blob<T>(m_cuda, m_log);
+                blobKnownCat = new Blob<T>(m_cuda, m_log);
                 blobTarget = new Blob<T>(m_cuda, m_log);
+                blobStatNum = new Blob<T>(m_cuda, m_log);
+                blobStatCat = new Blob<T>(m_cuda, m_log);
                 blobHistNum = new Blob<T>(m_cuda, m_log);
+                blobHistCat = new Blob<T>(m_cuda, m_log);
                 blobFutNum = new Blob<T>(m_cuda, m_log);
+                blobFutCat = new Blob<T>(m_cuda, m_log);
 
                 string strType = phase.ToString().ToLower();
                 if (strType == "run")
@@ -371,8 +665,12 @@ namespace MyCaffe.test
 
                 DataSchema schema = DataSchema.Load(strSrcPath + "\\" + strType + "_schema.xml");
                 Tuple<long[], int[]> sync = load(strSrcPath, strType, "sync.npy");
-                load(blobObsNum, strSrcPath, strType, "observed_num.npy");
-                load(blobKnownNum, strSrcPath, strType, "known_num.npy");   
+                loadFloat(blobStatNum1, strSrcPath, strType, "static_num.npy");
+                loadLong(blobStatCat1, strSrcPath, strType, "static_cat.npy");
+                loadFloat(blobObsNum, strSrcPath, strType, "observed_num.npy");
+                loadLong(blobObsCat, strSrcPath, strType, "observed_cat.npy");
+                loadFloat(blobKnownNum, strSrcPath, strType, "known_num.npy");
+                loadLong(blobKnownCat, strSrcPath, strType, "known_cat.npy");
 
                 string strModel = buildModel(nNumSamples, nNumHist, nNumFuture, srcType, strSrcPath);
                 RawProto rp = RawProto.Parse(strModel);
@@ -380,41 +678,90 @@ namespace MyCaffe.test
 
                 net = new Net<T>(m_cuda, m_log, param, evtCancel, null, phase);
 
+                int[] rgNumStaticShape = new int[] { 0 };
+                int[] rgCatStaticShape = new int[] { 0 };
+                int[] rgNumHistShape = new int[] { 0 };
+                int[] rgCatHistShape = new int[] { 0 };
+                int[] rgNumFutShape = new int[] { 0 };
+                int[] rgCatFutShape = new int[] { 0 };
+                int[] rgTargetShape = new int[] { 0 };
+
+                if (src == SOURCE.ELECTRICITY)
+                {
+                    rgCatStaticShape = new int[] { nBatchSize, 1 };             // station id
+                    rgNumHistShape = new int[] { nBatchSize, nNumHist, 3 };     // log power use, hour, hour from start
+                    rgNumFutShape = new int[] { nBatchSize, nNumFuture, 2 };    // hour, hour from start
+                    rgTargetShape = new int[] { nBatchSize, nNumFuture, 1 };         // log power use
+                }
+                else if (src == SOURCE.TRAFFIC)
+                {
+                    rgCatStaticShape = new int[] { nBatchSize, 1 };             // station id
+                    rgNumHistShape = new int[] { nBatchSize, nNumHist, 5 };     // value, sensor_day, time on day, day of week, hour from start
+                    rgNumFutShape = new int[] { nBatchSize, nNumFuture, 4 };    // sensor_day, time on day, day of week, hour from start
+                    rgTargetShape = new int[] { nBatchSize, nNumFuture, 1 };         // value
+                }
+                else if (src == SOURCE.VOLATILITY)
+                {
+                    rgCatStaticShape = new int[] { nBatchSize, 1 };             // region id
+                    rgNumHistShape = new int[] { nBatchSize, nNumHist, 2 };     // open_to_close, days from start
+                    rgCatHistShape = new int[] { nBatchSize, nNumHist, 4 };     // day of week, day of month, week of year, month
+                    rgNumFutShape = new int[] { nBatchSize, nNumFuture, 1 };    // days from start
+                    rgCatFutShape = new int[] { nBatchSize, nNumHist, 4 };      // day of week, day of month, week of year, month
+                    rgTargetShape = new int[] { nBatchSize, nNumFuture, 1 };         // log vol
+                }
+
                 for (int i = 0; i < nMaxIter; i++)
                 {
                     BlobCollection<T> colRes = net.Forward();
+
+                    int nRowIdx1 = nRowIdx;
+                    int nColIdx1 = nColIdx;
+
+                    loadStat(ref nRowIdx, ref nColIdx, schema, blobStatNum1, blobStatCat1, blobStatNum, blobStatCat, nNumHist, nNumFuture, nBatchSize);
+
+                    nRowIdx = nRowIdx1;
+                    nColIdx = nColIdx1;
+
+                    loadCat(ref nRowIdx, ref nColIdx, schema, blobObsCat, blobKnownCat, blobHistCat, blobFutCat, nNumHist, nNumFuture, nBatchSize);
+
+                    nRowIdx = nRowIdx1;
+                    nColIdx = nColIdx1;
 
                     loadNum(ref nRowIdx, ref nColIdx, schema, blobObsNum, blobKnownNum, blobHistNum, blobFutNum, blobTarget, nNumHist, nNumFuture, nBatchSize);
 
                     blob1 = net.FindBlob("x_numeric_static");
                     m_log.CHECK(blob1 != null, "Could not find the blob 'x_numeric_static'!");
-                    m_log.CHECK(blob1.CompareShape(new List<int>() { 0 }), "The blob shape is different than expected");
+                    m_log.CHECK(blob1.CompareShape(rgNumStaticShape), "The blob shape is different than expected");
+                    m_log.CHECK(blobStatNum.Compare(blob1, blobWork, false, 0), "The blob is different than expected.");
 
                     blob1 = net.FindBlob("x_categorical_static");
                     m_log.CHECK(blob1 != null, "Could not find the blob 'x_categorical_static'!");
-                    m_log.CHECK(blob1.CompareShape(new List<int>() { nBatchSize, 1 }), "The blob shape is different than expected");
+                    m_log.CHECK(blob1.CompareShape(rgCatStaticShape), "The blob shape is different than expected");
+                    m_log.CHECK(blobStatCat.Compare(blob1, blobWork, false, 0), "The blob is different than expected.");
 
                     blob1 = net.FindBlob("x_numeric_hist");
                     m_log.CHECK(blob1 != null, "Could not find the blob 'x_numeric_hist'!");
-                    m_log.CHECK(blob1.CompareShape(new List<int>() { nBatchSize, 90, 3 }), "The blob shape is different than expected");
+                    m_log.CHECK(blob1.CompareShape(rgNumHistShape), "The blob shape is different than expected");
                     m_log.CHECK(blobHistNum.Compare(blob1, blobWork, false, 0), "The blob is different than expected.");
 
                     blob1 = net.FindBlob("x_categorical_hist");
                     m_log.CHECK(blob1 != null, "Could not find the blob 'x_categorical_hist'!");
-                    m_log.CHECK(blob1.CompareShape(new List<int>() { 0 }), "The blob shape is different than expected");
+                    m_log.CHECK(blob1.CompareShape(rgCatHistShape), "The blob shape is different than expected");
+                    m_log.CHECK(blobHistCat.Compare(blob1, blobWork, false, 0), "The blob is different than expected.");
 
                     blob1 = net.FindBlob("x_numeric_future");
                     m_log.CHECK(blob1 != null, "Could not find the blob 'x_numeric_future'!");
-                    m_log.CHECK(blob1.CompareShape(new List<int>() { nBatchSize, 30, 2 }), "The blob shape is different than expected");
+                    m_log.CHECK(blob1.CompareShape(rgNumFutShape), "The blob shape is different than expected");
                     m_log.CHECK(blobFutNum.Compare(blob1, blobWork, false, 0), "The blob is different than expected.");
 
                     blob1 = net.FindBlob("x_categorical_future");
                     m_log.CHECK(blob1 != null, "Could not find the blob 'x_categorical_future'!");
-                    m_log.CHECK(blob1.CompareShape(new List<int>() { 0 }), "The blob shape is different than expected");
+                    m_log.CHECK(blob1.CompareShape(rgCatFutShape), "The blob shape is different than expected");
+                    m_log.CHECK(blobFutCat.Compare(blob1, blobWork, false, 0), "The blob is different than expected.");
 
                     blob1 = net.FindBlob("target");
                     m_log.CHECK(blob1 != null, "Could not find the blob 'target'!");
-                    m_log.CHECK(blob1.CompareShape(new List<int>() { nBatchSize, 30 }), "The blob shape is different than expected");
+                    m_log.CHECK(blob1.CompareShape(rgTargetShape), "The blob shape is different than expected");
                     m_log.CHECK(blobTarget.Compare(blob1, blobWork, false, 0), "The blob is different than expected.");
 
                     double dfPct = (double)i / nMaxIter;
@@ -428,10 +775,19 @@ namespace MyCaffe.test
                 
                 dispose(ref blobVal);
                 dispose(ref blobWork);
+                dispose(ref blobStatNum1);
+                dispose(ref blobStatCat1);
+                dispose(ref blobStatNum);
+                dispose(ref blobStatCat);
                 dispose(ref blobObsNum);
+                dispose(ref blobObsCat);
+                dispose(ref blobKnownNum);
+                dispose(ref blobKnownCat);
                 dispose(ref blobTarget);
                 dispose(ref blobHistNum);
+                dispose(ref blobHistCat);
                 dispose(ref blobFutNum);
+                dispose(ref blobFutCat);
 
                 if (net != null)
                     net.Dispose();
