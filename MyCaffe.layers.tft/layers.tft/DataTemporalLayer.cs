@@ -294,10 +294,16 @@ namespace MyCaffe.layers.tft
 
                 while (!evtCancel.WaitOne(0))
                 {
-                    bool bEndOfData = false;
+                    bool bGoodData = false;
 
-                    while (dataChunk.Load(nRowIdx, out bEndOfData) && !bEndOfData)
+                    while (dataChunk.Load(nRowIdx, out bGoodData))
                     {
+                        if (!bGoodData)
+                        {
+                            nRowIdx++;
+                            continue;
+                        }
+
                         bool bRefreshed = m_data.Add(dataChunk, nMaxLoadCount);
 
                         if (m_data.IsReady)
@@ -459,6 +465,7 @@ namespace MyCaffe.layers.tft
         Random m_random;
         Log m_log;
         DataSchema m_schema;
+        Lookup m_validRanges = new Lookup();
         int m_nHistoricalSteps;
         int m_nFutureSteps;
         bool m_bShuffleData;
@@ -685,21 +692,18 @@ namespace MyCaffe.layers.tft
             return -1;
         }
 
-        public bool Load(int nRowIdx, out bool bEndOfData)
+        public bool Load(int nRowIdx, out bool bGoodData)
         {
-            bEndOfData = false;
+            bGoodData = false;
 
             if (nRowIdx >= m_nRows)
-            {
-                bEndOfData = true;
-                return true;
-            }
+                return false;
 
             int nStartIdx = m_schema.Lookups[0][nRowIdx].ValidRangeStartIndex;
             int nEndIdx = m_schema.Lookups[0][nRowIdx].ValidRangeEndIndex;
             int nFields = m_rgFields[DATA_TYPE.SYNC];
-            if (nStartIdx < 0 || nEndIdx - nStartIdx < (m_nHistoricalSteps + m_nFutureSteps))
-                return false;
+            if (nStartIdx < 0 || nEndIdx < 0 || (nEndIdx - nStartIdx) < (m_nHistoricalSteps + m_nFutureSteps))
+                return true;
             
             Dictionary<DATA_TYPE, long[]> cat = new Dictionary<DATA_TYPE, long[]>();
             foreach (KeyValuePair<DATA_TYPE, NumpyFile<long>> kvp in m_rgCatFiles)
@@ -710,7 +714,7 @@ namespace MyCaffe.layers.tft
                 rgBuffer = kvp.Value.LoadRow(rgBuffer, nRowIdx, nStartIdx1, (nEndIdx1 - nStartIdx1) + 1);
                 cat.Add(kvp.Key, rgBuffer);
                 if (rgBuffer == null)
-                    bEndOfData = true;
+                    return true;
             }
 
             Dictionary<DATA_TYPE, float[]> num = new Dictionary<DATA_TYPE, float[]>();
@@ -722,11 +726,8 @@ namespace MyCaffe.layers.tft
                 rgBuffer = kvp.Value.LoadRow(rgBuffer, nRowIdx, nStartIdx1, (nEndIdx1 - nStartIdx1) + 1);
                 num.Add(kvp.Key, rgBuffer);
                 if (rgBuffer == null)
-                    bEndOfData = true;
+                    return true;
             }
-
-            if (bEndOfData)
-                return true;
 
             foreach (KeyValuePair<DATA_TYPE, long[]> kvp in cat)
             {
@@ -737,6 +738,10 @@ namespace MyCaffe.layers.tft
             {
                 m_rgNumData[kvp.Key].Add(kvp.Value);
             }
+
+            m_validRanges.Add(m_schema.Lookups[0][nRowIdx]);
+
+            bGoodData = true;
 
             return true;
         }
@@ -793,6 +798,9 @@ namespace MyCaffe.layers.tft
                     m_rgBatchBuffers.Add(kv.Key, kv.Value);
                 }
                 data.m_rgBatchBuffers.Clear();
+
+                m_validRanges.Add(data.m_validRanges);
+                data.m_validRanges.Clear();
 
                 m_schema = data.m_schema;
                 m_nBatchSize = data.m_nBatchSize;
@@ -876,19 +884,33 @@ namespace MyCaffe.layers.tft
         {
             if (m_bShuffleData)
             {
-                m_nRowIdx = m_random.Next(m_rgNumData[DATA_TYPE.OBSERVED_NUMERIC].Count());
-                m_nColIdx = m_random.Next(m_rgNumData[DATA_TYPE.OBSERVED_NUMERIC][m_nRowIdx].Length - (m_nHistoricalSteps + m_nFutureSteps));
+                m_nRowIdx = m_random.Next(m_validRanges.Count);
+
+                int nValidRangeCount = m_validRanges[m_nRowIdx].ValidRangeCount;
+                int nRetry = 0;
+                while (nRetry < 5 && nValidRangeCount < (m_nHistoricalSteps + m_nFutureSteps))
+                {
+                    m_nRowIdx = m_random.Next(m_validRanges.Count);
+                    nValidRangeCount = m_validRanges[m_nRowIdx].ValidRangeCount;
+                    nRetry++;
+                }
+
+                if (nRetry == 5)
+                    throw new Exception("Could not find a row with more than " + (m_nHistoricalSteps + m_nFutureSteps).ToString() + " valid ranges!");
+
+                m_nColIdx = m_random.Next(nValidRangeCount - (m_nHistoricalSteps + m_nFutureSteps));
             }
             else
             {
                 m_nColIdx++;
-                if (m_nColIdx + m_nHistoricalSteps + m_nFutureSteps > m_schema.Lookups[0][m_nRowIdx].ValidRangeCount)
+                int nValidRangeCount = m_validRanges[m_nRowIdx].ValidRangeCount;
+                if (m_nColIdx + m_nHistoricalSteps + m_nFutureSteps > nValidRangeCount)
                 {
-                    m_nColIdx = 0;
-
                     m_nRowIdx++;
                     if (m_nRowIdx >= m_nMaxRowIdx)
                         m_nRowIdx = 0;
+
+                    m_nColIdx = 0;
                 }
             }
         }
@@ -906,15 +928,12 @@ namespace MyCaffe.layers.tft
             if (rg == null)
                 return false;
 
-            int nStartIdx1 = m_nColIdx + nStartIdx;
+            int nStartIdx1 = m_validRanges[m_nRowIdx].ValidRangeStartIndex + m_nColIdx + nStartIdx;
             int nFields = m_rgFields[DATA_TYPE.SYNC];
             long[] rgSrc = m_rgCatData[DATA_TYPE.SYNC][m_nRowIdx];
 
             if (nStartIdx1 * nFields + nCount * nFields > rgSrc.Length)
-            {
-                m_log.WriteLine("WARNING: Row " + m_nRowIdx.ToString() + ", Col " + m_nColIdx.ToString() + " does not have enough data to load sync batch at index " + nStartIdx1.ToString() + " with count " + nCount.ToString() + ".");
                 return false;
-            }
 
             Array.Copy(rgSrc, nStartIdx1 * nFields, rg, nIdx * nCount * nFields, nCount * nFields);
 
@@ -948,7 +967,7 @@ namespace MyCaffe.layers.tft
             if (rg == null)
                 return;
 
-            int nStartIdx1 = m_nColIdx + nStartIdx;
+            int nStartIdx1 = m_validRanges[m_nRowIdx].ValidRangeStartIndex + m_nColIdx + nStartIdx;
             int nFields = m_rgFields[dt];
             long[] rgSrc = m_rgCatData[dt][m_nRowIdx];
             Array.Copy(rgSrc, nStartIdx1 * nFields, rg, nIdx * nCount * nFields, nCount * nFields);
@@ -959,7 +978,7 @@ namespace MyCaffe.layers.tft
             if (rg == null)
                 return;
 
-            int nStartIdx1 = m_nColIdx + nStartIdx;
+            int nStartIdx1 = m_validRanges[m_nRowIdx].ValidRangeStartIndex + m_nColIdx + nStartIdx;
             int nFields1 = (m_rgFields.ContainsKey(dt1)) ? m_rgFields[dt1] : 0;
             long[] rgSrc1 = (m_rgFields.ContainsKey(dt1)) ? m_rgCatData[dt1][m_nRowIdx] : null;
             int nFields2 = (m_rgFields.ContainsKey(dt2)) ? m_rgFields[dt2] : 0;
@@ -988,7 +1007,7 @@ namespace MyCaffe.layers.tft
             if (rg == null)
                 return;
 
-            int nStartIdx1 = m_nColIdx + nStartIdx;
+            int nStartIdx1 = m_validRanges[m_nRowIdx].ValidRangeStartIndex + m_nColIdx + nStartIdx;
             int nFields = m_rgFields[dt];
             float[] rgSrc = m_rgNumData[dt][m_nRowIdx];           
             Array.Copy(rgSrc, nStartIdx1 * nFields, rg, nIdx * nCount * nFields, nCount * nFields);
@@ -999,7 +1018,7 @@ namespace MyCaffe.layers.tft
             if (rg == null)
                 return;
 
-            int nStartIdx1 = m_nColIdx + nStartIdx;
+            int nStartIdx1 = m_validRanges[m_nRowIdx].ValidRangeStartIndex + m_nColIdx + nStartIdx;
             int nFields = m_rgFields[dt];
             float[] rgSrc = m_rgNumData[dt][m_nRowIdx];
 
