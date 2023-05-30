@@ -6,6 +6,7 @@ using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
 using MyCaffe.fillers;
+using System.Diagnostics;
 
 namespace MyCaffe.layers
 {
@@ -26,6 +27,9 @@ namespace MyCaffe.layers
         bool m_bBiasTerm;
         Blob<T> m_blobBiasMultiplier;
         bool m_bWarningShown = false;
+#if DEBUG
+        Blob<T> m_blobWork;
+#endif
 
         /// <summary>
         /// The EmbedLayer constructor
@@ -52,6 +56,10 @@ namespace MyCaffe.layers
             m_blobBiasMultiplier = new common.Blob<T>(cuda, log);
             m_blobBiasMultiplier.Name = m_param.name + " biasmult";
 
+#if DEBUG
+            m_blobWork = new common.Blob<T>(cuda, log);
+            m_blobWork.Name = m_param.name + " work";
+#endif
             setup_internal_blobs(m_colInternalBlobs);
         }
 
@@ -63,6 +71,14 @@ namespace MyCaffe.layers
                 m_blobBiasMultiplier.Dispose();
                 m_blobBiasMultiplier = null;
             }
+
+#if DEBUG
+            if (m_blobWork != null)
+            {
+                m_blobWork.Dispose();
+                m_blobWork = null;
+            }
+#endif
 
             base.dispose();
         }
@@ -229,6 +245,14 @@ namespace MyCaffe.layers
             long hTopData = colTop[0].mutable_gpu_data;
             long hWeight = m_colBlobs[0].gpu_data;
             int nCount = colTop[0].count();
+
+#if DEBUG
+            Tuple<double, double, double, double> minmax = colBottom[0].minmax_data(m_blobWork, true);
+            double dfMin = minmax.Item1;
+            double dfMax = minmax.Item2;
+            if (dfMin < 0 || dfMax >= m_nK)
+                throw new Exception("A data element within '" + colBottom[0].Name + "' is out of range [0," + m_nK.ToString() + ") non inclusive.  Data Min = " + dfMin.ToString() + " Max = " + dfMax.ToString() + ".");
+#endif
 
             m_cuda.embed_fwd(nCount, hBottomData, hWeight, m_nM, m_nN, m_nK, hTopData);
 
