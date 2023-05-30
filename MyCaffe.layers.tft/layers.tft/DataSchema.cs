@@ -387,6 +387,54 @@ namespace MyCaffe.layers.tft
         }
 
         /// <summary>
+        /// Returns the the number of lookup items.
+        /// </summary>
+        public int Count
+        {
+            get { return m_rgLookupIdToName.Count; }
+        }
+
+        /// <summary>
+        /// Clear the entries from the lookup table.
+        /// </summary>
+        public void Clear()
+        {
+            m_rgLookupIdToName.Clear();
+            m_rgLookupNameToId.Clear();
+        }
+
+        /// <summary>
+        /// Add a lookup table to this lookup table.
+        /// </summary>
+        /// <param name="l">Specifies the lookup table to add.</param>
+        public void Add(Lookup l)
+        {
+            foreach (KeyValuePair<int, LookupItem> kv in l.m_rgLookupIdToName)
+            {
+                bool bAdd = true;
+
+                if (m_rgLookupIdToName.ContainsKey(kv.Key))
+                {
+                    if (!m_rgLookupIdToName[kv.Key].Compare(kv.Value))
+                    {
+                        m_rgLookupIdToName.Remove(kv.Key);
+                        m_rgLookupNameToId.Remove(kv.Value.Name);
+                    }
+                    else
+                    {
+                        bAdd = false;
+                    }
+                }
+
+                if (bAdd)
+                {
+                    m_rgLookupIdToName.Add(kv.Key, kv.Value);
+                    m_rgLookupNameToId.Add(kv.Value.Name, kv.Value);
+                }
+            }
+        }
+
+        /// <summary>
         /// Add a new item to the lookup table.
         /// </summary>
         /// <param name="item">Specifies the lookup item to add.</param>
@@ -428,14 +476,6 @@ namespace MyCaffe.layers.tft
                 return null;
 
             return m_rgLookupIdToName[nID].Name;
-        }
-
-        /// <summary>
-        /// Returns the number of lookup items in the table.
-        /// </summary>
-        public int Count
-        {
-            get { return m_rgLookupIdToName.Count; }
         }
 
         /// <summary>
@@ -504,6 +544,25 @@ namespace MyCaffe.layers.tft
                 nValidRangeEnd = int.Parse(node.Attributes["ValidRangeEndIdx"].Value);
 
             return new LookupItem(strName, nIndex, nValidRangeStart, nValidRangeEnd);
+        }
+
+        /// <summary>
+        /// Compare two LookupItems and return whether or not they are the same.
+        /// </summary>
+        /// <param name="item">Specifies the other LookupItem to compare.</param>
+        /// <returns>Returns true if the two items are the same.</returns>
+        public bool Compare(LookupItem item)
+        {
+            if (item.Name != Name)
+                return false;
+
+            if (item.ValidRangeEndIndex != ValidRangeEndIndex)
+                return false;
+
+            if (item.ValidRangeStartIndex != ValidRangeStartIndex)
+                return false;
+
+            return true;
         }
 
         /// <summary>
