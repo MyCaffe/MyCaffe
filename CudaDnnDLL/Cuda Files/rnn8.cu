@@ -20,6 +20,9 @@ long rnn8Handle<T>::setupSeqArray(int nBatchSize, int nSequenceLength)
 	size_t lSize = sizeof(int) * nBatchSize;
 
 	m_pnHostSeqArray = (int*)malloc(lSize);
+	if (m_pnHostSeqArray == NULL)
+		return ERROR_OUTOFMEMORY;
+
 	for (int i = 0; i < nBatchSize; i++)
 	{
 		m_pnHostSeqArray[i] = nSequenceLength;
@@ -210,8 +213,7 @@ long rnn8Handle<T>::Set(long hCuda, cudnnForwardMode_t fwdmode, cudnnDataType_t 
 	if (lErr = cudnnGetRNNTempSpaceSizes(cuda, m_rnnDesc, m_fwdmode, m_xDesc, &m_szWorkSizeInBytes, &m_szReserveSizeInBytes))
 		return lErr;
 
-	m_szWorkSizeInBytes *= 2;
-	m_szReserveSizeInBytes *= 2;
+
 
 	return cudaStreamSynchronize(0);
 }
