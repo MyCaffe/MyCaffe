@@ -1096,6 +1096,9 @@ namespace MyCaffe.common
             if (nCount != other.count())
                 return false;
 
+            if (nCount == 0)
+                return true;
+
             if (Cuda.KernelHandle != other.Cuda.KernelHandle)
                 throw new Exception("The compare blob has a different Cuda Kernel Handles!");
 
@@ -2110,6 +2113,17 @@ namespace MyCaffe.common
             }
 
             return Utility.Compare<int>(rgShape1, rgShape);
+        }
+
+        /// <summary>
+        /// Compares the shape of this blob to another shape.
+        /// </summary>
+        /// <param name="rgShape">Specifies the shape to compare with.</param>
+        /// <param name="bCompareCpuDataLen">Optionally, compare the CPU data length.</param>
+        /// <returns>If the shapes are the same, return <i>true</i>, othewise <i>false</i>.</returns>
+        public bool CompareShape(int[] rgShape, bool bCompareCpuDataLen = false)
+        {
+            return CompareShape(new List<int>(rgShape), bCompareCpuDataLen);
         }
 
         /// <summary>
