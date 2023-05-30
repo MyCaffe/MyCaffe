@@ -448,11 +448,12 @@ namespace MyCaffe.test
             float[] rgKnownNum = convertF(blobKnownNum.mutable_cpu_data);
 
             int nObsNumFields = schema.Data.ObservedNum.Count;
+            int nObsNumFieldsExplicit = schema.Data.ObservedNumExplicitCount;
             int nKnownNumFields = schema.Data.KnownNum.Count;
-            int nFields = nObsNumFields + nKnownNumFields;
+            int nFields = nObsNumFieldsExplicit + nKnownNumFields;
             int nFutNumFields = nKnownNumFields;
 
-            blobHistNum.Reshape(nBatchSize, nNumHist, nObsNumFields + nKnownNumFields, 1);
+            blobHistNum.Reshape(nBatchSize, nNumHist, nObsNumFieldsExplicit + nKnownNumFields, 1);
             blobFutNum.Reshape(nBatchSize, nNumFut, nKnownNumFields, 1);
             blobTarget.Reshape(nBatchSize, nNumFut, 1, 1);
 
@@ -477,15 +478,20 @@ namespace MyCaffe.test
                     if (j < nNumHist)
                     {
                         int nIdxDst = (i * nNumHist * nFields) + (j * nFields);
+                        int nIdxDst1 = nIdxDst;
 
                         for (int k = 0; k < nObsNumFields; k++)
                         {
-                            rgHistNum[nIdxDst + k] = rgObsNum[nIdxSrc * nObsNumFields + k];
+                            if (schema.Data.IsObservedNum(k))
+                            {
+                                rgHistNum[nIdxDst1] = rgObsNum[nIdxSrc * nObsNumFields + k];
+                                nIdxDst1++;
+                            }
                         }
 
                         for (int k = 0; k < nKnownNumFields; k++)
                         {
-                            rgHistNum[nIdxDst + nObsNumFields + k] = rgKnownNum[nIdxSrc * nKnownNumFields + k];
+                            rgHistNum[nIdxDst + nObsNumFieldsExplicit + k] = rgKnownNum[nIdxSrc * nKnownNumFields + k];
                         }
                     }
                     else
@@ -706,7 +712,7 @@ namespace MyCaffe.test
                     rgNumHistShape = new int[] { nBatchSize, nNumHist, 2 };     // open_to_close, days from start
                     rgCatHistShape = new int[] { nBatchSize, nNumHist, 4 };     // day of week, day of month, week of year, month
                     rgNumFutShape = new int[] { nBatchSize, nNumFuture, 1 };    // days from start
-                    rgCatFutShape = new int[] { nBatchSize, nNumHist, 4 };      // day of week, day of month, week of year, month
+                    rgCatFutShape = new int[] { nBatchSize, nNumFuture, 4 };      // day of week, day of month, week of year, month
                     rgTargetShape = new int[] { nBatchSize, nNumFuture, 1 };         // log vol
                 }
 
@@ -766,6 +772,7 @@ namespace MyCaffe.test
 
                     double dfPct = (double)i / nMaxIter;
                     m_log.WriteLine("Testing batch " + i.ToString() + " (" + dfPct.ToString("P") + ")");
+                    m_log.Progress = dfPct;
                 }
             }
             finally
