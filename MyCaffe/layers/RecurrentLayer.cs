@@ -380,21 +380,25 @@ namespace MyCaffe.layers
 
         private void setupSharedWorkspaceAndReserved(ulong ulWsInBytes, ulong ulResInBytes)
         {
-            // This is the total amount of storage needed over all groups + streams.
-            WorkspaceArgs wsArgs = getWorkspace();
-            if (wsArgs != null)
-            {
-                if (ulWsInBytes > wsArgs.WorkspaceSizeInBytes)
-                {
-                    setWorkspace(ulWsInBytes);
-                    wsArgs = getWorkspace();
-                }
+            ulWsInBytes *= 2;
+            ulResInBytes *= 2;
 
-                m_hWorkspace = wsArgs.WorkspaceData;
-                m_nWorkspaceSizeInBytes = ulWsInBytes;
-                m_bWorkspaceOwned = false;
-            }
-            else
+            // NOTE: RNN FWD fails when sharing workspace data - need to investigate.
+            // This is the total amount of storage needed over all groups + streams.
+            //WorkspaceArgs wsArgs = getWorkspace();
+            //if (wsArgs != null)
+            //{
+            //    if (ulWsInBytes > wsArgs.WorkspaceSizeInBytes)
+            //    {
+            //        setWorkspace(ulWsInBytes);
+            //        wsArgs = getWorkspace();
+            //    }
+
+            //    m_hWorkspace = wsArgs.WorkspaceData;
+            //    m_nWorkspaceSizeInBytes = ulWsInBytes;
+            //    m_bWorkspaceOwned = false;
+            //}
+            //else
             {
                 ulong lCount = CudaDnn<T>.ConvertByteSizeToCount(ulWsInBytes);
                 m_hWorkspace = m_cuda.AllocMemory((long)lCount);
