@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -217,6 +218,37 @@ namespace MyCaffe.layers.tft
         public FieldCollection ObservedNum
         {
             get { return m_numObserved; }
+        }
+
+        /// <summary>
+        /// Returns the number of Observed numeric fields that are explicitly marked as observed.
+        /// </summary>
+        public int ObservedNumExplicitCount
+        {
+            get
+            {
+                int nCount = 0;
+                foreach (Field field in m_numObserved)
+                {
+                    if ((field.InputType & Field.INPUT_TYPE.OBSERVED) == Field.INPUT_TYPE.OBSERVED)
+                        nCount++;
+                }
+
+                return nCount;
+            }
+        }
+
+        /// <summary>
+        /// Returns whether or not the field at the given index is an observed field.
+        /// </summary>
+        /// <param name="nIdx">Specifies the field index.</param>
+        /// <returns>Returns whether or not the field is observed.</returns>
+        public bool IsObservedNum(int nIdx)
+        {
+            if (nIdx < 0 || nIdx >= m_numObserved.Count)
+                return false;
+
+            return ((m_numObserved[nIdx].InputType & Field.INPUT_TYPE.OBSERVED) == Field.INPUT_TYPE.OBSERVED);
         }
 
         /// <summary>
@@ -527,7 +559,7 @@ namespace MyCaffe.layers.tft
     /// <summary>
     /// The FieldCollection manages a collection of fields.
     /// </summary>
-    public class FieldCollection
+    public class FieldCollection : IEnumerable<Field>
     {
         string m_strFile;
         List<Field> m_rgFields = new List<Field>();
@@ -585,6 +617,24 @@ namespace MyCaffe.layers.tft
         public void Add(Field field)
         {
             m_rgFields.Add(field);
+        }
+
+        /// <summary>
+        /// Return the enumeration of the fields.
+        /// </summary>
+        /// <returns>The enumerator is returned.</returns>
+        public IEnumerator<Field> GetEnumerator()
+        {
+            return m_rgFields.GetEnumerator();
+        }
+
+        /// <summary>
+        /// Return the enumeration of the fields.
+        /// </summary>
+        /// <returns>The enumerator is returned.</returns>
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return m_rgFields.GetEnumerator();
         }
 
         /// <summary>
