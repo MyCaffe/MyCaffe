@@ -609,9 +609,9 @@ namespace MyCaffe.layers.tft
                 m_rgCatData.Add(DATA_TYPE.KNOWN_CATEGORICAL, new List<long[]>());
                 m_rgFields.Add(DATA_TYPE.KNOWN_CATEGORICAL, npyKnownCat.Fields);
 
-                nLen = nBatchSize * m_nHistoricalSteps * m_rgNumFiles[DATA_TYPE.KNOWN_CATEGORICAL].Fields;
+                nLen = nBatchSize * m_nHistoricalSteps * m_rgCatFiles[DATA_TYPE.KNOWN_CATEGORICAL].Fields;
                 m_rgBatchBuffers.Add(OUTPUT_TYPE.HISTORICAL_CATEGORICAL, new float[nLen]);
-                nLen = nBatchSize * m_nFutureSteps * m_rgNumFiles[DATA_TYPE.KNOWN_CATEGORICAL].Fields;
+                nLen = nBatchSize * m_nFutureSteps * m_rgCatFiles[DATA_TYPE.KNOWN_CATEGORICAL].Fields;
                 m_rgBatchBuffers.Add(OUTPUT_TYPE.FUTURE_CATEGORICAL, new float[nLen]);
             }
 
@@ -668,22 +668,15 @@ namespace MyCaffe.layers.tft
 
         private int getMaxRowIdx(int nBatchSize)
         {
-            int nCount = 0;
+            int nFields = m_rgFields[DATA_TYPE.SYNC];
+            int nCount = nBatchSize;
 
-            List<float[]> rgData = m_rgNumData[DATA_TYPE.OBSERVED_NUMERIC];
-            int nNumFields = m_rgFields[DATA_TYPE.OBSERVED_NUMERIC];
-
-            for (int i = rgData.Count - 1; i >= 0; i--)
+            for (int i=m_rgCatData[DATA_TYPE.SYNC].Count-1; i>=0; i--)
             {
-                if (rgData[i] != null)
-                {
-                    int nItems = (rgData[i].Length / nNumFields);
-                    nCount += nItems;
-                }
-
-                if (nCount > nBatchSize)
+                nCount -= m_rgCatData[DATA_TYPE.SYNC][i].Length / nFields;
+                if (nCount <= 0)
                     return i;
-            }
+            }   
 
             return -1;
         }
@@ -699,16 +692,18 @@ namespace MyCaffe.layers.tft
             }
 
             int nStartIdx = m_schema.Lookups[0][nRowIdx].ValidRangeStartIndex;
+            int nEndIdx = m_schema.Lookups[0][nRowIdx].ValidRangeEndIndex;
             int nFields = m_rgFields[DATA_TYPE.SYNC];
-            if (nStartIdx < 0 || m_rgCatFiles[DATA_TYPE.SYNC].Columns - nStartIdx < (m_nHistoricalSteps + m_nFutureSteps))
+            if (nStartIdx < 0 || nEndIdx - nStartIdx < (m_nHistoricalSteps + m_nFutureSteps))
                 return false;
             
             Dictionary<DATA_TYPE, long[]> cat = new Dictionary<DATA_TYPE, long[]>();
             foreach (KeyValuePair<DATA_TYPE, NumpyFile<long>> kvp in m_rgCatFiles)
             {
                 int nStartIdx1 = (kvp.Key == DATA_TYPE.STATIC_CATEGORICAL) ? 0 : nStartIdx;
+                int nEndIdx1 = (kvp.Key == DATA_TYPE.STATIC_CATEGORICAL) ? 0 : nEndIdx;
                 long[] rgBuffer = null;
-                rgBuffer = kvp.Value.LoadRow(rgBuffer, nRowIdx, nStartIdx1);
+                rgBuffer = kvp.Value.LoadRow(rgBuffer, nRowIdx, nStartIdx1, (nEndIdx1 - nStartIdx1) + 1);
                 cat.Add(kvp.Key, rgBuffer);
                 if (rgBuffer == null)
                     bEndOfData = true;
@@ -718,8 +713,9 @@ namespace MyCaffe.layers.tft
             foreach (KeyValuePair<DATA_TYPE, NumpyFile<float>> kvp in m_rgNumFiles)
             {
                 int nStartIdx1 = (kvp.Key == DATA_TYPE.STATIC_NUMERIC) ? 0 : nStartIdx;
+                int nEndIdx1 = (kvp.Key == DATA_TYPE.STATIC_NUMERIC) ? 0 : nEndIdx;
                 float[] rgBuffer = null;
-                rgBuffer = kvp.Value.LoadRow(rgBuffer, nRowIdx, nStartIdx1);
+                rgBuffer = kvp.Value.LoadRow(rgBuffer, nRowIdx, nStartIdx1, (nEndIdx1 - nStartIdx1) + 1);
                 num.Add(kvp.Key, rgBuffer);
                 if (rgBuffer == null)
                     bEndOfData = true;
@@ -797,9 +793,10 @@ namespace MyCaffe.layers.tft
                 m_schema = data.m_schema;
                 m_nBatchSize = data.m_nBatchSize;
                 m_nMaxRowIdx = getMaxRowIdx(m_nBatchSize);
-                m_nRows = m_rgNumData[DATA_TYPE.OBSERVED_NUMERIC].Count();
+                m_nRows = m_rgCatData[DATA_TYPE.SYNC].Count;
                 m_nTargetFieldIdx = data.m_nTargetFieldIdx;
-                m_nTotalSize = m_rgNumData[DATA_TYPE.OBSERVED_NUMERIC].Sum(p => p.Length) / (m_nHistoricalSteps + m_nFutureSteps);
+                int nFields = m_rgFields[DATA_TYPE.SYNC];
+                m_nTotalSize = m_rgCatData[DATA_TYPE.SYNC].Sum(p => p.Length) / (m_nHistoricalSteps + m_nFutureSteps) * nFields;
             }
 
             return bRefreshed;
@@ -959,10 +956,10 @@ namespace MyCaffe.layers.tft
                 return;
 
             int nStartIdx1 = m_nColIdx + nStartIdx;
-            int nFields1 = m_rgFields[dt1];
-            long[] rgSrc1 = m_rgCatData[dt1][m_nRowIdx];
-            int nFields2 = m_rgFields[dt2];
-            long[] rgSrc2 = m_rgCatData[dt2][m_nRowIdx];
+            int nFields1 = (m_rgFields.ContainsKey(dt1)) ? m_rgFields[dt1] : 0;
+            long[] rgSrc1 = (m_rgFields.ContainsKey(dt1)) ? m_rgCatData[dt1][m_nRowIdx] : null;
+            int nFields2 = (m_rgFields.ContainsKey(dt2)) ? m_rgFields[dt2] : 0;
+            long[] rgSrc2 = (m_rgFields.ContainsKey(dt2)) ? m_rgCatData[dt2][m_nRowIdx] : null;
             int nFields = nFields1 + nFields2;
 
             for (int j = nStartIdx1; j < nStartIdx1 + nCount; j++)
@@ -975,9 +972,9 @@ namespace MyCaffe.layers.tft
                 }
                 for (int k = 0; k < nFields2; k++)
                 {
-                    int nSrcIdx = j * nFields1 + k;
+                    int nSrcIdx = j * nFields2 + k;
                     int nDstIdx = nIdx * nCount * nFields + (j - nStartIdx1) * nFields + k + nFields1;
-                    rg[nDstIdx] = rgSrc1[nSrcIdx];
+                    rg[nDstIdx] = rgSrc2[nSrcIdx];
                 }
             }
         }
@@ -1017,10 +1014,10 @@ namespace MyCaffe.layers.tft
                 return;
 
             int nStartIdx1 = m_nColIdx + nStartIdx;
-            int nFields1 = m_rgFields[dt1];
-            float[] rgSrc1 = m_rgNumData[dt1][m_nRowIdx];
-            int nFields2 = m_rgFields[dt2];
-            float[] rgSrc2 = m_rgNumData[dt2][m_nRowIdx];
+            int nFields1 = (m_rgFields.ContainsKey(dt1)) ? m_rgFields[dt1] : 0;
+            float[] rgSrc1 = (m_rgFields.ContainsKey(dt1)) ? m_rgNumData[dt1][m_nRowIdx] : null;
+            int nFields2 = (m_rgFields.ContainsKey(dt2)) ? m_rgFields[dt2] : 0;
+            float[] rgSrc2 = (m_rgFields.ContainsKey(dt2)) ? m_rgNumData[dt2][m_nRowIdx] : null;
             int nFields = nFields1 + nFields2;
 
             for (int j = nStartIdx1; j < nStartIdx1 + nCount; j++)
