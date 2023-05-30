@@ -567,10 +567,14 @@ namespace MyCaffe.layers.tft
             m_rgFields.Add(DATA_TYPE.OBSERVED_NUMERIC, npyObsNum.Fields);
             m_nRows = npyObsNum.Rows;
 
-            nLen = nBatchSize * m_nHistoricalSteps * m_rgNumFiles[DATA_TYPE.OBSERVED_NUMERIC].Fields;
+            int nNumObsFields = m_schema.Data.ObservedNumExplicitCount;
+            if (nNumObsFields != m_rgNumFiles[DATA_TYPE.OBSERVED_NUMERIC].Fields && nNumObsFields != m_rgNumFiles[DATA_TYPE.OBSERVED_NUMERIC].Fields - 1)
+                throw new Exception("The number of observed numeric fields in the schema does not match the number of fields in the observed numeric data file.");
+
+            nLen = nBatchSize * m_nHistoricalSteps * nNumObsFields;
             m_rgBatchBuffers.Add(OUTPUT_TYPE.HISTORICAL_NUMERIC, new float[nLen]);
             // The future observed are the target values.
-            nLen = nBatchSize * m_nFutureSteps * m_rgNumFiles[DATA_TYPE.OBSERVED_NUMERIC].Fields;
+            nLen = nBatchSize * m_nFutureSteps * 1;
             m_rgBatchBuffers.Add(OUTPUT_TYPE.TARGET, new float[nLen]);
 
             if (File.Exists(m_rgstrFiles[DATA_TYPE.OBSERVED_CATEGORICAL]))
@@ -826,7 +830,7 @@ namespace MyCaffe.layers.tft
                 case OUTPUT_TYPE.HISTORICAL_NUMERIC:
                     nFields = 0;
                     if (m_rgFields.ContainsKey(DATA_TYPE.OBSERVED_NUMERIC))
-                        nFields += m_rgFields[DATA_TYPE.OBSERVED_NUMERIC];
+                        nFields += m_schema.Data.ObservedNumExplicitCount;
                     if (m_rgFields.ContainsKey(DATA_TYPE.KNOWN_NUMERIC))
                         nFields += m_rgFields[DATA_TYPE.KNOWN_NUMERIC];
                     if (nFields > 0)
@@ -1008,30 +1012,47 @@ namespace MyCaffe.layers.tft
             }
         }
 
+        private int getNumFields(DATA_TYPE dt)
+        {
+            if (dt != DATA_TYPE.OBSERVED_NUMERIC)
+                return m_rgFields[dt];
+
+            return m_schema.Data.ObservedNumExplicitCount;
+        }
+
         private void loadNumBatch(int nIdx, float[] rg, int nStartIdx, int nCount, DATA_TYPE dt1, DATA_TYPE dt2)
         {
             if (rg == null)
                 return;
 
             int nStartIdx1 = m_nColIdx + nStartIdx;
+            int nFields1Explicit = m_rgFields.ContainsKey(dt1) ? getNumFields(dt1) : 0;
             int nFields1 = (m_rgFields.ContainsKey(dt1)) ? m_rgFields[dt1] : 0;
             float[] rgSrc1 = (m_rgFields.ContainsKey(dt1)) ? m_rgNumData[dt1][m_nRowIdx] : null;
             int nFields2 = (m_rgFields.ContainsKey(dt2)) ? m_rgFields[dt2] : 0;
             float[] rgSrc2 = (m_rgFields.ContainsKey(dt2)) ? m_rgNumData[dt2][m_nRowIdx] : null;
-            int nFields = nFields1 + nFields2;
+            int nFields = nFields1Explicit + nFields2;
 
             for (int j = nStartIdx1; j < nStartIdx1 + nCount; j++)
             {
+                int nDstIdx = nIdx * nCount * nFields + (j - nStartIdx1) * nFields;
+                int nDstIdx1 = nDstIdx;
+
                 for (int k = 0; k < nFields1; k++)
                 {
                     int nSrcIdx = j * nFields1 + k;
-                    int nDstIdx = nIdx * nCount * nFields + (j - nStartIdx1) * nFields + k;
-                    rg[nDstIdx] = rgSrc1[nSrcIdx];
+
+                    if (m_schema.Data.IsObservedNum(k))
+                    {
+                        rg[nDstIdx1] = rgSrc1[nSrcIdx];
+                        nDstIdx1++;
+                    }
                 }
+
                 for (int k = 0; k < nFields2; k++)
                 {
                     int nSrcIdx = j * nFields2 + k;
-                    int nDstIdx = nIdx * nCount * nFields + (j - nStartIdx1) * nFields + k + nFields1;
+                    nDstIdx = nIdx * nCount * nFields + (j - nStartIdx1) * nFields + nFields1Explicit + k;
                     rg[nDstIdx] = rgSrc2[nSrcIdx];
                 }
             }
