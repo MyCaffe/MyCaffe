@@ -2783,6 +2783,7 @@ namespace MyCaffe
                 byte[] rgBytes = blob.ToByteArray();
 
                 res.SetPropertyBlob(strName, rgBytes);
+                res.SetPropertyInt(strName, (int)blob.type);
             }
 
             return res;
