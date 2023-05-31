@@ -14,6 +14,7 @@ namespace MyCaffe.basecode
     public class PropertySet : IEnumerable<KeyValuePair<string, string>>
     {
         Dictionary<string, string> m_rgProperties = new Dictionary<string, string>();
+        Dictionary<string, int> m_rgPropertiesInt = new Dictionary<string, int>();
         Dictionary<string, byte[]> m_rgBlobs = new Dictionary<string, byte[]>();
 
         /// <summary>
@@ -73,6 +74,14 @@ namespace MyCaffe.basecode
         public List<string> PropertyBlobNames
         {
             get { return m_rgBlobs.Keys.ToList(); }
+        }
+
+        /// <summary>
+        /// Returns the list of integer property names contained in the property set.
+        /// </summary>
+        public List<string> PropertyIntNames
+        {
+            get { return m_rgPropertiesInt.Keys.ToList(); }
         }
 
         /// <summary>
@@ -147,6 +156,25 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Returns an int property as a int value.
+        /// </summary>
+        /// <param name="strName">Specifies the name of the int property.</param>
+        /// <param name="bThrowExceptions">When <i>true</i> (the default), an exception is thrown if the property is not found, otherwise a value of <i>null</i> is returned when not found.</param>
+        /// <returns>The property value is returned.</returns>
+        public int GetPropertyInt(string strName, bool bThrowExceptions = true)
+        {
+            if (!m_rgPropertiesInt.ContainsKey(strName))
+            {
+                if (bThrowExceptions)
+                    throw new Exception("The property '" + strName + "' was not found!");
+
+                return 0;
+            }
+
+            return m_rgPropertiesInt[strName];
+        }
+
+        /// <summary>
         /// Returns a property blob as a byte array value.
         /// </summary>
         /// <param name="strName">Specifies the name of the property blob to retrieve.</param>
@@ -176,6 +204,19 @@ namespace MyCaffe.basecode
                 m_rgProperties.Add(strName, strVal);
             else
                 m_rgProperties[strName] = strVal;
+        }
+
+        /// <summary>
+        /// Sets an int property in the property set to a value if it exists, otherwise it adds the new property.
+        /// </summary>
+        /// <param name="strName">Specifies the property name.</param>
+        /// <param name="nVal">Specifies the new property value.</param>
+        public void SetPropertyInt(string strName, int nVal)
+        {
+            if (!m_rgProperties.ContainsKey(strName))
+                m_rgPropertiesInt.Add(strName, nVal);
+            else
+                m_rgPropertiesInt[strName] = nVal;
         }
 
         /// <summary>
