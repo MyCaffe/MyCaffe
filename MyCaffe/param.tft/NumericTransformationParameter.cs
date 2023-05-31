@@ -15,6 +15,8 @@ namespace MyCaffe.param.tft
     /// @see [Github - PlaytikaOSS/tft-torch](https://github.com/PlaytikaOSS/tft-torch) by Playtika Research, 2021.
     /// @see [Github - PlaytikaOSS/tft-torch tft.py](https://github.com/PlaytikaOSS/tft-torch/blob/main/tft_torch/tft.py#L333) by Playtika Research, 2021.
     /// </remarks>
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+
     public class NumericTransformationParameter : LayerParameterBase
     {
         uint m_nNumInput = 0;
