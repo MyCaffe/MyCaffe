@@ -25,10 +25,21 @@ namespace MyCaffe.param
         bool m_bEnableNoise = false;
         double m_dfSigmaInit = 0.017;
         double m_dfBiasGradScale = 1.0;
+        bool m_bOutputContainsPredictions = false;
 
         /** @copydoc LayerParameterBase */
         public InnerProductParameter()
         {
+        }
+
+        /// <summary>
+        /// Specifies that the output contains predictions and that the output blob is marked as BLOB_TYPE.PREDICTION.
+        /// </summary>
+        [Description("Specifies that the output contains predictions and that the output blob is marked as BLOB_TYPE.PREDICTION.")]
+        public bool output_contains_predictions
+        {
+            get { return m_bOutputContainsPredictions; }
+            set { m_bOutputContainsPredictions = value; }
         }
 
         /// <summary>
@@ -176,6 +187,7 @@ namespace MyCaffe.param
             m_bEnableNoise = p.m_bEnableNoise;
             m_dfSigmaInit = p.m_dfSigmaInit;
             m_dfBiasGradScale = p.m_dfBiasGradScale;
+            m_bOutputContainsPredictions = p.m_bOutputContainsPredictions;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -195,6 +207,7 @@ namespace MyCaffe.param
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
+            rgChildren.Add("output_contains_predictions", m_bOutputContainsPredictions.ToString());
             rgChildren.Add("num_output", num_output.ToString());
             rgChildren.Add("bias_term", bias_term.ToString());
 
@@ -233,6 +246,9 @@ namespace MyCaffe.param
         {
             string strVal;
             InnerProductParameter p = new InnerProductParameter();
+
+            if ((strVal = rp.FindValue("output_contains_predictions")) != null)
+                p.output_contains_predictions = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("num_output")) != null)
                 p.num_output = uint.Parse(strVal);

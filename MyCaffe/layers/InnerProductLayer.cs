@@ -314,6 +314,8 @@ namespace MyCaffe.layers
             }
 
             colTop[0].Reshape(rgTopShape);
+            if (m_param.inner_product_param.output_contains_predictions)
+                colTop[0].type = BLOB_TYPE.PREDICTION;
 
             // Set up the bias multiplier
             if (m_bBiasTerm)
