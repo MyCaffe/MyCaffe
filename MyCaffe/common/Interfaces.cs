@@ -115,7 +115,11 @@ namespace MyCaffe.common
         /// <summary>
         /// The blob contains prediction data.
         /// </summary>
-        PREDICTION = 0x0200
+        PREDICTION = 0x0200,
+        /// <summary>
+        /// The blob contains attention scores.
+        /// </summary>
+        ATTENTION = 0x0400
     }
 
     /// <summary>
