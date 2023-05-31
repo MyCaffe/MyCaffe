@@ -63,31 +63,31 @@ namespace MyCaffe.common
         /// <summary>
         /// The blob is an unknown type.
         /// </summary>
-        UNKNOWN,
+        UNKNOWN = 0x0000,
         /// <summary>
         /// The Blob holds Data.
         /// </summary>
-        DATA,
+        DATA = 0x0001,
         /// <summary>
         /// The Blob holds an inner product weight.
         /// </summary>
-        IP_WEIGHT,
+        IP_WEIGHT = 0x0002,
         /// <summary>
         /// The Blob holds a general weight.
         /// </summary>
-        WEIGHT,
+        WEIGHT = 0x0004,
         /// <summary>
         /// The Blob holds Loss Data.
         /// </summary>
-        LOSS,
+        LOSS = 0x0008,
         /// <summary>
         /// The Blob holds Accuracy Data.
         /// </summary>
-        ACCURACY,
+        ACCURACY = 0x0010,
         /// <summary>
         /// The blob holds Clip data.
         /// </summary>
-        CLIP,
+        CLIP = 0x0020,
         /// <summary>
         /// The blob holds multi-boundingbox data.
         /// </summary>
@@ -103,11 +103,19 @@ namespace MyCaffe.common
         /// 
         /// continues for each of the top 'n' bboxes output.
         /// </remarks>
-        MULTIBBOX,
+        MULTIBBOX = 0x0040,
         /// <summary>
         /// The blob is an internal blob used within the layer.
         /// </summary>
-        INTERNAL
+        INTERNAL = 0x0080,
+        /// <summary>
+        /// The blob contains target data.
+        /// </summary>
+        TARGET = 0x0100,
+        /// <summary>
+        /// The blob contains prediction data.
+        /// </summary>
+        PREDICTION = 0x0200
     }
 
     /// <summary>
