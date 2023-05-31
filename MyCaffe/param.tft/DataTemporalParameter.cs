@@ -27,6 +27,7 @@ namespace MyCaffe.param.tft
         int m_nDripRefreshRate = 0;
         uint? m_nSeed = null;
         bool m_bShuffleData = true;
+        bool m_bOutputTargetHistorical = false;
 
         /// <summary>
         /// Defines the type of source data.
@@ -58,6 +59,16 @@ namespace MyCaffe.param.tft
         /** @copydoc LayerParameterBase */
         public DataTemporalParameter()
         {
+        }
+
+        /// <summary>
+        /// Optionally, specifies to output a top containing the target historical data.
+        /// </summary>
+        [Description("Optionally, specifies to output a top containing the target historical data.")]
+        public bool output_target_historical
+        {
+            get { return m_bOutputTargetHistorical; }
+            set { m_bOutputTargetHistorical = value; }
         }
 
         /// <summary>
@@ -206,6 +217,7 @@ namespace MyCaffe.param.tft
             m_nChunkCount = p.chunk_count;
             m_bShuffleData = p.shuffle_data;
             m_forcedPhase = p.forced_phase;
+            m_bOutputTargetHistorical = p.output_target_historical;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -236,6 +248,7 @@ namespace MyCaffe.param.tft
             rgChildren.Add("drip_refresh_rate_in_sec", drip_refresh_rate_in_sec.ToString());
             rgChildren.Add("chunk_count", chunk_count.ToString());
             rgChildren.Add("shuffle_data", shuffle_data.ToString());
+            rgChildren.Add("output_target_historical", output_target_historical.ToString());
 
             if (seed.HasValue)
                 rgChildren.Add("seed", seed.Value.ToString());
@@ -305,6 +318,9 @@ namespace MyCaffe.param.tft
                 else
                     throw new Exception("Unknown forced_phase '" + strVal + "'!");
             }
+
+            if ((strVal = rp.FindValue("output_target_historical")) != null)
+                p.output_target_historical = bool.Parse(strVal);
 
             return p;
         }

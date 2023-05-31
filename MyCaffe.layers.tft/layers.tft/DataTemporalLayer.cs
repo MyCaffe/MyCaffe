@@ -81,7 +81,7 @@ namespace MyCaffe.layers.tft
         /// </summary>
         public override int MaxTopBlobs
         {
-            get { return 7; }
+            get { return (m_param.data_temporal_param.output_target_historical) ? 8 : 7; }
         }
 
         /// <summary>
@@ -96,7 +96,7 @@ namespace MyCaffe.layers.tft
             m_nNumFutureSteps = m_param.data_temporal_param.num_future_steps;
 
             if (m_data == null)
-                m_data = new RawFileData<T>(m_param.data_temporal_param.seed);
+                m_data = new RawFileData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical);
 
             Phase phase = m_phase;
             if (m_param.data_temporal_param.forced_phase.HasValue)
@@ -142,7 +142,17 @@ namespace MyCaffe.layers.tft
             if (colTop.Count > 6)
             {
                 if ((rgShape = m_data.GetShape(Data<T>.OUTPUT_TYPE.TARGET)) != null)
+                { 
                     colTop[6].Reshape(rgShape);
+                    colTop[6].type = BLOB_TYPE.TARGET;
+                }
+
+                if (m_param.data_temporal_param.output_target_historical && colTop.Count > 7)
+                {
+                    rgShape[1] = (int)m_nNumHistoricalSteps;
+                    colTop[7].Reshape(rgShape);
+                    colTop[7].type = BLOB_TYPE.TARGET | BLOB_TYPE.DATA;
+                }
             }
         }
 
@@ -177,13 +187,18 @@ namespace MyCaffe.layers.tft
         Data<T> m_data;
         Random m_random;
         int m_nBatchSize;
+        bool m_bOutputTargetHistorical;
 
 
         /// <summary>
         /// The constructor.
         /// </summary>
-        public RawFileData(uint? nSeed)
+        /// <param name="nSeed">Specifies the random number generator seed.</param>
+        /// <param name="bOutputTargetHistorical">Specifies to output the target historical data.</param>
+        public RawFileData(uint? nSeed, bool bOutputTargetHistorical)
         {
+            m_bOutputTargetHistorical = bOutputTargetHistorical;
+
             if (nSeed.HasValue)
                 m_random = new Random((int)nSeed.Value);
             else
@@ -236,7 +251,7 @@ namespace MyCaffe.layers.tft
         public bool LoadData(Phase phase, string strPath, bool bShuffleData, int nBatchSize, int nHistoricalSteps, int nFutureSteps, double dfPctMaxLoad, int nDripRefreshRateInSec, uint nChunkCount, Log log, CancelEvent evtCancel)
         {
             m_nBatchSize = nBatchSize;
-            m_data = new Data<T>(m_random, log, nHistoricalSteps, nFutureSteps, bShuffleData);
+            m_data = new Data<T>(m_random, log, nHistoricalSteps, nFutureSteps, bShuffleData, m_bOutputTargetHistorical);
 
             VerifyFiles(phase, strPath);
 
@@ -484,6 +499,7 @@ namespace MyCaffe.layers.tft
         int m_nRows = 0;
         int m_nBatchSize = 0;
         int m_nTotalSize = 0;
+        bool m_bOutputTargetHistorical = false;
         object m_syncObj = new object();
 
         public enum DATA_TYPE
@@ -507,16 +523,18 @@ namespace MyCaffe.layers.tft
             FUTURE_CATEGORICAL,
             TARGET,
             HISTORICAL_SYNC,
-            FUTURE_SYNC
+            FUTURE_SYNC,
+            HISTORICAL_TARGET
         }
 
-        public Data(Random random, Log log, int nHistoricalSteps, int nFutureSteps, bool bShuffleData)
+        public Data(Random random, Log log, int nHistoricalSteps, int nFutureSteps, bool bShuffleData, bool bOutputTargetHistorical)
         {
             m_random = random;
             m_log = log;
             m_nHistoricalSteps = nHistoricalSteps;
             m_nFutureSteps = nFutureSteps;
             m_bShuffleData = bShuffleData;
+            m_bOutputTargetHistorical = bOutputTargetHistorical;
         }
 
         public Data(Data<T> data)
@@ -526,6 +544,7 @@ namespace MyCaffe.layers.tft
             m_nHistoricalSteps = data.m_nHistoricalSteps;
             m_nFutureSteps = data.m_nFutureSteps;
             m_bShuffleData = data.m_bShuffleData;
+            m_bOutputTargetHistorical = data.m_bOutputTargetHistorical;
         }
 
         public void Dispose()
@@ -583,6 +602,13 @@ namespace MyCaffe.layers.tft
             // The future observed are the target values.
             nLen = nBatchSize * m_nFutureSteps * 1;
             m_rgBatchBuffers.Add(OUTPUT_TYPE.TARGET, new float[nLen]);
+
+            if (m_bOutputTargetHistorical)
+            {
+                // The past observed are the target values historical.
+                nLen = nBatchSize * m_nHistoricalSteps * 1;
+                m_rgBatchBuffers.Add(OUTPUT_TYPE.HISTORICAL_TARGET, new float[nLen]);
+            }
 
             if (File.Exists(m_rgstrFiles[DATA_TYPE.OBSERVED_CATEGORICAL]))
             {
@@ -868,6 +894,9 @@ namespace MyCaffe.layers.tft
                 case OUTPUT_TYPE.TARGET:
                     return new int[] { m_nBatchSize, m_nFutureSteps, 1 };
 
+                case OUTPUT_TYPE.HISTORICAL_TARGET:
+                    return new int[] { m_nBatchSize, m_nHistoricalSteps, 1 };
+
                 default:
                     throw new Exception("Unknown output type '" + ot.ToString() + "'!");
             }
@@ -1090,6 +1119,7 @@ namespace MyCaffe.layers.tft
                 float[] rgFutCat = getBatch(OUTPUT_TYPE.FUTURE_CATEGORICAL);
                 float[] rgFutNum = getBatch(OUTPUT_TYPE.FUTURE_NUMERIC);
                 float[] rgTarget = getBatch(OUTPUT_TYPE.TARGET);
+                float[] rgHistTarget = getBatch(OUTPUT_TYPE.HISTORICAL_TARGET);
 
                 for (int i = 0; i < nBatchSize; i++)
                 {
@@ -1105,6 +1135,7 @@ namespace MyCaffe.layers.tft
                         loadCatBatch(i, rgFutCat, m_nHistoricalSteps, m_nFutureSteps, DATA_TYPE.KNOWN_CATEGORICAL);
                         loadNumBatch(i, rgFutNum, m_nHistoricalSteps, m_nFutureSteps, DATA_TYPE.KNOWN_NUMERIC);
 
+                        loadNumBatch(i, rgHistTarget, 0, m_nHistoricalSteps, m_nTargetFieldIdx, DATA_TYPE.OBSERVED_NUMERIC);
                         loadNumBatch(i, rgTarget, m_nHistoricalSteps, m_nFutureSteps, m_nTargetFieldIdx, DATA_TYPE.OBSERVED_NUMERIC);
                     }
 
@@ -1131,6 +1162,9 @@ namespace MyCaffe.layers.tft
 
                 if (rgTarget != null)
                     col[6].mutable_cpu_data = Utility.ConvertVec<T>(rgTarget);
+
+                if (rgHistTarget != null)
+                    col[7].mutable_cpu_data = Utility.ConvertVec<T>(rgHistTarget);
             }
         }
     }
