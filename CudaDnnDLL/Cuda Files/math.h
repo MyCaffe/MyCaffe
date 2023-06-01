@@ -220,6 +220,7 @@ class Math
 		long minmaxvec(int n, long hA, long hWork1, long hWork2, int nK, long hMin, long hMax, bool bNonZero);
 		long transpose(int n, long hX, long hY, long hXCounts, long hYCounts, long hMapping, int nNumAxes, long hBuffer);
 		long transpose_hw(int n, int c, int h, int w, long hSrc, long hDst);
+		long transpose_hw(int n, int c, int h, int w, T* src, T* dst);
 		long naninfval(int n, long hA, long hWork1, long hWork2, T* pNan, T* pInf, int nAOff = 0);
 		long sumsq(int n, long hW, long hA, int nAOff, T* pOut);
 		long sumsqdiff(int n, long hW, long hA, long hB, int nAOff, int nBOff, T* pOut);
@@ -247,6 +248,7 @@ class Math
 		long channel_add(int n, int nOutNum, int nChannels, int nBlocks, int nInNum, int nOffset, long hX, long hY, int nDir);
 		long channel_copyall(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 		long channel_duplicate(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
+		long channel_percentile(int n, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, T fPercentile);
 
 		long im2col(long hDataIm, int nDataImOffset, int nChannels, int nHeight, int nWidth, int nKernelH, int nKernelW, int nPadH, int nPadW, int nStrideH, int nStrideW, int nDilationH, int nDilationW, long hDataCol, int nDataColOffset);
 		long col2im(long hDataCol, int nDataColOffset, int nChannels, int nHeight, int nWidth, int nKernelH, int nKernelW, int nPadH, int nPadW, int nStrideH, int nStrideW, int nDilationH, int nDilationW, long hDataIm, int nDataImOffset);

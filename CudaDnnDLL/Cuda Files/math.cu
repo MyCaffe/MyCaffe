@@ -4345,6 +4345,56 @@ long Math<double>::transpose_hw(int num, int c, int h, int w, long hSrc, long hD
 	return cudaStreamSynchronize(0);
 }
 
+template <>
+long Math<double>::transpose_hw(int num, int c, int h, int w, double* src, double* dst)
+{
+	LONG lErr;
+
+	int nCount = num * c;
+	int nDim = h * w;
+	double fAlpha = 0.0f;
+	double fBeta = 1.0f;
+
+	int m = h;
+	int n = w;
+
+	for (int i = 0; i < nCount; i++)
+	{
+		if (lErr = cublasDgeam(m_cublas, CUBLAS_OP_N, CUBLAS_OP_T, n, m, &fAlpha, dst, n, &fBeta, src, m, dst, n))
+			return lErr | ERROR_CUBLAS_OFFSET;
+
+		src += nDim;
+		dst += nDim;
+	}
+
+	return cudaStreamSynchronize(0);
+}
+
+template <>
+long Math<float>::transpose_hw(int num, int c, int h, int w, float* src, float* dst)
+{
+	LONG lErr;
+
+	int nCount = num * c;
+	int nDim = h * w;
+	float fAlpha = 0.0f;
+	float fBeta = 1.0f;
+
+	int m = h;
+	int n = w;
+
+	for (int i = 0; i < nCount; i++)
+	{
+		if (lErr = cublasSgeam(m_cublas, CUBLAS_OP_N, CUBLAS_OP_T, n, m, &fAlpha, dst, n, &fBeta, src, m, dst, n))
+			return lErr | ERROR_CUBLAS_OFFSET;
+
+		src += nDim;
+		dst += nDim;
+	}
+
+	return cudaStreamSynchronize(0);
+}
+
 
 template <class T>
 __global__ void naninf_kernel(const T* d_data, T* d_nan, T* d_inf, const size_t n)
@@ -6636,6 +6686,92 @@ long Math<T>::channel_duplicate(int n, int nOutNum, int nChannels, int nInNum, l
 
 template long Math<double>::channel_duplicate(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 template long Math<float>::channel_duplicate(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
+
+
+// Expects x to be sorted along the channel dimension of (items in length per channel).
+// X is of length num x items.
+// Y is of length items.
+template <typename T>
+__global__ void channel_percentile_kernel(const int num, const int items, T* x, T* y, const T fPercentile)
+{
+	const int N = num;
+	const T fN = (N - 1) * fPercentile + 1;
+	const int k = (int)fN;
+	const T fD = fN - k;
+
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < items && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		// Sort in place
+		for (int n = 0; n < num; n++)
+		{
+			for (int n2 = n + 1; n2 < num; n2++)
+			{
+				const int nIdx1 = i + (n * items);
+				const int nIdx2 = i + (n2 * items);
+
+				if (x[nIdx1] > x[nIdx2])
+				{
+					T fTmp = x[nIdx1];
+					x[nIdx1] = x[nIdx2];
+					x[nIdx2] = fTmp;
+				}
+			}
+		}
+
+		if (fN == 1)
+			y[i] = x[i];
+		else if (fN == N)
+			y[i] = x[i + (num-1) * items];
+		else
+		{
+			const T fK1 = x[i + (k - 1) * items];
+			const T fKr = x[i + (k) * items] - fK1;
+			y[i] = fK1 + fD * fKr;
+		}
+	}
+}
+
+template <typename T>
+long Math<T>::channel_percentile(int n, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, T fPercentile)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	T* x = (T*)pX->Data();
+	T* y = (T*)pY->Data();
+
+	int nItems = nChannels * nInnerNum;
+	if (pY->Size() < (nItems * sizeof(T)))
+		return ERROR_NOT_ENOUGH_MEMORY;
+
+	T* w = NULL;
+	size_t sz = sizeof(T) * nOuterNum * nItems;
+	if (lErr = cudaMalloc(&w, sz))
+		return lErr;
+
+	if (lErr = cudaMemcpy(w, x, sz, cudaMemcpyDeviceToDevice))
+	{
+		cudaFree(w);
+		return lErr;
+	}
+
+	// Calculate the percentile along axis=0
+	channel_percentile_kernel<T> << <CAFFE_GET_BLOCKS(nItems), CAFFE_CUDA_NUM_THREADS >> > (nOuterNum, nItems, w, y, fPercentile);
+
+	cudaFree(w);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::channel_percentile(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, double dfPercentile);
+template long Math<float>::channel_percentile(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, float dfPercentile);
 
 
 template<typename T>

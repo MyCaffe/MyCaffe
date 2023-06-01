@@ -688,7 +688,10 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, lon
 			
 		case CUDA_FN_CHANNEL_DUP:
 			return m_device.cuda_channel_duplicate(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
-			
+
+		case CUDA_FN_CHANNEL_PERCENTILE:
+			return m_device.cuda_channel_percentile(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
 		case CUDA_FN_IM2COL:
 			return m_device.cuda_im2col(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
@@ -1757,6 +1760,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_CHANNEL_DUP:
 		return "CUDA_FN_CHANNEL_DUP";
+
+	case CUDA_FN_CHANNEL_PERCENTILE:
+		return "CUDA_FN_CHANNEL_PERCENTILE";
 
 	case CUDA_FN_IM2COL:
 		return "CUDA_FN_IM2COL";
