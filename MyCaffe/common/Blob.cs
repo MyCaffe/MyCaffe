@@ -3963,7 +3963,7 @@ namespace MyCaffe.common
         /// <param name="dfPercentile">Specifies the percentile specified in range (0,1].</param>
         public void Percentile(Blob<T> blobY, double dfPercentile)
         {
-            List<int> rgShape = Utility.Clone<int>(blobY.shape());
+            List<int> rgShape = Utility.Clone<int>(shape());
             rgShape[0] = 1;
             blobY.Reshape(rgShape);
 
