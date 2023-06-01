@@ -32,21 +32,10 @@ namespace MyCaffe.param.tft
         FillerParameter m_fillerParam_weights = new FillerParameter("xavier");
         FillerParameter m_fillerParam_bias = new FillerParameter("constant", 0.1);
         int m_nAxis = 1;
-        bool m_bEnableWeightOutput = false;
 
         /** @copydoc LayerParameterBase */
         public VarSelNetParameter()
         {
-        }
-
-        /// <summary>
-        /// Specifies to enable the output of the weights (default = false)
-        /// </summary>
-        [Description("Specifies to enable the output of the weights (default = false)")]
-        public bool enable_weight_output
-        {
-            get { return m_bEnableWeightOutput; }
-            set { m_bEnableWeightOutput = value;}
         }
 
         /// <summary>
@@ -160,7 +149,6 @@ namespace MyCaffe.param.tft
         {
             VarSelNetParameter p = (VarSelNetParameter)src;
 
-            m_bEnableWeightOutput = p.enable_weight_output;
             m_nNumInputs = p.num_inputs;
             m_nInputDim = p.input_dim;
             m_nHiddenDim = p.hidden_dim;
@@ -193,7 +181,6 @@ namespace MyCaffe.param.tft
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
-            rgChildren.Add("enable_weight_output", enable_weight_output.ToString());
             rgChildren.Add("input_dim", input_dim.ToString());
             rgChildren.Add("hidden_dim", hidden_dim.ToString());
             rgChildren.Add("num_inputs", num_inputs.ToString());
@@ -222,9 +209,6 @@ namespace MyCaffe.param.tft
         {
             string strVal;
             VarSelNetParameter p = new VarSelNetParameter();
-
-            if ((strVal = rp.FindValue("enable_weight_output")) != null)
-                p.enable_weight_output = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("input_dim")) != null)
                 p.input_dim = int.Parse(strVal);

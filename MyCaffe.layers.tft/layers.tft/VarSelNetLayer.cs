@@ -167,11 +167,6 @@ namespace MyCaffe.layers.tft
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            if (m_param.varselnet_param.enable_weight_output)
-                m_log.CHECK_EQ(colTop.Count, 2, "There must be two tops one for the output and the other for the weights.");
-            else
-                m_log.CHECK_EQ(colTop.Count, 1, "There must be only one top for the output.");
-
             List<int> rgShape = new List<int>();
             Blob<T> blobStaticSelection = null;
 
@@ -312,7 +307,10 @@ namespace MyCaffe.layers.tft
 
             colTop[0].ReshapeLike(m_colSingleVarGrn[0]);
             if (colTop.Count > 1)
+            {
                 colTop[1].ReshapeLike(m_blobSparseWts);
+                colTop[1].type = BLOB_TYPE.WEIGHT;
+            }
         }
 
         /// <summary>
