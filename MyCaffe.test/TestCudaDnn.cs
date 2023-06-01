@@ -2851,6 +2851,124 @@ namespace MyCaffe.test
             }
         }
 
+        [TestMethod]
+        public void TestMath_channel_percentile()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+            Log log = new Log("Test Channel Percentile");
+            long hDataA = 0;
+            long hData25 = 0;
+            long hData50 = 0;
+            long hData75 = 0;
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    try
+                    {
+                        int nNum = 3;
+                        int nChannels = 3;
+                        int nItems = 2;
+                        int nCount = nNum * nChannels * nItems;
+                        //                                      |-c0----------------|-c1------------------|-c2-----------------|
+                        List<double> rgdfA = new List<double>() { 8, 2, 9, 4, 8.2, 7, 1, 10, 12, 0.1, 4, 5, 2, 4, 5, 6, 7, 8 };
+                        List<double> rgdfExpected25 = new List<double>() { 
+                            01.50, 03.00, 07.00,
+                            02.05, 05.50, 06.00, 
+                        };
+                        List<double> rgdfExpected50 = new List<double>() {
+                            02.00, 04.00, 09.00,
+                            04.00, 07.00, 07.00,
+                        };
+                        List<double> rgdfExpected75 = new List<double>() {
+                            05.00, 07.00, 10.50,
+                            05.00, 07.60, 07.50,
+                        };
+
+                        hDataA = t.Cuda.AllocMemory(rgdfA);
+                        hData25 = t.Cuda.AllocMemory(rgdfExpected25.Count());
+                        hData50 = t.Cuda.AllocMemory(rgdfExpected50.Count());
+                        hData75 = t.Cuda.AllocMemory(rgdfExpected75.Count());
+
+                        // Calculate percentiles from A -> Y
+                        t.Cuda.channel_percentile(nCount, nNum, nChannels, nItems, hDataA, hData25, 0.25);
+                        t.Cuda.channel_percentile(nCount, nNum, nChannels, nItems, hDataA, hData50, 0.50);
+                        t.Cuda.channel_percentile(nCount, nNum, nChannels, nItems, hDataA, hData75, 0.75);
+
+                        double[] rgData25 = t.Cuda.GetMemoryDouble(hData25);
+
+                        log.CHECK_EQ(rgData25.Length, rgdfExpected25.Count(), "The data length should be equal.");
+
+                        for (int i = 0; i < rgData25.Length; i++)
+                        {
+                            double dfActual = rgData25[i];
+                            double dfExpected = rgdfExpected25[i];
+                            double dfDiff = Math.Abs(dfActual - dfExpected);
+
+                            log.CHECK_LT(dfDiff, 1e-7, "The values are incorrect at index " + i.ToString() + "!");
+                        }
+
+                        double[] rgData50 = t.Cuda.GetMemoryDouble(hData50);
+
+                        log.CHECK_EQ(rgData50.Length, rgdfExpected50.Count(), "The data length should be equal.");
+
+                        for (int i = 0; i < rgData50.Length; i++)
+                        {
+                            double dfActual = rgData50[i];
+                            double dfExpected = rgdfExpected50[i];
+                            double dfDiff = Math.Abs(dfActual - dfExpected);
+
+                            log.CHECK_LT(dfDiff, 1e-7, "The values are incorrect at index " + i.ToString() + "!");
+                        }
+
+                        double[] rgData75 = t.Cuda.GetMemoryDouble(hData75);
+
+                        log.CHECK_EQ(rgData75.Length, rgdfExpected50.Count(), "The data length should be equal.");
+
+                        for (int i = 0; i < rgData75.Length; i++)
+                        {
+                            double dfActual = rgData75[i];
+                            double dfExpected = rgdfExpected75[i];
+                            double dfDiff = Math.Abs(dfActual - dfExpected);
+
+                            log.CHECK_LT(dfDiff, 1e-7, "The values are incorrect at index " + i.ToString() + "!");
+                        }
+                    }
+                    finally
+                    {
+                        if (hDataA != 0)
+                        {
+                            t.Cuda.FreeMemory(hDataA);
+                            hDataA = 0;
+                        }
+
+                        if (hData25 != 0)
+                        {
+                            t.Cuda.FreeMemory(hData25);
+                            hData25 = 0;
+                        }
+
+                        if (hData50 != 0)
+                        {
+                            t.Cuda.FreeMemory(hData50);
+                            hData50 = 0;
+                        }
+                    }
+
+                    if (hData75 != 0)
+                    {
+                        t.Cuda.FreeMemory(hData75);
+                        hData75 = 0;
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
         private bool verifyData(Log log, List<double> rgdf, double[] rgData)
         {
             log.CHECK_EQ(rgdf.Count, rgData.Length, "The length of Data does not match the count of rgdf!");
