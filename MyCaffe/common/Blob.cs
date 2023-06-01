@@ -3952,5 +3952,22 @@ namespace MyCaffe.common
             blobWork.CopyFromAndTransposeHeightWidth(blobA, false);
             blobB.MatMul(blobWork, this, false, false, false, 1, false, true, true);
         }
+
+        /// <summary>
+        /// Calculates the percentile and places the result in blobY.
+        /// </summary>
+        /// <remarks>
+        /// BlobY is reshaped to size 1xCxH*W.
+        /// </remarks>
+        /// <param name="blobY">Specifies blob where the percentile results are placed.</param>
+        /// <param name="dfPercentile">Specifies the percentile specified in range (0,1].</param>
+        public void Percentile(Blob<T> blobY, double dfPercentile)
+        {
+            List<int> rgShape = Utility.Clone<int>(blobY.shape());
+            rgShape[0] = 1;
+            blobY.Reshape(rgShape);
+
+            m_cuda.channel_percentile(m_nCount, num, channels, count(2), gpu_data, blobY.mutable_gpu_data, dfPercentile);
+        }
     }
 }
