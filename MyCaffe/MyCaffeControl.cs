@@ -1932,6 +1932,32 @@ namespace MyCaffe
         }
 
         /// <summary>
+        /// Test on custom input data.
+        /// </summary>
+        /// <param name="customInput">Specifies the custom input data separated by ';' characters.</param>
+        /// <returns>A property set containing the results is returned.</returns>
+        /// <remarks>Running test many on custom data requires a MODEL dataset, where the data is queried from the model itself.
+        /// </remarks>
+        public BlobCollection<T> TestManyEx(PropertySet customInput)
+        {
+            if (!m_project.Dataset.IsModelData)
+                throw new Exception("Custom input is only supported by MODEL based datasets!");
+
+            m_lastPhaseRun = Phase.RUN;
+
+            UpdateRunWeights(false, false);
+
+            double dfThreshold = customInput.GetPropertyAsDouble("Threshold", 0.2);
+            int nMax = customInput.GetPropertyAsInt("Max", 80);
+            int nK = customInput.GetPropertyAsInt("K", 1);
+            
+            if (customInput.GetProperty("Temporal") == "True")
+                return RunModelEx(customInput);
+
+            throw new Exception("TestManyEx currently only supports temporal testing.");
+        }
+
+        /// <summary>
         /// Test on a number of images by selecting random images from the database, running them through the Run network, and then comparing the results with the 
         /// expected results.
         /// </summary>
@@ -2772,7 +2798,7 @@ namespace MyCaffe
                 }
             }
 
-            BlobCollection<T> colTop = m_net.Forward();
+            BlobCollection<T> colTop = net.Forward();
 
             PropertySet res = new PropertySet();
 
@@ -2787,6 +2813,38 @@ namespace MyCaffe
             }
 
             return res;
+        }
+
+        /// <summary>
+        /// Run the model using data from the model itself - requires a Data layer with the RUN phase.
+        /// </summary>
+        /// <param name="customInput">Specifies custom inputs.  Properties used: 'Phase' specifies the phase for which to run the model (e.g. which net to use), when missing, the default run net is used.</param>
+        /// <returns>The results are returned in a property set, where each blob is stored as a byte array packed with the 'float' values from each blob.</returns>
+        public BlobCollection<T> RunModelEx(PropertySet customInput)
+        {
+            Net<T> net = m_net;
+
+            string strPhase = customInput.GetProperty("Phase", false);
+            if (!string.IsNullOrEmpty(strPhase))
+            {
+                if (strPhase == Phase.TRAIN.ToString())
+                {
+                    m_log.WriteLine("INFO: Running TestMany with the TRAIN phase.");
+                    net = GetInternalNet(Phase.TRAIN);
+                }
+                else if (strPhase == Phase.TEST.ToString())
+                {
+                    m_log.WriteLine("INFO: Running TestMany with the TEST phase.");
+                    net = GetInternalNet(Phase.TEST);
+                }
+                else if (strPhase == Phase.RUN.ToString())
+                {
+                    m_log.WriteLine("INFO: Running TestMany with the RUN phase.");
+                    net = GetInternalNet(Phase.RUN);
+                }
+            }
+
+            return net.Forward();
         }
 
         /// <summary>
