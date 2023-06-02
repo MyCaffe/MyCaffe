@@ -2707,6 +2707,24 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Find the layers with the matching type.
+        /// </summary>
+        /// <param name="type">Specifies the type of layer to find.</param>
+        /// <returns>The list of layers is returned.</returns>
+        public List<Layer<T>> FindLayers(LayerParameter.LayerType type)
+        {
+            List<Layer<T>> rgLayers = new List<Layer<T>>();
+
+            foreach (Layer<T> layer in m_rgLayers)
+            {
+                if (layer.type == type)
+                    rgLayers.Add(layer);
+            }
+
+            return rgLayers;
+        }
+
+        /// <summary>
         /// Find the layer with the matching type, name and or both.
         /// </summary>
         /// <param name="strType">Specifies the layer type.</param>
