@@ -3254,6 +3254,7 @@ namespace MyCaffe.common
 
                 strHeader = strHeader.TrimEnd(',');
                 strHeader += ")";
+                strHeader += ", }";
                 strHeader = strHeader.PadRight(117, ' ');
                 strHeader += "\n";
 
@@ -3310,6 +3311,7 @@ namespace MyCaffe.common
 
                 strHeader = strHeader.TrimEnd(',');
                 strHeader += ")";
+                strHeader += ", }";
                 strHeader = strHeader.PadRight(117, ' ');
                 strHeader += "\n";
 
@@ -3360,6 +3362,7 @@ namespace MyCaffe.common
 
                 strHeader = strHeader.TrimEnd(',');
                 strHeader += ")";
+                strHeader += ", }";
                 strHeader = strHeader.PadRight(117, ' ');
                 strHeader += "\n";
 
@@ -3410,6 +3413,7 @@ namespace MyCaffe.common
 
                 strHeader = strHeader.TrimEnd(',');
                 strHeader += ")";
+                strHeader += ", }";
                 strHeader = strHeader.PadRight(117, ' ');
                 strHeader += "\n";
 
