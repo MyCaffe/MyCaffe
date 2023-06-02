@@ -15,8 +15,8 @@ namespace MyCaffe.data
     /// </summary>
     public class ProgressInfo
     {
-        int m_nIdx;
-        int m_nTotal;
+        long m_nIdx;
+        long m_nTotal;        
         string m_strMsg;
         Exception m_err;
         bool? m_bAlive = null;
@@ -29,13 +29,29 @@ namespace MyCaffe.data
         /// <param name="str">Specifies the message to display.</param>
         /// <param name="err">Specifies an error if one occurred, or null.</param>
         /// <param name="bAlive">Specifies whether or not the process is alive.</param>
-        public ProgressInfo(int nIdx, int nTotal, string str, Exception err = null, bool? bAlive = null)
+        public ProgressInfo(long nIdx, long nTotal, string str, Exception err = null, bool? bAlive = null)
         {
             m_nIdx = nIdx;
             m_nTotal = nTotal;
             m_strMsg = str;
             m_err = err;
             m_bAlive = bAlive;
+        }
+
+        /// <summary>
+        /// Return the current index in the process.
+        /// </summary>
+        public long Index
+        {
+            get { return m_nIdx; }
+        }
+
+        /// <summary>
+        /// Return the total items to process.
+        /// </summary>
+        public long Total
+        {
+            get { return m_nTotal; }
         }
 
         /// <summary>
