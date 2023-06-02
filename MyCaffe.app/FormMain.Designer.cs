@@ -62,6 +62,7 @@
             this.cancelToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             this.specialTestsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.alexNetCifarCUDA8BugToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.alexNetToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.resNet56CifarAccuracyBugToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.testPythonInteropToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -97,7 +98,9 @@
             this.lblCudaPath = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
             this.m_bwLoadVOCDatabase = new System.ComponentModel.BackgroundWorker();
-            this.alexNetCifarCUDA8BugToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.downloadTestDataToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator7 = new System.Windows.Forms.ToolStripSeparator();
+            this.testDataDownloadTfTToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -149,40 +152,40 @@
             // createDatabaseToolStripMenuItem
             // 
             this.createDatabaseToolStripMenuItem.Name = "createDatabaseToolStripMenuItem";
-            this.createDatabaseToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+            this.createDatabaseToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.createDatabaseToolStripMenuItem.Text = "&Create Database";
             this.createDatabaseToolStripMenuItem.Click += new System.EventHandler(this.createDatabaseToolStripMenuItem_Click);
             // 
             // loadMNISTToolStripMenuItem
             // 
             this.loadMNISTToolStripMenuItem.Name = "loadMNISTToolStripMenuItem";
-            this.loadMNISTToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+            this.loadMNISTToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.loadMNISTToolStripMenuItem.Text = "Load MNIST...";
             this.loadMNISTToolStripMenuItem.Click += new System.EventHandler(this.loadMNISTToolStripMenuItem_Click);
             // 
             // loadCIFAR10ToolStripMenuItem
             // 
             this.loadCIFAR10ToolStripMenuItem.Name = "loadCIFAR10ToolStripMenuItem";
-            this.loadCIFAR10ToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+            this.loadCIFAR10ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.loadCIFAR10ToolStripMenuItem.Text = "Load CIFAR-10...";
             this.loadCIFAR10ToolStripMenuItem.Click += new System.EventHandler(this.loadCIFAR10ToolStripMenuItem_Click);
             // 
             // loadVOC2007ToolStripMenuItem
             // 
             this.loadVOC2007ToolStripMenuItem.Name = "loadVOC2007ToolStripMenuItem";
-            this.loadVOC2007ToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+            this.loadVOC2007ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.loadVOC2007ToolStripMenuItem.Text = "Load VOC0712...";
             this.loadVOC2007ToolStripMenuItem.Click += new System.EventHandler(this.loadVOC2007ToolStripMenuItem_Click);
             // 
             // toolStripSeparator6
             // 
             this.toolStripSeparator6.Name = "toolStripSeparator6";
-            this.toolStripSeparator6.Size = new System.Drawing.Size(164, 6);
+            this.toolStripSeparator6.Size = new System.Drawing.Size(177, 6);
             // 
             // getSQLExpressToolStripMenuItem
             // 
             this.getSQLExpressToolStripMenuItem.Name = "getSQLExpressToolStripMenuItem";
-            this.getSQLExpressToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
+            this.getSQLExpressToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.getSQLExpressToolStripMenuItem.Text = "Get SQL Express...";
             this.getSQLExpressToolStripMenuItem.Click += new System.EventHandler(this.getSqlExpressMenuItem_Click);
             // 
@@ -204,7 +207,9 @@
             this.abortToolStripMenuItem,
             this.cancelToolStripMenuItem,
             this.toolStripSeparator3,
-            this.specialTestsToolStripMenuItem});
+            this.specialTestsToolStripMenuItem,
+            this.toolStripSeparator7,
+            this.downloadTestDataToolStripMenuItem});
             this.testToolStripMenuItem.Name = "testToolStripMenuItem";
             this.testToolStripMenuItem.Size = new System.Drawing.Size(39, 20);
             this.testToolStripMenuItem.Text = "&Test";
@@ -375,6 +380,13 @@
             this.specialTestsToolStripMenuItem.Name = "specialTestsToolStripMenuItem";
             this.specialTestsToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
             this.specialTestsToolStripMenuItem.Text = "Special Tests";
+            // 
+            // alexNetCifarCUDA8BugToolStripMenuItem
+            // 
+            this.alexNetCifarCUDA8BugToolStripMenuItem.Name = "alexNetCifarCUDA8BugToolStripMenuItem";
+            this.alexNetCifarCUDA8BugToolStripMenuItem.Size = new System.Drawing.Size(242, 22);
+            this.alexNetCifarCUDA8BugToolStripMenuItem.Text = "AlexNet-Cifar CUDA 8 Bug";
+            this.alexNetCifarCUDA8BugToolStripMenuItem.Click += new System.EventHandler(this.alexNetCifarCUDA8BugToolStripMenuItem_Click);
             // 
             // alexNetToolStripMenuItem
             // 
@@ -634,12 +646,25 @@
             this.m_bwLoadVOCDatabase.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.m_bw_ProgressChanged);
             this.m_bwLoadVOCDatabase.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bw_RunWorkerCompleted);
             // 
-            // alexNetCifarCUDA8BugToolStripMenuItem
+            // downloadTestDataToolStripMenuItem
             // 
-            this.alexNetCifarCUDA8BugToolStripMenuItem.Name = "alexNetCifarCUDA8BugToolStripMenuItem";
-            this.alexNetCifarCUDA8BugToolStripMenuItem.Size = new System.Drawing.Size(242, 22);
-            this.alexNetCifarCUDA8BugToolStripMenuItem.Text = "AlexNet-Cifar CUDA 8 Bug";
-            this.alexNetCifarCUDA8BugToolStripMenuItem.Click += new System.EventHandler(this.alexNetCifarCUDA8BugToolStripMenuItem_Click);
+            this.downloadTestDataToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.testDataDownloadTfTToolStripMenuItem});
+            this.downloadTestDataToolStripMenuItem.Name = "downloadTestDataToolStripMenuItem";
+            this.downloadTestDataToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
+            this.downloadTestDataToolStripMenuItem.Text = "Download Test Data";
+            // 
+            // toolStripSeparator7
+            // 
+            this.toolStripSeparator7.Name = "toolStripSeparator7";
+            this.toolStripSeparator7.Size = new System.Drawing.Size(189, 6);
+            // 
+            // testDataDownloadTfTToolStripMenuItem
+            // 
+            this.testDataDownloadTfTToolStripMenuItem.Name = "testDataDownloadTfTToolStripMenuItem";
+            this.testDataDownloadTfTToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.testDataDownloadTfTToolStripMenuItem.Text = "TFT";
+            this.testDataDownloadTfTToolStripMenuItem.Click += new System.EventHandler(this.testDownloadTEstDataTftToolStripMenuItem_Click);
             // 
             // FormMain
             // 
@@ -735,6 +760,9 @@
         private System.Windows.Forms.ToolStripMenuItem testPythonInteropToolStripMenuItem;
         private ListViewEx lvStatus;
         private System.Windows.Forms.ToolStripMenuItem alexNetCifarCUDA8BugToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator7;
+        private System.Windows.Forms.ToolStripMenuItem downloadTestDataToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem testDataDownloadTfTToolStripMenuItem;
     }
 }
 
