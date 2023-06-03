@@ -21,7 +21,7 @@ The C# based MyCaffe open-source project is independently maintained by <a href=
 available under the Apache 2.0 License.
 <h3>Supported Development Environments:</h3>
 * Visual Studio 2022 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 11.8.0</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 8.8.0</a> (current test pass)</br>
-* Visual Studio 2022 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 12.1.0</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 8.9.0</a></br>
+* Visual Studio 2022 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 12.1.0</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 8.9.1</a></br>
 </br>
 
 NOTE: Compute 5.3 and above required for CUDA 11.8.0/cuDNN 8.8.0 when using __half sized memory.
@@ -44,6 +44,8 @@ We have several new models supported by MyCaffe with the train_val and solution 
  - Deep Metric Learning with Triplet Network [20][21]
  - Single-Shot Multi-Box (SSD) Object Detection [22][23]
  - Seq2Seq with Attention [24][25][26] (see MyCaffe-Samples at https://github.com/MyCaffe/MyCaffe-Samples/tree/master/Seq2Seq)
+ - Transformer Models (ChatGPT and GPT) [24][27]
+ - Temporal Fusion Transformer Models [28][29]
 
 For more information on the MyCaffe implementation of Policy Gradient Reinforcement Learning, see [MyCaffe: A Complete C# Re-Write of Caffe with Reinforcement Learning](https://arxiv.org/abs/1810.02272) by D. Brown, 2018. 
 
@@ -126,6 +128,12 @@ Source code available on GitHub at <a href="https://github.com/stella-emu/stella
 [25] [GitHub: mashmawy/Seq2SeqLearn](https://github.com/mashmawy/Seq2SeqLearn) by Mohamed Ashmawy, 2017
 
 [26] [GitHub: HectorPulido/Chatbot-seq2seq-C-](https://github.com/HectorPulido/Chatbot-seq2seq-C-) by Hector Pulido, 2018
+
+[27] [GitHub: devjwsong/transformer-translator-pytorch](https://github.com/devjwsong/transformer-translator-pytorch) by Jaewoo (Kyle) Song, 2021, GitHub
+
+[28] [Temporal Fusion Transformers for Interpretable Multi-horizon Time Series Forecasting](https://arxiv.org/abs/1912.09363) by Bryan Lim, Sercan O. Arik, Nicolas Loeff and Tomas Pfister, 2019, arXiv:1912.09363
+
+[29] [GitHub: PlaytikaOSS/tft-torch](https://github.com/PlaytikaOSS/tft-torch) by Playtika Research, 2021, GitHub
 
 For more information on the C++ CAFFE open-source project, please see the following <a href="http://caffe.berkeleyvision.org/">link</a>.
 
