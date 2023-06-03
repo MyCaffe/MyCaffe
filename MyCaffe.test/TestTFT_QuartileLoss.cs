@@ -165,7 +165,7 @@ namespace MyCaffe.test
             Blob<T> blob1 = null;
 
             Net<T> net = null;
-            int nNumSamples = 256;
+            int nNumSamples = 16;
             int nNumFuture = 30;
 
             try
@@ -223,7 +223,7 @@ namespace MyCaffe.test
             Blob<T> blob1 = null;
 
             Net<T> net = null;
-            int nNumSamples = 256;
+            int nNumSamples = 16;
             int nNumFuture = 30;
 
             try

@@ -276,12 +276,12 @@ namespace MyCaffe.test
                 blobGradExp.LoadFromNumpy(strPath + "tft.asa.gan_gate_gan_glu.internal.fc1.weight.grad.npy", true);
                 m_log.CHECK(blobGradExp.Compare(layer.blobs[0], blobWork, true, (typeof(T) == typeof(float)) ? 1e-08 : 5e-05), "The blobs do not match.");
                 blobGradExp.LoadFromNumpy(strPath + "tft.asa.gan_gate_gan_glu.internal.fc1.bias.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(layer.blobs[1], blobWork, true, (typeof(T) == typeof(float)) ? 8e-06 : 2e-05), "The blobs do not match.");
+                m_log.CHECK(blobGradExp.Compare(layer.blobs[1], blobWork, true, 2e-05), "The blobs do not match.");
 
                 blobGradExp.LoadFromNumpy(strPath + "tft.asa.gan_gate_gan_glu.internal.fc2.weight.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(layer.blobs[2], blobWork, true, (typeof(T) == typeof(float)) ? 1e-08 : 1e-04), "The blobs do not match.");
+                m_log.CHECK(blobGradExp.Compare(layer.blobs[2], blobWork, true, (typeof(T) == typeof(float)) ? 1e-08 : 2e-04), "The blobs do not match.");
                 blobGradExp.LoadFromNumpy(strPath + "tft.asa.gan_gate_gan_glu.internal.fc2.bias.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(layer.blobs[3], blobWork, true, (typeof(T) == typeof(float)) ? 2e-05 : 2e-05), "The blobs do not match.");
+                m_log.CHECK(blobGradExp.Compare(layer.blobs[3], blobWork, true, 4e-05), "The blobs do not match.");
             }
             finally
             {

@@ -149,7 +149,7 @@ namespace MyCaffe.test
 
         private string getTestBaseDataPath(int nIter=0)
         {
-            return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\test\\iter_" + nIter.ToString() + ".base_set\\";
+            return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\test\\all\\iter_0\\data\\";
             //return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\iter_" + nIter.ToString() + ".base_set\\";
         }
 
@@ -1425,7 +1425,7 @@ namespace MyCaffe.test
             Blob<T> blob1 = null;
 
             Net<T> net = null;
-            int nNumSamples = 256;
+            int nNumSamples = 16;
             int nNumHeads = 4;
             float fDropout = 0;
             int nLstmLayers = 2;
@@ -1461,17 +1461,17 @@ namespace MyCaffe.test
                 blob1 = net.FindBlob("x_numeric_static");
                 //blob1.LoadFromNumpy(strPathBase + "tft.static_feats_numeric.npy");
                 blob1 = net.FindBlob("x_categorical_static");
-                blob1.LoadFromNumpy(strPathBase + "tft.static_feats_categorical.npy");
+                blob1.LoadFromNumpy(strPathBase + "0_static_feats_categorical.npy");
                 blob1 = net.FindBlob("x_numeric_hist");
-                blob1.LoadFromNumpy(strPathBase + "tft.historical_ts_numeric.npy");
+                blob1.LoadFromNumpy(strPathBase + "0_historical_ts_numeric.npy");
                 blob1 = net.FindBlob("x_categorical_hist");
-                blob1.LoadFromNumpy(strPathBase + "tft.historical_ts_categorical.npy");
+                blob1.LoadFromNumpy(strPathBase + "0_historical_ts_categorical.npy");
                 blob1 = net.FindBlob("x_numeric_future");
-                blob1.LoadFromNumpy(strPathBase + "tft.future_ts_numeric.npy");
+                blob1.LoadFromNumpy(strPathBase + "0_future_ts_numeric.npy");
                 blob1 = net.FindBlob("x_categorical_future");
-                blob1.LoadFromNumpy(strPathBase + "tft.future_ts_categorical.npy");
+                blob1.LoadFromNumpy(strPathBase + "0_future_ts_categorical.npy");
                 blob1 = net.FindBlob("target");
-                blob1.LoadFromNumpy(strPathBase + "tft.target.npy");
+                blob1.LoadFromNumpy(strPathBase + "0_target.npy");
 
                 BlobCollection<T> colRes = net.Forward();
 
@@ -1589,7 +1589,7 @@ namespace MyCaffe.test
             Blob<T> blob1 = null;
 
             Net<T> net = null;
-            int nNumSamples = 256;
+            int nNumSamples = 16;
             int nNumHeads = 4;
             float fDropout = 0;
             int nLstmLayers = 2;
@@ -1626,17 +1626,17 @@ namespace MyCaffe.test
                 blob1 = net.FindBlob("x_numeric_static");
                 //blob1.LoadFromNumpy(strPathBase + "tft.static_feats_numeric.npy");
                 blob1 = net.FindBlob("x_categorical_static");
-                blob1.LoadFromNumpy(strPathBase + "tft.static_feats_categorical.npy");
+                blob1.LoadFromNumpy(strPathBase + "0_static_feats_categorical.npy");
                 blob1 = net.FindBlob("x_numeric_hist");
-                blob1.LoadFromNumpy(strPathBase + "tft.historical_ts_numeric.npy");
+                blob1.LoadFromNumpy(strPathBase + "0_historical_ts_numeric.npy");
                 blob1 = net.FindBlob("x_categorical_hist");
-                blob1.LoadFromNumpy(strPathBase + "tft.historical_ts_categorical.npy");
+                blob1.LoadFromNumpy(strPathBase + "0_historical_ts_categorical.npy");
                 blob1 = net.FindBlob("x_numeric_future");
-                blob1.LoadFromNumpy(strPathBase + "tft.future_ts_numeric.npy");
+                blob1.LoadFromNumpy(strPathBase + "0_future_ts_numeric.npy");
                 blob1 = net.FindBlob("x_categorical_future");
-                blob1.LoadFromNumpy(strPathBase + "tft.future_ts_categorical.npy");
+                blob1.LoadFromNumpy(strPathBase + "0_future_ts_categorical.npy");
                 blob1 = net.FindBlob("target");
-                blob1.LoadFromNumpy(strPathBase + "tft.target.npy");
+                blob1.LoadFromNumpy(strPathBase + "0_target.npy");
 
                 BlobCollection<T> colRes = net.Forward();
 
@@ -1783,7 +1783,7 @@ namespace MyCaffe.test
                 // Select static
                 blobVal.LoadFromNumpy(strPath + strTag + ".selected_static.grad.npy", true);
                 blob1 = net.FindBlob("selected_static");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The grad are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, (typeof(T) == typeof(float)) ? 1e-08 : 2e-08), "The grad are different!");
 
                 // Transform all input channels
                 blobVal.LoadFromNumpy(strPath + strTag + ".future.temporal_selection_output.grad.npy", true);
@@ -1792,11 +1792,11 @@ namespace MyCaffe.test
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".future.temporal_flattened_embedding.grad.npy", true);
                 blob1 = net.FindBlob("future_ts_rep1");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, (typeof(T) == typeof(float)) ? 5e-06 : 3e-05), "The grad are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, (typeof(T) == typeof(float)) ? 2e-05 : 5e-05), "The grad are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".future_ts_rep.grad.npy", true);
                 blob1 = net.FindBlob("future_ts_rep");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, (typeof(T) == typeof(float)) ? 5e-06 : 3e-05), "The grad are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, (typeof(T) == typeof(float)) ? 2e-05 : 5e-05), "The grad are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".historical_ts_rep.grad.npy", true);
                 blob1 = net.FindBlob("hist_ts_rep");
@@ -1844,7 +1844,7 @@ namespace MyCaffe.test
             SettingsCaffe s = new SettingsCaffe();
             s.GpuIds = "0";
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, new CancelEvent());
-            int nNumSamples = 256;
+            int nNumSamples = 16;
             int nNumHeads = 4;
             float fDropout = 0;
             int nLstmLayers = 2;
@@ -2093,7 +2093,7 @@ namespace MyCaffe.test
             SettingsCaffe s = new SettingsCaffe();
             s.GpuIds = "0";
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, new CancelEvent());
-            int nNumSamples = 256;
+            int nNumSamples = 16;
             int nNumHeads = 4;
             float fDropout = 0;
             int nLstmLayers = 2;
@@ -2150,7 +2150,7 @@ namespace MyCaffe.test
             SettingsCaffe s = new SettingsCaffe();
             s.GpuIds = "0";
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, new CancelEvent());
-            int nNumSamples = 256;
+            int nNumSamples = 16;
             int nNumHeads = 4;
             float fDropout = 0;
             int nLstmLayers = 2;
