@@ -17,6 +17,7 @@ namespace MyCaffe.app
 {
     public partial class FormTestDataDownload : Form
     {
+        StringBuilder m_sb = new StringBuilder();
         string m_strTargetFolder;
         List<string> m_rgstrUrl;
         Stopwatch m_sw = new Stopwatch();
@@ -35,8 +36,9 @@ namespace MyCaffe.app
 
         private void setStatus(string str)
         {
-            edtStatus.Text += Environment.NewLine;
-            edtStatus.Text += str;
+            m_sb.Append(Environment.NewLine);
+            m_sb.Append(str);
+            edtStatus.Text = m_sb.ToString();
             edtStatus.SelectionStart = edtStatus.Text.Length;
             edtStatus.ScrollToCaret();
         }
@@ -91,6 +93,8 @@ namespace MyCaffe.app
 
             if (pi.Message != "Bytes")
                 setStatus(pi.Message);
+
+            Application.DoEvents();
 
             m_sw.Restart();
         }
@@ -178,6 +182,9 @@ namespace MyCaffe.app
         {
             try
             {
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
+
                 using (ZipArchive zip = ZipFile.OpenRead(strFile))
                 {
                     ProgressInfo pi = new ProgressInfo(nIdx, nTotal, "Extracting '" + strFile + "' to '" + strTargetFolder + "'...");
@@ -203,8 +210,12 @@ namespace MyCaffe.app
                         }
                         nIdx++;
 
-                        pi = new ProgressInfo(nIdx, nTotal, "Extracting '" + entry.FullName + "'...");
-                        bw.ReportProgress((int)(pi.Percentage * 100), pi);
+                        if (sw.Elapsed.TotalMilliseconds > 2000)
+                        {
+                            pi = new ProgressInfo(nIdx, nTotal, "Extracting '" + entry.FullName + "'...");
+                            bw.ReportProgress((int)(pi.Percentage * 100), pi);
+                            sw.Restart();
+                        }
                     }
                 }
             }
