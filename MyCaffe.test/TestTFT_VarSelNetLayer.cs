@@ -6,6 +6,7 @@ using MyCaffe.param;
 using MyCaffe.param.tft;
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 /// <summary>
 /// Testing the VarSelNet layer.
@@ -250,6 +251,13 @@ namespace MyCaffe.test
             //return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\favorita\\weights\\" + strSubPath + "\\";
         }
 
+        private void verifyFileDownload(string strSubPath, string strFile)
+        {
+            string strPath = getTestDataPath(strSubPath);
+            if (!File.Exists(strPath + strFile))
+                throw new Exception("ERROR: You need to download the TFT test data by running the MyCaffe Test Application and selecting the 'Download Test Data | TFT' menu.");
+        }
+
         /// <summary>
         /// Test VarSelNet future focused forward pass.
         /// </summary>
@@ -279,6 +287,8 @@ namespace MyCaffe.test
             Blob<T> blobWork = null;
             string strPath = getTestDataPath("vsn_fut");
             string strPathWts = getTestWtsPath("future_ts_selection");
+
+            verifyFileDownload("vsn_fut", "tft.vsn.future_varsel_flattened_embedding.npy");   
 
             try
             {
@@ -387,6 +397,8 @@ namespace MyCaffe.test
             Blob<T> blobWork = null;
             string strPath = getTestDataPath("vsn_fut");
             string strPathWts = getTestWtsPath("");
+
+            verifyFileDownload("vsn_fut", "tft.vsn.future_varsel_flattened_embedding.npy");
 
             try
             {
@@ -507,6 +519,8 @@ namespace MyCaffe.test
             Blob<T> blobWork = null;
             string strPath = getTestDataPath("vsn_fut");
             string strPathWts = getTestWtsPath("");
+
+            verifyFileDownload("vsn_fut", "tft.vsn.future_varsel_flattened_embedding.npy");
 
             try
             {
@@ -634,6 +648,8 @@ namespace MyCaffe.test
             int nNumStaticCategorical = 9;
             float fDropout = 0;
 
+            verifyFileDownload("vsn_stat", "tft.vsn.static.flattened_grn.skip_layer.module.weight.npy");
+
             try
             {
                 blobVal = new Blob<T>(m_cuda, m_log);
@@ -729,6 +745,8 @@ namespace MyCaffe.test
             int nNumStaticNumeric = 0;
             int nNumStaticCategorical = 9;
             float fDropout = 0;
+
+            verifyFileDownload("vsn_stat", "tft.vsn.static.flattened_grn.skip_layer.module.weight.npy");
 
             try
             {
@@ -886,6 +904,8 @@ namespace MyCaffe.test
             int nNumHistSteps = 90;
             float fDropout = 0;
 
+            verifyFileDownload("vsn_hist", "tft.vsn.hist.flattened_grn.skip_layer.module.weight.npy");
+
             try
             {
                 blobVal = new Blob<T>(m_cuda, m_log);
@@ -986,6 +1006,8 @@ namespace MyCaffe.test
             int nNumHistCategorical = 7;
             int nNumHistSteps = 90;
             float fDropout = 0;
+
+            verifyFileDownload("vsn_hist", "tft.vsn.hist.flattened_grn.skip_layer.module.weight.npy");
 
             try
             {
@@ -1150,6 +1172,8 @@ namespace MyCaffe.test
             int nNumFutureSteps = 30;
             float fDropout = 0;
 
+            verifyFileDownload("vsn_fut", "tft.vsn.future.flattened_grn.skip_layer.module.weight.npy");
+
             try
             {
                 blobVal = new Blob<T>(m_cuda, m_log);
@@ -1250,6 +1274,8 @@ namespace MyCaffe.test
             int nNumFutureCategorical = 7;
             int nNumFutureSteps = 30;
             float fDropout = 0;
+
+            verifyFileDownload("vsn_fut", "tft.vsn.future.flattened_grn.skip_layer.module.weight.npy");
 
             try
             {

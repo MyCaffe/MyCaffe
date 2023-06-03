@@ -12,6 +12,7 @@ using MyCaffe.db.image;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.data;
 using MyCaffe.layers.tft;
+using System.IO;
 
 /// <summary>
 /// Testing the MultiHeadAttentionInterp layer.
@@ -121,6 +122,13 @@ namespace MyCaffe.test
         {
             return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\favorita\\weights\\" + strSubPath + "\\";
             //return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\favorita\\weights\\multihead_attn\\";
+        }
+
+        private void verifyFileDownload(string strSubPath, string strFile)
+        {
+            string strPath = getTestDataPath(strSubPath);
+            if (!File.Exists(strPath + strFile))
+                throw new Exception("ERROR: You need to download the TFT test data by running the MyCaffe Test Application and selecting the 'Download Test Data | TFT' menu.");
         }
 
         private string buildModel(bool bAddDataLayer, int nNumSamples, int nNumHeads, float fDropout, int nLstmLayers, int nNumOutputs, int nStateSize, int nNumHistSteps, int nNumFutureSteps,
@@ -312,6 +320,8 @@ namespace MyCaffe.test
             List<int> rgFutureCardinalities = new List<int>() { 2, 3, 8, 13, 72, 6, 28 };
             string strTag = "tft.test";
 
+            verifyFileDownload("imha", "tft.ada.gated_post_attention.npy");
+
             try
             {
                 blobVal = new Blob<T>(m_cuda, m_log);
@@ -396,6 +406,8 @@ namespace MyCaffe.test
             int nNumFutureCategorical = 7;
             List<int> rgFutureCardinalities = new List<int>() { 2, 3, 8, 13, 72, 6, 28 };
             string strTag = "tft.test";
+
+            verifyFileDownload("imha", "tft.ada.gated_post_attention.npy");
 
             try
             {

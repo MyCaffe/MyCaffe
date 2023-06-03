@@ -165,6 +165,12 @@ namespace MyCaffe.test
             //return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\" + strTag + "\\iter_" + nIter.ToString() + "\\weights\\";
         }
 
+        private void verifyFileDownload(string strPath, string strFile)
+        {
+            if (!File.Exists(strPath + strFile))
+                throw new Exception("ERROR: You need to download the TFT test data by running the MyCaffe Test Application and selecting the 'Download Test Data | TFT' menu.");
+        }
+
         private string buildModel(string strSrc, bool bAddDataLayer, int nNumSamples, int nNumHeads, float fDropout, int nLstmLayers, int nNumOutputs, int nStateSize, int nNumHistSteps, int nNumFutureSteps,
             int nNumStaticNumeric, int nNumStaticCategorical, List<int> rgStaticCardinalities,
             int nNumHistNumeric, int nNumHistCategorical, List<int> rgHistCardinalities,
@@ -1444,6 +1450,8 @@ namespace MyCaffe.test
             List<int> rgFutureCardinalities = new List<int>() { 2, 3, 8, 13, 72, 6, 28 };
             string strTag = "tft.full";
 
+            verifyFileDownload(strPathBase, "0_static_feats_categorical.npy");
+
             try
             {
                 blobVal = new Blob<T>(m_cuda, m_log);
@@ -1607,6 +1615,8 @@ namespace MyCaffe.test
             int nNumFutureCategorical = 7;
             List<int> rgFutureCardinalities = new List<int>() { 2, 3, 8, 13, 72, 6, 28 };
             string strTag = "tft.full";
+
+            verifyFileDownload(strPathBase, "0_static_feats_categorical.npy");
 
             try
             {

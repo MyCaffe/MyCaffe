@@ -290,6 +290,7 @@ namespace MyCaffe.test
             return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\favorita\\weights\\static_enrichment_grn\\";
         }
 
+
         private string buildModel(int nNumSamples, int nNumHist, int nNumFuture, DataTemporalParameter.SOURCE_TYPE srcType, string strSrc)
         {
             NetParameter p = new NetParameter();

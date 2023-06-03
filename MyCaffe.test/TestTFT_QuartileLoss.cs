@@ -12,6 +12,7 @@ using MyCaffe.db.image;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.data;
 using MyCaffe.layers.tft;
+using System.IO;
 
 /// <summary>
 /// Testing the QuartileLoss.
@@ -115,6 +116,12 @@ namespace MyCaffe.test
             //return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\favorita\\weights\\static_enrichment_grn\\";
         }
 
+        private void verifyFileDownload(string strPath, string strFile)
+        {
+            if (!File.Exists(strPath + strFile))
+                throw new Exception("ERROR: You need to download the TFT test data by running the MyCaffe Test Application and selecting the 'Download Test Data | TFT' menu.");
+        }
+
         private string buildModel(int nNumSamples, int nNumFuture)
         {
             NetParameter p = new NetParameter();
@@ -167,6 +174,8 @@ namespace MyCaffe.test
             Net<T> net = null;
             int nNumSamples = 16;
             int nNumFuture = 30;
+
+            verifyFileDownload(strPath, "outputs.npy");
 
             try
             {
@@ -225,6 +234,8 @@ namespace MyCaffe.test
             Net<T> net = null;
             int nNumSamples = 16;
             int nNumFuture = 30;
+
+            verifyFileDownload(strPath, "outputs.npy");
 
             try
             {
