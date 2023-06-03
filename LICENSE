@@ -1186,6 +1186,12 @@ license and copyright terms herein.
 
   ** end PlaytikaOSS/tft-torch license **
   
+  The MyCaffe TFT layers were inspired by portions of the open-source project
+  google-research/google-research/tft by Google Research located at:
+  https://github.com/google-research/google-research/tree/master/tft and distributed
+  under the Apache License, version 2.0 located at:
+  https://github.com/google-research/google-research/blob/master/LICENSE
+
   The sample WAV file(s) 'How_I_Feel.x.wav' is distributed with permission from 
   CLOV15 Tunes LLC.  For more information on CLOV15, see https://soundcloud.com/clov15.
 
