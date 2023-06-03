@@ -2036,13 +2036,24 @@ namespace MyCaffe.app
             gptDlg.ShowDialog();
         }
 
-        private void testDownloadTEstDataTftToolStripMenuItem_Click(object sender, EventArgs e)
+        private void testDownloadTestDataTftToolStripMenuItem_Click(object sender, EventArgs e)
         {
             List<string> rgstrUrl = new List<string>();
             string m_strOutputFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "MyCaffe\\test_data\\tft");
 
             rgstrUrl.Add("https://signalpopcdn.blob.core.windows.net/mycaffesupport/tft_data.zip");
             rgstrUrl.Add("https://signalpopcdn.blob.core.windows.net/mycaffesupport/tft_test.zip");
+
+            FormTestDataDownload dlg = new FormTestDataDownload(m_strOutputFolder, rgstrUrl);
+            dlg.ShowDialog();
+        }
+
+        private void testDownloadTestDataTftDataOnlyToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            List<string> rgstrUrl = new List<string>();
+            string m_strOutputFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "MyCaffe\\test_data\\tft");
+
+            rgstrUrl.Add("https://signalpopcdn.blob.core.windows.net/mycaffesupport/tft_data.zip");
 
             FormTestDataDownload dlg = new FormTestDataDownload(m_strOutputFolder, rgstrUrl);
             dlg.ShowDialog();

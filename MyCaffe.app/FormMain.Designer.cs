@@ -72,6 +72,9 @@
             this.showGymUiToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
             this.startNeuralStyleTransferToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator7 = new System.Windows.Forms.ToolStripSeparator();
+            this.downloadTestDataToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.testDataDownloadTfTToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.localHelpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.onlineHelpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -98,9 +101,7 @@
             this.lblCudaPath = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
             this.m_bwLoadVOCDatabase = new System.ComponentModel.BackgroundWorker();
-            this.downloadTestDataToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator7 = new System.Windows.Forms.ToolStripSeparator();
-            this.testDataDownloadTfTToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.testDataDownloadTFTDataOnlyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -152,40 +153,40 @@
             // createDatabaseToolStripMenuItem
             // 
             this.createDatabaseToolStripMenuItem.Name = "createDatabaseToolStripMenuItem";
-            this.createDatabaseToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.createDatabaseToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
             this.createDatabaseToolStripMenuItem.Text = "&Create Database";
             this.createDatabaseToolStripMenuItem.Click += new System.EventHandler(this.createDatabaseToolStripMenuItem_Click);
             // 
             // loadMNISTToolStripMenuItem
             // 
             this.loadMNISTToolStripMenuItem.Name = "loadMNISTToolStripMenuItem";
-            this.loadMNISTToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.loadMNISTToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
             this.loadMNISTToolStripMenuItem.Text = "Load MNIST...";
             this.loadMNISTToolStripMenuItem.Click += new System.EventHandler(this.loadMNISTToolStripMenuItem_Click);
             // 
             // loadCIFAR10ToolStripMenuItem
             // 
             this.loadCIFAR10ToolStripMenuItem.Name = "loadCIFAR10ToolStripMenuItem";
-            this.loadCIFAR10ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.loadCIFAR10ToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
             this.loadCIFAR10ToolStripMenuItem.Text = "Load CIFAR-10...";
             this.loadCIFAR10ToolStripMenuItem.Click += new System.EventHandler(this.loadCIFAR10ToolStripMenuItem_Click);
             // 
             // loadVOC2007ToolStripMenuItem
             // 
             this.loadVOC2007ToolStripMenuItem.Name = "loadVOC2007ToolStripMenuItem";
-            this.loadVOC2007ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.loadVOC2007ToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
             this.loadVOC2007ToolStripMenuItem.Text = "Load VOC0712...";
             this.loadVOC2007ToolStripMenuItem.Click += new System.EventHandler(this.loadVOC2007ToolStripMenuItem_Click);
             // 
             // toolStripSeparator6
             // 
             this.toolStripSeparator6.Name = "toolStripSeparator6";
-            this.toolStripSeparator6.Size = new System.Drawing.Size(177, 6);
+            this.toolStripSeparator6.Size = new System.Drawing.Size(164, 6);
             // 
             // getSQLExpressToolStripMenuItem
             // 
             this.getSQLExpressToolStripMenuItem.Name = "getSQLExpressToolStripMenuItem";
-            this.getSQLExpressToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.getSQLExpressToolStripMenuItem.Size = new System.Drawing.Size(167, 22);
             this.getSQLExpressToolStripMenuItem.Text = "Get SQL Express...";
             this.getSQLExpressToolStripMenuItem.Click += new System.EventHandler(this.getSqlExpressMenuItem_Click);
             // 
@@ -447,6 +448,27 @@
             this.startNeuralStyleTransferToolStripMenuItem.Text = "Start Neural Style Transfer";
             this.startNeuralStyleTransferToolStripMenuItem.Click += new System.EventHandler(this.startNeuralStyleTransferToolStripMenuItem_Click);
             // 
+            // toolStripSeparator7
+            // 
+            this.toolStripSeparator7.Name = "toolStripSeparator7";
+            this.toolStripSeparator7.Size = new System.Drawing.Size(189, 6);
+            // 
+            // downloadTestDataToolStripMenuItem
+            // 
+            this.downloadTestDataToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.testDataDownloadTfTToolStripMenuItem,
+            this.testDataDownloadTFTDataOnlyToolStripMenuItem});
+            this.downloadTestDataToolStripMenuItem.Name = "downloadTestDataToolStripMenuItem";
+            this.downloadTestDataToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
+            this.downloadTestDataToolStripMenuItem.Text = "Download Test Data";
+            // 
+            // testDataDownloadTfTToolStripMenuItem
+            // 
+            this.testDataDownloadTfTToolStripMenuItem.Name = "testDataDownloadTfTToolStripMenuItem";
+            this.testDataDownloadTfTToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.testDataDownloadTfTToolStripMenuItem.Text = "TFT";
+            this.testDataDownloadTfTToolStripMenuItem.Click += new System.EventHandler(this.testDownloadTestDataTftToolStripMenuItem_Click);
+            // 
             // helpToolStripMenuItem
             // 
             this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -646,25 +668,12 @@
             this.m_bwLoadVOCDatabase.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.m_bw_ProgressChanged);
             this.m_bwLoadVOCDatabase.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bw_RunWorkerCompleted);
             // 
-            // downloadTestDataToolStripMenuItem
+            // testDataDownloadTFTDataOnlyToolStripMenuItem
             // 
-            this.downloadTestDataToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.testDataDownloadTfTToolStripMenuItem});
-            this.downloadTestDataToolStripMenuItem.Name = "downloadTestDataToolStripMenuItem";
-            this.downloadTestDataToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
-            this.downloadTestDataToolStripMenuItem.Text = "Download Test Data";
-            // 
-            // toolStripSeparator7
-            // 
-            this.toolStripSeparator7.Name = "toolStripSeparator7";
-            this.toolStripSeparator7.Size = new System.Drawing.Size(189, 6);
-            // 
-            // testDataDownloadTfTToolStripMenuItem
-            // 
-            this.testDataDownloadTfTToolStripMenuItem.Name = "testDataDownloadTfTToolStripMenuItem";
-            this.testDataDownloadTfTToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.testDataDownloadTfTToolStripMenuItem.Text = "TFT";
-            this.testDataDownloadTfTToolStripMenuItem.Click += new System.EventHandler(this.testDownloadTEstDataTftToolStripMenuItem_Click);
+            this.testDataDownloadTFTDataOnlyToolStripMenuItem.Name = "testDataDownloadTFTDataOnlyToolStripMenuItem";
+            this.testDataDownloadTFTDataOnlyToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.testDataDownloadTFTDataOnlyToolStripMenuItem.Text = "TFT (Data Only)";
+            this.testDataDownloadTFTDataOnlyToolStripMenuItem.Click += new System.EventHandler(this.testDownloadTestDataTftDataOnlyToolStripMenuItem_Click);
             // 
             // FormMain
             // 
@@ -763,6 +772,7 @@
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator7;
         private System.Windows.Forms.ToolStripMenuItem downloadTestDataToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem testDataDownloadTfTToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem testDataDownloadTFTDataOnlyToolStripMenuItem;
     }
 }
 

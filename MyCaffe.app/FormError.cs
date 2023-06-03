@@ -35,7 +35,8 @@ namespace MyCaffe.app
                 err = err.InnerException;
             }
 
-            edtLocation.Text = err.StackTrace;
+            if (err != null)
+                edtLocation.Text = err.StackTrace;
         }
     }
 }
