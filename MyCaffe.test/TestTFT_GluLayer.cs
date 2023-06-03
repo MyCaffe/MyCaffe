@@ -130,12 +130,14 @@ namespace MyCaffe.test
 
         private string getTestDataPath(string strSubPath)
         {
-            return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\" + strSubPath + "\\iter_0\\";
+            return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\test\\" + strSubPath + "\\iter_0\\";
+            //return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\" + strSubPath + "\\iter_0\\";
         }
 
-        private string getTestWtsPath()
+        private string getTestWtsPath(string strSubPath)
         {
-            return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\favorita\\weights\\hist_ts_transform\\";
+            return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\favorita\\weights\\" + strSubPath + "\\";
+            //return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\favorita\\weights\\hist_ts_transform\\";
         }
 
         /// <summary>
@@ -159,7 +161,7 @@ namespace MyCaffe.test
             Blob<T> blobYexp = null;
             Blob<T> blobWork = null;
             string strPath = getTestDataPath("imha");
-            string strPathWts = getTestWtsPath();
+            string strPathWts = getTestWtsPath("hist_ts_transform");
 
             try
             {
@@ -224,7 +226,7 @@ namespace MyCaffe.test
             Blob<T> blobYexp = null;
             Blob<T> blobWork = null;
             string strPath = getTestDataPath("imha");
-            string strPathWts = getTestWtsPath();
+            string strPathWts = getTestWtsPath("hist_ts_transform");
 
             try
             {
@@ -263,12 +265,12 @@ namespace MyCaffe.test
                 layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
 
                 blobGradExp.LoadFromNumpy(strPath + "test1_glu_x.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(blobX, blobWork, true), "The blobs do not match.");
+                m_log.CHECK(blobGradExp.Compare(blobX, blobWork, true, 2e-08), "The blobs do not match.");
 
                 blobGradExp.LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc1.weight.grad.npy", true);
                 m_log.CHECK(blobGradExp.Compare(layer.blobs[0], blobWork, true, (typeof(T) == typeof(float)) ? 1e-06 : 3e-05), "The blobs do not match.");
                 blobGradExp.LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc1.bias.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(layer.blobs[1], blobWork, true, 1e-05), "The blobs do not match.");
+                m_log.CHECK(blobGradExp.Compare(layer.blobs[1], blobWork, true, 5e-06), "The blobs do not match.");
 
                 blobGradExp.LoadFromNumpy(strPath + "tft.asa.gan_gan_glu.internal.fc2.weight.grad.npy", true);
                 m_log.CHECK(blobGradExp.Compare(layer.blobs[2], blobWork, true, (typeof(T) == typeof(float)) ? 1e-8 : 5e-05), "The blobs do not match.");
@@ -309,7 +311,7 @@ namespace MyCaffe.test
             Blob<T> blobYexp = null;
             Blob<T> blobWork = null;
             string strPath = getTestDataPath("imha");
-            string strPathWts = getTestWtsPath();
+            string strPathWts = getTestWtsPath("hist_ts_transform");
 
             try
             {

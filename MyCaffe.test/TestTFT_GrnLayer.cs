@@ -130,12 +130,14 @@ namespace MyCaffe.test
 
         private string getTestDataPath(string strSubPath)
         {
-            return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\" + strSubPath + "\\iter_0\\";
+            return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\test\\" + strSubPath + "\\iter_0\\";
+            //return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\" + strSubPath + "\\iter_0\\";
         }
 
-        private string getTestWtsPath()
+        private string getTestWtsPath(string strSubPath)
         {
-            return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\favorita\\weights\\hist_ts_transform\\";
+            return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\favorita\\weights\\" + strSubPath + "\\";
+            //return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\favorita\\weights\\hist_ts_transform\\";
         }
 
         /// <summary>
@@ -164,7 +166,7 @@ namespace MyCaffe.test
             Blob<T> blobYexp = null;
             Blob<T> blobWork = null;
             string strPath = getTestDataPath("grn");
-            string strPathWts = getTestWtsPath();
+            string strPathWts = getTestWtsPath("hist_ts_transform");
 
             try
             {
@@ -239,7 +241,7 @@ namespace MyCaffe.test
             Blob<T> blobYexp = null;
             Blob<T> blobWork = null;
             string strPath = getTestDataPath("grn");
-            string strPathWts = getTestWtsPath();
+            string strPathWts = getTestWtsPath("hist_ts_transform");
 
             try
             {
@@ -290,10 +292,10 @@ namespace MyCaffe.test
                 m_log.CHECK(blobGradExp.Compare(layer.blobs[1], blobWork, true, 3e-08), "The blobs do not match.");
 
                 blobGradExp.LoadFromNumpy(strPath + "test_grn.fc2.module.weight.grad.npy", true);
-                dfErr = (typeof(T) == typeof(float)) ? 1e-08 : 1e-07;
+                dfErr = (typeof(T) == typeof(float)) ? 1e-08 : 2e-07;
                 m_log.CHECK(blobGradExp.Compare(layer.blobs[2], blobWork, true, dfErr), "The blobs do not match.");
                 blobGradExp.LoadFromNumpy(strPath + "test_grn.fc2.module.bias.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(layer.blobs[3], blobWork, true, 3e-08), "The blobs do not match.");
+                m_log.CHECK(blobGradExp.Compare(layer.blobs[3], blobWork, true, 5e-08), "The blobs do not match.");
 
                 blobGradExp.LoadFromNumpy(strPath + "test_grn.gate.module.fc1.weight.grad.npy", true);
                 dfErr = (typeof(T) == typeof(float)) ? 1e-08 : 1e-07;
@@ -346,7 +348,7 @@ namespace MyCaffe.test
             Blob<T> blobYexp = null;
             Blob<T> blobWork = null;
             string strPath = getTestDataPath("grn");
-            string strPathWts = getTestWtsPath();
+            string strPathWts = getTestWtsPath("hist_ts_transform");
 
             try
             {

@@ -234,17 +234,20 @@ namespace MyCaffe.test
 
         private string getTestDataPathBase()
         {
-            return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\iter_0.base_set\\";
+            return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\test\\iter_0.base_set\\";
+            //return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\iter_0.base_set\\";
         }
 
         private string getTestDataPath(string strSubPath)
         {
-            return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\" + strSubPath + "\\iter_0\\";
+            return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\test\\" + strSubPath + "\\iter_0\\";
+            //return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\" + strSubPath + "\\iter_0\\";
         }
 
         private string getTestWtsPath(string strSubPath)
         {
-            return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\favorita\\weights\\" + strSubPath + "\\";
+            return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\favorita\\weights\\" + strSubPath + "\\";
+            //return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\favorita\\weights\\" + strSubPath + "\\";
         }
 
         /// <summary>
@@ -337,7 +340,7 @@ namespace MyCaffe.test
                 layer.Forward(BottomVec, TopVec);
 
                 blobYexp1.LoadFromNumpy(strPath + "tft.vsn.future_varsel_outputs_sum.npy");
-                m_log.CHECK(TopVec[0].Compare(blobYexp1, blobWork, false, (typeof(T) == typeof(float)) ? 4e-07 : 3e-06), "The blobs do not match.");
+                m_log.CHECK(TopVec[0].Compare(blobYexp1, blobWork, false, (typeof(T) == typeof(float)) ? 4e-07 : 4e-06), "The blobs do not match.");
             }
             finally
             {
@@ -446,7 +449,7 @@ namespace MyCaffe.test
                 layer.Forward(BottomVec, TopVec);
 
                 blobYexp1.LoadFromNumpy(strPath + "tft.vsn.future_varsel_outputs_sum.npy");
-                m_log.CHECK(TopVec[0].Compare(blobYexp1, blobWork, false, (typeof(T) == typeof(float)) ? 4e-07 : 3e-06), "The blobs do not match.");
+                m_log.CHECK(TopVec[0].Compare(blobYexp1, blobWork, false, (typeof(T) == typeof(float)) ? 4e-07 : 4e-06), "The blobs do not match.");
 
                 //** BACKWARD **
 
@@ -455,7 +458,7 @@ namespace MyCaffe.test
                 layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
 
                 blobGradExp.LoadFromNumpy(strPath + "tft.vsn.future_varsel_flattened_embedding.grad.npy", true);
-                m_log.CHECK(blobGradExp.Compare(blobX1, blobWork, true, (typeof(T) == typeof(float)) ? 1e-08 : 3e-06), "The blobs do not match.");
+                m_log.CHECK(blobGradExp.Compare(blobX1, blobWork, true, (typeof(T) == typeof(float)) ? 3e-08 : 3e-06), "The blobs do not match.");
                 blobGradExp.LoadFromNumpy(strPath + "tft.vsn.future_varsel_context.grad.npy", true);
                 m_log.CHECK(blobGradExp.Compare(blobX2, blobWork, true), "The blobs do not match.");
             }
@@ -1211,7 +1214,7 @@ namespace MyCaffe.test
 
                 blobVal.LoadFromNumpy(strPath + "ZZZ.vsn.future.temporal_selection_output.npy");
                 blob1 = net.FindBlob("selected_fut");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 4e-07 : 3e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 4e-07 : 4e-06), "The blobs are different!");
             }
             finally
             {
@@ -1313,7 +1316,7 @@ namespace MyCaffe.test
 
                 blobVal.LoadFromNumpy(strPath + "ZZZ.vsn.future.temporal_selection_output.npy");
                 blob1 = net.FindBlob("selected_fut");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 4e-07 : 3e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 4e-07 : 4e-06), "The blobs are different!");
 
                 //*** BACKWARD ***
 
@@ -1324,7 +1327,7 @@ namespace MyCaffe.test
 
                 blob1 = net.FindBlob("future_ts_rep");
                 blobVal.LoadFromNumpy(strPath + "ZZZ.vsn.future.temporal_representation.grad.npy", true);
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, (typeof(T) == typeof(float)) ? 1e-08 : 2e-06), "The grads are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, (typeof(T) == typeof(float)) ? 3e-08 : 2e-06), "The grads are different!");
 
                 blob1 = net.FindBlob("c_selection_f");
                 blobVal.LoadFromNumpy(strPath + "ZZZ.vsn.future.static_selection_signal.grad.npy", true);

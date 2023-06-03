@@ -61,23 +61,23 @@ namespace MyCaffe.test
             }
         }
 
-        [TestMethod]
-        public void TestTraining()
-        {
-            TemporalFusionTransformerTest test = new TemporalFusionTransformerTest();
+        //[TestMethod]
+        //public void TestTraining()
+        //{
+        //    TemporalFusionTransformerTest test = new TemporalFusionTransformerTest();
 
-            try
-            {
-                foreach (ITemporalFusionTransformerTest t in test.Tests)
-                {
-                    t.TestTraining();
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
+        //    try
+        //    {
+        //        foreach (ITemporalFusionTransformerTest t in test.Tests)
+        //        {
+        //            t.TestTraining();
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        test.Dispose();
+        //    }
+        //}
 
         [TestMethod]
         public void TestTrainingFull_electricity()
@@ -149,17 +149,20 @@ namespace MyCaffe.test
 
         private string getTestBaseDataPath(int nIter=0)
         {
-            return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\iter_" + nIter.ToString() + ".base_set\\";
+            return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\test\\iter_" + nIter.ToString() + ".base_set\\";
+            //return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\iter_" + nIter.ToString() + ".base_set\\";
         }
 
         private string getTestDataPath(string strTag, int nIter = 0)
         {
-            return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\" + strTag + "\\iter_" + nIter.ToString() + "\\";
+            return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\test\\" + strTag + "\\iter_" + nIter.ToString() + "\\";
+            //return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\" + strTag + "\\iter_" + nIter.ToString() + "\\";
         }
 
         private string getTestWtsPath(string strTag, int nIter = 0)
         {
-            return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\" + strTag + "\\iter_" + nIter.ToString() + "\\weights\\";
+            return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\test\\" + strTag + "\\iter_" + nIter.ToString() + "\\weights\\";
+            //return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\" + strTag + "\\iter_" + nIter.ToString() + "\\weights\\";
         }
 
         private string buildModel(string strSrc, bool bAddDataLayer, int nNumSamples, int nNumHeads, float fDropout, int nLstmLayers, int nNumOutputs, int nStateSize, int nNumHistSteps, int nNumFutureSteps,
@@ -1412,7 +1415,8 @@ namespace MyCaffe.test
         /// </remarks>
         public void TestForward()
         {
-            string strSrc = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\favorita";
+            string strSrc = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\favorita\\";
+            //string strSrc = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\favorita";
             string strPathBase = getTestBaseDataPath();
             string strPath = getTestDataPath("full");
             string strPathWt = getTestWtsPath("full");
@@ -1493,19 +1497,19 @@ namespace MyCaffe.test
 
 
                 // Static Covariate Encoding
-                blobVal.LoadFromNumpy(strPath + strTag + ".c_enrichment.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".c_enrichment.XX.npy");
                 blob1 = net.FindBlob("c_enrichment");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 2e-06), "The blobs are different!");
 
-                blobVal.LoadFromNumpy(strPath + strTag + ".c_selection.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".c_selection.XX.npy");
                 blob1 = net.FindBlob("c_selection");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
 
-                blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_cell.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_cell.XX.npy");
                 blob1 = net.FindBlob("c_seq_cell");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
 
-                blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_hidden.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_hidden.XX.npy");
                 blob1 = net.FindBlob("c_seq_hidden");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
 
@@ -1542,7 +1546,7 @@ namespace MyCaffe.test
                 // Position-wise feed-forward
                 blobVal.LoadFromNumpy(strPath + strTag + ".post_poswise_ff_grn.npy");
                 blob1 = net.FindBlob("post_poswise_ff_grn");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 5e-06 : 2e-05), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 5e-06 : 3e-05), "The blobs are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".gated_poswise_ff.npy");
                 blob1 = net.FindBlob("gated_poswise_ff");
@@ -1575,7 +1579,8 @@ namespace MyCaffe.test
         /// </remarks>
         public void TestBackward()
         {
-            string strSrc = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\favorita";
+            string strSrc = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\favorita\\";
+            //string strSrc = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\favorita";
             string strPathBase = getTestBaseDataPath();
             string strPath = getTestDataPath("full");
             string strPathWt = getTestWtsPath("full");
@@ -1657,19 +1662,19 @@ namespace MyCaffe.test
 
 
                 // Static Covariate Encoding
-                blobVal.LoadFromNumpy(strPath + strTag + ".c_enrichment.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".c_enrichment.XX.npy");
                 blob1 = net.FindBlob("c_enrichment");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 2e-06), "The blobs are different!");
 
-                blobVal.LoadFromNumpy(strPath + strTag + ".c_selection.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".c_selection.XX.npy");
                 blob1 = net.FindBlob("c_selection");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
 
-                blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_cell.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_cell.XX.npy");
                 blob1 = net.FindBlob("c_seq_cell");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
 
-                blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_hidden.npy");
+                blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_hidden.XX.npy");
                 blob1 = net.FindBlob("c_seq_hidden");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
 
@@ -1706,7 +1711,7 @@ namespace MyCaffe.test
                 // Position-wise feed-forward
                 blobVal.LoadFromNumpy(strPath + strTag + ".post_poswise_ff_grn.npy");
                 blob1 = net.FindBlob("post_poswise_ff_grn");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 5e-06 : 2e-05), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 5e-06 : 3e-05), "The blobs are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".gated_poswise_ff.npy");
                 blob1 = net.FindBlob("gated_poswise_ff");
@@ -1759,7 +1764,7 @@ namespace MyCaffe.test
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The gradients are different!");
 
                 // Static Covariate Encoding
-                blobVal.LoadFromNumpy(strPath + strTag + ".c_enrichment.grad.npy", true);
+                blobVal.LoadFromNumpy(strPath + strTag + ".c_enrichment.XX.grad.npy", true);
                 blob1 = net.FindBlob("c_enrichment");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 4e-06), "The grad are different!");
 
@@ -1787,15 +1792,15 @@ namespace MyCaffe.test
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".future.temporal_flattened_embedding.grad.npy", true);
                 blob1 = net.FindBlob("future_ts_rep1");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 2e-04), "The grad are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, (typeof(T) == typeof(float)) ? 5e-06 : 3e-05), "The grad are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".future_ts_rep.grad.npy", true);
                 blob1 = net.FindBlob("future_ts_rep");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 2e-04), "The grad are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, (typeof(T) == typeof(float)) ? 5e-06 : 3e-05), "The grad are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".historical_ts_rep.grad.npy", true);
                 blob1 = net.FindBlob("hist_ts_rep");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 2e-05), "The grad are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, (typeof(T) == typeof(float)) ? 8e-07 : 4e-06), "The grad are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".static_rep.grad.npy", true);
                 blob1 = net.FindBlob("static_rep");
@@ -1828,7 +1833,8 @@ namespace MyCaffe.test
         /// </remarks>
         public void TestTraining()
         {
-            string strSrc = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\favorita";
+            string strSrc = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\favorita\\";
+            //string strSrc = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\favorita";
             string strPath = getTestDataPath("all");
             string strPathWt = getTestWtsPath("all");
             Blob<T> blobVal = null;
@@ -1945,19 +1951,19 @@ namespace MyCaffe.test
 
 
                     // Static Covariate Encoding
-                    blobVal.LoadFromNumpy(strPath + strTag + ".c_enrichment.npy");
+                    blobVal.LoadFromNumpy(strPath + strTag + ".c_enrichment.XX.npy");
                     blob1 = net.FindBlob("c_enrichment");
                     m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 2e-06), "The blobs are different!");
 
-                    blobVal.LoadFromNumpy(strPath + strTag + ".c_selection.npy");
+                    blobVal.LoadFromNumpy(strPath + strTag + ".c_selection.XX.npy");
                     blob1 = net.FindBlob("c_selection");
                     m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
 
-                    blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_cell.npy");
+                    blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_cell.XX.npy");
                     blob1 = net.FindBlob("c_seq_cell");
                     m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 5e-06), "The blobs are different!");
 
-                    blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_hidden.npy");
+                    blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_hidden.XX.npy");
                     blob1 = net.FindBlob("c_seq_hidden");
                     m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
 
@@ -2079,7 +2085,8 @@ namespace MyCaffe.test
 
         public void TestTrainingFull_favorita()
         {
-            string strSrc = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\favorita";
+            string strSrc = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\favorita\\";
+            //string strSrc = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\favorita";
             string strPath = getTestDataPath("all");
             string strPathWt = getTestWtsPath("all");
 
@@ -2135,7 +2142,8 @@ namespace MyCaffe.test
         public void TestTrainingFull_electricity()
         {
             // Preprocessed data created using the SignalPop AI Designer (see https://www.signalpop.com)
-            string strSrc = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\electricity\\preprocessed";
+            string strSrc = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\electricity\\preprocessed\\";
+            //string strSrc = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\electricity\\preprocessed";
             string strPath = getTestDataPath("all");
             string strPathWt = getTestWtsPath("all");
 

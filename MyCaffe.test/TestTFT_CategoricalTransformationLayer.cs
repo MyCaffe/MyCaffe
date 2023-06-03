@@ -130,12 +130,14 @@ namespace MyCaffe.test
 
         private string getTestDataPath(string strSubPath)
         {
-            return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\" + strSubPath + "\\iter_0\\";
+            return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\test\\" + strSubPath + "\\iter_0\\";
+            //return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\" + strSubPath + "\\iter_0\\";
         }
 
-        private string getTestWtsPath()
+        private string getTestWtsPath(string strSubPath)
         {
-            return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\favorita\\weights\\hist_ts_transform\\";
+            return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\favorita\\weights\\" + strSubPath + "\\";
+            //return "c:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\favorita\\weights\\hist_ts_transform\\";
         }
 
         /// <summary>
@@ -172,7 +174,7 @@ namespace MyCaffe.test
             Blob<T> blobProcessedCategorical6 = null;
             Blob<T> blobWork = null;
             string strPath = getTestDataPath("cattrx");
-            string strPathWts = getTestWtsPath();
+            string strPathWts = getTestWtsPath("hist_ts_transform");
 
             try
             {
@@ -295,7 +297,7 @@ namespace MyCaffe.test
             Blob<T> blobProcessedCategorical6 = null;
             Blob<T> blobWork = null;
             string strPath = getTestDataPath("cattrx");
-            string strPathWts = getTestWtsPath();
+            string strPathWts = getTestWtsPath("hist_ts_transform");
 
             try
             {
@@ -449,7 +451,7 @@ namespace MyCaffe.test
             Blob<T> blobY5 = null;
             Blob<T> blobY6 = null;
             string strPath = getTestDataPath("cattrx");
-            string strPathWts = getTestWtsPath();
+            string strPathWts = getTestWtsPath("hist_ts_transform");
 
             try
             {
