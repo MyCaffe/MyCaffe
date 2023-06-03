@@ -1,0 +1,883 @@
+name: "tft_net"
+layer 
+{
+   name: "data"
+   type: "DataTemporal"
+   top: "ns"
+   top: "cs"
+   top: "nh"
+   top: "ch"
+   top: "nf"
+   top: "cf"
+   top: "trg"
+   include 
+   {
+      phase: TRAIN
+   }
+   data_temporal_param 
+   {
+      batch_size: 64
+      source: C:\ProgramData\MyCaffe\test_data\tft\data\electricity\preprocessed
+      source_type: PATH_NPY_FILE
+      num_historical_steps: 90
+      num_future_steps: 30
+      max_load_percent: 1
+      drip_refresh_rate_in_sec: 0
+      chunk_count: 1024
+      shuffle_data: True
+      output_target_historical: False
+   }
+}
+layer 
+{
+   name: "data"
+   type: "DataTemporal"
+   top: "ns"
+   top: "cs"
+   top: "nh"
+   top: "ch"
+   top: "nf"
+   top: "cf"
+   top: "trg"
+   include 
+   {
+      phase: TEST
+   }
+   data_temporal_param 
+   {
+      batch_size: 64
+      source: C:\ProgramData\MyCaffe\test_data\tft\data\electricity\preprocessed
+      source_type: PATH_NPY_FILE
+      num_historical_steps: 90
+      num_future_steps: 30
+      max_load_percent: 1
+      drip_refresh_rate_in_sec: 0
+      chunk_count: 1024
+      shuffle_data: True
+      output_target_historical: False
+   }
+}
+layer 
+{
+   name: "data"
+   type: "DataTemporal"
+   top: "ns"
+   top: "cs"
+   top: "nh"
+   top: "ch"
+   top: "nf"
+   top: "cf"
+   top: "trg"
+   top: "th"
+   include 
+   {
+      phase: RUN
+   }
+   data_temporal_param 
+   {
+      batch_size: 32
+      source: C:\ProgramData\MyCaffe\test_data\tft\data\electricity\preprocessed
+      source_type: PATH_NPY_FILE
+      num_historical_steps: 90
+      num_future_steps: 30
+      max_load_percent: 1
+      drip_refresh_rate_in_sec: 0
+      chunk_count: 1024
+      shuffle_data: True
+      output_target_historical: True
+      forced_phase: TEST
+   }
+}
+layer 
+{
+   name: "static_trfm"
+   type: "ChannelEmbedding"
+   bottom: "ns"
+   bottom: "cs"
+   top: "stat_rep"
+   categorical_trans_param 
+   {
+      num_input: 1
+      state_size: 160
+      cardinality: 370
+   }
+   numeric_trans_param 
+   {
+      num_input: 0
+      state_size: 160
+   }
+}
+layer 
+{
+   name: "hist_ts_trfm"
+   type: "ChannelEmbedding"
+   bottom: "nh"
+   bottom: "ch"
+   top: "hist_rep"
+   categorical_trans_param 
+   {
+      num_input: 0
+      state_size: 160
+   }
+   numeric_trans_param 
+   {
+      num_input: 3
+      state_size: 160
+   }
+}
+layer 
+{
+   name: "future_ts_trfm"
+   type: "ChannelEmbedding"
+   bottom: "nf"
+   bottom: "cf"
+   top: "fut_rep"
+   categorical_trans_param 
+   {
+      num_input: 0
+      state_size: 160
+   }
+   numeric_trans_param 
+   {
+      num_input: 2
+      state_size: 160
+   }
+}
+layer 
+{
+   name: "static_vsn"
+   type: "VarSelNet"
+   bottom: "stat_rep"
+   top: "selected_static"
+   top: "stat_wts"
+   varselnet_param 
+   {
+      enable_weight_output: False
+      input_dim: 160
+      hidden_dim: 160
+      num_inputs: 1
+      dropout_ratio: 0.05
+      batch_first: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "silence2"
+   type: "Silence"
+   bottom: "stat_wts"
+   exclude 
+   {
+      phase: RUN
+   }
+}
+layer 
+{
+   name: "selstat_split"
+   type: "Split"
+   bottom: "selected_static"
+   top: "selstat_a"
+   top: "selstat_b"
+   top: "selstat_c"
+   top: "selstat_d"
+}
+layer 
+{
+   name: "enc_sel"
+   type: "GRN"
+   bottom: "selstat_a"
+   top: "c_sel"
+   grn_param 
+   {
+      input_dim: 160
+      hidden_dim: 160
+      output_dim: 160
+      dropout_ratio: 0.05
+      batch_first: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+      axis: 1
+      activation: ELU
+   }
+}
+layer 
+{
+   name: "enc_enr"
+   type: "GRN"
+   bottom: "selstat_b"
+   top: "c_enr"
+   grn_param 
+   {
+      input_dim: 160
+      hidden_dim: 160
+      output_dim: 160
+      dropout_ratio: 0.05
+      batch_first: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+      axis: 1
+      activation: ELU
+   }
+}
+layer 
+{
+   name: "enc_seq_cell_init"
+   type: "GRN"
+   bottom: "selstat_c"
+   top: "c_seq_cell"
+   grn_param 
+   {
+      input_dim: 160
+      hidden_dim: 160
+      output_dim: 160
+      dropout_ratio: 0.05
+      batch_first: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+      axis: 1
+      activation: ELU
+   }
+}
+layer 
+{
+   name: "enc_seq_state_init"
+   type: "GRN"
+   bottom: "selstat_d"
+   top: "c_seq_hid"
+   grn_param 
+   {
+      input_dim: 160
+      hidden_dim: 160
+      output_dim: 160
+      dropout_ratio: 0.05
+      batch_first: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+      axis: 1
+      activation: ELU
+   }
+}
+layer 
+{
+   name: "c_sel_split"
+   type: "Split"
+   bottom: "c_sel"
+   top: "c_sel_h"
+   top: "c_sel_f"
+}
+layer 
+{
+   name: "reshtmp_hist_b"
+   type: "ReshapeTemporal"
+   bottom: "hist_rep"
+   bottom: "c_sel_h"
+   top: "hist_rep1"
+   top: "c_sel1h"
+   reshape_temporal_param 
+   {
+      mode: BEFORE
+      enable_clip_output: False
+      enable_weight_output: False
+      forced_repeat_count: -1
+   }
+}
+layer 
+{
+   name: "hist_vsn"
+   type: "VarSelNet"
+   bottom: "hist_rep1"
+   bottom: "c_sel1h"
+   top: "sel_hist1"
+   top: "hist_wts"
+   varselnet_param 
+   {
+      enable_weight_output: False
+      input_dim: 160
+      hidden_dim: 160
+      num_inputs: 3
+      context_dim: 160
+      dropout_ratio: 0.05
+      batch_first: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "silence3"
+   type: "Silence"
+   bottom: "hist_wts"
+   exclude 
+   {
+      phase: RUN
+   }
+}
+layer 
+{
+   name: "reshtmp_hist_a"
+   type: "ReshapeTemporal"
+   bottom: "sel_hist1"
+   top: "sel_hist"
+   top: "sel_hist_clp"
+   reshape_temporal_param 
+   {
+      mode: AFTER
+      enable_clip_output: True
+      enable_weight_output: False
+      forced_repeat_count: -1
+   }
+}
+layer 
+{
+   name: "reshtmp_fut_b"
+   type: "ReshapeTemporal"
+   bottom: "fut_rep"
+   bottom: "c_sel_f"
+   top: "fut_rep1"
+   top: "c_sel1f"
+   reshape_temporal_param 
+   {
+      mode: BEFORE
+      enable_clip_output: False
+      enable_weight_output: False
+      forced_repeat_count: -1
+   }
+}
+layer 
+{
+   name: "future_vsn"
+   type: "VarSelNet"
+   bottom: "fut_rep1"
+   bottom: "c_sel1f"
+   top: "sel_fut1"
+   top: "fut_wts"
+   varselnet_param 
+   {
+      enable_weight_output: False
+      input_dim: 160
+      hidden_dim: 160
+      num_inputs: 2
+      context_dim: 160
+      dropout_ratio: 0.05
+      batch_first: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "silence4"
+   type: "Silence"
+   bottom: "fut_wts"
+   exclude 
+   {
+      phase: RUN
+   }
+}
+layer 
+{
+   name: "reshtmp_fut_a"
+   type: "ReshapeTemporal"
+   bottom: "sel_fut1"
+   top: "sel_fut"
+   top: "sel_fut_clp"
+   reshape_temporal_param 
+   {
+      mode: AFTER
+      enable_clip_output: True
+      enable_weight_output: False
+      forced_repeat_count: -1
+   }
+}
+layer 
+{
+   name: "selhist_split"
+   type: "Split"
+   bottom: "sel_hist"
+   top: "selhist_a"
+   top: "selhist_b"
+}
+layer 
+{
+   name: "selfut_split"
+   type: "Split"
+   bottom: "sel_fut"
+   top: "selfut_a"
+   top: "selfut_b"
+}
+layer 
+{
+   name: "lstm_input"
+   type: "Concat"
+   bottom: "selhist_a"
+   bottom: "selfut_a"
+   top: "lstm_input"
+}
+layer 
+{
+   name: "past_lstm"
+   type: "Lstm"
+   bottom: "selhist_b"
+   bottom: "sel_hist_clp"
+   bottom: "c_seq_hid"
+   bottom: "c_seq_cell"
+   top: "past_lstm_out"
+   top: "hidden1"
+   top: "cell1"
+   recurrent_param 
+   {
+      engine: CUDNN
+      num_output: 160
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+      debug_info: False
+      expose_hidden: True
+      expose_hidden_input: True
+      expose_hidden_output: True
+      batch_first: True
+      auto_repeat_hidden_states_across_layers: True
+      use_cudnn_rnn8_if_supported: True
+      dropout_ratio: 0.05
+      dropout_seed: 0
+      num_layers: 2
+      bidirectional: False
+      cudnn_enable_tensor_cores: False
+   }
+}
+layer 
+{
+   name: "future_lstm"
+   type: "Lstm"
+   bottom: "selfut_b"
+   bottom: "sel_fut_clp"
+   bottom: "hidden1"
+   bottom: "cell1"
+   top: "fut_lstm_out"
+   recurrent_param 
+   {
+      engine: CUDNN
+      num_output: 160
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+      debug_info: False
+      expose_hidden: False
+      expose_hidden_input: True
+      expose_hidden_output: False
+      batch_first: True
+      auto_repeat_hidden_states_across_layers: True
+      use_cudnn_rnn8_if_supported: True
+      dropout_ratio: 0.05
+      dropout_seed: 0
+      num_layers: 2
+      bidirectional: False
+      cudnn_enable_tensor_cores: False
+   }
+}
+layer 
+{
+   name: "lstm_output"
+   type: "Concat"
+   bottom: "past_lstm_out"
+   bottom: "fut_lstm_out"
+   top: "lstm_out"
+}
+layer 
+{
+   name: "post_lstm_gate"
+   type: "GateAddNorm"
+   bottom: "lstm_out"
+   bottom: "lstm_input"
+   top: "g_lstm_out"
+   dropout_param 
+   {
+      dropout_ratio: 0.05
+   }
+   layer_norm_param 
+   {
+      epsilon: 1E-10
+      enable_cuda_impl: False
+   }
+   gateaddnorm_param 
+   {
+      residual_channel_offset: 0
+   }
+   glu_param 
+   {
+      modulation: SIGMOID
+      input_dim: 160
+      bias_term: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+      axis: 2
+   }
+}
+layer 
+{
+   name: "glstmout_split"
+   type: "Split"
+   bottom: "g_lstm_out"
+   top: "glstmout_a"
+   top: "glstmout_b"
+}
+layer 
+{
+   name: "reshtmp_statenr_a"
+   type: "ReshapeTemporal"
+   bottom: "glstmout_a"
+   bottom: "c_enr"
+   top: "g_lstm_out1"
+   top: "c_enr1"
+   reshape_temporal_param 
+   {
+      mode: BEFORE
+      enable_clip_output: False
+      enable_weight_output: False
+      forced_repeat_count: -1
+   }
+}
+layer 
+{
+   name: "static_enrich_gru"
+   type: "GRN"
+   bottom: "g_lstm_out1"
+   bottom: "c_enr1"
+   top: "enr_seq1a"
+   grn_param 
+   {
+      input_dim: 160
+      hidden_dim: 160
+      output_dim: 160
+      context_dim: 160
+      dropout_ratio: 0.05
+      batch_first: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+      axis: 1
+      activation: ELU
+   }
+}
+layer 
+{
+   name: "reshtmp_statenr_b"
+   type: "ReshapeTemporal"
+   bottom: "enr_seq1a"
+   top: "enr_seq"
+   reshape_temporal_param 
+   {
+      mode: AFTER
+      enable_clip_output: False
+      enable_weight_output: False
+      forced_repeat_count: -1
+   }
+}
+layer 
+{
+   name: "statenr_split"
+   type: "Split"
+   bottom: "enr_seq"
+   top: "enr_seq_a"
+   top: "enr_seq_b"
+}
+layer 
+{
+   name: "mh_attn"
+   type: "MultiheadAttentionInterp"
+   bottom: "enr_seq_a"
+   top: "post_attn"
+   top: "attn_out"
+   top: "attn_scr"
+   multihead_attention_interp_param 
+   {
+      enable_self_attention: True
+      num_historical_steps: 90
+      num_future_steps: 30
+      embed_dim: 160
+      num_heads: 4
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+   }
+}
+layer 
+{
+   name: "post_attn_gate"
+   type: "GateAddNorm"
+   bottom: "post_attn"
+   bottom: "enr_seq_b"
+   top: "g_post_attn"
+   dropout_param 
+   {
+      dropout_ratio: 0.05
+   }
+   layer_norm_param 
+   {
+      epsilon: 1E-10
+      enable_cuda_impl: False
+   }
+   gateaddnorm_param 
+   {
+      residual_channel_offset: 90
+   }
+   glu_param 
+   {
+      modulation: SIGMOID
+      input_dim: 160
+      bias_term: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+      axis: 2
+   }
+}
+layer 
+{
+   name: "SILENCE"
+   type: "Silence"
+   bottom: "attn_out"
+}
+layer 
+{
+   name: "silence1"
+   type: "Silence"
+   bottom: "attn_scr"
+   exclude 
+   {
+      phase: RUN
+   }
+}
+layer 
+{
+   name: "pos_wise_ff_grn"
+   type: "GRN"
+   bottom: "g_post_attn"
+   top: "p_poswise_ff_grn"
+   grn_param 
+   {
+      input_dim: 160
+      hidden_dim: 160
+      output_dim: 160
+      context_dim: 160
+      dropout_ratio: 0.05
+      batch_first: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+      axis: 2
+      activation: ELU
+   }
+}
+layer 
+{
+   name: "pos_wise_ff_gate"
+   type: "GateAddNorm"
+   bottom: "p_poswise_ff_grn"
+   bottom: "glstmout_b"
+   top: "g_poswise_ff"
+   dropout_param 
+   {
+      dropout_ratio: 0.05
+   }
+   layer_norm_param 
+   {
+      epsilon: 1E-10
+      enable_cuda_impl: False
+   }
+   gateaddnorm_param 
+   {
+      residual_channel_offset: 90
+   }
+   glu_param 
+   {
+      modulation: SIGMOID
+      input_dim: 160
+      bias_term: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+      axis: 2
+   }
+}
+layer 
+{
+   name: "output"
+   type: "InnerProduct"
+   bottom: "g_poswise_ff"
+   top: "pred_quant"
+   inner_product_param 
+   {
+      output_contains_predictions: True
+      num_output: 3
+      bias_term: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+      axis: 2
+   }
+}
+layer 
+{
+   name: "loss"
+   type: "QuantileLoss"
+   bottom: "pred_quant"
+   bottom: "trg"
+   top: "loss"
+   loss_weight: 1
+   include 
+   {
+      phase: TRAIN
+   }
+   loss_param 
+   {
+      normalization: NONE
+   }
+   quantile_loss_param 
+   {
+      desired_quantile: 0.1
+      desired_quantile: 0.5
+      desired_quantile: 0.9
+   }
+}
+layer 
+{
+   name: "accuracy1"
+   type: "QuantileAccuracy"
+   bottom: "pred_quant"
+   bottom: "trg"
+   top: "accuracy"
+   include 
+   {
+      phase: TEST
+   }
+   quantile_accuracy_param 
+   {
+      accuracy_range: 0.6
+      average_period: 30
+   }
+}
