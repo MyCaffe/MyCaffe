@@ -115,42 +115,6 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestForwardTft()
-        {
-            LayerNormLayerTest test = new LayerNormLayerTest(EngineParameter.Engine.CAFFE);
-
-            try
-            {
-                foreach (ILayerNormLayerTest t in test.Tests)
-                {
-                    t.TestForwardTft(false);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
-        public void TestForwardTftCuda()
-        {
-            LayerNormLayerTest test = new LayerNormLayerTest(EngineParameter.Engine.CAFFE);
-
-            try
-            {
-                foreach (ILayerNormLayerTest t in test.Tests)
-                {
-                    t.TestForwardTft(true);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
         public void TestBackwardEx()
         {
             LayerNormLayerTest test = new LayerNormLayerTest(EngineParameter.Engine.CAFFE);
@@ -185,43 +149,6 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
-
-        [TestMethod]
-        public void TestBackwardTft()
-        {
-            LayerNormLayerTest test = new LayerNormLayerTest(EngineParameter.Engine.CAFFE);
-
-            try
-            {
-                foreach (ILayerNormLayerTest t in test.Tests)
-                {
-                    t.TestBackwardTft(false);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
-        public void TestBackwardTftCuda()
-        {
-            LayerNormLayerTest test = new LayerNormLayerTest(EngineParameter.Engine.CAFFE);
-
-            try
-            {
-                foreach (ILayerNormLayerTest t in test.Tests)
-                {
-                    t.TestBackwardTft(true);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
     }
 
     interface ILayerNormLayerTest : ITest
@@ -232,9 +159,6 @@ namespace MyCaffe.test
 
         void TestForwardEx(bool bUseCuda);
         void TestBackwardEx(bool bUseCuda);
-
-        void TestForwardTft(bool bUseCuda);
-        void TestBackwardTft(bool bUseCuda);
     }
 
     class LayerNormLayerTest : TestBase
@@ -441,11 +365,6 @@ namespace MyCaffe.test
             return loadTestData(strPath, strFileName, strTestPath, strTestFile);
         }
 
-        private string loadTestDataTft()
-        {
-            return "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\test\\iter_0\\";
-        }
-
         public void TestForwardEx(bool bUseCuda)
         {
             string strTestDataPath = loadTestData1();
@@ -530,106 +449,6 @@ namespace MyCaffe.test
                 m_log.CHECK_EQ(m_blob_top.width, m_blob_bottom.width, "The num does not match!");
 
                 m_blobVal.LoadFromNumpy(strTestDataPath + "grad_ln.1_x.npy", true);
-
-                float fErr = 1e-8f;
-                verify(m_blob_bottom, m_blobVal, true, fErr);
-
-                sw.Start();
-                for (int i = 0; i < 100; i++)
-                {
-                    layer.Backward(TopVec, rgProp, BottomVec);
-                }
-                sw.Stop();
-                double dfTime = sw.Elapsed.TotalMilliseconds / 100.0;
-                Trace.WriteLine("Time Per Backward = " + dfTime.ToString("N6") + " ms");
-            }
-            finally
-            {
-                if (layer != null)
-                    layer.Dispose();
-            }
-        }
-
-        public void TestForwardTft(bool bUseCuda)
-        {
-            string strTestDataPath = loadTestDataTft();
-            Layer<T> layer = null;
-
-            try
-            {
-                Stopwatch sw = new Stopwatch();
-
-                LayerParameter p = new LayerParameter(LayerParameter.LayerType.LAYERNORM);
-                p.layer_norm_param.enable_cuda_impl = bUseCuda;
-                layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-
-                m_log.CHECK(layer.type == LayerParameter.LayerType.LAYERNORM, "The layer type is incorrect!");
-
-                m_blob_bottom.LoadFromNumpy(strTestDataPath + "ln_x.npy");
-                m_blob_top.SetData(0);
-
-                layer.Setup(BottomVec, TopVec);
-                layer.Forward(BottomVec, TopVec);
-
-                m_log.CHECK_EQ(m_blob_top.num, m_blob_bottom.num, "The num does not match!");
-                m_log.CHECK_EQ(m_blob_top.channels, m_blob_bottom.channels, "The num does not match!");
-                m_log.CHECK_EQ(m_blob_top.height, m_blob_bottom.height, "The num does not match!");
-                m_log.CHECK_EQ(m_blob_top.width, m_blob_bottom.width, "The num does not match!");
-
-                m_blobVal.LoadFromNumpy(strTestDataPath + "ln_xhat.npy");
-
-                float fErr = 5e-7f;
-                m_log.CHECK(m_blobVal.Compare(m_blob_top, m_blobWork, false, fErr), "The blobs are different.");
-
-                sw.Start();
-                for (int i = 0; i < 100; i++)
-                {
-                    layer.Forward(BottomVec, TopVec);
-                }
-                sw.Stop();
-
-                double dfTime = sw.Elapsed.TotalMilliseconds / 100.0;
-                Trace.WriteLine("Time Per Forward = " + dfTime.ToString("N6") + " ms");
-            }
-            finally
-            {
-                if (layer != null)
-                    layer.Dispose();
-            }
-        }
-
-        public void TestBackwardTft(bool bUseCuda)
-        {
-            string strTestDataPath = loadTestDataTft();
-            Layer<T> layer = null;
-
-            try
-            {
-                Stopwatch sw = new Stopwatch();
-
-                LayerParameter p = new LayerParameter(LayerParameter.LayerType.LAYERNORM);
-                p.layer_norm_param.enable_cuda_impl = bUseCuda;
-                layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
-
-                m_log.CHECK(layer.type == LayerParameter.LayerType.LAYERNORM, "The layer type is incorrect!");
-
-                m_blob_bottom.LoadFromNumpy(strTestDataPath + "ln_x.npy");
-                m_blob_top.SetData(0);
-
-                layer.Setup(BottomVec, TopVec);
-                layer.Forward(BottomVec, TopVec);
-
-                m_blob_top.LoadFromNumpy(strTestDataPath + "ln_dxhat.npy", true);
-
-                List<bool> rgProp = new List<bool>() { true };
-                layer.Backward(TopVec, rgProp, BottomVec);
-
-                m_log.CHECK_EQ(m_blob_top.num, m_blob_bottom.num, "The num does not match!");
-                m_log.CHECK_EQ(m_blob_top.channels, m_blob_bottom.channels, "The num does not match!");
-                m_log.CHECK_EQ(m_blob_top.height, m_blob_bottom.height, "The num does not match!");
-                m_log.CHECK_EQ(m_blob_top.width, m_blob_bottom.width, "The num does not match!");
-
-                m_blobVal.LoadFromNumpy(strTestDataPath + "ln_dx.npy", true);
 
                 float fErr = 1e-8f;
                 verify(m_blob_bottom, m_blobVal, true, fErr);
