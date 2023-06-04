@@ -957,7 +957,7 @@ namespace MyCaffe.layers.tft
             if (rg == null)
                 return false;
 
-            int nStartIdx1 = m_validRanges[m_nRowIdx].ValidRangeStartIndex + m_nColIdx + nStartIdx;
+            int nStartIdx1 = m_nColIdx + nStartIdx;
             int nFields = m_rgFields[DATA_TYPE.SYNC];
             long[] rgSrc = m_rgCatData[DATA_TYPE.SYNC][m_nRowIdx];
 
@@ -996,7 +996,7 @@ namespace MyCaffe.layers.tft
             if (rg == null)
                 return;
 
-            int nStartIdx1 = m_validRanges[m_nRowIdx].ValidRangeStartIndex + m_nColIdx + nStartIdx;
+            int nStartIdx1 = m_nColIdx + nStartIdx;
             int nFields = m_rgFields[dt];
             long[] rgSrc = m_rgCatData[dt][m_nRowIdx];
             Array.Copy(rgSrc, nStartIdx1 * nFields, rg, nIdx * nCount * nFields, nCount * nFields);
@@ -1007,7 +1007,7 @@ namespace MyCaffe.layers.tft
             if (rg == null)
                 return;
 
-            int nStartIdx1 = m_validRanges[m_nRowIdx].ValidRangeStartIndex + m_nColIdx + nStartIdx;
+            int nStartIdx1 = m_nColIdx + nStartIdx;
             int nFields1 = (m_rgFields.ContainsKey(dt1)) ? m_rgFields[dt1] : 0;
             long[] rgSrc1 = (m_rgFields.ContainsKey(dt1)) ? m_rgCatData[dt1][m_nRowIdx] : null;
             int nFields2 = (m_rgFields.ContainsKey(dt2)) ? m_rgFields[dt2] : 0;
@@ -1036,7 +1036,7 @@ namespace MyCaffe.layers.tft
             if (rg == null)
                 return;
 
-            int nStartIdx1 = m_validRanges[m_nRowIdx].ValidRangeStartIndex + m_nColIdx + nStartIdx;
+            int nStartIdx1 = m_nColIdx + nStartIdx;
             int nFields = m_rgFields[dt];
             float[] rgSrc = m_rgNumData[dt][m_nRowIdx];           
             Array.Copy(rgSrc, nStartIdx1 * nFields, rg, nIdx * nCount * nFields, nCount * nFields);
@@ -1047,7 +1047,7 @@ namespace MyCaffe.layers.tft
             if (rg == null)
                 return;
 
-            int nStartIdx1 = m_validRanges[m_nRowIdx].ValidRangeStartIndex + m_nColIdx + nStartIdx;
+            int nStartIdx1 = m_nColIdx + nStartIdx;
             int nFields = m_rgFields[dt];
             float[] rgSrc = m_rgNumData[dt][m_nRowIdx];
 
