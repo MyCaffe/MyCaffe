@@ -207,7 +207,9 @@ namespace MyCaffe.param
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
-            rgChildren.Add("output_contains_predictions", m_bOutputContainsPredictions.ToString());
+            if (output_contains_predictions)
+                rgChildren.Add("output_contains_predictions", output_contains_predictions.ToString());
+
             rgChildren.Add("num_output", num_output.ToString());
             rgChildren.Add("bias_term", bias_term.ToString());
 
