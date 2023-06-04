@@ -293,6 +293,9 @@ namespace MyCaffe.layers
             if (m_bCudnnRnn8Supported && m_param.recurrent_param.use_cudnn_rnn8_if_supported)
                 m_bUseCudnnRnn8 = true;
 
+            m_blobBtmData = new Blob<T>(m_cuda, m_log);
+            m_blobTopData = new Blob<T>(m_cuda, m_log);
+
             if (m_param.recurrent_param.batch_first)
             {
                 m_colBtm = new BlobCollection<T>();
@@ -308,8 +311,6 @@ namespace MyCaffe.layers
                 }
 
                 m_transposeData = Layer<T>.Create(m_cuda, m_log, convertLayerParam(transpose, m_param), null);
-                m_blobBtmData = new Blob<T>(m_cuda, m_log);
-                m_blobTopData = new Blob<T>(m_cuda, m_log);
 
                 addBtmTop(colBottom[0], m_blobBtmData);
                 m_transposeData.Setup(m_colBtm, m_colTop);
@@ -332,16 +333,6 @@ namespace MyCaffe.layers
                 m_blobBtmClip.Reshape(m_rgShape);
 
                 blobBtm1 = m_blobBtmClip;
-            }
-            else
-            {
-                m_blobBtmData.ReshapeLike(colBottom[0]);
-                m_blobBtmData.ShareData(colBottom[0]);
-                m_blobBtmData.ShareDiff(colBottom[0]);
-
-                m_blobTopData.ReshapeLike(colTop[0]);
-                m_blobTopData.ShareData(colTop[0]);
-                m_blobTopData.ShareDiff(colTop[0]);
             }
 
             m_log.CHECK_GE(blobBtm0.num_axes, 2, "Bottom[0] must have at least 2 axes -- (#timesteps, #streams, ...)");
