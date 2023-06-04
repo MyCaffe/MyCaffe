@@ -1025,21 +1025,24 @@ namespace MyCaffe
 
         private bool verifySharedWeights()
         {
-            Net<T> netTrain = m_solver.TrainingNet;
             Net<T> netTest = m_solver.TestingNet;
-
-            if (netTrain.parameters.Count != netTest.parameters.Count)
+            if (netTest != null)
             {
-                m_log.WriteLine("WARNING: Training net has a different number of parameters than the testing net!");
-                return false;
-            }
+                Net<T> netTrain = m_solver.TrainingNet;
 
-            for (int i = 0; i < netTrain.parameters.Count; i++)
-            {
-                if (netTrain.parameters[i].gpu_data != netTest.parameters[i].gpu_data)
+                if (netTrain.parameters.Count != netTest.parameters.Count)
                 {
-                    m_log.WriteLine("WARNING: Training net parameter " + i.ToString() + " is not shared with the testing net!");
+                    m_log.WriteLine("WARNING: Training net has a different number of parameters than the testing net!");
                     return false;
+                }
+
+                for (int i = 0; i < netTrain.parameters.Count; i++)
+                {
+                    if (netTrain.parameters[i].gpu_data != netTest.parameters[i].gpu_data)
+                    {
+                        m_log.WriteLine("WARNING: Training net parameter " + i.ToString() + " is not shared with the testing net!");
+                        return false;
+                    }
                 }
             }
 
