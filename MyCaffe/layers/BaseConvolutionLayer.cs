@@ -259,7 +259,9 @@ namespace MyCaffe.layers
             if (m_hWorkspaceData != 0)
                 m_cuda.FreeMemory(m_hWorkspaceData);
 
-            m_hWorkspaceData = m_cuda.AllocMemory((long)m_lWorkspaceSize);
+            if (m_lWorkspaceSize > 0)
+                m_hWorkspaceData = m_cuda.AllocMemory((long)m_lWorkspaceSize);
+
             m_cuda.ResetGhostMemory();
 
             return true;
