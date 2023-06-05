@@ -429,7 +429,7 @@ namespace MyCaffe.layers.beta
 
         private void layer_OnSetWorkspace(object sender, WorkspaceArgs e)
         {
-            if (e.WorkspaceSizeInBytes < m_lWorkspaceSizeInBytes)
+            if (e.WorkspaceSizeInBytes < m_lWorkspaceSizeInBytes || e.WorkspaceSizeInBytes == 0)
                 return;
 
             m_lWorkspaceSizeInBytes = e.WorkspaceSizeInBytes;

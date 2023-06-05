@@ -891,7 +891,7 @@ namespace MyCaffe.extras
 
         private void net_OnSetWorkspace(object sender, WorkspaceArgs e)
         {
-            if (e.WorkspaceSizeInBytes < m_lWorkspaceSizeInBytes)
+            if (e.WorkspaceSizeInBytes < m_lWorkspaceSizeInBytes || e.WorkspaceSizeInBytes == 0)
                 return;
 
             m_lWorkspaceSizeInBytes = e.WorkspaceSizeInBytes;
@@ -901,6 +901,7 @@ namespace MyCaffe.extras
                 m_cuda.FreeMemory(m_hWorkspaceData);
 
             m_hWorkspaceData = m_cuda.AllocMemory((long)m_lWorkspaceSizeInBytes);
+
             m_cuda.ResetGhostMemory();
         }
 

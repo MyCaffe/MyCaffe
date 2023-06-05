@@ -749,6 +749,9 @@ namespace MyCaffe.common
 
         private void layer_OnSetWorkspace(object sender, WorkspaceArgs e)
         {
+            if (e.WorkspaceSizeInBytes == 0)
+                return; 
+
             if (OnSetWorkspace != null)
             {
                 OnSetWorkspace(sender, e);

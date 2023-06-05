@@ -679,6 +679,9 @@ namespace MyCaffe.test
                 if (strType == "run")
                     strType = "validation";
 
+                if (!File.Exists(strSrcPath + "\\" + strType + "_schema.xml"))
+                    throw new Exception("Could not find the schema file '" + strSrcPath + "\\" + strType + "_schema.xml'!  You must run the SignalPop Ai Designer's " + strType + " DataSet Creator.");
+
                 DataSchema schema = DataSchema.Load(strSrcPath + "\\" + strType + "_schema.xml");
                 Tuple<long[], int[]> sync = load(strSrcPath, strType, "sync.npy");
                 loadFloat(blobStatNum1, strSrcPath, strType, "static_num.npy");
