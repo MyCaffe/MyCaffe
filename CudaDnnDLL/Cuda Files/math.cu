@@ -6688,7 +6688,7 @@ template long Math<double>::channel_duplicate(int n, int nOutNum, int nChannels,
 template long Math<float>::channel_duplicate(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 
 
-// Expects x to be sorted along the channel dimension of (items in length per channel).
+// percentile kernel - expects x to be sorted along num axis.
 // X is of length num x items.
 // Y is of length items.
 template <typename T>
@@ -6701,23 +6701,6 @@ __global__ void channel_percentile_kernel(const int num, const int items, T* x, 
 
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < items && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		// Sort in place
-		for (int n = 0; n < num; n++)
-		{
-			for (int n2 = n + 1; n2 < num; n2++)
-			{
-				const int nIdx1 = i + (n * items);
-				const int nIdx2 = i + (n2 * items);
-
-				if (x[nIdx1] > x[nIdx2])
-				{
-					T fTmp = x[nIdx1];
-					x[nIdx1] = x[nIdx2];
-					x[nIdx2] = fTmp;
-				}
-			}
-		}
-
 		if (fN == 1)
 			y[i] = x[i];
 		else if (fN == N)
@@ -6731,8 +6714,34 @@ __global__ void channel_percentile_kernel(const int num, const int items, T* x, 
 	}
 }
 
+template <>
+long Math<float>::transpose(int n, int m, float* src, float* dst)
+{
+	LONG lErr;
+	float fAlpha = 1.0f;
+	float fBeta = 0.0f;
+
+	if (lErr = cublasSgeam(m_cublas, CUBLAS_OP_T, CUBLAS_OP_N, n, m, &fAlpha, src, m, &fBeta, src, n, dst, n))
+		return lErr | ERROR_CUBLAS_OFFSET;
+
+	return 0;
+}
+
+template <>
+long Math<double>::transpose(int n, int m, double* src, double* dst)
+{
+	LONG lErr;
+	double fAlpha = 1.0f;
+	double fBeta = 0.0f;
+
+	if (lErr = cublasDgeam(m_cublas, CUBLAS_OP_T, CUBLAS_OP_N, n, m, &fAlpha, src, m, &fBeta, src, n, dst, n))
+		return lErr | ERROR_CUBLAS_OFFSET;
+
+	return 0;
+}
+
 template <typename T>
-long Math<T>::channel_percentile(int n, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, T fPercentile)
+long Math<T>::channel_percentile(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, T fPercentile)
 {
 	LONG lErr;
 	MemoryItem* pX;
@@ -6751,21 +6760,45 @@ long Math<T>::channel_percentile(int n, int nOuterNum, int nChannels, int nInner
 	if (pY->Size() < (nItems * sizeof(T)))
 		return ERROR_NOT_ENOUGH_MEMORY;
 
-	T* w = NULL;
+	T* w1 = NULL;
+	T* w2 = NULL;
 	size_t sz = sizeof(T) * nOuterNum * nItems;
-	if (lErr = cudaMalloc(&w, sz))
+	if (lErr = cudaMalloc(&w1, sz))
 		return lErr;
-
-	if (lErr = cudaMemcpy(w, x, sz, cudaMemcpyDeviceToDevice))
+	if (lErr = cudaMalloc(&w2, sz))
 	{
-		cudaFree(w);
+		cudaFree(w1);
+		return lErr;
+	}
+
+	// Transpose to nItems x nOuterNum
+	if (lErr = transpose(nOuterNum, nItems, x, w1))
+	{
+		cudaFree(w1);
+		cudaFree(w2);
+		return lErr;
+	}
+
+	// Sort along axis=0
+	for (int i = 0; i < nItems; i++)
+	{
+		thrust::device_ptr<T> d_ptr = thrust::device_pointer_cast(w1 + nOuterNum * i);
+		thrust::sort(d_ptr, d_ptr + nOuterNum);
+	}
+
+	// Transpose back to original shape.
+	if (lErr = transpose(nItems, nOuterNum, w1, w2))
+	{
+		cudaFree(w1);
+		cudaFree(w2);
 		return lErr;
 	}
 
 	// Calculate the percentile along axis=0
-	channel_percentile_kernel<T> << <CAFFE_GET_BLOCKS(nItems), CAFFE_CUDA_NUM_THREADS >> > (nOuterNum, nItems, w, y, fPercentile);
+	channel_percentile_kernel<T> <<<CAFFE_GET_BLOCKS(nItems), CAFFE_CUDA_NUM_THREADS >> > (nOuterNum, nItems, w2, y, fPercentile);
 
-	cudaFree(w);
+	cudaFree(w1);
+	cudaFree(w2);
 
 	return cudaStreamSynchronize(0);
 }

@@ -221,6 +221,7 @@ class Math
 		long transpose(int n, long hX, long hY, long hXCounts, long hYCounts, long hMapping, int nNumAxes, long hBuffer);
 		long transpose_hw(int n, int c, int h, int w, long hSrc, long hDst);
 		long transpose_hw(int n, int c, int h, int w, T* src, T* dst);
+		long transpose(int nH, int nW, T* src, T* dst);
 		long naninfval(int n, long hA, long hWork1, long hWork2, T* pNan, T* pInf, int nAOff = 0);
 		long sumsq(int n, long hW, long hA, int nAOff, T* pOut);
 		long sumsqdiff(int n, long hW, long hA, long hB, int nAOff, int nBOff, T* pOut);
