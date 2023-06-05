@@ -338,6 +338,7 @@ namespace MyCaffe.layers
 
             // Ensure all groups have enough workspace.
             ulong lTotalMaxWorkspace = (ulong)lMaxWorkspace * (ulong)m_nGroup * (ulong)CUDNN_STREAMS_PER_GROUP;
+            lTotalMaxWorkspace *= (ulong)CUDNN_STREAMS_PER_GROUP;
 
             // Initialize the workspace data.
             WorkspaceArgs wsArgs = getWorkspace();
