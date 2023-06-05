@@ -291,7 +291,7 @@ namespace MyCaffe.test
         }
 
 
-        private string buildModel(int nNumSamples, int nNumHist, int nNumFuture, DataTemporalParameter.SOURCE_TYPE srcType, string strSrc)
+        private string buildModel(int nNumSamples, int nNumHist, int nNumFuture, DataTemporalParameter.SOURCE_TYPE srcType, string strSrc, Phase phase)
         {
             NetParameter p = new NetParameter();
             p.name = "tft_net";
@@ -311,7 +311,7 @@ namespace MyCaffe.test
             data.data_temporal_param.drip_refresh_rate_in_sec = 0;
             data.data_temporal_param.max_load_percent = 1.0;
             data.data_temporal_param.seed = 1704;
-            data.include.Add(new NetStateRule(Phase.TRAIN));
+            data.include.Add(new NetStateRule(phase));
             data.top.Add("x_numeric_static");
             data.top.Add("x_categorical_static");
             data.top.Add("x_numeric_hist");
@@ -691,7 +691,7 @@ namespace MyCaffe.test
                 loadFloat(blobKnownNum, strSrcPath, strType, "known_num.npy");
                 loadLong(blobKnownCat, strSrcPath, strType, "known_cat.npy");
 
-                string strModel = buildModel(nNumSamples, nNumHist, nNumFuture, srcType, strSrcPath);
+                string strModel = buildModel(nNumSamples, nNumHist, nNumFuture, srcType, strSrcPath, phase);
                 RawProto rp = RawProto.Parse(strModel);
                 NetParameter param = NetParameter.FromProto(rp);
 
