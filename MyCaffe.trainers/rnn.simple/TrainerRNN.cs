@@ -951,7 +951,10 @@ namespace MyCaffe.trainers.rnn.simple
 
                     for (int i = 0; i < rgCorrectLengthSequence.Length; i++)
                     {
-                        rgCorrectLengthSequence[i] = rgf[i * nDim];
+                        float fChar = rgf[i * nDim];
+                        // Tokenize
+                        fChar = m_rgVocabulary.FindIndex(fChar);
+                        rgCorrectLengthSequence[i] = fChar;
                     }
 
                     bDataNeeded = false;
@@ -1063,7 +1066,7 @@ namespace MyCaffe.trainers.rnn.simple
                 else
                 {
                     int nIdx = 0;
-                    List<T> rgInput = rgInput = getInitialInput(m_bIsDataReal);
+                    List<T> rgInput = getInitialInput(m_bIsDataReal);
 
                     for (int i = 0; i < nN; i++)
                     {
