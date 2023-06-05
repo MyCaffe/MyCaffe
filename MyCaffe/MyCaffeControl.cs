@@ -1921,7 +1921,7 @@ namespace MyCaffe
             int nK = customInput.GetPropertyAsInt("K", 1);
             PropertySet res;
 
-            if (customInput.GetProperty("Temporal") == "True")
+            if (customInput.GetPropertyAsBool("Temporal", false))
             {
                 res = RunModel(customInput);
                 res.SetProperty("Temporal", "True");
