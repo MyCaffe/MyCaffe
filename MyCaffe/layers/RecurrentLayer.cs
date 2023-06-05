@@ -371,39 +371,15 @@ namespace MyCaffe.layers
 
         private void setupSharedWorkspaceAndReserved(ulong ulWsInBytes, ulong ulResInBytes)
         {
-            ulWsInBytes *= 2;
-            ulResInBytes *= 2;
-
-            // NOTE: RNN FWD fails when sharing workspace data - need to investigate.
-            // This is the total amount of storage needed over all groups + streams.
-            //WorkspaceArgs wsArgs = getWorkspace();
-            //if (wsArgs != null)
-            //{
-            //    if (ulWsInBytes > wsArgs.WorkspaceSizeInBytes)
-            //    {
-            //        setWorkspace(ulWsInBytes);
-            //        wsArgs = getWorkspace();
-            //    }
-
-            //    m_hWorkspace = wsArgs.WorkspaceData;
-            //    m_nWorkspaceSizeInBytes = ulWsInBytes;
-            //    m_bWorkspaceOwned = false;
-            //}
-            //else
-            {
-                ulong lCount = CudaDnn<T>.ConvertByteSizeToCount(ulWsInBytes);
-                m_hWorkspace = m_cuda.AllocMemory((long)lCount);
-                m_nWorkspaceSizeInBytes = ulWsInBytes;
-                m_bWorkspaceOwned = true;
-            }
-
-            if (ulResInBytes > 0)
-            {
-                ulong lCount = CudaDnn<T>.ConvertByteSizeToCount(ulResInBytes);
-                m_hReserved = m_cuda.AllocMemory((long)lCount);
-            }
+            m_nWorkspaceSizeInBytes = ulWsInBytes;
+            m_bWorkspaceOwned = true;
             m_nReservedSizeInBytes = ulResInBytes;
             m_bReservedOwned = true;
+
+            if (ulWsInBytes > 0)
+                m_hWorkspace = m_cuda.AllocMemory((long)m_nWorkspaceSizeInBytes);
+            if (ulResInBytes > 0)
+                m_hReserved = m_cuda.AllocMemory((long)ulResInBytes);
         }
 
         private void layerSetupCudnnRnn8(BlobCollection<T> colBottom, BlobCollection<T> colTop)
