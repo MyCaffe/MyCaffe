@@ -659,7 +659,7 @@ namespace MyCaffe.layers
                 ulong ulWorkspaceSizeInBytes = m_cuda.GetRnnWorkspaceCount(m_hCuDnn, m_hRnnDesc, m_hXDesc, out ulReservedSizeInBytes);
 
                 // Setup the workspace and reserved memory.
-                setupSharedWorkspaceAndReserved(ulWorkspaceSizeInBytes, m_nReservedSizeInBytes);
+                setupSharedWorkspaceAndReserved(ulWorkspaceSizeInBytes, ulReservedSizeInBytes);
 
                 // Fill the weights.
                 if (!shareParameter(m_blobWts, rgWtShape))
@@ -1376,8 +1376,8 @@ namespace MyCaffe.layers
         {
             if (!m_param.recurrent_param.auto_repeat_hidden_states_across_layers || bBtm.count() == bTop.count())
             {
-                m_log.CHECK_EQ(bBtm.count(), bTop.count(), "The '" + bBtm.Name.ToString() + "' should have the same shape as '" + bTop.Name.ToString() + "' which has a shape = " + bTop.shape_string);
-                m_cuda.copy(bBtm.count(), bBtm.gpu_data, bTop.mutable_gpu_data);
+                if (bBtm.count() == bTop.count())
+                    m_cuda.copy(bBtm.count(), bBtm.gpu_data, bTop.mutable_gpu_data);
             }
             else
             {
