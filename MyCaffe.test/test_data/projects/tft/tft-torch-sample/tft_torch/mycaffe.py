@@ -6,7 +6,7 @@ import clr
 import os
 import numpy as np
 import System
-clr.AddReference("C:\\temp\\projects\\TFT\\tft-torch-sample\\MyCaffeConnector\\bin\\\Debug\\MyCaffeConnector.dll")
+clr.AddReference("..\\..\\MyCaffeConnector\\bin\\\Debug\\MyCaffeConnector.dll")
 from MyCaffeConnector import *
 from System import Array, Single
 import ctypes
