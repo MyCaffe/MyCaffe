@@ -212,26 +212,24 @@ namespace MyCaffe.test
             base.dispose();
         }
 
-        /// <summary>
-        /// Data1 values created with 'test_decoder.py' using MyCaffe LayerNorm and Softmax layers.
-        /// </summary>
-        /// <returns>The path of the data is returned.</returns>
-        private string loadTestData1()
+        private string getTestDataPath(string strSubPath, string strFile)
         {
-            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\dec\\";
-            string strFileName = "_decoder_test.zip";
-            string strTestPath = "test";
-            string strTestFile = "iter_0\\13_out1.npy";
-            return loadTestData(strPath, strFileName, strTestPath, strTestFile);
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\gpt\\test\\" + strSubPath + "\\iter_0\\";
+
+            if (!File.Exists(strPath + strFile))
+                throw new Exception("Could not find the test data file '" + strPath + strFile + "'.  You may need to run the 'Download Test Data | GPT' menu item.");
+
+            return strPath;
         }
 
-        private string loadTestData2()
+        private string getTestDataBasePath(string strFile)
         {
-            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\trfb\\";
-            string strFileName = "_transformer_test.zip";
-            string strTestPath = "test";
-            string strTestFile = "d_mask.npy";
-            return loadTestData(strPath, strFileName, strTestPath, strTestFile);
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\gpt\\test\\";
+
+            if (!File.Exists(strPath + strFile))
+                throw new Exception("Could not find the test data file '" + strPath + strFile + "'.  You may need to run the 'Download Test Data | GPT' menu item.");
+
+            return strPath;
         }
 
         private void createDecoderMask(Blob<T> blobMask)
@@ -265,9 +263,16 @@ namespace MyCaffe.test
             blobMask.mutable_cpu_data = convert(rgMask1);
         }
         
+        /// <summary>
+        /// Test the decoder block forward pass.
+        /// </summary>
+        /// <param name="nHeads">Specifies the number of heads.</param>
+        /// <param name="bEnableCudaImpl">Specifies whether or not to use the cuda implementation.</param>
+        /// <remarks>Run 'TransformerTranslation\6_test_decoder.py' to generate test data.</remarks>
         public void TestForward(uint nHeads, bool bEnableCudaImpl)
         {
-            string strTestDataPath = loadTestData1();
+            string strTestDataBasePath = getTestDataBasePath("dec_in_x0.npy");
+            string strTestDataPath = getTestDataPath("decoder", "15_loss.npy");
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
             p.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.DECODER;
@@ -283,23 +288,21 @@ namespace MyCaffe.test
             {
                 m_log.CHECK(layer.type == LayerParameter.LayerType.TRANSFORMER_BLOCK, "The layer type is incorrect!");
 
-                m_blobX.LoadFromNumpy(strTestDataPath + "dec_in_x0.npy");
+                m_blobX.LoadFromNumpy(strTestDataBasePath + "dec_in_x0.npy");
                 m_blobX.Name = "dec_in_x0";
-                m_blobEncOut.LoadFromNumpy(strTestDataPath + "enc_out_x1.npy");
+                m_blobEncOut.LoadFromNumpy(strTestDataBasePath + "enc_out_x1.npy");
                 m_blobEncOut.Name = "enc_out_x1";
                 
-                m_blobInput.LoadFromNumpy(strTestDataPath + "src_input.npy");                
+                m_blobInput.LoadFromNumpy(strTestDataBasePath + "src_input.npy");                
                 m_blobMaskEnc.ReshapeLike(m_blobInput);
                 m_blobMaskEnc.Name = "e_mask";
                 m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMaskEnc.mutable_gpu_data);
                 
-                m_blobInput.LoadFromNumpy(strTestDataPath + "trg_input.npy");
+                m_blobInput.LoadFromNumpy(strTestDataBasePath + "trg_input.npy");
                 m_blobMaskDec.ReshapeLike(m_blobInput);
                 m_blobMaskDec.Name = "d_mask";
                 m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMaskDec.mutable_gpu_data);
                 createDecoderMask(m_blobMaskDec);
-
-                strTestDataPath += "iter_0\\";
 
                 m_blobMaskDec_exp.LoadFromNumpy(strTestDataPath + "dec.mh1.1_mask.npy");
                 verify(m_blobMaskDec, m_blobMaskDec_exp, false, 1e-09);
@@ -366,9 +369,16 @@ namespace MyCaffe.test
             }
         }
 
+        /// <summary>
+        /// Test the decoder block backward
+        /// </summary>
+        /// <param name="nHeads">Specifies the number of heads.</param>
+        /// <param name="bEnableCudaImpl">Specifies whether or not to use the cuda implementation.</param>
+        /// <remarks>Run 'TransformerTranslation\6_test_decoder.py' to generate test data.</remarks>
         public void TestBackward(uint nHeads, bool bEnableCudaImpl)
         {
-            string strTestDataPath = loadTestData1();
+            string strTestDataBasePath = getTestDataBasePath("dec_in_x0.npy");
+            string strTestDataPath = getTestDataPath("decoder", "15_loss.npy");
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
             p.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.DECODER;
@@ -384,23 +394,21 @@ namespace MyCaffe.test
             {
                 m_log.CHECK(layer.type == LayerParameter.LayerType.TRANSFORMER_BLOCK, "The layer type is incorrect!");
 
-                m_blobX.LoadFromNumpy(strTestDataPath + "dec_in_x0.npy");
+                m_blobX.LoadFromNumpy(strTestDataBasePath + "dec_in_x0.npy");
                 m_blobX.Name = "dec_in_x0";
-                m_blobEncOut.LoadFromNumpy(strTestDataPath + "enc_out_x1.npy");
+                m_blobEncOut.LoadFromNumpy(strTestDataBasePath + "enc_out_x1.npy");
                 m_blobEncOut.Name = "enc_out_x1";
 
-                m_blobInput.LoadFromNumpy(strTestDataPath + "src_input.npy");
+                m_blobInput.LoadFromNumpy(strTestDataBasePath + "src_input.npy");
                 m_blobMaskEnc.ReshapeLike(m_blobInput);
                 m_blobMaskEnc.Name = "e_mask";
                 m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMaskEnc.mutable_gpu_data);
 
-                m_blobInput.LoadFromNumpy(strTestDataPath + "trg_input.npy");
+                m_blobInput.LoadFromNumpy(strTestDataBasePath + "trg_input.npy");
                 m_blobMaskDec.ReshapeLike(m_blobInput);
                 m_blobMaskDec.Name = "d_mask";
                 m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMaskDec.mutable_gpu_data);
                 createDecoderMask(m_blobMaskDec);
-
-                strTestDataPath += "iter_0\\";
 
                 m_blobMaskDec_exp.LoadFromNumpy(strTestDataPath + "dec.mh1.1_mask.npy");
                 verify(m_blobMaskDec, m_blobMaskDec_exp, false, 1e-12);

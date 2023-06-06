@@ -158,18 +158,30 @@ namespace MyCaffe.test
             base.dispose();
         }
 
-        private string loadTestData1()
+        private string getTestDataPath(string strSubPath, string strFile)
         {
-            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\enc\\";
-            string strFileName = "_encoder_test.zip";
-            string strTestPath = "test";
-            string strTestFile = "iter_0\\13_out1.npy";
-            return loadTestData(strPath, strFileName, strTestPath, strTestFile);
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\gpt\\test\\" + strSubPath + "\\iter_0\\";
+
+            if (!File.Exists(strPath + strFile))
+                throw new Exception("Could not find the test data file '" + strPath + strFile + "'.  You may need to run the 'Download Test Data | GPT' menu item.");
+
+            return strPath;
+        }
+
+        private string getTestDataBasePath(string strFile)
+        {
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\gpt\\test\\";
+
+            if (!File.Exists(strPath + strFile))
+                throw new Exception("Could not find the test data file '" + strPath + strFile + "'.  You may need to run the 'Download Test Data | GPT' menu item.");
+
+            return strPath;
         }
 
         public void TestForward(uint nHeads, bool bEnableCudaImpl)
         {
-            string strTestDataPath = loadTestData1();
+            string strTestDataBasePath = getTestDataBasePath("enc_in_x0.npy");
+            string strTestDataPath = getTestDataPath("encoder", "15_loss.npy");
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
             p.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.ENCODER;
@@ -185,8 +197,8 @@ namespace MyCaffe.test
             {
                 m_log.CHECK(layer.type == LayerParameter.LayerType.TRANSFORMER_BLOCK, "The layer type is incorrect!");
 
-                m_blobX.LoadFromNumpy(strTestDataPath + "enc_in_x0.npy");
-                m_blobInput.LoadFromNumpy(strTestDataPath + "src_input.npy");
+                m_blobX.LoadFromNumpy(strTestDataBasePath + "enc_in_x0.npy");
+                m_blobInput.LoadFromNumpy(strTestDataBasePath + "src_input.npy");
                 m_blobMask.ReshapeLike(m_blobInput);
                 m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMask.mutable_gpu_data);
                 
@@ -195,8 +207,6 @@ namespace MyCaffe.test
                 BottomVec.Add(m_blobMask);
 
                 layer.Setup(BottomVec, TopVec);
-
-                strTestDataPath += "iter_0\\";
 
                 layer.blobs[0].LoadFromNumpy(strTestDataPath + "enc.mh.w_q.weight.npy");    // multi-head query weight
                 layer.blobs[1].LoadFromNumpy(strTestDataPath + "enc.mh.w_q.bias.npy");      // multi-head query bias
@@ -239,7 +249,8 @@ namespace MyCaffe.test
 
         public void TestBackward(uint nHeads, bool bEnableCudaImpl)
         {
-            string strTestDataPath = loadTestData1();
+            string strTestDataBasePath = getTestDataBasePath("enc_in_x0.npy");
+            string strTestDataPath = getTestDataPath("encoder", "15_loss.npy");
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
             p.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.ENCODER;
@@ -255,8 +266,8 @@ namespace MyCaffe.test
             {
                 m_log.CHECK(layer.type == LayerParameter.LayerType.TRANSFORMER_BLOCK, "The layer type is incorrect!");
 
-                m_blobX.LoadFromNumpy(strTestDataPath + "enc_in_x0.npy");
-                m_blobInput.LoadFromNumpy(strTestDataPath + "src_input.npy");
+                m_blobX.LoadFromNumpy(strTestDataBasePath + "enc_in_x0.npy");
+                m_blobInput.LoadFromNumpy(strTestDataBasePath + "src_input.npy");
                 m_blobMask.ReshapeLike(m_blobInput);
                 m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMask.mutable_gpu_data);
 
@@ -265,8 +276,6 @@ namespace MyCaffe.test
                 BottomVec.Add(m_blobMask);
 
                 layer.Setup(BottomVec, TopVec);
-
-                strTestDataPath += "iter_0\\";
 
                 layer.blobs[0].LoadFromNumpy(strTestDataPath + "enc.mh.w_q.weight.npy");    // multi-head query weight
                 layer.blobs[1].LoadFromNumpy(strTestDataPath + "enc.mh.w_q.bias.npy");      // multi-head query bias
@@ -321,7 +330,8 @@ namespace MyCaffe.test
 
         public void TestGradient(uint nHeads, bool bEnableCudaImpl)
         {
-            string strTestDataPath = loadTestData1();
+            string strTestDataBasePath = getTestDataBasePath("enc_in_x0.npy");
+            string strTestDataPath = getTestDataPath("encoder", "15_loss.npy");
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSFORMER_BLOCK);
             p.transformer_block_param.block_type = TransformerBlockParameter.BLOCK_TYPE.ENCODER;
@@ -337,8 +347,8 @@ namespace MyCaffe.test
             {
                 m_log.CHECK(layer.type == LayerParameter.LayerType.TRANSFORMER_BLOCK, "The layer type is incorrect!");
 
-                m_blobX.LoadFromNumpy(strTestDataPath + "enc_in_x0.npy");
-                m_blobInput.LoadFromNumpy(strTestDataPath + "src_input.npy");
+                m_blobX.LoadFromNumpy(strTestDataBasePath + "enc_in_x0.npy");
+                m_blobInput.LoadFromNumpy(strTestDataBasePath + "src_input.npy");
                 m_blobMask.ReshapeLike(m_blobInput);
                 m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMask.mutable_gpu_data);
 

@@ -191,18 +191,30 @@ namespace MyCaffe.test
             base.dispose();
         }
 
-        private string loadTestData1()
+        private string getTestDataPath(string strSubPath, string strFile)
         {
-            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\mh\\";
-            string strFileName = "_multihead_test.zip";
-            string strTestPath = "test";
-            string strTestFile = "iter_0\\mh.10_concat_output1.npy";
-            return loadTestData(strPath, strFileName, strTestPath, strTestFile);
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\gpt\\test\\" + strSubPath + "\\iter_0\\";
+
+            if (!File.Exists(strPath + strFile))
+                throw new Exception("Could not find the test data file '" + strPath + strFile + "'.  You may need to run the 'Download Test Data | GPT' menu item.");
+
+            return strPath;
+        }
+
+        private string getTestDataBasePath(string strFile)
+        {
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\gpt\\test\\";
+
+            if (!File.Exists(strPath + strFile))
+                throw new Exception("Could not find the test data file '" + strPath + strFile + "'.  You may need to run the 'Download Test Data | GPT' menu item.");
+
+            return strPath;
         }
 
         public void TestForward(uint nBatch, uint nHeads)
         {
-            string strTestDataPath = loadTestData1();
+            string strTestDataBasePath = getTestDataBasePath("q0.npy");
+            string strTestDataPath = getTestDataPath("mha", "15_loss.npy");
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION);
             p.multihead_attention_param.heads = nHeads;
@@ -216,10 +228,10 @@ namespace MyCaffe.test
             {
                 m_log.CHECK(layer.type == LayerParameter.LayerType.MULTIHEAD_ATTENTION, "The layer type is incorrect!");
 
-                m_blobQ.LoadFromNumpy(strTestDataPath + "q0.npy");
-                m_blobK.LoadFromNumpy(strTestDataPath + "k0.npy");
-                m_blobV.LoadFromNumpy(strTestDataPath + "v0.npy");
-                m_blobInput.LoadFromNumpy(strTestDataPath + "src_input.npy");
+                m_blobQ.LoadFromNumpy(strTestDataBasePath + "q0.npy");
+                m_blobK.LoadFromNumpy(strTestDataBasePath + "k0.npy");
+                m_blobV.LoadFromNumpy(strTestDataBasePath + "v0.npy");
+                m_blobInput.LoadFromNumpy(strTestDataBasePath + "src_input.npy");
                 m_blobMask.ReshapeLike(m_blobInput);
                 m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMask.mutable_gpu_data);
                 
@@ -230,8 +242,6 @@ namespace MyCaffe.test
                 BottomVec.Add(m_blobMask);
 
                 layer.Setup(BottomVec, TopVec);
-
-                strTestDataPath += "iter_0\\";
 
                 layer.blobs[0].LoadFromNumpy(strTestDataPath + "mh.w_q.weight.npy");
                 layer.blobs[1].LoadFromNumpy(strTestDataPath + "mh.w_q.bias.npy");
@@ -245,9 +255,7 @@ namespace MyCaffe.test
                 layer.Forward(BottomVec, TopVec);
 
                 m_blobY.LoadFromNumpy(strTestDataPath + "mh.12_output.npy");
-
-                // Now, check values
-                verify(TopVec[0], m_blobY, false, (typeof(T) == typeof(float)) ? 1e-12 : 3e-06);
+                m_log.CHECK(m_blobY.Compare(TopVec[0], m_blobWork, false, (typeof(T) == typeof(float)) ? 1e-12 : 3e-06), "The blobs are different.");
             }
             finally
             {
@@ -257,7 +265,8 @@ namespace MyCaffe.test
 
         public void TestBackward(uint nBatch, uint nHeads)
         {
-            string strTestDataPath = loadTestData1();
+            string strTestDataBasePath = getTestDataBasePath("q0.npy");
+            string strTestDataPath = getTestDataPath("mha", "15_loss.npy");
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION);
             p.multihead_attention_param.heads = nHeads;
@@ -271,10 +280,10 @@ namespace MyCaffe.test
             {
                 m_log.CHECK(layer.type == LayerParameter.LayerType.MULTIHEAD_ATTENTION, "The layer type is incorrect!");
 
-                m_blobQ.LoadFromNumpy(strTestDataPath + "q0.npy");
-                m_blobK.LoadFromNumpy(strTestDataPath + "k0.npy");
-                m_blobV.LoadFromNumpy(strTestDataPath + "v0.npy");
-                m_blobInput.LoadFromNumpy(strTestDataPath + "src_input.npy");
+                m_blobQ.LoadFromNumpy(strTestDataBasePath + "q0.npy");
+                m_blobK.LoadFromNumpy(strTestDataBasePath + "k0.npy");
+                m_blobV.LoadFromNumpy(strTestDataBasePath + "v0.npy");
+                m_blobInput.LoadFromNumpy(strTestDataBasePath + "src_input.npy");
                 m_blobMask.ReshapeLike(m_blobInput);
                 m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMask.mutable_gpu_data);
 
@@ -285,8 +294,6 @@ namespace MyCaffe.test
                 BottomVec.Add(m_blobMask);
 
                 layer.Setup(BottomVec, TopVec);
-
-                strTestDataPath += "iter_0\\";
 
                 layer.blobs[0].LoadFromNumpy(strTestDataPath + "mh.w_q.weight.npy");
                 layer.blobs[1].LoadFromNumpy(strTestDataPath + "mh.w_q.bias.npy");
@@ -309,9 +316,9 @@ namespace MyCaffe.test
                 m_blobVexp.LoadFromNumpy(strTestDataPath + "grad_mh.1_v.npy", true);
 
                 // Now, check values
-                verify(BottomVec[0], m_blobQexp, true);
-                verify(BottomVec[1], m_blobKexp, true);
-                verify(BottomVec[2], m_blobVexp, true);
+                m_log.CHECK(m_blobQexp.Compare(BottomVec[0], m_blobWork, true), "The grads are different.");
+                m_log.CHECK(m_blobKexp.Compare(BottomVec[1], m_blobWork, true), "The grads are different.");
+                m_log.CHECK(m_blobVexp.Compare(BottomVec[2], m_blobWork, true), "The grads are different.");
             }
             finally
             {
@@ -321,7 +328,8 @@ namespace MyCaffe.test
 
         public void TestBackward2(uint nBatch, uint nHeads)
         {
-            string strTestDataPath = loadTestData1();
+            string strTestDataBasePath = getTestDataBasePath("q0.npy");
+            string strTestDataPath = getTestDataPath("mha", "15_loss.npy");
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION);
             p.multihead_attention_param.heads = nHeads;
@@ -335,10 +343,10 @@ namespace MyCaffe.test
             {
                 m_log.CHECK(layer.type == LayerParameter.LayerType.MULTIHEAD_ATTENTION, "The layer type is incorrect!");
 
-                m_blobQ.LoadFromNumpy(strTestDataPath + "q0.npy");
-                m_blobK.LoadFromNumpy(strTestDataPath + "k0.npy");
-                m_blobV.LoadFromNumpy(strTestDataPath + "v0.npy");
-                m_blobInput.LoadFromNumpy(strTestDataPath + "src_input.npy");
+                m_blobQ.LoadFromNumpy(strTestDataBasePath + "q0.npy");
+                m_blobK.LoadFromNumpy(strTestDataBasePath + "k0.npy");
+                m_blobV.LoadFromNumpy(strTestDataBasePath + "v0.npy");
+                m_blobInput.LoadFromNumpy(strTestDataBasePath + "src_input.npy");
                 m_blobMask.ReshapeLike(m_blobInput);
                 m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMask.mutable_gpu_data);
 
@@ -349,8 +357,6 @@ namespace MyCaffe.test
                 BottomVec.Add(m_blobMask);
 
                 layer.Setup(BottomVec, TopVec);
-
-                strTestDataPath += "iter_0\\";
 
                 layer.blobs[0].LoadFromNumpy(strTestDataPath + "mh.w_q.weight.npy");
                 layer.blobs[1].LoadFromNumpy(strTestDataPath + "mh.w_q.bias.npy");
@@ -373,9 +379,9 @@ namespace MyCaffe.test
                 m_blobVexp.LoadFromNumpy(strTestDataPath + "grad_mh.1_v.npy", true);
 
                 // Now, check values
-                verify(BottomVec[0], m_blobQexp, true);
-                verify(BottomVec[1], m_blobKexp, true);
-                verify(BottomVec[2], m_blobVexp, true);
+                m_log.CHECK(m_blobQexp.Compare(BottomVec[0], m_blobWork, true), "The grads are different.");
+                m_log.CHECK(m_blobKexp.Compare(BottomVec[1], m_blobWork, true), "The grads are different.");
+                m_log.CHECK(m_blobVexp.Compare(BottomVec[2], m_blobWork, true), "The grads are different.");
             }
             finally
             {
@@ -385,8 +391,9 @@ namespace MyCaffe.test
 
         public void TestGradient(uint nBatch, uint nHeads, MultiheadAttentionParameter.WEIGHT_INIT init)
         {
-            string strTestDataPath = loadTestData1();
-            
+            string strTestDataBasePath = getTestDataBasePath("q0.npy");
+            string strTestDataPath = getTestDataPath("mha", "15_loss.npy");
+
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION);
             p.multihead_attention_param.weight_init = init;
             p.multihead_attention_param.heads = nHeads;
@@ -400,10 +407,10 @@ namespace MyCaffe.test
             {
                 m_log.CHECK(layer.type == LayerParameter.LayerType.MULTIHEAD_ATTENTION, "The layer type is incorrect!");
 
-                m_blobQ.LoadFromNumpy(strTestDataPath + "q0.npy");
-                m_blobK.LoadFromNumpy(strTestDataPath + "k0.npy");
-                m_blobV.LoadFromNumpy(strTestDataPath + "v0.npy");
-                m_blobInput.LoadFromNumpy(strTestDataPath + "src_input.npy");
+                m_blobQ.LoadFromNumpy(strTestDataBasePath + "q0.npy");
+                m_blobK.LoadFromNumpy(strTestDataBasePath + "k0.npy");
+                m_blobV.LoadFromNumpy(strTestDataBasePath + "v0.npy");
+                m_blobInput.LoadFromNumpy(strTestDataBasePath + "src_input.npy");
                 m_blobMask.ReshapeLike(m_blobInput);
                 m_cuda.sign(m_blobInput.count(), m_blobInput.gpu_data, m_blobMask.mutable_gpu_data);
 

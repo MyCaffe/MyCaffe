@@ -356,18 +356,31 @@ namespace MyCaffe.test
             }
         }
 
-        private string loadTestData1()
+
+        private string getTestDataPath(string strSubPath, string strFile)
         {
-            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\auto\\ln\\";
-            string strFileName = "_layernorm_test.zip";
-            string strTestPath = "test";
-            string strTestFile = "iter_0\\ln.1_x.npy";
-            return loadTestData(strPath, strFileName, strTestPath, strTestFile);
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\gpt\\test\\" + strSubPath + "\\iter_0\\";
+
+            if (!File.Exists(strPath + strFile))
+                throw new Exception("Could not find the test data file '" + strPath + strFile + "'.  You may need to run the 'Download Test Data | GPT' menu item.");
+
+            return strPath;
+        }
+
+        private string getTestDataBasePath(string strFile)
+        {
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\gpt\\test\\";
+
+            if (!File.Exists(strPath + strFile))
+                throw new Exception("Could not find the test data file '" + strPath + strFile + "'.  You may need to run the 'Download Test Data | GPT' menu item.");
+
+            return strPath;
         }
 
         public void TestForwardEx(bool bUseCuda)
         {
-            string strTestDataPath = loadTestData1();
+            string strTestDataBasePath = getTestDataBasePath("q0.npy");
+            string strTestDataPath = getTestDataPath("layernorm", "15_loss.npy");
             Layer<T> layer = null;
 
             try
@@ -380,10 +393,8 @@ namespace MyCaffe.test
 
                 m_log.CHECK(layer.type == LayerParameter.LayerType.LAYERNORM, "The layer type is incorrect!");
 
-                m_blob_bottom.LoadFromNumpy(strTestDataPath + "q0.npy");
+                m_blob_bottom.LoadFromNumpy(strTestDataBasePath + "q0.npy");
                 m_blob_top.SetData(0);
-
-                strTestDataPath += "iter_0\\";
 
                 layer.Setup(BottomVec, TopVec);
                 layer.Forward(BottomVec, TopVec);
@@ -395,8 +406,7 @@ namespace MyCaffe.test
 
                 m_blobVal.LoadFromNumpy(strTestDataPath + "ln.8_y.npy");
 
-                float fErr = 2e-5f;
-                verify(m_blob_top, m_blobVal, false, fErr);
+                m_log.CHECK(m_blobVal.Compare(m_blob_top, m_blobWork, false, 2e-05), "The blobs are different.");
 
                 sw.Start();
                 for (int i = 0; i < 100; i++)
@@ -417,7 +427,8 @@ namespace MyCaffe.test
 
         public void TestBackwardEx(bool bUseCuda)
         {
-            string strTestDataPath = loadTestData1();
+            string strTestDataBasePath = getTestDataBasePath("q0.npy");
+            string strTestDataPath = getTestDataPath("layernorm", "15_loss.npy");
             Layer<T> layer = null;
 
             try
@@ -430,10 +441,8 @@ namespace MyCaffe.test
 
                 m_log.CHECK(layer.type == LayerParameter.LayerType.LAYERNORM, "The layer type is incorrect!");
 
-                m_blob_bottom.LoadFromNumpy(strTestDataPath + "q0.npy");
+                m_blob_bottom.LoadFromNumpy(strTestDataBasePath + "q0.npy");
                 m_blob_top.SetData(0);
-
-                strTestDataPath += "iter_0\\";
 
                 layer.Setup(BottomVec, TopVec);
                 layer.Forward(BottomVec, TopVec);
@@ -450,8 +459,7 @@ namespace MyCaffe.test
 
                 m_blobVal.LoadFromNumpy(strTestDataPath + "grad_ln.1_x.npy", true);
 
-                float fErr = 1e-8f;
-                verify(m_blob_bottom, m_blobVal, true, fErr);
+                m_log.CHECK(m_blobVal.Compare(m_blob_bottom, m_blobWork, true, 1e-08), "The blobs are different.");
 
                 sw.Start();
                 for (int i = 0; i < 100; i++)
