@@ -75,6 +75,7 @@
             this.toolStripSeparator7 = new System.Windows.Forms.ToolStripSeparator();
             this.downloadTestDataToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.testDataDownloadTfTToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.testDataDownloadTFTDataOnlyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.localHelpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.onlineHelpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -101,7 +102,7 @@
             this.lblCudaPath = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
             this.m_bwLoadVOCDatabase = new System.ComponentModel.BackgroundWorker();
-            this.testDataDownloadTFTDataOnlyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.testDataDownloadGPTToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -457,7 +458,8 @@
             // 
             this.downloadTestDataToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.testDataDownloadTfTToolStripMenuItem,
-            this.testDataDownloadTFTDataOnlyToolStripMenuItem});
+            this.testDataDownloadTFTDataOnlyToolStripMenuItem,
+            this.testDataDownloadGPTToolStripMenuItem});
             this.downloadTestDataToolStripMenuItem.Name = "downloadTestDataToolStripMenuItem";
             this.downloadTestDataToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
             this.downloadTestDataToolStripMenuItem.Text = "Download Test Data";
@@ -468,6 +470,13 @@
             this.testDataDownloadTfTToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.testDataDownloadTfTToolStripMenuItem.Text = "TFT";
             this.testDataDownloadTfTToolStripMenuItem.Click += new System.EventHandler(this.testDownloadTestDataTftToolStripMenuItem_Click);
+            // 
+            // testDataDownloadTFTDataOnlyToolStripMenuItem
+            // 
+            this.testDataDownloadTFTDataOnlyToolStripMenuItem.Name = "testDataDownloadTFTDataOnlyToolStripMenuItem";
+            this.testDataDownloadTFTDataOnlyToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.testDataDownloadTFTDataOnlyToolStripMenuItem.Text = "TFT (Data Only)";
+            this.testDataDownloadTFTDataOnlyToolStripMenuItem.Click += new System.EventHandler(this.testDownloadTestDataTftDataOnlyToolStripMenuItem_Click);
             // 
             // helpToolStripMenuItem
             // 
@@ -668,12 +677,12 @@
             this.m_bwLoadVOCDatabase.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.m_bw_ProgressChanged);
             this.m_bwLoadVOCDatabase.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bw_RunWorkerCompleted);
             // 
-            // testDataDownloadTFTDataOnlyToolStripMenuItem
+            // testDataDownloadGPTToolStripMenuItem
             // 
-            this.testDataDownloadTFTDataOnlyToolStripMenuItem.Name = "testDataDownloadTFTDataOnlyToolStripMenuItem";
-            this.testDataDownloadTFTDataOnlyToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.testDataDownloadTFTDataOnlyToolStripMenuItem.Text = "TFT (Data Only)";
-            this.testDataDownloadTFTDataOnlyToolStripMenuItem.Click += new System.EventHandler(this.testDownloadTestDataTftDataOnlyToolStripMenuItem_Click);
+            this.testDataDownloadGPTToolStripMenuItem.Name = "testDataDownloadGPTToolStripMenuItem";
+            this.testDataDownloadGPTToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.testDataDownloadGPTToolStripMenuItem.Text = "GPT";
+            this.testDataDownloadGPTToolStripMenuItem.Click += new System.EventHandler(this.testDataDownloadGPTToolStripMenuItem_Click);
             // 
             // FormMain
             // 
@@ -773,6 +782,7 @@
         private System.Windows.Forms.ToolStripMenuItem downloadTestDataToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem testDataDownloadTfTToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem testDataDownloadTFTDataOnlyToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem testDataDownloadGPTToolStripMenuItem;
     }
 }
 
