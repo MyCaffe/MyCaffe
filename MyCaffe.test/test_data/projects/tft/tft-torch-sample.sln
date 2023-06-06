@@ -1,0 +1,39 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.33502.453
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "tft-torch-sample", "tft-torch-sample\tft-torch-sample.pyproj", "{A1C91CF2-2968-45C7-AAA2-00CC1091C062}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyCaffeConnector", "MyCaffeConnector\MyCaffeConnector.csproj", "{214B7A52-0880-4332-A12C-0798B0B86EF7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OptimizerLib", "OptimizerLib\OptimizerLib\OptimizerLib.csproj", "{29A9053D-61CF-4AF6-A586-E05213415C29}"
+EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "tft_data", "tft_data\tft_data.pyproj", "{DED50B90-21D3-4FDB-A656-7E84F81AB01E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A1C91CF2-2968-45C7-AAA2-00CC1091C062}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1C91CF2-2968-45C7-AAA2-00CC1091C062}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{214B7A52-0880-4332-A12C-0798B0B86EF7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{214B7A52-0880-4332-A12C-0798B0B86EF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{214B7A52-0880-4332-A12C-0798B0B86EF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{214B7A52-0880-4332-A12C-0798B0B86EF7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{29A9053D-61CF-4AF6-A586-E05213415C29}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{29A9053D-61CF-4AF6-A586-E05213415C29}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{29A9053D-61CF-4AF6-A586-E05213415C29}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{29A9053D-61CF-4AF6-A586-E05213415C29}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DED50B90-21D3-4FDB-A656-7E84F81AB01E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DED50B90-21D3-4FDB-A656-7E84F81AB01E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BA0BE40F-3818-4AF2-9CD6-F09AECB84D54}
+	EndGlobalSection
+EndGlobal
