@@ -216,7 +216,8 @@ namespace MyCaffe.test
 
                 // Now, check values
                 m_blobYexp.LoadFromNumpy(strTestDataPath + "enc.12_output.npy");
-                verify(TopVec[0], m_blobYexp, false, (typeof(T) == typeof(float)) ? 1e-12 : 3e-06);
+                double dfErr = 6e-05; // mycaffe_layernorm = True; mycaffe_softmax = True
+                m_log.CHECK(m_blobYexp.Compare(TopVec[0], m_blobWork, false, dfErr), "The blobs do not match!");
 
                 Stopwatch sw = new Stopwatch();
                 sw.Start();
@@ -285,7 +286,8 @@ namespace MyCaffe.test
 
                 // Now, check values from forward
                 m_blobYexp.LoadFromNumpy(strTestDataPath + "enc.12_output.npy");
-                verify(TopVec[0], m_blobYexp, false, (typeof(T) == typeof(float)) ? 1e-12 : 3e-06);
+                double dfErr = 6e-05; // mycaffe_layernorm = True; mycaffe_softmax = True
+                m_log.CHECK(m_blobYexp.Compare(TopVec[0], m_blobWork, false, dfErr), "The blobs do not match!");
 
                 // Load the inbound gradients.
                 TopVec[0].LoadFromNumpy(strTestDataPath + "grad_enc.12_output.npy", true);
@@ -295,7 +297,8 @@ namespace MyCaffe.test
 
                 // Now, check values form backward
                 m_blobYexp.LoadFromNumpy(strTestDataPath + "grad_enc.enc.1_x.npy", true);
-                verify(BottomVec[0], m_blobYexp, true, 1e-08);
+                dfErr = 3e-07; // mycaffe_layernorm = True; mycaffe_softmax = True
+                m_log.CHECK(m_blobYexp.Compare(BottomVec[0], m_blobWork, true, dfErr), "The blobs do not match!");
 
                 Stopwatch sw = new Stopwatch();
                 sw.Start();

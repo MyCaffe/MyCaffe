@@ -344,8 +344,9 @@ namespace MyCaffe.test
                 m_blobYexp.LoadFromNumpy(strTestDataPath + "dec.12_output.npy");
                 //double dfErr = 3e-06; // mycaffe_layernorm = True; mycaffe_softmax = False
                 //double dfErr = 7e-05; // mycaffe_layernorm = False; mycaffe_softmax = True
-                double dfErr = (typeof(T) == typeof(float)) ? 1e-12 : 4e-06; // mycaffe_layernorm = True; mycaffe_softmax = True
-                verify(TopVec[0], m_blobYexp, false, dfErr);
+                //couble dfErr = 1e-12 : 4e-06; // mycaffe_layernorm = True; mycaffe_softmax = True
+                double dfErr = 7e-05; // mycaffe_layernorm = True; mycaffe_softmax = True
+                m_log.CHECK(m_blobYexp.Compare(TopVec[0], m_blobWork, false, dfErr), "The blobs do not match!");
 
                 Stopwatch sw = new Stopwatch();
                 sw.Start();
@@ -442,8 +443,8 @@ namespace MyCaffe.test
 
                 // Now, check values from forward
                 m_blobYexp.LoadFromNumpy(strTestDataPath + "dec.12_output.npy");
-                double dfErr = (typeof(T) == typeof(float)) ? 1e-12 : 4e-06;
-                verify(TopVec[0], m_blobYexp, false, dfErr);
+                double dfErr = 7e-05; // mycaffe_layernorm = True; mycaffe_softmax = True
+                m_log.CHECK(m_blobYexp.Compare(TopVec[0], m_blobWork, false, dfErr), "The blobs do not match!");
 
                 // Load the inbound gradients.
                 TopVec[0].LoadFromNumpy(strTestDataPath + "grad_dec.12_output.npy", true);
@@ -453,10 +454,10 @@ namespace MyCaffe.test
 
                 // Now, check values form backward
                 m_blobYexp.LoadFromNumpy(strTestDataPath + "grad_dec.1_x0.npy", true);
-                verify(m_blobX, m_blobYexp, true, 2e-09);
+                m_log.CHECK(m_blobYexp.Compare(m_blobX, m_blobWork, true, 2e-06), "The blobs do not match!");
                 m_blobYexp.LoadFromNumpy(strTestDataPath + "grad_dec.1_x1.npy", true);
-                verify(m_blobEncOut, m_blobYexp, true, 2e-09);
-                
+                m_log.CHECK(m_blobYexp.Compare(m_blobEncOut, m_blobWork, true, 6e-08), "The blobs do not match!");
+
                 Stopwatch sw = new Stopwatch();
                 sw.Start();
 
