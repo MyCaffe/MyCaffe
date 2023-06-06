@@ -45,9 +45,20 @@
     <Compile Include="test_1a_numericalinputtransformation.py" />
     <Compile Include="test_layernorm2.py" />
     <Compile Include="tft_helper.py" />
+    <Compile Include="tft_torch\adamEx.py" />
+    <Compile Include="tft_torch\adamw.py" />
+    <Compile Include="tft_torch\base_blocks.py" />
+    <Compile Include="tft_torch\loss.py" />
+    <Compile Include="tft_torch\mycaffe.py" />
+    <Compile Include="tft_torch\tft.py" />
+    <Compile Include="tft_torch\visualize.py" />
+    <Compile Include="tft_torch\__init__.py" />
     <Compile Include="training_electricity.py" />
     <Compile Include="training_flavorita.py" />
     <Compile Include="utility.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="tft_torch\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
