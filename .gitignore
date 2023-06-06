@@ -48,6 +48,7 @@ build/
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
 
+*.npy
 *.h5
 *_i.c
 *_p.c
