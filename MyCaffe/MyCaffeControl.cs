@@ -3161,22 +3161,36 @@ namespace MyCaffe
 
                 if (m_net != null && m_bOwnRunNet)
                 {
-                    m_log.CHECK_EQ(m_solver.net.learnable_parameters.Count, m_net.learnable_parameters.Count, "The number of learnable parameters in the run net does not match the training net!");
-
                     try
                     {
-                        for (int i = 0; i < m_solver.net.learnable_parameters.Count; i++)
+                        if (m_solver.net.learnable_parameters.Count == m_net.learnable_parameters.Count)
                         {
-                            Blob<T> b = m_solver.net.learnable_parameters[i];
-                            Blob<T> bRun = m_net.learnable_parameters[i];
+                            for (int i = 0; i < m_solver.net.learnable_parameters.Count; i++)
+                            {
+                                Blob<T> b = m_solver.net.learnable_parameters[i];
+                                Blob<T> bRun = m_net.learnable_parameters[i];
 
-                            m_log.CHECK(b.Name == bRun.Name, "The learnable parameter names do not match!");
-                            bRun.CopyFrom(b, false, true);
+                                m_log.CHECK(b.Name == bRun.Name, "The learnable parameter names do not match!");
+                                bRun.CopyFrom(b, false, true);
+                            }
+                        }
+                        else
+                        {
+                            for (int i = 0; i < m_net.learnable_parameters.Count; i++)
+                            {
+                                Blob<T> bRun = m_net.learnable_parameters[i];
+                                Blob<T> b = m_solver.net.FindBlob(bRun.Name);
+
+                                if (b == null)
+                                    m_log.FAIL("Could not find the run blob '" + bRun.Name + "' in the solver net!");
+
+                                bRun.CopyFrom(b, false, true);
+                            }
                         }
                     }
                     catch (Exception excpt)
                     {
-                        m_log.WriteLine("WARING: " + excpt.Message + ", attempting to load with legacy (slower method)...");
+                        m_log.WriteLine("WARNING: " + excpt.Message + ", attempting to load with legacy (slower method)...");
                         loadWeights(m_net, m_solver.net.SaveWeights(m_persist));
                     }
                 }
