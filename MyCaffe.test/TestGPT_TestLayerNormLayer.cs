@@ -362,7 +362,7 @@ namespace MyCaffe.test
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\gpt\\test\\" + strSubPath + "\\iter_0\\";
 
             if (!File.Exists(strPath + strFile))
-                throw new Exception("Could not find the test data file '" + strPath + strFile + "'.  You may need to run the 'Download Test Data | GPT' menu item.");
+                throw new Exception("Could not find the test data file '" + strPath + strFile + "'.  You may need to run the 'Test|Download Test Data | GPT' menu item.");
 
             return strPath;
         }
@@ -372,7 +372,7 @@ namespace MyCaffe.test
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\gpt\\test\\";
 
             if (!File.Exists(strPath + strFile))
-                throw new Exception("Could not find the test data file '" + strPath + strFile + "'.  You may need to run the 'Download Test Data | GPT' menu item.");
+                throw new Exception("Could not find the test data file '" + strPath + strFile + "'.  You may need to run the 'Test|Download Test Data | GPT' menu item.");
 
             return strPath;
         }
