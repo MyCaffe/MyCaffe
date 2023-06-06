@@ -18,7 +18,7 @@ using System.IO.Compression;
 namespace MyCaffe.test
 {
     [TestClass]
-    public class TestMultiheadAttentionLayer
+    public class TestGPT_TestMultiheadAttentionLayer
     {
         [TestMethod]
         public void TestForward()

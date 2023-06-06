@@ -28,7 +28,7 @@ using System.Diagnostics;
 namespace MyCaffe.test
 {
     [TestClass]
-    public class TestTokenizedDataPairsLayer
+    public class TestGPT_TokenizedDataPairsLayer
     {
         [TestMethod]
         public void TestForwardEnFrCharacter()

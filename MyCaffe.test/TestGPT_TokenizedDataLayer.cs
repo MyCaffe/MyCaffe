@@ -23,7 +23,7 @@ using MyCaffe.param.gpt;
 namespace MyCaffe.test
 {
     [TestClass]
-    public class TestTokenizedDataLayer
+    public class TestGPT_TokenizedDataLayer
     {
         [TestMethod]
         public void TestForwardInput()

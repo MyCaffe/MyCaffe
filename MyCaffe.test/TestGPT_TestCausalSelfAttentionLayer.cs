@@ -16,7 +16,7 @@ using MyCaffe.layers.gpt;
 namespace MyCaffe.test
 {
     [TestClass]
-    public class TestCausalSelfAttentionLayer
+    public class TestGPT_TestCausalSelfAttentionLayer
     {
         [TestMethod]
         public void TestForward()

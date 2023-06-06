@@ -22,7 +22,7 @@ using System.Net;
 namespace MyCaffe.test
 {
     [TestClass]
-    public class TestTransformerBlockLayer
+    public class TestGPT_TransformerBlockLayer
     {
         [TestMethod]
         public void TestTrain()
