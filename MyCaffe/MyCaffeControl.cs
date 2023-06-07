@@ -3163,6 +3163,8 @@ namespace MyCaffe
                 {
                     try
                     {
+                        int nCopyCount = 0;
+
                         if (m_solver.net.learnable_parameters.Count == m_net.learnable_parameters.Count)
                         {
                             for (int i = 0; i < m_solver.net.learnable_parameters.Count; i++)
@@ -3171,7 +3173,8 @@ namespace MyCaffe
                                 Blob<T> bRun = m_net.learnable_parameters[i];
 
                                 m_log.CHECK(b.Name == bRun.Name, "The learnable parameter names do not match!");
-                                bRun.CopyFrom(b, false, true);
+                                if (bRun.CopyFrom(b, false, true) != 0)
+                                    nCopyCount++;
                             }
                         }
                         else
@@ -3187,6 +3190,9 @@ namespace MyCaffe
                                 bRun.CopyFrom(b, false, true);
                             }
                         }
+
+                        if (nCopyCount == 0)
+                            loadWeights(m_net, m_solver.net.SaveWeights(m_persist));
                     }
                     catch (Exception excpt)
                     {
