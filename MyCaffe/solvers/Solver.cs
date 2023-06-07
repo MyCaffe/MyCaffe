@@ -110,6 +110,7 @@ namespace MyCaffe.solvers
         ulong m_lWorkspaceSizeInBytes = 0;
         bool m_bFirstNanError = true;
         List<double> m_rgAverageAccuracyWindow = null;
+        bool m_bForceTest = false;
 
         /// <summary>
         /// The OnStart event fires at the start of each training iteration.
@@ -467,6 +468,8 @@ namespace MyCaffe.solvers
                 m_log.WriteLine("Solver scaffolding done.");
 
             Reset();
+
+            m_log.WriteLine("INFO: Solver created for " + m_param.eval_type.ToString() + " (NOTE: Detection is only for SSD models).", true);
         }
 
         /// <summary>
@@ -1275,7 +1278,8 @@ namespace MyCaffe.solvers
                 if (m_evtForceTest == null)
                     return false;
 
-                return m_evtForceTest.WaitOne(0);
+                m_bForceTest = m_evtForceTest.WaitOne(0);
+                return m_bForceTest;
             }
         }
 
@@ -1593,6 +1597,12 @@ namespace MyCaffe.solvers
         public double TestClassification(int nIterationOverride = -1, int nTestNetId = 0)
         {
             bool bDisplay = (is_root_solver && m_param.display > 0 && (m_nIter % m_param.display) == 0) ? true : false;
+
+            if (m_bForceTest)
+            {
+                m_bForceTest = false;
+                bDisplay = true;
+            }
 
             if (bDisplay)
                 m_log.WriteLine("Iteration " + m_nIter.ToString() + ", Testing net (#" + nTestNetId.ToString() + ")");
