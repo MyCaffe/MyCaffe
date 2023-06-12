@@ -951,9 +951,9 @@ namespace MyCaffe
 
             if (!ds.IsModelData)
             {
-                nH = ds.TestingSource.ImageHeight;
-                nW = ds.TestingSource.ImageWidth;
-                nC = ds.TestingSource.ImageChannels;
+                nH = ds.TestingSource.Height;
+                nW = ds.TestingSource.Width;
+                nC = ds.TestingSource.Channels;
             }
 
             List<int> rgShape = new List<int>() { 1, nC, nH, nW };
@@ -1066,7 +1066,7 @@ namespace MyCaffe
         /// <param name="strStage">Optionally, specifies a stage under which to load the model.</param>
         /// <param name="bEnableMemTrace">Optionally, specifies to enable the memory tracing (only available in debug builds).</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        public bool Load(Phase phase, ProjectEx p, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabaseBase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false)
+        public bool Load(Phase phase, ProjectEx p, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabaseBase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false)
         {
             try
             {
@@ -1099,9 +1099,9 @@ namespace MyCaffe
 
                     //              m_imgDb.UpdateLabelBoosts(p.ID, p.Dataset.TrainingSource.ID);
 
-                    Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> selMethod = MyCaffeImageDatabase.GetSelectionMethod(p);
-                    IMGDB_LABEL_SELECTION_METHOD lblSel = selMethod.Item1;
-                    IMGDB_IMAGE_SELECTION_METHOD imgSel = selMethod.Item2;
+                    Tuple<DB_LABEL_SELECTION_METHOD, DB_ITEM_SELECTION_METHOD> selMethod = MyCaffeImageDatabase.GetSelectionMethod(p);
+                    DB_LABEL_SELECTION_METHOD lblSel = selMethod.Item1;
+                    DB_ITEM_SELECTION_METHOD imgSel = selMethod.Item2;
 
                     if (labelSelectionOverride.HasValue)
                         lblSel = labelSelectionOverride.Value;
@@ -1110,7 +1110,7 @@ namespace MyCaffe
                         imgSel = imageSelectionOverride.Value;
 
                     m_imgDb.SetSelectionMethod(lblSel, imgSel);
-                    m_imgDb.QueryImageMean(p.Dataset.TrainingSource.ID);
+                    m_imgDb.QueryItemMean(p.Dataset.TrainingSource.ID);
                     m_log.WriteLine("Images loaded.");
 
                     if (p.TargetDatasetID > 0)
@@ -1124,7 +1124,7 @@ namespace MyCaffe
                         else
                             ((IXImageDatabase2)m_imgDb).LoadDatasetByID(dsTarget.ID);
 
-                        m_imgDb.QueryImageMean(dsTarget.TrainingSource.ID);
+                        m_imgDb.QueryItemMean(dsTarget.TrainingSource.ID);
                         m_log.WriteLine("Target dataset images loaded.");
                     }
 
@@ -1198,10 +1198,10 @@ namespace MyCaffe
 
                 if (tp != null && !p.Dataset.IsModelData && !p.Dataset.IsGym)
                 {
-                    SimpleDatum sdMean = (m_imgDb == null) ? null : m_imgDb.QueryImageMean(m_dataSet.TrainingSource.ID);
-                    int nC = m_project.Dataset.TrainingSource.ImageChannels;
-                    int nH = m_project.Dataset.TrainingSource.ImageHeight;
-                    int nW = m_project.Dataset.TrainingSource.ImageWidth;
+                    SimpleDatum sdMean = (m_imgDb == null) ? null : m_imgDb.QueryItemMean(m_dataSet.TrainingSource.ID);
+                    int nC = m_project.Dataset.TrainingSource.Channels;
+                    int nH = m_project.Dataset.TrainingSource.Height;
+                    int nW = m_project.Dataset.TrainingSource.Width;
 
                     if (sdMean != null)
                     {
@@ -1270,7 +1270,7 @@ namespace MyCaffe
         /// <param name="strStage">Optionally, specifies a stage under which to load the model.</param>
         /// <param name="bEnableMemTrace">Optionally, specifies to enable the memory tracing (only available in debug builds).</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        public bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabaseBase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false)
+        public bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabaseBase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false)
         {
             try
             {
@@ -1306,9 +1306,9 @@ namespace MyCaffe
                     if (m_evtCancel.WaitOne(0))
                         return false;
 
-                    Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> selMethod = MyCaffeImageDatabase.GetSelectionMethod(m_settings);
-                    IMGDB_LABEL_SELECTION_METHOD lblSel = selMethod.Item1;
-                    IMGDB_IMAGE_SELECTION_METHOD imgSel = selMethod.Item2;
+                    Tuple<DB_LABEL_SELECTION_METHOD, DB_ITEM_SELECTION_METHOD> selMethod = MyCaffeImageDatabase.GetSelectionMethod(m_settings);
+                    DB_LABEL_SELECTION_METHOD lblSel = selMethod.Item1;
+                    DB_ITEM_SELECTION_METHOD imgSel = selMethod.Item2;
 
                     if (labelSelectionOverride.HasValue)
                         lblSel = labelSelectionOverride.Value;
@@ -1317,7 +1317,7 @@ namespace MyCaffe
                         imgSel = imageSelectionOverride.Value;
 
                     m_imgDb.SetSelectionMethod(lblSel, imgSel);
-                    m_imgDb.QueryImageMean(m_dataSet.TrainingSource.ID);
+                    m_imgDb.QueryItemMean(m_dataSet.TrainingSource.ID);
                     m_log.WriteLine("Images loaded.", true);
 
                     DatasetDescriptor dsTarget = findDataset(solverParam.net_param, m_dataSet);
@@ -1330,7 +1330,7 @@ namespace MyCaffe
                         else
                             ((IXImageDatabase2)m_imgDb).LoadDatasetByID(dsTarget.ID);
 
-                        m_imgDb.QueryImageMean(dsTarget.TrainingSource.ID);
+                        m_imgDb.QueryItemMean(dsTarget.TrainingSource.ID);
                         m_log.WriteLine("Target dataset images loaded.", true);
                     }
 
@@ -1378,7 +1378,7 @@ namespace MyCaffe
 
                 if (tp != null)
                 {
-                    SimpleDatum sdMean = (m_imgDb == null) ? null : m_imgDb.QueryImageMean(m_dataSet.TrainingSource.ID);
+                    SimpleDatum sdMean = (m_imgDb == null) ? null : m_imgDb.QueryItemMean(m_dataSet.TrainingSource.ID);
                     int nC = 0;
                     int nH = 0;
                     int nW = 0;
@@ -1391,9 +1391,9 @@ namespace MyCaffe
                     }
                     else if (m_project != null)
                     {
-                        nC = m_project.Dataset.TrainingSource.ImageChannels;
-                        nH = m_project.Dataset.TrainingSource.ImageHeight;
-                        nW = m_project.Dataset.TrainingSource.ImageWidth;
+                        nC = m_project.Dataset.TrainingSource.Channels;
+                        nH = m_project.Dataset.TrainingSource.Height;
+                        nW = m_project.Dataset.TrainingSource.Width;
                     }
 
                     if (nC == 0 || nH == 0 || nW == 0)
@@ -1972,7 +1972,7 @@ namespace MyCaffe
         /// <param name="dtImageStartTime">Optionally, specifies the image start time (default = null).  Note either the 'nImageStartIdx' or 'dtImageStartTime' may be used, but not both.</param>
         /// <param name="dfThreshold">Optionally, specifies a threshold where the winning selection must also be above the threshold in score.</param>
         /// <returns>The list of SimpleDatum and their ResultCollections (after running the model on each) is returned.</returns>
-        public List<Tuple<SimpleDatum, ResultCollection>> TestMany(int nCount, bool bOnTrainingSet, bool bOnTargetSet = false, IMGDB_IMAGE_SELECTION_METHOD imgSelMethod = IMGDB_IMAGE_SELECTION_METHOD.RANDOM, int nImageStartIdx = 0, DateTime? dtImageStartTime = null, double? dfThreshold = null)
+        public List<Tuple<SimpleDatum, ResultCollection>> TestMany(int nCount, bool bOnTrainingSet, bool bOnTargetSet = false, DB_ITEM_SELECTION_METHOD imgSelMethod = DB_ITEM_SELECTION_METHOD.RANDOM, int nImageStartIdx = 0, DateTime? dtImageStartTime = null, double? dfThreshold = null)
         {
             Dictionary<int, int> rgMissedThreshold = new Dictionary<int, int>();
 
@@ -1983,14 +1983,14 @@ namespace MyCaffe
             m_log.CHECK_GT(nCount, 0, "You must select at least 1 image to train on!");
 
             Stopwatch sw = new Stopwatch();
-            IMGDB_LABEL_SELECTION_METHOD? lblSelMethod = null;
+            DB_LABEL_SELECTION_METHOD? lblSelMethod = null;
 
-            if (imgSelMethod == IMGDB_IMAGE_SELECTION_METHOD.NONE)
-                lblSelMethod = IMGDB_LABEL_SELECTION_METHOD.NONE;
+            if (imgSelMethod == DB_ITEM_SELECTION_METHOD.NONE)
+                lblSelMethod = DB_LABEL_SELECTION_METHOD.NONE;
 
-            Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> sel = m_imgDb.GetSelectionMethod();
-            if ((sel.Item2 & IMGDB_IMAGE_SELECTION_METHOD.BOOST) == IMGDB_IMAGE_SELECTION_METHOD.BOOST)
-                imgSelMethod |= IMGDB_IMAGE_SELECTION_METHOD.BOOST;
+            Tuple<DB_LABEL_SELECTION_METHOD, DB_ITEM_SELECTION_METHOD> sel = m_imgDb.GetSelectionMethod();
+            if ((sel.Item2 & DB_ITEM_SELECTION_METHOD.BOOST) == DB_ITEM_SELECTION_METHOD.BOOST)
+                imgSelMethod |= DB_ITEM_SELECTION_METHOD.BOOST;
 
             int nSrcId = (bOnTrainingSet) ? m_dataSet.TrainingSource.ID : m_dataSet.TestingSource.ID;
             string strSrc = (bOnTrainingSet) ? m_dataSet.TrainingSourceName : m_dataSet.TestingSourceName;
@@ -2039,7 +2039,7 @@ namespace MyCaffe
             if (dtImageStartTime.HasValue && dtImageStartTime.Value > DateTime.MinValue)
             {
                 m_log.WriteLine("INFO: Starting test many at images with time " + dtImageStartTime.Value.ToString() + " or later...");
-                rgImg = m_imgDb.GetImagesFromTime(nSrcId, dtImageStartTime.Value, nCount);
+                rgImg = m_imgDb.GetItemsFromTime(nSrcId, dtImageStartTime.Value, nCount);
                 if (nCount > rgImg.Count)
                     nCount = rgImg.Count;
 
@@ -2072,11 +2072,11 @@ namespace MyCaffe
                     }
 
 
-                    sd = (rgImg != null) ? rgImg[i] : m_imgDb.QueryImage(nSrcId, nImageStartIdx + i, lblSelMethod, imgSelMethod, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+                    sd = (rgImg != null) ? rgImg[i] : m_imgDb.QueryItem(nSrcId, nImageStartIdx + i, lblSelMethod, imgSelMethod, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
 
-                    if (sd.Height != m_dataSet.TrainingSource.ImageHeight || sd.Width != m_dataSet.TestingSource.ImageWidth)
+                    if (sd.Height != m_dataSet.TrainingSource.Height || sd.Width != m_dataSet.TestingSource.Width)
                     {
-                        m_log.WriteLine("WARNING: Image size mismatch!  Current image size " + sd.Width.ToString() + " x " + sd.Height.ToString() + " does not match the dataset image size " + m_dataSet.TrainingSource.ImageWidth.ToString() + " x " + m_dataSet.TrainingSource.ImageHeight.ToString() + "!");
+                        m_log.WriteLine("WARNING: Image size mismatch!  Current image size " + sd.Width.ToString() + " x " + sd.Height.ToString() + " does not match the dataset image size " + m_dataSet.TrainingSource.Width.ToString() + " x " + m_dataSet.TrainingSource.Height.ToString() + "!");
                         continue;
                     }
 
@@ -2337,7 +2337,7 @@ namespace MyCaffe
         /// <returns>The result of the run is returned.</returns>
         public ResultCollection Run(int nImageIdx, bool bPad = true)
         {
-            SimpleDatum sd = m_imgDb.QueryImage(m_dataSet.TrainingSource.ID, nImageIdx, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+            SimpleDatum sd = m_imgDb.QueryItem(m_dataSet.TrainingSource.ID, nImageIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
             m_dataTransformer.TransformLabel(sd);
             return Run(sd, true, bPad);
         }
@@ -2354,7 +2354,7 @@ namespace MyCaffe
 
             foreach (int nImageIdx in rgImageIdx)
             {
-                SimpleDatum sd = m_imgDb.QueryImage(m_dataSet.TrainingSource.ID, nImageIdx, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+                SimpleDatum sd = m_imgDb.QueryItem(m_dataSet.TrainingSource.ID, nImageIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
                 m_dataTransformer.TransformLabel(sd);
                 rgSd.Add(sd);
             }
@@ -2376,7 +2376,7 @@ namespace MyCaffe
 
             foreach (int nImageIdx in rgImageIdx)
             {
-                SimpleDatum sd = m_imgDb.QueryImage(m_dataSet.TrainingSource.ID, nImageIdx, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+                SimpleDatum sd = m_imgDb.QueryItem(m_dataSet.TrainingSource.ID, nImageIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
                 m_dataTransformer.TransformLabel(sd);
                 rgSd.Add(sd);
             }
@@ -2641,12 +2641,12 @@ namespace MyCaffe
 
             List<ResultCollection> rgFinalResults = new List<ResultCollection>();
             int nBatchSize = blob.num;
-            int nChannels = (m_dataSet != null) ? m_dataSet.TestingSource.ImageChannels : m_loadToRunShape.dim[1];
+            int nChannels = (m_dataSet != null) ? m_dataSet.TestingSource.Channels : m_loadToRunShape.dim[1];
             if (blob.channels != nChannels)
-                throw new Exception("The blob channels must match those of the testing dataset which has channels = " + m_dataSet.TestingSource.ImageChannels.ToString());
+                throw new Exception("The blob channels must match those of the testing dataset which has channels = " + m_dataSet.TestingSource.Channels.ToString());
 
-            int nHeight = (m_dataSet != null) ? m_dataSet.TestingSource.ImageHeight : m_loadToRunShape.dim[2];
-            int nWidth = (m_dataSet != null) ? m_dataSet.TestingSource.ImageWidth : m_loadToRunShape.dim[3];
+            int nHeight = (m_dataSet != null) ? m_dataSet.TestingSource.Height : m_loadToRunShape.dim[2];
+            int nWidth = (m_dataSet != null) ? m_dataSet.TestingSource.Width : m_loadToRunShape.dim[3];
 
             if (m_dataTransformer.param.resize_param != null && m_dataTransformer.param.resize_param.Active)
             {
@@ -3016,7 +3016,7 @@ namespace MyCaffe
         public Bitmap GetTestImage(Phase phase, out int nLabel, out string strLabel)
         {
             int nSrcId = (phase == Phase.TRAIN) ? m_dataSet.TrainingSource.ID : m_dataSet.TestingSource.ID;
-            SimpleDatum sd = m_imgDb.QueryImage(nSrcId, 0, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+            SimpleDatum sd = m_imgDb.QueryItem(nSrcId, 0, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.RANDOM, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
             m_dataTransformer.TransformLabel(sd);
 
             nLabel = sd.Label;
@@ -3037,7 +3037,7 @@ namespace MyCaffe
         public Bitmap GetTestImage(Phase phase, int nLabel)
         {
             int nSrcId = (phase == Phase.TRAIN) ? m_dataSet.TrainingSource.ID : m_dataSet.TestingSource.ID;
-            SimpleDatum sd = m_imgDb.QueryImage(nSrcId, 0, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM, nLabel, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+            SimpleDatum sd = m_imgDb.QueryItem(nSrcId, 0, DB_LABEL_SELECTION_METHOD.RANDOM, DB_ITEM_SELECTION_METHOD.RANDOM, nLabel, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
             m_dataTransformer.TransformLabel(sd);
 
             return new Bitmap(ImageData.GetImage(new Datum(sd), null));
@@ -3055,7 +3055,7 @@ namespace MyCaffe
         /// <returns>The image queried is returned.</returns>
         public Bitmap GetTargetImage(int nSrcId, int nIdx, out int nLabel, out string strLabel, out byte[] rgCriteria, out SimpleDatum.DATA_FORMAT fmtCriteria)
         {
-            SimpleDatum sd = m_imgDb.QueryImage(nSrcId, nIdx, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+            SimpleDatum sd = m_imgDb.QueryItem(nSrcId, nIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
             m_dataTransformer.TransformLabel(sd);
 
             nLabel = sd.Label;
@@ -3081,7 +3081,7 @@ namespace MyCaffe
         /// <returns>The image queried is returned.</returns>
         public Bitmap GetTargetImage(int nImageID, out int nLabel, out string strLabel, out byte[] rgCriteria, out SimpleDatum.DATA_FORMAT fmtCriteria)
         {
-            SimpleDatum d = m_imgDb.GetImage(nImageID, m_dataSet.TrainingSource.ID, m_dataSet.TestingSource.ID);
+            SimpleDatum d = m_imgDb.GetItem(nImageID, m_dataSet.TrainingSource.ID, m_dataSet.TestingSource.ID);
 
             nLabel = d.Label;
             strLabel = m_imgDb.GetLabelName(m_dataSet.TestingSource.ID, nLabel);
@@ -3113,7 +3113,7 @@ namespace MyCaffe
             string strSrc = m_solver.net.GetDataSource();
             int nSrcId = m_imgDb.GetSourceID(strSrc);
 
-            return m_imgDb.GetImageMean(nSrcId);
+            return m_imgDb.GetItemMean(nSrcId);
         }
 
         /// <summary>

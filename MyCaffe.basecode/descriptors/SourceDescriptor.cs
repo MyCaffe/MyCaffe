@@ -14,9 +14,9 @@ namespace MyCaffe.basecode.descriptors
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class SourceDescriptor : BaseDescriptor
     {
-        int m_nImageHt;
-        int m_nImageWd;
-        int m_nImageCh;
+        int m_nHt;
+        int m_nWd;
+        int m_nCh;
         bool m_bIsRealData;
         int m_nImageCount;
         int m_nInactiveCount;
@@ -44,9 +44,9 @@ namespace MyCaffe.basecode.descriptors
         public SourceDescriptor(int nID, string strName, int nWd, int nHt, int nCh, bool bIsRealData, bool bSaveImagesToFile, int nCopyOfSourceId = 0, string strOwner = null, int nCount = 0, List<LabelDescriptor> rgLabels = null, string strLabelCounts = null)
             : base(nID, strName, strOwner)
         {
-            m_nImageHt = nHt;
-            m_nImageWd = nWd;
-            m_nImageCh = nCh;
+            m_nHt = nHt;
+            m_nWd = nWd;
+            m_nCh = nCh;
             m_bIsRealData = bIsRealData;
             m_nImageCount = nCount;
             m_strLabelCounts = strLabelCounts;
@@ -70,7 +70,7 @@ namespace MyCaffe.basecode.descriptors
         /// </summary>
         /// <param name="s">Specifies another SourceDescriptor used to create this one.</param>
         public SourceDescriptor(SourceDescriptor s)
-            : this(s.ID, s.Name, s.ImageWidth, s.ImageHeight, s.ImageChannels, s.IsRealData, s.SaveImagesToFile, s.CopyOfSourceID, s.Owner, s.ImageCount, s.Labels, s.LabelCountsAsText)
+            : this(s.ID, s.Name, s.Width, s.Height, s.Channels, s.IsRealData, s.SaveImagesToFile, s.CopyOfSourceID, s.Owner, s.ImageCount, s.Labels, s.LabelCountsAsText)
         {
             m_colParameters = new descriptors.ParameterDescriptorCollection();
             m_nInactiveCount = s.m_nInactiveCount;
@@ -88,9 +88,9 @@ namespace MyCaffe.basecode.descriptors
         {
             base.Copy(sd);
 
-            m_nImageCh = sd.m_nImageCh;
-            m_nImageHt = sd.m_nImageHt;
-            m_nImageWd = sd.m_nImageWd;
+            m_nCh = sd.m_nCh;
+            m_nHt = sd.m_nHt;
+            m_nWd = sd.m_nWd;
             m_bIsRealData = sd.m_bIsRealData;
             m_nImageCount = sd.m_nImageCount;
             m_nInactiveCount = sd.m_nInactiveCount;
@@ -120,9 +120,9 @@ namespace MyCaffe.basecode.descriptors
         /// <param name="nWidth">Specifies the new width size.</param>
         public void Resize(int nChannels, int nHeight, int nWidth)
         {
-            m_nImageCh = nChannels;
-            m_nImageHt = nHeight;
-            m_nImageWd = nWidth;
+            m_nCh = nChannels;
+            m_nHt = nHeight;
+            m_nWd = nWidth;
         }
 
         /// <summary>
@@ -158,28 +158,28 @@ namespace MyCaffe.basecode.descriptors
         /// <summary>
         /// Returns the height of each data item in the data source.
         /// </summary>
-        [Description("Specifies the image height in pixels.")]
-        public int ImageHeight
+        [Description("Specifies the item height in pixels.")]
+        public int Height
         {
-            get { return m_nImageHt; }
+            get { return m_nHt; }
         }
 
         /// <summary>
         /// Returns the width of each data item in the data source.
         /// </summary>
-        [Description("Specifies the image width in pixels.")]
-        public int ImageWidth
+        [Description("Specifies the item width in pixels.")]
+        public int Width
         {
-            get { return m_nImageWd; }
+            get { return m_nWd; }
         }
 
         /// <summary>
-        /// Returns the image colors - 1 channel = black/white, 3 channels = RGB color.
+        /// Returns the item colors - 1 channel = black/white, 3 channels = RGB color.
         /// </summary>
-        [Description("Specifies the image colors - 1 channel = black/white, 3 channels = RGB color.")]
-        public int ImageChannels
+        [Description("Specifies the item colors - 1 channel = black/white, 3 channels = RGB color.")]
+        public int Channels
         {
-            get { return m_nImageCh; }
+            get { return m_nCh; }
         }
 
         /// <summary>
