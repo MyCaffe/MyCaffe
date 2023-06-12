@@ -187,7 +187,7 @@ namespace MyCaffe.test
             rgWait.AddRange(m_evtCancel.Handles);
 
             m_rgevtCancel = rgWait.ToArray();
-            m_settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+            m_settings.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
             m_settings.GpuIds = nDeviceID.ToString();
             m_rgGpu.Add(nDeviceID);
         }

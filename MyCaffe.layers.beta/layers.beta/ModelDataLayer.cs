@@ -55,9 +55,12 @@ namespace MyCaffe.layers.beta
         /// </param>
         /// <param name="db">Specifies the external database to use.</param>
         /// <param name="evtCancel">Specifies the CancelEvent used to cancel any pre-fetching operations.</param>
-        public ModelDataLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXImageDatabaseBase db, CancelEvent evtCancel)
+        public ModelDataLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXDatabaseBase db, CancelEvent evtCancel)
             : base(cuda, log, p)
         {
+            if (db.GetVersion() != DB_VERSION.IMG_V2)
+                throw new Exception("The ModelDataLayer requires the ImageDatabase V2 or higher.");
+
             m_db = db as IXImageDatabase2;
             if (m_db == null)
                 throw new Exception("The ModelDataLayer requires the ImageDatabase V2 or higher.");

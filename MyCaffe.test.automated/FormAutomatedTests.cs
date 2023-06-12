@@ -15,10 +15,10 @@ namespace MyCaffe.test.automated
         string m_strPath;
         string m_strCulture;
         int m_nGpuID = 0;
-        IMGDB_VERSION m_imgDbVer = IMGDB_VERSION.DEFAULT;
+        DB_VERSION m_imgDbVer = DB_VERSION.DEFAULT;
         string m_strCudaPath = "";
 
-        public FormAutomatedTests(string strPath, int nGpuID, IMGDB_VERSION imgDbVer, string strCulture, string strCudaPath)
+        public FormAutomatedTests(string strPath, int nGpuID, DB_VERSION imgDbVer, string strCulture, string strCudaPath)
         {
             m_strCulture = strCulture;
             m_strPath = strPath;

@@ -223,7 +223,7 @@ namespace MyCaffe.test
             m_settings.EnableLabelBoosting = false;
             m_settings.EnablePairInputSelection = false;
             m_settings.EnableRandomInputSelection = false;
-            m_settings.ImageDbLoadDataCriteria = true;  // Required, for Annotation Data is stored in the Data Criteria.
+            m_settings.ItemDbLoadDataCriteria = true;  // Required, for Annotation Data is stored in the Data Criteria.
             m_settings.SkipMeanCheck = true;
 
             m_db = createImageDb(null);
@@ -329,7 +329,7 @@ namespace MyCaffe.test
 
         private void initDb(string strDs)
         {
-            if (m_parent.db.GetVersion() == IMGDB_VERSION.V1)
+            if (m_parent.db.GetVersion() == DB_VERSION.IMG_V1)
                 ((MyCaffeImageDatabase)m_parent.db).OutputLog = m_log;
             else
                 ((MyCaffeImageDatabase2)m_parent.db).OutputLog = m_log;

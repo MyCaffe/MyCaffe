@@ -105,7 +105,7 @@ namespace MyCaffe.test
         {
             CancelEvent evtCancel = new CancelEvent();
             SettingsCaffe settings = new SettingsCaffe();
-            settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ON_DEMAND;
+            settings.DbLoadMethod = DB_LOAD_METHOD.LOAD_ON_DEMAND;
             settings.EnableRandomInputSelection = true;
             settings.GpuIds = getGpuIds();
 

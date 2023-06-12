@@ -298,7 +298,7 @@ namespace MyCaffe.test
             SettingsCaffe settings = new SettingsCaffe();
             Stopwatch sw = new Stopwatch();
 
-            settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+            settings.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
             m_db.InitializeWithDsName1(settings, "MNIST");
             DatasetDescriptor ds = m_db.GetDatasetByName("MNIST");
             m_nSrcId = ds.TrainingSource.ID;
@@ -399,7 +399,7 @@ namespace MyCaffe.test
             SettingsCaffe settings = new SettingsCaffe();
             Stopwatch sw = new Stopwatch();
 
-            settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+            settings.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
             m_db.InitializeWithDsName1(settings, "MNIST");
             DatasetDescriptor ds = m_db.GetDatasetByName("MNIST");
             m_nSrcId = ds.TrainingSource.ID;
@@ -514,7 +514,7 @@ namespace MyCaffe.test
             SettingsCaffe settings = new SettingsCaffe();
             Stopwatch sw = new Stopwatch();
 
-            settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+            settings.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
             m_db.InitializeWithDsName1(settings, "MNIST");
             DatasetDescriptor ds = m_db.GetDatasetByName("MNIST");
             m_nSrcId = ds.TrainingSource.ID;
@@ -629,7 +629,7 @@ namespace MyCaffe.test
             SettingsCaffe settings = new SettingsCaffe();
             Stopwatch sw = new Stopwatch();
 
-            settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+            settings.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
             m_db.InitializeWithDsName1(settings, "MNIST");
             DatasetDescriptor ds = m_db.GetDatasetByName("MNIST");
             m_nSrcId = ds.TrainingSource.ID;

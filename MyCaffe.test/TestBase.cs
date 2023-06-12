@@ -25,7 +25,7 @@ namespace MyCaffe.test
         string m_strName = "";
         static bool m_bResetOnCleanUp = false;
         protected bool m_bHalf = false;
-        IMGDB_VERSION m_imgDbVer = IMGDB_VERSION.DEFAULT;
+        DB_VERSION m_imgDbVer = DB_VERSION.DEFAULT;
         static string m_strCudaPath = "";
         static string m_strCulture = "";
         static CultureInfo m_defaultCulture = null;
@@ -66,7 +66,7 @@ namespace MyCaffe.test
                         int nVal;
 
                         if (int.TryParse(strImgDbVer, out nVal) && (nVal == 0 || nVal == 1))
-                            m_imgDbVer = (IMGDB_VERSION)nVal;
+                            m_imgDbVer = (DB_VERSION)nVal;
                     }
                 }
             }
@@ -149,7 +149,7 @@ namespace MyCaffe.test
 
         public IXImageDatabaseBase createImageDb(Log log, int nSeed = 0)
         {
-            if (m_imgDbVer == IMGDB_VERSION.V1)
+            if (m_imgDbVer == DB_VERSION.IMG_V1)
                 return new MyCaffeImageDatabase(log, "default", nSeed);
             else
                 return new MyCaffeImageDatabase2(log, "default", nSeed);

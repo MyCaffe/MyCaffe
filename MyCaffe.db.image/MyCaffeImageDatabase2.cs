@@ -89,9 +89,9 @@ namespace MyCaffe.db.image
         /// Returns the version of the MyCaffe Image Database being used.
         /// </summary>
         /// <returns>Returns the version.</returns>
-        public IMGDB_VERSION GetVersion()
+        public DB_VERSION GetVersion()
         {
-            return IMGDB_VERSION.V2;
+            return DB_VERSION.IMG_V2;
         }
 
         #region Initialization and Cleanup
@@ -158,8 +158,8 @@ namespace MyCaffe.db.image
             m_labelSelectionMethod = selMethod.Item1;
             m_imageSelectionMethod = selMethod.Item2;
             m_dfSuperBoostProbability = s.SuperBoostProbability;
-            m_loadMethod = s.ImageDbLoadMethod;
-            m_nLoadLimit = s.ImageDbLoadLimit;
+            m_loadMethod = s.DbLoadMethod;
+            m_nLoadLimit = s.DbLoadLimit;
             m_bSkipMeanCheck = s.SkipMeanCheck;
 
             if (m_loadMethod == DB_LOAD_METHOD.LOAD_EXTERNAL)
@@ -198,7 +198,7 @@ namespace MyCaffe.db.image
                 {
                     m_evtInitializing.Set();
 
-                    m_factory.SetLoadingParameters(s.ImageDbLoadDataCriteria, s.ImageDbLoadDebugData);
+                    m_factory.SetLoadingParameters(s.ItemDbLoadDataCriteria, s.ItemDbLoadDebugData);
 
                     DatasetDescriptor ds = m_factory.LoadDataset(nDataSetID);
                     if (ds == null)
@@ -234,7 +234,7 @@ namespace MyCaffe.db.image
                     if (m_log != null)
                         m_log.WriteLine("Loading dataset '" + ds.Name + "'...");
 
-                    long lQueryHandle = ds0.Initialize(ds, rgAbort.ToArray(), nPadW, nPadH, m_log, m_loadMethod, m_bSkipMeanCheck, m_nLoadLimit, s.ImageDbAutoRefreshScheduledUpdateInMs, s.ImageDbAutoRefreshScheduledReplacementPercent, s.VeriyDatasetOnLoad);
+                    long lQueryHandle = ds0.Initialize(ds, rgAbort.ToArray(), nPadW, nPadH, m_log, m_loadMethod, m_bSkipMeanCheck, m_nLoadLimit, s.DbAutoRefreshScheduledUpdateInMs, s.DbAutoRefreshScheduledReplacementPercent, s.VeriyDatasetOnLoad);
                     if (lQueryHandle == 0)
                     {
                         col.Dispose();
@@ -911,7 +911,7 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Returns whether or not the image data criteria is loaded with each image.
         /// </summary>
-        public bool GetLoadImageDataCriteria()
+        public bool GetLoadItemDataCriteria()
         {
             return m_factory.LoadDataCriteria;
         }
@@ -919,7 +919,7 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Returns whether or not the image debug data is loaded with each image.
         /// </summary>
-        public bool GetLoadImageDebugData()
+        public bool GetLoadItemDebugData()
         {
             return m_factory.LoadDebugData;
         }

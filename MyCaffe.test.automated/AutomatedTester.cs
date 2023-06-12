@@ -29,7 +29,7 @@ namespace MyCaffe.test.automated
         TestingActiveKernelHandleGet m_activeKernelHandle = new TestingActiveKernelHandleGet();
         FileInfo m_fiPath;
         int m_nGpuId = 0;
-        IMGDB_VERSION m_imgDbVer = IMGDB_VERSION.DEFAULT;
+        DB_VERSION m_imgDbVer = DB_VERSION.DEFAULT;
         string m_strCudaPath = "";
         string m_strCulture = "en-US";
         bool m_bSkip = false;
@@ -286,7 +286,7 @@ namespace MyCaffe.test.automated
             set { m_nGpuId = value; }
         }
 
-        public IMGDB_VERSION ImageDbVersion
+        public DB_VERSION ImageDbVersion
         {
             get { return m_imgDbVer; }
             set { m_imgDbVer = value; }
@@ -750,7 +750,7 @@ namespace MyCaffe.test.automated
             return null;
         }
 
-        public void Run(AutoResetEvent evtCancel, bool bSkip, bool bServerMode = false, int nGpuId = 0, IMGDB_VERSION nImgDbVer = IMGDB_VERSION.DEFAULT, string strCudaPath = "", string strCulture = "en-US")
+        public void Run(AutoResetEvent evtCancel, bool bSkip, bool bServerMode = false, int nGpuId = 0, DB_VERSION nImgDbVer = DB_VERSION.DEFAULT, string strCudaPath = "", string strCulture = "en-US")
         {
             m_testTask = Task.Factory.StartNew(new Action<object>(testThread), new Tuple<AutoResetEvent, bool, bool, int, int, string, string>(evtCancel, bSkip, bServerMode, nGpuId, (int)nImgDbVer, strCudaPath, strCulture), TaskCreationOptions.LongRunning);
         }

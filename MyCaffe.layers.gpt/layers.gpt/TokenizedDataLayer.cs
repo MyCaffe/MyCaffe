@@ -49,7 +49,7 @@ namespace MyCaffe.layers.gpt
         /// </param>
         /// <param name="db">Specifies the external database to use.</param>
         /// <param name="evtCancel">Specifies the CancelEvent used to cancel any pre-fetching operations.</param>
-        public TokenizedDataLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXImageDatabaseBase db, CancelEvent evtCancel)
+        public TokenizedDataLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXDatabaseBase db, CancelEvent evtCancel)
             : base(cuda, log, p)
         {
             m_evtCancel = evtCancel;

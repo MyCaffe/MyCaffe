@@ -84,7 +84,7 @@ namespace MyCaffe.test.automated
             get { return m_bw.IsBusy; }
         }
 
-        public void Run(string strTestDllFile, bool bResetAllTests, int nGpuId = 0, IMGDB_VERSION imgDbVer = IMGDB_VERSION.DEFAULT, string strCulture = null, string strCudaPath = "")
+        public void Run(string strTestDllFile, bool bResetAllTests, int nGpuId = 0, DB_VERSION imgDbVer = DB_VERSION.DEFAULT, string strCulture = null, string strCudaPath = "")
         {
             m_evtCancel.Reset();
             m_evtGlobalCancel.Reset();
@@ -171,11 +171,11 @@ namespace MyCaffe.test.automated
         string m_strTestDllFile;
         bool m_bResetAllTests = false;
         int m_nGpuId = 0;
-        IMGDB_VERSION m_imgDbVer = IMGDB_VERSION.DEFAULT;
+        DB_VERSION m_imgDbVer = DB_VERSION.DEFAULT;
         string m_strCudaPath;
         string m_strCulture;
 
-        public AutoTestParams(string strTestDllFile, bool bResetAllTests, int nGpuId = 0, IMGDB_VERSION imgDbVer = IMGDB_VERSION.DEFAULT, string strCulture = null, string strCudaPath = "")
+        public AutoTestParams(string strTestDllFile, bool bResetAllTests, int nGpuId = 0, DB_VERSION imgDbVer = DB_VERSION.DEFAULT, string strCulture = null, string strCudaPath = "")
         {
             m_strTestDllFile = strTestDllFile;
             m_bResetAllTests = bResetAllTests;
@@ -190,7 +190,7 @@ namespace MyCaffe.test.automated
             get { return m_nGpuId; }
         }
 
-        public IMGDB_VERSION ImageDbVersion
+        public DB_VERSION ImageDbVersion
         {
             get { return m_imgDbVer; }
         }

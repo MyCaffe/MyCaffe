@@ -3790,8 +3790,8 @@ namespace MyCaffe.test
 
             IXImageDatabaseBase db = createImageDb(m_log);
             SettingsCaffe s = new SettingsCaffe();
-            s.ImageDbLoadLimit = 0;
-            s.ImageDbLoadMethod = loadMethod;
+            s.DbLoadLimit = 0;
+            s.DbLoadMethod = loadMethod;
 
             db.InitializeWithDsName1(s, "MNIST");
             db.LoadDatasetByName1("CIFAR-10");

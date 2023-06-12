@@ -25,9 +25,9 @@ namespace MyCaffe.layers.gpt
         /// <param name="log">Specifies the output log.</param>
         /// <param name="p">Specifies the layer parameter.</param>
         /// <param name="evtCancel">Specifies the cancellation event.</param>
-        /// <param name="imgDb">Specifies an interface to the image database, who's use is optional.</param>
+        /// <param name="db">Specifies an interface to the in-memory database, who's use is optional.</param>
         /// <returns>If supported, the layer is returned, otherwise <i>null</i> is returned.</returns>
-        public Layer<double> CreateDouble(CudaDnn<double> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXImageDatabaseBase imgDb)
+        public Layer<double> CreateDouble(CudaDnn<double> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXDatabaseBase db)
         {
             switch (p.type)
             {
@@ -50,10 +50,10 @@ namespace MyCaffe.layers.gpt
                     return new TransformerBlockLayer<double>(cuda, log, p);
                     
                 case LayerParameter.LayerType.TOKENIZED_DATA:
-                    return new TokenizedDataLayer<double>(cuda, log, p, imgDb, evtCancel);
+                    return new TokenizedDataLayer<double>(cuda, log, p, db, evtCancel);
 
                 case LayerParameter.LayerType.TOKENIZED_DATA_PAIRS:
-                    return new TokenizedDataPairsLayer<double>(cuda, log, p, imgDb, evtCancel);
+                    return new TokenizedDataPairsLayer<double>(cuda, log, p, db, evtCancel);
                     
                 case LayerParameter.LayerType.NLL_LOSS:
                     return new NLLLossLayer<double>(cuda, log, p);
@@ -70,9 +70,9 @@ namespace MyCaffe.layers.gpt
         /// <param name="log">Specifies the output log.</param>
         /// <param name="p">Specifies the layer parameter.</param>
         /// <param name="evtCancel">Specifies the cancellation event.</param>
-        /// <param name="imgDb">Specifies an interface to the image database, who's use is optional.</param>
+        /// <param name="db">Specifies an interface to the in-memory database, who's use is optional.</param>
         /// <returns>If supported, the layer is returned, otherwise <i>null</i> is returned.</returns>
-        public Layer<float> CreateSingle(CudaDnn<float> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXImageDatabaseBase imgDb)
+        public Layer<float> CreateSingle(CudaDnn<float> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXDatabaseBase db)
         {
             switch (p.type)
             {
@@ -95,10 +95,10 @@ namespace MyCaffe.layers.gpt
                     return new TransformerBlockLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.TOKENIZED_DATA:
-                    return new TokenizedDataLayer<float>(cuda, log, p, imgDb, evtCancel);
+                    return new TokenizedDataLayer<float>(cuda, log, p, db, evtCancel);
 
                 case LayerParameter.LayerType.TOKENIZED_DATA_PAIRS:
-                    return new TokenizedDataPairsLayer<float>(cuda, log, p, imgDb, evtCancel);
+                    return new TokenizedDataPairsLayer<float>(cuda, log, p, db, evtCancel);
 
                 case LayerParameter.LayerType.NLL_LOSS:
                     return new NLLLossLayer<float>(cuda, log, p);

@@ -452,7 +452,7 @@ namespace MyCaffe.app
             menu.Checked = true;
         }
 
-        private IMGDB_VERSION getImageDbVersion()
+        private DB_VERSION getImageDbVersion()
         {
             int nChecked = 0;
             foreach (ToolStripMenuItem menu in imageDBToolStripMenuItem.DropDownItems)
@@ -463,7 +463,7 @@ namespace MyCaffe.app
                 nChecked++;
             }
 
-            return (IMGDB_VERSION)nChecked;
+            return (DB_VERSION)nChecked;
         }
 
         private string getCulture()
@@ -1149,10 +1149,10 @@ namespace MyCaffe.app
                         {
                             case COMMAND.CREATE:
                                 SettingsCaffe settings = new SettingsCaffe();
-                                settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+                                settings.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
                                 settings.EnableRandomInputSelection = true;
                                 settings.GpuIds = getGpu().ToString();
-                                settings.ImageDbVersion = getImageDbVersion();
+                                settings.DbVersion = getImageDbVersion();
 
                                 mycaffe = createMyCaffe(settings, log, m_evtCaffeCancel);
 
@@ -1185,7 +1185,7 @@ namespace MyCaffe.app
                             case COMMAND.TRAIN:
                                 mycaffe.Train(5000);
                                 m_rgTrainedWeights = mycaffe.GetWeights();
-                                m_sdImageMean = mycaffe.GetImageMean();
+                                m_sdImageMean = mycaffe.GetItemMean();
                                 bw.ReportProgress(0, new ProgressInfo(0, 0, "MyCaffe Training completed.", null, true));
                                 break;
 
@@ -1470,7 +1470,7 @@ namespace MyCaffe.app
         {
             CancelEvent evtCancel = new CancelEvent();
             SettingsCaffe settings = new SettingsCaffe();
-            settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ON_DEMAND;
+            settings.DbLoadMethod = DB_LOAD_METHOD.LOAD_ON_DEMAND;
             settings.EnableRandomInputSelection = true;
             settings.GpuIds = "0";
 
@@ -1507,10 +1507,10 @@ namespace MyCaffe.app
         {
             MyCaffeControl<float> mycaffe = null;
             SettingsCaffe settings = new SettingsCaffe();
-            settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ON_DEMAND;
+            settings.DbLoadMethod = DB_LOAD_METHOD.LOAD_ON_DEMAND;
             settings.EnableRandomInputSelection = true;
             settings.GpuIds = getGpu().ToString();
-            settings.ImageDbVersion = getImageDbVersion();
+            settings.DbVersion = getImageDbVersion();
 
             log.WriteLine("Running AlexNet-Cifar test on GPU " + settings.GpuIds + "...");
 
@@ -1530,10 +1530,10 @@ namespace MyCaffe.app
             MyCaffeControl<float> mycaffe = null;
             SettingsCaffe settings = new SettingsCaffe();
             int nGpuId = getGpu();
-            settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+            settings.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
             settings.EnableRandomInputSelection = true;
             settings.GpuIds = nGpuId.ToString();
-            settings.ImageDbVersion = getImageDbVersion();
+            settings.DbVersion = getImageDbVersion();
 
             log.WriteLine("Running ResNet56-Cifar test on GPU " + settings.GpuIds + "...");
 

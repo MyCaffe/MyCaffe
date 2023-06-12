@@ -88,9 +88,9 @@ namespace MyCaffe.db.image
         /// Returns the version of the MyCaffe Image Database being used.
         /// </summary>
         /// <returns>Returns the version.</returns>
-        public IMGDB_VERSION GetVersion()
+        public DB_VERSION GetVersion()
         {
-            return IMGDB_VERSION.V1;
+            return DB_VERSION.IMG_V1;
         }
 
         private void init(string strId = "", int nSeed = 0)
@@ -239,7 +239,7 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Returns whether or not the image data criteria is loaded with each image.
         /// </summary>
-        public bool GetLoadImageDataCriteria()
+        public bool GetLoadItemDataCriteria()
         {
             return m_factory.LoadDataCriteria;
         }
@@ -247,7 +247,7 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Returns whether or not the image debug data is loaded with each image.
         /// </summary>
-        public bool GetLoadImageDebugData()
+        public bool GetLoadItemDebugData()
         {
             return m_factory.LoadDebugData;
         }
@@ -367,8 +367,8 @@ namespace MyCaffe.db.image
             m_labelSelectionMethod = selMethod.Item1;
             m_imageSelectionMethod = selMethod.Item2;
             m_dfSuperBoostProbability = s.SuperBoostProbability;
-            m_loadMethod = s.ImageDbLoadMethod;
-            m_nLoadLimit = s.ImageDbLoadLimit;
+            m_loadMethod = s.DbLoadMethod;
+            m_nLoadLimit = s.DbLoadLimit;
             m_bSkipMeanCheck = s.SkipMeanCheck;
 
             if (m_loadMethod == DB_LOAD_METHOD.LOAD_EXTERNAL)
@@ -407,7 +407,7 @@ namespace MyCaffe.db.image
                 {
                     m_evtInitializing.Set();
 
-                    m_factory.SetLoadingParameters(s.ImageDbLoadDataCriteria, s.ImageDbLoadDebugData);
+                    m_factory.SetLoadingParameters(s.ItemDbLoadDataCriteria, s.ItemDbLoadDebugData);
 
                     DatasetDescriptor ds = m_factory.LoadDataset(nDataSetID);
                     if (ds == null)

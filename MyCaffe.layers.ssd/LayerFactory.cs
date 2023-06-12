@@ -29,14 +29,14 @@ namespace MyCaffe.layers.ssd
         /// <param name="log">Specifies the output log.</param>
         /// <param name="p">Specifies the layer parameter.</param>
         /// <param name="evtCancel">Specifies the cancellation event.</param>
-        /// <param name="imgDb">Specifies an interface to the image database, who's use is optional.</param>
+        /// <param name="db">Specifies an interface to the in-memory database, who's use is optional.</param>
         /// <returns>If supported, the layer is returned, otherwise <i>null</i> is returned.</returns>
-        public Layer<double> CreateDouble(CudaDnn<double> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXImageDatabaseBase imgDb)
+        public Layer<double> CreateDouble(CudaDnn<double> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXDatabaseBase db)
         {
             switch (p.type)
             {
                 case LayerParameter.LayerType.ANNOTATED_DATA:
-                    return new AnnotatedDataLayer<double>(cuda, log, p, imgDb, evtCancel);
+                    return new AnnotatedDataLayer<double>(cuda, log, p, db, evtCancel);
 
                 case LayerParameter.LayerType.DETECTION_EVALUATE:
                     return new DetectionEvaluateLayer<double>(cuda, log, p);
@@ -60,7 +60,7 @@ namespace MyCaffe.layers.ssd
                     return new SmoothL1LossLayer<double>(cuda, log, p);
 
                 case LayerParameter.LayerType.VIDEO_DATA:
-                    return new VideoDataLayer<double>(cuda, log, p, imgDb, evtCancel);
+                    return new VideoDataLayer<double>(cuda, log, p, db, evtCancel);
 
                 default:
                     return null;
@@ -74,14 +74,14 @@ namespace MyCaffe.layers.ssd
         /// <param name="log">Specifies the output log.</param>
         /// <param name="p">Specifies the layer parameter.</param>
         /// <param name="evtCancel">Specifies the cancellation event.</param>
-        /// <param name="imgDb">Specifies an interface to the image database, who's use is optional.</param>
+        /// <param name="db">Specifies an interface to the in-memory database, who's use is optional.</param>
         /// <returns>If supported, the layer is returned, otherwise <i>null</i> is returned.</returns>
-        public Layer<float> CreateSingle(CudaDnn<float> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXImageDatabaseBase imgDb)
+        public Layer<float> CreateSingle(CudaDnn<float> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXDatabaseBase db)
         {
             switch (p.type)
             {
                 case LayerParameter.LayerType.ANNOTATED_DATA:
-                    return new AnnotatedDataLayer<float>(cuda, log, p, imgDb, evtCancel);
+                    return new AnnotatedDataLayer<float>(cuda, log, p, db, evtCancel);
 
                 case LayerParameter.LayerType.DETECTION_EVALUATE:
                     return new DetectionEvaluateLayer<float>(cuda, log, p);
@@ -105,7 +105,7 @@ namespace MyCaffe.layers.ssd
                     return new SmoothL1LossLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.VIDEO_DATA:
-                    return new VideoDataLayer<float>(cuda, log, p, imgDb, evtCancel);
+                    return new VideoDataLayer<float>(cuda, log, p, db, evtCancel);
 
                 default:
                     return null;

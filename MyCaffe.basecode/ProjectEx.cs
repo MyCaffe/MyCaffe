@@ -657,7 +657,7 @@ namespace MyCaffe.basecode
         /// </summary>
         public DB_LOAD_METHOD ImageLoadMethod
         {
-            get { return m_project.Settings.ImageDbLoadMethod; }
+            get { return m_project.Settings.DbLoadMethod; }
         }
 
         /// <summary>
@@ -665,7 +665,7 @@ namespace MyCaffe.basecode
         /// </summary>
         public int ImageLoadLimit
         {
-            get { return m_project.Settings.ImageDbLoadLimit; }
+            get { return m_project.Settings.DbLoadLimit; }
         }
 
         /// <summary>
@@ -673,7 +673,7 @@ namespace MyCaffe.basecode
         /// </summary>
         public int ImageLoadLimitRefreshPeriod
         {
-            get { return m_project.Settings.ImageDbAutoRefreshScheduledUpdateInMs; }
+            get { return m_project.Settings.DbAutoRefreshScheduledUpdateInMs; }
         }
 
         /// <summary>
@@ -681,7 +681,7 @@ namespace MyCaffe.basecode
         /// </summary>
         public double ImageLoadLimitRefreshPercent
         {
-            get { return m_project.Settings.ImageDbAutoRefreshScheduledReplacementPercent; }
+            get { return m_project.Settings.DbAutoRefreshScheduledReplacementPercent; }
         }
 
         /// <summary>

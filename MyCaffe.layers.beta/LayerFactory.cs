@@ -19,9 +19,9 @@ namespace MyCaffe.layers.beta
         /// <param name="log">Specifies the output log.</param>
         /// <param name="p">Specifies the layer parameter.</param>
         /// <param name="evtCancel">Specifies the cancellation event.</param>
-        /// <param name="imgDb">Specifies an interface to the image database, who's use is optional.</param>
+        /// <param name="db">Specifies an interface to the in-memory database, who's use is optional.</param>
         /// <returns>If supported, the layer is returned, otherwise <i>null</i> is returned.</returns>
-        public Layer<double> CreateDouble(CudaDnn<double> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXImageDatabaseBase imgDb)
+        public Layer<double> CreateDouble(CudaDnn<double> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXDatabaseBase db)
         {
             switch (p.type)
             {
@@ -74,7 +74,7 @@ namespace MyCaffe.layers.beta
                     return new Normalization1Layer<double>(cuda, log, p);
 
                 case LayerParameter.LayerType.MODEL_DATA:
-                    return new ModelDataLayer<double>(cuda, log, p, imgDb, evtCancel);
+                    return new ModelDataLayer<double>(cuda, log, p, db, evtCancel);
 
                 case LayerParameter.LayerType.SERF:
                     return new SerfLayer<double>(cuda, log, p);
@@ -112,9 +112,9 @@ namespace MyCaffe.layers.beta
         /// <param name="log">Specifies the output log.</param>
         /// <param name="p">Specifies the layer parameter.</param>
         /// <param name="evtCancel">Specifies the cancellation event.</param>
-        /// <param name="imgDb">Specifies an interface to the image database, who's use is optional.</param>
+        /// <param name="db">Specifies an interface to the in-memory database, who's use is optional.</param>
         /// <returns>If supported, the layer is returned, otherwise <i>null</i> is returned.</returns>
-        public Layer<float> CreateSingle(CudaDnn<float> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXImageDatabaseBase imgDb)
+        public Layer<float> CreateSingle(CudaDnn<float> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXDatabaseBase db)
         {
             switch (p.type)
             {
@@ -167,7 +167,7 @@ namespace MyCaffe.layers.beta
                     return new Normalization1Layer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.MODEL_DATA:
-                    return new ModelDataLayer<float>(cuda, log, p, imgDb, evtCancel);
+                    return new ModelDataLayer<float>(cuda, log, p, db, evtCancel);
 
                 case LayerParameter.LayerType.SERF:
                     return new SerfLayer<float>(cuda, log, p);

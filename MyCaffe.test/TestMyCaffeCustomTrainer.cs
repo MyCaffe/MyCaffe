@@ -386,7 +386,7 @@ namespace MyCaffe.test
             : base(strName, null, nDeviceID)
         {
             m_engine = engine;
-            m_settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+            m_settings.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
             m_settings.GpuIds = nDeviceID.ToString();
         }
 

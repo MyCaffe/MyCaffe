@@ -885,7 +885,7 @@ namespace MyCaffe.test
 
             IXImageDatabaseBase db = createImageDb(m_log);
 
-            m_parent.Settings.ImageDbLoadMethod = loadMethod;
+            m_parent.Settings.DbLoadMethod = loadMethod;
             db.InitializeWithDsId1(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
 
@@ -945,7 +945,7 @@ namespace MyCaffe.test
             p.data_param.backend = DataParameter.DB.IMAGEDB;
 
             IXImageDatabaseBase db = createImageDb(m_log);
-            m_parent.Settings.ImageDbLoadMethod = loadMethod;
+            m_parent.Settings.DbLoadMethod = loadMethod;
             db.InitializeWithDsId1(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
 
@@ -1009,7 +1009,7 @@ namespace MyCaffe.test
             p.data_param.backend = DataParameter.DB.IMAGEDB;
 
             IXImageDatabaseBase db = createImageDb(m_log);
-            m_parent.Settings.ImageDbLoadMethod = loadMethod;
+            m_parent.Settings.DbLoadMethod = loadMethod;
             db.InitializeWithDsId1(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
 
@@ -1076,7 +1076,7 @@ namespace MyCaffe.test
             p.transform_param.random_seed = 1701;
 
             IXImageDatabaseBase db = createImageDb(m_log);
-            m_parent.Settings.ImageDbLoadMethod = loadMethod;
+            m_parent.Settings.DbLoadMethod = loadMethod;
             db.InitializeWithDsId1(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
 
@@ -1154,7 +1154,7 @@ namespace MyCaffe.test
             p.transform_param.mirror = true;
             p.transform_param.random_seed = 1701;
 
-            m_parent.Settings.ImageDbLoadMethod = loadMethod;
+            m_parent.Settings.DbLoadMethod = loadMethod;
             IXImageDatabaseBase db = createImageDb(m_log);
             db.InitializeWithDsId1(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
@@ -1254,7 +1254,7 @@ namespace MyCaffe.test
             p.transform_param.crop_size = 1;
             p.transform_param.mirror = true;
 
-            m_parent.Settings.ImageDbLoadMethod = loadMethod;
+            m_parent.Settings.DbLoadMethod = loadMethod;
             IXImageDatabaseBase db = createImageDb(m_log);
             db.InitializeWithDsId1(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
@@ -1929,7 +1929,7 @@ namespace MyCaffe.test
                 p.data_param.enable_random_selection = true;
                 p.data_param.backend = DataParameter.DB.IMAGEDB;
 
-                m_parent.Settings.ImageDbLoadMethod = loadMethod;
+                m_parent.Settings.DbLoadMethod = loadMethod;
 
 
                 // Verify no label mapping by default
@@ -2032,7 +2032,7 @@ namespace MyCaffe.test
                 p.data_param.data_debug_param.debug_save_path = getTestPath("\\MyCaffe\\test_data\\test", true, true);
                 p.data_param.data_debug_param.iterations = int.MaxValue;
 
-                m_parent.Settings.ImageDbLoadMethod = loadMethod;
+                m_parent.Settings.DbLoadMethod = loadMethod;
                 deleteFiles(p.data_param.data_debug_param.debug_save_path);
 
                 // Verify no label mapping by default
@@ -2148,7 +2148,7 @@ namespace MyCaffe.test
                 p.data_param.data_debug_param.debug_save_path = getTestPath("\\MyCaffe\\test_data\\test", true, true);
                 p.data_param.data_debug_param.iterations = int.MaxValue;
 
-                m_parent.Settings.ImageDbLoadMethod = loadMethod;
+                m_parent.Settings.DbLoadMethod = loadMethod;
                 deleteFiles(p.data_param.data_debug_param.debug_save_path);
 
                 // Verify no label mapping by default

@@ -75,9 +75,12 @@ namespace MyCaffe.layers.ssd
         /// <param name="p">provides LayerParameter annotated_data_param.</param>
         /// <param name="db">Specifies the external database to use.</param>
         /// <param name="evtCancel">Specifies the CancelEvent used to cancel any pre-fetching operations.</param>
-        public AnnotatedDataLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXImageDatabaseBase db, CancelEvent evtCancel) 
+        public AnnotatedDataLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXDatabaseBase db, CancelEvent evtCancel) 
             : base(cuda, log, p, db, evtCancel)
         {
+            if (db.GetVersion() != DB_VERSION.IMG_V1 && db.GetVersion() != DB_VERSION.IMG_V2)
+                m_log.FAIL("Currently, the AnnotatedDataLayer requires the MyCaffe Image Database!");
+
             m_type = LayerParameter.LayerType.ANNOTATED_DATA;
             m_random = new CryptoRandom(CryptoRandom.METHOD.DEFAULT, p.transform_param.random_seed.GetValueOrDefault(0));
             m_tMinusOne = (T)Convert.ChangeType(-1, typeof(T));
@@ -104,12 +107,12 @@ namespace MyCaffe.layers.ssd
                     imgSel &= (~DB_ITEM_SELECTION_METHOD.RANDOM);
             }
 
-            if (!db.GetLoadImageDataCriteria())
+            if (!((IXImageDatabaseBase)db).GetLoadItemDataCriteria())
                 m_log.WriteError(new Exception("The 'Load Image Data Criteria' must be set to TRUE in order to load the Annotation data."));
 
             db.SetSelectionMethod(null, imgSel);
 
-            m_db = new data.DB<T>(db);
+            m_db = new data.DB<T>((IXImageDatabaseBase)db);
             m_db.Open(p.data_param.source);
 
             if (p.data_param.display_timing)

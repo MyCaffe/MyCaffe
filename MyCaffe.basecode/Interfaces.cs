@@ -393,23 +393,31 @@ namespace MyCaffe.basecode
     /// </summary>
     [Serializable]
     [DataContract]
-    public enum IMGDB_VERSION
+    public enum DB_VERSION
     {
+        /// <summary>
+        /// Specifies to not use an in-memory database.
+        /// </summary>
+        NONE,
         /// <summary>
         /// Specifies to use the original image database.
         /// </summary>
         [EnumMember]
-        V1,
+        IMG_V1,
         /// <summary>
         /// Specifies to use the new image database v2.
         /// </summary>
         [EnumMember]
-        V2,
+        IMG_V2,
+        /// <summary>
+        /// Specifies to use the tempoal database.
+        /// </summary>
+        TEMPORAL,
         /// <summary>
         /// Specifies the default version (currently V2)
         /// </summary>
         [EnumMember]
-        DEFAULT = V2
+        DEFAULT = IMG_V2
     }
 
 #pragma warning disable 1591
@@ -511,11 +519,30 @@ namespace MyCaffe.basecode
 
         #region Properties
         /// <summary>
+        /// Returns the version of the MyCaffe Image Database being used.
+        /// </summary>
+        /// <returns>Returns the version.</returns>
+        [OperationContract(IsOneWay = false)]
+        DB_VERSION GetVersion();
+
+        /// <summary>
+        /// Returns whether or not the item data criteria is loaded with each item.
+        /// </summary>
+        [OperationContract(IsOneWay = false)]
+        bool GetLoadItemDataCriteria();
+
+        /// <summary>
+        /// Returns whether or not the item debug data is loaded with each item.
+        /// </summary>
+        [OperationContract(IsOneWay = false)]
+        bool GetLoadItemDebugData();
+
+        /// <summary>
         /// Returns the percentage that a dataset is loaded into memory.
         /// </summary>
         /// <param name="strDataset">Specifies the name of the dataset.</param>
-        /// <param name="dfTraining">Specifies the percent of training images that are loaded.</param>
-        /// <param name="dfTesting">Specifies the percent of testing images that are loaded.</param>
+        /// <param name="dfTraining">Specifies the percent of training items that are loaded.</param>
+        /// <param name="dfTesting">Specifies the percent of testing items that are loaded.</param>
         /// <returns>The current image load percent for the dataset is returned..</returns>
         [OperationContract(IsOneWay = false)]
         double GetDatasetLoadedPercentByName(string strDataset, out double dfTraining, out double dfTesting);
@@ -524,8 +551,8 @@ namespace MyCaffe.basecode
         /// Returns the percentage that a dataset is loaded into memory.
         /// </summary>
         /// <param name="nDatasetID">Specifies the ID of the dataset.</param>
-        /// <param name="dfTraining">Specifies the percent of training images that are loaded.</param>
-        /// <param name="dfTesting">Specifies the percent of testing images that are loaded.</param>
+        /// <param name="dfTraining">Specifies the percent of training items that are loaded.</param>
+        /// <param name="dfTesting">Specifies the percent of testing items that are loaded.</param>
         /// <returns>The current image load percent for the dataset is returned..</returns>
         [OperationContract(IsOneWay = false)]
         double GetDatasetLoadedPercentById(int nDatasetID, out double dfTraining, out double dfTesting);
@@ -543,6 +570,20 @@ namespace MyCaffe.basecode
         [OperationContract(IsOneWay = false)]
         int GetItemCount(int nSrcId, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false);
 
+        /// <summary>
+        /// Returns the label and image selection method used.
+        /// </summary>
+        /// <returns>A tuple containing the Label and Image selection method.</returns>
+        [OperationContract(IsOneWay = false)]
+        Tuple<DB_LABEL_SELECTION_METHOD, DB_ITEM_SELECTION_METHOD> GetSelectionMethod();
+
+        /// <summary>
+        /// Sets the label and image selection methods.
+        /// </summary>
+        /// <param name="lbl">Specifies the label selection method or <i>null</i> to ignore.</param>
+        /// <param name="img">Specifies the image selection method or <i>null</i> to ignore.</param>
+        [OperationContract(IsOneWay = false)]
+        void SetSelectionMethod(DB_LABEL_SELECTION_METHOD? lbl, DB_ITEM_SELECTION_METHOD? img);
         #endregion
 
         #region Sources
@@ -780,40 +821,6 @@ namespace MyCaffe.basecode
     public interface IXImageDatabaseBase : IXDatabaseBase
     {
         #region Properties
-
-        /// <summary>
-        /// Returns the version of the MyCaffe Image Database being used.
-        /// </summary>
-        /// <returns>Returns the version.</returns>
-        [OperationContract(IsOneWay = false)]
-        IMGDB_VERSION GetVersion();
-
-        /// <summary>
-        /// Returns whether or not the image data criteria is loaded with each image.
-        /// </summary>
-        [OperationContract(IsOneWay = false)]
-        bool GetLoadImageDataCriteria();
-
-        /// <summary>
-        /// Returns whether or not the image debug data is loaded with each image.
-        /// </summary>
-        [OperationContract(IsOneWay = false)]
-        bool GetLoadImageDebugData();
-
-        /// <summary>
-        /// Returns the label and image selection method used.
-        /// </summary>
-        /// <returns>A tuple containing the Label and Image selection method.</returns>
-        [OperationContract(IsOneWay = false)]
-        Tuple<DB_LABEL_SELECTION_METHOD, DB_ITEM_SELECTION_METHOD> GetSelectionMethod();
-
-        /// <summary>
-        /// Sets the label and image selection methods.
-        /// </summary>
-        /// <param name="lbl">Specifies the label selection method or <i>null</i> to ignore.</param>
-        /// <param name="img">Specifies the image selection method or <i>null</i> to ignore.</param>
-        [OperationContract(IsOneWay = false)]
-        void SetSelectionMethod(DB_LABEL_SELECTION_METHOD? lbl, DB_ITEM_SELECTION_METHOD? img);
 
         /// <summary>
         /// Returns a string with the query hit percent for each boost (e.g. the percentage that each boost value has been queried).

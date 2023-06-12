@@ -35,8 +35,8 @@ namespace MyCaffe.test
                 foreach (string strDs in rgDs)
                 {
                     SettingsCaffe settings = new SettingsCaffe();
-                    settings.ImageDbLoadMethod = loadMethod;
-                    settings.ImageDbLoadLimit = nLoadLimit;
+                    settings.DbLoadMethod = loadMethod;
+                    settings.DbLoadLimit = nLoadLimit;
 
                     sw.Start();
                     db.InitializeWithDsName1(settings, strDs);
@@ -80,8 +80,8 @@ namespace MyCaffe.test
             try
             {
                 SettingsCaffe settings = new SettingsCaffe();
-                settings.ImageDbLoadMethod = loadMethod;
-                settings.ImageDbLoadLimit = nLoadLimit;
+                settings.DbLoadMethod = loadMethod;
+                settings.DbLoadLimit = nLoadLimit;
 
                 sw.Start();
                 db.InitializeWithDsName1(settings, strDs);
@@ -127,8 +127,8 @@ namespace MyCaffe.test
                 foreach (string strDs in rgDs)
                 {
                     SettingsCaffe settings = new SettingsCaffe();
-                    settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
-                    settings.ImageDbLoadLimit = 0;
+                    settings.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+                    settings.DbLoadLimit = 0;
 
                     sw.Start();
                     db.InitializeWithDsName1(settings, strDs);
@@ -256,8 +256,8 @@ namespace MyCaffe.test
                         throw new Exception("The dataset '" + strDs + "' does not exist - you need to load it.");
 
                     SettingsCaffe settings = new SettingsCaffe();
-                    settings.ImageDbLoadMethod = loadMethod;
-                    settings.ImageDbLoadLimit = nLoadLimit;
+                    settings.DbLoadMethod = loadMethod;
+                    settings.DbLoadLimit = nLoadLimit;
 
                     Stopwatch sw = new Stopwatch();
 
@@ -378,8 +378,8 @@ namespace MyCaffe.test
                 try
                 {
                     SettingsCaffe settings = new SettingsCaffe();
-                    settings.ImageDbLoadMethod = loadMethod;
-                    settings.ImageDbLoadLimit = nLoadLimit;
+                    settings.DbLoadMethod = loadMethod;
+                    settings.DbLoadLimit = nLoadLimit;
 
                     Stopwatch sw = new Stopwatch();
 
@@ -543,8 +543,8 @@ namespace MyCaffe.test
                         throw new Exception("The dataset '" + strDs + "' does not exist - you need to load it.");
 
                     SettingsCaffe settings = new SettingsCaffe();
-                    settings.ImageDbLoadMethod = loadMethod;
-                    settings.ImageDbLoadLimit = nLoadLimit;
+                    settings.DbLoadMethod = loadMethod;
+                    settings.DbLoadLimit = nLoadLimit;
 
                     Stopwatch sw = new Stopwatch();
 
@@ -625,8 +625,8 @@ namespace MyCaffe.test
                 foreach (string strDs in rgDs)
                 {
                     SettingsCaffe settings = new SettingsCaffe();
-                    settings.ImageDbLoadMethod = loadMethod;
-                    settings.ImageDbLoadLimit = nLoadLimit;
+                    settings.DbLoadMethod = loadMethod;
+                    settings.DbLoadLimit = nLoadLimit;
 
                     Stopwatch sw = new Stopwatch();
 
@@ -718,8 +718,8 @@ namespace MyCaffe.test
                 foreach (string strDs in rgDs)
                 {
                     SettingsCaffe settings = new SettingsCaffe();
-                    settings.ImageDbLoadMethod = loadMethod;
-                    settings.ImageDbLoadLimit = nLoadLimit;
+                    settings.DbLoadMethod = loadMethod;
+                    settings.DbLoadLimit = nLoadLimit;
 
                     Stopwatch sw = new Stopwatch();
 
@@ -801,8 +801,8 @@ namespace MyCaffe.test
                 foreach (string strDs in rgDs)
                 {
                     SettingsCaffe settings = new SettingsCaffe();
-                    settings.ImageDbLoadMethod = loadMethod;
-                    settings.ImageDbLoadLimit = nLoadLimit;
+                    settings.DbLoadMethod = loadMethod;
+                    settings.DbLoadLimit = nLoadLimit;
 
                     Stopwatch sw = new Stopwatch();
 
@@ -894,8 +894,8 @@ namespace MyCaffe.test
                 foreach (string strDs in rgDs)
                 {
                     SettingsCaffe settings = new SettingsCaffe();
-                    settings.ImageDbLoadMethod = loadMethod;
-                    settings.ImageDbLoadLimit = nLoadLimit;
+                    settings.DbLoadMethod = loadMethod;
+                    settings.DbLoadLimit = nLoadLimit;
 
                     Stopwatch sw = new Stopwatch();
 
@@ -978,8 +978,8 @@ namespace MyCaffe.test
                         throw new Exception("The dataset '" + strDs + "' does not exist - you need to load it.");
 
                     SettingsCaffe settings = new SettingsCaffe();
-                    settings.ImageDbLoadMethod = loadMethod;
-                    settings.ImageDbLoadLimit = nLoadLimit;
+                    settings.DbLoadMethod = loadMethod;
+                    settings.DbLoadLimit = nLoadLimit;
 
                     Stopwatch sw = new Stopwatch();
 
@@ -1153,7 +1153,7 @@ namespace MyCaffe.test
                 SettingsCaffe settings = new SettingsCaffe();
                 Stopwatch sw = new Stopwatch();
 
-                settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+                settings.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
 
                 db.InitializeWithDsName1(settings, "MNIST");
                 DatasetDescriptor ds = db.GetDatasetByName("MNIST");
@@ -1321,7 +1321,7 @@ namespace MyCaffe.test
                 SettingsCaffe settings = new SettingsCaffe();
                 Stopwatch sw = new Stopwatch();
 
-                settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+                settings.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
 
                 db.InitializeWithDsName1(settings, "MNIST");
                 DatasetDescriptor ds = db.GetDatasetByName("MNIST");
@@ -1496,7 +1496,7 @@ namespace MyCaffe.test
                 SettingsCaffe settings = new SettingsCaffe();
                 Stopwatch sw = new Stopwatch();
 
-                settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+                settings.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
 
                 db.InitializeWithDsName1(settings, "MNIST");
                 DatasetDescriptor ds = db.GetDatasetByName("MNIST");
@@ -1647,8 +1647,8 @@ namespace MyCaffe.test
                     progress = new TestingProgressSet();
 
                     SettingsCaffe settings = new SettingsCaffe();
-                    settings.ImageDbLoadMethod = loadMethod;
-                    settings.ImageDbLoadLimit = 0;
+                    settings.DbLoadMethod = loadMethod;
+                    settings.DbLoadLimit = 0;
 
                     db = new MyCaffeImageDatabase(log, "default", 1701);
                     db.InitializeWithDsName1(settings, ds.Name);

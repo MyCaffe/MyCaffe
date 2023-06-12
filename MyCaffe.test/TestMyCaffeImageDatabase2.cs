@@ -44,8 +44,8 @@ namespace MyCaffe.test
                 foreach (string strDs in rgDs)
                 {
                     SettingsCaffe settings = new SettingsCaffe();
-                    settings.ImageDbLoadMethod = loadMethod;
-                    settings.ImageDbLoadLimit = nLoadLimit;
+                    settings.DbLoadMethod = loadMethod;
+                    settings.DbLoadLimit = nLoadLimit;
 
                     sw.Start();
                     long lQueryState = db.InitializeWithDsName(settings, strDs);
@@ -97,8 +97,8 @@ namespace MyCaffe.test
             try
             {
                 SettingsCaffe settings = new SettingsCaffe();
-                settings.ImageDbLoadMethod = loadMethod;
-                settings.ImageDbLoadLimit = nLoadLimit;
+                settings.DbLoadMethod = loadMethod;
+                settings.DbLoadLimit = nLoadLimit;
 
                 sw.Start();
                 long lQueryState = db.InitializeWithDsName(settings, strDs);
@@ -179,26 +179,26 @@ namespace MyCaffe.test
                 progress = new TestingProgressSet();
 
                 SettingsCaffe settings = new SettingsCaffe();
-                settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
-                settings.ImageDbLoadLimit = nLoadLimit;
+                settings.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+                settings.DbLoadLimit = nLoadLimit;
 
                 int nRefreshUpdate = 12 * 1000;
                 double dfReplacePct = 1;
 
                 if (bSetParamsDuringInit)
                 {
-                    settings.ImageDbAutoRefreshScheduledUpdateInMs = nRefreshUpdate;
-                    settings.ImageDbAutoRefreshScheduledReplacementPercent = dfReplacePct;
+                    settings.DbAutoRefreshScheduledUpdateInMs = nRefreshUpdate;
+                    settings.DbAutoRefreshScheduledReplacementPercent = dfReplacePct;
 
-                    log.CHECK_EQ(settings.ImageDbAutoRefreshScheduledReplacementPercent, dfReplacePct, "The default auto refresh scheduled replacement percent should be " + dfReplacePct.ToString());
-                    log.CHECK_EQ(settings.ImageDbAutoRefreshScheduledUpdateInMs, nRefreshUpdate, "The default auto refresh scheduled update period should be " + nRefreshUpdate.ToString());
+                    log.CHECK_EQ(settings.DbAutoRefreshScheduledReplacementPercent, dfReplacePct, "The default auto refresh scheduled replacement percent should be " + dfReplacePct.ToString());
+                    log.CHECK_EQ(settings.DbAutoRefreshScheduledUpdateInMs, nRefreshUpdate, "The default auto refresh scheduled update period should be " + nRefreshUpdate.ToString());
                 }
                 else
                 {
-                    log.CHECK_EQ(settings.ImageDbAutoRefreshScheduledReplacementPercent, 0.3, "The default auto refresh scheduled replacement percentage should be 0.3.");
-                    log.CHECK_EQ(settings.ImageDbAutoRefreshScheduledUpdateInMs, 10000, "The default auto refresh scheduled update period should be 10000.");
-                    settings.ImageDbAutoRefreshScheduledUpdateInMs = 0;
-                    settings.ImageDbAutoRefreshScheduledReplacementPercent = 0;
+                    log.CHECK_EQ(settings.DbAutoRefreshScheduledReplacementPercent, 0.3, "The default auto refresh scheduled replacement percentage should be 0.3.");
+                    log.CHECK_EQ(settings.DbAutoRefreshScheduledUpdateInMs, 10000, "The default auto refresh scheduled update period should be 10000.");
+                    settings.DbAutoRefreshScheduledUpdateInMs = 0;
+                    settings.DbAutoRefreshScheduledReplacementPercent = 0;
                 }
 
 
@@ -214,7 +214,7 @@ namespace MyCaffe.test
                 str = sw.ElapsedMilliseconds.ToString();
                 Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
-                if (!bSetParamsDuringInit && settings.ImageDbLoadLimit > 0)
+                if (!bSetParamsDuringInit && settings.DbLoadLimit > 0)
                     db.StartAutomaticRefreshSchedule(strDs, true, false, nRefreshUpdate, dfReplacePct);
 
                 int nPeriodInMs;
@@ -350,8 +350,8 @@ namespace MyCaffe.test
                 foreach (string strDs in rgDs)
                 {
                     SettingsCaffe settings = new SettingsCaffe();
-                    settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
-                    settings.ImageDbLoadLimit = 0;
+                    settings.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+                    settings.DbLoadLimit = 0;
 
                     sw.Start();
                     rgQueryState[strDs] = db.InitializeWithDsName(settings, strDs);
@@ -467,8 +467,8 @@ namespace MyCaffe.test
                             log.FAIL("The dataset '" + strDs + "' does not exist - you need to load it.");
 
                         SettingsCaffe settings = new SettingsCaffe();
-                        settings.ImageDbLoadMethod = loadMethod;
-                        settings.ImageDbLoadLimit = nLoadLimit;
+                        settings.DbLoadMethod = loadMethod;
+                        settings.DbLoadLimit = nLoadLimit;
 
                         Stopwatch sw = new Stopwatch();
 
@@ -628,8 +628,8 @@ namespace MyCaffe.test
                 try
                 {
                     SettingsCaffe settings = new SettingsCaffe();
-                    settings.ImageDbLoadMethod = loadMethod;
-                    settings.ImageDbLoadLimit = nLoadLimit;
+                    settings.DbLoadMethod = loadMethod;
+                    settings.DbLoadLimit = nLoadLimit;
 
                     Stopwatch sw = new Stopwatch();
 
@@ -791,8 +791,8 @@ namespace MyCaffe.test
                         log.FAIL("The dataset '" + strDs + "' does not exist - you need to load it.");
 
                     SettingsCaffe settings = new SettingsCaffe();
-                    settings.ImageDbLoadMethod = loadMethod;
-                    settings.ImageDbLoadLimit = nLoadLimit;
+                    settings.DbLoadMethod = loadMethod;
+                    settings.DbLoadLimit = nLoadLimit;
 
                     Stopwatch sw = new Stopwatch();
 
@@ -871,8 +871,8 @@ namespace MyCaffe.test
                 foreach (string strDs in rgDs)
                 {
                     SettingsCaffe settings = new SettingsCaffe();
-                    settings.ImageDbLoadMethod = loadMethod;
-                    settings.ImageDbLoadLimit = nLoadLimit;
+                    settings.DbLoadMethod = loadMethod;
+                    settings.DbLoadLimit = nLoadLimit;
 
                     Stopwatch sw = new Stopwatch();
 
@@ -962,8 +962,8 @@ namespace MyCaffe.test
                 foreach (string strDs in rgDs)
                 {
                     SettingsCaffe settings = new SettingsCaffe();
-                    settings.ImageDbLoadMethod = loadMethod;
-                    settings.ImageDbLoadLimit = nLoadLimit;
+                    settings.DbLoadMethod = loadMethod;
+                    settings.DbLoadLimit = nLoadLimit;
 
                     Stopwatch sw = new Stopwatch();
 
@@ -1043,8 +1043,8 @@ namespace MyCaffe.test
                 foreach (string strDs in rgDs)
                 {
                     SettingsCaffe settings = new SettingsCaffe();
-                    settings.ImageDbLoadMethod = loadMethod;
-                    settings.ImageDbLoadLimit = nLoadLimit;
+                    settings.DbLoadMethod = loadMethod;
+                    settings.DbLoadLimit = nLoadLimit;
 
                     Stopwatch sw = new Stopwatch();
 
@@ -1135,8 +1135,8 @@ namespace MyCaffe.test
                 foreach (string strDs in rgDs)
                 {
                     SettingsCaffe settings = new SettingsCaffe();
-                    settings.ImageDbLoadMethod = loadMethod;
-                    settings.ImageDbLoadLimit = nLoadLimit;
+                    settings.DbLoadMethod = loadMethod;
+                    settings.DbLoadLimit = nLoadLimit;
 
                     Stopwatch sw = new Stopwatch();
 
@@ -1218,8 +1218,8 @@ namespace MyCaffe.test
                         log.FAIL("The dataset '" + strDs + "' does not exist - you need to load it.");
 
                     SettingsCaffe settings = new SettingsCaffe();
-                    settings.ImageDbLoadMethod = loadMethod;
-                    settings.ImageDbLoadLimit = nLoadLimit;
+                    settings.DbLoadMethod = loadMethod;
+                    settings.DbLoadLimit = nLoadLimit;
 
                     Stopwatch sw = new Stopwatch();
 
@@ -1392,7 +1392,7 @@ namespace MyCaffe.test
                 SettingsCaffe settings = new SettingsCaffe();
                 Stopwatch sw = new Stopwatch();
 
-                settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+                settings.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
 
                 long lQueryState = db.InitializeWithDsName(settings, "MNIST");
                 DatasetDescriptor ds = db.GetDatasetByName("MNIST");
@@ -1564,7 +1564,7 @@ namespace MyCaffe.test
                 SettingsCaffe settings = new SettingsCaffe();
                 Stopwatch sw = new Stopwatch();
 
-                settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+                settings.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
 
                 long lQueryState = db.InitializeWithDsName(settings, "MNIST");
                 DatasetDescriptor ds = db.GetDatasetByName("MNIST");
@@ -1739,7 +1739,7 @@ namespace MyCaffe.test
                 SettingsCaffe settings = new SettingsCaffe();
                 Stopwatch sw = new Stopwatch();
 
-                settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+                settings.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
 
                 long lQueryState = db.InitializeWithDsName(settings, "MNIST");
                 DatasetDescriptor ds = db.GetDatasetByName("MNIST");
@@ -1871,8 +1871,8 @@ namespace MyCaffe.test
                     progress = new TestingProgressSet();
 
                     SettingsCaffe settings = new SettingsCaffe();
-                    settings.ImageDbLoadMethod = loadMethod;
-                    settings.ImageDbLoadLimit = 0;
+                    settings.DbLoadMethod = loadMethod;
+                    settings.DbLoadLimit = 0;
 
                     db = new MyCaffeImageDatabase2(log, "default", 1701);
                     long lQueryState = db.InitializeWithDsName(settings, ds.Name);
@@ -2287,7 +2287,7 @@ namespace MyCaffe.test
             IXImageDatabase2 db = new MyCaffeImageDatabase2(log);
 
             SettingsCaffe settings = new SettingsCaffe();
-            settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ON_DEMAND;
+            settings.DbLoadMethod = DB_LOAD_METHOD.LOAD_ON_DEMAND;
 
             long lQueryState = db.InitializeWithDsName(settings, strDs);
             db.SetSelectionMethod(DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);

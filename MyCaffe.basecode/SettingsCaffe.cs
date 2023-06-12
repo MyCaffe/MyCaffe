@@ -12,7 +12,7 @@ namespace MyCaffe.basecode
     [Serializable]
     public class SettingsCaffe : ISerializable
     {
-        IMGDB_VERSION m_imgDbVersion = IMGDB_VERSION.DEFAULT;
+        DB_VERSION m_imgDbVersion = DB_VERSION.DEFAULT;
         bool m_bEnableLabelBalancing = false;
         bool m_bEnableLabelBoosting = false;
         bool m_bEnableRandomInputSelection = true;
@@ -24,12 +24,12 @@ namespace MyCaffe.basecode
         int m_nTestingIterationOverride = -1;
         string m_strDefaultModelGroup = "";
         string m_strGpuIds = "0";
-        DB_LOAD_METHOD m_imageDbLoadMethod = DB_LOAD_METHOD.LOAD_ON_DEMAND;
-        int m_nImageDbLoadLimit = 0;
+        DB_LOAD_METHOD m_dbLoadMethod = DB_LOAD_METHOD.LOAD_ON_DEMAND;
+        int m_nDbLoadLimit = 0;
         int m_nAutoRefreshScheduledUpdateInMs = 0;
         double m_dfAutoRefreshScheduledReplacementPct = 0;
-        bool m_bImageDbLoadDataCriteria = false;
-        bool m_bImageDbLoadDebugData = false;
+        bool m_bItemDbLoadDataCriteria = false;
+        bool m_bItemDbLoadDebugData = false;
         SNAPSHOT_WEIGHT_UPDATE_METHOD m_snapshotWeightUpdateMethod = SNAPSHOT_WEIGHT_UPDATE_METHOD.FAVOR_ACCURACY;
         SNAPSHOT_LOAD_METHOD m_snapshotLoadMethod = SNAPSHOT_LOAD_METHOD.STATE_BEST_ACCURACY;
         bool m_bSkipMeanCheck = false;
@@ -58,12 +58,12 @@ namespace MyCaffe.basecode
             m_nTestingIterationOverride = s.m_nTestingIterationOverride;
             m_strDefaultModelGroup = s.m_strDefaultModelGroup;
             m_strGpuIds = s.m_strGpuIds;
-            m_imageDbLoadMethod = s.m_imageDbLoadMethod;
-            m_nImageDbLoadLimit = s.m_nImageDbLoadLimit;
+            m_dbLoadMethod = s.m_dbLoadMethod;
+            m_nDbLoadLimit = s.m_nDbLoadLimit;
             m_nAutoRefreshScheduledUpdateInMs = s.m_nAutoRefreshScheduledUpdateInMs;
             m_dfAutoRefreshScheduledReplacementPct = s.m_dfAutoRefreshScheduledReplacementPct;
-            m_bImageDbLoadDataCriteria = s.m_bImageDbLoadDataCriteria;
-            m_bImageDbLoadDebugData = s.m_bImageDbLoadDebugData;
+            m_bItemDbLoadDataCriteria = s.m_bItemDbLoadDataCriteria;
+            m_bItemDbLoadDebugData = s.m_bItemDbLoadDebugData;
             m_snapshotWeightUpdateMethod = s.m_snapshotWeightUpdateMethod;
             m_snapshotLoadMethod = s.m_snapshotLoadMethod;
             m_bSkipMeanCheck = s.m_bSkipMeanCheck;
@@ -76,7 +76,7 @@ namespace MyCaffe.basecode
         /// <param name="context">Specifies the serialization context.</param>
         public SettingsCaffe(SerializationInfo info, StreamingContext context)
         {
-            m_imgDbVersion = (IMGDB_VERSION)getInt(info, "ImageDbVersion", (int)m_imgDbVersion);
+            m_imgDbVersion = (DB_VERSION)getInt(info, "ImageDbVersion", (int)m_imgDbVersion);
             m_bEnableLabelBalancing = getBool(info, "bEnableLabelBalancing", m_bEnableLabelBalancing);
             m_bEnableLabelBoosting = getBool(info, "bEnableLabelBoosting", m_bEnableLabelBoosting);
             m_bEnableRandomInputSelection = getBool(info, "bEnableRandomInputSelection", m_bEnableRandomInputSelection);
@@ -88,12 +88,12 @@ namespace MyCaffe.basecode
             m_nTestingIterationOverride = getInt(info, "nTestingIterationOverride", m_nTestingIterationOverride);
             m_strDefaultModelGroup = info.GetString("strDefaultModelGroup");
             m_strGpuIds = getString(info, "strGpuIds", m_strGpuIds);
-            m_imageDbLoadMethod = (DB_LOAD_METHOD)getInt(info, "ImageDbLoadMethod", (int)m_imageDbLoadMethod);
-            m_nImageDbLoadLimit = getInt(info, "ImageDbLoadLimit", m_nImageDbLoadLimit);
+            m_dbLoadMethod = (DB_LOAD_METHOD)getInt(info, "ImageDbLoadMethod", (int)m_dbLoadMethod);
+            m_nDbLoadLimit = getInt(info, "ImageDbLoadLimit", m_nDbLoadLimit);
             m_nAutoRefreshScheduledUpdateInMs = getInt(info, "ImageDbAutoRefreshScheduledUpdateInMs", m_nAutoRefreshScheduledUpdateInMs);
             m_dfAutoRefreshScheduledReplacementPct = getDouble(info, "ImageDbAutoRefreshReplacementPct", m_dfAutoRefreshScheduledReplacementPct);
-            m_bImageDbLoadDataCriteria = getBool(info, "ImageDbLoadDataCriteria", m_bImageDbLoadDataCriteria);
-            m_bImageDbLoadDebugData = getBool(info, "ImageDbLoadDebugData", m_bImageDbLoadDebugData);
+            m_bItemDbLoadDataCriteria = getBool(info, "ImageDbLoadDataCriteria", m_bItemDbLoadDataCriteria);
+            m_bItemDbLoadDebugData = getBool(info, "ImageDbLoadDebugData", m_bItemDbLoadDebugData);
             m_snapshotWeightUpdateMethod = (SNAPSHOT_WEIGHT_UPDATE_METHOD)getInt(info, "SnapshotWeightUpdateMethod", (int)m_snapshotWeightUpdateMethod);
             m_snapshotLoadMethod = (SNAPSHOT_LOAD_METHOD)getInt(info, "SnapshotLoadMethod", (int)m_snapshotLoadMethod);
             m_bSkipMeanCheck = getBool(info, "SkipMeanCheck", m_bSkipMeanCheck);
@@ -166,12 +166,12 @@ namespace MyCaffe.basecode
             info.AddValue("nTestingIterationOverride", m_nTestingIterationOverride);
             info.AddValue("strDefaultModelGroup", m_strDefaultModelGroup);
             info.AddValue("strGpuIds", m_strGpuIds);
-            info.AddValue("ImageDbLoadMethod", (int)m_imageDbLoadMethod);
-            info.AddValue("ImageDbLoadLimit", m_nImageDbLoadLimit);
+            info.AddValue("ImageDbLoadMethod", (int)m_dbLoadMethod);
+            info.AddValue("ImageDbLoadLimit", m_nDbLoadLimit);
             info.AddValue("ImageDbAutoRefreshScheduledUpdateInMs", m_nAutoRefreshScheduledUpdateInMs);
             info.AddValue("ImageDbAutoRefreshReplacementPct", m_dfAutoRefreshScheduledReplacementPct);
-            info.AddValue("ImageDbLoadDataCriteria", m_bImageDbLoadDataCriteria);
-            info.AddValue("ImageDbLoadDebugData", m_bImageDbLoadDebugData);
+            info.AddValue("ImageDbLoadDataCriteria", m_bItemDbLoadDataCriteria);
+            info.AddValue("ImageDbLoadDebugData", m_bItemDbLoadDebugData);
             info.AddValue("SnapshotWeightUpdateMethod", (int)m_snapshotWeightUpdateMethod);
             info.AddValue("SnapshotLoadMethod", (int)m_snapshotLoadMethod);
             info.AddValue("SkipMeanCheck", m_bSkipMeanCheck);
@@ -197,12 +197,12 @@ namespace MyCaffe.basecode
             s.m_nTestingIterationOverride = m_nTestingIterationOverride;
             s.m_strDefaultModelGroup = m_strDefaultModelGroup;
             s.m_strGpuIds = m_strGpuIds;
-            s.m_imageDbLoadMethod = m_imageDbLoadMethod;
-            s.m_nImageDbLoadLimit = m_nImageDbLoadLimit;
+            s.m_dbLoadMethod = m_dbLoadMethod;
+            s.m_nDbLoadLimit = m_nDbLoadLimit;
             s.m_nAutoRefreshScheduledUpdateInMs = m_nAutoRefreshScheduledUpdateInMs;
             s.m_dfAutoRefreshScheduledReplacementPct = m_dfAutoRefreshScheduledReplacementPct;
-            s.m_bImageDbLoadDataCriteria = m_bImageDbLoadDataCriteria;
-            s.m_bImageDbLoadDebugData = m_bImageDbLoadDebugData;
+            s.m_bItemDbLoadDataCriteria = m_bItemDbLoadDataCriteria;
+            s.m_bItemDbLoadDebugData = m_bItemDbLoadDebugData;
             s.m_snapshotWeightUpdateMethod = m_snapshotWeightUpdateMethod;
             s.m_snapshotLoadMethod = m_snapshotLoadMethod;
             s.m_bSkipMeanCheck = m_bSkipMeanCheck;
@@ -222,7 +222,7 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Get/set the version of the MyCaffeImageDatabase to use.
         /// </summary>
-        public IMGDB_VERSION ImageDbVersion
+        public DB_VERSION DbVersion
         {
             get { return m_imgDbVersion; }
             set { m_imgDbVersion = value; }
@@ -330,39 +330,39 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Get/set the image database loading method.
         /// </summary>
-        public DB_LOAD_METHOD ImageDbLoadMethod
+        public DB_LOAD_METHOD DbLoadMethod
         {
-            get { return m_imageDbLoadMethod; }
-            set { m_imageDbLoadMethod = value; }
+            get { return m_dbLoadMethod; }
+            set { m_dbLoadMethod = value; }
         }
 
         /// <summary>
         /// Get/set the image database load limit.
         /// </summary>
-        public int ImageDbLoadLimit
+        public int DbLoadLimit
         {
-            get { return m_nImageDbLoadLimit; }
+            get { return m_nDbLoadLimit; }
             set
             {
-                if (value == 0 && m_nImageDbLoadLimit != 0)
+                if (value == 0 && m_nDbLoadLimit != 0)
                 {
                     m_nAutoRefreshScheduledUpdateInMs = 0;
                     m_dfAutoRefreshScheduledReplacementPct = 0;
                 }
-                else if (value != 0 && m_nImageDbLoadLimit == 0)
+                else if (value != 0 && m_nDbLoadLimit == 0)
                 {
                     m_nAutoRefreshScheduledUpdateInMs = 10000;
                     m_dfAutoRefreshScheduledReplacementPct = 0.3;
                 }
 
-                m_nImageDbLoadLimit = value;
+                m_nDbLoadLimit = value;
             }
         }
 
         /// <summary>
         /// Get/set the automatic refresh scheduled udpate period (default = 10000, only applies when ImageDbLoadLimit > 0).
         /// </summary>
-        public int ImageDbAutoRefreshScheduledUpdateInMs
+        public int DbAutoRefreshScheduledUpdateInMs
         {
             get { return m_nAutoRefreshScheduledUpdateInMs; }
             set { m_nAutoRefreshScheduledUpdateInMs = value; }
@@ -371,7 +371,7 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Get/set the automatic refresh scheduled update replacement percentage used on refresh (default = 0.3, only applies when ImageDbLoadLimit > 0).
         /// </summary>
-        public double ImageDbAutoRefreshScheduledReplacementPercent
+        public double DbAutoRefreshScheduledReplacementPercent
         {
             get { return m_dfAutoRefreshScheduledReplacementPct; }
             set { m_dfAutoRefreshScheduledReplacementPct = value; }
@@ -380,19 +380,19 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Specifies whether or not to load the image criteria data from file (default = false).
         /// </summary>
-        public bool ImageDbLoadDataCriteria
+        public bool ItemDbLoadDataCriteria
         {
-            get { return m_bImageDbLoadDataCriteria; }
-            set { m_bImageDbLoadDataCriteria = value; }
+            get { return m_bItemDbLoadDataCriteria; }
+            set { m_bItemDbLoadDataCriteria = value; }
         }
 
         /// <summary>
         /// Specifies whether or not to load the debug data from file (default = false).
         /// </summary>
-        public bool ImageDbLoadDebugData
+        public bool ItemDbLoadDebugData
         {
-            get { return m_bImageDbLoadDebugData; }
-            set { m_bImageDbLoadDebugData = value; }
+            get { return m_bItemDbLoadDebugData; }
+            set { m_bItemDbLoadDebugData = value; }
         }
 
         /// <summary>

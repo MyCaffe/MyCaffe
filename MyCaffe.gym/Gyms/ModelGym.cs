@@ -116,7 +116,7 @@ namespace MyCaffe.gym
 
             SettingsCaffe s = new SettingsCaffe();
             s.GpuIds = m_nGpuID.ToString();
-            s.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND;
+            s.DbLoadMethod = DB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND;
 
             m_imgdb = new MyCaffeImageDatabase2(log);
             m_imgdb.InitializeWithDsName1(s, m_strDataset);
