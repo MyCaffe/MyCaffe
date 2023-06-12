@@ -74,9 +74,12 @@ namespace MyCaffe.layers
         /// <param name="p">Specifies the LayerParameter data_param</param>
         /// <param name="db">Specifies the external database to use.</param>
         /// <param name="evtCancel">Specifies the CancelEvent used to cancel any pre-fetching operations.</param>
-        public DataLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXImageDatabaseBase db, CancelEvent evtCancel)
+        public DataLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXDatabaseBase db, CancelEvent evtCancel)
             : base(cuda, log, p, db, evtCancel)
         {
+            if (db.GetVersion() != DB_VERSION.IMG_V1 && db.GetVersion() != DB_VERSION.IMG_V2)
+                throw new Exception("Currently only image databases are supported by the DataLayer.");
+
             m_type = LayerParameter.LayerType.DATA;
 
             if (p.data_param.synchronize_target)
@@ -103,7 +106,7 @@ namespace MyCaffe.layers
 
             db.SetSelectionMethod(null, imgSel);
 
-            m_db = new data.DB<T>(db);
+            m_db = new data.DB<T>((IXImageDatabaseBase)db);
             m_db.Open(p.data_param.source);
 
             if (p.data_param.display_timing)

@@ -45,12 +45,15 @@ namespace MyCaffe.layers
         /// <param name="log">Specifies the Log for output.</param>
         /// <param name="p">Specifies the LayerParameter</param>
         /// <param name="db">Specifies the external database to use.</param>
-        public BaseDataLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXImageDatabaseBase db)
+        public BaseDataLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXDatabaseBase db)
             : base(cuda, log, p)
         {
             if (db != null)
             {
-                m_imgdb = db;
+                if (db.GetVersion() != DB_VERSION.IMG_V1 && db.GetVersion() != DB_VERSION.IMG_V2)
+                    throw new Exception("Currently only image databases are supported by the BaseDataLayer.");
+
+                m_imgdb = (IXImageDatabaseBase)db;
 
                 if (p.type == LayerParameter.LayerType.DATA ||
                     p.type == LayerParameter.LayerType.ANNOTATED_DATA)

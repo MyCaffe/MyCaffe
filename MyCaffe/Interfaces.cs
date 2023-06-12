@@ -24,9 +24,9 @@ namespace MyCaffe
         /// <param name="log">Specifies the output log.</param>
         /// <param name="p">Specifies the layer parameter.</param>
         /// <param name="evtCancel">Specifies the cancellation event.</param>
-        /// <param name="imgDb">Specifies an interface to the image database, who's use is optional.</param>
+        /// <param name="db">Specifies an interface to the in-memory database, who's use is optional.</param>
         /// <returns>If supported, the layer is returned, otherwise <i>null</i> is returned.</returns>
-        Layer<double> CreateDouble(CudaDnn<double> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXImageDatabaseBase imgDb);
+        Layer<double> CreateDouble(CudaDnn<double> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXDatabaseBase db);
 
         /// <summary>
         /// Create the layers when using the <i>float</i> base type.
@@ -35,8 +35,8 @@ namespace MyCaffe
         /// <param name="log">Specifies the output log.</param>
         /// <param name="p">Specifies the layer parameter.</param>
         /// <param name="evtCancel">Specifies the cancellation event.</param>
-        /// <param name="imgDb">Specifies an interface to the image database, who's use is optional.</param>
+        /// <param name="db">Specifies an interface to the in-memory database, who's use is optional.</param>
         /// <returns>If supported, the layer is returned, otherwise <i>null</i> is returned.</returns>
-        Layer<float> CreateSingle(CudaDnn<float> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXImageDatabaseBase imgDb);
+        Layer<float> CreateSingle(CudaDnn<float> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXDatabaseBase db);
     }
 }

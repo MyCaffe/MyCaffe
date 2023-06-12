@@ -96,7 +96,7 @@ namespace MyCaffe.solvers
         double m_dfLastError = double.MaxValue;
         double m_dfBestAccuracy = 0;
         double m_dfBestError = double.MaxValue;
-        IXImageDatabaseBase m_db = null;
+        IXDatabaseBase m_db = null;
         int m_nTrainingIterationOverride = -1;
         int m_nTestingIterationOverride = -1;
         object m_tag = null;
@@ -171,14 +171,14 @@ namespace MyCaffe.solvers
         /// <param name="evtCancel">Specifies a CancelEvent used to cancel the current operation (e.g. training, testing) for which the Solver is performing.</param>
         /// <param name="evtForceSnapshot">Specifies an automatic reset event that causes the Solver to perform a Snapshot when set.</param>
         /// <param name="evtForceTest">Specifies an automatic reset event that causes teh Solver to run a testing cycle when set.</param>
-        /// <param name="imgDb">Specifies the MyCaffeImageDatabase.</param>
+        /// <param name="db">Specifies the in-memory MyCaffeDatabase.</param>
         /// <param name="persist">Specifies the peristence used for loading and saving weights.</param>
         /// <param name="nSolverCount">Specifies the number of Solvers participating in a multi-GPU session.</param>
         /// <param name="nSolverRank">Specifies the rank of this Solver in a multi-GPU session.</param>
         /// <param name="shareNet">Optionally, specifies the net to share when creating the training network (default = null, meaning no share net is used).</param>
         /// <param name="getws">Optionally, specifies the handler for getting the workspace.</param>
         /// <param name="setws">Optionally, specifies the handler for setting the workspace.</param>
-        public Solver(CudaDnn<T> cuda, Log log, SolverParameter p, CancelEvent evtCancel, AutoResetEvent evtForceSnapshot, AutoResetEvent evtForceTest, IXImageDatabaseBase imgDb, IXPersist<T> persist, int nSolverCount = 1, int nSolverRank = 0, Net<T> shareNet = null, onGetWorkspace getws = null, onSetWorkspace setws = null)
+        public Solver(CudaDnn<T> cuda, Log log, SolverParameter p, CancelEvent evtCancel, AutoResetEvent evtForceSnapshot, AutoResetEvent evtForceTest, IXDatabaseBase db, IXPersist<T> persist, int nSolverCount = 1, int nSolverRank = 0, Net<T> shareNet = null, onGetWorkspace getws = null, onSetWorkspace setws = null)
         {
             m_cuda = cuda;
             m_log = log;
@@ -189,7 +189,7 @@ namespace MyCaffe.solvers
             if (m_log.IsEnabled)
                 m_log.Enable = is_root_solver;
 
-            m_db = imgDb;
+            m_db = db;
             m_persist = persist;
             m_nSolverCount = nSolverCount;
             m_nSolverRank = nSolverRank;
@@ -304,9 +304,9 @@ namespace MyCaffe.solvers
         }
 
         /// <summary>
-        /// Returns the MyCaffeImageDatabase used.
+        /// Returns the in-memory MyCaffeDatabase used.
         /// </summary>
-        public IXImageDatabaseBase Database
+        public IXDatabaseBase Database
         {
             get { return m_db; }
         }
@@ -1878,7 +1878,7 @@ namespace MyCaffe.solvers
         /// <param name="evtCancel">Specifies the CancelEvent that the new Solver will use.</param>
         /// <param name="evtForceSnapshot">Specifies the force snapshot event that the new Solver will use.</param>
         /// <param name="evtForceTest">Specifies the force test event that the new Solver will use.</param>
-        /// <param name="imgDb">Specifies the MyCaffeImageDatabase that the new Solver will use.</param>
+        /// <param name="db">Specifies the in-memory MyCaffeDatabase that the new Solver will use.</param>
         /// <param name="persist">Specifies the peristence used for loading and saving weights.</param>
         /// <param name="nSolverCount">Specifies the number of Solvers participating in a multi-GPu session.</param>
         /// <param name="nSolverRank">Specifies the rank of the new Solver.</param>
@@ -1886,7 +1886,7 @@ namespace MyCaffe.solvers
         /// <param name="getws">Optionally, specifies the handler for getting the workspace.</param>
         /// <param name="setws">Optionally, specifies the handler for setting the workspace.</param>
         /// <returns>A new Solver instance is returned.</returns>
-        public static SGDSolver<T> Create(CudaDnn<T> cuda, Log log, ProjectEx p, CancelEvent evtCancel, AutoResetEvent evtForceSnapshot, AutoResetEvent evtForceTest, IXImageDatabaseBase imgDb, IXPersist<T> persist, int nSolverCount = 1, int nSolverRank = 0, Net<T> shareNet = null, onGetWorkspace getws = null, onSetWorkspace setws = null)
+        public static SGDSolver<T> Create(CudaDnn<T> cuda, Log log, ProjectEx p, CancelEvent evtCancel, AutoResetEvent evtForceSnapshot, AutoResetEvent evtForceTest, IXDatabaseBase db, IXPersist<T> persist, int nSolverCount = 1, int nSolverRank = 0, Net<T> shareNet = null, onGetWorkspace getws = null, onSetWorkspace setws = null)
         {
             SolverParameter solverParam = null;
 
@@ -1907,7 +1907,7 @@ namespace MyCaffe.solvers
                 solverParam.net_param.ProjectID = p.ID;
             }
 
-            return Create(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
+            return Create(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, db, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
         }
 
         /// <summary>
@@ -1919,7 +1919,7 @@ namespace MyCaffe.solvers
         /// <param name="evtCancel">Specifies the CancelEvent that the new Solver will use.</param>
         /// <param name="evtForceSnapshot">Specifies the force snapshot event that the new Solver will use.</param>
         /// <param name="evtForceTest">Specifies the force test event that the new Solver will use.</param>
-        /// <param name="imgDb">Specifies the MyCaffeImageDatabase that the new Solver will use.</param>
+        /// <param name="db">Specifies the in-memory MyCaffeDatabase that the new Solver will use.</param>
         /// <param name="persist">Specifies the peristence used for loading and saving weights.</param>
         /// <param name="nSolverCount">Specifies the number of Solvers participating in a multi-GPu session.</param>
         /// <param name="nSolverRank">Specifies the rank of the new Solver.</param>
@@ -1927,38 +1927,38 @@ namespace MyCaffe.solvers
         /// <param name="getws">Optionally, specifies the handler for getting the workspace.</param>
         /// <param name="setws">Optionally, specifies the handler for setting the workspace.</param>
         /// <returns></returns>
-        public static SGDSolver<T> Create(CudaDnn<T> cuda, Log log, SolverParameter solverParam, CancelEvent evtCancel, AutoResetEvent evtForceSnapshot, AutoResetEvent evtForceTest, IXImageDatabaseBase imgDb, IXPersist<T> persist, int nSolverCount = 1, int nSolverRank = 0, Net<T> shareNet = null, onGetWorkspace getws = null, onSetWorkspace setws = null)
+        public static SGDSolver<T> Create(CudaDnn<T> cuda, Log log, SolverParameter solverParam, CancelEvent evtCancel, AutoResetEvent evtForceSnapshot, AutoResetEvent evtForceTest, IXDatabaseBase db, IXPersist<T> persist, int nSolverCount = 1, int nSolverRank = 0, Net<T> shareNet = null, onGetWorkspace getws = null, onSetWorkspace setws = null)
         {
             SGDSolver<T> solver = null;
 
             switch (solverParam.type)
             {
                 case SolverParameter.SolverType.SGD:
-                    solver = new SGDSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
+                    solver = new SGDSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, db, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
                     break;
 
                 case SolverParameter.SolverType.NESTEROV:
-                    solver = new NesterovSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
+                    solver = new NesterovSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, db, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
                     break;
 
                 case SolverParameter.SolverType.ADAGRAD:
-                    solver = new AdaGradSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
+                    solver = new AdaGradSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, db, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
                     break;
 
                 case SolverParameter.SolverType.ADADELTA:
-                    solver = new AdaDeltaSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
+                    solver = new AdaDeltaSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, db, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
                     break;
 
                 case SolverParameter.SolverType.ADAM:
-                    solver = new AdamSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
+                    solver = new AdamSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, db, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
                     break;
 
                 case SolverParameter.SolverType.ADAMW:
-                    solver = new AdamWSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
+                    solver = new AdamWSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, db, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
                     break;
 
                 case SolverParameter.SolverType.RMSPROP:
-                    solver = new RmsPropSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
+                    solver = new RmsPropSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, db, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
                     break;
 
                 default:

@@ -20,6 +20,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Net;
+using static MyCaffe.param.beta.DecodeParameter;
 
 /// <summary>
 /// The MyCaffe namespace contains the main body of MyCaffe code that closesly tracks the C++ Caffe open-source project.  
@@ -43,11 +44,11 @@ namespace MyCaffe
         /// <summary>
         /// The image database.
         /// </summary>
-        protected IXImageDatabaseBase m_imgDb = null;
+        protected IXDatabaseBase m_db = null;
         /// <summary>
         /// Whether or not the control owns the image database.
         /// </summary>
-        protected bool m_bImgDbOwner = true;
+        protected bool m_bDbOwner = true;
         /// <summary>
         /// The CancelEvent used to cancel training and testing operations.
         /// </summary>
@@ -291,7 +292,7 @@ namespace MyCaffe
             if (m_bLoadLite)
                 mycaffe.LoadLite(Phase.TRAIN, m_strSolver, m_strModel, null);
             else
-                mycaffe.Load(Phase.TRAIN, m_project, null, null, false, m_imgDb, (m_imgDb == null) ? false : true, true, m_strStage);
+                mycaffe.Load(Phase.TRAIN, m_project, null, null, false, m_db, (m_db == null) ? false : true, true, m_strStage);
 
             Net<T> netSrc = GetInternalNet(Phase.TRAIN);
             Net<T> netDst = mycaffe.GetInternalNet(Phase.TRAIN);
@@ -408,19 +409,19 @@ namespace MyCaffe
                     m_net = null;
                 }
 
-                if (m_imgDb != null && bUnloadImageDb)
+                if (m_db != null && bUnloadImageDb)
                 {
-                    if (m_bImgDbOwner)
+                    if (m_bDbOwner)
                     {
                         if (m_dataSet != null)
-                            m_imgDb.CleanUp(m_dataSet.ID);
+                            m_db.CleanUp(m_dataSet.ID);
 
-                        IDisposable idisp = m_imgDb as IDisposable;
+                        IDisposable idisp = m_db as IDisposable;
                         if (idisp != null)
                             idisp.Dispose();
                     }
 
-                    m_imgDb = null;
+                    m_db = null;
                 }
 
                 m_project = null;
@@ -633,11 +634,11 @@ namespace MyCaffe
         }
 
         /// <summary>
-        /// Returns the MyCaffeImageDatabase used.
+        /// Returns the MyCaffeImageDatabase or MyCaffeTemporalDatabase used.
         /// </summary>
-        public IXImageDatabaseBase ImageDatabase
+        public IXDatabaseBase Database
         {
-            get { return m_imgDb; }
+            get { return m_db; }
         }
 
         /// <summary>
@@ -1058,15 +1059,15 @@ namespace MyCaffe
         /// <param name="phase">Specifies the Phase for which the load should focus.</param>
         /// <param name="p">Specifies the Project to load.</param>
         /// <param name="labelSelectionOverride">Optionally, specifies the label selection override (overides the label selection in SettingsCaffe).  The label selection dictates how the label sets are selected.</param>
-        /// <param name="imageSelectionOverride">Optionally, specifies the image selection override (overides the image selection in SettingsCaffe).  The image selection dictates how the images are selected from each label set.</param>
+        /// <param name="itemSelectionOverride">Optionally, specifies the item (e.g., image or temporal item) selection override (overides the item selection in SettingsCaffe).  The item selection dictates how the items are selected from each label set.</param>
         /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
-        /// <param name="imgdb">Optionally, specifies the MyCaffeImageDatabase to use.  When <i>null</i>, an instance if the MyCaffeImageDatabase is created internally.</param>
-        /// <param name="bUseImageDb">Optionally, specifies whehter or not to use the image database (default = true).</param>
+        /// <param name="db">Optionally, specifies the MyCaffeImageDatabase or MyCaffeTemporalDatabase to use.  When <i>null</i>, an instance if the in-memory database is created internally.</param>
+        /// <param name="bUseDb">Optionally, specifies to use the in-memory database based on the DB_VERSION specified in the settings.</param>
         /// <param name="bCreateRunNet">Optionally, specifies whether or not to create the Run net.</param>
         /// <param name="strStage">Optionally, specifies a stage under which to load the model.</param>
         /// <param name="bEnableMemTrace">Optionally, specifies to enable the memory tracing (only available in debug builds).</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        public bool Load(Phase phase, ProjectEx p, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabaseBase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false)
+        public bool Load(Phase phase, ProjectEx p, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? itemSelectionOverride = null, bool bResetFirst = false, IXDatabaseBase db = null, bool bUseDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false)
         {
             try
             {
@@ -1074,30 +1075,40 @@ namespace MyCaffe
 
                 DatasetFactory factory = new DatasetFactory();
                 m_strStage = strStage;
-                m_imgDb = imgdb;
-                m_bImgDbOwner = false;
+                m_db = db;
+                m_bDbOwner = false;
 
-                if (m_imgDb == null && bUseImageDb)
+                if (m_db == null && bUseDb)
                 {
-                    if (m_settings.ImageDbVersion == IMGDB_VERSION.V2)
-                        m_imgDb = new MyCaffeImageDatabase2(m_log);
-                    else
-                        m_imgDb = new MyCaffeImageDatabase(m_log);
+                    if (m_settings.DbVersion != db.GetVersion())
+                        throw new Exception("The database version in the settings (" + m_settings.DbVersion.ToString() + ") must match the database version (" + db.GetVersion().ToString() + ") of the 'db' parameter!");
 
-                    m_bImgDbOwner = true;
+                    switch (m_settings.DbVersion)
+                    {
+                        case DB_VERSION.IMG_V1:
+                            m_db = new MyCaffeImageDatabase(m_log);
+                            m_log.WriteLine("Loading primary images...", true);
+                            m_bDbOwner = true;
+                            m_log.Enable = true;
+                            ((IXImageDatabase1)m_db).InitializeWithDs1(m_settings, p.Dataset, m_evtCancel.Name);
+                            break;
 
-                    m_log.WriteLine("Loading primary images...", true);
-                    m_log.Enable = true;
+                        case DB_VERSION.TEMPORAL:
+                            throw new NotImplementedException("The temporal database is not yet supported.");
 
-                    if (m_imgDb is IXImageDatabase1)
-                        ((IXImageDatabase1)m_imgDb).InitializeWithDs1(m_settings, p.Dataset, m_evtCancel.Name);
-                    else
-                        ((IXImageDatabase2)m_imgDb).InitializeWithDs(m_settings, p.Dataset, m_evtCancel.Name);
+                        default:
+                            m_db = new MyCaffeImageDatabase2(m_log);
+                            m_log.WriteLine("Loading primary images...", true);
+                            m_bDbOwner = true;
+                            m_log.Enable = true;
+                            ((IXImageDatabase2)m_db).InitializeWithDs(m_settings, p.Dataset, m_evtCancel.Name);
+                            break;
+                    }
 
                     if (m_evtCancel.WaitOne(0))
                         return false;
 
-                    //              m_imgDb.UpdateLabelBoosts(p.ID, p.Dataset.TrainingSource.ID);
+                    // m_db.UpdateLabelBoosts(p.ID, p.Dataset.TrainingSource.ID);
 
                     Tuple<DB_LABEL_SELECTION_METHOD, DB_ITEM_SELECTION_METHOD> selMethod = MyCaffeImageDatabase.GetSelectionMethod(p);
                     DB_LABEL_SELECTION_METHOD lblSel = selMethod.Item1;
@@ -1106,26 +1117,37 @@ namespace MyCaffe
                     if (labelSelectionOverride.HasValue)
                         lblSel = labelSelectionOverride.Value;
 
-                    if (imageSelectionOverride.HasValue)
-                        imgSel = imageSelectionOverride.Value;
+                    if (itemSelectionOverride.HasValue)
+                        imgSel = itemSelectionOverride.Value;
 
-                    m_imgDb.SetSelectionMethod(lblSel, imgSel);
-                    m_imgDb.QueryItemMean(p.Dataset.TrainingSource.ID);
+                    m_db.SetSelectionMethod(lblSel, imgSel);
+                    m_db.QueryItemMean(p.Dataset.TrainingSource.ID);
                     m_log.WriteLine("Images loaded.");
 
                     if (p.TargetDatasetID > 0)
                     {
                         DatasetDescriptor dsTarget = factory.LoadDataset(p.TargetDatasetID);
 
-                        m_log.WriteLine("Loading target dataset '" + dsTarget.Name + "' images using " + m_settings.ImageDbLoadMethod.ToString() + " loading method.");
+                        m_log.WriteLine("Loading target dataset '" + dsTarget.Name + "' images using " + m_settings.DbLoadMethod.ToString() + " loading method.");
+                        string strType = "images";
 
-                        if (m_imgDb is IXImageDatabase1)
-                            ((IXImageDatabase1)m_imgDb).LoadDatasetByID1(dsTarget.ID);
-                        else
-                            ((IXImageDatabase2)m_imgDb).LoadDatasetByID(dsTarget.ID);
+                        switch (m_settings.DbVersion)
+                        {
+                            case DB_VERSION.IMG_V1:
+                                ((IXImageDatabase1)m_db).LoadDatasetByID1(dsTarget.ID);
+                                break;
 
-                        m_imgDb.QueryItemMean(dsTarget.TrainingSource.ID);
-                        m_log.WriteLine("Target dataset images loaded.");
+                            case DB_VERSION.TEMPORAL:
+                                strType = "items";
+                                throw new NotImplementedException("The temporal database is not yet supported.");
+
+                            default:
+                                ((IXImageDatabase2)m_db).LoadDatasetByID(dsTarget.ID);
+                                break;
+                        }
+
+                        m_db.QueryItemMean(dsTarget.TrainingSource.ID);
+                        m_log.WriteLine("Target dataset " + strType + " loaded.");
                     }
 
                     m_log.Enable = m_bEnableVerboseStatus;
@@ -1151,7 +1173,7 @@ namespace MyCaffe
                 {
                     m_log.WriteLine("Creating solver...", true);
 
-                    m_solver = Solver<T>.Create(m_cuda, m_log, p, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, m_imgDb, m_persist, m_rgGpu.Count, 0);
+                    m_solver = Solver<T>.Create(m_cuda, m_log, p, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, m_db, m_persist, m_rgGpu.Count, 0);
                     m_solver.SnapshotWeightUpdateMethod = m_settings.SnapshotWeightUpdateMethod;
                     if (p.WeightsState != null || p.SolverState != null)
                     {
@@ -1175,14 +1197,14 @@ namespace MyCaffe
                     verifySharedWeights();
                 }
 
-                if (m_imgDb is IXImageDatabase1)
+                if (m_db is IXImageDatabase1)
                 {
 #warning ImageDatabase V1 only
-                    if (phase == Phase.TRAIN && m_imgDb != null)
-                        ((IXImageDatabase1)m_imgDb).UpdateLabelBoosts(p.ID, m_dataSet.TrainingSource.ID);
+                    if (phase == Phase.TRAIN && m_db != null)
+                        ((IXImageDatabase1)m_db).UpdateLabelBoosts(p.ID, m_dataSet.TrainingSource.ID);
 
-                    if (phase == Phase.TEST && m_imgDb != null)
-                        ((IXImageDatabase1)m_imgDb).UpdateLabelBoosts(p.ID, m_dataSet.TestingSource.ID);
+                    if (phase == Phase.TEST && m_db != null)
+                        ((IXImageDatabase1)m_db).UpdateLabelBoosts(p.ID, m_dataSet.TestingSource.ID);
                 }
 
                 if (phase == Phase.RUN && !bCreateRunNet)
@@ -1198,7 +1220,7 @@ namespace MyCaffe
 
                 if (tp != null && !p.Dataset.IsModelData && !p.Dataset.IsGym)
                 {
-                    SimpleDatum sdMean = (m_imgDb == null) ? null : m_imgDb.QueryItemMean(m_dataSet.TrainingSource.ID);
+                    SimpleDatum sdMean = (m_db == null) ? null : m_db.QueryItemMean(m_dataSet.TrainingSource.ID);
                     int nC = m_project.Dataset.TrainingSource.Channels;
                     int nH = m_project.Dataset.TrainingSource.Height;
                     int nW = m_project.Dataset.TrainingSource.Width;
@@ -1217,7 +1239,7 @@ namespace MyCaffe
 
                 if (phase == Phase.RUN)
                 {
-                    m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_imgDb);
+                    m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_db);
 
                     if (p.WeightsState != null)
                     {
@@ -1229,7 +1251,7 @@ namespace MyCaffe
                 {
                     try
                     {
-                        m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_imgDb, Phase.RUN, null, m_solver.TrainingNet);
+                        m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_db, Phase.RUN, null, m_solver.TrainingNet);
                     }
                     catch (Exception excpt)
                     {
@@ -1262,23 +1284,23 @@ namespace MyCaffe
         /// <param name="strModel">Specifies the model desciptor.</param>
         /// <param name="rgWeights">Optionally, specifies the weights to load, or <i>null</i> to ignore.</param>
         /// <param name="labelSelectionOverride">Optionally, specifies the label selection override (overides the label selection in SettingsCaffe).  The label selection dictates how the label sets are selected.</param>
-        /// <param name="imageSelectionOverride">Optionally, specifies the image selection override (overides the image selection in SettingsCaffe).  The image selection dictates how the images are selected from each label set.</param>
+        /// <param name="itemSelectionOverride">Optionally, specifies the item (e.g., image or temporal item) selection override (overides the item selection in SettingsCaffe).  The item selection dictates how the item are selected from each label set.</param>
         /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
-        /// <param name="imgdb">Optionally, specifies the MyCaffeImageDatabase to use.  When <i>null</i>, an instance if the MyCaffeImageDatabase is created internally.</param>
-        /// <param name="bUseImageDb">Optionally, specifies whehter or not to use the image database (default = true).</param>
+        /// <param name="db">Optionally, specifies the in-memory MyCaffeDatabase to use.  When <i>null</i>, an instance if the MyCaffeImageDatabase or MyCaffeTemporalDatabase is created internally depending on the DB_VERSION used.</param>
+        /// <param name="bUseDb">Optionally, specifies to use the in-memory database based on the DB_VERSION specified in the settings.</param>
         /// <param name="bCreateRunNet">Optionally, specifies whether or not to create the Run net (default = true).</param>
         /// <param name="strStage">Optionally, specifies a stage under which to load the model.</param>
         /// <param name="bEnableMemTrace">Optionally, specifies to enable the memory tracing (only available in debug builds).</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        public bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabaseBase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false)
+        public bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? itemSelectionOverride = null, bool bResetFirst = false, IXDatabaseBase db = null, bool bUseDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false)
         {
             try
             {
                 m_log.Enable = m_bEnableVerboseStatus;
 
                 m_strStage = strStage;
-                m_imgDb = imgdb;
-                m_bImgDbOwner = false;
+                m_db = db;
+                m_bDbOwner = false;
 
                 RawProto protoSolver = RawProto.Parse(strSolver);
                 SolverParameter solverParam = SolverParameter.FromProto(protoSolver);
@@ -1290,19 +1312,33 @@ namespace MyCaffe
 
                 m_dataSet = findDataset(solverParam.net_param);
 
-                if (m_imgDb == null && bUseImageDb)
+                if (m_db == null && bUseDb)
                 {
-                    m_imgDb = new MyCaffeImageDatabase(m_log);
-                    m_bImgDbOwner = true;
+                    if (m_settings.DbVersion != db.GetVersion())
+                        throw new Exception("The database version in the settings (" + m_settings.DbVersion.ToString() + ") must match the database version (" + db.GetVersion().ToString() + ") of the 'db' parameter!");
 
-                    m_log.WriteLine("Loading primary images...", true);
-                    m_log.Enable = true;
+                    string strType = "images";
+                    switch (m_settings.DbVersion)
+                    {
+                        case DB_VERSION.IMG_V1:
+                            m_db = new MyCaffeImageDatabase(m_log);
+                            ((IXImageDatabase1)m_db).InitializeWithDs1(m_settings, m_dataSet, m_evtCancel.Name);
+                            m_log.WriteLine("Loading primary images...", true);
+                            m_log.Enable = true;
+                            break;
 
-                    if (m_imgDb is IXImageDatabase1)
-                        ((IXImageDatabase1)m_imgDb).InitializeWithDs1(m_settings, m_dataSet, m_evtCancel.Name);
-                    else
-                        ((IXImageDatabase2)m_imgDb).InitializeWithDs(m_settings, m_dataSet, m_evtCancel.Name);
+                        case DB_VERSION.IMG_V2:
+                            m_db = new MyCaffeImageDatabase(m_log);
+                            ((IXImageDatabase2)m_db).InitializeWithDs(m_settings, m_dataSet, m_evtCancel.Name);
+                            m_log.WriteLine("Loading primary images...", true);
+                            m_log.Enable = true;
+                            break;
 
+                        case DB_VERSION.TEMPORAL:
+                            throw new NotImplementedException("The temporal database is not yet implemented!");
+                    }
+
+                    m_bDbOwner = true;
                     if (m_evtCancel.WaitOne(0))
                         return false;
 
@@ -1313,25 +1349,34 @@ namespace MyCaffe
                     if (labelSelectionOverride.HasValue)
                         lblSel = labelSelectionOverride.Value;
 
-                    if (imageSelectionOverride.HasValue)
-                        imgSel = imageSelectionOverride.Value;
+                    if (itemSelectionOverride.HasValue)
+                        imgSel = itemSelectionOverride.Value;
 
-                    m_imgDb.SetSelectionMethod(lblSel, imgSel);
-                    m_imgDb.QueryItemMean(m_dataSet.TrainingSource.ID);
+                    m_db.SetSelectionMethod(lblSel, imgSel);
+                    m_db.QueryItemMean(m_dataSet.TrainingSource.ID);
                     m_log.WriteLine("Images loaded.", true);
 
                     DatasetDescriptor dsTarget = findDataset(solverParam.net_param, m_dataSet);
                     if (dsTarget != null)
                     {
-                        m_log.WriteLine("Loading target dataset '" + dsTarget.Name + "' images using " + m_settings.ImageDbLoadMethod.ToString() + " loading method.", true);
+                        m_log.WriteLine("Loading target dataset '" + dsTarget.Name + "' " + strType + " using " + m_settings.DbLoadMethod.ToString() + " loading method.", true);
 
-                        if (m_imgDb is IXImageDatabase1)
-                            ((IXImageDatabase1)m_imgDb).LoadDatasetByID1(dsTarget.ID);
-                        else
-                            ((IXImageDatabase2)m_imgDb).LoadDatasetByID(dsTarget.ID);
+                        switch (m_settings.DbVersion)
+                        {
+                            case DB_VERSION.IMG_V1:
+                                ((IXImageDatabase1)m_db).LoadDatasetByID1(dsTarget.ID);
+                                break;
 
-                        m_imgDb.QueryItemMean(dsTarget.TrainingSource.ID);
-                        m_log.WriteLine("Target dataset images loaded.", true);
+                            case DB_VERSION.IMG_V2:
+                                ((IXImageDatabase2)m_db).LoadDatasetByID(dsTarget.ID);
+                                break;
+
+                            case DB_VERSION.TEMPORAL:
+                                throw new NotImplementedException("The temporal database is not yet implemented!");
+                        }
+
+                        m_db.QueryItemMean(dsTarget.TrainingSource.ID);
+                        m_log.WriteLine("Target dataset " + strType + " loaded.", true);
                     }
 
                     m_log.Enable = m_bEnableVerboseStatus;
@@ -1349,7 +1394,7 @@ namespace MyCaffe
                 {
                     m_log.WriteLine("Creating solver...", true);
 
-                    m_solver = Solver<T>.Create(m_cuda, m_log, solverParam, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, m_imgDb, m_persist, m_rgGpu.Count, 0);
+                    m_solver = Solver<T>.Create(m_cuda, m_log, solverParam, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, m_db, m_persist, m_rgGpu.Count, 0);
 
                     if (rgWeights != null)
                     {
@@ -1378,7 +1423,7 @@ namespace MyCaffe
 
                 if (tp != null)
                 {
-                    SimpleDatum sdMean = (m_imgDb == null) ? null : m_imgDb.QueryItemMean(m_dataSet.TrainingSource.ID);
+                    SimpleDatum sdMean = (m_db == null) ? null : m_db.QueryItemMean(m_dataSet.TrainingSource.ID);
                     int nC = 0;
                     int nH = 0;
                     int nW = 0;
@@ -1406,7 +1451,7 @@ namespace MyCaffe
 
                 if (phase == Phase.RUN)
                 {
-                    m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_imgDb);
+                    m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_db);
 
                     if (rgWeights != null)
                     {
@@ -1420,7 +1465,7 @@ namespace MyCaffe
 
                     try
                     {
-                        m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_imgDb, Phase.RUN, null, m_solver.TrainingNet);
+                        m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_db, Phase.RUN, null, m_solver.TrainingNet);
                     }
                     catch (Exception excpt)
                     {
@@ -1469,8 +1514,8 @@ namespace MyCaffe
                 m_strModel = strModel;
 
                 m_strStage = strStage;
-                m_imgDb = null;
-                m_bImgDbOwner = false;
+                m_db = null;
+                m_bDbOwner = false;
 
                 RawProto protoSolver = RawProto.Parse(strSolver);
                 SolverParameter solverParam = SolverParameter.FromProto(protoSolver);
@@ -1493,7 +1538,7 @@ namespace MyCaffe
                 {
                     m_log.WriteLine("Creating solver...", true);
 
-                    m_solver = Solver<T>.Create(m_cuda, m_log, solverParam, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, m_imgDb, m_persist, m_rgGpu.Count, 0);
+                    m_solver = Solver<T>.Create(m_cuda, m_log, solverParam, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, m_db, m_persist, m_rgGpu.Count, 0);
 
                     if (rgWeights != null)
                         m_solver.Restore(rgWeights, null);
@@ -1988,7 +2033,7 @@ namespace MyCaffe
             if (imgSelMethod == DB_ITEM_SELECTION_METHOD.NONE)
                 lblSelMethod = DB_LABEL_SELECTION_METHOD.NONE;
 
-            Tuple<DB_LABEL_SELECTION_METHOD, DB_ITEM_SELECTION_METHOD> sel = m_imgDb.GetSelectionMethod();
+            Tuple<DB_LABEL_SELECTION_METHOD, DB_ITEM_SELECTION_METHOD> sel = m_db.GetSelectionMethod();
             if ((sel.Item2 & DB_ITEM_SELECTION_METHOD.BOOST) == DB_ITEM_SELECTION_METHOD.BOOST)
                 imgSelMethod |= DB_ITEM_SELECTION_METHOD.BOOST;
 
@@ -2039,7 +2084,7 @@ namespace MyCaffe
             if (dtImageStartTime.HasValue && dtImageStartTime.Value > DateTime.MinValue)
             {
                 m_log.WriteLine("INFO: Starting test many at images with time " + dtImageStartTime.Value.ToString() + " or later...");
-                rgImg = m_imgDb.GetItemsFromTime(nSrcId, dtImageStartTime.Value, nCount);
+                rgImg = m_db.GetItemsFromTime(nSrcId, dtImageStartTime.Value, nCount);
                 if (nCount > rgImg.Count)
                     nCount = rgImg.Count;
 
@@ -2072,7 +2117,7 @@ namespace MyCaffe
                     }
 
 
-                    sd = (rgImg != null) ? rgImg[i] : m_imgDb.QueryItem(nSrcId, nImageStartIdx + i, lblSelMethod, imgSelMethod, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+                    sd = (rgImg != null) ? rgImg[i] : m_db.QueryItem(nSrcId, nImageStartIdx + i, lblSelMethod, imgSelMethod, null, m_settings.ItemDbLoadDataCriteria, m_settings.ItemDbLoadDebugData);
 
                     if (sd.Height != m_dataSet.TrainingSource.Height || sd.Width != m_dataSet.TestingSource.Width)
                     {
@@ -2337,7 +2382,7 @@ namespace MyCaffe
         /// <returns>The result of the run is returned.</returns>
         public ResultCollection Run(int nImageIdx, bool bPad = true)
         {
-            SimpleDatum sd = m_imgDb.QueryItem(m_dataSet.TrainingSource.ID, nImageIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+            SimpleDatum sd = m_db.QueryItem(m_dataSet.TrainingSource.ID, nImageIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, null, m_settings.ItemDbLoadDataCriteria, m_settings.ItemDbLoadDebugData);
             m_dataTransformer.TransformLabel(sd);
             return Run(sd, true, bPad);
         }
@@ -2354,7 +2399,7 @@ namespace MyCaffe
 
             foreach (int nImageIdx in rgImageIdx)
             {
-                SimpleDatum sd = m_imgDb.QueryItem(m_dataSet.TrainingSource.ID, nImageIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+                SimpleDatum sd = m_db.QueryItem(m_dataSet.TrainingSource.ID, nImageIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, null, m_settings.ItemDbLoadDataCriteria, m_settings.ItemDbLoadDebugData);
                 m_dataTransformer.TransformLabel(sd);
                 rgSd.Add(sd);
             }
@@ -2376,7 +2421,7 @@ namespace MyCaffe
 
             foreach (int nImageIdx in rgImageIdx)
             {
-                SimpleDatum sd = m_imgDb.QueryItem(m_dataSet.TrainingSource.ID, nImageIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+                SimpleDatum sd = m_db.QueryItem(m_dataSet.TrainingSource.ID, nImageIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, null, m_settings.ItemDbLoadDataCriteria, m_settings.ItemDbLoadDebugData);
                 m_dataTransformer.TransformLabel(sd);
                 rgSd.Add(sd);
             }
@@ -2524,8 +2569,8 @@ namespace MyCaffe
                 }
 
                 result = new ResultCollection(rgResults, lastLayerType);
-                if (m_imgDb != null)
-                    result.SetLabels(m_imgDb.GetLabels(m_dataSet.TrainingSource.ID));
+                if (m_db != null && m_db.GetVersion() != DB_VERSION.TEMPORAL)
+                    result.SetLabels(((IXImageDatabaseBase)m_db).GetLabels(m_dataSet.TrainingSource.ID));
             }
             catch (Exception excpt)
             {
@@ -2611,8 +2656,8 @@ namespace MyCaffe
 
                 ResultCollection result = new ResultCollection(rgResults, lastLayerType);
 
-                if (m_imgDb != null && m_dataSet != null)
-                    result.SetLabels(m_imgDb.GetLabels(m_dataSet.TrainingSource.ID));
+                if (m_db != null && m_dataSet != null && m_db.GetVersion() != DB_VERSION.TEMPORAL)
+                    result.SetLabels(((IXImageDatabaseBase)m_db).GetLabels(m_dataSet.TrainingSource.ID));
 
                 rgFinalResults.Add(result);
             }
@@ -2728,8 +2773,8 @@ namespace MyCaffe
                 }
 
                 ResultCollection result = new ResultCollection(rgResults, lastLayerType);
-                if (m_imgDb != null)
-                    result.SetLabels(m_imgDb.GetLabels(m_dataSet.TrainingSource.ID));
+                if (m_db != null && m_db.GetVersion() != DB_VERSION.TEMPORAL)
+                    result.SetLabels(((IXImageDatabaseBase)m_db).GetLabels(m_dataSet.TrainingSource.ID));
 
                 rgFinalResults.Add(result);
             }
@@ -3015,12 +3060,15 @@ namespace MyCaffe
         /// <returns>The image queried is returned.</returns>
         public Bitmap GetTestImage(Phase phase, out int nLabel, out string strLabel)
         {
+            if (m_db.GetVersion() == DB_VERSION.TEMPORAL)
+                throw new Exception("The GetTestImage only works with non-temporal databases.");
+
             int nSrcId = (phase == Phase.TRAIN) ? m_dataSet.TrainingSource.ID : m_dataSet.TestingSource.ID;
-            SimpleDatum sd = m_imgDb.QueryItem(nSrcId, 0, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.RANDOM, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+            SimpleDatum sd = m_db.QueryItem(nSrcId, 0, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.RANDOM, null, m_settings.ItemDbLoadDataCriteria, m_settings.ItemDbLoadDebugData);
             m_dataTransformer.TransformLabel(sd);
 
             nLabel = sd.Label;
-            strLabel = m_imgDb.GetLabelName(nSrcId, nLabel);
+            strLabel = ((IXImageDatabaseBase)m_db).GetLabelName(nSrcId, nLabel);
 
             if (strLabel == null || strLabel.Length == 0)
                 strLabel = nLabel.ToString();
@@ -3036,8 +3084,11 @@ namespace MyCaffe
         /// <returns>The image queried is returned.</returns>
         public Bitmap GetTestImage(Phase phase, int nLabel)
         {
+            if (m_db.GetVersion() == DB_VERSION.TEMPORAL)
+                throw new Exception("The GetTestImage only works with non-temporal databases.");
+
             int nSrcId = (phase == Phase.TRAIN) ? m_dataSet.TrainingSource.ID : m_dataSet.TestingSource.ID;
-            SimpleDatum sd = m_imgDb.QueryItem(nSrcId, 0, DB_LABEL_SELECTION_METHOD.RANDOM, DB_ITEM_SELECTION_METHOD.RANDOM, nLabel, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+            SimpleDatum sd = m_db.QueryItem(nSrcId, 0, DB_LABEL_SELECTION_METHOD.RANDOM, DB_ITEM_SELECTION_METHOD.RANDOM, nLabel, m_settings.ItemDbLoadDataCriteria, m_settings.ItemDbLoadDebugData);
             m_dataTransformer.TransformLabel(sd);
 
             return new Bitmap(ImageData.GetImage(new Datum(sd), null));
@@ -3055,11 +3106,14 @@ namespace MyCaffe
         /// <returns>The image queried is returned.</returns>
         public Bitmap GetTargetImage(int nSrcId, int nIdx, out int nLabel, out string strLabel, out byte[] rgCriteria, out SimpleDatum.DATA_FORMAT fmtCriteria)
         {
-            SimpleDatum sd = m_imgDb.QueryItem(nSrcId, nIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+            if (m_db.GetVersion() == DB_VERSION.TEMPORAL)
+                throw new Exception("The GetTestImage only works with non-temporal databases.");
+
+            SimpleDatum sd = m_db.QueryItem(nSrcId, nIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, null, m_settings.ItemDbLoadDataCriteria, m_settings.ItemDbLoadDebugData);
             m_dataTransformer.TransformLabel(sd);
 
             nLabel = sd.Label;
-            strLabel = m_imgDb.GetLabelName(nSrcId, nLabel);
+            strLabel = ((IXImageDatabaseBase)m_db).GetLabelName(nSrcId, nLabel);
 
             if (strLabel == null || strLabel.Length == 0)
                 strLabel = nLabel.ToString();
@@ -3081,10 +3135,13 @@ namespace MyCaffe
         /// <returns>The image queried is returned.</returns>
         public Bitmap GetTargetImage(int nImageID, out int nLabel, out string strLabel, out byte[] rgCriteria, out SimpleDatum.DATA_FORMAT fmtCriteria)
         {
-            SimpleDatum d = m_imgDb.GetItem(nImageID, m_dataSet.TrainingSource.ID, m_dataSet.TestingSource.ID);
+            if (m_db.GetVersion() == DB_VERSION.TEMPORAL)
+                throw new Exception("The GetTestImage only works with non-temporal databases.");
+
+            SimpleDatum d = m_db.GetItem(nImageID, m_dataSet.TrainingSource.ID, m_dataSet.TestingSource.ID);
 
             nLabel = d.Label;
-            strLabel = m_imgDb.GetLabelName(m_dataSet.TestingSource.ID, nLabel);
+            strLabel = ((IXImageDatabaseBase)m_db).GetLabelName(m_dataSet.TestingSource.ID, nLabel);
 
             if (strLabel == null || strLabel.Length == 0)
                 strLabel = nLabel.ToString();
@@ -3096,12 +3153,12 @@ namespace MyCaffe
         }
 
         /// <summary>
-        /// Returns the image mean used by the solver network used during training.
+        /// Returns the item (e.g., image or temporal item) mean used by the solver network used during training.
         /// </summary>
         /// <returns>The image mean is returned as a SimpleDatum.</returns>
-        public SimpleDatum GetImageMean()
+        public SimpleDatum GetItemMean()
         {
-            if (m_imgDb == null)
+            if (m_db == null)
                 throw new Exception("The image database is null!");
 
             if (m_solver == null)
@@ -3111,9 +3168,9 @@ namespace MyCaffe
                 throw new Exception("The solver net is null - make sure that you are loaded for training.");
 
             string strSrc = m_solver.net.GetDataSource();
-            int nSrcId = m_imgDb.GetSourceID(strSrc);
+            int nSrcId = m_db.GetSourceID(strSrc);
 
-            return m_imgDb.GetItemMean(nSrcId);
+            return m_db.GetItemMean(nSrcId);
         }
 
         /// <summary>
@@ -3251,7 +3308,7 @@ namespace MyCaffe
                 cudaOverride = m_cuda;
 
             NetParameter p = (m_net != null) ? m_net.ToProto(false) : m_solver.net.ToProto(false);
-            Net<T> net = new Net<T>(cudaOverride, m_log, p, m_evtCancel, m_imgDb);
+            Net<T> net = new Net<T>(cudaOverride, m_log, p, m_evtCancel, m_db);
             loadWeights(net, rgWeights);
             return net;
         }

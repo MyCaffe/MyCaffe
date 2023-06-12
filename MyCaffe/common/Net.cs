@@ -93,8 +93,8 @@ namespace MyCaffe.common
         // Whether to compute and display debug info for the net.
         bool m_bDebugInfo = false;
 
-        // The image database passed through to the data layer(s).
-        IXImageDatabaseBase m_db = null;
+        // The in-memory database passed through to the data layer(s).
+        IXDatabaseBase m_db = null;
 
         // Cancel event used to cancel training and testing.
         CancelEvent m_evtCancel;
@@ -152,16 +152,16 @@ namespace MyCaffe.common
         /// <param name="log">Specifies the Log for output.</param>
         /// <param name="p">Specifies the NetParameter used to initialize the Net.</param>
         /// <param name="evtCancel">Specifies the CancelEvent used to cancel operations run by the Net.</param>
-        /// <param name="imgDb">Specifies the MyCaffeImageDatabase.</param>
+        /// <param name="db">Specifies the in-memory MyCaffeDatabase.</param>
         /// <param name="phaseOverride">Optionally, specifies an override of the Phase for which the Net is used.</param>
         /// <param name="evtTrainingCompleted">Optionally, specifies an auto reset event that is set after training has completed.</param>
         /// <param name="sharedNet">Specifies another Net that shares the GPU memory created by this Net.</param>
         /// <param name="getws">Optionally, specifies the handler for getting the workspace.</param>
         /// <param name="setws">Optionally, specifies the handler for setting the workspace.</param>
-        public Net(CudaDnn<T> cuda, Log log, NetParameter p, CancelEvent evtCancel, IXImageDatabaseBase imgDb, Phase phaseOverride = Phase.NONE, AutoResetEvent evtTrainingCompleted = null, Net<T> sharedNet = null, onGetWorkspace getws = null, onSetWorkspace setws = null)
+        public Net(CudaDnn<T> cuda, Log log, NetParameter p, CancelEvent evtCancel, IXDatabaseBase db, Phase phaseOverride = Phase.NONE, AutoResetEvent evtTrainingCompleted = null, Net<T> sharedNet = null, onGetWorkspace getws = null, onSetWorkspace setws = null)
         {
             m_sharedNet = sharedNet;
-            m_db = imgDb;
+            m_db = db;
             m_cuda = cuda;
             m_log = log;
             m_blobWork = new Blob<T>(cuda, log);
@@ -902,7 +902,10 @@ namespace MyCaffe.common
                 if (string.IsNullOrEmpty(strSrc))
                     return "n/a";
 
-                return m_db.GetLabelCountsAsTextFromSourceName(strSrc);
+                if (m_db.GetVersion() == DB_VERSION.TEMPORAL)
+                    return "n/a";
+
+                return ((IXImageDatabaseBase)m_db).GetLabelCountsAsTextFromSourceName(strSrc);
             }
         }
 
@@ -918,7 +921,10 @@ namespace MyCaffe.common
                 if (string.IsNullOrEmpty(strSrc))
                     return "n/a";
 
-                return m_db.GetLabelQueryHitPercentsAsTextFromSourceName(strSrc);
+                if (m_db.GetVersion() == DB_VERSION.TEMPORAL)
+                    return "n/a";
+
+                return ((IXImageDatabaseBase)m_db).GetLabelQueryHitPercentsAsTextFromSourceName(strSrc);
             }
         }
 
@@ -934,7 +940,10 @@ namespace MyCaffe.common
                 if (string.IsNullOrEmpty(strSrc))
                     return "n/a";
 
-                return m_db.GetLabelQueryEpocsAsTextFromSourceName(strSrc);
+                if (m_db.GetVersion() == DB_VERSION.TEMPORAL)
+                    return "n/a";
+
+                return ((IXImageDatabaseBase)m_db).GetLabelQueryEpocsAsTextFromSourceName(strSrc);
             }
         }
 
@@ -950,7 +959,10 @@ namespace MyCaffe.common
                 if (string.IsNullOrEmpty(strSrc))
                     return "n/a";
 
-                return m_db.GetBoostQueryHitPercentsAsTextFromSourceName(strSrc);
+                if (m_db.GetVersion() == DB_VERSION.TEMPORAL)
+                    return "n/a";
+
+                return ((IXImageDatabaseBase)m_db).GetBoostQueryHitPercentsAsTextFromSourceName(strSrc);
             }
         }
 

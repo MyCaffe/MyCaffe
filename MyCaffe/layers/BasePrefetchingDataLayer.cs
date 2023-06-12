@@ -39,7 +39,7 @@ namespace MyCaffe.layers
         /// <param name="p">Specifies the LayerParameter</param>
         /// <param name="db">Specifies the external database to use.</param>
         /// <param name="evtCancel">Specifies the CancelEvent used to cancel any pre-fetching operations.</param>
-        public BasePrefetchingDataLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXImageDatabaseBase db, CancelEvent evtCancel)
+        public BasePrefetchingDataLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXDatabaseBase db, CancelEvent evtCancel)
             : base(cuda, log, p, db)
         {
             m_evtCancel = evtCancel;

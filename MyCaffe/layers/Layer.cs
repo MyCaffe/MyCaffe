@@ -1424,10 +1424,10 @@ namespace MyCaffe.layers
         /// <param name="log">Specifies the Log for output.</param>
         /// <param name="p">Specifies the LayerParameter that contains the LayerType to create.</param>
         /// <param name="evtCancel">Specifies the CancelEvent used by some Layers when created.</param>
-        /// <param name="imgDb">Optionally, specifies the MyCaffeImageDatabase used by data Layers.</param>
+        /// <param name="db">Optionally, specifies the in-memory MyCaffeDatabase used by data Layers.</param>
         /// <param name="trxinput">Optionally, specifies the transfer input object used by some of the data Layers.</param>
         /// <returns></returns>
-        public static Layer<T> Create(CudaDnn<T> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXImageDatabaseBase imgDb = null, TransferInput trxinput = null)
+        public static Layer<T> Create(CudaDnn<T> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXDatabaseBase db = null, TransferInput trxinput = null)
         {
             switch (p.type)
             {
@@ -1477,7 +1477,7 @@ namespace MyCaffe.layers
                     return new Im2colLayer<T>(cuda, log, p);
 
                 case LayerParameter.LayerType.DATA:
-                    return new DataLayer<T>(cuda, log, p, imgDb, evtCancel);
+                    return new DataLayer<T>(cuda, log, p, db, evtCancel);
 
                 case LayerParameter.LayerType.DATA_NORMALIZER:
                     return new DataNormalizerLayer<T>(cuda, log, p);
@@ -1534,7 +1534,7 @@ namespace MyCaffe.layers
                     return new LogLayer<T>(cuda, log, p);
 
                 case LayerParameter.LayerType.LABELMAPPING:
-                    return new LabelMappingLayer<T>(cuda, log, p, imgDb);
+                    return new LabelMappingLayer<T>(cuda, log, p, db);
 
                 case LayerParameter.LayerType.LRN:
                     return new LRNLayer<T>(cuda, log, p);
@@ -1635,7 +1635,7 @@ namespace MyCaffe.layers
                     return new LSTMUnitLayer<T>(cuda, log, p);
 
                 default:
-                    Layer<T> layer = createDynamicLayer(cuda, log, p, imgDb, evtCancel);
+                    Layer<T> layer = createDynamicLayer(cuda, log, p, db, evtCancel);
                     if (layer != null)
                         return layer;
 
@@ -1646,7 +1646,7 @@ namespace MyCaffe.layers
             throw new NotImplementedException("The layer type: " + p.type.ToString() + " is not implemented yet.");
         }
 
-        private static Layer<T> createDynamicLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXImageDatabaseBase imgDb, CancelEvent evtCancel)
+        private static Layer<T> createDynamicLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXDatabaseBase db, CancelEvent evtCancel)
         {
             string strDir = System.IO.Path.GetDirectoryName(new System.Uri(System.Reflection.Assembly.GetExecutingAssembly().CodeBase).LocalPath);
             string[] rgstrFiles = Directory.GetFiles(strDir, "mycaffe.layers.*.dll");
@@ -1662,9 +1662,9 @@ namespace MyCaffe.layers
                         Layer<T> layer;
 
                         if (typeof(T) == typeof(double))
-                            layer = icreator.CreateDouble(cuda as CudaDnn<double>, log, p, evtCancel, imgDb) as Layer<T>;
+                            layer = icreator.CreateDouble(cuda as CudaDnn<double>, log, p, evtCancel, db) as Layer<T>;
                         else
-                            layer = icreator.CreateSingle(cuda as CudaDnn<float>, log, p, evtCancel, imgDb) as Layer<T>;
+                            layer = icreator.CreateSingle(cuda as CudaDnn<float>, log, p, evtCancel, db) as Layer<T>;
 
                         if (layer != null)
                             return layer;

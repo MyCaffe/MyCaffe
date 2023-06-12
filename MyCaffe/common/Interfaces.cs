@@ -324,9 +324,9 @@ namespace MyCaffe.common
         /// </summary>
         IXPersist<T> Persist { get; }
         /// <summary>
-        /// Returns the MyCaffeImageDatabase used.
+        /// Returns the in-memory MyCaffeDatabase used.
         /// </summary>
-        IXImageDatabaseBase ImageDatabase { get; }
+        IXDatabaseBase Database { get; }
 
         /// <summary>
         /// Returns the CancelEvent used.
@@ -417,15 +417,15 @@ namespace MyCaffe.common
         /// <param name="phase">Specifies the Phase for which the load should focus.</param>
         /// <param name="p">Specifies the Project to load.</param>
         /// <param name="labelSelectionOverride">Optionally, specifies the label selection override (overides the label selection in SettingsCaffe).  The label selection dictates how the label sets are selected.</param>
-        /// <param name="imageSelectionOverride">Optionally, specifies the image selection override (overides the image selection in SettingsCaffe).  The image selection dictates how the images are selected from each label set.</param>
+        /// <param name="itemSelectionOverride">Optionally, specifies the item (e.g., image or temporal item) selection override (overides the item selection in SettingsCaffe).  The item selection dictates how the items are selected from each label set.</param>
         /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
-        /// <param name="imgdb">Optionally, specifies the MyCaffeImageDatabase to use.  When <i>null</i>, an instance if the MyCaffeImageDatabase is created internally.</param>
-        /// <param name="bUseImageDb">Optionally, specifies whehter or not to use the image database (default = true).</param>
+        /// <param name="db">Optionally, specifies the in-memory MyCaffeDatabase to use.  When <i>null</i>, an instance if the in-memory MyCaffeDatabase is created internally based on the 'dbVer'.</param>
+        /// <param name="bUseDb">Optionally, specifies to use the in-memory database if not null.</param>
         /// <param name="bCreateRunNet">Optionally, specifies whether or not to create the Run net.</param>
         /// <param name="strStage">Optionally, specifies the stage under which to load the model.</param>
         /// <param name="bEnableMemTrace">Optionally, specifies to enable the memory tracing (only available in debug builds).</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        bool Load(Phase phase, ProjectEx p, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabaseBase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false);
+        bool Load(Phase phase, ProjectEx p, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? itemSelectionOverride = null, bool bResetFirst = false, IXDatabaseBase db = null, bool bUseDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false);
         /// <summary>
         /// Load a project and optionally the MyCaffeImageDatabase.
         /// </summary>
@@ -437,21 +437,21 @@ namespace MyCaffe.common
         /// <param name="strModel">Specifies the model desciptor.</param>
         /// <param name="rgWeights">Optionally, specifies the weights to load, or <i>null</i> to ignore.</param>
         /// <param name="labelSelectionOverride">Optionally, specifies the label selection override (overides the label selection in SettingsCaffe).  The label selection dictates how the label sets are selected.</param>
-        /// <param name="imageSelectionOverride">Optionally, specifies the image selection override (overides the image selection in SettingsCaffe).  The image selection dictates how the images are selected from each label set.</param>
+        /// <param name="itemSelectionOverride">Optionally, specifies the item (e.g., image or temporal item) selection override (overides the item selection in SettingsCaffe).  The item selection dictates how the items are selected from each label set.</param>
         /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
-        /// <param name="imgdb">Optionally, specifies the MyCaffeImageDatabase to use.  When <i>null</i>, an instance if the MyCaffeImageDatabase is created internally.</param>
-        /// <param name="bUseImageDb">Optionally, specifies whehter or not to use the image database (default = true).</param>
+        /// <param name="db">Optionally, specifies the in-memory MyCaffeDatabase to use.  When <i>null</i>, an instance if the in-memory MyCaffeDatabase is created internally based on the 'dbVer'.</param>
+        /// <param name="bUseDb">Optionally, specifies to use the in-memory database if not null.</param>
         /// <param name="bCreateRunNet">Optionally, specifies whether or not to create the Run net.</param>
         /// <param name="strStage">Optionally, specifies the stage under which to load the model.</param>
         /// <param name="bEnableMemTrace">Optionally, specifies to enable the memory tracing (only available in debug builds).</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabaseBase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false);
+        bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? itemSelectionOverride = null, bool bResetFirst = false, IXDatabaseBase db = null, bool bUseDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false);
         /// <summary>
         /// Unload the currently loaded project.
         /// </summary>
-        /// <param name="bUnloadImageDb">Optionally, specifies whether or not to unload the image database. The default = <i>true</i>.</param>
+        /// <param name="bUnloadDb">Optionally, specifies whether or not to unload the in-memory database. The default = <i>true</i>.</param>
         /// <param name="bIgnoreExceptions">Optionally, specifies to ignore exceptions that occur (default = <i>false</i>).</param>
-        void Unload(bool bUnloadImageDb = true, bool bIgnoreExceptions = false);
+        void Unload(bool bUnloadDb = true, bool bIgnoreExceptions = false);
         /// <summary>
         /// Train the network a set number of iterations and allow for single stepping.
         /// </summary>
@@ -526,7 +526,7 @@ namespace MyCaffe.common
         /// Returns the image mean used by the solver network used during training.
         /// </summary>
         /// <returns>The image mean is returned as a SimpleDatum.</returns>
-        SimpleDatum GetImageMean();
+        SimpleDatum GetItemMean();
         /// <summary>
         /// Returns the current dataset used when training and testing.
         /// </summary>
