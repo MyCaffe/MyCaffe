@@ -174,7 +174,7 @@ namespace MyCaffe.test
                 {
                     bool unique_pixels = false;
                     t.Fill(unique_pixels);
-                    t.TestRead(IMAGEDB_LOAD_METHOD.LOAD_ALL);
+                    t.TestRead(DB_LOAD_METHOD.LOAD_ALL);
                 }
             }
             finally
@@ -194,7 +194,7 @@ namespace MyCaffe.test
                 {
                     bool unique_pixels = false;
                     t.Fill(unique_pixels);
-                    t.TestRead(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
+                    t.TestRead(DB_LOAD_METHOD.LOAD_ON_DEMAND);
                 }
             }
             finally
@@ -214,7 +214,7 @@ namespace MyCaffe.test
                 {
                     bool unique_pixels = false;
                     t.Fill(unique_pixels);
-                    t.TestRead(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE);
+                    t.TestRead(DB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE);
                 }
             }
             finally
@@ -233,7 +233,7 @@ namespace MyCaffe.test
                 foreach (IDataLayerTest t in test.Tests)
                 {
                     t.Fill(false);
-                    t.TestSkip(IMAGEDB_LOAD_METHOD.LOAD_ALL);
+                    t.TestSkip(DB_LOAD_METHOD.LOAD_ALL);
                 }
             }
             finally
@@ -252,7 +252,7 @@ namespace MyCaffe.test
                 foreach (IDataLayerTest t in test.Tests)
                 {
                     t.Fill(false);
-                    t.TestSkip(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
+                    t.TestSkip(DB_LOAD_METHOD.LOAD_ON_DEMAND);
                 }
             }
             finally
@@ -270,7 +270,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataLayerTest t in test.Tests)
                 {
-                    t.TestReshape(IMAGEDB_LOAD_METHOD.LOAD_ALL);
+                    t.TestReshape(DB_LOAD_METHOD.LOAD_ALL);
                 }
             }
             finally
@@ -288,7 +288,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataLayerTest t in test.Tests)
                 {
-                    t.TestReshape(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
+                    t.TestReshape(DB_LOAD_METHOD.LOAD_ON_DEMAND);
                 }
             }
             finally
@@ -311,7 +311,7 @@ namespace MyCaffe.test
                     for (int i = 0; i < 2; i++)
                     {
                         t.Fill(unique_pixels);
-                        t.TestReadCrop(Phase.TRAIN, IMAGEDB_LOAD_METHOD.LOAD_ALL);
+                        t.TestReadCrop(Phase.TRAIN, DB_LOAD_METHOD.LOAD_ALL);
                     }
                 }
             }
@@ -332,7 +332,7 @@ namespace MyCaffe.test
                 {
                     bool unique_pixels = true;
                     t.Fill(unique_pixels);
-                    t.TestReadCrop(Phase.TRAIN, IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
+                    t.TestReadCrop(Phase.TRAIN, DB_LOAD_METHOD.LOAD_ON_DEMAND);
                 }
             }
             finally
@@ -352,7 +352,7 @@ namespace MyCaffe.test
                 {
                     bool unique_pixels = true;
                     t.Fill(unique_pixels);
-                    t.TestReadCropSequenceSeeded(IMAGEDB_LOAD_METHOD.LOAD_ALL);
+                    t.TestReadCropSequenceSeeded(DB_LOAD_METHOD.LOAD_ALL);
                 }
             }
             finally
@@ -372,7 +372,7 @@ namespace MyCaffe.test
                 {
                     bool unique_pixels = true;
                     t.Fill(unique_pixels);
-                    t.TestReadCropSequenceSeeded(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
+                    t.TestReadCropSequenceSeeded(DB_LOAD_METHOD.LOAD_ON_DEMAND);
                 }
             }
             finally
@@ -392,7 +392,7 @@ namespace MyCaffe.test
                 {
                     bool unique_pixels = true;
                     t.Fill(unique_pixels);
-                    t.TestReadCropSequenceSeeded(IMAGEDB_LOAD_METHOD.LOAD_ALL);
+                    t.TestReadCropSequenceSeeded(DB_LOAD_METHOD.LOAD_ALL);
                 }
             }
             finally
@@ -412,7 +412,7 @@ namespace MyCaffe.test
                 {
                     bool unique_pixels = true;
                     t.Fill(unique_pixels);
-                    t.TestReadCropSequenceSeeded(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
+                    t.TestReadCropSequenceSeeded(DB_LOAD_METHOD.LOAD_ON_DEMAND);
                 }
             }
             finally
@@ -435,7 +435,7 @@ namespace MyCaffe.test
                     for (int i = 0; i < 2; i++)
                     {
                         t.Fill(unique_pixels);
-                        t.TestReadCrop(Phase.TEST, IMAGEDB_LOAD_METHOD.LOAD_ALL);
+                        t.TestReadCrop(Phase.TEST, DB_LOAD_METHOD.LOAD_ALL);
                     }
                 }
             }
@@ -459,7 +459,7 @@ namespace MyCaffe.test
                     for (int i = 0; i < 2; i++)
                     {
                         t.Fill(unique_pixels);
-                        t.TestReadCrop(Phase.TEST, IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
+                        t.TestReadCrop(Phase.TEST, DB_LOAD_METHOD.LOAD_ON_DEMAND);
                     }
                 }
             }
@@ -481,7 +481,7 @@ namespace MyCaffe.test
                     bool unique_pixels = true;
 
                     t.Fill(unique_pixels, 5);
-                    t.TestDataLabelMapping(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
+                    t.TestDataLabelMapping(DB_LOAD_METHOD.LOAD_ON_DEMAND);
                 }
             }
             finally
@@ -502,7 +502,7 @@ namespace MyCaffe.test
                     bool unique_pixels = true;
 
                     t.Fill3(unique_pixels);
-                    t.TestDataLabelMappingWithBoost(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
+                    t.TestDataLabelMappingWithBoost(DB_LOAD_METHOD.LOAD_ON_DEMAND);
                 }
             }
             finally
@@ -523,7 +523,7 @@ namespace MyCaffe.test
                     bool unique_pixels = true;
 
                     t.Fill3(unique_pixels);
-                    t.TestDataLabelMappingWithBoostAndFalseCondition(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
+                    t.TestDataLabelMappingWithBoostAndFalseCondition(DB_LOAD_METHOD.LOAD_ON_DEMAND);
                 }
             }
             finally
@@ -620,15 +620,15 @@ namespace MyCaffe.test
         string Fill(bool unique_pixels, int nMaxLabel = -1);
         string Fill2(int num_inputs);
         string Fill3(bool unique_pixels);
-        void TestRead(IMAGEDB_LOAD_METHOD loadMethod);
-        void TestSkip(IMAGEDB_LOAD_METHOD loadMethod);
-        void TestReshape(IMAGEDB_LOAD_METHOD loadMethod);
-        void TestReadCrop(Phase phase, IMAGEDB_LOAD_METHOD loadMethod);
-        void TestReadCropSequenceSeeded(IMAGEDB_LOAD_METHOD loadMethod);
-        void TestReadCropSequenceUnSeeded(IMAGEDB_LOAD_METHOD loadMethod);
-        void TestDataLabelMapping(IMAGEDB_LOAD_METHOD loadMethod);
-        void TestDataLabelMappingWithBoost(IMAGEDB_LOAD_METHOD loadMethod);
-        void TestDataLabelMappingWithBoostAndFalseCondition(IMAGEDB_LOAD_METHOD loadMethod);
+        void TestRead(DB_LOAD_METHOD loadMethod);
+        void TestSkip(DB_LOAD_METHOD loadMethod);
+        void TestReshape(DB_LOAD_METHOD loadMethod);
+        void TestReadCrop(Phase phase, DB_LOAD_METHOD loadMethod);
+        void TestReadCropSequenceSeeded(DB_LOAD_METHOD loadMethod);
+        void TestReadCropSequenceUnSeeded(DB_LOAD_METHOD loadMethod);
+        void TestDataLabelMapping(DB_LOAD_METHOD loadMethod);
+        void TestDataLabelMappingWithBoost(DB_LOAD_METHOD loadMethod);
+        void TestDataLabelMappingWithBoostAndFalseCondition(DB_LOAD_METHOD loadMethod);
     }
 
     class DataLayerTest<T> : TestEx<T>, IDataLayerTest
@@ -870,7 +870,7 @@ namespace MyCaffe.test
             return m_strSrc1;
         }
 
-        public void TestRead(IMAGEDB_LOAD_METHOD loadMethod)
+        public void TestRead(DB_LOAD_METHOD loadMethod)
         {
             Assert.AreNotEqual(0, m_nSrcID1, "You must call 'Fill' first to set the source id!");
             double dfScale = 3;
@@ -934,7 +934,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestSkip(IMAGEDB_LOAD_METHOD loadMethod)
+        public void TestSkip(DB_LOAD_METHOD loadMethod)
         {
             int nBatchSize = 5;
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.DATA);
@@ -993,7 +993,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestReshape(IMAGEDB_LOAD_METHOD loadMethod)
+        public void TestReshape(DB_LOAD_METHOD loadMethod)
         {
             int num_inputs = 5;
             // Save data of varying shapes
@@ -1059,7 +1059,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestReadCrop(Phase phase, IMAGEDB_LOAD_METHOD loadMethod)
+        public void TestReadCrop(Phase phase, DB_LOAD_METHOD loadMethod)
         {
             Assert.AreNotEqual(0, m_nSrcID1, "You must call 'Fill' first to set the source id!");
             m_log.WriteLine("Using temporary dataset '" + m_strSrc1 + "'.");
@@ -1137,7 +1137,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestReadCropSequenceSeeded(IMAGEDB_LOAD_METHOD loadMethod)
+        public void TestReadCropSequenceSeeded(DB_LOAD_METHOD loadMethod)
         {
             Assert.AreNotEqual(0, m_nSrcID1, "You must call 'Fill' first to set the source id!");
             m_log.WriteLine("Using temporary dataset '" + m_strSrc1 + "'.");
@@ -1238,7 +1238,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestReadCropSequenceUnSeeded(IMAGEDB_LOAD_METHOD loadMethod)
+        public void TestReadCropSequenceUnSeeded(DB_LOAD_METHOD loadMethod)
         {
             Assert.AreNotEqual(0, m_nSrcID1, "You must call 'Fill' first to set the source id!");
             m_log.WriteLine("Using temporary dataset '" + m_strSrc1 + "'.");
@@ -1384,7 +1384,7 @@ namespace MyCaffe.test
                 m_log.CHECK_EQ(TopVec.Count, 2, "The top vec should have one element.");
                 T[] rgData = TopVec[0].update_cpu_data();
 
-                SimpleDatum d = m_parent.db.QueryImage(nSrcID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                SimpleDatum d = m_parent.db.QueryItem(nSrcID, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                 byte[] rgData2 = d.ByteData;
 
                 m_log.CHECK_EQ(rgData2.Length, rgData.Length, "The data from the data forward should have the same length as the first item in the database for the source = " + strSrc);
@@ -1449,7 +1449,7 @@ namespace MyCaffe.test
                 m_log.CHECK_EQ(TopVec.Count, 2, "The top vec should have one element.");
                 T[] rgData = TopVec[0].update_cpu_data();
 
-                SimpleDatum d = m_parent.db.QueryImage(nSrcID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                SimpleDatum d = m_parent.db.QueryItem(nSrcID, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                 byte[] rgData2 = d.ByteData;
 
                 m_log.CHECK_EQ(rgData2.Length, rgData.Length, "The data from the data forward should have the same length as the first item in the database for the source = " + strSrc);
@@ -1532,7 +1532,7 @@ namespace MyCaffe.test
 
                 for (int k = 0; k < nBatch; k++)
                 {
-                    SimpleDatum d = m_parent.db.QueryImage(nSrcID, i * nBatch + k, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    SimpleDatum d = m_parent.db.QueryItem(nSrcID, i * nBatch + k, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                     byte[] rgData2 = d.ByteData;
                     
                     m_log.CHECK_EQ(rgData2.Length, rgData.Length / nBatch, "The data from the data forward should have the same length as the first item in the database for the source = " + strSrc);
@@ -1607,10 +1607,10 @@ namespace MyCaffe.test
             p.data_param.enable_random_selection = false;
             p.data_param.enable_pair_selection = false;
 
-            int nL = (int)(src.ImageWidth * 0.5);
-            int nR = src.ImageWidth;
-            int nT = (int)(src.ImageHeight * 0.25);
-            int nB = (int)(src.ImageHeight * 0.75);
+            int nL = (int)(src.Width * 0.5);
+            int nR = src.Width;
+            int nT = (int)(src.Height * 0.25);
+            int nB = (int)(src.Height * 0.75);
 
             p.transform_param.mask_param.Active = false;
             p.transform_param.mask_param.boundary_left = nL;
@@ -1633,7 +1633,7 @@ namespace MyCaffe.test
                 {
                     layer.Forward(BottomVec, TopVec);
 
-                    int nDim = src.ImageChannels * src.ImageHeight * src.ImageWidth;
+                    int nDim = src.Channels * src.Height * src.Width;
                     float[] rgData1 = new float[nDim];
                     float[] rgData = convertF(TopVec[0].mutable_cpu_data);
 
@@ -1644,7 +1644,7 @@ namespace MyCaffe.test
                             Array.Copy(rgData, n * nImagesPerBlob * nDim + j * nDim, rgData1, 0, nDim);
                             byte[] rgb = rgData1.Select(pv => Math.Min((byte)pv, (byte)255)).ToArray();
 
-                            SimpleDatum sd = new SimpleDatum(false, src.ImageChannels, src.ImageWidth, src.ImageHeight, -1, DateTime.MinValue, rgb, 0, false, 0);
+                            SimpleDatum sd = new SimpleDatum(false, src.Channels, src.Width, src.Height, -1, DateTime.MinValue, rgb, 0, false, 0);
                             Bitmap bmp = ImageData.GetImage(sd);
                             //bmp.Save("c:\\temp\\img_" + n.ToString() + "_" + j.ToString() + ".png");
                             LockBitmap bmp1 = new LockBitmap(bmp);
@@ -1690,7 +1690,7 @@ namespace MyCaffe.test
                 {
                     layer.Forward(BottomVec, TopVec);
 
-                    int nDim = src.ImageChannels * src.ImageHeight * src.ImageWidth;
+                    int nDim = src.Channels * src.Height * src.Width;
                     float[] rgData1 = new float[nDim];
                     float[] rgData = convertF(TopVec[0].mutable_cpu_data);
 
@@ -1701,7 +1701,7 @@ namespace MyCaffe.test
                             Array.Copy(rgData, n * nImagesPerBlob * nDim + j * nDim, rgData1, 0, nDim);
                             byte[] rgb = rgData1.Select(pv => Math.Min((byte)pv, (byte)255)).ToArray();
 
-                            SimpleDatum sd = new SimpleDatum(false, src.ImageChannels, src.ImageWidth, src.ImageHeight, -1, DateTime.MinValue, rgb, 0, false, 0);
+                            SimpleDatum sd = new SimpleDatum(false, src.Channels, src.Width, src.Height, -1, DateTime.MinValue, rgb, 0, false, 0);
                             Bitmap bmp = ImageData.GetImage(sd);
                             //bmp.Save("c:\\temp\\img_masked_" + n.ToString() + "_" + j.ToString() + ".png");
                             LockBitmap bmp1 = new LockBitmap(bmp);
@@ -1794,9 +1794,9 @@ namespace MyCaffe.test
                     m_log.CHECK_EQ(TopVec[0].num, p.data_param.batch_size, "The data num should = the batch size.");
                     m_log.CHECK_EQ(TopVec[1].num, p.data_param.batch_size, "The label num should = the batch size.");
 
-                    m_log.CHECK_EQ(TopVec[0].channels, src.ImageChannels * p.data_param.images_per_blob, "The data should have channels = " + (src.ImageChannels * p.data_param.images_per_blob).ToString());
-                    m_log.CHECK_EQ(TopVec[0].height, src.ImageHeight, "The data should have height = " + src.ImageHeight.ToString());
-                    m_log.CHECK_EQ(TopVec[0].width, src.ImageWidth, "The data should have width = " + src.ImageWidth.ToString());
+                    m_log.CHECK_EQ(TopVec[0].channels, src.Channels * p.data_param.images_per_blob, "The data should have channels = " + (src.Channels * p.data_param.images_per_blob).ToString());
+                    m_log.CHECK_EQ(TopVec[0].height, src.Height, "The data should have height = " + src.Height.ToString());
+                    m_log.CHECK_EQ(TopVec[0].width, src.Width, "The data should have width = " + src.Width.ToString());
 
                     if (p.data_param.images_per_blob > 1)
                     {
@@ -1817,7 +1817,7 @@ namespace MyCaffe.test
 
                     for (int j = 0; j < p.data_param.batch_size; j++)
                     {
-                        SimpleDatum d = m_parent.db.QueryImage(nSrcID, nIdx, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                        SimpleDatum d = m_parent.db.QueryItem(nSrcID, nIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                         nIdx++;
 
                         List<SimpleDatum> rgD = new List<SimpleDatum>();
@@ -1825,7 +1825,7 @@ namespace MyCaffe.test
                         {
                             for (int k = 0; k < p.data_param.images_per_blob - 1; k++)
                             {
-                                rgD.Add(m_parent.db.QueryImage(nSrcID, nIdx, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE));
+                                rgD.Add(m_parent.db.QueryItem(nSrcID, nIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE));
                                 nIdx++;
                             }
 
@@ -1915,7 +1915,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestDataLabelMapping(IMAGEDB_LOAD_METHOD loadMethod)
+        public void TestDataLabelMapping(DB_LOAD_METHOD loadMethod)
         {
             Layer<T> layer = null;
             IXImageDatabaseBase db = null;
@@ -2014,7 +2014,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestDataLabelMappingWithBoost(IMAGEDB_LOAD_METHOD loadMethod)
+        public void TestDataLabelMappingWithBoost(DB_LOAD_METHOD loadMethod)
         {
             Layer<T> layer = null;
             IXImageDatabaseBase db = null;
@@ -2130,7 +2130,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestDataLabelMappingWithBoostAndFalseCondition(IMAGEDB_LOAD_METHOD loadMethod)
+        public void TestDataLabelMappingWithBoostAndFalseCondition(DB_LOAD_METHOD loadMethod)
         {
             Layer<T> layer = null;
             IXImageDatabaseBase db = null;

@@ -501,9 +501,9 @@ namespace MyCaffe.trainers.dqn.c51.st
             if (m_transformer == null)
             {
                 TransformationParameter trans_param = new TransformationParameter();
-                int nC = m_mycaffe.CurrentProject.Dataset.TrainingSource.ImageChannels;
-                int nH = m_mycaffe.CurrentProject.Dataset.TrainingSource.ImageHeight;
-                int nW = m_mycaffe.CurrentProject.Dataset.TrainingSource.ImageWidth;
+                int nC = m_mycaffe.CurrentProject.Dataset.TrainingSource.Channels;
+                int nH = m_mycaffe.CurrentProject.Dataset.TrainingSource.Height;
+                int nW = m_mycaffe.CurrentProject.Dataset.TrainingSource.Width;
                 m_transformer = new DataTransformer<T>(m_mycaffe.Cuda, m_mycaffe.Log, trans_param, phase, nC, nH, nW);
             }
             m_transformer.param.mean_value.Add(255 / 2); // center

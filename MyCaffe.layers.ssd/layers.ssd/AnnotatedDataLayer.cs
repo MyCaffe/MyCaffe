@@ -85,23 +85,23 @@ namespace MyCaffe.layers.ssd
             if (db == null)
                 m_log.FAIL("Currently, the AnnotatedDataLayer requires the MyCaffe Image Database!");
 
-            Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> kvSel = db.GetSelectionMethod();
-            IMGDB_IMAGE_SELECTION_METHOD imgSel = kvSel.Item2;
+            Tuple<DB_LABEL_SELECTION_METHOD, DB_ITEM_SELECTION_METHOD> kvSel = db.GetSelectionMethod();
+            DB_ITEM_SELECTION_METHOD imgSel = kvSel.Item2;
 
             if (m_param.data_param.enable_pair_selection.HasValue)
             {
                 if (m_param.data_param.enable_pair_selection.Value)
-                    imgSel |= IMGDB_IMAGE_SELECTION_METHOD.PAIR;
+                    imgSel |= DB_ITEM_SELECTION_METHOD.PAIR;
                 else
-                    imgSel &= (~IMGDB_IMAGE_SELECTION_METHOD.PAIR);
+                    imgSel &= (~DB_ITEM_SELECTION_METHOD.PAIR);
             }
 
             if (m_param.data_param.enable_random_selection.HasValue)
             {
                 if (m_param.data_param.enable_random_selection.Value)
-                    imgSel |= IMGDB_IMAGE_SELECTION_METHOD.RANDOM;
+                    imgSel |= DB_ITEM_SELECTION_METHOD.RANDOM;
                 else
-                    imgSel &= (~IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+                    imgSel &= (~DB_ITEM_SELECTION_METHOD.RANDOM);
             }
 
             if (!db.GetLoadImageDataCriteria())

@@ -100,9 +100,9 @@ namespace MyCaffe.db.image
         /// <param name="nIdx">Specifies the index to use when performing sequential selection.</param>
         /// <param name="selectionMethod">Specifies the image selection method.</param>
         /// <returns>The image is returned.</returns>
-        public SimpleDatum GetImage(int nIdx, IMGDB_IMAGE_SELECTION_METHOD selectionMethod)
+        public SimpleDatum GetImage(int nIdx, DB_ITEM_SELECTION_METHOD selectionMethod)
         {
-            if ((selectionMethod & IMGDB_IMAGE_SELECTION_METHOD.RANDOM) != IMGDB_IMAGE_SELECTION_METHOD.RANDOM)
+            if ((selectionMethod & DB_ITEM_SELECTION_METHOD.RANDOM) != DB_ITEM_SELECTION_METHOD.RANDOM)
                 throw new ArgumentException("Label balancing image selection only supports the RANDOM and RANDOM+BOOST selection methods");
 
             if (m_nCurrentIdx == 0)
@@ -128,9 +128,9 @@ namespace MyCaffe.db.image
         /// <param name="nFixedIndex">Specifies the fixed index to use.</param>
         /// <param name="nImageIdx">Returns the image index used.</param>
         /// <returns></returns>
-        public static SimpleDatum GetImage(SimpleDatum[] rgImages, List<int> rgIdx, int nCount, int nIdx, CryptoRandom random, IMGDB_IMAGE_SELECTION_METHOD selectionMethod, ref int nLastIndex, ref int nFixedIndex, out int nImageIdx)
+        public static SimpleDatum GetImage(SimpleDatum[] rgImages, List<int> rgIdx, int nCount, int nIdx, CryptoRandom random, DB_ITEM_SELECTION_METHOD selectionMethod, ref int nLastIndex, ref int nFixedIndex, out int nImageIdx)
         {
-            if ((selectionMethod & IMGDB_IMAGE_SELECTION_METHOD.BOOST) == IMGDB_IMAGE_SELECTION_METHOD.BOOST)
+            if ((selectionMethod & DB_ITEM_SELECTION_METHOD.BOOST) == DB_ITEM_SELECTION_METHOD.BOOST)
             {
                 IEnumerable<SimpleDatum> iQuery = rgImages.Where(p => p != null && p.Boost > 0);
                 List<SimpleDatum> rgItems = new List<SimpleDatum>(iQuery);               
@@ -148,7 +148,7 @@ namespace MyCaffe.db.image
                         }
                     }
 
-                    if ((selectionMethod & IMGDB_IMAGE_SELECTION_METHOD.RANDOM) == IMGDB_IMAGE_SELECTION_METHOD.RANDOM)
+                    if ((selectionMethod & DB_ITEM_SELECTION_METHOD.RANDOM) == DB_ITEM_SELECTION_METHOD.RANDOM)
                     {
                         nIdx = rgIdx[random.Next(rgIdx.Count)];
                         rgIdx.Remove(nIdx);
@@ -161,7 +161,7 @@ namespace MyCaffe.db.image
                 }
             }
 
-            int nMin = ((selectionMethod & IMGDB_IMAGE_SELECTION_METHOD.PAIR) == IMGDB_IMAGE_SELECTION_METHOD.PAIR) ? 2 : 1;
+            int nMin = ((selectionMethod & DB_ITEM_SELECTION_METHOD.PAIR) == DB_ITEM_SELECTION_METHOD.PAIR) ? 2 : 1;
             if (rgIdx.Count < nMin)
             {
                 rgIdx.Clear();
@@ -172,7 +172,7 @@ namespace MyCaffe.db.image
                 }
             }
 
-            if ((selectionMethod & IMGDB_IMAGE_SELECTION_METHOD.PAIR) == IMGDB_IMAGE_SELECTION_METHOD.PAIR)
+            if ((selectionMethod & DB_ITEM_SELECTION_METHOD.PAIR) == DB_ITEM_SELECTION_METHOD.PAIR)
             {
                 nIdx = nLastIndex + 1;
 
@@ -181,16 +181,16 @@ namespace MyCaffe.db.image
 
                 rgIdx.Remove(nIdx);
             }
-            else if ((selectionMethod & IMGDB_IMAGE_SELECTION_METHOD.RANDOM) == IMGDB_IMAGE_SELECTION_METHOD.RANDOM)
+            else if ((selectionMethod & DB_ITEM_SELECTION_METHOD.RANDOM) == DB_ITEM_SELECTION_METHOD.RANDOM)
             {
                 nIdx = rgIdx[random.Next(rgIdx.Count)];
                 rgIdx.Remove(nIdx);
             }
-            else if (selectionMethod == IMGDB_IMAGE_SELECTION_METHOD.FIXEDINDEX)
+            else if (selectionMethod == DB_ITEM_SELECTION_METHOD.FIXEDINDEX)
             {
                 nFixedIndex = nIdx;
             }
-            else if ((selectionMethod & IMGDB_IMAGE_SELECTION_METHOD.CLEARFIXEDINDEX) == IMGDB_IMAGE_SELECTION_METHOD.CLEARFIXEDINDEX)
+            else if ((selectionMethod & DB_ITEM_SELECTION_METHOD.CLEARFIXEDINDEX) == DB_ITEM_SELECTION_METHOD.CLEARFIXEDINDEX)
             {
                 nFixedIndex = -1;
             }

@@ -876,7 +876,7 @@ namespace MyCaffe.test
 
             for (int i = 0; i < ds.TestingSource.ImageCount; i++)
             {
-                SimpleDatum sd = mycaffe.ImageDatabase.QueryImage(ds.TestingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                SimpleDatum sd = mycaffe.ImageDatabase.QueryItem(ds.TestingSource.ID, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                 ResultCollection res = mycaffe.Run(sd);
 
                 int nLabel = getLabel(rgEncodings, res);
@@ -896,7 +896,7 @@ namespace MyCaffe.test
 
             for (int i = 0; i < ds.TestingSource.ImageCount; i++)
             {
-                SimpleDatum sd = mycaffe.ImageDatabase.QueryImage(ds.TestingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                SimpleDatum sd = mycaffe.ImageDatabase.QueryItem(ds.TestingSource.ID, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                 ResultCollection res = mycaffe.Run(sd);
                 List<double> rgEncoding = res.GetEncoding();
                 int nLabel = sd.Label;

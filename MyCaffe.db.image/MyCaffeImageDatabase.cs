@@ -38,10 +38,10 @@ namespace MyCaffe.db.image
         static Dictionary<int, LabelMappingCollection> m_rgLabelMappings = new Dictionary<int, LabelMappingCollection>();
         Dictionary<int, SimpleDatum> m_rgMeanCache = new Dictionary<int, SimpleDatum>();
         double m_dfSuperBoostProbability = 0;
-        IMGDB_IMAGE_SELECTION_METHOD m_imageSelectionMethod = IMGDB_IMAGE_SELECTION_METHOD.RANDOM;
-        IMGDB_LABEL_SELECTION_METHOD m_labelSelectionMethod = IMGDB_LABEL_SELECTION_METHOD.RANDOM;
+        DB_ITEM_SELECTION_METHOD m_imageSelectionMethod = DB_ITEM_SELECTION_METHOD.RANDOM;
+        DB_LABEL_SELECTION_METHOD m_labelSelectionMethod = DB_LABEL_SELECTION_METHOD.RANDOM;
         Log m_log;
-        IMAGEDB_LOAD_METHOD m_loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
+        DB_LOAD_METHOD m_loadMethod = DB_LOAD_METHOD.LOAD_ON_DEMAND;
         int m_nLoadLimit = 0;
         bool m_bSkipMeanCheck = false;
         int m_nPadW = 0;
@@ -157,31 +157,31 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="s">Specifies the caffe settings.</param>
         /// <returns>The label/image selection method is returned.</returns>
-        public static Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> GetSelectionMethod(SettingsCaffe s)
+        public static Tuple<DB_LABEL_SELECTION_METHOD, DB_ITEM_SELECTION_METHOD> GetSelectionMethod(SettingsCaffe s)
         {
-            IMGDB_IMAGE_SELECTION_METHOD imageSelectionMethod = IMGDB_IMAGE_SELECTION_METHOD.NONE;
-            IMGDB_LABEL_SELECTION_METHOD labelSelectionMethod = IMGDB_LABEL_SELECTION_METHOD.NONE;
+            DB_ITEM_SELECTION_METHOD imageSelectionMethod = DB_ITEM_SELECTION_METHOD.NONE;
+            DB_LABEL_SELECTION_METHOD labelSelectionMethod = DB_LABEL_SELECTION_METHOD.NONE;
 
             if (s.EnableRandomInputSelection)
-                imageSelectionMethod |= IMGDB_IMAGE_SELECTION_METHOD.RANDOM;
+                imageSelectionMethod |= DB_ITEM_SELECTION_METHOD.RANDOM;
 
             if (s.SuperBoostProbability > 0)
-                imageSelectionMethod |= IMGDB_IMAGE_SELECTION_METHOD.BOOST;
+                imageSelectionMethod |= DB_ITEM_SELECTION_METHOD.BOOST;
 
             if (s.EnableLabelBalancing)
             {
-                labelSelectionMethod |= IMGDB_LABEL_SELECTION_METHOD.RANDOM;
+                labelSelectionMethod |= DB_LABEL_SELECTION_METHOD.RANDOM;
 
                 if (s.EnableLabelBoosting)
-                    labelSelectionMethod |= IMGDB_LABEL_SELECTION_METHOD.BOOST;
+                    labelSelectionMethod |= DB_LABEL_SELECTION_METHOD.BOOST;
             }
             else
             {
                 if (s.EnablePairInputSelection)
-                    imageSelectionMethod |= IMGDB_IMAGE_SELECTION_METHOD.PAIR;
+                    imageSelectionMethod |= DB_ITEM_SELECTION_METHOD.PAIR;
             }
 
-            return new Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD>(labelSelectionMethod, imageSelectionMethod);
+            return new Tuple<DB_LABEL_SELECTION_METHOD, DB_ITEM_SELECTION_METHOD>(labelSelectionMethod, imageSelectionMethod);
         }
 
         /// <summary>
@@ -189,37 +189,37 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="p">Specifies the project.</param>
         /// <returns>The label/image selection method is returned.</returns>
-        public static Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> GetSelectionMethod(ProjectEx p)
+        public static Tuple<DB_LABEL_SELECTION_METHOD, DB_ITEM_SELECTION_METHOD> GetSelectionMethod(ProjectEx p)
         {
-            IMGDB_IMAGE_SELECTION_METHOD imageSelectionMethod = IMGDB_IMAGE_SELECTION_METHOD.NONE;
-            IMGDB_LABEL_SELECTION_METHOD labelSelectionMethod = IMGDB_LABEL_SELECTION_METHOD.NONE;
+            DB_ITEM_SELECTION_METHOD imageSelectionMethod = DB_ITEM_SELECTION_METHOD.NONE;
+            DB_LABEL_SELECTION_METHOD labelSelectionMethod = DB_LABEL_SELECTION_METHOD.NONE;
 
             if (p.EnableRandomSelection)
-                imageSelectionMethod |= IMGDB_IMAGE_SELECTION_METHOD.RANDOM;
+                imageSelectionMethod |= DB_ITEM_SELECTION_METHOD.RANDOM;
 
             if (p.EnableLabelBalancing)
             {
-                labelSelectionMethod |= IMGDB_LABEL_SELECTION_METHOD.RANDOM;
+                labelSelectionMethod |= DB_LABEL_SELECTION_METHOD.RANDOM;
 
                 if (p.EnableLabelBoosting)
-                    labelSelectionMethod |= IMGDB_LABEL_SELECTION_METHOD.BOOST;
+                    labelSelectionMethod |= DB_LABEL_SELECTION_METHOD.BOOST;
             }
             else
             {
                 if (p.EnablePairSelection)
-                    imageSelectionMethod |= IMGDB_IMAGE_SELECTION_METHOD.PAIR;
+                    imageSelectionMethod |= DB_ITEM_SELECTION_METHOD.PAIR;
             }
 
-            return new Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD>(labelSelectionMethod, imageSelectionMethod);
+            return new Tuple<DB_LABEL_SELECTION_METHOD, DB_ITEM_SELECTION_METHOD>(labelSelectionMethod, imageSelectionMethod);
         }
 
         /// <summary>
         /// Returns the label and image selection method used.
         /// </summary>
         /// <returns>A KeyValue containing the Label and Image selection method.</returns>
-        public Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> GetSelectionMethod()
+        public Tuple<DB_LABEL_SELECTION_METHOD, DB_ITEM_SELECTION_METHOD> GetSelectionMethod()
         {
-            return new Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD>(m_labelSelectionMethod, m_imageSelectionMethod);
+            return new Tuple<DB_LABEL_SELECTION_METHOD, DB_ITEM_SELECTION_METHOD>(m_labelSelectionMethod, m_imageSelectionMethod);
         }
 
         /// <summary>
@@ -227,7 +227,7 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="lbl">Specifies the label selection method or <i>null</i> to ignore.</param>
         /// <param name="img">Specifies the image selection method or <i>null</i> to ignore.</param>
-        public void SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD? lbl, IMGDB_IMAGE_SELECTION_METHOD? img)
+        public void SetSelectionMethod(DB_LABEL_SELECTION_METHOD? lbl, DB_ITEM_SELECTION_METHOD? img)
         {
             if (lbl.HasValue)
                 m_labelSelectionMethod = lbl.Value;
@@ -360,7 +360,7 @@ namespace MyCaffe.db.image
         /// <returns>Returns <i>true</i> on success, <i>false</i> otherwise.</returns>
         public bool InitializeWithDsId1(SettingsCaffe s, int nDataSetID, string strEvtCancel = null, int nPadW = 0, int nPadH = 0)
         {
-            Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> selMethod = GetSelectionMethod(s);
+            Tuple<DB_LABEL_SELECTION_METHOD, DB_ITEM_SELECTION_METHOD> selMethod = GetSelectionMethod(s);
 
             m_nPadW = nPadW;
             m_nPadH = nPadH;
@@ -371,8 +371,8 @@ namespace MyCaffe.db.image
             m_nLoadLimit = s.ImageDbLoadLimit;
             m_bSkipMeanCheck = s.SkipMeanCheck;
 
-            if (m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_EXTERNAL)
-                m_loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
+            if (m_loadMethod == DB_LOAD_METHOD.LOAD_EXTERNAL)
+                m_loadMethod = DB_LOAD_METHOD.LOAD_ON_DEMAND;
 
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtInitialized, m_evtInitializing, m_evtAbortInitialization }, 0);
 
@@ -594,7 +594,7 @@ namespace MyCaffe.db.image
         /// <returns>The number of images is returned.</returns>
         /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
         /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
-        public int GetImageCount(int nSrcId, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
+        public int GetItemCount(int nSrcId, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
         {
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
 
@@ -617,7 +617,7 @@ namespace MyCaffe.db.image
         /// <returns>The list of images is returned.</returns>
         /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', and
         /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
-        public List<SimpleDatum> GetImagesFromIndex(int nSrcId, int nStartIdx, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false, bool bAttemptDirectLoad = false)
+        public List<SimpleDatum> GetItemsFromIndex(int nSrcId, int nStartIdx, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false, bool bAttemptDirectLoad = false)
         {
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
             if (nWait == 0)
@@ -641,7 +641,7 @@ namespace MyCaffe.db.image
         /// <returns>The list of images is returned.</returns>
         /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
         /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
-        public List<SimpleDatum> GetImagesFromTime(int nSrcId, DateTime dtStart, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
+        public List<SimpleDatum> GetItemsFromTime(int nSrcId, DateTime dtStart, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
         {
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
             if (nWait == 0)
@@ -661,7 +661,7 @@ namespace MyCaffe.db.image
         /// <returns>The list of images is returned.</returns>
         /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
         /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
-        public List<SimpleDatum> GetImages(int nSrcId, int[] rgIdx, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
+        public List<SimpleDatum> GetItems(int nSrcId, int[] rgIdx, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
         {
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
             if (nWait == 0)
@@ -750,15 +750,15 @@ namespace MyCaffe.db.image
         /// <param name="bLoadDataCriteria">Specifies to load the data criteria data (default = false).</param>
         /// <param name="bLoadDebugData">Specifies to load the debug data (default = false).</param>
         /// <returns>The image SimpleDatum is returned.</returns>
-        public SimpleDatum QueryImage(int nSrcId, int nIdx, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false)
+        public SimpleDatum QueryItem(int nSrcId, int nIdx, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false)
         {
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
 
             if (nWait == 0)
                 return null;
 
-            IMGDB_LABEL_SELECTION_METHOD labelSelectionMethod = m_labelSelectionMethod;
-            IMGDB_IMAGE_SELECTION_METHOD imageSelectionMethod = m_imageSelectionMethod;
+            DB_LABEL_SELECTION_METHOD labelSelectionMethod = m_labelSelectionMethod;
+            DB_ITEM_SELECTION_METHOD imageSelectionMethod = m_imageSelectionMethod;
 
             if (labelSelectionOverride.HasValue)
                 labelSelectionMethod = labelSelectionOverride.Value;
@@ -766,7 +766,7 @@ namespace MyCaffe.db.image
             if (imageSelectionOverride.HasValue)
                 imageSelectionMethod = imageSelectionOverride.Value;
             else if (SelectFromBoostOnly)
-                imageSelectionMethod |= IMGDB_IMAGE_SELECTION_METHOD.BOOST;
+                imageSelectionMethod |= DB_ITEM_SELECTION_METHOD.BOOST;
 
             SimpleDatum sd = null;
             ImageSet imgSet = m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId);
@@ -779,7 +779,7 @@ namespace MyCaffe.db.image
                     sd = lblSet.GetImage(0, imageSelectionMethod);
             }
            
-            if ((m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND || m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE) && (imageSelectionMethod & IMGDB_IMAGE_SELECTION_METHOD.PAIR) == IMGDB_IMAGE_SELECTION_METHOD.PAIR)
+            if ((m_loadMethod == DB_LOAD_METHOD.LOAD_ON_DEMAND || m_loadMethod == DB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE) && (imageSelectionMethod & DB_ITEM_SELECTION_METHOD.PAIR) == DB_ITEM_SELECTION_METHOD.PAIR)
                 throw new Exception("PAIR selection is not supported whith the LOAD_ON_DEMAND loading method.");
 
             if (sd == null)
@@ -796,7 +796,7 @@ namespace MyCaffe.db.image
                 {
                     while (sd.Label != nLabel.Value)
                     {
-                        sd = imgSet.GetImage(nIdx, labelSelectionMethod, IMGDB_IMAGE_SELECTION_METHOD.RANDOM, m_log, bLoadDataCriteria, bLoadDebugData);
+                        sd = imgSet.GetImage(nIdx, labelSelectionMethod, DB_ITEM_SELECTION_METHOD.RANDOM, m_log, bLoadDataCriteria, bLoadDebugData);
                     }
 
                     lblSet.Add(sd);
@@ -829,7 +829,7 @@ namespace MyCaffe.db.image
         /// <param name="nImageID">Specifies the Raw Image ID.</param>
         /// <param name="rgSrcId">Specifies a set of source ID's to query from.</param>
         /// <returns>If found, the SimpleDatum of the Raw Image is returned, otherwise, <i>null</i> is returned.</returns>
-        public SimpleDatum GetImage(int nImageID, params int[] rgSrcId)
+        public SimpleDatum GetItem(int nImageID, params int[] rgSrcId)
         {
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
 
@@ -1003,7 +1003,7 @@ namespace MyCaffe.db.image
         /// <param name="dt">Specifies the time-stamp to search for.</param>
         /// <param name="strDescription">Specifies the description to search for.</param>
         /// <returns>If found the zero-based index of the image is returned, otherwise -1 is returned.</returns>
-        public int FindImageIndex(int nSrcId, DateTime dt, string strDescription)
+        public int FindItemIndex(int nSrcId, DateTime dt, string strDescription)
         {
             return m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).FindImageIndex(dt, strDescription);
         }
@@ -1013,7 +1013,7 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
         /// <returns>The image mean is returned as a SimpleDatum.</returns>
-        public SimpleDatum GetImageMean(int nSrcId)
+        public SimpleDatum GetItemMean(int nSrcId)
         {
             if (m_evtAbortInitialization.WaitOne(0))
                 return null;
@@ -1054,13 +1054,13 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="nDatasetId">Specifies the data set to use.</param>
         /// <returns>The image mean is returned as a SimpleDatum.</returns>
-        public SimpleDatum QueryImageMeanFromDataset(int nDatasetId)
+        public SimpleDatum QueryItemMeanFromDataset(int nDatasetId)
         {
             DatasetEx ds = m_colDatasets[m_nStrIDHashCode].FindDataset(nDatasetId);
             if (ds == null)
                 return null;
 
-            return QueryImageMean(ds.Descriptor.TrainingSource.ID);
+            return QueryItemMean(ds.Descriptor.TrainingSource.ID);
         }
 
         /// <summary>
@@ -1072,14 +1072,14 @@ namespace MyCaffe.db.image
         /// </remarks>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
         /// <returns>The image mean is returned as a SimpleDatum.</returns>
-        public SimpleDatum QueryImageMeanFromDb(int nSrcId)
+        public SimpleDatum QueryItemMeanFromDb(int nSrcId)
         {
-            SimpleDatum sd = QueryImageMean(nSrcId);
+            SimpleDatum sd = QueryItemMean(nSrcId);
 
             if (sd != null)
                 return sd;
 
-            sd = GetImageMean(nSrcId);
+            sd = GetItemMean(nSrcId);
             SaveImageMean(nSrcId, sd, false);
 
             return sd;
@@ -1102,7 +1102,7 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
         /// <returns></returns>
-        public SimpleDatum QueryImageMean(int nSrcId)
+        public SimpleDatum QueryItemMean(int nSrcId)
         {
             if (!m_colDatasets.ContainsKey(m_nStrIDHashCode))
                 return null;

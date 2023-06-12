@@ -141,9 +141,9 @@ namespace MyCaffe.data
         /// <param name="bLoadDataCriteria">Specifies whether or not to load the data criteria.</param>
         /// <param name="imgSel">Optionally, specifies the image selection method (default = null).</param>
         /// <returns>The Datum retrieved is returned.</returns>
-        public SimpleDatum GetValue(int? nLabel = null, bool bLoadDataCriteria = false, IMGDB_IMAGE_SELECTION_METHOD? imgSel = null)
+        public SimpleDatum GetValue(int? nLabel = null, bool bLoadDataCriteria = false, DB_ITEM_SELECTION_METHOD? imgSel = null)
         {
-            SimpleDatum sd = m_db.QueryImage(m_nSrcID, m_nIdx, null, imgSel, nLabel, bLoadDataCriteria, false);
+            SimpleDatum sd = m_db.QueryItem(m_nSrcID, m_nIdx, null, imgSel, nLabel, bLoadDataCriteria, false);
 
             if (m_log != null)
                 m_log.WriteLine(m_strSrc + ": Idx = " + sd.Index.ToString() + " Label = " + sd.Label.ToString());

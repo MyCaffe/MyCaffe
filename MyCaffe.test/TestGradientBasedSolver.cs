@@ -1843,9 +1843,9 @@ namespace MyCaffe.test
             m_lSeed = 1701;
             m_bShare = false;
             m_nNum = src.ImageCount;
-            m_nChannels = src.ImageChannels;
-            m_nHeight = src.ImageHeight;
-            m_nWidth = src.ImageWidth;
+            m_nChannels = src.Channels;
+            m_nHeight = src.Height;
+            m_nWidth = src.Width;
 
             m_persist = new PersistCaffe<T>(m_log, false);
 

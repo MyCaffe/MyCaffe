@@ -116,13 +116,13 @@ namespace MyCaffe.gym
 
             SettingsCaffe s = new SettingsCaffe();
             s.GpuIds = m_nGpuID.ToString();
-            s.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND;
+            s.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND;
 
             m_imgdb = new MyCaffeImageDatabase2(log);
             m_imgdb.InitializeWithDsName1(s, m_strDataset);
             m_ds = m_imgdb.GetDatasetByName(m_strDataset);
 
-            SimpleDatum sd = m_imgdb.QueryImage(m_ds.TrainingSource.ID, 0, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+            SimpleDatum sd = m_imgdb.QueryItem(m_ds.TrainingSource.ID, 0, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
             BlobShape shape = new BlobShape(1, sd.Channels, sd.Height, sd.Width);
 
             if (m_evtCancel == null)
@@ -311,7 +311,7 @@ namespace MyCaffe.gym
 
                         for (int i = 0; i < m_nBatchSize; i++)
                         {
-                            SimpleDatum sd = m_imgdb.QueryImage(m_ds.TrainingSource.ID, m_nCurrentIdx + i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                            SimpleDatum sd = m_imgdb.QueryItem(m_ds.TrainingSource.ID, m_nCurrentIdx + i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                             rgSd.Add(sd);
                             nCount++;
 

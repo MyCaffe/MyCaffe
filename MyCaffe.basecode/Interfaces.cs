@@ -148,20 +148,20 @@ namespace MyCaffe.basecode
     }
 
     /// <summary>
-    /// Defines how to laod the images into the image database.
+    /// Defines how to laod the items into the in-memory database.
     /// </summary>
-    public enum IMAGEDB_LOAD_METHOD
+    public enum DB_LOAD_METHOD
     {
         /// <summary>
-        /// Load the images as they are queried - this option cahces images into memory as needed, training speeds are slower up until all images are loaded into memory.
+        /// Load the items as they are queried - this option cahces items into memory as needed, training speeds are slower up until all items are loaded into memory.
         /// </summary>
         LOAD_ON_DEMAND,
         /// <summary>
-        /// Load all of the images into memory - this option provides the highest training speeds, but can use a lot of memory and takes time to load.
+        /// Load all of the items into memory - this option provides the highest training speeds, but can use a lot of memory and takes time to load.
         /// </summary>
         LOAD_ALL,
         /// <summary>
-        /// Load the images from an external source such as a Windows Service - this option provides the best balance of speed and short load times for once loaded all applications share the in-memory data.
+        /// Load the items from an external source such as a Windows Service - this option provides the best balance of speed and short load times for once loaded all applications share the in-memory data.
         /// </summary>
         LOAD_EXTERNAL,
         /// <summary>
@@ -169,7 +169,7 @@ namespace MyCaffe.basecode
         /// </summary>
         LOAD_ON_DEMAND_BACKGROUND,
         /// <summary>
-        /// Load the images on demand, but do not cache the images - this option loads images from disk as needed and does not cache them thus saving memory use.
+        /// Load the items on demand, but do not cache the items - this option loads items from disk as needed and does not cache them thus saving memory use.
         /// </summary>
         LOAD_ON_DEMAND_NOCACHE
     }
@@ -270,11 +270,11 @@ namespace MyCaffe.basecode
     //-------------------------------------------------------------------------------------------------
 
     /// <summary>
-    /// Defines the image selection method.
+    /// Defines the item (e.g., image or temporal item) selection method.
     /// </summary>
     [Serializable]
     [DataContract]
-    public enum IMGDB_IMAGE_SELECTION_METHOD
+    public enum DB_ITEM_SELECTION_METHOD
     {
         /// <summary>
         /// No selection method used, select sequentially by index.
@@ -329,7 +329,7 @@ namespace MyCaffe.basecode
     /// </summary>
     [Serializable]
     [DataContract]
-    public enum IMGDB_LABEL_SELECTION_METHOD
+    public enum DB_LABEL_SELECTION_METHOD
     {
         /// <summary>
         /// Don't use label selection and instead select from the general list of all images.
@@ -427,10 +427,10 @@ namespace MyCaffe.basecode
 #pragma warning restore 1591
 
     /// <summary>
-    /// The IXImageDatabaseBase interface defines the general interface to the in-memory image database.
+    /// The IXDatabaseBase interface defines the general interface to the in-memory database.
     /// </summary>
     [ServiceContract(CallbackContract = typeof(IXImageDatabaseEvent), SessionMode = SessionMode.Required)]
-    public interface IXImageDatabaseBase
+    public interface IXDatabaseBase
     {
         #region Initialization and Cleanup
 
@@ -510,41 +510,6 @@ namespace MyCaffe.basecode
         #endregion // Initialization and Cleanup
 
         #region Properties
-
-        /// <summary>
-        /// Returns the version of the MyCaffe Image Database being used.
-        /// </summary>
-        /// <returns>Returns the version.</returns>
-        [OperationContract(IsOneWay = false)]
-        IMGDB_VERSION GetVersion();
-
-        /// <summary>
-        /// Returns whether or not the image data criteria is loaded with each image.
-        /// </summary>
-        [OperationContract(IsOneWay = false)]
-        bool GetLoadImageDataCriteria();
-
-        /// <summary>
-        /// Returns whether or not the image debug data is loaded with each image.
-        /// </summary>
-        [OperationContract(IsOneWay = false)]
-        bool GetLoadImageDebugData();
-
-        /// <summary>
-        /// Returns the label and image selection method used.
-        /// </summary>
-        /// <returns>A tuple containing the Label and Image selection method.</returns>
-        [OperationContract(IsOneWay = false)]
-        Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> GetSelectionMethod();
-
-        /// <summary>
-        /// Sets the label and image selection methods.
-        /// </summary>
-        /// <param name="lbl">Specifies the label selection method or <i>null</i> to ignore.</param>
-        /// <param name="img">Specifies the image selection method or <i>null</i> to ignore.</param>
-        [OperationContract(IsOneWay = false)]
-        void SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD? lbl, IMGDB_IMAGE_SELECTION_METHOD? img);
-
         /// <summary>
         /// Returns the percentage that a dataset is loaded into memory.
         /// </summary>
@@ -566,46 +531,21 @@ namespace MyCaffe.basecode
         double GetDatasetLoadedPercentById(int nDatasetID, out double dfTraining, out double dfTesting);
 
         /// <summary>
-        /// Returns a string with the query hit percent for each boost (e.g. the percentage that each boost value has been queried).
-        /// </summary>
-        /// <param name="strSource">Specifies the data source who's hit percentages are to be retrieved.</param>
-        /// <returns>A string representing the query hit percentages is returned.</returns>
-        [OperationContract(IsOneWay = false)]
-        string GetBoostQueryHitPercentsAsTextFromSourceName(string strSource);
-
-        /// <summary>
-        /// Returns a string with the query hit percent for each label (e.g. the percentage that each label has been queried).
-        /// </summary>
-        /// <param name="strSource">Specifies the data source who's hit percentages are to be retrieved.</param>
-        /// <returns>A string representing the query hit percentages is returned.</returns>
-        [OperationContract(IsOneWay = false)]
-        string GetLabelQueryHitPercentsAsTextFromSourceName(string strSource);
-
-        /// <summary>
-        /// Returns a string with the query epoch counts for each label (e.g. the number of times all images with the label have been queried).
-        /// </summary>
-        /// <param name="strSource">Specifies the data source who's query epochs are to be retrieved.</param>
-        /// <returns>A string representing the query epoch counts is returned.</returns>
-        [OperationContract(IsOneWay = false)]
-        string GetLabelQueryEpocsAsTextFromSourceName(string strSource);
-
-        /// <summary>
-        /// Returns the number of images in a given data source.
+        /// Returns the number of items (e.g., images, or temporal items) in a given data source.
         /// </summary>
         /// <param name="nSrcId">Specifies the data source ID.</param>
         /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
         /// <param name="nBoostVal">Optionally, specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
         /// <param name="bBoostValIsExact">Optionally, specifies whether or the boost value (if specified) is to be used literally (exact = true), or as a minimum boost value.</param>
-        /// <returns>The number of images is returned.</returns>
+        /// <returns>The number of items (e.g., images or temporal items) is returned.</returns>
         /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
         /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
         [OperationContract(IsOneWay = false)]
-        int GetImageCount(int nSrcId, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false);
+        int GetItemCount(int nSrcId, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false);
 
-        #endregion // Properties
+        #endregion
 
         #region Sources
-
         /// <summary>
         /// Returns the SourceDescriptor for a given data source ID.
         /// </summary>
@@ -637,11 +577,9 @@ namespace MyCaffe.basecode
         /// <returns>The data source ID is returned.</returns>
         [OperationContract(IsOneWay = false)]
         int GetSourceID(string strSrc);
-
-        #endregion // Sources
+        #endregion
 
         #region Datasets
-
         /// <summary>
         /// Returns the DatasetDescriptor for a given data set ID.
         /// </summary>
@@ -683,14 +621,6 @@ namespace MyCaffe.basecode
         bool ReloadDataset(int nDsId);
 
         /// <summary>
-        /// Reloads the images of a data source.
-        /// </summary>
-        /// <param name="nSrcId">Specifies the ID of the data source.</param>
-        /// <returns>If the data source is found, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
-        [OperationContract(IsOneWay = false)]
-        bool ReloadImageSet(int nSrcId);
-
-        /// <summary>
         /// The UnloadDataset function unloads a given dataset from memory.
         /// </summary>
         /// <param name="strDataset">Specifies the name of the dataset to unload.</param>
@@ -706,8 +636,7 @@ namespace MyCaffe.basecode
         /// <returns>If the dataset is found and removed, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
         [OperationContract(IsOneWay = false)]
         bool UnloadDatasetById(int nDatasetID);
-
-        #endregion // Datasets
+        #endregion
 
         #region Image Acquisition
 
@@ -723,120 +652,206 @@ namespace MyCaffe.basecode
         /// <param name="bLoadDebugData">Specifies to load the debug data (default = false).</param>
         /// <returns>The image SimpleDatum is returned.</returns>
         [OperationContract(IsOneWay = false)]
-        SimpleDatum QueryImage(int nSrcId, int nIdx, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false);
+        SimpleDatum QueryItem(int nSrcId, int nIdx, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false);
 
         /// <summary>
-        /// Returns the array of images in the image set, possibly filtered with the filtering parameters.
+        /// Returns the array of items (e.g., images or temporal items) in the item set, possibly filtered with the filtering parameters.
         /// </summary>
         /// <param name="nSrcId">Specifies the data source ID.</param>
-        /// <param name="nStartIdx">Specifies a starting index from which the query is to start within the set of images.</param>
-        /// <param name="nQueryCount">Optionally, specifies a number of images to retrieve within the set (default = int.MaxValue).</param>
+        /// <param name="nStartIdx">Specifies a starting index from which the query is to start within the set of items.</param>
+        /// <param name="nQueryCount">Optionally, specifies a number of items to retrieve within the set (default = int.MaxValue).</param>
         /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
         /// <param name="nBoostVal">Optionally, specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
         /// <param name="bBoostValIsExact">Optionally, specifies whether or the boost value (if specified) is to be used literally (exact = true), or as a minimum boost value.</param>
         /// <param name="bAttemptDirectLoad">Optionaly, specifies to directly load all images not already loaded.</param>
-        /// <returns>The list of images is returned.</returns>
-        /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
+        /// <returns>The list of items (e.g., images or temporal items) is returned.</returns>
+        /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', and
         /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
         [OperationContract(IsOneWay = false)]
-        List<SimpleDatum> GetImagesFromIndex(int nSrcId, int nStartIdx, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false, bool bAttemptDirectLoad = false);
+        List<SimpleDatum> GetItemsFromIndex(int nSrcId, int nStartIdx, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false, bool bAttemptDirectLoad = false);
 
         /// <summary>
-        /// Returns the array of images in the image set, possibly filtered with the filtering parameters.
+        /// Returns the array of items (e.g., images or temporal items) in the item set, possibly filtered with the filtering parameters.
         /// </summary>
         /// <param name="nSrcId">Specifies the data source ID.</param>
         /// <param name="dtStart">Specifies a starting time from which the query is to start within the set of images.</param>
-        /// <param name="nQueryCount">Optionally, specifies a number of images to retrieve within the set (default = int.MaxValue).</param>
+        /// <param name="nQueryCount">Optionally, specifies a number of items to retrieve within the set (default = int.MaxValue).</param>
         /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
         /// <param name="nBoostVal">Optionally, specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
         /// <param name="bBoostValIsExact">Optionally, specifies whether or the boost value (if specified) is to be used literally (exact = true), or as a minimum boost value.</param>
-        /// <returns>The list of images is returned.</returns>
+        /// <returns>The list of items (e.g., images or temporal items) is returned.</returns>
         /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
         /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
         [OperationContract(IsOneWay = false)]
-        List<SimpleDatum> GetImagesFromTime(int nSrcId, DateTime dtStart, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false);
+        List<SimpleDatum> GetItemsFromTime(int nSrcId, DateTime dtStart, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false);
 
         /// <summary>
-        /// Returns the array of images in the image set, possibly filtered with the filtering parameters.
+        /// Returns the array of items (e.g., images or temporal items) in the item set, possibly filtered with the filtering parameters.
         /// </summary>
         /// <param name="nSrcId">Specifies the data source ID.</param>
         /// <param name="rgIdx">Specifies an array of indexes to query.</param>
         /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
         /// <param name="nBoostVal">Optionally, specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
         /// <param name="bBoostValIsExact">Optionally, specifies whether or the boost value (if specified) is to be used literally (exact = true), or as a minimum boost value.</param>
-        /// <returns>The list of images is returned.</returns>
+        /// <returns>The list of items (e.g., image or temporal item) is returned.</returns>
         /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
         /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
         [OperationContract(IsOneWay = false)]
-        List<SimpleDatum> GetImages(int nSrcId, int[] rgIdx, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false);
+        List<SimpleDatum> GetItems(int nSrcId, int[] rgIdx, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false);
 
         /// <summary>
-        /// Get the image with a given Raw Image ID.
+        /// Get the item (e.g., image or temporal item) with a given Raw Item ID.
         /// </summary>
-        /// <param name="nImageID">Specifies the Raw Image ID of the image to get.</param>
+        /// <param name="nItemID">Specifies the Raw Image ID of the image to get.</param>
         /// <param name="rgSrcId">Specifies a list of Source ID's to search for the image.</param>
-        /// <returns>The SimpleDatum of the image is returned.</returns>
+        /// <returns>The SimpleDatum of the item is returned.</returns>
+        /// <remarks>Note, temporal items are alwasy returned as a set of temporal items as defined by past and future steps defined in the temporal specific interface.</remarks>
         [OperationContract(IsOneWay = false)]
-        SimpleDatum GetImage(int nImageID, params int[] rgSrcId);
+        SimpleDatum GetItem(int nItemID, params int[] rgSrcId);
 
         /// <summary>
-        /// Searches for the image index of an image within a data source matching a DateTime/description pattern.
+        /// Searches for the item (e.g., image or temporal item) index of an image within a data source matching a DateTime/description pattern.
         /// </summary>
         /// <remarks>
-        /// Optionally, images may have a time-stamp and/or description associated with each image.  In such cases
+        /// Optionally, items may have a time-stamp and/or description associated with each item.  In such cases
         /// searching by the time-stamp + description can be useful in some instances.
         /// </remarks>
         /// <param name="nSrcId">Specifies the data source ID of the data source to be searched.</param>
         /// <param name="dt">Specifies the time-stamp to search for.</param>
         /// <param name="strDescription">Specifies the description to search for.</param>
-        /// <returns>If found the zero-based index of the image is returned, otherwise -1 is returned.</returns>
+        /// <returns>If found the zero-based index of the item (e.g., image or temporal item) is returned, otherwise -1 is returned.</returns>
         [OperationContract(IsOneWay = false)]
-        int FindImageIndex(int nSrcId, DateTime dt, string strDescription);
+        int FindItemIndex(int nSrcId, DateTime dt, string strDescription);
 
         #endregion
 
-        #region Image Mean
+        #region Item Mean
 
         /// <summary>
-        /// Queries the image mean for a data source from the database on disk.
+        /// Queries the item (e.g., image or temporal item) mean for a data source from the database on disk.
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
-        /// <returns>The image mean is returned as a SimpleDatum.</returns>
+        /// <returns>The item mean is returned as a SimpleDatum.</returns>
+        /// <remarks>Note, the mean for a temporal item is a set of values where one mean value exists for each data stream.</remarks>
         [OperationContract(IsOneWay = false)]
         [FaultContract(typeof(ImageDatabaseErrorData))]
-        SimpleDatum QueryImageMean(int nSrcId);
+        SimpleDatum QueryItemMean(int nSrcId);
 
         /// <summary>
-        /// Queries the image mean for a data source from the database on disk.
+        /// Queries the item (e.g., image or temporal item) mean for a data source from the database on disk.
         /// </summary>
         /// <remarks>
-        /// If the image mean does not exist in the database, one is created, saved
+        /// If the item mean does not exist in the database, one is created, saved
         /// and then returned.
         /// </remarks>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
-        /// <returns>The image mean is returned as a SimpleDatum.</returns>
+        /// <returns>The item (e.g., image or temporal item) mean is returned as a SimpleDatum.</returns>
+        /// <remarks>Note, the mean for a temporal item is a set of values where one mean value exists for each data stream.</remarks>
         [OperationContract(IsOneWay = false)]
         [FaultContract(typeof(ImageDatabaseErrorData))]
-        SimpleDatum QueryImageMeanFromDb(int nSrcId);
+        SimpleDatum QueryItemMeanFromDb(int nSrcId);
 
         /// <summary>
-        /// Returns the image mean for a data source.
+        /// Returns the item (e.g., image or temporal item) mean for a data source.
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
-        /// <returns>The image mean is returned as a SimpleDatum.</returns>
+        /// <returns>The item (e.g., image or temporal item) mean is returned as a SimpleDatum.</returns>
+        /// <remarks>Note, the mean for a temporal item is a set of values where one mean value exists for each data stream.</remarks>
         [OperationContract(IsOneWay = false)]
         [FaultContract(typeof(ImageDatabaseErrorData))]
-        SimpleDatum GetImageMean(int nSrcId);
+        SimpleDatum GetItemMean(int nSrcId);
 
         /// <summary>
-        /// Returns the image mean for the Training data source of a given data set.
+        /// Returns the item (e.g., image or temporal item) mean for the Training data source of a given data set.
         /// </summary>
         /// <param name="nDatasetId">Specifies the data set to use.</param>
-        /// <returns>The image mean is returned as a SimpleDatum.</returns>
+        /// <returns>The item (e.g., image or temporal item) mean is returned as a SimpleDatum.</returns>
+        /// <remarks>Note, the mean for a temporal item is a set of values where one mean value exists for each data stream.</remarks>
         [OperationContract(IsOneWay = false)]
-        SimpleDatum QueryImageMeanFromDataset(int nDatasetId);
+        SimpleDatum QueryItemMeanFromDataset(int nDatasetId);
 
         #endregion // Image Mean
+    }
+
+    /// <summary>
+    /// The IXImageDatabaseBase interface defines the general interface to the in-memory image database.
+    /// </summary>
+    [ServiceContract(CallbackContract = typeof(IXImageDatabaseEvent), SessionMode = SessionMode.Required)]
+    public interface IXImageDatabaseBase : IXDatabaseBase
+    {
+        #region Properties
+
+        /// <summary>
+        /// Returns the version of the MyCaffe Image Database being used.
+        /// </summary>
+        /// <returns>Returns the version.</returns>
+        [OperationContract(IsOneWay = false)]
+        IMGDB_VERSION GetVersion();
+
+        /// <summary>
+        /// Returns whether or not the image data criteria is loaded with each image.
+        /// </summary>
+        [OperationContract(IsOneWay = false)]
+        bool GetLoadImageDataCriteria();
+
+        /// <summary>
+        /// Returns whether or not the image debug data is loaded with each image.
+        /// </summary>
+        [OperationContract(IsOneWay = false)]
+        bool GetLoadImageDebugData();
+
+        /// <summary>
+        /// Returns the label and image selection method used.
+        /// </summary>
+        /// <returns>A tuple containing the Label and Image selection method.</returns>
+        [OperationContract(IsOneWay = false)]
+        Tuple<DB_LABEL_SELECTION_METHOD, DB_ITEM_SELECTION_METHOD> GetSelectionMethod();
+
+        /// <summary>
+        /// Sets the label and image selection methods.
+        /// </summary>
+        /// <param name="lbl">Specifies the label selection method or <i>null</i> to ignore.</param>
+        /// <param name="img">Specifies the image selection method or <i>null</i> to ignore.</param>
+        [OperationContract(IsOneWay = false)]
+        void SetSelectionMethod(DB_LABEL_SELECTION_METHOD? lbl, DB_ITEM_SELECTION_METHOD? img);
+
+        /// <summary>
+        /// Returns a string with the query hit percent for each boost (e.g. the percentage that each boost value has been queried).
+        /// </summary>
+        /// <param name="strSource">Specifies the data source who's hit percentages are to be retrieved.</param>
+        /// <returns>A string representing the query hit percentages is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        string GetBoostQueryHitPercentsAsTextFromSourceName(string strSource);
+
+        /// <summary>
+        /// Returns a string with the query hit percent for each label (e.g. the percentage that each label has been queried).
+        /// </summary>
+        /// <param name="strSource">Specifies the data source who's hit percentages are to be retrieved.</param>
+        /// <returns>A string representing the query hit percentages is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        string GetLabelQueryHitPercentsAsTextFromSourceName(string strSource);
+
+        /// <summary>
+        /// Returns a string with the query epoch counts for each label (e.g. the number of times all images with the label have been queried).
+        /// </summary>
+        /// <param name="strSource">Specifies the data source who's query epochs are to be retrieved.</param>
+        /// <returns>A string representing the query epoch counts is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        string GetLabelQueryEpocsAsTextFromSourceName(string strSource);
+
+        #endregion // Properties
+
+        #region Datasets
+
+        /// <summary>
+        /// Reloads the images of a data source.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the ID of the data source.</param>
+        /// <returns>If the data source is found, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        bool ReloadImageSet(int nSrcId);
+
+        #endregion // Datasets
 
         #region Labels
 
@@ -1265,7 +1280,7 @@ namespace MyCaffe.basecode
         /// <param name="bLoadDebugData">Specifies to load the debug data (default = false).</param>
         /// <returns>The image SimpleDatum is returned.</returns>
         [OperationContract(IsOneWay = false)]
-        SimpleDatum QueryImage(long lQueryState, int nSrcId, int nIdx, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false);
+        SimpleDatum QueryImage(long lQueryState, int nSrcId, int nIdx, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false);
 
         #endregion // Image Acquisition
 

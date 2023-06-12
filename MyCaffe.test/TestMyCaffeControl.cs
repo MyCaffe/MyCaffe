@@ -331,7 +331,7 @@ namespace MyCaffe.test
             rgWait.AddRange(m_evtCancel.Handles);
 
             m_rgevtCancel = rgWait.ToArray();
-            m_settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
+            m_settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
             m_settings.GpuIds = nDeviceID.ToString();
             m_rgGpu.Add(nDeviceID);
         }
@@ -460,7 +460,7 @@ namespace MyCaffe.test
 
             project = getProject();
 
-            ctrl.Load(Phase.NONE, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+            ctrl.Load(Phase.NONE, project, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
 
             ctrl.Dispose();
         }
@@ -472,7 +472,7 @@ namespace MyCaffe.test
             MyCaffeControl<T> ctrl = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, null, m_rgGpu, m_cuda.Path);
             ProjectEx project = getProject();
 
-            ctrl.Load(Phase.NONE, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+            ctrl.Load(Phase.NONE, project, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
 
             int nLabel;
             int nLabel2;
@@ -511,7 +511,7 @@ namespace MyCaffe.test
             MyCaffeControl<T> ctrl = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, null, m_rgGpu, m_cuda.Path);
             ProjectEx project = getProject(bUseTensorCores);
 
-            ctrl.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+            ctrl.Load(Phase.TRAIN, project, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.RANDOM);
             ctrl.Train();
 
             ctrl.Dispose();
@@ -524,7 +524,7 @@ namespace MyCaffe.test
             MyCaffeControl<T> ctrl = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, null, rgGpu.ToList(), m_cuda.Path);
             ProjectEx project = getProject();
 
-            ctrl.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+            ctrl.Load(Phase.TRAIN, project, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.RANDOM);
             ctrl.Train();
 
             ctrl.Dispose();
@@ -537,7 +537,7 @@ namespace MyCaffe.test
             MyCaffeControl<T> ctrl = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, null, m_rgGpu, m_cuda.Path);
             ProjectEx project = getProject(bUseTensorCores);
 
-            ctrl.Load(Phase.TEST, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+            ctrl.Load(Phase.TEST, project, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.RANDOM);
             ctrl.Train();
             double dfLoss = ctrl.Test();
 
@@ -553,7 +553,7 @@ namespace MyCaffe.test
             MyCaffeControl<T> ctrl = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, null, m_rgGpu, m_cuda.Path);
             ProjectEx project = getProject(bUseTensorCores);
 
-            ctrl.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+            ctrl.Load(Phase.TRAIN, project, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.RANDOM);
             ctrl.Train();
             ctrl.TestMany(1000, false);
 
@@ -567,7 +567,7 @@ namespace MyCaffe.test
             MyCaffeControl<T> ctrl = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, null, m_rgGpu, m_cuda.Path);
             ProjectEx project = getProject();
 
-            ctrl.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+            ctrl.Load(Phase.TRAIN, project, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.RANDOM);
             ctrl.Train();
             ctrl.TestMany(1000, true);
 
@@ -583,7 +583,7 @@ namespace MyCaffe.test
             string strDs = createSimpleDataset();
             ProjectEx project = getSimpleProject(strDs);
 
-            ctrl.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+            ctrl.Load(Phase.TRAIN, project, DB_LABEL_SELECTION_METHOD.RANDOM, DB_ITEM_SELECTION_METHOD.RANDOM);
             ctrl.Train();
             ctrl.TestMany(1000, false);
 

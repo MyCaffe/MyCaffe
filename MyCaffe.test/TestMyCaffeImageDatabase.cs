@@ -17,7 +17,7 @@ namespace MyCaffe.test
     [TestClass]
     public class TestMyCaffeImageDatabase
     {
-        public void TestInitialization(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
+        public void TestInitialization(DB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
             PreTest.Init();
 
@@ -64,7 +64,7 @@ namespace MyCaffe.test
             Trace.WriteLine("Dispose Time: " + str + " ms.");
         }
 
-        public void TestLoadSecondaryDataset(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
+        public void TestLoadSecondaryDataset(DB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
             PreTest.Init();
 
@@ -127,7 +127,7 @@ namespace MyCaffe.test
                 foreach (string strDs in rgDs)
                 {
                     SettingsCaffe settings = new SettingsCaffe();
-                    settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
+                    settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
                     settings.ImageDbLoadLimit = 0;
 
                     sw.Start();
@@ -210,34 +210,34 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestInitializationLoadAll()
         {
-            TestInitialization(IMAGEDB_LOAD_METHOD.LOAD_ALL, 0);
+            TestInitialization(DB_LOAD_METHOD.LOAD_ALL, 0);
         }
 
         [TestMethod]
         public void TestInitializationLoadOnDemand()
         {
-            TestInitialization(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 0);
+            TestInitialization(DB_LOAD_METHOD.LOAD_ON_DEMAND, 0);
         }
 
         [TestMethod]
         public void TestInitializationLoadLimit()
         {
-            TestInitialization(IMAGEDB_LOAD_METHOD.LOAD_ALL, 10);
+            TestInitialization(DB_LOAD_METHOD.LOAD_ALL, 10);
         }
 
         [TestMethod]
         public void TestLoadSecondaryLoadAll()
         {
-            TestLoadSecondaryDataset(IMAGEDB_LOAD_METHOD.LOAD_ALL, 0);
+            TestLoadSecondaryDataset(DB_LOAD_METHOD.LOAD_ALL, 0);
         }
 
         [TestMethod]
         public void TestLoadSecondaryLoadOnDemand()
         {
-            TestLoadSecondaryDataset(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 0);
+            TestLoadSecondaryDataset(DB_LOAD_METHOD.LOAD_ON_DEMAND, 0);
         }
 
-        public void TestQueryRandom(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit, IMGDB_LABEL_SELECTION_METHOD? labelSel = null, IMGDB_IMAGE_SELECTION_METHOD? imgSel = null)
+        public void TestQueryRandom(DB_LOAD_METHOD loadMethod, int nLoadLimit, DB_LABEL_SELECTION_METHOD? labelSel = null, DB_ITEM_SELECTION_METHOD? imgSel = null)
         {
             PreTest.Init();
 
@@ -278,7 +278,7 @@ namespace MyCaffe.test
                         {
                             sw.Reset();
                             sw.Start();
-                            SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, 0, labelSel, imgSel);
+                            SimpleDatum d = db.QueryItem(ds.TrainingSource.ID, 0, labelSel, imgSel);
                             dfTotalMs += sw.ElapsedMilliseconds;
                             sw.Stop();
 
@@ -338,25 +338,25 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestQueryRandomLoadAll()
         {
-            TestQueryRandom(IMAGEDB_LOAD_METHOD.LOAD_ALL, 0);
+            TestQueryRandom(DB_LOAD_METHOD.LOAD_ALL, 0);
         }
 
         [TestMethod]
         public void TestQueryRandomLoadOnDemand()
         {
-            TestQueryRandom(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 0);
+            TestQueryRandom(DB_LOAD_METHOD.LOAD_ON_DEMAND, 0);
         }
 
         [TestMethod]
         public void TestQueryRandomLoadAllLabelBalance()
         {
-            TestQueryRandom(IMAGEDB_LOAD_METHOD.LOAD_ALL, 0, IMGDB_LABEL_SELECTION_METHOD.RANDOM);
+            TestQueryRandom(DB_LOAD_METHOD.LOAD_ALL, 0, DB_LABEL_SELECTION_METHOD.RANDOM);
         }
 
         [TestMethod]
         public void TestQueryRandomLoadOnDemandLabelBalance()
         {
-            TestQueryRandom(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 0, IMGDB_LABEL_SELECTION_METHOD.RANDOM);
+            TestQueryRandom(DB_LOAD_METHOD.LOAD_ON_DEMAND, 0, DB_LABEL_SELECTION_METHOD.RANDOM);
         }
 
         //[TestMethod]
@@ -365,7 +365,7 @@ namespace MyCaffe.test
         //    TestQueryRandom(IMAGEDB_LOAD_METHOD.LOAD_ALL, 10);
         //}
 
-        public void TestQueryRandom2(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
+        public void TestQueryRandom2(DB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
             PreTest.Init();
 
@@ -385,7 +385,7 @@ namespace MyCaffe.test
 
                     sw.Start();
                     db.InitializeWithDsName1(settings, strDs);
-                    db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    db.SetSelectionMethod(DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                     string str = sw.ElapsedMilliseconds.ToString();
                     Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
@@ -407,7 +407,7 @@ namespace MyCaffe.test
                     {
                         sw.Reset();
                         sw.Start();
-                        SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, 0, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+                        SimpleDatum d = db.QueryItem(ds.TrainingSource.ID, 0, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.RANDOM);
                         sw.Stop();
                         dfTotalMs += sw.ElapsedMilliseconds;
                         dfTotalMs1 += sw.ElapsedMilliseconds;
@@ -458,7 +458,7 @@ namespace MyCaffe.test
                     {
                         sw.Reset();
                         sw.Start();
-                        SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, 0, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+                        SimpleDatum d = db.QueryItem(ds.TrainingSource.ID, 0, DB_LABEL_SELECTION_METHOD.RANDOM, DB_ITEM_SELECTION_METHOD.RANDOM);
                         dfTotalMs += sw.ElapsedMilliseconds;
                         sw.Stop();
 
@@ -511,7 +511,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestQueryRandom2LoadAll()
         {
-            TestQueryRandom2(IMAGEDB_LOAD_METHOD.LOAD_ALL, 0);
+            TestQueryRandom2(DB_LOAD_METHOD.LOAD_ALL, 0);
         }
 
         //[TestMethod]
@@ -523,10 +523,10 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestQueryRandom2LoadLimit()
         {
-            TestQueryRandom2(IMAGEDB_LOAD_METHOD.LOAD_ALL, 10);
+            TestQueryRandom2(DB_LOAD_METHOD.LOAD_ALL, 10);
         }
 
-        public void TestQuerySequential(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
+        public void TestQuerySequential(DB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
             PreTest.Init();
 
@@ -563,7 +563,7 @@ namespace MyCaffe.test
                     {
                         sw.Reset();
                         sw.Start();
-                        SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, 0, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                        SimpleDatum d = db.QueryItem(ds.TrainingSource.ID, 0, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                         dfTotalMs += sw.ElapsedMilliseconds;
                         sw.Stop();
 
@@ -598,22 +598,22 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestQuerySequentialLoadAll()
         {
-            TestQuerySequential(IMAGEDB_LOAD_METHOD.LOAD_ALL, 0);
+            TestQuerySequential(DB_LOAD_METHOD.LOAD_ALL, 0);
         }
 
         [TestMethod]
         public void TestQuerySequentialLoadOnDemand()
         {
-            TestQuerySequential(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 0);
+            TestQuerySequential(DB_LOAD_METHOD.LOAD_ON_DEMAND, 0);
         }
 
         [TestMethod]
         public void TestQuerySequentialLoadLimit()
         {
-            TestQuerySequential(IMAGEDB_LOAD_METHOD.LOAD_ALL, 10);
+            TestQuerySequential(DB_LOAD_METHOD.LOAD_ALL, 10);
         }
 
-        public void TestQuerySequential2(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
+        public void TestQuerySequential2(DB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
             PreTest.Init();
 
@@ -646,7 +646,7 @@ namespace MyCaffe.test
                     {
                         sw.Reset();
                         sw.Start();
-                        SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                        SimpleDatum d = db.QueryItem(ds.TrainingSource.ID, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                         dfTotalMs += sw.ElapsedMilliseconds;
                         sw.Stop();
 
@@ -691,22 +691,22 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestQuerySequential2LoadAll()
         {
-            TestQuerySequential2(IMAGEDB_LOAD_METHOD.LOAD_ALL, 0);
+            TestQuerySequential2(DB_LOAD_METHOD.LOAD_ALL, 0);
         }
 
         [TestMethod]
         public void TestQuerySequential2LoadOnDemand()
         {
-            TestQuerySequential2(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 0);
+            TestQuerySequential2(DB_LOAD_METHOD.LOAD_ON_DEMAND, 0);
         }
 
         [TestMethod]
         public void TestQuerySequential2LoadLimit()
         {
-            TestQuerySequential2(IMAGEDB_LOAD_METHOD.LOAD_ALL, 10);
+            TestQuerySequential2(DB_LOAD_METHOD.LOAD_ALL, 10);
         }
 
-        public void TestQuerySequential3(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
+        public void TestQuerySequential3(DB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
             PreTest.Init();
 
@@ -725,7 +725,7 @@ namespace MyCaffe.test
 
                     sw.Start();
                     db.InitializeWithDsName1(settings, strDs);
-                    db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    db.SetSelectionMethod(DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                     string str = sw.ElapsedMilliseconds.ToString();
                     Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
@@ -739,7 +739,7 @@ namespace MyCaffe.test
                     {
                         sw.Reset();
                         sw.Start();
-                        SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, 0);
+                        SimpleDatum d = db.QueryItem(ds.TrainingSource.ID, 0);
                         dfTotalMs += sw.ElapsedMilliseconds;
                         sw.Stop();
 
@@ -774,22 +774,22 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestQuerySequential3LoadAll()
         {
-            TestQuerySequential3(IMAGEDB_LOAD_METHOD.LOAD_ALL, 0);
+            TestQuerySequential3(DB_LOAD_METHOD.LOAD_ALL, 0);
         }
 
         [TestMethod]
         public void TestQuerySequential3LoadOnDemand()
         {
-            TestQuerySequential3(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 0);
+            TestQuerySequential3(DB_LOAD_METHOD.LOAD_ON_DEMAND, 0);
         }
 
         [TestMethod]
         public void TestQuerySequential3LoadLimit()
         {
-            TestQuerySequential3(IMAGEDB_LOAD_METHOD.LOAD_ALL, 10);
+            TestQuerySequential3(DB_LOAD_METHOD.LOAD_ALL, 10);
         }
 
-        public void TestQuerySequential4(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
+        public void TestQuerySequential4(DB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
             PreTest.Init();
 
@@ -808,7 +808,7 @@ namespace MyCaffe.test
 
                     sw.Start();
                     db.InitializeWithDsName1(settings, strDs);
-                    db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    db.SetSelectionMethod(DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                     string str = sw.ElapsedMilliseconds.ToString();
                     Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
@@ -823,7 +823,7 @@ namespace MyCaffe.test
                     {
                         sw.Reset();
                         sw.Start();
-                        SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, i);
+                        SimpleDatum d = db.QueryItem(ds.TrainingSource.ID, i);
                         dfTotalMs += sw.ElapsedMilliseconds;
                         sw.Stop();
 
@@ -867,22 +867,22 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestQuerySequential4LoadAll()
         {
-            TestQuerySequential4(IMAGEDB_LOAD_METHOD.LOAD_ALL, 0);
+            TestQuerySequential4(DB_LOAD_METHOD.LOAD_ALL, 0);
         }
 
         [TestMethod]
         public void TestQuerySequential4LoadOnDemand()
         {
-            TestQuerySequential4(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 0);
+            TestQuerySequential4(DB_LOAD_METHOD.LOAD_ON_DEMAND, 0);
         }
 
         [TestMethod]
         public void TestQuerySequential4LoadLimit()
         {
-            TestQuerySequential4(IMAGEDB_LOAD_METHOD.LOAD_ALL, 10);
+            TestQuerySequential4(DB_LOAD_METHOD.LOAD_ALL, 10);
         }
 
-        public void TestQueryPair(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
+        public void TestQueryPair(DB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
             PreTest.Init();
 
@@ -901,7 +901,7 @@ namespace MyCaffe.test
 
                     sw.Start();
                     db.InitializeWithDsName1(settings, strDs);
-                    db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    db.SetSelectionMethod(DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                     string str = sw.ElapsedMilliseconds.ToString();
                     Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
@@ -915,8 +915,8 @@ namespace MyCaffe.test
                     {
                         sw.Reset();
                         sw.Start();
-                        SimpleDatum d1 = db.QueryImage(ds.TrainingSource.ID, i);
-                        SimpleDatum d2 = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.PAIR);
+                        SimpleDatum d1 = db.QueryItem(ds.TrainingSource.ID, i);
+                        SimpleDatum d2 = db.QueryItem(ds.TrainingSource.ID, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.PAIR);
                         dfTotalMs += sw.ElapsedMilliseconds;
                         sw.Stop();
 
@@ -952,7 +952,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestQueryPairLoadAll()
         {
-            TestQueryPair(IMAGEDB_LOAD_METHOD.LOAD_ALL, 0);
+            TestQueryPair(DB_LOAD_METHOD.LOAD_ALL, 0);
         }
 
         //[TestMethod]
@@ -961,7 +961,7 @@ namespace MyCaffe.test
         //    TestQueryPair(IMAGEDB_LOAD_METHOD.LOAD_ALL, 10);
         //}
 
-        public void TestLoadLimitNextSequential(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
+        public void TestLoadLimitNextSequential(DB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
             PreTest.Init();
 
@@ -985,7 +985,7 @@ namespace MyCaffe.test
 
                     sw.Start();
                     db.InitializeWithDsName1(settings, strDs);
-                    db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    db.SetSelectionMethod(DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                     string str = sw.ElapsedMilliseconds.ToString();
                     Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
@@ -1003,7 +1003,7 @@ namespace MyCaffe.test
                         {
                             sw.Reset();
                             sw.Start();
-                            SimpleDatum d1 = db.QueryImage(ds.TrainingSource.ID, i);
+                            SimpleDatum d1 = db.QueryItem(ds.TrainingSource.ID, i);
                             dfTotalMs += sw.ElapsedMilliseconds;
                             sw.Stop();
 
@@ -1035,7 +1035,7 @@ namespace MyCaffe.test
 
                     for (int i = 0; i < nLoadLimit; i++)
                     {
-                        SimpleDatum d1 = db.QueryImage(ds.TrainingSource.ID, i);
+                        SimpleDatum d1 = db.QueryItem(ds.TrainingSource.ID, i);
 
                         if (!rgWrapAround.Keys.Contains(d1.Index))
                             rgWrapAround.Add(d1.Index, new List<SimpleDatum>() { d1 });
@@ -1109,9 +1109,9 @@ namespace MyCaffe.test
 
                     DatasetDescriptor ds = db.GetDatasetByName(strDs);
 
-                    SimpleDatum d1 = db.QueryImageMean(ds.TrainingSource.ID);
-                    SimpleDatum d2 = db.QueryImageMeanFromDataset(ds.ID);
-                    SimpleDatum d3 = db.GetImageMean(ds.TrainingSource.ID);
+                    SimpleDatum d1 = db.QueryItemMean(ds.TrainingSource.ID);
+                    SimpleDatum d2 = db.QueryItemMeanFromDataset(ds.ID);
+                    SimpleDatum d3 = db.GetItemMean(ds.TrainingSource.ID);
 
                     byte[] rgB1 = d1.ByteData;
                     byte[] rgB2 = d2.ByteData;
@@ -1153,7 +1153,7 @@ namespace MyCaffe.test
                 SettingsCaffe settings = new SettingsCaffe();
                 Stopwatch sw = new Stopwatch();
 
-                settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
+                settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
 
                 db.InitializeWithDsName1(settings, "MNIST");
                 DatasetDescriptor ds = db.GetDatasetByName("MNIST");
@@ -1181,7 +1181,7 @@ namespace MyCaffe.test
 
                     strDesc = strDesc.PadLeft(5, '0');
 
-                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    SimpleDatum sd = db.QueryItem(ds.TrainingSource.ID, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                     sd.TimeStamp = dt;
                     sd.Description = strDesc;
                     dt += TimeSpan.FromMinutes(1);
@@ -1204,7 +1204,7 @@ namespace MyCaffe.test
 
                 for (int i = 0; i < rgSd.Count; i++)
                 {
-                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    SimpleDatum sd = db.QueryItem(ds.TrainingSource.ID, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                     if (sd.ImageID != rgSd[i].ImageID)
                         throw new Exception("The image ordering is not as expected!");
                 }
@@ -1226,11 +1226,11 @@ namespace MyCaffe.test
 
                     int nFilterVal = i * 1000;
                     string strFilterVal = nFilterVal.ToString().PadLeft(5, '0');
-                    int nCount = db.GetImageCount(ds.TrainingSource.ID, strFilterVal);
+                    int nCount = db.GetItemCount(ds.TrainingSource.ID, strFilterVal);
                     int nSequenceCount = 10 + rand.Next(50);
                     int nRandomStart = rand.Next(nCount - nSequenceCount);
                     DateTime dtStart = dt + TimeSpan.FromMinutes(nRandomStart + i * 1000);
-                    List<SimpleDatum> rgSd1 = db.GetImagesFromTime(ds.TrainingSource.ID, dtStart, nSequenceCount, strFilterVal);
+                    List<SimpleDatum> rgSd1 = db.GetItemsFromTime(ds.TrainingSource.ID, dtStart, nSequenceCount, strFilterVal);
 
                     // Verify the count.
                     if (rgSd1.Count != nSequenceCount)
@@ -1259,7 +1259,7 @@ namespace MyCaffe.test
 
                 for (int i = 0; i < rgSd.Count; i++)
                 {
-                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    SimpleDatum sd = db.QueryItem(ds.TrainingSource.ID, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                     if (sd.ImageID != rgSd[i].ImageID)
                         throw new Exception("The image ordering is not as expected!");
                 }
@@ -1279,7 +1279,7 @@ namespace MyCaffe.test
                     int nSequenceCount = 10 + rand.Next(50);
                     int nRandomStart = rand.Next(nCount - nSequenceCount);
                     DateTime dtStart = dt + TimeSpan.FromMinutes(nRandomStart);
-                    List<SimpleDatum> rgSd1 = db.GetImagesFromTime(ds.TrainingSource.ID, dtStart, nSequenceCount);
+                    List<SimpleDatum> rgSd1 = db.GetItemsFromTime(ds.TrainingSource.ID, dtStart, nSequenceCount);
 
                     // Verify the count.
                     if (rgSd1.Count != nSequenceCount)
@@ -1321,7 +1321,7 @@ namespace MyCaffe.test
                 SettingsCaffe settings = new SettingsCaffe();
                 Stopwatch sw = new Stopwatch();
 
-                settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
+                settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
 
                 db.InitializeWithDsName1(settings, "MNIST");
                 DatasetDescriptor ds = db.GetDatasetByName("MNIST");
@@ -1349,7 +1349,7 @@ namespace MyCaffe.test
 
                     strDesc = strDesc.PadLeft(5, '0');
 
-                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    SimpleDatum sd = db.QueryItem(ds.TrainingSource.ID, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                     sd.TimeStamp = dt;
                     sd.Description = strDesc;
                     dt += TimeSpan.FromMinutes(1);
@@ -1368,7 +1368,7 @@ namespace MyCaffe.test
 
                 for (int i = 0; i < rgSd.Count; i++)
                 {
-                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    SimpleDatum sd = db.QueryItem(ds.TrainingSource.ID, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                     if (sd.ImageID != rgSd[i].ImageID)
                         throw new Exception("The image ordering is not as expected!");
                 }
@@ -1382,7 +1382,7 @@ namespace MyCaffe.test
 
                 for (int i = 0; i < rgSd.Count; i++)
                 {
-                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    SimpleDatum sd = db.QueryItem(ds.TrainingSource.ID, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                     if (sd.ImageID != rgSd[i].ImageID)
                         throw new Exception("The image ordering is not as expected!");
                 }
@@ -1392,7 +1392,7 @@ namespace MyCaffe.test
 
                 for (int i = 0; i < rgSd.Count; i++)
                 {
-                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    SimpleDatum sd = db.QueryItem(ds.TrainingSource.ID, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                     if (sd.ImageID != rgSd[i].ImageID)
                         throw new Exception("The image ordering is not as expected!");
                 }
@@ -1407,7 +1407,7 @@ namespace MyCaffe.test
 
                 for (int i = 0; i < rgSd.Count; i++)
                 {
-                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    SimpleDatum sd = db.QueryItem(ds.TrainingSource.ID, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                     if (sd.ImageID != rgSd[i].ImageID)
                         throw new Exception("The image ordering is not as expected!");
                 }
@@ -1417,7 +1417,7 @@ namespace MyCaffe.test
 
                 for (int i = 0; i < rgSd.Count; i++)
                 {
-                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    SimpleDatum sd = db.QueryItem(ds.TrainingSource.ID, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                     if (sd.ImageID != rgSd[i].ImageID)
                         throw new Exception("The image ordering is not as expected!");
                 }
@@ -1432,7 +1432,7 @@ namespace MyCaffe.test
 
                 for (int i = 0; i < rgSd.Count; i++)
                 {
-                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    SimpleDatum sd = db.QueryItem(ds.TrainingSource.ID, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                     if (sd.ImageID != rgSd[i].ImageID)
                         throw new Exception("The image ordering is not as expected!");
                 }
@@ -1442,7 +1442,7 @@ namespace MyCaffe.test
 
                 for (int i = 0; i < rgSd.Count; i++)
                 {
-                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    SimpleDatum sd = db.QueryItem(ds.TrainingSource.ID, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                     if (sd.ImageID != rgSd[i].ImageID)
                         throw new Exception("The image ordering is not as expected!");
                 }
@@ -1457,7 +1457,7 @@ namespace MyCaffe.test
 
                 for (int i = 0; i < rgSd.Count; i++)
                 {
-                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    SimpleDatum sd = db.QueryItem(ds.TrainingSource.ID, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                     if (sd.ImageID != rgSd[i].ImageID)
                         throw new Exception("The image ordering is not as expected!");
                 }
@@ -1467,7 +1467,7 @@ namespace MyCaffe.test
 
                 for (int i = 0; i < rgSd.Count; i++)
                 {
-                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    SimpleDatum sd = db.QueryItem(ds.TrainingSource.ID, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                     if (sd.ImageID != rgSd[i].ImageID)
                         throw new Exception("The image ordering is not as expected!");
                 }
@@ -1496,7 +1496,7 @@ namespace MyCaffe.test
                 SettingsCaffe settings = new SettingsCaffe();
                 Stopwatch sw = new Stopwatch();
 
-                settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
+                settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
 
                 db.InitializeWithDsName1(settings, "MNIST");
                 DatasetDescriptor ds = db.GetDatasetByName("MNIST");
@@ -1524,7 +1524,7 @@ namespace MyCaffe.test
 
                     strDesc = strDesc.PadLeft(5, '0');
 
-                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    SimpleDatum sd = db.QueryItem(ds.TrainingSource.ID, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                     sd.TimeStamp = dt;
                     sd.Description = strDesc;
                     dt += TimeSpan.FromMinutes(1);
@@ -1532,7 +1532,7 @@ namespace MyCaffe.test
 
                     if (i < ds.TestingSource.ImageCount)
                     {
-                        sd = db.QueryImage(ds.TestingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                        sd = db.QueryItem(ds.TestingSource.ID, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                         sd.TimeStamp = dt;
                         sd.Description = strDesc;
                         dt += TimeSpan.FromMinutes(1);
@@ -1576,13 +1576,13 @@ namespace MyCaffe.test
 
                 for (int i = 0; i < dsNew.TrainingSource.ImageCount; i++)
                 {
-                    SimpleDatum sd = db.QueryImage(dsNew.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    SimpleDatum sd = db.QueryItem(dsNew.TrainingSource.ID, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                     rgSd1.Add(sd);
                 }
 
                 for (int i = 0; i < dsNew.TestingSource.ImageCount; i++)
                 {
-                    SimpleDatum sd = db.QueryImage(dsNew.TestingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    SimpleDatum sd = db.QueryItem(dsNew.TestingSource.ID, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
                     rgSd1.Add(sd);
                 }
 
@@ -1610,7 +1610,7 @@ namespace MyCaffe.test
             }
         }
 
-        private bool testQuery(int nTestIdx, Log log, DatasetDescriptor ds, LabelDescriptor lblDesc, IMAGEDB_LOAD_METHOD loadMethod, IMGDB_LABEL_SELECTION_METHOD lblSel, IMGDB_IMAGE_SELECTION_METHOD imgSel, List<int> rgBoostIdx, ref int nIdx, ref int nTotal)
+        private bool testQuery(int nTestIdx, Log log, DatasetDescriptor ds, LabelDescriptor lblDesc, DB_LOAD_METHOD loadMethod, DB_LABEL_SELECTION_METHOD lblSel, DB_ITEM_SELECTION_METHOD imgSel, List<int> rgBoostIdx, ref int nIdx, ref int nTotal)
         {
             TestingProgressSet progress = null;
             IXImageDatabase1 db = null;
@@ -1620,7 +1620,7 @@ namespace MyCaffe.test
             try
             {
                 if (nTestIdx == 2)
-                    imgSel = (imgSel | IMGDB_IMAGE_SELECTION_METHOD.BOOST);
+                    imgSel = (imgSel | DB_ITEM_SELECTION_METHOD.BOOST);
 
                 int? nLabel = null;
                 if (lblDesc != null)
@@ -1666,14 +1666,14 @@ namespace MyCaffe.test
 
                     if (lblDesc != null)
                     {
-                        if ((imgSel & IMGDB_IMAGE_SELECTION_METHOD.BOOST) == IMGDB_IMAGE_SELECTION_METHOD.BOOST)
+                        if ((imgSel & DB_ITEM_SELECTION_METHOD.BOOST) == DB_ITEM_SELECTION_METHOD.BOOST)
                             rgItems = rgItems.Where(p => p.Label == lblDesc.ActiveLabel && p.Boost > 0).ToList();
                         else
                             rgItems = rgItems.Where(p => p.Label == lblDesc.ActiveLabel).ToList();
                     }
                     else
                     {
-                        if ((imgSel & IMGDB_IMAGE_SELECTION_METHOD.BOOST) == IMGDB_IMAGE_SELECTION_METHOD.BOOST)
+                        if ((imgSel & DB_ITEM_SELECTION_METHOD.BOOST) == DB_ITEM_SELECTION_METHOD.BOOST)
                             rgItems = rgItems.Where(p => p.Boost > 0).ToList();
                     }
 
@@ -1682,7 +1682,7 @@ namespace MyCaffe.test
 
                     for (int i = 0; i < nImageCount; i++)
                     {
-                        SimpleDatum sd = db.QueryImage(nSrcId, i, lblSel, imgSel, nLabel);
+                        SimpleDatum sd = db.QueryItem(nSrcId, i, lblSel, imgSel, nLabel);
                         if (!rgLabelCounts.ContainsKey(sd.Label))
                             rgLabelCounts.Add(sd.Label, 1);
                         else
@@ -1716,14 +1716,14 @@ namespace MyCaffe.test
                         rgProbabilities.Add(kv.Key, dfProb);
                     }
 
-                    if ((lblSel & IMGDB_LABEL_SELECTION_METHOD.RANDOM) == IMGDB_LABEL_SELECTION_METHOD.RANDOM)
+                    if ((lblSel & DB_LABEL_SELECTION_METHOD.RANDOM) == DB_LABEL_SELECTION_METHOD.RANDOM)
                     {
                         double dfSum = rgProbabilities.Sum(p => p.Value);
                         double dfAve = dfSum / rgProbabilities.Count;
 
                         double dfThreshold = 0.001;
-                        if ((lblSel & IMGDB_LABEL_SELECTION_METHOD.RANDOM) != IMGDB_LABEL_SELECTION_METHOD.RANDOM ||
-                            (imgSel & IMGDB_IMAGE_SELECTION_METHOD.RANDOM) != IMGDB_IMAGE_SELECTION_METHOD.RANDOM)
+                        if ((lblSel & DB_LABEL_SELECTION_METHOD.RANDOM) != DB_LABEL_SELECTION_METHOD.RANDOM ||
+                            (imgSel & DB_ITEM_SELECTION_METHOD.RANDOM) != DB_ITEM_SELECTION_METHOD.RANDOM)
                             dfThreshold = 0.12;
 
                         foreach (KeyValuePair<int, double> kv in rgProbabilities)
@@ -1927,16 +1927,16 @@ namespace MyCaffe.test
                         //  LOAD_ON_DEMAND tests
                         //---------------------------------------------------
 
-                        if (!testQuery(i, log, ds, lblDesc, IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM, rgBoostIdx, ref nIdx, ref nTotal))
+                        if (!testQuery(i, log, ds, lblDesc, DB_LOAD_METHOD.LOAD_ON_DEMAND, DB_LABEL_SELECTION_METHOD.RANDOM, DB_ITEM_SELECTION_METHOD.RANDOM, rgBoostIdx, ref nIdx, ref nTotal))
                             return;
 
-                        if (!testQuery(i, log, ds, lblDesc, IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM, rgBoostIdx, ref nIdx, ref nTotal))
+                        if (!testQuery(i, log, ds, lblDesc, DB_LOAD_METHOD.LOAD_ON_DEMAND, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.RANDOM, rgBoostIdx, ref nIdx, ref nTotal))
                             return;
 
-                        if (!testQuery(i, log, ds, lblDesc, IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.NONE, rgBoostIdx, ref nIdx, ref nTotal))
+                        if (!testQuery(i, log, ds, lblDesc, DB_LOAD_METHOD.LOAD_ON_DEMAND, DB_LABEL_SELECTION_METHOD.RANDOM, DB_ITEM_SELECTION_METHOD.NONE, rgBoostIdx, ref nIdx, ref nTotal))
                             return;
 
-                        if (!testQuery(i, log, ds, lblDesc, IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, rgBoostIdx, ref nIdx, ref nTotal))
+                        if (!testQuery(i, log, ds, lblDesc, DB_LOAD_METHOD.LOAD_ON_DEMAND, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, rgBoostIdx, ref nIdx, ref nTotal))
                             return;
 
 
@@ -1944,16 +1944,16 @@ namespace MyCaffe.test
                         //  LOAD_ALL tests
                         //---------------------------------------------------
 
-                        if (!testQuery(i, log, ds, lblDesc, IMAGEDB_LOAD_METHOD.LOAD_ALL, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM, rgBoostIdx, ref nIdx, ref nTotal))
+                        if (!testQuery(i, log, ds, lblDesc, DB_LOAD_METHOD.LOAD_ALL, DB_LABEL_SELECTION_METHOD.RANDOM, DB_ITEM_SELECTION_METHOD.RANDOM, rgBoostIdx, ref nIdx, ref nTotal))
                             return;
 
-                        if (!testQuery(i, log, ds, lblDesc, IMAGEDB_LOAD_METHOD.LOAD_ALL, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM, rgBoostIdx, ref nIdx, ref nTotal))
+                        if (!testQuery(i, log, ds, lblDesc, DB_LOAD_METHOD.LOAD_ALL, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.RANDOM, rgBoostIdx, ref nIdx, ref nTotal))
                             return;
 
-                        if (!testQuery(i, log, ds, lblDesc, IMAGEDB_LOAD_METHOD.LOAD_ALL, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.NONE, rgBoostIdx, ref nIdx, ref nTotal))
+                        if (!testQuery(i, log, ds, lblDesc, DB_LOAD_METHOD.LOAD_ALL, DB_LABEL_SELECTION_METHOD.RANDOM, DB_ITEM_SELECTION_METHOD.NONE, rgBoostIdx, ref nIdx, ref nTotal))
                             return;
 
-                        if (!testQuery(i, log, ds, lblDesc, IMAGEDB_LOAD_METHOD.LOAD_ALL, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, rgBoostIdx, ref nIdx, ref nTotal))
+                        if (!testQuery(i, log, ds, lblDesc, DB_LOAD_METHOD.LOAD_ALL, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, rgBoostIdx, ref nIdx, ref nTotal))
                             return;
                     }
                 }

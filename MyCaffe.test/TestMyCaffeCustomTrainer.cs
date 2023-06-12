@@ -386,7 +386,7 @@ namespace MyCaffe.test
             : base(strName, null, nDeviceID)
         {
             m_engine = engine;
-            m_settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
+            m_settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
             m_settings.GpuIds = nDeviceID.ToString();
         }
 
@@ -433,7 +433,7 @@ namespace MyCaffe.test
             m_log.CHECK(ds != null, "The MyCaffeCartPoleTrainer should return its dataset override returned by the Gym that it uses.");
 
             // load the project to train (note the project must use the MemoryDataLayer for input).
-            mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false);
+            mycaffe.Load(Phase.TRAIN, project, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, false, null, false);
 
             // Train the network using the custom trainer
             //  - Iterations (maximum frames cumulative across all threads) = 1000 (normally this would be much higher such as 500,000)
@@ -500,7 +500,7 @@ namespace MyCaffe.test
             itrainer.Initialize("TrainerType=" + strTrainerType + ";RewardType=VAL;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";AllowDiscountReset=" + bAllowDiscountReset.ToString() + ";Gamma=0.99;Init1=10;Init2=0;Threads=1;MiniBatch=" + nMiniBatch.ToString() + ";", this);
 
             // load the project to train (note the project must use the MemoryDataLayer for input).
-            mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false, true, itrainer.Stage.ToString());
+            mycaffe.Load(Phase.TRAIN, project, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, false, null, false, true, itrainer.Stage.ToString());
 
             if (bShowUi)
                 itrainer.OpenUi();
@@ -555,7 +555,7 @@ namespace MyCaffe.test
             itrainer.Initialize("TrainerType=" + strTrainerType + ";UseRawInput=True;RewardType=VAL;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";AllowDiscountReset=" + bAllowDiscountReset.ToString() + ";Gamma=0.99;Init1=10;Init2=0;Threads=1;MiniBatch=" + nMiniBatch.ToString() + ";", this);
 
             // load the project to train (note the project must use the MemoryDataLayer for input).
-            mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false, true, itrainer.Stage.ToString());
+            mycaffe.Load(Phase.TRAIN, project, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, false, null, false, true, itrainer.Stage.ToString());
 
             if (bShowUi)
                 itrainer.OpenUi();
@@ -605,7 +605,7 @@ namespace MyCaffe.test
             m_log.CHECK(ds != null, "The MyCaffeAtariTrainer should return its dataset override returned by the Gym that it uses.");
 
             // load the project to train (note the project must use the MemoryDataLayer for input).
-            mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false);
+            mycaffe.Load(Phase.TRAIN, project, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, false, null, false);
 
             // Train the network using the custom trainer
             //  - Iterations (maximum frames cumulative across all threads) = 1000 (normally this would be much higher such as 500,000)
@@ -700,7 +700,7 @@ namespace MyCaffe.test
             itrainer.Initialize(strParam, this);
 
             // load the project to train (note the project must use the MemoryDataLayer for input).
-            mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false, true, itrainer.Stage.ToString());
+            mycaffe.Load(Phase.TRAIN, project, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, false, null, false, true, itrainer.Stage.ToString());
 
             if (bShowUi)
                 itrainer.OpenUi();
@@ -775,7 +775,7 @@ namespace MyCaffe.test
             itrainer.Initialize(strParam, this);
 
             // load the project to train (note the project must use the MemoryDataLayer for input).
-            mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false, true, itrainer.Stage.ToString());
+            mycaffe.Load(Phase.TRAIN, project, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, false, null, false, true, itrainer.Stage.ToString());
 
             if (bShowUi)
                 itrainer.OpenUi();
@@ -850,7 +850,7 @@ namespace MyCaffe.test
             itrainer.Initialize(strParam, this);
 
             // load the project to train (note the project must use the MemoryDataLayer for input).
-            mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false, true, itrainer.Stage.ToString());
+            mycaffe.Load(Phase.TRAIN, project, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, false, null, false, true, itrainer.Stage.ToString());
 
             if (bShowUi)
                 itrainer.OpenUi();
@@ -940,7 +940,7 @@ namespace MyCaffe.test
             project.ModelDescription = trainer.ResizeModel(m_log, project.ModelDescription, rgVocabulary);
 
             // load the project to train (note the project must use the InputLayer for input).
-            mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false);
+            mycaffe.Load(Phase.TRAIN, project, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, false, null, false);
 
             if (bShowUi)
                 trainer.OpenUi();
@@ -1050,7 +1050,7 @@ namespace MyCaffe.test
             project.ModelDescription = itrainer.ResizeModel(m_log, project.ModelDescription, rgVocabulary);
 
             // load the project to train (note the project must use the InputLayer for input).
-            mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false, true, itrainer.Stage.ToString());
+            mycaffe.Load(Phase.TRAIN, project, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, false, null, false, true, itrainer.Stage.ToString());
 
             if (bShowUi)
                 itrainer.OpenUi();
@@ -1163,7 +1163,7 @@ namespace MyCaffe.test
             project.ModelDescription = trainer.ResizeModel(m_log, project.ModelDescription, rgVocabulary);
 
             // load the project to train (note the project must use the InputLayer for input).
-            mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false);
+            mycaffe.Load(Phase.TRAIN, project, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, false, null, false);
 
             if (bShowUi)
                 trainer.OpenUi();
@@ -1268,7 +1268,7 @@ namespace MyCaffe.test
             project.ModelDescription = itrainer.ResizeModel(m_log, project.ModelDescription, rgVocabulary);
 
             // load the project to train (note the project must use the InputLayer for input).
-            mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false, true, itrainer.Stage.ToString());
+            mycaffe.Load(Phase.TRAIN, project, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, false, null, false, true, itrainer.Stage.ToString());
 
             if (bShowUi)
                 itrainer.OpenUi();

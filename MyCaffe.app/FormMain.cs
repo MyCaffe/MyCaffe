@@ -1149,7 +1149,7 @@ namespace MyCaffe.app
                         {
                             case COMMAND.CREATE:
                                 SettingsCaffe settings = new SettingsCaffe();
-                                settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
+                                settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
                                 settings.EnableRandomInputSelection = true;
                                 settings.GpuIds = getGpu().ToString();
                                 settings.ImageDbVersion = getImageDbVersion();
@@ -1470,7 +1470,7 @@ namespace MyCaffe.app
         {
             CancelEvent evtCancel = new CancelEvent();
             SettingsCaffe settings = new SettingsCaffe();
-            settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
+            settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ON_DEMAND;
             settings.EnableRandomInputSelection = true;
             settings.GpuIds = "0";
 
@@ -1507,7 +1507,7 @@ namespace MyCaffe.app
         {
             MyCaffeControl<float> mycaffe = null;
             SettingsCaffe settings = new SettingsCaffe();
-            settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
+            settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ON_DEMAND;
             settings.EnableRandomInputSelection = true;
             settings.GpuIds = getGpu().ToString();
             settings.ImageDbVersion = getImageDbVersion();
@@ -1530,7 +1530,7 @@ namespace MyCaffe.app
             MyCaffeControl<float> mycaffe = null;
             SettingsCaffe settings = new SettingsCaffe();
             int nGpuId = getGpu();
-            settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
+            settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
             settings.EnableRandomInputSelection = true;
             settings.GpuIds = nGpuId.ToString();
             settings.ImageDbVersion = getImageDbVersion();

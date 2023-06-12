@@ -91,11 +91,11 @@ namespace MyCaffe.db.image
         /// <param name="nImageDbLoadLimit">Optionally, specifies the load limit (default = 0).</param>
         /// <param name="bSkipMeanCheck">Optionally, specifies to skip the mean check (default = false).</param>
         /// <returns>Upon loading the dataset <i>true</i> is returned, otherwise on failure or abort <i>false</i> is returned.</returns>
-        public bool Initialize(DatasetDescriptor ds, WaitHandle[] rgAbort, int nPadW = 0, int nPadH = 0, Log log = null, IMAGEDB_LOAD_METHOD loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL, int nImageDbLoadLimit = 0, bool bSkipMeanCheck = false)
+        public bool Initialize(DatasetDescriptor ds, WaitHandle[] rgAbort, int nPadW = 0, int nPadH = 0, Log log = null, DB_LOAD_METHOD loadMethod = DB_LOAD_METHOD.LOAD_ALL, int nImageDbLoadLimit = 0, bool bSkipMeanCheck = false)
         {
             lock (m_syncObj)
             {
-                if (loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ALL && nImageDbLoadLimit > 0)
+                if (loadMethod != DB_LOAD_METHOD.LOAD_ALL && nImageDbLoadLimit > 0)
                     throw new Exception("Currently the load-limit only works with the LOAD_ALLL image loading method.");
 
                 SimpleDatum imgMean = null;
@@ -103,7 +103,7 @@ namespace MyCaffe.db.image
                 if (ds != null)
                     m_ds = ds;
 
-                if (m_ds.TrainingSource.ImageWidth == -1 || m_ds.TrainingSource.ImageHeight == -1)
+                if (m_ds.TrainingSource.Width == -1 || m_ds.TrainingSource.Height == -1)
                 {
                     log.WriteLine("WARNING: Cannot create a mean image for data sources that contain variable sized images.  The mean check will be skipped.");
                     bSkipMeanCheck = true;
@@ -217,7 +217,7 @@ namespace MyCaffe.db.image
             set { m_bUseTrainingImagesForTesting = value; }
         }
 
-        private ImageSet loadImageset(string strType, SourceDescriptor src, WaitHandle[] rgAbort, ref SimpleDatum imgMean, out int nLastImageIdx, int nPadW = 0, int nPadH = 0, Log log = null, IMAGEDB_LOAD_METHOD loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL, int nImageDbLoadLimit = 0, int nImageDbLoadLimitStartIdx = 0, bool bLoadNext = false, bool bSkipMeanCheck = false)
+        private ImageSet loadImageset(string strType, SourceDescriptor src, WaitHandle[] rgAbort, ref SimpleDatum imgMean, out int nLastImageIdx, int nPadW = 0, int nPadH = 0, Log log = null, DB_LOAD_METHOD loadMethod = DB_LOAD_METHOD.LOAD_ALL, int nImageDbLoadLimit = 0, int nImageDbLoadLimitStartIdx = 0, bool bLoadNext = false, bool bSkipMeanCheck = false)
         {
             try
             {
@@ -226,7 +226,7 @@ namespace MyCaffe.db.image
                 m_factory.Open(src);
                 nLastImageIdx = nImageDbLoadLimitStartIdx;
 
-                if (loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ALL && !bSkipMeanCheck)
+                if (loadMethod != DB_LOAD_METHOD.LOAD_ALL && !bSkipMeanCheck)
                 {
                     if (imgMean == null)
                     {
@@ -234,9 +234,9 @@ namespace MyCaffe.db.image
                         if (imgMeanRaw == null)
                         {
                             if (log != null)
-                                log.WriteLine("WARNING: No image mean exists in the database, changing image database load from " + loadMethod.ToString() + " to " + IMAGEDB_LOAD_METHOD.LOAD_ALL.ToString());
+                                log.WriteLine("WARNING: No image mean exists in the database, changing image database load from " + loadMethod.ToString() + " to " + DB_LOAD_METHOD.LOAD_ALL.ToString());
 
-                            loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
+                            loadMethod = DB_LOAD_METHOD.LOAD_ALL;
                         }
                     }
                 }
@@ -247,12 +247,12 @@ namespace MyCaffe.db.image
                     if (log != null)
                         log.WriteLine("WARNING: Could not find any images with " + strType + " Source = '" + src.Name + "'.  If this is a training dataset, you will need to enable the 'UseTrainingSrcForTesting' setting.");
 
-                    if (loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND && loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE)
+                    if (loadMethod != DB_LOAD_METHOD.LOAD_ON_DEMAND && loadMethod != DB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE)
                     {
                         if (log != null)
                             log.WriteLine("Because there are no images in this set, the image loading method has been changed to LOAD_ON_DEMAND for this dataset.");
 
-                        loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
+                        loadMethod = DB_LOAD_METHOD.LOAD_ON_DEMAND;
                     }
                 }
 
@@ -264,13 +264,13 @@ namespace MyCaffe.db.image
                 if (OnCalculateImageMean != null)
                     imgset.OnCalculateImageMean += OnCalculateImageMean;
 
-                if (loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND && loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE)
+                if (loadMethod != DB_LOAD_METHOD.LOAD_ON_DEMAND && loadMethod != DB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE)
                 {
                     bool bDataIsReal = src.IsRealData;
                     int nBatchSize = 20000;
                     Stopwatch sw = new Stopwatch();
 
-                    int nImageSize = src.ImageHeight * src.ImageWidth;
+                    int nImageSize = src.Height * src.Width;
                     if (nImageSize > 60000)
                         nBatchSize = 5000;
                     else if (nBatchSize > 20000)
@@ -316,7 +316,7 @@ namespace MyCaffe.db.image
 
                         nIdx += rgImg.Count;
 
-                        if (loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ALL && rgImg.Count == 0 && nIdx < nCount)
+                        if (loadMethod == DB_LOAD_METHOD.LOAD_ALL && rgImg.Count == 0 && nIdx < nCount)
                         {
                             log.WriteLine("WARNING: Loaded " + nIdx.ToString("N0") + " images, yet " + (nCount - nIdx).ToString("N0") + " images are unaccounted for.  You may need to reindex the dataset.");
                             break;

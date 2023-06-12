@@ -655,7 +655,7 @@ namespace MyCaffe.basecode
         /// Returns the method used to load the images into memory.  Loading all images into memory has the highest training performance for 
         /// memory access is much faster than disk acces (even with an SSD).
         /// </summary>
-        public IMAGEDB_LOAD_METHOD ImageLoadMethod
+        public DB_LOAD_METHOD ImageLoadMethod
         {
             get { return m_project.Settings.ImageDbLoadMethod; }
         }
@@ -1903,7 +1903,7 @@ namespace MyCaffe.basecode
                                     if (source != null)
                                     {
                                         source.Value = dataset.TestingSource.Name;
-                                        nCropSize = dataset.TestingSource.ImageHeight;
+                                        nCropSize = dataset.TestingSource.Height;
                                     }
                                     else
                                     {
@@ -1917,7 +1917,7 @@ namespace MyCaffe.basecode
                                     if (source != null)
                                     {
                                         source.Value = dataset.TrainingSource.Name;
-                                        nCropSize = dataset.TrainingSource.ImageHeight;
+                                        nCropSize = dataset.TrainingSource.Height;
                                     }
                                     else
                                     {

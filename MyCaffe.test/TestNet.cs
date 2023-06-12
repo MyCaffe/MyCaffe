@@ -819,7 +819,7 @@ namespace MyCaffe.test
             {
                 foreach (INetTest t in test.Tests)
                 {
-                    t.TestSynchronizedDataLayers(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
+                    t.TestSynchronizedDataLayers(DB_LOAD_METHOD.LOAD_ON_DEMAND);
                 }
             }
             finally
@@ -837,7 +837,7 @@ namespace MyCaffe.test
             {
                 foreach (INetTest t in test.Tests)
                 {
-                    t.TestSynchronizedDataLayers(IMAGEDB_LOAD_METHOD.LOAD_ALL);
+                    t.TestSynchronizedDataLayers(DB_LOAD_METHOD.LOAD_ALL);
                 }
             }
             finally
@@ -894,7 +894,7 @@ namespace MyCaffe.test
         void TestSkipPropagateDown();
         void TestForcePropagateDown();
         void TestAllInOneNetTrain();
-        void TestSynchronizedDataLayers(IMAGEDB_LOAD_METHOD loadMethod);
+        void TestSynchronizedDataLayers(DB_LOAD_METHOD loadMethod);
     }
 
     class NetTest : TestBase
@@ -3738,7 +3738,7 @@ namespace MyCaffe.test
             m_log.CHECK(bFoundLoss, "Did not find the loss layer.");
         }
 
-        public void TestSynchronizedDataLayers(IMAGEDB_LOAD_METHOD loadMethod)
+        public void TestSynchronizedDataLayers(DB_LOAD_METHOD loadMethod)
         {
             string strProto =
                 "name: 'SyncDataLayer Network'" +

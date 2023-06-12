@@ -1337,7 +1337,7 @@ namespace MyCaffe.db.image
         public int AddSource(SourceDescriptor src, ConnectInfo ci = null, bool? bSaveImagesToFileOverride = null)
         {
             bool bSaveImagesToFile = bSaveImagesToFileOverride.GetValueOrDefault(src.SaveImagesToFile);
-            src.ID = m_db.AddSource(src.Name, src.ImageChannels, src.ImageWidth, src.ImageHeight, src.IsRealData, src.CopyOfSourceID, bSaveImagesToFile, ci);
+            src.ID = m_db.AddSource(src.Name, src.Channels, src.Width, src.Height, src.IsRealData, src.CopyOfSourceID, bSaveImagesToFile, ci);
             return src.ID;
         }
 

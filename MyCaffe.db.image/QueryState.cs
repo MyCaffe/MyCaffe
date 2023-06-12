@@ -57,15 +57,15 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="lblSel">Specifies the label selection method used.</param>
         /// <returns>The next label index is returned.</returns>
-        public int? GetNextLabel(IMGDB_LABEL_SELECTION_METHOD lblSel)
+        public int? GetNextLabel(DB_LABEL_SELECTION_METHOD lblSel)
         {
             Index.SELECTION_TYPE selType = Index.SELECTION_TYPE.RANDOM;
             bool bBoost = false;
 
-            if ((lblSel & IMGDB_LABEL_SELECTION_METHOD.RANDOM) != IMGDB_LABEL_SELECTION_METHOD.RANDOM)
+            if ((lblSel & DB_LABEL_SELECTION_METHOD.RANDOM) != DB_LABEL_SELECTION_METHOD.RANDOM)
                 selType = Index.SELECTION_TYPE.SEQUENTIAL;
 
-            if ((lblSel & IMGDB_LABEL_SELECTION_METHOD.BOOST) == IMGDB_LABEL_SELECTION_METHOD.BOOST)
+            if ((lblSel & DB_LABEL_SELECTION_METHOD.BOOST) == DB_LABEL_SELECTION_METHOD.BOOST)
                 bBoost = true;
 
             return GetNextLabel(selType, bBoost);
@@ -97,24 +97,24 @@ namespace MyCaffe.db.image
         /// <param name="nLabel">Optionally, specifies a label (default = null).</param>
         /// <param name="nDirectIdx">Optionally, specifies to query the image at this index (only applies when type = DIRECT).</param>
         /// <returns></returns>
-        public int? GetNextImage(IMGDB_IMAGE_SELECTION_METHOD imgSel, int? nLabel, int nDirectIdx)
+        public int? GetNextImage(DB_ITEM_SELECTION_METHOD imgSel, int? nLabel, int nDirectIdx)
         {
-            if (!nLabel.HasValue && imgSel == IMGDB_IMAGE_SELECTION_METHOD.NONE && nDirectIdx >= 0)
+            if (!nLabel.HasValue && imgSel == DB_ITEM_SELECTION_METHOD.NONE && nDirectIdx >= 0)
                 return GetNextImage(Index.SELECTION_TYPE.DIRECT, null, false, nDirectIdx);
 
             Index.SELECTION_TYPE selType = Index.SELECTION_TYPE.RANDOM;
             bool bBoosted = false;
 
-            if ((imgSel & IMGDB_IMAGE_SELECTION_METHOD.RANDOM) != IMGDB_IMAGE_SELECTION_METHOD.RANDOM)
+            if ((imgSel & DB_ITEM_SELECTION_METHOD.RANDOM) != DB_ITEM_SELECTION_METHOD.RANDOM)
             {
                 selType = Index.SELECTION_TYPE.SEQUENTIAL;
 
                 // When using PAIR, advance to the next item.
-                if ((imgSel & IMGDB_IMAGE_SELECTION_METHOD.PAIR) == IMGDB_IMAGE_SELECTION_METHOD.PAIR)
+                if ((imgSel & DB_ITEM_SELECTION_METHOD.PAIR) == DB_ITEM_SELECTION_METHOD.PAIR)
                     GetNextImage(selType, nLabel, bBoosted, -1);
             }
 
-            if ((imgSel & IMGDB_IMAGE_SELECTION_METHOD.BOOST) == IMGDB_IMAGE_SELECTION_METHOD.BOOST)
+            if ((imgSel & DB_ITEM_SELECTION_METHOD.BOOST) == DB_ITEM_SELECTION_METHOD.BOOST)
                 bBoosted = true;
 
             return GetNextImage(selType, nLabel, bBoosted, -1);

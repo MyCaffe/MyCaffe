@@ -29,7 +29,7 @@ namespace MyCaffe.db.image
         int m_nFixedIndex = -1;
         object m_syncObj = new object();
         int m_nLoadLimit = 0;
-        IMAGEDB_LOAD_METHOD m_loadMethod;
+        DB_LOAD_METHOD m_loadMethod;
         Dictionary<int, double> m_rgLabelBoosts = new Dictionary<int, double>();
         double m_dfLabelBoostTotal = 0;
         DatasetFactory m_factory;
@@ -50,7 +50,7 @@ namespace MyCaffe.db.image
         /// <param name="loadMethod">Specifies the method to use when loading the images.</param>
         /// <param name="nLoadLimit">Specifies the image load limit.</param>
         /// <param name="random">Specifies the random number generator.</param>
-        public ImageSet(DatasetFactory factory, SourceDescriptor src, IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit, CryptoRandom random)
+        public ImageSet(DatasetFactory factory, SourceDescriptor src, DB_LOAD_METHOD loadMethod, int nLoadLimit, CryptoRandom random)
         {
             m_random = random;
             m_factory = new DatasetFactory(factory);
@@ -532,7 +532,7 @@ namespace MyCaffe.db.image
         /// <param name="bLoadDataCriteria">Specifies to load the data criteria data (default = false).</param>
         /// <param name="bLoadDebugData">Specifies to load the debug data (default = false).</param>
         /// <returns>The SimpleDatum containing the image is returned.</returns>
-        public SimpleDatum GetImage(int nIdx, IMGDB_LABEL_SELECTION_METHOD labelSelectionMethod, IMGDB_IMAGE_SELECTION_METHOD imageSelectionMethod, Log log, bool bLoadDataCriteria = false, bool bLoadDebugData = false)
+        public SimpleDatum GetImage(int nIdx, DB_LABEL_SELECTION_METHOD labelSelectionMethod, DB_ITEM_SELECTION_METHOD imageSelectionMethod, Log log, bool bLoadDataCriteria = false, bool bLoadDebugData = false)
         {
             lock (m_syncObj)
             {
@@ -546,7 +546,7 @@ namespace MyCaffe.db.image
 
                 SimpleDatum sd = null;
 
-                if ((labelSelectionMethod & IMGDB_LABEL_SELECTION_METHOD.RANDOM) == IMGDB_LABEL_SELECTION_METHOD.RANDOM)
+                if ((labelSelectionMethod & DB_LABEL_SELECTION_METHOD.RANDOM) == DB_LABEL_SELECTION_METHOD.RANDOM)
                 {
                     if (m_rgLabelSet.Count == 0)
                         throw new Exception("There are no label specified in the Labels table for the dataset '" + m_src.Name + "'!");
@@ -574,7 +574,7 @@ namespace MyCaffe.db.image
                 {
                     int nRetries = 1;
 
-                    if ((imageSelectionMethod & IMGDB_IMAGE_SELECTION_METHOD.RANDOM) == IMGDB_IMAGE_SELECTION_METHOD.RANDOM)
+                    if ((imageSelectionMethod & DB_ITEM_SELECTION_METHOD.RANDOM) == DB_ITEM_SELECTION_METHOD.RANDOM)
                         nRetries = 5;
 
                     for (int i = 0; i < nRetries; i++)
@@ -639,13 +639,13 @@ namespace MyCaffe.db.image
             return null;
         }
 
-        private LabelSet getLabelSet(IMGDB_LABEL_SELECTION_METHOD labelSelectionMethod)
+        private LabelSet getLabelSet(DB_LABEL_SELECTION_METHOD labelSelectionMethod)
         {
             double dfBoostTotal = m_dfLabelBoostTotal;
             Dictionary<int, double> rgBoosts = m_rgLabelBoosts;
             int nIdx;
 
-            if ((labelSelectionMethod & IMGDB_LABEL_SELECTION_METHOD.BOOST) != IMGDB_LABEL_SELECTION_METHOD.BOOST)
+            if ((labelSelectionMethod & DB_LABEL_SELECTION_METHOD.BOOST) != DB_LABEL_SELECTION_METHOD.BOOST)
             {
                 if (m_rgLabelSetWithData.Count == 0)
                     return null;
@@ -723,7 +723,7 @@ namespace MyCaffe.db.image
                 return null;
             }
 
-            if (m_loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ALL)
+            if (m_loadMethod != DB_LOAD_METHOD.LOAD_ALL)
                 throw new Exception("Can only create image mean when using LOAD_ALL.");
 
             if (m_nLoadLimit != 0)

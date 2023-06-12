@@ -279,7 +279,7 @@ namespace MyCaffe.test
         {
             DatasetFactory factory = new DatasetFactory();
             SourceDescriptor src = factory.LoadSource(strSrc);
-            m_blobCompare = new Blob<T>(m_cuda, m_log, 1, src.ImageChannels, src.ImageHeight, src.ImageWidth);
+            m_blobCompare = new Blob<T>(m_cuda, m_log, 1, src.Channels, src.Height, src.Width);
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.DATA);
             p.data_param.batch_size = 64;

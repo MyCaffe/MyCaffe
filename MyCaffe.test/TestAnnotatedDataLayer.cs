@@ -1000,7 +1000,7 @@ namespace MyCaffe.test
                 p.transform_param.random_seed = 1701;
 
                 // Turn off random selection;
-                m_parent.db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                m_parent.db.SetSelectionMethod(DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
 
                 // Get crop sequence.
                 List<List<double>> rgrgCropSequence = new List<List<double>>();

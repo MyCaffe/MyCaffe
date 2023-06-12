@@ -82,23 +82,23 @@ namespace MyCaffe.layers
             if (p.data_param.synchronize_target)
                 m_rgBatchLabels = new LabelCollection();
 
-            Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> kvSel = db.GetSelectionMethod();
-            IMGDB_IMAGE_SELECTION_METHOD imgSel = kvSel.Item2;
+            Tuple<DB_LABEL_SELECTION_METHOD, DB_ITEM_SELECTION_METHOD> kvSel = db.GetSelectionMethod();
+            DB_ITEM_SELECTION_METHOD imgSel = kvSel.Item2;
 
             if (m_param.data_param.enable_pair_selection.HasValue)
             {
                 if (m_param.data_param.enable_pair_selection.Value)
-                    imgSel |= IMGDB_IMAGE_SELECTION_METHOD.PAIR;
+                    imgSel |= DB_ITEM_SELECTION_METHOD.PAIR;
                 else
-                    imgSel &= (~IMGDB_IMAGE_SELECTION_METHOD.PAIR);
+                    imgSel &= (~DB_ITEM_SELECTION_METHOD.PAIR);
             }
 
             if (m_param.data_param.enable_random_selection.HasValue)
             {
                 if (m_param.data_param.enable_random_selection.Value)
-                    imgSel |= IMGDB_IMAGE_SELECTION_METHOD.RANDOM;
+                    imgSel |= DB_ITEM_SELECTION_METHOD.RANDOM;
                 else
-                    imgSel &= (~IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+                    imgSel &= (~DB_ITEM_SELECTION_METHOD.RANDOM);
             }
 
             db.SetSelectionMethod(null, imgSel);
@@ -386,7 +386,7 @@ namespace MyCaffe.layers
                         if (m_imgdb == null)
                             m_log.FAIL("No 'mean' image is loaded, yet the MyCaffe Image Database = null, and it is required to get the mean image.");
 
-                        sdMean = m_imgdb.GetImageMean(m_src.ID);
+                        sdMean = m_imgdb.GetItemMean(m_src.ID);
                     }
 
                     if (sdMean == null)

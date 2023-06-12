@@ -298,16 +298,16 @@ namespace MyCaffe.test
             SettingsCaffe settings = new SettingsCaffe();
             Stopwatch sw = new Stopwatch();
 
-            settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
+            settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
             m_db.InitializeWithDsName1(settings, "MNIST");
             DatasetDescriptor ds = m_db.GetDatasetByName("MNIST");
             m_nSrcId = ds.TrainingSource.ID;
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.MEMORYDATA);
             p.memory_data_param.batch_size = (uint)m_nBatchSize;
-            p.memory_data_param.channels = (uint)ds.TrainingSource.ImageChannels;
-            p.memory_data_param.height = (uint)ds.TrainingSource.ImageHeight;
-            p.memory_data_param.width = (uint)ds.TrainingSource.ImageWidth;
+            p.memory_data_param.channels = (uint)ds.TrainingSource.Channels;
+            p.memory_data_param.height = (uint)ds.TrainingSource.Height;
+            p.memory_data_param.width = (uint)ds.TrainingSource.Width;
             MemoryDataLayer<T> layer = new MemoryDataLayer<T>(m_cuda, m_log, p);
 
             try
@@ -363,7 +363,7 @@ namespace MyCaffe.test
 
             for (int i = 0; i < m_nBatchSize * m_nBatches; i++)
             {
-                SimpleDatum sd = m_db.QueryImage(m_nSrcId, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+                SimpleDatum sd = m_db.QueryItem(m_nSrcId, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.RANDOM);
                 rgData.Add(new Datum(sd));              
             }
 
@@ -399,16 +399,16 @@ namespace MyCaffe.test
             SettingsCaffe settings = new SettingsCaffe();
             Stopwatch sw = new Stopwatch();
 
-            settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
+            settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
             m_db.InitializeWithDsName1(settings, "MNIST");
             DatasetDescriptor ds = m_db.GetDatasetByName("MNIST");
             m_nSrcId = ds.TrainingSource.ID;
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.MEMORYDATA);
             p.memory_data_param.batch_size = (uint)m_nBatchSize;
-            p.memory_data_param.channels = (uint)ds.TrainingSource.ImageChannels;
-            p.memory_data_param.height = (uint)ds.TrainingSource.ImageHeight;
-            p.memory_data_param.width = (uint)ds.TrainingSource.ImageWidth;
+            p.memory_data_param.channels = (uint)ds.TrainingSource.Channels;
+            p.memory_data_param.height = (uint)ds.TrainingSource.Height;
+            p.memory_data_param.width = (uint)ds.TrainingSource.Width;
             p.memory_data_param.label_channels = 3;
             p.memory_data_param.label_height = 1;
             p.memory_data_param.label_width = 1;
@@ -468,7 +468,7 @@ namespace MyCaffe.test
 
             for (int i = 0; i < m_nBatchSize * m_nBatches; i++)
             {
-                SimpleDatum sd = m_db.QueryImage(m_nSrcId, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+                SimpleDatum sd = m_db.QueryItem(m_nSrcId, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.RANDOM);
                 DATA_FORMAT fmt;
                 sd.DataCriteria = BinaryData.Pack(new List<float>() { sd.Label, sd.Label, sd.Label }, out fmt);
                 sd.DataCriteriaFormat = fmt;
@@ -514,16 +514,16 @@ namespace MyCaffe.test
             SettingsCaffe settings = new SettingsCaffe();
             Stopwatch sw = new Stopwatch();
 
-            settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
+            settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
             m_db.InitializeWithDsName1(settings, "MNIST");
             DatasetDescriptor ds = m_db.GetDatasetByName("MNIST");
             m_nSrcId = ds.TrainingSource.ID;
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.MEMORYDATA);
             p.memory_data_param.batch_size = (uint)m_nBatchSize;
-            p.memory_data_param.channels = (uint)ds.TrainingSource.ImageChannels;
-            p.memory_data_param.height = (uint)ds.TrainingSource.ImageHeight;
-            p.memory_data_param.width = (uint)ds.TrainingSource.ImageWidth;
+            p.memory_data_param.channels = (uint)ds.TrainingSource.Channels;
+            p.memory_data_param.height = (uint)ds.TrainingSource.Height;
+            p.memory_data_param.width = (uint)ds.TrainingSource.Width;
             p.memory_data_param.label_channels = 1;
             p.memory_data_param.label_height = 3;
             p.memory_data_param.label_width = 1;
@@ -583,7 +583,7 @@ namespace MyCaffe.test
 
             for (int i = 0; i < m_nBatchSize * m_nBatches; i++)
             {
-                SimpleDatum sd = m_db.QueryImage(m_nSrcId, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+                SimpleDatum sd = m_db.QueryItem(m_nSrcId, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.RANDOM);
                 DATA_FORMAT fmt;
                 sd.DataCriteria = BinaryData.Pack(new List<float>() { sd.Label, sd.Label, sd.Label }, out fmt);
                 sd.DataCriteriaFormat = fmt;
@@ -629,16 +629,16 @@ namespace MyCaffe.test
             SettingsCaffe settings = new SettingsCaffe();
             Stopwatch sw = new Stopwatch();
 
-            settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
+            settings.ImageDbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
             m_db.InitializeWithDsName1(settings, "MNIST");
             DatasetDescriptor ds = m_db.GetDatasetByName("MNIST");
             m_nSrcId = ds.TrainingSource.ID;
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.MEMORYDATA);
             p.memory_data_param.batch_size = (uint)m_nBatchSize;
-            p.memory_data_param.channels = (uint)ds.TrainingSource.ImageChannels;
-            p.memory_data_param.height = (uint)ds.TrainingSource.ImageHeight;
-            p.memory_data_param.width = (uint)ds.TrainingSource.ImageWidth;
+            p.memory_data_param.channels = (uint)ds.TrainingSource.Channels;
+            p.memory_data_param.height = (uint)ds.TrainingSource.Height;
+            p.memory_data_param.width = (uint)ds.TrainingSource.Width;
             p.memory_data_param.label_channels = 1;
             p.memory_data_param.label_height = 1;
             p.memory_data_param.label_width = 3;
@@ -698,7 +698,7 @@ namespace MyCaffe.test
 
             for (int i = 0; i < m_nBatchSize * m_nBatches; i++)
             {
-                SimpleDatum sd = m_db.QueryImage(m_nSrcId, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+                SimpleDatum sd = m_db.QueryItem(m_nSrcId, i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.RANDOM);
                 DATA_FORMAT fmt;
                 sd.DataCriteria = BinaryData.Pack(new List<float>() { sd.Label, sd.Label, sd.Label }, out fmt);
                 sd.DataCriteriaFormat = fmt;

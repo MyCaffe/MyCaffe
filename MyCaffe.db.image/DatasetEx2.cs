@@ -99,7 +99,7 @@ namespace MyCaffe.db.image
         /// <param name="dfImageDbAutoRefreshScheduledReplacementPct">Optionally, specifies the scheduled refresh replacement percent (default = 0).</param>
         /// <param name="bVerify">Optionally, verify the dataset indexes (only applies when using LOAD_ALL loading method (default = false).</param>
         /// <returns>Upon loading the dataset a handle to the default QueryState is returned, or 0 on cancel.</returns>
-        public long Initialize(DatasetDescriptor ds, WaitHandle[] rgAbort, int nPadW = 0, int nPadH = 0, Log log = null, IMAGEDB_LOAD_METHOD loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL, bool bSkipMeanCheck = false, int nImageDbLoadLimit = 0, int nImageDbAutoRefreshScheduledUpdateInMs = 0, double dfImageDbAutoRefreshScheduledReplacementPct = 0, bool bVerify = false)
+        public long Initialize(DatasetDescriptor ds, WaitHandle[] rgAbort, int nPadW = 0, int nPadH = 0, Log log = null, DB_LOAD_METHOD loadMethod = DB_LOAD_METHOD.LOAD_ALL, bool bSkipMeanCheck = false, int nImageDbLoadLimit = 0, int nImageDbAutoRefreshScheduledUpdateInMs = 0, double dfImageDbAutoRefreshScheduledReplacementPct = 0, bool bVerify = false)
         {
             lock (m_syncObj)
             {
@@ -108,13 +108,13 @@ namespace MyCaffe.db.image
                 if (ds != null)
                     m_ds = ds;
 
-                if (m_ds.TrainingSource.ImageWidth == -1 || m_ds.TrainingSource.ImageHeight == -1)
+                if (m_ds.TrainingSource.Width == -1 || m_ds.TrainingSource.Height == -1)
                 {
                     log.WriteLine("WARNING: Cannot create a mean image for data sources that contain variable sized images.  The mean check will be skipped.");
                     bSkipMeanCheck = true;
                 }
 
-                bool bSilentLoad = (loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND) ? true : false;
+                bool bSilentLoad = (loadMethod == DB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND) ? true : false;
 
                 m_TrainingImages = new ImageSet2(ImageSet2.TYPE.TRAIN, log, m_factory, m_ds.TrainingSource, loadMethod, m_random, rgAbort);
                 m_TrainingImages.OnCalculateImageMean += OnCalculateImageMean;
@@ -149,7 +149,7 @@ namespace MyCaffe.db.image
                 if (EventWaitHandle.WaitAny(rgAbort, 0) != EventWaitHandle.WaitTimeout)
                     return 0;
 
-                if (loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ALL && nImageDbLoadLimit > 0 && nImageDbAutoRefreshScheduledUpdateInMs > 0 && dfImageDbAutoRefreshScheduledReplacementPct > 0)
+                if (loadMethod == DB_LOAD_METHOD.LOAD_ALL && nImageDbLoadLimit > 0 && nImageDbAutoRefreshScheduledUpdateInMs > 0 && dfImageDbAutoRefreshScheduledReplacementPct > 0)
                     StartAutomaticRefreshSchedule(true, true, nImageDbAutoRefreshScheduledUpdateInMs, dfImageDbAutoRefreshScheduledReplacementPct);
 
                 m_lDefaultQueryState = m_queryStates.CreateNewState(qsTraining, qsTesting);
@@ -278,13 +278,13 @@ namespace MyCaffe.db.image
             if (nPeriodInMs == 0 || dfReplacementPct == 0)
                 return false;
 
-            if (bTraining && m_TrainingImages.LoadMethod != IMAGEDB_LOAD_METHOD.LOAD_ALL)
+            if (bTraining && m_TrainingImages.LoadMethod != DB_LOAD_METHOD.LOAD_ALL)
             {
                 m_log.WriteLine("WARNING: The shared training data source '" + m_TrainingImages.Source.Name + "' appears to already be open with the '" + m_TrainingImages.LoadMethod.ToString() + "', so the load limit with automatic refresh will not be used.");
                 return false;
             }
 
-            if (bTesting && m_TestingImages.LoadMethod != IMAGEDB_LOAD_METHOD.LOAD_ALL)
+            if (bTesting && m_TestingImages.LoadMethod != DB_LOAD_METHOD.LOAD_ALL)
             {
                 m_log.WriteLine("WARNING: The shared testing data source '" + m_TestingImages.Source.Name + "' appears to already be open with the '" + m_TestingImages.LoadMethod.ToString() + "', so the load limit with automatic refresh will not be used.");
                 return false;

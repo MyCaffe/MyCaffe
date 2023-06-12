@@ -425,7 +425,7 @@ namespace MyCaffe.common
         /// <param name="strStage">Optionally, specifies the stage under which to load the model.</param>
         /// <param name="bEnableMemTrace">Optionally, specifies to enable the memory tracing (only available in debug builds).</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        bool Load(Phase phase, ProjectEx p, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabaseBase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false);
+        bool Load(Phase phase, ProjectEx p, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabaseBase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false);
         /// <summary>
         /// Load a project and optionally the MyCaffeImageDatabase.
         /// </summary>
@@ -445,7 +445,7 @@ namespace MyCaffe.common
         /// <param name="strStage">Optionally, specifies the stage under which to load the model.</param>
         /// <param name="bEnableMemTrace">Optionally, specifies to enable the memory tracing (only available in debug builds).</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabaseBase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false);
+        bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabaseBase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false);
         /// <summary>
         /// Unload the currently loaded project.
         /// </summary>
@@ -485,7 +485,7 @@ namespace MyCaffe.common
         /// <param name="dtImageStartTime">Optionally, specifies the image start time (default = null).  Note either the 'nImageStartIdx' or 'dtImageStartTime' may be used, but not both.</param>
         /// <param name="dfThreshold">Optionally, specifies a threshold where the winning selection must also be above the threshold in score.</param>
         /// <returns>The list of SimpleDatum and their ResultCollections (after running the model on each) is returned.</returns>
-        List<Tuple<SimpleDatum, ResultCollection>> TestMany(int nCount, bool bOnTrainingSet, bool bOnTargetSet = false, IMGDB_IMAGE_SELECTION_METHOD imgSelMethod = IMGDB_IMAGE_SELECTION_METHOD.RANDOM, int nImageStartIdx = 0, DateTime? dtImageStartTime = null, double? dfThreshold = null);
+        List<Tuple<SimpleDatum, ResultCollection>> TestMany(int nCount, bool bOnTrainingSet, bool bOnTargetSet = false, DB_ITEM_SELECTION_METHOD imgSelMethod = DB_ITEM_SELECTION_METHOD.RANDOM, int nImageStartIdx = 0, DateTime? dtImageStartTime = null, double? dfThreshold = null);
         /// <summary>
         /// Run on a given image in the MyCaffeImageDatabase based on its image index.
         /// </summary>

@@ -521,7 +521,7 @@ namespace MyCaffe.db.image
         /// <param name="bLoadDebugData">Specifies whether or not to load the debug data with the image.</param>
         /// <param name="loadMethod">Specifies the image loading method used.</param>
         /// <returns>If found, the image is returned.</returns>
-        public SimpleDatum GetImage(int nIdx, bool bLoadDataCriteria, bool bLoadDebugData, IMAGEDB_LOAD_METHOD loadMethod)
+        public SimpleDatum GetImage(int nIdx, bool bLoadDataCriteria, bool bLoadDebugData, DB_LOAD_METHOD loadMethod)
         {
             SimpleDatum sd = m_rgImages[nIdx];
 
@@ -541,14 +541,14 @@ namespace MyCaffe.db.image
                 }
                 else
                 {
-                    if (!m_evtRunning.WaitOne(0) && (loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND && loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE))
-                        Load((loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND) ? true : false);
+                    if (!m_evtRunning.WaitOne(0) && (loadMethod != DB_LOAD_METHOD.LOAD_ON_DEMAND && loadMethod != DB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE))
+                        Load((loadMethod == DB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND) ? true : false);
 
                     sd = directLoadImage(nIdx);
                     if (sd == null)
                         throw new Exception("The image is still null yet should have loaded!");
 
-                    if (loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND)
+                    if (loadMethod == DB_LOAD_METHOD.LOAD_ON_DEMAND)
                         m_rgImages[nIdx] = sd;
                 }
             }
@@ -693,7 +693,7 @@ namespace MyCaffe.db.image
         {
             int nBatchSize = 20000;
 
-            int nImageSize = src.ImageHeight * src.ImageWidth * src.ImageChannels;
+            int nImageSize = src.Height * src.Width * src.Channels;
             if (nImageSize > 60000)
                 nBatchSize = 5000;
             else if (nImageSize > 20000)

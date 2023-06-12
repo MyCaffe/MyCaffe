@@ -59,7 +59,7 @@ namespace MyCaffe.layers
                 if (p.transform_param.use_imagedb_mean)
                 {
                     if (db != null)
-                        m_imgMean = db.GetImageMean(m_src.ID);
+                        m_imgMean = db.GetItemMean(m_src.ID);
                     else
                         m_log.WriteLine("WARNING: The image database is NULL, and therefore no mean image can not be acquired.");
                 }
@@ -118,9 +118,9 @@ namespace MyCaffe.layers
 
             if (m_src != null)
             {
-                nC = m_src.ImageChannels;
-                nH = m_src.ImageHeight;
-                nW = m_src.ImageWidth;
+                nC = m_src.Channels;
+                nH = m_src.Height;
+                nW = m_src.Width;
             }
             else if (m_imgMean != null)
             {

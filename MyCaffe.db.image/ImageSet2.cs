@@ -16,7 +16,7 @@ namespace MyCaffe.db.image
     public class ImageSet2 : ImageSetBase, IDisposable
     {
         CryptoRandom m_random;
-        IMAGEDB_LOAD_METHOD m_loadMethod;
+        DB_LOAD_METHOD m_loadMethod;
         MasterList m_masterList = null;
         MasterIndexes m_masterIdx = null;
         List<WaitHandle> m_rgAbort = new List<WaitHandle>();
@@ -54,7 +54,7 @@ namespace MyCaffe.db.image
         /// <param name="loadMethod">Specifies the load method used to load the data.</param>
         /// <param name="random">Specifies the random number generator.</param>
         /// <param name="rgAbort">Specifies the cancellation handles.</param>
-        public ImageSet2(TYPE type, Log log, DatasetFactory factory, SourceDescriptor src, IMAGEDB_LOAD_METHOD loadMethod, CryptoRandom random, WaitHandle[] rgAbort)
+        public ImageSet2(TYPE type, Log log, DatasetFactory factory, SourceDescriptor src, DB_LOAD_METHOD loadMethod, CryptoRandom random, WaitHandle[] rgAbort)
             : base(factory, src)
         {
             m_type = type;
@@ -108,7 +108,7 @@ namespace MyCaffe.db.image
                 if (OnCalculateImageMean != null)
                     m_masterList.OnCalculateImageMean += OnCalculateImageMean;
 
-                if (m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ALL || m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_EXTERNAL || m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND)
+                if (m_loadMethod == DB_LOAD_METHOD.LOAD_ALL || m_loadMethod == DB_LOAD_METHOD.LOAD_EXTERNAL || m_loadMethod == DB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND)
                     m_masterList.Load(bSilentLoad);
             }
 
@@ -117,7 +117,7 @@ namespace MyCaffe.db.image
 
             QueryState state = new QueryState(m_masterIdx, bUseUniqueLabelIndexes, bUseUniqueImageIndexes);
 
-            if (m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ALL)
+            if (m_loadMethod == DB_LOAD_METHOD.LOAD_ALL)
             {
                 m_masterList.WaitForLoadingToComplete(m_rgAbort);
 
@@ -141,7 +141,7 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Get the image load method used on initialization.
         /// </summary>
-        public IMAGEDB_LOAD_METHOD LoadMethod
+        public DB_LOAD_METHOD LoadMethod
         {
             get { return m_loadMethod; }
         }
@@ -367,13 +367,13 @@ namespace MyCaffe.db.image
         /// <param name="bLoadDataCriteria">Optionally, specifies to load the data criteria data (default = false).</param>
         /// <param name="bLoadDebugData">Optionally, specifies to load the debug data (default = false).</param>
         /// <returns>The SimpleDatum containing the image is returned.</returns>
-        public SimpleDatum GetImage(QueryState state, IMGDB_LABEL_SELECTION_METHOD labelSelectionMethod, IMGDB_IMAGE_SELECTION_METHOD imageSelectionMethod, Log log, int? nLabel = null, int nDirectIdx = -1, bool bLoadDataCriteria = false, bool bLoadDebugData = false)
+        public SimpleDatum GetImage(QueryState state, DB_LABEL_SELECTION_METHOD labelSelectionMethod, DB_ITEM_SELECTION_METHOD imageSelectionMethod, Log log, int? nLabel = null, int nDirectIdx = -1, bool bLoadDataCriteria = false, bool bLoadDebugData = false)
         {
-            if ((imageSelectionMethod & IMGDB_IMAGE_SELECTION_METHOD.BOOST) == IMGDB_IMAGE_SELECTION_METHOD.BOOST &&
-                (labelSelectionMethod & IMGDB_LABEL_SELECTION_METHOD.RANDOM) == IMGDB_LABEL_SELECTION_METHOD.RANDOM)
-                labelSelectionMethod |= IMGDB_LABEL_SELECTION_METHOD.BOOST;
+            if ((imageSelectionMethod & DB_ITEM_SELECTION_METHOD.BOOST) == DB_ITEM_SELECTION_METHOD.BOOST &&
+                (labelSelectionMethod & DB_LABEL_SELECTION_METHOD.RANDOM) == DB_LABEL_SELECTION_METHOD.RANDOM)
+                labelSelectionMethod |= DB_LABEL_SELECTION_METHOD.BOOST;
 
-            if (!nLabel.HasValue && (labelSelectionMethod & IMGDB_LABEL_SELECTION_METHOD.RANDOM) == IMGDB_LABEL_SELECTION_METHOD.RANDOM)
+            if (!nLabel.HasValue && (labelSelectionMethod & DB_LABEL_SELECTION_METHOD.RANDOM) == DB_LABEL_SELECTION_METHOD.RANDOM)
                 nLabel = state.GetNextLabel(labelSelectionMethod);
 
             int? nIdx = state.GetNextImage(imageSelectionMethod, nLabel, nDirectIdx);
@@ -383,7 +383,7 @@ namespace MyCaffe.db.image
                 nIdx = state.GetNextImage(imageSelectionMethod, nLabel, nDirectIdx);
                 if (!nIdx.HasValue || nIdx.Value < 0)
                 {
-                    string strBoosted = ((imageSelectionMethod & IMGDB_IMAGE_SELECTION_METHOD.BOOST) == IMGDB_IMAGE_SELECTION_METHOD.BOOST) ? "Boosted" : "";
+                    string strBoosted = ((imageSelectionMethod & DB_ITEM_SELECTION_METHOD.BOOST) == DB_ITEM_SELECTION_METHOD.BOOST) ? "Boosted" : "";
                     string strLabel = (nLabel.HasValue) ? " for label '" + nLabel.Value.ToString() + "'." : ".";
                     throw new Exception("Failed to find the image index! The data source '" + m_src.Name + "' has no " + strBoosted + " images" + strLabel + ". You may need to re-index the dataset.");
                 }

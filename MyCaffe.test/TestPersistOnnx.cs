@@ -851,7 +851,7 @@ namespace MyCaffe.test
             DatasetFactory factory = new DatasetFactory();
             dsTraining = factory.LoadDataset(strTrainingDs);
 
-            List<int> rgShape = new List<int>() { 1, dsTraining.TrainingSource.ImageChannels, dsTraining.TrainingSource.ImageHeight, dsTraining.TrainingSource.ImageWidth };
+            List<int> rgShape = new List<int>() { 1, dsTraining.TrainingSource.Channels, dsTraining.TrainingSource.Height, dsTraining.TrainingSource.Width };
             BlobShape shape = new BlobShape(rgShape);
 
             // Convert the model to a model for running (removes data layers)
