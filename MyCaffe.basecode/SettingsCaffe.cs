@@ -24,7 +24,7 @@ namespace MyCaffe.basecode
         int m_nTestingIterationOverride = -1;
         string m_strDefaultModelGroup = "";
         string m_strGpuIds = "0";
-        IMAGEDB_LOAD_METHOD m_imageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
+        DB_LOAD_METHOD m_imageDbLoadMethod = DB_LOAD_METHOD.LOAD_ON_DEMAND;
         int m_nImageDbLoadLimit = 0;
         int m_nAutoRefreshScheduledUpdateInMs = 0;
         double m_dfAutoRefreshScheduledReplacementPct = 0;
@@ -88,7 +88,7 @@ namespace MyCaffe.basecode
             m_nTestingIterationOverride = getInt(info, "nTestingIterationOverride", m_nTestingIterationOverride);
             m_strDefaultModelGroup = info.GetString("strDefaultModelGroup");
             m_strGpuIds = getString(info, "strGpuIds", m_strGpuIds);
-            m_imageDbLoadMethod = (IMAGEDB_LOAD_METHOD)getInt(info, "ImageDbLoadMethod", (int)m_imageDbLoadMethod);
+            m_imageDbLoadMethod = (DB_LOAD_METHOD)getInt(info, "ImageDbLoadMethod", (int)m_imageDbLoadMethod);
             m_nImageDbLoadLimit = getInt(info, "ImageDbLoadLimit", m_nImageDbLoadLimit);
             m_nAutoRefreshScheduledUpdateInMs = getInt(info, "ImageDbAutoRefreshScheduledUpdateInMs", m_nAutoRefreshScheduledUpdateInMs);
             m_dfAutoRefreshScheduledReplacementPct = getDouble(info, "ImageDbAutoRefreshReplacementPct", m_dfAutoRefreshScheduledReplacementPct);
@@ -330,7 +330,7 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Get/set the image database loading method.
         /// </summary>
-        public IMAGEDB_LOAD_METHOD ImageDbLoadMethod
+        public DB_LOAD_METHOD ImageDbLoadMethod
         {
             get { return m_imageDbLoadMethod; }
             set { m_imageDbLoadMethod = value; }
