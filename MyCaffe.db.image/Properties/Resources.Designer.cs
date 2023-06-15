@@ -366,6 +366,31 @@ namespace MyCaffe.db.image.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to CREATE TABLE [dbo].[RawValues](
+        ///	[ID] [int] IDENTITY(1,1) NOT NULL,
+        ///	[SourceID] [int] NULL,
+        ///	[ItemID] [int] NULL,
+        ///	[StreamID] [int] NULL,
+        ///	[TimeStamp] [datetime] NULL,
+        ///	[RawData] [numeric](18, 8) NULL,
+        ///	[NormalizedData] [numeric](18, 12) NULL,
+        ///	[DataCriteria] [image] NULL,
+        ///	[DebugData] [image] NULL,
+        ///	[DebugDataFormatID] [tinyint] NULL,
+        ///	[DataCriteriaFormatID] [tinyint] NULL,
+        ///	[Active] [bit] NULL,
+        /// CONSTRAINT [PK_RawValues] PRIMARY KEY CLUSTERED 
+        ///(
+        ///	[ID] ASC
+        ///)WITH (PAD_INDEX = OFF, STATISTICS [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string CreateRawValuesTable {
+            get {
+                return ResourceManager.GetString("CreateRawValuesTable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to CREATE TABLE [dbo].[SourceParameters](
         ///	[ID] [int] IDENTITY(1,1) NOT NULL,
         ///	[Name] [nvarchar](256) NULL,
@@ -403,6 +428,47 @@ namespace MyCaffe.db.image.Properties {
         internal static string CreateSourcesTable {
             get {
                 return ResourceManager.GetString("CreateSourcesTable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to CREATE TABLE [dbo].[ValueItems](
+        ///	[ID] [int] IDENTITY(1,1) NOT NULL,
+        ///	[Name] [nvarchar](128) NULL,
+        ///	[SourceID] [int] NULL,
+        /// CONSTRAINT [PK_Items] PRIMARY KEY CLUSTERED 
+        ///(
+        ///	[ID] ASC
+        ///)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+        ///) ON [PRIMARY].
+        /// </summary>
+        internal static string CreateValueItemsTable {
+            get {
+                return ResourceManager.GetString("CreateValueItemsTable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to CREATE TABLE [dbo].[ValueStreams](
+        ///	[ID] [int] IDENTITY(1,1) NOT NULL,
+        ///	[Name] [nvarchar](128) NULL,
+        ///	[ClassTypeID] [tinyint] NULL,
+        ///	[ValueTypeID] [tinyint] NULL,
+        ///	[ValueItemID] [int] NULL,
+        ///	[Ordering] [int] NULL,
+        ///	[StartTime] [datetime] NULL,
+        ///	[EndTime] [datetime] NULL,
+        ///	[SecondsPerStep] [int] NULL,
+        ///	[SourceID] [int] NULL,
+        ///	[ItemCount] [int] NULL,
+        /// CONSTRAINT [PK_ValueStreams] PRIMARY KEY CLUSTERED 
+        ///(
+        ///	[ID] ASC
+        ///)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string CreateValueStreamsTable {
+            get {
+                return ResourceManager.GetString("CreateValueStreamsTable", resourceCulture);
             }
         }
         
