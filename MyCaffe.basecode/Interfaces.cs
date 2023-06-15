@@ -423,13 +423,13 @@ namespace MyCaffe.basecode
 #pragma warning disable 1591
 
     [ServiceContract]
-    public interface IXImageDatabaseEvent /** @private */
+    public interface IXDatabaseEvent /** @private */
     {
         [OperationContract(IsOneWay = false)]
         void OnResult(string strMsg, double dfProgress);
 
         [OperationContract(IsOneWay = false)]
-        void OnError(ImageDatabaseErrorData err);
+        void OnError(DatabaseErrorData err);
     }
 
 #pragma warning restore 1591
@@ -437,7 +437,7 @@ namespace MyCaffe.basecode
     /// <summary>
     /// The IXDatabaseBase interface defines the general interface to the in-memory database.
     /// </summary>
-    [ServiceContract(CallbackContract = typeof(IXImageDatabaseEvent), SessionMode = SessionMode.Required)]
+    [ServiceContract(CallbackContract = typeof(IXDatabaseEvent), SessionMode = SessionMode.Required)]
     public interface IXDatabaseBase
     {
         #region Initialization and Cleanup
@@ -775,7 +775,7 @@ namespace MyCaffe.basecode
         /// <returns>The item mean is returned as a SimpleDatum.</returns>
         /// <remarks>Note, the mean for a temporal item is a set of values where one mean value exists for each data stream.</remarks>
         [OperationContract(IsOneWay = false)]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [FaultContract(typeof(DatabaseErrorData))]
         SimpleDatum QueryItemMean(int nSrcId);
 
         /// <summary>
@@ -789,7 +789,7 @@ namespace MyCaffe.basecode
         /// <returns>The item (e.g., image or temporal item) mean is returned as a SimpleDatum.</returns>
         /// <remarks>Note, the mean for a temporal item is a set of values where one mean value exists for each data stream.</remarks>
         [OperationContract(IsOneWay = false)]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [FaultContract(typeof(DatabaseErrorData))]
         SimpleDatum QueryItemMeanFromDb(int nSrcId);
 
         /// <summary>
@@ -799,7 +799,7 @@ namespace MyCaffe.basecode
         /// <returns>The item (e.g., image or temporal item) mean is returned as a SimpleDatum.</returns>
         /// <remarks>Note, the mean for a temporal item is a set of values where one mean value exists for each data stream.</remarks>
         [OperationContract(IsOneWay = false)]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [FaultContract(typeof(DatabaseErrorData))]
         SimpleDatum GetItemMean(int nSrcId);
 
         /// <summary>
@@ -815,9 +815,17 @@ namespace MyCaffe.basecode
     }
 
     /// <summary>
+    /// Teh IXTemporalDatabaseBase interface defines the general interface to the in-memory temporal database.
+    /// </summary>
+    [ServiceContract(CallbackContract = typeof(IXDatabaseEvent), SessionMode = SessionMode.Required)]
+    public interface IXTemporalDatabaseBase : IXDatabaseBase
+    {
+    }
+
+    /// <summary>
     /// The IXImageDatabaseBase interface defines the general interface to the in-memory image database.
     /// </summary>
-    [ServiceContract(CallbackContract = typeof(IXImageDatabaseEvent), SessionMode = SessionMode.Required)]
+    [ServiceContract(CallbackContract = typeof(IXDatabaseEvent), SessionMode = SessionMode.Required)]
     public interface IXImageDatabaseBase : IXDatabaseBase
     {
         #region Properties
@@ -918,7 +926,7 @@ namespace MyCaffe.basecode
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
         /// <returns>A dictionary containing label,count pairs is returned.</returns>
         [OperationContract(IsOneWay = false)]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [FaultContract(typeof(DatabaseErrorData))]
         Dictionary<int, int> LoadLabelCounts(int nSrcId);
 
         /// <summary>
@@ -943,7 +951,7 @@ namespace MyCaffe.basecode
     /// <summary>
     /// The IXImageDatabase interface defines the eneral interface to the in-memory image database.
     /// </summary>
-    [ServiceContract(CallbackContract = typeof(IXImageDatabaseEvent), SessionMode = SessionMode.Required)]
+    [ServiceContract(CallbackContract = typeof(IXDatabaseEvent), SessionMode = SessionMode.Required)]
     public interface IXImageDatabase1 : IXImageDatabaseBase
     {
         /// <summary>
@@ -1031,7 +1039,7 @@ namespace MyCaffe.basecode
     /// <summary>
     /// The IXImageDatabase2 interface defines the general interface to the in-memory image database (v2).
     /// </summary>
-    [ServiceContract(CallbackContract = typeof(IXImageDatabaseEvent), SessionMode = SessionMode.Required)]
+    [ServiceContract(CallbackContract = typeof(IXDatabaseEvent), SessionMode = SessionMode.Required)]
     public interface IXImageDatabase2 : IXImageDatabaseBase
     {
         #region Initialization and Cleanup
@@ -1476,7 +1484,7 @@ namespace MyCaffe.basecode
 #pragma warning disable 1591
 
     [DataContract]
-    public class ImageDatabaseErrorData /** @private */
+    public class DatabaseErrorData /** @private */
     {
         [DataMember]
         public bool Result { get; set; }
