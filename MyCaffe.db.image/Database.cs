@@ -21,7 +21,7 @@ namespace MyCaffe.db.image
     /// </summary>
     public class Database : IDisposable
     {
-        Source m_src = null;
+        protected Source m_src = null;
         DNNEntities m_entities = null;
         List<Label> m_rgLabelCache;
         /// <summary>
@@ -182,7 +182,7 @@ namespace MyCaffe.db.image
         /// <param name="nSrcId">Specifies the ID of the data source to open.</param>
         /// <param name="nForceLoad">Optionally, specifies how to force load the data (default = NONE).</param>
         /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
-        public void Open(int nSrcId, FORCE_LOAD nForceLoad = FORCE_LOAD.NONE, ConnectInfo ci = null)
+        public virtual void Open(int nSrcId, FORCE_LOAD nForceLoad = FORCE_LOAD.NONE, ConnectInfo ci = null)
         {
             m_src = GetSource(nSrcId, ci);
             if (m_src == null)
@@ -271,7 +271,7 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Close the previously opened data source.
         /// </summary>
-        public void Close()
+        public virtual void Close()
         {
             m_src = null;
 
@@ -4137,14 +4137,15 @@ namespace MyCaffe.db.image
         /// Delete a data source from the database.
         /// </summary>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-        public void DeleteSource(int nSrcId = 0)
+        /// <returns>Returns true if the source was found.</returns>
+        public virtual bool DeleteSource(int nSrcId = 0)
         {
             string strCmd;
 
             if (nSrcId == 0)
             {
                 if (m_src == null)
-                    return;
+                    return false;
 
                 nSrcId = m_src.ID;
             }
@@ -4159,9 +4160,20 @@ namespace MyCaffe.db.image
 
                 strCmd = "DELETE FROM Labels WHERE (SourceID = " + nSrcId.ToString() + ")";
                 entities.Database.ExecuteSqlCommand(strCmd);
+
+                strCmd = "IF OBJECT_ID (N'dbo.ValueItems', N'U') IS NOT NULL DELETE FROM ValueItems WHERE (SourceID = " + nSrcId.ToString() + ")";
+                entities.Database.ExecuteSqlCommand(strCmd);
+
+                strCmd = "IF OBJECT_ID (N'dbo.ValueStreams', N'U') IS NOT NULL DELETE FROM ValueStreams WHERE (SourceID = " + nSrcId.ToString() + ")";
+                entities.Database.ExecuteSqlCommand(strCmd);
+
+                strCmd = "IF OBJECT_ID (N'dbo.RawValues', N'U') IS NOT NULL DELETE FROM RawValues WHERE (SourceID = " + nSrcId.ToString() + ")";
+                entities.Database.ExecuteSqlCommand(strCmd);
             }
 
             DeleteSourceData(nSrcId);
+
+            return true;
         }
 
         /// <summary>
@@ -4195,12 +4207,13 @@ namespace MyCaffe.db.image
         /// Delete the data source data (images, means, results and parameters) from the database.
         /// </summary>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-        public void DeleteSourceData(int nSrcId = 0)
+        /// <returns>Returns true if the source was found.</returns>
+        public virtual bool DeleteSourceData(int nSrcId = 0)
         {
             if (nSrcId == 0)
             {
                 if (m_src == null)
-                    return;
+                    return false;
 
                 nSrcId = m_src.ID;
             }
@@ -4209,6 +4222,8 @@ namespace MyCaffe.db.image
             DeleteRawImageResults(nSrcId);
             DeleteRawImageParameters(nSrcId);
             DeleteRawImages(nSrcId);
+
+            return true;
         }
 
         /// <summary>
