@@ -222,6 +222,18 @@ namespace MyCaffe.db.image
                 cmdCreate.ExecuteNonQuery();
                 cmdCreate.Dispose();
 
+                cmdCreate = new SqlCommand(Properties.Resources.CreateRawValuesTable, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
+
+                cmdCreate = new SqlCommand(Properties.Resources.CreateValueStreamsTable, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
+
+                cmdCreate = new SqlCommand(Properties.Resources.CreateValueItemsTable, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
+
                 if (bFullCreate)
                 {
                     cmdCreate = new SqlCommand(Properties.Resources.CreateDatasetCreatorsTable, connection);
@@ -300,6 +312,18 @@ namespace MyCaffe.db.image
             cmdCreate.Dispose();
 
             cmdCreate = new SqlCommand("DROP TABLE ModelGroups", connection);
+            cmdCreate.ExecuteNonQuery();
+            cmdCreate.Dispose();
+
+            cmdCreate = new SqlCommand("DROP TABLE RawValues", connection);
+            cmdCreate.ExecuteNonQuery();
+            cmdCreate.Dispose();
+
+            cmdCreate = new SqlCommand("DROP TABLE ValueStreams", connection);
+            cmdCreate.ExecuteNonQuery();
+            cmdCreate.Dispose();
+
+            cmdCreate = new SqlCommand("DROP TABLE Items", connection);
             cmdCreate.ExecuteNonQuery();
             cmdCreate.Dispose();
         }
