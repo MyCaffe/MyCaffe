@@ -1078,11 +1078,14 @@ namespace MyCaffe
                 m_db = db;
                 m_bDbOwner = false;
 
-                if (m_db == null && bUseDb)
+                if (db != null && bUseDb)
                 {
                     if (m_settings.DbVersion != db.GetVersion())
                         throw new Exception("The database version in the settings (" + m_settings.DbVersion.ToString() + ") must match the database version (" + db.GetVersion().ToString() + ") of the 'db' parameter!");
+                }
 
+                if (m_db == null && bUseDb)
+                {
                     switch (m_settings.DbVersion)
                     {
                         case DB_VERSION.IMG_V1:
@@ -1312,11 +1315,14 @@ namespace MyCaffe
 
                 m_dataSet = findDataset(solverParam.net_param);
 
-                if (m_db == null && bUseDb)
+                if (db != null && bUseDb)
                 {
                     if (m_settings.DbVersion != db.GetVersion())
                         throw new Exception("The database version in the settings (" + m_settings.DbVersion.ToString() + ") must match the database version (" + db.GetVersion().ToString() + ") of the 'db' parameter!");
+                }
 
+                if (m_db == null && bUseDb)
+                {
                     string strType = "images";
                     switch (m_settings.DbVersion)
                     {
@@ -1328,7 +1334,7 @@ namespace MyCaffe
                             break;
 
                         case DB_VERSION.IMG_V2:
-                            m_db = new MyCaffeImageDatabase(m_log);
+                            m_db = new MyCaffeImageDatabase2(m_log);
                             ((IXImageDatabase2)m_db).InitializeWithDs(m_settings, m_dataSet, m_evtCancel.Name);
                             m_log.WriteLine("Loading primary images...", true);
                             m_log.Enable = true;
