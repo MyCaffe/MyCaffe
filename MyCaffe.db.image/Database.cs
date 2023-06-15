@@ -21,6 +21,9 @@ namespace MyCaffe.db.image
     /// </summary>
     public class Database : IDisposable
     {
+        /// <summary>
+        /// Specifies the default data source.
+        /// </summary>
         protected Source m_src = null;
         DNNEntities m_entities = null;
         List<Label> m_rgLabelCache;
