@@ -463,7 +463,7 @@ namespace MyCaffe.app
                 nChecked++;
             }
 
-            return (DB_VERSION)nChecked;
+            return (DB_VERSION)(nChecked + 1);
         }
 
         private string getCulture()
