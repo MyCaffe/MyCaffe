@@ -49,7 +49,7 @@ namespace MyCaffe.db.image
     /// </summary>
     public class EntitiesConnection
     {
-        static ConnectInfo g_connectInfo = new ConnectInfo(".", "DNN");
+        static protected ConnectInfo g_connectInfo = new ConnectInfo(".", "DNN");
         static Dictionary<int, string> m_rgstrConnections = new Dictionary<int, string>();
         static Dictionary<int, ConnectInfo> m_rgciConnections = new Dictionary<int, ConnectInfo>();
 
