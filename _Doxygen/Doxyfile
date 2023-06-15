@@ -38,7 +38,7 @@ PROJECT_NAME           = MyCaffe
 # could be handy for archiving the generated documentation or if some version
 # control system is used.
 
-PROJECT_NUMBER         = 1.12.1.82
+PROJECT_NUMBER         = 1.12.1.85
 
 # Using the PROJECT_BRIEF tag one can provide an optional one line description
 # for a project that appears at the top of each page and should give viewer a
@@ -891,7 +891,8 @@ INPUT                  = ../MyCaffe \
                          ../MyCaffe.python \
                          ../MyCaffe.preprocessor \
                          ../MyCaffe.layers.gpt \
-                         ../MyCaffe.layers.tft
+                         ../MyCaffe.layers.tft \
+                         ../MyCaffe.db.temporal
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -1003,6 +1004,15 @@ EXCLUDE                = ..\MyCaffe\MyCaffeControl.Designer.cs \
                          ..\MyCaffe.db.image\RawImageResult.cs \
                          ..\MyCaffe.db.image\Source.cs \
                          ..\MyCaffe.db.image\SourceParameter.cs \
+                         ..\MyCaffe.db.temporal\MyCaffeTemporalDatabase.Designer.cs \
+                         ..\MyCaffe.db.temporal\DNNModelTemporal.cs \
+                         ..\MyCaffe.db.temporal\DNNModelTemporal.tt \
+                         ..\MyCaffe.db.temporal\DNNModelTemporal.Context.tt \
+                         ..\MyCaffe.db.temporal\DNNModelTemporal.Context.cs \
+                         ..\MyCaffe.db.temporal\DNNModelTemporal.Designer.cs \
+                         ..\MyCaffe.db.temporal\RawValue.cs \
+                         ..\MyCaffe.db.temporal\ValueItem.cs \
+                         ..\MyCaffe.db.temporal\ValueStream.cs \
                          ..\MyCaffe.extras\_in_progress\StyleTransfer.cs \
                          ..\MyCaffe.converter.onnx\MyCaffeConversionControl.Designer.cs \
                          ..\MyCaffe.preprocessor\MyCaffeDataPreprocessor.Designer.cs
