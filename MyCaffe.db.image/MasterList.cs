@@ -742,7 +742,7 @@ namespace MyCaffe.db.image
 
                 factory.Open(m_src);
 
-                m_log.WriteLine(m_src.Name + " loading " + m_loadSequence.Count.ToString("N0") + " items...");
+                m_log.WriteLine(m_src.Name + " loading " + m_loadSequence.Count.ToString("N0") + " items...", true);
 
                 while (nNextIdx.HasValue || rgIdxBatch.Count > 0)
                 {
@@ -777,7 +777,7 @@ namespace MyCaffe.db.image
                                 {
                                     double dfPct = m_nLoadedCount / (double)m_rgImages.Length;
                                     m_log.Progress = dfPct;
-                                    m_log.WriteLine("Loading '" + m_src.Name + "' at " + dfPct.ToString("P") + " (" + m_nLoadedCount.ToString("N0") + " of " + m_rgImages.Length.ToString("N0") + ")...");
+                                    m_log.WriteLine("Loading '" + m_src.Name + "' at " + dfPct.ToString("P") + " (" + m_nLoadedCount.ToString("N0") + " of " + m_rgImages.Length.ToString("N0") + ")...", true);
                                 }
 
                                 int nWait = WaitHandle.WaitAny(m_rgAbort.ToArray(), 0);
@@ -816,7 +816,7 @@ namespace MyCaffe.db.image
             {
                 sw.Start();
 
-                m_log.WriteLine("Starting refresh of " + m_nReplacementBatch.ToString("N0") + " items...");
+                m_log.WriteLine("Starting refresh of " + m_nReplacementBatch.ToString("N0") + " items...", true);
 
                 List<Tuple<int, SimpleDatum>> rgReplace = new List<Tuple<int, SimpleDatum>>();
                 List<Tuple<int, DbItem>> rgItems = new List<Tuple<int, DbItem>>();
@@ -892,7 +892,7 @@ namespace MyCaffe.db.image
                     }
 
                     if (nMismatchCount > 0)
-                        m_log.WriteLine("WARNING: " + nMismatchCount.ToString("N0") + " label mismatches found!");
+                        m_log.WriteLine("WARNING: " + nMismatchCount.ToString("N0") + " label mismatches found!", true);
                 }
             }
             finally

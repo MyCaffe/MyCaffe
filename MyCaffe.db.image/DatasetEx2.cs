@@ -110,7 +110,7 @@ namespace MyCaffe.db.image
 
                 if (m_ds.TrainingSource.Width == -1 || m_ds.TrainingSource.Height == -1)
                 {
-                    log.WriteLine("WARNING: Cannot create a mean image for data sources that contain variable sized images.  The mean check will be skipped.");
+                    log.WriteLine("WARNING: Cannot create a mean image for data sources that contain variable sized images.  The mean check will be skipped.", true);
                     bSkipMeanCheck = true;
                 }
 

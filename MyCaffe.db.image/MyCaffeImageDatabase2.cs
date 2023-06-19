@@ -232,7 +232,7 @@ namespace MyCaffe.db.image
                         ds0.OnCalculateImageMean += OnCalculateImageMean;
 
                     if (m_log != null)
-                        m_log.WriteLine("Loading dataset '" + ds.Name + "'...");
+                        m_log.WriteLine("Loading dataset '" + ds.Name + "'...", true);
 
                     long lQueryHandle = ds0.Initialize(ds, rgAbort.ToArray(), nPadW, nPadH, m_log, m_loadMethod, m_bSkipMeanCheck, m_nLoadLimit, s.DbAutoRefreshScheduledUpdateInMs, s.DbAutoRefreshScheduledReplacementPercent, s.VeriyDatasetOnLoad);
                     if (lQueryHandle == 0)
@@ -242,7 +242,7 @@ namespace MyCaffe.db.image
                     }
 
                     if (m_log != null)
-                        m_log.WriteLine("Dataset '" + ds.Name + "' loaded.");
+                        m_log.WriteLine("Dataset '" + ds.Name + "' loaded.", true);
 
                     col.Add(ds0);
 
