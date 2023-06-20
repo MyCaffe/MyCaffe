@@ -69,7 +69,7 @@ namespace MyCaffe.test
 
             db.Open(nSrcId);
             db.PutRawValues(nSrcId, nValItem1, plots);
-            db.PutRawValues(nSrcId, nValItem1, nValStrm4a, 1);
+            db.PutRawValue(nSrcId, nValItem1, nValStrm4a, 1);
             db.Close();
 
             plots = new PlotCollection();
@@ -90,7 +90,7 @@ namespace MyCaffe.test
 
             db.Open(nSrcId);
             db.PutRawValues(nSrcId, nValItem2, plots);
-            db.PutRawValues(nSrcId, nValItem2, nValStrm4b, 2);
+            db.PutRawValue(nSrcId, nValItem2, nValStrm4b, 2);
             db.Close();
 
             return src;
