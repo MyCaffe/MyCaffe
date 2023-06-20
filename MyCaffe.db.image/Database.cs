@@ -4704,7 +4704,7 @@ namespace MyCaffe.db.image
         /// <param name="nModelGroupID">Optionally, specifies the ID of the model group (default = 0).</param>
         /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns></returns>
-        public int AddDataset(int nDsCreatorID, string strName, int nTestSrcId, int nTrainSrcId, int nDsGroupID = 0, int nModelGroupID = 0, ConnectInfo ci = null)
+        public int AddDataset(int nDsCreatorID, string strName, int nTestSrcId, int nTrainSrcId, int nDsGroupID = 0, int nModelGroupID = 0, ConnectInfo ci = null, bool bVerify = true)
         {
             strName = convertWs(strName, '_');
 
@@ -4716,17 +4716,20 @@ namespace MyCaffe.db.image
             if (srcTrain == null)
                 throw new Exception("Could not find either the train source with ID = " + nTrainSrcId.ToString() + "!");
 
-            if (srcTest.ImageChannels.GetValueOrDefault() != srcTrain.ImageChannels.GetValueOrDefault())
-                throw new Exception("The test and train sources have different image channels!");
+            if (bVerify)
+            {
+                if (srcTest.ImageChannels.GetValueOrDefault() != srcTrain.ImageChannels.GetValueOrDefault())
+                    throw new Exception("The test and train sources have different image channels!");
 
-            if (srcTest.ImageHeight.GetValueOrDefault() != srcTrain.ImageHeight.GetValueOrDefault())
-                throw new Exception("The test and train sources have different image heights!");
+                if (srcTest.ImageHeight.GetValueOrDefault() != srcTrain.ImageHeight.GetValueOrDefault())
+                    throw new Exception("The test and train sources have different image heights!");
 
-            if (srcTest.ImageWidth.GetValueOrDefault() != srcTrain.ImageWidth.GetValueOrDefault())
-                throw new Exception("The test and train sources have different image widths!");
+                if (srcTest.ImageWidth.GetValueOrDefault() != srcTrain.ImageWidth.GetValueOrDefault())
+                    throw new Exception("The test and train sources have different image widths!");
 
-            if (srcTest.ImageEncoded.GetValueOrDefault() != srcTrain.ImageEncoded.GetValueOrDefault())
-                throw new Exception("The test and train sources have different image encodings!");
+                if (srcTest.ImageEncoded.GetValueOrDefault() != srcTrain.ImageEncoded.GetValueOrDefault())
+                    throw new Exception("The test and train sources have different image encodings!");
+            }
 
             Dataset ds = null;
 
