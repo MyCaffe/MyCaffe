@@ -259,6 +259,39 @@ namespace MyCaffe.db.temporal
             m_entitiesTemporal = EntitiesConnectionTemporal.CreateEntities(m_ci);
         }
 
+        /// <summary>
+        /// Add static raw values for a data stream.
+        /// </summary>
+        /// <param name="nSrcID">Specifies the source ID.</param>
+        /// <param name="nItemID">Specifies the item ID.</param>
+        /// <param name="nStreamID">Specifies the static stream ID.</param>
+        /// <param name="fVal">Specifies the static value.</param>
+        /// <exception cref="Exception">An exception is thrown on error.</exception>
+        public void PutRawValues(int nSrcID, int nItemID, int nStreamID, float fVal)
+        {
+            RawValue val = new RawValue();
+            val.StreamID = nStreamID;
+            val.RawData = (decimal)fVal;
+            val.Active = true;
+            val.TimeStamp = null; // Static values are not bound by time.
+            val.ItemID = nItemID;
+            val.SourceID = nSrcID;
+
+            m_entitiesTemporal.RawValues.Add(val);
+
+            List<ValueStream> rgStrm = m_entitiesTemporal.ValueStreams.Where(p => p.ValueItemID == nItemID && p.ID == nStreamID).ToList();
+            foreach (ValueStream strm in rgStrm)
+            {
+                int nCount = strm.ItemCount.GetValueOrDefault(0);
+                nCount++;
+                strm.ItemCount = nCount;
+            }
+
+            m_entitiesTemporal.SaveChanges();
+            m_entitiesTemporal.Dispose();
+            m_entitiesTemporal = EntitiesConnectionTemporal.CreateEntities(m_ci);
+        }
+
         private bool compareTime(List<DateTime> rg1, List<RawValue> rg2)
         {
             if (rg1.Count != rg2.Count)
@@ -273,60 +306,50 @@ namespace MyCaffe.db.temporal
             return true;
         }
 
-        /// <summary>
-        /// Load the value stream values between a start and end time.
-        /// </summary>
-        /// <param name="nSrcID">Specifies the source ID.</param>
-        /// <param name="nItemID">Specifies the item ID.</param>
-        /// <param name="dtStart">Specifies the start time in UTC.</param>
-        /// <param name="nCount">Specifies the number of items to load.</param>
-        /// <param name="bNormalizedValue">Specifies to get the normalized value.</param>
-        /// <param name="dtEnd">Returns the end time in UTC.</param>
-        /// <param name="bEOD">Returns true when the end of data is hit.</param>
-        /// <returns>The PlotCollection </returns>
-        public PlotCollection GetRawValues(int nSrcID, int nItemID, DateTime dtStart, int nCount, bool bNormalizedValue, out DateTime dtEnd, out bool bEOD)
+        private PlotCollection getRawValues(int nSrcID, int nItemID, STREAM_CLASS_TYPE classType, DateTime dtStart, int nCount, bool bNormalizedValue, out DateTime dtEnd, out bool bEOD)
         {
             List<ValueStream> rgStreams = null;
-            List<RawValue> rgVal = null;
             List<DateTime> rgTime = new List<DateTime>();
+            IQueryable<RawValue> iqry = null;
             List<float[]> rgRawData = new List<float[]>();
+            int nItemCount = 0;
 
             dtEnd = DateTime.MinValue;
 
             using (DNNEntitiesTemporal entities = EntitiesConnectionTemporal.CreateEntities())
             {
-                rgStreams = entities.ValueStreams.AsNoTracking().Where(p => p.ValueItemID == nItemID).OrderBy(p => p.Ordering).ToList();
-                rgVal = entities.RawValues.AsNoTracking().Where(p => p.SourceID == nSrcID && p.ItemID == nItemID && p.TimeStamp >= dtStart).Take(nCount * rgStreams.Count).ToList();
-            }
+                rgStreams = entities.ValueStreams.AsNoTracking().Where(p => p.ValueItemID == nItemID && p.ClassTypeID == (int)classType).OrderBy(p => p.Ordering).ToList();
+                iqry = entities.RawValues.AsNoTracking().Where(p => p.SourceID == nSrcID && p.ItemID == nItemID && p.TimeStamp >= dtStart);
 
-            int nItemCount = 0;
+                // Collect the data.
+                for (int i = 0; i < rgStreams.Count; i++)
+                {
+                    int nID = rgStreams[i].ID;
+                    List<RawValue> rgVal = iqry.Where(p => p.StreamID == nID).ToList();
+                    float[] rgRawData1 = null;
 
-            for (int i = 0; i < rgStreams.Count; i++)
-            {
-                List<RawValue> rgVal1 = rgVal.Where(p => p.StreamID == rgStreams[i].ID).ToList();
-                float[] rgRawData1 = null;
-                
-                if (bNormalizedValue)
-                    rgRawData1 = rgVal.Where(p => p.StreamID == rgStreams[i].ID).Select(p => (float)p.NormalizedData).ToArray();
-                else
-                    rgRawData1 = rgVal.Where(p => p.StreamID == rgStreams[i].ID).Select(p => (float)p.RawData).ToArray();
+                    if (bNormalizedValue)
+                        rgRawData1 = rgVal.Select(p => (float)p.NormalizedData).ToArray();
+                    else
+                        rgRawData1 = rgVal.Select(p => (float)p.RawData).ToArray();
 
-                if (nItemCount == 0)
-                    nItemCount = rgRawData1.Length;
-                else if (nItemCount != rgRawData1.Length)
-                    throw new Exception("The number of values in each stream must be the same.");
+                    if (nItemCount == 0)
+                        nItemCount = rgRawData1.Length;
+                    else if (nItemCount != rgRawData1.Length)
+                        throw new Exception("The number of values in each stream must be the same.");
 
-                if (dtEnd == DateTime.MinValue)
-                    dtEnd = rgVal1[rgVal1.Count - 1].TimeStamp.Value;
-                else if (dtEnd != rgVal1[rgVal1.Count - 1].TimeStamp.Value)
-                    throw new Exception("The end time must be the same for all streams.");
+                    if (dtEnd == DateTime.MinValue)
+                        dtEnd = rgVal[rgVal.Count - 1].TimeStamp.Value;
+                    else if (dtEnd != rgVal[rgVal.Count - 1].TimeStamp.Value)
+                        throw new Exception("The end time must be the same for all streams.");
 
-                rgRawData.Add(rgRawData1);
+                    rgRawData.Add(rgRawData1);
 
-                if (i == 0)
-                    rgTime = rgVal1.Select(p => p.TimeStamp.Value).ToList();
-                else if (!compareTime(rgTime, rgVal1))
-                    throw new Exception("The time vectors must be the same across all streams.");
+                    if (i == 0)
+                        rgTime = rgVal.Select(p => p.TimeStamp.Value).ToList();
+                    else if (!compareTime(rgTime, rgVal))
+                        throw new Exception("The time vectors must be the same across all streams.");
+                }
             }
 
             PlotCollection plots = new PlotCollection();
@@ -347,9 +370,10 @@ namespace MyCaffe.db.temporal
                 plots.Add(plot);
             }
 
-            for (int i=0; i<rgStreams.Count; i++)
+            for (int i = 0; i < rgStreams.Count; i++)
             {
                 plots.Parameters.Add(rgStreams[i].Name, rgStreams[i].ID);
+                plots.ParametersEx.Add(rgStreams[i].Name, rgStreams[i]);
             }
 
             plots.ParametersEx.Add("SourceID", nSrcID);
@@ -363,6 +387,56 @@ namespace MyCaffe.db.temporal
                 bEOD = false;
 
             return plots;
+        }
+
+        /// <summary>
+        /// Load the observed value stream values between a start and end time.
+        /// </summary>
+        /// <param name="nSrcID">Specifies the source ID.</param>
+        /// <param name="nItemID">Specifies the item ID.</param>
+        /// <param name="dtStart">Specifies the start time in UTC.</param>
+        /// <param name="nCount">Specifies the number of items to load.</param>
+        /// <param name="bNormalizedValue">Specifies to get the normalized value.</param>
+        /// <param name="dtEnd">Returns the end time in UTC.</param>
+        /// <param name="bEOD">Returns true when the end of data is hit.</param>
+        /// <returns>The PlotCollection </returns>
+        public PlotCollection GetRawValuesObserved(int nSrcID, int nItemID, DateTime dtStart, int nCount, bool bNormalizedValue, out DateTime dtEnd, out bool bEOD)
+        {
+            return getRawValues(nSrcID, nItemID, STREAM_CLASS_TYPE.OBSERVED, dtStart, nCount, bNormalizedValue, out dtEnd, out bEOD);
+        }
+
+        /// <summary>
+        /// Load the observed value stream values between a start and end time.
+        /// </summary>
+        /// <param name="nSrcID">Specifies the source ID.</param>
+        /// <param name="nItemID">Specifies the item ID.</param>
+        /// <param name="dtStart">Specifies the start time in UTC.</param>
+        /// <param name="nCount">Specifies the number of items to load.</param>
+        /// <param name="bNormalizedValue">Specifies to get the normalized value.</param>
+        /// <param name="dtEnd">Returns the end time in UTC.</param>
+        /// <param name="bEOD">Returns true when the end of data is hit.</param>
+        /// <returns>The PlotCollection </returns>
+        public PlotCollection GetRawValuesKnown(int nSrcID, int nItemID, DateTime dtStart, int nCount, bool bNormalizedValue, out DateTime dtEnd, out bool bEOD)
+        {
+            return getRawValues(nSrcID, nItemID, STREAM_CLASS_TYPE.KNOWN, dtStart, nCount, bNormalizedValue, out dtEnd, out bEOD);
+        }
+
+        /// <summary>
+        /// Load the static value stream values for a given source and item.
+        /// </summary>
+        /// <param name="nSrcID">Specifies the source ID.</param>
+        /// <param name="nItemID">Specifies the item ID.</param>
+        /// <returns>A list of the static raw values is returned.</returns>
+        public List<RawValue> GetStaticValues(int nSrcID, int nItemID)
+        {
+            STREAM_CLASS_TYPE classType = STREAM_CLASS_TYPE.STATIC;
+            List<int> rgStreams = null;
+
+            using (DNNEntitiesTemporal entities = EntitiesConnectionTemporal.CreateEntities())
+            {
+                rgStreams = entities.ValueStreams.AsNoTracking().Where(p => p.ValueItemID == nItemID && p.ClassTypeID == (int)classType).OrderBy(p => p.Ordering).Select(p => p.ID).ToList();
+                return entities.RawValues.AsNoTracking().Where(p => p.SourceID == nSrcID && p.ItemID == nItemID && rgStreams.Contains(p.StreamID.Value)).ToList();
+            }
         }
 
         #endregion
@@ -475,27 +549,31 @@ namespace MyCaffe.db.temporal
         #region Value Streams
 
         /// <summary>
-        /// Add a new value stream to the database.
+        /// Add a new known value stream to the database.
         /// </summary>
+        /// <param name="nSourceID">Specifies the data source associated with the value item.</param>
         /// <param name="nValueItemID">Specifies the value item associated with the stream.</param>
         /// <param name="strName">Specifies the name of the value stream.</param>
-        /// <param name="classType">Specifies the value stream class (STATIC, OBSERVED or KNOWN)</param>
         /// <param name="valueType">Specifies the value stream type (NUMERIC or CATEGORICAL)</param>
         /// <param name="nOrdering">Specifies the ordering of the data.</param>
         /// <param name="dtStart">Specifies the start date of the data.</param>
         /// <param name="dtEnd">Specifies the end date of the data.</param>
         /// <param name="nSecPerStep">Specifies the seconds per time step.</param>
         /// <returns>The value item ID is returned.</returns>
-        public int AddValueStream(int nValueItemID, string strName, STREAM_CLASS_TYPE classType, STREAM_VALUE_TYPE valueType, int nOrdering, DateTime dtStart, DateTime dtEnd, int nSecPerStep)
+        /// <remarks>Known values are known both in the past and future (e.g., time from start, hour of day, day of week and holidays are known values.</remarks>
+        public int AddKnownValueStream(int nSourceID, int nValueItemID, string strName, STREAM_VALUE_TYPE valueType, int nOrdering, DateTime dtStart, DateTime dtEnd, int nSecPerStep)
         {
+            STREAM_CLASS_TYPE classType = STREAM_CLASS_TYPE.KNOWN;
+
             using (DNNEntitiesTemporal entities = EntitiesConnectionTemporal.CreateEntities())
             {
-                List<ValueStream> rgItems = entities.ValueStreams.Where(p => p.ValueItemID == nValueItemID && p.Name == strName && p.ClassTypeID == (byte)classType && p.ValueTypeID == (byte)valueType).ToList();
+                List<ValueStream> rgItems = entities.ValueStreams.Where(p => p.SourceID == nSourceID && p.ValueItemID == nValueItemID && p.Name == strName && p.ClassTypeID == (byte)classType && p.ValueTypeID == (byte)valueType).ToList();
 
                 if (rgItems.Count > 0)
                     return rgItems[0].ID;
 
                 ValueStream item = new ValueStream();
+                item.SourceID = nSourceID;
                 item.ValueItemID = nValueItemID;
                 item.Name = strName;
                 item.ClassTypeID = (byte)classType;
@@ -504,6 +582,85 @@ namespace MyCaffe.db.temporal
                 item.StartTime = dtStart;
                 item.EndTime = dtEnd;
                 item.SecondsPerStep = nSecPerStep;
+                entities.ValueStreams.Add(item);
+                entities.SaveChanges();
+
+                return item.ID;
+            }
+        }
+
+        /// <summary>
+        /// Add a new observed value stream to the database.
+        /// </summary>
+        /// <param name="nSourceID">Specifies the data source associated with the value item.</param>
+        /// <param name="nValueItemID">Specifies the value item associated with the stream.</param>
+        /// <param name="strName">Specifies the name of the value stream.</param>
+        /// <param name="valueType">Specifies the value stream type (NUMERIC or CATEGORICAL)</param>
+        /// <param name="nOrdering">Specifies the ordering of the data.</param>
+        /// <param name="dtStart">Specifies the start date of the data.</param>
+        /// <param name="dtEnd">Specifies the end date of the data.</param>
+        /// <param name="nSecPerStep">Specifies the seconds per time step.</param>
+        /// <returns>The value item ID is returned.</returns>
+        /// <remarks>Observed values are only known up to the present time (e.g., log power usage and traffic flow are examples of observed values.)</remarks>
+        public int AddObservedValueStream(int nSourceID, int nValueItemID, string strName, STREAM_VALUE_TYPE valueType, int nOrdering, DateTime dtStart, DateTime dtEnd, int nSecPerStep)
+        {
+            STREAM_CLASS_TYPE classType = STREAM_CLASS_TYPE.OBSERVED;
+
+            using (DNNEntitiesTemporal entities = EntitiesConnectionTemporal.CreateEntities())
+            {
+                List<ValueStream> rgItems = entities.ValueStreams.Where(p => p.SourceID == nSourceID && p.ValueItemID == nValueItemID && p.Name == strName && p.ClassTypeID == (byte)classType && p.ValueTypeID == (byte)valueType).ToList();
+
+                if (rgItems.Count > 0)
+                    return rgItems[0].ID;
+
+                ValueStream item = new ValueStream();
+                item.SourceID = nSourceID;
+                item.ValueItemID = nValueItemID;
+                item.Name = strName;
+                item.ClassTypeID = (byte)classType;
+                item.ValueTypeID = (byte)valueType;
+                item.Ordering = nOrdering;
+                item.StartTime = dtStart;
+                item.EndTime = dtEnd;
+                item.SecondsPerStep = nSecPerStep;
+                entities.ValueStreams.Add(item);
+                entities.SaveChanges();
+
+                return item.ID;
+            }
+        }
+
+        /// <summary>
+        /// Add a new static value stream to the database.
+        /// </summary>
+        /// <param name="nSourceID">Specifies the data source associated with the value item.</param>
+        /// <param name="nValueItemID">Specifies the value item associated with the stream.</param>
+        /// <param name="strName">Specifies the name of the value stream.</param>
+        /// <param name="valueType">Specifies the value stream type (NUMERIC or CATEGORICAL)</param>
+        /// <param name="nOrdering">Specifies the ordering of the data.</param>
+        /// <returns>The value item ID is returned.</returns>
+        /// <remarks>Static values are values that are not bound by time (e.g., store location, store type, item type, and customer id are examples of static values.)</remarks>
+        public int AddStaticValueStream(int nSourceID, int nValueItemID, string strName, STREAM_VALUE_TYPE valueType, int nOrdering)
+        {
+            STREAM_CLASS_TYPE classType = STREAM_CLASS_TYPE.STATIC;
+
+            using (DNNEntitiesTemporal entities = EntitiesConnectionTemporal.CreateEntities())
+            {
+                List<ValueStream> rgItems = entities.ValueStreams.Where(p => p.SourceID == nSourceID && p.ValueItemID == nValueItemID && p.Name == strName && p.ClassTypeID == (byte)classType && p.ValueTypeID == (byte)valueType).ToList();
+
+                if (rgItems.Count > 0)
+                    return rgItems[0].ID;
+
+                ValueStream item = new ValueStream();
+                item.SourceID = nSourceID;
+                item.ValueItemID = nValueItemID;
+                item.Name = strName;
+                item.ClassTypeID = (byte)classType;
+                item.ValueTypeID = (byte)valueType;
+                item.Ordering = nOrdering;
+                item.StartTime = null;
+                item.EndTime = null;
+                item.SecondsPerStep = null;
                 entities.ValueStreams.Add(item);
                 entities.SaveChanges();
 
