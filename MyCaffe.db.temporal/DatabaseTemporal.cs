@@ -4,7 +4,9 @@ using SimpleGraphing;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
 using System.Linq;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -19,6 +21,8 @@ namespace MyCaffe.db.temporal
         DNNEntitiesTemporal m_entitiesTemporal = null;
         Dictionary<int, string> m_rgstrValueItems = new Dictionary<int, string>();
         Dictionary<int, string> m_rgstrValueStreams = new Dictionary<int, string>();
+        DataTable m_rgRawValueCache = new DataTable();
+        SqlBulkCopy m_sqlBulkCopy = null;
 
         /// <summary>
         /// Defines the stream value type.
@@ -59,6 +63,13 @@ namespace MyCaffe.db.temporal
         /// </summary>
         public DatabaseTemporal()
         {
+            m_rgRawValueCache.Columns.Add("SourceID", typeof(int));
+            m_rgRawValueCache.Columns.Add("ItemID", typeof(int));
+            m_rgRawValueCache.Columns.Add("StreamID", typeof(int));
+            m_rgRawValueCache.Columns.Add("TimeStamp", typeof(DateTime));
+            m_rgRawValueCache.Columns.Add("RawData", typeof(decimal));
+            m_rgRawValueCache.Columns.Add("NormalizedData", typeof(decimal));
+            m_rgRawValueCache.Columns.Add("Active", typeof(bool));
         }
 
         /// <summary>
@@ -75,10 +86,40 @@ namespace MyCaffe.db.temporal
         }
 
         /// <summary>
+        /// Enable bulk inserts.
+        /// </summary>
+        /// <param name="bEnable">Enables the bulk mode.</param>
+        public void EnableBulk(bool bEnable)
+        {
+            if (m_entitiesTemporal == null)
+                return;
+
+            m_sqlBulkCopy = new SqlBulkCopy(m_entitiesTemporal.Database.Connection.ConnectionString, SqlBulkCopyOptions.TableLock);
+            m_sqlBulkCopy.DestinationTableName = "dbo.RawValues";
+            m_sqlBulkCopy.BulkCopyTimeout = 600;
+            m_sqlBulkCopy.ColumnMappings.Add("SourceID", "SourceID");
+            m_sqlBulkCopy.ColumnMappings.Add("ItemID", "ItemID");
+            m_sqlBulkCopy.ColumnMappings.Add("StreamID", "StreamID");
+            m_sqlBulkCopy.ColumnMappings.Add("TimeStamp", "TimeStamp");
+            m_sqlBulkCopy.ColumnMappings.Add("RawData", "RawData");
+            m_sqlBulkCopy.ColumnMappings.Add("NormalizedData", "NormalizedData");
+            m_sqlBulkCopy.ColumnMappings.Add("Active", "Active");
+
+            m_entitiesTemporal.Configuration.AutoDetectChangesEnabled = false;
+            m_entitiesTemporal.Configuration.ValidateOnSaveEnabled = false;
+        }
+
+        /// <summary>
         /// Close the current data source.
         /// </summary>
         public override void Close()
         {
+            if (m_sqlBulkCopy != null)
+            {
+                m_sqlBulkCopy.Close();
+                m_sqlBulkCopy = null;
+            }
+
             if (m_entitiesTemporal != null)
             {
                 m_entitiesTemporal.Dispose();
@@ -267,7 +308,7 @@ namespace MyCaffe.db.temporal
         /// <param name="nStreamID">Specifies the static stream ID.</param>
         /// <param name="fVal">Specifies the static value.</param>
         /// <exception cref="Exception">An exception is thrown on error.</exception>
-        public void PutRawValues(int nSrcID, int nItemID, int nStreamID, float fVal)
+        public void PutRawValue(int nSrcID, int nItemID, int nStreamID, float fVal)
         {
             RawValue val = new RawValue();
             val.StreamID = nStreamID;
@@ -290,6 +331,80 @@ namespace MyCaffe.db.temporal
             m_entitiesTemporal.SaveChanges();
             m_entitiesTemporal.Dispose();
             m_entitiesTemporal = EntitiesConnectionTemporal.CreateEntities(m_ci);
+        }
+
+        /// <summary>
+        /// Add raw values for a data stream.
+        /// </summary>
+        /// <param name="nSrcID">Specifies the source ID.</param>
+        /// <param name="nItemID">Specifies the item ID.</param>
+        /// <param name="nStreamID">Specifies the static stream ID.</param>
+        /// <param name="dt">Specifies the date/time associated with the value.</param>
+        /// <param name="fVal">Specifies the value.</param>
+        /// <param name="fValNormalized">Specifies the normalized value.</param>
+        /// <param name="log">Specifies the output log.</param>
+        /// <exception cref="Exception">An exception is thrown on error.</exception>
+        public void PutRawValue(int nSrcID, int nItemID, int nStreamID, DateTime dt, float fVal, float fValNormalized, Log log)
+        {
+            DataRow dr = m_rgRawValueCache.NewRow();
+
+            dr["SourceID"] = nSrcID;
+            dr["ItemID"] = nItemID;
+            dr["StreamID"] = nStreamID;
+            dr["TimeStamp"] = dt;
+            dr["RawData"] = (decimal)fVal;
+
+            if (float.IsNaN(fValNormalized))
+            {
+                fValNormalized = 0;
+                log.WriteLine("WARNING: NaN value detected, setting to 0.");
+            }
+
+            dr["NormalizedData"] = (decimal)fValNormalized;
+            dr["Active"] = true;
+
+            m_rgRawValueCache.Rows.Add(dr);
+        }
+
+        /// <summary>
+        /// Save the raw values.
+        /// </summary>
+        public void SaveRawValues()
+        {
+            if (m_rgRawValueCache.Rows.Count > 0)
+            {
+                try
+                {
+                    m_sqlBulkCopy.WriteToServer(m_rgRawValueCache);
+                }
+                catch (Exception excpt)
+                {
+                    throw excpt;
+                }
+                finally
+                {
+                    m_rgRawValueCache.Clear();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Save the raw values.
+        /// </summary>
+        /// <param name="nItemID">Specifies the item ID.</param>
+        /// <param name="rgnStreamID">Specifies the list of stream IDs.</param>
+        public void UpdateStreamCounts(int nItemID, params int[] rgnStreamID)
+        {
+            foreach (int nStreamID in rgnStreamID)
+            {
+                List<ValueStream> rgStrm = m_entitiesTemporal.ValueStreams.Where(p => p.ValueItemID == nItemID && p.ID == nStreamID).ToList();
+                foreach (ValueStream strm in rgStrm)
+                {
+                    strm.ItemCount = m_entitiesTemporal.RawValues.Where(p => p.ItemID == nItemID && p.StreamID == nStreamID).Count();
+                }
+            }
+
+            m_entitiesTemporal.SaveChanges();
         }
 
         private bool compareTime(List<DateTime> rg1, List<RawValue> rg2)
