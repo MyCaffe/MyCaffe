@@ -4,6 +4,7 @@ using MyCaffe.db.image;
 using SimpleGraphing;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -24,19 +25,18 @@ namespace MyCaffe.db.temporal
         DateTime m_dtEnd;
         ManualResetEvent m_evtCancel = new ManualResetEvent(false);
         AutoResetEvent m_evtDone = new AutoResetEvent(false);
-        Dictionary<ValueItem, List<ValueStream>> m_rgSchema = new Dictionary<ValueItem, List<ValueStream>>();
-        List<ValueItem> m_rgKeys = new List<ValueItem>();
+        List<ItemSet> m_rgItems = new List<ItemSet>();
         int m_nLoadLimit = 0;
         DB_LOAD_METHOD m_loadMethod;
         DatabaseTemporal m_db;
         CryptoRandom m_random = null;
         SourceDescriptor m_src;
-        PlotCollectionSet m_itemSet;
         Log m_log;
         Thread m_loadThread = null;
         int m_nChunks = 1024;
         int m_nItemIdx = 0;
         int m_nValueIdx = 0;
+        bool m_bNormalizeData = false;
 
         /// <summary>
         /// The constructor.
@@ -52,7 +52,7 @@ namespace MyCaffe.db.temporal
         /// <param name="nHistoricSteps">Specifies the historical steps in a step block.</param>
         /// <param name="nFutureSteps">Specifies the future steps in a step block.</param>
         /// <param name="nChunks">Specifies the number of step items to load on each cycle.</param>
-        public TemporalSet(Log log, DatabaseTemporal db, SourceDescriptor src, DB_LOAD_METHOD loadMethod, int nLoadLimit, CryptoRandom random, DateTime dtStart, DateTime dtEnd, int nHistoricSteps, int nFutureSteps, int nChunks)
+        public TemporalSet(Log log, DatabaseTemporal db, SourceDescriptor src, DB_LOAD_METHOD loadMethod, int nLoadLimit, CryptoRandom random, int nHistoricSteps, int nFutureSteps, int nChunks)
         {
             m_log = log;
             m_random = random;
@@ -60,8 +60,6 @@ namespace MyCaffe.db.temporal
             m_src = src;
             m_loadMethod = loadMethod;
             m_nLoadLimit = nLoadLimit;
-            m_dtStart = dtStart;
-            m_dtEnd = dtEnd;
             m_nHistoricSteps = nHistoricSteps;
             m_nFutureSteps = nFutureSteps;
             m_nTotalSteps = m_nHistoricSteps + m_nFutureSteps;
@@ -73,14 +71,39 @@ namespace MyCaffe.db.temporal
         /// </summary>
         public void Dispose()
         {
+            m_evtCancel.Set();
+        }
+
+        /// <summary>
+        /// Release all resources used by the temporal set and shut down all internal threads.
+        /// </summary>
+        public void CleanUp()
+        {
+            if (m_loadThread != null)
+            {
+                m_evtCancel.Set();
+                m_loadThread.Join();
+                m_loadThread = null;
+            }
+
+            foreach (ItemSet item in m_rgItems)
+            {
+                item.CleanUp();
+            }
+
+            m_rgItems.Clear();
         }
 
         /// <summary>
         /// Load the data based on the data load method.
         /// </summary>
+        /// <param name="bNormalizedData">Specifies to load the normalized data.</param>
+        /// <param name="evtCancel">Specifies the auto reset event used to cancel waiting for the data to load.</param>
         /// <returns>True is returned after starting the load thread, otherwise false is returned if it is already started.</returns>
-        public bool Initialize()
+        public bool Initialize(bool bNormalizedData, AutoResetEvent evtCancel)
         {
+            m_bNormalizeData = bNormalizedData;
+
             if (m_loadThread == null)
             {
                 m_loadThread = new Thread(new ThreadStart(loadThread));
@@ -88,7 +111,7 @@ namespace MyCaffe.db.temporal
             }
 
             if (m_loadMethod == DB_LOAD_METHOD.LOAD_ALL)
-                return WaitForLoadingToComplete();
+                return WaitForLoadingToComplete(evtCancel);
 
             return true;
         }
@@ -104,22 +127,24 @@ namespace MyCaffe.db.temporal
 
             try
             {
-                m_itemSet = new PlotCollectionSet();
-
                 // Load the data schema.
+                // - load each value item (e.g., customer id, station id, etc.)
                 foreach (ValueItem item in rgItems)
                 {
+                    // Load the streams for each item.
+                    // - load each static, known and observed stream (e.g., log power usage, traffic flow value, etc.)
                     List<ValueStream> rgStreams = m_db.GetAllValueStreams(item.ID);
+                    List<ValueStream> rgTemporalStreams = rgStreams.Where(p => p.ClassTypeID > 1).ToList();
 
-                    DateTime dtStart = rgStreams.Min(p => p.StartTime.Value);
-                    DateTime dtEnd = rgStreams.Max(p => p.EndTime.Value);
+                    DateTime dtStart = rgTemporalStreams.Min(p => p.StartTime.Value);
+                    DateTime dtEnd = rgTemporalStreams.Max(p => p.EndTime.Value);
 
                     dtMinStart = (dtStart < dtMinStart) ? dtStart : dtMinStart;
                     dtMaxEnd = (dtEnd > dtMaxEnd) ? dtEnd : dtMaxEnd;
 
-                    int nMinSecPerStep = rgStreams.Min(p => p.SecondsPerStep.Value);
-                    int nMaxSecPerStep = rgStreams.Max(p => p.SecondsPerStep.Value);
-                    int nMaxItems = rgStreams.Max(p => p.ItemCount.Value);
+                    int nMinSecPerStep = rgTemporalStreams.Min(p => p.SecondsPerStep.Value);
+                    int nMaxSecPerStep = rgTemporalStreams.Max(p => p.SecondsPerStep.Value);
+                    int nMaxItems = rgTemporalStreams.Max(p => p.ItemCount.Value);
 
                     if (nMinSecPerStep != nMaxSecPerStep)
                         throw new Exception("All streams must have the same number of seconds per step.");
@@ -134,10 +159,11 @@ namespace MyCaffe.db.temporal
                     else if (nItemCount != nMaxItems)
                         throw new Exception("All streams must have the same number of items.");
 
-                    m_rgSchema.Add(item, rgStreams);
+                    m_rgItems.Add(new ItemSet(m_random, m_db, item, rgStreams));
                 }
 
-                m_rgKeys = m_rgSchema.Keys.ToList();
+                m_dtStart = dtMinStart;
+                m_dtEnd = dtMaxEnd;
 
                 if (nItemCount < m_nTotalSteps)
                     throw new Exception("The number of items in the data source is less than the number of steps requested.");
@@ -167,22 +193,16 @@ namespace MyCaffe.db.temporal
 
                 while (!m_evtCancel.WaitOne(0))
                 {
-                    PlotCollectionSet set = new PlotCollectionSet();
+                    bool bEOD1;
 
                     // Load one chunk for each item.
-                    foreach (KeyValuePair<ValueItem, List<ValueStream>> kv in m_rgSchema)
+                    foreach (ItemSet item in m_rgItems)
                     {
-                        ValueItem item = kv.Key;
-
-                        bool bEOD1 = false;
-                        PlotCollection plots = m_db.GetRawValues(m_src.ID, item.ID, dt, nStepsToLoad, false, out dtEnd1, out bEOD1);
-                        set.Add(plots);
+                        DateTime dtEnd = item.Load(dt, nStepsToLoad, m_bNormalizeData, out bEOD1);
 
                         if (bEOD1)
                             bEOD = true;
                     }
-
-                    m_itemSet.Add(set);
 
                     if (bEOD)
                         dt = dtStart1;
@@ -193,9 +213,9 @@ namespace MyCaffe.db.temporal
 
                     if (m_nLoadLimit > 0)
                     {
-                        while (m_itemSet[0].Count > m_nLoadLimit)
+                        foreach (ItemSet item in m_rgItems)
                         {
-                            m_itemSet.RemoveAt(0);
+                            item.LoadLimit(m_nLoadLimit);
                         }
                     }
                     else
@@ -219,15 +239,15 @@ namespace MyCaffe.db.temporal
         /// <summary>
         /// Wait for the image set to complete loading.
         /// </summary>
+        /// <param name="evtCancel">Specifies the cancel event to abort waiting.</param>
         /// <param name="nWaitMs">Specifies the maximum number of ms to wait (default = int.MaxValue).</param>
         /// <returns>If the load has completed <i>true</i> is returned, otherwise <i>false</i>.</returns>
-        public bool WaitForLoadingToComplete(int nWaitMs = int.MaxValue)
+        public bool WaitForLoadingToComplete(AutoResetEvent evtCancel, int nWaitMs = int.MaxValue)
         {
-            WaitHandle[] rgWait = new WaitHandle[] { m_evtCancel, m_evtDone };
+            WaitHandle[] rgWait = new WaitHandle[] { m_evtCancel, evtCancel, m_evtDone };
             int nWait = WaitHandle.WaitAny(rgWait, nWaitMs);
-            m_loadThread = null;
 
-            if (nWait == 0)
+            if (nWait <= 1)
                 return false;
 
             return true;
@@ -242,59 +262,35 @@ namespace MyCaffe.db.temporal
         }
 
         /// <summary>
-        /// Get a single temporal data set for a selected item where the temporal data set contains (nHistSteps + nFutSteps) * nStreamCount items.
+        /// Get a data set consisting of the static, historical, and future data for a selected item where the static data is not bound by time, 
+        /// the historical data set contains nHistSteps * nStreamCount items, and the future data set contains (nHistSteps + nFutSteps) * nStreamCount items.
         /// </summary>
         /// <param name="itemSelectionMethod">Specifies the item index selection method.</param>
         /// <param name="valueSelectionMethod">Specifies the value starting point selection method.</param>
-        /// <param name="nValueStepOffset">Optionally, specifies the value step offset from the previous query (this parameter only applies when using non random selection).</param>
-        /// <returns>A SimpleDatum is returned containing (nHistSteps + nFutSteps) for the all streams for a given item.</returns>
-        public SimpleDatum GetTemporalData(DB_LABEL_SELECTION_METHOD itemSelectionMethod, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nValueStepOffset)
+        /// <param name="nValueStepOffset">Optionally, specifies the value step offset from the previous query (default = 1, this parameter only applies when using non random selection).</param>
+        /// <returns>A Tuple of three SimpleDatum is returned containing for the static, observed and known data for a given item at the temporal selection point.</returns>
+        /// <remarks>Note, the ordering for historical value streams is: observed, then known.  Future value streams only contiain known value streams.</remarks>
+        public Tuple<SimpleDatum, SimpleDatum, SimpleDatum> GetData(DB_LABEL_SELECTION_METHOD itemSelectionMethod, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nValueStepOffset = 1)
         {
             if (itemSelectionMethod == DB_LABEL_SELECTION_METHOD.RANDOM)
-                m_nItemIdx = m_random.Next(m_rgSchema.Count);
+            {
+                m_nItemIdx = m_random.Next(m_rgItems.Count);
+            }
             else
             {
-                if (m_nItemIdx >= m_rgSchema.Count)
+                if (m_nItemIdx >= m_rgItems.Count)
                     m_nItemIdx = 0;
             }
 
-            ValueItem item = m_rgKeys[m_nItemIdx];
-            int nValueCount = m_rgSchema[item][0].ItemCount.GetValueOrDefault(0);
-            int nStreamCount = m_rgSchema[item].Count;
+            Tuple<SimpleDatum, SimpleDatum, SimpleDatum> data = m_rgItems[m_nItemIdx].GetData(valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset);
 
-            if (valueSelectionMethod == DB_ITEM_SELECTION_METHOD.RANDOM)
+            if (data == null)
             {
-                m_nValueIdx = m_random.Next(nValueCount - m_nTotalSteps);
-            }
-            else if (m_nValueIdx + m_nTotalSteps >= nValueCount)
-            {
-                m_nValueIdx = 0;
                 m_nItemIdx++;
+                data = m_rgItems[m_nItemIdx].GetData(valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset);
             }
 
-            int nC = 1;
-            int nW = nStreamCount; // streams
-            int nH = m_nTotalSteps;   // value streams
-
-            float[] rgf = new float[nC * nH * nW];
-
-            for (int i = 0; i < nH; i++)
-            {
-                for (int j = 0; j < nW; j++)
-                {
-                    int nSrcIdx = m_nValueIdx + i;
-                    int nDstIdx = (i * nW) + j;
-                    rgf[nDstIdx] = m_itemSet[m_nItemIdx][nSrcIdx].Y_values[j];
-                }
-            }
-
-            SimpleDatum sd = new SimpleDatum(nC, nW, nH, rgf, 0, rgf.Length);
-            sd.Index = m_nHistoricSteps;
-            sd.TimeStamp = (DateTime)m_itemSet[m_nItemIdx][m_nValueIdx + m_nHistoricSteps].Tag;
-
-            m_nValueIdx += nValueStepOffset;
-
-            return sd;
+            return data;
         }
     }
 }
