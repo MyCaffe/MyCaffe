@@ -69,6 +69,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DatabaseTemporal.cs" />
+    <Compile Include="DataSet.cs" />
+    <Compile Include="DatasetCollection.cs" />
     <Compile Include="DNNModelTemporal.Context.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -85,6 +87,7 @@
       <DependentUpon>DNNModelTemporal.edmx</DependentUpon>
     </Compile>
     <Compile Include="EntitiesConnection.cs" />
+    <Compile Include="ItemSet.cs" />
     <Compile Include="MyCaffeTemporalDatabase.cs">
       <SubType>Component</SubType>
     </Compile>
