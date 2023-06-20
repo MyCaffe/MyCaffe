@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -37,6 +38,7 @@ namespace MyCaffe.db.temporal
         DB_LOAD_METHOD m_loadMethod = DB_LOAD_METHOD.LOAD_ON_DEMAND;
         int m_nLoadLimit = 0;
         Guid m_userGuid;
+        DatasetCollection m_rgDataSets = new DatasetCollection();
 
         /// <summary>
         /// The constructor.
@@ -57,8 +59,14 @@ namespace MyCaffe.db.temporal
             InitializeComponent();
         }
 
+        /// <summary>
+        /// Cleanup all resources used by the dataset specified (or all when no dataset is specified).
+        /// </summary>
+        /// <param name="nDsId">Specifies the dataset to cleanup, or 0 for all datasets.</param>
+        /// <param name="bForce">Not used.</param>
         public void CleanUp(int nDsId = 0, bool bForce = false)
         {
+            m_rgDataSets.CleanUp(nDsId);
         }
 
         public int FindItemIndex(int nSrcId, DateTime dt, string strDescription)
