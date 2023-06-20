@@ -41,13 +41,15 @@ namespace MyCaffe.test
             int nValItem1 = db.AddValueItem(nSrcId, "Test Value Item #1");
             int nValItem2 = db.AddValueItem(nSrcId, "Test Value ITem #2");
 
-            int nValStrm1a = db.AddValueStream(nValItem1, "Test Stream #1", DatabaseTemporal.STREAM_CLASS_TYPE.OBSERVED, DatabaseTemporal.STREAM_VALUE_TYPE.NUMERIC, 1, dtStart, dtEnd, 60);
-            int nValStrm2a = db.AddValueStream(nValItem1, "Test Stream #2", DatabaseTemporal.STREAM_CLASS_TYPE.OBSERVED, DatabaseTemporal.STREAM_VALUE_TYPE.NUMERIC, 2, dtStart, dtEnd, 60);
-            int nValStrm3a = db.AddValueStream(nValItem1, "Test Stream #3", DatabaseTemporal.STREAM_CLASS_TYPE.KNOWN, DatabaseTemporal.STREAM_VALUE_TYPE.CATEGORICAL, 3, dtStart, dtEnd, 60);
+            int nValStrm1a = db.AddObservedValueStream(nSrcId, nValItem1, "Test Stream #1", DatabaseTemporal.STREAM_VALUE_TYPE.NUMERIC, 1, dtStart, dtEnd, 60);
+            int nValStrm2a = db.AddObservedValueStream(nSrcId, nValItem1, "Test Stream #2", DatabaseTemporal.STREAM_VALUE_TYPE.NUMERIC, 2, dtStart, dtEnd, 60);
+            int nValStrm3a = db.AddKnownValueStream(nSrcId, nValItem1, "Test Stream #3", DatabaseTemporal.STREAM_VALUE_TYPE.CATEGORICAL, 3, dtStart, dtEnd, 60);
+            int nValStrm4a = db.AddStaticValueStream(nSrcId, nValItem1, "Test Stream #4", DatabaseTemporal.STREAM_VALUE_TYPE.CATEGORICAL, 3);
 
-            int nValStrm1b = db.AddValueStream(nValItem2, "Test Stream #1", DatabaseTemporal.STREAM_CLASS_TYPE.OBSERVED, DatabaseTemporal.STREAM_VALUE_TYPE.NUMERIC, 1, dtStart, dtEnd, 60);
-            int nValStrm2b = db.AddValueStream(nValItem2, "Test Stream #2", DatabaseTemporal.STREAM_CLASS_TYPE.OBSERVED, DatabaseTemporal.STREAM_VALUE_TYPE.NUMERIC, 2, dtStart, dtEnd, 60);
-            int nValStrm3b = db.AddValueStream(nValItem2, "Test Stream #3", DatabaseTemporal.STREAM_CLASS_TYPE.KNOWN, DatabaseTemporal.STREAM_VALUE_TYPE.CATEGORICAL, 3, dtStart, dtEnd, 60);
+            int nValStrm1b = db.AddObservedValueStream(nSrcId, nValItem2, "Test Stream #1", DatabaseTemporal.STREAM_VALUE_TYPE.NUMERIC, 1, dtStart, dtEnd, 60);
+            int nValStrm2b = db.AddObservedValueStream(nSrcId, nValItem2, "Test Stream #2", DatabaseTemporal.STREAM_VALUE_TYPE.NUMERIC, 2, dtStart, dtEnd, 60);
+            int nValStrm3b = db.AddKnownValueStream(nSrcId, nValItem2, "Test Stream #3", DatabaseTemporal.STREAM_VALUE_TYPE.CATEGORICAL, 3, dtStart, dtEnd, 60);
+            int nValStrm4b = db.AddStaticValueStream(nSrcId, nValItem2, "Test Stream #4", DatabaseTemporal.STREAM_VALUE_TYPE.CATEGORICAL, 3);
 
             PlotCollection plots = new PlotCollection();
             DateTime dt = dtStart;
@@ -67,13 +69,14 @@ namespace MyCaffe.test
 
             db.Open(nSrcId);
             db.PutRawValues(nSrcId, nValItem1, plots);
+            db.PutRawValues(nSrcId, nValItem1, nValStrm4a, 1);
             db.Close();
 
             plots = new PlotCollection();
             dt = dtStart;
             for (int i = 0; i < nSteps * nBlocks; i++)
             {
-                float[] rgfVal1 = new float[] { (float)((i+1) * 2), (float)((i+2) * 3), (float)i };
+                float[] rgfVal1 = new float[] { (float)((i + 3) * 4), (float)((i + 4) * 8), (float)i };
 
                 Plot plot = new Plot(dt.ToFileTimeUtc(), rgfVal1);
                 plot.Tag = dt;
@@ -87,6 +90,7 @@ namespace MyCaffe.test
 
             db.Open(nSrcId);
             db.PutRawValues(nSrcId, nValItem2, plots);
+            db.PutRawValues(nSrcId, nValItem2, nValStrm4b, 2);
             db.Close();
 
             return src;
@@ -103,60 +107,96 @@ namespace MyCaffe.test
             int nHistSteps = 90;
             int nFutSteps = 30;
             SourceDescriptor src = loadTestData(nHistSteps, nFutSteps, out dtStart, out dtEnd);
-            TemporalSet set = new TemporalSet(log, db, src, DB_LOAD_METHOD.LOAD_ALL, 0, random, dtStart, dtEnd, nHistSteps, nFutSteps, 1024);
+            TemporalSet set = new TemporalSet(log, db, src, DB_LOAD_METHOD.LOAD_ALL, 0, random, nHistSteps, nFutSteps, 1024);
+            AutoResetEvent evtCancel = new AutoResetEvent(false);
 
-            int nSteps = nHistSteps + nFutSteps;
             int nStreams = 3;
 
-            set.Initialize();
+            set.Initialize(false, evtCancel);
 
-            for (int i = 0; i < nSteps; i++)
+            for (int i = 0; i < (nHistSteps + nFutSteps); i++)
             {
-                SimpleDatum sd = set.GetTemporalData(DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, 1);
+                Tuple<SimpleDatum, SimpleDatum, SimpleDatum> data = set.GetData(DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
 
-                log.CHECK_EQ(sd.ItemCount, nSteps * nStreams, "The item count should = " + (nSteps * nStreams).ToString());
+                log.CHECK_EQ(data.Item1.ItemCount, 1, "The static item count should = 1.");
+                log.CHECK_EQ(data.Item2.ItemCount, nHistSteps * nStreams, "The historic item count should = " + (nHistSteps * nStreams).ToString());
+                log.CHECK_EQ(data.Item3.ItemCount, nFutSteps * 1, "The future item count should = " + nFutSteps.ToString() + ".");
 
-                float[] rgData = sd.GetData<float>();
-                for (int j = 0; j < nSteps; j++)
+                // Verify the static data.float[] 
+                float[] rgDataStatic = data.Item1.GetData<float>();
+                log.CHECK_EQ(rgDataStatic[0], 1, "The static value should = " + (i + 1).ToString() + ".");
+
+                // Verify the historical data.
+                float[] rgDataHist = data.Item2.GetData<float>();
+                for (int j = 0; j < nHistSteps; j++)
                 {
                     float fExp1a = (i + j + 1) * 2;
                     float fExp2a = (i + j + 2) * 3;
                     float fExp3a = i + j;
 
                     int nIdx = j * nStreams;
-                    float fVal = rgData[nIdx];
-                    log.CHECK_EQ(fVal, fExp1a, "The value should = " + fExp1a.ToString());
+                    float fVal = rgDataHist[nIdx];
+                    log.CHECK_EQ(fVal, fExp1a, "The value should = " + fExp1a.ToString()); // observed #1
 
-                    fVal = rgData[nIdx + 1];
-                    log.CHECK_EQ(fVal, fExp2a, "The value should = " + fExp2a.ToString());
+                    fVal = rgDataHist[nIdx + 1];
+                    log.CHECK_EQ(fVal, fExp2a, "The value should = " + fExp2a.ToString()); // observed #2
 
-                    fVal = rgData[nIdx + 2];
-                    log.CHECK_EQ(fVal, fExp3a, "The value should = " + fExp3a.ToString());
+                    fVal = rgDataHist[nIdx + 2];
+                    log.CHECK_EQ(fVal, fExp3a, "The value should = " + fExp3a.ToString()); // known #1
+                }
+
+                // Verify the future data.
+                float[] rgDataFut = data.Item3.GetData<float>();
+                for (int j = 0; j < nFutSteps; j++)
+                {
+                    float fExp3a = i + (j + nHistSteps);
+
+                    int nIdx = j;
+                    float fVal = rgDataFut[nIdx];
+                    log.CHECK_EQ(fVal, fExp3a, "The value should = " + fExp3a.ToString()); // known #1
                 }
             }
 
-            for (int i = 0; i < nSteps; i++)
+            for (int i = 0; i < (nHistSteps + nFutSteps); i++)
             {
-                SimpleDatum sd = set.GetTemporalData(DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE, 1);
+                Tuple<SimpleDatum, SimpleDatum, SimpleDatum> data = set.GetData(DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
 
-                log.CHECK_EQ(sd.ItemCount, nSteps * nStreams, "The item count should = " + (nSteps * nStreams).ToString());
+                log.CHECK_EQ(data.Item1.ItemCount, 1, "The static item count should = 1.");
+                log.CHECK_EQ(data.Item2.ItemCount, nHistSteps * nStreams, "The historic item count should = " + (nHistSteps * nStreams).ToString());
+                log.CHECK_EQ(data.Item3.ItemCount, nFutSteps * 1, "The future item count should = " + nFutSteps.ToString() + ".");
 
-                float[] rgData = sd.GetData<float>();
-                for (int j = 0; j < nSteps; j++)
+                // Verify the static data.float[] 
+                float[] rgDataStatic = data.Item1.GetData<float>();
+                log.CHECK_EQ(rgDataStatic[0], 2, "The static value should = 2.");
+
+                // Verify the historical data.
+                float[] rgDataHist = data.Item2.GetData<float>();
+                for (int j = 0; j < nHistSteps; j++)
                 {
-                    float fExp1b = (i + j + 1) * 2;
-                    float fExp2b = (i + j + 2) * 3;
-                    float fExp3b = i + j;
+                    float fExp1a = (i + j + 3) * 4;
+                    float fExp2a = (i + j + 4) * 8;
+                    float fExp3a = i + j;
 
                     int nIdx = j * nStreams;
-                    double dfVal = rgData[nIdx];
-                    log.CHECK_EQ(dfVal, fExp1b, "The value should = " + fExp1b.ToString());
+                    float fVal = rgDataHist[nIdx];
+                    log.CHECK_EQ(fVal, fExp1a, "The value should = " + fExp1a.ToString());
 
-                    dfVal = rgData[nIdx + 1];
-                    log.CHECK_EQ(dfVal, fExp2b, "The value should = " + fExp2b.ToString());
+                    fVal = rgDataHist[nIdx + 1];
+                    log.CHECK_EQ(fVal, fExp2a, "The value should = " + fExp2a.ToString());
 
-                    dfVal = rgData[nIdx + 2];
-                    log.CHECK_EQ(dfVal, fExp3b, "The value should = " + fExp3b.ToString());
+                    fVal = rgDataHist[nIdx + 2];
+                    log.CHECK_EQ(fVal, fExp3a, "The value should = " + fExp3a.ToString());
+                }
+
+                // Verify the future data.
+                float[] rgDataFut = data.Item3.GetData<float>();
+                for (int j = 0; j < nFutSteps; j++)
+                {
+                    float fExp3a = i + (j + nHistSteps);
+
+                    int nIdx = j;
+                    float fVal = rgDataFut[nIdx];
+                    log.CHECK_EQ(fVal, fExp3a, "The value should = " + fExp3a.ToString()); // known #1
                 }
             }
         }
