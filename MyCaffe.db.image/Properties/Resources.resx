@@ -375,8 +375,24 @@ END</value>
 )WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]</value>
   </data>
+  <data name="CreateRawValuesIndex" xml:space="preserve">
+    <value>IF NOT EXISTS (SELECT *  FROM sys.indexes  WHERE name='_dta_index_RawValues_8_994102582__K3_K4_K2_K12_K5_1_6_7_10_11') 
+BEGIN
+CREATE NONCLUSTERED INDEX [_dta_index_RawValues_8_994102582__K3_K4_K2_K12_K5_1_6_7_10_11] ON [dbo].[RawValues]
+(
+	[ItemID] ASC,
+	[StreamID] ASC,
+	[SourceID] ASC,
+	[Active] ASC,
+	[TimeStamp] ASC
+)
+INCLUDE([ID],[RawData],[NormalizedData],[DebugDataFormatID],[DataCriteriaFormatID]) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+END</value>
+  </data>
   <data name="CreateRawValuesTable" xml:space="preserve">
-    <value>CREATE TABLE [dbo].[RawValues](
+    <value>IF OBJECT_ID (N'dbo.RawValues', N'U') IS NULL
+BEGIN
+CREATE TABLE [dbo].[RawValues](
 	[ID] [int] IDENTITY(1,1) NOT NULL,
 	[SourceID] [int] NULL,
 	[ItemID] [int] NULL,
@@ -393,7 +409,8 @@ END</value>
 (
 	[ID] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]</value>
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+END</value>
   </data>
   <data name="CreateSourceParametersTable" xml:space="preserve">
     <value>CREATE TABLE [dbo].[SourceParameters](
@@ -426,7 +443,9 @@ END</value>
 ) ON [PRIMARY]</value>
   </data>
   <data name="CreateValueItemsTable" xml:space="preserve">
-    <value>CREATE TABLE [dbo].[ValueItems](
+    <value>IF OBJECT_ID (N'dbo.ValueItems', N'U') IS NULL
+BEGIN
+CREATE TABLE [dbo].[ValueItems](
 	[ID] [int] IDENTITY(1,1) NOT NULL,
 	[Name] [nvarchar](128) NULL,
 	[SourceID] [int] NULL,
@@ -434,10 +453,13 @@ END</value>
 (
 	[ID] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]</value>
+) ON [PRIMARY]
+END</value>
   </data>
   <data name="CreateValueStreamsTable" xml:space="preserve">
-    <value>CREATE TABLE [dbo].[ValueStreams](
+    <value>IF OBJECT_ID (N'dbo.ValueStreams', N'U') IS NULL
+BEGIN
+CREATE TABLE [dbo].[ValueStreams](
 	[ID] [int] IDENTITY(1,1) NOT NULL,
 	[Name] [nvarchar](128) NULL,
 	[ClassTypeID] [tinyint] NULL,
@@ -453,7 +475,8 @@ END</value>
 (
 	[ID] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]</value>
+) ON [PRIMARY]
+END</value>
   </data>
   <data name="QueryDatabaseExists" xml:space="preserve">
     <value>IF (EXISTS (SELECT name 

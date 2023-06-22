@@ -222,18 +222,6 @@ namespace MyCaffe.db.image
                 cmdCreate.ExecuteNonQuery();
                 cmdCreate.Dispose();
 
-                cmdCreate = new SqlCommand(Properties.Resources.CreateRawValuesTable, connection);
-                cmdCreate.ExecuteNonQuery();
-                cmdCreate.Dispose();
-
-                cmdCreate = new SqlCommand(Properties.Resources.CreateValueStreamsTable, connection);
-                cmdCreate.ExecuteNonQuery();
-                cmdCreate.Dispose();
-
-                cmdCreate = new SqlCommand(Properties.Resources.CreateValueItemsTable, connection);
-                cmdCreate.ExecuteNonQuery();
-                cmdCreate.Dispose();
-
                 if (bFullCreate)
                 {
                     cmdCreate = new SqlCommand(Properties.Resources.CreateDatasetCreatorsTable, connection);
@@ -242,11 +230,27 @@ namespace MyCaffe.db.image
                 }
             }
 
+            cmdCreate = new SqlCommand(Properties.Resources.CreateRawValuesTable, connection);
+            cmdCreate.ExecuteNonQuery();
+            cmdCreate.Dispose();
+
+            cmdCreate = new SqlCommand(Properties.Resources.CreateValueStreamsTable, connection);
+            cmdCreate.ExecuteNonQuery();
+            cmdCreate.Dispose();
+
+            cmdCreate = new SqlCommand(Properties.Resources.CreateValueItemsTable, connection);
+            cmdCreate.ExecuteNonQuery();
+            cmdCreate.Dispose();
+
             cmdCreate = new SqlCommand(Properties.Resources.CreateRawImageIndex, connection);
             cmdCreate.ExecuteNonQuery();
             cmdCreate.Dispose();
 
             cmdCreate = new SqlCommand(Properties.Resources.CreateRawImageIndex2, connection);
+            cmdCreate.ExecuteNonQuery();
+            cmdCreate.Dispose();
+
+            cmdCreate = new SqlCommand(Properties.Resources.CreateRawValuesIndex, connection);
             cmdCreate.ExecuteNonQuery();
             cmdCreate.Dispose();
 

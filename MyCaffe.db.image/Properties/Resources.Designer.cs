@@ -366,7 +366,28 @@ namespace MyCaffe.db.image.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to CREATE TABLE [dbo].[RawValues](
+        ///   Looks up a localized string similar to IF NOT EXISTS (SELECT *  FROM sys.indexes  WHERE name=&apos;_dta_index_RawValues_8_994102582__K3_K4_K2_K12_K5_1_6_7_10_11&apos;) 
+        ///BEGIN
+        ///CREATE NONCLUSTERED INDEX [_dta_index_RawValues_8_994102582__K3_K4_K2_K12_K5_1_6_7_10_11] ON [dbo].[RawValues]
+        ///(
+        ///	[ItemID] ASC,
+        ///	[StreamID] ASC,
+        ///	[SourceID] ASC,
+        ///	[Active] ASC,
+        ///	[TimeStamp] ASC
+        ///)
+        ///INCLUDE([ID],[RawData],[NormalizedData],[DebugDataFormatID],[DataCriteriaFormatID]) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF,  [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string CreateRawValuesIndex {
+            get {
+                return ResourceManager.GetString("CreateRawValuesIndex", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IF OBJECT_ID (N&apos;dbo.RawValues&apos;, N&apos;U&apos;) IS NULL
+        ///BEGIN
+        ///CREATE TABLE [dbo].[RawValues](
         ///	[ID] [int] IDENTITY(1,1) NOT NULL,
         ///	[SourceID] [int] NULL,
         ///	[ItemID] [int] NULL,
@@ -379,10 +400,7 @@ namespace MyCaffe.db.image.Properties {
         ///	[DebugDataFormatID] [tinyint] NULL,
         ///	[DataCriteriaFormatID] [tinyint] NULL,
         ///	[Active] [bit] NULL,
-        /// CONSTRAINT [PK_RawValues] PRIMARY KEY CLUSTERED 
-        ///(
-        ///	[ID] ASC
-        ///)WITH (PAD_INDEX = OFF, STATISTICS [rest of string was truncated]&quot;;.
+        /// CONSTRAINT [PK_RawValues] PRIMARY KEY CLUSTE [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string CreateRawValuesTable {
             get {
@@ -432,7 +450,9 @@ namespace MyCaffe.db.image.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to CREATE TABLE [dbo].[ValueItems](
+        ///   Looks up a localized string similar to IF OBJECT_ID (N&apos;dbo.ValueItems&apos;, N&apos;U&apos;) IS NULL
+        ///BEGIN
+        ///CREATE TABLE [dbo].[ValueItems](
         ///	[ID] [int] IDENTITY(1,1) NOT NULL,
         ///	[Name] [nvarchar](128) NULL,
         ///	[SourceID] [int] NULL,
@@ -440,7 +460,8 @@ namespace MyCaffe.db.image.Properties {
         ///(
         ///	[ID] ASC
         ///)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-        ///) ON [PRIMARY].
+        ///) ON [PRIMARY]
+        ///END.
         /// </summary>
         internal static string CreateValueItemsTable {
             get {
@@ -449,7 +470,9 @@ namespace MyCaffe.db.image.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to CREATE TABLE [dbo].[ValueStreams](
+        ///   Looks up a localized string similar to IF OBJECT_ID (N&apos;dbo.ValueStreams&apos;, N&apos;U&apos;) IS NULL
+        ///BEGIN
+        ///CREATE TABLE [dbo].[ValueStreams](
         ///	[ID] [int] IDENTITY(1,1) NOT NULL,
         ///	[Name] [nvarchar](128) NULL,
         ///	[ClassTypeID] [tinyint] NULL,
@@ -464,7 +487,7 @@ namespace MyCaffe.db.image.Properties {
         /// CONSTRAINT [PK_ValueStreams] PRIMARY KEY CLUSTERED 
         ///(
         ///	[ID] ASC
-        ///)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW [rest of string was truncated]&quot;;.
+        ///)WITH (PAD_INDEX = OFF,  [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string CreateValueStreamsTable {
             get {
