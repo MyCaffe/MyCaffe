@@ -19,6 +19,7 @@ using System.IO;
 using System.Xml;
 using System.ServiceModel.Security;
 using System.Data.Entity.ModelConfiguration.Conventions;
+using MyCaffe.db.temporal;
 
 /// <summary>
 /// Testing the DataTemporal.
@@ -35,8 +36,69 @@ namespace MyCaffe.test
     [TestClass]
     public class TestTFT_DataTemporal
     {
+        private IXDatabaseBase getDatabase(string strName, int nHistSteps, int nFutureSteps)
+        {
+            Log log = new Log("Test Data Temporal");
+            log.EnableTrace = true;
+
+            SettingsCaffe s = new SettingsCaffe();
+            s.DbLoadLimit = 0;
+            s.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+
+            PropertySet prop = new PropertySet();
+            prop.SetProperty("NormalizedData", "True");
+            prop.SetProperty("HistoricalSteps", nHistSteps.ToString());
+            prop.SetProperty("FutureSteps", nFutureSteps.ToString());
+
+            MyCaffeTemporalDatabase db = new MyCaffeTemporalDatabase(log, prop);
+            db.InitializeWithDsName1(s, "TFT.Electricity");
+
+            return db;
+        }
+
         [TestMethod]
-        public void TestForwardTrainElectricity()
+        public void TestForwardTrainElectricitySql()
+        {
+            DataTemporalTest test = new DataTemporalTest();
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\electricity\\preprocessed";
+
+            try
+            {
+                IXDatabaseBase db = getDatabase("TFT.Electricity", 90, 30);
+                foreach (IDataTemporalTest t in test.Tests)
+                {
+                    t.TestForward(Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.SQL_DB, "TFT.Electricity", strPath, 100, SOURCE.ELECTRICITY, db);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardTestElectricitySql()
+        {
+            DataTemporalTest test = new DataTemporalTest();
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\electricity\\preprocessed";
+
+            try
+            {
+                IXDatabaseBase db = getDatabase("TFT.Electricity", 90, 30);
+                foreach (IDataTemporalTest t in test.Tests)
+                {
+                    t.TestForward(Phase.TEST, DataTemporalParameter.SOURCE_TYPE.SQL_DB, "TFT.Electricity", strPath, 100, SOURCE.ELECTRICITY, db);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+
+        [TestMethod]
+        public void TestForwardTrainElectricityNpy()
         {
             DataTemporalTest test = new DataTemporalTest();
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\electricity\\preprocessed";
@@ -46,7 +108,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100, SOURCE.ELECTRICITY);
+                    t.TestForward(Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.ELECTRICITY, null);
                 }
             }
             finally
@@ -56,7 +118,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestForwardTestElectricity()
+        public void TestForwardTestElectricityNpy()
         {
             DataTemporalTest test = new DataTemporalTest();
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\electricity\\preprocessed";
@@ -66,7 +128,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100, SOURCE.ELECTRICITY);
+                    t.TestForward(Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.ELECTRICITY, null);
                 }
             }
             finally
@@ -76,7 +138,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestForwardRunElectricity()
+        public void TestForwardRunElectricityNpy()
         {
             DataTemporalTest test = new DataTemporalTest();
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\electricity\\preprocessed";
@@ -86,7 +148,28 @@ namespace MyCaffe.test
             {
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100, SOURCE.ELECTRICITY);
+                    t.TestForward(Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.ELECTRICITY, null);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+
+        [TestMethod]
+        public void TestForwardTrainTrafficSql()
+        {
+            DataTemporalTest test = new DataTemporalTest();
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\traffic\\preprocessed";
+
+            try
+            {
+                IXDatabaseBase db = getDatabase("TFT.Traffic", 90, 30);
+                foreach (IDataTemporalTest t in test.Tests)
+                {
+                    t.TestForward(Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.SQL_DB, "TFT.Traffic", strPath, 100, SOURCE.TRAFFIC, db);
                 }
             }
             finally
@@ -96,7 +179,27 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestForwardTrainTraffic()
+        public void TestForwardTestTrafficSql()
+        {
+            DataTemporalTest test = new DataTemporalTest();
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\traffic\\preprocessed";
+
+            try
+            {
+                IXDatabaseBase db = getDatabase("TFT.Traffic", 90, 30);
+                foreach (IDataTemporalTest t in test.Tests)
+                {
+                    t.TestForward(Phase.TEST, DataTemporalParameter.SOURCE_TYPE.SQL_DB, "TFT.Traffic", strPath, 100, SOURCE.TRAFFIC, db);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardTrainTrafficNpy()
         {
             DataTemporalTest test = new DataTemporalTest();
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\traffic\\preprocessed";
@@ -106,7 +209,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100, SOURCE.TRAFFIC);
+                    t.TestForward(Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.TRAFFIC, null);
                 }
             }
             finally
@@ -116,7 +219,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestForwardTestTraffic()
+        public void TestForwardTestTrafficNpy()
         {
             DataTemporalTest test = new DataTemporalTest();
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\traffic\\preprocessed";
@@ -126,7 +229,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100, SOURCE.TRAFFIC);
+                    t.TestForward(Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.TRAFFIC, null);
                 }
             }
             finally
@@ -136,7 +239,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestForwardRunTraffic()
+        public void TestForwardRunTrafficNpy()
         {
             DataTemporalTest test = new DataTemporalTest();
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\traffic\\preprocessed";
@@ -146,7 +249,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100, SOURCE.TRAFFIC);
+                    t.TestForward(Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.TRAFFIC, null);
                 }
             }
             finally
@@ -156,17 +259,17 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestForwardTrainVolatility()
+        public void TestForwardTrainVolatilitySql()
         {
             DataTemporalTest test = new DataTemporalTest();
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\volatility\\preprocessed";
-            //string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\volatility\\preprocessed";
 
             try
             {
+                IXDatabaseBase db = getDatabase("TFT.Volatility", 90, 30);
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100, SOURCE.VOLATILITY);
+                    t.TestForward(Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.SQL_DB, "TFT.Volatility", strPath, 100, SOURCE.VOLATILITY, null);
                 }
             }
             finally
@@ -176,17 +279,17 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestForwardTestVolatility()
+        public void TestForwardTestVolatilitysql()
         {
             DataTemporalTest test = new DataTemporalTest();
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\volatility\\preprocessed";
-            //string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\volatility\\preprocessed";
 
             try
             {
+                IXDatabaseBase db = getDatabase("TFT.Volatility", 90, 30);
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100, SOURCE.VOLATILITY);
+                    t.TestForward(Phase.TEST, DataTemporalParameter.SOURCE_TYPE.SQL_DB, "TFT.Volatility", strPath, 100, SOURCE.VOLATILITY, null);
                 }
             }
             finally
@@ -196,7 +299,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestForwardRunVolatility()
+        public void TestForwardTrainVolatilityNpy()
         {
             DataTemporalTest test = new DataTemporalTest();
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\volatility\\preprocessed";
@@ -206,7 +309,47 @@ namespace MyCaffe.test
             {
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, 100, SOURCE.VOLATILITY);
+                    t.TestForward(Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.VOLATILITY, null);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardTestVolatilityNpy()
+        {
+            DataTemporalTest test = new DataTemporalTest();
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\volatility\\preprocessed";
+            //string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\volatility\\preprocessed";
+
+            try
+            {
+                foreach (IDataTemporalTest t in test.Tests)
+                {
+                    t.TestForward(Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.VOLATILITY, null);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardRunVolatilityNpy()
+        {
+            DataTemporalTest test = new DataTemporalTest();
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\volatility\\preprocessed";
+            //string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\volatility\\preprocessed";
+
+            try
+            {
+                foreach (IDataTemporalTest t in test.Tests)
+                {
+                    t.TestForward(Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.VOLATILITY, null);
                 }
             }
             finally
@@ -237,7 +380,7 @@ namespace MyCaffe.test
 
     interface IDataTemporalTest : ITest
     {
-        void TestForward(Phase phase, DataTemporalParameter.SOURCE_TYPE srcType, string srcPath, int nBatchSize, SOURCE src);
+        void TestForward(Phase phase, DataTemporalParameter.SOURCE_TYPE srcType, string strSrc, string srcPath, int nBatchSize, SOURCE src, IXDatabaseBase db);
         void TestBlobLoadNumpyPartial();
     }
 
@@ -501,7 +644,8 @@ namespace MyCaffe.test
 
                         for (int k = 0; k < nKnownNumFields; k++)
                         {
-                            rgHistNum[nIdxDst + nObsNumFieldsExplicit + k] = rgKnownNum[nIdxSrc * nKnownNumFields + k];
+                            rgHistNum[nIdxDst1] = rgKnownNum[nIdxSrc * nKnownNumFields + k];
+                            nIdxDst1++;
                         }
                     }
                     else
@@ -608,6 +752,37 @@ namespace MyCaffe.test
                 blobFutCat.mutable_cpu_data = convert(rgFutCat);
         }
 
+        private bool verify(int nIter, Blob<T> blob1, int[] rgExpectedShape, Blob<T> blobExpected, Blob<T> blobWork, string strName)
+        {
+            m_log.CHECK(blob1 != null, "Could not find the blob '" + strName + "'!");
+            m_log.CHECK(blob1.CompareShape(rgExpectedShape), "The blob '" + strName + "' has an incorrect shape!");
+
+            if (!blobExpected.Compare(blob1, blobWork, false, 5e-07))
+            {
+                float[] rgf = convertF(blob1.mutable_cpu_data);
+                float[] rgfE = convertF(blobExpected.mutable_cpu_data);
+
+                for (int i = 0; i < rgf.Length; i++)
+                {
+                    float f = rgf[i];
+                    float fE = rgfE[i];
+                    float fDiff = Math.Abs(f - fE);
+                    if (fDiff > 5e-07)
+                    {
+                        if (fE == 0)
+                        {
+                            m_log.WriteLine("WARNING: Skipping iter " + nIter.ToString() + " for ." + strName + "'.");
+                            return false;
+                        }
+                        else
+                            m_log.FAIL("The blob values at index " + i.ToString() + " are not the same!  val = " + f.ToString() + ", expected = " + fE.ToString() + ", diff = " + fDiff.ToString());
+                    }
+                }
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// Test the forward pass for self attention
         /// </summary>
@@ -627,7 +802,7 @@ namespace MyCaffe.test
         /// Fresh test\iter_0 data generated by running:
         /// training.py with TemporalFusionTransformer options: debug=True, tag='tft', use_mycaffe=True
         /// </remarks>
-        public void TestForward(Phase phase, DataTemporalParameter.SOURCE_TYPE srcType, string strSrcPath, int nBatchSize, SOURCE src)
+        public void TestForward(Phase phase, DataTemporalParameter.SOURCE_TYPE srcType, string strSrc, string strSrcPath, int nBatchSize, SOURCE src, IXDatabaseBase db)
         {
             CancelEvent evtCancel = new CancelEvent();
             string strPath = getTestDataPath();
@@ -653,7 +828,7 @@ namespace MyCaffe.test
             int nNumSamples = nBatchSize;
             int nNumHist = 90;
             int nNumFuture = 30;
-            int nMaxIter = 200;
+            int nMaxIter = 100;
             int nRowIdx = 0;
             int nColIdx = 0;
 
@@ -691,11 +866,13 @@ namespace MyCaffe.test
                 loadFloat(blobKnownNum, strSrcPath, strType, "known_num.npy");
                 loadLong(blobKnownCat, strSrcPath, strType, "known_cat.npy");
 
-                string strModel = buildModel(nNumSamples, nNumHist, nNumFuture, srcType, strSrcPath, phase);
+                string strModel = buildModel(nNumSamples, nNumHist, nNumFuture, srcType, strSrc, phase);
                 RawProto rp = RawProto.Parse(strModel);
                 NetParameter param = NetParameter.FromProto(rp);
 
-                net = new Net<T>(m_cuda, m_log, param, evtCancel, null, phase);
+                ((IXTemporalDatabaseBase)db).Reset();
+
+                net = new Net<T>(m_cuda, m_log, param, evtCancel, db, phase);
 
                 int[] rgNumStaticShape = new int[] { 0 };
                 int[] rgCatStaticShape = new int[] { 0 };
@@ -749,39 +926,25 @@ namespace MyCaffe.test
                     loadNum(ref nRowIdx, ref nColIdx, schema, blobObsNum, blobKnownNum, blobHistNum, blobFutNum, blobTarget, nNumHist, nNumFuture, nBatchSize);
 
                     blob1 = net.FindBlob("x_numeric_static");
-                    m_log.CHECK(blob1 != null, "Could not find the blob 'x_numeric_static'!");
-                    m_log.CHECK(blob1.CompareShape(rgNumStaticShape), "The blob shape is different than expected");
-                    m_log.CHECK(blobStatNum.Compare(blob1, blobWork, false, 0), "The blob is different than expected.");
+                    verify(i, blob1, rgNumStaticShape, blobStatNum, blobWork, "x_numeric_static");
 
                     blob1 = net.FindBlob("x_categorical_static");
-                    m_log.CHECK(blob1 != null, "Could not find the blob 'x_categorical_static'!");
-                    m_log.CHECK(blob1.CompareShape(rgCatStaticShape), "The blob shape is different than expected");
-                    m_log.CHECK(blobStatCat.Compare(blob1, blobWork, false, 0), "The blob is different than expected.");
+                    verify(i, blob1, rgCatStaticShape, blobStatCat, blobWork, "x_categorical_static");
 
                     blob1 = net.FindBlob("x_numeric_hist");
-                    m_log.CHECK(blob1 != null, "Could not find the blob 'x_numeric_hist'!");
-                    m_log.CHECK(blob1.CompareShape(rgNumHistShape), "The blob shape is different than expected");
-                    m_log.CHECK(blobHistNum.Compare(blob1, blobWork, false, 0), "The blob is different than expected.");
+                    verify(i, blob1, rgNumHistShape, blobHistNum, blobWork, "x_numeric_hist");
 
                     blob1 = net.FindBlob("x_categorical_hist");
-                    m_log.CHECK(blob1 != null, "Could not find the blob 'x_categorical_hist'!");
-                    m_log.CHECK(blob1.CompareShape(rgCatHistShape), "The blob shape is different than expected");
-                    m_log.CHECK(blobHistCat.Compare(blob1, blobWork, false, 0), "The blob is different than expected.");
+                    verify(i, blob1, rgCatHistShape, blobHistCat, blobWork, "x_categorical_hist");
 
                     blob1 = net.FindBlob("x_numeric_future");
-                    m_log.CHECK(blob1 != null, "Could not find the blob 'x_numeric_future'!");
-                    m_log.CHECK(blob1.CompareShape(rgNumFutShape), "The blob shape is different than expected");
-                    m_log.CHECK(blobFutNum.Compare(blob1, blobWork, false, 0), "The blob is different than expected.");
+                    verify(i, blob1, rgNumFutShape, blobFutNum, blobWork, "x_numeric_future");
 
                     blob1 = net.FindBlob("x_categorical_future");
-                    m_log.CHECK(blob1 != null, "Could not find the blob 'x_categorical_future'!");
-                    m_log.CHECK(blob1.CompareShape(rgCatFutShape), "The blob shape is different than expected");
-                    m_log.CHECK(blobFutCat.Compare(blob1, blobWork, false, 0), "The blob is different than expected.");
+                    verify(i, blob1, rgCatFutShape, blobFutCat, blobWork, "x_categorical_future");
 
                     blob1 = net.FindBlob("target");
-                    m_log.CHECK(blob1 != null, "Could not find the blob 'target'!");
-                    m_log.CHECK(blob1.CompareShape(rgTargetShape), "The blob shape is different than expected");
-                    m_log.CHECK(blobTarget.Compare(blob1, blobWork, false, 0), "The blob is different than expected.");
+                    verify(i, blob1, rgTargetShape, blobTarget, blobWork, "target");
 
                     double dfPct = (double)i / nMaxIter;
                     m_log.WriteLine("Testing batch " + i.ToString() + " (" + dfPct.ToString("P") + ")");
