@@ -53,7 +53,11 @@ namespace MyCaffe.param.tft
             /// data stream.  If one of the npy files above does not exist, not data for that class of data exists.
             /// NOTE: TIME and ID fields are only used for reference and debugging and are not used as input data.
             /// </summary>
-            PATH_NPY_FILE
+            PATH_NPY_FILE,
+            /// <summary>
+            /// Specifies the source path is the name of a data source within the SQL (or SQL Express) database.
+            /// </summary>
+            SQL_DB
         }
 
         /** @copydoc LayerParameterBase */
@@ -275,10 +279,12 @@ namespace MyCaffe.param.tft
             if ((strVal = rp.FindValue("source")) != null)
                 p.source = strVal;
 
-            if ((strVal = rp.FindValue("source_tyype")) != null)
+            if ((strVal = rp.FindValue("source_type")) != null)
             {
                 if (strVal == SOURCE_TYPE.PATH_NPY_FILE.ToString())
                     p.source_type = SOURCE_TYPE.PATH_NPY_FILE;
+                else if (strVal == SOURCE_TYPE.SQL_DB.ToString())
+                    p.source_type = SOURCE_TYPE.SQL_DB;
                 else
                     throw new Exception("Unknown source_type '" + strVal + "'!");
             }
