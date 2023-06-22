@@ -820,6 +820,40 @@ namespace MyCaffe.basecode
     [ServiceContract(CallbackContract = typeof(IXDatabaseEvent), SessionMode = SessionMode.Required)]
     public interface IXTemporalDatabaseBase : IXDatabaseBase
     {
+        /// <summary>
+        /// The SetInitializationProperties method is used to set the initialization properties of the database.
+        /// </summary>
+        /// <param name="prop">Specifies the initialization properties.</param>
+        /// <remarks>This method must be called before any other initialization methods.</remarks>
+        void SetInitializationProperties(PropertySet prop);
+
+        /// <summary>
+        /// Returns the total number of blocks in the database where one block is a set of (historical and future steps).
+        /// </summary>
+        /// <param name="nDsId">Specifies the dataset ID.</param>
+        /// <param name="phase">Specifies the phase who's data size is to be returned.</param>
+        /// <param name="nHistoricalSteps">Specifies the number of historical steps.</param>
+        /// <param name="nFutureSteps">Specifies the number of future steps.</param>
+        /// <returns>The total number of blocks is returned.</returns>
+        int GetTotalSize(int nDsId, Phase phase, int nHistoricalSteps, int nFutureSteps);
+
+        /// <summary>
+        /// Returns a block of static, observed and known data from the database where one block is a set of (historical and future steps).
+        /// </summary>
+        /// <param name="nSrcId">Specifies the source ID of the data source.</param>
+        /// <param name="itemSelectionOverride">Optionally, specifies the item selection method used to select the item (e.g., customer, station, stock symbol)</param>
+        /// <param name="valueSelectionOverride">Optionally, specifies the value selection method used to select the index within the temporal data of the selected item.</param>
+        /// <returns>An array containing the static num, statuc cat, historical num, historical cat, future num, future cat, target and target hist data is returned. 
+        /// If one of the value types are not produced, null is filled in the array slot.</returns>
+        SimpleDatum[] QueryTemporalItem(int nSrcId, DB_LABEL_SELECTION_METHOD? itemSelectionOverride = null, DB_ITEM_SELECTION_METHOD? valueSelectionOverride = null);
+
+        /// <summary>
+        /// Reset the database indexes.
+        /// </summary>
+        /// <remarks>
+        /// This method is only used when using sequential selection.
+        /// </remarks>
+        void Reset();
     }
 
     /// <summary>
