@@ -25,6 +25,7 @@ namespace MyCaffe.basecode.descriptors
         ParameterDescriptorCollection m_colParameters = new ParameterDescriptorCollection();
         string m_strLabelCounts;
         int m_nCopyOfSourceID;
+        TemporalDescriptor m_temporalDesc = null;
 
         /// <summary>
         /// The SourceDescriptor constructor.
@@ -74,10 +75,14 @@ namespace MyCaffe.basecode.descriptors
         {
             m_colParameters = new descriptors.ParameterDescriptorCollection();
             m_nInactiveCount = s.m_nInactiveCount;
+            
             foreach (ParameterDescriptor p in s.m_colParameters)
             {
                 m_colParameters.Add(new ParameterDescriptor(p));
             }
+
+            if (s.m_temporalDesc != null)
+                m_temporalDesc = new TemporalDescriptor(s.m_temporalDesc);
         }
 
         /// <summary>
@@ -110,6 +115,9 @@ namespace MyCaffe.basecode.descriptors
             }
 
             m_strLabelCounts = sd.m_strLabelCounts;
+
+            if (sd.m_temporalDesc != null)
+                m_temporalDesc = new TemporalDescriptor(sd.m_temporalDesc);
         }
 
         /// <summary>
@@ -246,6 +254,15 @@ namespace MyCaffe.basecode.descriptors
         {
             get { return m_colParameters; }
             set { m_colParameters = value; }
+        }
+
+        /// <summary>
+        /// Get/set the temporal descriptor (if any).
+        /// </summary>
+        public TemporalDescriptor TemporalDescriptor
+        {
+            get { return m_temporalDesc; }
+            set { m_temporalDesc = value; }
         }
     }
 }
