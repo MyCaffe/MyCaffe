@@ -32,7 +32,7 @@ namespace MyCaffe.layers.tft
             switch (p.type)
             {
                 case LayerParameter.LayerType.DATA_TEMPORAL:
-                    return new DataTemporalLayer<double>(cuda, log, p, evtCancel);
+                    return new DataTemporalLayer<double>(cuda, log, p, evtCancel, db);
 
                 case LayerParameter.LayerType.CATEGORICAL_TRANS:
                     return new CategoricalTransformationLayer<double>(cuda, log, p);
@@ -86,7 +86,7 @@ namespace MyCaffe.layers.tft
             switch (p.type)
             {
                 case LayerParameter.LayerType.DATA_TEMPORAL:
-                    return new DataTemporalLayer<float>(cuda, log, p, evtCancel);
+                    return new DataTemporalLayer<float>(cuda, log, p, evtCancel, db);
 
                 case LayerParameter.LayerType.CATEGORICAL_TRANS:
                     return new CategoricalTransformationLayer<float>(cuda, log, p);
