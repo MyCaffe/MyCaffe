@@ -1,4 +1,5 @@
 ﻿using MyCaffe.basecode;
+using MyCaffe.basecode.descriptors;
 using SimpleGraphing;
 using System;
 using System.Collections.Generic;
@@ -17,11 +18,18 @@ namespace MyCaffe.db.temporal
         int m_nValIdx = 0;
         DatabaseTemporal m_db;
         ValueItem m_item = null;
-        PlotCollection m_plotsHitorical = null;
-        PlotCollection m_plotsFuture = null;
-        List<RawValue> m_rgStatic = null;
+        PlotCollection m_plotsObservedNum = null;
+        PlotCollection m_plotsObservedCat = null;
+        PlotCollection m_plotsKnownNum = null;
+        PlotCollection m_plotsKnownCat = null;
+        List<RawValue> m_rgStaticNum = null;
+        List<RawValue> m_rgStaticCat = null;
         List<ValueStream> m_rgStreams = null;
-        SimpleDatum m_sdStatic = null;
+        SimpleDatum m_sdStaticNum = null;
+        SimpleDatum m_sdStaticCat = null;
+        int m_nRowCount = 0;
+        List<int> m_rgRowCount = new List<int>(8);
+        int m_nTargetStreamNumIdx = 0;
 
         /// <summary>
         /// The constructor.
@@ -43,10 +51,21 @@ namespace MyCaffe.db.temporal
         /// </summary>
         public void CleanUp()
         {
-            m_plotsHitorical = null;
-            m_plotsFuture = null;
-            m_rgStatic = null;
+            m_plotsObservedNum = null;
+            m_plotsObservedCat = null;
+            m_plotsKnownNum = null;
+            m_plotsKnownCat = null;
+            m_rgStaticNum = null;
             m_rgStreams = null;
+            m_nRowCount = 0;
+        }
+
+        /// <summary>
+        /// Reset the value index.
+        /// </summary>
+        public void Reset()
+        {
+            m_nValIdx = 0;
         }
 
         /// <summary>
@@ -68,50 +87,94 @@ namespace MyCaffe.db.temporal
         /// <exception cref="Exception">An exception is thrown on error.</exception>
         public DateTime Load(DateTime dt, int nStepsToLoad, bool bNormalizedValue, out bool bEOD)
         {
+            DateTime dtEnd = DateTime.MinValue;
             bEOD = false;
 
-            if (m_rgStatic == null)
-                m_rgStatic = m_db.GetStaticValues(m_item.SourceID.Value, m_item.ID);
+            if (m_rgStaticNum == null)
+                m_rgStaticNum = m_db.GetStaticValuesNum(m_item.SourceID.Value, m_item.ID);
 
-            bool bEOD1 = false;
-            DateTime dtEnd;
-            PlotCollection plotsObserved = m_db.GetRawValuesObserved(m_item.SourceID.Value, m_item.ID, dt, nStepsToLoad, bNormalizedValue, out dtEnd, out bEOD1);
-            if (bEOD1)
-                bEOD = true;
-            PlotCollection plotsKnown = m_db.GetRawValuesKnown(m_item.SourceID.Value, m_item.ID, dt, nStepsToLoad, bNormalizedValue, out dtEnd, out bEOD1);
-            if (bEOD1)
-                bEOD = true;
+            if (m_rgStaticCat == null)
+                m_rgStaticCat = m_db.GetStaticValuesCat(m_item.SourceID.Value, m_item.ID);
 
-            if (plotsObserved.Count != plotsKnown.Count)
-                throw new Exception("The number of observed and known values must be the same.");
+            bool? bEOD1;
+            DateTime? dtEnd1;
 
-            int nObservedCount = plotsObserved[0].Y_values.Length;
-            int nKnownCount = plotsKnown[0].Y_values.Length;
+            m_rgRowCount.Clear();
 
-            for (int i = 0; i < plotsObserved.Count; i++)
+            PlotCollection plotsObservedNum = m_db.GetRawValuesObservedNum(m_item.SourceID.Value, m_item.ID, dt, nStepsToLoad, bNormalizedValue, out dtEnd1, out bEOD1);
+            if (plotsObservedNum != null)
             {
-                float[] rgf = new float[nObservedCount + nKnownCount];
-                Array.Copy(plotsObserved[i].Y_values, rgf, nObservedCount);
-                Array.Copy(plotsKnown[i].Y_values, 0, rgf, nObservedCount, nKnownCount);
-                plotsObserved[i].SetYValues(rgf);
+                if (m_plotsObservedNum == null)
+                    m_plotsObservedNum = plotsObservedNum;
+                else
+                    m_plotsObservedNum.Add(plotsObservedNum);
+
+                m_rgRowCount.Add(m_plotsObservedNum.Count);
+
+                if (bEOD1.GetValueOrDefault(false))
+                    bEOD = true;
+                
+                if (dtEnd1.HasValue)
+                    dtEnd = dtEnd1.Value;
             }
 
-            for (int i=0; i<nKnownCount; i++)
+            PlotCollection plotsObservedCat = m_db.GetRawValuesObservedCat(m_item.SourceID.Value, m_item.ID, dt, nStepsToLoad, bNormalizedValue, out dtEnd1, out bEOD1);
+            if (plotsObservedCat != null)
             {
-                string strKey = plotsKnown.Parameters.Keys.ToList()[i];
-                plotsObserved.Parameters.Add(strKey, plotsKnown.Parameters[strKey]);
-                plotsObserved.ParametersEx.Add(strKey, plotsKnown.ParametersEx[strKey]);
+                if (m_plotsObservedCat == null)
+                    m_plotsObservedCat = plotsObservedCat;
+                else
+                    m_plotsObservedCat.Add(plotsObservedCat);
+
+                m_rgRowCount.Add(m_plotsObservedCat.Count);
+
+                if (bEOD1.GetValueOrDefault(false))
+                    bEOD = true;
+
+                if (dtEnd1.HasValue)
+                    dtEnd = dtEnd1.Value;
             }
 
-            if (m_plotsHitorical == null)
-                m_plotsHitorical = plotsObserved;
-            else
-                m_plotsHitorical.Add(plotsObserved);
+            PlotCollection plotsKnownNum = m_db.GetRawValuesKnownNum(m_item.SourceID.Value, m_item.ID, dt, nStepsToLoad, bNormalizedValue, out dtEnd1, out bEOD1);
+            if (plotsKnownNum != null)
+            {
+                if (m_plotsKnownNum == null)
+                    m_plotsKnownNum = plotsKnownNum;
+                else
+                    m_plotsKnownNum.Add(plotsKnownNum);
 
-            if (m_plotsFuture == null)
-                m_plotsFuture = plotsKnown;
-            else
-                m_plotsFuture.Add(plotsKnown);
+                m_rgRowCount.Add(m_plotsKnownNum.Count);
+
+                if (bEOD1.GetValueOrDefault(false))
+                    bEOD = true;
+
+                if (dtEnd1.HasValue)
+                    dtEnd = dtEnd1.Value;
+            }
+
+            PlotCollection plotsKnownCat = m_db.GetRawValuesKnownCat(m_item.SourceID.Value, m_item.ID, dt, nStepsToLoad, bNormalizedValue, out dtEnd1, out bEOD1);
+            if (plotsKnownCat != null)
+            {
+                if (m_plotsKnownCat == null)
+                    m_plotsKnownCat = plotsKnownCat;
+                else
+                    m_plotsKnownCat.Add(plotsKnownCat);
+
+                m_rgRowCount.Add(m_plotsKnownCat.Count);
+
+                if (bEOD1.GetValueOrDefault(false))
+                    bEOD = true;
+
+                if (dtEnd1.HasValue)
+                    dtEnd = dtEnd1.Value;
+            }
+
+            m_nRowCount = m_rgRowCount[0];
+            for (int i = 1; i < m_rgRowCount.Count; i++)
+            {
+                if (m_rgRowCount[i] != m_nRowCount)
+                    throw new Exception("The number of rows in each plot must be the same.");
+            }
 
             return dtEnd;
         }
@@ -122,14 +185,49 @@ namespace MyCaffe.db.temporal
         /// <param name="nMax">Specifies the maximum number of steps to hold in memory.</param>
         public void LoadLimit(int nMax)
         {
-            while (m_plotsHitorical.Count > nMax)
+            m_rgRowCount.Clear();
+
+            if (m_plotsObservedNum != null)
             {
-                m_plotsHitorical.RemoveAt(0);
+                while (m_plotsObservedNum.Count > nMax)
+                {
+                    m_plotsObservedNum.RemoveAt(0);
+                }
+                m_rgRowCount.Add(m_plotsObservedNum.Count);
             }
 
-            while (m_plotsFuture.Count > nMax)
+            if (m_plotsObservedCat != null)
             {
-                m_plotsFuture.RemoveAt(0);
+                while (m_plotsObservedCat.Count > nMax)
+                {
+                    m_plotsObservedCat.RemoveAt(0);
+                }
+                m_rgRowCount.Add(m_plotsObservedCat.Count);
+            }
+
+            if (m_plotsKnownNum != null)
+            {
+                while (m_plotsKnownNum.Count > nMax)
+                {
+                    m_plotsKnownNum.RemoveAt(0);
+                }
+                m_rgRowCount.Add(m_plotsKnownNum.Count);
+            }
+
+            if (m_plotsKnownCat != null)
+            {
+                while (m_plotsKnownCat.Count > nMax)
+                {
+                    m_plotsKnownCat.RemoveAt(0);
+                }
+                m_rgRowCount.Add(m_plotsKnownCat.Count);
+            }
+
+            m_nRowCount = m_rgRowCount[0];
+            for (int i = 1; i < m_rgRowCount.Count; i++)
+            {
+                if (m_rgRowCount[i] != m_nRowCount)
+                    throw new Exception("The number of rows in each plot must be the same.");
             }
         }
 
@@ -140,70 +238,171 @@ namespace MyCaffe.db.temporal
         /// <param name="nHistSteps">Specifies the number of historical steps.</param>
         /// <param name="nFutSteps">Specifies the number of future steps.</param>
         /// <param name="nValueStepOffset">Specifes the step offset to apply when advancing the step index.</param>
-        /// <returns>A tuple containing the Static, Historical and Future SimpleData is returned.</returns>
-        public Tuple<SimpleDatum, SimpleDatum, SimpleDatum> GetData(DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nHistSteps, int nFutSteps, int nValueStepOffset = 1)
+        /// <returns>An array of SimpleDatum is returned where: [0] = static num, [1] = static cat, [2] = historical num, [3] = historical cat, [4] = future num, [5] = future cat, [6] = target, and [7] = target history
+        /// for a given item at the temporal selection point.</returns>
+        /// <remarks>Note, the ordering for historical value streams is: observed, then known.  Future value streams only contiain known value streams.  If a dataset does not have one of the data types noted above, null
+        /// is returned in the array slot (for example, if the dataset does not produce static numeric values, the array slot is set to [0] = null.</remarks>
+        public SimpleDatum[] GetData(DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nHistSteps, int nFutSteps, int nValueStepOffset = 1)
         {
             int nTotalSteps = nHistSteps + nFutSteps;
 
+            if (m_nRowCount < nTotalSteps)
+                return null;
+
             if (valueSelectionMethod == DB_ITEM_SELECTION_METHOD.RANDOM)
             {
-                m_nValIdx = m_random.Next(m_plotsHitorical.Count - nTotalSteps);
+                m_nValIdx = m_random.Next(m_nRowCount - nTotalSteps);
             }
             else if (valueSelectionMethod == DB_ITEM_SELECTION_METHOD.NONE)
             {
-                if (m_nValIdx >= m_plotsHitorical.Count - nTotalSteps)
+                if (m_nValIdx >= m_nRowCount - nTotalSteps)
                 {
                     m_nValIdx = 0;
                     return null;
                 }
             }
 
-            if (m_sdStatic == null)
-                m_sdStatic = getStaticData();
+            if (m_sdStaticNum == null)
+                m_sdStaticNum = getStaticDataNum();
 
-            SimpleDatum sdHist = getHistoricalData(m_nValIdx, nHistSteps);
-            SimpleDatum sdFuture = getFutureData(m_nValIdx + nHistSteps, nFutSteps);
+            if (m_sdStaticCat == null)
+                m_sdStaticCat = getStaticDataCat();
 
-            Tuple<SimpleDatum, SimpleDatum, SimpleDatum> data = new Tuple<SimpleDatum, SimpleDatum, SimpleDatum>(m_sdStatic, sdHist, sdFuture);
+            SimpleDatum sdHistNum = getHistoricalDataNum(m_nValIdx, nHistSteps);
+            SimpleDatum sdHistCat = getHistoricalDataCat(m_nValIdx, nHistSteps);
+            SimpleDatum sdFutureNum = getFutureDataNum(m_nValIdx + nHistSteps, nFutSteps);
+            SimpleDatum sdFutureCat = getFutureDataCat(m_nValIdx + nHistSteps, nFutSteps);
+            SimpleDatum sdTarget = getTargetData(m_nValIdx + nHistSteps, nFutSteps);
+            SimpleDatum sdTargetHist = getTargetData(m_nValIdx, nHistSteps);
+
+            SimpleDatum[] rgData = new SimpleDatum[] { m_sdStaticNum, m_sdStaticCat, sdHistNum, sdHistCat, sdFutureNum, sdFutureCat, sdTarget, sdTargetHist };
             m_nValIdx++;
 
-            return data;
+            return rgData;
         }
 
-        private SimpleDatum getStaticData()
+        private SimpleDatum getStaticDataNum()
         {
+            if (m_rgStaticNum == null || m_rgStaticNum.Count == 0)
+                return null;
+
             List<float> rgf = new List<float>();
 
-            foreach (RawValue rv in m_rgStatic)
+            foreach (RawValue rv in m_rgStaticNum)
             {
                 rgf.Add((float)rv.RawData.Value);
             }
 
-            return new SimpleDatum(1, rgf.Count, 1, rgf.ToArray(), 0, rgf.Count);
+            return new SimpleDatum(1, 1, rgf.Count, rgf.ToArray(), 0, rgf.Count);
         }
 
-        private SimpleDatum getHistoricalData(int nIdx, int nCount)
+        private SimpleDatum getStaticDataCat()
+        {
+            if (m_rgStaticCat == null || m_rgStaticCat.Count == 0)
+                return null;
+
+            List<float> rgf = new List<float>();
+
+            foreach (RawValue rv in m_rgStaticCat)
+            {
+                rgf.Add((float)rv.RawData.Value);
+            }
+
+            return new SimpleDatum(1, 1, rgf.Count, rgf.ToArray(), 0, rgf.Count);
+        }
+
+        private SimpleDatum getHistoricalDataNum(int nIdx, int nCount)
+        {
+            if (m_plotsObservedNum == null && m_plotsKnownNum == null)
+                return null;
+
+            List<float> rgf = new List<float>();
+
+            for (int i = nIdx; i < nIdx + nCount; i++)
+            {
+                if (m_plotsObservedNum != null)
+                    rgf.AddRange(m_plotsObservedNum[i].Y_values);
+                if (m_plotsKnownNum != null)
+                    rgf.AddRange(m_plotsKnownNum[i].Y_values);
+            }
+
+            int nStreams = 0;
+            if (m_plotsObservedNum != null)
+                nStreams += m_plotsObservedNum[0].Y_values.Length;
+            if (m_plotsKnownNum != null)
+                nStreams += m_plotsKnownNum[0].Y_values.Length;
+
+            return new SimpleDatum(1, nStreams, nCount, rgf.ToArray(), 0, rgf.Count);
+        }
+
+        private SimpleDatum getHistoricalDataCat(int nIdx, int nCount)
+        {
+            if (m_plotsObservedCat == null && m_plotsKnownCat == null)
+                return null;
+
+            List<float> rgf = new List<float>();
+
+            for (int i = nIdx; i < nIdx + nCount; i++)
+            {
+                if (m_plotsObservedCat != null)
+                    rgf.AddRange(m_plotsObservedCat[i].Y_values);
+                if (m_plotsKnownCat != null)
+                    rgf.AddRange(m_plotsKnownCat[i].Y_values);
+            }
+
+            int nStreams = 0;
+            if (m_plotsObservedCat != null)
+                nStreams += m_plotsObservedCat[0].Y_values.Length;
+            if (m_plotsKnownCat != null)
+                nStreams += m_plotsKnownCat[0].Y_values.Length;
+
+            return new SimpleDatum(1, nStreams, nCount, rgf.ToArray(), 0, rgf.Count);
+        }
+
+        private SimpleDatum getFutureDataNum(int nIdx, int nCount)
+        {
+            if (m_plotsKnownNum == null)
+                return null;
+
+            List<float> rgf = new List<float>();
+
+            for (int i = nIdx; i < nIdx + nCount; i++)
+            {
+                rgf.AddRange(m_plotsKnownNum[i].Y_values);
+            }
+
+            int nStreams = m_plotsKnownNum[0].Y_values.Length;
+
+            return new SimpleDatum(1, nStreams, nCount, rgf.ToArray(), 0, rgf.Count);
+        }
+
+        private SimpleDatum getFutureDataCat(int nIdx, int nCount)
+        {
+            if (m_plotsKnownCat == null)
+                return null;
+
+            List<float> rgf = new List<float>();
+
+            for (int i = nIdx; i < nIdx + nCount; i++)
+            {
+                rgf.AddRange(m_plotsKnownCat[i].Y_values);
+            }
+
+            int nStreams = m_plotsKnownCat[0].Y_values.Length;
+
+            return new SimpleDatum(1, nStreams, nCount, rgf.ToArray(), 0, rgf.Count);
+        }
+
+        private SimpleDatum getTargetData(int nIdx, int nCount)
         {
             List<float> rgf = new List<float>();
 
             for (int i = nIdx; i < nIdx + nCount; i++)
             {
-                rgf.AddRange(m_plotsHitorical[i].Y_values);
+                rgf.Add(m_plotsObservedNum[i].Y_values[m_nTargetStreamNumIdx]);
             }
 
-            return new SimpleDatum(1, nCount, m_plotsHitorical[0].Y_values.Length, rgf.ToArray(), 0, rgf.Count);
-        }
-
-        private SimpleDatum getFutureData(int nIdx, int nCount)
-        {
-            List<float> rgf = new List<float>();
-
-            for (int i = nIdx; i < nIdx + nCount; i++)
-            {
-                rgf.AddRange(m_plotsFuture[i].Y_values);
-            }
-
-            return new SimpleDatum(1, nCount, m_plotsFuture[0].Y_values.Length, rgf.ToArray(), 0, rgf.Count);
+            return new SimpleDatum(1, 1, nCount, rgf.ToArray(), 0, rgf.Count);
         }
     }
 }

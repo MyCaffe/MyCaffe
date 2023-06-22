@@ -71,6 +71,7 @@
     <Compile Include="DatabaseTemporal.cs" />
     <Compile Include="DataSet.cs" />
     <Compile Include="DatasetCollection.cs" />
+    <Compile Include="DatabaseLoader.cs" />
     <Compile Include="DNNModelTemporal.Context.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

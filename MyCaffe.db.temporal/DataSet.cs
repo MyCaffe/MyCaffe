@@ -18,8 +18,8 @@ namespace MyCaffe.db.temporal
         CryptoRandom m_random = new CryptoRandom();
         DatabaseTemporal m_db = new DatabaseTemporal();
         DatasetDescriptor m_ds;
-        TemporalSet m_tsTrain;
-        TemporalSet m_tsTest;
+        Dictionary<int, TemporalSet> m_rgTemporalSets = new Dictionary<int, TemporalSet>();
+        Dictionary<Phase, TemporalSet> m_rgTemporalSetsEx = new Dictionary<Phase, TemporalSet>();
 
         /// <summary>
         /// The constructor.
@@ -37,17 +37,14 @@ namespace MyCaffe.db.temporal
         /// </summary>
         public void CleanUp()
         {
-            if (m_tsTrain != null)
+            foreach (KeyValuePair<int, TemporalSet> kv in m_rgTemporalSets)
             {
-                m_tsTrain.CleanUp();
-                m_tsTrain = null;
+                if (kv.Value != null)
+                    kv.Value.CleanUp();
             }
 
-            if (m_tsTest != null)
-            {
-                m_tsTest.CleanUp();
-                m_tsTest = null;
-            }
+            m_rgTemporalSets.Clear();
+            m_rgTemporalSetsEx.Clear();
         }
 
         /// <summary>
@@ -59,25 +56,70 @@ namespace MyCaffe.db.temporal
         }
 
         /// <summary>
+        /// Returns the temporal set for the specified phase.
+        /// </summary>
+        /// <param name="phase">Specifies the phase.</param>
+        /// <returns>The temporal set associated with the phase is returned.</returns>
+        public TemporalSet GetTemporalSetByPhase(Phase phase)
+        {
+            if (m_rgTemporalSetsEx.ContainsKey(phase))
+                return m_rgTemporalSetsEx[phase];
+
+            return null;
+        }
+
+        /// <summary>
+        /// Returns the temporal set for the specified source ID.
+        /// </summary>
+        /// <param name="nSourceID">Specifies the source ID associated with the temporal set.</param>
+        /// <returns>The temporal set associated with the source ID is returned.</returns>
+        public TemporalSet GetTemporalSetBySourceID(int nSourceID)
+        {
+            if (m_rgTemporalSets.ContainsKey(nSourceID))
+                return m_rgTemporalSets[nSourceID];
+
+            return null;
+        }
+
+        /// <summary>
+        /// Return the load percentage for the dataset.
+        /// </summary>
+        /// <param name="dfTraining">Specifies the training percent loaded.</param>
+        /// <param name="dfTesting">Specifies the testing percent loaded.</param>
+        /// <returns>Returns the total load percent.</returns>
+        public double GetLoadPercent(out double dfTraining, out double dfTesting)
+        {            
+            dfTraining = m_rgTemporalSetsEx[Phase.TRAIN].LoadPercent;
+            dfTesting = m_rgTemporalSetsEx[Phase.TEST].LoadPercent;
+
+            return (dfTraining + dfTesting) / 2.0;
+        }
+
+        /// <summary>
         /// Load the training and testing data.
         /// </summary>
         /// <param name="loadMethod">Specifies the loading method.</param>
         /// <param name="nLoadLimit">Specifies the load limit (or 0 to ignore)</param>
-        /// <param name="bNormalizeData">Specifies to load the normalized data.</param>
+        /// <param name="bNormalizedData">Specifies to load the normalized data.</param>
         /// <param name="nHistoricalSteps">Specifies the number of sequential historical steps in each block.</param>
         /// <param name="nFutureSteps">Specifies the number of sequential future steps in each block.</param>
         /// <param name="nChunks">Specifies the number of blocks to load at a time.</param>
         /// <param name="evtCancel">Specifies the event used to cancel the initialization process.</param>
-        public bool Load(DB_LOAD_METHOD loadMethod, int nLoadLimit, bool bNormalizeData, int nHistoricalSteps, int nFutureSteps, int nChunks, AutoResetEvent evtCancel)
+        public bool Load(DB_LOAD_METHOD loadMethod, int nLoadLimit, bool bNormalizedData, int nHistoricalSteps, int nFutureSteps, int nChunks, EventWaitHandle evtCancel)
         {
-            m_tsTrain = new TemporalSet(m_log, m_db, m_ds.TrainingSource, loadMethod, nLoadLimit, m_random, nHistoricalSteps, nFutureSteps, nChunks);
-            m_tsTest = new TemporalSet(m_log, m_db, m_ds.TestingSource, loadMethod, nLoadLimit, m_random, nHistoricalSteps, nFutureSteps, nChunks);
+            TemporalSet ts = new TemporalSet(m_log, m_db, m_ds.TrainingSource, loadMethod, nLoadLimit, m_random, nHistoricalSteps, nFutureSteps, nChunks);
+            m_rgTemporalSets.Add(m_ds.TrainingSource.ID, ts);
+            m_rgTemporalSetsEx.Add(Phase.TRAIN, ts);
 
-            if (!m_tsTrain.Initialize(bNormalizeData, evtCancel))
-                return false;
+            ts = new TemporalSet(m_log, m_db, m_ds.TestingSource, loadMethod, nLoadLimit, m_random, nHistoricalSteps, nFutureSteps, nChunks);
+            m_rgTemporalSets.Add(m_ds.TestingSource.ID, ts);
+            m_rgTemporalSetsEx.Add(Phase.TEST, ts);
 
-            if (!m_tsTest.Initialize(bNormalizeData, evtCancel))
-                return false;
+            foreach (KeyValuePair<int, TemporalSet> kv in m_rgTemporalSets)
+            {
+                if (!kv.Value.Initialize(bNormalizedData, evtCancel))
+                    return false;
+            }
 
             return true;
         }
@@ -89,11 +131,11 @@ namespace MyCaffe.db.temporal
         /// <returns>True is returned once loaded, otherwise false is returned when aborting.</returns>
         public bool WaitForLoadingToComplete(AutoResetEvent evtCancel)
         {
-            if (!m_tsTrain.WaitForLoadingToComplete(evtCancel))
-                return false;
-
-            if (!m_tsTest.WaitForLoadingToComplete(evtCancel))
-                return false;
+            foreach (KeyValuePair<int, TemporalSet> kv in m_rgTemporalSets)
+            {
+                if (!kv.Value.WaitForLoadingToComplete(evtCancel))
+                    return false;
+            }
 
             return true;
         }

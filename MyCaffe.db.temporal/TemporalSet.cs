@@ -35,8 +35,8 @@ namespace MyCaffe.db.temporal
         Thread m_loadThread = null;
         int m_nChunks = 1024;
         int m_nItemIdx = 0;
-        int m_nValueIdx = 0;
         bool m_bNormalizeData = false;
+        double m_dfLoadPct = 0;
 
         /// <summary>
         /// The constructor.
@@ -95,12 +95,25 @@ namespace MyCaffe.db.temporal
         }
 
         /// <summary>
+        /// Reset all indexes to their starting locations.
+        /// </summary>
+        public void Reset()
+        {
+            m_nItemIdx = 0;
+
+            foreach (ItemSet item in m_rgItems)
+            {
+                item.Reset();
+            }
+        }
+
+        /// <summary>
         /// Load the data based on the data load method.
         /// </summary>
         /// <param name="bNormalizedData">Specifies to load the normalized data.</param>
         /// <param name="evtCancel">Specifies the auto reset event used to cancel waiting for the data to load.</param>
         /// <returns>True is returned after starting the load thread, otherwise false is returned if it is already started.</returns>
-        public bool Initialize(bool bNormalizedData, AutoResetEvent evtCancel)
+        public bool Initialize(bool bNormalizedData, EventWaitHandle evtCancel)
         {
             m_bNormalizeData = bNormalizedData;
 
@@ -127,6 +140,8 @@ namespace MyCaffe.db.temporal
 
             try
             {
+                m_dfLoadPct = 0;
+
                 // Load the data schema.
                 // - load each value item (e.g., customer id, station id, etc.)
                 foreach (ValueItem item in rgItems)
@@ -144,7 +159,6 @@ namespace MyCaffe.db.temporal
 
                     int nMinSecPerStep = rgTemporalStreams.Min(p => p.SecondsPerStep.Value);
                     int nMaxSecPerStep = rgTemporalStreams.Max(p => p.SecondsPerStep.Value);
-                    int nMaxItems = rgTemporalStreams.Max(p => p.ItemCount.Value);
 
                     if (nMinSecPerStep != nMaxSecPerStep)
                         throw new Exception("All streams must have the same number of seconds per step.");
@@ -154,19 +168,11 @@ namespace MyCaffe.db.temporal
                     else if (nSecondsPerStep != nMinSecPerStep)
                         throw new Exception("All streams must have the same number of seconds per step.");
 
-                    if (nItemCount == 0)
-                        nItemCount = nMaxItems;
-                    else if (nItemCount != nMaxItems)
-                        throw new Exception("All streams must have the same number of items.");
-
                     m_rgItems.Add(new ItemSet(m_random, m_db, item, rgStreams));
                 }
 
                 m_dtStart = dtMinStart;
                 m_dtEnd = dtMaxEnd;
-
-                if (nItemCount < m_nTotalSteps)
-                    throw new Exception("The number of items in the data source is less than the number of steps requested.");
 
                 if (m_dtEnd <= m_dtStart)
                     throw new Exception("The end date must be greater than the start date.");
@@ -190,18 +196,31 @@ namespace MyCaffe.db.temporal
                 bool bEOD = false;
                 int nStepsToLoad = m_nTotalSteps * nChunks;
                 int nLoadedChunks = 0;
+                Stopwatch sw = new Stopwatch();
+
+                sw.Start();
+                m_dfLoadPct = 0;
 
                 while (!m_evtCancel.WaitOne(0))
                 {
                     bool bEOD1;
 
                     // Load one chunk for each item.
-                    foreach (ItemSet item in m_rgItems)
+                    for (int i=0; i<m_rgItems.Count; i++)
                     {
+                        ItemSet item = m_rgItems[i];
                         DateTime dtEnd = item.Load(dt, nStepsToLoad, m_bNormalizeData, out bEOD1);
 
+                        m_dfLoadPct = (double)i / m_rgItems.Count;                       
                         if (bEOD1)
                             bEOD = true;
+
+                        if (sw.Elapsed.TotalMilliseconds > 1000)
+                        {
+                            sw.Restart();
+                            m_log.Progress = m_dfLoadPct;
+                            m_log.WriteLine("Loading '" + m_src.Name + "' data for item " + item.Item.Name + " (" + m_dfLoadPct.ToString("P") + ")...", true);
+                        }
                     }
 
                     if (bEOD)
@@ -242,7 +261,7 @@ namespace MyCaffe.db.temporal
         /// <param name="evtCancel">Specifies the cancel event to abort waiting.</param>
         /// <param name="nWaitMs">Specifies the maximum number of ms to wait (default = int.MaxValue).</param>
         /// <returns>If the load has completed <i>true</i> is returned, otherwise <i>false</i>.</returns>
-        public bool WaitForLoadingToComplete(AutoResetEvent evtCancel, int nWaitMs = int.MaxValue)
+        public bool WaitForLoadingToComplete(EventWaitHandle evtCancel, int nWaitMs = int.MaxValue)
         {
             WaitHandle[] rgWait = new WaitHandle[] { m_evtCancel, evtCancel, m_evtDone };
             int nWait = WaitHandle.WaitAny(rgWait, nWaitMs);
@@ -251,6 +270,14 @@ namespace MyCaffe.db.temporal
                 return false;
 
             return true;
+        }
+
+        /// <summary>
+        /// Returns the percentage of the load completed.
+        /// </summary>
+        public double LoadPercent
+        {
+            get { return m_dfLoadPct; }
         }
 
         /// <summary>
@@ -268,9 +295,11 @@ namespace MyCaffe.db.temporal
         /// <param name="itemSelectionMethod">Specifies the item index selection method.</param>
         /// <param name="valueSelectionMethod">Specifies the value starting point selection method.</param>
         /// <param name="nValueStepOffset">Optionally, specifies the value step offset from the previous query (default = 1, this parameter only applies when using non random selection).</param>
-        /// <returns>A Tuple of three SimpleDatum is returned containing for the static, observed and known data for a given item at the temporal selection point.</returns>
-        /// <remarks>Note, the ordering for historical value streams is: observed, then known.  Future value streams only contiain known value streams.</remarks>
-        public Tuple<SimpleDatum, SimpleDatum, SimpleDatum> GetData(DB_LABEL_SELECTION_METHOD itemSelectionMethod, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nValueStepOffset = 1)
+        /// <returns>An array of SimpleDatum is returned where: [0] = static num, [1] = static cat, [2] = historical num, [3] = historical cat, [4] = future num, [5] = future cat, [6] = target, and [7] = target history
+        /// for a given item at the temporal selection point.</returns>
+        /// <remarks>Note, the ordering for historical value streams is: observed, then known.  Future value streams only contiain known value streams.  If a dataset does not have one of the data types noted above, null
+        /// is returned in the array slot (for example, if the dataset does not produce static numeric values, the array slot is set to [0] = null.</remarks>
+        public SimpleDatum[] GetData(DB_LABEL_SELECTION_METHOD itemSelectionMethod, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nValueStepOffset = 1)
         {
             if (itemSelectionMethod == DB_LABEL_SELECTION_METHOD.RANDOM)
             {
@@ -282,12 +311,25 @@ namespace MyCaffe.db.temporal
                     m_nItemIdx = 0;
             }
 
-            Tuple<SimpleDatum, SimpleDatum, SimpleDatum> data = m_rgItems[m_nItemIdx].GetData(valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset);
+            SimpleDatum[] data = m_rgItems[m_nItemIdx].GetData(valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset);
 
-            if (data == null)
+            int nRetryCount = 0;
+            while (data == null && nRetryCount < 5)
             {
-                m_nItemIdx++;
+                if (itemSelectionMethod == DB_LABEL_SELECTION_METHOD.RANDOM)
+                {
+                    m_nItemIdx = m_random.Next(m_rgItems.Count);
+                }
+                else
+                {
+                    m_nItemIdx++;
+
+                    if (m_nItemIdx >= m_rgItems.Count)
+                        m_nItemIdx = 0;
+                }
+
                 data = m_rgItems[m_nItemIdx].GetData(valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset);
+                nRetryCount++;
             }
 
             return data;
