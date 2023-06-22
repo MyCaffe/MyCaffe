@@ -1221,7 +1221,7 @@ namespace MyCaffe
 
                 m_dataTransformer = null;
 
-                if (tp != null && !p.Dataset.IsModelData && !p.Dataset.IsGym)
+                if (tp != null && !p.Dataset.IsModelData && !p.Dataset.IsGym && m_settings.DbVersion != DB_VERSION.TEMPORAL)
                 {
                     SimpleDatum sdMean = (m_db == null) ? null : m_db.QueryItemMean(m_dataSet.TrainingSource.ID);
                     int nC = m_project.Dataset.TrainingSource.Channels;
@@ -1994,9 +1994,6 @@ namespace MyCaffe
         /// </remarks>
         public BlobCollection<T> TestManyEx(PropertySet customInput)
         {
-            if (!m_project.Dataset.IsModelData)
-                throw new Exception("Custom input is only supported by MODEL based datasets!");
-
             m_lastPhaseRun = Phase.RUN;
 
             UpdateRunWeights(false, false);
