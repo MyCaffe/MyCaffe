@@ -396,10 +396,26 @@ namespace MyCaffe.basecode
         /// Returns the setting of a Layer (if found).
         /// </summary>
         /// <param name="phase">Specifies the Phase to use.</param>
-        /// <param name="strLayer">Specifies the Layer name.</param>
+        /// <param name="strLayer">Specifies the Layer parameter name.</param>
         /// <param name="strParam">Specifies the Layer setting name to look for.</param>
         /// <returns>If found the setting value is returned, otherwise <i>null</i> is returned.</returns>
         public double? GetLayerSetting(Phase phase, string strLayer, string strParam)
+        {
+            string strVal = GetLayerSettingEx(phase, strLayer, strParam);
+            if (string.IsNullOrEmpty(strVal))
+                return null;
+
+            return BaseParameter.ParseDouble(strVal);
+        }
+
+        /// <summary>
+        /// Returns the setting of a Layer (if found).
+        /// </summary>
+        /// <param name="phase">Specifies the Phase to use.</param>
+        /// <param name="strLayer">Specifies the Layer parameter name.</param>
+        /// <param name="strParam">Specifies the Layer setting name to look for.</param>
+        /// <returns>If found the setting value is returned, otherwise <i>null</i> is returned.</returns>
+        public string GetLayerSettingEx(Phase phase, string strLayer, string strParam)
         {
             if (m_protoModel == null)
                 ModelDescription = m_project.ModelDescription;
@@ -421,7 +437,7 @@ namespace MyCaffe.basecode
                         if (rp == null)
                             return null;
 
-                        return BaseParameter.ParseDouble(rp.Value);
+                        return rp.Value;
                     }
                 }
             }
