@@ -47,8 +47,6 @@ namespace MyCaffe.db.temporal
         /// <param name="loadMethod">Specifies the data load method.</param>
         /// <param name="nLoadLimit">Specifies the data load limit.</param>
         /// <param name="random">Specifies the random number object.</param>
-        /// <param name="dtStart">Specifies the start date.</param>
-        /// <param name="dtEnd">Specifies the end date.</param>
         /// <param name="nHistoricSteps">Specifies the historical steps in a step block.</param>
         /// <param name="nFutureSteps">Specifies the future steps in a step block.</param>
         /// <param name="nChunks">Specifies the number of step items to load on each cycle.</param>
