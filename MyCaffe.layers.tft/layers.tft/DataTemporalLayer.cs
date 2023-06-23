@@ -197,9 +197,21 @@ namespace MyCaffe.layers.tft
     /// <typeparam name="T"></typeparam>
     abstract class RawData<T>
     {
+        /// <summary>
+        /// Specifies the base data object used to store data blocks loaded from disk or database.
+        /// </summary>
         protected Data<T> m_data;
+        /// <summary>
+        /// Specifies the random number generator used to shuffle the data.
+        /// </summary>
         protected Random m_random;
+        /// <summary>
+        /// Specifies the batch size.
+        /// </summary>
         protected int m_nBatchSize;
+        /// <summary>
+        /// Specifies to output the target historical data.
+        /// </summary>
         protected bool m_bOutputTargetHistorical;
 
         /// <summary>
@@ -251,6 +263,10 @@ namespace MyCaffe.layers.tft
             return true;
         }
 
+        /// <summary>
+        /// The virtual load data function override by the derived class to load the data in the background.
+        /// </summary>
+        /// <param name="obj">Specifies the user state.</param>
         protected virtual void loadDataFunction(object obj)
         {
         }
@@ -286,6 +302,10 @@ namespace MyCaffe.layers.tft
         }
     }
 
+    /// <summary>
+    /// The RawSqlData class loads data from a database.
+    /// </summary>
+    /// <typeparam name="T">Specifies the base type.</typeparam>
     class RawSqlData<T> : RawData<T>
     {
         IXTemporalDatabaseBase m_db;
