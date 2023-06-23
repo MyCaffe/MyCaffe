@@ -123,6 +123,48 @@ namespace MyCaffe.db.temporal
         }
 
         /// <summary>
+        /// Find the source descriptor associated with the source ID.
+        /// </summary>
+        /// <param name="nSrcID">Specifies the source ID.</param>
+        /// <returns>The source descriptor is returned or null if not found.</returns>
+        public SourceDescriptor FindSourceByID(int nSrcID)
+        {
+            foreach (KeyValuePair<int, DataSet> kvp in m_rgDatasets)
+            {
+                SourceDescriptor src = kvp.Value.Dataset.TrainingSource;
+                if (src.ID == nSrcID)
+                    return src;
+
+                src = kvp.Value.Dataset.TestingSource;
+                if (src.ID == nSrcID)
+                    return src;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Find the source descriptor associated with the source Name.
+        /// </summary>
+        /// <param name="strSrc">Specifies the source name.</param>
+        /// <returns>The source descriptor is returned or null if not found.</returns>
+        public SourceDescriptor FindSourceByName(string strSrc)
+        {
+            foreach (KeyValuePair<int, DataSet> kvp in m_rgDatasets)
+            {
+                SourceDescriptor src = kvp.Value.Dataset.TrainingSource;
+                if (src.Name == strSrc)
+                    return src;
+
+                src = kvp.Value.Dataset.TestingSource;
+                if (src.Name == strSrc)
+                    return src;
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Find the temporal set associated with the source ID.
         /// </summary>
         /// <param name="nSrcID">Specifies the source ID associated with the temporal set.</param>
