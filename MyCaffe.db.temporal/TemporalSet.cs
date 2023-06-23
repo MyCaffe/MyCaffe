@@ -15,6 +15,7 @@ namespace MyCaffe.db.temporal
     /// <summary>
     /// The TemporalSet manages a set of temporal data for a given data source.
     /// </summary>
+    [Serializable]
     public class TemporalSet : IDisposable
     {
         Exception m_loadException = null;

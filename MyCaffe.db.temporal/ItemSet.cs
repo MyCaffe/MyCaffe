@@ -12,6 +12,7 @@ namespace MyCaffe.db.temporal
     /// <summary>
     /// The ItemSet manages the data for a single item (e.g., customer, station, stock symbol, etc.) and its associated streams.
     /// </summary>
+    [Serializable]
     public class ItemSet
     {
         CryptoRandom m_random;
@@ -113,7 +114,7 @@ namespace MyCaffe.db.temporal
 
                 if (bEOD1.GetValueOrDefault(false))
                     bEOD = true;
-                
+
                 if (dtEnd1.HasValue)
                     dtEnd = dtEnd1.Value;
             }
@@ -404,5 +405,20 @@ namespace MyCaffe.db.temporal
 
             return new SimpleDatum(1, 1, nCount, rgf.ToArray(), 0, rgf.Count);
         }
+    }
+
+    [Serializable]
+    public partial class RawValue /**@private */
+    {
+    }
+
+    [Serializable]
+    public partial class ValueItem /**@private */
+    {
+    }
+
+    [Serializable]
+    public partial class ValueStream /**@private */
+    {
     }
 }

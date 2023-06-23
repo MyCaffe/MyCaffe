@@ -12,6 +12,7 @@ namespace MyCaffe.db.temporal
     /// <summary>
     /// The DataSet class loads the training and testing data.
     /// </summary>
+    [Serializable]
     public class DataSet
     {
         Log m_log;
