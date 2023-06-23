@@ -4703,6 +4703,7 @@ namespace MyCaffe.db.image
         /// <param name="nDsGroupID">Optionally, specifies the ID of the dataset group (default = 0).</param>
         /// <param name="nModelGroupID">Optionally, specifies the ID of the model group (default = 0).</param>
         /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
+        /// <param name="bVerify">Optionally, specifies to verify the image sizings CxHxW (default = true).</param>
         /// <returns></returns>
         public int AddDataset(int nDsCreatorID, string strName, int nTestSrcId, int nTrainSrcId, int nDsGroupID = 0, int nModelGroupID = 0, ConnectInfo ci = null, bool bVerify = true)
         {
