@@ -28,6 +28,7 @@ namespace MyCaffe.db.temporal
     /// </remarks>
     public partial class MyCaffeTemporalDatabase : Component, IXTemporalDatabaseBase
     {
+        SettingsCaffe m_settings;
         PropertySet m_prop;
         CryptoRandom m_random = null;
         EventWaitHandle m_evtInitializing = null;
@@ -43,7 +44,7 @@ namespace MyCaffe.db.temporal
         Guid m_userGuid;
         DatasetCollection m_rgDataSets = new DatasetCollection();
         Dictionary<int, TemporalSet> m_rgTemporalSets = new Dictionary<int, TemporalSet>();
-
+        
         /// <summary>
         /// The constructor.
         /// </summary>
@@ -208,55 +209,6 @@ namespace MyCaffe.db.temporal
             return ds.Dataset.Name;
         }
 
-        //---------------------------------------------------------------------
-        //  Not Implemented
-        //---------------------------------------------------------------------
-
-        public int FindItemIndex(int nSrcId, DateTime dt, string strDescription)
-        {
-            throw new NotImplementedException();
-        }
-
-        public SimpleDatum GetItem(int nItemID, params int[] rgSrcId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public int GetItemCount(int nSrcId, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
-        {
-            throw new NotImplementedException();
-        }
-
-        public SimpleDatum GetItemMean(int nSrcId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public List<SimpleDatum> GetItems(int nSrcId, int[] rgIdx, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
-        {
-            throw new NotImplementedException();
-        }
-
-        public List<SimpleDatum> GetItemsFromIndex(int nSrcId, int nStartIdx, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false, bool bAttemptDirectLoad = false)
-        {
-            throw new NotImplementedException();
-        }
-
-        public List<SimpleDatum> GetItemsFromTime(int nSrcId, DateTime dtStart, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool GetLoadItemDataCriteria()
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool GetLoadItemDebugData()
-        {
-            throw new NotImplementedException();
-        }
-
         /// <summary>
         /// Returns the item/value selection methods based on the SettingsCaffe settings.
         /// </summary>
@@ -304,24 +256,90 @@ namespace MyCaffe.db.temporal
             return new Tuple<DB_LABEL_SELECTION_METHOD, DB_ITEM_SELECTION_METHOD>(m_itemSelectionMethod, m_valueSelectionMethod);
         }
 
+        /// <summary>
+        /// Get the source given its ID.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the Source ID.</param>
+        /// <returns>Returns the source descriptor or null if not loaded.</returns>
         public SourceDescriptor GetSourceById(int nSrcId)
-        {            
-            throw new NotImplementedException();
+        {
+            return m_rgDataSets.FindSourceByID(nSrcId);
         }
 
+        /// <summary>
+        /// Get the source given its name.
+        /// </summary>
+        /// <param name="strSrc">Specifies the Source Name.</param>
+        /// <returns>Returns the source descriptor or null if not loaded.</returns>
         public SourceDescriptor GetSourceByName(string strSrc)
         {
-            throw new NotImplementedException();
+            return m_rgDataSets.FindSourceByName(strSrc);
         }
 
+        /// <summary>
+        /// Get the source ID given its name.
+        /// </summary>
+        /// <param name="strSrc">Specifies the Source Name.</param>
+        /// <returns>Returns the source ID or 0 if not loaded.</returns>
         public int GetSourceID(string strSrc)
         {
-            throw new NotImplementedException();
+            SourceDescriptor sd = GetSourceByName(strSrc);
+            if (sd == null)
+                return 0;
+
+            return sd.ID;
         }
 
+        /// <summary>
+        /// Get the source name given its ID.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the Source Id.</param>
+        /// <returns>Returns the source name or null if not loaded.</returns>
         public string GetSourceName(int nSrcId)
         {
-            throw new NotImplementedException();
+            SourceDescriptor sd = GetSourceById(nSrcId);
+            if (sd == null)
+                return null;
+
+            return sd.Name;
+        }
+
+        /// <summary>
+        /// Reload the dataset with the specified dataset ID.
+        /// </summary>
+        /// <param name="nDsId">Specifies the dataset ID.</param>
+        /// <returns>If reloaded successfully, returns true.</returns>
+        public bool ReloadDataset(int nDsId) 
+        {
+            UnloadDatasetById(nDsId);
+            return InitializeWithDsId1(m_settings, nDsId);
+        }
+
+        /// <summary>
+        /// Unload the dataset specified by the dataset ID.
+        /// </summary>
+        /// <param name="nDsId">Specifies the dataset ID.</param>
+        /// <returns>Returns true if unloaded successfully.</returns>
+        public bool UnloadDatasetById(int nDsId)
+        {
+            DataSet ds = m_rgDataSets.Find(nDsId);
+            if (ds != null)
+            {
+                m_rgDataSets.CleanUp(nDsId);
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Unload the dataset specified by the dataset name.
+        /// </summary>
+        /// <param name="strDataset">Specifies the dataset name.</param>
+        /// <returns>Returns true if unloaded successfully.</returns>
+        public bool UnloadDatasetByName(string strDataset) 
+        {
+            return UnloadDatasetById(GetDatasetID(strDataset));
         }
 
         /// <summary>
@@ -364,6 +382,7 @@ namespace MyCaffe.db.temporal
         /// <exception cref="Exception">An exception is thrown on error, e.g, when missing initialization properties.</exception>
         public bool InitializeWithDsId1(SettingsCaffe s, int nDataSetID, string strEvtCancel = null, int nPadW = 0, int nPadH = 0)
         {
+            m_settings = s;
             m_evtAbortInitialization = new AutoResetEvent(false);
 
             DataSet ds = m_rgDataSets.Find(nDataSetID);
@@ -495,30 +514,6 @@ namespace MyCaffe.db.temporal
             return ts.GetData(itemSelection, valueSelection);
         }
 
-        public SimpleDatum QueryItem(int nSrcId, int nIdx, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false)
-        {
-            throw new NotImplementedException();
-        }
-
-        public SimpleDatum QueryItemMean(int nSrcId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public SimpleDatum QueryItemMeanFromDataset(int nDatasetId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public SimpleDatum QueryItemMeanFromDb(int nSrcId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool ReloadDataset(int nDsId)
-        {
-            throw new NotImplementedException();
-        }
 
         /// <summary>
         /// Set the database connection to use.
@@ -542,14 +537,75 @@ namespace MyCaffe.db.temporal
                 m_valueSelectionMethod = value.Value;
         }
 
-        public bool UnloadDatasetById(int nDatasetID)
+        //---------------------------------------------------------------------
+        //  Not Implemented
+        //---------------------------------------------------------------------
+        #region Not Implemented
+        public int FindItemIndex(int nSrcId, DateTime dt, string strDescription) /**@private */
         {
             throw new NotImplementedException();
         }
 
-        public bool UnloadDatasetByName(string strDataset)
+        public SimpleDatum GetItem(int nItemID, params int[] rgSrcId) /**@private */
         {
             throw new NotImplementedException();
         }
+
+        public int GetItemCount(int nSrcId, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false) /**@private */
+        {
+            throw new NotImplementedException();
+        }
+
+        public SimpleDatum GetItemMean(int nSrcId) /**@private */
+        {
+            throw new NotImplementedException();
+        }
+
+        public List<SimpleDatum> GetItems(int nSrcId, int[] rgIdx, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false) /**@private */
+        {
+            throw new NotImplementedException();
+        }
+
+        public List<SimpleDatum> GetItemsFromIndex(int nSrcId, int nStartIdx, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false, bool bAttemptDirectLoad = false) /**@private */
+        {
+            throw new NotImplementedException();
+        }
+
+        public List<SimpleDatum> GetItemsFromTime(int nSrcId, DateTime dtStart, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false) /**@private */
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool GetLoadItemDataCriteria() /**@private */
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool GetLoadItemDebugData() /**@private */
+        {
+            throw new NotImplementedException();
+        }
+
+        public SimpleDatum QueryItem(int nSrcId, int nIdx, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false) /**@private */
+        {
+            throw new NotImplementedException();
+        }
+
+        public SimpleDatum QueryItemMean(int nSrcId) /**@private */
+        {
+            throw new NotImplementedException();
+        }
+
+        public SimpleDatum QueryItemMeanFromDataset(int nDatasetId) /**@private */
+        {
+            throw new NotImplementedException();
+        }
+
+        public SimpleDatum QueryItemMeanFromDb(int nSrcId) /**@private */
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
     }
 }
