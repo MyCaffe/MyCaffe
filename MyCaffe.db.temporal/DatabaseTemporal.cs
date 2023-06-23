@@ -309,6 +309,7 @@ namespace MyCaffe.db.temporal
         /// <param name="dt">Specifies the date/time associated with the value.</param>
         /// <param name="fVal">Specifies the value.</param>
         /// <param name="fValNormalized">Specifies the normalized value.</param>
+        /// <param name="bActive">Specifies the active state of the record.</param>
         /// <param name="log">Specifies the output log.</param>
         /// <exception cref="Exception">An exception is thrown on error.</exception>
         public void PutRawValue(int nSrcID, int nItemID, int nStreamID, DateTime dt, float fVal, float fValNormalized, bool bActive, Log log)
