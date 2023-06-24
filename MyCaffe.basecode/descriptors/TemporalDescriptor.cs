@@ -1,6 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,6 +14,8 @@ namespace MyCaffe.basecode.descriptors
     /// <summary>
     /// The TemporalDescriptor is used to describe a temporal aspects of the data source.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class TemporalDescriptor
     {
         List<ValueItemDescriptor> m_rgValItemDesc = new List<ValueItemDescriptor>();
@@ -36,16 +42,71 @@ namespace MyCaffe.basecode.descriptors
         /// <summary>
         /// Returns the value item descriptor.
         /// </summary>
+        [Browsable(false)]
         public List<ValueItemDescriptor> ValueItemDescriptors
         {
             get { return m_rgValItemDesc; }
             set { m_rgValItemDesc = value; }
+        }
+
+        /// <summary>
+        /// Returns the value item descriptors as a read-only array.
+        /// </summary>
+        public ReadOnlyCollection<ValueItemDescriptor> ValueItemDescriptorItems
+        {
+            get { return m_rgValItemDesc.AsReadOnly(); }
+        }
+
+        /// <summary>
+        /// Returns a new TemporalDescriptor from a byte array. 
+        /// </summary>
+        /// <param name="rgb">Specifies the byte array.</param>
+        /// <returns>The temporal descriptor is returned, or null.</returns>
+        public static TemporalDescriptor FromBytes(byte[] rgb)
+        {
+            if (rgb == null)
+                return null;
+
+            TemporalDescriptor desc = new TemporalDescriptor();
+
+            using (MemoryStream ms = new MemoryStream(rgb))
+            using (BinaryReader br = new BinaryReader(ms))
+            {
+                int nCount = br.ReadInt32();
+                for (int i = 0; i < nCount; i++)
+                {
+                    desc.m_rgValItemDesc.Add(ValueItemDescriptor.FromBytes(br));
+                }
+            }
+
+            return desc;
+        }
+
+        /// <summary>
+        /// Returns the temporal descriptor as a byte array.
+        /// </summary>
+        /// <returns>The byte array is returned.</returns>
+        public byte[] ToBytes()
+        {
+            using (MemoryStream ms = new MemoryStream())
+            using (BinaryWriter bw = new BinaryWriter(ms))
+            {
+                bw.Write(m_rgValItemDesc.Count);
+                foreach (ValueItemDescriptor vid in m_rgValItemDesc)
+                {
+                    vid.ToBytes(bw);
+                }
+
+                return ms.ToArray();
+            }
         }
     }
 
     /// <summary>
     /// The ValueItemDescriptor describes each value item (e.g., customer, station or stock)
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ValueItemDescriptor
     {
         int m_nID;
@@ -79,8 +140,45 @@ namespace MyCaffe.basecode.descriptors
         }
 
         /// <summary>
+        /// Returns a new ValueItemDescriptor from a binary reader. 
+        /// </summary>
+        /// <param name="br">Specifies the binary reader.</param>
+        /// <returns>The value item descriptor is returned, or null.</returns>
+        public static ValueItemDescriptor FromBytes(BinaryReader br)
+        {
+            int nID = br.ReadInt32();
+            string strName = br.ReadString();
+            ValueItemDescriptor desc = new ValueItemDescriptor(nID, strName);
+
+            int nCount = br.ReadInt32();
+            for (int i = 0; i < nCount; i++)
+            {
+                desc.m_rgValStreamDesc.Add(ValueStreamDescriptor.FromBytes(br));
+            }
+
+            return desc;
+        }
+
+        /// <summary>
+        /// Returns the value item descriptor as a byte array.
+        /// </summary>
+        /// <param name="bw">Specifies the binary writer.</param>
+        /// <returns>The byte array is returned.</returns>
+        public void ToBytes(BinaryWriter bw)
+        {
+            bw.Write(m_nID);
+            bw.Write(m_strName);
+            bw.Write(m_rgValStreamDesc.Count);
+            foreach (ValueStreamDescriptor vsd in m_rgValStreamDesc)
+            {
+                vsd.ToBytes(bw);
+            }
+        }
+
+        /// <summary>
         /// Returns the value item ID.
         /// </summary>
+        [ReadOnly(true)]
         public int ID
         {
             get { return m_nID; }
@@ -89,6 +187,7 @@ namespace MyCaffe.basecode.descriptors
         /// <summary>
         /// Returns the value item name.
         /// </summary>
+        [ReadOnly(true)]
         public string Name
         {
             get { return m_strName; }
@@ -97,10 +196,19 @@ namespace MyCaffe.basecode.descriptors
         /// <summary>
         /// Get/set the value stream descriptors.
         /// </summary>
+        [Browsable(false)]
         public List<ValueStreamDescriptor> ValueStreamDescriptors
         {
             get { return m_rgValStreamDesc; }
             set { m_rgValStreamDesc = value; }
+        }
+
+        /// <summary>
+        /// Returns the value stream descriptors as a read-only array.
+        /// </summary>
+        public ReadOnlyCollection<ValueStreamDescriptor> ValueStreamDescriptorItems
+        {
+            get { return m_rgValStreamDesc.AsReadOnly(); }
         }
 
         /// <summary>
@@ -116,6 +224,8 @@ namespace MyCaffe.basecode.descriptors
     /// <summary>
     /// The value stream descriptor describes a single value stream within a value item.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ValueStreamDescriptor
     {
         STREAM_CLASS_TYPE m_classType = STREAM_CLASS_TYPE.STATIC;
@@ -205,8 +315,69 @@ namespace MyCaffe.basecode.descriptors
         }
 
         /// <summary>
+        /// Returns a new ValueStreamDescriptor from a byte array. 
+        /// </summary>
+        /// <param name="br">Specifies the binary reader.</param>
+        /// <returns>The value stream descriptor is returned.</returns>
+        public static ValueStreamDescriptor FromBytes(BinaryReader br)
+        {
+            int nID = br.ReadInt32();
+            string strName = br.ReadString();
+            int nOrdering = br.ReadInt32();
+            STREAM_CLASS_TYPE classType = (STREAM_CLASS_TYPE)br.ReadInt32();
+            STREAM_VALUE_TYPE valueType = (STREAM_VALUE_TYPE)br.ReadInt32();
+            DateTime? dtStart = null;
+            DateTime? dtEnd = null;
+            int? nSecondsPerStep = null;
+
+            bool bHasStart = br.ReadBoolean();
+            if (bHasStart)
+                dtStart = new DateTime(br.ReadInt64());
+
+            bool bHasEnd = br.ReadBoolean();
+            if (bHasEnd)
+                dtEnd = new DateTime(br.ReadInt64());
+
+            bool bHasSecondsPerStep = br.ReadBoolean();
+            if (bHasSecondsPerStep)
+                nSecondsPerStep = br.ReadInt32();
+
+            int nItemCount = br.ReadInt32();
+
+            return new ValueStreamDescriptor(nID, strName, nOrdering, classType, valueType, dtStart, dtEnd, nSecondsPerStep, nItemCount);
+        }
+
+        /// <summary>
+        /// Returns the value stream descriptor as a byte array.
+        /// </summary>
+        /// <returns>The byte array is returned.</returns>
+        public void ToBytes(BinaryWriter bw)
+        {
+            bw.Write(m_nID);
+            bw.Write(m_strName);
+            bw.Write(m_nOrdering);
+            bw.Write((int)m_classType);
+            bw.Write((int)m_valueType);
+
+            bw.Write(m_dtStart.HasValue);
+            if (m_dtStart.HasValue)
+                bw.Write(m_dtStart.Value.Ticks);
+
+            bw.Write(m_dtEnd.HasValue);
+            if (m_dtEnd.HasValue)
+                bw.Write(m_dtEnd.Value.Ticks);
+
+            bw.Write(m_nSecondsPerStep.HasValue);
+            if (m_nSecondsPerStep.HasValue)
+                bw.Write(m_nSecondsPerStep.Value);
+
+            bw.Write(m_nItemCount);
+        }
+
+        /// <summary>
         /// Returns the value stream ID.
         /// </summary>
+        [ReadOnly(true)]
         public int ID
         {
             get { return m_nID; }
@@ -215,6 +386,7 @@ namespace MyCaffe.basecode.descriptors
         /// <summary>
         /// Return the value stream name.
         /// </summary>
+        [ReadOnly(true)]
         public string Name
         {
             get { return m_strName; }
@@ -223,6 +395,7 @@ namespace MyCaffe.basecode.descriptors
         /// <summary>
         /// Returns the value stream ordering.
         /// </summary>
+        [ReadOnly(true)]
         public int Ordering
         {
             get { return m_nOrdering; }
@@ -231,6 +404,7 @@ namespace MyCaffe.basecode.descriptors
         /// <summary>
         /// Returns the value stream class type.
         /// </summary>
+        [ReadOnly(true)]
         public STREAM_CLASS_TYPE ClassType
         {
             get { return m_classType; }
@@ -239,6 +413,7 @@ namespace MyCaffe.basecode.descriptors
         /// <summary>
         /// Returns the value stream value type.
         /// </summary>
+        [ReadOnly(true)]
         public STREAM_VALUE_TYPE ValueType
         {
             get { return m_valueType; }
@@ -247,6 +422,7 @@ namespace MyCaffe.basecode.descriptors
         /// <summary>
         /// Returns the value stream start time (null with STATIC class).
         /// </summary>
+        [ReadOnly(true)]
         public DateTime? Start
         {
             get { return m_dtStart; }
@@ -255,6 +431,7 @@ namespace MyCaffe.basecode.descriptors
         /// <summary>
         /// Returns the value stream end time (null with STATIC class).
         /// </summary>
+        [ReadOnly(true)]
         public DateTime? End
         {
             get { return m_dtEnd; }
@@ -263,6 +440,7 @@ namespace MyCaffe.basecode.descriptors
         /// <summary>
         /// Returns the value stream seconds per step (null with STATIC class).
         /// </summary>
+        [ReadOnly(true)]
         public int? SecondsPerStep
         {
             get { return m_nSecondsPerStep; }
@@ -271,6 +449,7 @@ namespace MyCaffe.basecode.descriptors
         /// <summary>
         /// Returns the number of items in the value stream.
         /// </summary>
+        [ReadOnly(true)]
         public int ItemCount
         {
             get { return m_nItemCount; }

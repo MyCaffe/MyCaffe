@@ -42,7 +42,8 @@ namespace MyCaffe.basecode.descriptors
         /// <param name="nCount">Optionallty, specifies the number of items in the data source.</param>
         /// <param name="rgLabels">Optionally, specifies a list of LabelDescriptors that describe the labels used by the data items.</param>
         /// <param name="strLabelCounts">Optionally, specifies a string containing the label counts.</param>
-        public SourceDescriptor(int nID, string strName, int nWd, int nHt, int nCh, bool bIsRealData, bool bSaveImagesToFile, int nCopyOfSourceId = 0, string strOwner = null, int nCount = 0, List<LabelDescriptor> rgLabels = null, string strLabelCounts = null)
+        /// <param name="rgbTemporal">Optionally, specifies the temporal data.</param>
+        public SourceDescriptor(int nID, string strName, int nWd, int nHt, int nCh, bool bIsRealData, bool bSaveImagesToFile, int nCopyOfSourceId = 0, string strOwner = null, int nCount = 0, List<LabelDescriptor> rgLabels = null, string strLabelCounts = null, byte[] rgbTemporal = null)
             : base(nID, strName, strOwner)
         {
             m_nHt = nHt;
@@ -54,6 +55,7 @@ namespace MyCaffe.basecode.descriptors
             m_rgLabels = rgLabels;
             m_bSaveImagesToFile = bSaveImagesToFile;
             m_nCopyOfSourceID = nCopyOfSourceId;
+            m_temporalDesc = TemporalDescriptor.FromBytes(rgbTemporal);
         }
 
         /// <summary>
@@ -259,6 +261,7 @@ namespace MyCaffe.basecode.descriptors
         /// <summary>
         /// Get/set the temporal descriptor (if any).
         /// </summary>
+        [ReadOnly(true)]
         public TemporalDescriptor TemporalDescriptor
         {
             get { return m_temporalDesc; }
