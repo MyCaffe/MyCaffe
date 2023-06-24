@@ -144,23 +144,80 @@ namespace MyCaffe.db.temporal
             return true;
         }
 
+        /// <summary>
+        /// Delete a dataset.
+        /// </summary>
+        /// <param name="strDsName">Specifies the dataset name.</param>
+        /// <param name="bDeleteRelatedProjects">Specifies whether or not to also delete all projects using the dataset.  <b>WARNING!</b> Use this with caution for it will permenantly delete the projects and their results.</param>
+        /// <param name="log">Specifies the Log object for status output.</param>
+        /// <param name="evtCancel">Specifies the cancel event used to cancel the delete.</param>
+        public override void DeleteDataset(string strDsName, bool bDeleteRelatedProjects, Log log, CancelEvent evtCancel)
+        {
+            Dataset ds = GetDataset(strDsName);
+            if (ds == null)
+                return;
+
+            Source srcTraining = GetSource(ds.TrainingSourceID.GetValueOrDefault());
+            Source srcTesting = GetSource(ds.TestingSourceID.GetValueOrDefault());
+            string strCmd;
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                entities.Database.CommandTimeout = 180;
+
+                strCmd = "DELETE RawValues WHERE (SourceID = " + ds.TestingSourceID.GetValueOrDefault().ToString() + ") OR (SourceID = " + ds.TrainingSourceID.GetValueOrDefault().ToString() + ")";
+                entities.Database.ExecuteSqlCommand(strCmd);
+
+                strCmd = "DELETE ValueItems WHERE (SourceID = " + ds.TestingSourceID.GetValueOrDefault().ToString() + ") OR (SourceID = " + ds.TrainingSourceID.GetValueOrDefault().ToString() + ")";
+                entities.Database.ExecuteSqlCommand(strCmd);
+
+                strCmd = "DELETE ValueStreams WHERE (SourceID = " + ds.TestingSourceID.GetValueOrDefault().ToString() + ") OR (SourceID = " + ds.TrainingSourceID.GetValueOrDefault().ToString() + ")";
+                entities.Database.ExecuteSqlCommand(strCmd);
+            }
+
+            base.DeleteDataset(strDsName, bDeleteRelatedProjects, log, evtCancel);
+        }
+
+        /// <summary>
+        /// Delete a dataset temporal tables..
+        /// </summary>
+        /// <param name="nSrcIDTrain">Specifies the train source ID.</param>
+        /// <param name="nSrcIDTest">Specifies the test source ID.</param>
+        public static void DeleteDatasetTemporalTables(int nSrcIDTrain, int nSrcIDTest)
+        {
+            string strCmd;
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                entities.Database.CommandTimeout = 180;
+
+                strCmd = "DELETE RawValues WHERE (SourceID = " + nSrcIDTrain.ToString() + ") OR (SourceID = " + nSrcIDTest.ToString() + ")";
+                entities.Database.ExecuteSqlCommand(strCmd);
+
+                strCmd = "DELETE ValueItems WHERE (SourceID = " + nSrcIDTrain.ToString() + ") OR (SourceID = " + nSrcIDTest.ToString() + ")";
+                entities.Database.ExecuteSqlCommand(strCmd);
+
+                strCmd = "DELETE ValueStreams WHERE (SourceID = " + nSrcIDTrain.ToString() + ") OR (SourceID = " + nSrcIDTest.ToString() + ")";
+                entities.Database.ExecuteSqlCommand(strCmd);
+            }
+        }
 
         /// <summary>
         /// Delete all RawValues in a data source.
         /// </summary>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
         public void DeleteRawValues(int nSrcId = 0)
-        {
-            if (nSrcId == 0)
-                nSrcId = m_src.ID;
-
-            string strCmd = "IF OBJECT_ID (N'dbo.RawValues', N'U') IS NOT NULL DELETE FROM RawValues WHERE (SourceID = " + nSrcId.ToString() + ")";
-
-            using (DNNEntitiesTemporal entities = EntitiesConnectionTemporal.CreateEntities())
             {
-                entities.Database.ExecuteSqlCommand(strCmd);
+                if (nSrcId == 0)
+                    nSrcId = m_src.ID;
+
+                string strCmd = "IF OBJECT_ID (N'dbo.RawValues', N'U') IS NOT NULL DELETE FROM RawValues WHERE (SourceID = " + nSrcId.ToString() + ")";
+
+                using (DNNEntitiesTemporal entities = EntitiesConnectionTemporal.CreateEntities())
+                {
+                    entities.Database.ExecuteSqlCommand(strCmd);
+                }
             }
-        }
 
         /// <summary>
         /// Delete all ValueItems in a data source.
