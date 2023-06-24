@@ -103,6 +103,9 @@ namespace MyCaffe.db.temporal
             List<ValueItem> rgItem = m_db.GetAllValueItems(nSrcID);
             bool bLoadValueStreams = true;
 
+            if (rgItem.Count == 0)
+                return null;
+
             foreach (ValueItem vi in rgItem)
             {
                 ValueItemDescriptor vid = new ValueItemDescriptor(vi.ID, vi.Name);
@@ -129,6 +132,23 @@ namespace MyCaffe.db.temporal
             }
 
             return td;            
+        }
+
+        /// <summary>
+        /// Load the temporal descriptors for the specified source ID from the database.
+        /// </summary>
+        /// <param name="ds">Specifies the dataset descriptor where the temporal descriptors are loaded.</param>
+        /// <param name="bOnlyLoadStreamsForFirst">Optionally, only load the value streams are loaded for the first value item (default = false).</param>
+        public void LoadTemporalFromDb(DatasetDescriptor ds, bool bOnlyLoadStreamsForFirst = true)
+        {
+            if (ds == null)
+                return;
+
+            if (ds.TrainingSource != null)
+                ds.TrainingSource.TemporalDescriptor = LoadTemporalFromDb(ds.TrainingSource.ID, bOnlyLoadStreamsForFirst);
+
+            if (ds.TestingSource != null)
+                ds.TestingSource.TemporalDescriptor = LoadTemporalFromDb(ds.TestingSource.ID, bOnlyLoadStreamsForFirst);
         }
     }
 }
