@@ -1,4 +1,6 @@
-﻿using System;
+﻿using MyCaffe.basecode;
+using MyCaffe.basecode.descriptors;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,6 +23,48 @@ namespace MyCaffe.layers.tft
         /// </summary>
         public DataSchema()
         {
+        }
+
+        /// <summary>
+        /// Loads the data schema from a project.
+        /// </summary>
+        /// <param name="prj">Specifies the project name.</param>
+        /// <returns>The data schema is returned.</returns>
+        public static DataSchema LoadFromProject(ProjectEx prj)
+        {
+            DataSchema schema = new DataSchema();
+            TemporalDescriptor tsd = prj.Dataset.TrainingSource.TemporalDescriptor;
+
+            schema.Data.Columns = tsd.ValueItemDescriptors[0].ValueStreamDescriptors[0].ItemCount;
+
+            foreach (ValueStreamDescriptor vsd in tsd.ValueItemDescriptors[0].ValueStreamDescriptors)
+            {
+                switch (vsd.ClassType)
+                {
+                    case ValueStreamDescriptor.STREAM_CLASS_TYPE.STATIC:
+                        if (vsd.ValueType == ValueStreamDescriptor.STREAM_VALUE_TYPE.NUMERIC)
+                            schema.Data.StaticNum.Add(new Field(vsd));
+                        else
+                            schema.Data.StaticCat.Add(new Field(vsd));
+                        break;
+
+                    case ValueStreamDescriptor.STREAM_CLASS_TYPE.OBSERVED:
+                        if (vsd.ValueType == ValueStreamDescriptor.STREAM_VALUE_TYPE.NUMERIC)
+                            schema.Data.ObservedNum.Add(new Field(vsd));
+                        else
+                            schema.Data.ObservedCat.Add(new Field(vsd));
+                        break;
+
+                    case ValueStreamDescriptor.STREAM_CLASS_TYPE.KNOWN:
+                        if (vsd.ValueType == ValueStreamDescriptor.STREAM_VALUE_TYPE.NUMERIC)
+                            schema.Data.KnownNum.Add(new Field(vsd));
+                        else
+                            schema.Data.KnownCat.Add(new Field(vsd));
+                        break;
+                }
+            }
+
+            return schema;
         }
 
         /// <summary>
@@ -815,6 +859,32 @@ namespace MyCaffe.layers.tft
             m_nIdx = nIdx;
             m_dataType = dataType;
             m_inputType = inputType;
+        }
+
+        /// <summary>
+        /// Create a new field from the ValueStreamDescriptor specified.
+        /// </summary>
+        /// <param name="vsd">Specifies the ValueStreamDescriptor used to create the field.</param>
+        public Field(ValueStreamDescriptor vsd)
+        {
+            m_strName = vsd.Name;
+            m_nIdx = vsd.Ordering;
+            m_dataType = (vsd.ValueType == ValueStreamDescriptor.STREAM_VALUE_TYPE.NUMERIC) ? DATA_TYPE.REAL : DATA_TYPE.CATEGORICAL;
+
+            switch (vsd.ClassType)
+            {
+                case ValueStreamDescriptor.STREAM_CLASS_TYPE.STATIC:
+                    m_inputType = INPUT_TYPE.STATIC;
+                    break;
+
+                case ValueStreamDescriptor.STREAM_CLASS_TYPE.OBSERVED:
+                    m_inputType = INPUT_TYPE.OBSERVED;
+                    break;
+
+                case ValueStreamDescriptor.STREAM_CLASS_TYPE.KNOWN:
+                    m_inputType = INPUT_TYPE.KNOWN;
+                    break;
+            }
         }
 
         /// <summary>
