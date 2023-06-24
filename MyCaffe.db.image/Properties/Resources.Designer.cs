@@ -456,6 +456,7 @@ namespace MyCaffe.db.image.Properties {
         ///	[ID] [int] IDENTITY(1,1) NOT NULL,
         ///	[Name] [nvarchar](128) NULL,
         ///	[SourceID] [int] NULL,
+        ///	[Idx] [int] NULL,
         /// CONSTRAINT [PK_Items] PRIMARY KEY CLUSTERED 
         ///(
         ///	[ID] ASC
