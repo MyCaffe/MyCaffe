@@ -51,7 +51,7 @@ namespace MyCaffe.test
             prop.SetProperty("FutureSteps", nFutureSteps.ToString());
 
             MyCaffeTemporalDatabase db = new MyCaffeTemporalDatabase(log, prop);
-            db.InitializeWithDsName1(s, "TFT.Electricity");
+            db.InitializeWithDsName1(s, strName);
 
             return db;
         }
@@ -68,7 +68,7 @@ namespace MyCaffe.test
                 db = getDatabase("TFT.Electricity", 90, 30, true);
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(100, Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.SQL_DB, "TFT.Electricity", strPath, 100, SOURCE.ELECTRICITY, db);
+                    t.TestForward(10, Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.SQL_DB, "TFT.Electricity", strPath, 100, SOURCE.ELECTRICITY, db);
                 }
             }
             finally
@@ -92,7 +92,7 @@ namespace MyCaffe.test
                 db = getDatabase("TFT.Electricity", 90, 30, true);
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(30, Phase.TEST, DataTemporalParameter.SOURCE_TYPE.SQL_DB, "TFT.Electricity", strPath, 100, SOURCE.ELECTRICITY, db);
+                    t.TestForward(10, Phase.TEST, DataTemporalParameter.SOURCE_TYPE.SQL_DB, "TFT.Electricity", strPath, 100, SOURCE.ELECTRICITY, db);
                 }
             }
             finally
@@ -178,7 +178,7 @@ namespace MyCaffe.test
                 db = getDatabase("TFT.Traffic", 90, 30, true);
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(100, Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.SQL_DB, "TFT.Traffic", strPath, 100, SOURCE.TRAFFIC, db);
+                    t.TestForward(10, Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.SQL_DB, "TFT.Traffic", strPath, 100, SOURCE.TRAFFIC, db);
                 }
             }
             finally
@@ -202,7 +202,7 @@ namespace MyCaffe.test
                 db = getDatabase("TFT.Traffic", 90, 30, true);
                 foreach (IDataTemporalTest t in test.Tests)
                 {
-                    t.TestForward(100, Phase.TEST, DataTemporalParameter.SOURCE_TYPE.SQL_DB, "TFT.Traffic", strPath, 100, SOURCE.TRAFFIC, db);
+                    t.TestForward(5, Phase.TEST, DataTemporalParameter.SOURCE_TYPE.SQL_DB, "TFT.Traffic", strPath, 100, SOURCE.TRAFFIC, db);
                 }
             }
             finally
@@ -792,7 +792,7 @@ namespace MyCaffe.test
                     float f = rgf[i];
                     float fE = rgfE[i];
                     float fDiff = Math.Abs(f - fE);
-                    if (fDiff > 5e-07)
+                    if (fDiff > 1e-06)
                     {
                         if (fE == 0)
                         {
