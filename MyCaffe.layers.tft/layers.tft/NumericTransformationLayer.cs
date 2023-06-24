@@ -88,8 +88,9 @@ namespace MyCaffe.layers.tft
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            int nDim = colBottom[0].count(0, 2);
-            int nSpatialDim = 1;
+            int nOffset = (colBottom[0].num_axes == 2) ? 1 : 2;
+            int nDim = colBottom[0].count(0, nOffset);
+            int nSpatialDim = colBottom[0].count(colBottom[0].num_axes - 1);
             List<int> rgShape = new List<int>() { nDim, nSpatialDim };
             Blob<T> blobBtm = null;
 
