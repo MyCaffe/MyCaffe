@@ -38,8 +38,8 @@ namespace MyCaffe.test
             dtStart = new DateTime(2017, 1, 1);
             dtEnd = dtStart.AddMinutes(nSteps * nBlocks);
 
-            int nValItem1 = db.AddValueItem(nSrcId, "Test Value Item #1");
-            int nValItem2 = db.AddValueItem(nSrcId, "Test Value ITem #2");
+            int nValItem1 = db.AddValueItem(nSrcId, 0, "Test Value Item #1");
+            int nValItem2 = db.AddValueItem(nSrcId, 1, "Test Value ITem #2");
 
             int nValStrm1a = db.AddObservedValueStream(nSrcId, nValItem1, "Test Stream #1", ValueStreamDescriptor.STREAM_VALUE_TYPE.NUMERIC, 1, dtStart, dtEnd, 60);
             int nValStrm2a = db.AddObservedValueStream(nSrcId, nValItem1, "Test Stream #2", ValueStreamDescriptor.STREAM_VALUE_TYPE.NUMERIC, 2, dtStart, dtEnd, 60);

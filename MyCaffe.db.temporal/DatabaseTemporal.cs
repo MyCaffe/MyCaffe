@@ -21,6 +21,7 @@ namespace MyCaffe.db.temporal
         ConnectInfo m_ci;
         DNNEntitiesTemporal m_entitiesTemporal = null;
         Dictionary<int, string> m_rgstrValueItems = new Dictionary<int, string>();
+        Dictionary<int, string> m_rgstrValueItemsByIndex = new Dictionary<int, string>();
         Dictionary<int, string> m_rgstrValueStreams = new Dictionary<int, string>();
         DataTable m_rgRawValueCache = new DataTable();
         SqlBulkCopy m_sqlBulkCopy = null;
@@ -652,9 +653,10 @@ namespace MyCaffe.db.temporal
         /// Add a new value item to the database.
         /// </summary>
         /// <param name="nSrcId">Specifies the source ID of the value item.</param>
+        /// <param name="nItemIdx">Specifies the index of the item.</param>
         /// <param name="strName">Specifies the name of the value item.</param>
         /// <returns>The value item ID is returned.</returns>
-        public int AddValueItem(int nSrcId, string strName)
+        public int AddValueItem(int nSrcId, int nItemIdx, string strName)
         {
             using (DNNEntitiesTemporal entities = EntitiesConnectionTemporal.CreateEntities())
             {
@@ -665,6 +667,7 @@ namespace MyCaffe.db.temporal
 
                 ValueItem item = new ValueItem();
                 item.Name = strName;
+                item.Idx = nItemIdx;
                 item.SourceID = nSrcId;
                 entities.ValueItems.Add(item);
                 entities.SaveChanges();
@@ -708,6 +711,7 @@ namespace MyCaffe.db.temporal
                 if (rgItems.Count > 0)
                 {
                     m_rgstrValueItems.Add(nID, rgItems[0].Name);
+                    m_rgstrValueItemsByIndex.Add(rgItems[0].Idx.GetValueOrDefault(0), rgItems[0].Name);
                     return rgItems[0].Name;
                 }
 
@@ -725,6 +729,62 @@ namespace MyCaffe.db.temporal
             using (DNNEntitiesTemporal entities = EntitiesConnectionTemporal.CreateEntities())
             {
                 return entities.ValueItems.Where(p => p.SourceID == nSrcID).Select(p => p.ID).ToList();
+            }
+        }
+
+        /// <summary>
+        /// Returns the value item ID given the value item name if found, or 0.
+        /// </summary>
+        /// <param name="strName">Specifies the value item to find.</param>
+        /// <returns>The value item ID is returned or 0 if not found.</returns>
+        public int GetValueItemIndex(string strName)
+        {
+            using (DNNEntitiesTemporal entities = EntitiesConnectionTemporal.CreateEntities())
+            {
+                List<ValueItem> rgItems = entities.ValueItems.Where(p => p.Name == strName).ToList();
+
+                if (rgItems.Count > 0)
+                    return rgItems[0].Idx.GetValueOrDefault(0);
+
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// Returns the value item name given the value item index if found, or 0.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index of the value item to find.</param>
+        /// <returns>The value item name is returned or null if not found.</returns>
+        public string GetValueItemNamByIndex(int nIdx)
+        {
+            if (m_rgstrValueItemsByIndex.ContainsKey(nIdx))
+                return m_rgstrValueItemsByIndex[nIdx];
+
+            using (DNNEntitiesTemporal entities = EntitiesConnectionTemporal.CreateEntities())
+            {
+                List<ValueItem> rgItems = entities.ValueItems.Where(p => p.Idx == nIdx).ToList();
+
+                if (rgItems.Count > 0)
+                {
+                    m_rgstrValueItemsByIndex.Add(nIdx, rgItems[0].Name);
+                    m_rgstrValueItems.Add(rgItems[0].ID, rgItems[0].Name);
+                    return rgItems[0].Name;
+                }
+
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Returns a list of all value item Indices associated with a SourceID.
+        /// </summary>
+        /// <param name="nSrcID">Specifies the source ID.</param>
+        /// <returns>The list of item Inidices is returned.</returns>
+        public List<int> GetAllItemIndices(int nSrcID)
+        {
+            using (DNNEntitiesTemporal entities = EntitiesConnectionTemporal.CreateEntities())
+            {
+                return entities.ValueItems.Where(p => p.SourceID == nSrcID).Select(p => p.Idx.GetValueOrDefault(0)).ToList();
             }
         }
 

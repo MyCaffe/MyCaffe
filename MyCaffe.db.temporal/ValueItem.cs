@@ -17,5 +17,6 @@ namespace MyCaffe.db.temporal
         public int ID { get; set; }
         public string Name { get; set; }
         public Nullable<int> SourceID { get; set; }
+        public Nullable<int> Idx { get; set; }
     }
 }
