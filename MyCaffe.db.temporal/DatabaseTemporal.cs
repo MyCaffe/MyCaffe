@@ -409,13 +409,21 @@ namespace MyCaffe.db.temporal
                 }
                 finally
                 {
-                    m_rgRawValueCache.Clear();
+                    ClearRawValues();
                 }
             }
         }
 
         /// <summary>
-        /// Save the raw values.
+        /// Clear the raw values.   
+        /// </summary>
+        public void ClearRawValues()
+        {
+            m_rgRawValueCache.Clear();
+        }
+
+        /// <summary>
+        /// Update the stream counts.
         /// </summary>
         /// <param name="nItemID">Specifies the item ID.</param>
         /// <param name="rgnStreamID">Specifies the list of stream IDs.</param>
