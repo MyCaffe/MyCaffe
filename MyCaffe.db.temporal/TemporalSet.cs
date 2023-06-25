@@ -168,6 +168,7 @@ namespace MyCaffe.db.temporal
                         throw new Exception("All streams must have the same number of seconds per step.");
 
                     m_rgItems.Add(new ItemSet(m_random, m_db, item, rgStreams));
+                    nItemCount++;
                 }
 
                 m_dtStart = dtMinStart;
@@ -186,7 +187,7 @@ namespace MyCaffe.db.temporal
                 if (m_nLoadLimit > 0 && m_nLoadLimit < nTotalChunks)
                     nTotalChunks = m_nLoadLimit;
 
-                int nChunks = Math.Min(nTotalChunks, m_nChunks);
+                int nChunks = Math.Max(1, Math.Min(nTotalChunks, m_nChunks));
 
                 // Load the data.
                 DateTime dtStart1 = (dtMinStart > m_dtStart) ? dtMinStart : m_dtStart;
