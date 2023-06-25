@@ -427,18 +427,28 @@ namespace MyCaffe.db.temporal
         /// </summary>
         /// <param name="nItemID">Specifies the item ID.</param>
         /// <param name="rgnStreamID">Specifies the list of stream IDs.</param>
-        public void UpdateStreamCounts(int nItemID, params int[] rgnStreamID)
+        /// <returns>The total number of items is returned.</returns>
+        public int UpdateStreamCounts(int nItemID, params int[] rgnStreamID)
         {
-            foreach (int nStreamID in rgnStreamID)
+            int nCount = 0;
+            int nSrcID = m_src.ID;
+
+            using (DNNEntitiesTemporal entities = EntitiesConnectionTemporal.CreateEntities())
             {
-                List<ValueStream> rgStrm = m_entitiesTemporal.ValueStreams.Where(p => p.ValueItemID == nItemID && p.ID == nStreamID).ToList();
-                foreach (ValueStream strm in rgStrm)
+                foreach (int nStreamID in rgnStreamID)
                 {
-                    strm.ItemCount = m_entitiesTemporal.RawValues.Where(p => p.ItemID == nItemID && p.StreamID == nStreamID).Count();
+                    List<ValueStream> rgStrm = entities.ValueStreams.Where(p => p.SourceID == nSrcID && p.ValueItemID == nItemID && p.ID == nStreamID).ToList();
+                    foreach (ValueStream strm in rgStrm)
+                    {
+                        strm.ItemCount = entities.RawValues.Where(p => p.SourceID == nSrcID && p.ItemID == nItemID && p.StreamID == nStreamID).Count();
+                        nCount += strm.ItemCount.GetValueOrDefault(0);
+                    }
                 }
+
+                entities.SaveChanges();
             }
 
-            m_entitiesTemporal.SaveChanges();
+            return nCount;
         }
 
         private bool compareTime(List<DateTime> rg1, List<RawValue> rg2)
