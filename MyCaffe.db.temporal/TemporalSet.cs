@@ -194,7 +194,7 @@ namespace MyCaffe.db.temporal
                 DateTime dtEnd1 = dtStart1;
                 DateTime dt = dtStart1;
                 bool bEOD = false;
-                int nStepsToLoad = int.MaxValue;;
+                int nStepsToLoad = int.MaxValue;
                 int nLoadedChunks = 0;
                 Stopwatch sw = new Stopwatch();
 
