@@ -182,7 +182,11 @@ namespace MyCaffe.layers.tft
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            m_data.LoadBatch(m_phase, (int)m_nBatchSize, colTop);
+            Phase phase = layer_param.data_temporal_param.forced_phase.GetValueOrDefault(m_phase);
+            m_data.LoadBatch(phase, (int)m_nBatchSize, colTop, m_param.data_temporal_param.enable_debug_output, m_param.data_temporal_param.debug_output_path);
+
+            if (m_param.data_temporal_param.enable_debug_output)
+                m_log.WriteLine("WARNING: Debugging is enabled with path = " + m_param.data_temporal_param.debug_output_path + " and will slow down training!");
         }
 
         /// @brief Not implemented - data Layers do not perform backward.
@@ -277,9 +281,11 @@ namespace MyCaffe.layers.tft
         /// <param name="nBatchSize">Specifies the batch size.</param>
         /// <param name="col">Specifies the blob collection to load the batch into.</param>
         /// <param name="phase">Specifies the phase.</param>
-        public virtual void LoadBatch(Phase phase, int nBatchSize, BlobCollection<T> col)
+        /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
+        /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
+        public virtual void LoadBatch(Phase phase, int nBatchSize, BlobCollection<T> col, bool bEnableDebug = false, string strDebugPath = null)
         {
-            m_data.LoadBatch(nBatchSize, col);
+            m_data.LoadBatch(nBatchSize, col, bEnableDebug, strDebugPath);
         }
 
         /// <summary>
@@ -419,7 +425,9 @@ namespace MyCaffe.layers.tft
         /// <param name="phase">Specifies the phase being loaded (e.g., TRAIN, TEST).</param>
         /// <param name="nBatchSize">Specifies the batch size.</param>
         /// <param name="col">Specifies the collection of blobs to load.</param>
-        public override void LoadBatch(Phase phase, int nBatchSize, BlobCollection<T> col)
+        /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
+        /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
+        public override void LoadBatch(Phase phase, int nBatchSize, BlobCollection<T> col, bool bEnableDebug = false, string strDebugPath = null)
         {
             int nSrcID = (phase == Phase.TRAIN) ? m_ds.TrainingSource.ID : m_ds.TestingSource.ID;
             DB_LABEL_SELECTION_METHOD itemSelection = (m_bShuffleData) ? DB_LABEL_SELECTION_METHOD.RANDOM : DB_LABEL_SELECTION_METHOD.NONE;
@@ -444,7 +452,7 @@ namespace MyCaffe.layers.tft
 
             for (int i = 0; i < nBatchSize; i++)
             {
-                SimpleDatum[] rgData = m_db.QueryTemporalItem(nSrcID, itemSelection, valueSelection);
+                SimpleDatum[] rgData = m_db.QueryTemporalItem(i, nSrcID, itemSelection, valueSelection, bEnableDebug, strDebugPath);
                 SimpleDatum sdStatNum = rgData[0];
                 SimpleDatum sdStatCat = rgData[1];
                 SimpleDatum sdHistNum = rgData[2];
@@ -941,7 +949,7 @@ namespace MyCaffe.layers.tft
 
         public abstract void Close();
 
-        public abstract void LoadBatch(int nBatchSize, BlobCollection<T> col);
+        public abstract void LoadBatch(int nBatchSize, BlobCollection<T> col, bool bEnableDebug, string strDebugPath);
 
         public abstract int[] GetShape(OUTPUT_TYPE ot);
 
@@ -1514,7 +1522,7 @@ namespace MyCaffe.layers.tft
             }
         }
 
-        public override void LoadBatch(int nBatchSize, BlobCollection<T> col)
+        public override void LoadBatch(int nBatchSize, BlobCollection<T> col, bool bEnableDebug, string strDebugPath)
         {
             lock (m_syncObj)
             {
