@@ -3,6 +3,9 @@ using MyCaffe.basecode.descriptors;
 using SimpleGraphing;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -235,15 +238,18 @@ namespace MyCaffe.db.temporal
         /// <summary>
         /// Retreives the static, historical and future data at a selected step.
         /// </summary>
+        /// <param name="nQueryIdx">Specifies the index of the query, used to show where this query is within a batch.</param>
         /// <param name="valueSelectionMethod">Specifies the value step selection method.</param>
         /// <param name="nHistSteps">Specifies the number of historical steps.</param>
         /// <param name="nFutSteps">Specifies the number of future steps.</param>
         /// <param name="nValueStepOffset">Specifes the step offset to apply when advancing the step index.</param>
+        /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
+        /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
         /// <returns>An array of SimpleDatum is returned where: [0] = static num, [1] = static cat, [2] = historical num, [3] = historical cat, [4] = future num, [5] = future cat, [6] = target, and [7] = target history
         /// for a given item at the temporal selection point.</returns>
         /// <remarks>Note, the ordering for historical value streams is: observed, then known.  Future value streams only contiain known value streams.  If a dataset does not have one of the data types noted above, null
         /// is returned in the array slot (for example, if the dataset does not produce static numeric values, the array slot is set to [0] = null.</remarks>
-        public SimpleDatum[] GetData(DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nHistSteps, int nFutSteps, int nValueStepOffset = 1)
+        public SimpleDatum[] GetData(int nQueryIdx, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nHistSteps, int nFutSteps, int nValueStepOffset = 1, bool bEnableDebug = false, string strDebugPath = null)
         {
             int nTotalSteps = nHistSteps + nFutSteps;
 
@@ -276,10 +282,75 @@ namespace MyCaffe.db.temporal
             SimpleDatum sdTarget = getTargetData(m_nValIdx + nHistSteps, nFutSteps);
             SimpleDatum sdTargetHist = getTargetData(m_nValIdx, nHistSteps);
 
+            if (bEnableDebug)
+                debug(nQueryIdx, strDebugPath, m_nValIdx, nHistSteps, nFutSteps, sdTargetHist, sdTarget);
+
             SimpleDatum[] rgData = new SimpleDatum[] { m_sdStaticNum, m_sdStaticCat, sdHistNum, sdHistCat, sdFutureNum, sdFutureCat, sdTarget, sdTargetHist };
             m_nValIdx++;
 
             return rgData;
+        }
+
+        private void debug(int nQueryIdx, string strDebugPath, int nIdx, int nHistSteps, int nFutSteps, SimpleDatum sd1, SimpleDatum sd2)
+        {
+            if (string.IsNullOrEmpty(strDebugPath))
+                throw new Exception("You must specify a debug path, when 'EnableDebug' = true.");
+
+            string strName = "TargetData: QueryIdx = " + nQueryIdx.ToString() + ", Idx = " + nIdx.ToString() + ", Hist = " + nHistSteps.ToString() + ", Fut = " + nFutSteps.ToString();
+            PlotCollection plots = new PlotCollection(strName);
+            DateTime[] rgSync = getTimeSync(nIdx, nHistSteps + nFutSteps);
+            SimpleDatum sd = getTargetData(nIdx, nHistSteps + nFutSteps);
+
+            float[] rgf1 = sd1.GetData<float>();
+            float[] rgf2 = sd2.GetData<float>();
+            float[] rgfE = sd.GetData<float>();
+
+            for (int i=0; i<rgf1.Length; i++)
+            {
+                float fVal = rgf1[i];
+
+                if (fVal != rgfE[i])
+                    throw new Exception("The data values do not match!");
+
+                Plot plot = new Plot(rgSync[i].ToFileTime(), fVal);
+                plot.Tag = rgSync[i];
+                plots.Add(plot);
+            }
+
+            for (int i = 0; i < rgf2.Length; i++)
+            {
+                float fVal = rgf2[i];
+
+                if (fVal != rgfE[i + rgf1.Length])
+                    throw new Exception("The data values do not match!");
+
+                Plot plot = new Plot(rgSync[i + rgf1.Length].ToFileTime(), fVal);
+                plot.Tag = rgSync[i];
+                plots.Add(plot);
+            }
+
+            if (!Directory.Exists(strDebugPath))
+                Directory.CreateDirectory(strDebugPath);
+
+            DateTime dt = rgSync[rgf1.Length];
+
+            strDebugPath = strDebugPath.TrimEnd('\\') + "\\";
+            string strFile = strDebugPath + nQueryIdx.ToString() + "." + dt.Year.ToString() + "." + dt.Month.ToString() + "." + dt.Day.ToString() + "_" + dt.Hour.ToString() + "." + dt.Minute.ToString() + "." + dt.Second.ToString() + "." + nIdx.ToString() + ".png";
+            Image img = SimpleGraphingControl.QuickRender(plots, 1000, 600, true, ConfigurationAxis.VALUE_RESOLUTION.MINUTE, null, true, null, true);
+
+            using (Graphics g = Graphics.FromImage(img))
+            {
+                Brush br = new SolidBrush(Color.FromArgb(64, Color.Blue));
+                int nWid = 5 * nFutSteps;
+                int nLeft = img.Width - (55 + nWid);
+                Rectangle rc = new Rectangle(nLeft, 0, nWid, img.Height);
+                g.FillRectangle(br, rc);
+                g.DrawLine(Pens.Lime, nLeft, 0, nLeft, img.Height);
+                br.Dispose();
+            }
+
+            img.Save(strFile);
+            img.Dispose();
         }
 
         private SimpleDatum getStaticDataNum()
@@ -404,6 +475,18 @@ namespace MyCaffe.db.temporal
             }
 
             return new SimpleDatum(1, 1, nCount, rgf.ToArray(), 0, rgf.Count);
+        }
+
+        private DateTime[] getTimeSync(int nIdx, int nCount)
+        {
+            List<DateTime> rgDt = new List<DateTime>();
+
+            for (int i = nIdx; i < nIdx + nCount; i++)
+            {
+                rgDt.Add((DateTime)m_plotsObservedNum[i].Tag);
+            }
+
+            return rgDt.ToArray();
         }
     }
 

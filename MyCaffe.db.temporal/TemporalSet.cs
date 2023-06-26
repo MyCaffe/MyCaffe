@@ -295,14 +295,17 @@ namespace MyCaffe.db.temporal
         /// Get a data set consisting of the static, historical, and future data for a selected item where the static data is not bound by time, 
         /// the historical data set contains nHistSteps * nStreamCount items, and the future data set contains (nHistSteps + nFutSteps) * nStreamCount items.
         /// </summary>
+        /// <param name="nQueryIdx">Specifies the index location of the query within a batch.</param>
         /// <param name="itemSelectionMethod">Specifies the item index selection method.</param>
         /// <param name="valueSelectionMethod">Specifies the value starting point selection method.</param>
         /// <param name="nValueStepOffset">Optionally, specifies the value step offset from the previous query (default = 1, this parameter only applies when using non random selection).</param>
+        /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
+        /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
         /// <returns>An array of SimpleDatum is returned where: [0] = static num, [1] = static cat, [2] = historical num, [3] = historical cat, [4] = future num, [5] = future cat, [6] = target, and [7] = target history
         /// for a given item at the temporal selection point.</returns>
         /// <remarks>Note, the ordering for historical value streams is: observed, then known.  Future value streams only contiain known value streams.  If a dataset does not have one of the data types noted above, null
         /// is returned in the array slot (for example, if the dataset does not produce static numeric values, the array slot is set to [0] = null.</remarks>
-        public SimpleDatum[] GetData(DB_LABEL_SELECTION_METHOD itemSelectionMethod, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nValueStepOffset = 1)
+        public SimpleDatum[] GetData(int nQueryIdx, DB_LABEL_SELECTION_METHOD itemSelectionMethod, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nValueStepOffset = 1, bool bEnableDebug = false, string strDebugPath = null)
         {
             if (itemSelectionMethod == DB_LABEL_SELECTION_METHOD.RANDOM)
             {
@@ -314,7 +317,7 @@ namespace MyCaffe.db.temporal
                     m_nItemIdx = 0;
             }
 
-            SimpleDatum[] data = m_rgItems[m_nItemIdx].GetData(valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset);
+            SimpleDatum[] data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bEnableDebug, strDebugPath);
 
             int nRetryCount = 0;
             while (data == null && nRetryCount < 5)
@@ -331,7 +334,7 @@ namespace MyCaffe.db.temporal
                         m_nItemIdx = 0;
                 }
 
-                data = m_rgItems[m_nItemIdx].GetData(valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset);
+                data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bEnableDebug, strDebugPath);
                 nRetryCount++;
             }
 

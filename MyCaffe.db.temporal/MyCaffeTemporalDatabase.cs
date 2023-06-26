@@ -505,17 +505,20 @@ namespace MyCaffe.db.temporal
         /// <summary>
         /// Returns a block of static, observed and known data from the database where one block is a set of (historical and future steps).
         /// </summary>
+        /// <param name="nQueryIdx">Specifies the index of the query within a batch.</param>
         /// <param name="nSrcId">Specifies the source ID of the data source.</param>
         /// <param name="itemSelectionOverride">Optionally, specifies the item selection method used to select the item (e.g., customer, station, stock symbol)</param>
         /// <param name="valueSelectionOverride">Optionally, specifies the value selection method used to select the index within the temporal data of the selected item.</param>
+        /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
+        /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
         /// <returns>A tuple containing the static, observed and known data is returned.</returns>
-        public SimpleDatum[] QueryTemporalItem(int nSrcId, DB_LABEL_SELECTION_METHOD? itemSelectionOverride = null, DB_ITEM_SELECTION_METHOD? valueSelectionOverride = null)
+        public SimpleDatum[] QueryTemporalItem(int nQueryIdx, int nSrcId, DB_LABEL_SELECTION_METHOD? itemSelectionOverride = null, DB_ITEM_SELECTION_METHOD? valueSelectionOverride = null, bool bEnableDebug = false, string strDebugPath = null)
         {
             TemporalSet ts = getTemporalSet(nSrcId);
             DB_LABEL_SELECTION_METHOD itemSelection = (itemSelectionOverride.HasValue) ? itemSelectionOverride.Value : m_itemSelectionMethod;
             DB_ITEM_SELECTION_METHOD valueSelection = (valueSelectionOverride.HasValue) ? valueSelectionOverride.Value : m_valueSelectionMethod;
 
-            return ts.GetData(itemSelection, valueSelection);
+            return ts.GetData(nQueryIdx, itemSelection, valueSelection, 1, bEnableDebug, strDebugPath);
         }
 
 

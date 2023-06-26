@@ -28,6 +28,8 @@ namespace MyCaffe.param.tft
         uint? m_nSeed = null;
         bool m_bShuffleData = true;
         bool m_bOutputTargetHistorical = false;
+        bool m_bEnableDebugOutput = false;
+        string m_strDebugOutputPath = null;
 
         /// <summary>
         /// Defines the type of source data.
@@ -63,6 +65,27 @@ namespace MyCaffe.param.tft
         /** @copydoc LayerParameterBase */
         public DataTemporalParameter()
         {
+        }
+
+        /// <summary>
+        /// Optionally, specifies to output debug information (slower) on each pass.
+        /// </summary>
+        /// <remarks>
+        /// When true, the 'debug_output_path' must be specified.   
+        /// </remarks>
+        public bool enable_debug_output
+        {
+            get { return m_bEnableDebugOutput; }
+            set { m_bEnableDebugOutput = value; }
+        }
+
+        /// <summary>
+        /// Specifies the debug output path where debug images are placed when enable_debug_output = true.
+        /// </summary>
+        public string debug_output_path
+        {
+            get { return m_strDebugOutputPath; }
+            set { m_strDebugOutputPath = value; }
         }
 
         /// <summary>
@@ -222,6 +245,9 @@ namespace MyCaffe.param.tft
             m_bShuffleData = p.shuffle_data;
             m_forcedPhase = p.forced_phase;
             m_bOutputTargetHistorical = p.output_target_historical;
+
+            m_bEnableDebugOutput = p.enable_debug_output;
+            m_strDebugOutputPath = p.debug_output_path;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -253,6 +279,9 @@ namespace MyCaffe.param.tft
             rgChildren.Add("chunk_count", chunk_count.ToString());
             rgChildren.Add("shuffle_data", shuffle_data.ToString());
             rgChildren.Add("output_target_historical", output_target_historical.ToString());
+
+            rgChildren.Add("enable_debug_output", enable_debug_output.ToString());
+            rgChildren.Add("debug_output_path", debug_output_path);
 
             if (seed.HasValue)
                 rgChildren.Add("seed", seed.Value.ToString());
@@ -327,6 +356,12 @@ namespace MyCaffe.param.tft
 
             if ((strVal = rp.FindValue("output_target_historical")) != null)
                 p.output_target_historical = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("enable_debug_output")) != null)
+                p.enable_debug_output = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("debug_output_path")) != null)
+                p.debug_output_path = strVal;
 
             return p;
         }

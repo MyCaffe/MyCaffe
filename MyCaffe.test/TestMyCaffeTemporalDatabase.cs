@@ -117,7 +117,7 @@ namespace MyCaffe.test
 
             for (int i = 0; i < (nHistSteps + nFutSteps); i++)
             {
-                SimpleDatum[] rgData = set.GetData(DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
+                SimpleDatum[] rgData = set.GetData(i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
 
                 log.CHECK_EQ(rgData.Length, 8, "There should be 8 simple datums (static num, static cat, hist num, hist cat, fut num, fut cat, target, target hist).");
 
@@ -184,7 +184,7 @@ namespace MyCaffe.test
 
             for (int i = 0; i < (nHistSteps + nFutSteps); i++)
             {
-                SimpleDatum[] rgData = set.GetData(DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
+                SimpleDatum[] rgData = set.GetData(i, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
 
                 log.CHECK_EQ(rgData.Length, 8, "There should be 8 simple datums (static num, static cat, hist num, hist cat, fut num, fut cat, target, target hist).");
 
