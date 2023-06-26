@@ -296,10 +296,17 @@ namespace MyCaffe.db.temporal
             if (string.IsNullOrEmpty(strDebugPath))
                 throw new Exception("You must specify a debug path, when 'EnableDebug' = true.");
 
-            string strName = "TargetData: QueryIdx = " + nQueryIdx.ToString() + ", Idx = " + nIdx.ToString() + ", Hist = " + nHistSteps.ToString() + ", Fut = " + nFutSteps.ToString();
-            PlotCollection plots = new PlotCollection(strName);
             DateTime[] rgSync = getTimeSync(nIdx, nHistSteps + nFutSteps);
             SimpleDatum sd = getTargetData(nIdx, nHistSteps + nFutSteps);
+
+            if (rgSync.Length != sd1.ItemCount + sd2.ItemCount)
+                throw new Exception("The sync and data lengths do not match!");
+
+            if (sd.ItemCount != sd1.ItemCount + sd2.ItemCount)
+                throw new Exception("The target data length does not match the sum of the historical and future data lengths!");
+
+            string strName = "TargetData: QueryIdx = " + nQueryIdx.ToString() + ", Idx = " + nIdx.ToString() + ", Hist = " + nHistSteps.ToString() + ", Fut = " + nFutSteps.ToString() + " Time: " + rgSync[0].ToString() + " - " + rgSync[rgSync.Length-1].ToString();
+            PlotCollection plots = new PlotCollection(strName);
 
             float[] rgf1 = sd1.GetData<float>();
             float[] rgf2 = sd2.GetData<float>();
