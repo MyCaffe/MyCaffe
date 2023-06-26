@@ -429,7 +429,7 @@ namespace MyCaffe.layers.tft
         /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
         public override void LoadBatch(Phase phase, int nBatchSize, BlobCollection<T> col, bool bEnableDebug = false, string strDebugPath = null)
         {
-            int nSrcID = (phase == Phase.TRAIN) ? m_ds.TrainingSource.ID : m_ds.TestingSource.ID;
+            SourceDescriptor src = (phase == Phase.TRAIN) ? m_ds.TrainingSource : m_ds.TestingSource;
             DB_LABEL_SELECTION_METHOD itemSelection = (m_bShuffleData) ? DB_LABEL_SELECTION_METHOD.RANDOM : DB_LABEL_SELECTION_METHOD.NONE;
             DB_ITEM_SELECTION_METHOD valueSelection = (m_bShuffleData) ? DB_ITEM_SELECTION_METHOD.RANDOM : DB_ITEM_SELECTION_METHOD.NONE;
 
@@ -452,7 +452,10 @@ namespace MyCaffe.layers.tft
 
             for (int i = 0; i < nBatchSize; i++)
             {
-                SimpleDatum[] rgData = m_db.QueryTemporalItem(i, nSrcID, itemSelection, valueSelection, bEnableDebug, strDebugPath);
+                SimpleDatum[] rgData = m_db.QueryTemporalItem(i, src.ID, itemSelection, valueSelection, bEnableDebug, strDebugPath);
+                if (rgData == null)
+                    throw new Exception("No data could be found for source '" + src.Name + ".  You may need to re-run the dataset creator for the dataset '" + m_ds.Name + "'.");
+
                 SimpleDatum sdStatNum = rgData[0];
                 SimpleDatum sdStatCat = rgData[1];
                 SimpleDatum sdHistNum = rgData[2];
