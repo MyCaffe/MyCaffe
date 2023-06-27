@@ -22,6 +22,8 @@ namespace MyCaffe.param.tft
     /// @see [Github - PlaytikaOSS/tft-torch tft.py](https://github.com/PlaytikaOSS/tft-torch/blob/main/tft_torch/tft.py#L11) by Playtika Research, 2021.
     /// @see ["Language modeling with gated convolution networks](https://arxiv.org/abs/1612.08083) by Dauphin, Yann N., et al., International conference on machine learning, PMLR, 2017
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class GluParameter : LayerParameterBase
     {
         FillerParameter m_fillerParam_weights = new FillerParameter("xavier");

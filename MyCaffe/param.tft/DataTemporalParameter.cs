@@ -14,6 +14,8 @@ namespace MyCaffe.param.tft
     /// @see [Temporal Fusion Transformers for Interpretable Multi-horizon Time Series Forecasting](https://arxiv.org/abs/1912.09363) by Bryan Lim, Sercan O. Arik, Nicolas Loeff, and Tomas Pfister, 2019, arXiv 1912.09363
     /// @see [Github - PlaytikaOSS/tft-torch](https://github.com/PlaytikaOSS/tft-torch) by Playtika Research, 2021.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class DataTemporalParameter : LayerParameterBase
     {
         string m_strSource = null;

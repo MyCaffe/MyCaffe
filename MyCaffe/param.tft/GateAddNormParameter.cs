@@ -22,6 +22,8 @@ namespace MyCaffe.param.tft
     /// @see [Github - PlaytikaOSS/tft-torch](https://github.com/PlaytikaOSS/tft-torch) by Playtika Research, 2021.
     /// @see [Github - PlaytikaOSS/tft-torch tft.py](https://github.com/PlaytikaOSS/tft-torch/blob/main/tft_torch/tft.py#L405) by Playtika Research, 2021.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class GateAddNormParameter : LayerParameterBase
     {
         int m_nResidualChannelOffset = 0;
