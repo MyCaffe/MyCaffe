@@ -14,6 +14,8 @@ namespace MyCaffe.param.python
     /// @see [Example calling Python from C#](https://stackoverflow.com/questions/138918/calling-python-from-c-sharp)
     /// @see [doWork](https://github.com/MyCaffe/MyCaffe/blob/7462fcb217b8247912d0beb0ccce7088125c4bdb/MyCaffe.app/FormGptTest.cs#L85)
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class PythonParameter : LayerParameterBase
     {
         string m_strPythonPath = "$Default$";
