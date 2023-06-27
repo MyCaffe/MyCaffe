@@ -17,6 +17,8 @@ namespace MyCaffe.param.ssd
     /// @see [GitHub: SSD: Single Shot MultiBox Detector](https://github.com/weiliu89/caffe/tree/ssd), by weiliu89/caffe, 2016
     /// @see [Training Region-based Object Detectors with Online Hard Example Mining](https://arxiv.org/abs/1604.03540) by Abhinav Shrivastava, Abhinav Gupta, Ross Girshick, 2016.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class MultiBoxLossParameter : LayerParameterBase
     {
         LocLossType m_locLossType = LocLossType.SMOOTH_L1;

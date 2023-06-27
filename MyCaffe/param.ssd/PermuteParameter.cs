@@ -14,6 +14,8 @@ namespace MyCaffe.param.ssd
     /// @see [SSD: Single Shot MultiBox Detector](https://arxiv.org/abs/1512.02325) by Wei Liu, Dragomir Anguelov, Dumitru Erhan, Christian Szegedy, Scott Reed, Cheng-Yang Fu, Alexander C. Berg, 2016.
     /// @see [GitHub: SSD: Single Shot MultiBox Detector](https://github.com/weiliu89/caffe/tree/ssd), by weiliu89/caffe, 2016
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class PermuteParameter : LayerParameterBase 
     {
         List<int> m_rgOrder = new List<int>();
