@@ -259,6 +259,28 @@ namespace MyCaffe.layers.tft
             }
         }
 
+        private void add_to_bwd(BlobCollection<T> colBtm, Blob<T> bTop)
+        {
+            if (colBtm.Count < 2)
+                return;
+
+            Blob<T> bBtm = colBtm[1];
+
+            if (m_param.gateaddnorm_param.residual_channel_offset > 0)
+            {
+                // Copy just the future items to the top, so if future = 30,
+                // with input shape is btm(256,120,64) just the last (256,30,64) are copied to top 
+                int nOuterNum = bBtm.num;
+                int nChannels = m_nBlocks;
+                int nInnerNum = (bBtm.channels / m_nBlocks) * bBtm.count(2);
+                m_cuda.channel_add(bTop.count(), nOuterNum, nChannels, m_nBlocks, nInnerNum, m_nBlocks - 1, bBtm.mutable_gpu_diff, bTop.gpu_diff, DIR.BWD);
+            }
+            else
+            {
+                m_cuda.add(bTop.count(), bTop.gpu_diff, bBtm.mutable_gpu_diff, bBtm.mutable_gpu_diff);
+            }
+        }
+
         /// <summary>
         /// Forward computation
         /// </summary>
@@ -318,6 +340,8 @@ namespace MyCaffe.layers.tft
             // Copy grad to the residual if it exists.
             copy_to_bwd(colBottom, m_blobGateAddResidual);
             m_blobGate.CopyFrom(m_blobGateAddResidual, true);
+            if (colBottom.Count > 1)
+                m_blobResidual.CopyFrom(m_blobGateAddResidual, true);
 
             addBtmTop(colBottom[0], m_blobGate);
             m_gate.Backward(m_colTop, rgbPropagateDown, m_colBtm);
@@ -328,6 +352,8 @@ namespace MyCaffe.layers.tft
                 m_dropout.Backward(m_colTop, rgbPropagateDown, m_colBtm);
                 colBottom[0].CopyFrom(m_blobDrop, true);
             }
+
+            add_to_bwd(colBottom, m_blobResidual);
         }
     }
 }
