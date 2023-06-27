@@ -10,6 +10,8 @@ namespace MyCaffe.param
     /// <summary>
     /// Specifies the parameters for the ScaleLayer.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ScaleParameter : BiasParameter 
     {
         bool m_bBiasTerm = false;

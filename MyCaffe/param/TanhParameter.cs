@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using MyCaffe.basecode;
@@ -14,6 +15,8 @@ namespace MyCaffe.param
     /// @see [Spatial, Structural and Temporal Feature Learning for Human Interaction Prediction](https://arxiv.org/abs/1608.05267v2) by Qiuhong Ke, Mohammed Bennamoun, Senjian An, Farid Bossaid, and Ferdous Sohel, , 2016.
     /// @see [Applying Deep Learning to Answer Selection: A Study and An Open Task](https://arxiv.org/abs/1508.01585v2) by Minwei Feng, Bing Xiang, Michael R. Glass, Lidan Wang, and Bowen Zhou, 2015.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class TanhParameter : EngineParameter 
     {
         /** @copydoc EngineParameter */

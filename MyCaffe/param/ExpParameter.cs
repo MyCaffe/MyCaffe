@@ -20,6 +20,7 @@ namespace MyCaffe.param
     /// 
     /// @f$ y = exp(shift + scale * x) @f$
     /// </remarks> 
+    [Serializable]
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ExpParameter : LayerParameterBase
     {

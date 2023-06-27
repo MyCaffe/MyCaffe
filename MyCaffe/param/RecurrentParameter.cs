@@ -12,6 +12,8 @@ namespace MyCaffe.param
     /// <summary>
     /// Specifies the parameters used by the RecurrentLayer.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class RecurrentParameter : EngineParameter
     {
         uint m_nNumOutput = 0;

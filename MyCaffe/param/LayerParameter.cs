@@ -10,12 +10,15 @@ using MyCaffe.param.ssd;
 using MyCaffe.param.beta;
 using MyCaffe.param.gpt;
 using MyCaffe.param.tft;
+using System.ComponentModel;
 
 namespace MyCaffe.param
 {
     /// <summary>
     /// Specifies the base parameter for all layers.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class LayerParameter : BaseParameter, ICloneable, IComparable, IBinaryPersist  
     {
         /// <summary>

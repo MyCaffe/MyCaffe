@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using MyCaffe.basecode;
@@ -14,6 +15,8 @@ namespace MyCaffe.param
     /// @see [Residual Attention Network for Image Classification](https://arxiv.org/abs/1704.06904v1) by Fei Wang, Mengquing Jiang, Chen Qian, Shuo Yang, Cheng Li, Honggang Zhang, Xiaogang Wang, and Xiaoou Tang, 2017.
     /// @see [Attention and Localization based on a Deep Convolutional Recurrent Model for Weakly Supervised Audio Tagging](https://arxiv.org/abs/1703.06052v1) by Yong Xu, Qiuqiang Kong, Qiang Huang, Wenwu Wang, and Mark D. Plumbley, 2017.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class SigmoidParameter : EngineParameter 
     {
         /** @copydoc EngineParameter */

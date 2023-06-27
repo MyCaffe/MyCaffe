@@ -11,6 +11,8 @@ namespace MyCaffe.param
     /// <summary>
     /// Specifies the parameters for the ConstantLayer.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ConstantParameter : LayerParameterBase 
     {
         BlobShape m_outputShape = new BlobShape();

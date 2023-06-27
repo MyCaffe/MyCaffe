@@ -15,6 +15,8 @@ namespace MyCaffe.param
     /// @see [Image-based Localization using Hourglass Networks](https://arxiv.org/abs/1703.07971v1) by Iaroslav Melekhov, Juha Ylioinas, Juho Kannala, and Esa Rahtu, 2017.
     /// @see [Relative Camera Pose Estimation Using Convolutional Neural Networks](https://arxiv.org/abs/1702.01381v2) by Iaroslav Melekhov, Juha Ylioinas, Juho Kannala, Esa Rahtu, 2017.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class SPPParameter : EngineParameter 
     {
         PoolingParameter.PoolingMethod m_method = PoolingParameter.PoolingMethod.MAX;

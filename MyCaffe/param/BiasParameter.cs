@@ -10,6 +10,8 @@ namespace MyCaffe.param
     /// <summary>
     /// Specifies the parameters for the BiasLayer
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class BiasParameter : LayerParameterBase
     {
         int m_nAxis = 1;

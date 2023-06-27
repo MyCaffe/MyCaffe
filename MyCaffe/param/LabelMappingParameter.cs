@@ -11,6 +11,8 @@ namespace MyCaffe.param
     /// <summary>
     /// /b DEPRECIATED (use DataLayer DataLabelMappingParameter instead) Specifies the parameters for the LabelMappingLayer.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class LabelMappingParameter : LayerParameterBase 
     {
         LabelMappingCollection m_rgMapping = new LabelMappingCollection();

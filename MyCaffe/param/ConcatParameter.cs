@@ -16,6 +16,8 @@ namespace MyCaffe.param
     /// @see [Rethinking the Inception Architecture for Computer Vision](https://arxiv.org/abs/1512.00567) by Christian Szegedy, Vincent Vanhoucke, Sergey Ioffe, Jonathon Shlens, and Zbigniew Wojna, 2015.
     /// @see [Inception-v4, Inception-ResNet and the Impact of Residual Connections on Learning](https://arxiv.org/abs/1602.07261) by Christian Szegedy, Sergey Ioffe, Vincent Vanhoucke, and Alex Alemi, 2015.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ConcatParameter : LayerParameterBase 
     {
         int m_nAxis = 1;

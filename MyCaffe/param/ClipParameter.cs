@@ -10,6 +10,8 @@ namespace MyCaffe.param
     /// <summary>
     /// Stores the parameters used by the ClipLayer
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ClipParameter : LayerParameterBase
     {
         double m_dfMin;

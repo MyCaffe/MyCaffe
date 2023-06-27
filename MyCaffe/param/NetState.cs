@@ -13,6 +13,8 @@ namespace MyCaffe.param
     /// Specifies the NetState which includes the phase, level and stage
     /// for which a given Net is to run under.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class NetState : BaseParameter, ICloneable, IComparable 
     {
         Phase m_phase = Phase.TEST;

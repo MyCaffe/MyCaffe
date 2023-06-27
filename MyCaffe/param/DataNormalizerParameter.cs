@@ -13,6 +13,8 @@ namespace MyCaffe.param
     /// <remarks>
     /// The data normalizer layer provides a detailed normalization that is applied to the data (and label if desired).
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class DataNormalizerParameter : LayerParameterBase
     {
         bool m_bNormalizeAcrossDataAndLabel = false;

@@ -13,6 +13,7 @@ namespace MyCaffe.param
     /// shape fields, and 0, 1 or N data fillers.
     /// This layer is initialized with the ReLUParameter.
     /// </summary>
+    [Serializable]
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class DummyDataParameter : LayerParameterBase
     {

@@ -14,6 +14,7 @@ namespace MyCaffe.param
     /// <summary>
     /// Specifies a NetStateRule used to determine whether a Net falls within a given <i>include</i> or <i>exclude</i> pattern.
     /// </summary>
+    [Serializable]
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class NetStateRule : BaseParameter, ICloneable, IComparable, IBinaryPersist
     {

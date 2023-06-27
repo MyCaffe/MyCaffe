@@ -20,6 +20,8 @@ namespace MyCaffe.param
     /// 
     /// @f$ y = ln(shift + scale * x) @f$
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class LogParameter : LayerParameterBase
     {
         double m_dfBase = -1.0;

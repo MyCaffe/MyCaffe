@@ -26,6 +26,8 @@ namespace MyCaffe.param
     /// A test_iter must be specified for each test_net.
     /// A test_level and/or test_stage may also be specified for each test_net.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class SolverParameter : BaseParameter
     {
         NetParameter m_paramNet = null;

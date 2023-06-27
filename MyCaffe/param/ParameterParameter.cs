@@ -10,6 +10,8 @@ namespace MyCaffe.param
     /// <summary>
     /// Specifies the parameters for the ParameterLayer
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ParameterParameter : LayerParameterBase 
     {
         BlobShape m_shape = new BlobShape();

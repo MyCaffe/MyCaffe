@@ -15,6 +15,7 @@ namespace MyCaffe.param
     /// 
     /// @f$ y = function @f$, where function is a mathematical function.
     /// </remarks> 
+    [Serializable]
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class MathParameter : LayerParameterBase
     {

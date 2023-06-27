@@ -12,6 +12,8 @@ namespace MyCaffe.param
     /// <summary>
     /// Specifies the parameters use to create a Net
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class NetParameter : BaseParameter 
     {
         string m_strName = "";

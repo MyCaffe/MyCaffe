@@ -10,6 +10,8 @@ namespace MyCaffe.param
     /// <summary>
     /// Specifies the parameters for the ReshapeLayer.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ReshapeParameter : LayerParameterBase
     {
         BlobShape m_shape = new BlobShape();

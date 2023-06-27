@@ -14,6 +14,8 @@ namespace MyCaffe.param
     /// @see [Representation Learning and Pairwise Ranking for Implicit and Explicit Feedback in Recommendation Systems](https://arxiv.org/abs/1705.00105v1) by Mikhail Trofimov, Sumit Sidana, Oleh Horodnitskii, Charlotte Laclau, Yury Maximov, and Massih-Reza Amini, 2017. 
     /// @see [Deep Neural Networks to Enable Real-time Multimessenger Astrophysics](https://arxiv.org/abs/1701.00008v2) by Daniel George, and E. A. Huerta, 2016.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class FlattenParameter : LayerParameterBase
     {
         int m_nAxis = 1;

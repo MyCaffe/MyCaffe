@@ -16,6 +16,7 @@ namespace MyCaffe.param
     /// @see [Mixed context networks for semantic segmentation](https://arxiv.org/abs/1610.05854v1) by Haiming Sun, Di Xie, and Shiliang Pu, 2016. 
     /// @see [Why M Heads are Better than One: Training a Diverse Ensemble of Deep Networks](https://arxiv.org/abs/1511.06314v1) by Stefan Lee, Senthil Purushwalkam, Michael Cogswell, David Crandall, and Dhruv Batra, 2015.
     /// </remarks>
+    [Serializable]
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class EltwiseParameter : LayerParameterBase
     {

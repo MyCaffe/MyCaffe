@@ -21,6 +21,8 @@ namespace MyCaffe.param
     /// @see [Retrieving Similar E-Commerce Images Using Deep Learning](https://arxiv.org/abs/1901.03546) by Rishab Sharma and Anirudha Vishvakarma, arXiv:1901.03546, 2019.
     /// @see [A New Loss Function for CNN Classifier Based on Pre-defined Evenly-Distributed Class Centroids](https://arxiv.org/abs/1904.06008) by Qiuyu Zhu, Pengju Zhang, and Xin Ye, arXiv:1904.06008, 2019.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ContrastiveLossParameter : LayerParameterBase
     {
         double m_dfMargin = 1.0;

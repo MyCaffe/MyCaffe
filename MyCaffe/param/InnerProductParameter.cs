@@ -13,6 +13,8 @@ namespace MyCaffe.param
     /// <remarks>
     /// @see [Product-based Neural Networks for User Response Prediction](https://arxiv.org/abs/1611.00144) by Yanru Qu, Kan Cai, Weinan Zhang, Yong Yu, Ying Wen, and Jun Wang, 2016. 
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class InnerProductParameter : LayerParameterBase
     {
         uint m_nNumOutput = 0;

@@ -11,6 +11,8 @@ namespace MyCaffe.param
     /// Specifies whether to use the [NVIDIA cuDnn](https://developer.nvidia.com/cudnn) version 
     /// or Caffe version of a given forward/backward operation.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class EngineParameter : LayerParameterBase 
     {
         Engine m_engine = Engine.DEFAULT;

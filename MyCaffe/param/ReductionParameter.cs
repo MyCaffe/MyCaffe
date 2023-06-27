@@ -10,6 +10,8 @@ namespace MyCaffe.param
     /// <summary>
     /// Specifies the parameters used by ReductionLayer.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ReductionParameter : LayerParameterBase
     {
         /// <summary>

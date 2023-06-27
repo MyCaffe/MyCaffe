@@ -18,6 +18,8 @@ namespace MyCaffe.param
     /// @see [Fully Convolutional Networks for Semantic Segmentation](https://arxiv.org/abs/1411.4038) by Jonathan Long, Evan Shelhamer, and Trevor Darrell, 2014.
     /// @see [Multi-Scale Context Aggregation by Dilated Convolutions](https://arxiv.org/abs/1511.07122) by Fisher Yu, and Vladlen Koltun, 2015.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ConvolutionParameter : KernelParameter 
     {
         uint m_nNumOutput = 0;

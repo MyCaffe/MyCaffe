@@ -16,6 +16,8 @@ namespace MyCaffe.param
     /// 
     /// @see [Optimizing a Shallow Multi-Scale Network for Tiny-Imagenet Classification](http://cs231n.stanford.edu/reports/2015/pdfs/dashb_CS231n_Paper.pdf) by Dash Bodington, 2015.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class PowerParameter : LayerParameterBase
     {
         double m_dfPower = 1.0;

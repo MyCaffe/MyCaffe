@@ -13,6 +13,8 @@ namespace MyCaffe.param
     /// <remarks>
     /// @see [Convolutional Architecture Exploration for Action Recognition and Image Classification](https://arxiv.org/abs/1512.07502v1) by J. T. Turner, David Aha, Leslie Smith, and Kalyan Moy Gupta, 2015.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class AccuracyParameter : LayerParameterBase 
     {
         uint m_nTopK = 1;

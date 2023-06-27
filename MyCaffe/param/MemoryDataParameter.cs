@@ -10,6 +10,8 @@ namespace MyCaffe.param
     /// <summary>
     /// Specifies the parameters used by the MemoryDataLayer.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class MemoryDataParameter : LayerParameterBase 
     {
         uint m_nBatchSize;

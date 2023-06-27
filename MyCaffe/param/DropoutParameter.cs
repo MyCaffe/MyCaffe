@@ -14,6 +14,8 @@ namespace MyCaffe.param
     /// @see [Improving neural networks by preventing co-adaptation of feature detectors](https://arxiv.org/abs/1207.0580) by Geoffrey E. Hinton, Nitish Srivastava, Alex Krizhavsky, and Ruslan R. Salakhutdinov, 2012.
     /// @see [Information Dropout: Learning Optimal Representations Through Noisy Computation](https://arxiv.org/abs/1611.01353) by Alessandro Achille, and Stevano Soatto, 2016.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class DropoutParameter : EngineParameter
     {
         double m_dfDropoutRatio = 0.5;

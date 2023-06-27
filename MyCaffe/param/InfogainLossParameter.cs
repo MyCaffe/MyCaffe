@@ -13,6 +13,8 @@ namespace MyCaffe.param
     /// <remarks>
     /// @see [DeepGaze II: Reading fixations from deep features trained on object recognition](https://arxiv.org/abs/1610.01563) by Matthias Kümmerer, Thomas S. A. Wallis, and Matthias Bethge, 2016.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class InfogainLossParameter : LayerParameterBase
     {
         string m_strSource;

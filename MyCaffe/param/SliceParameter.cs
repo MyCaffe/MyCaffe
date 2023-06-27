@@ -11,6 +11,8 @@ namespace MyCaffe.param
     /// <summary>
     /// Specifies the parameters for the SliceLayer.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class SliceParameter : LayerParameterBase
     {
         int m_nAxis = 1;

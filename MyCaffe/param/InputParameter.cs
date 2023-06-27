@@ -15,6 +15,8 @@ namespace MyCaffe.param
     /// <remarks>
     /// This layer produces N >= 1 top blob(s) to be assigned manually.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class InputParameter : LayerParameterBase
     {
         List<BlobShape> m_rgShape = new List<BlobShape>();

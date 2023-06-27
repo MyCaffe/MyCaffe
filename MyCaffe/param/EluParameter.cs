@@ -14,6 +14,7 @@ namespace MyCaffe.param
     /// @see [Deep Residual Networks with Exponential Linear Unit](https://arxiv.org/abs/1604.04112) by Anish Shah, Eashan Kadam, Hena Shah, Sameer Shinde, and Sandip Shingade, 2016.
     /// @see [Fast and Accurate Deep Network Learning by Exponential Linear Units (ELUs)](https://arxiv.org/abs/1511.07289) by Djork-Arné Clevert, Thomas Unterthiner, and Sepp Hochreiter, 2015.
     /// </remarks>
+    [Serializable]
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class EluParameter : EngineParameter
     {

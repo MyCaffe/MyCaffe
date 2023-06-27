@@ -13,6 +13,8 @@ namespace MyCaffe.param
     /// <remarks>
     /// @see [Activation Functions](https://arxiv.org/abs/1710.05941v2) by Prajit Ramachandran, Barret Zoph, Quoc V. Le., 2017.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class SwishParameter : EngineParameter
     {
         double m_dfBeta = 1;

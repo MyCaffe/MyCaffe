@@ -14,6 +14,8 @@ namespace MyCaffe.param
     /// @see [CNN-based Patch Matching for Optical Flow with Thresholded Hinge Loss](https://arxiv.org/abs/1607.08064) by Christian Bailer, Kiran Varanasi, and Didier Stricker, 2016.
     /// @see [Hinge-Loss Markov Random Fields and Probabilistic Soft Logic](https://arxiv.org/abs/1505.04406) by Stephen H. Bach, Matthias Broecheler, Bert Huang, and Lise Getoor, 2015.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class HingeLossParameter : LayerParameterBase
     {
         /// <summary>

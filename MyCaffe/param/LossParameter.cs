@@ -10,6 +10,8 @@ namespace MyCaffe.param
     /// <summary>
     /// Stores the parameters used by loss layers.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class LossParameter : LayerParameterBase 
     {
         int? m_nIgnoreLabel = null;

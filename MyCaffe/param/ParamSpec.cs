@@ -13,6 +13,7 @@ namespace MyCaffe.param
     /// Specifies training parameters (multipliers on global learning constants,
     /// and the name of other settings used for weight sharing).
     /// </summary>
+    [Serializable]
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ParamSpec : BaseParameter, ICloneable, IBinaryPersist 
     {

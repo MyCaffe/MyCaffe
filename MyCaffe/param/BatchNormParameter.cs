@@ -15,6 +15,8 @@ namespace MyCaffe.param
     /// @see [In Defense of the Triplet Loss for Person Re-Identification](https://arxiv.org/abs/1703.07737v2) by Alexander Hermans, Lucas Beyer, and Bastian Leibe, 2017. 
     /// @see [Layer Normalization](https://arxiv.org/abs/1607.06450) by Jimmy Lei Ba,  and Jamie Ryan Kiros, and Geoffrey E. Hinton, 2016.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class BatchNormParameter : EngineParameter
     {
         bool? m_bUseGlobalStats = null;

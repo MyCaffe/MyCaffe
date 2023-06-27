@@ -10,6 +10,8 @@ namespace MyCaffe.param
     /// <summary>
     /// Specifies the parameters for the ImageDataLayer
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ImageDataParameter : LayerParameterBase 
     {
         uint m_nRandomSkip = 0;

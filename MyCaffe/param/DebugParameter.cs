@@ -10,6 +10,8 @@ namespace MyCaffe.param
     /// <summary>
     /// Specifies the parameters used by the DebugLayer
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class DebugParameter : LayerParameterBase 
     {
         int m_nMaxBatchesToStore = 1000;

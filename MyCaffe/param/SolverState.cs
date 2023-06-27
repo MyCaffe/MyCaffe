@@ -4,12 +4,15 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using MyCaffe.common;
+using System.ComponentModel;
 
 namespace MyCaffe.param
 {
     /// <summary>
     /// The SolverState specifies the state of a given solver.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class SolverState
     {
         int m_nIter;

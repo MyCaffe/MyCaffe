@@ -13,6 +13,8 @@ namespace MyCaffe.param
     /// <remarks>
     /// @see [Detecting Unexpected Obstacles for Self-Driving Cars: Fusing Deep Learning and Geometric Modeling](https://arxiv.org/abs/1612.06573v1) by Sebastian Ramos, Stefan Gehrig, Peter Pinggera, Uwe Franke, and Carsten Rother, 2016. 
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ArgMaxParameter : LayerParameterBase
     {
         bool m_bOutMaxVal = false;

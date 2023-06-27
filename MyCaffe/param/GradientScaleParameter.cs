@@ -25,6 +25,7 @@ namespace MyCaffe.param
     /// @see [Domain-Adversarial Training of Neural Networks](https://arxiv.org/abs/1505.07818) by Ganin et al., 2015, v4 in 2016.
     /// @see [Github/ddtm/caffe](https://github.com/ddtm/caffe) for original source.
     /// </remarks> 
+    [Serializable]
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class GradientScaleParameter : LayerParameterBase
     {

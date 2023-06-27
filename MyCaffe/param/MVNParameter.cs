@@ -15,6 +15,8 @@ namespace MyCaffe.param
     /// @see [Learning weakly supervised multimodal phoneme embeddings](https://arxiv.org/abs/1704.06913v1) by Rahma Chaabouni, Ewan Dunbar, Neil Zeghidour, and Emmanuel Dupoux, 2017. 
     /// @see [Estimating Phoneme Class Conditional Probabilities from Raw Speech Signal using Convolutional Neural Networks](https://arxiv.org/abs/1304.1018) by Dimitri Palaz, Ronan Collobert, and Mathew Magimai-Doss, 2013.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class MVNParameter : LayerParameterBase
     {
         bool m_bNormalizeVariance = true;

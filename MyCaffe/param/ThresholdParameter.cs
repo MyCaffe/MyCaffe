@@ -13,6 +13,8 @@ namespace MyCaffe.param
     /// <remarks>
     /// @see [Neural Networks with Input Specified Thresholds](http://cs231n.stanford.edu/reports/2016/pdfs/118_Report.pdf) by Fei Liu and Junyang Qian, 2016.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ThresholdParameter : LayerParameterBase
     {
         double m_dfThreshold = 0;

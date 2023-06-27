@@ -16,6 +16,8 @@ namespace MyCaffe.param
     /// @see [Understanding Deep Neural Networks with Rectified Linear Units](https://arxiv.org/abs/1611.01491) by Raman Arora, Amitabh Basu, Poorya Mianjy, and Anirbit Mukherjee, 2016.
     /// @see [Delving Deep into Rectifiers: Surpassing Human-Level Performance on ImageNet Classification](https://arxiv.org/abs/1502.01852v1) by Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun, 2015.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class PReLUParameter : LayerParameterBase
     {
         FillerParameter m_filler = new FillerParameter("constant", 0.25);

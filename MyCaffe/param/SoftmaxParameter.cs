@@ -17,6 +17,8 @@ namespace MyCaffe.param
     /// @see [Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer](https://arxiv.org/abs/1701.06538v1) by Noam Shazeer, Azalia Mirhoseini, Krzysztof Maziarz, Andy Davis, Quoc Le, Geoffrey Hinton, and Jeff Dean, 2017.
     /// @see [Exploring the Limits of Language Modeling](https://arxiv.org/abs/1602.02410v2) by Rafal Jozefowicz, Oriol Vinyals, Mike Schuster, Noam Shazeer, and Yonghui Wu, 2016.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class SoftmaxParameter : EngineParameter 
     {
         int m_nAxis = 1;

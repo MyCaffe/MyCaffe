@@ -15,6 +15,8 @@ namespace MyCaffe.param
     /// @see [Revise Saturated Activation Functions](https://arxiv.org/abs/1602.05980?context=cs) by Bing Xu, Ruitong Huang, and Mu Li, 2016.
     /// @see [Rectifier Nonlinearities Improve Neural Network Acoustic Models](http://ai.stanford.edu/~amaas/papers/relu_hybrid_icml2013_final.pdf) by Andrew L. Maas, Awni Y. Hannun, and Andrew Y. Ng, 2013.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ReLUParameter : EngineParameter 
     {
         double m_dfNegativeSlope = 0;

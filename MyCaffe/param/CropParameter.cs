@@ -19,6 +19,8 @@ namespace MyCaffe.param
     /// 
     /// @see [Fully Convolutional Networks for Semantic Segmentation](https://arxiv.org/abs/1411.4038) by Jonathan Long, Evan Shelhamer, and Trevor Darrell, 2014.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class CropParameter : LayerParameterBase 
     {
         int m_nAxis = 2;

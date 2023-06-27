@@ -11,6 +11,8 @@ namespace MyCaffe.param
     /// <summary>
     /// Specifies the basic kernel parameters (used by convolution and pooling)
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class KernelParameter : EngineParameter 
     {
         List<uint> m_rgPad = new List<uint>();
