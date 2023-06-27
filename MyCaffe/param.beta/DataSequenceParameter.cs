@@ -16,6 +16,8 @@ namespace MyCaffe.param.beta
     /// <summary>
     /// Specifies the parameters for the DataSequenceLayer.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class DataSequenceParameter : LayerParameterBase 
     {
         int m_nK = 0;

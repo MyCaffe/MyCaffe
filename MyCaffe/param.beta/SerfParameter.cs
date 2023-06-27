@@ -10,8 +10,8 @@ namespace MyCaffe.param.beta
     /// <summary>
     /// Stores the parameters used by the SerfLayer
     /// </summary>
-    /// <remarks>
-    /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class SerfParameter : EngineParameter
     {
         double m_dfThreshold = 20;

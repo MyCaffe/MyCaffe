@@ -28,6 +28,8 @@ namespace MyCaffe.param.beta
     /// @see [FaceNet: A Unified Embedding for Face Recognition and Clustering](https://arxiv.org/abs/1503.03832) by Florian Schroff, and Dmitry Kalenichenko, and James Philbin, 2015.
     /// @see [Generalisation and Sharing in Triplet Convnets for Sketch based Visual Search](https://arxiv.org/abs/1611.05301v1) by Tu Bui, Leonardo Ribeiro, Moacir Ponti, and John Collomosse, 2016.
     /// </remarks> 
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class TripletLossParameter : LayerParameterBase 
     {
         double m_dfAlpha = 1.1;

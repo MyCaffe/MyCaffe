@@ -23,6 +23,8 @@ namespace MyCaffe.param
     /// And also inspired by the C# ChatBot implementation by HectorPulido which uses Seq2SeqLearn
     /// @see [HectorPulido/Chatbot-seq2seq-C-](https://github.com/HectorPulido/Chatbot-seq2seq-C-) distributed under [MIT license](https://github.com/HectorPulido/Chatbot-seq2seq-C-/blob/master/LICENSE).
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class LSTMAttentionParameter : LayerParameterBase
     {
         uint m_nNumOutput;

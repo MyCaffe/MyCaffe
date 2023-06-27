@@ -8,10 +8,12 @@ using MyCaffe.basecode;
 namespace MyCaffe.param
 {
     /// <summary>
-    /// Specifies the parameters for the AttentionLayer.
+    /// [/b DEPRECIATED, use MultiHeadAttention layers instead.] Specifies the parameters for the AttentionLayer.
     /// </summary>
     /// <remarks>
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class AttentionParameter : LayerParameterBase
     {
         int m_nAxis = 2;

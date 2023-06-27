@@ -12,6 +12,8 @@ namespace MyCaffe.param
     /// </summary>
     /// <remarks>
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class InterpParameter : LayerParameterBase
     {
         int? m_nHeight = null;

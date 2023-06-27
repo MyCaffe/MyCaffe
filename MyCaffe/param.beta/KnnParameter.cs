@@ -16,6 +16,8 @@ namespace MyCaffe.param.beta
     /// <summary>
     /// Specifies the parameters for the KnnLayer.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class KnnParameter : LayerParameterBase 
     {
         int m_nMaxBatchesToStore = 10;

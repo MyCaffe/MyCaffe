@@ -17,6 +17,8 @@ namespace MyCaffe.param
     /// @see [MAD vs RMSE vs MAE vs MSLE vs R^2: When to use which?](https://datascience.stackexchange.com/questions/42760/mad-vs-rmse-vs-mae-vs-msle-vs-r%C2%B2-when-to-use-which), StackExchange, 2018.
     /// @see [Mean Absolute Error](https://peltarion.com/knowledge-center/documentation/modeling-view/build-an-ai-model/loss-functions/mean-absolute-error) by Peltarion.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class MeanErrorLossParameter : LayerParameterBase
     {
         int m_nAxis = 1; // Axis used to calculate the loss normalization.

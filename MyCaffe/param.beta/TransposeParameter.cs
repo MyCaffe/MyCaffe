@@ -10,6 +10,8 @@ namespace MyCaffe.param.beta
     /// <summary>
     /// Specifies the parameters for the TransposeLayer.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class TransposeParameter : LayerParameterBase
     {
         BlobShape m_shape = new BlobShape();

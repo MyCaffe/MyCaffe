@@ -16,6 +16,8 @@ namespace MyCaffe.param.beta
     /// <summary>
     /// Specifies the parameters for the MergeLayer.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class MergeParameter : LayerParameterBase 
     {
         int m_nCopyAxis = 0;

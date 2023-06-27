@@ -13,6 +13,8 @@ namespace MyCaffe.param.beta
     /// <remarks>
     /// @see [Layer Normalization](https://arxiv.org/abs/1607.06450) by Jimmy Lei Ba, Jamie Ryan Kiros, and Geoffrey E. Hinton, 2016.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class Normalization1Parameter : LayerParameterBase 
     {
         Norm m_norm = Norm.L2;

@@ -10,6 +10,8 @@ namespace MyCaffe.param.beta
     /// <summary>
     /// Specifies the parameters for the GatherLayer.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class GatherParameter : LayerParameterBase
     {
         int m_nAxis = 0;

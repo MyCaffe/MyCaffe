@@ -12,6 +12,8 @@ namespace MyCaffe.param
     /// </summary>
     /// <remarks>
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ConvolutionOctaveParameter : LayerParameterBase
     {
         double m_dfAlphaIn = 0.5;

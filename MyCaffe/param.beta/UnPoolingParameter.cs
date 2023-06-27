@@ -17,6 +17,8 @@ namespace MyCaffe.param.beta
     /// @see [Gradient-Based Learning Applied to Document Recognition](http://yann.lecun.com/exdb/publis/pdf/lecun-98.pdf) by Yann LeCun, Léon Bottou, Yoshua Bengio, and Patrick Haffner, 1998.
     /// @see [Decoupled Deep Neural Network for Semi-supervised Semantic Segmentation](https://arxiv.org/abs/1506.04924) by Seunghoon Hong, Hyeonwoo Noh, and Bohyung Han, 2015.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class UnPoolingParameter : PoolingParameter 
     {
         List<uint> m_rgUnpool = new List<uint>();

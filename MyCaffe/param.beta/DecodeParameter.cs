@@ -22,6 +22,8 @@ namespace MyCaffe.param.beta
     /// <summary>
     /// Specifies the parameters for the DecodeLayer and the AccuracyEncodingLayer.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class DecodeParameter : LayerParameterBase 
     {
         bool m_bEnableCentroidUpdate = true;

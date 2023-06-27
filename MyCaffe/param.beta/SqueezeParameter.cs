@@ -10,6 +10,8 @@ namespace MyCaffe.param.beta
     /// <summary>
     /// Specifies the parameters for the SqueezeLayer.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class SqueezeParameter : LayerParameterBase
     {
         BlobShape m_shape = new BlobShape();
