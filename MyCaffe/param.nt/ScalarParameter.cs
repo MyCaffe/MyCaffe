@@ -10,6 +10,8 @@ namespace MyCaffe.param.nt
     /// <summary>
     /// Specifies the parameters for the ScalarLayer
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ScalarParameter : LayerParameterBase 
     {
         double m_dfVal;

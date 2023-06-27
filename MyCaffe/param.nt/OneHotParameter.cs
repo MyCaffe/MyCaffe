@@ -30,6 +30,8 @@ namespace MyCaffe.param.nt
     /// 
     /// Except for end buckets, inputs are placed in bucket where:  bucket min &lt;= input &lt; bucket max.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class OneHotParameter : LayerParameterBase
     {
         int m_nAxis = 2;
