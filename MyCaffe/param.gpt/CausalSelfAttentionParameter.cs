@@ -10,8 +10,8 @@ namespace MyCaffe.param.gpt
     /// <summary>
     /// Specifies the parameters for the CausalSelfAttentionLayer.
     /// </summary>
-    /// <remarks>
-    /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class CausalSelfAttentionParameter : LayerParameterBase
     {
         uint m_nHeads = 6;

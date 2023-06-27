@@ -10,8 +10,8 @@ namespace MyCaffe.param.gpt
     /// <summary>
     /// Specifies the parameters for the PositionalEncoderLayer.
     /// </summary>
-    /// <remarks>
-    /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class PositionalEncoderParameter : LayerParameterBase
     {
         uint m_nEmbed = 192;     // d_model

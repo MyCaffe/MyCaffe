@@ -10,8 +10,8 @@ namespace MyCaffe.param.gpt
     /// <summary>
     /// Specifies the parameters for the MultiheadAttentionLayer.
     /// </summary>
-    /// <remarks>
-    /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class MultiheadAttentionParameter : LayerParameterBase
     {
         uint m_nHeads = 6;

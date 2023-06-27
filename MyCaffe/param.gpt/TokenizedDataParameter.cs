@@ -11,8 +11,8 @@ namespace MyCaffe.param.gpt
     /// <summary>
     /// Specifies the parameters for the TokenizedDataLayer.
     /// </summary>
-    /// <remarks>
-    /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class TokenizedDataParameter : LayerParameterBase
     {
         /// <summary>

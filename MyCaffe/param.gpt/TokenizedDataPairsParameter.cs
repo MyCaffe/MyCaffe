@@ -11,8 +11,8 @@ namespace MyCaffe.param.gpt
     /// <summary>
     /// Specifies the parameters for the TokenizedDataPairsLayer.
     /// </summary>
-    /// <remarks>
-    /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class TokenizedDataPairsParameter : TokenizedDataParameter
     {
         string m_strTarget = "";

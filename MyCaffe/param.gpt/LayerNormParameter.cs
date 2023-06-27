@@ -15,6 +15,8 @@ namespace MyCaffe.param.gpt
     /// @see [LayerNorm](https://pytorch.org/docs/stable/generated/torch.nn.LayerNorm.html) PyTorch
     /// @see [Understanding and Improving Layer Normalization](https://arxiv.org/abs/1911.07013) by Xu et al., 2019, arXiv:1911.07013
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class LayerNormParameter : LayerParameterBase 
     {
         double m_dfEpsilon = 1e-10;

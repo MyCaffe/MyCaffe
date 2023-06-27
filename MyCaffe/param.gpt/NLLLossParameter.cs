@@ -14,6 +14,8 @@ namespace MyCaffe.param.gpt
     /// @see [NLLOSS](https://pytorch.org/docs/stable/generated/torch.nn.NLLLoss.html) by PyTorch
     /// @see [NLLLoss implementation](https://forums.fast.ai/t/nllloss-implementation/20028) by bny6613 Nick, 2018
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class NLLLossParameter : LayerParameterBase
     {
         int m_nAxis = 1;

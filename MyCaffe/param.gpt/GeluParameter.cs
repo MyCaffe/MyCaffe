@@ -10,8 +10,8 @@ namespace MyCaffe.param.gpt
     /// <summary>
     /// Specifies the parameters for the GeluLayer.
     /// </summary>
-    /// <remarks>
-    /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class GeluParameter : LayerParameterBase
     {
         bool m_bEnableBertVersion = false;

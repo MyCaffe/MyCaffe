@@ -10,8 +10,8 @@ namespace MyCaffe.param.gpt
     /// <summary>
     /// Specifies the parameters for the TransformerBlockLayer.
     /// </summary>
-    /// <remarks>
-    /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class TransformerBlockParameter : LayerParameterBase
     {
         uint m_nHeads = 6;
