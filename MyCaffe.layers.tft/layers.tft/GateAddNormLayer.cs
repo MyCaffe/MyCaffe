@@ -224,12 +224,12 @@ namespace MyCaffe.layers.tft
             m_layerNorm.Reshape(m_colBtm, m_colTop);
         }
 
-        private void copy_to_fwd(BlobCollection<T> colBtm, Blob<T> bTop)
+        private void copy_to_fwd(BlobCollection<T> colBtm, int nIdx, Blob<T> bTop)
         {
-            if (colBtm.Count < 2)
+            if (nIdx >= colBtm.Count)
                 return;
 
-            Blob<T> bBtm = colBtm[1];
+            Blob<T> bBtm = colBtm[nIdx];
 
             if (m_param.gateaddnorm_param.residual_channel_offset > 0)
             {
@@ -246,12 +246,12 @@ namespace MyCaffe.layers.tft
             }
         }
 
-        private void copy_to_bwd(BlobCollection<T> colBtm, Blob<T> bTop)
+        private void copy_to_bwd(BlobCollection<T> colBtm, int nIdx, Blob<T> bTop)
         {
-            if (colBtm.Count < 2)
+            if (nIdx >= colBtm.Count)
                 return;
 
-            Blob<T> bBtm = colBtm[1];
+            Blob<T> bBtm = colBtm[nIdx];
 
             if (m_param.gateaddnorm_param.residual_channel_offset > 0)
             {
@@ -268,12 +268,12 @@ namespace MyCaffe.layers.tft
             }
         }
 
-        private void add_to_bwd(BlobCollection<T> colBtm, Blob<T> bTop)
+        private void add_to_bwd(BlobCollection<T> colBtm, int nIdx, Blob<T> bTop)
         {
-            if (colBtm.Count < 2)
+            if (nIdx >= colBtm.Count)
                 return;
 
-            Blob<T> bBtm = colBtm[1];
+            Blob<T> bBtm = colBtm[nIdx];
 
             if (m_param.gateaddnorm_param.residual_channel_offset > 0)
             {
@@ -304,7 +304,7 @@ namespace MyCaffe.layers.tft
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             Blob<T> blobBtm = colBottom[0];
-            copy_to_fwd(colBottom, m_blobResidual);
+            copy_to_fwd(colBottom, 1, m_blobResidual);
 
             if (m_dropout != null)
             {
@@ -347,7 +347,7 @@ namespace MyCaffe.layers.tft
             m_layerNorm.Backward(m_colTop, rgbPropagateDown, m_colBtm);
 
             // Copy grad to the residual if it exists.
-            copy_to_bwd(colBottom, m_blobGateAddResidual);
+            copy_to_bwd(colBottom, 1, m_blobGateAddResidual);
             m_blobGate.CopyFrom(m_blobGateAddResidual, true);
             if (colBottom.Count > 1)
                 m_blobResidual.CopyFrom(m_blobGateAddResidual, true);
@@ -362,7 +362,7 @@ namespace MyCaffe.layers.tft
                 colBottom[0].CopyFrom(m_blobDrop, true);
             }
 
-            add_to_bwd(colBottom, m_blobResidual);
+            add_to_bwd(colBottom, 1, m_blobResidual);
         }
     }
 }
