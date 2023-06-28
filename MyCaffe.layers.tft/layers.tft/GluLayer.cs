@@ -155,7 +155,7 @@ namespace MyCaffe.layers.tft
 
             if (m_ip2Layer == null)
             {
-                LayerParameter ip2 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + "fc2");
+                LayerParameter ip2 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".fc2");
                 ip2.inner_product_param.num_output = (uint)m_param.glu_param.input_dim;
                 ip2.inner_product_param.axis = m_param.glu_param.axis;
                 ip2.inner_product_param.bias_term = m_param.glu_param.bias_term;
