@@ -26,14 +26,18 @@ namespace MyCaffe.layers.tft
         }
 
         /// <summary>
-        /// Loads the data schema from a project.
+        /// Loads the data schema from a dataset descriptor.
         /// </summary>
-        /// <param name="prj">Specifies the project name.</param>
+        /// <param name="desc">Specifies the dataset descriptor.</param>
+        /// <param name="phase">Specifies the phase to load.</param>
         /// <returns>The data schema is returned.</returns>
-        public static DataSchema LoadFromProject(ProjectEx prj)
+        public static DataSchema LoadFromDatasetDescriptor(DatasetDescriptor desc, Phase phase)
         {
             DataSchema schema = new DataSchema();
-            TemporalDescriptor tsd = prj.Dataset.TrainingSource.TemporalDescriptor;
+            TemporalDescriptor tsd = (phase == Phase.TEST) ? desc.TestingSource.TemporalDescriptor : desc.TrainingSource.TemporalDescriptor;
+
+            if (tsd == null)
+                return null;
 
             schema.Data.Columns = tsd.ValueItemDescriptors[0].ValueStreamDescriptors[0].ItemCount;
 
@@ -65,6 +69,17 @@ namespace MyCaffe.layers.tft
             }
 
             return schema;
+        }
+
+        /// <summary>
+        /// Loads the data schema from a project.
+        /// </summary>
+        /// <param name="prj">Specifies the project name.</param>
+        /// <param name="phase">Specifies the phase to load.</param>
+        /// <returns>The data schema is returned.</returns>
+        public static DataSchema LoadFromProject(ProjectEx prj, Phase phase = Phase.TRAIN)
+        {
+            return LoadFromDatasetDescriptor(prj.Dataset, phase);
         }
 
         /// <summary>
