@@ -177,7 +177,6 @@ namespace MyCaffe.layers.tft
             ip1.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
             ip1.inner_product_param.bias_filler = m_param.grn_param.bias_filler;
             m_ipFc1 = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ip1, m_param), null);
-            m_blobIp1 = new Blob<T>(m_cuda, m_log);
 
             addBtmTop(colBottom[0], m_blobIp1);
             m_ipFc1.Setup(m_colBtm, m_colTop);
@@ -406,13 +405,9 @@ namespace MyCaffe.layers.tft
 
             // add residual
             if (m_ipSkipLayer != null)
-            {
                 m_blobResidual.CopyFrom(m_blobGatePlusResidual, true);
-            }
             else
-            {
                 colBottom[0].CopyFrom(m_blobGatePlusResidual, true, false, 0, true);
-            }
 
             m_blobGate.CopyFrom(m_blobGatePlusResidual, true, false, 0, true);
 
@@ -428,7 +423,7 @@ namespace MyCaffe.layers.tft
             }
 
             Blob<T> blobIp1 = m_blobIp1;
-            if (m_ipContext != null)
+            if (colBottom.Count > 1)
                 blobIp1 = m_blobContextAdd;
 
             // Fc2
@@ -439,16 +434,17 @@ namespace MyCaffe.layers.tft
             addBtmTop(blobIp1, blobIp1);
             m_act.Backward(m_colTop, rgbPropagateDown, m_colBtm);
 
-            if (m_ipContext != null)
+            if (colBottom.Count > 1)
             {
-                m_blobContext.CopyFrom(blobIp1, true);
+                m_blobContext.CopyFrom(m_blobContextAdd, true);
+                m_blobIp1.CopyFrom(m_blobContextAdd, true);
 
                 addBtmTop(colBottom[1], m_blobContext);
                 m_ipContext.Backward(m_colTop, rgbPropagateDown, m_colBtm);
             }
 
             m_blobBtm.CopyFrom(colBottom[0]);
-            addBtmTop(m_blobBtm, blobIp1);
+            addBtmTop(m_blobBtm, m_blobIp1);
             m_ipFc1.Backward(m_colTop, rgbPropagateDown, m_colBtm);
 
             m_cuda.add(colBottom[0].count(), colBottom[0].gpu_diff, m_blobBtm.gpu_diff, colBottom[0].mutable_gpu_diff);
