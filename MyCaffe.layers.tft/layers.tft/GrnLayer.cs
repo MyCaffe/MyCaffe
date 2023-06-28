@@ -158,85 +158,100 @@ namespace MyCaffe.layers.tft
             // otherwise we need to project the input for creating the residual connection.
             if (m_param.grn_param.input_dim != m_param.grn_param.output_dim)
             {
-                LayerParameter ip = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".skip");
-                ip.inner_product_param.num_output = (uint)m_param.grn_param.output_dim;
-                ip.inner_product_param.axis = m_param.grn_param.axis;
-                ip.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
-                ip.inner_product_param.bias_filler = m_param.grn_param.bias_filler;
-                m_ipSkipLayer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ip, m_param), null);
+                if (m_ipSkipLayer == null)
+                {
+                    LayerParameter ip = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".skip");
+                    ip.inner_product_param.num_output = (uint)m_param.grn_param.output_dim;
+                    ip.inner_product_param.axis = m_param.grn_param.axis;
+                    ip.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
+                    ip.inner_product_param.bias_filler = m_param.grn_param.bias_filler;
+                    m_ipSkipLayer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ip, m_param), null);
 
-                addBtmTop(colBottom[0], m_blobResidual);
-                m_ipSkipLayer.Setup(m_colBtm, m_colTop);
-                blobs.Add(m_ipSkipLayer.blobs);
+                    addBtmTop(colBottom[0], m_blobResidual);
+                    m_ipSkipLayer.Setup(m_colBtm, m_colTop);
+                    blobs.Add(m_ipSkipLayer.blobs);
+                }
             }
 
             // Create the linear layer for projecting the primary input (across time if necessary)
-            LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".fc1");
-            ip1.inner_product_param.num_output = (uint)m_param.grn_param.hidden_dim;
-            ip1.inner_product_param.axis = m_param.grn_param.axis;
-            ip1.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
-            ip1.inner_product_param.bias_filler = m_param.grn_param.bias_filler;
-            m_ipFc1 = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ip1, m_param), null);
+            if (m_ipFc1 == null)
+            {
+                LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".fc1");
+                ip1.inner_product_param.num_output = (uint)m_param.grn_param.hidden_dim;
+                ip1.inner_product_param.axis = m_param.grn_param.axis;
+                ip1.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
+                ip1.inner_product_param.bias_filler = m_param.grn_param.bias_filler;
+                m_ipFc1 = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ip1, m_param), null);
 
-            addBtmTop(colBottom[0], m_blobIp1);
-            m_ipFc1.Setup(m_colBtm, m_colTop);
-            blobs.Add(m_ipFc1.blobs);
+                addBtmTop(colBottom[0], m_blobIp1);
+                m_ipFc1.Setup(m_colBtm, m_colTop);
+                blobs.Add(m_ipFc1.blobs);
+            }
             Blob<T> blobIp1 = m_blobIp1;
 
             // If a context input exists, project the context as well.
             if (colBottom.Count > 1)
             {
-                LayerParameter ip = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".context");
-                ip.inner_product_param.num_output = (uint)m_param.grn_param.hidden_dim;
-                ip.inner_product_param.axis = m_param.grn_param.axis;
-                ip.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
-                ip.inner_product_param.bias_term = false;
-                m_ipContext = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ip, m_param), null);
-                m_blobContext = new Blob<T>(m_cuda, m_log);
-                m_blobContext.Name = m_param.name + ".ctx";
-                m_blobContextAdd = new Blob<T>(m_cuda, m_log);
-                m_blobContextAdd.Name = m_param.name + ".ctx_add";
+                if (m_ipContext == null)
+                {
+                    LayerParameter ip = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".context");
+                    ip.inner_product_param.num_output = (uint)m_param.grn_param.hidden_dim;
+                    ip.inner_product_param.axis = m_param.grn_param.axis;
+                    ip.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
+                    ip.inner_product_param.bias_term = false;
+                    m_ipContext = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ip, m_param), null);
+                    m_blobContext = new Blob<T>(m_cuda, m_log);
+                    m_blobContext.Name = m_param.name + ".ctx";
+                    m_blobContextAdd = new Blob<T>(m_cuda, m_log);
+                    m_blobContextAdd.Name = m_param.name + ".ctx_add";
 
-                addBtmTop(colBottom[1], m_blobContext);
-                m_ipContext.Setup(m_colBtm, m_colTop);
-                blobs.Add(m_ipContext.blobs);
+                    addBtmTop(colBottom[1], m_blobContext);
+                    m_ipContext.Setup(m_colBtm, m_colTop);
+                    blobs.Add(m_ipContext.blobs);
 
-                m_cuda.add(m_blobContext.count(), m_blobContext.gpu_data, m_blobIp1.gpu_data, m_blobContext.mutable_gpu_data);
+                    m_cuda.add(m_blobContext.count(), m_blobContext.gpu_data, m_blobIp1.gpu_data, m_blobContext.mutable_gpu_data);
+                }
                 blobIp1 = m_blobContext;
             }
 
             // non-linear activation function applied to the sum of projections.
-            if (m_param.grn_param.activation == param.tft.GrnParameter.ACTIVATION.RELU)
+            if (m_act == null)
             {
-                LayerParameter act = new LayerParameter(LayerParameter.LayerType.RELU, m_param.name + ".act");
-                m_act = Layer<T>.Create(m_cuda, m_log, convertLayerParam(act, m_param), null);
-            }
-            else
-            {
-                LayerParameter act = new LayerParameter(LayerParameter.LayerType.ELU, m_param.name + ".act");
-                act.elu_param.engine = EngineParameter.Engine.CAFFE;
-                act.elu_param.alpha = 1.0;
-                m_act = Layer<T>.Create(m_cuda, m_log, convertLayerParam(act, m_param), null);
-            }
+                if (m_param.grn_param.activation == param.tft.GrnParameter.ACTIVATION.RELU)
+                {
+                    LayerParameter act = new LayerParameter(LayerParameter.LayerType.RELU, m_param.name + ".act");
+                    m_act = Layer<T>.Create(m_cuda, m_log, convertLayerParam(act, m_param), null);
+                }
+                else
+                {
+                    LayerParameter act = new LayerParameter(LayerParameter.LayerType.ELU, m_param.name + ".act");
+                    act.elu_param.engine = EngineParameter.Engine.CAFFE;
+                    act.elu_param.alpha = 1.0;
+                    m_act = Layer<T>.Create(m_cuda, m_log, convertLayerParam(act, m_param), null);
+                }
 
-            addBtmTop(blobIp1, blobIp1);
-            m_act.Setup(m_colBtm, m_colTop);
+                addBtmTop(blobIp1, blobIp1);
+                m_act.Setup(m_colBtm, m_colTop);
+            }
 
             //-------------------------------------------------------
             // Further projection components (Eq.3 in original paper)
             //-------------------------------------------------------
 
             // Create the linear layer for projecting top of the activation function
-            LayerParameter ip2 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".fc2");
-            ip2.inner_product_param.num_output = (uint)m_param.grn_param.output_dim;
-            ip2.inner_product_param.axis = m_param.grn_param.axis;
-            ip2.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
-            ip2.inner_product_param.bias_filler = m_param.grn_param.bias_filler;
-            m_ipFc2 = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ip2, m_param), null);
+            if (m_ipFc2 == null)
+            {
+                LayerParameter ip2 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".fc2");
+                ip2.inner_product_param.num_output = (uint)m_param.grn_param.output_dim;
+                ip2.inner_product_param.axis = m_param.grn_param.axis;
+                ip2.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
+                ip2.inner_product_param.bias_filler = m_param.grn_param.bias_filler;
+                m_ipFc2 = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ip2, m_param), null);
 
-            addBtmTop(blobIp1, m_blobIp2);
-            m_ipFc2.Setup(m_colBtm, m_colTop);
-            blobs.Add(m_ipFc2.blobs);
+                addBtmTop(blobIp1, m_blobIp2);
+                m_ipFc2.Setup(m_colBtm, m_colTop);
+                blobs.Add(m_ipFc2.blobs);
+            }
 
             //-------------------------------------------------------
             // Output gating components (Eq.2 in original paper)
@@ -244,31 +259,40 @@ namespace MyCaffe.layers.tft
 
             if (m_param.grn_param.dropout_ratio > 0)
             {
-                LayerParameter drop = new LayerParameter(LayerParameter.LayerType.DROPOUT, m_param.name + ".drop");
-                drop.dropout_param.dropout_ratio = m_param.grn_param.dropout_ratio;
-                m_dropout = Layer<T>.Create(m_cuda, m_log, convertLayerParam(drop, m_param), null);
+                if (m_dropout == null)
+                {
+                    LayerParameter drop = new LayerParameter(LayerParameter.LayerType.DROPOUT, m_param.name + ".drop");
+                    drop.dropout_param.dropout_ratio = m_param.grn_param.dropout_ratio;
+                    m_dropout = Layer<T>.Create(m_cuda, m_log, convertLayerParam(drop, m_param), null);
 
-                addBtmTop(m_blobIp2, m_blobIp2);
-                m_dropout.Setup(m_colBtm, m_colTop);
+                    addBtmTop(m_blobIp2, m_blobIp2);
+                    m_dropout.Setup(m_colBtm, m_colTop);
+                }
             }
 
-            LayerParameter gate = new LayerParameter(LayerParameter.LayerType.GLU, m_param.name + ".gate");
-            gate.glu_param.input_dim = m_param.grn_param.output_dim;
-            gate.glu_param.axis = m_param.grn_param.axis;
-            gate.glu_param.weight_filler = m_param.grn_param.weight_filler;
-            gate.glu_param.bias_filler = m_param.grn_param.bias_filler;
-            m_gate = Layer<T>.Create(m_cuda, m_log, convertLayerParam(gate, m_param), null);
+            if (m_gate == null)
+            {
+                LayerParameter gate = new LayerParameter(LayerParameter.LayerType.GLU, m_param.name + ".gate");
+                gate.glu_param.input_dim = m_param.grn_param.output_dim;
+                gate.glu_param.axis = m_param.grn_param.axis;
+                gate.glu_param.weight_filler = m_param.grn_param.weight_filler;
+                gate.glu_param.bias_filler = m_param.grn_param.bias_filler;
+                m_gate = Layer<T>.Create(m_cuda, m_log, convertLayerParam(gate, m_param), null);
 
-            addBtmTop(m_blobIp2, m_blobGate);
-            m_gate.Setup(m_colBtm, m_colTop);
-            blobs.Add(m_gate.blobs);
+                addBtmTop(m_blobIp2, m_blobGate);
+                m_gate.Setup(m_colBtm, m_colTop);
+                blobs.Add(m_gate.blobs);
+            }
 
-            LayerParameter layerNorm = new LayerParameter(LayerParameter.LayerType.LAYERNORM, m_param.name + ".layernorm");
-            layerNorm.layer_norm_param.epsilon = 1e-10;
-            m_layerNorm = Layer<T>.Create(m_cuda, m_log, convertLayerParam(layerNorm, m_param), null);
+            if (m_layerNorm == null)
+            {
+                LayerParameter layerNorm = new LayerParameter(LayerParameter.LayerType.LAYERNORM, m_param.name + ".layernorm");
+                layerNorm.layer_norm_param.epsilon = 1e-10;
+                m_layerNorm = Layer<T>.Create(m_cuda, m_log, convertLayerParam(layerNorm, m_param), null);
 
-            addBtmTop(m_blobGate, colTop[0]);
-            m_layerNorm.Setup(m_colBtm, m_colTop);
+                addBtmTop(m_blobGate, colTop[0]);
+                m_layerNorm.Setup(m_colBtm, m_colTop);
+            }
 
             setup_internal_blobs(m_colInternalBlobs);
         }

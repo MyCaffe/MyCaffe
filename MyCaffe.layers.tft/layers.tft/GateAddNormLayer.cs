@@ -143,29 +143,38 @@ namespace MyCaffe.layers.tft
 
             if (m_param.dropout_param != null && m_param.dropout_param.dropout_ratio > 0)
             {
-                p = new LayerParameter(LayerParameter.LayerType.DROPOUT, m_param.name + ".drop");
-                p.dropout_param.Copy(m_param.dropout_param);
-                m_dropout = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
+                if (m_dropout == null)
+                {
+                    p = new LayerParameter(LayerParameter.LayerType.DROPOUT, m_param.name + ".drop");
+                    p.dropout_param.Copy(m_param.dropout_param);
+                    m_dropout = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
 
-                addBtmTop(colBottom[0], m_blobDrop);
-                m_dropout.Setup(m_colBtm, m_colTop);
+                    addBtmTop(colBottom[0], m_blobDrop);
+                    m_dropout.Setup(m_colBtm, m_colTop);
+                }
                 blobBtm = m_blobDrop;
             }
 
-            p = new LayerParameter(LayerParameter.LayerType.GLU, m_param.name + ".glu");
-            p.glu_param.Copy(m_param.glu_param);
-            m_gate = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
+            if (m_gate == null)
+            {
+                p = new LayerParameter(LayerParameter.LayerType.GLU, m_param.name + ".glu");
+                p.glu_param.Copy(m_param.glu_param);
+                m_gate = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
 
-            addBtmTop(blobBtm, m_blobGate);
-            m_gate.Setup(m_colBtm, m_colTop);
-            blobs.Add(m_gate.blobs);
+                addBtmTop(blobBtm, m_blobGate);
+                m_gate.Setup(m_colBtm, m_colTop);
+                blobs.Add(m_gate.blobs);
+            }
             m_blobGateAddResidual.ReshapeLike(m_blobGate);
 
-            p = new LayerParameter(LayerParameter.LayerType.LAYERNORM, m_param.name + ".layernorm");
-            p.layer_norm_param.Copy(m_param.layer_norm_param);
-            m_layerNorm = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
-            addBtmTop(m_blobGate, colTop[0]);
-            m_layerNorm.Setup(m_colBtm, m_colTop);
+            if (m_layerNorm == null)
+            {
+                p = new LayerParameter(LayerParameter.LayerType.LAYERNORM, m_param.name + ".layernorm");
+                p.layer_norm_param.Copy(m_param.layer_norm_param);
+                m_layerNorm = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
+                addBtmTop(m_blobGate, colTop[0]);
+                m_layerNorm.Setup(m_colBtm, m_colTop);
+            }
 
             setup_internal_blobs(m_colInternalBlobs);
         }
