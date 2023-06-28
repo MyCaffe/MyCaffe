@@ -286,7 +286,7 @@ namespace MyCaffe.layers.tft
             }
             else
             {
-                m_cuda.add(bTop.count(), bTop.gpu_diff, bBtm.mutable_gpu_diff, bBtm.mutable_gpu_diff);
+                m_cuda.add(bTop.count(), bTop.gpu_diff, bBtm.gpu_diff, bBtm.mutable_gpu_diff);
             }
         }
 
@@ -361,8 +361,6 @@ namespace MyCaffe.layers.tft
                 m_dropout.Backward(m_colTop, rgbPropagateDown, m_colBtm);
                 colBottom[0].CopyFrom(m_blobDrop, true);
             }
-
-            add_to_bwd(colBottom, 1, m_blobResidual);
         }
     }
 }
