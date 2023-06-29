@@ -175,31 +175,37 @@ namespace MyCaffe.layers.tft
 
             // This GRN is applied on the flat concatenation of the input representation (all inputs together),
             // possibly provided with context information.
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.GRN, m_param.name + ".flat");
-            p.grn_param.axis = m_param.varselnet_param.axis;
-            p.grn_param.batch_first = m_param.varselnet_param.batch_first;
-            p.grn_param.bias_filler = m_param.varselnet_param.bias_filler;
-            p.grn_param.weight_filler = m_param.varselnet_param.weight_filler;
-            p.grn_param.input_dim = m_param.varselnet_param.num_inputs * m_param.varselnet_param.input_dim;
-            p.grn_param.hidden_dim = m_param.varselnet_param.hidden_dim;
-            p.grn_param.output_dim = m_param.varselnet_param.num_inputs;
-            p.grn_param.context_dim = m_param.varselnet_param.context_dim;
-            m_grnFlatten = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
+            if (m_grnFlatten == null)
+            {
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.GRN, m_param.name + ".flat");
+                p.grn_param.axis = m_param.varselnet_param.axis;
+                p.grn_param.batch_first = m_param.varselnet_param.batch_first;
+                p.grn_param.bias_filler = m_param.varselnet_param.bias_filler;
+                p.grn_param.weight_filler = m_param.varselnet_param.weight_filler;
+                p.grn_param.input_dim = m_param.varselnet_param.num_inputs * m_param.varselnet_param.input_dim;
+                p.grn_param.hidden_dim = m_param.varselnet_param.hidden_dim;
+                p.grn_param.output_dim = m_param.varselnet_param.num_inputs;
+                p.grn_param.context_dim = m_param.varselnet_param.context_dim;
+                m_grnFlatten = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
 
-            addBtmTop(colBottom[0], m_blobSparseWts);
-            if (blobStaticSelection != null)
-                m_colBtm.Add(blobStaticSelection);
-            m_grnFlatten.Setup(m_colBtm, m_colTop);
-            blobs.Add(m_grnFlatten.blobs);
+                addBtmTop(colBottom[0], m_blobSparseWts);
+                if (blobStaticSelection != null)
+                    m_colBtm.Add(blobStaticSelection);
+                m_grnFlatten.Setup(m_colBtm, m_colTop);
+                blobs.Add(m_grnFlatten.blobs);
+            }
 
             // Activation for transforming the GRN output to weights.
-            p = new LayerParameter(LayerParameter.LayerType.SOFTMAX, m_param.name + ".smx");
-            p.softmax_param.axis = m_param.varselnet_param.axis;
-            p.softmax_param.engine = EngineParameter.Engine.DEFAULT;
-            m_softmax = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
+            if (m_softmax == null)
+            {
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.SOFTMAX, m_param.name + ".smx");
+                p.softmax_param.axis = m_param.varselnet_param.axis;
+                p.softmax_param.engine = EngineParameter.Engine.DEFAULT;
+                m_softmax = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
 
-            addBtmTop(m_blobSparseWts, m_blobSparseWtsSmx);
-            m_softmax.Setup(m_colBtm, m_colTop);
+                addBtmTop(m_blobSparseWts, m_blobSparseWtsSmx);
+                m_softmax.Setup(m_colBtm, m_colTop);
+            }
 
             rgShape = Utility.Clone<int>(m_blobSparseWtsSmx.shape());
             rgShape.Add(1);
@@ -207,13 +213,16 @@ namespace MyCaffe.layers.tft
             m_blobSparseWtsSmx.Reshape(rgShape);
 
             // Setup transpose applied to smx.
-            p = new LayerParameter(LayerParameter.LayerType.TRANSPOSE, m_param.name + ".trfm");
-            p.transpose_param.dim[1] = 2;
-            p.transpose_param.dim[2] = 1;
-            m_transpose = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
+            if (m_transpose == null)
+            {
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSPOSE, m_param.name + ".trfm");
+                p.transpose_param.dim[1] = 2;
+                p.transpose_param.dim[2] = 1;
+                m_transpose = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
 
-            addBtmTop(m_blobSparseWtsSmx, m_blobSparseWtsSmxT);
-            m_transpose.Setup(m_colBtm, m_colTop);
+                addBtmTop(m_blobSparseWtsSmx, m_blobSparseWtsSmxT);
+                m_transpose.Setup(m_colBtm, m_colTop);
+            }
 
             // Each input variable (after transformation into its wide represenation) goes through its own GRN
             rgShape.Clear();
@@ -221,28 +230,31 @@ namespace MyCaffe.layers.tft
             rgShape.Add(colBottom[0].channels / m_param.varselnet_param.num_inputs);
             m_blobGrn1.Reshape(rgShape);
 
-            for (int i = 0; i < m_param.varselnet_param.num_inputs; i++)
+            if (m_rgSingleVarGrn.Count < m_param.varselnet_param.num_inputs)
             {
-                p = new LayerParameter(LayerParameter.LayerType.GRN, m_param.name + ".grn" + i.ToString());
-                p.grn_param.axis = m_param.varselnet_param.axis;
-                p.grn_param.batch_first = m_param.varselnet_param.batch_first;
-                p.grn_param.bias_filler = m_param.varselnet_param.bias_filler;
-                p.grn_param.weight_filler = m_param.varselnet_param.weight_filler;
-                p.grn_param.input_dim = m_param.varselnet_param.input_dim;
-                p.grn_param.hidden_dim = m_param.varselnet_param.hidden_dim;
-                p.grn_param.output_dim = m_param.varselnet_param.hidden_dim;
-                p.grn_param.dropout_ratio = m_param.varselnet_param.dropout_ratio;
-                Layer<T> grn = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
+                for (int i = 0; i < m_param.varselnet_param.num_inputs; i++)
+                {
+                    LayerParameter p = new LayerParameter(LayerParameter.LayerType.GRN, m_param.name + ".grn" + i.ToString());
+                    p.grn_param.axis = m_param.varselnet_param.axis;
+                    p.grn_param.batch_first = m_param.varselnet_param.batch_first;
+                    p.grn_param.bias_filler = m_param.varselnet_param.bias_filler;
+                    p.grn_param.weight_filler = m_param.varselnet_param.weight_filler;
+                    p.grn_param.input_dim = m_param.varselnet_param.input_dim;
+                    p.grn_param.hidden_dim = m_param.varselnet_param.hidden_dim;
+                    p.grn_param.output_dim = m_param.varselnet_param.hidden_dim;
+                    p.grn_param.dropout_ratio = m_param.varselnet_param.dropout_ratio;
+                    Layer<T> grn = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
 
-                Blob<T> blobGrn = new Blob<T>(m_cuda, m_log);
-                blobGrn.ReshapeLike(m_blobGrn1);
+                    Blob<T> blobGrn = new Blob<T>(m_cuda, m_log);
+                    blobGrn.ReshapeLike(m_blobGrn1);
 
-                m_rgSingleVarGrn.Add(grn);
-                m_colSingleVarGrn.Add(blobGrn);
+                    m_rgSingleVarGrn.Add(grn);
+                    m_colSingleVarGrn.Add(blobGrn);
 
-                addBtmTop(m_blobGrn1, m_colSingleVarGrn[i]);
-                m_rgSingleVarGrn[i].Setup(m_colBtm, m_colTop);
-                blobs.Add(grn.blobs);
+                    addBtmTop(m_blobGrn1, m_colSingleVarGrn[i]);
+                    m_rgSingleVarGrn[i].Setup(m_colBtm, m_colTop);
+                    blobs.Add(grn.blobs);
+                }
             }
 
             rgShape.Clear();
