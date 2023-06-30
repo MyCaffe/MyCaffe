@@ -68,6 +68,7 @@
     <Compile Include="BinaryData.cs" />
     <Compile Include="BucketCollection.cs" />
     <Compile Include="ConnectInfo.cs" />
+    <Compile Include="descriptors\TemporalDescriptor.cs" />
     <Compile Include="DictionaryMap.cs" />
     <Compile Include="LabelBBox.cs" />
     <Compile Include="LabelMapping.cs" />
