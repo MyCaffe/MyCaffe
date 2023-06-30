@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static MyCaffe.basecode.descriptors.ValueStreamDescriptor;
 
 namespace MyCaffe.db.temporal
 {
@@ -71,8 +72,7 @@ namespace MyCaffe.db.temporal
             int nCount = src.ImageCount.GetValueOrDefault(0);
 
             SourceDescriptor srcd = new SourceDescriptor(src.ID, src.Name, nW, nH, nC, bIsReal, false, 0, null, nCount);
-
-            srcd.TemporalDescriptor = LoadTemporalFromDb(src.ID, true);
+            srcd.TemporalDescriptor = LoadTemporalFromDb(src.ID);
 
             return srcd;
         }
@@ -95,40 +95,35 @@ namespace MyCaffe.db.temporal
         /// Load the temporal descriptor for the specified source ID from the database.
         /// </summary>
         /// <param name="nSrcID">Specifies the data source ID.</param>
-        /// <param name="bOnlyLoadStreamsForFirst">Optionally, only load the value streams are loaded for the first value item (default = false).</param>
         /// <returns>The TemporalDescriptor is returned.</returns>
-        public TemporalDescriptor LoadTemporalFromDb(int nSrcID, bool bOnlyLoadStreamsForFirst = false)
+        public TemporalDescriptor LoadTemporalFromDb(int nSrcID)
         {
             TemporalDescriptor td = new TemporalDescriptor();
+            List<ValueStream> rgStrm = m_db.GetAllValueStreams(nSrcID);
             List<ValueItem> rgItem = m_db.GetAllValueItems(nSrcID);
-            bool bLoadValueStreams = true;
 
-            if (rgItem.Count == 0)
+            if (rgItem.Count == 0 || rgStrm.Count == 0)
                 return null;
+
+
+            foreach (ValueStream strm in rgStrm)
+            {
+                ValueStreamDescriptor vsd = new ValueStreamDescriptor(strm.ID,
+                                                                      strm.Name,
+                                                                      strm.Ordering.GetValueOrDefault(0),
+                                                                      (STREAM_CLASS_TYPE)strm.ClassTypeID,
+                                                                      (STREAM_VALUE_TYPE)strm.ValueTypeID,
+                                                                      strm.StartTime,
+                                                                      strm.EndTime,
+                                                                      strm.SecondsPerStep,
+                                                                      strm.TotalSteps.GetValueOrDefault(0));
+
+                td.ValueStreamDescriptors.Add(vsd);
+            }
 
             foreach (ValueItem vi in rgItem)
             {
-                ValueItemDescriptor vid = new ValueItemDescriptor(vi.ID, vi.Name);
-
-                if (bLoadValueStreams)
-                {
-                    List<ValueStream> rgStrm = m_db.GetAllValueStreams(vi.ID);
-                    foreach (ValueStream vs in rgStrm)
-                    {
-                        int nOrdering = vs.Ordering.GetValueOrDefault(0);
-                        ValueStreamDescriptor.STREAM_CLASS_TYPE classType = (ValueStreamDescriptor.STREAM_CLASS_TYPE)vs.ClassTypeID.GetValueOrDefault(0);
-                        ValueStreamDescriptor.STREAM_VALUE_TYPE valType = (ValueStreamDescriptor.STREAM_VALUE_TYPE)vs.ValueTypeID.GetValueOrDefault(0);
-                        int nCount = vs.ItemCount.GetValueOrDefault(0);
-
-                        ValueStreamDescriptor vsd = new ValueStreamDescriptor(vs.ID, vs.Name, nOrdering, classType, valType, vs.StartTime, vs.EndTime, vs.SecondsPerStep, nCount);
-                        vid.ValueStreamDescriptors.Add(vsd);
-                    }
-
-                    if (bOnlyLoadStreamsForFirst)
-                        bLoadValueStreams = false;
-                }
-
-                td.ValueItemDescriptors.Add(vid);
+                td.ValueItemDescriptors.Add(new ValueItemDescriptor(vi.ID, vi.Name));
             }
 
             return td;            
@@ -138,17 +133,16 @@ namespace MyCaffe.db.temporal
         /// Load the temporal descriptors for the specified source ID from the database.
         /// </summary>
         /// <param name="ds">Specifies the dataset descriptor where the temporal descriptors are loaded.</param>
-        /// <param name="bOnlyLoadStreamsForFirst">Optionally, only load the value streams are loaded for the first value item (default = false).</param>
-        public void LoadTemporalFromDb(DatasetDescriptor ds, bool bOnlyLoadStreamsForFirst = true)
+        public void LoadTemporalFromDb(DatasetDescriptor ds)
         {
             if (ds == null)
                 return;
 
             if (ds.TrainingSource != null)
-                ds.TrainingSource.TemporalDescriptor = LoadTemporalFromDb(ds.TrainingSource.ID, bOnlyLoadStreamsForFirst);
+                ds.TrainingSource.TemporalDescriptor = LoadTemporalFromDb(ds.TrainingSource.ID);
 
             if (ds.TestingSource != null)
-                ds.TestingSource.TemporalDescriptor = LoadTemporalFromDb(ds.TestingSource.ID, bOnlyLoadStreamsForFirst);
+                ds.TestingSource.TemporalDescriptor = LoadTemporalFromDb(ds.TestingSource.ID);
         }
     }
 }

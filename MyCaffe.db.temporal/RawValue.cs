@@ -17,10 +17,8 @@ namespace MyCaffe.db.temporal
         public int ID { get; set; }
         public Nullable<int> SourceID { get; set; }
         public Nullable<int> ItemID { get; set; }
-        public Nullable<int> StreamID { get; set; }
         public Nullable<System.DateTime> TimeStamp { get; set; }
-        public Nullable<decimal> RawData { get; set; }
-        public Nullable<decimal> NormalizedData { get; set; }
+        public byte[] RawData { get; set; }
         public byte[] DataCriteria { get; set; }
         public byte[] DebugData { get; set; }
         public Nullable<byte> DebugDataFormatID { get; set; }

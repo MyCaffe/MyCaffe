@@ -25,8 +25,8 @@ namespace MyCaffe.db.temporal
             throw new UnintentionalCodeFirstException();
         }
     
-        public virtual DbSet<RawValue> RawValues { get; set; }
         public virtual DbSet<ValueItem> ValueItems { get; set; }
+        public virtual DbSet<RawValue> RawValues { get; set; }
         public virtual DbSet<ValueStream> ValueStreams { get; set; }
     }
 }

@@ -16,14 +16,13 @@ namespace MyCaffe.db.temporal
     {
         public int ID { get; set; }
         public string Name { get; set; }
-        public Nullable<byte> ClassTypeID { get; set; }
         public Nullable<byte> ValueTypeID { get; set; }
-        public Nullable<int> ValueItemID { get; set; }
-        public Nullable<int> Ordering { get; set; }
+        public Nullable<byte> ClassTypeID { get; set; }
+        public Nullable<short> Ordering { get; set; }
+        public Nullable<int> SourceID { get; set; }
         public Nullable<System.DateTime> StartTime { get; set; }
         public Nullable<System.DateTime> EndTime { get; set; }
         public Nullable<int> SecondsPerStep { get; set; }
-        public Nullable<int> SourceID { get; set; }
-        public Nullable<int> ItemCount { get; set; }
+        public Nullable<int> TotalSteps { get; set; }
     }
 }

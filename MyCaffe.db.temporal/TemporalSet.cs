@@ -130,77 +130,27 @@ namespace MyCaffe.db.temporal
 
         private void loadThread()
         {
+            DatabaseLoader loader = new DatabaseLoader();
             List<ValueItem> rgItems = m_db.GetAllValueItems(m_src.ID);
-            DateTime dtMinStart = DateTime.MaxValue;
-            DateTime dtMaxEnd = DateTime.MinValue;
-            int nSecondsPerStep = 0;
-            int nTotalChunks = 1;
-            int nItemCount = 0;
 
             try
             {
                 m_dfLoadPct = 0;
 
-                // Load the data schema.
-                // - load each value item (e.g., customer id, station id, etc.)
-                foreach (ValueItem item in rgItems)
-                {
-                    // Load the streams for each item.
-                    // - load each static, known and observed stream (e.g., log power usage, traffic flow value, etc.)
-                    List<ValueStream> rgStreams = m_db.GetAllValueStreams(item.ID);
-                    List<ValueStream> rgTemporalStreams = rgStreams.Where(p => p.ClassTypeID > 1).ToList();
-
-                    DateTime dtStart = rgTemporalStreams.Min(p => p.StartTime.Value);
-                    DateTime dtEnd = rgTemporalStreams.Max(p => p.EndTime.Value);
-
-                    dtMinStart = (dtStart < dtMinStart) ? dtStart : dtMinStart;
-                    dtMaxEnd = (dtEnd > dtMaxEnd) ? dtEnd : dtMaxEnd;
-
-                    int nMinSecPerStep = rgTemporalStreams.Min(p => p.SecondsPerStep.Value);
-                    int nMaxSecPerStep = rgTemporalStreams.Max(p => p.SecondsPerStep.Value);
-
-                    if (nMinSecPerStep != nMaxSecPerStep)
-                        throw new Exception("All streams must have the same number of seconds per step.");
-
-                    if (nSecondsPerStep == 0)
-                        nSecondsPerStep = nMinSecPerStep;
-                    else if (nSecondsPerStep != nMinSecPerStep)
-                        throw new Exception("All streams must have the same number of seconds per step.");
-
-                    m_rgItems.Add(new ItemSet(m_random, m_db, item, rgStreams));
-                    nItemCount++;
-                }
-
-                m_dtStart = dtMinStart;
-                m_dtEnd = dtMaxEnd;
+                TemporalDescriptor td = loader.LoadTemporalFromDb(m_src.ID);
+                OrderedValueStreamDescriptorSet rgStrm = td.OrderedValueStreamDescriptors;
+                
+                m_dtStart = td.StartDate;
+                m_dtEnd = td.EndDate;
 
                 if (m_dtEnd <= m_dtStart)
                     throw new Exception("The end date must be greater than the start date.");
 
-                if (m_dtEnd < dtMinStart)
-                    throw new Exception("The end date must be greater than the minimum start date of the data source.");
-
-                if (m_dtStart > dtMaxEnd)
-                    throw new Exception("The start date must be less than the maximum end date of the data source.");
-
-                nTotalChunks = (int)Math.Floor((double)nItemCount/(double)m_nTotalSteps);
-                if (m_nLoadLimit > 0 && m_nLoadLimit < nTotalChunks)
-                    nTotalChunks = m_nLoadLimit;
-
-                int nChunks = Math.Max(1, Math.Min(nTotalChunks, m_nChunks));
-
                 // Load the data.
-                DateTime dtStart1 = (dtMinStart > m_dtStart) ? dtMinStart : m_dtStart;
-                DateTime dtEnd1 = dtStart1;
-                DateTime dt = dtStart1;
+                DateTime dt = m_dtStart;
                 bool bEOD = false;
-                int nStepsToLoad = int.MaxValue;
-                int nLoadedChunks = 0;
+
                 Stopwatch sw = new Stopwatch();
-
-                if (m_nLoadLimit > 0)
-                    nStepsToLoad = m_nTotalSteps* nChunks;
-
                 sw.Start();
                 m_dfLoadPct = 0;
 
@@ -209,12 +159,13 @@ namespace MyCaffe.db.temporal
                     bool bEOD1;
 
                     // Load one chunk for each item.
-                    for (int i=0; i<m_rgItems.Count; i++)
+                    for (int i=0; i<rgItems.Count; i++)
                     {
-                        ItemSet item = m_rgItems[i];
-                        DateTime dtEnd = item.Load(dt, nStepsToLoad, m_bNormalizeData, out bEOD1);
+                        ItemSet item = new ItemSet(m_random, m_db, rgItems[i], rgStrm);
+                        DateTime dtEnd = item.Load(dt, out bEOD1);
+                        m_rgItems.Add(item);
 
-                        m_dfLoadPct = (double)i / m_rgItems.Count;                       
+                        m_dfLoadPct = (double)i / rgItems.Count;                       
                         if (bEOD1)
                             bEOD = true;
 
@@ -227,24 +178,7 @@ namespace MyCaffe.db.temporal
                     }
 
                     if (bEOD)
-                        dt = dtStart1;
-                    else
-                        dt = dtEnd1;
-
-                    nLoadedChunks += nChunks;
-
-                    if (m_nLoadLimit > 0)
-                    {
-                        foreach (ItemSet item in m_rgItems)
-                        {
-                            item.LoadLimit(m_nLoadLimit);
-                        }
-                    }
-                    else
-                    {
-                        if (nLoadedChunks >= nTotalChunks)
-                            break;
-                    }
+                        break;
                 }
             }
             catch (Exception excpt)

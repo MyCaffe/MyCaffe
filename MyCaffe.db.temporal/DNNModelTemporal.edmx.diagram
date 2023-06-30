@@ -5,8 +5,8 @@
     <!-- Diagram content (shape and connector positions) -->
     <edmx:Diagrams>
       <Diagram DiagramId="1262d57c8b014589b8e9e448cbbf233d" Name="Diagram1">
-        <EntityTypeShape EntityType="DNNModelTemporal.RawValue" Width="1.5" PointX="0.75" PointY="0.75" IsExpanded="true" />
         <EntityTypeShape EntityType="DNNModelTemporal.ValueItem" Width="1.5" PointX="2.75" PointY="0.75" IsExpanded="true" />
+        <EntityTypeShape EntityType="DNNModelTemporal.RawValue" Width="1.5" PointX="0.75" PointY="3.75" />
         <EntityTypeShape EntityType="DNNModelTemporal.ValueStream" Width="1.5" PointX="3.375" PointY="3.75" />
       </Diagram>
     </edmx:Diagrams>

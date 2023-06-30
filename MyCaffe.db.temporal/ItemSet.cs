@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static MyCaffe.basecode.descriptors.ValueStreamDescriptor;
 
 namespace MyCaffe.db.temporal
 {
@@ -22,18 +23,13 @@ namespace MyCaffe.db.temporal
         int m_nValIdx = 0;
         DatabaseTemporal m_db;
         ValueItem m_item = null;
-        PlotCollection m_plotsObservedNum = null;
-        PlotCollection m_plotsObservedCat = null;
-        PlotCollection m_plotsKnownNum = null;
-        PlotCollection m_plotsKnownCat = null;
-        List<RawValue> m_rgStaticNum = null;
-        List<RawValue> m_rgStaticCat = null;
-        List<ValueStream> m_rgStreams = null;
-        SimpleDatum m_sdStaticNum = null;
-        SimpleDatum m_sdStaticCat = null;
-        int m_nRowCount = 0;
+        OrderedValueStreamDescriptorSet m_rgStrm;
+        int m_nColCount = 0;
         List<int> m_rgRowCount = new List<int>(8);
         int m_nTargetStreamNumIdx = 0;
+        RawValueSet m_data = null;
+        SimpleDatum m_sdStaticNum = null;
+        SimpleDatum m_sdStaticCat = null;
 
         /// <summary>
         /// The constructor.
@@ -41,13 +37,13 @@ namespace MyCaffe.db.temporal
         /// <param name="random">Specifies the random number generator.</param>
         /// <param name="db">Specifies the database connection.</param>
         /// <param name="item">Specifies the value item.</param>
-        /// <param name="rgStreams">Specifies the value streams associated with the item.</param>
-        public ItemSet(CryptoRandom random, DatabaseTemporal db, ValueItem item, List<ValueStream> rgStreams)
+        /// <param name="rgStrm">Specifies the value streams associated with the item set.</param>
+        public ItemSet(CryptoRandom random, DatabaseTemporal db, ValueItem item, OrderedValueStreamDescriptorSet rgStrm)
         {
             m_random = random;
             m_db = db;
             m_item = item;
-            m_rgStreams = rgStreams;
+            m_rgStrm = rgStrm;
         }
 
         /// <summary>
@@ -55,13 +51,7 @@ namespace MyCaffe.db.temporal
         /// </summary>
         public void CleanUp()
         {
-            m_plotsObservedNum = null;
-            m_plotsObservedCat = null;
-            m_plotsKnownNum = null;
-            m_plotsKnownCat = null;
-            m_rgStaticNum = null;
-            m_rgStreams = null;
-            m_nRowCount = 0;
+            m_nColCount = 0;
         }
 
         /// <summary>
@@ -81,106 +71,31 @@ namespace MyCaffe.db.temporal
         }
 
         /// <summary>
+        /// Returns the value streams.
+        /// </summary>
+        public OrderedValueStreamDescriptorSet Streams
+        {
+            get { return m_rgStrm; }
+        }
+
+        /// <summary>
         /// Loads the data for the item starting at the specified date/time and loading the specified number of steps.
         /// </summary>
         /// <param name="dt">Specifies the start time to load the data.</param>
-        /// <param name="nStepsToLoad">Specifies the number of temporal steps to load.</param>
-        /// <param name="bNormalizedValue">Specifies whether to load the normalized values.</param>
         /// <param name="bEOD">Returns whether the end of data is found.</param>
         /// <returns>The end date is returned.</returns>
         /// <exception cref="Exception">An exception is thrown on error.</exception>
-        public DateTime Load(DateTime dt, int nStepsToLoad, bool bNormalizedValue, out bool bEOD)
+        public DateTime Load(DateTime dt, out bool bEOD)
         {
-            DateTime dtEnd = DateTime.MinValue;
-            bEOD = false;
+            int nSrcID = m_item.SourceID.Value;
+            int nItemID = m_item.ID;
 
-            if (m_rgStaticNum == null)
-                m_rgStaticNum = m_db.GetStaticValuesNum(m_item.SourceID.Value, m_item.ID);
+            if (m_data == null)
+                m_data = m_db.GetValues(nSrcID, nItemID);
 
-            if (m_rgStaticCat == null)
-                m_rgStaticCat = m_db.GetStaticValuesCat(m_item.SourceID.Value, m_item.ID);
-
-            bool? bEOD1;
-            DateTime? dtEnd1;
-
-            m_rgRowCount.Clear();
-
-            PlotCollection plotsObservedNum = m_db.GetRawValuesObservedNum(m_item.SourceID.Value, m_item.ID, dt, nStepsToLoad, bNormalizedValue, out dtEnd1, out bEOD1);
-            if (plotsObservedNum != null)
-            {
-                if (m_plotsObservedNum == null)
-                    m_plotsObservedNum = plotsObservedNum;
-                else
-                    m_plotsObservedNum.Add(plotsObservedNum);
-
-                m_rgRowCount.Add(m_plotsObservedNum.Count);
-
-                if (bEOD1.GetValueOrDefault(false))
-                    bEOD = true;
-
-                if (dtEnd1.HasValue)
-                    dtEnd = dtEnd1.Value;
-            }
-
-            PlotCollection plotsObservedCat = m_db.GetRawValuesObservedCat(m_item.SourceID.Value, m_item.ID, dt, nStepsToLoad, bNormalizedValue, out dtEnd1, out bEOD1);
-            if (plotsObservedCat != null)
-            {
-                if (m_plotsObservedCat == null)
-                    m_plotsObservedCat = plotsObservedCat;
-                else
-                    m_plotsObservedCat.Add(plotsObservedCat);
-
-                m_rgRowCount.Add(m_plotsObservedCat.Count);
-
-                if (bEOD1.GetValueOrDefault(false))
-                    bEOD = true;
-
-                if (dtEnd1.HasValue)
-                    dtEnd = dtEnd1.Value;
-            }
-
-            PlotCollection plotsKnownNum = m_db.GetRawValuesKnownNum(m_item.SourceID.Value, m_item.ID, dt, nStepsToLoad, bNormalizedValue, out dtEnd1, out bEOD1);
-            if (plotsKnownNum != null)
-            {
-                if (m_plotsKnownNum == null)
-                    m_plotsKnownNum = plotsKnownNum;
-                else
-                    m_plotsKnownNum.Add(plotsKnownNum);
-
-                m_rgRowCount.Add(m_plotsKnownNum.Count);
-
-                if (bEOD1.GetValueOrDefault(false))
-                    bEOD = true;
-
-                if (dtEnd1.HasValue)
-                    dtEnd = dtEnd1.Value;
-            }
-
-            PlotCollection plotsKnownCat = m_db.GetRawValuesKnownCat(m_item.SourceID.Value, m_item.ID, dt, nStepsToLoad, bNormalizedValue, out dtEnd1, out bEOD1);
-            if (plotsKnownCat != null)
-            {
-                if (m_plotsKnownCat == null)
-                    m_plotsKnownCat = plotsKnownCat;
-                else
-                    m_plotsKnownCat.Add(plotsKnownCat);
-
-                m_rgRowCount.Add(m_plotsKnownCat.Count);
-
-                if (bEOD1.GetValueOrDefault(false))
-                    bEOD = true;
-
-                if (dtEnd1.HasValue)
-                    dtEnd = dtEnd1.Value;
-            }
-
-            m_nRowCount = m_rgRowCount[0];
-            for (int i = 1; i < m_rgRowCount.Count; i++)
-            {
-                if (m_rgRowCount[i] != m_nRowCount)
-                    throw new Exception("The number of rows in each plot must be the same.");
-            }
-
-            return dtEnd;
+            bEOD = true;
+            m_nColCount = m_data.ColCount;
+            return m_data.EndTime;
         }
 
         /// <summary>
@@ -189,50 +104,7 @@ namespace MyCaffe.db.temporal
         /// <param name="nMax">Specifies the maximum number of steps to hold in memory.</param>
         public void LoadLimit(int nMax)
         {
-            m_rgRowCount.Clear();
-
-            if (m_plotsObservedNum != null)
-            {
-                while (m_plotsObservedNum.Count > nMax)
-                {
-                    m_plotsObservedNum.RemoveAt(0);
-                }
-                m_rgRowCount.Add(m_plotsObservedNum.Count);
-            }
-
-            if (m_plotsObservedCat != null)
-            {
-                while (m_plotsObservedCat.Count > nMax)
-                {
-                    m_plotsObservedCat.RemoveAt(0);
-                }
-                m_rgRowCount.Add(m_plotsObservedCat.Count);
-            }
-
-            if (m_plotsKnownNum != null)
-            {
-                while (m_plotsKnownNum.Count > nMax)
-                {
-                    m_plotsKnownNum.RemoveAt(0);
-                }
-                m_rgRowCount.Add(m_plotsKnownNum.Count);
-            }
-
-            if (m_plotsKnownCat != null)
-            {
-                while (m_plotsKnownCat.Count > nMax)
-                {
-                    m_plotsKnownCat.RemoveAt(0);
-                }
-                m_rgRowCount.Add(m_plotsKnownCat.Count);
-            }
-
-            m_nRowCount = m_rgRowCount[0];
-            for (int i = 1; i < m_rgRowCount.Count; i++)
-            {
-                if (m_rgRowCount[i] != m_nRowCount)
-                    throw new Exception("The number of rows in each plot must be the same.");
-            }
+#warning("TBD: LoadLimit")
         }
 
         /// <summary>
@@ -253,39 +125,42 @@ namespace MyCaffe.db.temporal
         {
             int nTotalSteps = nHistSteps + nFutSteps;
 
-            if (m_nRowCount < nTotalSteps)
+            if (m_nColCount < nTotalSteps)
                 return null;
 
             if (valueSelectionMethod == DB_ITEM_SELECTION_METHOD.RANDOM)
             {
-                m_nValIdx = m_random.Next(m_nRowCount - nTotalSteps);
+                m_nValIdx = m_random.Next(m_nColCount - nTotalSteps);
             }
             else if (valueSelectionMethod == DB_ITEM_SELECTION_METHOD.NONE)
             {
-                if (m_nValIdx >= m_nRowCount - nTotalSteps)
+                if (m_nValIdx >= m_nColCount - nTotalSteps)
                 {
                     m_nValIdx = 0;
                     return null;
                 }
             }
 
-            if (m_sdStaticNum == null)
-                m_sdStaticNum = getStaticDataNum();
+            SimpleDatum sdStatNum = null;
+            SimpleDatum sdStatCat = null;
+            getStaticData(ref sdStatNum, ref sdStatCat);
 
-            if (m_sdStaticCat == null)
-                m_sdStaticCat = getStaticDataCat();
+            SimpleDatum sdHistNum = null;
+            SimpleDatum sdHistCat = null;
+            getHistoricalData(m_nValIdx, nHistSteps, out sdHistNum, out sdHistCat);
 
-            SimpleDatum sdHistNum = getHistoricalDataNum(m_nValIdx, nHistSteps);
-            SimpleDatum sdHistCat = getHistoricalDataCat(m_nValIdx, nHistSteps);
-            SimpleDatum sdFutureNum = getFutureDataNum(m_nValIdx + nHistSteps, nFutSteps);
-            SimpleDatum sdFutureCat = getFutureDataCat(m_nValIdx + nHistSteps, nFutSteps);
-            SimpleDatum sdTarget = getTargetData(m_nValIdx + nHistSteps, nFutSteps);
-            SimpleDatum sdTargetHist = getTargetData(m_nValIdx, nHistSteps);
+            SimpleDatum sdFutNum = null;
+            SimpleDatum sdFutCat = null;
+            getFutureData(m_nValIdx + nHistSteps, nFutSteps, out sdFutNum, out sdFutCat);
+
+            SimpleDatum sdTarget = null;
+            SimpleDatum sdTargetHist = null;
+            getTargetData(m_nValIdx, nHistSteps, nFutSteps, m_nTargetStreamNumIdx, out sdTarget, out sdTargetHist);
 
             if (bEnableDebug)
                 debug(nQueryIdx, strDebugPath, m_nValIdx, nHistSteps, nFutSteps, sdTargetHist, sdTarget);
 
-            SimpleDatum[] rgData = new SimpleDatum[] { m_sdStaticNum, m_sdStaticCat, sdHistNum, sdHistCat, sdFutureNum, sdFutureCat, sdTarget, sdTargetHist };
+            SimpleDatum[] rgData = new SimpleDatum[] { m_sdStaticNum, m_sdStaticCat, sdHistNum, sdHistCat, sdFutNum, sdFutCat, sdTarget, sdTargetHist };
             m_nValIdx++;
 
             return rgData;
@@ -297,7 +172,7 @@ namespace MyCaffe.db.temporal
                 throw new Exception("You must specify a debug path, when 'EnableDebug' = true.");
 
             DateTime[] rgSync = getTimeSync(nIdx, nHistSteps + nFutSteps);
-            SimpleDatum sd = getTargetData(nIdx, nHistSteps + nFutSteps);
+            SimpleDatum sd = getTargetData(nIdx, nHistSteps + nFutSteps, m_nTargetStreamNumIdx);
 
             if (rgSync.Length != sd1.ItemCount + sd2.ItemCount)
                 throw new Exception("The sync and data lengths do not match!");
@@ -360,140 +235,185 @@ namespace MyCaffe.db.temporal
             img.Dispose();
         }
 
-        private SimpleDatum getStaticDataNum()
+        private void getStaticData(ref SimpleDatum sdNum, ref SimpleDatum sdCat)
         {
-            if (m_rgStaticNum == null || m_rgStaticNum.Count == 0)
-                return null;
-
-            List<float> rgf = new List<float>();
-
-            foreach (RawValue rv in m_rgStaticNum)
+            if (m_sdStaticNum != null && m_sdStaticCat != null)
             {
-                rgf.Add((float)rv.RawData.Value);
+                sdNum = m_sdStaticNum;
+                sdCat = m_sdStaticCat;
+                return;
+            }   
+
+            Tuple<float[], float[]> data = m_data.GetStaticValues();
+
+            List<ValueStreamDescriptor> rgDesc = m_rgStrm.GetStreamDescriptors(STREAM_CLASS_TYPE.STATIC, STREAM_VALUE_TYPE.NUMERIC);
+            int nC = 1;
+
+            if (rgDesc != null && rgDesc.Count > 0)
+            {
+                int nH = rgDesc.Count;
+                int nW = rgDesc.Max(p => p.Steps);
+                sdNum = new SimpleDatum(nC, nW, nH, data.Item1, 0, data.Item1.Length);
+            }
+            else
+            {
+                sdNum = null;
             }
 
-            return new SimpleDatum(1, 1, rgf.Count, rgf.ToArray(), 0, rgf.Count);
+            rgDesc = m_rgStrm.GetStreamDescriptors(STREAM_CLASS_TYPE.STATIC, STREAM_VALUE_TYPE.CATEGORICAL);
+            nC = 1;
+
+            if (rgDesc != null && rgDesc.Count > 0)
+            {
+                int nH = rgDesc.Count;
+                int nW = rgDesc.Max(p => p.Steps);
+                sdCat = new SimpleDatum(nC, nW, nH, data.Item2, 0, data.Item2.Length);
+            }
+            else
+            {
+                sdCat = null;
+            }
+
+            m_sdStaticNum = sdNum;
+            m_sdStaticCat = sdCat;
         }
 
-        private SimpleDatum getStaticDataCat()
+        private void getHistoricalData(int nIdx, int nCount, out SimpleDatum sdNum, out SimpleDatum sdCat)
         {
-            if (m_rgStaticCat == null || m_rgStaticCat.Count == 0)
-                return null;
+            Tuple<float[], float[]> dataObs = m_data.GetObservedValues(nIdx, nCount);
+            Tuple<float[], float[]> dataKnown = m_data.GetKnownValues(nIdx, nCount);
 
-            List<float> rgf = new List<float>();
-
-            foreach (RawValue rv in m_rgStaticCat)
+            float[] rgfNum = null;
+            if (dataObs.Item1.Length > 0 && dataKnown.Item1.Length > 0)
             {
-                rgf.Add((float)rv.RawData.Value);
+                rgfNum = new float[dataObs.Item1.Length + dataKnown.Item1.Length];
+                Array.Copy(dataObs.Item1, rgfNum, dataObs.Item1.Length);
+                Array.Copy(dataKnown.Item1, 0, rgfNum, dataObs.Item1.Length, dataKnown.Item1.Length);
+            }
+            else if (dataObs.Item1.Length > 0)
+            {
+                rgfNum = dataObs.Item1;
+            }
+            else if (dataKnown.Item1.Length > 0)
+            {
+                rgfNum = dataKnown.Item1;
             }
 
-            return new SimpleDatum(1, 1, rgf.Count, rgf.ToArray(), 0, rgf.Count);
+            float[] rgfCat = null;
+            if (dataObs.Item2.Length > 0 && dataKnown.Item2.Length > 0)
+            {
+                rgfCat = new float[dataObs.Item2.Length + dataKnown.Item2.Length];
+                Array.Copy(dataObs.Item2, rgfCat, dataObs.Item2.Length);
+                Array.Copy(dataKnown.Item2, 0, rgfCat, dataObs.Item2.Length, dataKnown.Item2.Length);
+            }
+            else if (dataObs.Item2.Length > 0)
+            {
+                rgfCat = dataObs.Item2;
+            }
+            else if (dataKnown.Item2.Length > 0)
+            {
+                rgfCat = dataKnown.Item2;
+            }
+
+            if (rgfNum != null)
+            {
+                List<ValueStreamDescriptor> rgDescO = m_rgStrm.GetStreamDescriptors(STREAM_CLASS_TYPE.OBSERVED, STREAM_VALUE_TYPE.NUMERIC);
+                List<ValueStreamDescriptor> rgDescK = m_rgStrm.GetStreamDescriptors(STREAM_CLASS_TYPE.KNOWN, STREAM_VALUE_TYPE.NUMERIC);
+                int nC = 1;
+                int nH = nCount;
+                int nW = rgDescO.Count + (rgDescK != null ? rgDescK.Count : 0);
+
+                sdNum = new SimpleDatum(nC, nW, nH, rgfNum, 0, rgfNum.Length);
+            }
+            else
+            {
+                sdNum = null;
+            }
+
+            if (rgfCat != null)
+            {
+                List<ValueStreamDescriptor> rgDescO = m_rgStrm.GetStreamDescriptors(STREAM_CLASS_TYPE.OBSERVED, STREAM_VALUE_TYPE.CATEGORICAL);
+                List<ValueStreamDescriptor> rgDescK = m_rgStrm.GetStreamDescriptors(STREAM_CLASS_TYPE.KNOWN, STREAM_VALUE_TYPE.CATEGORICAL);
+                int nC = 1;
+                int nH = nCount;
+                int nW = (rgDescO != null ? rgDescO.Count : 0) + (rgDescK != null ? rgDescK.Count : 0);
+
+                sdCat = new SimpleDatum(nC, nW, nH, rgfCat, 0, rgfCat.Length);
+            }
+            else
+            {
+                sdCat = null;
+            }
         }
 
-        private SimpleDatum getHistoricalDataNum(int nIdx, int nCount)
+        private void getFutureData(int nIdx, int nCount, out SimpleDatum sdNum, out SimpleDatum sdCat)
         {
-            if (m_plotsObservedNum == null && m_plotsKnownNum == null)
-                return null;
+            Tuple<float[], float[]> dataKnown = m_data.GetKnownValues(nIdx, nCount);
 
-            List<float> rgf = new List<float>();
+            float[] rgfNum = null;
+            if (dataKnown.Item1.Length > 0)
+                rgfNum = dataKnown.Item1;
 
-            for (int i = nIdx; i < nIdx + nCount; i++)
+            float[] rgfCat = null;
+            if (dataKnown.Item2.Length > 0)
+                rgfCat = dataKnown.Item2;
+
+            if (rgfNum != null)
             {
-                if (m_plotsObservedNum != null)
-                    rgf.AddRange(m_plotsObservedNum[i].Y_values);
-                if (m_plotsKnownNum != null)
-                    rgf.AddRange(m_plotsKnownNum[i].Y_values);
+                List<ValueStreamDescriptor> rgDescK = m_rgStrm.GetStreamDescriptors(STREAM_CLASS_TYPE.KNOWN, STREAM_VALUE_TYPE.NUMERIC);
+                int nC = 1;
+                int nH = nCount;
+                int nW = rgDescK.Count;
+
+                sdNum = new SimpleDatum(nC, nW, nH, rgfNum, 0, rgfNum.Length);
+            }
+            else
+            {
+                sdNum = null;
             }
 
-            int nStreams = 0;
-            if (m_plotsObservedNum != null)
-                nStreams += m_plotsObservedNum[0].Y_values.Length;
-            if (m_plotsKnownNum != null)
-                nStreams += m_plotsKnownNum[0].Y_values.Length;
+            if (rgfCat != null)
+            {
+                List<ValueStreamDescriptor> rgDescK = m_rgStrm.GetStreamDescriptors(STREAM_CLASS_TYPE.KNOWN, STREAM_VALUE_TYPE.CATEGORICAL);
+                int nC = 1;
+                int nH = nCount;
+                int nW = rgDescK.Count;
 
-            return new SimpleDatum(1, nStreams, nCount, rgf.ToArray(), 0, rgf.Count);
+                sdCat = new SimpleDatum(nC, nW, nH, rgfCat, 0, rgfCat.Length);
+            }
+            else
+            {
+                sdCat = null;
+            }
         }
 
-        private SimpleDatum getHistoricalDataCat(int nIdx, int nCount)
+        private void getTargetData(int nIdx, int nHistSteps, int nFutSteps, int nTargetIdx, out SimpleDatum sdTarget, out SimpleDatum sdTargetHist)
         {
-            if (m_plotsObservedCat == null && m_plotsKnownCat == null)
-                return null;
+            float[] rgfTgt = m_data.GetObservedNumValues(nIdx + nHistSteps, nFutSteps, nTargetIdx);
+            float[] rgfTgtH = m_data.GetObservedNumValues(nIdx, nHistSteps, nTargetIdx);
 
-            List<float> rgf = new List<float>();
+            int nC = 1;
+            int nH = 1;
+            int nW = rgfTgt.Length;
+            sdTarget = new SimpleDatum(nC, nW, nH, rgfTgt, 0, rgfTgt.Length);
 
-            for (int i = nIdx; i < nIdx + nCount; i++)
-            {
-                if (m_plotsObservedCat != null)
-                    rgf.AddRange(m_plotsObservedCat[i].Y_values);
-                if (m_plotsKnownCat != null)
-                    rgf.AddRange(m_plotsKnownCat[i].Y_values);
-            }
-
-            int nStreams = 0;
-            if (m_plotsObservedCat != null)
-                nStreams += m_plotsObservedCat[0].Y_values.Length;
-            if (m_plotsKnownCat != null)
-                nStreams += m_plotsKnownCat[0].Y_values.Length;
-
-            return new SimpleDatum(1, nStreams, nCount, rgf.ToArray(), 0, rgf.Count);
+            nW = rgfTgtH.Length;
+            sdTargetHist = new SimpleDatum(nC, nW, nH, rgfTgtH, 0, rgfTgtH.Length);
         }
 
-        private SimpleDatum getFutureDataNum(int nIdx, int nCount)
+        private SimpleDatum getTargetData(int nIdx, int nCount, int nTargetIdx)
         {
-            if (m_plotsKnownNum == null)
-                return null;
+            float[] rgfTgt = m_data.GetObservedNumValues(nIdx, nCount, nTargetIdx);
 
-            List<float> rgf = new List<float>();
-
-            for (int i = nIdx; i < nIdx + nCount; i++)
-            {
-                rgf.AddRange(m_plotsKnownNum[i].Y_values);
-            }
-
-            int nStreams = m_plotsKnownNum[0].Y_values.Length;
-
-            return new SimpleDatum(1, nStreams, nCount, rgf.ToArray(), 0, rgf.Count);
-        }
-
-        private SimpleDatum getFutureDataCat(int nIdx, int nCount)
-        {
-            if (m_plotsKnownCat == null)
-                return null;
-
-            List<float> rgf = new List<float>();
-
-            for (int i = nIdx; i < nIdx + nCount; i++)
-            {
-                rgf.AddRange(m_plotsKnownCat[i].Y_values);
-            }
-
-            int nStreams = m_plotsKnownCat[0].Y_values.Length;
-
-            return new SimpleDatum(1, nStreams, nCount, rgf.ToArray(), 0, rgf.Count);
-        }
-
-        private SimpleDatum getTargetData(int nIdx, int nCount)
-        {
-            List<float> rgf = new List<float>();
-
-            for (int i = nIdx; i < nIdx + nCount; i++)
-            {
-                rgf.Add(m_plotsObservedNum[i].Y_values[m_nTargetStreamNumIdx]);
-            }
-
-            return new SimpleDatum(1, 1, nCount, rgf.ToArray(), 0, rgf.Count);
+            int nC = 1;
+            int nH = 1;
+            int nW = rgfTgt.Length;
+            return new SimpleDatum(nC, nW, nH, rgfTgt, 0, rgfTgt.Length);
         }
 
         private DateTime[] getTimeSync(int nIdx, int nCount)
         {
-            List<DateTime> rgDt = new List<DateTime>();
-
-            for (int i = nIdx; i < nIdx + nCount; i++)
-            {
-                rgDt.Add((DateTime)m_plotsObservedNum[i].Tag);
-            }
-
-            return rgDt.ToArray();
+            return m_data.GetTimeSyncValues(nIdx, nCount);
         }
     }
 
