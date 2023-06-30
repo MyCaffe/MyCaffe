@@ -41,56 +41,54 @@ namespace MyCaffe.test
             int nValItem1 = db.AddValueItem(nSrcId, 0, "Test Value Item #1");
             int nValItem2 = db.AddValueItem(nSrcId, 1, "Test Value ITem #2");
 
-            int nValStrm1a = db.AddObservedValueStream(nSrcId, nValItem1, "Test Stream #1", ValueStreamDescriptor.STREAM_VALUE_TYPE.NUMERIC, 1, dtStart, dtEnd, 60);
-            int nValStrm2a = db.AddObservedValueStream(nSrcId, nValItem1, "Test Stream #2", ValueStreamDescriptor.STREAM_VALUE_TYPE.NUMERIC, 2, dtStart, dtEnd, 60);
-            int nValStrm3a = db.AddKnownValueStream(nSrcId, nValItem1, "Test Stream #3", ValueStreamDescriptor.STREAM_VALUE_TYPE.CATEGORICAL, 3, dtStart, dtEnd, 60);
-            int nValStrm4a = db.AddStaticValueStream(nSrcId, nValItem1, "Test Stream #4", ValueStreamDescriptor.STREAM_VALUE_TYPE.CATEGORICAL, 3);
+            // Setup the data schema.
+            int nSecPerStep = 60;
+            int nOrdering = 0;
+            int nValStrm1 = db.AddValueStream(nSrcId, "Test Stream #1", nOrdering++, ValueStreamDescriptor.STREAM_CLASS_TYPE.OBSERVED, ValueStreamDescriptor.STREAM_VALUE_TYPE.NUMERIC, dtStart, dtEnd, nSecPerStep);
+            int nValStrm2 = db.AddValueStream(nSrcId, "Test Stream #2", nOrdering++, ValueStreamDescriptor.STREAM_CLASS_TYPE.OBSERVED, ValueStreamDescriptor.STREAM_VALUE_TYPE.NUMERIC, dtStart, dtEnd, nSecPerStep);
+            int nValStrm3 = db.AddValueStream(nSrcId, "Test Stream #3", nOrdering++, ValueStreamDescriptor.STREAM_CLASS_TYPE.KNOWN, ValueStreamDescriptor.STREAM_VALUE_TYPE.CATEGORICAL, dtStart, dtEnd, nSecPerStep);
+            int nValStrm4 = db.AddValueStream(nSrcId, "Test Stream #4", nOrdering++, ValueStreamDescriptor.STREAM_CLASS_TYPE.STATIC, ValueStreamDescriptor.STREAM_VALUE_TYPE.CATEGORICAL);
 
-            int nValStrm1b = db.AddObservedValueStream(nSrcId, nValItem2, "Test Stream #1", ValueStreamDescriptor.STREAM_VALUE_TYPE.NUMERIC, 1, dtStart, dtEnd, 60);
-            int nValStrm2b = db.AddObservedValueStream(nSrcId, nValItem2, "Test Stream #2", ValueStreamDescriptor.STREAM_VALUE_TYPE.NUMERIC, 2, dtStart, dtEnd, 60);
-            int nValStrm3b = db.AddKnownValueStream(nSrcId, nValItem2, "Test Stream #3", ValueStreamDescriptor.STREAM_VALUE_TYPE.CATEGORICAL, 3, dtStart, dtEnd, 60);
-            int nValStrm4b = db.AddStaticValueStream(nSrcId, nValItem2, "Test Stream #4", ValueStreamDescriptor.STREAM_VALUE_TYPE.CATEGORICAL, 3);
+            RawValueDataCollection dataStatic = new RawValueDataCollection(null);
+            dataStatic.Add(new RawValueData(ValueStreamDescriptor.STREAM_CLASS_TYPE.STATIC, ValueStreamDescriptor.STREAM_VALUE_TYPE.CATEGORICAL, nValStrm4));
 
-            PlotCollection plots = new PlotCollection();
+            RawValueDataCollection data = new RawValueDataCollection(null);
+            data.Add(new RawValueData(ValueStreamDescriptor.STREAM_CLASS_TYPE.OBSERVED, ValueStreamDescriptor.STREAM_VALUE_TYPE.NUMERIC, nValStrm1));
+            data.Add(new RawValueData(ValueStreamDescriptor.STREAM_CLASS_TYPE.OBSERVED, ValueStreamDescriptor.STREAM_VALUE_TYPE.NUMERIC, nValStrm2));
+            data.Add(new RawValueData(ValueStreamDescriptor.STREAM_CLASS_TYPE.KNOWN, ValueStreamDescriptor.STREAM_VALUE_TYPE.CATEGORICAL, nValStrm3));
+
+            db.Open(nSrcId);
+            db.EnableBulk(true);
+
+            // Add the data to item 1
+            dataStatic.SetData(new float[] { 1 });
+            db.PutRawValue(nSrcId, nValItem1, dataStatic);
+
             DateTime dt = dtStart;
             for (int i = 0; i < nSteps * nBlocks; i++)
             {
                 float[] rgfVal1 = new float[] { (float)((i + 1) * 2), (float)((i + 2) * 3), (float)i };
+                data.SetData(dt, rgfVal1);
 
-                Plot plot = new Plot(dt.ToFileTimeUtc(), rgfVal1);
-                plot.Tag = dt;
-                plots.Add(plot);
-
+                db.PutRawValue(nSrcId, nValItem1, data);
                 dt += TimeSpan.FromMinutes(1);
             }
-            plots.SetParameter("Test Stream #1", nValStrm1a);
-            plots.SetParameter("Test Stream #2", nValStrm2a);
-            plots.SetParameter("Test Stream #3", nValStrm3a);
 
-            db.Open(nSrcId);
-            db.PutRawValues(nSrcId, nValItem1, plots);
-            db.PutRawValue(nSrcId, nValItem1, nValStrm4a, 1);
-            db.Close();
+            // Add the data to item 2
+            dataStatic.SetData(new float[] { 2 });
+            db.PutRawValue(nSrcId, nValItem2, dataStatic);
 
-            plots = new PlotCollection();
             dt = dtStart;
             for (int i = 0; i < nSteps * nBlocks; i++)
             {
                 float[] rgfVal1 = new float[] { (float)((i + 3) * 4), (float)((i + 4) * 8), (float)i };
+                data.SetData(dt, rgfVal1);
 
-                Plot plot = new Plot(dt.ToFileTimeUtc(), rgfVal1);
-                plot.Tag = dt;
-                plots.Add(plot);
-
+                db.PutRawValue(nSrcId, nValItem2, data);
                 dt += TimeSpan.FromMinutes(1);
             }
-            plots.SetParameter("Test Stream #1", nValStrm1b);
-            plots.SetParameter("Test Stream #2", nValStrm2b);
-            plots.SetParameter("Test Stream #3", nValStrm3b);
 
-            db.Open(nSrcId);
-            db.PutRawValues(nSrcId, nValItem2, plots);
-            db.PutRawValue(nSrcId, nValItem2, nValStrm4b, 2);
+            db.SaveRawValues();
             db.Close();
 
             return src;

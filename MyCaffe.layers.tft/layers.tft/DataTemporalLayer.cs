@@ -556,7 +556,7 @@ namespace MyCaffe.layers.tft
             int nKnownNumCount = 0;
             int nKnownCatCount = 0;
 
-            foreach (ValueStreamDescriptor vsd in m_ds.TrainingSource.TemporalDescriptor.ValueItemDescriptors[0].ValueStreamDescriptors)
+            foreach (ValueStreamDescriptor vsd in m_ds.TrainingSource.TemporalDescriptor.ValueStreamDescriptors)
             {
                 if (vsd.ClassType == ValueStreamDescriptor.STREAM_CLASS_TYPE.STATIC)
                 {

@@ -39,9 +39,9 @@ namespace MyCaffe.layers.tft
             if (tsd == null)
                 return null;
 
-            schema.Data.Columns = tsd.ValueItemDescriptors[0].ValueStreamDescriptors[0].ItemCount;
+            schema.Data.Columns = tsd.ValueStreamDescriptors[0].Steps;
 
-            foreach (ValueStreamDescriptor vsd in tsd.ValueItemDescriptors[0].ValueStreamDescriptors)
+            foreach (ValueStreamDescriptor vsd in tsd.ValueStreamDescriptors)
             {
                 switch (vsd.ClassType)
                 {
