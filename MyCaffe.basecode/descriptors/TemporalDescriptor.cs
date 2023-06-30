@@ -8,6 +8,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
+using static MyCaffe.basecode.descriptors.ValueStreamDescriptor;
 
 namespace MyCaffe.basecode.descriptors
 {
@@ -18,6 +19,7 @@ namespace MyCaffe.basecode.descriptors
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class TemporalDescriptor
     {
+        List<ValueStreamDescriptor> m_rgValStrmDesc = new List<ValueStreamDescriptor>();
         List<ValueItemDescriptor> m_rgValItemDesc = new List<ValueItemDescriptor>();
 
         /// <summary>
@@ -33,10 +35,34 @@ namespace MyCaffe.basecode.descriptors
         /// <param name="td">Specifies a TemporalDescriptor to copy.</param>
         public TemporalDescriptor(TemporalDescriptor td)
         {
+            foreach (ValueStreamDescriptor vsd in td.m_rgValStrmDesc)
+            {
+                m_rgValStrmDesc.Add(new ValueStreamDescriptor(vsd));
+            }
+
             foreach (ValueItemDescriptor vid in td.m_rgValItemDesc)
             {
                 m_rgValItemDesc.Add(new ValueItemDescriptor(vid));
             }
+        }
+
+        /// <summary>
+        /// Returns the value stream descriptor.
+        /// </summary>
+        [ReadOnly(true)]
+        public List<ValueStreamDescriptor> ValueStreamDescriptors
+        {
+            get { return m_rgValStrmDesc; }
+            set { m_rgValStrmDesc = value; }
+        }
+
+        /// <summary>
+        /// Retunrs the ordered set of stream descriptors.
+        /// </summary>
+        [Browsable(false)]
+        public OrderedValueStreamDescriptorSet OrderedValueStreamDescriptors
+        {
+            get { return new OrderedValueStreamDescriptorSet(m_rgValStrmDesc); }
         }
 
         /// <summary>
@@ -58,6 +84,40 @@ namespace MyCaffe.basecode.descriptors
         }
 
         /// <summary>
+        /// Returns the total number of temporal steps.
+        /// </summary>
+        public int TotalSteps
+        {
+            get
+            {
+                int nTotal = 0;
+
+                foreach (ValueStreamDescriptor vsd in m_rgValStrmDesc)
+                {
+                    nTotal = Math.Max(nTotal, vsd.Steps);
+                }
+
+                return nTotal;
+            }
+        }
+
+        /// <summary>
+        /// Return the start date.
+        /// </summary>
+        public DateTime StartDate
+        {
+            get { return m_rgValStrmDesc.Min(p => p.Start.GetValueOrDefault(DateTime.MaxValue)); }
+        }
+
+        /// <summary>
+        /// Return the end date.
+        /// </summary>
+        public DateTime EndDate
+        {
+            get { return m_rgValStrmDesc.Max(p => p.End.GetValueOrDefault(DateTime.MinValue)); }
+        }
+
+        /// <summary>
         /// Returns a new TemporalDescriptor from a byte array. 
         /// </summary>
         /// <param name="rgb">Specifies the byte array.</param>
@@ -73,6 +133,12 @@ namespace MyCaffe.basecode.descriptors
             using (BinaryReader br = new BinaryReader(ms))
             {
                 int nCount = br.ReadInt32();
+                for (int i = 0; i < nCount; i++)
+                {
+                    desc.m_rgValStrmDesc.Add(ValueStreamDescriptor.FromBytes(br));
+                }
+
+                nCount = br.ReadInt32();
                 for (int i = 0; i < nCount; i++)
                 {
                     desc.m_rgValItemDesc.Add(ValueItemDescriptor.FromBytes(br));
@@ -92,6 +158,12 @@ namespace MyCaffe.basecode.descriptors
             using (BinaryWriter bw = new BinaryWriter(ms))
             {
                 bw.Write(m_rgValItemDesc.Count);
+                foreach (ValueStreamDescriptor vid in m_rgValStrmDesc)
+                {
+                    vid.ToBytes(bw);
+                }
+
+                bw.Write(m_rgValItemDesc.Count);
                 foreach (ValueItemDescriptor vid in m_rgValItemDesc)
                 {
                     vid.ToBytes(bw);
@@ -99,6 +171,49 @@ namespace MyCaffe.basecode.descriptors
 
                 return ms.ToArray();
             }
+        }
+    }
+
+    /// <summary>
+    /// The ordered value stream descriptor set is used to order the value stream descriptors by class and value type.
+    /// </summary>
+    public class OrderedValueStreamDescriptorSet
+    {
+        Dictionary<STREAM_CLASS_TYPE, Dictionary<STREAM_VALUE_TYPE, List<ValueStreamDescriptor>>> m_rgOrdered = new Dictionary<STREAM_CLASS_TYPE, Dictionary<STREAM_VALUE_TYPE, List<ValueStreamDescriptor>>>();
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="rg">Specifies the list of stream descriptors.</param>
+        public OrderedValueStreamDescriptorSet(List<ValueStreamDescriptor> rg)
+        {
+            foreach (ValueStreamDescriptor vsd in rg)
+            {
+                if (!m_rgOrdered.ContainsKey(vsd.ClassType))
+                    m_rgOrdered.Add(vsd.ClassType, new Dictionary<STREAM_VALUE_TYPE, List<ValueStreamDescriptor>>());
+
+                if (!m_rgOrdered[vsd.ClassType].ContainsKey(vsd.ValueType))
+                    m_rgOrdered[vsd.ClassType].Add(vsd.ValueType, new List<ValueStreamDescriptor>());
+
+                m_rgOrdered[vsd.ClassType][vsd.ValueType].Add(vsd);
+            }
+        }
+
+        /// <summary>
+        /// Retrieves the set of stream descriptors with the given class and value type.
+        /// </summary>
+        /// <param name="classType">Specifies the class type.</param>
+        /// <param name="valueType">Specifies the value type.</param>
+        /// <returns>The list of value stream descriptors is returned.</returns>
+        public List<ValueStreamDescriptor> GetStreamDescriptors(STREAM_CLASS_TYPE classType, STREAM_VALUE_TYPE valueType)
+        {
+            if (!m_rgOrdered.ContainsKey(classType))
+                return null;
+
+            if (!m_rgOrdered[classType].ContainsKey(valueType))
+                return null;
+
+            return m_rgOrdered[classType][valueType];
         }
     }
 
@@ -111,7 +226,6 @@ namespace MyCaffe.basecode.descriptors
     {
         int m_nID;
         string m_strName;   
-        List<ValueStreamDescriptor> m_rgValStreamDesc = new List<ValueStreamDescriptor>();
 
         /// <summary>
         /// The constructor.
@@ -132,11 +246,6 @@ namespace MyCaffe.basecode.descriptors
         {
             m_nID = vid.m_nID;
             m_strName = vid.m_strName;
-
-            foreach (ValueStreamDescriptor vsd in vid.m_rgValStreamDesc)
-            {
-                m_rgValStreamDesc.Add(new ValueStreamDescriptor(vsd));
-            }
         }
 
         /// <summary>
@@ -149,13 +258,6 @@ namespace MyCaffe.basecode.descriptors
             int nID = br.ReadInt32();
             string strName = br.ReadString();
             ValueItemDescriptor desc = new ValueItemDescriptor(nID, strName);
-
-            int nCount = br.ReadInt32();
-            for (int i = 0; i < nCount; i++)
-            {
-                desc.m_rgValStreamDesc.Add(ValueStreamDescriptor.FromBytes(br));
-            }
-
             return desc;
         }
 
@@ -168,11 +270,6 @@ namespace MyCaffe.basecode.descriptors
         {
             bw.Write(m_nID);
             bw.Write(m_strName);
-            bw.Write(m_rgValStreamDesc.Count);
-            foreach (ValueStreamDescriptor vsd in m_rgValStreamDesc)
-            {
-                vsd.ToBytes(bw);
-            }
         }
 
         /// <summary>
@@ -194,30 +291,12 @@ namespace MyCaffe.basecode.descriptors
         }
 
         /// <summary>
-        /// Get/set the value stream descriptors.
-        /// </summary>
-        [Browsable(false)]
-        public List<ValueStreamDescriptor> ValueStreamDescriptors
-        {
-            get { return m_rgValStreamDesc; }
-            set { m_rgValStreamDesc = value; }
-        }
-
-        /// <summary>
-        /// Returns the value stream descriptors as a read-only array.
-        /// </summary>
-        public ReadOnlyCollection<ValueStreamDescriptor> ValueStreamDescriptorItems
-        {
-            get { return m_rgValStreamDesc.AsReadOnly(); }
-        }
-
-        /// <summary>
         /// Returns a string representation of the value item descriptor.
         /// </summary>
         /// <returns>The string representation is returned.</returns>
         public override string ToString()
         {
-            return m_strName + " (" + m_rgValStreamDesc.Count.ToString() + " streams)";
+            return m_strName;
         }
     }
 
@@ -236,7 +315,7 @@ namespace MyCaffe.basecode.descriptors
         DateTime? m_dtStart = null;
         DateTime? m_dtEnd = null;
         int? m_nSecondsPerStep = null;
-        int m_nItemCount = 0;
+        int m_nSteps = 0;
 
         /// <summary>
         /// Defines the stream value type.
@@ -280,11 +359,10 @@ namespace MyCaffe.basecode.descriptors
         /// <param name="nOrdering">Specifies the value stream ordering.</param>
         /// <param name="classType">Specifies the value stream class type.</param>
         /// <param name="valueType">Specifies the value stream value type.</param>
-        /// <param name="dtStart">Specifies the value stream start date (null with STATIC class).</param>
-        /// <param name="dtEnd">Specifies the value stream end date (null with STATIC class).</param>
-        /// <param name="nSecondsPerStep">Specifies the value stream seconds per time step (null with STATIC class)</param>
-        /// <param name="nItemCount">Specifies the value stream item count.</param>
-        public ValueStreamDescriptor(int nID, string strName, int nOrdering, STREAM_CLASS_TYPE classType, STREAM_VALUE_TYPE valueType, DateTime? dtStart, DateTime? dtEnd, int? nSecondsPerStep, int nItemCount)
+        /// <param name="dtStart">Specifies the start time of the value stream.</param>
+        /// <param name="dtEnd">Specifies the end time of the value stream.</param>
+        /// <param name="nSecPerStep">Specifies the number of seconds in each step.</param>
+        public ValueStreamDescriptor(int nID, string strName, int nOrdering, STREAM_CLASS_TYPE classType, STREAM_VALUE_TYPE valueType, DateTime? dtStart = null, DateTime? dtEnd = null, int? nSecPerStep = null, int nSteps = 1)
         {
             m_nID = nID;
             m_strName = strName;
@@ -293,8 +371,8 @@ namespace MyCaffe.basecode.descriptors
             m_valueType = valueType;
             m_dtStart = dtStart;
             m_dtEnd = dtEnd;
-            m_nSecondsPerStep = nSecondsPerStep;
-            m_nItemCount = nItemCount;
+            m_nSecondsPerStep = nSecPerStep;
+            m_nSteps = nSteps;
         }
 
         /// <summary>
@@ -311,7 +389,7 @@ namespace MyCaffe.basecode.descriptors
             m_dtStart = vsd.m_dtStart;
             m_dtEnd = vsd.m_dtEnd;
             m_nSecondsPerStep = vsd.m_nSecondsPerStep;
-            m_nItemCount = vsd.m_nItemCount;
+            m_nSteps = vsd.m_nSteps;
         }
 
         /// <summary>
@@ -342,9 +420,9 @@ namespace MyCaffe.basecode.descriptors
             if (bHasSecondsPerStep)
                 nSecondsPerStep = br.ReadInt32();
 
-            int nItemCount = br.ReadInt32();
+            int nSteps = br.ReadInt32();
 
-            return new ValueStreamDescriptor(nID, strName, nOrdering, classType, valueType, dtStart, dtEnd, nSecondsPerStep, nItemCount);
+            return new ValueStreamDescriptor(nID, strName, nOrdering, classType, valueType, dtStart, dtEnd, nSecondsPerStep, nSteps);
         }
 
         /// <summary>
@@ -371,7 +449,7 @@ namespace MyCaffe.basecode.descriptors
             if (m_nSecondsPerStep.HasValue)
                 bw.Write(m_nSecondsPerStep.Value);
 
-            bw.Write(m_nItemCount);
+            bw.Write(m_nSteps);
         }
 
         /// <summary>
@@ -450,9 +528,9 @@ namespace MyCaffe.basecode.descriptors
         /// Returns the number of items in the value stream.
         /// </summary>
         [ReadOnly(true)]
-        public int ItemCount
+        public int Steps
         {
-            get { return m_nItemCount; }
+            get { return m_nSteps; }
         }
 
         /// <summary>
