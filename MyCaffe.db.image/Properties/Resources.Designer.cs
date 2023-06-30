@@ -371,12 +371,11 @@ namespace MyCaffe.db.image.Properties {
         ///CREATE NONCLUSTERED INDEX [_dta_index_RawValues_8_994102582__K3_K4_K2_K12_K5_1_6_7_10_11] ON [dbo].[RawValues]
         ///(
         ///	[ItemID] ASC,
-        ///	[StreamID] ASC,
         ///	[SourceID] ASC,
         ///	[Active] ASC,
         ///	[TimeStamp] ASC
         ///)
-        ///INCLUDE([ID],[RawData],[NormalizedData],[DebugDataFormatID],[DataCriteriaFormatID]) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF,  [rest of string was truncated]&quot;;.
+        ///INCLUDE([ID],[DebugDataFormatID],[DataCriteriaFormatID]) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAG [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string CreateRawValuesIndex {
             get {
@@ -391,16 +390,17 @@ namespace MyCaffe.db.image.Properties {
         ///	[ID] [int] IDENTITY(1,1) NOT NULL,
         ///	[SourceID] [int] NULL,
         ///	[ItemID] [int] NULL,
-        ///	[StreamID] [int] NULL,
         ///	[TimeStamp] [datetime] NULL,
-        ///	[RawData] [numeric](18, 8) NULL,
-        ///	[NormalizedData] [numeric](18, 12) NULL,
+        ///	[RawData] [image] NULL,
         ///	[DataCriteria] [image] NULL,
         ///	[DebugData] [image] NULL,
         ///	[DebugDataFormatID] [tinyint] NULL,
         ///	[DataCriteriaFormatID] [tinyint] NULL,
         ///	[Active] [bit] NULL,
-        /// CONSTRAINT [PK_RawValues] PRIMARY KEY CLUSTE [rest of string was truncated]&quot;;.
+        /// CONSTRAINT [PK_RawValues] PRIMARY KEY CLUSTERED 
+        ///(
+        ///	[ID] ASC
+        ///)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGN [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string CreateRawValuesTable {
             get {
@@ -475,20 +475,19 @@ namespace MyCaffe.db.image.Properties {
         ///BEGIN
         ///CREATE TABLE [dbo].[ValueStreams](
         ///	[ID] [int] IDENTITY(1,1) NOT NULL,
-        ///	[Name] [nvarchar](128) NULL,
-        ///	[ClassTypeID] [tinyint] NULL,
+        ///	[Name] [nvarchar](256) NULL,
         ///	[ValueTypeID] [tinyint] NULL,
-        ///	[ValueItemID] [int] NULL,
-        ///	[Ordering] [int] NULL,
-        ///	[StartTime] [datetime] NULL,
-        ///	[EndTime] [datetime] NULL,
-        ///	[SecondsPerStep] [int] NULL,
+        ///	[ClassTypeID] [tinyint] NULL,
+        ///	[Ordering] [smallint] NULL,
         ///	[SourceID] [int] NULL,
-        ///	[ItemCount] [int] NULL,
+        ///	[StartTime] [smalldatetime] NULL,
+        ///	[EndTime] [smalldatetime] NULL,
+        ///	[SecondsPerStep] [int] NULL,
+        ///	[TotalSteps] [int] NULL,
         /// CONSTRAINT [PK_ValueStreams] PRIMARY KEY CLUSTERED 
         ///(
         ///	[ID] ASC
-        ///)WITH (PAD_INDEX = OFF,  [rest of string was truncated]&quot;;.
+        ///)WITH (PAD_INDEX = OFF, STATISTICS_N [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string CreateValueStreamsTable {
             get {
