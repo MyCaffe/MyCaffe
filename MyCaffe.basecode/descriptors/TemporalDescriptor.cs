@@ -157,7 +157,7 @@ namespace MyCaffe.basecode.descriptors
             using (MemoryStream ms = new MemoryStream())
             using (BinaryWriter bw = new BinaryWriter(ms))
             {
-                bw.Write(m_rgValItemDesc.Count);
+                bw.Write(m_rgValStrmDesc.Count);
                 foreach (ValueStreamDescriptor vid in m_rgValStrmDesc)
                 {
                     vid.ToBytes(bw);
