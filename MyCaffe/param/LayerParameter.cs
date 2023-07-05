@@ -81,6 +81,7 @@ namespace MyCaffe.param
         List<string> m_rgstrExpectedTop = new List<string>();
         List<string> m_rgstrExpectedBottom = new List<string>();
         bool m_bFreezeLearning = false;
+        bool m_bConnectLossEvent = false;
 
         /// <summary>
         /// Defines whether a layer node has ONNX conversion support or not.
@@ -1873,6 +1874,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Get/set whether or not to connect the loss event to this layer.
+        /// </summary>
+        public bool connect_loss_event
+        {
+            get { return m_bConnectLossEvent; }
+            set { m_bConnectLossEvent = value; }
+        }
+
+        /// <summary>
         /// Specifies the loss weight.
         /// </summary>
         public List<double> loss_weight
@@ -2954,6 +2964,7 @@ namespace MyCaffe.param
             p.m_rgInclude = Utility.Clone<NetStateRule>(m_rgInclude);
             p.m_rgExclude = Utility.Clone<NetStateRule>(m_rgExclude);
             p.m_bFreezeLearning = m_bFreezeLearning;
+            p.m_bConnectLossEvent = m_bConnectLossEvent;
 
             p.m_rgLayerParameters = new Dictionary<LayerType, LayerParameterBase>();
 
@@ -3413,6 +3424,9 @@ namespace MyCaffe.param
             if (freeze_learning)
                 rgChildren.Add("freeze_learning", freeze_learning.ToString());
 
+            if (connect_loss_event)
+                rgChildren.Add("connect_loss_event", connect_loss_event.ToString());
+
             if (use_halfsize)
                 rgChildren.Add("use_halfsize", use_halfsize.ToString());
 
@@ -3618,6 +3632,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("freeze_learning")) != null)
                 p.freeze_learning = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("connect_loss_event")) != null)
+                p.connect_loss_event = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("use_halfsize")) != null)
                 p.use_halfsize = bool.Parse(strVal);

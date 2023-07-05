@@ -686,6 +686,26 @@ namespace MyCaffe.common
                         break;
                 }
 
+                LossLayer<T> lossLayer = null;
+                for (int i=m_rgLayers.Count-1; i>=0; i--)
+                {
+                    if (m_rgLayers[i] is LossLayer<T>)
+                    {
+                        lossLayer = m_rgLayers[i] as LossLayer<T>;
+                        break;
+                    }
+                }
+
+                // Connect any loss events
+                if (lossLayer != null)
+                {
+                    for (int i = 0; i < m_rgLayers.Count; i++)
+                    {
+                        if (m_rgLayers[i].layer_param.connect_loss_event)
+                            m_rgLayers[i].ConnectLoss(lossLayer);
+                    }
+                }
+
                 m_bDebugInfo = param.debug_info;
                 m_log.WriteLine("Network initialization done.");
             }

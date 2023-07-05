@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 
 /// <summary>
@@ -196,6 +197,42 @@ namespace MyCaffe.basecode
         {
             get { return m_proto; }
             set { m_proto = value; }
+        }
+    }
+
+    /// <summary>
+    /// The LossArgs contains the loss values for a given batch.
+    /// </summary>
+    public class LossArgs : EventArgs
+    {
+        List<int> m_rgShape;
+        float[] m_rgfData;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="nCount">Specifies the batch size used.</param>
+        /// <param name="rgShape">Specifies the shape of the data.</param>
+        public LossArgs(int nCount, List<int> rgShape)
+        {
+            m_rgShape = rgShape;
+            m_rgfData = new float[nCount];
+        }
+
+        /// <summary>
+        /// Specifies the shape of the data.
+        /// </summary>
+        public List<int> Shape
+        {
+            get { return m_rgShape; }
+        }
+
+        /// <summary>
+        /// Specifies the loss values for a given batch.
+        /// </summary>
+        public float[] Data
+        {
+            get { return m_rgfData; }
         }
     }
 }

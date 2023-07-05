@@ -41,6 +41,11 @@ namespace MyCaffe.layers
         /// Specifies the inner num, such as the channel + height + width (e.g. count(axis + 1)).  Each derivative class must set this value appropriately.
         /// </summary>
         protected int m_nInnerNum = 0;
+        /// <summary>
+        /// Specifies the loss event called on each learning cycle.
+        /// </summary>
+        public event EventHandler<LossArgs> OnLoss;
+        LossArgs m_lossArgs = null;
 
         /// <summary>
         /// The LossLayer constructor.
@@ -57,6 +62,22 @@ namespace MyCaffe.layers
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.LOSS;
+        }
+
+        /// <summary>
+        /// This method is called by the loss layer to pass the blob data to the OnLoss event (if implemented)
+        /// </summary>
+        /// <param name="blob">Specifies the loss blob data.</param>
+        protected void callLossEvent(Blob<T> blob)
+        {
+            if (OnLoss == null)
+                return;
+
+            if (m_lossArgs == null)
+                m_lossArgs = new LossArgs(blob.count(), blob.shape());
+
+            float[] rgData = convertF(blob.mutable_cpu_data);
+            Array.Copy(rgData, m_lossArgs.Data, rgData.Length);
         }
 
         /// <summary>

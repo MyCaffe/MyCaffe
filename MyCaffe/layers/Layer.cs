@@ -212,6 +212,17 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Called to connect the loss OnLoss event to a specified layer (typically the data layer).
+        /// </summary>
+        /// <remarks>
+        /// When connected, the OnLoss event is called on each forward pass during the loss function.
+        /// </remarks>
+        /// <param name="layer">Specifies the layer to connect the OnLoss event to.</param>
+        public virtual void ConnectLoss(LossLayer<T> layer)
+        {
+        }
+
+        /// <summary>
         /// Should return true when PreProcessing methods are overriden.
         /// </summary>
         public virtual bool SupportsPreProcessing
