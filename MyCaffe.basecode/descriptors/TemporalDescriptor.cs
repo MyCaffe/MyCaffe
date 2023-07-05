@@ -362,6 +362,7 @@ namespace MyCaffe.basecode.descriptors
         /// <param name="dtStart">Specifies the start time of the value stream.</param>
         /// <param name="dtEnd">Specifies the end time of the value stream.</param>
         /// <param name="nSecPerStep">Specifies the number of seconds in each step.</param>
+        /// <param name="nSteps">Optionally, specifies the number of steps taken on each iteration (default = 1).</param>
         public ValueStreamDescriptor(int nID, string strName, int nOrdering, STREAM_CLASS_TYPE classType, STREAM_VALUE_TYPE valueType, DateTime? dtStart = null, DateTime? dtEnd = null, int? nSecPerStep = null, int nSteps = 1)
         {
             m_nID = nID;
