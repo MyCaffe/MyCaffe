@@ -842,13 +842,15 @@ namespace MyCaffe.basecode
         /// </summary>
         /// <param name="nQueryIdx">Specifies the index of the query within a batch.</param>
         /// <param name="nSrcId">Specifies the source ID of the data source.</param>
+        /// <param name="nItemIdx">Returns the item index used.</param>
+        /// <param name="nIdx">Returns the index used with in the item.</param>
         /// <param name="itemSelectionOverride">Optionally, specifies the item selection method used to select the item (e.g., customer, station, stock symbol)</param>
         /// <param name="valueSelectionOverride">Optionally, specifies the value selection method used to select the index within the temporal data of the selected item.</param>
         /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
         /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
         /// <returns>An array containing the static num, statuc cat, historical num, historical cat, future num, future cat, target and target hist data is returned. 
         /// If one of the value types are not produced, null is filled in the array slot.</returns>
-        SimpleDatum[] QueryTemporalItem(int nQueryIdx, int nSrcId, DB_LABEL_SELECTION_METHOD? itemSelectionOverride = null, DB_ITEM_SELECTION_METHOD? valueSelectionOverride = null, bool bEnableDebug = false, string strDebugPath = null);
+        SimpleDatum[] QueryTemporalItem(int nQueryIdx, int nSrcId, out int nItemIdx, out int nIdx, DB_LABEL_SELECTION_METHOD? itemSelectionOverride = null, DB_ITEM_SELECTION_METHOD? valueSelectionOverride = null, bool bEnableDebug = false, string strDebugPath = null);
 
         /// <summary>
         /// Reset the database indexes.
