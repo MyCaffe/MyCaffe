@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Data.SqlClient;
 using MyCaffe.basecode;
+using System.Diagnostics;
 
 namespace MyCaffe.db.image
 {
@@ -159,12 +160,33 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Create the temporal tables.
+        /// </summary>
+        public void CreateTemporalTables()
+        {
+            try
+            {
+                SqlConnection connection;
+
+                connection = new SqlConnection(GetConnectionString(m_ci.Database));
+                connection.Open();
+                createTables(connection, true, true, true);
+                connection.Close();
+            }
+            catch (Exception excpt)
+            {
+                Trace.WriteLine("ERROR: Creating temporal tables - " + excpt.Message);
+            }
+        }
+
+        /// <summary>
         /// The createTables function creates the tables of the database.
         /// </summary>
         /// <param name="connection">Specifies the SQL connection.</param>
         /// <param name="bFullCreate">When <i>true</i> the full database is created, otherwise all tables are created except the DatasetCreators table.</param>
         /// <param name="bUpdateOnly">When <i>true</i> an existing database is being updated.</param>
-        protected virtual void createTables(SqlConnection connection, bool bFullCreate, bool bUpdateOnly)
+        /// <param name="bTemporalOnly">When <i>true</i> only the temporal tables are created.</param>
+        protected virtual void createTables(SqlConnection connection, bool bFullCreate, bool bUpdateOnly, bool bTemporalOnly = false)
         {
             SqlCommand cmdCreate;
 
@@ -242,25 +264,28 @@ namespace MyCaffe.db.image
             cmdCreate.ExecuteNonQuery();
             cmdCreate.Dispose();
 
-            cmdCreate = new SqlCommand(Properties.Resources.CreateRawImageIndex, connection);
-            cmdCreate.ExecuteNonQuery();
-            cmdCreate.Dispose();
+            if (!bTemporalOnly)
+            {
+                cmdCreate = new SqlCommand(Properties.Resources.CreateRawImageIndex, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
 
-            cmdCreate = new SqlCommand(Properties.Resources.CreateRawImageIndex2, connection);
-            cmdCreate.ExecuteNonQuery();
-            cmdCreate.Dispose();
+                cmdCreate = new SqlCommand(Properties.Resources.CreateRawImageIndex2, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
 
-            cmdCreate = new SqlCommand(Properties.Resources.CreateRawValuesIndex, connection);
-            cmdCreate.ExecuteNonQuery();
-            cmdCreate.Dispose();
+                cmdCreate = new SqlCommand(Properties.Resources.CreateRawValuesIndex, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
 
-            cmdCreate = new SqlCommand(Properties.Resources.UpdateRawImageResultsTable, connection);
-            cmdCreate.ExecuteNonQuery();
-            cmdCreate.Dispose();
+                cmdCreate = new SqlCommand(Properties.Resources.UpdateRawImageResultsTable, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
 
-            cmdCreate = new SqlCommand(Properties.Resources.UpdateRawImageResultsTable2, connection);
-            cmdCreate.ExecuteNonQuery();
-            cmdCreate.Dispose();
+                cmdCreate = new SqlCommand(Properties.Resources.UpdateRawImageResultsTable2, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
+            }
         }
 
         /// <summary>
