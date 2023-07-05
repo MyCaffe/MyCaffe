@@ -144,6 +144,8 @@ namespace MyCaffe.layers
 
             m_blobDesiredQuantiles.mutable_cpu_data = convert(rgDeqQtl1);
             m_blobDesiredQuantiles.mutable_cpu_diff = convert(rgDeqQtl2);
+
+            
         }
 
         /// <summary>
@@ -242,6 +244,8 @@ namespace MyCaffe.layers
 
                 colTop[1].scale_data(2.0 / dfTargetSum);
             }
+
+            callLossEvent(m_blobLossSumMean);
         }
 
         /// <summary>

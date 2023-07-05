@@ -170,6 +170,20 @@ namespace MyCaffe.layers.tft
         }
 
         /// <summary>
+        /// Connect the loss layer to the data layer so that we can rank the data values.
+        /// </summary>
+        /// <param name="layer">Specifies the loss layer to connect.</param>
+        public override void ConnectLoss(LossLayer<T> layer)
+        {
+            layer.OnLoss += Layer_OnLoss;
+        }
+
+        private void Layer_OnLoss(object sender, LossArgs e)
+        {
+
+        }
+
+        /// <summary>
         /// Forward computation
         /// </summary>
         /// <param name="colBottom">inpub Blob vector (length 1)
@@ -283,9 +297,10 @@ namespace MyCaffe.layers.tft
         /// <param name="phase">Specifies the phase.</param>
         /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
         /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
-        public virtual void LoadBatch(Phase phase, int nBatchSize, BlobCollection<T> col, bool bEnableDebug = false, string strDebugPath = null)
+        /// <returns>An array of the selected item and indexes is returned.</returns>
+        public virtual int[,] LoadBatch(Phase phase, int nBatchSize, BlobCollection<T> col, bool bEnableDebug = false, string strDebugPath = null)
         {
-            m_data.LoadBatch(nBatchSize, col, bEnableDebug, strDebugPath);
+            return m_data.LoadBatch(nBatchSize, col, bEnableDebug, strDebugPath);
         }
 
         /// <summary>
@@ -330,6 +345,7 @@ namespace MyCaffe.layers.tft
         float[] m_rgFutureCat = null;
         float[] m_rgTarget = null;
         float[] m_rgTargetHist = null;
+        int[,] m_rgIdx = null;
 
 
         /// <summary>
@@ -427,7 +443,8 @@ namespace MyCaffe.layers.tft
         /// <param name="col">Specifies the collection of blobs to load.</param>
         /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
         /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
-        public override void LoadBatch(Phase phase, int nBatchSize, BlobCollection<T> col, bool bEnableDebug = false, string strDebugPath = null)
+        /// <returns>The list of selected indexes is returned.</returns>
+        public override int[,] LoadBatch(Phase phase, int nBatchSize, BlobCollection<T> col, bool bEnableDebug = false, string strDebugPath = null)
         {
             SourceDescriptor src = (phase == Phase.TRAIN) ? m_ds.TrainingSource : m_ds.TestingSource;
             DB_LABEL_SELECTION_METHOD itemSelection = (m_bShuffleData) ? DB_LABEL_SELECTION_METHOD.RANDOM : DB_LABEL_SELECTION_METHOD.NONE;
@@ -450,11 +467,19 @@ namespace MyCaffe.layers.tft
             if (m_rgTargetHist == null)
                 m_rgTargetHist = getBuffer(col, 7);
 
+            if (m_rgIdx == null)
+                m_rgIdx = new int[nBatchSize,2];
+
             for (int i = 0; i < nBatchSize; i++)
             {
-                SimpleDatum[] rgData = m_db.QueryTemporalItem(i, src.ID, itemSelection, valueSelection, bEnableDebug, strDebugPath);
+                int nItemIdx;
+                int nIdx;
+                SimpleDatum[] rgData = m_db.QueryTemporalItem(i, src.ID, out nItemIdx, out nIdx, itemSelection, valueSelection, bEnableDebug, strDebugPath);
                 if (rgData == null)
                     throw new Exception("No data could be found for source '" + src.Name + ".  You may need to re-run the dataset creator for the dataset '" + m_ds.Name + "'.");
+
+                m_rgIdx[i,0] = nItemIdx;
+                m_rgIdx[i,1] = nIdx;
 
                 SimpleDatum sdStatNum = rgData[0];
                 SimpleDatum sdStatCat = rgData[1];
@@ -531,6 +556,8 @@ namespace MyCaffe.layers.tft
             setBuffer(col, 5, m_rgFutureCat);
             setBuffer(col, 6, m_rgTarget);
             setBuffer(col, 7, m_rgTargetHist);
+
+            return m_rgIdx;
         }
 
         /// <summary>
@@ -952,7 +979,7 @@ namespace MyCaffe.layers.tft
 
         public abstract void Close();
 
-        public abstract void LoadBatch(int nBatchSize, BlobCollection<T> col, bool bEnableDebug, string strDebugPath);
+        public abstract int[,] LoadBatch(int nBatchSize, BlobCollection<T> col, bool bEnableDebug, string strDebugPath);
 
         public abstract int[] GetShape(OUTPUT_TYPE ot);
 
@@ -1525,7 +1552,7 @@ namespace MyCaffe.layers.tft
             }
         }
 
-        public override void LoadBatch(int nBatchSize, BlobCollection<T> col, bool bEnableDebug, string strDebugPath)
+        public override int[,] LoadBatch(int nBatchSize, BlobCollection<T> col, bool bEnableDebug, string strDebugPath)
         {
             lock (m_syncObj)
             {
@@ -1584,6 +1611,8 @@ namespace MyCaffe.layers.tft
 
                 if (rgHistTarget != null)
                     col[7].mutable_cpu_data = Utility.ConvertVec<T>(rgHistTarget);
+
+                return null;
             }
         }
     }
