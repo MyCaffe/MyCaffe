@@ -111,6 +111,7 @@ namespace MyCaffe.db.temporal
         /// Retreives the static, historical and future data at a selected step.
         /// </summary>
         /// <param name="nQueryIdx">Specifies the index of the query, used to show where this query is within a batch.</param>
+        /// <param name="nIdx">Returns the index used within the item.</param>
         /// <param name="valueSelectionMethod">Specifies the value step selection method.</param>
         /// <param name="nHistSteps">Specifies the number of historical steps.</param>
         /// <param name="nFutSteps">Specifies the number of future steps.</param>
@@ -121,9 +122,11 @@ namespace MyCaffe.db.temporal
         /// for a given item at the temporal selection point.</returns>
         /// <remarks>Note, the ordering for historical value streams is: observed, then known.  Future value streams only contiain known value streams.  If a dataset does not have one of the data types noted above, null
         /// is returned in the array slot (for example, if the dataset does not produce static numeric values, the array slot is set to [0] = null.</remarks>
-        public SimpleDatum[] GetData(int nQueryIdx, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nHistSteps, int nFutSteps, int nValueStepOffset = 1, bool bEnableDebug = false, string strDebugPath = null)
+        public SimpleDatum[] GetData(int nQueryIdx, out int nIdx, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nHistSteps, int nFutSteps, int nValueStepOffset = 1, bool bEnableDebug = false, string strDebugPath = null)
         {
             int nTotalSteps = nHistSteps + nFutSteps;
+
+            nIdx = m_nValIdx;
 
             if (m_nColCount < nTotalSteps)
                 return null;
