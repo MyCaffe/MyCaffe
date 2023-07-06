@@ -111,7 +111,7 @@ namespace MyCaffe.db.temporal
         /// Retreives the static, historical and future data at a selected step.
         /// </summary>
         /// <param name="nQueryIdx">Specifies the index of the query, used to show where this query is within a batch.</param>
-        /// <param name="nIdx">Returns the index used within the item.</param>
+        /// <param name="nValueIdx">Specifies the value index override when not null, returns the index used with in the item.</param>
         /// <param name="valueSelectionMethod">Specifies the value step selection method.</param>
         /// <param name="nHistSteps">Specifies the number of historical steps.</param>
         /// <param name="nFutSteps">Specifies the number of future steps.</param>
@@ -122,11 +122,9 @@ namespace MyCaffe.db.temporal
         /// for a given item at the temporal selection point.</returns>
         /// <remarks>Note, the ordering for historical value streams is: observed, then known.  Future value streams only contiain known value streams.  If a dataset does not have one of the data types noted above, null
         /// is returned in the array slot (for example, if the dataset does not produce static numeric values, the array slot is set to [0] = null.</remarks>
-        public SimpleDatum[] GetData(int nQueryIdx, out int nIdx, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nHistSteps, int nFutSteps, int nValueStepOffset = 1, bool bEnableDebug = false, string strDebugPath = null)
+        public SimpleDatum[] GetData(int nQueryIdx, ref int? nValueIdx, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nHistSteps, int nFutSteps, int nValueStepOffset = 1, bool bEnableDebug = false, string strDebugPath = null)
         {
             int nTotalSteps = nHistSteps + nFutSteps;
-
-            nIdx = m_nValIdx;
 
             if (m_nColCount < nTotalSteps)
                 return null;
@@ -140,9 +138,14 @@ namespace MyCaffe.db.temporal
                 if (m_nValIdx >= m_nColCount - nTotalSteps)
                 {
                     m_nValIdx = 0;
+                    nValueIdx = m_nValIdx;
                     return null;
                 }
             }
+
+            if (nValueIdx.HasValue)
+                m_nValIdx = nValueIdx.Value;
+            nValueIdx = m_nValIdx;
 
             SimpleDatum sdStatNum = null;
             SimpleDatum sdStatCat = null;
@@ -161,7 +164,15 @@ namespace MyCaffe.db.temporal
             getTargetData(m_nValIdx, nHistSteps, nFutSteps, m_nTargetStreamNumIdx, out sdTarget, out sdTargetHist);
 
             if (bEnableDebug)
-                debug(nQueryIdx, strDebugPath, m_nValIdx, nHistSteps, nFutSteps, sdTargetHist, sdTarget);
+            {
+                debug("trg", nQueryIdx, strDebugPath, m_nValIdx, nHistSteps, nFutSteps, sdTargetHist, sdTarget);
+                debugStatic("stat_cat", nQueryIdx, strDebugPath, m_nValIdx, sdStatCat);
+                debugStatic("stat_num", nQueryIdx, strDebugPath, m_nValIdx, sdStatNum);
+                debug("hist_cat", nQueryIdx, strDebugPath, m_nValIdx, sdHistCat, STREAM_CLASS_TYPE.OBSERVED);
+                debug("hist_num", nQueryIdx, strDebugPath, m_nValIdx, sdHistNum, STREAM_CLASS_TYPE.OBSERVED);
+                debug("fut_cat", nQueryIdx, strDebugPath, m_nValIdx, sdFutCat, STREAM_CLASS_TYPE.KNOWN);
+                debug("fut_num", nQueryIdx, strDebugPath, m_nValIdx, sdFutNum, STREAM_CLASS_TYPE.KNOWN);
+            }
 
             SimpleDatum[] rgData = new SimpleDatum[] { m_sdStaticNum, m_sdStaticCat, sdHistNum, sdHistCat, sdFutNum, sdFutCat, sdTarget, sdTargetHist };
             m_nValIdx++;
@@ -169,7 +180,81 @@ namespace MyCaffe.db.temporal
             return rgData;
         }
 
-        private void debug(int nQueryIdx, string strDebugPath, int nIdx, int nHistSteps, int nFutSteps, SimpleDatum sd1, SimpleDatum sd2)
+        private void debugStatic(string strTag, int nQueryIdx, string strDebugPath, int nIdx, SimpleDatum sd)
+        {
+            if (string.IsNullOrEmpty(strDebugPath))
+                throw new Exception("You must specify a debug path, when 'EnableDebug' = true.");
+
+            if (sd == null)
+                return;
+
+            string strName = strTag + ": QueryIdx = " + nQueryIdx.ToString() + ", Idx = " + nIdx.ToString() + ", Length = " + sd.ItemCount.ToString() + " Time: None - Static";
+            PlotCollection plots = new PlotCollection(strName);
+
+            float[] rgf = sd.GetData<float>();
+            for (int i = 0; i < rgf.Length; i++)
+            {
+                float fVal = rgf[i];
+
+                Plot plot = new Plot(i, fVal);
+                plots.Add(plot);
+            }
+
+            if (!Directory.Exists(strDebugPath))
+                Directory.CreateDirectory(strDebugPath);
+
+            strDebugPath = strDebugPath.TrimEnd('\\') + "\\";
+            string strFile = strDebugPath + strTag + "." + nQueryIdx.ToString() + ".static" + "." + nIdx.ToString() + ".png";
+            Image img = SimpleGraphingControl.QuickRender(plots, 1000, 600, true, ConfigurationAxis.VALUE_RESOLUTION.MINUTE, null, true, null, true);
+
+            img.Save(strFile);
+            img.Dispose();
+
+        }
+
+        private void debug(string strTag, int nQueryIdx, string strDebugPath, int nIdx, SimpleDatum sd, STREAM_CLASS_TYPE classType)
+        {
+            if (string.IsNullOrEmpty(strDebugPath))
+                throw new Exception("You must specify a debug path, when 'EnableDebug' = true.");
+
+            if (sd == null)
+                return;
+
+            DateTime[] rgSync = getTimeSync(nIdx, sd.ItemCount);
+            if (rgSync.Length != sd.ItemCount)
+                throw new Exception("The sync and data lengths do not match!");
+
+            string strName = strTag + ": QueryIdx = " + nQueryIdx.ToString() + ", Idx = " + nIdx.ToString() + ", Length = " + sd.ItemCount.ToString() + " Time: " + rgSync[0].ToString() + " - " + rgSync[rgSync.Length - 1].ToString();
+            PlotCollection plots = new PlotCollection(strName);
+
+            float[] rgf = sd.GetData<float>();
+            for (int i = 0; i < rgf.Length; i++)
+            {
+                float fVal = rgf[i];
+
+                Plot plot = new Plot(rgSync[i].ToFileTime(), fVal);
+                plot.Tag = rgSync[i];
+                plots.Add(plot);
+            }
+
+            if (!Directory.Exists(strDebugPath))
+                Directory.CreateDirectory(strDebugPath);
+
+            DateTime dt = rgSync[0];
+
+            if (classType == STREAM_CLASS_TYPE.OBSERVED)
+                dt = rgSync[rgSync.Length - 1];
+
+            strDebugPath = strDebugPath.TrimEnd('\\') + "\\";
+            string strFile = strDebugPath + strTag + "." + nQueryIdx.ToString() + "." + dt.Year.ToString() + "." + dt.Month.ToString() + "." + dt.Day.ToString() + "_" + dt.Hour.ToString() + "." + dt.Minute.ToString() + "." + dt.Second.ToString() + "." + nIdx.ToString() + ".png";
+            Image img = SimpleGraphingControl.QuickRender(plots, 1000, 600, true, ConfigurationAxis.VALUE_RESOLUTION.MINUTE, null, true, null, true);
+
+            img.Save(strFile);
+            img.Dispose();
+
+        }
+
+        private void debug(string strTag, int nQueryIdx, string strDebugPath, int nIdx, int nHistSteps, int nFutSteps, SimpleDatum sd1, SimpleDatum sd2)
         {
             if (string.IsNullOrEmpty(strDebugPath))
                 throw new Exception("You must specify a debug path, when 'EnableDebug' = true.");
@@ -220,7 +305,7 @@ namespace MyCaffe.db.temporal
             DateTime dt = rgSync[rgf1.Length];
 
             strDebugPath = strDebugPath.TrimEnd('\\') + "\\";
-            string strFile = strDebugPath + nQueryIdx.ToString() + "." + dt.Year.ToString() + "." + dt.Month.ToString() + "." + dt.Day.ToString() + "_" + dt.Hour.ToString() + "." + dt.Minute.ToString() + "." + dt.Second.ToString() + "." + nIdx.ToString() + ".png";
+            string strFile = strDebugPath + strTag + "." + nQueryIdx.ToString() + "." + dt.Year.ToString() + "." + dt.Month.ToString() + "." + dt.Day.ToString() + "_" + dt.Hour.ToString() + "." + dt.Minute.ToString() + "." + dt.Second.ToString() + "." + nIdx.ToString() + ".png";
             Image img = SimpleGraphingControl.QuickRender(plots, 1000, 600, true, ConfigurationAxis.VALUE_RESOLUTION.MINUTE, null, true, null, true);
 
             using (Graphics g = Graphics.FromImage(img))

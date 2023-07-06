@@ -115,9 +115,9 @@ namespace MyCaffe.test
 
             for (int i = 0; i < (nHistSteps + nFutSteps); i++)
             {
-                int nItemIdx;
-                int nValIdx;
-                SimpleDatum[] rgData = set.GetData(i, out nItemIdx, out nValIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
+                int? nItemIdx = null;
+                int? nValIdx = null;
+                SimpleDatum[] rgData = set.GetData(i, ref nItemIdx, ref nValIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
 
                 log.CHECK_EQ(rgData.Length, 8, "There should be 8 simple datums (static num, static cat, hist num, hist cat, fut num, fut cat, target, target hist).");
 
@@ -184,9 +184,9 @@ namespace MyCaffe.test
 
             for (int i = 0; i < (nHistSteps + nFutSteps); i++)
             {
-                int nItemIdx;
-                int nValIdx;
-                SimpleDatum[] rgData = set.GetData(i, out nItemIdx, out nValIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
+                int? nItemIdx = null;
+                int? nValIdx = null;
+                SimpleDatum[] rgData = set.GetData(i, ref nItemIdx, ref nValIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
 
                 log.CHECK_EQ(rgData.Length, 8, "There should be 8 simple datums (static num, static cat, hist num, hist cat, fut num, fut cat, target, target hist).");
 
