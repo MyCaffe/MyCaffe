@@ -78,6 +78,8 @@ namespace MyCaffe.layers
 
             float[] rgData = convertF(blob.mutable_cpu_data);
             Array.Copy(rgData, m_lossArgs.Data, rgData.Length);
+
+            OnLoss(this, m_lossArgs);
         }
 
         /// <summary>
