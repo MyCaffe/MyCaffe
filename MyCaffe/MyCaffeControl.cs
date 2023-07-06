@@ -2828,26 +2828,24 @@ namespace MyCaffe
         public PropertySet RunModel(PropertySet customInput)
         {
             Net<T> net = m_net;
+            Phase phase = Phase.TRAIN;
 
-            string strPhase = customInput.GetProperty("Phase", false);
-            if (!string.IsNullOrEmpty(strPhase))
+            if (customInput != null)
             {
-                if (strPhase == Phase.TRAIN.ToString())
+                string strPhase = customInput.GetProperty("Phase", false);
+                if (!string.IsNullOrEmpty(strPhase))
                 {
-                    m_log.WriteLine("INFO: Running TestMany with the TRAIN phase.");
-                    net = GetInternalNet(Phase.TRAIN);
-                }
-                else if (strPhase == Phase.TEST.ToString())
-                {
-                    m_log.WriteLine("INFO: Running TestMany with the TEST phase.");
-                    net = GetInternalNet(Phase.TEST);
-                }
-                else if (strPhase == Phase.RUN.ToString())
-                {
-                    m_log.WriteLine("INFO: Running TestMany with the RUN phase.");
-                    net = GetInternalNet(Phase.RUN);
+                    if (strPhase == Phase.TRAIN.ToString())
+                        phase = Phase.TRAIN;
+                    else if (strPhase == Phase.TEST.ToString())
+                        phase = Phase.TEST;
+                    else if (strPhase == Phase.RUN.ToString())
+                        phase = Phase.RUN;
                 }
             }
+
+            m_log.WriteLine("INFO: Running TestMany with the " + phase.ToString() + " phase.");
+            net = GetInternalNet(phase);
 
             BlobCollection<T> colTop = net.Forward();
 
@@ -2874,26 +2872,24 @@ namespace MyCaffe
         public BlobCollection<T> RunModelEx(PropertySet customInput)
         {
             Net<T> net = m_net;
+            Phase phase = Phase.TRAIN;
 
-            string strPhase = customInput.GetProperty("Phase", false);
-            if (!string.IsNullOrEmpty(strPhase))
+            if (customInput != null)
             {
-                if (strPhase == Phase.TRAIN.ToString())
+                string strPhase = customInput.GetProperty("Phase", false);
+                if (!string.IsNullOrEmpty(strPhase))
                 {
-                    m_log.WriteLine("INFO: Running TestMany with the TRAIN phase.");
-                    net = GetInternalNet(Phase.TRAIN);
-                }
-                else if (strPhase == Phase.TEST.ToString())
-                {
-                    m_log.WriteLine("INFO: Running TestMany with the TEST phase.");
-                    net = GetInternalNet(Phase.TEST);
-                }
-                else if (strPhase == Phase.RUN.ToString())
-                {
-                    m_log.WriteLine("INFO: Running TestMany with the RUN phase.");
-                    net = GetInternalNet(Phase.RUN);
+                    if (strPhase == Phase.TRAIN.ToString())
+                        phase = Phase.TRAIN;
+                    else if (strPhase == Phase.TEST.ToString())
+                        phase = Phase.TEST;
+                    else if (strPhase == Phase.RUN.ToString())
+                        phase = Phase.RUN;
                 }
             }
+
+            m_log.WriteLine("INFO: Running TestMany with the " + phase.ToString() + " phase.");
+            net = GetInternalNet(phase);
 
             return net.Forward();
         }
