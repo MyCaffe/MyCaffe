@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Remoting.Messaging;
+using System.Security.Cryptography;
 using System.Security.Policy;
 using System.Text;
 using System.Threading;
@@ -37,6 +38,7 @@ namespace MyCaffe.layers.tft
         uint m_nNumFutureSteps;
         RawData<T> m_data = null;
         CancelEvent m_evtCancel;
+        int[,] m_rgIdx = null;
 
         /// <summary>
         /// The constructor.
@@ -180,7 +182,7 @@ namespace MyCaffe.layers.tft
 
         private void Layer_OnLoss(object sender, LossArgs e)
         {
-
+            m_data.Add(e, m_rgIdx);
         }
 
         /// <summary>
@@ -197,7 +199,7 @@ namespace MyCaffe.layers.tft
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             Phase phase = layer_param.data_temporal_param.forced_phase.GetValueOrDefault(m_phase);
-            m_data.LoadBatch(phase, (int)m_nBatchSize, colTop, m_param.data_temporal_param.enable_debug_output, m_param.data_temporal_param.debug_output_path);
+            m_rgIdx = m_data.LoadBatch(phase, (int)m_nBatchSize, colTop, m_param.data_temporal_param.enable_debug_output, m_param.data_temporal_param.debug_output_path);
 
             if (m_param.data_temporal_param.enable_debug_output)
                 m_log.WriteLine("WARNING: Debugging is enabled with path = " + m_param.data_temporal_param.debug_output_path + " and will slow down training!");
@@ -245,6 +247,14 @@ namespace MyCaffe.layers.tft
                 m_random = new Random((int)nSeed.Value);
             else
                 m_random = new Random();
+        }
+
+        /// <summary>
+        /// Specifies the random number generator used.
+        /// </summary>
+        public Random Random
+        {
+            get { return m_random; }
         }
 
         /// <summary>
@@ -304,6 +314,15 @@ namespace MyCaffe.layers.tft
         }
 
         /// <summary>
+        /// Adds the selected indexes along with the loss data (used by the BatchPerfSet to select worst cases).
+        /// </summary>
+        /// <param name="e">Specifies the loss args.</param>
+        /// <param name="rgIdx">Specifies the selected item/value indexes for the batch.</param>
+        public virtual void Add(LossArgs e, int[,] rgIdx)
+        {
+        }
+
+        /// <summary>
         /// Returns the total size of the data.
         /// </summary>
         /// <returns>The total size is returned.</returns>
@@ -346,6 +365,7 @@ namespace MyCaffe.layers.tft
         float[] m_rgTarget = null;
         float[] m_rgTargetHist = null;
         int[,] m_rgIdx = null;
+        BatchPerfSet m_batchPerfSet = null;
 
 
         /// <summary>
@@ -436,6 +456,19 @@ namespace MyCaffe.layers.tft
         }
 
         /// <summary>
+        /// Add the loss data for the batch into the performance data later used to select the worst cases.
+        /// </summary>
+        /// <param name="e">Specifies the loss data.</param>
+        /// <param name="rgIdx">Specifies the selected indexes for the batch.</param>
+        public override void Add(LossArgs e, int[,] rgIdx)
+        {
+            if (m_batchPerfSet == null)
+                m_batchPerfSet = new BatchPerfSet(m_random, 0.25, (int)m_nBatchSize * 100, 2);
+
+            m_batchPerfSet.Add(e, rgIdx);
+        }
+
+        /// <summary>
         /// Load a batch of data to feed into the network.
         /// </summary>
         /// <param name="phase">Specifies the phase being loaded (e.g., TRAIN, TEST).</param>
@@ -472,14 +505,17 @@ namespace MyCaffe.layers.tft
 
             for (int i = 0; i < nBatchSize; i++)
             {
-                int nItemIdx;
-                int nIdx;
-                SimpleDatum[] rgData = m_db.QueryTemporalItem(i, src.ID, out nItemIdx, out nIdx, itemSelection, valueSelection, bEnableDebug, strDebugPath);
+                int? nItemIdx = null;
+                int? nValueIdx = null;
+
+                if (m_batchPerfSet != null)
+                    m_batchPerfSet.Select(ref nItemIdx, ref nValueIdx);
+                SimpleDatum[] rgData = m_db.QueryTemporalItem(i, src.ID, ref nItemIdx, ref nValueIdx, itemSelection, valueSelection, bEnableDebug, strDebugPath);
                 if (rgData == null)
                     throw new Exception("No data could be found for source '" + src.Name + ".  You may need to re-run the dataset creator for the dataset '" + m_ds.Name + "'.");
 
-                m_rgIdx[i,0] = nItemIdx;
-                m_rgIdx[i,1] = nIdx;
+                m_rgIdx[i,0] = nItemIdx.Value;
+                m_rgIdx[i,1] = nValueIdx.Value;
 
                 SimpleDatum sdStatNum = rgData[0];
                 SimpleDatum sdStatCat = rgData[1];
@@ -1617,5 +1653,129 @@ namespace MyCaffe.layers.tft
         }
     }
 
+    class BatchPerfSet
+    {
+        BatchPerf[] m_rgBatchPerf = new BatchPerf[2];
+        int m_nSelectIdx = 0;
+        int m_nLoadIdx = 0;
+        int m_nSelectFrequency = 1;
+        int m_nSelectCount = 0;
+        Random m_random;
+        double m_dfPctTopSelectionPct = 0.25;
+        bool m_bActive = false;
+
+        public BatchPerfSet(Random rand, double dfPctTopSelectionPct, int nMax, int nSelectFrequency)
+        {
+            m_rgBatchPerf[0] = new BatchPerf(nMax, dfPctTopSelectionPct);
+            m_rgBatchPerf[1] = new BatchPerf(nMax, dfPctTopSelectionPct);
+            m_nSelectFrequency = nSelectFrequency;
+            m_dfPctTopSelectionPct = dfPctTopSelectionPct;
+            m_random = rand;
+        }
+
+        public bool Add(LossArgs e, int[,] rg)
+        {
+            if (m_rgBatchPerf[m_nLoadIdx].Add(e, rg))
+            {
+                if (m_nLoadIdx == 0)
+                {
+                    m_rgBatchPerf[1].Clear();
+                    m_nSelectIdx = 0;
+                    m_nLoadIdx = 1;
+                }
+                else
+                {
+                    m_rgBatchPerf[0].Clear();
+                    m_nLoadIdx = 0;
+                    m_nSelectIdx = 1;
+                }
+
+                m_bActive = true;
+            }
+            else
+            {
+                m_bActive = false;
+            }
+
+            return m_bActive;
+        }
+
+        public bool IsActive
+        {
+            get { return m_bActive; }
+        }
+
+        public bool Select(ref int? nIdx1, ref int? nIdx2)
+        {
+            m_nSelectCount++;
+            if (m_nSelectCount % m_nSelectFrequency == 0)
+                return m_rgBatchPerf[m_nSelectIdx].Select(m_random, m_dfPctTopSelectionPct, ref nIdx1, ref nIdx2);
+
+            return false;
+        }
+    }
+
+    class BatchPerf
+    {
+        int m_nMax;
+        int m_nLastSortCount;
+        double m_dfTopSelectionPct;
+        List<Tuple<float, int, int>> m_rgPerformanceItems = new List<Tuple<float, int, int>>();
+
+        public BatchPerf(int nMax, double dfPctTopSelectionPct)
+        {
+            m_rgPerformanceItems = new List<Tuple<float, int, int>>(nMax + 1);
+            m_dfTopSelectionPct = dfPctTopSelectionPct;
+            m_nMax = nMax;
+            m_nLastSortCount = (int)(nMax * dfPctTopSelectionPct);
+        }
+
+        public bool Add(LossArgs e, int[,] rg)
+        {
+            bool bAtMax = false;
+
+            for (int i = 0; i < e.Data.Length; i++)
+            {
+                m_rgPerformanceItems.Add(new Tuple<float, int, int>(e.Data[i], rg[i,0], rg[i,1]));
+                m_nLastSortCount--;
+
+                if (m_rgPerformanceItems.Count > m_nMax)
+                {
+                    m_rgPerformanceItems.RemoveAt(0);
+                    bAtMax = true;
+                }
+            }
+
+            return bAtMax;
+        }
+
+        public void Clear()
+        {
+            m_rgPerformanceItems.Clear();   
+        }
+
+        public void Sort()
+        {
+            m_rgPerformanceItems = m_rgPerformanceItems.OrderByDescending(p => p.Item1).ToList();
+            m_nLastSortCount = (int)(m_nMax * m_dfTopSelectionPct);
+        }
+
+        public bool Select(Random rand, double dfPct, ref int? nIdx1, ref int? nIdx2)
+        {
+            if (m_rgPerformanceItems.Count < m_nMax)
+                return false;
+
+            if (m_nLastSortCount <= 0)
+                Sort();
+
+            int nCount = (int)(m_rgPerformanceItems.Count * dfPct);
+            int nIdx = rand.Next(nCount);
+
+            nIdx1 = m_rgPerformanceItems[nIdx].Item2;
+            nIdx2 = m_rgPerformanceItems[nIdx].Item3;
+
+            return true;
+        }
+    }
 #pragma warning restore 1591
 }
