@@ -1653,7 +1653,7 @@ namespace MyCaffe.layers.tft
         }
     }
 
-    class BatchPerfSet
+    class BatchPerfSet /** @private */
     {
         BatchPerf[] m_rgBatchPerf = new BatchPerf[2];
         int m_nSelectIdx = 0;
