@@ -204,7 +204,7 @@ namespace MyCaffe.db.temporal
                 Directory.CreateDirectory(strDebugPath);
 
             strDebugPath = strDebugPath.TrimEnd('\\') + "\\";
-            string strFile = strDebugPath + strTag + "." + nQueryIdx.ToString() + ".static" + "." + nIdx.ToString() + ".png";
+            string strFile = strDebugPath + nQueryIdx.ToString() + "." + nIdx.ToString() + "." + strTag + ".png";
             Image img = SimpleGraphingControl.QuickRender(plots, 1000, 600, true, ConfigurationAxis.VALUE_RESOLUTION.MINUTE, null, true, null, true);
 
             img.Save(strFile);
@@ -220,21 +220,29 @@ namespace MyCaffe.db.temporal
             if (sd == null)
                 return;
 
-            DateTime[] rgSync = getTimeSync(nIdx, sd.ItemCount);
-            if (rgSync.Length != sd.ItemCount)
+            DateTime[] rgSync = getTimeSync(nIdx, sd.Height);
+            if (rgSync.Length != sd.Height)
                 throw new Exception("The sync and data lengths do not match!");
 
             string strName = strTag + ": QueryIdx = " + nQueryIdx.ToString() + ", Idx = " + nIdx.ToString() + ", Length = " + sd.ItemCount.ToString() + " Time: " + rgSync[0].ToString() + " - " + rgSync[rgSync.Length - 1].ToString();
-            PlotCollection plots = new PlotCollection(strName);
-
+            PlotCollectionSet set = new PlotCollectionSet();
             float[] rgf = sd.GetData<float>();
-            for (int i = 0; i < rgf.Length; i++)
-            {
-                float fVal = rgf[i];
 
-                Plot plot = new Plot(rgSync[i].ToFileTime(), fVal);
-                plot.Tag = rgSync[i];
-                plots.Add(plot);
+            for (int i = 0; i < sd.Width; i++)
+            {
+                PlotCollection plots = new PlotCollection(strName + " strm #" + i.ToString());
+
+                for (int j = 0; j < sd.Height; j++)
+                {
+                    int nDataIdx = j * sd.Width + i;
+                    float fVal = rgf[nDataIdx];
+
+                    Plot plot = new Plot(rgSync[j].ToFileTime(), fVal);
+                    plot.Tag = rgSync[i];
+                    plots.Add(plot);
+                }
+
+                set.Add(plots);
             }
 
             if (!Directory.Exists(strDebugPath))
@@ -246,12 +254,11 @@ namespace MyCaffe.db.temporal
                 dt = rgSync[rgSync.Length - 1];
 
             strDebugPath = strDebugPath.TrimEnd('\\') + "\\";
-            string strFile = strDebugPath + strTag + "." + nQueryIdx.ToString() + "." + dt.Year.ToString() + "." + dt.Month.ToString() + "." + dt.Day.ToString() + "_" + dt.Hour.ToString() + "." + dt.Minute.ToString() + "." + dt.Second.ToString() + "." + nIdx.ToString() + ".png";
-            Image img = SimpleGraphingControl.QuickRender(plots, 1000, 600, true, ConfigurationAxis.VALUE_RESOLUTION.MINUTE, null, true, null, true);
+            string strFile = strDebugPath + nQueryIdx.ToString() + "." + dt.Year.ToString() + "." + dt.Month.ToString() + "." + dt.Day.ToString() + "_" + dt.Hour.ToString() + "." + dt.Minute.ToString() + "." + dt.Second.ToString() + "." + nIdx.ToString() + "." + strTag + ".png";
+            Image img = SimpleGraphingControl.QuickRender(set, 1000, 600, true, ConfigurationAxis.VALUE_RESOLUTION.MINUTE, null, true, null, true);
 
             img.Save(strFile);
             img.Dispose();
-
         }
 
         private void debug(string strTag, int nQueryIdx, string strDebugPath, int nIdx, int nHistSteps, int nFutSteps, SimpleDatum sd1, SimpleDatum sd2)
@@ -268,7 +275,7 @@ namespace MyCaffe.db.temporal
             if (sd.ItemCount != sd1.ItemCount + sd2.ItemCount)
                 throw new Exception("The target data length does not match the sum of the historical and future data lengths!");
 
-            string strName = "TargetData: QueryIdx = " + nQueryIdx.ToString() + ", Idx = " + nIdx.ToString() + ", Hist = " + nHistSteps.ToString() + ", Fut = " + nFutSteps.ToString() + " Time: " + rgSync[0].ToString() + " - " + rgSync[rgSync.Length-1].ToString();
+            string strName = "TargetData: QueryIdx = " + nQueryIdx.ToString() + ", Idx = " + nIdx.ToString() + ", Hist = " + nHistSteps.ToString() + ", Fut = " + nFutSteps.ToString() + "\nTime: " + rgSync[0].ToString() + " - " + rgSync[rgSync.Length-1].ToString();
             PlotCollection plots = new PlotCollection(strName);
 
             float[] rgf1 = sd1.GetData<float>();
@@ -290,12 +297,13 @@ namespace MyCaffe.db.temporal
             for (int i = 0; i < rgf2.Length; i++)
             {
                 float fVal = rgf2[i];
+                int nDataIdx = i + rgf1.Length;
 
-                if (fVal != rgfE[i + rgf1.Length])
+                if (fVal != rgfE[nDataIdx])
                     throw new Exception("The data values do not match!");
 
-                Plot plot = new Plot(rgSync[i + rgf1.Length].ToFileTime(), fVal);
-                plot.Tag = rgSync[i];
+                Plot plot = new Plot(rgSync[nDataIdx].ToFileTime(), fVal);
+                plot.Tag = rgSync[nDataIdx];
                 plots.Add(plot);
             }
 
@@ -305,8 +313,14 @@ namespace MyCaffe.db.temporal
             DateTime dt = rgSync[rgf1.Length];
 
             strDebugPath = strDebugPath.TrimEnd('\\') + "\\";
-            string strFile = strDebugPath + strTag + "." + nQueryIdx.ToString() + "." + dt.Year.ToString() + "." + dt.Month.ToString() + "." + dt.Day.ToString() + "_" + dt.Hour.ToString() + "." + dt.Minute.ToString() + "." + dt.Second.ToString() + "." + nIdx.ToString() + ".png";
-            Image img = SimpleGraphingControl.QuickRender(plots, 1000, 600, true, ConfigurationAxis.VALUE_RESOLUTION.MINUTE, null, true, null, true);
+            string strFile = strDebugPath + nQueryIdx.ToString() + "." + dt.Year.ToString() + "." + dt.Month.ToString() + "." + dt.Day.ToString() + "_" + dt.Hour.ToString() + "." + dt.Minute.ToString() + "." + dt.Second.ToString() + "." + nIdx.ToString() + "." + strTag + ".png";
+            int nImgWid = 1000;
+            int nActualWid = plots.Count * 5 + 55;
+
+            if (nImgWid > nActualWid)
+                nImgWid = nActualWid;
+
+            Image img = SimpleGraphingControl.QuickRender(plots, nImgWid, 600, true, ConfigurationAxis.VALUE_RESOLUTION.MINUTE, null, true, null, true);
 
             using (Graphics g = Graphics.FromImage(img))
             {
@@ -371,66 +385,106 @@ namespace MyCaffe.db.temporal
             Tuple<float[], float[]> dataObs = m_data.GetObservedValues(nIdx, nCount);
             Tuple<float[], float[]> dataKnown = m_data.GetKnownValues(nIdx, nCount);
 
-            float[] rgfNum = null;
-            if (dataObs.Item1.Length > 0 && dataKnown.Item1.Length > 0)
-            {
-                rgfNum = new float[dataObs.Item1.Length + dataKnown.Item1.Length];
-                Array.Copy(dataObs.Item1, rgfNum, dataObs.Item1.Length);
-                Array.Copy(dataKnown.Item1, 0, rgfNum, dataObs.Item1.Length, dataKnown.Item1.Length);
-            }
-            else if (dataObs.Item1.Length > 0)
-            {
-                rgfNum = dataObs.Item1;
-            }
-            else if (dataKnown.Item1.Length > 0)
-            {
-                rgfNum = dataKnown.Item1;
-            }
-
-            float[] rgfCat = null;
-            if (dataObs.Item2.Length > 0 && dataKnown.Item2.Length > 0)
-            {
-                rgfCat = new float[dataObs.Item2.Length + dataKnown.Item2.Length];
-                Array.Copy(dataObs.Item2, rgfCat, dataObs.Item2.Length);
-                Array.Copy(dataKnown.Item2, 0, rgfCat, dataObs.Item2.Length, dataKnown.Item2.Length);
-            }
-            else if (dataObs.Item2.Length > 0)
-            {
-                rgfCat = dataObs.Item2;
-            }
-            else if (dataKnown.Item2.Length > 0)
-            {
-                rgfCat = dataKnown.Item2;
-            }
-
-            if (rgfNum != null)
+            // Collect the numeric data
             {
                 List<ValueStreamDescriptor> rgDescO = m_rgStrm.GetStreamDescriptors(STREAM_CLASS_TYPE.OBSERVED, STREAM_VALUE_TYPE.NUMERIC);
+                int nObsCount = rgDescO == null ? 0 : rgDescO.Count;
                 List<ValueStreamDescriptor> rgDescK = m_rgStrm.GetStreamDescriptors(STREAM_CLASS_TYPE.KNOWN, STREAM_VALUE_TYPE.NUMERIC);
-                int nC = 1;
-                int nH = nCount;
-                int nW = rgDescO.Count + (rgDescK != null ? rgDescK.Count : 0);
+                int nKnownCount = rgDescK == null ? 0 : rgDescK.Count;
+                int nItemCount = nObsCount + nKnownCount;
 
-                sdNum = new SimpleDatum(nC, nW, nH, rgfNum, 0, rgfNum.Length);
-            }
-            else
-            {
-                sdNum = null;
+                float[] rgfNum = null;
+                if (dataObs.Item1.Length > 0 && dataKnown.Item1.Length > 0)
+                {
+                    rgfNum = new float[dataObs.Item1.Length + dataKnown.Item1.Length];
+
+                    for (int i=0; i<nCount; i++)
+                    {
+                        for (int j = 0; j < nObsCount; j++)
+                        {
+                            int nDataIdx = i * nItemCount + j;
+                            rgfNum[nDataIdx] = dataObs.Item1[i * nObsCount + j];
+                        }
+
+                        for (int j = 0; j < nKnownCount; j++)
+                        {
+                            int nDataIdx = i * nItemCount + nObsCount + j;
+                            rgfNum[nDataIdx] = dataKnown.Item1[i * nKnownCount + j];
+                        }
+                    }   
+                }
+                else if (dataObs.Item1.Length > 0)
+                {
+                    rgfNum = dataObs.Item1;
+                }
+                else if (dataKnown.Item1.Length > 0)
+                {
+                    rgfNum = dataKnown.Item1;
+                }
+
+                if (rgfNum != null)
+                {
+                    int nC = 1;
+                    int nH = nCount;
+                    int nW = nItemCount;
+
+                    sdNum = new SimpleDatum(nC, nW, nH, rgfNum, 0, rgfNum.Length);
+                }
+                else
+                {
+                    sdNum = null;
+                }
             }
 
-            if (rgfCat != null)
+            // Collect the categorical data
             {
                 List<ValueStreamDescriptor> rgDescO = m_rgStrm.GetStreamDescriptors(STREAM_CLASS_TYPE.OBSERVED, STREAM_VALUE_TYPE.CATEGORICAL);
+                int nObsCount = rgDescO == null ? 0 : rgDescO.Count;
                 List<ValueStreamDescriptor> rgDescK = m_rgStrm.GetStreamDescriptors(STREAM_CLASS_TYPE.KNOWN, STREAM_VALUE_TYPE.CATEGORICAL);
-                int nC = 1;
-                int nH = nCount;
-                int nW = (rgDescO != null ? rgDescO.Count : 0) + (rgDescK != null ? rgDescK.Count : 0);
+                int nKnownCount = rgDescK == null ? 0 : rgDescK.Count;
+                int nItemCount = nObsCount + nKnownCount;
 
-                sdCat = new SimpleDatum(nC, nW, nH, rgfCat, 0, rgfCat.Length);
-            }
-            else
-            {
-                sdCat = null;
+                float[] rgfCat = null;
+                if (dataObs.Item2.Length > 0 && dataKnown.Item2.Length > 0)
+                {
+                    rgfCat = new float[dataObs.Item2.Length + dataKnown.Item2.Length];
+
+                    for (int i = 0; i < nCount; i++)
+                    {
+                        for (int j = 0; j < nObsCount; j++)
+                        {
+                            int nDataIdx = i * nItemCount + j;
+                            rgfCat[nDataIdx] = dataObs.Item2[i * nObsCount + j];
+                        }
+
+                        for (int j = 0; j < nKnownCount; j++)
+                        {
+                            int nDataIdx = i * nItemCount + nObsCount + j;
+                            rgfCat[nDataIdx] = dataKnown.Item2[i * nKnownCount + j];
+                        }
+                    }
+                }
+                else if (dataObs.Item2.Length > 0)
+                {
+                    rgfCat = dataObs.Item2;
+                }
+                else if (dataKnown.Item2.Length > 0)
+                {
+                    rgfCat = dataKnown.Item2;
+                }
+
+                if (rgfCat != null)
+                {
+                    int nC = 1;
+                    int nH = nCount;
+                    int nW = nItemCount;
+
+                    sdCat = new SimpleDatum(nC, nW, nH, rgfCat, 0, rgfCat.Length);
+                }
+                else
+                {
+                    sdCat = null;
+                }
             }
         }
 
@@ -481,11 +535,11 @@ namespace MyCaffe.db.temporal
             float[] rgfTgtH = m_data.GetObservedNumValues(nIdx, nHistSteps, nTargetIdx);
 
             int nC = 1;
-            int nH = 1;
-            int nW = rgfTgt.Length;
+            int nH = rgfTgt.Length;
+            int nW = 1;
             sdTarget = new SimpleDatum(nC, nW, nH, rgfTgt, 0, rgfTgt.Length);
 
-            nW = rgfTgtH.Length;
+            nH = rgfTgtH.Length;
             sdTargetHist = new SimpleDatum(nC, nW, nH, rgfTgtH, 0, rgfTgtH.Length);
         }
 
