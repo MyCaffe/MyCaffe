@@ -945,6 +945,7 @@ namespace MyCaffe.db.temporal
         /// <summary>
         /// Loads a raw value data collection from a byte array.
         /// </summary>
+        /// <param name="dt">Specifies a timestamp for the raw value data collection, or null for static data.</param>
         /// <param name="rg">Specifies the serialized byte array.</param>
         /// <returns>The raw data value collection is returned.</returns>
         public static RawValueDataCollection LoadFromBytes(DateTime? dt, byte[] rg)
