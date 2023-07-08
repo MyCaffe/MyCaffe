@@ -182,7 +182,8 @@ namespace MyCaffe.layers.tft
 
         private void Layer_OnLoss(object sender, LossArgs e)
         {
-            m_data.Add(e, m_rgIdx);
+            if (m_rgIdx != null)
+                m_data.Add(e, m_rgIdx);
         }
 
         /// <summary>
@@ -510,12 +511,13 @@ namespace MyCaffe.layers.tft
 
                 if (m_batchPerfSet != null)
                     m_batchPerfSet.Select(ref nItemIdx, ref nValueIdx);
+
                 SimpleDatum[] rgData = m_db.QueryTemporalItem(i, src.ID, ref nItemIdx, ref nValueIdx, itemSelection, valueSelection, bEnableDebug, strDebugPath);
                 if (rgData == null)
                     throw new Exception("No data could be found for source '" + src.Name + ".  You may need to re-run the dataset creator for the dataset '" + m_ds.Name + "'.");
 
-                m_rgIdx[i,0] = nItemIdx.Value;
-                m_rgIdx[i,1] = nValueIdx.Value;
+                m_rgIdx[i, 0] = nItemIdx.Value;
+                m_rgIdx[i, 1] = nValueIdx.Value;
 
                 SimpleDatum sdStatNum = rgData[0];
                 SimpleDatum sdStatCat = rgData[1];
@@ -1736,6 +1738,9 @@ namespace MyCaffe.layers.tft
 
             for (int i = 0; i < e.Data.Length; i++)
             {
+                if (rg[i,0] == -1 || rg[i, 1] == -1)
+                    continue;
+
                 m_rgPerformanceItems.Add(new Tuple<float, int, int>(e.Data[i], rg[i,0], rg[i,1]));
                 m_nLastSortCount--;
 
