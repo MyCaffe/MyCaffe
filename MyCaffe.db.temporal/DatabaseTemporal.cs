@@ -849,6 +849,7 @@ namespace MyCaffe.db.temporal
     {
         DateTime? m_dt;
         List<RawValueData> m_rgData = new List<RawValueData>();
+        Dictionary<int, RawValueData> m_rgDataById = new Dictionary<int, RawValueData>();
 
         /// <summary>
         /// The constructor.
@@ -888,9 +889,16 @@ namespace MyCaffe.db.temporal
         /// Manually add a new raw value data item.
         /// </summary>
         /// <param name="data">Specifies the data item to add.</param>
-        public void Add(RawValueData data)
+        /// <returns>Retuns true if added or false if the stream ID already exists.</returns>
+        public bool Add(RawValueData data)
         {
+            if (m_rgDataById.ContainsKey(data.StreamID))
+                return false;
+
+            m_rgDataById.Add(data.StreamID, data);
             m_rgData.Add(data);
+
+            return true;
         }
 
         /// <summary>
@@ -1072,6 +1080,14 @@ namespace MyCaffe.db.temporal
         public STREAM_VALUE_TYPE ValueType
         {
             get { return m_valueType; }
+        }
+
+        /// <summary>
+        /// Returns the stream ID.
+        /// </summary>
+        public int StreamID
+        {
+            get { return m_nStrmID; }
         }
 
         /// <summary>
