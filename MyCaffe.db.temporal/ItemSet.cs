@@ -356,6 +356,7 @@ namespace MyCaffe.db.temporal
                 int nH = rgDesc.Count;
                 int nW = rgDesc.Max(p => p.Steps);
                 sdNum = new SimpleDatum(nC, nW, nH, data.Item1, 0, data.Item1.Length);
+                sdNum.TagName = "StaticNumeric";
             }
             else
             {
@@ -370,6 +371,7 @@ namespace MyCaffe.db.temporal
                 int nH = rgDesc.Count;
                 int nW = rgDesc.Max(p => p.Steps);
                 sdCat = new SimpleDatum(nC, nW, nH, data.Item2, 0, data.Item2.Length);
+                sdCat.TagName = "StaticCategorical";
             }
             else
             {
@@ -382,8 +384,8 @@ namespace MyCaffe.db.temporal
 
         private void getHistoricalData(int nIdx, int nCount, out SimpleDatum sdNum, out SimpleDatum sdCat)
         {
-            Tuple<float[], float[]> dataObs = m_data.GetObservedValues(nIdx, nCount);
-            Tuple<float[], float[]> dataKnown = m_data.GetKnownValues(nIdx, nCount);
+            Tuple<float[], float[], DateTime[]> dataObs = m_data.GetObservedValues(nIdx, nCount);
+            Tuple<float[], float[], DateTime[]> dataKnown = m_data.GetKnownValues(nIdx, nCount);
 
             // Collect the numeric data
             {
@@ -429,6 +431,8 @@ namespace MyCaffe.db.temporal
                     int nW = nItemCount;
 
                     sdNum = new SimpleDatum(nC, nW, nH, rgfNum, 0, rgfNum.Length);
+                    sdNum.TagName = "HistoricalNumeric";
+                    sdNum.Tag = dataObs.Item3;
                 }
                 else
                 {
@@ -480,6 +484,8 @@ namespace MyCaffe.db.temporal
                     int nW = nItemCount;
 
                     sdCat = new SimpleDatum(nC, nW, nH, rgfCat, 0, rgfCat.Length);
+                    sdCat.TagName = "HistoricalCategorical";
+                    sdCat.Tag = dataObs.Item3;
                 }
                 else
                 {
@@ -490,7 +496,7 @@ namespace MyCaffe.db.temporal
 
         private void getFutureData(int nIdx, int nCount, out SimpleDatum sdNum, out SimpleDatum sdCat)
         {
-            Tuple<float[], float[]> dataKnown = m_data.GetKnownValues(nIdx, nCount);
+            Tuple<float[], float[], DateTime[]> dataKnown = m_data.GetKnownValues(nIdx, nCount);
 
             float[] rgfNum = null;
             if (dataKnown.Item1.Length > 0)
@@ -508,6 +514,8 @@ namespace MyCaffe.db.temporal
                 int nW = rgDescK.Count;
 
                 sdNum = new SimpleDatum(nC, nW, nH, rgfNum, 0, rgfNum.Length);
+                sdNum.TagName = "FutureNumeric";
+                sdNum.Tag = dataKnown.Item3;
             }
             else
             {
@@ -522,6 +530,7 @@ namespace MyCaffe.db.temporal
                 int nW = rgDescK.Count;
 
                 sdCat = new SimpleDatum(nC, nW, nH, rgfCat, 0, rgfCat.Length);
+                sdCat.TagName = "FutureCategorical";
             }
             else
             {
@@ -531,31 +540,52 @@ namespace MyCaffe.db.temporal
 
         private void getTargetData(int nIdx, int nHistSteps, int nFutSteps, int nTargetIdx, out SimpleDatum sdTarget, out SimpleDatum sdTargetHist)
         {
-            float[] rgfTgt = m_data.GetObservedNumValues(nIdx + nHistSteps, nFutSteps, nTargetIdx);
-            float[] rgfTgtH = m_data.GetObservedNumValues(nIdx, nHistSteps, nTargetIdx);
+            Tuple<float[], DateTime[]> rgfTgt = m_data.GetObservedNumValues(nIdx + nHistSteps, nFutSteps, nTargetIdx);
+            Tuple<float[], DateTime[]> rgfTgtH = m_data.GetObservedNumValues(nIdx, nHistSteps, nTargetIdx);
 
             int nC = 1;
-            int nH = rgfTgt.Length;
+            int nH = rgfTgt.Item1.Length;
             int nW = 1;
-            sdTarget = new SimpleDatum(nC, nW, nH, rgfTgt, 0, rgfTgt.Length);
+            sdTarget = new SimpleDatum(nC, nW, nH, rgfTgt.Item1, 0, rgfTgt.Item1.Length);
+            sdTarget.TagName = "Target";
+            sdTarget.Tag = rgfTgt.Item2;
 
-            nH = rgfTgtH.Length;
-            sdTargetHist = new SimpleDatum(nC, nW, nH, rgfTgtH, 0, rgfTgtH.Length);
+            nH = rgfTgtH.Item1.Length;
+            sdTargetHist = new SimpleDatum(nC, nW, nH, rgfTgtH.Item1, 0, rgfTgtH.Item1.Length);
+            sdTargetHist.TagName = "TargetHist";
+            sdTargetHist.Tag = rgfTgtH.Item2;
         }
 
         private SimpleDatum getTargetData(int nIdx, int nCount, int nTargetIdx)
         {
-            float[] rgfTgt = m_data.GetObservedNumValues(nIdx, nCount, nTargetIdx);
+            Tuple<float[], DateTime[]> rgfTgt = m_data.GetObservedNumValues(nIdx, nCount, nTargetIdx);
 
             int nC = 1;
             int nH = 1;
-            int nW = rgfTgt.Length;
-            return new SimpleDatum(nC, nW, nH, rgfTgt, 0, rgfTgt.Length);
+            int nW = rgfTgt.Item1.Length;
+            SimpleDatum sd = new SimpleDatum(nC, nW, nH, rgfTgt.Item1, 0, rgfTgt.Item1.Length);
+            sd.TagName = "Target";
+
+            return sd;
         }
 
         private DateTime[] getTimeSync(int nIdx, int nCount)
         {
             return m_data.GetTimeSyncValues(nIdx, nCount);
+        }
+
+        /// <summary>
+        /// Return the total number of queries available in the item set.
+        /// </summary>
+        /// <param name="nSteps">Specifies the number of steps in the query.</param>
+        /// <returns>The number of queries available is returned.</returns>
+        public int GetCount(int nSteps)
+        {
+            int nCount = m_nColCount - nSteps;
+            if (nCount < 0)
+                return 0;
+
+            return nCount;
         }
     }
 
