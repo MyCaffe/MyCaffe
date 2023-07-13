@@ -587,7 +587,8 @@ namespace MyCaffe.db.temporal
 
         public int GetItemCount(int nSrcId, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false) /**@private */
         {
-            throw new NotImplementedException();
+            TemporalSet ts = getTemporalSet(nSrcId);
+            return ts.GetCount();
         }
 
         public SimpleDatum GetItemMean(int nSrcId) /**@private */

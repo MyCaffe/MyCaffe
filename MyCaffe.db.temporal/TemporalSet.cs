@@ -281,5 +281,14 @@ namespace MyCaffe.db.temporal
 
             return data;
         }
+
+        /// <summary>
+        /// Return the total number of queries available in the temporal set.
+        /// </summary>
+        /// <returns>The number of queries available is returned.</returns>
+        public int GetCount()
+        {
+            return m_rgItems.Sum(p => p.GetCount(m_nHistoricSteps + m_nFutureSteps));
+        }
     }
 }
