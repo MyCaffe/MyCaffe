@@ -509,6 +509,8 @@ namespace MyCaffe.layers.tft
                 int? nItemIdx = null;
                 int? nValueIdx = null;
 
+                // When using the batch performance set, the indexes are selected from the set,
+                // seeking to select from the 25% worst performing items.
                 if (m_batchPerfSet != null)
                     m_batchPerfSet.Select(ref nItemIdx, ref nValueIdx);
 
