@@ -715,21 +715,22 @@ namespace MyCaffe.db.temporal
         /// </summary>
         /// <param name="nIdx">Specifies the start index.</param>
         /// <param name="nCount">Specifies the number of items to collect.</param>
-        /// <returns>A tuple of the observed numeric and categorical values is returned, or null if not enough items exists from 'nIdx'.</returns>
-        public Tuple<float[], float[]> GetObservedValues(int nIdx, int nCount)
+        /// <returns>A tuple of the observed numeric and categorical values + time is returned, or null if not enough items exists from 'nIdx'.</returns>
+        public Tuple<float[], float[], DateTime[]> GetObservedValues(int nIdx, int nCount)
         {
             if (nIdx + nCount >= m_rgValues.Count)
                 return null;
 
             List<float> rgNum = new List<float>();
             List<float> rgCat = new List<float>();
+            List<DateTime> rgTime = new List<DateTime>();
 
             if (!m_bSorted)
             {
                 m_rgValues = m_rgValues.OrderBy(p => p.TimeStamp).ToList();
                 m_bSorted = true;
             }
- 
+
             for (int i=nIdx; i<nIdx + nCount; i++)
             {
                 foreach (RawValueData data in m_rgValues[i])
@@ -740,11 +741,13 @@ namespace MyCaffe.db.temporal
                             rgNum.Add(data.ValueNormalized.GetValueOrDefault(data.Value));
                         else
                             rgCat.Add(data.Value);
+
+                        rgTime.Add(data.TimeStamp.Value);
                     }
                 }
             }
 
-            return new Tuple<float[], float[]>(rgNum.ToArray(), rgCat.ToArray());
+            return new Tuple<float[], float[], DateTime[]>(rgNum.ToArray(), rgCat.ToArray(), rgTime.ToArray());
         }
 
         /// <summary>
@@ -754,12 +757,13 @@ namespace MyCaffe.db.temporal
         /// <param name="nCount">Specifies the number of items to collect.</param>
         /// <param name="nValIdx">Specifies the index of the target value.</param>
         /// <returns>A tuple of the observed numeric and categorical values is returned, or null if not enough items exists from 'nIdx'.</returns>
-        public float[] GetObservedNumValues(int nIdx, int nCount, int nValIdx)
+        public Tuple<float[],DateTime[]> GetObservedNumValues(int nIdx, int nCount, int nValIdx)
         {
             if (nIdx + nCount >= m_rgValues.Count)
                 return null;
 
             List<float> rgNum = new List<float>();
+            List<DateTime> rgTime = new List<DateTime>();
 
             if (!m_bSorted)
             {
@@ -776,9 +780,10 @@ namespace MyCaffe.db.temporal
                     throw new Exception("The value at index " + nValIdx.ToString() + " is not a numeric observed value!");
 
                 rgNum.Add(val.ValueNormalized.GetValueOrDefault(val.Value));
+                rgTime.Add(val.TimeStamp.Value);
             }
 
-            return rgNum.ToArray();
+            return new Tuple<float[], DateTime[]>(rgNum.ToArray(), rgTime.ToArray());
         }
 
         /// <summary>
@@ -786,14 +791,15 @@ namespace MyCaffe.db.temporal
         /// </summary>
         /// <param name="nIdx">Specifies the start index.</param>
         /// <param name="nCount">Specifies the number of items to collect.</param>
-        /// <returns>A tuple of the known numeric and categorical values is returned, or null if not enough items exists from 'nIdx'.</returns>
-        public Tuple<float[], float[]> GetKnownValues(int nIdx, int nCount)
+        /// <returns>A tuple of the known numeric and categorical values + time is returned, or null if not enough items exists from 'nIdx'.</returns>
+        public Tuple<float[], float[], DateTime[]> GetKnownValues(int nIdx, int nCount)
         {
             if (nIdx + nCount >= m_rgValues.Count)
                 return null;
 
             List<float> rgNum = new List<float>();
             List<float> rgCat = new List<float>();
+            List<DateTime> rgTime = new List<DateTime>();
 
             if (!m_bSorted)
             {
@@ -814,11 +820,13 @@ namespace MyCaffe.db.temporal
                             rgNum.Add(data.ValueNormalized.GetValueOrDefault(data.Value));
                         else
                             rgCat.Add(data.Value);
+
+                        rgTime.Add(data.TimeStamp.Value);
                     }
                 }
             }
 
-            return new Tuple<float[], float[]>(rgNum.ToArray(), rgCat.ToArray());
+            return new Tuple<float[], float[], DateTime[]>(rgNum.ToArray(), rgCat.ToArray(), rgTime.ToArray());
         }
 
         /// <summary>
@@ -967,7 +975,7 @@ namespace MyCaffe.db.temporal
 
                 for (int i = 0; i < nCount; i++)
                 {
-                    col.m_rgData.Add(RawValueData.Load(br));
+                    col.m_rgData.Add(RawValueData.Load(dt, br));
                 }
             }
 
@@ -998,6 +1006,7 @@ namespace MyCaffe.db.temporal
     /// </summary>
     public class RawValueData
     {
+        DateTime? m_dt;
         int m_nStrmID = 0;
         STREAM_CLASS_TYPE m_classType = STREAM_CLASS_TYPE.STATIC;
         STREAM_VALUE_TYPE m_valueType = STREAM_VALUE_TYPE.NUMERIC;
@@ -1009,10 +1018,12 @@ namespace MyCaffe.db.temporal
         /// </summary>
         /// <param name="classType">Specifies the raw value item class.</param>
         /// <param name="valueType">Specifies the raw value item value type.</param>
+        /// <param name="dt">Specifies the time stamp of the data, or null if static.</param>
         /// <param name="fVal">Specifies the raw value item data.</param>
         /// <param name="fValNorm">Optionally, specifies the raw value item normalized data.</param>
-        public RawValueData(STREAM_CLASS_TYPE classType, STREAM_VALUE_TYPE valueType, float fVal, float? fValNorm = null)
+        public RawValueData(STREAM_CLASS_TYPE classType, STREAM_VALUE_TYPE valueType, DateTime? dt, float fVal, float? fValNorm = null)
         {
+            m_dt = dt;
             m_classType = classType;
             m_valueType = valueType;
             m_fVal = fVal;
@@ -1053,7 +1064,7 @@ namespace MyCaffe.db.temporal
         /// </summary>
         /// <param name="br">Specifies the binary reader.</param>
         /// <returns>The new RawValueData is returned.</returns>
-        public static RawValueData Load(BinaryReader br)
+        public static RawValueData Load(DateTime? dt, BinaryReader br)
         {
             STREAM_CLASS_TYPE classType = (STREAM_CLASS_TYPE)br.ReadByte();
             STREAM_VALUE_TYPE valueType = (STREAM_VALUE_TYPE)br.ReadByte();
@@ -1063,7 +1074,7 @@ namespace MyCaffe.db.temporal
             if (br.ReadBoolean())
                 fValNorm = br.ReadSingle();
 
-            return new RawValueData(classType, valueType, fVal, fValNorm);
+            return new RawValueData(classType, valueType, dt, fVal, fValNorm);
         }
 
         /// <summary>
@@ -1088,6 +1099,14 @@ namespace MyCaffe.db.temporal
         public int StreamID
         {
             get { return m_nStrmID; }
+        }
+
+        /// <summary>
+        /// Returns the time of the data point or null if static data.
+        /// </summary>
+        public DateTime? TimeStamp
+        {
+            get { return m_dt; }
         }
 
         /// <summary>
