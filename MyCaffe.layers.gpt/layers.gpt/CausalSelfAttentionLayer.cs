@@ -55,6 +55,7 @@ namespace MyCaffe.layers.gpt
         double m_dfIgnoreVal = -1e+29;
 
         int m_nSize;
+        int m_nDataSize;
         int m_nB;
         int m_nT;
         int m_nC;
@@ -318,6 +319,10 @@ namespace MyCaffe.layers.gpt
             m_nC = blobX.height;      // embedding dim (m_nEmbed)
             m_nSize = m_nC / (int)m_nHeads;
 
+            m_nDataSize = blobX.count(3);
+
+            m_nSize *= m_nDataSize;
+
             addInternal(blobX, m_blobIpAttn);
             m_c_attn.Setup(m_colInternalBottom, m_colInternalTop);
 
@@ -350,7 +355,7 @@ namespace MyCaffe.layers.gpt
             m_rgShape[0] = m_nB;
             m_rgShape[1] = m_nT;
             m_rgShape[2] = m_nC;
-            m_rgShape[3] = 1;
+            m_rgShape[3] = m_nDataSize;
 
             shareLayerBlob(m_blobY, m_rgShape);
             m_blobY.Reshape(m_rgShape);
@@ -387,6 +392,10 @@ namespace MyCaffe.layers.gpt
             m_nT = blobX.channels;    // sequence length
             m_nC = blobX.height;      // embedding dim (m_nEmbed)
             m_nSize = m_nC / m_nHeads;
+
+            m_nDataSize = blobX.count(3);
+
+            m_nSize *= m_nDataSize;
 
             m_rgShape[0] = m_nB;
             m_rgShape[1] = m_nT;
@@ -442,7 +451,7 @@ namespace MyCaffe.layers.gpt
             m_rgShape[0] = m_nB;
             m_rgShape[1] = m_nT;
             m_rgShape[2] = m_nC;
-            m_rgShape[3] = 1;
+            m_rgShape[3] = m_nDataSize;
 
             shareLayerBlob(m_blobY, m_rgShape);
             m_blobY.Reshape(m_rgShape);
@@ -537,7 +546,7 @@ namespace MyCaffe.layers.gpt
             // y = y.transpose(1, 2).contiguous().view(B, T, C) 
             addInternal(m_blobWork, m_blobY);
             m_transpose.Forward(m_colInternalBottom, m_colInternalTop); 
-            m_blobY.Reshape(m_nB, m_nT, m_nC, 1);
+            m_blobY.Reshape(m_nB, m_nT, m_nC, m_nDataSize);
 
             // Apply output projection.
             // y = self.resid_dropout(self.c_proj(y))
