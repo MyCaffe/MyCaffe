@@ -161,9 +161,9 @@ namespace MyCaffe.basecode.descriptors
         /// <summary>
         /// Returns whether or not this dataset is from the model itself and is temporal.
         /// </summary>
-        public bool IsModelDataTemporal
+        public bool IsDataTemporal
         {
-            get { return IsModelData && Name.Contains("TEMPORAL"); }
+            get { return IsModelData && Name.Contains("TEMPORAL") || (TrainingSource != null && TrainingSource.TemporalDescriptor != null); }
         }
 
         /// <summary>
