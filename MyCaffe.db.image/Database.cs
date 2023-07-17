@@ -3994,7 +3994,18 @@ namespace MyCaffe.db.image
 
             if (rgResult.Count > 0)
                 nCount = rgResult[0];
-            
+
+            if (nCount == 0)
+            {
+                strCmd = "SELECT COUNT(ID) FROM RawValues WHERE (SourceID = " + m_src.ID.ToString() + " AND Active=1)";
+                result = m_entities.Database.SqlQuery<int>(strCmd);
+                rgResult = result.ToList();
+                nCount = 0;
+
+                if (rgResult.Count > 0)
+                    nCount = rgResult[0];
+            }
+
             UpdateSourceCounts(nCount, ci);
         }
 
