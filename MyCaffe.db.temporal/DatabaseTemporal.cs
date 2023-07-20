@@ -375,8 +375,11 @@ namespace MyCaffe.db.temporal
         /// <param name="nSrcId">Specifies the source ID of the value item.</param>
         /// <param name="nItemIdx">Specifies the index of the item.</param>
         /// <param name="strName">Specifies the name of the value item.</param>
+        /// <param name="dtStart">Optionally, specifies the start time.</param>
+        /// <param name="dtEnd">Optionally, specifies the end time.</param>
+        /// <param name="nSteps">Optionally, specifies the steps.</param>
         /// <returns>The value item ID is returned.</returns>
-        public int AddValueItem(int nSrcId, int nItemIdx, string strName)
+        public int AddValueItem(int nSrcId, int nItemIdx, string strName, DateTime? dtStart = null, DateTime? dtEnd = null, int? nSteps = null)
         {
             using (DNNEntitiesTemporal entities = EntitiesConnectionTemporal.CreateEntities())
             {
@@ -389,6 +392,9 @@ namespace MyCaffe.db.temporal
                 item.Name = strName;
                 item.Idx = nItemIdx;
                 item.SourceID = nSrcId;
+                item.StartTime = dtStart;
+                item.EndTime = dtEnd;
+                item.Steps = nSteps;
                 entities.ValueItems.Add(item);
                 entities.SaveChanges();
 

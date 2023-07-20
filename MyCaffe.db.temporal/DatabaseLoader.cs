@@ -123,7 +123,7 @@ namespace MyCaffe.db.temporal
 
             foreach (ValueItem vi in rgItem)
             {
-                td.ValueItemDescriptors.Add(new ValueItemDescriptor(vi.ID, vi.Name));
+                td.ValueItemDescriptors.Add(new ValueItemDescriptor(vi.ID, vi.Name, vi.StartTime, vi.EndTime, vi.Steps));
             }
 
             return td;            

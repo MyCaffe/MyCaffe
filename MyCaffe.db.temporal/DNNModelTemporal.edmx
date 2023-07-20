@@ -28,6 +28,9 @@
           <Property Name="Name" Type="nvarchar" MaxLength="128" />
           <Property Name="SourceID" Type="int" />
           <Property Name="Idx" Type="int" />
+          <Property Name="StartTime" Type="datetime" />
+          <Property Name="EndTime" Type="datetime" />
+          <Property Name="Steps" Type="int" />
         </EntityType>
         <EntityType Name="ValueStreams">
           <Key>
@@ -61,6 +64,9 @@
           <Property Name="Name" Type="String" MaxLength="128" FixedLength="false" Unicode="true" />
           <Property Name="SourceID" Type="Int32" />
           <Property Name="Idx" Type="Int32" />
+          <Property Name="StartTime" Type="DateTime" Precision="3" />
+          <Property Name="EndTime" Type="DateTime" Precision="3" />
+          <Property Name="Steps" Type="Int32" />
         </EntityType>
         <EntityContainer Name="DNNEntitiesTemporal" annotation:LazyLoadingEnabled="true">
           <EntitySet Name="ValueItems" EntityType="Self.ValueItem" />
@@ -106,6 +112,9 @@
           <EntitySetMapping Name="ValueItems">
             <EntityTypeMapping TypeName="DNNModelTemporal.ValueItem">
               <MappingFragment StoreEntitySet="ValueItems">
+                <ScalarProperty Name="Steps" ColumnName="Steps" />
+                <ScalarProperty Name="EndTime" ColumnName="EndTime" />
+                <ScalarProperty Name="StartTime" ColumnName="StartTime" />
                 <ScalarProperty Name="Idx" ColumnName="Idx" />
                 <ScalarProperty Name="SourceID" ColumnName="SourceID" />
                 <ScalarProperty Name="ID" ColumnName="ID" />

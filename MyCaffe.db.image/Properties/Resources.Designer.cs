@@ -457,12 +457,13 @@ namespace MyCaffe.db.image.Properties {
         ///	[Name] [nvarchar](128) NULL,
         ///	[SourceID] [int] NULL,
         ///	[Idx] [int] NULL,
-        /// CONSTRAINT [PK_Items] PRIMARY KEY CLUSTERED 
+        ///	[StartTime] [datetime] NULL,
+        ///	[EndTime] [datetime] NULL,
+        ///	[Steps] [int] NULL,
+        /// CONSTRAINT [PK_ValueItems] PRIMARY KEY CLUSTERED 
         ///(
         ///	[ID] ASC
-        ///)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-        ///) ON [PRIMARY]
-        ///END.
+        ///)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PR [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string CreateValueItemsTable {
             get {

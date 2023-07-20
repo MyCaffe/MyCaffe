@@ -225,17 +225,26 @@ namespace MyCaffe.basecode.descriptors
     public class ValueItemDescriptor
     {
         int m_nID;
-        string m_strName;   
+        string m_strName;
+        DateTime? m_dtStart;
+        DateTime? m_dtEnd;
+        int? m_nSteps;
 
         /// <summary>
         /// The constructor.
         /// </summary>
         /// <param name="nID">Specifies the value item ID.</param>
         /// <param name="strName">Specifies the value item name.</param>
-        public ValueItemDescriptor(int nID, string strName)
+        /// <param name="dtStart">Optionally, specifies the start time of the item data.</param>
+        /// <param name="dtEnd">Optionally, specifies the end time of the item data.</param>
+        /// <param name="nSteps">Optionally, specifies teh steps in the item data.</param>
+        public ValueItemDescriptor(int nID, string strName, DateTime? dtStart, DateTime? dtEnd, int? nSteps)
         {
             m_nID = nID;
             m_strName = strName;
+            m_dtStart = dtStart;
+            m_dtEnd = dtEnd;
+            m_nSteps = nSteps;
         }
 
         /// <summary>
@@ -246,6 +255,9 @@ namespace MyCaffe.basecode.descriptors
         {
             m_nID = vid.m_nID;
             m_strName = vid.m_strName;
+            m_dtStart = vid.m_dtStart;
+            m_dtEnd = vid.m_dtEnd;
+            m_nSteps = vid.m_nSteps;
         }
 
         /// <summary>
@@ -257,7 +269,18 @@ namespace MyCaffe.basecode.descriptors
         {
             int nID = br.ReadInt32();
             string strName = br.ReadString();
-            ValueItemDescriptor desc = new ValueItemDescriptor(nID, strName);
+            DateTime? dtStart = null;
+            DateTime? dtEnd = null;
+            int? nSteps = null;
+
+            if (br.ReadBoolean())
+            {
+                dtStart = new DateTime(br.ReadInt64());
+                dtEnd = new DateTime(br.ReadInt64());
+                nSteps = br.ReadInt32();
+            }
+
+            ValueItemDescriptor desc = new ValueItemDescriptor(nID, strName, dtStart, dtEnd, nSteps);
             return desc;
         }
 
@@ -270,6 +293,18 @@ namespace MyCaffe.basecode.descriptors
         {
             bw.Write(m_nID);
             bw.Write(m_strName);
+
+            if (m_dtStart.HasValue && m_dtEnd.HasValue && m_nSteps.HasValue)
+            {
+                bw.Write(true);
+                bw.Write(m_dtStart.Value.Ticks);
+                bw.Write(m_dtEnd.Value.Ticks);
+                bw.Write(m_nSteps.Value);
+            }
+            else
+            {
+                bw.Write(false);
+            }
         }
 
         /// <summary>
@@ -288,6 +323,33 @@ namespace MyCaffe.basecode.descriptors
         public string Name
         {
             get { return m_strName; }
+        }
+
+        /// <summary>
+        /// Returns the start time (if any).
+        /// </summary>
+        [ReadOnly(true)]
+        public DateTime? Start
+        {
+            get { return m_dtStart; }
+        }
+
+        /// <summary>
+        /// Returns the end time (if any).
+        /// </summary>
+        [ReadOnly(true)]
+        public DateTime? End
+        {
+            get { return m_dtEnd; }
+        }
+
+        /// <summary>
+        /// Returns the steps (if any).
+        /// </summary>
+        [ReadOnly(true)]
+        public int? Steps
+        {
+            get { return m_nSteps; }
         }
 
         /// <summary>

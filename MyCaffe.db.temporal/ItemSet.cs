@@ -125,17 +125,21 @@ namespace MyCaffe.db.temporal
         public SimpleDatum[] GetData(int nQueryIdx, ref int? nValueIdx, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nHistSteps, int nFutSteps, int nValueStepOffset = 1, bool bEnableDebug = false, string strDebugPath = null)
         {
             int nTotalSteps = nHistSteps + nFutSteps;
+            int nColCount = m_nColCount;
 
-            if (m_nColCount < nTotalSteps)
+            if (m_item.Steps.HasValue)
+                nColCount = m_item.Steps.Value;
+
+            if (nColCount < nTotalSteps)
                 return null;
 
             if (valueSelectionMethod == DB_ITEM_SELECTION_METHOD.RANDOM)
             {
-                m_nValIdx = m_random.Next(m_nColCount - nTotalSteps);
+                m_nValIdx = m_random.Next(nColCount - nTotalSteps);
             }
             else if (valueSelectionMethod == DB_ITEM_SELECTION_METHOD.NONE)
             {
-                if (m_nValIdx >= m_nColCount - nTotalSteps)
+                if (m_nValIdx >= nColCount - nTotalSteps)
                 {
                     m_nValIdx = 0;
                     nValueIdx = m_nValIdx;

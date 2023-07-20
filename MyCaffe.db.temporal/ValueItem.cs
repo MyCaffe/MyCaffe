@@ -18,5 +18,8 @@ namespace MyCaffe.db.temporal
         public string Name { get; set; }
         public Nullable<int> SourceID { get; set; }
         public Nullable<int> Idx { get; set; }
+        public Nullable<System.DateTime> StartTime { get; set; }
+        public Nullable<System.DateTime> EndTime { get; set; }
+        public Nullable<int> Steps { get; set; }
     }
 }
