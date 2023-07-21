@@ -545,7 +545,6 @@ namespace MyCaffe.layers.tft
                 }
 
                 // col[2] = HISTORICAL_NUMERIC
-
                 if (m_rgHistoricalNum != null)
                 {
                     float[] rgRawData = sdHistNum.GetData<float>();
