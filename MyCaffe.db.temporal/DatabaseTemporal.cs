@@ -667,6 +667,20 @@ namespace MyCaffe.db.temporal
         }
 
         /// <summary>
+        /// Returns the start time of the data values.
+        /// </summary>
+        public DateTime StartTime
+        {
+            get
+            {
+                if (m_rgValues.Count == 0)
+                    return DateTime.MinValue;
+
+                return m_rgValues[0].TimeStamp.Value;
+            }
+        }
+
+        /// <summary>
         /// Returns the end time of the data values.
         /// </summary>
         public DateTime EndTime

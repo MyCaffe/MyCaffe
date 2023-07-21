@@ -81,11 +81,10 @@ namespace MyCaffe.db.temporal
         /// <summary>
         /// Loads the data for the item starting at the specified date/time and loading the specified number of steps.
         /// </summary>
-        /// <param name="dt">Specifies the start time to load the data.</param>
         /// <param name="bEOD">Returns whether the end of data is found.</param>
         /// <returns>The end date is returned.</returns>
         /// <exception cref="Exception">An exception is thrown on error.</exception>
-        public DateTime Load(DateTime dt, out bool bEOD)
+        public Tuple<DateTime, DateTime> Load(out bool bEOD)
         {
             int nSrcID = m_item.SourceID.Value;
             int nItemID = m_item.ID;
@@ -95,7 +94,7 @@ namespace MyCaffe.db.temporal
 
             bEOD = true;
             m_nColCount = m_data.ColCount;
-            return m_data.EndTime;
+            return new Tuple<DateTime, DateTime>(m_data.StartTime, m_data.EndTime);
         }
 
         /// <summary>

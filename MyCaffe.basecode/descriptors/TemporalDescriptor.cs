@@ -104,17 +104,31 @@ namespace MyCaffe.basecode.descriptors
         /// <summary>
         /// Return the start date.
         /// </summary>
-        public DateTime StartDate
+        public DateTime? StartDate
         {
-            get { return m_rgValStrmDesc.Min(p => p.Start.GetValueOrDefault(DateTime.MaxValue)); }
+            get
+            {
+                DateTime dt = m_rgValStrmDesc.Min(p => p.Start.GetValueOrDefault(DateTime.MaxValue));
+                if (dt == DateTime.MaxValue)
+                    return null;
+
+                return dt;
+            }
         }
 
         /// <summary>
         /// Return the end date.
         /// </summary>
-        public DateTime EndDate
+        public DateTime? EndDate
         {
-            get { return m_rgValStrmDesc.Max(p => p.End.GetValueOrDefault(DateTime.MinValue)); }
+            get 
+            { 
+                DateTime dt = m_rgValStrmDesc.Max(p => p.End.GetValueOrDefault(DateTime.MinValue));
+                if (dt == DateTime.MinValue)
+                    return null;
+
+                return dt;
+            }
         }
 
         /// <summary>

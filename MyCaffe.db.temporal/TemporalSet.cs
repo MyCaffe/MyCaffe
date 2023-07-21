@@ -22,8 +22,8 @@ namespace MyCaffe.db.temporal
         int m_nHistoricSteps;
         int m_nFutureSteps;
         int m_nTotalSteps;
-        DateTime m_dtStart;
-        DateTime m_dtEnd;
+        DateTime? m_dtStart;
+        DateTime? m_dtEnd;
         ManualResetEvent m_evtCancel = new ManualResetEvent(false);
         AutoResetEvent m_evtDone = new AutoResetEvent(false);
         List<ItemSet> m_rgItems = new List<ItemSet>();
@@ -143,11 +143,11 @@ namespace MyCaffe.db.temporal
                 m_dtStart = td.StartDate;
                 m_dtEnd = td.EndDate;
 
-                if (m_dtEnd <= m_dtStart)
+                if (m_dtEnd.HasValue && m_dtStart.HasValue && m_dtEnd <= m_dtStart)
                     throw new Exception("The end date must be greater than the start date.");
 
                 // Load the data.
-                DateTime dt = m_dtStart;
+                DateTime? dt = m_dtStart;
                 bool bEOD = false;
 
                 Stopwatch sw = new Stopwatch();
@@ -162,7 +162,7 @@ namespace MyCaffe.db.temporal
                     for (int i=0; i<rgItems.Count; i++)
                     {
                         ItemSet item = new ItemSet(m_random, m_db, rgItems[i], rgStrm);
-                        DateTime dtEnd = item.Load(dt, out bEOD1);
+                        item.Load(out bEOD1);
                         m_rgItems.Add(item);
 
                         m_dfLoadPct = (double)i / rgItems.Count;                       
@@ -289,6 +289,14 @@ namespace MyCaffe.db.temporal
         public int GetCount()
         {
             return m_rgItems.Sum(p => p.GetCount(m_nHistoricSteps + m_nFutureSteps));
+        }
+
+        /// <summary>
+        /// Return the total number of queries available in the temporal set.
+        /// </summary>
+        public int Count
+        {
+            get { return m_rgItems.Count; }
         }
     }
 }

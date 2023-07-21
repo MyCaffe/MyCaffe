@@ -141,11 +141,11 @@ namespace MyCaffe.db.temporal
                 return 0;
 
             int nStepsPerBlock = nHistoricalSteps + nFutureSteps;
-            int nTotalSteps = sd.TemporalDescriptor.ValueStreamDescriptors.Max(p => p.Steps);
-            if (nTotalSteps < nStepsPerBlock)
+            int? nTotalSteps = sd.TemporalDescriptor.ValueItemDescriptors.Max(p => p.Steps);
+            if (!nTotalSteps.HasValue || nTotalSteps.Value < nStepsPerBlock)
                 m_log.FAIL("Stream: " + sd.Name + " - The number of historical and future steps must be less than the number of steps in the temporal data stream.  The steps per block = " + nStepsPerBlock.ToString() + " and the total steps = " + nTotalSteps.ToString() + " items.");
 
-            int nRowBlocks = nTotalSteps - nStepsPerBlock;
+            int nRowBlocks = nTotalSteps.Value - nStepsPerBlock;
             int nTotal = sd.TemporalDescriptor.ValueItemDescriptors.Count * nRowBlocks;
 
             return nTotal;
