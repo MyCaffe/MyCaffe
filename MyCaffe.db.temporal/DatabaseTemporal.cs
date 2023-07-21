@@ -1082,6 +1082,7 @@ namespace MyCaffe.db.temporal
         /// <summary>
         /// Load a raw value item from a binary reader.
         /// </summary>
+        /// <param name="dt">Optionally, specifies the time of the raw value data (or null when static).</param>
         /// <param name="br">Specifies the binary reader.</param>
         /// <returns>The new RawValueData is returned.</returns>
         public static RawValueData Load(DateTime? dt, BinaryReader br)
