@@ -79,7 +79,7 @@ namespace MyCaffe.converter.pytorch
         }
     }
 
-    class SolverInfo
+    class SolverInfo /** @private */
     {
         SolverParameter m_solver;
         NetworkInfo m_net;
@@ -215,7 +215,7 @@ namespace MyCaffe.converter.pytorch
         }
     }
 
-    class NetworkInfo
+    class NetworkInfo /** @private */
     {
         NetParameter m_net;
         LayerInfoCollection m_layers = new LayerInfoCollection();
@@ -320,7 +320,7 @@ namespace MyCaffe.converter.pytorch
         }
     }
 
-    class LayerInfoCollection
+    class LayerInfoCollection /** @private */
     {
         List<LayerInfo> m_rgLayers = new List<LayerInfo>();
 
@@ -361,7 +361,7 @@ namespace MyCaffe.converter.pytorch
         }
     }
 
-    class ConvolutionLayerInfo : LayerInfo
+    class ConvolutionLayerInfo : LayerInfo /** @private */
     {
         public ConvolutionLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
         {
@@ -387,7 +387,7 @@ namespace MyCaffe.converter.pytorch
         }
     }
 
-    class PoolingLayerInfo : LayerInfo
+    class PoolingLayerInfo : LayerInfo /** @private */
     {
         public PoolingLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
         {
@@ -419,7 +419,7 @@ namespace MyCaffe.converter.pytorch
         }
     }
 
-    class InnerProductLayerInfo : LayerInfo
+    class InnerProductLayerInfo : LayerInfo /** @private */
     {
         public InnerProductLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
         {
@@ -443,7 +443,7 @@ namespace MyCaffe.converter.pytorch
         }
     }
 
-    class ConcatLayerInfo : LayerInfo
+    class ConcatLayerInfo : LayerInfo /** @private */
     {
         public ConcatLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
         {
@@ -475,7 +475,7 @@ namespace MyCaffe.converter.pytorch
         }
     }
 
-    class LRNLayerInfo : LayerInfo
+    class LRNLayerInfo : LayerInfo /** @private */
     {
         public LRNLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
         {
@@ -496,7 +496,7 @@ namespace MyCaffe.converter.pytorch
         }
     }
 
-    class ReluLayerInfo : LayerInfo
+    class ReluLayerInfo : LayerInfo /** @private */
     {
         public ReluLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
         {
@@ -517,7 +517,7 @@ namespace MyCaffe.converter.pytorch
         }
     }
 
-    class SigmoidLayerInfo : LayerInfo
+    class SigmoidLayerInfo : LayerInfo /** @private */
     {
         public SigmoidLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
         {
@@ -537,7 +537,7 @@ namespace MyCaffe.converter.pytorch
             return strCode;
         }
     }
-    class TanhLayerInfo : LayerInfo
+    class TanhLayerInfo : LayerInfo /** @private */
     {
         public TanhLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
         {
@@ -558,7 +558,7 @@ namespace MyCaffe.converter.pytorch
         }
     }
 
-    class DropoutLayerInfo : LayerInfo
+    class DropoutLayerInfo : LayerInfo /** @private */
     {
         public DropoutLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
         {
@@ -579,7 +579,7 @@ namespace MyCaffe.converter.pytorch
         }
     }
 
-    class BatchNormLayerInfo : LayerInfo
+    class BatchNormLayerInfo : LayerInfo /** @private */
     {
         public BatchNormLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
         {
@@ -600,7 +600,7 @@ namespace MyCaffe.converter.pytorch
         }
     }
 
-    class LayerNormLayerInfo : LayerInfo
+    class LayerNormLayerInfo : LayerInfo /** @private */
     {
         public LayerNormLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
         {
@@ -621,7 +621,7 @@ namespace MyCaffe.converter.pytorch
         }
     }
 
-    class SoftmaxLayerInfo : LayerInfo
+    class SoftmaxLayerInfo : LayerInfo /** @private */
     {
         public SoftmaxLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
         {
@@ -642,7 +642,7 @@ namespace MyCaffe.converter.pytorch
         }
     }
 
-    class SoftmaxLossLayerInfo : SoftmaxLayerInfo
+    class SoftmaxLossLayerInfo : SoftmaxLayerInfo /** @private */
     {
         public SoftmaxLossLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
         {
@@ -664,7 +664,7 @@ namespace MyCaffe.converter.pytorch
         }
     }
 
-    class AccuracyLayerInfo : LayerInfo
+    class AccuracyLayerInfo : LayerInfo /** @private */
     {
         public AccuracyLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
         {
@@ -695,7 +695,7 @@ namespace MyCaffe.converter.pytorch
     }
 
 
-    class LayerInfo
+    class LayerInfo /** @private */
     {
         protected LayerParameter m_layer;
         protected VariableCollection m_inputs = new VariableCollection();
@@ -855,7 +855,7 @@ namespace MyCaffe.converter.pytorch
         }
     }
 
-    class VariableCollection
+    class VariableCollection /** @private */
     {
         List<VariableInfo> m_rgVariables = new List<VariableInfo>();
         public VariableCollection()
@@ -921,7 +921,7 @@ namespace MyCaffe.converter.pytorch
         }
     }
 
-    class VariableInfo
+    class VariableInfo /** @private */
     {
         string m_strName;
         List<int> m_rgShape;
