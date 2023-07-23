@@ -72,6 +72,7 @@
     <Compile Include="DictionaryMap.cs" />
     <Compile Include="LabelBBox.cs" />
     <Compile Include="LabelMapping.cs" />
+    <Compile Include="MyCaffeModelData.cs" />
     <Compile Include="NormalizedBBox.cs" />
     <Compile Include="param\BaseParameter.cs" />
     <Compile Include="Result.cs" />

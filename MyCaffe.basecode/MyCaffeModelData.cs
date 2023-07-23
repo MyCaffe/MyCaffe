@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyCaffe.converter.onnx
+namespace MyCaffe.basecode
 {
     /// <summary>
     /// The MyCaffeModelData object contains the model descriptor, model weights and optionally the image mean.
@@ -13,12 +13,15 @@ namespace MyCaffe.converter.onnx
     public class MyCaffeModelData
     {
         string m_strModelDescription;
+        string m_strSolverDescription = null;
         byte[] m_rgWeights;
         byte[] m_rgImageMean;
         string m_strLastModelFileName = "";
+        string m_strLastSolverFileName = "";
         string m_strLastImageMeanFileName = "";
         string m_strLastWeightsFileName = "";
         string m_strOriginalDownloadFile = null;
+        List<int> m_rgInputShape = new List<int>();
 
         /// <summary>
         /// The constructor.
@@ -26,11 +29,26 @@ namespace MyCaffe.converter.onnx
         /// <param name="strModelDesc">Specifies the model descriptor.</param>
         /// <param name="rgWeights">Specifies the model weights.</param>
         /// <param name="rgImageMean">Optionally, specifies the image mean (default = null).</param>
-        public MyCaffeModelData(string strModelDesc, byte[] rgWeights, byte[] rgImageMean = null)
+        /// <param name="strSolverDescription">Optionally, specifies the solver description.</param>
+        /// <param name="rgInputShape">Specifies the input data shape.</param>
+        public MyCaffeModelData(string strModelDesc, byte[] rgWeights, byte[] rgImageMean = null, string strSolverDescription = null, List<int> rgInputShape = null)
         {
             m_strModelDescription = strModelDesc;
             m_rgWeights = rgWeights;
             m_rgImageMean = rgImageMean;
+            m_strSolverDescription = strSolverDescription;
+
+            if (rgInputShape != null)
+                m_rgInputShape = rgInputShape;
+        }
+
+        /// <summary>
+        /// Get/set the data input shape.
+        /// </summary>
+        public List<int> InputShape
+        {
+            get { return m_rgInputShape; }
+            set { m_rgInputShape = value; }
         }
 
         /// <summary>
@@ -40,6 +58,15 @@ namespace MyCaffe.converter.onnx
         {
             get { return m_strModelDescription; }
             set { m_strModelDescription = value; }
+        }
+
+        /// <summary>
+        /// Get/set the solver description.
+        /// </summary>
+        public string SolverDescription
+        {
+            get { return m_strSolverDescription; }
+            set { m_strSolverDescription = value; }
         }
 
         /// <summary>
@@ -83,6 +110,20 @@ namespace MyCaffe.converter.onnx
             using (StreamWriter sr = new StreamWriter(strModel))
             {
                 sr.WriteLine(m_strModelDescription);
+            }
+
+            if (!string.IsNullOrEmpty(m_strSolverDescription))
+            {
+                string strSolver = strFolder.TrimEnd('\\') + "\\" + strName + "_solver_desc.prototxt";
+
+                if (File.Exists(strSolver))
+                    File.Delete(strSolver);
+
+                m_strLastSolverFileName = strSolver;
+                using (StreamWriter sr = new StreamWriter(strSolver))
+                {
+                    sr.WriteLine(strSolver);
+                }
             }
 
             if (m_rgWeights != null)
@@ -130,6 +171,14 @@ namespace MyCaffe.converter.onnx
         public string LastSavedModeDescriptionFileName
         {
             get { return m_strLastModelFileName; }
+        }
+
+        /// <summary>
+        /// Returns the file name of the last saved solver description file.
+        /// </summary>
+        public string LastSaveSolverDescriptionFileName
+        {
+            get { return m_strLastSolverFileName; }
         }
 
         /// <summary>
