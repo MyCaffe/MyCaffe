@@ -169,13 +169,14 @@ namespace MyCaffe.converter.pytorch
             strCode += "    def __init__(self, path, labels, tfms=None):" + Environment.NewLine;
             strCode += "        self.X = path" + Environment.NewLine;
             strCode += "        self.y = labels" + Environment.NewLine;
+            strCode += "        self.img_list = []" + Environment.NewLine;
+            strCode += Environment.NewLine;
+            strCode += "        for i in range(len(self.X)):" + Environment.NewLine;
+            strCode += "            self.img_list.append(None)" + Environment.NewLine;
             strCode += Environment.NewLine;
             strCode += "        # apply augmentations to the image" + Environment.NewLine;
             strCode += "        if tfms == 0: # if validating" + Environment.NewLine;
             strCode += "           self.transform = albumentations.Compose([" + Environment.NewLine;
-
-            if (m_net.Net.layer[0].type == LayerParameter.LayerType.DATA && m_net.Net.layer[0].transform_param.scale != 1.0)
-                strCode += "               albumentations.ShiftScaleRotate(shift_limit=0.0,scale_limit=" + m_net.Net.layer[0].transform_param.scale.ToString() + ", rotate_limit=0, p=1.0)," + Environment.NewLine;
 
             string strMean = getMean();
             if (!string.IsNullOrEmpty(strMean))
@@ -189,9 +190,6 @@ namespace MyCaffe.converter.pytorch
                 m_net.Net.layer[0].transform_param.mirror)
                 strCode += "               albumentations.HorizontalFlip(p=1.0)," + Environment.NewLine;
 
-            if (m_net.Net.layer[0].type == LayerParameter.LayerType.DATA && m_net.Net.layer[0].transform_param.scale != 1.0)
-                strCode += "               albumentations.ShiftScaleRotate(shift_limit=0.0,scale_limit=" + m_net.Net.layer[0].transform_param.scale.ToString() + ", rotate_limit=0, p=1.0)," + Environment.NewLine;
-
             if (!string.IsNullOrEmpty(strMean))
                 strCode += "               albumentations.Normalize(mean=[" + strMean + "], always_apply=True)" + Environment.NewLine;
 
@@ -201,14 +199,22 @@ namespace MyCaffe.converter.pytorch
             strCode += "        return len(self.X)" + Environment.NewLine;
             strCode += Environment.NewLine;
             strCode += "    def __getitem__(self, idx):" + Environment.NewLine;
-            strCode += "        img = iio.imread(self.X[idx],pilmode=\'RGB\')" + Environment.NewLine;
-            strCode += "        img = np.array(img).astype(float)" + Environment.NewLine;
-            strCode += "        img = self.transform(image=img)['image']" + Environment.NewLine;
+            strCode += "        if self.img_list[idx] is None:" + Environment.NewLine;
+            strCode += "            img = iio.imread(self.X[idx],pilmode=\'RGB\')" + Environment.NewLine;
+            strCode += "            img = np.array(img).astype(float)" + Environment.NewLine;
 
             if (m_net.Net.layer[0].type == LayerParameter.LayerType.DATA &&
                 m_net.Net.layer[0].transform_param.color_order == TransformationParameter.COLOR_ORDER.RGB)
-                strCode += "        img = np.transpose(img, (2, 0, 1)).astype(np.float32)" + Environment.NewLine;
+                strCode += "            img = np.transpose(img, (2, 0, 1)).astype(np.float32)" + Environment.NewLine;
 
+            if (m_net.Net.layer[0].type == LayerParameter.LayerType.DATA &&
+                m_net.Net.layer[0].transform_param.scale != 1.0)
+                strCode += "            img = img * " + m_net.Net.layer[0].transform_param.scale + Environment.NewLine;
+
+            strCode += "            img = self.transform(image=img)['image']" + Environment.NewLine;
+            strCode += "            self.img_list[idx] = img" + Environment.NewLine;
+
+            strCode += "        img = self.img_list[idx]" + Environment.NewLine;
             strCode += "        label = self.y[idx]" + Environment.NewLine;
             strCode += "        return torch.tensor(img, dtype=torch.float), torch.tensor(label, dtype=torch.long)" + Environment.NewLine;
             strCode += Environment.NewLine;
@@ -297,19 +303,8 @@ namespace MyCaffe.converter.pytorch
             strCode += Environment.NewLine;
 
             strCode += "# Create the training and testing data loaders" + Environment.NewLine;
-            strCode += "train_loader = torch.utils.data.DataLoader(" + Environment.NewLine;
-            strCode += "    train_dataset," + Environment.NewLine;
-            strCode += "    batch_size=" + m_net.batch_size.ToString() + "," + Environment.NewLine;
-            strCode += "    shuffle=True," + Environment.NewLine;
-            strCode += "    num_workers=0," + Environment.NewLine;
-            strCode += "    pin_memory=True)" + Environment.NewLine;
-            strCode += Environment.NewLine;
-            strCode += "test_loader = torch.utils.data.DataLoader(" + Environment.NewLine;
-            strCode += "    test_dataset," + Environment.NewLine;
-            strCode += "    batch_size=" + m_net.batch_size.ToString() + "," + Environment.NewLine;
-            strCode += "    shuffle=False," + Environment.NewLine;
-            strCode += "    num_workers=0," + Environment.NewLine;
-            strCode += "    pin_memory=True)" + Environment.NewLine;
+            strCode += "train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=" + m_net.batch_size.ToString() + ", shuffle=True)" + Environment.NewLine;
+            strCode += "test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=" + m_net.batch_size.ToString() + ", shuffle=True)" + Environment.NewLine;
             strCode += Environment.NewLine;
 
             strCode += "# Create the model, optimizer and trainer" + Environment.NewLine;
