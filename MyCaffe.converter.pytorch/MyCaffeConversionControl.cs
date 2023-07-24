@@ -326,7 +326,17 @@ namespace MyCaffe.converter.pytorch
             strCode += "        loss, acc = trainer.test(inputs, labels)" + Environment.NewLine;
             strCode += "        print(\"Epoch: %d, Iter: %d, Loss: %f, Accuracy: %f\" % (epoch, i, loss, acc))" + Environment.NewLine;
             strCode += Environment.NewLine;
-            strCode += "trainer.save(\"" + m_solver.snapshot_prefix + "\")" + Environment.NewLine;
+
+            strCode += "# Save the weights" + Environment.NewLine;
+            strCode += "current_directory = os.getcwd()" + Environment.NewLine;
+            strCode += "final_directory = os.path.join(current_directory, r'weights')" + Environment.NewLine;
+            strCode += "if not os.path.exists(final_directory):" + Environment.NewLine;
+            strCode += "   os.makedirs(final_directory)" + Environment.NewLine;
+
+            strCode += "wt_file = os.path.join(final_directory,'mnist_weights.wts')" + Environment.NewLine; ;
+            strCode += "trainer.save(wt_file)" + Environment.NewLine;
+            strCode += Environment.NewLine;
+            strCode += "print(\"Training Done!\")" + Environment.NewLine;
             strCode += Environment.NewLine;
 
             return strCode;
