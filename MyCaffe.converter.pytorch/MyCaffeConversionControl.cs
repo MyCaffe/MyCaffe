@@ -21,9 +21,6 @@ namespace MyCaffe.converter.pytorch
     /// <summary>
     /// The MyCaffeConversionControl is used to convert a MyCaffe model to a PyTorch model.
     /// </summary>
-    /// <remarks>
-    /// WORK IN PROGRESS
-    /// </remarks>
     public partial class MyCaffeConversionControl<T> : Component
     {
         string m_strOriginalPath = null;
