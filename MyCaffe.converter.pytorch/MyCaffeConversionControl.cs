@@ -101,7 +101,10 @@ namespace MyCaffe.converter.pytorch
 
             strCode += addImports(strModelFile);
             strCode += addGpu();
-            strCode += addClass();
+            strCode += addLoadDataFunction();
+            strCode += addDataSet();
+            strCode += addTrainerClass();
+            strCode += addTraining();
 
             return strCode;
         }
@@ -112,9 +115,15 @@ namespace MyCaffe.converter.pytorch
 
             FileInfo fi = new FileInfo(strModelFile);
 
+            strCode += "import os" + Environment.NewLine;
+            strCode += "import imageio.v2 as iio" + Environment.NewLine;
+            strCode += "import pandas as pd" + Environment.NewLine;
+            strCode += "import numpy as np" + Environment.NewLine;
+            strCode += "import random" + Environment.NewLine;
             strCode += "import torch" + Environment.NewLine;
+            strCode += "import albumentations" + Environment.NewLine;
             strCode += "from torch import optim" + Environment.NewLine;
-            strCode += "from " + fi.Name + " import " + m_net.Net.name + Environment.NewLine;
+            strCode += "from " + Path.GetFileNameWithoutExtension(fi.Name) + " import " + m_net.Net.name + Environment.NewLine;
             strCode += Environment.NewLine;
 
             return strCode;
@@ -131,7 +140,64 @@ namespace MyCaffe.converter.pytorch
             return strCode;
         }
 
-        private string addClass()
+        private string addLoadDataFunction()
+        {
+            string strCode = "";
+
+            strCode += "# load the data files" + Environment.NewLine;
+            strCode += "def load_data(fullfile):" + Environment.NewLine;
+            strCode += "    # load the image paths" + Environment.NewLine;
+            strCode += "    img_paths = []" + Environment.NewLine;
+            strCode += "    labels = []" + Environment.NewLine;
+            strCode += "    for line in open(fullfile):" + Environment.NewLine;
+            strCode += "        line = line.split(' ')" + Environment.NewLine;
+            strCode += "        img_paths.append(line[0].strip(\'\\n\'))" + Environment.NewLine;
+            strCode += "        labels.append(int(line[1].strip('\\n\')))" + Environment.NewLine;
+            strCode += Environment.NewLine;
+            strCode += "    return img_paths, labels" + Environment.NewLine;
+            strCode += Environment.NewLine;
+
+            return strCode;
+        }
+
+        private string addDataSet()
+        {
+            string strCode = "";
+
+            strCode += "# Dataset class used to load the data" + Environment.NewLine;
+            strCode += "class ImageDataset(torch.utils.data.Dataset):" + Environment.NewLine;
+            strCode += "    def __init__(self, path, labels, tfms=None):" + Environment.NewLine;
+            strCode += "        self.X = path" + Environment.NewLine;
+            strCode += "        self.y = labels" + Environment.NewLine;
+            strCode += Environment.NewLine;
+            strCode += "        # apply augmentations to the image" + Environment.NewLine;
+            strCode += "        if tfms == 0: # if validating" + Environment.NewLine;
+            strCode += "           self.transform = albumentations.Compose([" + Environment.NewLine;
+            strCode += "               albumentations.Normalize(mean=[0.485,0.456,0.406],std=[0.229,0.224,0.225], always_apply=True)" + Environment.NewLine;
+            strCode += "           ])" + Environment.NewLine;
+            strCode += "        else: # if training" + Environment.NewLine;
+            strCode += "           self.transform = albumentations.Compose([" + Environment.NewLine;
+            strCode += "               albumentations.HorizontalFlip(p=1.0)," + Environment.NewLine;
+            strCode += "               albumentations.ShiftScaleRotate(shift_limit=0.3,scale_limit=0.3,rotate_limit=30, p=1.0)," + Environment.NewLine;
+            strCode += "               albumentations.Normalize(mean=[0.485,0.456,0.406],std=[0.229,0.224,0.225], always_apply=True)" + Environment.NewLine;
+            strCode += "           ])" + Environment.NewLine;
+            strCode += Environment.NewLine;
+            strCode += "    def __len__(self):" + Environment.NewLine;
+            strCode += "        return len(self.X)" + Environment.NewLine;
+            strCode += Environment.NewLine;
+            strCode += "    def __getitem__(self, idx):" + Environment.NewLine;
+            strCode += "        img = iio.imread(self.X[idx],pilmode=\'RGB\')" + Environment.NewLine;
+            strCode += "        img = np.array(img).astype(float)" + Environment.NewLine;
+            strCode += "        img = self.transform(image=img)['image']" + Environment.NewLine;
+            strCode += "        img = np.transpose(img, (2, 0, 1)).astype(np.float32)" + Environment.NewLine;
+            strCode += "        label = self.y[idx]" + Environment.NewLine;
+            strCode += "        return torch.tensor(img, dtype=torch.float), torch.tensor(label, dtype=torch.long)" + Environment.NewLine;
+            strCode += Environment.NewLine;
+
+            return strCode;
+        }
+
+        private string addTrainerClass()
         {
             string strCode = "";
 
@@ -142,23 +208,30 @@ namespace MyCaffe.converter.pytorch
             strCode += "        self.solver = opt" + Environment.NewLine;
             strCode += "        self.device = device" + Environment.NewLine;
             strCode += Environment.NewLine;
+            strCode += "    def seed_everything(self, SEED=42):" + Environment.NewLine;
+            strCode += "        torch.manual_seed(SEED)" + Environment.NewLine;
+            strCode += "        torch.cuda.manual_seed(SEED)" + Environment.NewLine;
+            strCode += "        torch.cuda.manual_seed_all(SEED)" + Environment.NewLine;
+            strCode += "        torch.backends.cudnn.deterministic = True" + Environment.NewLine;
+            strCode += "        torch.backends.cudnn.benchmark = True" + Environment.NewLine;
+            strCode += "        np.random.seed(SEED)" + Environment.NewLine;
+            strCode += "        random.seed(SEED)" + Environment.NewLine;
+            strCode += Environment.NewLine;
             strCode += "    def train(self, inputs, labels):" + Environment.NewLine;
             strCode += "        self.net.train()" + Environment.NewLine;
             strCode += "        inputs = inputs.to(self.device)" + Environment.NewLine;
             strCode += "        labels = labels.to(self.device)" + Environment.NewLine;
-            strCode += "        outputs = self.net(inputs)" + Environment.NewLine;
-            strCode += "        loss = self.solver.loss(outputs, labels)" + Environment.NewLine;
+            strCode += "        loss, acc = self.net(inputs, labels)" + Environment.NewLine;
             strCode += "        loss.backward()" + Environment.NewLine;
             strCode += "        self.solver.step()" + Environment.NewLine;
-            strCode += "        return loss" + Environment.NewLine;
+            strCode += "        return loss, acc" + Environment.NewLine;
             strCode += Environment.NewLine;
             strCode += "    def test(self, inputs, labels):" + Environment.NewLine;
             strCode += "        self.net.eval()" + Environment.NewLine;
             strCode += "        inputs = inputs.to(self.device)" + Environment.NewLine;
             strCode += "        labels = labels.to(self.device)" + Environment.NewLine;
-            strCode += "        outputs = self.net(inputs)" + Environment.NewLine;
-            strCode += "        loss = self.solver.loss(outputs, labels)" + Environment.NewLine;
-            strCode += "        return loss" + Environment.NewLine;
+            strCode += "        loss, acc = self.net(inputs, labels)" + Environment.NewLine;
+            strCode += "        return loss, acc" + Environment.NewLine;
             strCode += Environment.NewLine;
             strCode += "    def save(self, strFile):" + Environment.NewLine;
             strCode += "        torch.save(self.net.state_dict(), strFile)" + Environment.NewLine;
@@ -167,25 +240,64 @@ namespace MyCaffe.converter.pytorch
             strCode += "        self.net.load_state_dict(torch.load(strFile))" + Environment.NewLine;
             strCode += Environment.NewLine;
 
+            return strCode;
+        }
+
+        private string addTraining()
+        {
+            string strCode = "";
+
+            strCode += "train_file = 'c:/ProgramData/MyCaffe/test_data/mnist/training/file_list.txt'" + Environment.NewLine;
+            strCode += "test_file = 'c:/ProgramData/MyCaffe/test_data/mnist/testing/file_list.txt'" + Environment.NewLine;
+            strCode += Environment.NewLine;
+
+            strCode += "# Load the training and testing data files" + Environment.NewLine;
+            strCode += "train_X, train_y = load_data(train_file)" + Environment.NewLine;
+            strCode += "test_X, test_y = load_data(test_file)" + Environment.NewLine;
+            strCode += Environment.NewLine;
+
+            strCode += "# Load the training and testing data" + Environment.NewLine;
+            strCode += "train_dataset = ImageDataset(train_X, train_y, 1)" + Environment.NewLine;
+            strCode += "test_dataset = ImageDataset(test_X, test_y, 0)" + Environment.NewLine;
+            strCode += Environment.NewLine;
+
+            strCode += "# Create the training and testing data loaders" + Environment.NewLine;
+            strCode += "train_loader = torch.utils.data.DataLoader(" + Environment.NewLine;
+            strCode += "    train_dataset," + Environment.NewLine;
+            strCode += "    batch_size=" + m_net.batch_size.ToString() + "," + Environment.NewLine;
+            strCode += "    shuffle=True," + Environment.NewLine;
+            strCode += "    num_workers=0," + Environment.NewLine;
+            strCode += "    pin_memory=True)" + Environment.NewLine;
+            strCode += Environment.NewLine;
+            strCode += "test_loader = torch.utils.data.DataLoader(" + Environment.NewLine;
+            strCode += "    test_dataset," + Environment.NewLine;
+            strCode += "    batch_size=" + m_net.batch_size.ToString() + "," + Environment.NewLine;
+            strCode += "    shuffle=False," + Environment.NewLine;
+            strCode += "    num_workers=0," + Environment.NewLine;
+            strCode += "    pin_memory=True)" + Environment.NewLine;
+            strCode += Environment.NewLine;
+
             strCode += "# Create the model, optimizer and trainer" + Environment.NewLine;
             strCode += "model = " + m_net.Net.name + "()" + Environment.NewLine;
             strCode += "model.to(device)" + Environment.NewLine;
             strCode += "model.init_weights()" + Environment.NewLine;
             strCode += "opt = optim." + getSolver() + "(filter(lambda p: p.requires_grad, list(model.parameters())), lr=" + m_solver.base_lr.ToString() + ")" + Environment.NewLine;
             strCode += "trainer = Trainer(model, opt, device)" + Environment.NewLine;
+            strCode += "trainer.seed_everything()" + Environment.NewLine;
             strCode += Environment.NewLine;
 
             strCode += "# Training" + Environment.NewLine;
             strCode += "for epoch in range(" + m_solver.max_iter.ToString() + "):" + Environment.NewLine;
             strCode += "    for i, (inputs, labels) in enumerate(train_loader):" + Environment.NewLine;
-            strCode += "        loss = trainer.train(inputs, labels)" + Environment.NewLine;
-            strCode += "        print(\"Epoch: %d, Iter: %d, Loss: %f\" % (epoch, i, loss))" + Environment.NewLine;
+            strCode += "        loss, acc = trainer.train(inputs, labels)" + Environment.NewLine;
+            strCode += "        print(\"Epoch: %d, Iter: %d, Loss: %f, Accuracy: %f\" % (epoch, i, loss, acc))" + Environment.NewLine;
             strCode += Environment.NewLine;
             strCode += "    for i, (inputs, labels) in enumerate(test_loader):" + Environment.NewLine;
-            strCode += "        loss = trainer.test(inputs, labels)" + Environment.NewLine;
-            strCode += "        print(\"Epoch: %d, Iter: %d, Loss: %f\" % (epoch, i, loss))" + Environment.NewLine;
+            strCode += "        loss, acc = trainer.test(inputs, labels)" + Environment.NewLine;
+            strCode += "        print(\"Epoch: %d, Iter: %d, Loss: %f, Accuracy: %f\" % (epoch, i, loss, acc))" + Environment.NewLine;
             strCode += Environment.NewLine;
-            strCode += "solver.save(\"" + m_solver.snapshot_prefix + "\")" + Environment.NewLine;
+            strCode += "trainer.save(\"" + m_solver.snapshot_prefix + "\")" + Environment.NewLine;
+            strCode += Environment.NewLine;
 
             return strCode;
         }
@@ -233,6 +345,18 @@ namespace MyCaffe.converter.pytorch
             }
         }
 
+        public int batch_size
+        {
+            get
+            {
+                double? dfParam = m_layers.GetParameter("batch_size");
+                if (dfParam.HasValue)
+                    return (int)dfParam.Value;
+
+                return 0;
+            }
+        }
+
         public string Generate()
         {
             string strCode = "";
@@ -247,6 +371,8 @@ namespace MyCaffe.converter.pytorch
         {
             string strCode = "";
 
+            strCode += "import random" + Environment.NewLine;
+            strCode += "import albumentations" + Environment.NewLine;
             strCode += "import torch" + Environment.NewLine;
             strCode += "import torch.nn as nn" + Environment.NewLine;
             strCode += "import torch.nn.functional as F" + Environment.NewLine;
@@ -274,7 +400,7 @@ namespace MyCaffe.converter.pytorch
 
         private string addConstructor()
         {
-            string strCode = "# The constructor." + Environment.NewLine;
+            string strCode = "    # The constructor." + Environment.NewLine;
 
             strCode += "    def __init__(self):" + Environment.NewLine;
             strCode += "        super(" + m_net.name + ", self).__init__()" + Environment.NewLine;
@@ -285,7 +411,7 @@ namespace MyCaffe.converter.pytorch
 
         private string addInitWeights()
         {
-            string strCode = "# Initialize the weights." + Environment.NewLine;
+            string strCode = "    # Initialize the weights." + Environment.NewLine;
 
             strCode += "    def init_weights(self):" + Environment.NewLine;
             strCode += m_layers.Generate(LayerInfo.GENERATE.INITWEIGHTS);
@@ -295,11 +421,14 @@ namespace MyCaffe.converter.pytorch
 
         private string addForward()
         {
-            string strCode = "# The forward method." + Environment.NewLine;
+            string strCode = "    # The forward method." + Environment.NewLine;
 
-            strCode += "    def forward(self, x):" + Environment.NewLine;
+            string strX = m_net.layer[0].top[0];
+            string strY = m_net.layer[0].top[1];
+
+            strCode += "    def forward(self, " + strX + ", " + strY + "):" + Environment.NewLine;
             strCode += m_layers.Generate(LayerInfo.GENERATE.FORWARD);
-            strCode += "        return " + m_layers[m_layers.Count - 1].Outputs[0].Name + Environment.NewLine;
+            strCode += "        return " + m_layers.GetReturnValues() + Environment.NewLine;
             strCode += Environment.NewLine;
             return strCode;
         }
@@ -359,13 +488,68 @@ namespace MyCaffe.converter.pytorch
         {
             get { return m_rgLayers[nIdx]; }
         }
+
+        public double? GetParameter(string strName)
+        {
+            for (int i = 0; i < m_rgLayers.Count; i++)
+            {
+                double? dfParam = m_rgLayers[i].GetParameter(strName);
+                if (dfParam.HasValue)
+                    return dfParam;
+            }
+
+            return null;
+        }
+
+        public string GetReturnValues()
+        {
+            Dictionary<string, int> rgRv = new Dictionary<string, int>();
+
+            foreach(LayerInfo layer in m_rgLayers)
+            {
+                foreach (KeyValuePair<string, int> kv in layer.ReturnValues)
+                {
+                    rgRv.Add(kv.Key, kv.Value);
+                }
+            }
+
+            List<KeyValuePair<string, int>> rgRv1 = rgRv.OrderBy(p => p.Value).ToList();
+            string strReturn = rgRv1[0].Key;
+
+            for (int i=1; i<rgRv1.Count; i++)
+            {
+                strReturn += ", " + rgRv1[i].Key;
+            }
+
+            return strReturn;
+        }
+    }
+
+    class DataLayerInfo : LayerInfo /** @private */
+    {
+        public DataLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
+        {
+            m_rgParameters.Add("batch_size", layer.data_param.batch_size);
+        }
+
+        public override string Generate(GENERATE gen)
+        {
+            string strCode = "";
+            return strCode;
+        }
     }
 
     class ConvolutionLayerInfo : LayerInfo /** @private */
     {
         public ConvolutionLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
         {
+            int nPad = (layer.convolution_param.pad != null && layer.convolution_param.pad.Count > 0) ? (int)layer.convolution_param.pad[0] : 0;
+            int nKernel = (layer.convolution_param.kernel_size != null && layer.convolution_param.kernel_size.Count > 0) ? (int)layer.convolution_param.kernel_size[0] : 1;
+            int nStride = (layer.convolution_param.stride != null && layer.convolution_param.stride.Count > 0) ? (int)layer.convolution_param.stride[0] : 1;
+
             m_outputs[0].Shape[1] = (int)layer.convolution_param.num_output;
+            m_outputs[0].Shape[2] = (int)Math.Floor((double)(m_inputs[0].Shape[2] + 2 * nPad - nKernel) / nStride) + 1;
+            m_outputs[0].Shape[3] = (int)Math.Floor((double)(m_inputs[0].Shape[3] + 2 * nPad - nKernel) / nStride) + 1;
         }
 
         public override string Generate(GENERATE gen)
@@ -424,6 +608,8 @@ namespace MyCaffe.converter.pytorch
         public InnerProductLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
         {
             m_outputs[0].Shape[1] = (int)layer.inner_product_param.num_output;
+            m_outputs[0].Shape[2] = 1;
+            m_outputs[0].Shape[3] = 1;
         }
 
         public override string Generate(GENERATE gen)
@@ -435,9 +621,12 @@ namespace MyCaffe.converter.pytorch
             if (gen == GENERATE.DEFINITION)
                 strCode += "        self." + m_layer.name + " = nn.Linear(in_features=" + nInFeatures + ", out_features=" + nOutFeatures + ", bias=" + m_layer.inner_product_param.bias_term.ToString() + ")" + Environment.NewLine;
             else if (gen == GENERATE.INITWEIGHTS)
-                initWeights(m_layer.name, m_layer.inner_product_param.bias_term, m_layer.inner_product_param.weight_filler, m_layer.inner_product_param.bias_filler);
+                strCode += initWeights(m_layer.name, m_layer.inner_product_param.bias_term, m_layer.inner_product_param.weight_filler, m_layer.inner_product_param.bias_filler);
             else
+            {
+                strCode += "        " + m_inputs.AsText + " = " + m_inputs.AsText + ".view(" + m_inputs.AsText + ".size(0), -1)" + Environment.NewLine;
                 strCode += "        " + m_outputs.AsText + " = self." + m_layer.name + "(" + m_inputs.AsText + ")" + Environment.NewLine;
+            }
 
             return strCode;
         }
@@ -537,6 +726,7 @@ namespace MyCaffe.converter.pytorch
             return strCode;
         }
     }
+
     class TanhLayerInfo : LayerInfo /** @private */
     {
         public TanhLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
@@ -646,19 +836,26 @@ namespace MyCaffe.converter.pytorch
     {
         public SoftmaxLossLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
         {
+            m_rgstrReturnValues.Add("loss", 1);
         }
 
         public override string Generate(GENERATE gen)
         {
-            string strCode = base.Generate(gen);
+            string strCode = "";
 
             if (gen == GENERATE.DEFINITION)
+            {
+                strCode += "        self.smx = nn.Softmax(dim=" + m_layer.softmax_param.axis.ToString() + ")" + Environment.NewLine;
                 strCode += "        self." + m_layer.name + " = nn.CrossEntropyLoss()" + Environment.NewLine;
+            }
             else if (gen == GENERATE.INITWEIGHTS)
             {
             }
             else
-                strCode += "        " + m_outputs.AsText + " = self." + m_layer.name + "(" + m_inputs.AsText + ")" + Environment.NewLine;
+            {
+                strCode += "        smx1 = self.smx(" + m_inputs.AsText + ")" + Environment.NewLine;
+                strCode += "        " + m_outputs.AsText + " = self." + m_layer.name + "(smx1, " + m_layer.bottom[1] + ")" + Environment.NewLine;
+            }
 
             return strCode;
         }
@@ -668,6 +865,7 @@ namespace MyCaffe.converter.pytorch
     {
         public AccuracyLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
         {
+            m_rgstrReturnValues.Add("self.accuracy", 2);
         }
 
         public override string Generate(GENERATE gen)
@@ -685,8 +883,9 @@ namespace MyCaffe.converter.pytorch
             }
             else
             {
-                strCode += "        self.accuracy_sum += torch.sum(" + m_inputs.AsText + ")" + Environment.NewLine;
-                strCode += "        self.accuracy_count += 1" + Environment.NewLine;
+                strCode += "        x1 = torch.argmax(" + m_inputs.AsText + ", dim=1)" + Environment.NewLine;
+                strCode += "        self.accuracy_sum += torch.sum(x1 == " + m_layer.bottom[1] + ")" + Environment.NewLine;
+                strCode += "        self.accuracy_count += len(x1)" + Environment.NewLine;
                 strCode += "        self.accuracy = self.accuracy_sum / self.accuracy_count" + Environment.NewLine;
             }
 
@@ -694,9 +893,10 @@ namespace MyCaffe.converter.pytorch
         }
     }
 
-
     class LayerInfo /** @private */
     {
+        protected Dictionary<string, int> m_rgstrReturnValues = new Dictionary<string, int>();
+        protected Dictionary<string, double> m_rgParameters = new Dictionary<string, double>();
         protected LayerParameter m_layer;
         protected VariableCollection m_inputs = new VariableCollection();
         protected VariableCollection m_outputs = new VariableCollection();
@@ -711,15 +911,28 @@ namespace MyCaffe.converter.pytorch
         public LayerInfo(LayerParameter layer, VariableCollection inputs)
         {
             m_layer = layer;
-            m_inputs = inputs;
+            m_inputs = inputs.Clone();
+
+            for (int i=0; i<layer.bottom.Count && i<m_inputs.Count; i++)
+            {
+                m_inputs[i].Name = layer.bottom[i];
+            }   
+
             m_outputs = m_inputs.Clone();
-            m_outputs[0].Name = layer.top[0];
+
+            for (int i = 0; i < layer.top.Count && i < m_outputs.Count; i++)
+            {
+                m_outputs[i].Name = layer.top[i];
+            }
         }
 
         public static LayerInfo Create(LayerParameter layer, VariableCollection inputs)
         {
             switch (layer.type)
             {
+                case LayerParameter.LayerType.DATA:
+                    return new DataLayerInfo(layer, inputs);
+
                 case LayerParameter.LayerType.CONVOLUTION:
                     return new ConvolutionLayerInfo(layer, inputs);
 
@@ -767,6 +980,19 @@ namespace MyCaffe.converter.pytorch
             }
         }
 
+        public Dictionary<string, int> ReturnValues
+        {
+            get { return m_rgstrReturnValues; }
+        }
+
+        public double? GetParameter(string strName)
+        {
+            if (!m_rgParameters.ContainsKey(strName))
+                return null;
+
+            return m_rgParameters[strName];
+        }
+
         public LayerParameter Layer
         {
             get { return m_layer; }
@@ -811,7 +1037,7 @@ namespace MyCaffe.converter.pytorch
         protected string initWeights(string strName, string strItem, FillerParameter filler)
         {
             string strCode = "";
-            string strType = getFiller(filler, strName + "." + strItem + ".data");
+            string strType = getFiller(filler, "self." + strName + "." + strItem + ".data");
 
             if (filler != null)
                 strCode += "        init." + strType + Environment.NewLine;
@@ -874,7 +1100,7 @@ namespace MyCaffe.converter.pytorch
 
             foreach (VariableInfo var in m_rgVariables)
             {
-                col.Add(var.Name, var.Shape);
+                col.Add(var.Name, new List<int>(var.Shape));
                 nIdx++;
 
                 if (nIdx >= nMax)
@@ -930,6 +1156,11 @@ namespace MyCaffe.converter.pytorch
         {
             m_strName = strName;
             m_rgShape = rgShape;
+        }
+
+        public VariableInfo Clone()
+        {
+            return new VariableInfo(m_strName, new List<int>(m_rgShape));
         }
 
         public string Name
