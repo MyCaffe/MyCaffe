@@ -173,13 +173,28 @@ namespace MyCaffe.converter.pytorch
             strCode += "        # apply augmentations to the image" + Environment.NewLine;
             strCode += "        if tfms == 0: # if validating" + Environment.NewLine;
             strCode += "           self.transform = albumentations.Compose([" + Environment.NewLine;
-            strCode += "               albumentations.Normalize(mean=[0.485,0.456,0.406],std=[0.229,0.224,0.225], always_apply=True)" + Environment.NewLine;
+
+            if (m_net.Net.layer[0].type == LayerParameter.LayerType.DATA && m_net.Net.layer[0].transform_param.scale != 1.0)
+                strCode += "               albumentations.ShiftScaleRotate(shift_limit=0.0,scale_limit=" + m_net.Net.layer[0].transform_param.scale.ToString() + ", rotate_limit=0, p=1.0)," + Environment.NewLine;
+
+            string strMean = getMean();
+            if (!string.IsNullOrEmpty(strMean))
+                strCode += "               albumentations.Normalize(mean=[" + strMean + "], always_apply=True)" + Environment.NewLine;
+
             strCode += "           ])" + Environment.NewLine;
             strCode += "        else: # if training" + Environment.NewLine;
             strCode += "           self.transform = albumentations.Compose([" + Environment.NewLine;
-            strCode += "               albumentations.HorizontalFlip(p=1.0)," + Environment.NewLine;
-            strCode += "               albumentations.ShiftScaleRotate(shift_limit=0.3,scale_limit=0.3,rotate_limit=30, p=1.0)," + Environment.NewLine;
-            strCode += "               albumentations.Normalize(mean=[0.485,0.456,0.406],std=[0.229,0.224,0.225], always_apply=True)" + Environment.NewLine;
+
+            if (m_net.Net.layer[0].type == LayerParameter.LayerType.DATA &&
+                m_net.Net.layer[0].transform_param.mirror)
+                strCode += "               albumentations.HorizontalFlip(p=1.0)," + Environment.NewLine;
+
+            if (m_net.Net.layer[0].type == LayerParameter.LayerType.DATA && m_net.Net.layer[0].transform_param.scale != 1.0)
+                strCode += "               albumentations.ShiftScaleRotate(shift_limit=0.0,scale_limit=" + m_net.Net.layer[0].transform_param.scale.ToString() + ", rotate_limit=0, p=1.0)," + Environment.NewLine;
+
+            if (!string.IsNullOrEmpty(strMean))
+                strCode += "               albumentations.Normalize(mean=[" + strMean + "], always_apply=True)" + Environment.NewLine;
+
             strCode += "           ])" + Environment.NewLine;
             strCode += Environment.NewLine;
             strCode += "    def __len__(self):" + Environment.NewLine;
@@ -189,12 +204,31 @@ namespace MyCaffe.converter.pytorch
             strCode += "        img = iio.imread(self.X[idx],pilmode=\'RGB\')" + Environment.NewLine;
             strCode += "        img = np.array(img).astype(float)" + Environment.NewLine;
             strCode += "        img = self.transform(image=img)['image']" + Environment.NewLine;
-            strCode += "        img = np.transpose(img, (2, 0, 1)).astype(np.float32)" + Environment.NewLine;
+
+            if (m_net.Net.layer[0].type == LayerParameter.LayerType.DATA &&
+                m_net.Net.layer[0].transform_param.color_order == TransformationParameter.COLOR_ORDER.RGB)
+                strCode += "        img = np.transpose(img, (2, 0, 1)).astype(np.float32)" + Environment.NewLine;
+
             strCode += "        label = self.y[idx]" + Environment.NewLine;
             strCode += "        return torch.tensor(img, dtype=torch.float), torch.tensor(label, dtype=torch.long)" + Environment.NewLine;
             strCode += Environment.NewLine;
 
             return strCode;
+        }
+
+        private string getMean()
+        {
+            string strMean = "";
+            if (m_net.Net.layer[0].type == LayerParameter.LayerType.DATA && m_net.Net.layer[0].transform_param != null && m_net.Net.layer[0].transform_param.mean_value.Count > 0)
+            {
+                strMean = m_net.Net.layer[0].transform_param.mean_value[0].ToString();
+                for (int i = 1; i < m_net.Net.layer[0].transform_param.mean_value.Count; i++)
+                {
+                    strMean += "," + m_net.Net.layer[0].transform_param.mean_value[i].ToString();
+                }
+            }
+
+            return strMean;
         }
 
         private string addTrainerClass()
@@ -219,6 +253,7 @@ namespace MyCaffe.converter.pytorch
             strCode += Environment.NewLine;
             strCode += "    def train(self, inputs, labels):" + Environment.NewLine;
             strCode += "        self.net.train()" + Environment.NewLine;
+            strCode += "        self.solver.zero_grad()" + Environment.NewLine;
             strCode += "        inputs = inputs.to(self.device)" + Environment.NewLine;
             strCode += "        labels = labels.to(self.device)" + Environment.NewLine;
             strCode += "        loss, acc = self.net(inputs, labels)" + Environment.NewLine;
@@ -281,13 +316,13 @@ namespace MyCaffe.converter.pytorch
             strCode += "model = " + m_net.Net.name + "()" + Environment.NewLine;
             strCode += "model.to(device)" + Environment.NewLine;
             strCode += "model.init_weights()" + Environment.NewLine;
-            strCode += "opt = optim." + getSolver() + "(filter(lambda p: p.requires_grad, list(model.parameters())), lr=" + m_solver.base_lr.ToString() + ")" + Environment.NewLine;
+            strCode += "opt = optim." + getSolver() + "(filter(lambda p: p.requires_grad, list(model.parameters())), " + getSolverParam() + ")" + Environment.NewLine;
             strCode += "trainer = Trainer(model, opt, device)" + Environment.NewLine;
             strCode += "trainer.seed_everything()" + Environment.NewLine;
             strCode += Environment.NewLine;
 
             strCode += "# Training" + Environment.NewLine;
-            strCode += "for epoch in range(" + m_solver.max_iter.ToString() + "):" + Environment.NewLine;
+            strCode += "for epoch in range(1, 10):" + Environment.NewLine;
             strCode += "    for i, (inputs, labels) in enumerate(train_loader):" + Environment.NewLine;
             strCode += "        loss, acc = trainer.train(inputs, labels)" + Environment.NewLine;
             strCode += "        print(\"Epoch: %d, Iter: %d, Loss: %f, Accuracy: %f\" % (epoch, i, loss, acc))" + Environment.NewLine;
@@ -300,6 +335,19 @@ namespace MyCaffe.converter.pytorch
             strCode += Environment.NewLine;
 
             return strCode;
+        }
+
+        private string getSolverParam()
+        {
+            string strParam = "lr = " + m_solver.base_lr.ToString();
+
+            if (m_solver.momentum != 0)
+                strParam += ", momentum = " + m_solver.momentum.ToString();
+
+            if (m_solver.weight_decay != 0)
+                strParam += ", weight_decay = " + m_solver.weight_decay.ToString();
+
+            return strParam;
         }
 
         private string getSolver()
