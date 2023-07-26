@@ -50,6 +50,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="layers\ActivationLayers.cs" />
+    <Compile Include="layers\CommonLayers.cs" />
+    <Compile Include="layers\DataLayers.cs" />
+    <Compile Include="layers\LossLayers.cs" />
+    <Compile Include="layers\NormalizationLayers.cs" />
+    <Compile Include="layers\TFT_Layers.cs" />
+    <Compile Include="layers\VisionLayers.cs" />
     <Compile Include="MyCaffeConversionControl.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -74,6 +81,7 @@
   <ItemGroup>
     <None Include="mycaffe.converter.pytorch.pfx" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PreBuildEvent>

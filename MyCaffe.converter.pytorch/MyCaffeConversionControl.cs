@@ -1,7 +1,9 @@
 ﻿using MyCaffe.basecode;
 using MyCaffe.common;
+using MyCaffe.converter.pytorch.layers;
 using MyCaffe.layers;
 using MyCaffe.param;
+using MyCaffe.param.gpt;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -26,7 +28,6 @@ namespace MyCaffe.converter.pytorch
         string m_strOriginalPath = null;
         NetworkInfo m_net;
         SolverInfo m_solver;
-
 
         /// <summary>
         /// The constructor.
@@ -412,6 +413,7 @@ namespace MyCaffe.converter.pytorch
             string strCode = "";
 
             strCode += addImports();
+            strCode += addClasses();
             strCode += addClass();
 
             return strCode;
@@ -430,6 +432,16 @@ namespace MyCaffe.converter.pytorch
             strCode += "import numpy as np" + Environment.NewLine;
             strCode += "import math" + Environment.NewLine;
             strCode += Environment.NewLine;
+
+            return strCode;
+        }
+
+        private string addClasses()
+        {
+            string strCode = m_layers.Generate(LayerInfo.GENERATE.CLASSES);
+
+            if (!string.IsNullOrEmpty(strCode))
+                strCode += Environment.NewLine;
 
             return strCode;
         }
@@ -575,374 +587,6 @@ namespace MyCaffe.converter.pytorch
         }
     }
 
-    class DataLayerInfo : LayerInfo /** @private */
-    {
-        public DataLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
-        {
-            m_rgParameters.Add("batch_size", layer.data_param.batch_size);
-        }
-
-        public override string Generate(GENERATE gen)
-        {
-            string strCode = "";
-            return strCode;
-        }
-    }
-
-    class ConvolutionLayerInfo : LayerInfo /** @private */
-    {
-        public ConvolutionLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
-        {
-            int nPad = (layer.convolution_param.pad != null && layer.convolution_param.pad.Count > 0) ? (int)layer.convolution_param.pad[0] : 0;
-            int nKernel = (layer.convolution_param.kernel_size != null && layer.convolution_param.kernel_size.Count > 0) ? (int)layer.convolution_param.kernel_size[0] : 1;
-            int nStride = (layer.convolution_param.stride != null && layer.convolution_param.stride.Count > 0) ? (int)layer.convolution_param.stride[0] : 1;
-
-            m_outputs[0].Shape[1] = (int)layer.convolution_param.num_output;
-            m_outputs[0].Shape[2] = (int)Math.Floor((double)(m_inputs[0].Shape[2] + 2 * nPad - nKernel) / nStride) + 1;
-            m_outputs[0].Shape[3] = (int)Math.Floor((double)(m_inputs[0].Shape[3] + 2 * nPad - nKernel) / nStride) + 1;
-        }
-
-        public override string Generate(GENERATE gen)
-        {
-            int nPad = (m_layer.convolution_param.pad != null && m_layer.convolution_param.pad.Count > 0) ? (int)m_layer.convolution_param.pad[0] : 0;
-            int nKernel = (m_layer.convolution_param.kernel_size != null && m_layer.convolution_param.kernel_size.Count > 0) ? (int)m_layer.convolution_param.kernel_size[0] : 1;
-            int nStride = (m_layer.convolution_param.stride != null && m_layer.convolution_param.stride.Count > 0) ? (int)m_layer.convolution_param.stride[0] : 1;
-            int nDilation = (m_layer.convolution_param.dilation != null && m_layer.convolution_param.dilation.Count > 0) ? (int)m_layer.convolution_param.dilation[0] : 1;
-
-            string strCode = "";
-            if (gen == GENERATE.DEFINITION)
-                strCode += "        self." + m_layer.name + " = nn.Conv2d(in_channels=" + m_inputs[0].Shape[1] + ", out_channels=" + m_layer.convolution_param.num_output.ToString() + ", kernel_size=" + nKernel.ToString() + ", stride=" + nStride.ToString() + ", padding=" + nPad.ToString() + ", dilation=" + nDilation.ToString() + ", groups=" + m_layer.convolution_param.group.ToString() + ", bias=" + m_layer.convolution_param.bias_term.ToString() + ")" + Environment.NewLine;
-            else if (gen == GENERATE.INITWEIGHTS)
-                strCode += initWeights(m_layer.name, m_layer.convolution_param.bias_term, m_layer.convolution_param.weight_filler, m_layer.convolution_param.bias_filler);
-            else
-                strCode += "        " + m_outputs.AsText + " = self." + m_layer.name + "(" + m_inputs.AsText + ")" + Environment.NewLine;
-
-            return strCode;
-        }
-    }
-
-    class PoolingLayerInfo : LayerInfo /** @private */
-    {
-        public PoolingLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
-        {
-            int nPad = (layer.pooling_param.pad != null && layer.pooling_param.pad.Count > 0) ? (int)layer.pooling_param.pad[0] : 0;
-            int nKernel = (layer.pooling_param.kernel_size != null && layer.pooling_param.kernel_size.Count > 0) ? (int)layer.pooling_param.kernel_size[0] : 1;
-            int nStride = (layer.pooling_param.stride != null && layer.pooling_param.stride.Count > 0) ? (int)layer.pooling_param.stride[0] : 1;
-
-            m_outputs[0].Shape[2] = (int)Math.Floor((double)(m_inputs[0].Shape[2] + 2 * nPad - nKernel) / nStride) + 1;
-            m_outputs[0].Shape[3] = (int)Math.Floor((double)(m_inputs[0].Shape[3] + 2 * nPad - nKernel) / nStride) + 1;
-        }
-
-        public override string Generate(GENERATE gen)
-        {
-            int nPad = (m_layer.pooling_param.pad != null && m_layer.pooling_param.pad.Count > 0) ? (int)m_layer.pooling_param.pad[0] : 0;
-            int nKernel = (m_layer.pooling_param.kernel_size != null && m_layer.pooling_param.kernel_size.Count > 0) ? (int)m_layer.pooling_param.kernel_size[0] : 1;
-            int nStride = (m_layer.pooling_param.stride != null && m_layer.pooling_param.stride.Count > 0) ? (int)m_layer.pooling_param.stride[0] : 1;
-            int nDilation = (m_layer.pooling_param.dilation != null && m_layer.pooling_param.dilation.Count > 0) ? (int)m_layer.pooling_param.dilation[0] : 1;
-
-            string strCode = "";
-            if (gen == GENERATE.DEFINITION)
-                strCode += "        self." + m_layer.name + " = nn.MaxPool2d(kernel_size=" + nKernel.ToString() + ", stride=" + nStride.ToString() + ", padding=" + nPad.ToString() + ", dilation=" + nDilation.ToString() + ")" + Environment.NewLine;
-            else if (gen == GENERATE.INITWEIGHTS)
-            {
-            }
-            else
-                strCode += "        " + m_outputs.AsText + " = self." + m_layer.name + "(" + m_inputs.AsText + ")" + Environment.NewLine;
-
-            return strCode;
-        }
-    }
-
-    class InnerProductLayerInfo : LayerInfo /** @private */
-    {
-        public InnerProductLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
-        {
-            m_outputs[0].Shape[1] = (int)layer.inner_product_param.num_output;
-            m_outputs[0].Shape[2] = 1;
-            m_outputs[0].Shape[3] = 1;
-        }
-
-        public override string Generate(GENERATE gen)
-        {
-            int nInFeatures = m_inputs[0].getCount(m_layer.inner_product_param.axis);
-            int nOutFeatures = (int)m_layer.inner_product_param.num_output;
-
-            string strCode = "";
-            if (gen == GENERATE.DEFINITION)
-                strCode += "        self." + m_layer.name + " = nn.Linear(in_features=" + nInFeatures + ", out_features=" + nOutFeatures + ", bias=" + m_layer.inner_product_param.bias_term.ToString() + ")" + Environment.NewLine;
-            else if (gen == GENERATE.INITWEIGHTS)
-                strCode += initWeights(m_layer.name, m_layer.inner_product_param.bias_term, m_layer.inner_product_param.weight_filler, m_layer.inner_product_param.bias_filler);
-            else
-            {
-                strCode += "        " + m_inputs.AsText + " = " + m_inputs.AsText + ".view(" + m_inputs.AsText + ".size(0), -1)" + Environment.NewLine;
-                strCode += "        " + m_outputs.AsText + " = self." + m_layer.name + "(" + m_inputs.AsText + ")" + Environment.NewLine;
-            }
-
-            return strCode;
-        }
-    }
-
-    class ConcatLayerInfo : LayerInfo /** @private */
-    {
-        public ConcatLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
-        {
-            m_outputs = m_inputs.Clone(1);
-            m_outputs[0].Name = layer.top[0];
-
-            int nCount = 0;
-
-            for (int i = 0; i < m_inputs.Count; i++)
-            {
-                nCount += m_inputs[i].Shape[layer.concat_param.axis];
-            }
-
-            m_outputs[0].Shape[layer.concat_param.axis] = nCount;
-        }
-
-        public override string Generate(GENERATE gen)
-        {
-            string strCode = "";
-            if (gen == GENERATE.DEFINITION)
-                strCode += "#       self." + m_layer.name + " = Concat(" + m_inputs.AsText + ")" + Environment.NewLine;
-            else if (gen == GENERATE.INITWEIGHTS)
-            {
-            }
-            else
-                strCode += "        " + m_outputs.AsText + " = torch.concat(" + m_inputs.AsText + ", dim=0)" + Environment.NewLine;
-
-            return strCode;
-        }
-    }
-
-    class LRNLayerInfo : LayerInfo /** @private */
-    {
-        public LRNLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
-        {
-        }
-
-        public override string Generate(GENERATE gen)
-        {
-            string strCode = "";
-            if (gen == GENERATE.DEFINITION)
-                strCode += "        self." + m_layer.name + " = nn.LocalResponseNorm(size=" + m_layer.lrn_param.local_size.ToString() + ", alpha=" + m_layer.lrn_param.alpha.ToString() + ", beta=" + m_layer.lrn_param.beta.ToString() + ", k=" + m_layer.lrn_param.k.ToString() + ")" + Environment.NewLine;
-            else if (gen == GENERATE.INITWEIGHTS)
-            {
-            }
-            else
-                strCode += "        " + m_outputs.AsText + " = self." + m_layer.name + "(" + m_inputs.AsText + ")" + Environment.NewLine;
-
-            return strCode;
-        }
-    }
-
-    class ReluLayerInfo : LayerInfo /** @private */
-    {
-        public ReluLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
-        {
-        }
-
-        public override string Generate(GENERATE gen)
-        {
-            string strCode = "";
-            if (gen == GENERATE.DEFINITION)
-                strCode += "        self." + m_layer.name + " = nn.ReLU()" + Environment.NewLine;
-            else if (gen == GENERATE.INITWEIGHTS)
-            {
-            }
-            else
-                strCode += "        " + m_outputs.AsText + " = self." + m_layer.name + "(" + m_inputs.AsText + ")" + Environment.NewLine;
-
-            return strCode;
-        }
-    }
-
-    class SigmoidLayerInfo : LayerInfo /** @private */
-    {
-        public SigmoidLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
-        {
-        }
-
-        public override string Generate(GENERATE gen)
-        {
-            string strCode = "";
-            if (gen == GENERATE.DEFINITION)
-                strCode += "        self." + m_layer.name + " = nn.Sigmoid()" + Environment.NewLine;
-            else if (gen == GENERATE.INITWEIGHTS)
-            {
-            }
-            else
-                strCode += "        " + m_outputs.AsText + " = self." + m_layer.name + "(" + m_inputs.AsText + ")" + Environment.NewLine;
-
-            return strCode;
-        }
-    }
-
-    class TanhLayerInfo : LayerInfo /** @private */
-    {
-        public TanhLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
-        {
-        }
-
-        public override string Generate(GENERATE gen)
-        {
-            string strCode = "";
-            if (gen == GENERATE.DEFINITION)
-                strCode += "        self." + m_layer.name + " = nn.Tanh()" + Environment.NewLine;
-            else if (gen == GENERATE.INITWEIGHTS) 
-            { 
-            }
-            else
-                strCode += "        " + m_outputs.AsText + " = self." + m_layer.name + "(" + m_inputs.AsText + ")" + Environment.NewLine;
-
-            return strCode;
-        }
-    }
-
-    class DropoutLayerInfo : LayerInfo /** @private */
-    {
-        public DropoutLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
-        {
-        }
-
-        public override string Generate(GENERATE gen)
-        {
-            string strCode = "";
-            if (gen == GENERATE.DEFINITION)
-                strCode += "        self." + m_layer.name + " = nn.Dropout(p=" + m_layer.dropout_param.dropout_ratio.ToString() + ")" + Environment.NewLine;
-            else if (gen == GENERATE.INITWEIGHTS) 
-            { 
-            }
-            else
-                strCode += "        " + m_outputs.AsText + " = self." + m_layer.name + "(" + m_inputs.AsText + ")" + Environment.NewLine;
-
-            return strCode;
-        }
-    }
-
-    class BatchNormLayerInfo : LayerInfo /** @private */
-    {
-        public BatchNormLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
-        {
-        }
-
-        public override string Generate(GENERATE gen)
-        {
-            string strCode = "";
-            if (gen == GENERATE.DEFINITION)
-                strCode += "        self." + m_layer.name + " = nn.BatchNorm2d(num_features=" + m_inputs[0].getCount(1).ToString() + ", eps=" + m_layer.batch_norm_param.eps.ToString() + ")" + Environment.NewLine;
-            else if (gen == GENERATE.INITWEIGHTS)
-            {
-            }
-            else
-                strCode += "        " + m_outputs.AsText + " = self." + m_layer.name + "(" + m_inputs.AsText + ")" + Environment.NewLine;
-
-            return strCode;
-        }
-    }
-
-    class LayerNormLayerInfo : LayerInfo /** @private */
-    {
-        public LayerNormLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
-        {
-        }
-
-        public override string Generate(GENERATE gen)
-        {
-            string strCode = "";
-            if (gen == GENERATE.DEFINITION)
-                strCode += "        self." + m_layer.name + " = nn.LayerNorm2d(num_features=" + m_inputs[0].getCount(2).ToString() + ", eps=" + m_layer.layer_norm_param.epsilon.ToString() + ")" + Environment.NewLine;
-            else if (gen == GENERATE.INITWEIGHTS)
-            {
-            }
-            else
-                strCode += "        " + m_outputs.AsText + " = self." + m_layer.name + "(" + m_inputs.AsText + ")" + Environment.NewLine;
-
-            return strCode;
-        }
-    }
-
-    class SoftmaxLayerInfo : LayerInfo /** @private */
-    {
-        public SoftmaxLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
-        {
-        }
-
-        public override string Generate(GENERATE gen)
-        {
-            string strCode = "";
-            if (gen == GENERATE.DEFINITION)
-                strCode += "        self." + m_layer.name + " = nn.Softmax(dim=" + m_layer.softmax_param.axis.ToString() + ")" + Environment.NewLine;
-            else if (gen == GENERATE.INITWEIGHTS)
-            {
-            }
-            else
-                strCode += "        " + m_outputs.AsText + " = self." + m_layer.name + "(" + m_inputs.AsText + ")" + Environment.NewLine;
-
-            return strCode;
-        }
-    }
-
-    class SoftmaxLossLayerInfo : SoftmaxLayerInfo /** @private */
-    {
-        public SoftmaxLossLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
-        {
-            m_rgstrReturnValues.Add("loss", 1);
-        }
-
-        public override string Generate(GENERATE gen)
-        {
-            string strCode = "";
-
-            if (gen == GENERATE.DEFINITION)
-            {
-                strCode += "        self.smx = nn.Softmax(dim=" + m_layer.softmax_param.axis.ToString() + ")" + Environment.NewLine;
-                strCode += "        self." + m_layer.name + " = nn.CrossEntropyLoss()" + Environment.NewLine;
-            }
-            else if (gen == GENERATE.INITWEIGHTS)
-            {
-            }
-            else
-            {
-                strCode += "        smx1 = self.smx(" + m_inputs.AsText + ")" + Environment.NewLine;
-                strCode += "        " + m_outputs.AsText + " = self." + m_layer.name + "(smx1, " + m_layer.bottom[1] + ")" + Environment.NewLine;
-            }
-
-            return strCode;
-        }
-    }
-
-    class AccuracyLayerInfo : LayerInfo /** @private */
-    {
-        public AccuracyLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
-        {
-            m_rgstrReturnValues.Add("self.accuracy", 2);
-        }
-
-        public override string Generate(GENERATE gen)
-        {
-            string strCode = "";
-            if (gen == GENERATE.DEFINITION)
-            {
-                strCode += "#        self." + m_layer.name + " = Accuracy(" + m_inputs.AsText + ")" + Environment.NewLine;
-                strCode += "        self.accuracy_sum = 0" + Environment.NewLine;
-                strCode += "        self.accuracy_count = 0" + Environment.NewLine;
-                strCode += "        self.accuracy = 0" + Environment.NewLine;
-            }
-            else if (gen == GENERATE.INITWEIGHTS)
-            {
-            }
-            else
-            {
-                strCode += "        x1 = torch.argmax(" + m_inputs.AsText + ", dim=1)" + Environment.NewLine;
-                strCode += "        self.accuracy_sum += torch.sum(x1 == " + m_layer.bottom[1] + ")" + Environment.NewLine;
-                strCode += "        self.accuracy_count += len(x1)" + Environment.NewLine;
-                strCode += "        self.accuracy = self.accuracy_sum / self.accuracy_count" + Environment.NewLine;
-            }
-
-            return strCode;
-        }
-    }
-
     class LayerInfo /** @private */
     {
         protected Dictionary<string, int> m_rgstrReturnValues = new Dictionary<string, int>();
@@ -953,6 +597,7 @@ namespace MyCaffe.converter.pytorch
 
         public enum GENERATE
         {
+            CLASSES,
             DEFINITION,
             INITWEIGHTS,
             FORWARD
@@ -1001,6 +646,9 @@ namespace MyCaffe.converter.pytorch
                 case LayerParameter.LayerType.RELU:
                     return new ReluLayerInfo(layer, inputs);
 
+                case LayerParameter.LayerType.ELU:
+                    return new ELULayerInfo(layer, inputs);
+
                 case LayerParameter.LayerType.SIGMOID:
                     return new SigmoidLayerInfo(layer, inputs);
 
@@ -1024,6 +672,9 @@ namespace MyCaffe.converter.pytorch
 
                 case LayerParameter.LayerType.ACCURACY:
                     return new AccuracyLayerInfo(layer, inputs);
+
+                case LayerParameter.LayerType.CHANNEL_EMBEDDING:
+                    return new ChannelEmbeddingLayerInfo(layer, inputs);
 
                 default:
                     return new LayerInfo(layer, inputs);
