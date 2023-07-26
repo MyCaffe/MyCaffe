@@ -764,10 +764,12 @@ namespace MyCaffe.basecode
         /// <param name="rg">Specifies the array.</param>
         /// <param name="nDecimals">Optionally, specifies the number of decimals (default = -1, ignored)</param>
         /// <param name="nIdxHighight">Optionally, specifies the index to highlight (default = -1, ignored)</param>
+        /// <param name="strStart">Optionally, specifies the start bracket (default = '{')</param>
+        /// <param name="strEnd">Optionally, specifies the end bracket (default = '}')</param>
         /// <returns>The string representation of the array is returned.</returns>
-        public static string ToString<T>(List<T> rg, int nDecimals = -1, int nIdxHighight = -1)
+        public static string ToString<T>(List<T> rg, int nDecimals = -1, int nIdxHighight = -1, string strStart = "{", string strEnd = "}")
         {
-            string strOut = "{";
+            string strOut = strStart;
 
             for (int i = 0; i < rg.Count; i++)
             {
@@ -801,7 +803,7 @@ namespace MyCaffe.basecode
             }
 
             strOut = strOut.TrimEnd(',');
-            strOut += "}";
+            strOut += strEnd;
 
             return strOut;
         }
