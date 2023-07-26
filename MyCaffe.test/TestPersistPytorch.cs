@@ -140,8 +140,8 @@ namespace MyCaffe.test
 
                 mycaffe.Load(Phase.TRAIN, prj);
 
-                string strPytorchModelFile = strTestPath + "\\lenet_from_mycaffe.model.py";
-                string strPytorchSolverFile = strTestPath + "\\lenet_from_mycaffe.solver.py";
+                string strPytorchModelFile = strTestPath + "\\lenet_from_mycaffe_model.py";
+                string strPytorchSolverFile = strTestPath + "\\lenet_from_mycaffe_solver.py";
 
                 if (File.Exists(strPytorchModelFile))
                     File.Delete(strPytorchModelFile);
@@ -149,7 +149,7 @@ namespace MyCaffe.test
                 if (File.Exists(strPytorchSolverFile))
                     File.Delete(strPytorchSolverFile);
 
-                MyCaffeModelData data = new MyCaffeModelData(prj.ModelDescription, null, null, prj.SolverDescription, new List<int>() {  1, 1, 28, 28 });
+                MyCaffeModelData data = new MyCaffeModelData(prj.ModelDescription, null, null, prj.SolverDescription, new List<int>() {  100, 3, 28, 28 });
                 convert.ConvertMyCaffeToPyTorch(mycaffe.Cuda, mycaffe.Log, data, strPytorchModelFile, strPytorchSolverFile);
             }
             catch (Exception excpt)
