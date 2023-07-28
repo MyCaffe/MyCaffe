@@ -183,6 +183,57 @@ namespace MyCaffe.converter.pytorch.layers
         }
     }
 
+    class GluLayerInfo : LayerInfo /** @private */
+    {
+        public GluLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
+        {
+        }
+
+        public override string Generate(GENERATE gen)
+        {
+            string strCode = "";
+            if (gen == GENERATE.CLASSES)
+            {
+                strCode += generateGluClass(m_layer);
+            }
+            if (gen == GENERATE.DEFINITION)
+            {
+                strCode += "        self." + m_layer.name + " = GLU(input_dim=" + m_layer.glu_param.input_dim.ToString() + ")" + Environment.NewLine;
+            }
+            else if (gen == GENERATE.INITWEIGHTS)
+            {
+                strCode += initWeights(m_layer.name + ".fc1", m_layer.glu_param.bias_term, m_layer.glu_param.weight_filler, m_layer.glu_param.bias_filler);
+                strCode += initWeights(m_layer.name + ".fc2", m_layer.glu_param.bias_term, m_layer.glu_param.weight_filler, m_layer.glu_param.bias_filler);
+            }
+            else if (gen == GENERATE.FORWARD)
+                strCode += "        " + m_outputs.AsText + " = self." + m_layer.name + "(" + m_inputs.AsText + ")" + Environment.NewLine;
+
+            return strCode;
+        }
+
+        private string generateGluClass(LayerParameter p)
+        {
+            string strCode = "";
+
+            strCode += "class GLU(nn.Module):" + Environment.NewLine;
+            strCode += "    def __init__(self, input_dim: int):" + Environment.NewLine;
+            strCode += "        super(GLU, self).__init__()" + Environment.NewLine;
+            strCode += "        self.input_dim = input_dim" + Environment.NewLine;
+            strCode += "        self.fc1 = nn.Linear(self.input_dim, self.input_dim)" + Environment.NewLine;
+            strCode += "        self.fc2 = nn.Linear(self.input_dim, self.input_dim)" + Environment.NewLine;
+            strCode += "        self.sigmoid = nn.Sigmoid()" + Environment.NewLine;
+            strCode += Environment.NewLine;
+            strCode += "    def forward(self, x: torch.Tensor) -> torch.Tensor:" + Environment.NewLine;
+            strCode += "        x = self.fc1(x)" + Environment.NewLine;
+            strCode += "        sig = self.sigmoid(x)" + Environment.NewLine;
+            strCode += "        x = self.fc2(x)" + Environment.NewLine;
+            strCode += "        return torch.mul(sig, x)" + Environment.NewLine;    
+            strCode += Environment.NewLine;
+
+            return strCode;
+        }
+    }
+
     class GrnLayerInfo : LayerInfo /** @private */
     {
         public GrnLayerInfo(LayerParameter layer, VariableCollection inputs) : base(layer, inputs)
@@ -194,16 +245,83 @@ namespace MyCaffe.converter.pytorch.layers
             string strCode = "";
             if (gen == GENERATE.CLASSES)
             {
+                strCode += generateGrnClass(m_layer);
             }
             if (gen == GENERATE.DEFINITION)
             {
-                strCode += "        self." + m_layer.name + " = nn.Softmax(dim=" + m_layer.softmax_param.axis.ToString() + ")" + Environment.NewLine;
+                strCode += "        self." + m_layer.name + " = GLU(input_dim=" + m_layer.glu_param.input_dim.ToString() + ")" + Environment.NewLine;
             }
             else if (gen == GENERATE.INITWEIGHTS)
             {
+                strCode += initWeights(m_layer.name + ".project_residual", true, m_layer.grn_param.weight_filler, m_layer.grn_param.bias_filler);
+                strCode += initWeights(m_layer.name + ".fc1", true, m_layer.grn_param.weight_filler, m_layer.grn_param.bias_filler);
+                strCode += initWeights(m_layer.name + ".context_projection", true, m_layer.grn_param.weight_filler, m_layer.grn_param.bias_filler);
+                strCode += initWeights(m_layer.name + ".fc2", true, m_layer.grn_param.weight_filler, m_layer.grn_param.bias_filler);
+                strCode += initWeights(m_layer.name + ".gate.fc1", true, m_layer.grn_param.weight_filler, m_layer.grn_param.bias_filler);
+                strCode += initWeights(m_layer.name + ".gate.fc2", true, m_layer.grn_param.weight_filler, m_layer.grn_param.bias_filler);
             }
             else if (gen == GENERATE.FORWARD)
                 strCode += "        " + m_outputs.AsText + " = self." + m_layer.name + "(" + m_inputs.AsText + ")" + Environment.NewLine;
+
+            return strCode;
+        }
+
+        private string generateGrnClass(LayerParameter p)
+        {
+            string strCode = "";
+
+            strCode += "class GRN(nn.Module):" + Environment.NewLine;
+            strCode += "    def __init__(self, input_dim: int, hidden_dim: int, output_dim: int, dropout: Optional[float] = 0.05, context_dim: Optional[int] = None, batch_first: Optional[bool] = True, activation_relu: Optional[bool] = False):" + Environment.NewLine;
+            strCode += "        super(GRN, self).__init__()" + Environment.NewLine;
+            strCode += "        self.input_dim = input_dim" + Environment.NewLine;
+            strCode += "        self.hidden_dim = hidden_dim" + Environment.NewLine;
+            strCode += "        self.output_dim = output_dim" + Environment.NewLine;
+            strCode += "        self.context_dim = context_dim" + Environment.NewLine;
+            strCode += "        self.batch_first = batch_first" + Environment.NewLine;
+            strCode += "        self.dropout = dropout" + Environment.NewLine;
+            strCode += Environment.NewLine;
+            strCode += "        self.project_residual: bool = self.input_dim != self.output_dim" + Environment.NewLine;
+            strCode += "        if self.project_residual:" + Environment.NewLine;
+            strCode += "            self.skip_layer = TimeDistributed(LinearEx(self.input_dim, self.output_dim))" + Environment.NewLine;
+            strCode += Environment.NewLine;
+            strCode += "        self.fc1 = TimeDistributed(nn.Linear(self.input_dim, self.hidden_dim), batch_first=batch_first)" + Environment.NewLine;
+            strCode += Environment.NewLine;
+            strCode += "        if self.context_dim is not None:" + Environment.NewLine;
+            strCode += "            self.context_projection = TimeDistributed(nn.Linear(self.context_dim, self.hidden_dim, bias=Fals), batch_first=batch_first)" + Environment.NewLine;
+            strCode += Environment.NewLine;
+            strCode += "        if activation_relu:" + Environment.NewLine;
+            strCode += "            self.activation = nn.ReLU()" + Environment.NewLine;
+            strCode += "        else:" + Environment.NewLine;
+            strCode += "            self.activation = nn.ELU()" + Environment.NewLine;
+            strCode += Environment.NewLine;
+            strCode += "        self.fc2 = TimeDistributed(nn.Linear(self.hidden_dim, self.output_dim), batch_first=batch_first)" + Environment.NewLine;
+            strCode += Environment.NewLine;
+            strCode += "        self.dropout = nn.Dropout(self.dropout)" + Environment.NewLine;
+            strCode += "        self.gate = TimeDistributed(GLU(self.output_dim), batch_first=batch_first)" + Environment.NewLine;
+            strCode += "        self.layernorm = TimeDistributed(LayerNorm(self.output_dim), batch_first=batch_first)" + Environment.NewLine;
+            strCode += Environment.NewLine;
+            strCode += "    def forward(self, x: torch.Tensor, context: Optional[Tensor] = None) -> torch.Tensor:" + Environment.NewLine;
+            strCode += "        if self.project_residual:" + Environment.NewLine;
+            strCode += "            residual = self.skip_layer(x)" + Environment.NewLine;
+            strCode += "        else:" + Environment.NewLine;
+            strCode += "            residual = x" + Environment.NewLine;
+            strCode += Environment.NewLine;
+            strCode += "        x = self.fc1(x)" + Environment.NewLine;
+            strCode += "        if context is not None:" + Environment.NewLine;
+            strCode += "            context = self.context_projection(context)" + Environment.NewLine;
+            strCode += "            x = x + context" + Environment.NewLine;
+            strCode += Environment.NewLine;
+            strCode += "        x = self.activation(x)" + Environment.NewLine;
+            strCode += Environment.NewLine;
+            strCode += "        x = self.fc2(x)" + Environment.NewLine;
+            strCode += Environment.NewLine;
+            strCode += "        x = self.dropout(x)" + Environment.NewLine;
+            strCode += "        x = self.gate(x)" + Environment.NewLine;
+            strCode += "        x = x + residual" + Environment.NewLine;
+            strCode += "        x = self.layernorm(x)" + Environment.NewLine;
+            strCode += Environment.NewLine;
+            strCode += "        return x" + Environment.NewLine;
+            strCode += Environment.NewLine;
 
             return strCode;
         }
