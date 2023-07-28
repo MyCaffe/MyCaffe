@@ -22,7 +22,7 @@ namespace MyCaffe.test
     public class TestPersistPytorch
     {
         [TestMethod]
-        public void TestConvertLeNetToPytorch()
+        public void TestConvertLeNettoPytorch()
         {
             PersistPytorchTest test = new PersistPytorchTest();
 
@@ -31,7 +31,26 @@ namespace MyCaffe.test
                 foreach (IPersistPytorchTest t in test.Tests)
                 {
                     if (t.DataType == DataType.FLOAT)
-                        t.TestConvertLeNetToPytorch();
+                        t.TestConvertLeNettoPytorch();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestConvertTFTtoPytorch()
+        {
+            PersistPytorchTest test = new PersistPytorchTest();
+
+            try
+            {
+                foreach (IPersistPytorchTest t in test.Tests)
+                {
+                    if (t.DataType == DataType.FLOAT)
+                        t.TestConvertTFTtoPytorch();
                 }
             }
             finally
@@ -44,7 +63,8 @@ namespace MyCaffe.test
 
     interface IPersistPytorchTest : ITest
     {
-        void TestConvertLeNetToPytorch();
+        void TestConvertLeNettoPytorch();
+        void TestConvertTFTtoPytorch();
     }
 
     class PersistPytorchTest : TestBase
@@ -116,7 +136,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestConvertLeNetToPytorch()
+        public void TestConvertLeNettoPytorch()
         {
             string strTestPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\Pytorch";
             if (!Directory.Exists(strTestPath))
@@ -150,7 +170,53 @@ namespace MyCaffe.test
                     File.Delete(strPytorchSolverFile);
 
                 MyCaffeModelData data = new MyCaffeModelData(prj.ModelDescription, null, null, prj.SolverDescription, new List<int>() {  100, 3, 28, 28 });
-                convert.ConvertMyCaffeToPyTorch(mycaffe.Cuda, mycaffe.Log, data, strPytorchModelFile, strPytorchSolverFile);
+                convert.ConvertMyCaffeToPyTorch(mycaffe.Cuda, mycaffe.Log, data, strPytorchModelFile, strPytorchSolverFile, true);
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                mycaffe.Dispose();
+                convert.Dispose();
+            }
+        }
+
+        public void TestConvertTFTtoPytorch()
+        {
+            string strTestPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\Pytorch";
+            if (!Directory.Exists(strTestPath))
+                Directory.CreateDirectory(strTestPath);
+
+            string strModelPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\tft\\TFT_electricity";
+            MyCaffeConversionControl<T> convert = new MyCaffeConversionControl<T>();
+
+            SettingsCaffe s = new SettingsCaffe();
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, new CancelEvent());
+
+            try
+            {
+                ProjectEx prj = new ProjectEx("LeNet");
+                prj.SolverDescription = loadTextFile(strModelPath + "\\tft_electricity_solver.prototxt");
+                prj.ModelDescription = loadTextFile(strModelPath + "\\tft_electricity_train_test.prototxt");
+
+                DatasetFactory factory = new DatasetFactory();
+                prj.SetDataset(factory.LoadDataset("TFT.electricity"));
+
+                mycaffe.Load(Phase.TRAIN, prj);
+
+                string strPytorchModelFile = strTestPath + "\\tft_electricity_from_mycaffe_model.py";
+                string strPytorchSolverFile = strTestPath + "\\tft_electricity_from_mycaffe_solver.py";
+
+                if (File.Exists(strPytorchModelFile))
+                    File.Delete(strPytorchModelFile);
+
+                if (File.Exists(strPytorchSolverFile))
+                    File.Delete(strPytorchSolverFile);
+
+                MyCaffeModelData data = new MyCaffeModelData(prj.ModelDescription, null, null, prj.SolverDescription, new List<int>() { 100, 3, 28, 28 });
+                convert.ConvertMyCaffeToPyTorch(mycaffe.Cuda, mycaffe.Log, data, strPytorchModelFile, strPytorchSolverFile, true);
             }
             catch (Exception excpt)
             {
