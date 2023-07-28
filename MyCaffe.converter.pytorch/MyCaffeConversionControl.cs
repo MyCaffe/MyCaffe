@@ -56,7 +56,7 @@ namespace MyCaffe.converter.pytorch
         /// <param name="data">Specifies the MyCaffe model data including the model description, the weights and optionally, the image mean.</param>
         /// <param name="strModelFile">Specifies the .py output file for the model.</param>
         /// <param name="strOptimizerFile">Specifies the .py output file for the optimizer.</param>
-        public void ConvertMyCaffeToPyTorch(CudaDnn<T> cuda, Log log, MyCaffeModelData data, string strModelFile, string strOptimizerFile)
+        public void ConvertMyCaffeToPyTorch(CudaDnn<T> cuda, Log log, MyCaffeModelData data, string strModelFile, string strOptimizerFile, bool bAddComments)
         {
             m_strOriginalPath = Path.GetDirectoryName(strModelFile);
 
@@ -67,12 +67,12 @@ namespace MyCaffe.converter.pytorch
 
             using (StreamWriter sw = new StreamWriter(strModelFile))
             {
-                sw.Write(m_net.Generate());
+                sw.Write(m_net.Generate(bAddComments));
             }
 
             using (StreamWriter sw = new StreamWriter(strOptimizerFile))
             {
-                sw.Write(m_solver.Generate(strModelFile));
+                sw.Write(m_solver.Generate(strModelFile, bAddComments));
             }
         }
     }
@@ -93,7 +93,7 @@ namespace MyCaffe.converter.pytorch
             get { return m_solver; }
         }
 
-        public string Generate(string strModelFile)
+        public string Generate(string strModelFile, bool bAddComments)
         {
             string strCode = "";
 
@@ -408,18 +408,19 @@ namespace MyCaffe.converter.pytorch
             }
         }
 
-        public string Generate()
+        public string Generate(bool bAddComments)
         {
             string strCode = "";
 
-            strCode += addImports();
-            strCode += addClasses();
-            strCode += addClass();
+            strCode += addCredits();
+            strCode += addImports(bAddComments);
+            strCode += addClasses(bAddComments);
+            strCode += addClass(bAddComments);
 
             return strCode;
         }
 
-        private string addImports()
+        private string addImports(bool bAddComments)
         {
             string strCode = "";
 
@@ -431,14 +432,36 @@ namespace MyCaffe.converter.pytorch
             strCode += "import torch.nn.init as init" + Environment.NewLine;
             strCode += "import numpy as np" + Environment.NewLine;
             strCode += "import math" + Environment.NewLine;
+            strCode += "from typing import List, Dict, Tuple, Optional" + Environment.NewLine;
             strCode += Environment.NewLine;
 
             return strCode;
         }
 
-        private string addClasses()
+        public string addCredits()
         {
-            string strCode = m_layers.Generate(LayerInfo.GENERATE.CLASSES);
+            string strCode = "";
+            string strCredits = m_layers.Generate(LayerInfo.GENERATE.CREDITS, true);
+
+            if (!string.IsNullOrEmpty(strCredits))
+            {
+                strCode += "# -----------------------------------------------------------------------------" + Environment.NewLine;
+                strCode += "# " + strCredits;
+
+                if (!strCode.EndsWith(Environment.NewLine))
+                    strCode += Environment.NewLine;
+
+                strCode += "# -----------------------------------------------------------------------------" + Environment.NewLine;
+                strCode += Environment.NewLine;
+                strCode += Environment.NewLine;
+            }
+
+            return strCode;
+        }
+
+        private string addClasses(bool bAddComments)
+        {
+            string strCode = m_layers.Generate(LayerInfo.GENERATE.CLASSES, bAddComments);
 
             if (!string.IsNullOrEmpty(strCode))
                 strCode += Environment.NewLine;
@@ -446,50 +469,61 @@ namespace MyCaffe.converter.pytorch
             return strCode;
         }
 
-        private string addClass()
+        private string addClass(bool bAddComments)
         {
             string strCode = "";
 
-            strCode += "# Define the model class." + Environment.NewLine;
+            if (bAddComments)
+                strCode += "# Define the model class." + Environment.NewLine;
+
             strCode += "class " + m_net.name + "(nn.Module):" + Environment.NewLine;
-            strCode += addConstructor();
-            strCode += addInitWeights();
-            strCode += addForward();
+            strCode += addConstructor(bAddComments);
+            strCode += addInitWeights(bAddComments);
+            strCode += addForward(bAddComments);
             strCode += Environment.NewLine;
 
             return strCode;
         }
 
-        private string addConstructor()
+        private string addConstructor(bool bAddComments)
         {
-            string strCode = "    # The constructor." + Environment.NewLine;
+            string strCode = "";
+
+            if (bAddComments)
+                strCode += "    # The constructor." + Environment.NewLine;
 
             strCode += "    def __init__(self):" + Environment.NewLine;
             strCode += "        super(" + m_net.name + ", self).__init__()" + Environment.NewLine;
-            strCode += m_layers.Generate(LayerInfo.GENERATE.DEFINITION);
+            strCode += m_layers.Generate(LayerInfo.GENERATE.DEFINITION, bAddComments);
             strCode += Environment.NewLine;
             return strCode;
         }
 
-        private string addInitWeights()
+        private string addInitWeights(bool bAddComments)
         {
-            string strCode = "    # Initialize the weights." + Environment.NewLine;
+            string strCode = "";
+            
+            if (bAddComments)
+                strCode += "    # Initialize the weights." + Environment.NewLine;
 
             strCode += "    def init_weights(self):" + Environment.NewLine;
-            strCode += m_layers.Generate(LayerInfo.GENERATE.INITWEIGHTS);
+            strCode += m_layers.Generate(LayerInfo.GENERATE.INITWEIGHTS, bAddComments);
             strCode += Environment.NewLine;
             return strCode;
         }
 
-        private string addForward()
+        private string addForward(bool bAddComments)
         {
-            string strCode = "    # The forward method." + Environment.NewLine;
+            string strCode = "";
+            
+            if (bAddComments)
+                strCode += "    # The forward method." + Environment.NewLine;
 
             string strX = m_net.layer[0].top[0];
             string strY = m_net.layer[0].top[1];
 
             strCode += "    def forward(self, " + strX + ", " + strY + "):" + Environment.NewLine;
-            strCode += m_layers.Generate(LayerInfo.GENERATE.FORWARD);
+            strCode += m_layers.Generate(LayerInfo.GENERATE.FORWARD, bAddComments);
             strCode += "        return " + m_layers.GetReturnValues() + Environment.NewLine;
             strCode += Environment.NewLine;
             return strCode;
@@ -519,12 +553,13 @@ namespace MyCaffe.converter.pytorch
         {
         }
 
-        public string Generate(LayerInfo.GENERATE gen)
+        public string Generate(LayerInfo.GENERATE gen, bool bAddComments)
         {
             string strCode = "";
             for (int i = 0; i < m_rgLayers.Count; i++)
             {
                 LayerInfo layer = m_rgLayers[i];
+                layer.AddComments = bAddComments;
                 strCode += layer.Generate(gen);
             }
             return strCode;
@@ -576,6 +611,10 @@ namespace MyCaffe.converter.pytorch
             }
 
             List<KeyValuePair<string, int>> rgRv1 = rgRv.OrderBy(p => p.Value).ToList();
+
+            if (rgRv1.Count == 0)
+                return "# Missing Return Value";
+
             string strReturn = rgRv1[0].Key;
 
             for (int i=1; i<rgRv1.Count; i++)
@@ -594,9 +633,11 @@ namespace MyCaffe.converter.pytorch
         protected LayerParameter m_layer;
         protected VariableCollection m_inputs = new VariableCollection();
         protected VariableCollection m_outputs = new VariableCollection();
+        protected bool m_bAddComments = false;
 
         public enum GENERATE
         {
+            CREDITS,
             CLASSES,
             DEFINITION,
             INITWEIGHTS,
@@ -625,8 +666,30 @@ namespace MyCaffe.converter.pytorch
         {
             switch (layer.type)
             {
+                /// Data Layes
+                /// 
                 case LayerParameter.LayerType.DATA:
                     return new DataLayerInfo(layer, inputs);
+
+
+                /// Common Layers
+                /// 
+
+                case LayerParameter.LayerType.CONCAT:
+                    return new ConcatLayerInfo(layer, inputs);
+
+                case LayerParameter.LayerType.SPLIT:
+                    return new SplitLayerInfo(layer, inputs);
+
+                case LayerParameter.LayerType.INNERPRODUCT:
+                    return new InnerProductLayerInfo(layer, inputs);
+
+                case LayerParameter.LayerType.LSTM:
+                    return new LSTMLayerInfo(layer, inputs);
+
+
+                /// Vision Layers
+                /// 
 
                 case LayerParameter.LayerType.CONVOLUTION:
                     return new ConvolutionLayerInfo(layer, inputs);
@@ -634,14 +697,9 @@ namespace MyCaffe.converter.pytorch
                 case LayerParameter.LayerType.POOLING:
                     return new PoolingLayerInfo(layer, inputs);
 
-                case LayerParameter.LayerType.INNERPRODUCT:
-                    return new InnerProductLayerInfo(layer, inputs);
 
-                case LayerParameter.LayerType.CONCAT:
-                    return new ConcatLayerInfo(layer, inputs);
-
-                case LayerParameter.LayerType.LRN:
-                    return new LRNLayerInfo(layer, inputs);
+                /// Activation Layers
+                /// 
 
                 case LayerParameter.LayerType.RELU:
                     return new ReluLayerInfo(layer, inputs);
@@ -658,14 +716,25 @@ namespace MyCaffe.converter.pytorch
                 case LayerParameter.LayerType.DROPOUT:
                     return new DropoutLayerInfo(layer, inputs);
 
+                case LayerParameter.LayerType.SOFTMAX:
+                    return new SoftmaxLayerInfo(layer, inputs);
+
+
+                /// Normalization Layers
+                /// 
+
+                case LayerParameter.LayerType.LRN:
+                    return new LRNLayerInfo(layer, inputs);
+
                 case LayerParameter.LayerType.BATCHNORM:
                     return new BatchNormLayerInfo(layer, inputs);
 
                 case LayerParameter.LayerType.LAYERNORM:
                     return new LayerNormLayerInfo(layer, inputs);
 
-                case LayerParameter.LayerType.SOFTMAX:
-                    return new SoftmaxLayerInfo(layer, inputs);
+
+                /// Loss Layers
+                /// 
 
                 case LayerParameter.LayerType.SOFTMAXWITH_LOSS:
                     return new SoftmaxLossLayerInfo(layer, inputs);
@@ -673,12 +742,41 @@ namespace MyCaffe.converter.pytorch
                 case LayerParameter.LayerType.ACCURACY:
                     return new AccuracyLayerInfo(layer, inputs);
 
+
+                /// TFT Layers
+
+                case LayerParameter.LayerType.DATA_TEMPORAL:
+                    return new DataTemporalLayerInfo(layer, inputs);
+
                 case LayerParameter.LayerType.CHANNEL_EMBEDDING:
                     return new ChannelEmbeddingLayerInfo(layer, inputs);
+
+                case LayerParameter.LayerType.GLU:
+                    return new GLULayerInfo(layer, inputs);
+
+                case LayerParameter.LayerType.GRN:
+                    return new GRNLayerInfo(layer, inputs);
+
+                case LayerParameter.LayerType.VARSELNET:
+                    return new VarSelNetLayerInfo(layer, inputs);
+
+                case LayerParameter.LayerType.GATEADDNORM:
+                    return new GateAddNormLayerInfo(layer, inputs);
+
+                case LayerParameter.LayerType.MULTIHEAD_ATTENTION_INTERP:
+                    return new MultiheadAttentionInterpLayerInfo(layer, inputs);
+
+                case LayerParameter.LayerType.RESHAPE_TEMPORAL:
+                    return new ReshapeTemporalLayerInfo(layer, inputs);
 
                 default:
                     return new LayerInfo(layer, inputs);
             }
+        }
+
+        protected static string generateBar()
+        {
+            return "# -----------------------------------------------------------------------------" + Environment.NewLine;
         }
 
         public Dictionary<string, int> ReturnValues
@@ -709,6 +807,12 @@ namespace MyCaffe.converter.pytorch
             get { return m_outputs; }
         }
 
+        public bool AddComments
+        {
+            get { return m_bAddComments; }
+            set { m_bAddComments = value; }
+        }
+
         public virtual string Generate(GENERATE gen)
         {
             string strCode = "";
@@ -716,37 +820,37 @@ namespace MyCaffe.converter.pytorch
                 strCode += "#        self." + m_layer.name + " = nn." + m_layer.type.ToString() + "()   # Not Supported" + Environment.NewLine;
             else if (gen == GENERATE.INITWEIGHTS)
                 strCode += "#        self." + m_layer.name + ".apply(weights_init)" + Environment.NewLine;
-            else
+            else if (gen == GENERATE.FORWARD)
                 strCode += "#        " + m_outputs.AsText + " = self." + m_layer.name + "(" + m_inputs.AsText + ")  # Not Supported" + Environment.NewLine;
 
             return strCode;
         }
 
-        protected string initWeights(string strName, bool bBias, FillerParameter weightFiller, FillerParameter biasFiller)
+        protected static string initWeights(string strIndent, string strName, bool bBias, FillerParameter weightFiller, FillerParameter biasFiller)
         {
             string strCode = "";
 
             if (weightFiller != null)
-                strCode += initWeights(strName, "weight", weightFiller);
+                strCode += initWeights(strIndent, strName, "weight", weightFiller);
 
             if (bBias && biasFiller != null)
-                strCode += initWeights(strName, "bias", biasFiller);
+                strCode += initWeights(strIndent, strName, "bias", biasFiller);
 
             return strCode;
         }
 
-        protected string initWeights(string strName, string strItem, FillerParameter filler)
+        protected static string initWeights(string strIndent, string strName, string strItem, FillerParameter filler)
         {
             string strCode = "";
             string strType = getFiller(filler, "self." + strName + "." + strItem + ".data");
 
             if (filler != null)
-                strCode += "        init." + strType + Environment.NewLine;
+                strCode += strIndent + "        init." + strType + Environment.NewLine;
 
             return strCode;
         }
 
-        protected string getFiller(FillerParameter filler, string strName)
+        protected static string getFiller(FillerParameter filler, string strName)
         {
             if (filler == null)
                 return "uniform_(" + strName + ", a=" + filler.min.ToString() + ", b=" + filler.max.ToString() + ")";
