@@ -31,7 +31,7 @@ namespace MyCaffe.converter.pytorch.layers
             if (gen == GENERATE.DEFINITION)
                 strCode += "        self." + m_layer.name + " = nn.Conv2d(in_channels=" + m_inputs[0].Shape[1] + ", out_channels=" + m_layer.convolution_param.num_output.ToString() + ", kernel_size=" + nKernel.ToString() + ", stride=" + nStride.ToString() + ", padding=" + nPad.ToString() + ", dilation=" + nDilation.ToString() + ", groups=" + m_layer.convolution_param.group.ToString() + ", bias=" + m_layer.convolution_param.bias_term.ToString() + ")" + Environment.NewLine;
             else if (gen == GENERATE.INITWEIGHTS)
-                strCode += initWeights(m_layer.name, m_layer.convolution_param.bias_term, m_layer.convolution_param.weight_filler, m_layer.convolution_param.bias_filler);
+                strCode += initWeights("", m_layer.name, m_layer.convolution_param.bias_term, m_layer.convolution_param.weight_filler, m_layer.convolution_param.bias_filler);
             else if (gen == GENERATE.FORWARD)
                 strCode += "        " + m_outputs.AsText + " = self." + m_layer.name + "(" + m_inputs.AsText + ")" + Environment.NewLine;
 
