@@ -1378,6 +1378,9 @@ namespace MyCaffe.common
             CUDA_GELU_FWD = 600,
             CUDA_GELU_BWD = 601,
 
+            CUDA_SILU_FWD = 605,
+            CUDA_SILU_BWD = 606,
+
             CUDA_MTX_SET_DIAGONAL = 700,
             CUDA_MTX_SET_DIAGONAL2 = 701,
             CUDA_MTX_ADD_VECTOR = 702,
@@ -9004,6 +9007,48 @@ namespace MyCaffe.common
                 m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_GELU_BWD, null, m_param.AsLong(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, (bEnableBertVersion) ? 1 : 0));
             else
                 m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_GELU_BWD, null, m_param.AsLong(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, (bEnableBertVersion) ? 1 : 0));
+        }
+
+        /// <summary>
+        /// Performs the Sigmoid-weighted Linear Unit (SiLU) activation forward pass in Cuda.
+        /// </summary>
+        /// <remarks>
+        /// Computes the SiLU non-linearity @f$ y  = x * sigmoid(x) @f$
+        ///                                 @f$ y' = sigmoid(x) * (1 + x * (1 - sigmoid(x)) @f$
+        /// 
+        /// @see [Brief Review - SiLU: Sigmoid-weighted Linear Unit](https://sh-tsang.medium.com/review-silu-sigmoid-weighted-linear-unit-be4bc943624d) by Sik-Ho Tsang, 2022, Medium.
+        /// </remarks>
+        /// <param name="nCount">Specifies the number of items in the bottom and top data.</param>
+        /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
+        /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
+        public void silu_fwd(int nCount, long hBottomData, long hTopData)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_SILU_FWD, null, m_param.AsLong(nCount, hBottomData, hTopData));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_SILU_FWD, null, m_param.AsLong(nCount, hBottomData, hTopData));
+        }
+
+        /// <summary>
+        /// Performs the Sigmoid-weighted Linear Unit (SiLU) activation backward pass in Cuda.
+        /// </summary>
+        /// <remarks>
+        /// Computes the SiLU non-linearity @f$ y  = x * sigmoid(x) @f$
+        ///                                 @f$ y' = sigmoid(x) * (1 + x * (1 - sigmoid(x)) @f$
+        /// 
+        /// @see [Brief Review - SiLU: Sigmoid-weighted Linear Unit](https://sh-tsang.medium.com/review-silu-sigmoid-weighted-linear-unit-be4bc943624d) by Sik-Ho Tsang, 2022, Medium.
+        /// </remarks>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="hTopDiff">Specifies a handle to the top diff in GPU memory.</param>
+        /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
+        /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
+        /// <param name="hBottomData">Specifies a handle tot he bottom data in GPU memory.</param>
+        public void silu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_SILU_BWD, null, m_param.AsLong(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_SILU_BWD, null, m_param.AsLong(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData));
         }
 
         /// <summary>

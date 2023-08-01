@@ -770,6 +770,12 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, lon
 		case CUDA_FN_GELU_BWD:
 			return m_device.cuda_gelu_bwd(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
+		case CUDA_FN_SILU_FWD:
+			return m_device.cuda_silu_fwd(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDA_FN_SILU_BWD:
+			return m_device.cuda_silu_bwd(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
 		case CUDA_FN_SIGMOID_FWD:
 			return m_device.cuda_sigmoid_fwd(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
@@ -1835,6 +1841,12 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_GELU_BWD:
 		return "CUDA_FN_GELU_BWD";
+
+	case CUDA_FN_SILU_FWD:
+		return "CUDA_FN_SILU_FWD";
+
+	case CUDA_FN_SILU_BWD:
+		return "CUDA_FN_SILU_BWD";
 
 	case CUDA_FN_SIGMOID_FWD:
 		return "CUDA_FN_SIGMOID_FWD";

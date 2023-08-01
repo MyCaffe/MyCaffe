@@ -9707,7 +9707,6 @@ long Math<T>::gelu_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff, lo
 template long Math<double>::gelu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, bool bUseBertVersion);
 template long Math<float>::gelu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, bool bUseBertVersion);
 
-
 /// Computes the serf non-linearity @f$ f(x) = x erf(\ln( 1 + \exp(x) )) @f$.
 /// @see [Serf: Towards better training of deep neural networks using log-Softplus ERror activation Function](https://arxiv.org/pdf/2108.09598.pdf) by Sayan Nag and Mayukh Bhattacharyya, 2021.
 /// Also note, log1p(x) = log(1 + x)                                         
@@ -9829,6 +9828,15 @@ long Math<T>::serf_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff, lo
 template long Math<double>::serf_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, double dfThreshold);
 template long Math<float>::serf_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, float fThreshold);
 
+__device__ float sigmoid(float x)
+{
+	return 0.5f * tanhf(0.5f * x) + 0.5f;
+}
+
+__device__ double sigmoid(double x)
+{
+	return 0.5 * tanh(0.5 * x) + 0.5;
+}
 
 template<typename T>
 __global__ void sigmoid_fwd_kernel(int n, T* in, T* out)
@@ -9902,6 +9910,99 @@ long Math<T>::sigmoid_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff)
 
 template long Math<double>::sigmoid_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff);
 template long Math<float>::sigmoid_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff);
+
+
+/// The SiLULayer implements the Sigmoid-weighted Linear Unit (SiLU) activation forward function 
+/// Computes the SiLU non-linearity @f$ y  = x * sigmoid(x) @f$
+///                                 @f$ y' = sigmoid(x) * (1 + x * (1 - sigmoid(x)) @f$
+/// 
+/// @see [Brief Review - SiLU: Sigmoid-weighted Linear Unit](https://sh-tsang.medium.com/review-silu-sigmoid-weighted-linear-unit-be4bc943624d) by Sik-Ho Tsang, 2022, Medium.
+template<typename T>
+__global__ void silu_fwd_kernel(int n, const T* in, T* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const T x = in[i];
+		const T sigx = sigmoid(x);
+		out[i] = x * sigx;
+	}
+}
+
+template <class T>
+long Math<T>::silu_fwd(int n, long hBottomData, long hTopData)
+{
+	LONG lErr;
+	MemoryItem* pBottomData;
+	MemoryItem* pTopData;
+
+	if (lErr = m_pMemCol->GetData(hBottomData, &pBottomData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hTopData, &pTopData))
+		return lErr;
+
+	T* bottom_data = (T*)pBottomData->Data();
+	T* top_data = (T*)pTopData->Data();
+
+	silu_fwd_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::silu_fwd(int nCount, long hBottomData, long hTopData);
+template long Math<float>::silu_fwd(int nCount, long hBottomData, long hTopData);
+
+
+/// The SiLULayer implements the Sigmoid-weighted Linear Unit (SiLU) activation backward function 
+/// Computes the SiLU non-linearity @f$ y  = x * sigmoid(x) @f$
+///                                 @f$ y' = sigmoid(x) * (1 + x * (1 - sigmoid(x)) @f$
+/// 
+/// @see [Brief Review - SiLU: Sigmoid-weighted Linear Unit](https://sh-tsang.medium.com/review-silu-sigmoid-weighted-linear-unit-be4bc943624d) by Sik-Ho Tsang, 2022, Medium.
+template<typename T>
+__global__ void silu_bwd_kernel(const int n, const T* in_diff, T* out_data, T* out_diff, const T* in_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const T x = in_data[i];
+		const T sigx = sigmoid(x);
+		const T grad = sigx * (1 + x * (1 - sigx));
+		out_diff[i] = in_diff[i] * grad;
+	}
+}
+
+template <class T>
+long Math<T>::silu_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData)
+{
+	LONG lErr;
+	MemoryItem* pTopDiff;
+	MemoryItem* pTopData;
+	MemoryItem* pBottomDiff;
+	MemoryItem* pBottomData;
+
+	if (lErr = m_pMemCol->GetData(hTopDiff, &pTopDiff))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hTopData, &pTopData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBottomDiff, &pBottomDiff))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBottomData, &pBottomData))
+		return lErr;
+
+	T* top_diff = (T*)pTopDiff->Data();
+	T* top_data = (T*)pTopData->Data();
+	T* bottom_diff = (T*)pBottomDiff->Data();
+	T* bottom_data = (T*)pBottomData->Data();
+
+	silu_bwd_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::silu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
+template long Math<float>::silu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
 
 
 template<typename T>

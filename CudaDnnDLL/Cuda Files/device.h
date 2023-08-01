@@ -509,6 +509,9 @@ class Device
 		long cuda_gelu_fwd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long cuda_gelu_bwd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 
+		long cuda_silu_fwd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long cuda_silu_bwd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+
 		long cuda_serf_fwd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long cuda_serf_bwd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 
@@ -3023,6 +3026,38 @@ inline long Device<T>::cuda_gelu_bwd(long lInput, T* pfInput, long llInput, LONG
 	bool bUseBertVersion = (plInput[5] != 0) ? true : false;
 
 	return m_math.gelu_bwd(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData, bUseBertVersion);
+}
+
+template <class T>
+inline long Device<T>::cuda_silu_fwd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 3, 3))
+		return lErr;
+
+	int nCount = (int)plInput[0];
+	long hBottomData = (long)plInput[1];
+	long hTopData = (long)plInput[2];
+
+	return m_math.silu_fwd(nCount, hBottomData, hTopData);
+}
+
+template <class T>
+inline long Device<T>::cuda_silu_bwd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 5, 5))
+		return lErr;
+
+	int nCount = (int)plInput[0];
+	long hTopDiff = (long)plInput[1];
+	long hTopData = (long)plInput[2];
+	long hBottomDiff = (long)plInput[3];
+	long hBottomData = (long)plInput[4];
+
+	return m_math.silu_bwd(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData);
 }
 
 template <class T>

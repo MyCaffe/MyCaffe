@@ -294,6 +294,9 @@ class Math
 		long gelu_fwd(int nCount, long hBottomData, long hTopData, bool bUseBertVersion);
 		long gelu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, bool bUseBertVersion);
 
+		long silu_fwd(int nCount, long hBottomData, long hTopData);
+		long silu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
+
 		long serf_fwd(int nCount, long hBottomData, long hTopData, T fThreshold);
 		long serf_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, T fThreshold);
 
