@@ -297,6 +297,9 @@ class Math
 		long silu_fwd(int nCount, long hBottomData, long hTopData);
 		long silu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
 
+		long softplus_fwd(int nCount, long hBottomData, long hTopData);
+		long softplus_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
+
 		long serf_fwd(int nCount, long hBottomData, long hTopData, T fThreshold);
 		long serf_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, T fThreshold);
 

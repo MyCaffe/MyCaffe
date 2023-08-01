@@ -430,6 +430,8 @@ const int CUDA_FN_GELU_FWD = 600;
 const int CUDA_FN_GELU_BWD = 601;
 const int CUDA_FN_SILU_FWD = 605;
 const int CUDA_FN_SILU_BWD = 606;
+const int CUDA_FN_SOFTPLUS_FWD = 610;
+const int CUDA_FN_SOFTPLUS_BWD = 611;
 
 const int CUDA_FN_MTX_SET_DIAGONAL = 700;
 const int CUDA_FN_MTX_SET_DIAGONAL2 = 701;

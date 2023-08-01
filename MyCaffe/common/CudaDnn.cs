@@ -1381,6 +1381,9 @@ namespace MyCaffe.common
             CUDA_SILU_FWD = 605,
             CUDA_SILU_BWD = 606,
 
+            CUDA_SOFTPLUS_FWD = 610,
+            CUDA_SOFTPLUS_BWD = 611,
+
             CUDA_MTX_SET_DIAGONAL = 700,
             CUDA_MTX_SET_DIAGONAL2 = 701,
             CUDA_MTX_ADD_VECTOR = 702,
@@ -9049,6 +9052,49 @@ namespace MyCaffe.common
                 m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_SILU_BWD, null, m_param.AsLong(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData));
             else
                 m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_SILU_BWD, null, m_param.AsLong(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData));
+        }
+
+
+        /// <summary>
+        /// Performs the Softplus function forward, a smooth approximation of the ReLU function
+        /// </summary>
+        /// <remarks>
+        /// Computes the SiLU non-linearity @f$ y  = log(1 + e^x) @f$
+        ///                                 @f$ y' = sigmoid(x) @f$
+        /// 
+        /// @see [Softplus function - Smooth approximation of the ReLU function](https://neuralthreads.medium.com/softplus-function-smooth-approximation-of-the-relu-function-6a85f92a98e6) by neuralthreds, 2021, Medium.
+        /// </remarks>
+        /// <param name="nCount">Specifies the number of items in the bottom and top data.</param>
+        /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
+        /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
+        public void softplus_fwd(int nCount, long hBottomData, long hTopData)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_SOFTPLUS_FWD, null, m_param.AsLong(nCount, hBottomData, hTopData));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_SOFTPLUS_FWD, null, m_param.AsLong(nCount, hBottomData, hTopData));
+        }
+
+        /// <summary>
+        /// Performs the Softplus function backward, a smooth approximation of the ReLU function
+        /// </summary>
+        /// <remarks>
+        /// Computes the SiLU non-linearity @f$ y  = log(1 + e^x) @f$
+        ///                                 @f$ y' = sigmoid(x) @f$
+        /// 
+        /// @see [Softplus function - Smooth approximation of the ReLU function](https://neuralthreads.medium.com/softplus-function-smooth-approximation-of-the-relu-function-6a85f92a98e6) by neuralthreds, 2021, Medium.
+        /// </remarks>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="hTopDiff">Specifies a handle to the top diff in GPU memory.</param>
+        /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
+        /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
+        /// <param name="hBottomData">Specifies a handle tot he bottom data in GPU memory.</param>
+        public void softplus_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_SOFTPLUS_BWD, null, m_param.AsLong(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_SOFTPLUS_BWD, null, m_param.AsLong(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData));
         }
 
         /// <summary>

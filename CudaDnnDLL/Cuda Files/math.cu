@@ -10005,6 +10005,106 @@ template long Math<double>::silu_bwd(int nCount, long hTopDiff, long hTopData, l
 template long Math<float>::silu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
 
 
+/// <summary>
+/// Performs the Softplus function forward, a smooth approximation of the ReLU function
+/// </summary>
+/// <remarks>
+/// Computes the SiLU non-linearity @f$ y  = log(1 + e^x) @f$
+///                                 @f$ y' = sigmoid(x) @f$
+/// 
+/// @see [Softplus function - Smooth approximation of the ReLU function](https://neuralthreads.medium.com/softplus-function-smooth-approximation-of-the-relu-function-6a85f92a98e6) by neuralthreds, 2021, Medium.
+/// </remarks>
+template<typename T>
+__global__ void softplus_fwd_kernel(int n, const T* in, T* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const T x = in[i];
+		const T expx = exp(x);
+		out[i] = log(1 + expx);
+	}
+}
+
+template <class T>
+long Math<T>::softplus_fwd(int n, long hBottomData, long hTopData)
+{
+	LONG lErr;
+	MemoryItem* pBottomData;
+	MemoryItem* pTopData;
+
+	if (lErr = m_pMemCol->GetData(hBottomData, &pBottomData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hTopData, &pTopData))
+		return lErr;
+
+	T* bottom_data = (T*)pBottomData->Data();
+	T* top_data = (T*)pTopData->Data();
+
+	softplus_fwd_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::softplus_fwd(int nCount, long hBottomData, long hTopData);
+template long Math<float>::softplus_fwd(int nCount, long hBottomData, long hTopData);
+
+
+/// <summary>
+/// Performs the Softplus function forward, a smooth approximation of the ReLU function
+/// </summary>
+/// <remarks>
+/// Computes the SiLU non-linearity @f$ y  = log(1 + e^x) @f$
+///                                 @f$ y' = sigmoid(x) @f$
+/// 
+/// @see [Softplus function - Smooth approximation of the ReLU function](https://neuralthreads.medium.com/softplus-function-smooth-approximation-of-the-relu-function-6a85f92a98e6) by neuralthreds, 2021, Medium.
+/// </remarks>
+template<typename T>
+__global__ void softplus_bwd_kernel(const int n, const T* in_diff, T* out_data, T* out_diff, const T* in_data)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const T x = in_data[i];
+		const T grad = sigmoid(x);
+		out_diff[i] = in_diff[i] * grad;
+	}
+}
+
+template <class T>
+long Math<T>::softplus_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData)
+{
+	LONG lErr;
+	MemoryItem* pTopDiff;
+	MemoryItem* pTopData;
+	MemoryItem* pBottomDiff;
+	MemoryItem* pBottomData;
+
+	if (lErr = m_pMemCol->GetData(hTopDiff, &pTopDiff))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hTopData, &pTopData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBottomDiff, &pBottomDiff))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBottomData, &pBottomData))
+		return lErr;
+
+	T* top_diff = (T*)pTopDiff->Data();
+	T* top_data = (T*)pTopData->Data();
+	T* bottom_diff = (T*)pBottomDiff->Data();
+	T* bottom_data = (T*)pBottomData->Data();
+
+	softplus_bwd_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::softplus_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
+template long Math<float>::softplus_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
+
+
 template<typename T>
 __global__ void swish_bwd_kernel(int n, const T* in_diff, const T* out_data, const T* sigmoid_output_data, T* out_diff, const T beta)
 {
