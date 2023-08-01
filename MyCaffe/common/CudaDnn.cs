@@ -1384,6 +1384,9 @@ namespace MyCaffe.common
             CUDA_SOFTPLUS_FWD = 610,
             CUDA_SOFTPLUS_BWD = 611,
 
+            CUDA_LECUN_FWD = 615,
+            CUDA_LECUN_BWD = 616,
+
             CUDA_MTX_SET_DIAGONAL = 700,
             CUDA_MTX_SET_DIAGONAL2 = 701,
             CUDA_MTX_ADD_VECTOR = 702,
@@ -9059,7 +9062,7 @@ namespace MyCaffe.common
         /// Performs the Softplus function forward, a smooth approximation of the ReLU function
         /// </summary>
         /// <remarks>
-        /// Computes the SiLU non-linearity @f$ y  = log(1 + e^x) @f$
+        /// Computes the SoftPlus non-linearity @f$ y  = log(1 + e^x) @f$
         ///                                 @f$ y' = sigmoid(x) @f$
         /// 
         /// @see [Softplus function - Smooth approximation of the ReLU function](https://neuralthreads.medium.com/softplus-function-smooth-approximation-of-the-relu-function-6a85f92a98e6) by neuralthreds, 2021, Medium.
@@ -9079,7 +9082,7 @@ namespace MyCaffe.common
         /// Performs the Softplus function backward, a smooth approximation of the ReLU function
         /// </summary>
         /// <remarks>
-        /// Computes the SiLU non-linearity @f$ y  = log(1 + e^x) @f$
+        /// Computes the SoftPlus non-linearity @f$ y  = log(1 + e^x) @f$
         ///                                 @f$ y' = sigmoid(x) @f$
         /// 
         /// @see [Softplus function - Smooth approximation of the ReLU function](https://neuralthreads.medium.com/softplus-function-smooth-approximation-of-the-relu-function-6a85f92a98e6) by neuralthreds, 2021, Medium.
@@ -9095,6 +9098,48 @@ namespace MyCaffe.common
                 m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_SOFTPLUS_BWD, null, m_param.AsLong(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData));
             else
                 m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_SOFTPLUS_BWD, null, m_param.AsLong(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData));
+        }
+
+        /// <summary>
+        /// Performs the LeCun's Tanh function forward
+        /// </summary>
+        /// <remarks>
+        /// Computes the LeCun non-linearity @f$ y  = 1.7159 * tanh(2/3 * x) @f$
+        ///                                  @f$ y' = 1.7159 * 2/3 * (1 - tanh(2/3 * x)^2) @f$
+        /// 
+        /// @see [Lecun's Tanh](https://paperswithcode.com/method/lecun-s-tanh) by PapersWithCode.
+        /// </remarks>
+        /// <param name="nCount">Specifies the number of items in the bottom and top data.</param>
+        /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
+        /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
+        public void lecun_fwd(int nCount, long hBottomData, long hTopData)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_LECUN_FWD, null, m_param.AsLong(nCount, hBottomData, hTopData));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_LECUN_FWD, null, m_param.AsLong(nCount, hBottomData, hTopData));
+        }
+
+        /// <summary>
+        /// Performs the LeCun's Tanh function backward
+        /// </summary>
+        /// <remarks>
+        /// Computes the LeCun non-linearity @f$ y  = 1.7159 * tanh(2/3 * x) @f$
+        ///                                  @f$ y' = 1.7159 * 2/3 * (1 - tanh(2/3 * x)^2) @f$
+        /// 
+        /// @see [Lecun's Tanh](https://paperswithcode.com/method/lecun-s-tanh) by PapersWithCode.
+        /// </remarks>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="hTopDiff">Specifies a handle to the top diff in GPU memory.</param>
+        /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
+        /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
+        /// <param name="hBottomData">Specifies a handle tot he bottom data in GPU memory.</param>
+        public void lecun_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_LECUN_BWD, null, m_param.AsLong(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_LECUN_BWD, null, m_param.AsLong(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData));
         }
 
         /// <summary>

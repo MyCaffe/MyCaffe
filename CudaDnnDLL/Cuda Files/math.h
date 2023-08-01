@@ -300,6 +300,9 @@ class Math
 		long softplus_fwd(int nCount, long hBottomData, long hTopData);
 		long softplus_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
 
+		long lecun_fwd(int nCount, long hBottomData, long hTopData);
+		long lecun_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
+
 		long serf_fwd(int nCount, long hBottomData, long hTopData, T fThreshold);
 		long serf_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData, T fThreshold);
 

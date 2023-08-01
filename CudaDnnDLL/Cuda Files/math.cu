@@ -10105,6 +10105,111 @@ template long Math<double>::softplus_bwd(int nCount, long hTopDiff, long hTopDat
 template long Math<float>::softplus_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
 
 
+/// <summary>
+/// Performs the LeCun's Tanh function forward
+/// </summary>
+/// <remarks>
+/// Computes the LeCun non-linearity @f$ y  = 1.7159 * tanh(2/3 * x) @f$
+///                                  @f$ y' = 1.7159 * 2/3 * (1 - tanh(2/3 * x)^2) @f$
+/// 
+/// @see [Lecun's Tanh](https://paperswithcode.com/method/lecun-s-tanh) by PapersWithCode.
+/// </remarks>
+template<typename T>
+__global__ void lecun_fwd_kernel(int n, const T* in, T* out)
+{
+	const T fTwoThirds = (T)2.0 / (T)3.0;
+
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const T x = in[i];
+		out[i] = 1.7159 * tanh(fTwoThirds * x);
+	}
+}
+
+template <class T>
+long Math<T>::lecun_fwd(int n, long hBottomData, long hTopData)
+{
+	LONG lErr;
+	MemoryItem* pBottomData;
+	MemoryItem* pTopData;
+
+	if (lErr = m_pMemCol->GetData(hBottomData, &pBottomData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hTopData, &pTopData))
+		return lErr;
+
+	T* bottom_data = (T*)pBottomData->Data();
+	T* top_data = (T*)pTopData->Data();
+
+	lecun_fwd_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::lecun_fwd(int nCount, long hBottomData, long hTopData);
+template long Math<float>::lecun_fwd(int nCount, long hBottomData, long hTopData);
+
+
+/// <summary>
+/// Performs the LeCun's Tanh function backward
+/// </summary>
+/// <remarks>
+/// Computes the LeCun non-linearity @f$ y  = 1.7159 * tanh(2/3 * x) @f$
+///                                  @f$ y' = 1.7159 * 2/3 * (1 - tanh(2/3 * x)^2) @f$
+/// 
+/// @see [Lecun's Tanh](https://paperswithcode.com/method/lecun-s-tanh) by PapersWithCode.
+/// </remarks>
+template<typename T>
+__global__ void lecun_bwd_kernel(const int n, const T* in_diff, T* out_data, T* out_diff, const T* in_data)
+{
+	const T fTwoThirds = (T)2.0 / (T)3.0;
+	const T fFactor = 1.1759 * fTwoThirds;
+
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const T x = in_data[i];
+		const T tanhx = tanh(fTwoThirds * x);
+		const T grad = fFactor * (1 - (tanhx * tanhx));
+		out_diff[i] = in_diff[i] * grad;
+	}
+}
+
+template <class T>
+long Math<T>::lecun_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData)
+{
+	LONG lErr;
+	MemoryItem* pTopDiff;
+	MemoryItem* pTopData;
+	MemoryItem* pBottomDiff;
+	MemoryItem* pBottomData;
+
+	if (lErr = m_pMemCol->GetData(hTopDiff, &pTopDiff))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hTopData, &pTopData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBottomDiff, &pBottomDiff))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBottomData, &pBottomData))
+		return lErr;
+
+	T* top_diff = (T*)pTopDiff->Data();
+	T* top_data = (T*)pTopData->Data();
+	T* bottom_diff = (T*)pBottomDiff->Data();
+	T* bottom_data = (T*)pBottomData->Data();
+
+	lecun_bwd_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, top_diff, top_data, bottom_diff, bottom_data);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::lecun_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
+template long Math<float>::lecun_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, long hBottomData);
+
+
 template<typename T>
 __global__ void swish_bwd_kernel(int n, const T* in_diff, const T* out_data, const T* sigmoid_output_data, T* out_diff, const T beta)
 {

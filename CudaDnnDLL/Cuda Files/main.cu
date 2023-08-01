@@ -782,6 +782,12 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, lon
 		case CUDA_FN_SOFTPLUS_BWD:
 			return m_device.cuda_softplus_bwd(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
+		case CUDA_FN_LECUN_FWD:
+			return m_device.cuda_lecun_fwd(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDA_FN_LECUN_BWD:
+			return m_device.cuda_lecun_bwd(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
 		case CUDA_FN_SIGMOID_FWD:
 			return m_device.cuda_sigmoid_fwd(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
@@ -1859,6 +1865,12 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_SOFTPLUS_BWD:
 		return "CUDA_FN_SOFTPLUS_BWD";
+
+	case CUDA_FN_LECUN_FWD:
+		return "CUDA_FN_LECUN_FWD";
+
+	case CUDA_FN_LECUN_BWD:
+		return "CUDA_FN_LECUN_BWD";
 
 	case CUDA_FN_SIGMOID_FWD:
 		return "CUDA_FN_SIGMOID_FWD";

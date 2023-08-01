@@ -515,6 +515,9 @@ class Device
 		long cuda_softplus_fwd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long cuda_softplus_bwd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 
+		long cuda_lecun_fwd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long cuda_lecun_bwd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+
 		long cuda_serf_fwd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long cuda_serf_bwd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 
@@ -3093,6 +3096,38 @@ inline long Device<T>::cuda_softplus_bwd(long lInput, T* pfInput, long llInput, 
 	long hBottomData = (long)plInput[4];
 
 	return m_math.softplus_bwd(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData);
+}
+
+template <class T>
+inline long Device<T>::cuda_lecun_fwd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 3, 3))
+		return lErr;
+
+	int nCount = (int)plInput[0];
+	long hBottomData = (long)plInput[1];
+	long hTopData = (long)plInput[2];
+
+	return m_math.lecun_fwd(nCount, hBottomData, hTopData);
+}
+
+template <class T>
+inline long Device<T>::cuda_lecun_bwd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 5, 5))
+		return lErr;
+
+	int nCount = (int)plInput[0];
+	long hTopDiff = (long)plInput[1];
+	long hTopData = (long)plInput[2];
+	long hBottomDiff = (long)plInput[3];
+	long hBottomData = (long)plInput[4];
+
+	return m_math.lecun_bwd(nCount, hTopDiff, hTopData, hBottomDiff, hBottomData);
 }
 
 template <class T>
