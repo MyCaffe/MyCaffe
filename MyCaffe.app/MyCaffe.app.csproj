@@ -283,6 +283,34 @@
       <Project>{4e057228-71d3-4575-ae50-71e6fc970501}</Project>
       <Name>MyCaffe.layers.alpha</Name>
     </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.layers.beta\MyCaffe.layers.beta.csproj">
+      <Project>{db6986db-ab61-4bd5-828e-a8eda0a6f56e}</Project>
+      <Name>MyCaffe.layers.beta</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.layers.gpt\MyCaffe.layers.gpt.csproj">
+      <Project>{e9c65155-a603-4730-ab2b-2bc180ad4a65}</Project>
+      <Name>MyCaffe.layers.gpt</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.layers.hdf5\MyCaffe.layers.hdf5.csproj">
+      <Project>{03210d74-58ae-488e-98d5-7851deca448a}</Project>
+      <Name>MyCaffe.layers.hdf5</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.layers.lnn\MyCaffe.layers.lnn.csproj">
+      <Project>{81671c60-be5b-4539-a8ef-2369c1d106b3}</Project>
+      <Name>MyCaffe.layers.lnn</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.layers.nt\MyCaffe.layers.nt.csproj">
+      <Project>{bac34be4-818e-4f59-821b-fecfd6c797aa}</Project>
+      <Name>MyCaffe.layers.nt</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.layers.ssd\MyCaffe.layers.ssd.csproj">
+      <Project>{679fabca-e889-428c-a59e-261af1af1cf2}</Project>
+      <Name>MyCaffe.layers.ssd</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.layers.tft\MyCaffe.layers.tft.csproj">
+      <Project>{70fb1619-1888-4a66-a075-5ee39909a77c}</Project>
+      <Name>MyCaffe.layers.tft</Name>
+    </ProjectReference>
     <ProjectReference Include="..\MyCaffe.python\MyCaffe.python.csproj">
       <Project>{0ED28C56-F959-44D0-8E99-DB6C0BE75C3A}</Project>
       <Name>MyCaffe.python</Name>
