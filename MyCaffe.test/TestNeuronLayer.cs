@@ -9,6 +9,7 @@ using MyCaffe.layers;
 using MyCaffe.fillers;
 using MyCaffe.basecode;
 using MyCaffe.db.image;
+using static HDF5DotNet.H5T;
 
 namespace MyCaffe.test
 {
@@ -50,6 +51,115 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestSiLU()
+        {
+            SiLULayerTest test = new SiLULayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (INeuronLayerTest t in test.Tests)
+                {
+                    t.TestForward();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSiLUGradient()
+        {
+            SiLULayerTest test = new SiLULayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (INeuronLayerTest t in test.Tests)
+                {
+                    t.TestGradient();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSoftPlus()
+        {
+            SoftPlusLayerTest test = new SoftPlusLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (INeuronLayerTest t in test.Tests)
+                {
+                    t.TestForward();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSoftPlusGradient()
+        {
+            SoftPlusLayerTest test = new SoftPlusLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (INeuronLayerTest t in test.Tests)
+                {
+                    t.TestGradient();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestLeCun()
+        {
+            LeCunLayerTest test = new LeCunLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (INeuronLayerTest t in test.Tests)
+                {
+                    t.TestForward();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestLeCunGradient()
+        {
+            LeCunLayerTest test = new LeCunLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (INeuronLayerTest t in test.Tests)
+                {
+                    t.TestGradient();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
 
         [TestMethod]
         public void TestSigmoid()
@@ -1383,6 +1493,312 @@ namespace MyCaffe.test
     {
         void TestForward();
         void TestGradient();
+    }
+
+
+    class SiLULayerTest : TestBase
+    {
+        public SiLULayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
+            : base("SiLU Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
+        {
+        }
+
+        protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
+        {
+            if (dt == common.DataType.DOUBLE)
+                return new SiLULayerTest<double>(strName, nDeviceID, engine);
+            else
+                return new SiLULayerTest<float>(strName, nDeviceID, engine);
+        }
+    }
+
+    class SiLULayerTest<T> : TestEx<T>, INeuronLayerTest
+    {
+        public SiLULayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
+            : base(strName, new List<int>() { 2, 3, 4, 5 }, nDeviceID)
+        {
+            m_engine = engine;
+        }
+
+        protected override void dispose()
+        {
+            base.dispose();
+        }
+
+        protected override FillerParameter getFillerParam()
+        {
+            FillerParameter p = new FillerParameter("uniform");
+            return p;
+        }
+
+        private double sigmoid(double dfX)
+        {
+            return 0.5 * Math.Tanh(0.5 * dfX) + 0.5;
+        }
+
+        private double silu(double dfX)
+        {
+            double dfSigmoid = sigmoid(dfX);
+            return dfX * dfSigmoid;
+        }
+
+        private double silu_grad(double dfX)
+        {
+            double dfSigmoid = sigmoid(dfX);
+            return dfSigmoid * (1 + dfX * (1 - dfSigmoid));
+        }
+
+        public void TestForward()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.SILU);
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
+
+            try
+            {
+                m_log.CHECK(layer.layer_param.type == LayerParameter.LayerType.SILU, "The layer type should be SiLU."); 
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // Now, check values
+                double[] rgBottom = convert(Bottom.update_cpu_data());
+                double[] rgTop = convert(Top.update_cpu_data());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfTop = rgTop[i];
+                    double dfBottom = rgBottom[i];
+                    double dfExpected = silu(dfBottom);
+
+                    m_log.EXPECT_NEAR(dfTop, dfExpected, (m_dt == common.DataType.DOUBLE) ? 1e-15 : 1e-7);
+
+                    // check that we squashed the value between 0 and 1.
+                    m_log.CHECK(dfTop >= 0.0, "The top value at " + i.ToString() + " should be greater than or equal to 0.");
+                    m_log.CHECK(dfTop <= 1.0, "The top value at " + i.ToString() + " should be less than or equal to 1.");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
+            }
+        }
+
+        public void TestGradient()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.SILU);
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
+
+            try
+            {
+                m_log.CHECK(layer.layer_param.type == LayerParameter.LayerType.SILU, "The layer type should be SiLU.");
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
+        }
+    }
+
+    class SoftPlusLayerTest : TestBase
+    {
+        public SoftPlusLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
+            : base("SoftPlus Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
+        {
+        }
+
+        protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
+        {
+            if (dt == common.DataType.DOUBLE)
+                return new SoftPlusLayerTest<double>(strName, nDeviceID, engine);
+            else
+                return new SoftPlusLayerTest<float>(strName, nDeviceID, engine);
+        }
+    }
+
+    class SoftPlusLayerTest<T> : TestEx<T>, INeuronLayerTest
+    {
+        public SoftPlusLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
+            : base(strName, new List<int>() { 2, 3, 4, 5 }, nDeviceID)
+        {
+            m_engine = engine;
+        }
+
+        protected override void dispose()
+        {
+            base.dispose();
+        }
+
+        protected override FillerParameter getFillerParam()
+        {
+            FillerParameter p = new FillerParameter("uniform");
+            return p;
+        }
+
+        private double sigmoid(double dfX)
+        {
+            return 0.5 * Math.Tanh(0.5 * dfX) + 0.5;
+        }
+
+        private double softplus(double dfX)
+        {
+            return Math.Log(1 + Math.Exp(dfX));
+        }
+
+        private double softplus_grad(double dfX)
+        {
+            return sigmoid(dfX);
+        }
+
+        public void TestForward()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.SOFTPLUS);
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
+
+            try
+            {
+                m_log.CHECK(layer.layer_param.type == LayerParameter.LayerType.SOFTPLUS, "The layer type should be SOFTPLUS.");
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // Now, check values
+                double[] rgBottom = convert(Bottom.update_cpu_data());
+                double[] rgTop = convert(Top.update_cpu_data());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfTop = rgTop[i];
+                    double dfBottom = rgBottom[i];
+                    double dfExpected = softplus(dfBottom);
+
+                    m_log.EXPECT_NEAR(dfTop, dfExpected, (m_dt == common.DataType.DOUBLE) ? 1e-15 : 1e-6);
+                }
+            }
+            finally
+            {
+                layer.Dispose();
+            }
+        }
+
+        public void TestGradient()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.SOFTPLUS);
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
+
+            try
+            {
+                m_log.CHECK(layer.layer_param.type == LayerParameter.LayerType.SOFTPLUS, "The layer type should be SOFTPLUS.");
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
+        }
+    }
+
+    class LeCunLayerTest : TestBase
+    {
+        public LeCunLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
+            : base("LeCun Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
+        {
+        }
+
+        protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
+        {
+            if (dt == common.DataType.DOUBLE)
+                return new SiLULayerTest<double>(strName, nDeviceID, engine);
+            else
+                return new SiLULayerTest<float>(strName, nDeviceID, engine);
+        }
+    }
+
+    class LeCunLayerTest<T> : TestEx<T>, INeuronLayerTest
+    {
+        public LeCunLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
+            : base(strName, new List<int>() { 2, 3, 4, 5 }, nDeviceID)
+        {
+            m_engine = engine;
+        }
+
+        protected override void dispose()
+        {
+            base.dispose();
+        }
+
+        protected override FillerParameter getFillerParam()
+        {
+            FillerParameter p = new FillerParameter("uniform");
+            return p;
+        }
+
+        private double lecun(double dfX)
+        {
+            double dfTanH = Math.Tanh(2.0/3.0 * dfX);
+            return 1.7159 * dfTanH;
+        }
+
+        private double lecun_grad(double dfX)
+        {
+            double dfTwoThirds = 2.0 / 3.0;
+            double dfTanH = Math.Tanh(dfTwoThirds * dfX);
+            return 1.7159 * dfTwoThirds * (1.0 - dfTanH * dfTanH);
+        }
+
+        public void TestForward()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.LECUN);
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
+
+            try
+            {
+                m_log.CHECK(layer.layer_param.type == LayerParameter.LayerType.LECUN, "The layer type should be LeCun.");
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                // Now, check values
+                double[] rgBottom = convert(Bottom.update_cpu_data());
+                double[] rgTop = convert(Top.update_cpu_data());
+
+                for (int i = 0; i < Bottom.count(); i++)
+                {
+                    double dfTop = rgTop[i];
+                    double dfBottom = rgBottom[i];
+                    double dfExpected = lecun(dfBottom);
+
+                    m_log.EXPECT_NEAR(dfTop, dfExpected, (m_dt == common.DataType.DOUBLE) ? 1e-15 : 1e-7);
+
+                    // check that we squashed the value between 0 and 1.
+                    m_log.CHECK(dfTop >= 0.0, "The top value at " + i.ToString() + " should be greater than or equal to 0.");
+                    m_log.CHECK(dfTop <= 1.0, "The top value at " + i.ToString() + " should be less than or equal to 1.");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
+            }
+        }
+
+        public void TestGradient()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.LECUN);
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
+
+            try
+            {
+                m_log.CHECK(layer.layer_param.type == LayerParameter.LayerType.LECUN, "The layer type should be LeCun.");
+                GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
+                checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+            }
+            finally
+            {
+                layer.Dispose();
+            }
+        }
     }
 
     class SigmoidLayerTest : TestBase

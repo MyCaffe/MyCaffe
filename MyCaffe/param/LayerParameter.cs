@@ -340,6 +340,10 @@ namespace MyCaffe.param
             /// </summary>
             LAYERNORM,
             /// <summary>
+            /// Initializes a parameter for the LeCunLayer.
+            /// </summary>
+            LECUN,
+            /// <summary>
             /// Initializes a parameter for the LogLayer.
             /// </summary>
             LOG,
@@ -479,6 +483,14 @@ namespace MyCaffe.param
             /// Initializes a parameter for the SigmoidCrossEntropyLossLayer.
             /// </summary>
             SIGMOIDCROSSENTROPY_LOSS,
+            /// <summary>
+            /// Initializes a parameter for the SiLULayer.
+            /// </summary>
+            SILU,
+            /// <summary>
+            /// Initializes a parameter for the SoftPlusLayer.
+            /// </summary>
+            SOFTPLUS,
             /// <summary>
             /// Initializes a parameter for the SoftmaxCrossEntropyLossLayer.
             /// </summary>
@@ -1323,6 +1335,11 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new LayerNormParameter();
                     break;
 
+                case LayerType.LECUN:
+                    expected_bottom.Add("input");
+                    expected_top.Add("lecun");
+                    break;
+
                 case LayerType.LOG:
                     expected_bottom.Add("input");
                     expected_top.Add("log");
@@ -1595,6 +1612,16 @@ namespace MyCaffe.param
                     expected_top.Add("loss");
                     m_rgLayerParameters[LayerType.LOSS] = new LossParameter(LossParameter.NormalizationMode.BATCH_SIZE);
                     m_rgLayerParameters[LayerType.SIGMOID] = new SigmoidParameter();
+                    break;
+
+                case LayerType.SILU:
+                    expected_bottom.Add("input");
+                    expected_top.Add("silu");
+                    break;
+
+                case LayerType.SOFTPLUS:
+                    expected_bottom.Add("input");
+                    expected_top.Add("sftp");
                     break;
 
                 case LayerType.SOFTMAXCROSSENTROPY_LOSS:
@@ -3191,6 +3218,9 @@ namespace MyCaffe.param
                 case LayerType.LAYERNORM:
                     return "LayerNorm";
 
+                case LayerType.LECUN:
+                    return "LeCun";
+
                 case LayerType.LOG:
                     return "Log";
 
@@ -3313,6 +3343,12 @@ namespace MyCaffe.param
 
                 case LayerType.SIGMOIDCROSSENTROPY_LOSS:
                     return "SigmoidCrossEntropyLoss";
+
+                case LayerType.SILU:
+                    return "SiLU";
+
+                case LayerType.SOFTPLUS:
+                    return "SoftPlus";
 
                 case LayerType.SOFTMAXCROSSENTROPY_LOSS:
                     return "SoftmaxCrossEntropyLoss";
@@ -4245,6 +4281,9 @@ namespace MyCaffe.param
                 case "layernorm":
                     return LayerType.LAYERNORM;
 
+                case "lecun":
+                    return LayerType.LECUN;
+
                 case "log":
                     return LayerType.LOG;
 
@@ -4374,6 +4413,12 @@ namespace MyCaffe.param
                 case "sigmoidcrossentropyloss":
                 case "sigmoidcrossentropy_loss":
                     return LayerType.SIGMOIDCROSSENTROPY_LOSS;
+
+                case "silu":
+                    return LayerType.SILU;
+
+                case "softplus":
+                    return LayerType.SOFTPLUS;
 
                 case "softmaxcrossentropyloss":
                 case "softmaxcrossentropy_loss":
