@@ -122,6 +122,7 @@
     <Compile Include="TestMyCaffeTemporalDatabase.cs" />
     <Compile Include="TestPersistPytorch.cs" />
     <Compile Include="TestTFT_GateAddNormLayer.cs" />
+    <Compile Include="TestLNN_CfcUnitLayer.cs" />
     <Compile Include="TestTFT_MultiHeadAttentionInterpLayer.cs" />
     <Compile Include="TestTFT_DataTemporal.cs" />
     <Compile Include="TestTFT_QuartileLoss.cs" />
@@ -343,6 +344,10 @@
     <ProjectReference Include="..\MyCaffe.layers.hdf5\MyCaffe.layers.hdf5.csproj">
       <Project>{03210d74-58ae-488e-98d5-7851deca448a}</Project>
       <Name>MyCaffe.layers.hdf5</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.layers.lnn\MyCaffe.layers.lnn.csproj">
+      <Project>{81671c60-be5b-4539-a8ef-2369c1d106b3}</Project>
+      <Name>MyCaffe.layers.lnn</Name>
     </ProjectReference>
     <ProjectReference Include="..\MyCaffe.layers.nt\MyCaffe.layers.nt.csproj">
       <Project>{bac34be4-818e-4f59-821b-fecfd6c797aa}</Project>

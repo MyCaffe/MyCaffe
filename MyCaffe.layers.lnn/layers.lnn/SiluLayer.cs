@@ -42,7 +42,7 @@ namespace MyCaffe.layers.lnn
         /// <param name="colTop">top output Blob vector (length 1)
         ///  -# @f$ (N \times C \times H \times W) @f$
         ///     the computed outputs @f$ 
-        ///         y  =x * sigmoid(x)
+        ///         y  = x * sigmoid(x)
         ///     @f$.
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)

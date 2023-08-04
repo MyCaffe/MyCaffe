@@ -10,6 +10,7 @@ using MyCaffe.param.ssd;
 using MyCaffe.param.beta;
 using MyCaffe.param.gpt;
 using MyCaffe.param.tft;
+using MyCaffe.param.lnn;
 using System.ComponentModel;
 
 namespace MyCaffe.param
@@ -159,6 +160,10 @@ namespace MyCaffe.param
             /// Initializes a parameter for the CausalSelfAttentionLayer.
             /// </summary>
             CAUSAL_SELF_ATTENTION,
+            /// <summary>
+            /// Initializes a parameter for the CfCUnitLayer.
+            /// </summary>
+            CFC_UNIT,
             /// <summary>
             /// Initializes a parameter for the ChannelEmbeddingLayer.
             /// </summary>
@@ -1011,6 +1016,12 @@ namespace MyCaffe.param
                     expected_top.Add("emb");
                     m_rgLayerParameters[LayerType.CATEGORICAL_TRANS] = new CategoricalTransformationParameter();
                     m_rgLayerParameters[LayerType.NUMERIC_TRANS] = new NumericTransformationParameter();
+                    break;
+
+                case LayerType.CFC_UNIT:
+                    expected_bottom.Add("x");
+                    expected_top.Add("cfc");
+                    m_rgLayerParameters[lt] = new CfcUnitParameter();
                     break;
 
                 case LayerType.CLIP:
@@ -2024,6 +2035,15 @@ namespace MyCaffe.param
         {
             get { return (BiasParameter)m_rgLayerParameters[LayerType.BIAS]; }
             set { m_rgLayerParameters[LayerType.BIAS] = value; }
+        }
+
+        /// <summary>
+        /// Returns the parameter set when initialized with LayerType.CFC_UNIT
+        /// </summary>
+        public CfcUnitParameter cfc_unit_param
+        {
+            get { return (CfcUnitParameter)m_rgLayerParameters[LayerType.CFC_UNIT]; }
+            set { m_rgLayerParameters[LayerType.CFC_UNIT] = value; }
         }
 
         /// <summary>
@@ -3077,6 +3097,9 @@ namespace MyCaffe.param
                 case LayerType.CAUSAL_SELF_ATTENTION:
                     return "CausalSelfAttention";
 
+                case LayerType.CFC_UNIT:
+                    return "Cfc_Unit";
+
                 case LayerType.CHANNEL_EMBEDDING:
                     return "ChannelEmbedding";
 
@@ -3601,6 +3624,9 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(quantile_loss_param, "quantile_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(quantile_accuracy_param, "quantile_accuracy_param"));
 
+            // LNN Layers
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(cfc_unit_param, "cfc_unit_param"));
+
             // Nt layers.
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gram_param, "gram_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(onehot_param, "onehot_param"));
@@ -3999,6 +4025,11 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("quantile_accuracy_param")) != null)
                 p.quantile_accuracy_param = QuantileAccuracyParameter.FromProto(rpp);
 
+            // LNN Layers
+
+            if ((rpp = rp.FindChild("cfc_unit_param")) != null)
+                p.cfc_unit_param = CfcUnitParameter.FromProto(rpp);
+
             // Nt layers.
             if ((rpp = rp.FindChild("gram_param")) != null)
                 p.gram_param = GramParameter.FromProto(rpp);
@@ -4131,6 +4162,9 @@ namespace MyCaffe.param
 
                 case "channelembedding":
                     return LayerType.CHANNEL_EMBEDDING;
+
+                case "cfc_unit":
+                    return LayerType.CFC_UNIT;
 
                 case "concat":
                     return LayerType.CONCAT;

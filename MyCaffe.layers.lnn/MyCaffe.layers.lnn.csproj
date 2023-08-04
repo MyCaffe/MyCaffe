@@ -52,6 +52,7 @@
   <ItemGroup>
     <Compile Include="LayerFactory.cs" />
     <Compile Include="layers.lnn\LeCunLayer.cs" />
+    <Compile Include="layers.lnn\CfcUnitLayer.cs" />
     <Compile Include="layers.lnn\SoftPlusLayer.cs" />
     <Compile Include="layers.lnn\SiluLayer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
