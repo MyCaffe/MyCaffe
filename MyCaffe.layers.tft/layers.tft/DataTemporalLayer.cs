@@ -1718,7 +1718,7 @@ namespace MyCaffe.layers.tft
         }
     }
 
-    class BatchPerf
+    class BatchPerf /** @private */
     {
         int m_nMax;
         int m_nLastSortCount;
