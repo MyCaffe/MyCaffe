@@ -223,6 +223,7 @@
     <Compile Include="param.beta\SqueezeParameter.cs" />
     <Compile Include="param.beta\TransposeParameter.cs" />
     <Compile Include="param.hdf5\HDF5DataParameter.cs" />
+    <Compile Include="param.lnn\CfcParameter.cs" />
     <Compile Include="param.lnn\CfcUnitParameter.cs" />
     <Compile Include="param.python\PythonParameter.cs" />
     <Compile Include="param.tft\CategoricalTransformationParameter.cs" />

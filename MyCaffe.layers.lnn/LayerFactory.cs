@@ -31,6 +31,9 @@ namespace MyCaffe.layers.lnn
         {
             switch (p.type)
             {
+                case LayerParameter.LayerType.CFC:
+                    return new CfcLayer<double>(cuda, log, p);
+
                 case LayerParameter.LayerType.CFC_UNIT:
                     return new CfcUnitLayer<double>(cuda, log, p);
 
@@ -61,6 +64,9 @@ namespace MyCaffe.layers.lnn
         {
             switch (p.type)
             {
+                case LayerParameter.LayerType.CFC:
+                    return new CfcLayer<float>(cuda, log, p);
+
                 case LayerParameter.LayerType.CFC_UNIT:
                     return new CfcUnitLayer<float>(cuda, log, p);
 

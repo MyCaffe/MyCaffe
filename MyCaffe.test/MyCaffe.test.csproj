@@ -119,6 +119,7 @@
     <Compile Include="TestActivations.cs" />
     <Compile Include="TestAccuracyEncodingLayer.cs" />
     <Compile Include="TestAnnotatedDataLayer.cs" />
+    <Compile Include="TestLNN_CfcLayer.cs" />
     <Compile Include="TestMyCaffeTemporalDatabase.cs" />
     <Compile Include="TestPersistPytorch.cs" />
     <Compile Include="TestTFT_GateAddNormLayer.cs" />
