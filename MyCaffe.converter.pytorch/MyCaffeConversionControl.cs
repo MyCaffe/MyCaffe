@@ -56,6 +56,7 @@ namespace MyCaffe.converter.pytorch
         /// <param name="data">Specifies the MyCaffe model data including the model description, the weights and optionally, the image mean.</param>
         /// <param name="strModelFile">Specifies the .py output file for the model.</param>
         /// <param name="strOptimizerFile">Specifies the .py output file for the optimizer.</param>
+        /// <param name="bAddComments">Specifies to add comments to generated code.</param>
         public void ConvertMyCaffeToPyTorch(CudaDnn<T> cuda, Log log, MyCaffeModelData data, string strModelFile, string strOptimizerFile, bool bAddComments)
         {
             m_strOriginalPath = Path.GetDirectoryName(strModelFile);
