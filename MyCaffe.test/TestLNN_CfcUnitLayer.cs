@@ -177,14 +177,12 @@ namespace MyCaffe.test
 
         private string getTestDataPath(string strSubPath)
         {
-            //return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\LNN\\test\\" + strSubPath + "\\iter_0\\";
-            return "C:\\temp\\projects\\LNN\\PythonApplication2\\PythonApplication2\\test\\" + strSubPath + "\\iter_0\\";
+            return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\LNN\\test\\" + strSubPath + "\\iter_0\\";
         }
 
         private string getTestWtsPath(string strSubPath)
         {
-            //return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\LNN\\data\\favorita\\weights\\" + strSubPath + "\\";
-            return "C:\\temp\\projects\\LNN\\PythonApplication2\\PythonApplication2\\test\\" + strSubPath + "\\iter_0\\weights\\";
+            return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\LNN\\test\\" + strSubPath + "\\iter_0\\weights\\";
         }
 
         private void verifyFileDownload(string strSubPath, string strFile)
