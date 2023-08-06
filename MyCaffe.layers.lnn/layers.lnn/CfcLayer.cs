@@ -306,7 +306,7 @@ namespace MyCaffe.layers.lnn
         }
 
         /// <summary>
-        /// Forward computation
+        /// [WORK IN PROGRESS]Forward computation
         /// </summary>
         /// <param name="colBottom">inpub Blob vector (length 1)
         ///  -# @f$ (N \times C \times H \times W) @f$ 
@@ -480,7 +480,7 @@ namespace MyCaffe.layers.lnn
         }
 
         /// <summary>
-        /// Computes the error gradient w.r.t. the Cfc value inputs.
+        /// [WORK IN PROGRESS]Computes the error gradient w.r.t. the Cfc value inputs.
         /// </summary>
         /// <param name="colTop">top output blob vector (length 1), providing the error gradient
         /// with respect to outputs
