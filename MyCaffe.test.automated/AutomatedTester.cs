@@ -767,6 +767,7 @@ namespace MyCaffe.test.automated
             string strCulture = param.Item7;
             TestClass tcCurrent = null;
             MethodInfoEx miCurrent = null;
+            bool bEnableEventLog = true;
 
             AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
 
@@ -823,14 +824,27 @@ namespace MyCaffe.test.automated
                         }
                         else
                         {
-                            eventLogStart.WriteEntry("Starting " + tcCurrent.Name + "::" + miCurrent.Name + " test.");
+                            if (bEnableEventLog)
+                            {
+                                try
+                                {
+                                    eventLogStart.WriteEntry("Starting " + tcCurrent.Name + "::" + miCurrent.Name + " test.");
+                                }
+                                catch
+                                {
+                                    bEnableEventLog = false;
+                                }
+                            }
 
                             miCurrent.Invoke(tcCurrent.Instance, nGpuId, nImgDbVer, strCudaPath, strCulture);
 
-                            if (miCurrent.Status == MethodInfoEx.STATUS.Failed)
-                                eventLogResult.WriteEntry("ERROR " + tcCurrent.Name + "::" + miCurrent.Name + " test - " + miCurrent.Status.ToString() + " Error Information: " + miCurrent.ErrorInfo.FullErrorString, EventLogEntryType.Warning);
-                            else
-                                eventLogResult.WriteEntry("Completed " + tcCurrent.Name + "::" + miCurrent.Name + " test - " + miCurrent.Status.ToString(), EventLogEntryType.Information);
+                            if (bEnableEventLog)
+                            {
+                                if (miCurrent.Status == MethodInfoEx.STATUS.Failed)
+                                    eventLogResult.WriteEntry("ERROR " + tcCurrent.Name + "::" + miCurrent.Name + " test - " + miCurrent.Status.ToString() + " Error Information: " + miCurrent.ErrorInfo.FullErrorString, EventLogEntryType.Warning);
+                                else
+                                    eventLogResult.WriteEntry("Completed " + tcCurrent.Name + "::" + miCurrent.Name + " test - " + miCurrent.Status.ToString(), EventLogEntryType.Information);
+                            }
                         }
 
                         if (miCurrent.Status != MethodInfoEx.STATUS.Aborted)
@@ -845,7 +859,8 @@ namespace MyCaffe.test.automated
                 SaveToDatabase(tcCurrent, miCurrent, excpt);
                 tcCurrent.InvokeDispose();
 
-                eventLogStart.WriteEntry("Test Exception Thrown! " + excpt.Message, EventLogEntryType.Error);
+                if (bEnableEventLog)
+                    eventLogStart.WriteEntry("Test Exception Thrown! " + excpt.Message, EventLogEntryType.Error);
 
                 throw excpt;
             }
