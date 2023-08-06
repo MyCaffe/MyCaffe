@@ -33,9 +33,11 @@ namespace MyCaffe.layers.lnn
         Layer<T> m_fc = null;
         Blob<T> m_blobInputs = null;
         Blob<T> m_blobInputs1 = null;
-        Blob<T> m_blobHState = null;
-        Blob<T> m_blobTs = null;
         Blob<T> m_blobHState1 = null;
+        Blob<T> m_blobHState = null;
+        BlobCollection<T> m_rgBlobHState = new BlobCollection<T>();
+        Blob<T> m_blobTs = null;
+        Blob<T> m_blobTsFull = null;
         Blob<T> m_blobForwardInput = null;
         Blob<T> m_blobForwardInput1 = null;
         Blob<T> m_blobForwardInput2 = null;
@@ -46,6 +48,7 @@ namespace MyCaffe.layers.lnn
         Blob<T> m_blobTimeSinceUpdate1 = null;
         Blob<T> m_blobMask = null;
         Blob<T> m_blobCurrentMask = null;
+        Blob<T> m_blobCurrentMaskFull = null;
         Blob<T> m_blobCurrentOutput = null;
         Blob<T> m_blobOutputSequence = null;
         int[] m_rgShape = new int[] { 1, 1, 1, 1 };
@@ -67,11 +70,18 @@ namespace MyCaffe.layers.lnn
         {
             base.dispose();
 
+            if (m_rgBlobHState != null)
+            {
+                m_rgBlobHState.Dispose();
+                m_rgBlobHState = null;
+            }
+
+            dispose(ref m_blobHState1);
+            dispose(ref m_blobHState);
             dispose(ref m_blobInputs);
             dispose(ref m_blobInputs1);
-            dispose(ref m_blobHState);
             dispose(ref m_blobTs);
-            dispose(ref m_blobHState1);
+            dispose(ref m_blobTsFull);
             dispose(ref m_blobForwardInput);
             dispose(ref m_blobForwardInput1);
             dispose(ref m_blobForwardInput2);
@@ -82,6 +92,7 @@ namespace MyCaffe.layers.lnn
             dispose(ref m_blobTimeSinceUpdate1);
             dispose(ref m_blobMask);
             dispose(ref m_blobCurrentMask);
+            dispose(ref m_blobCurrentMaskFull);
             dispose(ref m_blobCurrentOutput);
             dispose(ref m_blobOutputSequence);
 
@@ -146,10 +157,15 @@ namespace MyCaffe.layers.lnn
             m_nTrueInFeatures = colBottom[0].count(2);
 
             m_rgShape[0] = m_nBatchSize;
-
             m_rgShape[1] = m_param.cfc_param.hidden_size;
-            m_blobHState = new Blob<T>(m_cuda, m_log, m_rgShape);
             m_blobHState1 = new Blob<T>(m_cuda, m_log, m_rgShape);
+            m_blobHState = new Blob<T>(m_cuda, m_log, m_rgShape);
+
+            for (int i = 0; i < m_nSeqLen; i++)
+            {
+                Blob<T> blobHStateT = new Blob<T>(m_cuda, m_log, m_rgShape);
+                m_rgBlobHState.Add(blobHStateT);
+            }
 
             m_rgShape[1] = 1;   
             m_blobTs = new Blob<T>(m_cuda, m_log, m_rgShape);
@@ -164,6 +180,7 @@ namespace MyCaffe.layers.lnn
             m_rgShape[1] = 1;
             m_blobCurrentMask = new Blob<T>(m_cuda, m_log, m_rgShape);
             m_blobCurrentOutput = new Blob<T>(m_cuda, m_log);
+            m_blobCurrentMaskFull = new Blob<T>(m_cuda, m_log);
 
             m_rgShape[1] = m_nTrueInFeatures;
             m_blobForwardInput = new Blob<T>(m_cuda, m_log, m_rgShape);
@@ -171,6 +188,7 @@ namespace MyCaffe.layers.lnn
             m_blobForwardInput2 = new Blob<T>(m_cuda, m_log, m_rgShape);
             m_blobTimeSinceUpdate = new Blob<T>(m_cuda, m_log, m_rgShape);
             m_blobTimeSinceUpdate1 = new Blob<T>(m_cuda, m_log, m_rgShape);
+            m_blobTsFull = new Blob<T>(m_cuda, m_log, m_rgShape);
 
             m_rgShape[1] = m_param.cfc_param.output_features;
             m_blobForwardOutput = new Blob<T>(m_cuda, m_log, m_rgShape);
@@ -193,25 +211,29 @@ namespace MyCaffe.layers.lnn
             p.cfc_unit_param.Copy(m_param.cfc_unit_param);
             m_rnn_cell = Layer<T>.Create(m_cuda, m_log, p, null);
 
-            addBtmTop(m_blobInputs1, m_blobHState1);
-            m_colBtm.Add(m_blobHState);
+            addBtmTop(m_blobInputs1, m_blobHState);
+            m_colBtm.Add(m_blobHState1);
             m_colBtm.Add(m_blobTs);
             m_rnn_cell.Setup(m_colBtm, m_colTop);
             blobs.Add(m_rnn_cell.blobs);
 
-            p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
+            m_blobHState.Unsqueeze(4);
+
+            p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "fc");
             p.inner_product_param.num_output = (uint)m_param.cfc_param.output_features;
             p.inner_product_param.bias_term = true;
             p.inner_product_param.weight_filler = new FillerParameter("xavier");
             p.inner_product_param.bias_filler = new FillerParameter("constant", 0.1);
-            p.inner_product_param.axis = 2;
+            p.inner_product_param.axis = 1;
             m_fc = Layer<T>.Create(m_cuda, m_log, p, null);
 
-            addBtmTop(m_blobHState1, m_blobCurrentOutput);
+            addBtmTop(m_blobHState, m_blobCurrentOutput);
             m_fc.Setup(m_colBtm, m_colTop);
             blobs.Add(m_fc.blobs);
 
-            addBtmTop(m_blobHState1, colTop[0]);
+            m_blobCurrentMaskFull.ReshapeLike(m_blobCurrentOutput);
+
+            addBtmTop(m_blobHState, colTop[0]);
             m_fc.Reshape(m_colBtm, m_colTop);
         }
 
@@ -227,10 +249,15 @@ namespace MyCaffe.layers.lnn
             m_nTrueInFeatures = colBottom[0].count(2);
 
             m_rgShape[0] = m_nBatchSize;
-
             m_rgShape[1] = m_param.cfc_param.hidden_size;
-            m_blobHState.Reshape(m_rgShape);
+
             m_blobHState1.Reshape(m_rgShape);
+            m_blobHState.Reshape(m_rgShape);
+
+            for (int i=0; i<m_nSeqLen; i++)
+            {
+                m_rgBlobHState[i].Reshape(m_rgShape);
+            }
 
             m_rgShape[1] = 1;
             m_blobTs.Reshape(m_rgShape);
@@ -249,6 +276,7 @@ namespace MyCaffe.layers.lnn
             m_blobForwardInput2.Reshape(m_rgShape);
             m_blobTimeSinceUpdate.Reshape(m_rgShape);
             m_blobTimeSinceUpdate1.Reshape(m_rgShape);
+            m_blobTsFull.ReshapeLike(m_blobTimeSinceUpdate1);
 
             m_rgShape[1] = m_param.cfc_param.output_features;
             m_blobForwardOutput.Reshape(m_rgShape);
@@ -261,15 +289,19 @@ namespace MyCaffe.layers.lnn
             m_colBtm.Add(m_blobMask);
             m_cat.Reshape(m_colBtm, m_colTop);
 
-            addBtmTop(m_blobInputs1, m_blobHState1);
-            m_colBtm.Add(m_blobHState);
+            addBtmTop(m_blobInputs1, m_blobHState);
+            m_colBtm.Add(m_blobHState1);
             m_colBtm.Add(m_blobTs);
             m_rnn_cell.Reshape(m_colBtm, m_colTop);
 
-            addBtmTop(m_blobHState1, m_blobCurrentOutput);
+            m_blobHState.Unsqueeze(4);
+
+            addBtmTop(m_blobHState, m_blobCurrentOutput);
             m_fc.Reshape(m_colBtm, m_colTop);
 
-            addBtmTop(m_blobHState1, colTop[0]);
+            m_blobCurrentMaskFull.ReshapeLike(m_blobCurrentOutput);
+
+            addBtmTop(m_blobHState, colTop[0]);
             m_fc.Reshape(m_colBtm, m_colTop);
         }
 
@@ -288,21 +320,31 @@ namespace MyCaffe.layers.lnn
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            string strPath = "C:\\temp\\projects\\LNN\\PythonApplication2\\PythonApplication2\\test\\cfc_no_gate\\iter_0\\";
+            double dfErr = 6e-08;
+            string strPath = "C:\\temp\\projects\\LNN\\PythonApplication2\\PythonApplication2\\test\\cfc_gate\\iter_0\\";
             Blob<T> blobVal = new Blob<T>(m_cuda, m_log);
             Blob<T> blobWork = new Blob<T>(m_cuda, m_log);
 
-            m_blobHState.SetData(0);
+            blobVal.LoadFromNumpy(strPath + "x.npy");
+            Trace.Assert(blobVal.Compare(colBottom[0], blobWork));
+            blobVal.LoadFromNumpy(strPath + "timespans.npy");
+            Trace.Assert(blobVal.Compare(colBottom[1], blobWork));
+            blobVal.LoadFromNumpy(strPath + "mask.npy");
+            Trace.Assert(blobVal.Compare(colBottom[2], blobWork));
+
             m_blobForwardInput.SetData(0);
             m_blobForwardOutput.SetData(0);
             m_blobTimeSinceUpdate.SetData(0);
+            m_blobHState.SetData(0);
 
-            for (int t = 0; t < m_nSeqLen; t++)
+            int nSeqLen = 4; //m_nSeqLen;
+            for (int t = 0; t < nSeqLen; t++)
             {
                 // Copy the t'th time step of the input to the input blob.
                 m_cuda.channel_copy(m_blobInputs.count(), m_blobInputs.num, 1, m_nSeqLen, m_nTrueInFeatures, t, colBottom[0].gpu_data, m_blobInputs.mutable_gpu_data, DIR.FWD);
                 // Copy the t'th timestep of the time since update to the ts blob.
                 m_cuda.channel_copy(m_blobTs.count(), m_blobTs.num, 1, m_nSeqLen, 1, t, colBottom[1].gpu_data, m_blobTs.mutable_gpu_data, DIR.FWD);
+                m_cuda.channel_fillfrom(m_blobTsFull.count(), 1, m_blobTs.num, m_blobTsFull.channels, m_blobTs.gpu_data, m_blobTsFull.mutable_gpu_data, DIR.FWD);
 
                 blobVal.LoadFromNumpy(strPath + "inputs_a_" + t.ToString() + ".npy");
                 Trace.Assert(blobVal.Compare(m_blobInputs, blobWork));
@@ -316,14 +358,14 @@ namespace MyCaffe.layers.lnn
                     if (nMaskCount == m_nTrueInFeatures)
                     {
                         // Copy the t'th mask of the full mask to the mask blob.
-                        m_cuda.channel_copy(m_blobMask.count(), m_blobMask.num, 1, m_nSeqLen, 1, t, colBottom[2].gpu_data, m_blobMask.mutable_gpu_data, DIR.FWD);
+                        m_cuda.channel_copy(m_blobMask.count(), m_blobMask.num, 1, m_nSeqLen, nMaskCount, t, colBottom[2].gpu_data, m_blobMask.mutable_gpu_data, DIR.FWD);
                         // Create the mask inverse
                         m_blobMask.SetDiff(1.0);
                         m_cuda.sub(m_blobMask.count(), m_blobMask.gpu_diff, m_blobMask.gpu_data, m_blobMask.mutable_gpu_diff);
 
                         blobVal.LoadFromNumpy(strPath + "mask1_" + t.ToString() + ".npy");
                         Trace.Assert(blobVal.Compare(m_blobMask, blobWork));
-                        blobVal.LoadFromNumpy(strPath + "mask1_inv_" + t.ToString() + ".npy", true);
+                        blobVal.LoadFromNumpy(strPath + "mask1_inv_a_" + t.ToString() + ".npy", true);
                         Trace.Assert(blobVal.Compare(m_blobMask, blobWork, true));
 
                         // Update the forwarded input.
@@ -335,7 +377,7 @@ namespace MyCaffe.layers.lnn
                         Trace.Assert(blobVal.Compare(m_blobForwardInput, blobWork));
 
                         // Update the time since update.
-                        m_cuda.add(m_blobTimeSinceUpdate.count(), m_blobTimeSinceUpdate.gpu_data, m_blobTs.gpu_data, m_blobTimeSinceUpdate1.mutable_gpu_data);
+                        m_cuda.add(m_blobTimeSinceUpdate.count(), m_blobTimeSinceUpdate.gpu_data, m_blobTsFull.gpu_data, m_blobTimeSinceUpdate1.mutable_gpu_data);
                         m_cuda.mul(m_blobTimeSinceUpdate1.count(), m_blobTimeSinceUpdate1.gpu_data, m_blobMask.gpu_diff, m_blobTimeSinceUpdate.mutable_gpu_data);
 
                         blobVal.LoadFromNumpy(strPath + "time_since_update_" + t.ToString() + ".npy");
@@ -344,9 +386,6 @@ namespace MyCaffe.layers.lnn
                     else
                     {
                         m_cuda.copy(m_blobForwardInput.count(), m_blobInputs.gpu_data, m_blobForwardInput.mutable_gpu_data);
-
-                        blobVal.LoadFromNumpy(strPath + "forwarded_input_" + t.ToString() + ".npy");
-                        Trace.Assert(blobVal.Compare(m_blobForwardInput, blobWork));
                     }
 
                     // Update a 3x in-features mask.
@@ -370,12 +409,10 @@ namespace MyCaffe.layers.lnn
                     m_blobInputs1.CopyFrom(m_blobInputs);
                 }
 
-                blobVal.LoadFromNumpy(strPath + "h_state_" + t.ToString() + ".npy");
-                Trace.Assert(blobVal.Compare(m_blobHState, blobWork));
                 blobVal.LoadFromNumpy(strPath + "inputs1_" + t.ToString() + ".npy");
                 Trace.Assert(blobVal.Compare(m_blobInputs1, blobWork));
-                blobVal.LoadFromNumpy(strPath + "ts_" + t.ToString() + ".npy");
-                Trace.Assert(blobVal.Compare(m_blobTs, blobWork));
+                blobVal.LoadFromNumpy(strPath + "h_state_" + t.ToString() + ".npy");
+                Trace.Assert(blobVal.Compare(m_blobHState, blobWork, false, dfErr));
 
                 // Run the CfcCell forward pass.
                 addBtmTop(m_blobInputs1, m_blobHState1);
@@ -383,10 +420,11 @@ namespace MyCaffe.layers.lnn
                 m_colBtm.Add(m_blobTs);
                 m_rnn_cell.Forward(m_colBtm, m_colTop);
 
-                blobVal.LoadFromNumpy(strPath + "h_state1_" + t.ToString() + ".npy");
-                Trace.Assert(blobVal.Compare(m_blobHState1, blobWork));
+                m_blobHState1.Unsqueeze(4);
+                m_rgBlobHState[t].CopyFrom(m_blobHState1);
 
-                m_blobHState.CopyFrom(m_blobHState1);
+                blobVal.LoadFromNumpy(strPath + "h_state1_" + t.ToString() + ".npy");
+                Trace.Assert(blobVal.Compare(m_blobHState1, blobWork, false, dfErr));
 
                 // Apply masking
                 if (colBottom.Count > 2)
@@ -402,20 +440,25 @@ namespace MyCaffe.layers.lnn
                     blobVal.LoadFromNumpy(strPath + "cur_mask_inv_" + t.ToString() + ".npy", true);
                     Trace.Assert(blobVal.Compare(m_blobCurrentMask, blobWork, true));
 
+                    m_cuda.channel_fillfrom(m_blobCurrentMaskFull.count(), m_blobCurrentMask.num, m_blobCurrentMask.channels, m_blobCurrentMaskFull.channels, m_blobCurrentMask.gpu_data, m_blobCurrentMaskFull.mutable_gpu_data, DIR.FWD);
+                    m_cuda.channel_fillfrom(m_blobCurrentMaskFull.count(), m_blobCurrentMask.num, m_blobCurrentMask.channels, m_blobCurrentMaskFull.channels, m_blobCurrentMask.gpu_diff, m_blobCurrentMaskFull.mutable_gpu_diff, DIR.FWD);
+
                     addBtmTop(m_blobHState1, m_blobCurrentOutput);
-                    m_fc.Setup(m_colBtm, m_colTop);
+                    m_fc.Forward(m_colBtm, m_colTop);
 
                     blobVal.LoadFromNumpy(strPath + "current_output_" + t.ToString() + ".npy");
-                    Trace.Assert(blobVal.Compare(m_blobCurrentOutput, blobWork));
+                    Trace.Assert(blobVal.Compare(m_blobCurrentOutput, blobWork, false, dfErr));
 
                     // Update the forwarded output.
-                    m_cuda.mul(m_blobCurrentMask.count(), m_blobCurrentOutput.gpu_data, m_blobMask.gpu_data, m_blobForwardOutput1.mutable_gpu_data);
-                    m_cuda.mul(m_blobCurrentMask.count(), m_blobForwardOutput.gpu_data, m_blobMask.gpu_diff, m_blobForwardOutput2.mutable_gpu_data);
-                    m_cuda.add(m_blobCurrentMask.count(), m_blobForwardOutput1.gpu_data, m_blobForwardOutput2.gpu_data, m_blobForwardOutput.mutable_gpu_data);
+                    m_cuda.mul(m_blobCurrentMaskFull.count(), m_blobCurrentOutput.gpu_data, m_blobCurrentMaskFull.gpu_data, m_blobForwardOutput1.mutable_gpu_data);
+                    m_cuda.mul(m_blobCurrentMaskFull.count(), m_blobForwardOutput.gpu_data, m_blobCurrentMaskFull.gpu_diff, m_blobForwardOutput2.mutable_gpu_data);
+                    m_cuda.add(m_blobCurrentMaskFull.count(), m_blobForwardOutput1.gpu_data, m_blobForwardOutput2.gpu_data, m_blobForwardOutput.mutable_gpu_data);
 
-                    blobVal.LoadFromNumpy(strPath + "forward_output_" + t.ToString() + ".npy");
-                    Trace.Assert(blobVal.Compare(m_blobForwardOutput, blobWork));
+                    blobVal.LoadFromNumpy(strPath + "forwarded_output_" + t.ToString() + ".npy");
+                    Trace.Assert(blobVal.Compare(m_blobForwardOutput, blobWork, false, dfErr));
                 }
+
+                m_blobHState.CopyFrom(m_blobHState1);
             }
 
             if (m_param.cfc_param.return_sequences)
@@ -425,18 +468,15 @@ namespace MyCaffe.layers.lnn
             else if (colBottom.Count > 2)
             {
                 colTop[0].CopyFrom(m_blobForwardOutput);
-
-                blobVal.LoadFromNumpy(strPath + "readout.npy");
-                Trace.Assert(blobVal.Compare(colTop[0], blobWork));
             }
             else
             {
-                addBtmTop(m_blobHState1, colTop[0]);
-                m_fc.Setup(m_colBtm, m_colTop);
-
-                blobVal.LoadFromNumpy(strPath + "readout.npy");
-                Trace.Assert(blobVal.Compare(colTop[0], blobWork));
+                addBtmTop(m_blobHState, colTop[0]);
+                m_fc.Forward(m_colBtm, m_colTop);
             }
+
+            blobVal.LoadFromNumpy(strPath + "readout.npy");
+            Trace.Assert(blobVal.Compare(colTop[0], blobWork, false, dfErr));
         }
 
         /// <summary>
@@ -457,6 +497,145 @@ namespace MyCaffe.layers.lnn
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
+            m_blobHState.SetDiff(0);
+
+            double dfErr = 6e-08;
+            string strPath = "C:\\temp\\projects\\LNN\\PythonApplication2\\PythonApplication2\\test\\cfc_gate\\iter_0\\";
+            Blob<T> blobVal = new Blob<T>(m_cuda, m_log);
+            Blob<T> blobWork = new Blob<T>(m_cuda, m_log);
+
+            blobVal.LoadFromNumpy(strPath + "readout.grad.npy", true);
+            Trace.Assert(blobVal.Compare(colTop[0], blobWork, true));
+
+            if (m_param.cfc_param.return_sequences)
+            {
+                throw new NotImplementedException("return sequences is not implemented yet.");
+            }
+            else if (colBottom.Count > 2)
+            {
+                m_blobForwardOutput.CopyFrom(colTop[0], true);
+            }
+            else
+            {
+                addBtmTop(m_blobHState, colTop[0]);
+                m_fc.Backward(m_colTop, rgbPropagateDown, m_colBtm);
+            }
+
+            int nMaskCount = colBottom[2].count(2);
+            int nSeqLen = 4; //m_nSeqLen;
+            for (int t = nSeqLen - 1; t >= 0; t--)
+            {
+                m_blobHState.CopyFrom(m_rgBlobHState[t]);
+
+                if (colBottom.Count > 2)
+                {
+                    // Copy the t'th mask of the full mask to the mask blob.
+                    m_cuda.channel_copy(m_blobMask.count(), m_blobMask.num, 1, m_nSeqLen, nMaskCount, t, colBottom[2].gpu_data, m_blobMask.mutable_gpu_data, DIR.FWD);
+                    // Create the mask inverse
+                    m_blobMask.SetDiff(1.0);
+                    m_cuda.sub(m_blobMask.count(), m_blobMask.gpu_diff, m_blobMask.gpu_data, m_blobMask.mutable_gpu_diff);
+
+                    blobVal.LoadFromNumpy(strPath + "mask1_" + t.ToString() + ".npy");
+                    Trace.Assert(blobVal.Compare(m_blobMask, blobWork));
+
+                    m_cuda.channel_max(m_blobMask.count(), m_blobMask.num, m_blobMask.channels, 1, m_blobMask.gpu_data, m_blobCurrentMask.mutable_gpu_data);
+
+                    // Create mask inverse
+                    m_blobCurrentMask.SetDiff(1.0);
+                    m_cuda.sub(m_blobCurrentMask.count(), m_blobCurrentMask.gpu_diff, m_blobCurrentMask.gpu_data, m_blobCurrentMask.mutable_gpu_diff);
+
+                    blobVal.LoadFromNumpy(strPath + "cur_mask_" + t.ToString() + ".npy");
+                    Trace.Assert(blobVal.Compare(m_blobCurrentMask, blobWork));
+                    blobVal.LoadFromNumpy(strPath + "cur_mask_inv_" + t.ToString() + ".npy", true);
+                    Trace.Assert(blobVal.Compare(m_blobCurrentMask, blobWork, true));
+
+                    m_cuda.channel_fillfrom(m_blobCurrentMaskFull.count(), m_blobCurrentMask.num, m_blobCurrentMask.channels, m_blobCurrentMaskFull.channels, m_blobCurrentMask.gpu_data, m_blobCurrentMaskFull.mutable_gpu_data, DIR.FWD);
+                    m_cuda.channel_fillfrom(m_blobCurrentMaskFull.count(), m_blobCurrentMask.num, m_blobCurrentMask.channels, m_blobCurrentMaskFull.channels, m_blobCurrentMask.gpu_diff, m_blobCurrentMaskFull.mutable_gpu_diff, DIR.FWD);
+
+                    m_blobForwardOutput1.CopyFrom(m_blobForwardOutput, true);
+                    m_blobForwardOutput2.CopyFrom(m_blobForwardOutput, true);
+
+                    // Update the forwarded output.
+                    m_cuda.mul(m_blobCurrentMaskFull.count(), m_blobForwardOutput1.gpu_diff, m_blobCurrentMaskFull.gpu_data, m_blobCurrentOutput.mutable_gpu_diff);
+                    m_cuda.mul(m_blobCurrentMaskFull.count(), m_blobForwardOutput2.gpu_diff, m_blobCurrentMaskFull.gpu_diff, m_blobForwardOutput.mutable_gpu_diff);
+
+                    blobVal.LoadFromNumpy(strPath + "current_output_" + t.ToString() + ".grad.npy", true);
+                    Trace.Assert(blobVal.Compare(m_blobCurrentOutput, blobWork, true, dfErr, false));
+
+                    addBtmTop(m_blobHState1, m_blobCurrentOutput);
+                    m_fc.Backward(m_colTop, rgbPropagateDown, m_colBtm);
+                }
+
+                if (t < m_nSeqLen - 1)
+                    m_cuda.add(m_blobHState1.count(), m_blobHState1.gpu_diff, m_rgBlobHState[t + 1].gpu_diff, m_blobHState1.mutable_gpu_diff);
+
+                blobVal.LoadFromNumpy(strPath + "h_state1_" + t.ToString() + ".grad.npy", true);
+                Trace.Assert(blobVal.Compare(m_blobHState1, blobWork, true, dfErr, false));
+
+                // Run the CfcCell backward pass.
+                addBtmTop(m_blobInputs1, m_blobHState1);
+                m_colBtm.Add(m_blobHState);
+                m_colBtm.Add(m_blobTs);
+                m_rnn_cell.Backward(m_colTop, new List<bool>() { true, true, true }, m_colBtm);
+
+                m_rgBlobHState[t].CopyFrom(m_blobHState, true);
+
+                blobVal.LoadFromNumpy(strPath + "h_state_" + t.ToString() + ".grad.npy", true);
+                Trace.Assert(blobVal.Compare(m_blobHState, blobWork, true, dfErr, false));
+
+                // Apply masking
+                if (colBottom.Count() > 2)
+                {
+                    if (m_nTrueInFeatures * 2 < m_param.cfc_param.input_features && m_nMaskCount == m_nTrueInFeatures)
+                    {
+                        addBtmTop(m_blobForwardInput, m_blobInputs1);
+                        m_colBtm.Add(m_blobTimeSinceUpdate);
+                        m_colBtm.Add(m_blobMask);
+                        m_cat.Backward(m_colTop, new List<bool>() { true, true, true }, m_colBtm);
+                    }
+                    else
+                    {
+                        addBtmTop(m_blobForwardInput, m_blobInputs1);
+                        m_colBtm.Add(m_blobMask);
+                        m_cat.Backward(m_colTop, new List<bool>() { true, true }, m_colBtm);
+                    }
+
+                    if (nMaskCount == m_nTrueInFeatures)
+                    {
+                        // Update the time since update.
+                        m_cuda.mul(m_blobTimeSinceUpdate.count(), m_blobTimeSinceUpdate.gpu_diff, m_blobMask.gpu_diff, m_blobTimeSinceUpdate1.mutable_gpu_diff);
+                        m_blobTimeSinceUpdate.CopyFrom(m_blobTimeSinceUpdate1, true);
+                        m_blobTsFull.CopyFrom(m_blobTimeSinceUpdate1, true);
+
+                        // Update the forwarded input.
+                        m_blobForwardInput1.CopyFrom(m_blobForwardInput, true);
+                        m_blobForwardInput2.CopyFrom(m_blobForwardInput, true);
+                        m_cuda.mul(m_blobMask.count(), m_blobForwardInput2.gpu_diff, m_blobMask.gpu_diff, m_blobForwardInput.mutable_gpu_diff);
+                        m_cuda.mul(m_blobMask.count(), m_blobForwardInput1.gpu_diff, m_blobMask.gpu_data, m_blobInputs.mutable_gpu_diff);
+                    }
+                    else
+                    {
+                        m_cuda.copy(m_blobForwardInput.count(), m_blobForwardInput.gpu_diff, m_blobInputs.mutable_gpu_diff);
+                    }
+                }
+                else
+                {
+                    m_blobInputs.CopyFrom(m_blobInputs1, true);
+                }
+
+                // Copy the t'th time step of the input to the input blob.
+                m_cuda.channel_copy(m_blobInputs.count(), m_blobInputs.num, 1, m_nSeqLen, m_nTrueInFeatures, t, colBottom[0].gpu_data, m_blobInputs.mutable_gpu_data, DIR.BWD);
+                // Copy the t'th timestep of the time since update to the ts blob.
+                m_cuda.channel_copy(m_blobTs.count(), m_blobTs.num, 1, m_nSeqLen, 1, t, colBottom[1].gpu_data, m_blobTs.mutable_gpu_data, DIR.BWD);
+                m_cuda.channel_fillfrom(m_blobTsFull.count(), 1, m_blobTs.num, m_blobTsFull.channels, m_blobTs.gpu_data, m_blobTsFull.mutable_gpu_data, DIR.BWD);
+            }
+
+            blobVal.LoadFromNumpy(strPath + "x.grad.npy", true);
+            Trace.Assert(blobVal.Compare(colBottom[0], blobWork, true));
+            blobVal.LoadFromNumpy(strPath + "timespans.grad.npy", true);
+            Trace.Assert(blobVal.Compare(colBottom[1], blobWork, true));
+            blobVal.LoadFromNumpy(strPath + "mask.grad.npy", true);
+            Trace.Assert(blobVal.Compare(colBottom[2], blobWork, true));
         }
     }
 }

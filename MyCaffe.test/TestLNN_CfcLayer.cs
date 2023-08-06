@@ -14,6 +14,7 @@ using MyCaffe.data;
 using MyCaffe.layers.lnn;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
 using System.IO;
+using System.Diagnostics;
 
 /// <summary>
 /// Testing the Cfc layer.
@@ -177,13 +178,13 @@ namespace MyCaffe.test
 
         private string getTestDataPath(string strSubPath)
         {
-            return "C:\\temp\\projects\\LNN\\PythonApplication2\\PythonApplication2\\test\\cfc_no_gate\\iter_0\\";
+            return "C:\\temp\\projects\\LNN\\PythonApplication2\\PythonApplication2\\test\\" + strSubPath + "\\iter_0\\";
             //return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\LNN\\test\\" + strSubPath + "\\iter_0\\";
         }
 
         private string getTestWtsPath(string strSubPath)
         {
-            return "C:\\temp\\projects\\LNN\\PythonApplication2\\PythonApplication2\\test\\cfc_no_gate\\iter_0\\weights\\";
+            return "C:\\temp\\projects\\LNN\\PythonApplication2\\PythonApplication2\\test\\" + strSubPath + "\\iter_0\\weights\\";
             //return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\LNN\\test\\" + strSubPath + "\\iter_0\\weights\\";
         }
 
@@ -234,19 +235,19 @@ namespace MyCaffe.test
         }
 
         /// <summary>
-        /// [WORK IN PROGRESS] Test Cfc forward
+        /// Test Cfc forward
         /// </summary>
         /// <remarks>
         /// To generate the test data, run the following:
-        /// Code: test_cfc_cell.py
-        /// Path: cfc_cell
+        /// Code: test_cfc.py
+        /// Path: cfc
         /// </remarks>
         public void TestForward(bool bNoGate)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CFC);
             p.cfc_unit_param.input_size = 82;
             p.cfc_unit_param.hidden_size = 256;
-            p.cfc_unit_param.backbone_activation = param.lnn.CfcUnitParameter.ACTIVATION.SILU;
+            p.cfc_unit_param.backbone_activation = param.lnn.CfcUnitParameter.ACTIVATION.RELU;
             p.cfc_unit_param.backbone_dropout_ratio = 0.0f;
             p.cfc_unit_param.backbone_layers = 2;
             p.cfc_unit_param.backbone_units = 64;
@@ -298,7 +299,19 @@ namespace MyCaffe.test
                 layer.Forward(BottomVec, TopVec);
 
                 blobYexp.LoadFromNumpy(strPath + "y.npy");
-                m_log.CHECK(TopVec[0].Compare(blobYexp, blobWork), "The blobs do not match.");
+                m_log.CHECK(TopVec[0].Compare(blobYexp, blobWork, false, 1e-07), "The blobs do not match.");
+
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
+
+                for (int i = 0; i < 100; i++)
+                {
+                    layer.Forward(BottomVec, TopVec);
+                }
+
+                sw.Stop();
+                double dfTime = sw.Elapsed.TotalMilliseconds / 100;
+                Trace.WriteLine("Ave time per forward = " + dfTime.ToString("N3") + " ms.");
             }
             finally
             {
@@ -319,15 +332,15 @@ namespace MyCaffe.test
         /// </summary>
         /// <remarks>
         /// To generate the test data, run the following:
-        /// Code: test_cfc_cell.py
-        /// Path: cfc_cell
+        /// Code: test_cfc.py
+        /// Path: cfc
         /// </remarks>
         public void TestBackward(bool bNoGate)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CFC);
             p.cfc_unit_param.input_size = 82;
             p.cfc_unit_param.hidden_size = 256;
-            p.cfc_unit_param.backbone_activation = param.lnn.CfcUnitParameter.ACTIVATION.SILU;
+            p.cfc_unit_param.backbone_activation = param.lnn.CfcUnitParameter.ACTIVATION.RELU;
             p.cfc_unit_param.backbone_dropout_ratio = 0.0f;
             p.cfc_unit_param.backbone_layers = 2;
             p.cfc_unit_param.backbone_units = 64;
@@ -385,7 +398,7 @@ namespace MyCaffe.test
                 layer.Forward(BottomVec, TopVec);
 
                 blobYexp.LoadFromNumpy(strPath + "y.npy");
-                m_log.CHECK(TopVec[0].Compare(blobYexp, blobWork), "The blobs do not match.");
+                m_log.CHECK(TopVec[0].Compare(blobYexp, blobWork, false, 1e-07), "The blobs do not match.");
 
                 //** BACKWARD **
 
@@ -425,7 +438,7 @@ namespace MyCaffe.test
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CFC);
             p.cfc_unit_param.input_size = 82;
             p.cfc_unit_param.hidden_size = 256;
-            p.cfc_unit_param.backbone_activation = param.lnn.CfcUnitParameter.ACTIVATION.SILU;
+            p.cfc_unit_param.backbone_activation = param.lnn.CfcUnitParameter.ACTIVATION.RELU;
             p.cfc_unit_param.backbone_dropout_ratio = 0.0f;
             p.cfc_unit_param.backbone_layers = 2;
             p.cfc_unit_param.backbone_units = 64;

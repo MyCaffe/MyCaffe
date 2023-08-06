@@ -61,9 +61,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="mycaffe.layers.lnn.pfx" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="MainIcon.ico" />
   </ItemGroup>
   <ItemGroup>
@@ -87,6 +84,9 @@
       <Project>{28e430dd-bd6c-4a4c-9454-1eeb4ad63a5c}</Project>
       <Name>MyCaffe</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="mycaffe.layers.lnn.pfx" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
