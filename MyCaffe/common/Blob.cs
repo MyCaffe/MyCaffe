@@ -196,6 +196,24 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Unsqueeze the shape by adding shape=1 on each axis until the 'nNumAxes' is reached.
+        /// </summary>
+        /// <param name="nNumAxes">Specifies the number of axes to unsqueeze to.</param>
+        public void Unsqueeze(int nNumAxes)
+        {
+            if (num_axes < 4)
+            {
+                List<int> rgShape = Utility.Clone<int>(shape());
+                for (int i = rgShape.Count; i < 4; i++)
+                {
+                    rgShape.Add(1);
+                }
+
+                Reshape(rgShape);
+            }
+        }
+
+        /// <summary>
         /// Get a blob parameter.
         /// </summary>
         /// <param name="strName">Specifies the name of the blob parameter.</param>
