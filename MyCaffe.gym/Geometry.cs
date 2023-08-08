@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace MyCaffe.gym
 {
@@ -355,7 +356,7 @@ namespace MyCaffe.gym
     }
 
     /// <summary>
-    /// The GeomEllipse object is used to render an polygon.
+    /// The GeomPolygon object is used to render an polygon.
     /// </summary>
     class GeomPolygon : GeomObj
     {
@@ -380,13 +381,74 @@ namespace MyCaffe.gym
         public override void Render(Graphics g)
         {
             prerender(g);
-            PointF[] rg = m_rgPoints.ToArray();
-            Brush br = new SolidBrush(m_clrFill);
-            Pen p = new Pen(m_clrBorder, 1.0f);
-            g.FillPolygon(br, rg);
-            g.DrawPolygon(p, rg);
-            p.Dispose();
-            br.Dispose();
+
+            if (m_rgPoints.Count >= 2)
+            {
+                PointF[] rg = m_rgPoints.ToArray();
+                Brush br = new SolidBrush(m_clrFill);
+                Pen p = new Pen(m_clrBorder, 1.0f);
+                g.FillPolygon(br, rg);
+                g.DrawPolygon(p, rg);
+                p.Dispose();
+                br.Dispose();
+            }
+
+            postrender(g);
+        }
+    }
+
+    /// <summary>
+    /// The GeomPolyLine object is used to render an spline.
+    /// </summary>
+    class GeomPolyLine : GeomObj
+    {
+        int m_nMaxPlots = int.MaxValue;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="fL">Specifies the left position.</param>
+        /// <param name="fR">Specifies the right position.</param>
+        /// <param name="fT">Specifies the top position.</param>
+        /// <param name="fB">Specifies the bottom position.</param>
+        /// <param name="clrFill">Specifies the fill color.</param>
+        /// <param name="clrBorder">Specifies the border color.</param>
+        /// <param name="nMaxPlots">Specifies the maximum number of plots.</param>
+        public GeomPolyLine(float fL, float fR, float fT, float fB, Color clrFill, Color clrBorder, int nMaxPlots = int.MaxValue)
+            : base(fL, fR, fT, fB, clrFill, clrBorder)
+        {
+            m_nMaxPlots = nMaxPlots;
+        }
+
+        private void clipAndShift()
+        {
+            if (m_rgPoints.Count > m_nMaxPlots)
+            {
+                float fShift = m_rgPoints[m_rgPoints.Count - 1].X - m_rgPoints[m_rgPoints.Count - 2].X;
+                int nDiff = m_rgPoints.Count - m_nMaxPlots;
+                m_rgPoints.RemoveRange(0, nDiff);
+                m_location.X -= (fShift * nDiff);
+            }
+        }
+
+        /// <summary>
+        /// Renders the rectangle on the Graphics specified.
+        /// </summary>
+        /// <param name="g">Specifies the Graphics used to draw.</param>
+        public override void Render(Graphics g)
+        {
+            prerender(g);
+
+            if (m_rgPoints.Count >= 2)
+            {
+                clipAndShift();
+
+                PointF[] rg = m_rgPoints.ToArray();
+                Pen p = new Pen(m_clrBorder, 1.0f);
+                g.DrawLines(p, rg);
+                p.Dispose();
+            }
+
             postrender(g);
         }
     }

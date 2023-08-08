@@ -411,8 +411,9 @@ namespace MyCaffe.gym.python
         /// </summary>
         /// <param name="nAction">Specifies the action to run.</param>
         /// <param name="nSteps">Specifies the number of steps to run the action.</param>
+        /// <param name="props">Optionally, specifies properties that may include the 'override_prediction' values used to set the prediction override.</param>
         /// <returns>A tuple containing a double[] with the data, a double with the reward and a bool with the terminal state is returned.</returns>
-        public CurrentState Step(int nAction, int nSteps = 1)
+        public CurrentState Step(int nAction, int nSteps = 1, PropertySet props = null)
         {
             if (m_igym == null)
                 throw new Exception("You must call 'Initialize' first!");
@@ -422,7 +423,7 @@ namespace MyCaffe.gym.python
                 m_igym.Step(nAction);
             }
 
-            Tuple<State, double, bool> state = m_igym.Step(nAction);
+            Tuple<State, double, bool> state = m_igym.Step(nAction, false, props);
 
             bool bIsOpen = (m_nUiId >= 0) ? true : false;
             Tuple<Bitmap, SimpleDatum> data = m_igym.Render(bIsOpen, 512, 512, true);

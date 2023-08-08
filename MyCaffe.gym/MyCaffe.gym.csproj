@@ -85,6 +85,7 @@
     </Compile>
     <Compile Include="Geometry.cs" />
     <Compile Include="GymCollection.cs" />
+    <Compile Include="Gyms\CurveGym.cs" />
     <Compile Include="Gyms\ModelGym.cs" />
     <Compile Include="Gyms\DataGeneralGym.cs" />
     <Compile Include="Gyms\AtariGym.cs" />

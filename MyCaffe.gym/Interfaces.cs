@@ -25,6 +25,10 @@ namespace MyCaffe.gym
         /// </summary>
         ATARI = 99990002,
         /// <summary>
+        /// Specifies the Curve GYM Dataset ID.
+        /// </summary>
+        CURVE = 99990003,
+        /// <summary>
         /// Specifies the Standard DATAGENERAL GYM Dataset ID.
         /// </summary>
         DATAGENERAL = 99991001,
@@ -48,6 +52,10 @@ namespace MyCaffe.gym
         /// </summary>
         ATARI = 99995002,
         /// <summary>
+        /// Specifies the Curve GYM Dataset ID.
+        /// </summary>
+        CURVE = 99995003,
+        /// <summary>
         /// Specifies the Standard DATAGENERAL GYM Training Dataset ID.
         /// </summary>
         DATAGENERAL = 99996001,
@@ -70,6 +78,10 @@ namespace MyCaffe.gym
         /// Specifies the Standard ATARI GYM Testing Dataset ID.
         /// </summary>
         ATARI = 99997002,
+        /// <summary>
+        /// Specifies the Curve GYM Dataset ID.
+        /// </summary>
+        CURVE = 99997003,
         /// <summary>
         /// Specifies the Standard DATAGENERAL GYM Testing Dataset ID.
         /// </summary>

@@ -58,6 +58,60 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestGymCurve()
+        {
+            MyCaffePythonGym gym = new MyCaffePythonGym();
+            Random random = new Random();
+
+            // 0 = Sin, 1 = Cos, 2 = Random
+            gym.Initialize("Curve", "CurveType=0");
+
+            string strName = gym.Name;
+            Assert.AreEqual(strName, "MyCaffe Curve");
+
+            int[] rgActions = gym.Actions;
+            Assert.AreEqual(rgActions.Length, 2);
+            Assert.AreEqual(rgActions[0], 0);
+            Assert.AreEqual(rgActions[1], 1);
+
+            gym.OpenUi();
+
+            float fPredictedY = 0;
+            PropertySet props = new PropertySet();
+
+            for (int i = 0; i < 1000; i++)
+            {
+                if (i == 0 || gym.IsTerminal)
+                    gym.Reset();
+
+                fPredictedY += (float)(random.NextDouble() - 0.5) * (float)(random.NextDouble() * 0.20f);
+                if (fPredictedY > 1.0f)
+                    fPredictedY = 1.0f;
+                if (fPredictedY < -1.0f)
+                    fPredictedY = -1.0f;
+
+                props.SetProperty("override_prediction", fPredictedY.ToString());
+
+                int nActionIdx = random.Next(rgActions.Length);
+                gym.Step(rgActions[nActionIdx], 1, props);
+
+                Assert.AreNotEqual(gym.Data, null);
+
+                List<double> rgData = gym.Data;
+
+                Assert.AreNotEqual(rgData, null);
+                Assert.AreEqual(rgData.Count, 4);
+
+                Trace.WriteLine("Reward = " + gym.Reward);
+
+                if (gym.IsTerminal)
+                    Trace.WriteLine("TERMINAL = TRUE");
+            }
+
+            gym.CloseUi();
+        }
+
+        [TestMethod]
         public void TestGym()
         {
             MyCaffePythonGym gym = new MyCaffePythonGym();
