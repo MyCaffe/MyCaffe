@@ -177,12 +177,14 @@ namespace MyCaffe.test
 
         private string getTestDataPath(string strSubPath)
         {
-            return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\LNN\\test\\" + strSubPath + "\\iter_0\\";
+            return "C:\\temp\\projects\\LNN\\PythonApplication2\\PythonApplication2\\test\\" + strSubPath + "\\iter_0\\";
+            //return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\LNN\\test\\" + strSubPath + "\\iter_0\\";
         }
 
         private string getTestWtsPath(string strSubPath)
         {
-            return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\LNN\\test\\" + strSubPath + "\\iter_0\\weights\\";
+            return "C:\\temp\\projects\\LNN\\PythonApplication2\\PythonApplication2\\test\\" + strSubPath + "\\iter_0\\weights\\";
+            //return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\LNN\\test\\" + strSubPath + "\\iter_0\\weights\\";
         }
 
         private void verifyFileDownload(string strSubPath, string strFile)
@@ -192,37 +194,37 @@ namespace MyCaffe.test
                 throw new Exception("ERROR: You need to download the LNN test data by running the MyCaffe Test Application and selecting the 'Download Test Data | LNN' menu.");
         }
 
-        private void load_weights(Layer<T> layer, string strPath)
+        private void load_weights(Layer<T> layer, string strPath, string strTag = "")
         {
             int nNumLayes = layer.layer_param.cfc_unit_param.backbone_layers;
             int nIdx = 0;
 
             for (int i = 0; i < nNumLayes; i++)
             {
-                layer.blobs[nIdx].LoadFromNumpy(strPath + "bb_" + i.ToString() + ".weight.npy");
+                layer.blobs[nIdx].LoadFromNumpy(strPath + strTag + "bb_" + i.ToString() + ".weight.npy");
                 nIdx++;
-                layer.blobs[nIdx].LoadFromNumpy(strPath + "bb_" + i.ToString() + ".bias.npy");
+                layer.blobs[nIdx].LoadFromNumpy(strPath + strTag + "bb_" + i.ToString() + ".bias.npy");
                 nIdx++;
             }
 
-            layer.blobs[nIdx].LoadFromNumpy(strPath + "ff1.weight.npy");
+            layer.blobs[nIdx].LoadFromNumpy(strPath + strTag + "ff1.weight.npy");
             nIdx++;
-            layer.blobs[nIdx].LoadFromNumpy(strPath + "ff1.bias.npy");
-            nIdx++;
-
-            layer.blobs[nIdx].LoadFromNumpy(strPath + "ff2.weight.npy");
-            nIdx++;
-            layer.blobs[nIdx].LoadFromNumpy(strPath + "ff2.bias.npy");
+            layer.blobs[nIdx].LoadFromNumpy(strPath + strTag + "ff1.bias.npy");
             nIdx++;
 
-            layer.blobs[nIdx].LoadFromNumpy(strPath + "time_a.weight.npy");
+            layer.blobs[nIdx].LoadFromNumpy(strPath + strTag + "ff2.weight.npy");
             nIdx++;
-            layer.blobs[nIdx].LoadFromNumpy(strPath + "time_a.bias.npy");
+            layer.blobs[nIdx].LoadFromNumpy(strPath + strTag + "ff2.bias.npy");
             nIdx++;
 
-            layer.blobs[nIdx].LoadFromNumpy(strPath + "time_b.weight.npy");
+            layer.blobs[nIdx].LoadFromNumpy(strPath + strTag + "time_a.weight.npy");
             nIdx++;
-            layer.blobs[nIdx].LoadFromNumpy(strPath + "time_b.bias.npy");
+            layer.blobs[nIdx].LoadFromNumpy(strPath + strTag + "time_a.bias.npy");
+            nIdx++;
+
+            layer.blobs[nIdx].LoadFromNumpy(strPath + strTag + "time_b.weight.npy");
+            nIdx++;
+            layer.blobs[nIdx].LoadFromNumpy(strPath + strTag + "time_b.bias.npy");
             nIdx++;
         }
 
@@ -334,10 +336,13 @@ namespace MyCaffe.test
             Blob<T> blobYexp = null;
             Blob<T> blobWork = null;
             string strSubPath = (bNoGate) ? "cfc_cell_no_gate" : "cfc_cell_gate";
+            string strTag = "";
+            string strVerifyFile = "cell_ff1.npy";
+
             string strPath = getTestDataPath(strSubPath);
             string strPathWts = getTestWtsPath(strSubPath);
 
-            verifyFileDownload(strSubPath, "cell_ff1.npy");
+            verifyFileDownload(strSubPath, strVerifyFile);
 
             try
             {
@@ -355,9 +360,18 @@ namespace MyCaffe.test
                 m_log.CHECK(layer != null, "The layer was not created correctly.");
                 m_log.CHECK(layer.type == LayerParameter.LayerType.CFC_UNIT, "The layer type is incorrect.");
 
-                blobX.LoadFromNumpy(strPath + "x.npy");
-                blobHx.LoadFromNumpy(strPath + "hx.npy");
-                blobTs.LoadFromNumpy(strPath + "ts.npy");
+                string strXname = "x.npy";
+                string strHxName = "hx.npy";
+                string strTsName = "ts.npy";
+                string strXGradName = "cell_input.grad.npy";
+                string strHxGradName = "cell_hx.grad.npy";
+                string strTsGradName = "cell_ts.grad.npy";
+                string strHStateName = "h_state.npy";
+                string strHStateGradName = "h_state.grad.npy";
+
+                blobX.LoadFromNumpy(strPath + strXname);
+                blobHx.LoadFromNumpy(strPath + strHxName);
+                blobTs.LoadFromNumpy(strPath + strTsName);
 
                 BottomVec.Clear();
                 BottomVec.Add(blobX);
@@ -367,24 +381,25 @@ namespace MyCaffe.test
                 TopVec.Add(blobY);
 
                 layer.Setup(BottomVec, TopVec);
-                load_weights(layer, strPathWts);
+                load_weights(layer, strPathWts, strTag);
 
                 layer.Forward(BottomVec, TopVec);
 
-                blobYexp.LoadFromNumpy(strPath + "h_state.npy");
+                blobYexp.LoadFromNumpy(strPath + strHStateName);
                 m_log.CHECK(TopVec[0].Compare(blobYexp, blobWork, false, 2e-07), "The blobs do not match.");
 
                 //** BACKWARD **
 
-                TopVec[0].LoadFromNumpy(strPath + "h_state.grad.npy", true);
+                TopVec[0].LoadFromNumpy(strPath + strHStateGradName, true);
 
                 layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
 
-                blobXgrad.LoadFromNumpy(strPath + "cell_input.grad.npy", true);
+                blobXgrad.LoadFromNumpy(strPath + strXGradName, true);
                 m_log.CHECK(blobXgrad.Compare(blobX, blobWork, true, 1e-07), "The blobs do not match.");
-                blobHxgrad.LoadFromNumpy(strPath + "cell_hx.grad.npy", true);
+
+                blobHxgrad.LoadFromNumpy(strPath + strHxGradName, true);
                 m_log.CHECK(blobHxgrad.Compare(blobHx, blobWork, true, 1e-07), "The blobs do not match.");
-                blobTsgrad.LoadFromNumpy(strPath + "cell_ts.grad.npy", true);
+                blobTsgrad.LoadFromNumpy(strPath + strTsGradName, true);
                 m_log.CHECK(blobTsgrad.Compare(blobTs, blobWork, true, 1e-07), "The blobs do not match.");
             }
             finally
