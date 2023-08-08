@@ -220,6 +220,18 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Reshapes all blobs in the collection to the sizes of the source.
+        /// </summary>
+        /// <param name="blob">Specifies the source blob.</param>
+        public void ReshapeLike(Blob<T> blob)
+        {
+            for (int i = 0; i < m_rgBlobs.Count; i++)
+            {
+                m_rgBlobs[i].ReshapeLike(blob);
+            }
+        }
+
+        /// <summary>
         /// Copy the data or diff from another BlobCollection into this one.
         /// </summary>
         /// <param name="bSrc">Specifies the src BlobCollection to copy.</param>
