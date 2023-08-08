@@ -212,6 +212,19 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Dispose the blob collection.
+        /// </summary>
+        /// <param name="rg">Specifies the blob collection to dispose.</param>
+        protected void dispose(ref BlobCollection<T> rg)
+        {
+            if (rg != null)
+            {
+                rg.Dispose();
+                rg = null;
+            }
+        }
+
+        /// <summary>
         /// Called to connect the loss OnLoss event to a specified layer (typically the data layer).
         /// </summary>
         /// <remarks>
