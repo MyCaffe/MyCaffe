@@ -1192,9 +1192,11 @@ license and copyright terms herein.
   under the Apache License, version 2.0 located at:
   https://github.com/google-research/google-research/blob/master/LICENSE
 
-  The MyCaffe LNN layers were inspired by or use portions of the open-source project
+  The MyCaffe LNN layers were inspired by or use portions of the open-source projects
   https://github.com/raminmh/CfC by Ramin Hasani distributed under the Apache 2.0 
-  license located at: https://github.com/raminmh/CfC/blob/main/LICENSE
+  license located at: https://github.com/raminmh/CfC/blob/main/LICENSE and 
+  https://github.com/mlech26l/ncps/blob/master/LICENSE by Mathias Lechner distributed
+  under the Apache 2.0 license located at: https://github.com/mlech26l/ncps/blob/master/LICENSE
 
   The sample WAV file(s) 'How_I_Feel.x.wav' is distributed with permission from 
   CLOV15 Tunes LLC.  For more information on CLOV15, see https://soundcloud.com/clov15.
