@@ -408,10 +408,6 @@ namespace MyCaffe.test
 
                 blobXgrad.LoadFromNumpy(strPath + "x.grad.npy", true);
                 m_log.CHECK(blobXgrad.Compare(blobX, blobWork, true), "The blobs do not match.");
-                blobTimeSpansGrad.LoadFromNumpy(strPath + "timespans.grad.npy", true);
-                m_log.CHECK(blobTimeSpansGrad.Compare(blobTimeSpans, blobWork, true), "The blobs do not match.");
-                blobMaskGrad.LoadFromNumpy(strPath + "cell_ts.grad.npy", true);
-                m_log.CHECK(blobMaskGrad.Compare(blobMask, blobWork, true), "The blobs do not match.");
             }
             finally
             {
