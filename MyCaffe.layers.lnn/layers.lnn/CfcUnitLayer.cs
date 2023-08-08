@@ -37,6 +37,7 @@ namespace MyCaffe.layers.lnn
         Layer<T> m_ff2;
         Layer<T> m_timeA;
         Layer<T> m_timeB;
+        bool m_bOwnInternalBlobs = true;
         Blob<T> m_blobFF1;
         Blob<T> m_blobFF2;
         Blob<T> m_blobTimeA;
@@ -44,6 +45,7 @@ namespace MyCaffe.layers.lnn
         Blob<T> m_blobTInterp;
         Blob<T> m_blobTInterp1;
         Blob<T> m_blobTInterpInv;
+        Blob<T> m_blobTInterpOnes;
         Blob<T> m_blobTs;
         Blob<T> m_blobX;
         Blob<T> m_blobTop1;
@@ -66,30 +68,6 @@ namespace MyCaffe.layers.lnn
         {
             base.dispose();
 
-            if (m_rgLinearBtms != null)
-            {
-                m_rgLinearBtms.Dispose();
-                m_rgLinearBtms = null;
-            }
-
-            if (m_rgLinearTops != null)
-            {
-                m_rgLinearTops.Dispose();
-                m_rgLinearTops = null;
-            }
-
-            if (m_rgActivationBtms != null)
-            {
-                m_rgActivationBtms.Dispose();
-                m_rgActivationBtms = null;
-            }
-
-            if (m_rgActivationTops != null)
-            {
-                m_rgActivationTops.Dispose();
-                m_rgActivationTops = null;
-            }
-
             if (m_rgLinearLayers != null)
             {
                 for (int i = 0; i < m_rgLinearLayers.Length; i++)
@@ -99,17 +77,27 @@ namespace MyCaffe.layers.lnn
                 m_rgLinearLayers = null;
             }
 
-            dispose(ref m_blobFF1);
-            dispose(ref m_blobFF2);
-            dispose(ref m_blobTimeA);
-            dispose(ref m_blobTimeB);
-            dispose(ref m_blobTInterp);
-            dispose(ref m_blobTInterp1);
-            dispose(ref m_blobTInterpInv);
-            dispose(ref m_blobTs);
-            dispose(ref m_blobX);
-            dispose(ref m_blobTop1);
-            dispose(ref m_blobTop2);
+            if (m_bOwnInternalBlobs)
+            {
+                dispose(ref m_rgLinearBtms);
+                dispose(ref m_rgLinearTops);
+                dispose(ref m_rgActivationBtms);
+                dispose(ref m_rgActivationTops);
+
+                dispose(ref m_blobFF1);
+                dispose(ref m_blobFF2);
+                dispose(ref m_blobTimeA);
+                dispose(ref m_blobTimeB);
+                dispose(ref m_blobTInterp);
+                dispose(ref m_blobTInterp1);
+                dispose(ref m_blobTInterpInv);
+                dispose(ref m_blobTs);
+                dispose(ref m_blobX);
+                dispose(ref m_blobTop1);
+                dispose(ref m_blobTop2);
+            }
+
+            dispose(ref m_blobTInterpOnes);
 
             dispose(ref m_cat);
             dispose(ref m_tanh);
@@ -118,6 +106,47 @@ namespace MyCaffe.layers.lnn
             dispose(ref m_ff2);
             dispose(ref m_timeA);
             dispose(ref m_timeB);
+        }
+
+        /// <summary>
+        /// Set the internal blobs to a set of external blobs.
+        /// </summary>
+        /// <param name="blobFF1">Specifies the FF1 data.</param>
+        /// <param name="blobFF2">Specifies the FF2 data.</param>
+        /// <param name="blobTimeA">Specifies the TimeA data.</param>
+        /// <param name="blobTimeB">Specifies the TimeB data.</param>
+        /// <param name="blobTInterp">Specifies the t-interp data.</param>
+        /// <param name="blobTInterp1">Specifies the t-interp1 data.</param>
+        /// <param name="blobTInterpInv">Specifies the t-interp inv data.</param>
+        /// <param name="blobTs">Specifies the ts data.</param>
+        /// <param name="blobX">Specifies the input x data.</param>
+        /// <param name="blobTop1">Specifies the top1 data.</param>
+        /// <param name="blobTop2">Specifies the top2 data.</param>
+        public void SetInternalBlobs(Blob<T> blobFF1, Blob<T> blobFF2, Blob<T> blobTimeA, Blob<T> blobTimeB, Blob<T> blobTInterp, Blob<T> blobTInterp1, Blob<T> blobTInterpInv, Blob<T> blobTs, Blob<T> blobX, Blob<T> blobTop1, Blob<T> blobTop2, BlobCollection<T> colLin)
+        {
+            m_bOwnInternalBlobs = false;
+            m_blobFF1 = blobFF1;
+            m_blobFF2 = blobFF2;
+            m_blobTimeA = blobTimeA;
+            m_blobTimeB = blobTimeB;
+            m_blobTInterp = blobTInterp;
+            m_blobTInterp1 = blobTInterp1;
+            m_blobTInterpInv = blobTInterpInv;
+            m_blobTs = blobTs;
+            m_blobX = blobX;
+            m_blobTop1 = blobTop1;
+            m_blobTop2 = blobTop2;
+
+            int nIdx = 0;
+            for (int i=0; i<m_param.cfc_unit_param.backbone_layers; i++)
+            {
+                m_rgLinearBtms[i] = colLin[nIdx];
+                nIdx++;
+                m_rgLinearTops[i] = colLin[nIdx];
+                m_rgActivationBtms[i] = colLin[nIdx];
+                nIdx++;
+                m_rgActivationTops[i] = colLin[nIdx];
+            }
         }
 
         private void addBtmTop(Blob<T> btm, Blob<T> top)
@@ -358,6 +387,9 @@ namespace MyCaffe.layers.lnn
             m_blobTInterp1 = new Blob<T>(m_cuda, m_log);
             m_blobTInterp1.Name = "t-interp1";
             m_blobTInterp1.ReshapeLike(m_blobTimeA);
+            m_blobTInterpOnes = new Blob<T>(m_cuda, m_log, true);
+            m_blobTInterpOnes.Name = "t_interp_ones";
+            m_blobTInterpOnes.ReshapeLike(m_blobTimeA);
 
             addBtmTop(m_blobTInterp, colTop[0]);
             m_sigmoid.Setup(m_colBtm, m_colTop);
@@ -418,10 +450,13 @@ namespace MyCaffe.layers.lnn
             // Time A Layer
             addBtmTop(blobX, m_blobTimeA);
             m_timeA.Reshape(m_colBtm, m_colTop);
+            m_blobTs.ReshapeLike(m_blobTimeA);
 
             m_blobTInterp.ReshapeLike(m_blobTimeA);
             m_blobTInterpInv.ReshapeLike(m_blobTimeA);
             m_blobTInterp1.ReshapeLike(m_blobTimeA);
+            m_blobTInterpOnes.ReshapeLike(m_blobTimeA);
+            m_blobTInterpOnes.SetData(1.0);
 
             // Time B Layer
             addBtmTop(blobX, m_blobTimeB);
@@ -558,16 +593,15 @@ namespace MyCaffe.layers.lnn
             else
             {
                 // ff1 grad = top.trad * (1.0 - t_interp)
-                m_blobTInterp.SetDiff(1.0);
-                m_cuda.sub(m_blobFF1.count(), m_blobTInterp.gpu_diff, m_blobTInterp.gpu_data, m_blobFF1.mutable_gpu_diff);
+                m_cuda.sub(m_blobFF1.count(), m_blobTInterpOnes.gpu_data, m_blobTInterp.gpu_data, m_blobFF1.mutable_gpu_diff);
                 m_cuda.mul(m_blobFF1.count(), m_blobFF1.gpu_diff, colTop[0].gpu_diff, m_blobFF1.mutable_gpu_diff);
+
+                // ff2 grad = top.grad * t_interp
+                m_cuda.mul(m_blobFF2.count(), colTop[0].gpu_diff, m_blobTInterp.gpu_data, m_blobFF2.mutable_gpu_diff);
 
                 // ti grad = top.grad * (ff2 - ff1)
                 m_cuda.sub(m_blobTInterp1.count(), m_blobFF2.gpu_data, m_blobFF1.gpu_data, m_blobTInterp1.mutable_gpu_diff);
                 m_cuda.mul(m_blobTInterp1.count(), m_blobTInterp1.gpu_diff, colTop[0].gpu_diff, m_blobTInterp1.mutable_gpu_diff);
-
-                // ff2 grad = top.grad * t_interp
-                m_cuda.mul(m_blobFF2.count(), colTop[0].gpu_diff, m_blobTInterp.gpu_data, m_blobFF2.mutable_gpu_diff);
             }
 
             // Sigmoid Grad
@@ -585,7 +619,7 @@ namespace MyCaffe.layers.lnn
             m_cuda.mul(m_blobTs.count(), m_blobTInterp.gpu_diff, m_blobTimeA.gpu_data, m_blobTs.mutable_gpu_diff);
             m_cuda.channel_sum(m_blobTs.count(), 1, m_blobTs.num, m_blobTs.channels, m_blobTs.gpu_diff, colBottom[2].mutable_gpu_diff, false);
 
-            Blob<T> blobX = m_rgActivationTops[m_rgLinearLayers.Length - 1];
+            Blob<T> blobX = m_rgActivationTops[m_rgActivationTops.Count-1];
             blobX.SetDiff(0);
 
             // time_b grad
