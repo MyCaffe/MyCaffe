@@ -194,6 +194,15 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Delete a property by name.
+        /// </summary>
+        /// <param name="strName">Specifies the proeprty to delete.</param>
+        public void DeleteProperty(string strName)
+        {
+            m_rgProperties.Remove(strName);
+        }
+
+        /// <summary>
         /// Sets a property in the property set to a value if it exists, otherwise it adds the new property.
         /// </summary>
         /// <param name="strName">Specifies the property name.</param>
