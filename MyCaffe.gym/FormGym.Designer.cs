@@ -28,10 +28,14 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormGym));
             this.toolStripContainer1 = new System.Windows.Forms.ToolStripContainer();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.btnShowActionImage = new System.Windows.Forms.ToolStripButton();
+            this.btnRecord = new System.Windows.Forms.ToolStripButton();
+            this.btnDeleteRecordingData = new System.Windows.Forms.ToolStripButton();
+            this.timerUI = new System.Windows.Forms.Timer(this.components);
             this.toolStripContainer1.BottomToolStripPanel.SuspendLayout();
             this.toolStripContainer1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
@@ -58,10 +62,12 @@
             // 
             this.toolStrip1.Dock = System.Windows.Forms.DockStyle.None;
             this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.btnShowActionImage});
+            this.btnShowActionImage,
+            this.btnRecord,
+            this.btnDeleteRecordingData});
             this.toolStrip1.Location = new System.Drawing.Point(3, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(35, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(81, 25);
             this.toolStrip1.TabIndex = 0;
             // 
             // btnShowActionImage
@@ -75,6 +81,35 @@
             this.btnShowActionImage.Size = new System.Drawing.Size(23, 22);
             this.btnShowActionImage.Text = "Show action image";
             this.btnShowActionImage.Click += new System.EventHandler(this.btnShowActionImage_Click);
+            // 
+            // btnRecord
+            // 
+            this.btnRecord.CheckOnClick = true;
+            this.btnRecord.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnRecord.Image = ((System.Drawing.Image)(resources.GetObject("btnRecord.Image")));
+            this.btnRecord.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
+            this.btnRecord.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnRecord.Name = "btnRecord";
+            this.btnRecord.Size = new System.Drawing.Size(23, 22);
+            this.btnRecord.Text = "Record";
+            this.btnRecord.Click += new System.EventHandler(this.btnRecord_Click);
+            // 
+            // btnDeleteRecordingData
+            // 
+            this.btnDeleteRecordingData.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnDeleteRecordingData.Image = ((System.Drawing.Image)(resources.GetObject("btnDeleteRecordingData.Image")));
+            this.btnDeleteRecordingData.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
+            this.btnDeleteRecordingData.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnDeleteRecordingData.Name = "btnDeleteRecordingData";
+            this.btnDeleteRecordingData.Size = new System.Drawing.Size(23, 22);
+            this.btnDeleteRecordingData.Text = "Delete Recording Data";
+            this.btnDeleteRecordingData.Click += new System.EventHandler(this.btnDeleteRecordingData_Click);
+            // 
+            // timerUI
+            // 
+            this.timerUI.Enabled = true;
+            this.timerUI.Interval = 250;
+            this.timerUI.Tick += new System.EventHandler(this.timerUI_Tick);
             // 
             // FormGym
             // 
@@ -106,5 +141,8 @@
         private System.Windows.Forms.ToolStripContainer toolStripContainer1;
         private System.Windows.Forms.ToolStrip toolStrip1;
         private System.Windows.Forms.ToolStripButton btnShowActionImage;
+        private System.Windows.Forms.ToolStripButton btnRecord;
+        private System.Windows.Forms.ToolStripButton btnDeleteRecordingData;
+        private System.Windows.Forms.Timer timerUI;
     }
 }

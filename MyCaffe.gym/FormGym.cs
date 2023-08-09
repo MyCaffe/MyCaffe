@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -128,6 +129,30 @@ namespace MyCaffe.gym
                 if (m_dlgActionImage.Visible)
                     m_dlgActionImage.Hide();
             }
+        }
+
+        private void btnRecord_Click(object sender, EventArgs e)
+        {
+            if (btnRecord.Checked)
+            {
+                btnRecord.Image = Properties.Resources.record_on;
+                m_ctrl.EnableRecording = true;
+            }
+            else
+            {
+                btnRecord.Image = Properties.Resources.record_off;
+                m_ctrl.EnableRecording = false;
+            }
+        }
+
+        private void btnDeleteRecordingData_Click(object sender, EventArgs e)
+        {
+            m_ctrl.DeleteRecordingData();
+        }
+
+        private void timerUI_Tick(object sender, EventArgs e)
+        {
+            btnDeleteRecordingData.Enabled = m_ctrl.HasRecordingData;
         }
     }
 }

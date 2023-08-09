@@ -133,6 +133,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="MainIcon.ico" />
+    <None Include="Resources\record_on.bmp" />
+    <None Include="Resources\record_off.bmp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MyCaffe.basecode\MyCaffe.basecode.csproj">
