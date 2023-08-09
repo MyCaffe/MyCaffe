@@ -370,7 +370,7 @@ namespace MyCaffe.test
         }
 
         /// <summary>
-        /// [WORK IN PROGRESS] Test Cfc backward
+        /// Test Cfc backward
         /// </summary>
         /// <remarks>
         /// To generate the test data, run the following:
@@ -468,7 +468,7 @@ namespace MyCaffe.test
         }
 
         /// <summary>
-        /// [WORK IN PROGRESS] Test Cfc gradient check
+        /// Test Cfc gradient check
         /// </summary>
         public void TestGradient(bool bNoGate)
         {
@@ -752,9 +752,6 @@ namespace MyCaffe.test
                 }
             }
 
-            //IXPersist<T> persist = new common.PersistCaffe<T>(m_log, false);
-            //byte[] rgWts = net.SaveWeights(persist, false);
-
             //---------------------------------------------------
             // Run the trained model
             //---------------------------------------------------
@@ -769,7 +766,6 @@ namespace MyCaffe.test
 
             // Use the test net for running the model.
             Net<T> netTest = mycaffe.GetInternalNet(Phase.TEST);
-            //netTest.LoadWeights(rgWts, persist);
 
             BlobCollection<T> colInputs = new BlobCollection<T>();
             Blob<T> blobX1 = mycaffe.CreateBlob("x");
