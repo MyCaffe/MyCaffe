@@ -66,6 +66,7 @@ namespace MyCaffe.layers.lnn
         Blob<T> m_blobCurrentOutput = null;
         Blob<T> m_blobOutputSequence = null;
         int[] m_rgShape = new int[] { 1, 1, 1, 1 };
+        bool m_bSetup = false;
 
         /// <summary>
         /// The CfcLayer constructor.
@@ -77,6 +78,50 @@ namespace MyCaffe.layers.lnn
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.CFC;
+
+            m_blobHState1 = new Blob<T>(m_cuda, m_log);
+            m_blobHState = new Blob<T>(m_cuda, m_log);
+
+            m_rgrgLinear = new List<BlobCollection<T>>();
+            m_blobTs = new Blob<T>(m_cuda, m_log);
+
+            m_blobInputs = new Blob<T>(m_cuda, m_log);
+            m_blobInputs1 = new Blob<T>(m_cuda, m_log);
+            m_blobMask = new Blob<T>(m_cuda, m_log);
+            m_blobMaskInv = new Blob<T>(m_cuda, m_log);
+
+            m_blobCurrentMask = new Blob<T>(m_cuda, m_log);
+            m_blobCurrentOutput = new Blob<T>(m_cuda, m_log);
+            m_blobCurrentMaskFull = new Blob<T>(m_cuda, m_log);
+
+            m_blobForwardInput = new Blob<T>(m_cuda, m_log);
+            m_blobForwardInput1 = new Blob<T>(m_cuda, m_log);
+            m_blobForwardInput2 = new Blob<T>(m_cuda, m_log);
+            m_blobTimeSinceUpdate = new Blob<T>(m_cuda, m_log);
+            m_blobTimeSinceUpdate1 = new Blob<T>(m_cuda, m_log);
+            m_blobTsFull = new Blob<T>(m_cuda, m_log);
+
+            m_blobForwardOutput = new Blob<T>(m_cuda, m_log);
+            m_blobForwardOutput1 = new Blob<T>(m_cuda, m_log);
+            m_blobForwardOutput2 = new Blob<T>(m_cuda, m_log);
+
+            m_blobOutputSequence = new Blob<T>(m_cuda, m_log);
+
+            LayerParameter cat = new LayerParameter(LayerParameter.LayerType.CONCAT);
+            cat.concat_param.axis = 1;
+            m_cat = Layer<T>.Create(m_cuda, m_log, convertLayerParam(cat, p), null);
+
+            LayerParameter rnn = new LayerParameter(LayerParameter.LayerType.CFC_UNIT);
+            rnn.cfc_unit_param.Copy(m_param.cfc_unit_param);
+            m_rnn_cell = Layer<T>.Create(m_cuda, m_log, convertLayerParam(rnn, p), null);
+
+            LayerParameter fc = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "fc");
+            fc.inner_product_param.num_output = (uint)m_param.cfc_param.output_features;
+            fc.inner_product_param.bias_term = true;
+            fc.inner_product_param.weight_filler = new FillerParameter("xavier");
+            fc.inner_product_param.bias_filler = new FillerParameter("constant", 0.1);
+            fc.inner_product_param.axis = 1;
+            m_fc = Layer<T>.Create(m_cuda, m_log, convertLayerParam(fc, p), null);
         }
 
         private void dispose(ref List<BlobCollection<T>> rg)
@@ -191,7 +236,8 @@ namespace MyCaffe.layers.lnn
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            LayerParameter p;
+            if (m_bSetup)
+                return;
 
             m_nBatchSize = colBottom[0].num;
             m_nSeqLen = colBottom[0].channels;
@@ -200,10 +246,8 @@ namespace MyCaffe.layers.lnn
 
             m_rgShape[0] = m_nBatchSize;
             m_rgShape[1] = m_param.cfc_param.hidden_size;
-            m_blobHState1 = new Blob<T>(m_cuda, m_log, m_rgShape);
-            m_blobHState = new Blob<T>(m_cuda, m_log, m_rgShape);
-
-            m_rgrgLinear = new List<BlobCollection<T>>();
+            m_blobHState1.Reshape(m_rgShape);
+            m_blobHState.Reshape(m_rgShape);
 
             for (int i = 0; i < m_nSeqLen; i++)
             {
@@ -262,7 +306,7 @@ namespace MyCaffe.layers.lnn
                 for (int n = 0; n < m_param.cfc_unit_param.backbone_layers; n++)
                 {
                     colLinear.Add(new Blob<T>(m_cuda, m_log));
-                    colLinear[colLinear.Count-1].Name = "bb_fc" + (n + 1).ToString() + "_" + i.ToString();
+                    colLinear[colLinear.Count - 1].Name = "bb_fc" + (n + 1).ToString() + "_" + i.ToString();
                     colLinear.Add(new Blob<T>(m_cuda, m_log));
                     colLinear[colLinear.Count - 1].Name = "bb_act" + (n + 1).ToString() + "_" + i.ToString();
                 }
@@ -270,50 +314,35 @@ namespace MyCaffe.layers.lnn
             }
 
             m_rgShape[1] = 1;   
-            m_blobTs = new Blob<T>(m_cuda, m_log, m_rgShape);
+            m_blobTs.Reshape(m_rgShape);
 
             m_rgShape[1] = m_nTrueInFeatures;
-            m_blobInputs = new Blob<T>(m_cuda, m_log, m_rgShape);
-            m_blobInputs1 = new Blob<T>(m_cuda, m_log);
-            m_blobMask = new Blob<T>(m_cuda, m_log);
+            m_blobInputs.Reshape(m_rgShape);
             m_blobMask.ReshapeLike(m_blobInputs);
-            m_blobMaskInv = new Blob<T>(m_cuda, m_log);
             m_blobMaskInv.ReshapeLike(m_blobInputs);
             m_nMaskCount = m_blobMask.count(2);
 
             m_rgShape[1] = 1;
-            m_blobCurrentMask = new Blob<T>(m_cuda, m_log, m_rgShape);
-            m_blobCurrentOutput = new Blob<T>(m_cuda, m_log);
-            m_blobCurrentMaskFull = new Blob<T>(m_cuda, m_log);
+            m_blobCurrentMask.Reshape(m_rgShape);
 
             m_rgShape[1] = m_nTrueInFeatures;
-            m_blobForwardInput = new Blob<T>(m_cuda, m_log, m_rgShape);
-            m_blobForwardInput1 = new Blob<T>(m_cuda, m_log, m_rgShape);
-            m_blobForwardInput2 = new Blob<T>(m_cuda, m_log, m_rgShape);
-            m_blobTimeSinceUpdate = new Blob<T>(m_cuda, m_log, m_rgShape);
-            m_blobTimeSinceUpdate1 = new Blob<T>(m_cuda, m_log, m_rgShape);
-            m_blobTsFull = new Blob<T>(m_cuda, m_log, m_rgShape);
+            m_blobForwardInput.Reshape(m_rgShape);
+            m_blobForwardInput1.Reshape(m_rgShape);
+            m_blobForwardInput2.Reshape(m_rgShape);
+            m_blobTimeSinceUpdate.Reshape(m_rgShape);
+            m_blobTimeSinceUpdate1.Reshape(m_rgShape);
+            m_blobTsFull.Reshape(m_rgShape);
 
             m_rgShape[1] = m_param.cfc_param.output_features;
-            m_blobForwardOutput = new Blob<T>(m_cuda, m_log, m_rgShape);
-            m_blobForwardOutput1 = new Blob<T>(m_cuda, m_log, m_rgShape);
-            m_blobForwardOutput2 = new Blob<T>(m_cuda, m_log, m_rgShape);
-
-            m_blobOutputSequence = new Blob<T>(m_cuda, m_log);
-
-            p = new LayerParameter(LayerParameter.LayerType.CONCAT);
-            p.concat_param.axis = 1;
-            m_cat = Layer<T>.Create(m_cuda, m_log, p, null);
+            m_blobForwardOutput.Reshape(m_rgShape);
+            m_blobForwardOutput1.Reshape(m_rgShape);
+            m_blobForwardOutput2.Reshape(m_rgShape);
 
             addBtmTop(m_blobForwardInput, m_blobInputs1);
             if (m_nTrueInFeatures * 2 < m_param.cfc_param.input_features && m_nMaskCount == m_nTrueInFeatures)
                 m_colBtm.Add(m_blobTimeSinceUpdate);
             m_colBtm.Add(m_blobMask);
             m_cat.Setup(m_colBtm, m_colTop);
-
-            p = new LayerParameter(LayerParameter.LayerType.CFC_UNIT);
-            p.cfc_unit_param.Copy(m_param.cfc_unit_param);
-            m_rnn_cell = Layer<T>.Create(m_cuda, m_log, p, null);
 
             addBtmTop(m_blobInputs1, m_blobHState);
             m_colBtm.Add(m_blobHState1);
@@ -323,14 +352,6 @@ namespace MyCaffe.layers.lnn
 
             m_blobHState.Unsqueeze(4);
 
-            p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "fc");
-            p.inner_product_param.num_output = (uint)m_param.cfc_param.output_features;
-            p.inner_product_param.bias_term = true;
-            p.inner_product_param.weight_filler = new FillerParameter("xavier");
-            p.inner_product_param.bias_filler = new FillerParameter("constant", 0.1);
-            p.inner_product_param.axis = 1;
-            m_fc = Layer<T>.Create(m_cuda, m_log, p, null);
-
             addBtmTop(m_blobHState, m_blobCurrentOutput);
             m_fc.Setup(m_colBtm, m_colTop);
             blobs.Add(m_fc.blobs);
@@ -339,6 +360,8 @@ namespace MyCaffe.layers.lnn
 
             addBtmTop(m_blobHState, colTop[0]);
             m_fc.Reshape(m_colBtm, m_colTop);
+
+            m_bSetup = true;
         }
 
         /// <summary>
@@ -439,7 +462,7 @@ namespace MyCaffe.layers.lnn
         }
 
         /// <summary>
-        /// Forward computation
+        /// [WORK IN PROGRESS]Forward computation
         /// </summary>
         /// <param name="colBottom">inpub Blob vector (length 1)
         ///  -# @f$ (N \times C \times H \times W) @f$ 
@@ -575,7 +598,7 @@ namespace MyCaffe.layers.lnn
         }
 
         /// <summary>
-        /// Computes the error gradient w.r.t. the Cfc value inputs.
+        /// [WORK IN PROGRESS]Computes the error gradient w.r.t. the Cfc value inputs.
         /// </summary>
         /// <param name="colTop">top output blob vector (length 1), providing the error gradient
         /// with respect to outputs
@@ -691,6 +714,8 @@ namespace MyCaffe.layers.lnn
                     {
                         // Input grad = mask * Inputs1
                         m_cuda.mul(m_blobForwardInput.count(), m_blobForwardInput.gpu_diff, m_blobMask.gpu_data, m_blobInputs.mutable_gpu_diff);
+                        // Forwarded input grad = mask_inv * Forwarded input grad
+                        //m_cuda.mul(m_blobForwardInput.count(), m_blobForwardInput.gpu_diff, m_blobMaskInv.gpu_data, m_blobForwardInput.mutable_gpu_diff);
                     }
                     else
                     {
@@ -702,6 +727,10 @@ namespace MyCaffe.layers.lnn
                     m_blobInputs.CopyFrom(m_blobInputs1, true);
                 }
 
+                // Copy the t'th timestep of the time since update to the ts blob.
+                //m_cuda.channel_fillfrom(m_blobTsFull.count(), 1, m_blobTs.num, m_blobTsFull.channels, m_blobTs.gpu_diff, m_blobTsFull.mutable_gpu_diff, DIR.BWD);
+
+                //m_cuda.channel_copy(m_blobTs.count(), m_blobTs.num, 1, m_nSeqLen, 1, t, colBottom[1].gpu_diff, m_blobTs.mutable_gpu_diff, DIR.BWD);
                 // Copy the t'th time step of the input to the input blob.
                 m_cuda.channel_copy(m_blobInputs.count(), m_blobInputs.num, 1, m_nSeqLen, m_nTrueInFeatures, t, colBottom[0].gpu_diff, m_blobInputs.mutable_gpu_diff, DIR.BWD);
 
