@@ -373,33 +373,38 @@ namespace MyCaffe.gym.python
         /// <summary>
         /// Resets the gym to its initial state.
         /// </summary>
+        /// <param name="props">Optionally, specifies a set of properties to use to reset the gym.</param>
         /// <returns>A tuple containing a double[] with the data, a double with the reward and a bool with the terminal state is returned.</returns>
-        public CurrentState Reset()
+        public CurrentState Reset(PropertySet props = null)
         {
             if (m_igym == null)
                 throw new Exception("You must call 'Initialize' first!");
 
-            Tuple<State, double, bool> state = m_igym.Reset();
+            Tuple<State, double, bool> state = m_igym.Reset(false, props);
 
             bool bIsOpen = (m_nUiId >= 0) ? true : false;
             Tuple<Bitmap, SimpleDatum> data = m_igym.Render(bIsOpen, 512, 512, true);
             int nDataLen = 0;
             SimpleDatum sd = state.Item1.GetData(false, out nDataLen);
-            Observation obs = new Observation(data.Item1, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, sd.GetData<double>(), state.Item2, state.Item3);
 
-            if (bIsOpen)
+            if (data.Item1 != null || data.Item2 != null)
             {
-                if (m_rgrgActionDistributions != null)
-                    overlay(obs.ImageDisplay, m_rgrgActionDistributions);
+                Observation obs = new Observation(data.Item1, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, sd.GetData<double>(), state.Item2, state.Item3);
 
-                m_gymui.Render(m_nUiId, obs);
-                Thread.Sleep(m_igym.UiDelay);
+                if (bIsOpen)
+                {
+                    if (m_rgrgActionDistributions != null)
+                        overlay(obs.ImageDisplay, m_rgrgActionDistributions);
+
+                    m_gymui.Render(m_nUiId, obs);
+                    Thread.Sleep(m_igym.UiDelay);
+                }
+
+                if (m_igym.SelectedDataType == DATA_TYPE.BLOB)
+                    sd = data.Item2;
+                else
+                    sd.Clip(nDataLen, null, nDataLen, null);
             }
-
-            if (m_igym.SelectedDataType == DATA_TYPE.BLOB)
-                sd = data.Item2;
-            else
-                sd.Clip(nDataLen, null, nDataLen, null);
 
             m_state = new Tuple<SimpleDatum, double, bool>(sd, state.Item2, state.Item3);
 
@@ -429,25 +434,29 @@ namespace MyCaffe.gym.python
             Tuple<Bitmap, SimpleDatum> data = m_igym.Render(bIsOpen, 512, 512, true);
             int nDataLen = 0;
             SimpleDatum sd = state.Item1.GetData(false, out nDataLen);
-            Observation obs = new Observation(data.Item1, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, sd.GetData<double>(), state.Item2, state.Item3);
 
-            if (bIsOpen)
+            if (data.Item1 != null || data.Item2 != null)
             {
-                if (m_rgrgActionDistributions != null)
-                    overlay(obs.ImageDisplay, m_rgrgActionDistributions);
+                Observation obs = new Observation(data.Item1, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, sd.GetData<double>(), state.Item2, state.Item3);
 
-                m_gymui.Render(m_nUiId, obs);
-                Thread.Sleep(m_igym.UiDelay);
+                if (bIsOpen)
+                {
+                    if (m_rgrgActionDistributions != null)
+                        overlay(obs.ImageDisplay, m_rgrgActionDistributions);
+
+                    m_gymui.Render(m_nUiId, obs);
+                    Thread.Sleep(m_igym.UiDelay);
+                }
+
+                if (m_igym.SelectedDataType == DATA_TYPE.BLOB)
+                    sd = data.Item2;
+                else
+                    sd.Clip(nDataLen, null, nDataLen, null);
             }
-
-            if (m_igym.SelectedDataType == DATA_TYPE.BLOB)
-                sd = data.Item2;
-            else
-                sd.Clip(nDataLen, null, nDataLen, null);
 
             m_state = new Tuple<SimpleDatum, double, bool>(sd, state.Item2, state.Item3);
 
-            return new CurrentState(m_state.Item1.GetData<double>(), m_state.Item2, m_state.Item3);
+            return new CurrentState(m_state.Item1.GetData<double>(), m_state.Item2, m_state.Item3, state.Item1);
         }
 
         private void overlay(Bitmap bmp, double[][] rgData)
@@ -616,6 +625,7 @@ namespace MyCaffe.gym.python
     /// </summary>
     public class CurrentState
     {
+        State m_gymState = null;
         SimpleDatum m_rgData;
         double m_dfReward;
         bool m_bTerminal;
@@ -626,11 +636,13 @@ namespace MyCaffe.gym.python
         /// <param name="rgData">Specifies the data.</param>
         /// <param name="dfReward">Specifies the reward.</param>
         /// <param name="bTerminal">Specifies whether or not the state is terminal.</param>
-        public CurrentState(double[] rgData, double dfReward, bool bTerminal)
+        /// <param name="gymState">Optionally, specifies the gym state.</param>
+        public CurrentState(double[] rgData, double dfReward, bool bTerminal, State gymState = null)
         {
             m_rgData = new SimpleDatum(rgData.Length, 1, 1, rgData.Select(p => (float)p).ToArray(), 0, rgData.Length);
             m_dfReward = dfReward;
             m_bTerminal = bTerminal;
+            m_gymState = gymState;
         }
 
         /// <summary>
@@ -655,6 +667,14 @@ namespace MyCaffe.gym.python
         public bool Terminal
         {
             get { return m_bTerminal; }
+        }
+
+        /// <summary>
+        /// Returns the GymState if provided.
+        /// </summary>
+        public State GymState
+        {
+            get { return m_gymState; }
         }
     }
 }

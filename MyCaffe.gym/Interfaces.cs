@@ -121,8 +121,9 @@ namespace MyCaffe.gym
         /// Resets the state of they gym.
         /// </summary>
         /// <param name="bGetLabel">Optionally, specifies to query the label (default = false).</param>
+        /// <param name="props">Optionally, specifies the properties used when resetting.</param>
         /// <returns>A tuple containing state information and gym data, the reward and whether or not the gym is done is returned.</returns>
-        Tuple<State, double, bool> Reset(bool bGetLabel = false);
+        Tuple<State, double, bool> Reset(bool bGetLabel = false, PropertySet props = null);
         /// <summary>
         /// Run an action on the gym.
         /// </summary>
@@ -229,10 +230,93 @@ namespace MyCaffe.gym
     }
 
     /// <summary>
+    /// The DataPoint contains the data used when training.
+    /// </summary>
+    public class DataPoint
+    {
+        float[] m_rgfInputs;
+        float[] m_rgfMask;
+        float m_fTarget;
+        float m_fPredicted;
+        float m_fTime;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="rgfInputs">Specifies the inputs.</param>
+        /// <param name="rgfMask">Specifies the mask, where 1 indicates that the input at that same location is valid.</param>
+        /// <param name="fTarget">Specifies the output target.</param>
+        /// <param name="fPredicted">Specifies the predicted value.</param>
+        /// <param name="fTime">Specifies the time of the data point.</param>
+        public DataPoint(float[] rgfInputs, float[] rgfMask, float fTarget, float fPredicted, float fTime)
+        {
+            m_rgfInputs = rgfInputs;
+            m_rgfMask = rgfMask;
+            m_fTarget = fTarget;
+            m_fPredicted = fPredicted;
+            m_fTime = fTime;
+        }
+
+        /// <summary>
+        /// Returns the inputs.
+        /// </summary>
+        public float[] Inputs
+        {
+            get { return m_rgfInputs; }
+        }
+
+        /// <summary>
+        /// Returns the mask where a value of 1 indicates that the input at that same location is valid.
+        /// </summary>
+        public float[] Mask
+        {
+            get { return m_rgfMask; }
+        }
+
+        /// <summary>
+        /// Returns the target value.
+        /// </summary>
+        public float Target
+        {
+            get { return m_fTarget; }
+        }
+
+        /// <summary>
+        /// Returns the predicted value.
+        /// </summary>
+        public float Predicted
+        {
+            get { return m_fPredicted; }
+        }
+
+        /// <summary>
+        /// Returns the time for the data point.
+        /// </summary>
+        public float Time
+        {
+            get { return m_fTime; }
+        }
+
+        /// <summary>
+        /// Copies the data point to a new data point.
+        /// </summary>
+        /// <returns>The new copy is returned.</returns>
+        public DataPoint Clone()
+        {
+            return new DataPoint(m_rgfInputs, m_rgfMask, m_fTarget, m_fPredicted, m_fTime);
+        }
+    }
+
+    /// <summary>
     /// The State class defines an abstract base class for the state information and gym data.
     /// </summary>
     public abstract class State
     {
+        /// <summary>
+        /// Contains the history of the previous target points.
+        /// </summary>
+        protected List<DataPoint> m_rgPrevPoints = new List<DataPoint>();
+
         /// <summary>
         /// The constructor.
         /// </summary>
@@ -269,5 +353,13 @@ namespace MyCaffe.gym
         /// </summary>
         /// <returns>The label data is returned.</returns>
         public virtual SimpleDatum GetLabel() { throw new NotImplementedException(); }
+
+        /// <summary>
+        /// Returns the history of the previous points if provided by the gym.
+        /// </summary>
+        public List<DataPoint> History
+        {
+            get { return m_rgPrevPoints; }
+        }
     }
 }

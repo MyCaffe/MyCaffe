@@ -33,9 +33,10 @@ namespace MyCaffe.gym
         float m_fX = 0;
         float m_fInc = (float)(Math.PI * 2.0f / 360.0f);
         float m_fMax = (float)(Math.PI * 2.0f);
-        List<PointF> m_rgPrevPoints = new List<PointF>();
+        List<DataPoint> m_rgPrevPoints = new List<DataPoint>();
         int m_nMaxPlots = 500;
         float m_fLastY = 0;
+        bool m_bRenderImage = true;
 
         Random m_random = new Random();
         CurveState m_state = new CurveState();
@@ -242,7 +243,6 @@ namespace MyCaffe.gym
         /// <returns>A tuple optionally containing a Bitmap and/or Simpledatum is returned.</returns>
         public Tuple<Bitmap, SimpleDatum> Render(bool bShowUi, int nWidth, int nHeight, double[] rgData, bool bGetAction)
         { 
-            Bitmap bmp = new Bitmap(nWidth, nHeight);
 
             double dfX = rgData[0];
             double dfY = rgData[1];
@@ -252,66 +252,71 @@ namespace MyCaffe.gym
             m_nSteps = nSteps;
             m_nMaxSteps = Math.Max(nSteps, m_nMaxSteps);
 
-            using (Graphics g = Graphics.FromImage(bmp))
+            SimpleDatum sdAction = null;
+            Bitmap bmp = null;
+
+            if (m_bRenderImage)
             {
-                Rectangle rc = new Rectangle(0, 0, bmp.Width, bmp.Height);
-                g.FillRectangle(Brushes.White, rc);
-
-                float fScreenWidth = g.VisibleClipBounds.Width;
-                float fScreenHeight = g.VisibleClipBounds.Height;
-                float fWorldWidth = (float)m_fXScale;
-                float fWorldHeight = (float)m_fYScale * 2;
-                float fScale = fScreenHeight / fWorldHeight;
-
-                float fL = 0;
-                float fR = fWorldWidth;
-                float fT = fWorldHeight / 2;
-                float fB = -fWorldHeight / 2;
-
-                if (m_geomGraph == null)
+                bmp = new Bitmap(nWidth, nHeight);
+                using (Graphics g = Graphics.FromImage(bmp))
                 {
-                    m_geomGraph = new GeomGraph(fL, fR, fT, fB, Color.Azure, Color.SteelBlue);
-                    m_geomGraph.SetLocation(0, fScale * (fWorldHeight / 2));
+                    Rectangle rc = new Rectangle(0, 0, bmp.Width, bmp.Height);
+                    g.FillRectangle(Brushes.White, rc);
+
+                    float fScreenWidth = g.VisibleClipBounds.Width;
+                    float fScreenHeight = g.VisibleClipBounds.Height;
+                    float fWorldWidth = (float)m_fXScale;
+                    float fWorldHeight = (float)m_fYScale * 2;
+                    float fScale = fScreenHeight / fWorldHeight;
+
+                    float fL = 0;
+                    float fR = fWorldWidth;
+                    float fT = fWorldHeight / 2;
+                    float fB = -fWorldHeight / 2;
+
+                    if (m_geomGraph == null)
+                    {
+                        m_geomGraph = new GeomGraph(fL, fR, fT, fB, Color.Azure, Color.SteelBlue);
+                        m_geomGraph.SetLocation(0, fScale * (fWorldHeight / 2));
+                    }
+                    if (m_geomTargetLine == null)
+                    {
+                        m_geomTargetLine = new GeomPolyLine(fL, fR, fT, fB, Color.Blue, Color.Blue, m_nMaxPlots);
+                        m_geomTargetLine.Polygon.Clear();
+                        m_geomTargetLine.SetLocation(0, fScale * (fWorldHeight / 2));
+                    }
+                    m_geomTargetLine.Polygon.Add(new PointF((float)dfX, (float)(dfY * m_fYScale)));
+
+                    if (m_geomPredictLine == null)
+                    {
+                        m_geomPredictLine = new GeomPolyLine(fL, fR, fT, fB, Color.Orange, Color.Orange, m_nMaxPlots);
+                        m_geomPredictLine.Polygon.Clear();
+                        m_geomPredictLine.SetLocation(0, fScale * (fWorldHeight / 2));
+                    }
+                    m_geomPredictLine.Polygon.Add(new PointF((float)dfX, (float)(dfPredictedY * m_fYScale)));
+
+                    GeomView view = new GeomView();
+
+                    view.RenderText(g, "X = " + dfX.ToString("N02"), 10, 24);
+                    view.RenderText(g, "Y = " + dfY.ToString("N02"), 10, 36);
+                    view.RenderText(g, "Predicted Y = " + dfPredictedY.ToString("N02"), 10, 48);
+                    view.RenderText(g, "Curve Type = " + m_curveType.ToString(), 10, 60);
+                    view.RenderSteps(g, m_nSteps, m_nMaxSteps);
+
+                    // Render the objects.
+                    view.AddObject(m_geomGraph);
+                    view.AddObject(m_geomTargetLine);
+                    view.AddObject(m_geomPredictLine);
+                    view.Render(g);
+
+                    if (bGetAction)
+                        sdAction = getActionData((float)dfX, (float)dfY, (float)fWorldWidth, (float)fWorldHeight, bmp);
+
+                    m_bmp = bmp;
                 }
-                if (m_geomTargetLine == null)
-                {
-                    m_geomTargetLine = new GeomPolyLine(fL, fR, fT, fB, Color.Blue, Color.Blue, m_nMaxPlots);
-                    m_geomTargetLine.Polygon.Clear();
-                    m_geomTargetLine.SetLocation(0, fScale * (fWorldHeight / 2));                    
-                }
-                m_geomTargetLine.Polygon.Add(new PointF((float)dfX, (float)dfY));
-
-                if (m_geomPredictLine == null)
-                {
-                    m_geomPredictLine = new GeomPolyLine(fL, fR, fT, fB, Color.Orange, Color.Orange, m_nMaxPlots);
-                    m_geomPredictLine.Polygon.Clear();
-                    m_geomPredictLine.SetLocation(0, fScale * (fWorldHeight / 2));
-                }
-                m_geomPredictLine.Polygon.Add(new PointF((float)dfX, (float)dfPredictedY));
-
-                GeomView view = new GeomView();
-
-                view.RenderText(g, "X = " + dfX.ToString("N02"), 10, 24);
-                view.RenderText(g, "Y = " + dfY.ToString("N02"), 10, 36);
-                view.RenderText(g, "Predicted Y = " + dfPredictedY.ToString("N02"), 10, 48);
-                view.RenderText(g, "Curve Type = " + m_curveType.ToString(), 10, 60);
-                view.RenderSteps(g, m_nSteps, m_nMaxSteps);
-
-                // Render the objects.
-                view.AddObject(m_geomGraph);
-                view.AddObject(m_geomTargetLine);
-                view.AddObject(m_geomPredictLine);
-                view.Render(g);
-
-                SimpleDatum sdAction = null;
-
-                if (bGetAction)
-                    sdAction = getActionData((float)dfX, (float)dfY, (float)fWorldWidth, (float)fWorldHeight, bmp);
-
-                m_bmp = bmp;
-
-                return new Tuple<Bitmap, SimpleDatum>(bmp, sdAction);
             }
+
+            return new Tuple<Bitmap, SimpleDatum>(bmp, sdAction);
         }
 
         private SimpleDatum getActionData(float fX, float fY, float fWid, float fHt, Bitmap bmpSrc)
@@ -336,16 +341,30 @@ namespace MyCaffe.gym
         /// Reset the state of the gym.
         /// </summary>
         /// <param name="bGetLabel">Not used.</param>
+        /// <param name="props">Optionally, specifies the property set to use.</param>
         /// <returns>A tuple containing state data, the reward, and the done state is returned.</returns>
-        public Tuple<State, double, bool> Reset(bool bGetLabel)
+        public Tuple<State, double, bool> Reset(bool bGetLabel, PropertySet props = null)
         {
             double dfX = 0;
             double dfY = 0;
             double dfPredictedY = 0;
-            m_nSteps = 0;
-            m_fLastY = 0;
 
+            m_bRenderImage = true;
+            m_rgPrevPoints.Clear();
+            m_nSteps = 0;
+
+            m_fLastY = 0;
             m_state = new CurveState(dfX, dfY, dfPredictedY);
+
+            if (props != null)
+            {
+                bool bTraining = props.GetPropertyAsBool("Training", false);
+                if (bTraining)
+                    m_bRenderImage = false;
+
+                m_fLastY = (float)props.GetPropertyAsDouble("TrainingStart", 0);
+            }
+
             return new Tuple<State, double, bool>(m_state.Clone(), 1, false);
         }
 
@@ -392,8 +411,14 @@ namespace MyCaffe.gym
             double dfReward = 0;
             double? dfOverride = null;
 
+            m_bRenderImage = true;
+
             if (propExtra != null)
             {
+                bool bTraining = propExtra.GetPropertyAsBool("Training", false);
+                if (bTraining)
+                    m_bRenderImage = false;
+
                 double dfVal = propExtra.GetPropertyAsDouble("override_prediction", double.MaxValue);
                 if (dfVal != double.MaxValue)   
                     dfOverride = dfVal;
@@ -403,7 +428,7 @@ namespace MyCaffe.gym
 
             double dfX = state.X;
             double dfY = state.Y;
-            double dfPredictedY = m_fYScale * ((dfOverride.HasValue) ? dfOverride.Value : state.PredictedY);
+            double dfPredictedY = ((dfOverride.HasValue) ? dfOverride.Value : state.PredictedY);
 
             m_fX += m_fInc;
             if (m_fX > m_fMax)
@@ -411,29 +436,30 @@ namespace MyCaffe.gym
 
             dfY = calculateTarget(m_fX);
             dfX += 1;
-            dfY *= m_fYScale;
 
-            m_rgPrevPoints.Add(new PointF((float)dfX, (float)dfY));
+            float[] rgInput = new float[] { m_fX };
+            float[] rgMask = new float[] { 1 };
+            float fTarget = (float)dfY;
+            float fTime = (float)(dfX / m_nMaxPlots);
+
+            DataPoint pt = new DataPoint(rgInput, rgMask, fTarget,  (float)dfPredictedY, fTime);
+            m_rgPrevPoints.Add(pt);
+
             if (m_rgPrevPoints.Count > m_nMaxPlots)
                 m_rgPrevPoints.RemoveAt(0);
 
             CurveState stateOut = m_state;
             m_state = new CurveState(dfX, dfY, dfPredictedY, m_rgPrevPoints);
 
-            bool bDone = false;
-
-            if (!bDone)
-            {
-                dfReward = 1.0 - Math.Abs(dfPredictedY - dfY);
-                if (dfReward < -1)
-                    dfReward = -1;
-            }
+            dfReward = 1.0 - Math.Abs(dfPredictedY - dfY);
+            if (dfReward < -1)
+                dfReward = -1;
 
             m_nSteps++;
             m_nMaxSteps = Math.Max(m_nMaxSteps, m_nSteps);
 
             stateOut.Steps = m_nSteps;
-            return new Tuple<State, double, bool>(stateOut.Clone(), dfReward, bDone);
+            return new Tuple<State, double, bool>(stateOut.Clone(), dfReward, false);
         }
 
         /// <summary>
@@ -487,12 +513,11 @@ namespace MyCaffe.gym
         double m_dfY = 0;
         double m_dfPredictedY = 0;
         int m_nSteps = 0;
-        List<PointF> m_rgPrevPoints = new List<PointF>();
 
         public const double MAX_X = 2.4;
         public const double MAX_Y = 2.4;
 
-        public CurveState(double dfX = 0, double dfY = 0, double dfPredictedY = 0, List<PointF> rgPoints = null)
+        public CurveState(double dfX = 0, double dfY = 0, double dfPredictedY = 0, List<DataPoint> rgPoints = null)
         {
             m_dfX = dfX;
             m_dfY = dfY;
@@ -508,7 +533,7 @@ namespace MyCaffe.gym
             m_dfY = s.m_dfY;
             m_dfPredictedY = s.m_dfPredictedY;
             m_nSteps = s.m_nSteps;
-            m_rgPrevPoints = new List<PointF>();
+            m_rgPrevPoints = new List<DataPoint>();
 
             if (s.m_rgPrevPoints != null)
                 m_rgPrevPoints.AddRange(s.m_rgPrevPoints);
@@ -536,12 +561,6 @@ namespace MyCaffe.gym
         {
             get { return m_dfPredictedY; }
             set { m_dfPredictedY = value; }
-        }
-
-        public List<PointF> PreviousPoints
-        {
-            get { return m_rgPrevPoints; }
-            set { m_rgPrevPoints = value; }
         }
 
         public override State Clone()

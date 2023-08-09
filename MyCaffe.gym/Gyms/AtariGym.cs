@@ -415,8 +415,9 @@ namespace MyCaffe.gym
         /// Reset the state of the gym.
         /// </summary>
         /// <param name="bGetLabel">Not used.</param>
+        /// <param name="props">Optionally, specifies extra properties.</param>
         /// <returns>A tuple containing state data, the reward, and the done state is returned.</returns>
-        public Tuple<State, double, bool> Reset(bool bGetLabel)
+        public Tuple<State, double, bool> Reset(bool bGetLabel, PropertySet props = null)
         {
             m_state = new AtariState();
             m_ale.ResetGame();
