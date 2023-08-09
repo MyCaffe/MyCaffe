@@ -149,7 +149,7 @@ namespace MyCaffe.test
             {
                 foreach (ICfcLayerTest t in test.Tests)
                 {
-                    t.TestTrainingBatch(false);
+                    t.TestTrainingBatch(false, false);
                 }
             }
             finally
@@ -167,7 +167,7 @@ namespace MyCaffe.test
             {
                 foreach (ICfcLayerTest t in test.Tests)
                 {
-                    t.TestTrainingRealTime(false);
+                    t.TestTrainingRealTime(false, false);
                 }
             }
             finally
@@ -182,8 +182,8 @@ namespace MyCaffe.test
         void TestForward(bool bNoGate);
         void TestBackward(bool bNoGate);
         void TestGradient(bool bNoGate);
-        void TestTrainingBatch(bool bNoGate);
-        void TestTrainingRealTime(bool bNoGate);
+        void TestTrainingBatch(bool bNoGate, bool bEnableUI);
+        void TestTrainingRealTime(bool bNoGate, bool bEnableUI);
     }
 
     class CfcLayerTest : TestBase
@@ -648,7 +648,8 @@ namespace MyCaffe.test
         /// Test training with batches of input data.
         /// </summary>
         /// <param name="bNoGate">Specifies whether the no-gate mode is used.</param>
-        public void TestTrainingBatch(bool bNoGate)
+        /// <param name="bEnableUI">Specifies to turn on the UI display.</param>
+        public void TestTrainingBatch(bool bNoGate, bool bEnableUI)
         {
             int nBatchSize = 128;
             int nInputSize = 82;
@@ -755,7 +756,8 @@ namespace MyCaffe.test
             //---------------------------------------------------
             // Run the trained model
             //---------------------------------------------------
-            gym.OpenUi();
+            if (bEnableUI)
+                gym.OpenUi();
             gym.Reset();
 
             PropertySet propTest = new PropertySet();
@@ -813,7 +815,8 @@ namespace MyCaffe.test
                 state = gym.Step(0, 1, propTest);
             }
 
-            gym.CloseUi();
+            if (bEnableUI)
+                gym.CloseUi();
 
             colInputs.Dispose();
             mycaffe.Dispose();
@@ -823,7 +826,8 @@ namespace MyCaffe.test
         /// Test the training using real-time data (with batch = 1).
         /// </summary>
         /// <param name="bNoGate">Specifies the whether the no-gate mode is used.</param>
-        public void TestTrainingRealTime(bool bNoGate)
+        /// <param name="bEnableUI">Specifies to turn on the UI display.</param>
+        public void TestTrainingRealTime(bool bNoGate, bool bEnableUI)
         {
             int nBatchSize = 1;
             int nInputSize = 82;
@@ -852,7 +856,8 @@ namespace MyCaffe.test
             gym.Initialize("Curve", "CurveType=0");
 
             // Run the trained model
-            gym.OpenUi();
+            if (bEnableUI)
+                gym.OpenUi();   
 
             PropertySet propTest = new PropertySet();
             CurrentState state = gym.Step(0, 1, propTest);
@@ -904,7 +909,8 @@ namespace MyCaffe.test
                 state = gym.Step(0, 1, propTest);
             }
 
-            gym.CloseUi();
+            if (bEnableUI)
+                gym.CloseUi();
 
             mycaffe.Dispose();
         }
