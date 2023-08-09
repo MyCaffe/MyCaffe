@@ -50,6 +50,8 @@ namespace MyCaffe.layers.lnn
         Blob<T> m_blobX;
         Blob<T> m_blobTop1;
         Blob<T> m_blobTop2;
+        int m_nNumLayers;
+        int m_nNumUnits;
 
         /// <summary>
         /// The CfcUnitLayer constructor.
@@ -61,6 +63,168 @@ namespace MyCaffe.layers.lnn
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.CFC_UNIT;
+
+            m_nNumLayers = m_param.cfc_unit_param.backbone_layers;
+            m_nNumUnits = m_param.cfc_unit_param.backbone_units;
+
+            if (m_nNumLayers < 1)
+                m_nNumLayers = 1;
+
+            LayerParameter concat = new LayerParameter(LayerParameter.LayerType.CONCAT, "concat");
+            concat.concat_param.axis = 1;
+            m_cat = Layer<T>.Create(m_cuda, m_log, convertLayerParam(concat, p), null);
+
+            Blob<T> blobBtm = new Blob<T>(m_cuda, m_log);
+            blobBtm.Name = "bb";
+
+            for (int i = 0; i < m_nNumLayers; i++)
+            {
+                // Linear Layer
+                m_rgLinearBtms.Add(blobBtm);
+
+                Blob<T> blobTop = new Blob<T>(m_cuda, m_log);
+                blobTop.Name = "bb_" + i.ToString();
+
+                m_rgLinearTops.Add(blobTop);
+
+                // Activation Layer
+                blobBtm = blobTop;
+                m_rgActivationBtms.Add(blobBtm);
+
+                blobTop = new Blob<T>(m_cuda, m_log);
+                blobTop.Name = "bb_act_" + i.ToString();
+
+                m_rgActivationTops.Add(blobTop);
+                blobBtm = blobTop;
+            }
+
+            m_rgLinearLayers = new Layer<T>[m_nNumLayers];
+            m_rgActivationLayers = new Layer<T>[m_nNumLayers];
+
+            if (m_param.cfc_unit_param.backbone_dropout_ratio > 0)
+                m_rgDropoutLayers = new Layer<T>[m_nNumLayers];
+
+            for (int i = 0; i < m_nNumLayers; i++)
+            {
+                LayerParameter ip = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "bb_" + i.ToString());
+                ip.inner_product_param.num_output = (uint)m_nNumUnits;
+                ip.inner_product_param.bias_term = true;
+                ip.inner_product_param.weight_filler = new FillerParameter("xavier", 0.0, 0.01);
+                ip.inner_product_param.bias_filler = new FillerParameter("constant", 0.1);
+                m_rgLinearLayers[i] = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ip, p), null);
+
+                LayerParameter act;
+                switch (m_param.cfc_unit_param.backbone_activation)
+                {
+                    case CfcUnitParameter.ACTIVATION.SILU:
+                        act = new LayerParameter(LayerParameter.LayerType.SILU, "bb_act_" + i.ToString());
+                        break;
+
+                    case CfcUnitParameter.ACTIVATION.RELU:
+                        act = new LayerParameter(LayerParameter.LayerType.RELU, "bb_act_" + i.ToString());
+                        break;
+
+                    case CfcUnitParameter.ACTIVATION.TANH:
+                        act = new LayerParameter(LayerParameter.LayerType.TANH, "bb_act_" + i.ToString());
+                        break;
+
+                    case CfcUnitParameter.ACTIVATION.GELU:
+                        act = new LayerParameter(LayerParameter.LayerType.GELU, "bb_act_" + i.ToString());
+                        break;
+
+                    case CfcUnitParameter.ACTIVATION.LECUN:
+                        act = new LayerParameter(LayerParameter.LayerType.LECUN, "bb_act_" + i.ToString());
+                        break;
+
+                    default:
+                        throw new Exception("Unknown activation type: " + m_param.cfc_unit_param.backbone_activation.ToString());
+                }
+
+                m_rgActivationLayers[i] = Layer<T>.Create(m_cuda, m_log, convertLayerParam(act, p), null);
+
+                if (i > 0 && m_rgDropoutLayers != null)
+                {
+                    LayerParameter drop = new LayerParameter(LayerParameter.LayerType.DROPOUT, "bb_drop_" + i.ToString());
+                    drop.dropout_param.dropout_ratio = m_param.cfc_unit_param.backbone_dropout_ratio;
+
+                    m_rgDropoutLayers[i] = Layer<T>.Create(m_cuda, m_log, convertLayerParam(drop, p), null);
+                }
+            }
+
+            m_blobX = new Blob<T>(m_cuda, m_log);
+            m_blobX.Name = "x";
+
+            // FF1 Layer
+            LayerParameter ff1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "ff1");
+            ff1.inner_product_param.num_output = (uint)m_param.cfc_unit_param.hidden_size;
+            ff1.inner_product_param.bias_term = true;
+            ff1.inner_product_param.weight_filler = new FillerParameter("xavier", 0.0, 0.01);
+            ff1.inner_product_param.bias_filler = new FillerParameter("constant", 0.1);
+            m_ff1 = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ff1, p), null);
+
+            m_blobFF1 = new Blob<T>(m_cuda, m_log);
+            m_blobFF1.Name = "ff1";
+
+            // Tanh Layer
+            LayerParameter tanh = new LayerParameter(LayerParameter.LayerType.TANH, "tanh");
+            m_tanh = Layer<T>.Create(m_cuda, m_log, convertLayerParam(tanh, p), null);
+
+            // FF2 Layer
+            LayerParameter ff2 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "ff2");
+            ff2.inner_product_param.num_output = (uint)m_param.cfc_unit_param.hidden_size;
+            ff2.inner_product_param.bias_term = true;
+            ff2.inner_product_param.weight_filler = new FillerParameter("xavier", 0.0, 0.01);
+            ff2.inner_product_param.bias_filler = new FillerParameter("constant", 0.1);
+            m_ff2 = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ff2, p), null);
+
+            m_blobFF2 = new Blob<T>(m_cuda, m_log);
+            m_blobFF2.Name = "ff2";
+
+            // Time A Layer
+            LayerParameter timeA = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "time_a");
+            timeA.inner_product_param.num_output = (uint)m_param.cfc_unit_param.hidden_size;
+            timeA.inner_product_param.bias_term = true;
+            timeA.inner_product_param.weight_filler = new FillerParameter("xavier", 0.0, 0.01);
+            timeA.inner_product_param.bias_filler = new FillerParameter("constant", 0.1);
+            m_timeA = Layer<T>.Create(m_cuda, m_log, convertLayerParam(timeA, p), null);
+
+            m_blobTimeA = new Blob<T>(m_cuda, m_log);
+            m_blobTimeA.Name = "time_a";
+
+            // Time B Layer
+            LayerParameter timeB = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "time_b");
+            timeB.inner_product_param.num_output = (uint)m_param.cfc_unit_param.hidden_size;
+            timeB.inner_product_param.bias_term = true;
+            timeB.inner_product_param.weight_filler = new FillerParameter("xavier", 0.0, 0.01);
+            timeB.inner_product_param.bias_filler = new FillerParameter("constant", 0.1);
+            m_timeB = Layer<T>.Create(m_cuda, m_log, convertLayerParam(timeB, p), null);
+
+            m_blobTimeB = new Blob<T>(m_cuda, m_log);
+            m_blobTimeB.Name = "time_b";
+
+            // Sigmoid Layer
+            LayerParameter sigmoid = new LayerParameter(LayerParameter.LayerType.SIGMOID, "sigmoid");
+            m_sigmoid = Layer<T>.Create(m_cuda, m_log, convertLayerParam(sigmoid, p), null);
+
+            // T-Interp
+            m_blobTInterp = new Blob<T>(m_cuda, m_log);
+            m_blobTInterp.Name = "t-interp";
+
+            m_blobTInterpInv = new Blob<T>(m_cuda, m_log);
+            m_blobTInterpInv.Name = "t-interpinv";
+
+            m_blobTInterp1 = new Blob<T>(m_cuda, m_log);
+            m_blobTInterp1.Name = "t-interp1";
+            m_blobTInterpOnes = new Blob<T>(m_cuda, m_log, true);
+            m_blobTInterpOnes.Name = "t_interp_ones";
+
+            m_blobTs = new Blob<T>(m_cuda, m_log);
+            m_blobTs.Name = "ts";
+
+            m_blobTop1 = new Blob<T>(m_cuda, m_log);
+            m_blobTop1.Name = "top1";
+            m_blobTop2 = new Blob<T>(m_cuda, m_log);
+            m_blobTop2.Name = "top2";
         }
 
         /** @copydoc Layer::dispose */
@@ -198,142 +362,36 @@ namespace MyCaffe.layers.lnn
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            LayerParameter p;
-            int nNumLayers = m_param.cfc_unit_param.backbone_layers;
-            int nNumUnits = m_param.cfc_unit_param.backbone_units;
-
-            if (nNumLayers < 1)
-                nNumLayers = 1;
-
-            p = new LayerParameter(LayerParameter.LayerType.CONCAT, "concat");
-            p.concat_param.axis = 1;
-            m_cat = Layer<T>.Create(m_cuda, m_log, p, null);
-
-            Blob<T> blobBtm = new Blob<T>(m_cuda, m_log);
-            blobBtm.Name = "bb";
-
-            for (int i = 0; i < nNumLayers; i++)
-            {
-                // Linear Layer
-                m_rgLinearBtms.Add(blobBtm);
-
-                Blob<T> blobTop = new Blob<T>(m_cuda, m_log);
-                blobTop.Name = "bb_" + i.ToString();
-
-                m_rgLinearTops.Add(blobTop);
-
-                // Activation Layer
-                blobBtm = blobTop;
-                m_rgActivationBtms.Add(blobBtm);
-
-                blobTop = new Blob<T>(m_cuda, m_log);
-                blobTop.Name = "bb_act_" + i.ToString();
-
-                m_rgActivationTops.Add(blobTop);
-                blobBtm = blobTop;
-            }
-
             addBtmTop(colBottom[0], m_rgLinearBtms[0]);
             m_colBtm.Add(colBottom[1]);
             m_cat.Setup(m_colBtm, m_colTop);
 
-            m_rgLinearLayers = new Layer<T>[nNumLayers];
-            m_rgActivationLayers = new Layer<T>[nNumLayers];
-
-            if (m_param.cfc_unit_param.backbone_dropout_ratio > 0)
-                m_rgDropoutLayers = new Layer<T>[nNumLayers];
-
-            for (int i = 0; i < nNumLayers; i++)
+            for (int i = 0; i < m_nNumLayers; i++)
             {
-                p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "bb_" + i.ToString());
-                p.inner_product_param.num_output = (uint)nNumUnits;
-                p.inner_product_param.bias_term = true;
-                p.inner_product_param.weight_filler = new FillerParameter("xavier", 0.0, 0.01);
-                p.inner_product_param.bias_filler = new FillerParameter("constant", 0.1);
-                m_rgLinearLayers[i] = new InnerProductLayer<T>(m_cuda, m_log, p);
-
                 addBtmTop(m_rgLinearBtms[i], m_rgLinearTops[i]);
                 m_rgLinearLayers[i].Setup(m_colBtm, m_colTop);
                 blobs.Add(m_rgLinearLayers[i].blobs);
 
-                switch (m_param.cfc_unit_param.backbone_activation)
-                {
-                    case CfcUnitParameter.ACTIVATION.SILU:
-                        p = new LayerParameter(LayerParameter.LayerType.SILU, "bb_act_" + i.ToString());
-                        break;
-
-                    case CfcUnitParameter.ACTIVATION.RELU:
-                        p = new LayerParameter(LayerParameter.LayerType.RELU, "bb_act_" + i.ToString());
-                        break;
-
-                    case CfcUnitParameter.ACTIVATION.TANH:
-                        p = new LayerParameter(LayerParameter.LayerType.TANH, "bb_act_" + i.ToString());
-                        break;
-
-                    case CfcUnitParameter.ACTIVATION.GELU:
-                        p = new LayerParameter(LayerParameter.LayerType.GELU, "bb_act_" + i.ToString());
-                        break;
-
-                    case CfcUnitParameter.ACTIVATION.LECUN:
-                        p = new LayerParameter(LayerParameter.LayerType.LECUN, "bb_act_" + i.ToString());
-                        break;
-
-                    default:
-                        throw new Exception("Unknown activation type: " + m_param.cfc_unit_param.backbone_activation.ToString());
-                }
-
-                m_rgActivationLayers[i] = Layer<T>.Create(m_cuda, m_log, p, null);
                 addBtmTop(m_rgActivationBtms[i], m_rgActivationTops[i]);
                 m_rgActivationLayers[i].Setup(m_colBtm, m_colTop);
 
                 if (i > 0 && m_rgDropoutLayers != null)
-                {
-                    p = new LayerParameter(LayerParameter.LayerType.DROPOUT, "bb_drop_" + i.ToString());
-                    p.dropout_param.dropout_ratio = m_param.cfc_unit_param.backbone_dropout_ratio;
-
-                    m_rgDropoutLayers[i] = Layer<T>.Create(m_cuda, m_log, p, null);
                     m_rgDropoutLayers[i].Setup(m_colBtm, m_colTop);
-                }
             }
 
-            Blob<T> blobX = m_rgActivationTops[nNumLayers - 1];
-            m_blobX = new Blob<T>(m_cuda, m_log);
-            m_blobX.Name = "x";
+            Blob<T> blobX = m_rgActivationTops[m_nNumLayers - 1];
             m_blobX.ReshapeLike(blobX);
 
             // FF1 Layer
-            p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "ff1");
-            p.inner_product_param.num_output = (uint)m_param.cfc_unit_param.hidden_size;
-            p.inner_product_param.bias_term = true;
-            p.inner_product_param.weight_filler = new FillerParameter("xavier", 0.0, 0.01);
-            p.inner_product_param.bias_filler = new FillerParameter("constant", 0.1);
-            m_ff1 = new InnerProductLayer<T>(m_cuda, m_log, p);
-
-            m_blobFF1 = new Blob<T>(m_cuda, m_log);
-            m_blobFF1.Name = "ff1";
-
             addBtmTop(blobX, m_blobFF1);
             m_ff1.Setup(m_colBtm, m_colTop);
             blobs.Add(m_ff1.blobs);
 
             // Tanh Layer
-            p = new LayerParameter(LayerParameter.LayerType.TANH, "tanh");
-            m_tanh = Layer<T>.Create(m_cuda, m_log, p, null);
-
             addBtmTop(m_blobFF1, m_blobFF1);
             m_tanh.Setup(m_colBtm, m_colTop);
 
             // FF2 Layer
-            p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "ff2");
-            p.inner_product_param.num_output = (uint)m_param.cfc_unit_param.hidden_size;
-            p.inner_product_param.bias_term = true;
-            p.inner_product_param.weight_filler = new FillerParameter("xavier", 0.0, 0.01);
-            p.inner_product_param.bias_filler = new FillerParameter("constant", 0.1);
-            m_ff2 = new InnerProductLayer<T>(m_cuda, m_log, p);
-
-            m_blobFF2 = new Blob<T>(m_cuda, m_log);
-            m_blobFF2.Name = "ff2";
-
             addBtmTop(blobX, m_blobFF2);
             m_ff2.Setup(m_colBtm, m_colTop);
             blobs.Add(m_ff2.blobs);
@@ -342,67 +400,26 @@ namespace MyCaffe.layers.lnn
             m_tanh.Setup(m_colBtm, m_colTop);
 
             // Time A Layer
-            p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "time_a");
-            p.inner_product_param.num_output = (uint)m_param.cfc_unit_param.hidden_size;
-            p.inner_product_param.bias_term = true;
-            p.inner_product_param.weight_filler = new FillerParameter("xavier", 0.0, 0.01);
-            p.inner_product_param.bias_filler = new FillerParameter("constant", 0.1);
-            m_timeA = new InnerProductLayer<T>(m_cuda, m_log, p);
-
-            m_blobTimeA = new Blob<T>(m_cuda, m_log);
-            m_blobTimeA.Name = "time_a";
-
             addBtmTop(blobX, m_blobTimeA);
             m_timeA.Setup(m_colBtm, m_colTop);
             blobs.Add(m_timeA.blobs);
 
             // Time B Layer
-            p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "time_b");
-            p.inner_product_param.num_output = (uint)m_param.cfc_unit_param.hidden_size;
-            p.inner_product_param.bias_term = true;
-            p.inner_product_param.weight_filler = new FillerParameter("xavier", 0.0, 0.01);
-            p.inner_product_param.bias_filler = new FillerParameter("constant", 0.1);
-            m_timeB = new InnerProductLayer<T>(m_cuda, m_log, p);
-
-            m_blobTimeB = new Blob<T>(m_cuda, m_log);
-            m_blobTimeB.Name = "time_b";
-
             addBtmTop(blobX, m_blobTimeB);
             m_timeB.Setup(m_colBtm, m_colTop);
             blobs.Add(m_timeB.blobs);
 
-            // Sigmoid Layer
-            p = new LayerParameter(LayerParameter.LayerType.SIGMOID, "sigmoid");
-            m_sigmoid = Layer<T>.Create(m_cuda, m_log, p, null);
-
             // T-Interp
-            m_blobTInterp = new Blob<T>(m_cuda, m_log);
-            m_blobTInterp.Name = "t-interp";
             m_blobTInterp.ReshapeLike(m_blobTimeA);
-
-            m_blobTInterpInv = new Blob<T>(m_cuda, m_log);
-            m_blobTInterpInv.Name = "t-interpinv";
             m_blobTInterpInv.ReshapeLike(m_blobTimeA);
-
-            m_blobTInterp1 = new Blob<T>(m_cuda, m_log);
-            m_blobTInterp1.Name = "t-interp1";
             m_blobTInterp1.ReshapeLike(m_blobTimeA);
-            m_blobTInterpOnes = new Blob<T>(m_cuda, m_log, true);
-            m_blobTInterpOnes.Name = "t_interp_ones";
             m_blobTInterpOnes.ReshapeLike(m_blobTimeA);
 
             addBtmTop(m_blobTInterp, colTop[0]);
             m_sigmoid.Setup(m_colBtm, m_colTop);
 
-            m_blobTs = new Blob<T>(m_cuda, m_log);
-            m_blobTs.Name = "ts";
             m_blobTs.ReshapeLike(m_blobTimeA);
-
-            m_blobTop1 = new Blob<T>(m_cuda, m_log);
-            m_blobTop1.Name = "top1";
             m_blobTop1.ReshapeLike(colTop[0]);
-            m_blobTop2 = new Blob<T>(m_cuda, m_log);
-            m_blobTop2.Name = "top2";
             m_blobTop2.ReshapeLike(colTop[0]);
         }
 
