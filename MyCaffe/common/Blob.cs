@@ -18,7 +18,7 @@ namespace MyCaffe.common
     /// <remarks>
     /// Each blob holds Data and optionally Diff where the data is passed through the Net
     /// Layers on each forward pass, and the Diff contains the errors passed backward
-    /// throgh the Net Layers on the backward pass.
+    /// through the Net Layers on the backward pass.
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class Blob<T> : IDisposable
@@ -48,6 +48,7 @@ namespace MyCaffe.common
         bool m_bSnapshotRequested = false;
         bool m_bPadded = false;
         Dictionary<string, double> m_rgParam = new Dictionary<string, double>();
+        int[] m_rgShape1 = new int[4] { 1, 1, 1, 1 };
 
         /// <summary>
         /// Defines the maximum number of Axes supported by the Blob.
@@ -442,7 +443,12 @@ namespace MyCaffe.common
         /// <param name="bUseHalfSize">Optionally, specifies to use half sized memory.</param>
         public void Reshape(int nNum, int nChannels, int nHeight, int nWidth, bool? bUseHalfSize = null)
         {
-            Reshape(new List<int>() { nNum, nChannels, nHeight, nWidth }, bUseHalfSize);
+            m_rgShape1[0] = nNum;
+            m_rgShape1[1] = nChannels;
+            m_rgShape1[2] = nHeight;
+            m_rgShape1[3] = nWidth;
+
+            Reshape(m_rgShape1, bUseHalfSize);
         }
 
         private string toString(List<int> rgShape)
