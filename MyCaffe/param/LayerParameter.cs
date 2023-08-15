@@ -365,6 +365,10 @@ namespace MyCaffe.param
             /// </summary>
             LRN,
             /// <summary>
+            /// Initializes a parameter for the LtcUnitLayer.
+            /// </summary>
+            LTC_UNIT,
+            /// <summary>
             /// Initializes a parameter for the MeanErrorLossLayer, used with time series and other regression problems.
             /// </summary>
             MEAN_ERROR_LOSS,
@@ -1378,6 +1382,14 @@ namespace MyCaffe.param
                     expected_top.Add("lrn");
                     m_rgLayerParameters[lt] = new LRNParameter();
                     m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.INFERENCE;
+                    break;
+
+                case LayerType.LTC_UNIT:
+                    expected_bottom.Add("x");
+                    expected_bottom.Add("hx");
+                    expected_bottom.Add("ts");
+                    expected_top.Add("ltc");
+                    m_rgLayerParameters[lt] = new LtcUnitParameter();
                     break;
 
                 case LayerType.MEAN_ERROR_LOSS:
@@ -2496,6 +2508,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.LTC_UNIT
+        /// </summary>
+        public LtcUnitParameter ltc_unit_param
+        {
+            get { return (LtcUnitParameter)m_rgLayerParameters[LayerType.LTC_UNIT]; }
+            set { m_rgLayerParameters[LayerType.LTC_UNIT] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.MEAN_ERROR_LOSS
         /// </summary>
         public MeanErrorLossParameter mean_error_loss_param
@@ -3280,6 +3301,9 @@ namespace MyCaffe.param
                 case LayerType.LRN:
                     return "LRN";
 
+                case LayerType.LTC_UNIT:
+                    return "Ltc_Unit";
+
                 case LayerType.MEAN_ERROR_LOSS:
                     return "MeanErrorLoss";
 
@@ -3652,8 +3676,9 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(quantile_accuracy_param, "quantile_accuracy_param"));
 
             // LNN Layers
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(cfc_unit_param, "cfc_unit_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(cfc_param, "cfc_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(cfc_unit_param, "cfc_unit_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(ltc_unit_param, "ltc_unit_param"));
 
             // Nt layers.
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gram_param, "gram_param"));
@@ -4055,11 +4080,14 @@ namespace MyCaffe.param
 
             // LNN Layers
 
+            if ((rpp = rp.FindChild("cfc_param")) != null)
+                p.cfc_param = CfcParameter.FromProto(rpp);
+
             if ((rpp = rp.FindChild("cfc_unit_param")) != null)
                 p.cfc_unit_param = CfcUnitParameter.FromProto(rpp);
 
-            if ((rpp = rp.FindChild("cfc_param")) != null)
-                p.cfc_param = CfcParameter.FromProto(rpp);
+            if ((rpp = rp.FindChild("ltc_unit_param")) != null)
+                p.ltc_unit_param = LtcUnitParameter.FromProto(rpp);
 
             // Nt layers.
             if ((rpp = rp.FindChild("gram_param")) != null)
@@ -4357,6 +4385,9 @@ namespace MyCaffe.param
 
                 case "lrn":
                     return LayerType.LRN;
+
+                case "ltc_unit":
+                    return LayerType.LTC_UNIT;
 
                 case "mean_error_loss":
                 case "meanerrorloss":
