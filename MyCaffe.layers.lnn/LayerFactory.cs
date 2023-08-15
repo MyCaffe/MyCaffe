@@ -37,6 +37,9 @@ namespace MyCaffe.layers.lnn
                 case LayerParameter.LayerType.CFC_UNIT:
                     return new CfcUnitLayer<double>(cuda, log, p);
 
+                case LayerParameter.LayerType.LTC_UNIT:
+                    return new LtcUnitLayer<double>(cuda, log, p);
+
                 case LayerParameter.LayerType.LECUN:
                     return new LeCunLayer<double>(cuda, log, p);
 
@@ -69,6 +72,9 @@ namespace MyCaffe.layers.lnn
 
                 case LayerParameter.LayerType.CFC_UNIT:
                     return new CfcUnitLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.LTC_UNIT:
+                    return new LtcUnitLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.LECUN:
                     return new LeCunLayer<float>(cuda, log, p);
