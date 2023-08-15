@@ -24,7 +24,6 @@ namespace MyCaffe.common
     public class Blob<T> : IDisposable
     {
         T m_tZero;
-        T m_tOne;
         T m_tMinusOne;
         string m_strName = "";
         CudaDnn<T> m_cuda;
@@ -74,7 +73,6 @@ namespace MyCaffe.common
 
             m_tZero = Zero;
             m_tMinusOne = MinusOne;
-            m_tOne = One;
             m_bIncludeDiff = bIncludeDiff;
             m_cuda = cuda;
             m_log = log;
