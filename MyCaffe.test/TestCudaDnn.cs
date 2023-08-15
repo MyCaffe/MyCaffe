@@ -3065,6 +3065,54 @@ namespace MyCaffe.test
             test_channel_op1(OP.SUB, nC, nN1, nSD1, nN2, nSD2);
         }
 
+        [TestMethod]
+        public void TestMath_channel_op_mul3()
+        {
+            int nC = 82;
+            int nN1 = 128;
+            int nSD1 = 256;
+            int nN2 = 1;
+            int nSD2 = 256;
+
+            test_channel_op1(OP.MUL, nC, nN1, nSD1, nN2, nSD2);
+        }
+
+        [TestMethod]
+        public void TestMath_channel_op_div3()
+        {
+            int nC = 82;
+            int nN1 = 128;
+            int nSD1 = 256;
+            int nN2 = 1;
+            int nSD2 = 256;
+
+            test_channel_op1(OP.DIV, nC, nN1, nSD1, nN2, nSD2);
+        }
+
+        [TestMethod]
+        public void TestMath_channel_op_add3()
+        {
+            int nC = 82;
+            int nN1 = 128;
+            int nSD1 = 256;
+            int nN2 = 1;
+            int nSD2 = 256;
+
+            test_channel_op1(OP.ADD, nC, nN1, nSD1, nN2, nSD2);
+        }
+
+        [TestMethod]
+        public void TestMath_channel_op_sub3()
+        {
+            int nC = 82;
+            int nN1 = 128;
+            int nSD1 = 256;
+            int nN2 = 1;
+            int nSD2 = 256;
+
+            test_channel_op1(OP.SUB, nC, nN1, nSD1, nN2, nSD2);
+        }
+
         private void test_channel_op1(OP op, int nC, int nN1, int nSD1, int nN2, int nSD2)
         {
             CudaDnnTest test = new CudaDnnTest();
@@ -3111,8 +3159,8 @@ namespace MyCaffe.test
                         {
                             double dfActual = rgDataY[i];
 
-                            int nIdxA = (i / nSD2) % nCount1;
-                            int nIdxB = (i / nSD1) % nCount2;
+                            int nIdxA = i % nCount1;
+                            int nIdxB = i % nCount2;
                             double dfA = rgdfA[nIdxA];
                             double dfB = rgdfB[nIdxB];
                             double dfExpected = 0;
