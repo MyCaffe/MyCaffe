@@ -60,6 +60,11 @@ const int MATH_SQRT = 34;
 const int MEAN_ERROR_MSE = 1;
 const int MEAN_ERROR_MAE = 2;
 
+const int CHANNEL_OP_MUL = 1;
+const int CHANNEL_OP_DIV = 2;
+const int CHANNEL_OP_ADD = 3;
+const int CHANNEL_OP_SUB = 4;
+
 
 //=============================================================================
 //	Forward References
@@ -250,6 +255,7 @@ class Math
 		long channel_copyall(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 		long channel_duplicate(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 		long channel_percentile(int n, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, T fPercentile);
+		long channel_op(int op, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY, int nDir);
 
 		long im2col(long hDataIm, int nDataImOffset, int nChannels, int nHeight, int nWidth, int nKernelH, int nKernelW, int nPadH, int nPadW, int nStrideH, int nStrideW, int nDilationH, int nDilationW, long hDataCol, int nDataColOffset);
 		long col2im(long hDataCol, int nDataColOffset, int nChannels, int nHeight, int nWidth, int nKernelH, int nKernelW, int nPadH, int nPadW, int nStrideH, int nStrideW, int nDilationH, int nDilationW, long hDataIm, int nDataImOffset);

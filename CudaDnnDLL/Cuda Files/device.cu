@@ -3533,6 +3533,33 @@ template long Device<float>::cuda_channel_percentile(long lInput, float* pfInput
 
 
 template <class T>
+long Device<T>::cuda_channel_op(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 11, 11))
+		return lErr;
+
+	int op = (int)plInput[0];
+	int n = (int)plInput[1];
+	int nC = (int)plInput[2];
+	int nN1 = (int)plInput[3];
+	int nSD1 = (int)plInput[4];
+	int nN2 = (int)plInput[5];
+	int nSD2 = (int)plInput[6];
+	long hA = (long)plInput[7];
+	long hB = (long)plInput[8];
+	long hY = (long)plInput[9];
+	int dir = (int)plInput[10];
+
+	return m_math.channel_op(op, n, nC, nN1, nSD1, nN2, nSD2, hA, hB, hY, dir);
+}
+
+template long Device<double>::cuda_channel_op(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_channel_op(long lInput, float* pfInput, long llInput, LONGLONG* plInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::cuda_im2col(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;

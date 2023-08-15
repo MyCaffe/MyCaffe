@@ -2969,6 +2969,205 @@ namespace MyCaffe.test
             }
         }
 
+        [TestMethod]
+        public void TestMath_channel_op_mul1()
+        {
+            int nC = 3;
+            int nN1 = 2;
+            int nSD1 = 1;
+            int nN2 = 1;
+            int nSD2 = 2;
+
+            test_channel_op1(OP.MUL, nC, nN1, nSD1, nN2, nSD2);
+        }
+
+        [TestMethod]
+        public void TestMath_channel_op_div1()
+        {
+            int nC = 3;
+            int nN1 = 2;
+            int nSD1 = 1;
+            int nN2 = 1;
+            int nSD2 = 2;
+
+            test_channel_op1(OP.DIV, nC, nN1, nSD1, nN2, nSD2);
+        }
+
+        [TestMethod]
+        public void TestMath_channel_op_add1()
+        {
+            int nC = 3;
+            int nN1 = 2;
+            int nSD1 = 1;
+            int nN2 = 1;
+            int nSD2 = 2;
+
+            test_channel_op1(OP.ADD, nC, nN1, nSD1, nN2, nSD2);
+        }
+
+        [TestMethod]
+        public void TestMath_channel_op_sub1()
+        {
+            int nC = 3;
+            int nN1 = 2;
+            int nSD1 = 1;
+            int nN2 = 1;
+            int nSD2 = 2;
+
+            test_channel_op1(OP.SUB, nC, nN1, nSD1, nN2, nSD2);
+        }
+
+        [TestMethod]
+        public void TestMath_channel_op_mul2()
+        {
+            int nC = 3;
+            int nN1 = 2;
+            int nSD1 = 1;
+            int nN2 = 1;
+            int nSD2 = 1;
+
+            test_channel_op1(OP.MUL, nC, nN1, nSD1, nN2, nSD2);
+        }
+
+        [TestMethod]
+        public void TestMath_channel_op_div2()
+        {
+            int nC = 3;
+            int nN1 = 2;
+            int nSD1 = 1;
+            int nN2 = 1;
+            int nSD2 = 1;
+
+            test_channel_op1(OP.DIV, nC, nN1, nSD1, nN2, nSD2);
+        }
+
+        [TestMethod]
+        public void TestMath_channel_op_add2()
+        {
+            int nC = 3;
+            int nN1 = 2;
+            int nSD1 = 1;
+            int nN2 = 1;
+            int nSD2 = 1;
+
+            test_channel_op1(OP.ADD, nC, nN1, nSD1, nN2, nSD2);
+        }
+
+        [TestMethod]
+        public void TestMath_channel_op_sub2()
+        {
+            int nC = 3;
+            int nN1 = 2;
+            int nSD1 = 1;
+            int nN2 = 1;
+            int nSD2 = 1;
+
+            test_channel_op1(OP.SUB, nC, nN1, nSD1, nN2, nSD2);
+        }
+
+        private void test_channel_op1(OP op, int nC, int nN1, int nSD1, int nN2, int nSD2)
+        {
+            CudaDnnTest test = new CudaDnnTest();
+            Log log = new Log("Test 1 Channel Op = " + op.ToString());
+            long hDataA = 0;
+            long hDataB = 0;
+            long hDataY = 0;
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    try
+                    {
+                        List<double> rgdfA = new List<double>();
+                        List<double> rgdfB = new List<double>();
+                        int nCount1 = nN1 * nC * nSD1;
+                        int nCount2 = nN2 * nC * nSD2;
+
+                        for (int i = 0; i < nCount1; i++)
+                        {
+                            rgdfA.Add(i * 0.01);
+                        }
+
+                        for (int i = 0; i < nCount2; i++)
+                        {
+                            rgdfB.Add(20 + i * 0.10);
+                        }
+
+                        int nCount = Math.Max(nN1, nN2) * nC * Math.Max(nSD1, nSD2);
+
+                        hDataA = t.Cuda.AllocMemory(rgdfA);
+                        hDataB = t.Cuda.AllocMemory(rgdfB);
+                        hDataY = t.Cuda.AllocMemory(nCount);
+
+                        // Test A op B -> Y
+                        t.Cuda.channel_op(op, nCount, nC, nN1, nSD1, nN2, nSD2, hDataA, hDataB, hDataY, DIR.FWD);
+
+                        double[] rgDataY = t.Cuda.GetMemoryDouble(hDataY);
+
+                        log.CHECK_EQ(rgDataY.Length, nCount, "The data length should be equal.");
+
+                        for (int i = 0; i < rgDataY.Length; i++)
+                        {
+                            double dfActual = rgDataY[i];
+
+                            int nIdxA = (i / nSD2) % nCount1;
+                            int nIdxB = (i / nSD1) % nCount2;
+                            double dfA = rgdfA[nIdxA];
+                            double dfB = rgdfB[nIdxB];
+                            double dfExpected = 0;
+
+                            switch (op)
+                            {
+                                case OP.ADD:
+                                    dfExpected = dfA + dfB;
+                                    break;
+
+                                case OP.SUB:
+                                    dfExpected = dfA - dfB;
+                                    break;
+
+                                case OP.MUL:
+                                    dfExpected = dfA * dfB;
+                                    break;
+
+                                case OP.DIV:
+                                    dfExpected = dfA / dfB;
+                                    break;
+                            }
+
+                            double dfDiff = Math.Abs(dfActual - dfExpected);
+                            log.CHECK_LT(dfDiff, 1e-5, "The values are incorrect at index " + i.ToString() + "!");
+                        }
+                    }
+                    finally
+                    {
+                        if (hDataA != 0)
+                        {
+                            t.Cuda.FreeMemory(hDataA);
+                            hDataA = 0;
+                        }
+
+                        if (hDataB != 0)
+                        {
+                            t.Cuda.FreeMemory(hDataB);
+                            hDataB = 0;
+                        }
+
+                        if (hDataY != 0)
+                        {
+                            t.Cuda.FreeMemory(hDataY);
+                            hDataY = 0;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
         private bool verifyData(Log log, List<double> rgdf, double[] rgData)
         {
             log.CHECK_EQ(rgdf.Count, rgData.Length, "The length of Data does not match the count of rgdf!");

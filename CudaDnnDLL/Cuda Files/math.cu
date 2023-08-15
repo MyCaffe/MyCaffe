@@ -6807,6 +6807,118 @@ template long Math<double>::channel_percentile(int n, int nOutNum, int nChannels
 template long Math<float>::channel_percentile(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, float dfPercentile);
 
 
+template <typename T>
+__global__ void channel_op_mul_fwd_kernel(const int nYCount, const int nC, const int nN1, const int nSD1, const int nN2, const int nSD2, const T* a, const T* b, T* y)
+{
+	const int nCount1 = nN1 * nC * nSD1;
+	const int nCount2 = nN2 * nC * nSD2;
+
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nYCount && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const int nIdx1 = (i / nSD2) % nCount1;
+		const int nIdx2 = (i / nSD1) % nCount2;
+
+		y[i] = a[nIdx1] * b[nIdx2];
+	}
+}
+
+template <typename T>
+__global__ void channel_op_div_fwd_kernel(const int nYCount, const int nC, const int nN1, const int nSD1, const int nN2, const int nSD2, const T* a, const T* b, T* y)
+{
+	const int nCount1 = nN1 * nC * nSD1;
+	const int nCount2 = nN2 * nC * nSD2;
+
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nYCount && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const int nIdx1 = (i / nSD2) % nCount1;
+		const int nIdx2 = (i / nSD1) % nCount2;
+
+		y[i] = a[nIdx1] / b[nIdx2];
+	}
+}
+
+template <typename T>
+__global__ void channel_op_add_fwd_kernel(const int nYCount, const int nC, const int nN1, const int nSD1, const int nN2, const int nSD2, const T* a, const T* b, T* y)
+{
+	const int nCount1 = nN1 * nC * nSD1;
+	const int nCount2 = nN2 * nC * nSD2;
+
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nYCount && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const int nIdx1 = (i / nSD2) % nCount1;
+		const int nIdx2 = (i / nSD1) % nCount2;
+
+		y[i] = a[nIdx1] + b[nIdx2];
+	}
+}
+
+template <typename T>
+__global__ void channel_op_sub_fwd_kernel(const int nYCount, const int nC, const int nN1, const int nSD1, const int nN2, const int nSD2, const T* a, const T* b, T* y)
+{
+	const int nCount1 = nN1 * nC * nSD1;
+	const int nCount2 = nN2 * nC * nSD2;
+
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nYCount && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const int nIdx1 = (i / nSD2) % nCount1;
+		const int nIdx2 = (i / nSD1) % nCount2;
+
+		y[i] = a[nIdx1] - b[nIdx2];
+	}
+}
+
+
+template <typename T>
+long Math<T>::channel_op(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY, int nDir)
+{
+	LONG lErr;
+	MemoryItem* pA;
+	MemoryItem* pB;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hA, &pA))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hB, &pB))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	T* y = (T*)pY->Data();
+	T* a = (T*)pA->Data();
+	T* b = (T*)pB->Data();
+
+	switch (nOp)
+	{
+		case CHANNEL_OP_MUL:
+			if (nDir == 0) // Fwd
+				channel_op_mul_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
+			break;
+
+		case CHANNEL_OP_DIV:
+			if (nDir == 0) // Fwd
+				channel_op_div_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
+			break;
+
+		case CHANNEL_OP_ADD:
+			if (nDir == 0) // Fwd
+				channel_op_add_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
+			break;
+
+		case CHANNEL_OP_SUB:
+			if (nDir == 0) // Fwd
+				channel_op_sub_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
+			break;
+	}
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::channel_op(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY, int nDir);
+template long Math<float>::channel_op(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY, int nDir);
+
+
 template<typename T>
 __global__ void im2col_kernel(int n, T* data_im, int height, int width, int kernel_h, int kernel_w, int pad_h, int pad_w, int stride_h, int stride_w, int dilation_h, int dilation_w, int height_col, int width_col, T* data_col)
 {
