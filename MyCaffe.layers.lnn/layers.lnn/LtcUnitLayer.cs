@@ -33,6 +33,7 @@ namespace MyCaffe.layers.lnn
         Blob<T> m_blobTs = null;
         Blob<T> m_blobCmt = null;
         Blob<T> m_blobActivationW = null;
+        Blob<T> m_blobActivationW1 = null;
         Blob<T> m_blobActivationRev = null;
         Blob<T> m_blobNumeratorW = null;
         Blob<T> m_blobDenominatorW = null;
@@ -42,6 +43,8 @@ namespace MyCaffe.layers.lnn
         Blob<T> m_blobDenominator = null;
         Blob<T> m_blobWork = null;
         Blob<T> m_blobVPre = null;
+        BlobCollection<T> m_colCmt = new BlobCollection<T>();
+        BlobCollection<T> m_colVPre = new BlobCollection<T>();
         BlobCollection<T> m_colTop = new BlobCollection<T>();
         BlobCollection<T> m_colBtm = new BlobCollection<T>();
         Layer<T> m_sigmoid = null;
@@ -161,6 +164,8 @@ namespace MyCaffe.layers.lnn
             m_blobSensoryDenominatorW.Name = m_param.name + ".sensory_denominator_w";
             m_blobActivationW = new Blob<T>(m_cuda, m_log);
             m_blobActivationW.Name = m_param.name + ".activation_w";
+            m_blobActivationW1 = new Blob<T>(m_cuda, m_log);
+            m_blobActivationW1.Name = m_param.name + ".activation_w1";
             m_blobActivationRev = new Blob<T>(m_cuda, m_log);
             m_blobActivationRev.Name = m_param.name + ".activation_rev";
             m_blobNumeratorW = new Blob<T>(m_cuda, m_log);
@@ -180,9 +185,18 @@ namespace MyCaffe.layers.lnn
             m_blobTs = new Blob<T>(m_cuda, m_log);
             m_blobTs.Name = m_param.name + ".ts";
 
+            for (int i=0; i<m_param.ltc_unit_param.ode_unfolds; i++)
+            {
+                m_colVPre.Add(new Blob<T>(cuda, log));
+                m_colVPre[i].Name = m_param.name + ".vpre." + i.ToString();
+                m_colCmt.Add(new Blob<T>(cuda, log));
+                m_colCmt[i].Name = m_param.name + ".cmt." + i.ToString();
+            }
+
             LayerParameter sigmoid_param = new LayerParameter(LayerParameter.LayerType.SIGMOID);
             sigmoid_param.name = m_param.name + ".sigmoid";
-            m_sigmoid = new SigmoidLayer<T>(cuda, log, sigmoid_param);
+            sigmoid_param.sigmoid_param.engine = EngineParameter.Engine.CAFFE;
+            m_sigmoid = Layer<T>.Create(cuda, log, sigmoid_param, null);
         }
 
         private void addWeight(BlobCollection<T> blobs1, string strName, List<int> rgShape, float fMin, float fMax)
@@ -244,6 +258,7 @@ namespace MyCaffe.layers.lnn
             dispose(ref m_blobSensoryNumeratorW);
             dispose(ref m_blobSensoryDenominatorW);
             dispose(ref m_blobActivationW);
+            dispose(ref m_blobActivationW1);
             dispose(ref m_blobActivationRev);
             dispose(ref m_blobNumeratorW);
             dispose(ref m_blobDenominatorW);
@@ -253,6 +268,18 @@ namespace MyCaffe.layers.lnn
             dispose(ref m_blobDenominator);
             dispose(ref m_blobCmt);
             dispose(ref m_blobTs);
+
+            if (m_colVPre != null)
+            {
+                m_colVPre.Dispose();
+                m_colVPre = null;
+            }
+
+            if (m_colCmt != null)
+            {
+                m_colCmt.Dispose();
+                m_colCmt = null;
+            }
 
             dispose(ref m_sigmoid);
         }
@@ -348,6 +375,7 @@ namespace MyCaffe.layers.lnn
             m_rgShape[1] = m_param.ltc_unit_param.hidden_size;
             m_rgShape[2] = m_param.ltc_unit_param.hidden_size;
             m_blobActivationW.Reshape(m_rgShape);
+            m_blobActivationW1.Reshape(m_rgShape);
             m_blobActivationRev.Reshape(m_rgShape);
 
             m_rgShape[2] = 1;
@@ -360,6 +388,12 @@ namespace MyCaffe.layers.lnn
             m_rgShape[0] = m_param.ltc_unit_param.hidden_size;
             m_rgShape[1] = 1;
             m_blobNumerator2.Reshape(m_rgShape);
+
+            for (int i = 0; i < m_param.ltc_unit_param.ode_unfolds; i++)
+            {
+                m_colCmt[i].ReshapeLike(m_blobCmt);
+                m_colVPre[i].ReshapeLike(m_blobVPre);
+            }
 
             colTop[0].ReshapeLike(m_blobVPre);
         }
@@ -387,6 +421,32 @@ namespace MyCaffe.layers.lnn
             ode_solver_fwd(m_colBtm, m_colTop);
         }
 
+        /// <summary>
+        /// WORK IN PROGRESS Computes the error gradient w.r.t. the LtcUnit value inputs.
+        /// </summary>
+        /// <param name="colTop">top output blob vector (length 1), providing the error gradient
+        /// with respect to outputs
+        ///  -# @f$ (N \times C \times H \times W) @f$
+        ///     containing error gradients @f$ \frac{\partial E}{\partial y} @f$
+        ///     with respect to computed outputs @f$ y @f$
+        /// </param>
+        /// <param name="rgbPropagateDown">propagate_down see Layer::Backward.</param>
+        /// <param name="colBottom">bottom input blob vector (length 1)
+        ///  -# @f$ (N \times C \times H \times W) @f$
+        ///     the inputs @f$ x @f$; Backward fills their diff with 
+        ///     gradients @f$ y' @f$
+        ///     if propagate_down[0]
+        /// </param>
+        protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
+        {
+            addBtmTop(m_blobInputs, colTop[0]);
+            m_colBtm.Add(colBottom[1]);
+            m_colBtm.Add(colBottom[2]);
+            ode_solver_bwd(m_colBtm, m_colTop);
+
+            map_inputs_bwd(colBottom[0], m_blobInputs);
+        }
+
         private void op_fwd(OP op, Blob<T> btm1, Blob<T> btm2, Blob<T> top, int nC = 0, int nN1 = 0, int nSD1 = 0, int nN2 = 0, int nSD2 = 0)
         {
             if (nC == 0)
@@ -409,9 +469,120 @@ namespace MyCaffe.layers.lnn
             int nCount = nN * nC * nSD;
 
             if (nCount != top.count())
-                top.Reshape(Math.Max(nN1, nN2), nC, Math.Max(nSD1, nSD2), 1);
+                top.Reshape(nN, nC, nSD, 1);
 
             m_cuda.channel_op(op, top.count(), nC, nN1, nSD1, nN2, nSD2, btm1.gpu_data, btm2.gpu_data, top.mutable_gpu_data, DIR.FWD);
+        }
+
+        private void op_bwd(OP op, Blob<T> btm1, Blob<T> btm2, Blob<T> top, int nC = 0, int nN1 = 0, int nSD1 = 0, int nN2 = 0, int nSD2 = 0)
+        {
+            if (nC == 0)
+                nC = btm1.channels;
+
+            if (nN1 == 0)
+                nN1 = btm1.num;
+
+            if (nSD1 == 0)
+                nSD1 = (btm1.num_axes < 2) ? 1 : btm1.count(2);
+
+            if (nN2 == 0)
+                nN2 = (btm2.num_axes == 1) ? 1 : btm2.num;
+
+            if (nSD2 == 0)
+                nSD2 = (btm2.num_axes < 2) ? 1 : btm2.count(2);
+
+            int nN = Math.Max(nN1, nN2);
+            int nSD = Math.Max(nSD1, nSD2);
+            int nCount = nN * nC * nSD;
+
+            if (nCount != top.count())
+                top.Reshape(nN, nC, nSD, 1);
+
+            if (nCount != m_blobWork.count())
+                m_blobWork.ReshapeLike(top);
+
+            //m_cuda.channel_op(op, top.count(), nC, nN1, nSD1, nN2, nSD2, btm1.gpu_data, btm2.gpu_data, top.gpu_data, DIR.BWD, btm1.mutable_gpu_diff, btm2.mutable_gpu_diff, top.gpu_diff, m_blobWork.mutable_gpu_data);
+
+            // Gradient for btm1
+            if (top.gpu_diff != btm1.gpu_diff)
+            {
+                m_blobWork.SetDiff(0);
+                if (op == OP.MUL || op == OP.DIV)
+                {
+                    if (top.count() == btm1.count())
+                        m_cuda.channel_op(op, nCount, nC, nN1, nSD1, nN2, nSD2, top.gpu_diff, btm2.gpu_data, btm1.mutable_gpu_diff, DIR.FWD);
+                    else
+                        m_cuda.channel_op(op, nCount, nC, nN1, nSD1, nN2, nSD2, top.gpu_diff, btm2.gpu_data, m_blobWork.mutable_gpu_diff, DIR.FWD);
+                }
+                else
+                {
+                    if (top.count() == btm1.count())
+                        btm1.CopyFrom(top, true);
+                    else
+                        m_blobWork.CopyFrom(top, true);
+                }
+
+                if (nN1 == nN2 && nSD1 < nSD2)
+                {
+                    int nNa = nN1 * nC * nSD1;
+                    int nCa = nSD2 / nSD1;
+                    int nSDa = 1;
+                    m_cuda.channel_sum(nCount, nNa, nCa, nSDa, m_blobWork.gpu_diff, btm1.mutable_gpu_diff, true);
+                }
+                else if (nN1 < nN2 && nSD1 == nSD2)
+                {
+                    int nNa = nN1;
+                    int nCa = nN2 / nN1;
+                    int nSDa = nC * nSD1;
+                    m_cuda.channel_sum(nCount, nNa, nCa, nSDa, m_blobWork.gpu_diff, btm1.mutable_gpu_diff, true);
+                }
+            }
+
+            // Gradient for btm2
+            if (top.gpu_diff != btm2.gpu_diff)
+            {
+                m_blobWork.SetDiff(0);
+                if (op == OP.DIV)
+                {
+                    m_cuda.powx(btm2.count(), btm2.gpu_data, 2.0, btm2.mutable_gpu_diff);
+                    m_cuda.channel_op(op, nCount, nC, nN1, nSD1, nN2, nSD2, btm1.gpu_data, btm2.gpu_diff, m_blobWork.mutable_gpu_diff, DIR.FWD);
+                    m_blobWork.scale_diff(-1);
+
+                    if (top.count() == btm2.count())
+                        m_cuda.channel_op(OP.MUL, nCount, nC, m_blobWork.num, m_blobWork.count(2), top.num, top.count(2), m_blobWork.gpu_diff, top.gpu_diff, btm2.mutable_gpu_diff, DIR.FWD);
+                    else
+                        m_cuda.channel_op(OP.MUL, nCount, nC, m_blobWork.num, m_blobWork.count(2), top.num, top.count(2), m_blobWork.gpu_diff, top.gpu_diff, m_blobWork.mutable_gpu_diff, DIR.FWD);
+                }
+                else if (op == OP.MUL)
+                {
+                    if (top.count() == btm2.count())
+                        m_cuda.channel_op(op, nCount, nC, nN1, nSD1, nN2, nSD2, top.gpu_diff, btm1.gpu_data, btm2.mutable_gpu_diff, DIR.FWD);
+                    else
+                        m_cuda.channel_op(op, nCount, nC, nN1, nSD1, nN2, nSD2, top.gpu_diff, btm1.gpu_data, m_blobWork.mutable_gpu_diff, DIR.FWD);
+                }
+                else
+                {
+                    if (top.count() == btm2.count())
+                        btm2.CopyFrom(top, true);
+                    else
+                        m_blobWork.CopyFrom(top, true);
+                }
+
+                if (nN1 == nN2 && nSD2 < nSD1)
+                {
+                    int nNb = nN2 * nC * nSD1;
+                    int nCb = nSD1 / nSD2;
+                    int nSDb = 1;
+                    m_cuda.channel_sum(nCount, nNb, nCb, nSDb, m_blobWork.gpu_diff, btm2.mutable_gpu_diff, true);
+                }
+                else if (nN2 < nN1 && nSD1 == nSD2)
+                {
+                    int nNb = nN2;
+                    int nCb = nN1 / nN2;
+                    int nSDb = nC * nSD2;
+                    m_cuda.channel_sum(nCount, nNb, nCb, nSDb, m_blobWork.gpu_diff, btm2.mutable_gpu_diff, true);
+                }
+            }
         }
 
         private void sigmoid_fwd(BlobCollection<T> colBtm, BlobCollection<T> colTop)
@@ -428,10 +599,31 @@ namespace MyCaffe.layers.lnn
             m_sigmoid.Forward(m_colBtm, m_colTop);
         }
 
+        private void sigmoid_bwd(BlobCollection<T> colBtm, BlobCollection<T> colTop)
+        {
+            Blob<T> blobPre = colBtm[0];
+            Blob<T> blobMu = colBtm[1];
+            Blob<T> blobSigma = colBtm[2];
+            Blob<T> blobTop = colTop[0];
+
+            addBtmTop(m_blobX, blobTop);
+            m_sigmoid.Backward(m_colTop, new List<bool>() { true }, m_colBtm);
+
+            op_bwd(OP.MUL, m_blobMues, blobSigma, m_blobX, m_blobMues.channels, m_blobMues.num, m_blobMues.count(2), 1, blobSigma.channels);
+            op_bwd(OP.SUB, blobPre, blobMu, m_blobMues, blobPre.channels, blobPre.num, blobPre.count(2), 1, blobMu.channels);
+        }
+
+
         private void map_inputs_fwd(Blob<T> btm, Blob<T> top)
         {
             op_fwd(OP.MUL, btm, blobs[(int)WEIGHT.INPUT_WT], top);
             op_fwd(OP.ADD, top, blobs[(int)WEIGHT.INPUT_BIAS], top);
+        }
+
+        private void map_inputs_bwd(Blob<T> btm, Blob<T> top)
+        {
+            op_bwd(OP.ADD, top, blobs[(int)WEIGHT.INPUT_BIAS], top);
+            op_bwd(OP.MUL, btm, blobs[(int)WEIGHT.INPUT_WT], top);
         }
 
         private void ode_solver_fwd(BlobCollection<T> colBtm, BlobCollection<T> colTop)
@@ -443,6 +635,7 @@ namespace MyCaffe.layers.lnn
             int nN = blobInputs.num;
             int nC = blobInputs.channels;
             int nSD = m_param.ltc_unit_param.hidden_size;
+
             int nCount = blobInputs.count();
 
             m_blobVPre.CopyFrom(blobVPre);
@@ -469,8 +662,11 @@ namespace MyCaffe.layers.lnn
             // Unfold the multi-step ODE solver into one RNN step.
             for (int t = 0; t < m_param.ltc_unit_param.ode_unfolds; t++)
             {
+                m_colVPre[t].CopyFrom(m_blobVPre);
+                m_colCmt[t].CopyFrom(m_blobCmt);
+
                 // Compute the W activation
-                addBtmTop(m_blobVPre, m_blobActivationW);
+                addBtmTop(m_colVPre[t], m_blobActivationW);
                 m_colBtm.Add(blobs[(int)WEIGHT.MU]);
                 m_colBtm.Add(blobs[(int)WEIGHT.SIGMA]);
                 sigmoid_fwd(m_colBtm, m_colTop);
@@ -487,13 +683,13 @@ namespace MyCaffe.layers.lnn
                 op_fwd(OP.ADD, m_blobDenominatorW, m_blobSensoryDenominatorW, m_blobDenominatorW);
 
                 // Compute the numerator
-                op_fwd(OP.MUL, m_blobCmt, m_blobVPre, m_blobNumerator1);
+                op_fwd(OP.MUL, m_colCmt[t], m_colVPre[t], m_blobNumerator1);
                 op_fwd(OP.MUL, blobs[(int)WEIGHT.GLEAK], blobs[(int)WEIGHT.VLEAK], m_blobNumerator2, nSD, 1, 1, 1, 1);
                 op_fwd(OP.ADD, m_blobNumerator1, m_blobNumerator2, m_blobNumerator, nSD, nN, 1, 1, 1);
                 op_fwd(OP.ADD, m_blobNumerator, m_blobNumeratorW, m_blobNumerator);
 
                 // Compute the denominator
-                op_fwd(OP.ADD, m_blobCmt, blobs[(int)WEIGHT.GLEAK], m_blobDenominator, nSD, nN, 1, 1, 1);
+                op_fwd(OP.ADD, m_colCmt[t], blobs[(int)WEIGHT.GLEAK], m_blobDenominator, nSD, nN, 1, 1, 1);
                 op_fwd(OP.ADD, m_blobDenominator, m_blobDenominatorW, m_blobDenominator);
                 m_blobDenominator.add_scalar(m_param.ltc_unit_param.epsilon);
 
@@ -504,24 +700,83 @@ namespace MyCaffe.layers.lnn
             blobTop.CopyFrom(m_blobVPre);
         }
 
-        /// <summary>
-        /// WORK IN PROGRESS Computes the error gradient w.r.t. the LtcUnit value inputs.
-        /// </summary>
-        /// <param name="colTop">top output blob vector (length 1), providing the error gradient
-        /// with respect to outputs
-        ///  -# @f$ (N \times C \times H \times W) @f$
-        ///     containing error gradients @f$ \frac{\partial E}{\partial y} @f$
-        ///     with respect to computed outputs @f$ y @f$
-        /// </param>
-        /// <param name="rgbPropagateDown">propagate_down see Layer::Backward.</param>
-        /// <param name="colBottom">bottom input blob vector (length 1)
-        ///  -# @f$ (N \times C \times H \times W) @f$
-        ///     the inputs @f$ x @f$; Backward fills their diff with 
-        ///     gradients @f$ y' @f$
-        ///     if propagate_down[0]
-        /// </param>
-        protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
+        private void ode_solver_bwd(BlobCollection<T> colBtm, BlobCollection<T> colTop)
         {
+            Blob<T> blobInputs = colBtm[0];
+            Blob<T> blobVPre = colBtm[1];
+            Blob<T> blobTs = colBtm[2];
+            Blob<T> blobTop = colTop[0];
+            int nN = blobInputs.num;
+            int nC = blobInputs.channels;
+            int nSD = m_param.ltc_unit_param.hidden_size;
+
+            int nCount = blobInputs.count();
+
+            m_blobCmt.SetDiff(0);
+            m_blobVPre.CopyFrom(colTop[0], true);
+
+            // Unfold the multi-step ODE solver into one RNN step.
+            for (int t = m_param.ltc_unit_param.ode_unfolds-1; t >= 0; t--)
+            {
+                // Compute the output
+                op_bwd(OP.DIV, m_blobNumerator, m_blobDenominator, m_blobVPre);
+
+                // Compute the denominator
+                op_bwd(OP.ADD, m_blobDenominator, m_blobDenominatorW, m_blobDenominator);
+                op_bwd(OP.ADD, m_colCmt[t], blobs[(int)WEIGHT.GLEAK], m_blobDenominator, nSD, nN, 1, 1, 1);
+                m_cuda.add(m_blobCmt.count(), m_colCmt[t].gpu_diff, m_blobCmt.gpu_diff, m_blobCmt.mutable_gpu_diff);
+
+                // Compute the numerator
+                op_bwd(OP.ADD, m_blobNumerator, m_blobNumeratorW, m_blobNumerator);
+                op_bwd(OP.ADD, m_blobNumerator1, m_blobNumerator2, m_blobNumerator, nSD, nN, 1, 1, 1);
+
+                op_bwd(OP.MUL, blobs[(int)WEIGHT.GLEAK], blobs[(int)WEIGHT.VLEAK], m_blobNumerator2, nSD, 1, 1, 1, 1);
+                op_bwd(OP.MUL, m_colCmt[t], m_colVPre[t], m_blobNumerator1);
+                m_cuda.add(m_blobCmt.count(), m_colCmt[t].gpu_diff, m_blobCmt.gpu_diff, m_blobCmt.mutable_gpu_diff);
+                m_cuda.add(m_blobVPre.count(), m_colVPre[t].gpu_diff, m_blobVPre.gpu_diff, m_blobVPre.mutable_gpu_diff);
+
+                // Add sensory input
+                op_bwd(OP.ADD, m_blobDenominatorW, m_blobSensoryDenominatorW, m_blobDenominatorW);
+                op_bwd(OP.ADD, m_blobNumeratorW, m_blobSensoryNumeratorW, m_blobNumeratorW);
+
+                // Reduce over dim=1 (source neurons)
+                m_cuda.channel_sum(m_blobActivationRev.count(), m_blobActivationRev.num, m_blobActivationRev.channels, m_blobActivationRev.count(2), m_blobActivationRev.mutable_gpu_diff, m_blobNumeratorW.gpu_diff, true, DIR.BWD);
+                m_cuda.channel_sum(m_blobActivationW1.count(), m_blobActivationW1.num, m_blobActivationW1.channels, m_blobActivationW1.count(2), m_blobActivationW1.mutable_gpu_diff, m_blobDenominatorW.gpu_diff, true, DIR.BWD);
+
+                // Compute the Rev activation
+                op_bwd(OP.MUL, m_blobActivationW, blobs[(int)WEIGHT.EREV], m_blobActivationRev, nSD, nN, nSD, 1, nSD);
+                // Accumulate the gradient
+                m_cuda.add(m_blobActivationW.count(), m_blobActivationW1.gpu_diff, m_blobActivationW.gpu_diff, m_blobActivationW1.mutable_gpu_diff);
+
+                // Compute the W activation
+                op_bwd(OP.MUL, m_blobActivationW, blobs[(int)WEIGHT.W], m_blobActivationW1, nSD, nN, nSD, 1, nSD);
+
+                addBtmTop(m_blobVPre, m_blobActivationW);
+                m_colBtm.Add(blobs[(int)WEIGHT.MU]);
+                m_colBtm.Add(blobs[(int)WEIGHT.SIGMA]);
+                sigmoid_bwd(m_colBtm, m_colTop);
+            }
+
+            // cm/t is loop invariant, so we can compute it once here.
+            op_bwd(OP.DIV, blobs[(int)WEIGHT.CM], m_blobTs, m_blobCmt, 1, 1, nSD, nN, 1);
+            m_blobTs.scale_data(1.0 / m_param.ltc_unit_param.ode_unfolds);
+            m_blobTs.add_scalar(1.0);
+            blobTs.CopyFrom(m_blobTs, true);
+
+            // Reduce over dim=1 (source sensory neurons)
+            m_cuda.channel_sum(nCount, m_blobSensoryActivationW.num, m_blobSensoryActivationW.channels, m_blobSensoryActivationW.count(2), m_blobSensoryActivationW.gpu_data, m_blobSensoryDenominatorW.mutable_gpu_data, true);
+            m_cuda.channel_sum(nCount, m_blobSensoryActivationRev.num, m_blobSensoryActivationRev.channels, m_blobSensoryActivationRev.count(2), m_blobSensoryActivationRev.gpu_data, m_blobSensoryNumeratorW.mutable_gpu_data, true);
+
+            // Pre-compute the effect of the sensory inputs.
+            op_bwd(OP.MUL, m_blobSensoryActivationW, blobs[(int)WEIGHT.SENSORY_EREV], m_blobSensoryActivationRev, nC, nN, nSD, 1, nSD);
+            op_bwd(OP.MUL, m_blobSensoryActivationW, blobs[(int)WEIGHT.SENSORY_W], m_blobSensoryActivationW, nC, nN, nSD, 1, nSD);
+
+            addBtmTop(blobInputs, m_blobSensoryActivationW);
+            m_colBtm.Add(blobs[(int)WEIGHT.SENSORY_MU]);
+            m_colBtm.Add(blobs[(int)WEIGHT.SENSORY_SIGMA]);
+            sigmoid_bwd(m_colBtm, m_colTop);
+
+            blobVPre.CopyFrom(m_blobVPre, true);
         }
     }
 }
