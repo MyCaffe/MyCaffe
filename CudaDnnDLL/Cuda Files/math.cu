@@ -6123,7 +6123,9 @@ __global__ void channel_sum_kernel_acrosschannels_bwd(const int num, const int c
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * channels * spatial_dim && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		const int nSrcIdx = i % (channels * spatial_dim);
+		const int n = (i / (channels * spatial_dim)) * (channels);
+		const int s = i % spatial_dim;
+		const int nSrcIdx = n + s;
 		x[i] = y[nSrcIdx];
 	}
 }
@@ -6133,7 +6135,9 @@ __global__ void channel_sum_kernel_withinchannel_bwd(const int num, const int ch
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * channels * spatial_dim && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		const int nSrcIdx = i / (channels * spatial_dim);
+		const int n = (i / (channels * spatial_dim)) * (channels);
+		const int s = i / spatial_dim;
+		const int nSrcIdx = n + s;
 		x[i] = y[nSrcIdx];
 	}
 }
