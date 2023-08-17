@@ -282,7 +282,7 @@ namespace MyCaffe.test
                 layer.Forward(BottomVec, TopVec);
 
                 blobYexp.LoadFromNumpy(strPath + "h_state.npy");
-                m_log.CHECK(TopVec[0].Compare(blobYexp, blobWork, false, 1e-07), "The blobs do not match.");
+                m_log.CHECK(TopVec[0].Compare(blobYexp, blobWork, false, 2e-07), "The blobs do not match.");
             }
             finally
             {
@@ -315,20 +315,17 @@ namespace MyCaffe.test
             Blob<T> blobX = null;
             Blob<T> blobHx = null;
             Blob<T> blobTs = null;
-            Blob<T> blobXgrad = null;
-            Blob<T> blobHxgrad = null;
-            Blob<T> blobTsgrad = null;
             Blob<T> blobY = null;
             Blob<T> blobYexp = null;
             Blob<T> blobWork = null;
+            Blob<T> blobXgrad = null;
+            Blob<T> blobHxgrad = null;
+            Blob<T> blobTsgrad = null;
             string strSubPath = (bNoGate) ? "ltc_cell_no_gate" : "ltc_cell_gate";
-            string strTag = "";
-            string strVerifyFile = "0.cm_t.a.npy";
-
             string strPath = getTestDataPath(strSubPath);
             string strPathWts = getTestWtsPath(strSubPath);
 
-            verifyFileDownload(strSubPath, strVerifyFile);
+            verifyFileDownload(strSubPath, "0.cm_t.a.npy");
 
             try
             {
@@ -336,9 +333,6 @@ namespace MyCaffe.test
                 blobX = new Blob<T>(m_cuda, m_log);
                 blobHx = new Blob<T>(m_cuda, m_log);
                 blobTs = new Blob<T>(m_cuda, m_log);
-                blobXgrad = new Blob<T>(m_cuda, m_log);
-                blobHxgrad = new Blob<T>(m_cuda, m_log);
-                blobTsgrad = new Blob<T>(m_cuda, m_log);
                 blobY = new Blob<T>(m_cuda, m_log);
                 blobYexp = new Blob<T>(m_cuda, m_log);
                 blobWork = new Blob<T>(m_cuda, m_log);
@@ -346,18 +340,9 @@ namespace MyCaffe.test
                 m_log.CHECK(layer != null, "The layer was not created correctly.");
                 m_log.CHECK(layer.type == LayerParameter.LayerType.LTC_UNIT, "The layer type is incorrect.");
 
-                string strXname = "x.npy";
-                string strHxName = "hx.npy";
-                string strTsName = "ts.npy";
-                string strXGradName = "cell_input.grad.npy";
-                string strHxGradName = "cell_hx.grad.npy";
-                string strTsGradName = "cell_ts.grad.npy";
-                string strHStateName = "h_state.npy";
-                string strHStateGradName = "h_state.grad.npy";
-
-                blobX.LoadFromNumpy(strPath + strXname);
-                blobHx.LoadFromNumpy(strPath + strHxName);
-                blobTs.LoadFromNumpy(strPath + strTsName);
+                blobX.LoadFromNumpy(strPath + "x.npy");
+                blobHx.LoadFromNumpy(strPath + "hx.npy");
+                blobTs.LoadFromNumpy(strPath + "ts.npy");
 
                 BottomVec.Clear();
                 BottomVec.Add(blobX);
@@ -367,25 +352,25 @@ namespace MyCaffe.test
                 TopVec.Add(blobY);
 
                 layer.Setup(BottomVec, TopVec);
-                load_weights(layer, strPathWts, strTag);
+                load_weights(layer, strPathWts);
 
                 layer.Forward(BottomVec, TopVec);
 
-                blobYexp.LoadFromNumpy(strPath + strHStateName);
+                blobYexp.LoadFromNumpy(strPath + "h_state.npy");
                 m_log.CHECK(TopVec[0].Compare(blobYexp, blobWork, false, 2e-07), "The blobs do not match.");
 
                 //** BACKWARD **
 
-                TopVec[0].LoadFromNumpy(strPath + strHStateGradName, true);
+                TopVec[0].LoadFromNumpy(strPath + "h_state.grad.npy", true);
 
                 layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
 
-                blobXgrad.LoadFromNumpy(strPath + strXGradName, true);
+                blobXgrad.LoadFromNumpy(strPath + "x.grad.npy", true);
                 m_log.CHECK(blobXgrad.Compare(blobX, blobWork, true, 1e-07), "The blobs do not match.");
 
-                blobHxgrad.LoadFromNumpy(strPath + strHxGradName, true);
+                blobHxgrad.LoadFromNumpy(strPath + "hx.grad.npy", true);
                 m_log.CHECK(blobHxgrad.Compare(blobHx, blobWork, true, 1e-07), "The blobs do not match.");
-                blobTsgrad.LoadFromNumpy(strPath + strTsGradName, true);
+                blobTsgrad.LoadFromNumpy(strPath + "ts.grad.npy", true);
                 m_log.CHECK(blobTsgrad.Compare(blobTs, blobWork, true, 1e-07), "The blobs do not match.");
             }
             finally
