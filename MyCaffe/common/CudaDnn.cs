@@ -864,13 +864,13 @@ namespace MyCaffe.common
         void channel_fillfrom(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, DIR dir);
         void channel_scale(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hA, long hY);
         void channel_mulv(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hA, long hX, long hC);
-        void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bSumAcrossChannels = true);
+        void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bSumAcrossChannels = true, DIR dir = DIR.FWD);
         void channel_mean(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
         void channel_copy(int nCount, int nOuterNum, int nChannels, int nBlocks, int nInnerNum, int nOffset, long hX, long hY, DIR dir);
         void channel_copyall(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
         void channel_duplicate(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
         void channel_percentile(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, double dfPercentile);
-        void channel_op(OP op, int nCount, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY, DIR dir);
+        void channel_op(OP op, int nCount, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY, DIR dir, long hAd = 0, long hBd = 0, long hYd = 0, long hWork = 0);
 
         void gemm(bool bTransA, bool bTransB, int m, int n, int k, double fAlpha, long hA, long hB, double fBeta, long hC);
         void gemm(bool bTransA, bool bTransB, int m, int n, int k, float fAlpha, long hA, long hB, float fBeta, long hC);
@@ -8224,15 +8224,18 @@ namespace MyCaffe.common
         /// <param name="nOuterNum">Specifies the number of images within X.</param>
         /// <param name="nChannels">Specifies the number of channels per image of X.</param>
         /// <param name="nInnerNum">Specifies the dimension of each image in X.</param>
-        /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
-        /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
+        /// <param name="hX">Specifies a handle to the vector X in GPU memory (with expected size nOuterNum, nChannels, nInnerNum).</param>
+        /// <param name="hY">Specifies a handle to the vector Y in GPU memory (with expected size nOuterNum, nChannels, 1).</param>
         /// <param name="bSumAcrossChannels">Specifies to sum across channels (true), or within each channel (false), default = true.</param>"
-        public void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bSumAcrossChannels = true)
+        /// <param name="dir">Optionally, specifies the direction (default = DIR.FWD).  When DIR.BWD is used, data flows from Y to X where Y data 
+        /// is copied to X and duplicated across the channels of Y.  When using bSumAcrossChannels = true, ordering is based on Y ordering Y(c1,c2,c3,c1,c2,c3,c1,c2,c3),
+        /// and when using bSumAcrossChannels = false, ordering is based on X ordering Y(c1,c1,c1,c2,c2,c2,c3,c3,c3).</param>
+        public void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bSumAcrossChannels = true, DIR dir = DIR.FWD)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bSumAcrossChannels) ? 1 : 0));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bSumAcrossChannels) ? 1 : 0, (int)dir));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bSumAcrossChannels) ? 1 : 0));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bSumAcrossChannels) ? 1 : 0, (int)dir));
         }
 
         /// <summary>
@@ -8372,18 +8375,22 @@ namespace MyCaffe.common
         /// <param name="nSD2">Specifies the spatial dimension of each item of B.</param>
         /// <param name="hA">Specifies a handle to the memory of A which has the size nN1 x nC1 x nSD1.</param>
         /// <param name="hB">Specifies a handle to the memory of B which has the size nN2 x nC2 x nSD2.</param>
-        /// <param name="hY">Specifies a handle to the memory where the result is placed with size max(nN1, nN2) x nC x max(nSD1, nSD2).</param>
+        /// <param name="hY">Specifies a handle to the memory where the result is placed during FWD with size max(nN1, nN2) x nC x max(nSD1, nSD2).</param>
         /// <param name="dir">Specifies the direction of the operation (FWD or BWD).</param>
-        public void channel_op(OP op, int nCount, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY, DIR dir)
+        /// <param name="hAd">Optionally, specifies a handle to the memory of the diff for A (filled during BWD) with size nN1, nC, nSD1.</param>
+        /// <param name="hBd">Optionally, specifies a handle to the memory of the diff for b (filled during BWD) with size nN2, nC, nSD2.</param>
+        /// <param name="hYd">Optionally, specifies a handle to the memory of the diff for Y (used during BWD).</param>
+        /// <param name="hWork">Optionally, specifies a handle to work memory with the same size as Y (used during BWD)</param>
+        public void channel_op(OP op, int nCount, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY, DIR dir, long hAd = 0, long hBd = 0, long hYd = 0, long hWork = 0)
         {
             int nCount1 = Math.Max(nN1, nN2) * nC * Math.Max(nSD1, nSD2);
             if (nCount1 != nCount)
                 throw new Exception("The count must equal max(nN1, nN2) x nC x max(nSD1, nSD2).");
 
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int) m_hKernel, (int) CUDAFN.CUDA_CHANNEL_OP, null, m_param.AsLong((int)op, nCount, nC, nN1, nSD1, nN2, nSD2, hA, hB, hY, (int)dir));
+                m_cuda.RunDoubleEx2((int) m_hKernel, (int) CUDAFN.CUDA_CHANNEL_OP, null, m_param.AsLong((int)op, nCount, nC, nN1, nSD1, nN2, nSD2, hA, hB, hY, (int)dir, hAd, hBd, hYd, hWork));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_OP, null, m_param.AsLong((int)op, nCount, nC, nN1, nSD1, nN2, nSD2, hA, hB, hY, (int)dir));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_OP, null, m_param.AsLong((int)op, nCount, nC, nN1, nSD1, nN2, nSD2, hA, hB, hY, (int)dir, hAd, hBd, hYd, hWork));
         }
 
         /// <summary>

@@ -2978,7 +2978,7 @@ namespace MyCaffe.test
             int nN2 = 1;
             int nSD2 = 2;
 
-            test_channel_op1(OP.MUL, nC, nN1, nSD1, nN2, nSD2);
+            test_channel_op_fwd(OP.MUL, nC, nN1, nSD1, nN2, nSD2);
         }
 
         [TestMethod]
@@ -2990,7 +2990,7 @@ namespace MyCaffe.test
             int nN2 = 1;
             int nSD2 = 2;
 
-            test_channel_op1(OP.DIV, nC, nN1, nSD1, nN2, nSD2);
+            test_channel_op_fwd(OP.DIV, nC, nN1, nSD1, nN2, nSD2);
         }
 
         [TestMethod]
@@ -3002,7 +3002,7 @@ namespace MyCaffe.test
             int nN2 = 1;
             int nSD2 = 2;
 
-            test_channel_op1(OP.ADD, nC, nN1, nSD1, nN2, nSD2);
+            test_channel_op_fwd(OP.ADD, nC, nN1, nSD1, nN2, nSD2);
         }
 
         [TestMethod]
@@ -3014,7 +3014,7 @@ namespace MyCaffe.test
             int nN2 = 1;
             int nSD2 = 2;
 
-            test_channel_op1(OP.SUB, nC, nN1, nSD1, nN2, nSD2);
+            test_channel_op_fwd(OP.SUB, nC, nN1, nSD1, nN2, nSD2);
         }
 
         [TestMethod]
@@ -3026,7 +3026,7 @@ namespace MyCaffe.test
             int nN2 = 1;
             int nSD2 = 1;
 
-            test_channel_op1(OP.MUL, nC, nN1, nSD1, nN2, nSD2);
+            test_channel_op_fwd(OP.MUL, nC, nN1, nSD1, nN2, nSD2);
         }
 
         [TestMethod]
@@ -3038,7 +3038,7 @@ namespace MyCaffe.test
             int nN2 = 1;
             int nSD2 = 1;
 
-            test_channel_op1(OP.DIV, nC, nN1, nSD1, nN2, nSD2);
+            test_channel_op_fwd(OP.DIV, nC, nN1, nSD1, nN2, nSD2);
         }
 
         [TestMethod]
@@ -3050,7 +3050,7 @@ namespace MyCaffe.test
             int nN2 = 1;
             int nSD2 = 1;
 
-            test_channel_op1(OP.ADD, nC, nN1, nSD1, nN2, nSD2);
+            test_channel_op_fwd(OP.ADD, nC, nN1, nSD1, nN2, nSD2);
         }
 
         [TestMethod]
@@ -3062,7 +3062,7 @@ namespace MyCaffe.test
             int nN2 = 1;
             int nSD2 = 1;
 
-            test_channel_op1(OP.SUB, nC, nN1, nSD1, nN2, nSD2);
+            test_channel_op_fwd(OP.SUB, nC, nN1, nSD1, nN2, nSD2);
         }
 
         [TestMethod]
@@ -3074,7 +3074,7 @@ namespace MyCaffe.test
             int nN2 = 1;
             int nSD2 = 256;
 
-            test_channel_op1(OP.MUL, nC, nN1, nSD1, nN2, nSD2);
+            test_channel_op_fwd(OP.MUL, nC, nN1, nSD1, nN2, nSD2);
         }
 
         [TestMethod]
@@ -3086,7 +3086,7 @@ namespace MyCaffe.test
             int nN2 = 1;
             int nSD2 = 256;
 
-            test_channel_op1(OP.DIV, nC, nN1, nSD1, nN2, nSD2);
+            test_channel_op_fwd(OP.DIV, nC, nN1, nSD1, nN2, nSD2);
         }
 
         [TestMethod]
@@ -3098,7 +3098,7 @@ namespace MyCaffe.test
             int nN2 = 1;
             int nSD2 = 256;
 
-            test_channel_op1(OP.ADD, nC, nN1, nSD1, nN2, nSD2);
+            test_channel_op_fwd(OP.ADD, nC, nN1, nSD1, nN2, nSD2);
         }
 
         [TestMethod]
@@ -3110,13 +3110,13 @@ namespace MyCaffe.test
             int nN2 = 1;
             int nSD2 = 256;
 
-            test_channel_op1(OP.SUB, nC, nN1, nSD1, nN2, nSD2);
+            test_channel_op_fwd(OP.SUB, nC, nN1, nSD1, nN2, nSD2);
         }
 
-        private void test_channel_op1(OP op, int nC, int nN1, int nSD1, int nN2, int nSD2)
+        private void test_channel_op_fwd(OP op, int nC, int nN1, int nSD1, int nN2, int nSD2)
         {
             CudaDnnTest test = new CudaDnnTest();
-            Log log = new Log("Test 1 Channel Op = " + op.ToString());
+            Log log = new Log("Test Fwd Channel Op = " + op.ToString());
             long hDataA = 0;
             long hDataB = 0;
             long hDataY = 0;
@@ -3206,6 +3206,143 @@ namespace MyCaffe.test
                         {
                             t.Cuda.FreeMemory(hDataY);
                             hDataY = 0;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        private void test_channel_op_bwd(OP op, int nC, int nN1, int nSD1, int nN2, int nSD2)
+        {
+            CudaDnnTest test = new CudaDnnTest();
+            Log log = new Log("Test Bwd Channel Op = " + op.ToString());
+            long hDataA = 0;
+            long hDataB = 0;
+            long hDataY = 0;
+            long hDataAd = 0;
+            long hDataBd = 0;
+            long hDataYd = 0;
+            long hWork = 0;
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    try
+                    {
+                        List<double> rgdfA = new List<double>();
+                        List<double> rgdfB = new List<double>();
+                        int nCount1 = nN1 * nC * nSD1;
+                        int nCount2 = nN2 * nC * nSD2;
+
+                        for (int i = 0; i < nCount1; i++)
+                        {
+                            rgdfA.Add(i * 0.01);
+                        }
+
+                        for (int i = 0; i < nCount2; i++)
+                        {
+                            rgdfB.Add(20 + i * 0.10);
+                        }
+
+                        int nCount = Math.Max(nN1, nN2) * nC * Math.Max(nSD1, nSD2);
+
+                        hDataA = t.Cuda.AllocMemory(rgdfA);
+                        hDataB = t.Cuda.AllocMemory(rgdfB);
+                        hDataY = t.Cuda.AllocMemory(nCount);
+
+                        List<double> rgdfYd = new List<double>();
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            rgdfYd.Add(i * 0.123);
+                        }
+
+                        hDataYd = t.Cuda.AllocMemory(rgdfYd);
+                        hDataAd = t.Cuda.AllocMemory(rgdfA.Count);
+                        hDataBd = t.Cuda.AllocMemory(rgdfB.Count);
+                        hWork = t.Cuda.AllocMemory(rgdfYd.Count);
+
+                        // Test Yd -> Ad op Bd
+                        t.Cuda.channel_op(op, nCount, nC, nN1, nSD1, nN2, nSD2, hDataA, hDataB, hDataY, DIR.BWD, hDataAd, hDataBd, hDataYd, hWork);
+
+                        double[] rgDataAd = t.Cuda.GetMemoryDouble(hDataYd);
+
+                        log.CHECK_EQ(rgDataAd.Length, rgdfA.Count, "The data A length should be equal.");
+
+                        t.Cuda.channel_op(op, nCount, nC, nN1, nSD1, nN2, nSD2, hDataYd, hDataB, hWork, DIR.FWD);
+
+                        if (nN1 == nN2 && nSD1 < nSD2)
+                        {
+                            int nN = nN1 * nC * nSD1;
+                            int nC1 = nSD2 / nSD1;
+                            int nSD = 1;
+                            t.Cuda.channel_sum(nCount, nN, nC1, nSD, hWork, hDataA, false);
+                        }
+                        else if (nN1 < nN2 && nSD1 == nSD2)
+                        {
+                            int nN = nN1;
+                            int nC1 = nN2 / nN1;
+                            int nSD = nC * nSD2;
+                            t.Cuda.channel_sum(nCount, nN, nC1, nSD, hWork, hDataA, false);
+                        }
+
+                        double[] rgDataA = t.Cuda.GetMemoryDouble(hDataA);
+
+                        for (int i = 0; i < rgDataAd.Length; i++)
+                        {
+                            double dfActual = rgDataAd[i];
+                            double dfExpected = rgDataA[i];
+
+                            double dfDiff = Math.Abs(dfActual - dfExpected);
+                            log.CHECK_LT(dfDiff, 1e-5, "The values are incorrect at index " + i.ToString() + "!");
+                        }
+                    }
+                    finally
+                    {
+                        if (hDataA != 0)
+                        {
+                            t.Cuda.FreeMemory(hDataA);
+                            hDataA = 0;
+                        }
+
+                        if (hDataB != 0)
+                        {
+                            t.Cuda.FreeMemory(hDataB);
+                            hDataB = 0;
+                        }
+
+                        if (hDataY != 0)
+                        {
+                            t.Cuda.FreeMemory(hDataY);
+                            hDataY = 0;
+                        }
+
+                        if (hDataAd != 0)
+                        {
+                            t.Cuda.FreeMemory(hDataAd);
+                            hDataAd = 0;
+                        }
+
+                        if (hDataBd != 0)
+                        {
+                            t.Cuda.FreeMemory(hDataBd);
+                            hDataBd = 0;
+                        }
+
+                        if (hDataYd != 0)
+                        {
+                            t.Cuda.FreeMemory(hDataYd);
+                            hDataYd = 0;
+                        }
+
+                        if (hWork != 0)
+                        {
+                            t.Cuda.FreeMemory(hWork);
+                            hWork = 0;
                         }
                     }
                 }
@@ -3508,10 +3645,10 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestMath_channel_sum_acrosschannels()
+        public void TestMath_channel_sum_acrosschannels_fwd()
         {
             CudaDnnTest test = new CudaDnnTest();
-            Log log = new Log("Test Channel Sum across channels");
+            Log log = new Log("Test Channel Sum Fwd across channels");
             long hDataMatrix = 0;
             long hDstVector = 0;
 
@@ -3575,10 +3712,10 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestMath_channel_sum_withinchannel()
+        public void TestMath_channel_sum_withinchannel_fwd()
         {
             CudaDnnTest test = new CudaDnnTest();
-            Log log = new Log("Test Channel Sum within channels");
+            Log log = new Log("Test Channel Sum Fwd within channels");
             long hDataMatrix = 0;
             long hDstVector = 0;
 
@@ -3632,6 +3769,132 @@ namespace MyCaffe.test
                             double dfErr = 1e-5;
 
                             log.EXPECT_NEAR(dfExpected, dfActual, dfErr, "The values do not match!");
+                        }
+                    }
+                    finally
+                    {
+                        if (hDataMatrix != 0)
+                        {
+                            t.Cuda.FreeMemory(hDataMatrix);
+                            hDataMatrix = 0;
+                        }
+
+                        if (hDstVector != 0)
+                        {
+                            t.Cuda.FreeMemory(hDstVector);
+                            hDstVector = 0;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestMath_channel_sum_acrosschannels_bwd()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+            Log log = new Log("Test Channel Sum Bwd across channels");
+            long hDataMatrix = 0;
+            long hDstVector = 0;
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    try
+                    {
+                        int nNum = 4;
+                        int nDim = 3;
+                        int nCount = nNum * nDim;
+
+                        // Data matrix is an nNum x nDim matrix.  Dst matrix is the same size.
+                        List<double> rgDataMatrix = new List<double>() { 1.0, 1.1, 1.2, 2.0, 2.1, 2.2, 3.0, 3.1, 3.2, 4.0, 4.1, 4.2 };
+                        double dfC1 = 1.0 + 2.0 + 3.0 + 4.0;
+                        double dfC2 = 1.1 + 2.1 + 3.1 + 4.1;
+                        double dfC3 = 1.2 + 2.2 + 3.2 + 4.2;
+                        List<double> rgExpectedMatrix = new List<double>() { dfC1, dfC2, dfC3, dfC1, dfC2, dfC3, dfC1, dfC2, dfC3, dfC1, dfC2, dfC3 };
+                        List<double> rgExpected = new List<double>() { dfC1, dfC2, dfC3 };
+                        hDataMatrix = t.Cuda.AllocMemory(rgDataMatrix);
+                        hDstVector = t.Cuda.AllocMemory(rgExpected);
+
+                        // Copies from Y channels to X along X channels.
+                        t.Cuda.channel_sum(nCount, nNum, nDim, 1, hDataMatrix, hDstVector, true, DIR.BWD);
+                        double[] rgActualData = t.Cuda.GetMemoryDouble(hDataMatrix);
+
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            double dfExpected = rgExpected[i % nDim];
+                            double dfActual = rgActualData[i];
+
+                            log.EXPECT_EQUAL<float>(dfExpected, dfActual, "The values do not match!");
+                        }
+                    }
+                    finally
+                    {
+                        if (hDataMatrix != 0)
+                        {
+                            t.Cuda.FreeMemory(hDataMatrix);
+                            hDataMatrix = 0;
+                        }
+
+                        if (hDstVector != 0)
+                        {
+                            t.Cuda.FreeMemory(hDstVector);
+                            hDstVector = 0;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestMath_channel_sum_withinchannel_bwd()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+            Log log = new Log("Test Channel Sum Bwd across channels");
+            long hDataMatrix = 0;
+            long hDstVector = 0;
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    try
+                    {
+                        int nNum = 4;
+                        int nDim = 3;
+                        int nCount = nNum * nDim;
+
+                        // Data matrix is an nNum x nDim matrix.  Dst matrix is the same size.
+                        List<double> rgDataMatrix = new List<double>() { 1.0, 1.1, 1.2, 2.0, 2.1, 2.2, 3.0, 3.1, 3.2, 4.0, 4.1, 4.2 };
+                        double dfN1 = 1.0 + 1.1 + 1.2;
+                        double dfN2 = 2.0 + 2.1 + 2.2;
+                        double dfN3 = 3.0 + 3.1 + 3.2;
+                        double dfN4 = 4.0 + 4.1 + 4.2;
+                        List<double> rgExpectedMatrix = new List<double>() { dfN1, dfN1, dfN1, dfN2, dfN2, dfN2, dfN3, dfN3, dfN3, dfN4, dfN4, dfN4 };
+                        hDataMatrix = t.Cuda.AllocMemory(rgDataMatrix);
+
+                        List<double> rgExpected = new List<double>() { dfN1, dfN2, dfN3, dfN4 };
+                        hDstVector = t.Cuda.AllocMemory(rgExpected);
+
+                        // Copies from Y channels to X along X channels.
+                        t.Cuda.channel_sum(nCount, nNum, nDim, 1, hDataMatrix, hDstVector, false, DIR.BWD);
+                        double[] rgActualData = t.Cuda.GetMemoryDouble(hDataMatrix);
+
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            double dfExpected = rgExpected[i / nDim];
+                            double dfActual = rgActualData[i];
+
+                            log.EXPECT_EQUAL<float>(dfExpected, dfActual, "The values do not match!");
                         }
                     }
                     finally

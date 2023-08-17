@@ -241,7 +241,7 @@ class Math
 		long channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx);
 		long channel_mean(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 		long channel_sub(int n, int nOutNum, int nChannels, int nInNum, long hA, long hX, long hY);
-		long channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bSumAcrossChannels);
+		long channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bSumAcrossChannels, int nDir);
 		long channel_div(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nMethod = 1);
 		long channel_mul(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nMethod = 1);
 		long channel_mulv(int n, int nOutNum, int nChannels, int nInNum, long hA, long hX, long hC);
@@ -255,7 +255,7 @@ class Math
 		long channel_copyall(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 		long channel_duplicate(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 		long channel_percentile(int n, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, T fPercentile);
-		long channel_op(int op, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY, int nDir);
+		long channel_op(int op, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY, int nDir, long hAd, long hBd, long hYd, long hWork);
 
 		long im2col(long hDataIm, int nDataImOffset, int nChannels, int nHeight, int nWidth, int nKernelH, int nKernelW, int nPadH, int nPadW, int nStrideH, int nStrideW, int nDilationH, int nDilationW, long hDataCol, int nDataColOffset);
 		long col2im(long hDataCol, int nDataColOffset, int nChannels, int nHeight, int nWidth, int nKernelH, int nKernelW, int nPadH, int nPadW, int nStrideH, int nStrideW, int nDilationH, int nDilationW, long hDataIm, int nDataImOffset);

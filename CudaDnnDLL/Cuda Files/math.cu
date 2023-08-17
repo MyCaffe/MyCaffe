@@ -6118,9 +6118,29 @@ __global__ void channel_sum_kernel_withinchannel(const int num, const int channe
 	}
 }
 
+template <typename T>
+__global__ void channel_sum_kernel_acrosschannels_bwd(const int num, const int channels, const int spatial_dim, T* x, const T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * channels * spatial_dim && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const int nSrcIdx = i % (channels * spatial_dim);
+		x[i] = y[nSrcIdx];
+	}
+}
+
+template <typename T>
+__global__ void channel_sum_kernel_withinchannel_bwd(const int num, const int channels, const int spatial_dim, T* x, const T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * channels * spatial_dim && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const int nSrcIdx = i / (channels * spatial_dim);
+		x[i] = y[nSrcIdx];
+	}
+}
+
 
 template <typename T> 
-long Math<T>::channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bSumAcrossChannels)
+long Math<T>::channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bSumAcrossChannels, int nDir)
 {
 	LONG lErr;
 	MemoryItem* pX;
@@ -6132,16 +6152,26 @@ long Math<T>::channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	if (bSumAcrossChannels)
-		channel_sum_kernel_acrosschannels<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+	if (nDir == 0)
+	{
+		if (bSumAcrossChannels)
+			channel_sum_kernel_acrosschannels<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+		else
+			channel_sum_kernel_withinchannel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+	}
 	else
-		channel_sum_kernel_withinchannel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+	{
+		if (bSumAcrossChannels)
+			channel_sum_kernel_acrosschannels_bwd<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+		else
+			channel_sum_kernel_withinchannel_bwd<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+	}
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bSumAcrossChannels);
-template long Math<float>::channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bSumAcrossChannels);
+template long Math<double>::channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bSumAcrossChannels, int nDir);
+template long Math<float>::channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bSumAcrossChannels, int nDir);
 
 
 template <typename T>
@@ -6837,6 +6867,7 @@ __global__ void channel_op_mul_fwd_kernel1(const int nYCount, const int nC, cons
 	}
 }
 
+
 template <typename T>
 __global__ void channel_op_div_fwd_kernel(const int nYCount, const int nC, const int nN1, const int nSD1, const int nN2, const int nSD2, const T* a, const T* b, T* y)
 {
@@ -6927,13 +6958,18 @@ __global__ void channel_op_sub_fwd_kernel1(const int nYCount, const int nC, cons
 	}
 }
 
+
 template <typename T>
-long Math<T>::channel_op(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY, int nDir)
+long Math<T>::channel_op(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY, int nDir, long hAd, long hBd, long hYd, long hWork)
 {
 	LONG lErr;
 	MemoryItem* pA;
 	MemoryItem* pB;
 	MemoryItem* pY;
+	MemoryItem* pAd;
+	MemoryItem* pBd;
+	MemoryItem* pYd;
+	MemoryItem* pWork;
 
 	if (lErr = m_pMemCol->GetData(hA, &pA))
 		return lErr;
@@ -6947,6 +6983,30 @@ long Math<T>::channel_op(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int
 	T* y = (T*)pY->Data();
 	T* a = (T*)pA->Data();
 	T* b = (T*)pB->Data();
+	T* yd = NULL;
+	T* ad = NULL;
+	T* bd = NULL;
+	T* work = NULL;
+
+	if (nDir == 1)
+	{
+		if (lErr = m_pMemCol->GetData(hAd, &pAd))
+			return lErr;
+
+		if (lErr = m_pMemCol->GetData(hBd, &pBd))
+			return lErr;
+
+		if (lErr = m_pMemCol->GetData(hYd, &pYd))
+			return lErr;
+
+		if (lErr = m_pMemCol->GetData(hWork, &pWork))
+			return lErr;
+
+		yd = (T*)pYd->Data();
+		ad = (T*)pAd->Data();
+		bd = (T*)pBd->Data();
+		work = (T*)pWork->Data();
+	}
 
 	switch (nOp)
 	{
@@ -6958,6 +7018,28 @@ long Math<T>::channel_op(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int
 				else
 					channel_op_mul_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
 			}
+			else
+			{
+				if (nSD1 == nSD2)
+				{
+					channel_op_mul_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, max(nN1, nN2), max(nSD1, nSD2), nN2, nSD2, yd, b, work);
+
+					if (nN1 == nN2 && nSD1 < nSD2)
+					{
+						int nN = nN1 * nC * nSD1;
+						int nC1 = nSD2 / nSD1;
+						int nSD = 1;
+						channel_sum_kernel_withinchannel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nN, nC1, nSD, work, ad);
+					}
+					else if (nN1 < nN2 && nSD1 == nSD2)
+					{
+						int nN = nN1;
+						int nC1 = nN2 / nN1;
+						int nSD = nC * nSD2;
+						channel_sum_kernel_withinchannel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nN, nC1, nSD, work, ad);
+					}
+				}
+			}
 			break;
 
 		case CHANNEL_OP_DIV:
@@ -6967,6 +7049,9 @@ long Math<T>::channel_op(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int
 					channel_op_div_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
 				else
 					channel_op_div_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
+			}
+			else
+			{
 			}
 			break;
 
@@ -6978,6 +7063,9 @@ long Math<T>::channel_op(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int
 				else
 					channel_op_add_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
 			}
+			else
+			{
+			}
 			break;
 
 		case CHANNEL_OP_SUB:
@@ -6988,14 +7076,17 @@ long Math<T>::channel_op(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int
 				else
 					channel_op_sub_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
 			}
+			else
+			{
+			}
 			break;
 	}
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::channel_op(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY, int nDir);
-template long Math<float>::channel_op(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY, int nDir);
+template long Math<double>::channel_op(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY, int nDir, long hAd, long hBd, long hYd, long hWork);
+template long Math<float>::channel_op(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY, int nDir, long hAd, long hBd, long hYd, long hWork);
 
 
 template<typename T>

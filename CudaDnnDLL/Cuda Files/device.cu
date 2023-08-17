@@ -3206,7 +3206,7 @@ long Device<T>::cuda_channel_sum(long lInput, T* pfInput, long llInput, LONGLONG
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(llInput, plInput, 7, 7))
+	if (lErr = verifyInput(llInput, plInput, 7, 8))
 		return lErr;
 
 	int n = (int)plInput[0];
@@ -3216,8 +3216,12 @@ long Device<T>::cuda_channel_sum(long lInput, T* pfInput, long llInput, LONGLONG
 	long hX = (long)plInput[4];
 	long hY = (long)plInput[5];
 	bool bSumAcrossChannels = (plInput[6] == 0) ? false : true;
+	int nDir = 0;
 
-	return m_math.channel_sum(n, nOutNum, nChannels, nInNum, hX, hY, bSumAcrossChannels);
+	if (llInput == 8)
+		nDir = (int)plInput[7];
+
+	return m_math.channel_sum(n, nOutNum, nChannels, nInNum, hX, hY, bSumAcrossChannels, nDir);
 }
 
 template long Device<double>::cuda_channel_sum(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
@@ -3537,7 +3541,7 @@ long Device<T>::cuda_channel_op(long lInput, T* pfInput, long llInput, LONGLONG*
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(llInput, plInput, 11, 11))
+	if (lErr = verifyInput(llInput, plInput, 15, 15))
 		return lErr;
 
 	int op = (int)plInput[0];
@@ -3551,8 +3555,12 @@ long Device<T>::cuda_channel_op(long lInput, T* pfInput, long llInput, LONGLONG*
 	long hB = (long)plInput[8];
 	long hY = (long)plInput[9];
 	int dir = (int)plInput[10];
+	long hAd = (long)plInput[11];
+	long hBd = (long)plInput[12];
+	long hYd = (long)plInput[13];
+	long hWork = (long)plInput[14];
 
-	return m_math.channel_op(op, n, nC, nN1, nSD1, nN2, nSD2, hA, hB, hY, dir);
+	return m_math.channel_op(op, n, nC, nN1, nSD1, nN2, nSD2, hA, hB, hY, dir, hAd, hBd, hYd, hWork);
 }
 
 template long Device<double>::cuda_channel_op(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
