@@ -26,12 +26,14 @@ namespace MyCaffe.layers.lnn
         Blob<T> m_blobInputs = null;
         Blob<T> m_blobMues = null;
         Blob<T> m_blobX = null;
+        Blob<T> m_blobSensorySigmoidW = null;
         Blob<T> m_blobSensoryActivationW = null;
         Blob<T> m_blobSensoryActivationRev = null;
         Blob<T> m_blobSensoryNumeratorW = null;
         Blob<T> m_blobSensoryDenominatorW = null;
         Blob<T> m_blobTs = null;
         Blob<T> m_blobCmt = null;
+        Blob<T> m_blobSigmoidW = null;
         Blob<T> m_blobActivationW = null;
         Blob<T> m_blobActivationW1 = null;
         Blob<T> m_blobActivationRev = null;
@@ -154,6 +156,8 @@ namespace MyCaffe.layers.lnn
             m_blobMues.Name = m_param.name + ".mues";
             m_blobX = new Blob<T>(m_cuda, m_log);
             m_blobX.Name = m_param.name + ".x";
+            m_blobSensorySigmoidW = new Blob<T>(m_cuda, m_log);
+            m_blobSensorySigmoidW.Name = m_param.name + ".sensory_sigmoid_w";
             m_blobSensoryActivationW = new Blob<T>(m_cuda, m_log);
             m_blobSensoryActivationW.Name = m_param.name + ".sensory_activation_w";
             m_blobSensoryActivationRev = new Blob<T>(m_cuda, m_log);
@@ -162,6 +166,8 @@ namespace MyCaffe.layers.lnn
             m_blobSensoryNumeratorW.Name = m_param.name + ".sensory_numerator_w";
             m_blobSensoryDenominatorW = new Blob<T>(m_cuda, m_log);
             m_blobSensoryDenominatorW.Name = m_param.name + ".sensory_denominator_w";
+            m_blobSigmoidW = new Blob<T>(m_cuda, m_log);
+            m_blobSigmoidW.Name = m_param.name + ".sigmoid";
             m_blobActivationW = new Blob<T>(m_cuda, m_log);
             m_blobActivationW.Name = m_param.name + ".activation_w";
             m_blobActivationW1 = new Blob<T>(m_cuda, m_log);
@@ -253,10 +259,12 @@ namespace MyCaffe.layers.lnn
             dispose(ref m_blobInputs);
             dispose(ref m_blobMues);
             dispose(ref m_blobX);
+            dispose(ref m_blobSensorySigmoidW);
             dispose(ref m_blobSensoryActivationW);
             dispose(ref m_blobSensoryActivationRev);
             dispose(ref m_blobSensoryNumeratorW);
             dispose(ref m_blobSensoryDenominatorW);
+            dispose(ref m_blobSigmoidW);
             dispose(ref m_blobActivationW);
             dispose(ref m_blobActivationW1);
             dispose(ref m_blobActivationRev);
@@ -361,6 +369,7 @@ namespace MyCaffe.layers.lnn
             m_rgShape[0] = m_blobInputs.num;
             m_rgShape[1] = m_blobInputs.channels;
             m_rgShape[2] = m_param.ltc_unit_param.hidden_size;
+            m_blobSensorySigmoidW.Reshape(m_rgShape);
             m_blobSensoryActivationW.Reshape(m_rgShape);
             m_blobSensoryActivationRev.Reshape(m_rgShape);
 
@@ -374,6 +383,7 @@ namespace MyCaffe.layers.lnn
 
             m_rgShape[1] = m_param.ltc_unit_param.hidden_size;
             m_rgShape[2] = m_param.ltc_unit_param.hidden_size;
+            m_blobSigmoidW.Reshape(m_rgShape);
             m_blobActivationW.Reshape(m_rgShape);
             m_blobActivationW1.Reshape(m_rgShape);
             m_blobActivationRev.Reshape(m_rgShape);
@@ -522,14 +532,14 @@ namespace MyCaffe.layers.lnn
                         m_blobWork.CopyFrom(top, true);
                 }
 
-                if (nN1 == nN2 && nSD1 < nSD2)
+                if (nSD1 < nSD2)
                 {
                     int nNa = nN1 * nC * nSD1;
                     int nCa = nSD2 / nSD1;
                     int nSDa = 1;
                     m_cuda.channel_sum(nCount, nNa, nCa, nSDa, m_blobWork.gpu_diff, btm1.mutable_gpu_diff, true);
                 }
-                else if (nN1 < nN2 && nSD1 == nSD2)
+                else if (nN1 < nN2)
                 {
                     int nNa = nN1;
                     int nCa = nN2 / nN1;
@@ -568,14 +578,14 @@ namespace MyCaffe.layers.lnn
                         m_blobWork.CopyFrom(top, true);
                 }
 
-                if (nN1 == nN2 && nSD2 < nSD1)
+                if (nSD2 < nSD1)
                 {
                     int nNb = nN2 * nC * nSD1;
                     int nCb = nSD1 / nSD2;
                     int nSDb = 1;
                     m_cuda.channel_sum(nCount, nNb, nCb, nSDb, m_blobWork.gpu_diff, btm2.mutable_gpu_diff, true);
                 }
-                else if (nN2 < nN1 && nSD1 == nSD2)
+                else if (nN2 < nN1)
                 {
                     int nNb = nN2;
                     int nCb = nN1 / nN2;
@@ -641,12 +651,12 @@ namespace MyCaffe.layers.lnn
             m_blobVPre.CopyFrom(blobVPre);
 
             // Pre-compute the effect of the sensory inputs.
-            addBtmTop(blobInputs, m_blobSensoryActivationW);
+            addBtmTop(blobInputs, m_blobSensorySigmoidW);
             m_colBtm.Add(blobs[(int)WEIGHT.SENSORY_MU]);
             m_colBtm.Add(blobs[(int)WEIGHT.SENSORY_SIGMA]);
             sigmoid_fwd(m_colBtm, m_colTop);
 
-            op_fwd(OP.MUL, m_blobSensoryActivationW, blobs[(int)WEIGHT.SENSORY_W], m_blobSensoryActivationW, nC, nN, nSD, 1, nSD);
+            op_fwd(OP.MUL, m_blobSensorySigmoidW, blobs[(int)WEIGHT.SENSORY_W], m_blobSensoryActivationW, nC, nN, nSD, 1, nSD);
             op_fwd(OP.MUL, m_blobSensoryActivationW, blobs[(int)WEIGHT.SENSORY_EREV], m_blobSensoryActivationRev, nC, nN, nSD, 1, nSD);
 
             // Reduce over dim=1 (source sensory neurons)
@@ -666,11 +676,11 @@ namespace MyCaffe.layers.lnn
                 m_colCmt[t].CopyFrom(m_blobCmt);
 
                 // Compute the W activation
-                addBtmTop(m_colVPre[t], m_blobActivationW);
+                addBtmTop(m_colVPre[t], m_blobSigmoidW);
                 m_colBtm.Add(blobs[(int)WEIGHT.MU]);
                 m_colBtm.Add(blobs[(int)WEIGHT.SIGMA]);
                 sigmoid_fwd(m_colBtm, m_colTop);
-                op_fwd(OP.MUL, m_blobActivationW, blobs[(int)WEIGHT.W], m_blobActivationW, nSD, nN, nSD, 1, nSD);
+                op_fwd(OP.MUL, m_blobSigmoidW, blobs[(int)WEIGHT.W], m_blobActivationW, nSD, nN, nSD, 1, nSD);
 
                 // Compute the Rev activation
                 op_fwd(OP.MUL, m_blobActivationW, blobs[(int)WEIGHT.EREV], m_blobActivationRev, nSD, nN, nSD, 1, nSD);
@@ -713,13 +723,15 @@ namespace MyCaffe.layers.lnn
             int nCount = blobInputs.count();
 
             m_blobCmt.SetDiff(0);
-            m_blobVPre.CopyFrom(colTop[0], true);
 
             // Unfold the multi-step ODE solver into one RNN step.
             for (int t = m_param.ltc_unit_param.ode_unfolds-1; t >= 0; t--)
             {
                 // Compute the output
-                op_bwd(OP.DIV, m_blobNumerator, m_blobDenominator, m_blobVPre);
+                if (t == m_param.ltc_unit_param.ode_unfolds - 1)
+                    op_bwd(OP.DIV, m_blobNumerator, m_blobDenominator, colTop[0]);
+                else
+                    op_bwd(OP.DIV, m_blobNumerator, m_blobDenominator, m_blobVPre);
 
                 // Compute the denominator
                 op_bwd(OP.ADD, m_blobDenominator, m_blobDenominatorW, m_blobDenominator);
@@ -729,7 +741,6 @@ namespace MyCaffe.layers.lnn
                 // Compute the numerator
                 op_bwd(OP.ADD, m_blobNumerator, m_blobNumeratorW, m_blobNumerator);
                 op_bwd(OP.ADD, m_blobNumerator1, m_blobNumerator2, m_blobNumerator, nSD, nN, 1, 1, 1);
-
                 op_bwd(OP.MUL, blobs[(int)WEIGHT.GLEAK], blobs[(int)WEIGHT.VLEAK], m_blobNumerator2, nSD, 1, 1, 1, 1);
                 op_bwd(OP.MUL, m_colCmt[t], m_colVPre[t], m_blobNumerator1);
                 m_cuda.add(m_blobCmt.count(), m_colCmt[t].gpu_diff, m_blobCmt.gpu_diff, m_blobCmt.mutable_gpu_diff);
@@ -749,12 +760,13 @@ namespace MyCaffe.layers.lnn
                 m_cuda.add(m_blobActivationW.count(), m_blobActivationW1.gpu_diff, m_blobActivationW.gpu_diff, m_blobActivationW1.mutable_gpu_diff);
 
                 // Compute the W activation
-                op_bwd(OP.MUL, m_blobActivationW, blobs[(int)WEIGHT.W], m_blobActivationW1, nSD, nN, nSD, 1, nSD);
+                op_bwd(OP.MUL, m_blobSigmoidW, blobs[(int)WEIGHT.W], m_blobActivationW1, nSD, nN, nSD, 1, nSD);
 
-                addBtmTop(m_blobVPre, m_blobActivationW);
+                addBtmTop(m_colVPre[t], m_blobSigmoidW);
                 m_colBtm.Add(blobs[(int)WEIGHT.MU]);
                 m_colBtm.Add(blobs[(int)WEIGHT.SIGMA]);
                 sigmoid_bwd(m_colBtm, m_colTop);
+                m_cuda.add(m_blobVPre.count(), m_colVPre[t].gpu_diff, m_blobVPre.gpu_diff, m_blobVPre.mutable_gpu_diff);
             }
 
             // cm/t is loop invariant, so we can compute it once here.
@@ -769,9 +781,9 @@ namespace MyCaffe.layers.lnn
 
             // Pre-compute the effect of the sensory inputs.
             op_bwd(OP.MUL, m_blobSensoryActivationW, blobs[(int)WEIGHT.SENSORY_EREV], m_blobSensoryActivationRev, nC, nN, nSD, 1, nSD);
-            op_bwd(OP.MUL, m_blobSensoryActivationW, blobs[(int)WEIGHT.SENSORY_W], m_blobSensoryActivationW, nC, nN, nSD, 1, nSD);
+            op_bwd(OP.MUL, m_blobSensorySigmoidW, blobs[(int)WEIGHT.SENSORY_W], m_blobSensoryActivationW, nC, nN, nSD, 1, nSD);
 
-            addBtmTop(blobInputs, m_blobSensoryActivationW);
+            addBtmTop(blobInputs, m_blobSensorySigmoidW);
             m_colBtm.Add(blobs[(int)WEIGHT.SENSORY_MU]);
             m_colBtm.Add(blobs[(int)WEIGHT.SENSORY_SIGMA]);
             sigmoid_bwd(m_colBtm, m_colTop);
