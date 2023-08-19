@@ -31,22 +31,25 @@ namespace MyCaffe.layers.lnn
         Blob<T> m_blobSensoryActivationRev = null;
         Blob<T> m_blobSensoryNumeratorW = null;
         Blob<T> m_blobSensoryDenominatorW = null;
+        Blob<T> m_blobSensoryNumeratorW1 = null;
+        Blob<T> m_blobSensoryDenominatorW1 = null;
         Blob<T> m_blobTs = null;
         Blob<T> m_blobCmt = null;
-        Blob<T> m_blobSigmoidW = null;
-        Blob<T> m_blobActivationW = null;
-        Blob<T> m_blobActivationW1 = null;
-        Blob<T> m_blobActivationRev = null;
-        Blob<T> m_blobNumeratorW = null;
-        Blob<T> m_blobDenominatorW = null;
-        Blob<T> m_blobNumerator1 = null;
-        Blob<T> m_blobNumerator2 = null;
-        Blob<T> m_blobNumerator = null;
-        Blob<T> m_blobDenominator = null;
         Blob<T> m_blobWork = null;
         Blob<T> m_blobVPre = null;
         BlobCollection<T> m_colCmt = new BlobCollection<T>();
         BlobCollection<T> m_colVPre = new BlobCollection<T>();
+        BlobCollection<T> m_colMues = new BlobCollection<T>();
+        BlobCollection<T> m_colSigmoidW = new BlobCollection<T>();
+        BlobCollection<T> m_colActivationW = new BlobCollection<T>();
+        BlobCollection<T> m_colActivationW1 = new BlobCollection<T>();
+        BlobCollection<T> m_colActivationRev = new BlobCollection<T>();
+        BlobCollection<T> m_colNumeratorW = new BlobCollection<T>();
+        BlobCollection<T> m_colDenominatorW = new BlobCollection<T>();
+        BlobCollection<T> m_colNumerator1 = new BlobCollection<T>();
+        BlobCollection<T> m_colNumerator2 = new BlobCollection<T>();
+        BlobCollection<T> m_colNumerator = new BlobCollection<T>();
+        BlobCollection<T> m_colDenominator = new BlobCollection<T>();
         BlobCollection<T> m_colTop = new BlobCollection<T>();
         BlobCollection<T> m_colBtm = new BlobCollection<T>();
         Layer<T> m_sigmoid = null;
@@ -166,26 +169,10 @@ namespace MyCaffe.layers.lnn
             m_blobSensoryNumeratorW.Name = m_param.name + ".sensory_numerator_w";
             m_blobSensoryDenominatorW = new Blob<T>(m_cuda, m_log);
             m_blobSensoryDenominatorW.Name = m_param.name + ".sensory_denominator_w";
-            m_blobSigmoidW = new Blob<T>(m_cuda, m_log);
-            m_blobSigmoidW.Name = m_param.name + ".sigmoid";
-            m_blobActivationW = new Blob<T>(m_cuda, m_log);
-            m_blobActivationW.Name = m_param.name + ".activation_w";
-            m_blobActivationW1 = new Blob<T>(m_cuda, m_log);
-            m_blobActivationW1.Name = m_param.name + ".activation_w1";
-            m_blobActivationRev = new Blob<T>(m_cuda, m_log);
-            m_blobActivationRev.Name = m_param.name + ".activation_rev";
-            m_blobNumeratorW = new Blob<T>(m_cuda, m_log);
-            m_blobNumeratorW.Name = m_param.name + ".numerator_w";
-            m_blobDenominatorW = new Blob<T>(m_cuda, m_log);
-            m_blobDenominatorW.Name = m_param.name + ".denominator_w";
-            m_blobNumerator = new Blob<T>(m_cuda, m_log);
-            m_blobNumerator.Name = m_param.name + ".numerator";
-            m_blobNumerator1 = new Blob<T>(m_cuda, m_log);
-            m_blobNumerator1.Name = m_param.name + ".numerator1";
-            m_blobNumerator2 = new Blob<T>(m_cuda, m_log);
-            m_blobNumerator2.Name = m_param.name + ".numerator2";
-            m_blobDenominator = new Blob<T>(m_cuda, m_log);
-            m_blobDenominator.Name = m_param.name + ".denominator";
+            m_blobSensoryNumeratorW1 = new Blob<T>(m_cuda, m_log);
+            m_blobSensoryNumeratorW1.Name = m_param.name + ".sensory_numerator_w1";
+            m_blobSensoryDenominatorW1 = new Blob<T>(m_cuda, m_log);
+            m_blobSensoryDenominatorW1.Name = m_param.name + ".sensory_denominator_w1";
             m_blobCmt = new Blob<T>(m_cuda, m_log);
             m_blobCmt.Name = m_param.name + ".cm_t";
             m_blobTs = new Blob<T>(m_cuda, m_log);
@@ -197,6 +184,29 @@ namespace MyCaffe.layers.lnn
                 m_colVPre[i].Name = m_param.name + ".vpre." + i.ToString();
                 m_colCmt.Add(new Blob<T>(cuda, log));
                 m_colCmt[i].Name = m_param.name + ".cmt." + i.ToString();
+
+                m_colMues.Add(new Blob<T>(cuda, log));
+                m_colMues[i].Name = m_param.name + ".mues." + i.ToString();
+                m_colSigmoidW.Add(new Blob<T>(cuda, log));
+                m_colSigmoidW[i].Name = m_param.name + ".sigmoid_w." + i.ToString();
+                m_colActivationW.Add(new Blob<T>(cuda, log));
+                m_colActivationW[i].Name = m_param.name + ".activation_w." + i.ToString();
+                m_colActivationW1.Add(new Blob<T>(cuda, log));
+                m_colActivationW1[i].Name = m_param.name + ".activation_w1." + i.ToString();
+                m_colActivationRev.Add(new Blob<T>(cuda, log));
+                m_colActivationRev[i].Name = m_param.name + ".activation_rev." + i.ToString();
+                m_colNumeratorW.Add(new Blob<T>(cuda, log));
+                m_colNumeratorW[i].Name = m_param.name + ".numerator_w." + i.ToString();
+                m_colDenominatorW.Add(new Blob<T>(cuda, log));
+                m_colDenominatorW[i].Name = m_param.name + ".denominator_w." + i.ToString();
+                m_colNumerator1.Add(new Blob<T>(cuda, log));
+                m_colNumerator1[i].Name = m_param.name + ".numerator1." + i.ToString();
+                m_colNumerator2.Add(new Blob<T>(cuda, log));
+                m_colNumerator2[i].Name = m_param.name + ".numerator2." + i.ToString();
+                m_colNumerator.Add(new Blob<T>(cuda, log));
+                m_colNumerator[i].Name = m_param.name + ".numerator." + i.ToString();
+                m_colDenominator.Add(new Blob<T>(cuda, log));
+                m_colDenominator[i].Name = m_param.name + ".denominator." + i.ToString();
             }
 
             LayerParameter sigmoid_param = new LayerParameter(LayerParameter.LayerType.SIGMOID);
@@ -264,18 +274,11 @@ namespace MyCaffe.layers.lnn
             dispose(ref m_blobSensoryActivationRev);
             dispose(ref m_blobSensoryNumeratorW);
             dispose(ref m_blobSensoryDenominatorW);
-            dispose(ref m_blobSigmoidW);
-            dispose(ref m_blobActivationW);
-            dispose(ref m_blobActivationW1);
-            dispose(ref m_blobActivationRev);
-            dispose(ref m_blobNumeratorW);
-            dispose(ref m_blobDenominatorW);
-            dispose(ref m_blobNumerator);
-            dispose(ref m_blobNumerator1);
-            dispose(ref m_blobNumerator2);
-            dispose(ref m_blobDenominator);
+            dispose(ref m_blobSensoryNumeratorW1);
+            dispose(ref m_blobSensoryDenominatorW1);
             dispose(ref m_blobCmt);
             dispose(ref m_blobTs);
+            dispose(ref m_blobWork);
 
             if (m_colVPre != null)
             {
@@ -287,6 +290,72 @@ namespace MyCaffe.layers.lnn
             {
                 m_colCmt.Dispose();
                 m_colCmt = null;
+            }
+
+            if (m_colMues != null)
+            {
+                m_colMues.Dispose();
+                m_colMues = null;
+            }
+
+            if (m_colSigmoidW != null)
+            {
+                m_colSigmoidW.Dispose();
+                m_colSigmoidW = null;
+            }
+
+            if (m_colActivationW != null)
+            {
+                m_colActivationW.Dispose();
+                m_colActivationW = null;
+            }
+
+            if (m_colActivationW1 != null)
+            {
+                m_colActivationW1.Dispose();
+                m_colActivationW1 = null;
+            }
+
+            if (m_colActivationRev != null)
+            {
+                m_colActivationRev.Dispose();
+                m_colActivationRev = null;
+            }
+
+            if (m_colNumeratorW != null)
+            {
+                m_colNumeratorW.Dispose();
+                m_colNumeratorW = null;
+            }
+
+            if (m_colDenominatorW != null)
+            {
+                m_colDenominatorW.Dispose();
+                m_colDenominatorW = null;
+            }
+
+            if (m_colNumerator != null)
+            {
+                m_colNumerator.Dispose();
+                m_colNumerator = null;
+            }
+
+            if (m_colNumerator1 != null)
+            {
+                m_colNumerator1.Dispose();
+                m_colNumerator1 = null;
+            }
+
+            if (m_colNumerator2 != null)
+            {
+                m_colNumerator2.Dispose();
+                m_colNumerator2 = null;
+            }
+
+            if (m_colDenominator != null)
+            {
+                m_colDenominator.Dispose();
+                m_colDenominator = null;
             }
 
             dispose(ref m_sigmoid);
@@ -362,6 +431,7 @@ namespace MyCaffe.layers.lnn
         {
             m_blobInputs.ReshapeLike(colBottom[0]);
             m_blobMues.Reshape(colBottom[0].num, colBottom[0].channels, m_param.ltc_unit_param.hidden_size, 1);
+            m_colMues.Reshape(colBottom[0].num, colBottom[0].channels, m_param.ltc_unit_param.hidden_size, 1);
             m_blobX.Reshape(colBottom[0].num, colBottom[0].channels, m_param.ltc_unit_param.hidden_size, 1);
 
             m_blobVPre.ReshapeLike(colBottom[1]);
@@ -378,32 +448,31 @@ namespace MyCaffe.layers.lnn
             m_rgShape[2] = m_blobSensoryActivationW.width;
             m_blobSensoryNumeratorW.Reshape(m_rgShape);
             m_blobSensoryDenominatorW.Reshape(m_rgShape);
+            m_blobSensoryNumeratorW1.Reshape(m_rgShape);
+            m_blobSensoryDenominatorW1.Reshape(m_rgShape);
             m_blobCmt.Reshape(m_rgShape);
             m_blobTs.ReshapeLike(colBottom[2]);
 
             m_rgShape[1] = m_param.ltc_unit_param.hidden_size;
             m_rgShape[2] = m_param.ltc_unit_param.hidden_size;
-            m_blobSigmoidW.Reshape(m_rgShape);
-            m_blobActivationW.Reshape(m_rgShape);
-            m_blobActivationW1.Reshape(m_rgShape);
-            m_blobActivationRev.Reshape(m_rgShape);
+            m_colSigmoidW.Reshape(m_rgShape);
+            m_colActivationW.Reshape(m_rgShape);
+            m_colActivationW1.Reshape(m_rgShape);
+            m_colActivationRev.Reshape(m_rgShape);
 
             m_rgShape[2] = 1;
-            m_blobNumeratorW.Reshape(m_rgShape);
-            m_blobDenominatorW.Reshape(m_rgShape);
-            m_blobNumerator.Reshape(m_rgShape);
-            m_blobNumerator1.Reshape(m_rgShape);
-            m_blobDenominator.Reshape(m_rgShape);
+            m_colNumeratorW.Reshape(m_rgShape);
+            m_colDenominatorW.Reshape(m_rgShape);
+            m_colNumerator.Reshape(m_rgShape);
+            m_colNumerator1.Reshape(m_rgShape);
+            m_colDenominator.Reshape(m_rgShape);
 
             m_rgShape[0] = m_param.ltc_unit_param.hidden_size;
             m_rgShape[1] = 1;
-            m_blobNumerator2.Reshape(m_rgShape);
+            m_colNumerator2.Reshape(m_rgShape);
 
-            for (int i = 0; i < m_param.ltc_unit_param.ode_unfolds; i++)
-            {
-                m_colCmt[i].ReshapeLike(m_blobCmt);
-                m_colVPre[i].ReshapeLike(m_blobVPre);
-            }
+            m_colCmt.ReshapeLike(m_blobCmt);
+            m_colVPre.ReshapeLike(m_blobVPre);
 
             colTop[0].ReshapeLike(m_blobVPre);
         }
@@ -595,32 +664,40 @@ namespace MyCaffe.layers.lnn
             }
         }
 
-        private void sigmoid_fwd(BlobCollection<T> colBtm, BlobCollection<T> colTop)
+        private void sigmoid_fwd(BlobCollection<T> colBtm, BlobCollection<T> colTop, int t = -1)
         {
             Blob<T> blobPre = colBtm[0];
             Blob<T> blobMu = colBtm[1];
             Blob<T> blobSigma = colBtm[2];
             Blob<T> blobTop = colTop[0];
+            Blob<T> blobMues = m_blobMues;
 
-            op_fwd(OP.SUB, blobPre, blobMu, m_blobMues, blobPre.channels, blobPre.num, blobPre.count(2), 1, blobMu.channels);
-            op_fwd(OP.MUL, m_blobMues, blobSigma, m_blobX, m_blobMues.channels, m_blobMues.num, m_blobMues.count(2), 1, blobSigma.channels);
+            if (t >= 0)
+                blobMues = m_colMues[t];
+
+            op_fwd(OP.SUB, blobPre, blobMu, blobMues, blobPre.channels, blobPre.num, blobPre.count(2), 1, blobMu.channels);
+            op_fwd(OP.MUL, blobMues, blobSigma, m_blobX, blobMues.channels, blobMues.num, blobMues.count(2), 1, blobSigma.channels);
 
             addBtmTop(m_blobX, blobTop);
             m_sigmoid.Forward(m_colBtm, m_colTop);
         }
 
-        private void sigmoid_bwd(BlobCollection<T> colBtm, BlobCollection<T> colTop)
+        private void sigmoid_bwd(BlobCollection<T> colBtm, BlobCollection<T> colTop, int t = -1)
         {
             Blob<T> blobPre = colBtm[0];
             Blob<T> blobMu = colBtm[1];
             Blob<T> blobSigma = colBtm[2];
             Blob<T> blobTop = colTop[0];
+            Blob<T> blobMues = m_blobMues;
+
+            if (t >= 0)
+                blobMues = m_colMues[t];
 
             addBtmTop(m_blobX, blobTop);
             m_sigmoid.Backward(m_colTop, new List<bool>() { true }, m_colBtm);
 
-            op_bwd(OP.MUL, m_blobMues, blobSigma, m_blobX, m_blobMues.channels, m_blobMues.num, m_blobMues.count(2), 1, blobSigma.channels);
-            op_bwd(OP.SUB, blobPre, blobMu, m_blobMues, blobPre.channels, blobPre.num, blobPre.count(2), 1, blobMu.channels);
+            op_bwd(OP.MUL, blobMues, blobSigma, m_blobX, blobMues.channels, blobMues.num, blobMues.count(2), 1, blobSigma.channels);
+            op_bwd(OP.SUB, blobPre, blobMu, blobMues, blobPre.channels, blobPre.num, blobPre.count(2), 1, blobMu.channels);
         }
 
 
@@ -676,35 +753,35 @@ namespace MyCaffe.layers.lnn
                 m_colCmt[t].CopyFrom(m_blobCmt);
 
                 // Compute the W activation
-                addBtmTop(m_colVPre[t], m_blobSigmoidW);
+                addBtmTop(m_colVPre[t], m_colSigmoidW[t]);
                 m_colBtm.Add(blobs[(int)WEIGHT.MU]);
                 m_colBtm.Add(blobs[(int)WEIGHT.SIGMA]);
-                sigmoid_fwd(m_colBtm, m_colTop);
-                op_fwd(OP.MUL, m_blobSigmoidW, blobs[(int)WEIGHT.W], m_blobActivationW, nSD, nN, nSD, 1, nSD);
+                sigmoid_fwd(m_colBtm, m_colTop, t);
+                op_fwd(OP.MUL, m_colSigmoidW[t], blobs[(int)WEIGHT.W], m_colActivationW[t], nSD, nN, nSD, 1, nSD);
 
                 // Compute the Rev activation
-                op_fwd(OP.MUL, m_blobActivationW, blobs[(int)WEIGHT.EREV], m_blobActivationRev, nSD, nN, nSD, 1, nSD);
+                op_fwd(OP.MUL, m_colActivationW[t], blobs[(int)WEIGHT.EREV], m_colActivationRev[t], nSD, nN, nSD, 1, nSD);
 
                 // Reduce over dim=1 (source neurons)
-                m_cuda.channel_sum(nCount, m_blobActivationRev.num, m_blobActivationRev.channels, m_blobActivationRev.count(2), m_blobActivationRev.gpu_data, m_blobNumeratorW.mutable_gpu_data, true);
-                m_cuda.channel_sum(nCount, m_blobActivationW.num, m_blobActivationW.channels, m_blobActivationW.count(2), m_blobActivationW.gpu_data, m_blobDenominatorW.mutable_gpu_data, true);
+                m_cuda.channel_sum(nCount, m_colActivationRev[t].num, m_colActivationRev[t].channels, m_colActivationRev[t].count(2), m_colActivationRev[t].gpu_data, m_colNumeratorW[t].mutable_gpu_data, true);
+                m_cuda.channel_sum(nCount, m_colActivationW[t].num, m_colActivationW[t].channels, m_colActivationW[t].count(2), m_colActivationW[t].gpu_data, m_colDenominatorW[t].mutable_gpu_data, true);
                 // Add sensory input
-                op_fwd(OP.ADD, m_blobNumeratorW, m_blobSensoryNumeratorW, m_blobNumeratorW);
-                op_fwd(OP.ADD, m_blobDenominatorW, m_blobSensoryDenominatorW, m_blobDenominatorW);
+                op_fwd(OP.ADD, m_colNumeratorW[t], m_blobSensoryNumeratorW, m_colNumeratorW[t]);
+                op_fwd(OP.ADD, m_colDenominatorW[t], m_blobSensoryDenominatorW, m_colDenominatorW[t]);
 
                 // Compute the numerator
-                op_fwd(OP.MUL, m_colCmt[t], m_colVPre[t], m_blobNumerator1);
-                op_fwd(OP.MUL, blobs[(int)WEIGHT.GLEAK], blobs[(int)WEIGHT.VLEAK], m_blobNumerator2, nSD, 1, 1, 1, 1);
-                op_fwd(OP.ADD, m_blobNumerator1, m_blobNumerator2, m_blobNumerator, nSD, nN, 1, 1, 1);
-                op_fwd(OP.ADD, m_blobNumerator, m_blobNumeratorW, m_blobNumerator);
+                op_fwd(OP.MUL, m_colCmt[t], m_colVPre[t], m_colNumerator1[t]);
+                op_fwd(OP.MUL, blobs[(int)WEIGHT.GLEAK], blobs[(int)WEIGHT.VLEAK], m_colNumerator2[t], nSD, 1, 1, 1, 1);
+                op_fwd(OP.ADD, m_colNumerator1[t], m_colNumerator2[t], m_colNumerator[t], nSD, nN, 1, 1, 1);
+                op_fwd(OP.ADD, m_colNumerator[t], m_colNumeratorW[t], m_colNumerator[t]);
 
                 // Compute the denominator
-                op_fwd(OP.ADD, m_colCmt[t], blobs[(int)WEIGHT.GLEAK], m_blobDenominator, nSD, nN, 1, 1, 1);
-                op_fwd(OP.ADD, m_blobDenominator, m_blobDenominatorW, m_blobDenominator);
-                m_blobDenominator.add_scalar(m_param.ltc_unit_param.epsilon);
+                op_fwd(OP.ADD, m_colCmt[t], blobs[(int)WEIGHT.GLEAK], m_colDenominator[t], nSD, nN, 1, 1, 1);
+                op_fwd(OP.ADD, m_colDenominator[t], m_colDenominatorW[t], m_colDenominator[t]);
+                m_colDenominator[t].add_scalar(m_param.ltc_unit_param.epsilon);
 
                 // Compute the output
-                op_fwd(OP.DIV, m_blobNumerator, m_blobDenominator, m_blobVPre);
+                op_fwd(OP.DIV, m_colNumerator[t], m_colDenominator[t], m_blobVPre);
             }
 
             blobTop.CopyFrom(m_blobVPre);
@@ -729,43 +806,47 @@ namespace MyCaffe.layers.lnn
             {
                 // Compute the output
                 if (t == m_param.ltc_unit_param.ode_unfolds - 1)
-                    op_bwd(OP.DIV, m_blobNumerator, m_blobDenominator, colTop[0]);
+                    op_bwd(OP.DIV, m_colNumerator[t], m_colDenominator[t], colTop[0]);
                 else
-                    op_bwd(OP.DIV, m_blobNumerator, m_blobDenominator, m_blobVPre);
+                    op_bwd(OP.DIV, m_colNumerator[t], m_colDenominator[t], m_blobVPre);
+
+                m_blobVPre.SetDiff(0);
 
                 // Compute the denominator
-                op_bwd(OP.ADD, m_blobDenominator, m_blobDenominatorW, m_blobDenominator);
-                op_bwd(OP.ADD, m_colCmt[t], blobs[(int)WEIGHT.GLEAK], m_blobDenominator, nSD, nN, 1, 1, 1);
+                op_bwd(OP.ADD, m_colDenominator[t], m_colDenominatorW[t], m_colDenominator[t]);
+                op_bwd(OP.ADD, m_colCmt[t], blobs[(int)WEIGHT.GLEAK], m_colDenominator[t], nSD, nN, 1, 1, 1);
                 m_cuda.add(m_blobCmt.count(), m_colCmt[t].gpu_diff, m_blobCmt.gpu_diff, m_blobCmt.mutable_gpu_diff);
 
                 // Compute the numerator
-                op_bwd(OP.ADD, m_blobNumerator, m_blobNumeratorW, m_blobNumerator);
-                op_bwd(OP.ADD, m_blobNumerator1, m_blobNumerator2, m_blobNumerator, nSD, nN, 1, 1, 1);
-                op_bwd(OP.MUL, blobs[(int)WEIGHT.GLEAK], blobs[(int)WEIGHT.VLEAK], m_blobNumerator2, nSD, 1, 1, 1, 1);
-                op_bwd(OP.MUL, m_colCmt[t], m_colVPre[t], m_blobNumerator1);
+                op_bwd(OP.ADD, m_colNumerator[t], m_colNumeratorW[t], m_colNumerator[t]);
+                op_bwd(OP.ADD, m_colNumerator1[t], m_colNumerator2[t], m_colNumerator[t], nSD, nN, 1, 1, 1);
+                op_bwd(OP.MUL, blobs[(int)WEIGHT.GLEAK], blobs[(int)WEIGHT.VLEAK], m_colNumerator2[t], nSD, 1, 1, 1, 1);
+                op_bwd(OP.MUL, m_colCmt[t], m_colVPre[t], m_colNumerator1[t]);
                 m_cuda.add(m_blobCmt.count(), m_colCmt[t].gpu_diff, m_blobCmt.gpu_diff, m_blobCmt.mutable_gpu_diff);
                 m_cuda.add(m_blobVPre.count(), m_colVPre[t].gpu_diff, m_blobVPre.gpu_diff, m_blobVPre.mutable_gpu_diff);
 
                 // Add sensory input
-                op_bwd(OP.ADD, m_blobDenominatorW, m_blobSensoryDenominatorW, m_blobDenominatorW);
-                op_bwd(OP.ADD, m_blobNumeratorW, m_blobSensoryNumeratorW, m_blobNumeratorW);
+                op_bwd(OP.ADD, m_colDenominatorW[t], m_blobSensoryDenominatorW1, m_colDenominatorW[t]);
+                m_cuda.add(m_blobSensoryDenominatorW.count(), m_blobSensoryDenominatorW1.gpu_diff, m_blobSensoryDenominatorW.gpu_diff, m_blobSensoryDenominatorW.mutable_gpu_diff);
+                op_bwd(OP.ADD, m_colNumeratorW[t], m_blobSensoryNumeratorW1, m_colNumeratorW[t]);
+                m_cuda.add(m_blobSensoryNumeratorW.count(), m_blobSensoryNumeratorW1.gpu_diff, m_blobSensoryNumeratorW.gpu_diff, m_blobSensoryNumeratorW.mutable_gpu_diff);
 
                 // Reduce over dim=1 (source neurons)
-                m_cuda.channel_sum(m_blobActivationRev.count(), m_blobActivationRev.num, m_blobActivationRev.channels, m_blobActivationRev.count(2), m_blobActivationRev.mutable_gpu_diff, m_blobNumeratorW.gpu_diff, true, DIR.BWD);
-                m_cuda.channel_sum(m_blobActivationW1.count(), m_blobActivationW1.num, m_blobActivationW1.channels, m_blobActivationW1.count(2), m_blobActivationW1.mutable_gpu_diff, m_blobDenominatorW.gpu_diff, true, DIR.BWD);
+                m_cuda.channel_sum(m_colActivationRev[t].count(), m_colActivationRev[t].num, m_colActivationRev[t].channels, m_colActivationRev[t].count(2), m_colActivationRev[t].mutable_gpu_diff, m_colNumeratorW[t].gpu_diff, true, DIR.BWD);
+                m_cuda.channel_sum(m_colActivationW1[t].count(), m_colActivationW1[t].num, m_colActivationW1[t].channels, m_colActivationW1[t].count(2), m_colActivationW1[t].mutable_gpu_diff, m_colDenominatorW[t].gpu_diff, true, DIR.BWD);
 
                 // Compute the Rev activation
-                op_bwd(OP.MUL, m_blobActivationW, blobs[(int)WEIGHT.EREV], m_blobActivationRev, nSD, nN, nSD, 1, nSD);
+                op_bwd(OP.MUL, m_colActivationW[t], blobs[(int)WEIGHT.EREV], m_colActivationRev[t], nSD, nN, nSD, 1, nSD);
                 // Accumulate the gradient
-                m_cuda.add(m_blobActivationW.count(), m_blobActivationW1.gpu_diff, m_blobActivationW.gpu_diff, m_blobActivationW1.mutable_gpu_diff);
+                m_cuda.add(m_colActivationW[t].count(), m_colActivationW1[t].gpu_diff, m_colActivationW[t].gpu_diff, m_colActivationW1[t].mutable_gpu_diff);
 
                 // Compute the W activation
-                op_bwd(OP.MUL, m_blobSigmoidW, blobs[(int)WEIGHT.W], m_blobActivationW1, nSD, nN, nSD, 1, nSD);
+                op_bwd(OP.MUL, m_colSigmoidW[t], blobs[(int)WEIGHT.W], m_colActivationW1[t], nSD, nN, nSD, 1, nSD);
 
-                addBtmTop(m_colVPre[t], m_blobSigmoidW);
+                addBtmTop(m_colVPre[t], m_colSigmoidW[t]);
                 m_colBtm.Add(blobs[(int)WEIGHT.MU]);
                 m_colBtm.Add(blobs[(int)WEIGHT.SIGMA]);
-                sigmoid_bwd(m_colBtm, m_colTop);
+                sigmoid_bwd(m_colBtm, m_colTop, t);
                 m_cuda.add(m_blobVPre.count(), m_colVPre[t].gpu_diff, m_blobVPre.gpu_diff, m_blobVPre.mutable_gpu_diff);
             }
 
@@ -776,8 +857,8 @@ namespace MyCaffe.layers.lnn
             blobTs.CopyFrom(m_blobTs, true);
 
             // Reduce over dim=1 (source sensory neurons)
-            m_cuda.channel_sum(nCount, m_blobSensoryActivationW.num, m_blobSensoryActivationW.channels, m_blobSensoryActivationW.count(2), m_blobSensoryActivationW.gpu_data, m_blobSensoryDenominatorW.mutable_gpu_data, true);
-            m_cuda.channel_sum(nCount, m_blobSensoryActivationRev.num, m_blobSensoryActivationRev.channels, m_blobSensoryActivationRev.count(2), m_blobSensoryActivationRev.gpu_data, m_blobSensoryNumeratorW.mutable_gpu_data, true);
+            m_cuda.channel_sum(nCount, m_blobSensoryActivationW.num, m_blobSensoryActivationW.channels, m_blobSensoryActivationW.count(2), m_blobSensoryActivationW.gpu_diff, m_blobSensoryDenominatorW.mutable_gpu_diff, true, DIR.BWD);
+            m_cuda.channel_sum(nCount, m_blobSensoryActivationRev.num, m_blobSensoryActivationRev.channels, m_blobSensoryActivationRev.count(2), m_blobSensoryActivationRev.gpu_diff, m_blobSensoryNumeratorW.mutable_gpu_diff, true, DIR.BWD);
 
             // Pre-compute the effect of the sensory inputs.
             op_bwd(OP.MUL, m_blobSensoryActivationW, blobs[(int)WEIGHT.SENSORY_EREV], m_blobSensoryActivationRev, nC, nN, nSD, 1, nSD);
