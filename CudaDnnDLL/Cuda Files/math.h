@@ -241,7 +241,7 @@ class Math
 		long channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx);
 		long channel_mean(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 		long channel_sub(int n, int nOutNum, int nChannels, int nInNum, long hA, long hX, long hY);
-		long channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bSumAcrossChannels, int nDir);
+		long channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bSumAcrossChannels, int nDir, int nChannelsY);
 		long channel_div(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nMethod = 1);
 		long channel_mul(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nMethod = 1);
 		long channel_mulv(int n, int nOutNum, int nChannels, int nInNum, long hA, long hX, long hC);

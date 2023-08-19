@@ -864,7 +864,7 @@ namespace MyCaffe.common
         void channel_fillfrom(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, DIR dir);
         void channel_scale(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hA, long hY);
         void channel_mulv(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hA, long hX, long hC);
-        void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bSumAcrossChannels = true, DIR dir = DIR.FWD);
+        void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bSumAcrossChannels = true, DIR dir = DIR.FWD, int nChanalesY = -1);
         void channel_mean(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
         void channel_copy(int nCount, int nOuterNum, int nChannels, int nBlocks, int nInnerNum, int nOffset, long hX, long hY, DIR dir);
         void channel_copyall(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
@@ -8230,12 +8230,13 @@ namespace MyCaffe.common
         /// <param name="dir">Optionally, specifies the direction (default = DIR.FWD).  When DIR.BWD is used, data flows from Y to X where Y data 
         /// is copied to X and duplicated across the channels of Y.  When using bSumAcrossChannels = true, ordering is based on Y ordering Y(c1,c2,c3,c1,c2,c3,c1,c2,c3),
         /// and when using bSumAcrossChannels = false, ordering is based on X ordering Y(c1,c1,c1,c2,c2,c2,c3,c3,c3).</param>
-        public void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bSumAcrossChannels = true, DIR dir = DIR.FWD)
+        /// <param name="nChannelsY">Optionally, specifies the channels of Y (used in special case where Y channels = 1)</param>
+        public void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bSumAcrossChannels = true, DIR dir = DIR.FWD, int nChannelsY = -1)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bSumAcrossChannels) ? 1 : 0, (int)dir));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bSumAcrossChannels) ? 1 : 0, (int)dir, nChannelsY));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bSumAcrossChannels) ? 1 : 0, (int)dir));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_SUM, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bSumAcrossChannels) ? 1 : 0, (int)dir, nChannelsY));
         }
 
         /// <summary>

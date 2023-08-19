@@ -6131,6 +6131,18 @@ __global__ void channel_sum_kernel_acrosschannels_bwd(const int num, const int c
 }
 
 template <typename T>
+__global__ void channel_sum_kernel_acrosschannels_bwd1(const int num, const int channels, const int spatial_dim, T* x, const T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * channels * spatial_dim && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const int n = (i / (channels * spatial_dim)) * (spatial_dim);
+		const int s = i % spatial_dim;
+		const int nSrcIdx = n + s;
+		x[i] = y[nSrcIdx];
+	}
+}
+
+template <typename T>
 __global__ void channel_sum_kernel_withinchannel_bwd(const int num, const int channels, const int spatial_dim, T* x, const T* y)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * channels * spatial_dim && i >= 0; i += blockDim.x * gridDim.x)
@@ -6142,9 +6154,20 @@ __global__ void channel_sum_kernel_withinchannel_bwd(const int num, const int ch
 	}
 }
 
+template <typename T>
+__global__ void channel_sum_kernel_withinchannel_bwd1(const int num, const int channels, const int spatial_dim, T* x, const T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * channels * spatial_dim && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const int n = (i / (channels * spatial_dim)) * (spatial_dim);
+		const int s = i / spatial_dim;
+		const int nSrcIdx = n + s;
+		x[i] = y[nSrcIdx];
+	}
+}
 
 template <typename T> 
-long Math<T>::channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bSumAcrossChannels, int nDir)
+long Math<T>::channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bSumAcrossChannels, int nDir, int nChannelsY)
 {
 	LONG lErr;
 	MemoryItem* pX;
@@ -6166,16 +6189,26 @@ long Math<T>::channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX
 	else
 	{
 		if (bSumAcrossChannels)
-			channel_sum_kernel_acrosschannels_bwd<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+		{
+			if (nChannelsY == 1 && nChannelsY != nChannels)
+				channel_sum_kernel_acrosschannels_bwd1<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+			else
+				channel_sum_kernel_acrosschannels_bwd<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+		}
 		else
-			channel_sum_kernel_withinchannel_bwd<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+		{
+			if (nChannelsY == 1 && nChannelsY != nChannels)
+				channel_sum_kernel_withinchannel_bwd1<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+			else
+				channel_sum_kernel_withinchannel_bwd<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+		}
 	}
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bSumAcrossChannels, int nDir);
-template long Math<float>::channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bSumAcrossChannels, int nDir);
+template long Math<double>::channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bSumAcrossChannels, int nDir, int nChannelsY);
+template long Math<float>::channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bSumAcrossChannels, int nDir, int nChannelsY);
 
 
 template <typename T>

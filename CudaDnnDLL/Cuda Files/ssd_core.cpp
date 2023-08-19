@@ -559,7 +559,7 @@ long SsdData<T>::softmax(SsdMemory<T>* pData, const int nOuterNum, const int nCh
 		return lErr;
 
 	// Sum after exponentiate
-	if (lErr = m_pMath->channel_sum(nOuterNum * nInnerNum, nOuterNum, nChannels, nInnerNum, pProb->gpu_handle(), m_pScale->gpu_handle(), true, 0))
+	if (lErr = m_pMath->channel_sum(nOuterNum * nInnerNum, nOuterNum, nChannels, nInnerNum, pProb->gpu_handle(), m_pScale->gpu_handle(), true, 0, -1))
 		return lErr;
 
 	// Divide
