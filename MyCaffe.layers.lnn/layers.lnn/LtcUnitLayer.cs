@@ -28,6 +28,7 @@ namespace MyCaffe.layers.lnn
         Blob<T> m_blobX = null;
         Blob<T> m_blobSensorySigmoidW = null;
         Blob<T> m_blobSensoryActivationW = null;
+        Blob<T> m_blobSensoryActivationW1 = null;
         Blob<T> m_blobSensoryActivationRev = null;
         Blob<T> m_blobSensoryNumeratorW = null;
         Blob<T> m_blobSensoryDenominatorW = null;
@@ -163,6 +164,8 @@ namespace MyCaffe.layers.lnn
             m_blobSensorySigmoidW.Name = m_param.name + ".sensory_sigmoid_w";
             m_blobSensoryActivationW = new Blob<T>(m_cuda, m_log);
             m_blobSensoryActivationW.Name = m_param.name + ".sensory_activation_w";
+            m_blobSensoryActivationW1 = new Blob<T>(m_cuda, m_log);
+            m_blobSensoryActivationW1.Name = m_param.name + ".sensory_activation_w1";
             m_blobSensoryActivationRev = new Blob<T>(m_cuda, m_log);
             m_blobSensoryActivationRev.Name = m_param.name + ".sensory_activation_erev";
             m_blobSensoryNumeratorW = new Blob<T>(m_cuda, m_log);
@@ -271,6 +274,7 @@ namespace MyCaffe.layers.lnn
             dispose(ref m_blobX);
             dispose(ref m_blobSensorySigmoidW);
             dispose(ref m_blobSensoryActivationW);
+            dispose(ref m_blobSensoryActivationW1);
             dispose(ref m_blobSensoryActivationRev);
             dispose(ref m_blobSensoryNumeratorW);
             dispose(ref m_blobSensoryDenominatorW);
@@ -441,6 +445,7 @@ namespace MyCaffe.layers.lnn
             m_rgShape[2] = m_param.ltc_unit_param.hidden_size;
             m_blobSensorySigmoidW.Reshape(m_rgShape);
             m_blobSensoryActivationW.Reshape(m_rgShape);
+            m_blobSensoryActivationW1.Reshape(m_rgShape);
             m_blobSensoryActivationRev.Reshape(m_rgShape);
 
             m_rgShape[0] = m_blobSensoryActivationW.num;
@@ -501,7 +506,7 @@ namespace MyCaffe.layers.lnn
         }
 
         /// <summary>
-        /// WORK IN PROGRESS Computes the error gradient w.r.t. the LtcUnit value inputs.
+        /// Computes the error gradient w.r.t. the LtcUnit value inputs.
         /// </summary>
         /// <param name="colTop">top output blob vector (length 1), providing the error gradient
         /// with respect to outputs
@@ -628,9 +633,9 @@ namespace MyCaffe.layers.lnn
                     m_blobWork.scale_diff(-1);
 
                     if (top.count() == btm2.count())
-                        m_cuda.channel_op(OP.MUL, nCount, nC, m_blobWork.num, m_blobWork.count(2), top.num, top.count(2), m_blobWork.gpu_diff, top.gpu_diff, btm2.mutable_gpu_diff, DIR.FWD);
+                        m_cuda.channel_op(OP.MUL, nCount, m_blobWork.channels, m_blobWork.num, m_blobWork.count(2), top.num, top.count(2), m_blobWork.gpu_diff, top.gpu_diff, btm2.mutable_gpu_diff, DIR.FWD);
                     else
-                        m_cuda.channel_op(OP.MUL, nCount, nC, m_blobWork.num, m_blobWork.count(2), top.num, top.count(2), m_blobWork.gpu_diff, top.gpu_diff, m_blobWork.mutable_gpu_diff, DIR.FWD);
+                        m_cuda.channel_op(OP.MUL, nCount, m_blobWork.channels, m_blobWork.num, m_blobWork.count(2), top.num, top.count(2), m_blobWork.gpu_diff, top.gpu_diff, m_blobWork.mutable_gpu_diff, DIR.FWD);
                 }
                 else if (op == OP.MUL)
                 {
@@ -649,7 +654,7 @@ namespace MyCaffe.layers.lnn
 
                 if (nSD2 < nSD1)
                 {
-                    int nNb = nN2 * nC * nSD1;
+                    int nNb = Math.Max(nN1, nN2);
                     int nCb = nSD1 / nSD2;
                     int nSDb = 1;
                     m_cuda.channel_sum(nCount, nNb, nCb, nSDb, m_blobWork.gpu_diff, btm2.mutable_gpu_diff, true);
@@ -852,16 +857,16 @@ namespace MyCaffe.layers.lnn
 
             // cm/t is loop invariant, so we can compute it once here.
             op_bwd(OP.DIV, blobs[(int)WEIGHT.CM], m_blobTs, m_blobCmt, 1, 1, nSD, nN, 1);
-            m_blobTs.scale_data(1.0 / m_param.ltc_unit_param.ode_unfolds);
-            m_blobTs.add_scalar(1.0);
+            m_blobTs.scale_diff(1.0 / m_param.ltc_unit_param.ode_unfolds);
             blobTs.CopyFrom(m_blobTs, true);
 
             // Reduce over dim=1 (source sensory neurons)
-            m_cuda.channel_sum(nCount, m_blobSensoryActivationW.num, m_blobSensoryActivationW.channels, m_blobSensoryActivationW.count(2), m_blobSensoryActivationW.gpu_diff, m_blobSensoryDenominatorW.mutable_gpu_diff, true, DIR.BWD);
-            m_cuda.channel_sum(nCount, m_blobSensoryActivationRev.num, m_blobSensoryActivationRev.channels, m_blobSensoryActivationRev.count(2), m_blobSensoryActivationRev.gpu_diff, m_blobSensoryNumeratorW.mutable_gpu_diff, true, DIR.BWD);
+            m_cuda.channel_sum(m_blobSensoryActivationRev.count(), m_blobSensoryActivationRev.num, m_blobSensoryActivationRev.channels, m_blobSensoryActivationRev.count(2), m_blobSensoryActivationRev.gpu_diff, m_blobSensoryNumeratorW.mutable_gpu_diff, true, DIR.BWD, 1);
+            m_cuda.channel_sum(m_blobSensoryActivationW1.count(), m_blobSensoryActivationW1.num, m_blobSensoryActivationW1.channels, m_blobSensoryActivationW1.count(2), m_blobSensoryActivationW1.gpu_diff, m_blobSensoryDenominatorW.mutable_gpu_diff, true, DIR.BWD, 1);
 
             // Pre-compute the effect of the sensory inputs.
             op_bwd(OP.MUL, m_blobSensoryActivationW, blobs[(int)WEIGHT.SENSORY_EREV], m_blobSensoryActivationRev, nC, nN, nSD, 1, nSD);
+            m_cuda.add(m_blobSensoryActivationW.count(), m_blobSensoryActivationW.gpu_diff, m_blobSensoryActivationW1.gpu_diff, m_blobSensoryActivationW.mutable_gpu_diff);
             op_bwd(OP.MUL, m_blobSensorySigmoidW, blobs[(int)WEIGHT.SENSORY_W], m_blobSensoryActivationW, nC, nN, nSD, 1, nSD);
 
             addBtmTop(blobInputs, m_blobSensorySigmoidW);
