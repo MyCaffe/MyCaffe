@@ -232,6 +232,33 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Reshapes all blobs in the collection to the given shape.
+        /// </summary>
+        /// <param name="rgShape">Specifies the shape to use.</param>
+        public void Reshape(int[] rgShape)
+        {
+            for (int i = 0; i < m_rgBlobs.Count; i++)
+            {
+                m_rgBlobs[i].Reshape(rgShape);
+            }
+        }
+
+        /// <summary>
+        /// Reshapes all blobs in the collection to the given shape.
+        /// </summary>
+        /// <param name="nN">Specifies the number of items.</param>
+        /// <param name="nC">Specifies the number of channels.</param>
+        /// <param name="nH">Specifies the spatial height.</param>
+        /// <param name="nW">Specifies the spatial width.</param>
+        public void Reshape(int nN, int nC, int nH, int nW)
+        {
+            for (int i = 0; i < m_rgBlobs.Count; i++)
+            {
+                m_rgBlobs[i].Reshape(nN, nC, nH, nW);
+            }
+        }
+
+        /// <summary>
         /// Copy the data or diff from another BlobCollection into this one.
         /// </summary>
         /// <param name="bSrc">Specifies the src BlobCollection to copy.</param>
