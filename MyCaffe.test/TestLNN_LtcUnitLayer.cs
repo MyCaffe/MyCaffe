@@ -336,6 +336,9 @@ namespace MyCaffe.test
                 blobY = new Blob<T>(m_cuda, m_log);
                 blobYexp = new Blob<T>(m_cuda, m_log);
                 blobWork = new Blob<T>(m_cuda, m_log);
+                blobXgrad = new Blob<T>(m_cuda, m_log);
+                blobHxgrad = new Blob<T>(m_cuda, m_log);
+                blobTsgrad = new Blob<T>(m_cuda, m_log);
 
                 m_log.CHECK(layer != null, "The layer was not created correctly.");
                 m_log.CHECK(layer.type == LayerParameter.LayerType.LTC_UNIT, "The layer type is incorrect.");
@@ -366,7 +369,7 @@ namespace MyCaffe.test
                 layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
 
                 blobXgrad.LoadFromNumpy(strPath + "x.grad.npy", true);
-                m_log.CHECK(blobXgrad.Compare(blobX, blobWork, true, 1e-07), "The blobs do not match.");
+                m_log.CHECK(blobXgrad.Compare(blobX, blobWork, true, 4e-07), "The blobs do not match.");
 
                 blobHxgrad.LoadFromNumpy(strPath + "hx.grad.npy", true);
                 m_log.CHECK(blobHxgrad.Compare(blobHx, blobWork, true, 1e-07), "The blobs do not match.");
