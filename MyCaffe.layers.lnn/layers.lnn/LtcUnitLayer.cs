@@ -506,7 +506,7 @@ namespace MyCaffe.layers.lnn
         }
 
         /// <summary>
-        /// Computes the error gradient w.r.t. the LtcUnit value inputs.
+        /// WORK IN PROGRESS Computes the error gradient w.r.t. the LtcUnit value inputs.
         /// </summary>
         /// <param name="colTop">top output blob vector (length 1), providing the error gradient
         /// with respect to outputs
@@ -555,10 +555,10 @@ namespace MyCaffe.layers.lnn
             if (nCount != top.count())
                 top.Reshape(nN, nC, nSD, 1);
 
-            m_cuda.channel_op(op, top.count(), nC, nN1, nSD1, nN2, nSD2, btm1.gpu_data, btm2.gpu_data, top.mutable_gpu_data, DIR.FWD);
+            m_cuda.channel_op_fwd(op, top.count(), nC, nN1, nSD1, nN2, nSD2, btm1.gpu_data, btm2.gpu_data, top.mutable_gpu_data);
         }
 
-        private void op_bwd(OP op, Blob<T> btm1, Blob<T> btm2, Blob<T> top, int nC = 0, int nN1 = 0, int nSD1 = 0, int nN2 = 0, int nSD2 = 0)
+        private void op_bwd_local(OP op, Blob<T> btm1, Blob<T> btm2, Blob<T> top, int nC = 0, int nN1 = 0, int nSD1 = 0, int nN2 = 0, int nSD2 = 0)
         {
             if (nC == 0)
                 nC = btm1.channels;
@@ -585,7 +585,7 @@ namespace MyCaffe.layers.lnn
             if (nCount != m_blobWork.count())
                 m_blobWork.ReshapeLike(top);
 
-            //m_cuda.channel_op(op, top.count(), nC, nN1, nSD1, nN2, nSD2, btm1.gpu_data, btm2.gpu_data, top.gpu_data, DIR.BWD, btm1.mutable_gpu_diff, btm2.mutable_gpu_diff, top.gpu_diff, m_blobWork.mutable_gpu_data);
+            //m_cuda.channel_op_bwd(op, top.count(), nC, nN1, nSD1, nN2, nSD2, btm1.gpu_data, btm2.gpu_data, top.gpu_data, btm1.mutable_gpu_diff, btm2.mutable_gpu_diff, top.gpu_diff, m_blobWork.mutable_gpu_data);
 
             // Gradient for btm1
             if (top.gpu_diff != btm1.gpu_diff)
@@ -594,9 +594,9 @@ namespace MyCaffe.layers.lnn
                 if (op == OP.MUL || op == OP.DIV)
                 {
                     if (top.count() == btm1.count())
-                        m_cuda.channel_op(op, nCount, nC, nN1, nSD1, nN2, nSD2, top.gpu_diff, btm2.gpu_data, btm1.mutable_gpu_diff, DIR.FWD);
+                        m_cuda.channel_op_fwd(op, nCount, nC, nN1, nSD1, nN2, nSD2, top.gpu_diff, btm2.gpu_data, btm1.mutable_gpu_diff);
                     else
-                        m_cuda.channel_op(op, nCount, nC, nN1, nSD1, nN2, nSD2, top.gpu_diff, btm2.gpu_data, m_blobWork.mutable_gpu_diff, DIR.FWD);
+                        m_cuda.channel_op_fwd(op, nCount, nC, nN1, nSD1, nN2, nSD2, top.gpu_diff, btm2.gpu_data, m_blobWork.mutable_gpu_diff);
                 }
                 else
                 {
@@ -629,20 +629,24 @@ namespace MyCaffe.layers.lnn
                 if (op == OP.DIV)
                 {
                     m_cuda.powx(btm2.count(), btm2.gpu_data, 2.0, btm2.mutable_gpu_diff);
-                    m_cuda.channel_op(op, nCount, nC, nN1, nSD1, nN2, nSD2, btm1.gpu_data, btm2.gpu_diff, m_blobWork.mutable_gpu_diff, DIR.FWD);
+                    m_cuda.channel_op_fwd(op, nCount, nC, nN1, nSD1, nN2, nSD2, btm1.gpu_data, btm2.gpu_diff, m_blobWork.mutable_gpu_diff);
                     m_blobWork.scale_diff(-1);
 
+                    int nCc = m_blobWork.channels;
+                    int nNc = m_blobWork.num;
+                    int nSDc = top.count(2);
+
                     if (top.count() == btm2.count())
-                        m_cuda.channel_op(OP.MUL, nCount, m_blobWork.channels, m_blobWork.num, m_blobWork.count(2), top.num, top.count(2), m_blobWork.gpu_diff, top.gpu_diff, btm2.mutable_gpu_diff, DIR.FWD);
+                        m_cuda.channel_op_fwd(OP.MUL, nCount, nCc, nNc, nSDc, nNc, nSDc, m_blobWork.gpu_diff, top.gpu_diff, btm2.mutable_gpu_diff);
                     else
-                        m_cuda.channel_op(OP.MUL, nCount, m_blobWork.channels, m_blobWork.num, m_blobWork.count(2), top.num, top.count(2), m_blobWork.gpu_diff, top.gpu_diff, m_blobWork.mutable_gpu_diff, DIR.FWD);
+                        m_cuda.channel_op_fwd(OP.MUL, nCount, nCc, nNc, nSDc, nNc, nSDc, m_blobWork.gpu_diff, top.gpu_diff, m_blobWork.mutable_gpu_diff);
                 }
                 else if (op == OP.MUL)
                 {
                     if (top.count() == btm2.count())
-                        m_cuda.channel_op(op, nCount, nC, nN1, nSD1, nN2, nSD2, top.gpu_diff, btm1.gpu_data, btm2.mutable_gpu_diff, DIR.FWD);
+                        m_cuda.channel_op_fwd(op, nCount, nC, nN1, nSD1, nN2, nSD2, top.gpu_diff, btm1.gpu_data, btm2.mutable_gpu_diff);
                     else
-                        m_cuda.channel_op(op, nCount, nC, nN1, nSD1, nN2, nSD2, top.gpu_diff, btm1.gpu_data, m_blobWork.mutable_gpu_diff, DIR.FWD);
+                        m_cuda.channel_op_fwd(op, nCount, nC, nN1, nSD1, nN2, nSD2, top.gpu_diff, btm1.gpu_data, m_blobWork.mutable_gpu_diff);
                 }
                 else
                 {
@@ -667,6 +671,42 @@ namespace MyCaffe.layers.lnn
                     m_cuda.channel_sum(nCount, nNb, nCb, nSDb, m_blobWork.gpu_diff, btm2.mutable_gpu_diff, true);
                 }
             }
+        }
+
+        private void op_bwd(OP op, Blob<T> btm1, Blob<T> btm2, Blob<T> top, int nC = 0, int nN1 = 0, int nSD1 = 0, int nN2 = 0, int nSD2 = 0, int nCy = 0, int nSDy = 0)
+        {
+            if (nC == 0)
+                nC = btm1.channels;
+
+            if (nN1 == 0)
+                nN1 = btm1.num;
+
+            if (nSD1 == 0)
+                nSD1 = (btm1.num_axes < 2) ? 1 : btm1.count(2);
+
+            if (nN2 == 0)
+                nN2 = (btm2.num_axes == 1) ? 1 : btm2.num;
+
+            if (nSD2 == 0)
+                nSD2 = (btm2.num_axes < 2) ? 1 : btm2.count(2);
+
+            if (nCy == 0)
+                nCy = top.channels;
+
+            if (nSDy == 0)
+                nSDy = top.count(2);
+
+            int nN = Math.Max(nN1, nN2);
+            int nSD = Math.Max(nSD1, nSD2);
+            int nCount = nN * nC * nSD;
+
+            if (nCount != top.count())
+                top.Reshape(nN, nC, nSD, 1);
+
+            if (nCount != m_blobWork.count())
+                m_blobWork.ReshapeLike(top);
+
+            m_cuda.channel_op_bwd(op, top.count(), nC, nN1, nSD1, nN2, nSD2, nCy, nSDy, btm1.gpu_data, btm2.gpu_data, top.gpu_data, btm1.mutable_gpu_diff, btm2.mutable_gpu_diff, top.gpu_diff, m_blobWork.mutable_gpu_data);
         }
 
         private void sigmoid_fwd(BlobCollection<T> colBtm, BlobCollection<T> colTop, int t = -1)
@@ -855,8 +895,9 @@ namespace MyCaffe.layers.lnn
                 m_cuda.add(m_blobVPre.count(), m_colVPre[t].gpu_diff, m_blobVPre.gpu_diff, m_blobVPre.mutable_gpu_diff);
             }
 
+            m_cuda.debug();
             // cm/t is loop invariant, so we can compute it once here.
-            op_bwd(OP.DIV, blobs[(int)WEIGHT.CM], m_blobTs, m_blobCmt, 1, 1, nSD, nN, 1);
+            op_bwd(OP.DIV, blobs[(int)WEIGHT.CM], m_blobTs, m_blobCmt, 1, 1, nSD, nN, 1, m_blobCmt.channels, m_blobCmt.count(2));
             m_blobTs.scale_diff(1.0 / m_param.ltc_unit_param.ode_unfolds);
             blobTs.CopyFrom(m_blobTs, true);
 
@@ -867,6 +908,7 @@ namespace MyCaffe.layers.lnn
             // Pre-compute the effect of the sensory inputs.
             op_bwd(OP.MUL, m_blobSensoryActivationW, blobs[(int)WEIGHT.SENSORY_EREV], m_blobSensoryActivationRev, nC, nN, nSD, 1, nSD);
             m_cuda.add(m_blobSensoryActivationW.count(), m_blobSensoryActivationW.gpu_diff, m_blobSensoryActivationW1.gpu_diff, m_blobSensoryActivationW.mutable_gpu_diff);
+
             op_bwd(OP.MUL, m_blobSensorySigmoidW, blobs[(int)WEIGHT.SENSORY_W], m_blobSensoryActivationW, nC, nN, nSD, 1, nSD);
 
             addBtmTop(blobInputs, m_blobSensorySigmoidW);
