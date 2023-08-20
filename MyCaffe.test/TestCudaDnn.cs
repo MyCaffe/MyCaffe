@@ -3149,7 +3149,7 @@ namespace MyCaffe.test
                         hDataY = t.Cuda.AllocMemory(nCount);
 
                         // Test A op B -> Y
-                        t.Cuda.channel_op(op, nCount, nC, nN1, nSD1, nN2, nSD2, hDataA, hDataB, hDataY, DIR.FWD);
+                        t.Cuda.channel_op_fwd(op, nCount, nC, nN1, nSD1, nN2, nSD2, hDataA, hDataB, hDataY);
 
                         double[] rgDataY = t.Cuda.GetMemoryDouble(hDataY);
 
@@ -3250,6 +3250,8 @@ namespace MyCaffe.test
                         }
 
                         int nCount = Math.Max(nN1, nN2) * nC * Math.Max(nSD1, nSD2);
+                        int nSDy = Math.Max(nSD1, nSD2);
+                        int nCy = nC;
 
                         hDataA = t.Cuda.AllocMemory(rgdfA);
                         hDataB = t.Cuda.AllocMemory(rgdfB);
@@ -3267,13 +3269,13 @@ namespace MyCaffe.test
                         hWork = t.Cuda.AllocMemory(rgdfYd.Count);
 
                         // Test Yd -> Ad op Bd
-                        t.Cuda.channel_op(op, nCount, nC, nN1, nSD1, nN2, nSD2, hDataA, hDataB, hDataY, DIR.BWD, hDataAd, hDataBd, hDataYd, hWork);
+                        t.Cuda.channel_op_bwd(op, nCount, nC, nN1, nSD1, nN2, nSD2, nCy, nSDy, hDataA, hDataB, hDataY, hDataAd, hDataBd, hDataYd, hWork);
 
                         double[] rgDataAd = t.Cuda.GetMemoryDouble(hDataYd);
 
                         log.CHECK_EQ(rgDataAd.Length, rgdfA.Count, "The data A length should be equal.");
 
-                        t.Cuda.channel_op(op, nCount, nC, nN1, nSD1, nN2, nSD2, hDataYd, hDataB, hWork, DIR.FWD);
+                        t.Cuda.channel_op_fwd(op, nCount, nC, nN1, nSD1, nN2, nSD2, hDataYd, hDataB, hWork);
 
                         if (nN1 == nN2 && nSD1 < nSD2)
                         {
