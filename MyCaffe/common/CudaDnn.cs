@@ -870,7 +870,8 @@ namespace MyCaffe.common
         void channel_copyall(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
         void channel_duplicate(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
         void channel_percentile(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, double dfPercentile);
-        void channel_op(OP op, int nCount, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY, DIR dir, long hAd = 0, long hBd = 0, long hYd = 0, long hWork = 0);
+        void channel_op_fwd(OP op, int nCount, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY);
+        void channel_op_bwd(OP op, int nCount, int nC, int nN1, int nSD1, int nN2, int nSD2, int nCy, int nSDy, long hA, long hB, long hY, long hAd, long hBd, long hYd, long hWork);
 
         void gemm(bool bTransA, bool bTransB, int m, int n, int k, double fAlpha, long hA, long hB, double fBeta, long hC);
         void gemm(bool bTransA, bool bTransB, int m, int n, int k, float fAlpha, long hA, long hB, float fBeta, long hC);
@@ -1273,7 +1274,8 @@ namespace MyCaffe.common
             CUDA_CHANNEL_DUP = 303,
             CUDA_CHANNEL_ADD = 304,
             CUDA_CHANNEL_PERCENTILE = 305,
-            CUDA_CHANNEL_OP = 306,
+            CUDA_CHANNEL_OP_FWD = 306,
+            CUDA_CHANNEL_OP_BWD = 307,
 
             CUDA_RNG_SETSEED = 349,
             CUDA_RNG_UNIFORM = 350,
@@ -8365,7 +8367,7 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Performs a channel operation on the data.
+        /// Performs a channel operation forward on the data.
         /// </summary>
         /// <param name="op">Specifies the operation to perform.</param>
         /// <param name="nCount">Specifies the number of items in Y which should equal max(nN1, nN2) x nC x max(nSD1, nSD2).</param>
@@ -8377,21 +8379,47 @@ namespace MyCaffe.common
         /// <param name="hA">Specifies a handle to the memory of A which has the size nN1 x nC1 x nSD1.</param>
         /// <param name="hB">Specifies a handle to the memory of B which has the size nN2 x nC2 x nSD2.</param>
         /// <param name="hY">Specifies a handle to the memory where the result is placed during FWD with size max(nN1, nN2) x nC x max(nSD1, nSD2).</param>
-        /// <param name="dir">Specifies the direction of the operation (FWD or BWD).</param>
+        public void channel_op_fwd(OP op, int nCount, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY)
+        {
+            int nCount1 = Math.Max(nN1, nN2) * nC * Math.Max(nSD1, nSD2);
+            if (nCount1 != nCount)
+                throw new Exception("The nCount must equal max(nN1, nN2) x nC x max(nSD1, nSD2).");
+
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int) m_hKernel, (int) CUDAFN.CUDA_CHANNEL_OP_FWD, null, m_param.AsLong((int)op, nCount, nC, nN1, nSD1, nN2, nSD2, hA, hB, hY));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_OP_FWD, null, m_param.AsLong((int)op, nCount, nC, nN1, nSD1, nN2, nSD2, hA, hB, hY));
+        }
+
+        /// <summary>
+        /// Performs a channel operation backward on the data.
+        /// </summary>
+        /// <param name="op">Specifies the operation to perform.</param>
+        /// <param name="nCount">Specifies the number of items in Y which should equal max(nN1, nN2) x nC x max(nSD1, nSD2).</param>
+        /// <param name="nC">Specifies the channels in both A, B and Y.</param>
+        /// <param name="nN1">Specifies the number of items in A.</param>
+        /// <param name="nSD1">Specifies the spatial dimension of each item of A.</param>
+        /// <param name="nN2">Specifies the number of items in B.</param>
+        /// <param name="nSD2">Specifies the spatial dimension of each item of B.</param>
+        /// <param name="nCy">Specifies the channels of each item of Y.</param>
+        /// <param name="nSDy">Specifies the spatial dimension of each item of Y.</param>
+        /// <param name="hA">Specifies a handle to the memory of A which has the size nN1 x nC1 x nSD1.</param>
+        /// <param name="hB">Specifies a handle to the memory of B which has the size nN2 x nC2 x nSD2.</param>
+        /// <param name="hY">Specifies a handle to the memory where the result is placed during FWD with size max(nN1, nN2) x nC x max(nSD1, nSD2).</param>
         /// <param name="hAd">Optionally, specifies a handle to the memory of the diff for A (filled during BWD) with size nN1, nC, nSD1.</param>
         /// <param name="hBd">Optionally, specifies a handle to the memory of the diff for b (filled during BWD) with size nN2, nC, nSD2.</param>
         /// <param name="hYd">Optionally, specifies a handle to the memory of the diff for Y (used during BWD).</param>
         /// <param name="hWork">Optionally, specifies a handle to work memory with the same size as Y (used during BWD)</param>
-        public void channel_op(OP op, int nCount, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY, DIR dir, long hAd = 0, long hBd = 0, long hYd = 0, long hWork = 0)
+        public void channel_op_bwd(OP op, int nCount, int nC, int nN1, int nSD1, int nN2, int nSD2, int nCy,int nSDy, long hA, long hB, long hY, long hAd, long hBd, long hYd, long hWork)
         {
             int nCount1 = Math.Max(nN1, nN2) * nC * Math.Max(nSD1, nSD2);
             if (nCount1 != nCount)
-                throw new Exception("The count must equal max(nN1, nN2) x nC x max(nSD1, nSD2).");
+                throw new Exception("The nCount must equal max(nN1, nN2) x nC x max(nSD1, nSD2).");
 
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int) m_hKernel, (int) CUDAFN.CUDA_CHANNEL_OP, null, m_param.AsLong((int)op, nCount, nC, nN1, nSD1, nN2, nSD2, hA, hB, hY, (int)dir, hAd, hBd, hYd, hWork));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_OP_BWD, null, m_param.AsLong((int)op, nCount, nC, nN1, nSD1, nN2, nSD2, nCy, nSDy, hA, hB, hY, hAd, hBd, hYd, hWork));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_OP, null, m_param.AsLong((int)op, nCount, nC, nN1, nSD1, nN2, nSD2, hA, hB, hY, (int)dir, hAd, hBd, hYd, hWork));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_OP_BWD, null, m_param.AsLong((int)op, nCount, nC, nN1, nSD1, nN2, nSD2, nCy, nSDy, hA, hB, hY, hAd, hBd, hYd, hWork));
         }
 
         /// <summary>

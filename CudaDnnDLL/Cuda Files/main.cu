@@ -692,8 +692,11 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, lon
 		case CUDA_FN_CHANNEL_PERCENTILE:
 			return m_device.cuda_channel_percentile(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
-		case CUDA_FN_CHANNEL_OP:
-			return m_device.cuda_channel_op(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+		case CUDA_FN_CHANNEL_OP_FWD:
+			return m_device.cuda_channel_op_fwd(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDA_FN_CHANNEL_OP_BWD:
+			return m_device.cuda_channel_op_bwd(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
 		case CUDA_FN_IM2COL:
 			return m_device.cuda_im2col(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
@@ -1785,8 +1788,11 @@ char* GetApiName(long lfnIdx)
 	case CUDA_FN_CHANNEL_PERCENTILE:
 		return "CUDA_FN_CHANNEL_PERCENTILE";
 
-	case CUDA_FN_CHANNEL_OP:
-		return "CUDA_FN_CHANNEL_OP";
+	case CUDA_FN_CHANNEL_OP_FWD:
+		return "CUDA_FN_CHANNEL_OP_FWD";
+
+	case CUDA_FN_CHANNEL_OP_BWD:
+		return "CUDA_FN_CHANNEL_OP_BWD";
 
 	case CUDA_FN_IM2COL:
 		return "CUDA_FN_IM2COL";

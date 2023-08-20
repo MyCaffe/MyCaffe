@@ -2312,6 +2312,33 @@ long Math<float>::scal(int n, float fAlpha, long hX, int nXOff, long hStream)
 	return lErr;
 }
 
+template <>
+long Math<double>::scal(int n, double fAlpha, double* x)
+{
+	LONG lErr;
+
+	if (m_cublas == NULL)
+		return ERROR_CUBLAS_NULL;
+
+	if (lErr = cublasDscal(m_cublas, n, &fAlpha, x, 1))
+		return lErr | ERROR_CUBLAS_OFFSET;
+
+	return cudaStreamSynchronize(0);
+}
+
+template <>
+long Math<float>::scal(int n, float fAlpha, float* x)
+{
+	LONG lErr;
+
+	if (m_cublas == NULL)
+		return ERROR_CUBLAS_NULL;
+
+	if (lErr = cublasSscal(m_cublas, n, &fAlpha, x, 1))
+		return lErr | ERROR_CUBLAS_OFFSET;
+
+	return cudaStreamSynchronize(0);
+}
 
 template <>
 long Math<double>::dot(int n, long hX, long hY, double* pOut, int nXOff, int nYOff)
@@ -6995,9 +7022,66 @@ __global__ void channel_op_sub_fwd_kernel1(const int nYCount, const int nC, cons
 	}
 }
 
+template <typename T>
+long Math<T>::channel_op_fwd(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY)
+{
+	LONG lErr;
+	MemoryItem* pA;
+	MemoryItem* pB;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hA, &pA))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hB, &pB))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	T* y = (T*)pY->Data();
+	T* a = (T*)pA->Data();
+	T* b = (T*)pB->Data();
+
+	switch (nOp)
+	{
+		case CHANNEL_OP_MUL:
+			if (nSD1 == nSD2)
+				channel_op_mul_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
+			else
+				channel_op_mul_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
+			break;
+
+		case CHANNEL_OP_DIV:
+			if (nSD1 == nSD2)
+				channel_op_div_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
+			else
+				channel_op_div_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
+			break;
+
+		case CHANNEL_OP_ADD:
+			if (nSD1 == nSD2)
+				channel_op_add_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
+			else
+				channel_op_add_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
+			break;
+
+		case CHANNEL_OP_SUB:
+			if (nSD1 == nSD2)
+				channel_op_sub_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
+			else
+				channel_op_sub_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
+			break;
+	}
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::channel_op_fwd(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY);
+template long Math<float>::channel_op_fwd(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY);
 
 template <typename T>
-long Math<T>::channel_op(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY, int nDir, long hAd, long hBd, long hYd, long hWork)
+long Math<T>::channel_op_bwd(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, int nCy, int nSDy, long hA, long hB, long hY, long hAd, long hBd, long hYd, long hWork)
 {
 	LONG lErr;
 	MemoryItem* pA;
@@ -7017,113 +7101,168 @@ long Math<T>::channel_op(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
+	if (lErr = m_pMemCol->GetData(hAd, &pAd))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBd, &pBd))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hYd, &pYd))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hWork, &pWork))
+		return lErr;
+
 	T* y = (T*)pY->Data();
 	T* a = (T*)pA->Data();
 	T* b = (T*)pB->Data();
-	T* yd = NULL;
-	T* ad = NULL;
-	T* bd = NULL;
-	T* work = NULL;
+	T* yd = (T*)pYd->Data();
+	T* ad = (T*)pAd->Data();
+	T* bd = (T*)pBd->Data();
+	T* work = (T*)pWork->Data();
 
-	if (nDir == 1)
+	int nACount = nN1 * nC * nSD1;
+	int nBCount = nN2 * nC * nSD2;
+
+	int nN = max(nN1, nN2);
+	int nSD = max(nSD1, nSD2);
+	int nCount = nN * nC * nSD;
+
+	if (n != nCount)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	// Gradient for hAd
+	if (hYd != hAd)
 	{
-		if (lErr = m_pMemCol->GetData(hAd, &pAd))
+		if (lErr = set(nCount, work, (T)0.0))
 			return lErr;
 
-		if (lErr = m_pMemCol->GetData(hBd, &pBd))
+		switch (nOp)
+		{
+			case CHANNEL_OP_MUL:
+				if (nCount == nACount)
+					channel_op_mul_fwd_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nC, nN1, nSD1, nN2, nSD2, yd, b, ad);				
+				else
+					channel_op_mul_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nC, nN1, nSD1, nN2, nSD2, yd, b, work);
+				lErr = cudaStreamSynchronize(0);
+				break;
+
+			case CHANNEL_OP_DIV:
+				if (nCount == nACount)
+					channel_op_div_fwd_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nC, nN1, nSD1, nN2, nSD2, yd, b, ad);
+				else
+					channel_op_div_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nC, nN1, nSD1, nN2, nSD2, yd, b, work);
+				lErr = cudaStreamSynchronize(0);
+				break;
+
+			case CHANNEL_OP_ADD:
+			case CHANNEL_OP_SUB:
+				if (nCount == nACount)
+					lErr = cudaMemcpy(ad, yd, sizeof(T) * nCount, cudaMemcpyDeviceToDevice);
+				else
+					lErr = cudaMemcpy(work, yd, sizeof(T) * nCount, cudaMemcpyDeviceToDevice);
+				break;
+		}
+
+		if (lErr)
 			return lErr;
 
-		if (lErr = m_pMemCol->GetData(hYd, &pYd))
-			return lErr;
-
-		if (lErr = m_pMemCol->GetData(hWork, &pWork))
-			return lErr;
-
-		yd = (T*)pYd->Data();
-		ad = (T*)pAd->Data();
-		bd = (T*)pBd->Data();
-		work = (T*)pWork->Data();
+		if (nSD1 < nSD2)
+		{
+			int nNa = nN1 * nC * nSD1;
+			int nCa = nSD2 / nSD1;
+			int nSDa = 1;
+			channel_sum_kernel_acrosschannels<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nNa, nCa, nSDa, work, ad);
+			if (lErr = cudaStreamSynchronize(0))
+				return lErr;
+		}
+		else if (nN1 < nN2)
+		{
+			int nNa = nN1;
+			int nCa = nN2 / nN1;
+			int nSDa = nC * nSD1;
+			channel_sum_kernel_acrosschannels<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nNa, nCa, nSDa, work, ad);
+			if (lErr = cudaStreamSynchronize(0))
+				return lErr;
+		}
 	}
 
-	switch (nOp)
+	// Gradient for hBd
+	if (hYd != hBd)
 	{
-		case CHANNEL_OP_MUL:
-			if (nDir == 0) // Fwd
-			{
-				if (nSD1 == nSD2)
-					channel_op_mul_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
-				else
-					channel_op_mul_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
-			}
-			else
-			{
-				if (nSD1 == nSD2)
-				{
-					channel_op_mul_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, max(nN1, nN2), max(nSD1, nSD2), nN2, nSD2, yd, b, work);
+		if (lErr = set(nCount, work, (T)0.0))
+			return lErr;
 
-					if (nN1 == nN2 && nSD1 < nSD2)
-					{
-						int nN = nN1 * nC * nSD1;
-						int nC1 = nSD2 / nSD1;
-						int nSD = 1;
-						channel_sum_kernel_withinchannel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nN, nC1, nSD, work, ad);
-					}
-					else if (nN1 < nN2 && nSD1 == nSD2)
-					{
-						int nN = nN1;
-						int nC1 = nN2 / nN1;
-						int nSD = nC * nSD2;
-						channel_sum_kernel_withinchannel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nN, nC1, nSD, work, ad);
-					}
-				}
-			}
-			break;
+		int nCc = nCy;
+		int nNc = max(nN1, nN2);
+		int nSDc = nSDy;
 
-		case CHANNEL_OP_DIV:
-			if (nDir == 0) // Fwd
-			{
-				if (nSD1 == nSD2)
-					channel_op_div_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
-				else
-					channel_op_div_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
-			}
-			else
-			{
-			}
-			break;
+		switch (nOp)
+		{
+			case CHANNEL_OP_DIV:
+				powx_kernel<T> << <CAFFE_GET_BLOCKS(nBCount), CAFFE_CUDA_NUM_THREADS >> > (nBCount, b, (T)2.0, bd);
+				if (lErr = cudaStreamSynchronize(0))
+					return lErr;
 
-		case CHANNEL_OP_ADD:
-			if (nDir == 0) // Fwd
-			{
-				if (nSD1 == nSD2)
-					channel_op_add_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
-				else
-					channel_op_add_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
-			}
-			else
-			{
-			}
-			break;
+				channel_op_div_fwd_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nC, nN1, nSD1, nN2, nSD2, a, bd, work);
+				if (lErr = cudaStreamSynchronize(0))
+					return lErr;
 
-		case CHANNEL_OP_SUB:
-			if (nDir == 0) // Fwd
-			{
-				if (nSD1 == nSD2)
-					channel_op_sub_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
+				if (lErr = scal(nCount, (T)-1.0, work))
+					return lErr;
+
+				if (nCount == nBCount)
+					channel_op_mul_fwd_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nCc, nNc, nSDc, nNc, nSDc, work, yd, bd);
 				else
-					channel_op_sub_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nC, nN1, nSD1, nN2, nSD2, a, b, y);
-			}
-			else
-			{
-			}
-			break;
+					channel_op_mul_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nCc, nNc, nSDc, nNc, nSDc, work, yd, work);
+				lErr = cudaStreamSynchronize(0);
+				break;
+
+			case CHANNEL_OP_MUL:
+				if (nCount == nBCount)
+					channel_op_mul_fwd_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nC, nN1, nSD1, nN2, nSD2, yd, a, bd);
+				else
+					channel_op_mul_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nC, nN1, nSD1, nN2, nSD2, yd, a, work);
+				lErr = cudaStreamSynchronize(0);
+				break;
+
+			case CHANNEL_OP_ADD:
+			case CHANNEL_OP_SUB:
+				if (nCount == nBCount)
+					lErr = cudaMemcpy(bd, yd, sizeof(T) * nCount, cudaMemcpyDeviceToDevice);
+				else
+					lErr = cudaMemcpy(work, yd, sizeof(T) * nCount, cudaMemcpyDeviceToDevice);
+				break;
+		}
+
+		if (lErr)
+			return lErr;
+
+		if (nSD2 < nSD1)
+		{
+			int nNb = max(nN1, nN2);
+			int nCb = nSD1 / nSD2;
+			int nSDb = 1;
+			channel_sum_kernel_acrosschannels<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nNb, nCb, nSDb, work, bd);
+			if (lErr = cudaStreamSynchronize(0))
+				return lErr;
+		}
+		else if (nN2 < nN1)
+		{
+			int nNb = nN2;
+			int nCb = nN1 / nN2;
+			int nSDb = nC * nSD2;
+			channel_sum_kernel_acrosschannels<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nNb, nCb, nSDb, work, bd);
+			if (lErr = cudaStreamSynchronize(0))
+				return lErr;
+		}
 	}
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::channel_op(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY, int nDir, long hAd, long hBd, long hYd, long hWork);
-template long Math<float>::channel_op(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, long hA, long hB, long hY, int nDir, long hAd, long hBd, long hYd, long hWork);
+template long Math<double>::channel_op_bwd(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, int nCy, int nSDy, long hA, long hB, long hY, long hAd, long hBd, long hYd, long hWork);
+template long Math<float>::channel_op_bwd(int nOp, int n, int nC, int nN1, int nSD1, int nN2, int nSD2, int nCy, int nSDy, long hA, long hB, long hY, long hAd, long hBd, long hYd, long hWork);
 
 
 template<typename T>
@@ -7784,7 +7923,7 @@ long Math<T>::rng_uniform(int n, T fMin, T fMax, long hY)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	rng_uniform(n, fMin, fMax, (T*)pY->Data());
+	return rng_uniform(n, fMin, fMax, (T*)pY->Data());
 }
 
 template long Math<double>::rng_uniform(int n, double fMin, double fMax, long hY);
