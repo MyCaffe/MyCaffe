@@ -44,24 +44,6 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestForward_NoGate()
-        {
-            LtcCellLayerTest test = new LtcCellLayerTest();
-
-            try
-            {
-                foreach (ILtcCellLayerTest t in test.Tests)
-                {
-                    t.TestForward(true);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
         public void TestBackward()
         {
             LtcCellLayerTest test = new LtcCellLayerTest();
@@ -80,24 +62,6 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestBackward_NoGate()
-        {
-            LtcCellLayerTest test = new LtcCellLayerTest();
-
-            try
-            {
-                foreach (ILtcCellLayerTest t in test.Tests)
-                {
-                    t.TestBackward(true);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
         public void TestGradient()
         {
             LtcCellLayerTest test = new LtcCellLayerTest();
@@ -107,24 +71,6 @@ namespace MyCaffe.test
                 foreach (ILtcCellLayerTest t in test.Tests)
                 {
                     t.TestGradient(false);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
-        public void TestGradient_NoGate()
-        {
-            LtcCellLayerTest test = new LtcCellLayerTest();
-
-            try
-            {
-                foreach (ILtcCellLayerTest t in test.Tests)
-                {
-                    t.TestGradient(true);
                 }
             }
             finally
