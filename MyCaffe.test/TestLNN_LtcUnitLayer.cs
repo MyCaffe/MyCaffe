@@ -354,7 +354,7 @@ namespace MyCaffe.test
             string strPath = getTestDataPath(strSubPath);
             string strPathWts = getTestWtsPath(strSubPath);
 
-            verifyFileDownload(strSubPath, "0.cm_t.a.npy");
+            verifyFileDownload(strSubPath, "0.cm_t.b.npy");
 
             try
             {
