@@ -79,6 +79,7 @@
     <Content Include="MainIcon.ico" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="mycaffe.converter.pytorch.pfx" />
   </ItemGroup>
   <ItemGroup />
