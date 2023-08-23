@@ -38,6 +38,7 @@ namespace MyCaffe.layers.lnn
         Blob<T> m_blobCmt = null;
         Blob<T> m_blobWork = null;
         Blob<T> m_blobVPre = null;
+        BlobCollection<T> m_colWtsAccum = new BlobCollection<T>();
         BlobCollection<T> m_colCmt = new BlobCollection<T>();
         BlobCollection<T> m_colVPre = new BlobCollection<T>();
         BlobCollection<T> m_colMues = new BlobCollection<T>();
@@ -131,24 +132,24 @@ namespace MyCaffe.layers.lnn
             int nStateSize = m_param.ltc_unit_param.hidden_size;
 
             List<int> rgShape = new List<int>() { nStateSize };
-            addWeight(blobs, "gleak", rgShape, m_param.ltc_unit_param.gleak_init_min, m_param.ltc_unit_param.gleak_init_max);
-            addWeight(blobs, "vleak", rgShape, m_param.ltc_unit_param.vleak_init_min, m_param.ltc_unit_param.vleak_init_max);
-            addWeight(blobs, "cm", rgShape, m_param.ltc_unit_param.cm_init_min, m_param.ltc_unit_param.cm_init_max);
+            addWeight(blobs, m_colWtsAccum, "gleak", rgShape, m_param.ltc_unit_param.gleak_init_min, m_param.ltc_unit_param.gleak_init_max);
+            addWeight(blobs, m_colWtsAccum, "vleak", rgShape, m_param.ltc_unit_param.vleak_init_min, m_param.ltc_unit_param.vleak_init_max);
+            addWeight(blobs, m_colWtsAccum, "cm", rgShape, m_param.ltc_unit_param.cm_init_min, m_param.ltc_unit_param.cm_init_max);
 
             rgShape.Add(nStateSize);
-            addWeight(blobs, "sigma", rgShape, m_param.ltc_unit_param.sigma_init_min, m_param.ltc_unit_param.sigma_init_max);
-            addWeight(blobs, "mu", rgShape, m_param.ltc_unit_param.mu_init_min, m_param.ltc_unit_param.mu_init_max);
-            addWeight(blobs, "w", rgShape, m_param.ltc_unit_param.w_init_min, m_param.ltc_unit_param.w_init_max);
-            addWeight(blobs, "erev", rgShape);
+            addWeight(blobs, m_colWtsAccum, "sigma", rgShape, m_param.ltc_unit_param.sigma_init_min, m_param.ltc_unit_param.sigma_init_max);
+            addWeight(blobs, m_colWtsAccum, "mu", rgShape, m_param.ltc_unit_param.mu_init_min, m_param.ltc_unit_param.mu_init_max);
+            addWeight(blobs, m_colWtsAccum, "w", rgShape, m_param.ltc_unit_param.w_init_min, m_param.ltc_unit_param.w_init_max);
+            addWeight(blobs, m_colWtsAccum, "erev", rgShape);
 
             rgShape[0] = nSensorySize;
-            addWeight(blobs, "sensory_sigma", rgShape, m_param.ltc_unit_param.sensory_sigma_init_min, m_param.ltc_unit_param.sensory_sigma_init_max);
-            addWeight(blobs, "sensory_mu", rgShape, m_param.ltc_unit_param.sensory_mu_init_min, m_param.ltc_unit_param.sensory_mu_init_max);
-            addWeight(blobs, "sensory_w", rgShape, m_param.ltc_unit_param.sensory_w_init_min, m_param.ltc_unit_param.sensory_w_init_max);
-            addWeight(blobs, "sensory_erev", rgShape);
+            addWeight(blobs, m_colWtsAccum, "sensory_sigma", rgShape, m_param.ltc_unit_param.sensory_sigma_init_min, m_param.ltc_unit_param.sensory_sigma_init_max);
+            addWeight(blobs, m_colWtsAccum, "sensory_mu", rgShape, m_param.ltc_unit_param.sensory_mu_init_min, m_param.ltc_unit_param.sensory_mu_init_max);
+            addWeight(blobs, m_colWtsAccum, "sensory_w", rgShape, m_param.ltc_unit_param.sensory_w_init_min, m_param.ltc_unit_param.sensory_w_init_max);
+            addWeight(blobs, m_colWtsAccum, "sensory_erev", rgShape);
 
-            addWeight(blobs, "input_w", nSensorySize, 1.0);
-            addWeight(blobs, "input_b", nSensorySize, 0.0);
+            addWeight(blobs, m_colWtsAccum, "input_w", nSensorySize, 1.0);
+            addWeight(blobs, m_colWtsAccum, "input_b", nSensorySize, 0.0);
 
             m_blobVPre = new Blob<T>(cuda, log);
             m_blobVPre.Name = m_param.name + ".vpre";
@@ -218,10 +219,13 @@ namespace MyCaffe.layers.lnn
             m_sigmoid = Layer<T>.Create(cuda, log, sigmoid_param, null);
         }
 
-        private void addWeight(BlobCollection<T> blobs1, string strName, List<int> rgShape, float fMin, float fMax)
+        private void addWeight(BlobCollection<T> blobs1, BlobCollection<T> blobsAcc, string strName, List<int> rgShape, float fMin, float fMax)
         {
             Blob<T> blob = new Blob<T>(m_cuda, m_log, rgShape);
             blob.Name = strName;
+
+            Blob<T> blobAcc = new Blob<T>(m_cuda, m_log, rgShape, false);
+            blobAcc.Name = strName + "_acc";
 
             FillerParameter fp = new FillerParameter("uniform");
             Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
@@ -230,13 +234,19 @@ namespace MyCaffe.layers.lnn
 
             filler.Fill(blob);
 
+            blobAcc.SetData(0);
+
             blobs1.Add(blob);
+            blobsAcc.Add(blobAcc);
         }
 
-        private void addWeight(BlobCollection<T> blobs1, string strName, List<int> rgShape)
+        private void addWeight(BlobCollection<T> blobs1, BlobCollection<T> blobsAcc, string strName, List<int> rgShape)
         {
             Blob<T> blob = new Blob<T>(m_cuda, m_log, rgShape);
             blob.Name = strName;
+
+            Blob<T> blobAcc = new Blob<T>(m_cuda, m_log, rgShape, false);
+            blobAcc.Name = strName + "_acc";
 
             FillerParameter fp = new FillerParameter("uniform");
             Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
@@ -245,22 +255,31 @@ namespace MyCaffe.layers.lnn
 
             filler.Fill(blob);
 
+            blobAcc.SetData(0);
+
             blobs1.Add(blob);
+            blobsAcc.Add(blobAcc);
         }
 
-        private void addWeight(BlobCollection<T> blobs1, string strName, int nSize, double dfVal)
+        private void addWeight(BlobCollection<T> blobs1, BlobCollection<T> blobsAcc, string strName, int nSize, double dfVal)
         {
             List<int> rgShape = new List<int>() { nSize };
 
             Blob<T> blob = new Blob<T>(m_cuda, m_log, rgShape);
             blob.Name = strName;
 
+            Blob<T> blobAcc = new Blob<T>(m_cuda, m_log, rgShape, false);
+            blobAcc.Name = strName + "_acc";
+
             FillerParameter fp = new FillerParameter("constant", dfVal);
             Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
 
             filler.Fill(blob);
 
+            blobAcc.SetData(0);
+
             blobs1.Add(blob);
+            blobsAcc.Add(blobAcc);
         }
 
         /** @copydoc Layer::dispose */
@@ -360,6 +379,12 @@ namespace MyCaffe.layers.lnn
             {
                 m_colDenominator.Dispose();
                 m_colDenominator = null;
+            }
+
+            if (m_colWtsAccum != null)
+            {
+                m_colWtsAccum.Dispose();
+                m_colWtsAccum = null;
             }
 
             dispose(ref m_sigmoid);
@@ -646,7 +671,14 @@ namespace MyCaffe.layers.lnn
                     if (top.count() == btm2.count())
                         m_cuda.channel_op_fwd(op, nCount, nC, nN1, nSD1, nN2, nSD2, top.gpu_diff, btm1.gpu_data, btm2.mutable_gpu_diff);
                     else
-                        m_cuda.channel_op_fwd(op, nCount, nC, nN1, nSD1, nN2, nSD2, top.gpu_diff, btm1.gpu_data, m_blobWork.mutable_gpu_diff);
+                        m_cuda.channel_op_fwd(op, nCount, nC, nN1, nSD1, nN1, nSD2, top.gpu_diff, btm1.gpu_data, m_blobWork.mutable_gpu_diff);
+                }
+                else if (op == OP.SUB)
+                {
+                    if (top.count() == btm1.count())
+                        m_cuda.scale(top.count(), -1, top.gpu_diff, btm2.mutable_gpu_diff);
+                    else
+                        m_cuda.scale(top.count(), -1, top.gpu_diff, m_blobWork.mutable_gpu_diff);
                 }
                 else
                 {
@@ -741,7 +773,7 @@ namespace MyCaffe.layers.lnn
             addBtmTop(m_blobX, blobTop);
             m_sigmoid.Backward(m_colTop, new List<bool>() { true }, m_colBtm);
 
-            op_bwd(OP.MUL, blobMues, blobSigma, m_blobX, blobMues.channels, blobMues.num, blobMues.count(2), 1, blobSigma.channels);
+            op_bwd_local(OP.MUL, blobMues, blobSigma, m_blobX, blobMues.channels, blobMues.num, blobMues.count(2), 1, blobSigma.channels);
             op_bwd(OP.SUB, blobPre, blobMu, blobMues, blobPre.channels, blobPre.num, blobPre.count(2), 1, blobMu.channels);
         }
 
@@ -832,6 +864,16 @@ namespace MyCaffe.layers.lnn
             blobTop.CopyFrom(m_blobVPre);
         }
 
+        private void accumulateGrad(BlobCollection<T> src, BlobCollection<T> dst, WEIGHT wt)
+        {
+            m_cuda.add(dst[(int)wt].count(), src[(int)wt].gpu_diff, dst[(int)wt].gpu_data, dst[(int)wt].mutable_gpu_data);
+        }
+
+        private void copyGrad(BlobCollection<T> src, BlobCollection<T> dst, WEIGHT wt)
+        {
+            m_cuda.copy(dst[(int)wt].count(), src[(int)wt].gpu_data, dst[(int)wt].mutable_gpu_diff);
+        }
+
         private void ode_solver_bwd(BlobCollection<T> colBtm, BlobCollection<T> colTop)
         {
             Blob<T> blobInputs = colBtm[0];
@@ -860,12 +902,16 @@ namespace MyCaffe.layers.lnn
                 // Compute the denominator
                 op_bwd(OP.ADD, m_colDenominator[t], m_colDenominatorW[t], m_colDenominator[t]);
                 op_bwd(OP.ADD, m_colCmt[t], blobs[(int)WEIGHT.GLEAK], m_colDenominator[t], nSD, nN, 1, 1, 1);
+                accumulateGrad(blobs, m_colWtsAccum, WEIGHT.GLEAK);
                 m_cuda.add(m_blobCmt.count(), m_colCmt[t].gpu_diff, m_blobCmt.gpu_diff, m_blobCmt.mutable_gpu_diff);
 
                 // Compute the numerator
                 op_bwd(OP.ADD, m_colNumerator[t], m_colNumeratorW[t], m_colNumerator[t]);
                 op_bwd(OP.ADD, m_colNumerator1[t], m_colNumerator2[t], m_colNumerator[t], nSD, nN, 1, 1, 1);
                 op_bwd(OP.MUL, blobs[(int)WEIGHT.GLEAK], blobs[(int)WEIGHT.VLEAK], m_colNumerator2[t], nSD, 1, 1, 1, 1);
+                accumulateGrad(blobs, m_colWtsAccum, WEIGHT.GLEAK);
+                accumulateGrad(blobs, m_colWtsAccum, WEIGHT.VLEAK);
+
                 op_bwd(OP.MUL, m_colCmt[t], m_colVPre[t], m_colNumerator1[t]);
                 m_cuda.add(m_blobCmt.count(), m_colCmt[t].gpu_diff, m_blobCmt.gpu_diff, m_blobCmt.mutable_gpu_diff);
                 m_cuda.add(m_blobVPre.count(), m_colVPre[t].gpu_diff, m_blobVPre.gpu_diff, m_blobVPre.mutable_gpu_diff);
@@ -881,19 +927,31 @@ namespace MyCaffe.layers.lnn
                 m_cuda.channel_sum(m_colActivationW1[t].count(), m_colActivationW1[t].num, m_colActivationW1[t].channels, m_colActivationW1[t].count(2), m_colActivationW1[t].mutable_gpu_diff, m_colDenominatorW[t].gpu_diff, true, DIR.BWD);
 
                 // Compute the Rev activation
-                op_bwd(OP.MUL, m_colActivationW[t], blobs[(int)WEIGHT.EREV], m_colActivationRev[t], nSD, nN, nSD, 1, nSD);
+                op_bwd_local(OP.MUL, m_colActivationW[t], blobs[(int)WEIGHT.EREV], m_colActivationRev[t], nSD, nN, nSD, 1, nSD);
+                accumulateGrad(blobs, m_colWtsAccum, WEIGHT.EREV);
                 // Accumulate the gradient
                 m_cuda.add(m_colActivationW[t].count(), m_colActivationW1[t].gpu_diff, m_colActivationW[t].gpu_diff, m_colActivationW1[t].mutable_gpu_diff);
 
                 // Compute the W activation
-                op_bwd(OP.MUL, m_colSigmoidW[t], blobs[(int)WEIGHT.W], m_colActivationW1[t], nSD, nN, nSD, 1, nSD);
+                op_bwd_local(OP.MUL, m_colSigmoidW[t], blobs[(int)WEIGHT.W], m_colActivationW1[t], nSD, nN, nSD, 1, nSD);
+                accumulateGrad(blobs, m_colWtsAccum, WEIGHT.W);
 
                 addBtmTop(m_colVPre[t], m_colSigmoidW[t]);
                 m_colBtm.Add(blobs[(int)WEIGHT.MU]);
                 m_colBtm.Add(blobs[(int)WEIGHT.SIGMA]);
                 sigmoid_bwd(m_colBtm, m_colTop, t);
+
                 m_cuda.add(m_blobVPre.count(), m_colVPre[t].gpu_diff, m_blobVPre.gpu_diff, m_blobVPre.mutable_gpu_diff);
+                accumulateGrad(blobs, m_colWtsAccum, WEIGHT.MU);
+                accumulateGrad(blobs, m_colWtsAccum, WEIGHT.SIGMA);
             }
+
+            copyGrad(m_colWtsAccum, blobs, WEIGHT.GLEAK);
+            copyGrad(m_colWtsAccum, blobs, WEIGHT.VLEAK);
+            copyGrad(m_colWtsAccum, blobs, WEIGHT.EREV);
+            copyGrad(m_colWtsAccum, blobs, WEIGHT.W);
+            copyGrad(m_colWtsAccum, blobs, WEIGHT.MU);
+            copyGrad(m_colWtsAccum, blobs, WEIGHT.SIGMA);
 
             m_cuda.debug();
             // cm/t is loop invariant, so we can compute it once here.
