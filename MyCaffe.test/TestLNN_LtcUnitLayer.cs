@@ -243,7 +243,7 @@ namespace MyCaffe.test
         }
 
         /// <summary>
-        /// Test LtcUnit backward
+        /// WORK IN PROGRESS - Test LtcUnit backward
         /// </summary>
         /// <remarks>
         /// To generate the test data, run the following:
