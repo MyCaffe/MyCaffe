@@ -184,6 +184,7 @@ class Math
 		long asum(int n, long hX, T* pOut, int nXOff = 0);
 		long asum(int n, T* x, T* pOut);
 		long scale(int n, T fAlpha, long hX, long hY, int nXOff = 0, int nYOff = 0);
+		long scale(int n, T fAlpha, const T* x, T* y);
 		long scale_to_range(int n, long hX, long hY, T fMin, T fMax);
 		long erf(T fVal, T* fResult);
 		long mask(int n, int nMaskDim, T fSearch, T fReplace, long hX, long hMask, long hY);

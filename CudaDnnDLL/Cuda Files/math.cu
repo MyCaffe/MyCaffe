@@ -2636,6 +2636,7 @@ long Math<float>::scale(int n, float fAlpha, long hX, long hY, int nXOff, int nY
 	return cudaStreamSynchronize(stream);
 }
 
+
 template <typename T>
 __global__ void scale_to_range_kernel(const int n, const T* x, T* y, const T fMinOriginal, const T fMin, const T fScale)
 {
@@ -7222,16 +7223,22 @@ long Math<T>::channel_op_bwd(int nOp, int n, int nC, int nN1, int nSD1, int nN2,
 				if (nCount == nBCount)
 					channel_op_mul_fwd_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nC, nN1, nSD1, nN2, nSD2, yd, a, bd);
 				else
-					channel_op_mul_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nC, nN1, nSD1, nN2, nSD2, yd, a, work);
+					channel_op_mul_fwd_kernel1<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nC, nN1, nSD1, nN1, nSD2, yd, a, work);
 				lErr = cudaStreamSynchronize(0);
 				break;
 
-			case CHANNEL_OP_ADD:
+			case CHANNEL_OP_ADD:			
 			case CHANNEL_OP_SUB:
-				if (nCount == nBCount)
-					lErr = cudaMemcpy(bd, yd, sizeof(T) * nCount, cudaMemcpyDeviceToDevice);
-				else
-					lErr = cudaMemcpy(work, yd, sizeof(T) * nCount, cudaMemcpyDeviceToDevice);
+				T* dst = (nCount == nBCount) ? bd : work;
+
+				if (lErr = cudaMemcpy(dst, yd, sizeof(T) * nCount, cudaMemcpyDeviceToDevice))
+					return lErr | ERROR_CUBLAS_OFFSET;
+
+				if (nOp == CHANNEL_OP_SUB)
+				{
+					if (lErr = scal(nCount, (T)-1.0, dst))
+						return lErr | ERROR_CUBLAS_OFFSET;
+				}
 				break;
 		}
 
