@@ -1088,12 +1088,13 @@ namespace MyCaffe.common
         /// <param name="bZeroCheck">Optionally, specifies to check for all zeros (default = false).</param>
         /// <param name="bFullCompare">Optionally, compare each item individually (default = false).</param>
         /// <param name="bDetectNans">Optionally, detect NAN's (default = true).</param>
+        /// <param name="bForceOtherData">Optionally, force using the other blobs data even when bDiff = true.</param>
         /// <returns>If all data (or diff) values fall within the tolerance, true is returned, otherwise false.</returns>
-        public bool Compare(Blob<T> other, Blob<T> work, bool bDiff = false, double dfTol = 1e-8, bool bZeroCheck = true, bool bFullCompare = false, bool bDetectNans = true)
+        public bool Compare(Blob<T> other, Blob<T> work, bool bDiff = false, double dfTol = 1e-8, bool bZeroCheck = true, bool bFullCompare = false, bool bDetectNans = true, bool bForceOtherData = false)
         {
             double dfMin;
             double dfMax;
-            return CompareEx(other, work, out dfMin, out dfMax, bDiff, dfTol, bZeroCheck, bFullCompare, bDetectNans);
+            return CompareEx(other, work, out dfMin, out dfMax, bDiff, dfTol, bZeroCheck, bFullCompare, bDetectNans, bForceOtherData);
         }
 
         /// <summary>
@@ -1108,8 +1109,9 @@ namespace MyCaffe.common
         /// <param name="bZeroCheck">Optionally, specifies to check for all zeros (default = false).</param>
         /// <param name="bFullCompare">Optionally, compare each item individually (default = false).</param>
         /// <param name="bDetectNans">Optionally, detect NAN's (default = true).</param>
+        /// <param name="bForceOtherData">Optionally, force using the other blobs data even when bDiff = true.</param>
         /// <returns>If all data (or diff) values fall within the tolerance, true is returned, otherwise false.</returns>
-        public bool CompareEx(Blob<T> other, Blob<T> work, out double dfMin, out double dfMax, bool bDiff = false, double dfTol = 1e-8, bool bZeroCheck = true, bool bFullCompare = false, bool bDetectNans = true)
+        public bool CompareEx(Blob<T> other, Blob<T> work, out double dfMin, out double dfMax, bool bDiff = false, double dfTol = 1e-8, bool bZeroCheck = true, bool bFullCompare = false, bool bDetectNans = true, bool bForceOtherData = false)
         {
             dfMin = -1;
             dfMax = -1;
@@ -1130,7 +1132,7 @@ namespace MyCaffe.common
             work.ReshapeLike(this);
 
             long h1 = (bDiff) ? gpu_diff : gpu_data;
-            long h2 = (bDiff) ? other.gpu_diff : other.gpu_data;
+            long h2 = (bDiff && !bForceOtherData) ? other.gpu_diff : other.gpu_data;
             long lPos;
 
             m_cuda.sub(nCount, h1, h2, work.mutable_gpu_data);
