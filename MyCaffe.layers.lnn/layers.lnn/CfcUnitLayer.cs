@@ -286,6 +286,7 @@ namespace MyCaffe.layers.lnn
         /// <param name="blobX">Specifies the input x data.</param>
         /// <param name="blobTop1">Specifies the top1 data.</param>
         /// <param name="blobTop2">Specifies the top2 data.</param>
+        /// <param name="colLin">Specifies the collection of linear blobs.</param>
         public void SetInternalBlobs(Blob<T> blobFF1, Blob<T> blobFF2, Blob<T> blobTimeA, Blob<T> blobTimeB, Blob<T> blobTInterp, Blob<T> blobTInterp1, Blob<T> blobTInterpInv, Blob<T> blobTs, Blob<T> blobX, Blob<T> blobTop1, Blob<T> blobTop2, BlobCollection<T> colLin)
         {
             m_bOwnInternalBlobs = false;
