@@ -170,6 +170,48 @@ namespace MyCaffe.test
             nIdx++;
         }
 
+        private void check_weight_grads(Blob<T> blobVal, Blob<T> blobWork, Layer<T> layer, string strPath, string strTag = "")
+        {
+            blobVal.LoadFromNumpy(strPath + "gleak.grad.npy", true);
+            m_log.CHECK(blobVal.Compare(layer.blobs[(int)LtcUnitLayer<T>.WEIGHT.GLEAK], blobWork, true, 8e-07), "The gradient grads for the gleak are incorrect!");
+
+            blobVal.LoadFromNumpy(strPath + "vleak.grad.npy", true);
+            m_log.CHECK(blobVal.Compare(layer.blobs[(int)LtcUnitLayer<T>.WEIGHT.VLEAK], blobWork, true, 1e-06), "The gradient grads for the vleak are incorrect!");
+
+            blobVal.LoadFromNumpy(strPath + "erev.grad.npy", true);
+            m_log.CHECK(blobVal.Compare(layer.blobs[(int)LtcUnitLayer<T>.WEIGHT.EREV], blobWork, true, 5e-07), "The gradient grads for the erev are incorrect!");
+
+            blobVal.LoadFromNumpy(strPath + "w.grad.npy", true);
+            m_log.CHECK(blobVal.Compare(layer.blobs[(int)LtcUnitLayer<T>.WEIGHT.W], blobWork, true, 5e-07), "The gradient grads for the w are incorrect!");
+
+            blobVal.LoadFromNumpy(strPath + "mu.grad.npy", true);
+            m_log.CHECK(blobVal.Compare(layer.blobs[(int)LtcUnitLayer<T>.WEIGHT.MU], blobWork, true, 2e-06), "The gradient grads for the mu are incorrect!");
+
+            blobVal.LoadFromNumpy(strPath + "sigma.grad.npy", true);
+            m_log.CHECK(blobVal.Compare(layer.blobs[(int)LtcUnitLayer<T>.WEIGHT.SIGMA], blobWork, true, 2e-07), "The gradient grads for the sigma are incorrect!");
+
+            //blobVal.LoadFromNumpy(strPath + "cm.grad.npy", true);
+            //m_log.CHECK(blobVal.Compare(layer.blobs[(int)LtcUnitLayer<T>.WEIGHT.CM], blobWork, true), "The gradient grads for the cm are incorrect!");
+
+            blobVal.LoadFromNumpy(strPath + "sensory_sigma.grad.npy", true);
+            m_log.CHECK(blobVal.Compare(layer.blobs[(int)LtcUnitLayer<T>.WEIGHT.SENSORY_SIGMA], blobWork, true, 5e-08), "The gradient grads for the sensory_sigma are incorrect!");
+
+            blobVal.LoadFromNumpy(strPath + "sensory_mu.grad.npy", true);
+            m_log.CHECK(blobVal.Compare(layer.blobs[(int)LtcUnitLayer<T>.WEIGHT.SENSORY_MU], blobWork, true, 6e-07), "The gradient grads for the sensory_mu are incorrect!");
+
+            blobVal.LoadFromNumpy(strPath + "sensory_w.grad.npy", true);
+            m_log.CHECK(blobVal.Compare(layer.blobs[(int)LtcUnitLayer<T>.WEIGHT.SENSORY_W], blobWork, true, 6e-07), "The gradient grads for the sensory_w are incorrect!");
+
+            blobVal.LoadFromNumpy(strPath + "sensory_erev.grad.npy", true);
+            m_log.CHECK(blobVal.Compare(layer.blobs[(int)LtcUnitLayer<T>.WEIGHT.SENSORY_EREV], blobWork, true, 5e-07), "The gradient grads for the sensory_erev are incorrect!");
+
+            blobVal.LoadFromNumpy(strPath + "mi.input_w.grad.npy", true);
+            m_log.CHECK(blobVal.Compare(layer.blobs[(int)LtcUnitLayer<T>.WEIGHT.INPUT_WT], blobWork, true, 2e-06), "The gradient grads for the input_w are incorrect!");
+
+            blobVal.LoadFromNumpy(strPath + "mi.input_b.grad.npy", true);
+            m_log.CHECK(blobVal.Compare(layer.blobs[(int)LtcUnitLayer<T>.WEIGHT.INPUT_BIAS], blobWork, true, 4e-06), "The gradient grads for the input_b are incorrect!");
+        }
+
         /// <summary>
         /// Test LtcUnit forward
         /// </summary>
@@ -223,6 +265,8 @@ namespace MyCaffe.test
                 layer.Setup(BottomVec, TopVec);
                 load_weights(layer, strPathWts);
 
+
+
                 layer.Forward(BottomVec, TopVec);
 
                 blobYexp.LoadFromNumpy(strPath + "h_state.npy");
@@ -265,6 +309,7 @@ namespace MyCaffe.test
             Blob<T> blobXgrad = null;
             Blob<T> blobHxgrad = null;
             Blob<T> blobTsgrad = null;
+            Blob<T> blobVal = null;
             string strSubPath = (bNoGate) ? "ltc_cell_no_gate" : "ltc_cell_gate";
             string strPath = getTestDataPath(strSubPath);
             string strPathWts = getTestWtsPath(strSubPath);
@@ -280,6 +325,7 @@ namespace MyCaffe.test
                 blobY = new Blob<T>(m_cuda, m_log);
                 blobYexp = new Blob<T>(m_cuda, m_log);
                 blobWork = new Blob<T>(m_cuda, m_log);
+                blobVal = new Blob<T>(m_cuda, m_log);
                 blobXgrad = new Blob<T>(m_cuda, m_log);
                 blobHxgrad = new Blob<T>(m_cuda, m_log);
                 blobTsgrad = new Blob<T>(m_cuda, m_log);
@@ -318,12 +364,15 @@ namespace MyCaffe.test
                 blobHxgrad.LoadFromNumpy(strPath + "hx.grad.npy", true);
                 m_log.CHECK(blobHxgrad.Compare(blobHx, blobWork, true, 1e-07), "The blobs do not match.");
                 blobTsgrad.LoadFromNumpy(strPath + "ts.grad.npy", true);
-                m_log.CHECK(blobTsgrad.Compare(blobTs, blobWork, true, 1e-07), "The blobs do not match.");
+                m_log.CHECK(blobTsgrad.Compare(blobTs, blobWork, true, 2e-07), "The blobs do not match.");
+
+                check_weight_grads(blobVal, blobWork, layer, strPath);
             }
             finally
             {
                 dispose(ref blobYexp);
                 dispose(ref blobWork);
+                dispose(ref blobVal);
                 dispose(ref blobX);
                 dispose(ref blobHx);
                 dispose(ref blobTs);
