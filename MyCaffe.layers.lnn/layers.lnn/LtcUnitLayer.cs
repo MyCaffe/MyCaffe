@@ -531,7 +531,7 @@ namespace MyCaffe.layers.lnn
         }
 
         /// <summary>
-        /// WORK IN PROGRESS Computes the error gradient w.r.t. the LtcUnit value inputs.
+        /// Computes the error gradient w.r.t. the LtcUnit value inputs.
         /// </summary>
         /// <param name="colTop">top output blob vector (length 1), providing the error gradient
         /// with respect to outputs
@@ -774,7 +774,7 @@ namespace MyCaffe.layers.lnn
             m_sigmoid.Backward(m_colTop, new List<bool>() { true }, m_colBtm);
 
             op_bwd_local(OP.MUL, blobMues, blobSigma, m_blobX, blobMues.channels, blobMues.num, blobMues.count(2), 1, blobSigma.channels);
-            op_bwd(OP.SUB, blobPre, blobMu, blobMues, blobPre.channels, blobPre.num, blobPre.count(2), 1, blobMu.channels);
+            op_bwd_local(OP.SUB, blobPre, blobMu, blobMues, blobPre.channels, blobPre.num, blobPre.count(2), 1, blobMu.channels);
         }
 
 
@@ -893,9 +893,9 @@ namespace MyCaffe.layers.lnn
             {
                 // Compute the output
                 if (t == m_param.ltc_unit_param.ode_unfolds - 1)
-                    op_bwd(OP.DIV, m_colNumerator[t], m_colDenominator[t], colTop[0]);
+                    op_bwd_local(OP.DIV, m_colNumerator[t], m_colDenominator[t], colTop[0]);
                 else
-                    op_bwd(OP.DIV, m_colNumerator[t], m_colDenominator[t], m_blobVPre);
+                    op_bwd_local(OP.DIV, m_colNumerator[t], m_colDenominator[t], m_blobVPre);
 
                 m_blobVPre.SetDiff(0);
 
@@ -964,10 +964,9 @@ namespace MyCaffe.layers.lnn
             m_cuda.channel_sum(m_blobSensoryActivationW1.count(), m_blobSensoryActivationW1.num, m_blobSensoryActivationW1.channels, m_blobSensoryActivationW1.count(2), m_blobSensoryActivationW1.gpu_diff, m_blobSensoryDenominatorW.mutable_gpu_diff, true, DIR.BWD, 1);
 
             // Pre-compute the effect of the sensory inputs.
-            op_bwd(OP.MUL, m_blobSensoryActivationW, blobs[(int)WEIGHT.SENSORY_EREV], m_blobSensoryActivationRev, nC, nN, nSD, 1, nSD);
+            op_bwd_local(OP.MUL, m_blobSensoryActivationW, blobs[(int)WEIGHT.SENSORY_EREV], m_blobSensoryActivationRev, nC, nN, nSD, 1, nSD);
             m_cuda.add(m_blobSensoryActivationW.count(), m_blobSensoryActivationW.gpu_diff, m_blobSensoryActivationW1.gpu_diff, m_blobSensoryActivationW.mutable_gpu_diff);
-
-            op_bwd(OP.MUL, m_blobSensorySigmoidW, blobs[(int)WEIGHT.SENSORY_W], m_blobSensoryActivationW, nC, nN, nSD, 1, nSD);
+            op_bwd_local(OP.MUL, m_blobSensorySigmoidW, blobs[(int)WEIGHT.SENSORY_W], m_blobSensoryActivationW, nC, nN, nSD, 1, nSD);
 
             addBtmTop(blobInputs, m_blobSensorySigmoidW);
             m_colBtm.Add(blobs[(int)WEIGHT.SENSORY_MU]);
