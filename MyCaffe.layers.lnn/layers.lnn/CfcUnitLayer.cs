@@ -38,7 +38,6 @@ namespace MyCaffe.layers.lnn
         Layer<T> m_ff2;
         Layer<T> m_timeA;
         Layer<T> m_timeB;
-        bool m_bOwnInternalBlobs = true;
         Blob<T> m_blobFF1;
         Blob<T> m_blobFF2;
         Blob<T> m_blobTimeA;
@@ -243,24 +242,7 @@ namespace MyCaffe.layers.lnn
             }
 
             if (m_bOwnInternalBlobs)
-            {
-                dispose(ref m_rgLinearBtms);
-                dispose(ref m_rgLinearTops);
-                dispose(ref m_rgActivationBtms);
-                dispose(ref m_rgActivationTops);
-
-                dispose(ref m_blobFF1);
-                dispose(ref m_blobFF2);
-                dispose(ref m_blobTimeA);
-                dispose(ref m_blobTimeB);
-                dispose(ref m_blobTInterp);
-                dispose(ref m_blobTInterp1);
-                dispose(ref m_blobTInterpInv);
-                dispose(ref m_blobTs);
-                dispose(ref m_blobX);
-                dispose(ref m_blobTop1);
-                dispose(ref m_blobTop2);
-            }
+                dispose_internal_blobs();
 
             dispose(ref m_blobTInterpOnes);
 
@@ -273,16 +255,41 @@ namespace MyCaffe.layers.lnn
             dispose(ref m_timeB);
         }
 
+        private void dispose_internal_blobs()
+        {
+            dispose(ref m_rgLinearBtms);
+            dispose(ref m_rgLinearTops);
+            dispose(ref m_rgActivationBtms);
+            dispose(ref m_rgActivationTops);
+
+            dispose(ref m_blobFF1);
+            dispose(ref m_blobFF2);
+            dispose(ref m_blobTimeA);
+            dispose(ref m_blobTimeB);
+            dispose(ref m_blobTInterp);
+            dispose(ref m_blobTInterp1);
+            dispose(ref m_blobTInterpInv);
+            dispose(ref m_blobTs);
+            dispose(ref m_blobX);
+            dispose(ref m_blobTop1);
+            dispose(ref m_blobTop2);
+        }
+
         /// <summary>
-        /// Create the internal blobs used by the layer for a given index.
+        /// Create the internal shared blobs used by the layer for a given index.
         /// </summary>
         /// <param name="nIdx">Specifies the index.</param>
         /// <param name="cuda">Specifies the underlying CudaDnn low-level DLL.</param>
         /// <param name="log">Specifies the log.</param>
         /// <returns>The collection of created blobs is returned.</returns>
-        public override BlobCollection<T> CreateInternalBlobs(int nIdx, CudaDnn<T> cuda, Log log)
+        /// <remarks>
+        /// Note when creating shared blobs, existing internal blobs are disposed.
+        /// </remarks>
+        public override BlobCollection<T> CreateInternalSharedBlobs(int nIdx, CudaDnn<T> cuda, Log log)
         { 
             BlobCollection<T> col = new BlobCollection<T>();
+
+            dispose_internal_blobs();
 
             Blob<T> blobFF1 = new Blob<T>(cuda, log);
             blobFF1.Name = "ff1_" + nIdx.ToString();
@@ -347,10 +354,10 @@ namespace MyCaffe.layers.lnn
         }
 
         /// <summary>
-        /// Set the internal blobs to a set of external blobs.
+        /// Set the internal shared blobs to a set of external blobs.
         /// </summary>
         /// <param name="col">Specifies the blob collection created using CreateInternalBlobs.</param>
-        public override void SetInternalBlobs(BlobCollection<T> col)
+        public override void SetInternalSharedBlobs(BlobCollection<T> col)
         {
             int nIdx = 0;
 
