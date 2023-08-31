@@ -290,10 +290,11 @@ namespace MyCaffe.layers.lnn
             if (m_bOwnInternalBlobs)
                 dispose_internal_blobs();
 
+            dispose(ref m_colWtsAccum);
             dispose(ref m_sigmoid);
         }
 
-        private void dispose_internal_blobs()
+        private void dispose_internal_blobs(bool bSetToNull = true)
         {
             dispose(ref m_blobVPre);
             dispose(ref m_blobInputs);
@@ -311,20 +312,19 @@ namespace MyCaffe.layers.lnn
             dispose(ref m_blobTs);
             dispose(ref m_blobWork);
 
-            dispose(ref m_colVPre);
-            dispose(ref m_colCmt);
-            dispose(ref m_colMues);
-            dispose(ref m_colSigmoidW);
-            dispose(ref m_colActivationW);
-            dispose(ref m_colActivationW1);
-            dispose(ref m_colActivationRev);
-            dispose(ref m_colNumeratorW);
-            dispose(ref m_colDenominatorW);
-            dispose(ref m_colNumerator);
-            dispose(ref m_colNumerator1);
-            dispose(ref m_colNumerator2);
-            dispose(ref m_colDenominator);
-            dispose(ref m_colWtsAccum);
+            dispose(ref m_colVPre, bSetToNull);
+            dispose(ref m_colCmt, bSetToNull);
+            dispose(ref m_colMues, bSetToNull);
+            dispose(ref m_colSigmoidW, bSetToNull);
+            dispose(ref m_colActivationW, bSetToNull);
+            dispose(ref m_colActivationW1, bSetToNull);
+            dispose(ref m_colActivationRev, bSetToNull);
+            dispose(ref m_colNumeratorW, bSetToNull);
+            dispose(ref m_colDenominatorW, bSetToNull);
+            dispose(ref m_colNumerator, bSetToNull);
+            dispose(ref m_colNumerator1, bSetToNull);
+            dispose(ref m_colNumerator2, bSetToNull);
+            dispose(ref m_colDenominator, bSetToNull);
         }
 
         /// <summary>
@@ -341,7 +341,7 @@ namespace MyCaffe.layers.lnn
         {
             BlobCollection<T> col = new BlobCollection<T>();
 
-            dispose_internal_blobs();
+            dispose_internal_blobs(false);
 
             Blob<T> blobVPre = new Blob<T>(cuda, log);
             blobVPre.Name = m_param.name + ".vpre";
@@ -1062,6 +1062,11 @@ namespace MyCaffe.layers.lnn
             int nCount = blobInputs.count();
 
             m_blobCmt.SetDiff(0);
+
+            foreach (Blob<T> blob in m_colWtsAccum)
+            {
+                blob.SetDiff(0);
+            }
 
             // Unfold the multi-step ODE solver into one RNN step.
             for (int t = m_param.ltc_unit_param.ode_unfolds-1; t >= 0; t--)
