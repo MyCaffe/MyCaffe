@@ -21,7 +21,7 @@ namespace MyCaffe.layers.lnn
     /// @see [Closed-form Continuous-time Neural Models](https://arxiv.org/abs/2106.13898) by Ramin Hasani, Mathias Lechner, Alexander Amini, Lucas Liebenwein, Aaron Ray, Max Tschaikowski, Gerald Teschl, Daniela Rus, 2021, arXiv 2106.13898
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
-    public class LtcUnitLayer<T> : Layer<T>
+    public class LtcUnitLayer<T> : LnnUnitLayer<T>
     {
         Blob<T> m_blobInputs = null;
         Blob<T> m_blobMues = null;
@@ -287,6 +287,14 @@ namespace MyCaffe.layers.lnn
         {
             base.dispose();
 
+            if (m_bOwnInternalBlobs)
+                dispose_internal_blobs();
+
+            dispose(ref m_sigmoid);
+        }
+
+        private void dispose_internal_blobs()
+        {
             dispose(ref m_blobVPre);
             dispose(ref m_blobInputs);
             dispose(ref m_blobMues);
@@ -303,99 +311,266 @@ namespace MyCaffe.layers.lnn
             dispose(ref m_blobTs);
             dispose(ref m_blobWork);
 
-            if (m_colVPre != null)
-            {
-                m_colVPre.Dispose();
-                m_colVPre = null;
-            }
-
-            if (m_colCmt != null)
-            {
-                m_colCmt.Dispose();
-                m_colCmt = null;
-            }
-
-            if (m_colMues != null)
-            {
-                m_colMues.Dispose();
-                m_colMues = null;
-            }
-
-            if (m_colSigmoidW != null)
-            {
-                m_colSigmoidW.Dispose();
-                m_colSigmoidW = null;
-            }
-
-            if (m_colActivationW != null)
-            {
-                m_colActivationW.Dispose();
-                m_colActivationW = null;
-            }
-
-            if (m_colActivationW1 != null)
-            {
-                m_colActivationW1.Dispose();
-                m_colActivationW1 = null;
-            }
-
-            if (m_colActivationRev != null)
-            {
-                m_colActivationRev.Dispose();
-                m_colActivationRev = null;
-            }
-
-            if (m_colNumeratorW != null)
-            {
-                m_colNumeratorW.Dispose();
-                m_colNumeratorW = null;
-            }
-
-            if (m_colDenominatorW != null)
-            {
-                m_colDenominatorW.Dispose();
-                m_colDenominatorW = null;
-            }
-
-            if (m_colNumerator != null)
-            {
-                m_colNumerator.Dispose();
-                m_colNumerator = null;
-            }
-
-            if (m_colNumerator1 != null)
-            {
-                m_colNumerator1.Dispose();
-                m_colNumerator1 = null;
-            }
-
-            if (m_colNumerator2 != null)
-            {
-                m_colNumerator2.Dispose();
-                m_colNumerator2 = null;
-            }
-
-            if (m_colDenominator != null)
-            {
-                m_colDenominator.Dispose();
-                m_colDenominator = null;
-            }
-
-            if (m_colWtsAccum != null)
-            {
-                m_colWtsAccum.Dispose();
-                m_colWtsAccum = null;
-            }
-
-            dispose(ref m_sigmoid);
+            dispose(ref m_colVPre);
+            dispose(ref m_colCmt);
+            dispose(ref m_colMues);
+            dispose(ref m_colSigmoidW);
+            dispose(ref m_colActivationW);
+            dispose(ref m_colActivationW1);
+            dispose(ref m_colActivationRev);
+            dispose(ref m_colNumeratorW);
+            dispose(ref m_colDenominatorW);
+            dispose(ref m_colNumerator);
+            dispose(ref m_colNumerator1);
+            dispose(ref m_colNumerator2);
+            dispose(ref m_colDenominator);
+            dispose(ref m_colWtsAccum);
         }
 
         /// <summary>
-        /// Set the internal blobs to a set of external blobs.
+        /// Create the internal shared blobs used by the layer for a given index.
         /// </summary>
-        /// <param name="blobs1">Specifies internal weight blobs.</param>
-        public void SetInternalBlobs(BlobCollection<T> blobs1)
+        /// <param name="nIdx">Specifies the index.</param>
+        /// <param name="cuda">Specifies the underlying CudaDnn low-level DLL.</param>
+        /// <param name="log">Specifies the log.</param>
+        /// <returns>The collection of created blobs is returned.</returns>
+        /// <remarks>
+        /// Note when creating shared blobs, existing internal blobs are disposed.
+        /// </remarks>
+        public override BlobCollection<T> CreateInternalSharedBlobs(int nIdx, CudaDnn<T> cuda, Log log)
         {
+            BlobCollection<T> col = new BlobCollection<T>();
+
+            dispose_internal_blobs();
+
+            Blob<T> blobVPre = new Blob<T>(cuda, log);
+            blobVPre.Name = m_param.name + ".vpre";
+            col.Add(blobVPre);
+
+            Blob<T> blobWork = new Blob<T>(cuda, log);
+            blobWork.Name = m_param.name + ".work";
+            col.Add(blobWork);
+
+            Blob<T> blobInputs = new Blob<T>(m_cuda, m_log);
+            blobInputs.Name = m_param.name + ".inputs";
+            col.Add(blobInputs);
+
+            Blob<T> blobMues = new Blob<T>(m_cuda, m_log);
+            blobMues.Name = m_param.name + ".mues";
+            col.Add(blobMues);
+
+            Blob<T> blobX = new Blob<T>(m_cuda, m_log);
+            blobX.Name = m_param.name + ".x";
+            col.Add(blobX);
+
+            Blob<T> blobSensorySigmoidW = new Blob<T>(m_cuda, m_log);
+            blobSensorySigmoidW.Name = m_param.name + ".sensory_sigmoid_w";
+            col.Add(blobSensorySigmoidW);
+
+            Blob<T> blobSensoryActivationW = new Blob<T>(m_cuda, m_log);
+            blobSensoryActivationW.Name = m_param.name + ".sensory_activation_w";
+            col.Add(blobSensoryActivationW);
+
+            Blob<T> blobSensoryActivationW1 = new Blob<T>(m_cuda, m_log);
+            blobSensoryActivationW1.Name = m_param.name + ".sensory_activation_w1";
+            col.Add(blobSensoryActivationW1);
+
+            Blob<T> blobSensoryActivationRev = new Blob<T>(m_cuda, m_log);
+            blobSensoryActivationRev.Name = m_param.name + ".sensory_activation_erev";
+            col.Add(blobSensoryActivationRev);
+
+            Blob<T> blobSensoryNumeratorW = new Blob<T>(m_cuda, m_log);
+            blobSensoryNumeratorW.Name = m_param.name + ".sensory_numerator_w";
+            col.Add(blobSensoryNumeratorW);
+
+            Blob<T> blobSensoryDenominatorW = new Blob<T>(m_cuda, m_log);
+            blobSensoryDenominatorW.Name = m_param.name + ".sensory_denominator_w";
+            col.Add(blobSensoryDenominatorW);
+
+            Blob<T> blobSensoryNumeratorW1 = new Blob<T>(m_cuda, m_log);
+            blobSensoryNumeratorW1.Name = m_param.name + ".sensory_numerator_w1";
+            col.Add(blobSensoryNumeratorW1);
+
+            Blob<T> blobSensoryDenominatorW1 = new Blob<T>(m_cuda, m_log);
+            blobSensoryDenominatorW1.Name = m_param.name + ".sensory_denominator_w1";
+            col.Add(blobSensoryDenominatorW1);
+
+            Blob<T> blobCmt = new Blob<T>(m_cuda, m_log);
+            blobCmt.Name = m_param.name + ".cm_t";
+            col.Add(blobCmt);
+
+            Blob<T> blobTs = new Blob<T>(m_cuda, m_log);
+            blobTs.Name = m_param.name + ".ts";
+            col.Add(blobTs);
+
+            for (int i = 0; i < m_param.ltc_unit_param.ode_unfolds; i++)
+            {
+                Blob<T> blobVPre_a = new Blob<T>(cuda, log);
+                blobVPre_a.Name = m_param.name + ".vpre." + i.ToString();
+                col.Add(blobVPre_a);
+
+                Blob<T> blobCmt_a = new Blob<T>(cuda, log);
+                blobCmt_a.Name = m_param.name + ".cmt." + i.ToString();
+                col.Add(blobCmt_a);
+
+                Blob<T> blobMues_a = new Blob<T>(cuda, log);
+                blobMues_a.Name = m_param.name + ".mues." + i.ToString();
+                col.Add(blobMues_a);
+
+                Blob<T> blobSigmoidW_a = new Blob<T>(cuda, log);
+                blobSigmoidW_a.Name = m_param.name + ".sigmoid_w." + i.ToString();
+                col.Add(blobSigmoidW_a);
+
+                Blob<T> blobActivationW_a = new Blob<T>(cuda, log);
+                blobActivationW_a.Name = m_param.name + ".activation_w." + i.ToString();
+                col.Add(blobActivationW_a);
+
+                Blob<T> blobActivationW1_a = new Blob<T>(cuda, log);
+                blobActivationW1_a.Name = m_param.name + ".activation_w1." + i.ToString();
+                col.Add(blobActivationW1_a);
+
+                Blob<T> blobActivationRev_a = new Blob<T>(cuda, log);
+                blobActivationRev_a.Name = m_param.name + ".activation_rev." + i.ToString();
+                col.Add(blobActivationRev_a);
+
+                Blob<T> blobNumeratorW_a = new Blob<T>(cuda, log);
+                blobNumeratorW_a.Name = m_param.name + ".numerator_w." + i.ToString();
+                col.Add(blobNumeratorW_a);
+
+                Blob<T> blobDenominatorW_a = new Blob<T>(cuda, log);
+                blobDenominatorW_a.Name = m_param.name + ".denominator_w." + i.ToString();
+                col.Add(blobDenominatorW_a);
+
+                Blob<T> blobNumerator1_a = new Blob<T>(cuda, log);
+                blobNumerator1_a.Name = m_param.name + ".numerator1." + i.ToString();
+                col.Add(blobNumerator1_a);
+
+                Blob<T> blobNumerator2_a = new Blob<T>(cuda, log);
+                blobNumerator2_a.Name = m_param.name + ".numerator2." + i.ToString();
+                col.Add(blobNumerator2_a);
+
+                Blob<T> blobNumerator_a = new Blob<T>(cuda, log);
+                blobNumerator_a.Name = m_param.name + ".numerator." + i.ToString();
+                col.Add(blobNumerator_a);
+
+                Blob<T> blobDenominator_a = new Blob<T>(cuda, log);
+                blobDenominator_a.Name = m_param.name + ".denominator." + i.ToString();
+                col.Add(blobDenominator_a);
+            }
+
+            return col;
+        }
+
+        /// <summary>
+        /// Set the internal shared blobs to a set of external blobs.
+        /// </summary>
+        /// <param name="col">Specifies the blob collection created using CreateInternalBlobs.</param>
+        public override void SetInternalSharedBlobs(BlobCollection<T> col)
+        {
+            int nIdx = 0;
+
+            m_bOwnInternalBlobs = false;
+
+            m_blobVPre = col[nIdx];
+            nIdx++;
+
+            m_blobWork = col[nIdx];
+            nIdx++;
+
+            m_blobInputs = col[nIdx];
+            nIdx++;
+
+            m_blobMues = col[nIdx];
+            nIdx++;
+
+            m_blobX = col[nIdx];
+            nIdx++;
+
+            m_blobSensorySigmoidW = col[nIdx];
+            nIdx++;
+
+            m_blobSensoryActivationW = col[nIdx];
+            nIdx++;
+
+            m_blobSensoryActivationW1 = col[nIdx];
+            nIdx++;
+
+            m_blobSensoryActivationRev = col[nIdx];
+            nIdx++;
+
+            m_blobSensoryNumeratorW = col[nIdx];
+            nIdx++;
+
+            m_blobSensoryDenominatorW = col[nIdx];
+            nIdx++;
+
+            m_blobSensoryNumeratorW1 = col[nIdx];
+            nIdx++;
+
+            m_blobSensoryDenominatorW1 = col[nIdx];
+            nIdx++;
+
+            m_blobCmt = col[nIdx];
+            nIdx++;
+
+            m_blobTs = col[nIdx];
+            nIdx++;
+
+            m_colVPre.Clear();
+            m_colCmt.Clear();
+            m_colMues.Clear();
+            m_colSigmoidW.Clear();
+            m_colActivationW.Clear();
+            m_colActivationW1.Clear();
+            m_colActivationRev.Clear();
+            m_colNumeratorW.Clear();
+            m_colDenominatorW.Clear();
+            m_colNumerator1.Clear();
+            m_colNumerator2.Clear();
+            m_colNumerator.Clear();
+            m_colDenominator.Clear();
+
+            for (int i = 0; i < m_param.ltc_unit_param.ode_unfolds; i++)
+            {
+                m_colVPre.Add(col[nIdx]);
+                nIdx++;
+
+                m_colCmt.Add(col[nIdx]);
+                nIdx++;
+
+                m_colMues.Add(col[nIdx]);
+                nIdx++;
+
+                m_colSigmoidW.Add(col[nIdx]);
+                nIdx++;
+
+                m_colActivationW.Add(col[nIdx]);
+                nIdx++;
+
+                m_colActivationW1.Add(col[nIdx]);
+                nIdx++;
+
+                m_colActivationRev.Add(col[nIdx]);
+                nIdx++;
+
+                m_colNumeratorW.Add(col[nIdx]);
+                nIdx++;
+
+                m_colDenominatorW.Add(col[nIdx]);
+                nIdx++;
+
+                m_colNumerator1.Add(col[nIdx]);
+                nIdx++;
+
+                m_colNumerator2.Add(col[nIdx]);
+                nIdx++;
+
+                m_colNumerator.Add(col[nIdx]);
+                nIdx++;
+
+                m_colDenominator.Add(col[nIdx]);
+                nIdx++;
+            }
         }
 
         private void addBtmTop(Blob<T> btm, Blob<T> top)
