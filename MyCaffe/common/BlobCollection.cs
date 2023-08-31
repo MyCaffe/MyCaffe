@@ -545,6 +545,8 @@ namespace MyCaffe.common
             {
                 b.Dispose();
             }
+
+            m_rgBlobs.Clear();
         }
     }
 }
