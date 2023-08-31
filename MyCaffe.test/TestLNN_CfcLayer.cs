@@ -21,6 +21,7 @@ using MyCaffe.solvers;
 using MyCaffe.gym;
 using System.Drawing;
 using static System.Windows.Forms.AxHost;
+using MyCaffe.param.lnn;
 
 /// <summary>
 /// Testing the Cfc layer.
@@ -141,7 +142,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestTrainingBatch()
+        public void TestTrainingBatch_CFC()
         {
             CfcLayerTest test = new CfcLayerTest();
 
@@ -149,7 +150,7 @@ namespace MyCaffe.test
             {
                 foreach (ICfcLayerTest t in test.Tests)
                 {
-                    t.TestTrainingBatch(false, false);
+                    t.TestTrainingBatch(false, false, CfcParameter.CELL_TYPE.CFC);
                 }
             }
             finally
@@ -159,7 +160,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestTrainingRealTime()
+        public void TestTrainingRealTime_CFC()
         {
             CfcLayerTest test = new CfcLayerTest();
 
@@ -167,7 +168,43 @@ namespace MyCaffe.test
             {
                 foreach (ICfcLayerTest t in test.Tests)
                 {
-                    t.TestTrainingRealTime(false, false);
+                    t.TestTrainingRealTime(false, false, CfcParameter.CELL_TYPE.CFC);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestTrainingBatch_LTC()
+        {
+            CfcLayerTest test = new CfcLayerTest();
+
+            try
+            {
+                foreach (ICfcLayerTest t in test.Tests)
+                {
+                    t.TestTrainingBatch(false, false, CfcParameter.CELL_TYPE.LTC);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestTrainingRealTime_LTC()
+        {
+            CfcLayerTest test = new CfcLayerTest();
+
+            try
+            {
+                foreach (ICfcLayerTest t in test.Tests)
+                {
+                    t.TestTrainingRealTime(false, true, CfcParameter.CELL_TYPE.LTC);
                 }
             }
             finally
@@ -182,8 +219,8 @@ namespace MyCaffe.test
         void TestForward(bool bNoGate);
         void TestBackward(bool bNoGate);
         void TestGradient(bool bNoGate);
-        void TestTrainingBatch(bool bNoGate, bool bEnableUI);
-        void TestTrainingRealTime(bool bNoGate, bool bEnableUI);
+        void TestTrainingBatch(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type);
+        void TestTrainingRealTime(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type);
     }
 
     class CfcLayerTest : TestBase
@@ -298,6 +335,7 @@ namespace MyCaffe.test
             p.cfc_param.input_features = 82;
             p.cfc_param.hidden_size = 256;
             p.cfc_param.output_features = 2;
+            p.cfc_param.cell_type = param.lnn.CfcParameter.CELL_TYPE.CFC;
             Layer<T> layer = null;
             Blob<T> blobX = null;
             Blob<T> blobTimeSpans = null;
@@ -391,6 +429,7 @@ namespace MyCaffe.test
             p.cfc_param.input_features = 82;
             p.cfc_param.hidden_size = 256;
             p.cfc_param.output_features = 2;
+            p.cfc_param.cell_type = param.lnn.CfcParameter.CELL_TYPE.CFC;
             Layer<T> layer = null;
             Blob<T> blobX = null;
             Blob<T> blobXgrad = null;
@@ -552,8 +591,9 @@ namespace MyCaffe.test
         /// <param name="nLayers">Specifies the number of backbone layers used.</param>
         /// <param name="nUnits">Specifies the number of backbone units used.</param>
         /// <param name="nOutputSize">Specifies the number of outputs.</param>
+        /// <param name="cell_type">Specifies the cell type (default = CFC)</param>
         /// <returns></returns>
-        private string buildModel(int nBatchSize, int nInputSize, bool bNoGate, int nHiddenSize, float fDropout, int nLayers, int nUnits, int nOutputSize)
+        private string buildModel(int nBatchSize, int nInputSize, bool bNoGate, int nHiddenSize, float fDropout, int nLayers, int nUnits, int nOutputSize, CfcParameter.CELL_TYPE cell_type = CfcParameter.CELL_TYPE.CFC)
         {
             NetParameter p = new NetParameter();
             p.name = "cfc_net";
@@ -587,17 +627,29 @@ namespace MyCaffe.test
             //  CFC Layer (Closed form Continuous-time)
             //---------------------------------
             LayerParameter cfc = new LayerParameter(LayerParameter.LayerType.CFC);
-            cfc.cfc_unit_param.input_size = nInputSize;
-            cfc.cfc_unit_param.hidden_size = nHiddenSize;
-            cfc.cfc_unit_param.backbone_activation = param.lnn.CfcUnitParameter.ACTIVATION.RELU;
-            cfc.cfc_unit_param.backbone_dropout_ratio = fDropout;
-            cfc.cfc_unit_param.backbone_layers = nLayers;
-            cfc.cfc_unit_param.backbone_units = nUnits;
-            cfc.cfc_unit_param.no_gate = bNoGate;
-            cfc.cfc_unit_param.minimal = false;
+
+            if (cell_type == CfcParameter.CELL_TYPE.LTC)
+            {
+                cfc.ltc_unit_param.input_size = nInputSize;
+                cfc.ltc_unit_param.hidden_size = nHiddenSize;
+                cfc.ltc_unit_param.ode_unfolds = 6;
+            }
+            else
+            {
+                cfc.cfc_unit_param.input_size = nInputSize;
+                cfc.cfc_unit_param.hidden_size = nHiddenSize;
+                cfc.cfc_unit_param.backbone_activation = param.lnn.CfcUnitParameter.ACTIVATION.RELU;
+                cfc.cfc_unit_param.backbone_dropout_ratio = fDropout;
+                cfc.cfc_unit_param.backbone_layers = nLayers;
+                cfc.cfc_unit_param.backbone_units = nUnits;
+                cfc.cfc_unit_param.no_gate = bNoGate;
+                cfc.cfc_unit_param.minimal = false;
+            }
+
             cfc.cfc_param.input_features = nInputSize;
             cfc.cfc_param.hidden_size = nHiddenSize;
             cfc.cfc_param.output_features = nOutputSize;
+            cfc.cfc_param.cell_type = cell_type;
             cfc.bottom.Add("x");
             cfc.bottom.Add("tt");
             cfc.bottom.Add("mask");
@@ -649,7 +701,8 @@ namespace MyCaffe.test
         /// </summary>
         /// <param name="bNoGate">Specifies whether the no-gate mode is used.</param>
         /// <param name="bEnableUI">Specifies to turn on the UI display.</param>
-        public void TestTrainingBatch(bool bNoGate, bool bEnableUI)
+        /// <param name="cell_type">Specifies the cell type.</param>
+        public void TestTrainingBatch(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type)
         {
             int nBatchSize = 128;
             int nInputSize = 82;
@@ -658,7 +711,7 @@ namespace MyCaffe.test
             int nBackboneLayers = 2;
             int nBackboneUnits = 64;
             string strSolver = buildSolver(0.01f);
-            string strModel = buildModel(nBatchSize, nInputSize, false, nHiddenSize, 0.0f, nBackboneLayers, nBackboneUnits, nOutputSize);
+            string strModel = buildModel(nBatchSize, nInputSize, false, nHiddenSize, 0.0f, nBackboneLayers, nBackboneUnits, nOutputSize, cell_type);
 
             //---------------------------------------------------
             // Setup MyCaffe and load the model.
@@ -827,7 +880,8 @@ namespace MyCaffe.test
         /// </summary>
         /// <param name="bNoGate">Specifies the whether the no-gate mode is used.</param>
         /// <param name="bEnableUI">Specifies to turn on the UI display.</param>
-        public void TestTrainingRealTime(bool bNoGate, bool bEnableUI)
+        /// <param name="cell_type">Specifies the cell type.</param>
+        public void TestTrainingRealTime(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type)
         {
             int nBatchSize = 1;
             int nInputSize = 82;
@@ -836,7 +890,7 @@ namespace MyCaffe.test
             int nBackboneLayers = 2;
             int nBackboneUnits = 64;
             string strSolver = buildSolver(0.01f);
-            string strModel = buildModel(nBatchSize, nInputSize, false, nHiddenSize, 0.0f, nBackboneLayers, nBackboneUnits, nOutputSize);
+            string strModel = buildModel(nBatchSize, nInputSize, false, nHiddenSize, 0.0f, nBackboneLayers, nBackboneUnits, nOutputSize, cell_type);
 
             // Setup MyCaffe and load the model.
             m_log.EnableTrace = true;
