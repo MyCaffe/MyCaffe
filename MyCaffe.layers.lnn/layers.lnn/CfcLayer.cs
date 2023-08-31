@@ -101,8 +101,19 @@ namespace MyCaffe.layers.lnn
             cat.concat_param.axis = 1;
             m_cat = Layer<T>.Create(m_cuda, m_log, convertLayerParam(cat, p), null);
 
-            LayerParameter rnn = new LayerParameter(LayerParameter.LayerType.CFC_UNIT);
-            rnn.cfc_unit_param.Copy(m_param.cfc_unit_param);
+            LayerParameter rnn = null;
+
+            if (m_param.cfc_param.cell_type == CfcParameter.CELL_TYPE.LTC)
+            {
+                rnn = new LayerParameter(LayerParameter.LayerType.LTC_UNIT);
+                rnn.ltc_unit_param.Copy(m_param.ltc_unit_param);
+            }
+            else
+            {
+                rnn = new LayerParameter(LayerParameter.LayerType.CFC_UNIT);
+                rnn.cfc_unit_param.Copy(m_param.cfc_unit_param);
+            }
+
             m_rnn_cell = Layer<T>.Create(m_cuda, m_log, convertLayerParam(rnn, p), null);
 
             LayerParameter fc = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "fc");

@@ -23,10 +23,36 @@ namespace MyCaffe.param.lnn
         int m_nHiddenSize = 0;
         int m_nOutputFeatures = 0;
         bool m_bReturnSequence = false;
+        CELL_TYPE m_cellType = CELL_TYPE.CFC;
+
+        /// <summary>
+        /// Defines the cell type.
+        /// </summary>
+        public enum CELL_TYPE
+        {
+            /// <summary>
+            /// Specifies to use the (Closed for Continuous) CFC cell.
+            /// </summary>
+            CFC,
+            /// <summary>
+            /// Specifies to use the (Liquid Time Constant) LTC cell.
+            /// </summary>
+            LTC
+        }
 
         /** @copydoc LayerParameterBase */
         public CfcParameter()
         {
+        }
+
+        /// <summary>
+        /// Specifies the cell type to use (default = CFC).
+        /// </summary>
+        [Description("Specifies the cell type to use.")]
+        public CELL_TYPE cell_type
+        {
+            get { return m_cellType; }
+            set { m_cellType = value; }
         }
 
         /// <summary>
@@ -90,6 +116,7 @@ namespace MyCaffe.param.lnn
             m_nHiddenSize = p.hidden_size;
             m_nOutputFeatures = p.output_features;
             m_bReturnSequence = p.m_bReturnSequence;
+            m_cellType = p.cell_type;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -113,6 +140,7 @@ namespace MyCaffe.param.lnn
             rgChildren.Add("hidden_size", hidden_size.ToString());
             rgChildren.Add("output_features", output_features.ToString());
             rgChildren.Add("return_sequences", return_sequences.ToString());
+            rgChildren.Add("cell_type", cell_type.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -138,6 +166,9 @@ namespace MyCaffe.param.lnn
 
             if ((strVal = rp.FindValue("return_sequences")) != null)
                 p.return_sequences = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("cell_type")) != null)
+                p.cell_type = (CELL_TYPE)Enum.Parse(typeof(CELL_TYPE), strVal, true);
 
             return p;
         }
