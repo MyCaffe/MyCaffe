@@ -17,6 +17,8 @@ namespace MyCaffe.layers.lnn
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public abstract class LnnUnitLayer<T> : Layer<T>
     {
+        protected bool m_bOwnInternalBlobs = true;
+
         /// <summary>
         /// The LnnUnitLayer constructor.
         /// </summary>
@@ -29,18 +31,18 @@ namespace MyCaffe.layers.lnn
         }
 
         /// <summary>
-        /// Create the internal blobs used by the layer for a given index.
+        /// Create the internal shared blobs used by the layer for a given index.
         /// </summary>
         /// <param name="nIdx">Specifies the index.</param>
         /// <param name="cuda">Specifies the underlying CudaDnn low-level DLL.</param>
         /// <param name="log">Specifies the log.</param>
         /// <returns>The collection of created blobs is returned.</returns>
-        public abstract BlobCollection<T> CreateInternalBlobs(int nIdx, CudaDnn<T> cuda, Log log);
+        public abstract BlobCollection<T> CreateInternalSharedBlobs(int nIdx, CudaDnn<T> cuda, Log log);
 
         /// <summary>
-        /// Set the internal blobs to a set of external blobs.
+        /// Set the internal shared blobs to a set of external blobs.
         /// </summary>
         /// <param name="col">Specifies the blob collection created using CreateInternalBlobs.</param>
-        public abstract void SetInternalBlobs(BlobCollection<T> col);
+        public abstract void SetInternalSharedBlobs(BlobCollection<T> col);
     }
 }

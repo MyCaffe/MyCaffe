@@ -234,7 +234,7 @@ namespace MyCaffe.layers.lnn
                 blobHStateT.Name = "h_state_" + i.ToString();
                 m_rgBlobHState.Add(blobHStateT);
 
-                BlobCollection<T> col = ((LnnUnitLayer<T>)m_rnn_cell).CreateInternalBlobs(i, m_cuda, m_log);
+                BlobCollection<T> col = ((LnnUnitLayer<T>)m_rnn_cell).CreateInternalSharedBlobs(i, m_cuda, m_log);
                 m_rgrgInternalBlobs.Add(col);
             }
 
@@ -359,7 +359,7 @@ namespace MyCaffe.layers.lnn
                 m_colBtm.Add(m_blobHState1);
                 m_colBtm.Add(m_blobTs);
 
-                ((LnnUnitLayer<T>)m_rnn_cell).SetInternalBlobs(m_rgrgInternalBlobs[i]);
+                ((LnnUnitLayer<T>)m_rnn_cell).SetInternalSharedBlobs(m_rgrgInternalBlobs[i]);
 
                 m_rnn_cell.Reshape(m_colBtm, m_colTop);
             }
@@ -454,7 +454,7 @@ namespace MyCaffe.layers.lnn
                 m_colBtm.Add(m_blobHState);
                 m_colBtm.Add(m_blobTs);
 
-                ((LnnUnitLayer<T>)m_rnn_cell).SetInternalBlobs(m_rgrgInternalBlobs[t]);
+                ((LnnUnitLayer<T>)m_rnn_cell).SetInternalSharedBlobs(m_rgrgInternalBlobs[t]);
 
                 m_rnn_cell.Forward(m_colBtm, m_colTop);
 
@@ -576,7 +576,7 @@ namespace MyCaffe.layers.lnn
                 m_colBtm.Add(m_blobHState);
                 m_colBtm.Add(m_blobTs);
 
-                ((LnnUnitLayer<T>)m_rnn_cell).SetInternalBlobs(m_rgrgInternalBlobs[t]);
+                ((LnnUnitLayer<T>)m_rnn_cell).SetInternalSharedBlobs(m_rgrgInternalBlobs[t]);
 
                 m_rnn_cell.Backward(m_colTop, new List<bool>() { true, true, true }, m_colBtm);
                 m_rgBlobHState[t].CopyFrom(m_blobHState, true);
