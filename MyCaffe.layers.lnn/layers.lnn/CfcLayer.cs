@@ -58,6 +58,7 @@ namespace MyCaffe.layers.lnn
         Blob<T> m_blobOutputSequence = null;
         int[] m_rgShape = new int[] { 1, 1, 1, 1 };
         bool m_bSetup = false;
+        int m_nHiddenSize = 0;
 
         /// <summary>
         /// The CfcLayer constructor.
@@ -69,6 +70,11 @@ namespace MyCaffe.layers.lnn
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.CFC;
+
+            if (p.cfc_param.cell_type == CfcParameter.CELL_TYPE.LTC)
+                m_nHiddenSize = p.ltc_unit_param.hidden_size;
+            else
+                m_nHiddenSize = p.cfc_unit_param.hidden_size;
 
             m_blobHState1 = new Blob<T>(m_cuda, m_log);
             m_blobHState = new Blob<T>(m_cuda, m_log);
@@ -235,7 +241,7 @@ namespace MyCaffe.layers.lnn
             m_nReshapeCount = 0;
 
             m_rgShape[0] = m_nBatchSize;
-            m_rgShape[1] = m_param.cfc_param.hidden_size;
+            m_rgShape[1] = m_nHiddenSize;
             m_blobHState1.Reshape(m_rgShape);
             m_blobHState.Reshape(m_rgShape);
 
@@ -280,6 +286,8 @@ namespace MyCaffe.layers.lnn
             m_colBtm.Add(m_blobMask);
             m_cat.Setup(m_colBtm, m_colTop);
 
+            ((LnnUnitLayer<T>)m_rnn_cell).SetInternalSharedBlobs(m_rgrgInternalBlobs[0]);
+
             addBtmTop(m_blobInputs1, m_blobHState);
             m_colBtm.Add(m_blobHState1);
             m_colBtm.Add(m_blobTs);
@@ -322,7 +330,7 @@ namespace MyCaffe.layers.lnn
             m_nTrueInFeatures = nTrueInFeatures;
 
             m_rgShape[0] = m_nBatchSize;
-            m_rgShape[1] = m_param.cfc_param.hidden_size;
+            m_rgShape[1] = m_nHiddenSize;
 
             m_blobHState1.Reshape(m_rgShape);
             m_blobHState.Reshape(m_rgShape);
