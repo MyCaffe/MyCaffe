@@ -37,18 +37,9 @@ namespace MyCaffe.layers.lnn
         Blob<T> m_blobHState1 = null;
         Blob<T> m_blobHState = null;
         BlobCollection<T> m_rgBlobHState = new BlobCollection<T>();
-        BlobCollection<T> m_rgBlobFF1 = new BlobCollection<T>();
-        BlobCollection<T> m_rgBlobFF2 = new BlobCollection<T>();
-        BlobCollection<T> m_rgBlobTimeA = new BlobCollection<T>();
-        BlobCollection<T> m_rgBlobTimeB = new BlobCollection<T>();
-        BlobCollection<T> m_rgBlobTInterp = new BlobCollection<T>();
-        BlobCollection<T> m_rgBlobTInterp1 = new BlobCollection<T>();
-        BlobCollection<T> m_rgBlobTInterpInv = new BlobCollection<T>();
-        BlobCollection<T> m_rgBlobTs = new BlobCollection<T>();
-        BlobCollection<T> m_rgBlobX = new BlobCollection<T>();
-        BlobCollection<T> m_rgBlobTop1 = new BlobCollection<T>();
-        BlobCollection<T> m_rgBlobTop2 = new BlobCollection<T>();
-        List<BlobCollection<T>> m_rgrgLinear = new List<BlobCollection<T>>();
+
+        List<BlobCollection<T>> m_rgrgInternalBlobs = new List<BlobCollection<T>>();
+       
         Blob<T> m_blobTs = null;
         Blob<T> m_blobTsFull = null;
         Blob<T> m_blobForwardInput = null;
@@ -82,7 +73,6 @@ namespace MyCaffe.layers.lnn
             m_blobHState1 = new Blob<T>(m_cuda, m_log);
             m_blobHState = new Blob<T>(m_cuda, m_log);
 
-            m_rgrgLinear = new List<BlobCollection<T>>();
             m_blobTs = new Blob<T>(m_cuda, m_log);
 
             m_blobInputs = new Blob<T>(m_cuda, m_log);
@@ -147,19 +137,8 @@ namespace MyCaffe.layers.lnn
             base.dispose();
 
             dispose(ref m_rgBlobHState);
-            dispose(ref m_rgBlobFF1);
-            dispose(ref m_rgBlobFF2);
-            dispose(ref m_rgBlobTimeA);
-            dispose(ref m_rgBlobTimeB);
-            dispose(ref m_rgBlobTInterp);
-            dispose(ref m_rgBlobTInterp1);
-            dispose(ref m_rgBlobTInterpInv);
-            dispose(ref m_rgBlobTs);
-            dispose(ref m_rgBlobX);
-            dispose(ref m_rgBlobTop1);
-            dispose(ref m_rgBlobTop2);
 
-            dispose(ref m_rgrgLinear);
+            dispose(ref m_rgrgInternalBlobs);
 
             dispose(ref m_blobHState1);
             dispose(ref m_blobHState);
@@ -255,62 +234,8 @@ namespace MyCaffe.layers.lnn
                 blobHStateT.Name = "h_state_" + i.ToString();
                 m_rgBlobHState.Add(blobHStateT);
 
-                Blob<T> blobFF1 = new Blob<T>(m_cuda, m_log);
-                blobFF1.Name = "ff1_" + i.ToString();
-                m_rgBlobFF1.Add(blobFF1);
-
-                Blob<T> blobFF2 = new Blob<T>(m_cuda, m_log);
-                blobFF2.Name = "ff2_" + i.ToString();
-                m_rgBlobFF2.Add(blobFF2);
-
-                Blob<T> blobTimeA = new Blob<T>(m_cuda, m_log);
-                blobTimeA.Name = "timeA_" + i.ToString();
-                m_rgBlobTimeA.Add(blobTimeA);
-
-                Blob<T> blobTimeB = new Blob<T>(m_cuda, m_log);
-                blobTimeB.Name = "timeB_" + i.ToString();
-                m_rgBlobTimeB.Add(blobTimeB);
-
-                Blob<T> blobTInterp = new Blob<T>(m_cuda, m_log);
-                blobTInterp.Name = "t-interp_" + i.ToString();
-                m_rgBlobTInterp.Add(blobTInterp);
-
-                Blob<T> blobTInterp1 = new Blob<T>(m_cuda, m_log);
-                blobTInterp1.Name = "t-interp1_" + i.ToString();
-                m_rgBlobTInterp1.Add(blobTInterp1);
-
-                Blob<T> blobTInterpInv = new Blob<T>(m_cuda, m_log);
-                blobTInterpInv.Name = "t-interpinv_" + i.ToString();
-                m_rgBlobTInterpInv.Add(blobTInterpInv);
-
-                Blob<T> blobTs = new Blob<T>(m_cuda, m_log);
-                blobTs.Name = "ts_" + i.ToString();
-                m_rgBlobTs.Add(blobTs);
-
-                Blob<T> blobX = new Blob<T>(m_cuda, m_log);
-                blobX.Name = "x_" + i.ToString();
-                m_rgBlobX.Add(blobX);
-
-                Blob<T> blobTop1 = new Blob<T>(m_cuda, m_log);
-                blobTop1.Name = "top1_" + i.ToString();
-                m_rgBlobTop1.Add(blobTop1);
-
-                Blob<T> blobTop2 = new Blob<T>(m_cuda, m_log);
-                blobTop2.Name = "top2_" + i.ToString();
-                m_rgBlobTop2.Add(blobTop2);
-
-                BlobCollection<T> colLinear = new BlobCollection<T>();
-                colLinear.Add(new Blob<T>(m_cuda, m_log));
-                colLinear[0].Name = "bb_" + i.ToString();
-
-                for (int n = 0; n < m_param.cfc_unit_param.backbone_layers; n++)
-                {
-                    colLinear.Add(new Blob<T>(m_cuda, m_log));
-                    colLinear[colLinear.Count - 1].Name = "bb_fc" + (n + 1).ToString() + "_" + i.ToString();
-                    colLinear.Add(new Blob<T>(m_cuda, m_log));
-                    colLinear[colLinear.Count - 1].Name = "bb_act" + (n + 1).ToString() + "_" + i.ToString();
-                }
-                m_rgrgLinear.Add(colLinear);
+                BlobCollection<T> col = ((LnnUnitLayer<T>)m_rnn_cell).CreateInternalBlobs(i, m_cuda, m_log);
+                m_rgrgInternalBlobs.Add(col);
             }
 
             m_rgShape[1] = 1;   
@@ -434,18 +359,7 @@ namespace MyCaffe.layers.lnn
                 m_colBtm.Add(m_blobHState1);
                 m_colBtm.Add(m_blobTs);
 
-                ((CfcUnitLayer<T>)m_rnn_cell).SetInternalBlobs(m_rgBlobFF1[i],
-                                                               m_rgBlobFF2[i],
-                                                               m_rgBlobTimeA[i],
-                                                               m_rgBlobTimeB[i],
-                                                               m_rgBlobTInterp[i],
-                                                               m_rgBlobTInterp1[i],
-                                                               m_rgBlobTInterpInv[i],
-                                                               m_rgBlobTs[i],
-                                                               m_rgBlobX[i],
-                                                               m_rgBlobTop1[i],
-                                                               m_rgBlobTop2[i],
-                                                               m_rgrgLinear[i]);
+                ((LnnUnitLayer<T>)m_rnn_cell).SetInternalBlobs(m_rgrgInternalBlobs[i]);
 
                 m_rnn_cell.Reshape(m_colBtm, m_colTop);
             }
@@ -540,18 +454,7 @@ namespace MyCaffe.layers.lnn
                 m_colBtm.Add(m_blobHState);
                 m_colBtm.Add(m_blobTs);
 
-                ((CfcUnitLayer<T>)m_rnn_cell).SetInternalBlobs(m_rgBlobFF1[t],
-                                                               m_rgBlobFF2[t],
-                                                               m_rgBlobTimeA[t],
-                                                               m_rgBlobTimeB[t],
-                                                               m_rgBlobTInterp[t],
-                                                               m_rgBlobTInterp1[t],
-                                                               m_rgBlobTInterpInv[t],
-                                                               m_rgBlobTs[t],
-                                                               m_rgBlobX[t],
-                                                               m_rgBlobTop1[t],
-                                                               m_rgBlobTop2[t],
-                                                               m_rgrgLinear[t]);
+                ((LnnUnitLayer<T>)m_rnn_cell).SetInternalBlobs(m_rgrgInternalBlobs[t]);
 
                 m_rnn_cell.Forward(m_colBtm, m_colTop);
 
@@ -673,18 +576,7 @@ namespace MyCaffe.layers.lnn
                 m_colBtm.Add(m_blobHState);
                 m_colBtm.Add(m_blobTs);
 
-                ((CfcUnitLayer<T>)m_rnn_cell).SetInternalBlobs(m_rgBlobFF1[t],
-                                                               m_rgBlobFF2[t],
-                                                               m_rgBlobTimeA[t],
-                                                               m_rgBlobTimeB[t],
-                                                               m_rgBlobTInterp[t],
-                                                               m_rgBlobTInterp1[t],
-                                                               m_rgBlobTInterpInv[t],
-                                                               m_rgBlobTs[t],
-                                                               m_rgBlobX[t],
-                                                               m_rgBlobTop1[t],
-                                                               m_rgBlobTop2[t],
-                                                               m_rgrgLinear[t]);
+                ((LnnUnitLayer<T>)m_rnn_cell).SetInternalBlobs(m_rgrgInternalBlobs[t]);
 
                 m_rnn_cell.Backward(m_colTop, new List<bool>() { true, true, true }, m_colBtm);
                 m_rgBlobHState[t].CopyFrom(m_blobHState, true);

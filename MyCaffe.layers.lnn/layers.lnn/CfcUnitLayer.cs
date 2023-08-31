@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -19,7 +20,7 @@ namespace MyCaffe.layers.lnn
     /// @see [Closed-form Continuous-time Neural Models](https://arxiv.org/abs/2106.13898) by Ramin Hasani, Mathias Lechner, Alexander Amini, Lucas Liebenwein, Aaron Ray, Max Tschaikowski, Gerald Teschl, Daniela Rus, 2021, arXiv 2106.13898
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
-    public class CfcUnitLayer<T> : Layer<T>
+    public class CfcUnitLayer<T> : LnnUnitLayer<T>
     {
         Layer<T> m_cat;
         Layer<T>[] m_rgLinearLayers = null;
@@ -273,36 +274,128 @@ namespace MyCaffe.layers.lnn
         }
 
         /// <summary>
+        /// Create the internal blobs used by the layer for a given index.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index.</param>
+        /// <param name="cuda">Specifies the underlying CudaDnn low-level DLL.</param>
+        /// <param name="log">Specifies the log.</param>
+        /// <returns>The collection of created blobs is returned.</returns>
+        public override BlobCollection<T> CreateInternalBlobs(int nIdx, CudaDnn<T> cuda, Log log)
+        { 
+            BlobCollection<T> col = new BlobCollection<T>();
+
+            Blob<T> blobFF1 = new Blob<T>(cuda, log);
+            blobFF1.Name = "ff1_" + nIdx.ToString();
+            col.Add(blobFF1);
+
+            Blob<T> blobFF2 = new Blob<T>(cuda, log);
+            blobFF2.Name = "ff2_" + nIdx.ToString();
+            col.Add(blobFF2);
+
+            Blob<T> blobTimeA = new Blob<T>(cuda, log);
+            blobTimeA.Name = "timeA_" + nIdx.ToString();
+            col.Add(blobTimeA);
+
+            Blob<T> blobTimeB = new Blob<T>(cuda, log);
+            blobTimeB.Name = "timeB_" + nIdx.ToString();
+            col.Add(blobTimeB);
+
+            Blob<T> blobTInterp = new Blob<T>(cuda, log);
+            blobTInterp.Name = "tInterp_" + nIdx.ToString();
+            col.Add(blobTInterp);
+
+            Blob<T> blobTInterp1 = new Blob<T>(cuda, log);
+            blobTInterp1.Name = "tInterp1_" + nIdx.ToString();
+            col.Add(blobTInterp1);
+
+            Blob<T> blobTInterpInv = new Blob<T>(cuda, log);
+            blobTInterpInv.Name = "tInterpInv_" + nIdx.ToString();
+            col.Add(blobTInterpInv);
+
+            Blob<T> blobTs = new Blob<T>(cuda, log);
+            blobTs.Name = "ts_" + nIdx.ToString();
+            col.Add(blobTs);
+
+            Blob<T> blobX = new Blob<T>(cuda, log);
+            blobX.Name = "x_" + nIdx.ToString();
+            col.Add(blobX);
+
+            Blob<T> blobTop1 = new Blob<T>(cuda, log);
+            blobTop1.Name = "top1_" + nIdx.ToString();
+            col.Add(blobTop1);
+
+            Blob<T> blobTop2 = new Blob<T>(cuda, log);
+            blobTop2.Name = "top2_" + nIdx.ToString();
+            col.Add(blobTop2);
+
+            Blob<T> blobBb = new Blob<T>(cuda, log);
+            blobBb.Name = "bb_" + nIdx.ToString();
+            col.Add(blobBb);
+
+            for (int i = 0; i < m_param.cfc_unit_param.backbone_layers; i++)
+            {
+                Blob<T> blobFc = new Blob<T>(cuda, log);
+                blobFc.Name = "bb_fc" + (i + 1).ToString() + "_" + nIdx.ToString();
+                col.Add(blobFc);
+
+                Blob<T> blobAct = new Blob<T>(cuda, log);
+                blobAct.Name = "bb_act" + (i + 1).ToString() + "_" + nIdx.ToString();
+                col.Add(blobAct);
+            }
+
+            return col;
+        }
+
+        /// <summary>
         /// Set the internal blobs to a set of external blobs.
         /// </summary>
-        /// <param name="blobFF1">Specifies the FF1 data.</param>
-        /// <param name="blobFF2">Specifies the FF2 data.</param>
-        /// <param name="blobTimeA">Specifies the TimeA data.</param>
-        /// <param name="blobTimeB">Specifies the TimeB data.</param>
-        /// <param name="blobTInterp">Specifies the t-interp data.</param>
-        /// <param name="blobTInterp1">Specifies the t-interp1 data.</param>
-        /// <param name="blobTInterpInv">Specifies the t-interp inv data.</param>
-        /// <param name="blobTs">Specifies the ts data.</param>
-        /// <param name="blobX">Specifies the input x data.</param>
-        /// <param name="blobTop1">Specifies the top1 data.</param>
-        /// <param name="blobTop2">Specifies the top2 data.</param>
-        /// <param name="colLin">Specifies the collection of linear blobs.</param>
-        public void SetInternalBlobs(Blob<T> blobFF1, Blob<T> blobFF2, Blob<T> blobTimeA, Blob<T> blobTimeB, Blob<T> blobTInterp, Blob<T> blobTInterp1, Blob<T> blobTInterpInv, Blob<T> blobTs, Blob<T> blobX, Blob<T> blobTop1, Blob<T> blobTop2, BlobCollection<T> colLin)
+        /// <param name="col">Specifies the blob collection created using CreateInternalBlobs.</param>
+        public override void SetInternalBlobs(BlobCollection<T> col)
         {
-            m_bOwnInternalBlobs = false;
-            m_blobFF1 = blobFF1;
-            m_blobFF2 = blobFF2;
-            m_blobTimeA = blobTimeA;
-            m_blobTimeB = blobTimeB;
-            m_blobTInterp = blobTInterp;
-            m_blobTInterp1 = blobTInterp1;
-            m_blobTInterpInv = blobTInterpInv;
-            m_blobTs = blobTs;
-            m_blobX = blobX;
-            m_blobTop1 = blobTop1;
-            m_blobTop2 = blobTop2;
-
             int nIdx = 0;
+
+            m_bOwnInternalBlobs = false;
+            m_blobFF1 = col[nIdx];
+            nIdx++;
+
+            m_blobFF2 = col[nIdx];
+            nIdx++;
+
+            m_blobTimeA = col[nIdx];
+            nIdx++;
+
+            m_blobTimeB = col[nIdx];
+            nIdx++;
+
+            m_blobTInterp = col[nIdx];
+            nIdx++;
+
+            m_blobTInterp1 = col[nIdx];
+            nIdx++;
+
+            m_blobTInterpInv = col[nIdx];
+            nIdx++;
+
+            m_blobTs = col[nIdx];
+            nIdx++;
+
+            m_blobX = col[nIdx];
+            nIdx++;
+
+            m_blobTop1 = col[nIdx];
+            nIdx++;
+
+            m_blobTop2 = col[nIdx];
+            nIdx++;
+
+            BlobCollection<T> colLin = new BlobCollection<T>();
+            while (nIdx < col.Count)
+            {
+                colLin.Add(col[nIdx]);
+                nIdx++;
+            }
+
+            nIdx = 0;
             for (int i=0; i<m_param.cfc_unit_param.backbone_layers; i++)
             {
                 m_rgLinearBtms[i] = colLin[nIdx];
@@ -312,6 +405,8 @@ namespace MyCaffe.layers.lnn
                 nIdx++;
                 m_rgActivationTops[i] = colLin[nIdx];
             }
+
+            colLin.Clear();
         }
 
         private void addBtmTop(Blob<T> btm, Blob<T> top)
