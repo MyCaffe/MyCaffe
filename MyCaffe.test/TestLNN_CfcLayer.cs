@@ -225,7 +225,7 @@ namespace MyCaffe.test
             {
                 foreach (ICfcLayerTest t in test.Tests)
                 {
-                    t.TestTrainingRealTimeCombo(true, false, false, true);
+                    t.TestTrainingRealTimeCombo(false, true, true, true);
                 }
             }
             finally
@@ -1043,8 +1043,8 @@ namespace MyCaffe.test
 
                 // Run the trained model
                 if (bEnableUI)
-                    gym.OpenUi();
-
+                    gym.OpenUi(true);
+               
                 PropertySet propTest = new PropertySet();
                 CurrentState state = gym.Step(0, 1, propTest);
 
@@ -1064,7 +1064,11 @@ namespace MyCaffe.test
                 Stopwatch sw = new Stopwatch();
                 sw.Start();
 
-                for (int i = 0; i < 2000; i++)
+                int nMax = 100;
+                if (bEnableUI)
+                    nMax = 2000;
+
+                for (int i = 0; i < nMax; i++)
                 {
                     List<DataPoint> rgHistory = state.GymState.History;
 
@@ -1130,6 +1134,22 @@ namespace MyCaffe.test
                             m_log.WriteLine("LTC: " + caLtc.Average.ToString("N3") + " ms.");
                             m_log.WriteLine("---------------------------------");
                         }
+                    }
+                    else
+                    {
+                        propTest.SetProperty("override_predictions", "3");
+
+                        propTest.SetProperty("override_prediction0", "0");
+                        propTest.SetProperty("override_prediction0_name", "CFC no gate");
+                        propTest.SetProperty("override_prediction0_emphasize", bEmphasizeCfcNoGate.ToString());
+
+                        propTest.SetProperty("override_prediction1", "0");
+                        propTest.SetProperty("override_prediction1_name", "CFC gate");
+                        propTest.SetProperty("override_prediction1_emphasize", bEmphasizeCfcGate.ToString());
+
+                        propTest.SetProperty("override_prediction2", "0");
+                        propTest.SetProperty("override_prediction2_name", "LTC");
+                        propTest.SetProperty("override_prediction2_emphasize", bEmphasizeLtc.ToString());
                     }
 
                     state = gym.Step(0, 1, propTest);
