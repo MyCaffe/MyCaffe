@@ -215,12 +215,14 @@ namespace MyCaffe.layers
         /// Dispose the blob collection.
         /// </summary>
         /// <param name="rg">Specifies the blob collection to dispose.</param>
-        protected void dispose(ref BlobCollection<T> rg)
+        /// <param name="bSetToNull">Specifies to set the rg param to null (default = true).</param>
+        protected void dispose(ref BlobCollection<T> rg, bool bSetToNull = true)
         {
             if (rg != null)
             {
                 rg.Dispose();
-                rg = null;
+                if (bSetToNull)
+                    rg = null;
             }
         }
 
