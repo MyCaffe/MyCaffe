@@ -604,6 +604,9 @@ namespace MyCaffe.basecode
         /// <returns>The new copy of the List is returned.</returns>
         public static List<T> Clone<T>(List<T> rg, int nMaxCount = int.MaxValue)
         {
+            if (rg == null)
+                return null;
+
             List<T> rg1 = new List<T>();
 
             for (int i=0; i<rg.Count && i<nMaxCount; i++)
