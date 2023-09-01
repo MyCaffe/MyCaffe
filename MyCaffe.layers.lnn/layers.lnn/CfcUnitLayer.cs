@@ -243,6 +243,8 @@ namespace MyCaffe.layers.lnn
 
             if (m_bOwnInternalBlobs)
                 dispose_internal_blobs();
+            else
+                clear_internal_blobs();
 
             dispose(ref m_blobTInterpOnes);
 
@@ -255,12 +257,12 @@ namespace MyCaffe.layers.lnn
             dispose(ref m_timeB);
         }
 
-        private void dispose_internal_blobs()
+        private void dispose_internal_blobs(bool bSetToNull = true)
         {
-            dispose(ref m_rgLinearBtms);
-            dispose(ref m_rgLinearTops);
-            dispose(ref m_rgActivationBtms);
-            dispose(ref m_rgActivationTops);
+            dispose(ref m_rgLinearBtms, bSetToNull);
+            dispose(ref m_rgLinearTops, bSetToNull);
+            dispose(ref m_rgActivationBtms, bSetToNull);
+            dispose(ref m_rgActivationTops, bSetToNull);
 
             dispose(ref m_blobFF1);
             dispose(ref m_blobFF2);
@@ -273,6 +275,14 @@ namespace MyCaffe.layers.lnn
             dispose(ref m_blobX);
             dispose(ref m_blobTop1);
             dispose(ref m_blobTop2);
+        }
+
+        private void clear_internal_blobs()
+        {
+            m_rgLinearBtms.Clear();
+            m_rgLinearTops.Clear();
+            m_rgActivationBtms.Clear();
+            m_rgActivationTops.Clear();
         }
 
         /// <summary>
@@ -289,7 +299,7 @@ namespace MyCaffe.layers.lnn
         { 
             BlobCollection<T> col = new BlobCollection<T>();
 
-            dispose_internal_blobs();
+            dispose_internal_blobs(false);
 
             Blob<T> blobFF1 = new Blob<T>(cuda, log);
             blobFF1.Name = "ff1_" + nIdx.ToString();
@@ -402,15 +412,20 @@ namespace MyCaffe.layers.lnn
                 nIdx++;
             }
 
+            m_rgLinearBtms.Clear();
+            m_rgLinearTops.Clear();
+            m_rgActivationBtms.Clear();
+            m_rgActivationTops.Clear();
+
             nIdx = 0;
             for (int i=0; i<m_param.cfc_unit_param.backbone_layers; i++)
             {
-                m_rgLinearBtms[i] = colLin[nIdx];
+                m_rgLinearBtms.Add(colLin[nIdx]);
                 nIdx++;
-                m_rgLinearTops[i] = colLin[nIdx];
-                m_rgActivationBtms[i] = colLin[nIdx];
+                m_rgLinearTops.Add(colLin[nIdx]);
+                m_rgActivationBtms.Add(colLin[nIdx]);
                 nIdx++;
-                m_rgActivationTops[i] = colLin[nIdx];
+                m_rgActivationTops.Add(colLin[nIdx]);
             }
 
             colLin.Clear();

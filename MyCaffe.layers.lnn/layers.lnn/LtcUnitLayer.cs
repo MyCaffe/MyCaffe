@@ -289,6 +289,8 @@ namespace MyCaffe.layers.lnn
 
             if (m_bOwnInternalBlobs)
                 dispose_internal_blobs();
+            else
+                clear_inernal_blobs();
 
             dispose(ref m_colWtsAccum);
             dispose(ref m_sigmoid);
@@ -325,6 +327,23 @@ namespace MyCaffe.layers.lnn
             dispose(ref m_colNumerator1, bSetToNull);
             dispose(ref m_colNumerator2, bSetToNull);
             dispose(ref m_colDenominator, bSetToNull);
+        }
+
+        private void clear_inernal_blobs()
+        {
+            m_colVPre.Clear();
+            m_colCmt.Clear();
+            m_colMues.Clear();
+            m_colSigmoidW.Clear();
+            m_colActivationW.Clear();
+            m_colActivationW1.Clear();
+            m_colActivationRev.Clear();
+            m_colNumeratorW.Clear();
+            m_colDenominatorW.Clear();
+            m_colNumerator.Clear();
+            m_colNumerator1.Clear();
+            m_colNumerator2.Clear();
+            m_colDenominator.Clear();
         }
 
         /// <summary>
