@@ -23,9 +23,10 @@ namespace MyCaffe.gym
         /// </summary>
         /// <param name="strName">Specifies the Gym name who's user-interface is to be displayed.</param>
         /// <param name="nId">Specifies the Gym id (used when multiple Gym's of the same name are used).</param>
+        /// <param name="bStartRecording">Optionally, specifies to open with recording on.</param>
         /// <returns>The ID of the Gym opened is returned.</returns>
         [OperationContract(IsOneWay = false)]
-        int OpenUi(string strName, int nId);
+        int OpenUi(string strName, int nId, bool bStartRecording = false);
         /// <summary>
         /// Close the user interface of a Gym.
         /// </summary>

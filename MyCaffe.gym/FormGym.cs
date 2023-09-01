@@ -21,17 +21,20 @@ namespace MyCaffe.gym
         string m_strName;
         MyCaffeGymControl m_ctrl;
         FormActionImage m_dlgActionImage;
+        bool m_bStartRecording = false;
 
         /// <summary>
         /// The constructor.
         /// </summary>
         /// <param name="strName">Specifies the name of the Gym.</param>
         /// <param name="ctrl">Specifies the MyCaffeGymControl instance to use.</param>
-        public FormGym(string strName, MyCaffeGymControl ctrl = null)
+        /// <param name="bStartRecording">Optionally, specifies to start recording at the start.</param>
+        public FormGym(string strName, MyCaffeGymControl ctrl = null, bool bStartRecording = false)
         {
             InitializeComponent();
 
             m_strName = strName;
+            m_bStartRecording = bStartRecording;
 
             if (ctrl == null)
                 ctrl = new MyCaffeGymControl();
@@ -104,6 +107,12 @@ namespace MyCaffe.gym
         private void FormGym_Load(object sender, EventArgs e)
         {
             Text = "MyCaffe Test Gym - " + m_strName;
+
+            if (m_bStartRecording)
+            {
+                btnRecord.Checked = true;
+                btnRecord_Click(btnRecord, EventArgs.Empty);
+            }
         }
 
         private void FormGym_FormClosing(object sender, FormClosingEventArgs e)

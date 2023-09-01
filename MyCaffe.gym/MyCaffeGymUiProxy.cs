@@ -32,11 +32,12 @@ namespace MyCaffe.gym
         /// </summary>
         /// <param name="strName">Specifies the Gym name.</param>
         /// <param name="nId">Specifies the ID of the Gym.</param>
+        /// <param name="bStartRecording">Optionally, specifies to open with recording on.</param>
         /// <returns>The ID of the Gym opened is returned.</returns>
-        public int OpenUi(string strName, int nId)
+        public int OpenUi(string strName, int nId, bool bStartRecording = false)
         {
             m_bOpen = true;
-            return Channel.OpenUi(strName, nId);
+            return Channel.OpenUi(strName, nId, bStartRecording);
         }
 
         /// <summary>

@@ -581,7 +581,8 @@ namespace MyCaffe.gym.python
         /// <summary>
         /// The OpenUi method opens the user interface to visualize the gym as it progresses.
         /// </summary>
-        public void OpenUi()
+        /// <param name="bStartRecording">Optionally, specifies to open with recording on.</param>
+        public void OpenUi(bool bStartRecording = false)
         {
             if (m_gymui != null)
                 return;
@@ -590,7 +591,7 @@ namespace MyCaffe.gym.python
             {
                 m_gymui = new MyCaffeGymUiProxy(new InstanceContext(this));
                 m_gymui.Open();
-                m_nUiId = m_gymui.OpenUi(Name, m_nUiId);
+                m_nUiId = m_gymui.OpenUi(Name, m_nUiId, bStartRecording);
             }
             catch (Exception excpt)
             {
