@@ -17,6 +17,9 @@ namespace MyCaffe.layers.lnn
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public abstract class LnnUnitLayer<T> : Layer<T>
     {
+        /// <summary>
+        /// Specifies member variable used to track whether or not the internal blobs are owned by this layer.
+        /// </summary>
         protected bool m_bOwnInternalBlobs = true;
 
         /// <summary>
