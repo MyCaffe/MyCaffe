@@ -22,7 +22,7 @@ namespace MyCaffe.test.automated
     {
         TestClassCollection m_rgTestClasses = new TestClassCollection();
         AutoResetEvent m_evtCancel = new AutoResetEvent(false);
-        EventWaitHandle m_evtGlobalCancel = new EventWaitHandle(false, EventResetMode.AutoReset, "__GRADIENT_CHECKER_CancelEvent__");
+        EventWaitHandle m_evtGlobalCancel = new EventWaitHandle(false, EventResetMode.ManualReset, "__GRADIENT_CHECKER_CancelEvent__");
         ListViewColumnSorter m_lstSorter = new ListViewColumnSorter();
         TestingProgressGet m_progress = new TestingProgressGet();
         TestingActiveGpuGet m_activeGpu = new TestingActiveGpuGet();
@@ -58,6 +58,7 @@ namespace MyCaffe.test.automated
             lstTests.ListViewItemSorter = m_lstSorter;
 
             AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+            m_evtGlobalCancel.Reset();
         }
 
         private void dispose()
@@ -109,6 +110,7 @@ namespace MyCaffe.test.automated
 
         public void Close()
         {
+            m_evtGlobalCancel.Set();
             timerUI.Enabled = false;
         }
 
