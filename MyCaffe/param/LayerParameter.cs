@@ -1033,6 +1033,7 @@ namespace MyCaffe.param
                     expected_top.Add("cfc");
                     m_rgLayerParameters[lt] = new CfcParameter();
                     m_rgLayerParameters[LayerType.CFC_UNIT] = new CfcUnitParameter();
+                    m_rgLayerParameters[LayerType.LTC_UNIT] = new LtcUnitParameter();
                     break;
 
                 case LayerType.CFC_UNIT:
