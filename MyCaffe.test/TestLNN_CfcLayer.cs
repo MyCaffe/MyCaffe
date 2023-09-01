@@ -22,6 +22,9 @@ using MyCaffe.gym;
 using System.Drawing;
 using static System.Windows.Forms.AxHost;
 using MyCaffe.param.lnn;
+using System.Threading;
+using System.Runtime.CompilerServices;
+using SimpleGraphing;
 
 /// <summary>
 /// Testing the Cfc layer.
@@ -212,6 +215,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestTrainingRealTime_Combo()
+        {
+            CfcLayerTest test = new CfcLayerTest();
+
+            try
+            {
+                foreach (ICfcLayerTest t in test.Tests)
+                {
+                    t.TestTrainingRealTimeCombo(true, false, false, true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface ICfcLayerTest : ITest
@@ -221,6 +242,7 @@ namespace MyCaffe.test
         void TestGradient(bool bNoGate);
         void TestTrainingBatch(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type);
         void TestTrainingRealTime(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type);
+        void TestTrainingRealTimeCombo(bool bEnableUI, bool bEmphasizeCfcNoGate, bool bEmphasizeCfcGate, bool bEmphasizeLtc);
     }
 
     class CfcLayerTest : TestBase
@@ -241,6 +263,8 @@ namespace MyCaffe.test
 
     class CfcLayerTest<T> : TestEx<T>, ICfcLayerTest
     {
+        ManualResetEvent m_evtCancel = new ManualResetEvent(false);
+
         public CfcLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, null, nDeviceID)
         {
@@ -249,6 +273,7 @@ namespace MyCaffe.test
 
         protected override void dispose()
         {
+            m_evtCancel.Set();
             base.dispose();
         }
 
@@ -967,6 +992,317 @@ namespace MyCaffe.test
                 gym.CloseUi();
 
             mycaffe.Dispose();
+        }
+
+        /// <summary>
+        /// Test the training using real-time combo data (with batch = 1).
+        /// </summary>
+        /// <param name="bEnableUI">Specifies to turn on the UI display.</param>
+        public void TestTrainingRealTimeCombo(bool bEnableUI, bool bEmphasizeCfcNoGate, bool bEmphasizeCfcGate, bool bEmphasizeLtc)
+        {
+            if (m_evtCancel.WaitOne(0))
+                return;
+
+            int nBatchSize = 1;
+            int nInputSize = 82;
+            int nOutputSize = 1;
+            int nHiddenSize = 256;
+            int nBackboneLayers = 2;
+            int nBackboneUnits = 64;
+            string strSolver = buildSolver(0.01f);
+            string strModelCfcNoGate = buildModel(nBatchSize, nInputSize, false, nHiddenSize, 0.0f, nBackboneLayers, nBackboneUnits, nOutputSize, CfcParameter.CELL_TYPE.CFC);
+            string strModelCfcGate = buildModel(nBatchSize, nInputSize, true, nHiddenSize, 0.0f, nBackboneLayers, nBackboneUnits, nOutputSize, CfcParameter.CELL_TYPE.CFC);
+            string strModelLtc = buildModel(nBatchSize, nInputSize, false, nHiddenSize, 0.0f, nBackboneLayers, nBackboneUnits, nOutputSize, CfcParameter.CELL_TYPE.LTC);
+
+            m_log.EnableTrace = true;
+
+            // Setup MyCaffe and load the model.
+            MyCaffeOperation<T> mycaffeOp_cfcNoGate = new MyCaffeOperation<T>("CFC No Gate");
+            MyCaffeOperation<T> mycaffeOp_cfcGate = new MyCaffeOperation<T>("CFC Gate");
+            MyCaffeOperation<T> mycaffeOp_ltc = new MyCaffeOperation<T>("LTC");
+
+            try
+            {
+                EventWaitHandle evtGlobalCancel = new EventWaitHandle(false, EventResetMode.ManualReset, "__GRADIENT_CHECKER_CancelEvent__");
+
+                if (!mycaffeOp_cfcNoGate.Initialize(evtGlobalCancel, m_evtCancel, m_log, 0, strModelCfcNoGate, strSolver, nInputSize, nOutputSize))
+                    throw new Exception("Could not initialize the CFC No Gate model!");
+
+                if (!mycaffeOp_cfcGate.Initialize(evtGlobalCancel, m_evtCancel, m_log, 0, strModelCfcGate, strSolver, nInputSize, nOutputSize))
+                    throw new Exception("Could not initialize the CFC Gate model!");
+
+                if (!mycaffeOp_ltc.Initialize(evtGlobalCancel, m_evtCancel, m_log, 1, strModelLtc, strSolver, nInputSize, nOutputSize))
+                    throw new Exception("Could not initialize the LTC model!");
+
+                // Setup the curve gym for the data.
+                MyCaffePythonGym gym = new MyCaffePythonGym();
+                Random random = new Random();
+
+                // 0 = Sin, 1 = Cos, 2 = Random
+                gym.Initialize("Curve", "CurveType=0");
+
+                // Run the trained model
+                if (bEnableUI)
+                    gym.OpenUi();
+
+                PropertySet propTest = new PropertySet();
+                CurrentState state = gym.Step(0, 1, propTest);
+
+                propTest = new PropertySet();
+
+                float[] rgInput = new float[nInputSize];
+                float[] rgTimeSteps = new float[nInputSize];
+                float[] rgMask = new float[nInputSize];
+                float[] rgTarget = new float[nOutputSize];
+
+                WaitHandle[] rgWait = new WaitHandle[3];
+
+                CalculationArray caCfcNoGate = new CalculationArray(200);
+                CalculationArray caCfcGate = new CalculationArray(200);
+                CalculationArray caLtc = new CalculationArray(200);
+
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
+
+                for (int i = 0; i < 2000; i++)
+                {
+                    List<DataPoint> rgHistory = state.GymState.History;
+
+                    if (rgHistory.Count >= nInputSize)
+                    {
+                        for (int j = 0; j < nInputSize; j++)
+                        {
+                            int nIdx = rgHistory.Count - nInputSize + j;
+                            rgInput[j] = rgHistory[nIdx].Inputs[0];
+                            rgTimeSteps[j] = rgHistory[nIdx].Time;
+                            rgMask[j] = rgHistory[nIdx].Mask[0];
+                            rgTarget[0] = rgHistory[nIdx].Target;
+                        }
+
+                        rgWait[0] = mycaffeOp_cfcNoGate.RunCycleAsync(rgInput, rgTimeSteps, rgMask, rgTarget);
+                        rgWait[1] = mycaffeOp_cfcGate.RunCycleAsync(rgInput, rgTimeSteps, rgMask, rgTarget);
+                        rgWait[2] = mycaffeOp_ltc.RunCycleAsync(rgInput, rgTimeSteps, rgMask, rgTarget);
+
+                        while (!WaitHandle.WaitAll(rgWait, 10))
+                        {
+                            Thread.Sleep(1);
+                            if (m_evtCancel.WaitOne(i))
+                                break;
+
+                            if (evtGlobalCancel.WaitOne(0))
+                                break;
+                        }
+
+                        if (m_evtCancel.WaitOne(0))
+                            break;
+
+                        if (evtGlobalCancel.WaitOne(0))
+                            break;
+
+                        caCfcNoGate.Add(mycaffeOp_cfcNoGate.TotalMilliseconds);
+                        caCfcGate.Add(mycaffeOp_cfcGate.TotalMilliseconds);
+                        caLtc.Add(mycaffeOp_ltc.TotalMilliseconds);
+
+                        float fPredicted_cfcNoGate = mycaffeOp_cfcNoGate.Output[0];
+                        float fPredicted_cfcGate = mycaffeOp_cfcGate.Output[0];
+                        float fPredicted_ltc = mycaffeOp_ltc.Output[0];
+
+                        propTest.SetProperty("override_predictions", "3");
+
+                        propTest.SetProperty("override_prediction0", fPredicted_cfcNoGate.ToString());
+                        propTest.SetProperty("override_prediction0_name", "CFC no gate");
+                        propTest.SetProperty("override_prediction0_emphasize", bEmphasizeCfcNoGate.ToString());
+
+                        propTest.SetProperty("override_prediction1", fPredicted_cfcGate.ToString());
+                        propTest.SetProperty("override_prediction1_name", "CFC gate");
+                        propTest.SetProperty("override_prediction1_emphasize", bEmphasizeCfcGate.ToString());
+
+                        propTest.SetProperty("override_prediction2", fPredicted_ltc.ToString());
+                        propTest.SetProperty("override_prediction2_name", "LTC");
+                        propTest.SetProperty("override_prediction2_emphasize", bEmphasizeLtc.ToString());
+
+                        if (sw.Elapsed.TotalMilliseconds > 1000)
+                        {
+                            sw.Restart();
+
+                            m_log.WriteLine("CFC No Gate: " + caCfcNoGate.Average.ToString("N3") + " ms.");
+                            m_log.WriteLine("CFC Gate: " + caCfcGate.Average.ToString("N3") + " ms.");
+                            m_log.WriteLine("LTC: " + caLtc.Average.ToString("N3") + " ms.");
+                            m_log.WriteLine("---------------------------------");
+                        }
+                    }
+
+                    state = gym.Step(0, 1, propTest);
+                }
+
+                if (bEnableUI)
+                    gym.CloseUi();
+            }
+            finally
+            {
+                if (mycaffeOp_cfcNoGate != null)
+                    mycaffeOp_cfcNoGate.Dispose();
+
+                if (mycaffeOp_cfcGate != null)
+                    mycaffeOp_cfcGate.Dispose();
+
+                if (mycaffeOp_ltc != null)
+                    mycaffeOp_ltc.Dispose();
+            }
+        }
+    }
+
+    internal class MyCaffeOperation<T> : IDisposable
+    {
+        Log m_log;
+        ManualResetEvent m_evtCancel = new ManualResetEvent(false);
+        ManualResetEvent m_evtInitalized = new ManualResetEvent(false);
+        AutoResetEvent m_evtReady = new AutoResetEvent(false);
+        AutoResetEvent m_evtDone = new AutoResetEvent(false);
+        string m_strName;
+        string m_strModel;
+        string m_strSolver;
+        int m_nGpuID = 0;
+        float[] m_rgInput = null;
+        float[] m_rgTimeSteps = null;
+        float[] m_rgMask = null;
+        float[] m_rgTarget = null;
+        float[] m_rgOutput = null;
+        Exception m_err = null;
+        Stopwatch m_sw = new Stopwatch();
+        EventWaitHandle m_evtGlobalCancel;
+
+        public MyCaffeOperation(string strName)
+        {
+            m_strName = strName;
+        }
+
+        public bool Initialize(EventWaitHandle evtGlobalCancel, ManualResetEvent evtCancel, Log log, int nGpuID, string strModel, string strSolver, int nInputSize, int nOutputSize)
+        {
+            m_log = log;
+            m_nGpuID = nGpuID;
+            m_strModel = strModel;
+            m_strSolver = strSolver;
+
+            m_evtCancel = evtCancel;
+            m_evtGlobalCancel = evtGlobalCancel;
+            m_rgInput = new float[nInputSize];
+            m_rgTimeSteps = new float[nInputSize];
+            m_rgMask = new float[nInputSize];
+            m_rgTarget = new float[nOutputSize];
+
+            Thread th = new Thread(new ThreadStart(operationThread));
+            th.Start();
+
+            WaitHandle[] rgWait = new WaitHandle[2];
+            rgWait[0] = m_evtCancel;
+            rgWait[1] = m_evtInitalized;
+
+            if (WaitHandle.WaitAny(rgWait) == 0)
+                return false;
+
+            return true;
+        }
+
+        public void Dispose()
+        {
+            m_evtCancel.Set();
+        }
+
+        public WaitHandle RunCycleAsync(float[] rgInput, float[] rgTimeSteps, float[] rgMask, float[] rgTarget)
+        {
+            m_rgInput = rgInput;
+            m_rgTimeSteps = rgTimeSteps;
+            m_rgMask = rgMask;
+            m_rgTarget = rgTarget;
+
+            m_sw.Restart();
+            m_evtReady.Set();
+
+            return m_evtDone;
+        }
+
+        protected float[] convertF(T[] rg)
+        {
+            return Utility.ConvertVecF<T>(rg);
+        }
+
+        protected T[] convert(float[] rg)
+        {
+            return Utility.ConvertVec<T>(rg);
+        }
+
+        public WaitHandle DoneEvent
+        {
+            get { return m_evtDone; }
+        }
+
+        public float[] Output
+        {
+            get { return m_rgOutput; }
+        }
+
+        public double TotalMilliseconds
+        {
+            get { return m_sw.Elapsed.TotalMilliseconds; }
+        }
+
+        private void operationThread()
+        {
+            MyCaffeControl<T> mycaffe = null;
+
+            try
+            {
+                m_log.EnableTrace = true;
+                SettingsCaffe s = new SettingsCaffe();
+                s.GpuIds = m_nGpuID.ToString();
+
+                mycaffe = new MyCaffeControl<T>(s, m_log, new CancelEvent());
+                mycaffe.LoadLite(Phase.TRAIN, m_strSolver, m_strModel, null, false, false);
+                Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
+                Solver<T> solver = mycaffe.GetInternalSolver();
+
+                Blob<T> blobX = net.FindBlob("x");
+                Blob<T> blobTt = net.FindBlob("tt");
+                Blob<T> blobMask = net.FindBlob("mask");
+                Blob<T> blobY = net.FindBlob("target");
+                Blob<T> blobXhat = net.FindBlob("x_hat");
+
+                m_evtInitalized.Set();
+
+                WaitHandle[] rgWait = new WaitHandle[3];
+
+                rgWait[0] = m_evtGlobalCancel;
+                rgWait[1] = m_evtCancel;
+                rgWait[2] = m_evtReady;
+
+                while (WaitHandle.WaitAny(rgWait) > 1)
+                {
+                    blobX.mutable_cpu_data = convert(m_rgInput);
+                    blobTt.mutable_cpu_data = convert(m_rgTimeSteps);
+                    blobMask.mutable_cpu_data = convert(m_rgMask);
+                    blobY.mutable_cpu_data = convert(m_rgTarget);
+
+                    net.Forward();
+                    net.Backward();
+                    solver.Step(1);
+
+                    m_rgOutput = convertF(blobXhat.mutable_cpu_data);
+                    m_evtDone.Set();
+                    m_sw.Stop();
+                }
+            }
+            catch (Exception excpt)
+            {
+                m_err = excpt;
+                m_log.WriteError(excpt);
+            }
+            finally
+            {
+                m_evtCancel.Set();
+                if (mycaffe != null)
+                    mycaffe.Dispose();
+            }
         }
     }
 }
