@@ -34,7 +34,11 @@ namespace MyCaffe.gym
         /// Specifies the rotation of the object.
         /// </summary>
         protected float m_fRotation = 0;
-        System.Drawing.Drawing2D.GraphicsState m_gstate = null;
+        /// <summary>
+        /// Specifies that the colors have changed.
+        /// </summary>
+        protected bool m_bClrDirty = false;
+        System.Drawing.Drawing2D.GraphicsState m_gstate = null;        
 
         /// <summary>
         /// The constructor.
@@ -78,6 +82,18 @@ namespace MyCaffe.gym
                 g.Restore(m_gstate);
                 m_gstate = null;
             }
+        }
+
+        /// <summary>
+        /// Set the colors of the object.
+        /// </summary>
+        /// <param name="clrFill">Specifies the fill color.</param>
+        /// <param name="clrBorder">Specifies the border color.</param>
+        public void SetColors(Color clrFill, Color clrBorder)
+        {
+            m_clrFill = clrFill;
+            m_clrBorder = clrBorder;
+            m_bClrDirty = true;
         }
 
         /// <summary>
@@ -483,10 +499,14 @@ namespace MyCaffe.gym
         /// <param name="str">Specifies the text to draw.</param>
         /// <param name="fX">Specifies the left most x-coordinate where the text is drawn.</param>
         /// <param name="fY">Specifies the top most y-coordinate where the text is drawn.</param>
-        public void RenderText(Graphics g, string str, float fX, float fY)
+        /// <param name="br">Optionally, specifies the brush to use (default = Black)</param>
+        public void RenderText(Graphics g, string str, float fX, float fY, Brush br = null)
         {
+            if (br == null)
+                br = Brushes.Black;
+
             Font font = new Font("Century Gothic", 9.0f);
-            g.DrawString(str, font, Brushes.Black, new PointF(fX, fY));
+            g.DrawString(str, font, br, new PointF(fX, fY));
             font.Dispose();
         }
 

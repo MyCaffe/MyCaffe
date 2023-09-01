@@ -67,7 +67,7 @@
             this.btnDeleteRecordingData});
             this.toolStrip1.Location = new System.Drawing.Point(3, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(81, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(112, 25);
             this.toolStrip1.TabIndex = 0;
             // 
             // btnShowActionImage
@@ -92,6 +92,7 @@
             this.btnRecord.Name = "btnRecord";
             this.btnRecord.Size = new System.Drawing.Size(23, 22);
             this.btnRecord.Text = "Record";
+            this.btnRecord.ToolTipText = "Record data saved to \'MyDocuments\\MyCaffe\\gym\\recordings\'";
             this.btnRecord.Click += new System.EventHandler(this.btnRecord_Click);
             // 
             // btnDeleteRecordingData

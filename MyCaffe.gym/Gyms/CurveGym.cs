@@ -15,7 +15,7 @@ namespace MyCaffe.gym
     /// <summary>
     /// The Curve Gym provides a simulation of continuous curve such as Sin or Cos.
     /// </summary>
-    public class CurveGym : IXMyCaffeGym
+    public class CurveGym : IXMyCaffeGym, IDisposable
     {
         string m_strName = "Curve";
         Dictionary<string, int> m_rgActionSpace;
@@ -26,7 +26,7 @@ namespace MyCaffe.gym
         DATA_TYPE m_dt = DATA_TYPE.VALUES;
         GeomGraph m_geomGraph;
         GeomPolyLine m_geomTargetLine;
-        GeomPolyLine m_geomPredictLine;
+        List<GeomPolyLine> m_rgGeomPredictedLines = new List<GeomPolyLine>();
         CURVE_TYPE m_curveType = CURVE_TYPE.SIN;
         float m_fXScale = 512;
         float m_fYScale = 150;
@@ -34,9 +34,16 @@ namespace MyCaffe.gym
         float m_fInc = (float)(Math.PI * 2.0f / 360.0f);
         float m_fMax = (float)(Math.PI * 2.0f);
         List<DataPoint> m_rgPrevPoints = new List<DataPoint>();
+        Dictionary<Color, Brush> m_rgBrushes = new Dictionary<Color, Brush>();
+        Dictionary<Color, Brush> m_rgBrushesEmphasize = new Dictionary<Color, Brush>();
         int m_nMaxPlots = 500;
         float m_fLastY = 0;
         bool m_bRenderImage = true;
+        List<string> m_rgstrLabels = null;
+        List<bool> m_rgEmphasize = null;
+        List<Color> m_rgPallete = new List<Color>();
+        List<Color> m_rgPalleteEmphasize = new List<Color>() { Color.Orange, Color.Green, Color.Red, Color.HotPink, Color.Tomato, Color.Lavender, Color.DarkOrange };
+        int m_nAlphaNormal = 64;
 
         Random m_random = new Random();
         CurveState m_state = new CurveState();
@@ -84,6 +91,31 @@ namespace MyCaffe.gym
             m_rgActionSpace = new Dictionary<string, int>();
             m_rgActionSpace.Add("MoveUp", 0);
             m_rgActionSpace.Add("MoveDn", 1);
+
+            foreach (Color clr in m_rgPalleteEmphasize)
+            {
+                Color clrLite = Color.FromArgb(m_nAlphaNormal, clr);
+                m_rgPallete.Add(clrLite);
+
+                m_rgBrushes.Add(clr, new SolidBrush(clrLite));
+                m_rgBrushesEmphasize.Add(clr, new SolidBrush(clr));
+            }
+        }
+
+        /// <summary>
+        /// Release all resources used.
+        /// </summary>
+        public void Dispose()
+        {
+            foreach (KeyValuePair<Color, Brush> kv in m_rgBrushes)
+            {
+                kv.Value.Dispose();
+            }
+
+            foreach (KeyValuePair<Color, Brush> kv in m_rgBrushesEmphasize)
+            {
+                kv.Value.Dispose();
+            }
         }
 
         /// <summary>
@@ -183,26 +215,6 @@ namespace MyCaffe.gym
 
         private void processAction(ACTION? a, double? dfOverride = null)
         {
-            if (dfOverride.HasValue)
-            {
-                m_state.PredictedY = dfOverride.Value;
-            }
-            else
-            {
-                if (a.HasValue)
-                {
-                    switch (a)
-                    {
-                        case ACTION.MOVEUP:
-                            m_state.PredictedY += 0.1;
-                            break;
-
-                        case ACTION.MOVEDN:
-                            m_state.PredictedY -= 0.1;
-                            break;
-                    }
-                }
-            }
         }
 
         /// <summary>
@@ -226,9 +238,16 @@ namespace MyCaffe.gym
 
             rgData.Add(m_state.X);
             rgData.Add(m_state.Y);
-            rgData.Add(m_state.PredictedY);
             rgData.Add(m_nSteps);
 
+            if (m_state.PredictedYValues.Count > 0)
+                rgData.AddRange(m_state.PredictedYValues);
+            else
+                rgData.Add(0);
+
+            m_rgstrLabels = m_state.PredictedYNames;
+            m_rgEmphasize = m_state.PredictedYEmphasize;
+            
             return Render(bShowUi, nWidth, nHeight, rgData.ToArray(), bGetAction);
         }
 
@@ -243,11 +262,10 @@ namespace MyCaffe.gym
         /// <returns>A tuple optionally containing a Bitmap and/or Simpledatum is returned.</returns>
         public Tuple<Bitmap, SimpleDatum> Render(bool bShowUi, int nWidth, int nHeight, double[] rgData, bool bGetAction)
         { 
-
             double dfX = rgData[0];
             double dfY = rgData[1];
-            double dfPredictedY = rgData[2];
-            int nSteps = (int)rgData[3];
+            int nSteps = (int)rgData[2];
+            int nPredictedIdx = 3;
 
             m_nSteps = nSteps;
             m_nMaxSteps = Math.Max(nSteps, m_nMaxSteps);
@@ -287,26 +305,74 @@ namespace MyCaffe.gym
                     }
                     m_geomTargetLine.Polygon.Add(new PointF((float)dfX, (float)(dfY * m_fYScale)));
 
-                    if (m_geomPredictLine == null)
+                    if (m_rgGeomPredictedLines.Count == 0)
                     {
-                        m_geomPredictLine = new GeomPolyLine(fL, fR, fT, fB, Color.Orange, Color.Orange, m_nMaxPlots);
-                        m_geomPredictLine.Polygon.Clear();
-                        m_geomPredictLine.SetLocation(0, fScale * (fWorldHeight / 2));
+                        List<Color> rgClr = (m_rgEmphasize != null && m_rgEmphasize.Count > 0 && m_rgEmphasize[0]) ? m_rgPalleteEmphasize : m_rgPallete; 
+                        GeomPolyLine geomPredictLine = new GeomPolyLine(fL, fR, fT, fB, rgClr[0], rgClr[0], m_nMaxPlots);
+                        geomPredictLine.Polygon.Clear();
+                        geomPredictLine.SetLocation(0, fScale * (fWorldHeight / 2));
+                        m_rgGeomPredictedLines.Add(geomPredictLine);
                     }
-                    m_geomPredictLine.Polygon.Add(new PointF((float)dfX, (float)(dfPredictedY * m_fYScale)));
+
+                    if (m_rgstrLabels != null && m_rgstrLabels.Count > 0)
+                    {
+                        if (m_rgEmphasize[0])
+                        {
+                            List<Color> rgClr = (m_rgEmphasize != null && m_rgEmphasize.Count > 0 && m_rgEmphasize[0]) ? m_rgPalleteEmphasize : m_rgPallete;
+                            m_rgGeomPredictedLines[0].SetColors(rgClr[0], rgClr[0]);
+                        }
+
+                        int nIdx = 1;
+                        while (m_rgGeomPredictedLines.Count < m_rgstrLabels.Count && nIdx < m_rgPallete.Count)
+                        {
+                            List<Color> rgClr = (m_rgEmphasize != null && m_rgEmphasize.Count > nIdx && m_rgEmphasize[nIdx]) ? m_rgPalleteEmphasize : m_rgPallete;
+                            GeomPolyLine geomPredictLine = new GeomPolyLine(fL, fR, fT, fB, rgClr[nIdx], rgClr[nIdx], m_nMaxPlots);
+                            geomPredictLine.Polygon.Clear();
+                            geomPredictLine.SetLocation(0, fScale * (fWorldHeight / 2));
+                            m_rgGeomPredictedLines.Add(geomPredictLine);
+                            nIdx++;
+                        }
+                    }
+
+                    for (int i=0; i < m_rgGeomPredictedLines.Count; i++)
+                    {
+                        m_rgGeomPredictedLines[i].Polygon.Add(new PointF((float)dfX, (float)(rgData[nPredictedIdx + i] * m_fYScale)));
+                    }
 
                     GeomView view = new GeomView();
 
                     view.RenderText(g, "X = " + dfX.ToString("N02"), 10, 24);
                     view.RenderText(g, "Y = " + dfY.ToString("N02"), 10, 36);
-                    view.RenderText(g, "Predicted Y = " + dfPredictedY.ToString("N02"), 10, 48);
-                    view.RenderText(g, "Curve Type = " + m_curveType.ToString(), 10, 60);
+                    int nY = 48;
+
+                    if (m_rgstrLabels.Count > 0)
+                    {
+                        for (int i = 0; i < m_rgGeomPredictedLines.Count && i < m_rgstrLabels.Count; i++)
+                        {
+                            Dictionary<Color, Brush> rgClr = (m_rgEmphasize.Count > i && m_rgEmphasize[i]) ? m_rgBrushesEmphasize : m_rgBrushes;
+                            view.RenderText(g, "Predicted Y (" + m_rgstrLabels[i] + ") = " + rgData[nPredictedIdx + i].ToString("N02"), 10, nY, rgClr[m_rgPalleteEmphasize[i]]);
+                            nY += 12;
+                        }
+                    }
+                    else
+                    {
+                        Dictionary<Color, Brush> rgClr = (m_rgEmphasize.Count > 0 && m_rgEmphasize[0]) ? m_rgBrushesEmphasize : m_rgBrushes;
+                        view.RenderText(g, "Predicted Y = " + rgData[nPredictedIdx].ToString("N02"), 10, nY, rgClr[m_rgPalleteEmphasize[0]]);
+                        nY += 12;
+                    }
+
+                    view.RenderText(g, "Curve Type = " + m_curveType.ToString(), 10, nY);
                     view.RenderSteps(g, m_nSteps, m_nMaxSteps);
 
                     // Render the objects.
                     view.AddObject(m_geomGraph);
                     view.AddObject(m_geomTargetLine);
-                    view.AddObject(m_geomPredictLine);
+
+                    for (int i = 0; i < m_rgGeomPredictedLines.Count; i++)
+                    {
+                        view.AddObject(m_rgGeomPredictedLines[i]);
+                    }
+
                     view.Render(g);
 
                     if (bGetAction)
@@ -354,7 +420,7 @@ namespace MyCaffe.gym
             m_nSteps = 0;
 
             m_fLastY = 0;
-            m_state = new CurveState(dfX, dfY, dfPredictedY);
+            m_state = new CurveState(dfX, dfY, new List<double>() { dfPredictedY });
 
             if (props != null)
             {
@@ -409,6 +475,9 @@ namespace MyCaffe.gym
         {
             CurveState state = new CurveState(m_state);
             double dfReward = 0;
+            List<double> rgOverrides = new List<double>();
+            List<string> rgOverrideNames = new List<string>();
+            List<bool> rgOverrideEmphasize = new List<bool>();
             double? dfOverride = null;
 
             m_bRenderImage = true;
@@ -419,9 +488,34 @@ namespace MyCaffe.gym
                 if (bTraining)
                     m_bRenderImage = false;
 
-                double dfVal = propExtra.GetPropertyAsDouble("override_prediction", double.MaxValue);
-                if (dfVal != double.MaxValue)   
-                    dfOverride = dfVal;
+                double dfCount = propExtra.GetPropertyAsDouble("override_predictions", 0);
+                if (dfCount > 0)
+                {
+                    for (int i = 0; i < (int)dfCount; i++)
+                    {
+                        double dfVal = propExtra.GetPropertyAsDouble("override_prediction" + i.ToString(), double.MaxValue);
+                        if (dfVal != double.MaxValue)
+                            rgOverrides.Add(dfVal);
+
+                        string strName = propExtra.GetProperty("override_prediction" + i.ToString() + "_name");
+                        if (!string.IsNullOrEmpty(strName))
+                            rgOverrideNames.Add(strName);
+
+                        string strVal = propExtra.GetProperty("override_prediction" + i.ToString() + "_emphasize");
+                        bool bEmphasize;
+                        if (bool.TryParse(strVal, out bEmphasize))
+                            rgOverrideEmphasize.Add(bEmphasize);
+                    }
+                }
+                else
+                {
+                    double dfVal = propExtra.GetPropertyAsDouble("override_prediction", double.MaxValue);
+                    if (dfVal != double.MaxValue)
+                        rgOverrides.Add(dfVal);
+                }
+
+                if (rgOverrides.Count > 0)
+                    dfOverride = rgOverrides[0];
             }
 
             processAction((ACTION)nAction, dfOverride);
@@ -442,14 +536,14 @@ namespace MyCaffe.gym
             float fTarget = (float)dfY;
             float fTime = (float)(dfX / m_nMaxPlots);
 
-            DataPoint pt = new DataPoint(rgInput, rgMask, fTarget,  (float)dfPredictedY, fTime);
+            DataPoint pt = new DataPoint(rgInput, rgMask, fTarget, rgOverrides, rgOverrideNames, rgOverrideEmphasize, fTime);
             m_rgPrevPoints.Add(pt);
 
             if (m_rgPrevPoints.Count > m_nMaxPlots)
                 m_rgPrevPoints.RemoveAt(0);
 
             CurveState stateOut = m_state;
-            m_state = new CurveState(dfX, dfY, dfPredictedY, m_rgPrevPoints);
+            m_state = new CurveState(dfX, dfY, rgOverrides, rgOverrideNames, rgOverrideEmphasize, m_rgPrevPoints);
 
             dfReward = 1.0 - Math.Abs(dfPredictedY - dfY);
             if (dfReward < -1)
@@ -511,17 +605,21 @@ namespace MyCaffe.gym
     {
         double m_dfX = 0;
         double m_dfY = 0;
-        double m_dfPredictedY = 0;
+        List<double> m_rgdfPredictedY = null;
+        List<string> m_rgstrPredictedY = null;
+        List<bool> m_rgbPredictedY = null;
         int m_nSteps = 0;
 
         public const double MAX_X = 2.4;
         public const double MAX_Y = 2.4;
 
-        public CurveState(double dfX = 0, double dfY = 0, double dfPredictedY = 0, List<DataPoint> rgPoints = null)
+        public CurveState(double dfX = 0, double dfY = 0, List<double> rgdfPredictedY = null, List<string> rgstrPredictedY = null, List<bool> rgbPredictedY = null, List<DataPoint> rgPoints = null)
         {
             m_dfX = dfX;
             m_dfY = dfY;
-            m_dfPredictedY = dfPredictedY;
+            m_rgdfPredictedY = rgdfPredictedY;
+            m_rgstrPredictedY = rgstrPredictedY;
+            m_rgbPredictedY = rgbPredictedY;
 
             if (rgPoints != null)
                 m_rgPrevPoints = rgPoints;
@@ -531,7 +629,9 @@ namespace MyCaffe.gym
         {
             m_dfX = s.m_dfX;
             m_dfY = s.m_dfY;
-            m_dfPredictedY = s.m_dfPredictedY;
+            m_rgdfPredictedY = Utility.Clone<double>(s.m_rgdfPredictedY);
+            m_rgstrPredictedY = Utility.Clone<string>(s.m_rgstrPredictedY);
+            m_rgbPredictedY = Utility.Clone<bool>(s.m_rgbPredictedY);
             m_nSteps = s.m_nSteps;
             m_rgPrevPoints = new List<DataPoint>();
 
@@ -559,8 +659,31 @@ namespace MyCaffe.gym
 
         public double PredictedY
         {
-            get { return m_dfPredictedY; }
-            set { m_dfPredictedY = value; }
+            get
+            {
+                if (m_rgdfPredictedY == null || m_rgdfPredictedY.Count == 0)
+                    return 0;
+
+                return m_rgdfPredictedY[0];
+            }
+        }
+
+        public List<double> PredictedYValues
+        {
+            get { return m_rgdfPredictedY; }
+            set { m_rgdfPredictedY = value; }
+        }
+
+        public List<string> PredictedYNames
+        {
+            get { return m_rgstrPredictedY; }
+            set { m_rgstrPredictedY = value; }
+        }
+
+        public List<bool> PredictedYEmphasize
+        {
+            get { return m_rgbPredictedY; }
+            set { m_rgbPredictedY = value; }
         }
 
         public override State Clone()
@@ -573,9 +696,14 @@ namespace MyCaffe.gym
             nDataLen = 4;
             Valuemap data = new Valuemap(1, 4, 1);
 
+            double dfPredictedY = 0;
+
+            if (m_rgdfPredictedY != null && m_rgdfPredictedY.Count > 0)
+                dfPredictedY = m_rgdfPredictedY[0];
+
             data.SetPixel(0, 0, getValue(m_dfX, -MAX_X, MAX_X, bNormalize));
             data.SetPixel(0, 1, getValue(m_dfY, -MAX_Y, MAX_Y, bNormalize));
-            data.SetPixel(0, 2, getValue(m_dfPredictedY, -MAX_Y, MAX_Y, bNormalize));
+            data.SetPixel(0, 2, getValue(dfPredictedY, -MAX_Y, MAX_Y, bNormalize));
             data.SetPixel(0, 3, m_nSteps);
 
             return new SimpleDatum(data);

@@ -237,8 +237,10 @@ namespace MyCaffe.gym
         float[] m_rgfInputs;
         float[] m_rgfMask;
         float m_fTarget;
-        float m_fPredicted;
         float m_fTime;
+        List<double> m_rgdfPredicted = null;
+        List<string> m_rgstrPredicted = null;
+        List<bool> m_rgbEmphasize = null;
 
         /// <summary>
         /// The constructor.
@@ -246,15 +248,20 @@ namespace MyCaffe.gym
         /// <param name="rgfInputs">Specifies the inputs.</param>
         /// <param name="rgfMask">Specifies the mask, where 1 indicates that the input at that same location is valid.</param>
         /// <param name="fTarget">Specifies the output target.</param>
-        /// <param name="fPredicted">Specifies the predicted value.</param>
+        /// <param name="rgdfPredicted">Specifies the predicted values.</param>
+        /// <param name="rgstrPredicted">Specifies the predicted labels.</param>
+        /// <param name="rgbEmphasize">Specifies which predicted labels to emphasize.</param>
         /// <param name="fTime">Specifies the time of the data point.</param>
-        public DataPoint(float[] rgfInputs, float[] rgfMask, float fTarget, float fPredicted, float fTime)
+        public DataPoint(float[] rgfInputs, float[] rgfMask, float fTarget, List<double> rgdfPredicted, List<string> rgstrPredicted, List<bool> rgbEmphasize, float fTime)
         {
             m_rgfInputs = rgfInputs;
             m_rgfMask = rgfMask;
             m_fTarget = fTarget;
-            m_fPredicted = fPredicted;
             m_fTime = fTime;
+
+            m_rgdfPredicted = rgdfPredicted;
+            m_rgstrPredicted = rgstrPredicted;
+            m_rgbEmphasize = rgbEmphasize;
         }
 
         /// <summary>
@@ -282,11 +289,27 @@ namespace MyCaffe.gym
         }
 
         /// <summary>
-        /// Returns the predicted value.
+        /// Returns the predicted values.
         /// </summary>
-        public float Predicted
+        public List<double> Predicted
         {
-            get { return m_fPredicted; }
+            get { return m_rgdfPredicted; }
+        }
+
+        /// <summary>
+        /// Returns the predicted labels.   
+        /// </summary>
+        public List<string> PredictedLabels
+        {
+            get { return m_rgstrPredicted; }
+        }
+
+        /// <summary>
+        /// Returns the predicted labels to emphasize.
+        /// </summary>
+        public List<bool> PredictedEmphasize
+        {
+            get { return m_rgbEmphasize; }
         }
 
         /// <summary>
@@ -303,7 +326,7 @@ namespace MyCaffe.gym
         /// <returns>The new copy is returned.</returns>
         public DataPoint Clone()
         {
-            return new DataPoint(m_rgfInputs, m_rgfMask, m_fTarget, m_fPredicted, m_fTime);
+            return new DataPoint(m_rgfInputs, m_rgfMask, m_fTarget, Utility.Clone<double>(m_rgdfPredicted), Utility.Clone<string>(m_rgstrPredicted), Utility.Clone<bool>(m_rgbEmphasize), m_fTime);
         }
     }
 
