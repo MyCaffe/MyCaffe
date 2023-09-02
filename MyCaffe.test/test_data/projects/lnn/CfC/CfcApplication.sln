@@ -1,0 +1,23 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33829.357
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "CfcApplication", "CfcApplication\CfcApplication.pyproj", "{96A4F2DB-F924-4B3B-A2EA-A5F036FBF56A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{96A4F2DB-F924-4B3B-A2EA-A5F036FBF56A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{96A4F2DB-F924-4B3B-A2EA-A5F036FBF56A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8B4E867D-7CEE-4D6E-BF29-0A6E2503C31F}
+	EndGlobalSection
+EndGlobal

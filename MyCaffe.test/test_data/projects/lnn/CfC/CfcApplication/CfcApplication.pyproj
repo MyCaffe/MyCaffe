@@ -1,0 +1,55 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>96a4f2db-f924-4b3b-a2ea-a5f036fbf56a</ProjectGuid>
+    <ProjectHome>.</ProjectHome>
+    <StartupFile>test_cfc.py</StartupFile>
+    <SearchPath>
+    </SearchPath>
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <Name>CfcApplication</Name>
+    <RootNamespace>CfcApplication</RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="duv_person_activity.py" />
+    <Compile Include="duv_physionet.py" />
+    <Compile Include="duv_utils.py" />
+    <Compile Include="CfcApplication.py" />
+    <Compile Include="test_grad5.py" />
+    <Compile Include="test_grad4.py" />
+    <Compile Include="test_ltc_cell.py" />
+    <Compile Include="test_cfc_ltc.py" />
+    <Compile Include="test_cfc.py" />
+    <Compile Include="test_grad3.py" />
+    <Compile Include="test_grad2.py" />
+    <Compile Include="test_lecun.py" />
+    <Compile Include="test_grad.py" />
+    <Compile Include="test_cfc_cell.py" />
+    <Compile Include="test_softplus.py" />
+    <Compile Include="test_silu.py" />
+    <Compile Include="torch_cfc.py" />
+    <Compile Include="traffic_with_cfc.py" />
+    <Compile Include="train_person_acitivity.py" />
+    <Compile Include="train_physio.py" />
+    <Compile Include="utility.py" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
+  <!-- Uncomment the CoreCompile target to enable the Build command in
+       Visual Studio and specify your pre- and post-build commands in
+       the BeforeBuild and AfterBuild targets below. -->
+  <!--<Target Name="CoreCompile" />-->
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+</Project>
