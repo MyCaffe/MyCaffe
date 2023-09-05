@@ -58,7 +58,8 @@ namespace MyCaffe.trainers
 
         enum TRAINER_TYPE
         {
-            RNN_SIMPLE
+            RNN_SIMPLE,
+            RNN_SUPER_SIMPLE
         }
 
         /// <summary>
@@ -137,6 +138,9 @@ namespace MyCaffe.trainers
 
             switch (m_trainerType)
             {
+                case TRAINER_TYPE.RNN_SUPER_SIMPLE:
+                    return new rnn.simple.TrainerRNNSimple<double>(mycaffe, m_properties, m_random, this, m_rgVocabulary);
+
                 case TRAINER_TYPE.RNN_SIMPLE:
                     return new rnn.simple.TrainerRNN<double>(mycaffe, m_properties, m_random, this, m_rgVocabulary);
 
@@ -164,6 +168,9 @@ namespace MyCaffe.trainers
 
             switch (m_trainerType)
             {
+                case TRAINER_TYPE.RNN_SUPER_SIMPLE:
+                    return new rnn.simple.TrainerRNNSimple<float>(mycaffe, m_properties, m_random, this, m_rgVocabulary);
+
                 case TRAINER_TYPE.RNN_SIMPLE:
                     return new rnn.simple.TrainerRNN<float>(mycaffe, m_properties, m_random, this, m_rgVocabulary);
 

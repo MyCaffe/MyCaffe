@@ -1,4 +1,5 @@
 ﻿using MyCaffe.basecode;
+using MyCaffe.gym;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -24,6 +25,7 @@ namespace MyCaffe.trainers
         double[] m_rgClip = null;
         Image m_img = null;
         double m_dfTestingPercent = 0.2; // default to 20% of the tail end of the data for testing.
+        List<DataPoint> m_rgHistory = null;
 
         /// <summary>
         /// The constructor.
@@ -70,6 +72,15 @@ namespace MyCaffe.trainers
         {
             get { return m_bDone; }
             set { m_bDone = value; }
+        }
+
+        /// <summary>
+        /// Get/set the data history (if any exists).
+        /// </summary>
+        public List<DataPoint> History
+        {
+            get { return m_rgHistory; }
+            set { m_rgHistory = value; }
         }
 
         /// <summary>

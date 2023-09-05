@@ -483,6 +483,7 @@ namespace MyCaffe.trainers
         public int Index
         {
             get { return m_nIndex; }
+            set { m_nIndex = value; }
         }
 
         /// <summary>
@@ -524,6 +525,7 @@ namespace MyCaffe.trainers
         public int Action
         {
             get { return m_nAction; }
+            set { m_nAction = value; }
         }
 
         /// <summary>
@@ -540,6 +542,7 @@ namespace MyCaffe.trainers
         public bool Reset
         {
             get { return m_bReset; }
+            set { m_bReset = value; }
         }
     }
 

@@ -105,7 +105,8 @@ namespace MyCaffe.trainers
             C51b_ST,
             DQN_ST,
             DQN_SIMPLE,
-            RNN_SIMPLE
+            RNN_SIMPLE,
+            RNN_SUPER_SIMPLE
         }
 
         enum REWARD_TYPE
@@ -196,6 +197,9 @@ namespace MyCaffe.trainers
             {
                 switch (m_trainerType)
                 {
+                    case TRAINER_TYPE.RNN_SUPER_SIMPLE:
+                        return new rnn.simple.TrainerRNNSimple<double>(mycaffe, m_properties, m_random, this, m_rgVocabulary);
+
                     case TRAINER_TYPE.RNN_SIMPLE:
                         return new rnn.simple.TrainerRNN<double>(mycaffe, m_properties, m_random, this, m_rgVocabulary);
 
@@ -255,6 +259,9 @@ namespace MyCaffe.trainers
             {
                 switch (m_trainerType)
                 {
+                    case TRAINER_TYPE.RNN_SUPER_SIMPLE:
+                        return new rnn.simple.TrainerRNNSimple<float>(mycaffe, m_properties, m_random, this, m_rgVocabulary);
+
                     case TRAINER_TYPE.RNN_SIMPLE:
                         return new rnn.simple.TrainerRNN<float>(mycaffe, m_properties, m_random, this, m_rgVocabulary);
 
@@ -542,6 +549,11 @@ namespace MyCaffe.trainers
                     m_stage = Stage.RNN;
                     break;
 
+                case "RNN.SUPER.SIMPLE":
+                    m_trainerType = TRAINER_TYPE.RNN_SUPER_SIMPLE;
+                    m_stage = Stage.RNN;
+                    break;
+
                 default:
                     throw new Exception("Unknown trainer type '" + strTrainerType + "'!");
             }
@@ -549,7 +561,7 @@ namespace MyCaffe.trainers
 
         private Stage getStage()
         {
-            if (m_trainerType == TRAINER_TYPE.RNN_SIMPLE)
+            if (m_trainerType == TRAINER_TYPE.RNN_SIMPLE || m_trainerType == TRAINER_TYPE.RNN_SUPER_SIMPLE)
                 return Stage.RNN;
             else
                 return Stage.RL;
@@ -998,7 +1010,7 @@ namespace MyCaffe.trainers
                 }
             }
 
-            if (ip.num_output != (uint)nVocabCount)
+            if (ip != null && ip.num_output != (uint)nVocabCount)
             {
                 log.WriteLine("WARNING: InnerProduct layer '" + strIpName + "' num_output changed from " + ip.num_output.ToString() + " to " + nVocabCount.ToString() + " to accomodate for the vocabulary count.");
                 ip.num_output = (uint)nVocabCount;
