@@ -225,7 +225,7 @@ namespace MyCaffe.test
             {
                 foreach (ICfcLayerTest t in test.Tests)
                 {
-                    t.TestTrainingRealTimeCombo(false, true, true, true);
+                    t.TestTrainingRealTimeCombo(true, true, false, false);
                 }
             }
             finally
@@ -998,7 +998,7 @@ namespace MyCaffe.test
         /// Test the training using real-time combo data (with batch = 1).
         /// </summary>
         /// <param name="bEnableUI">Specifies to turn on the UI display.</param>
-        public void TestTrainingRealTimeCombo(bool bEnableUI, bool bEmphasizeCfcNoGate, bool bEmphasizeCfcGate, bool bEmphasizeLtc)
+        public void TestTrainingRealTimeCombo(bool bEnableUI, bool bEmphasizeCfcNoGateF, bool bEmphasizeCfcNoGateT, bool bEmphasizeLtc)
         {
             if (m_evtCancel.WaitOne(0))
                 return;
@@ -1010,26 +1010,26 @@ namespace MyCaffe.test
             int nBackboneLayers = 2;
             int nBackboneUnits = 64;
             string strSolver = buildSolver(0.01f);
-            string strModelCfcNoGate = buildModel(nBatchSize, nInputSize, false, nHiddenSize, 0.0f, nBackboneLayers, nBackboneUnits, nOutputSize, CfcParameter.CELL_TYPE.CFC);
-            string strModelCfcGate = buildModel(nBatchSize, nInputSize, true, nHiddenSize, 0.0f, nBackboneLayers, nBackboneUnits, nOutputSize, CfcParameter.CELL_TYPE.CFC);
+            string strModelCfcNoGateF = buildModel(nBatchSize, nInputSize, false, nHiddenSize, 0.0f, nBackboneLayers, nBackboneUnits, nOutputSize, CfcParameter.CELL_TYPE.CFC);
+            string strModelCfcNoGateT = buildModel(nBatchSize, nInputSize, true, nHiddenSize, 0.0f, nBackboneLayers, nBackboneUnits, nOutputSize, CfcParameter.CELL_TYPE.CFC);
             string strModelLtc = buildModel(nBatchSize, nInputSize, false, nHiddenSize, 0.0f, nBackboneLayers, nBackboneUnits, nOutputSize, CfcParameter.CELL_TYPE.LTC);
 
             m_log.EnableTrace = true;
 
             // Setup MyCaffe and load the model.
-            MyCaffeOperation<T> mycaffeOp_cfcNoGate = new MyCaffeOperation<T>("CFC No Gate");
-            MyCaffeOperation<T> mycaffeOp_cfcGate = new MyCaffeOperation<T>("CFC Gate");
+            MyCaffeOperation<T> mycaffeOp_cfcNoGateF = new MyCaffeOperation<T>("CFC No Gate (F)");
+            MyCaffeOperation<T> mycaffeOp_cfcNoGateT = new MyCaffeOperation<T>("CFC No Gate (T)");
             MyCaffeOperation<T> mycaffeOp_ltc = new MyCaffeOperation<T>("LTC");
 
             try
             {
                 EventWaitHandle evtGlobalCancel = new EventWaitHandle(false, EventResetMode.ManualReset, "__GRADIENT_CHECKER_CancelEvent__");
 
-                if (!mycaffeOp_cfcNoGate.Initialize(evtGlobalCancel, m_evtCancel, m_log, 0, strModelCfcNoGate, strSolver, nInputSize, nOutputSize))
-                    throw new Exception("Could not initialize the CFC No Gate model!");
+                if (!mycaffeOp_cfcNoGateF.Initialize(evtGlobalCancel, m_evtCancel, m_log, 0, strModelCfcNoGateF, strSolver, nInputSize, nOutputSize))
+                    throw new Exception("Could not initialize the CFC No Gate (F) model!");
 
-                if (!mycaffeOp_cfcGate.Initialize(evtGlobalCancel, m_evtCancel, m_log, 0, strModelCfcGate, strSolver, nInputSize, nOutputSize))
-                    throw new Exception("Could not initialize the CFC Gate model!");
+                if (!mycaffeOp_cfcNoGateT.Initialize(evtGlobalCancel, m_evtCancel, m_log, 0, strModelCfcNoGateT, strSolver, nInputSize, nOutputSize))
+                    throw new Exception("Could not initialize the CFC No Gate (T) model!");
 
                 if (!mycaffeOp_ltc.Initialize(evtGlobalCancel, m_evtCancel, m_log, 1, strModelLtc, strSolver, nInputSize, nOutputSize))
                     throw new Exception("Could not initialize the LTC model!");
@@ -1057,8 +1057,8 @@ namespace MyCaffe.test
 
                 WaitHandle[] rgWait = new WaitHandle[3];
 
-                CalculationArray caCfcNoGate = new CalculationArray(200);
-                CalculationArray caCfcGate = new CalculationArray(200);
+                CalculationArray caCfcNoGateF = new CalculationArray(200);
+                CalculationArray caCfcNoGateT = new CalculationArray(200);
                 CalculationArray caLtc = new CalculationArray(200);
 
                 Stopwatch sw = new Stopwatch();
@@ -1067,6 +1067,16 @@ namespace MyCaffe.test
                 int nMax = 100;
                 if (bEnableUI)
                     nMax = 2000;
+
+                propTest.SetProperty("override_predictions", "3");
+                propTest.SetProperty("override_prediction1", "0");
+                propTest.SetProperty("override_prediction2", "0");
+                propTest.SetProperty("override_prediction0_name", "CFC no_gate=F");
+                propTest.SetProperty("override_prediction0_emphasize", bEmphasizeCfcNoGateF.ToString());
+                propTest.SetProperty("override_prediction1_name", "CFC no_gate=T");
+                propTest.SetProperty("override_prediction1_emphasize", bEmphasizeCfcNoGateT.ToString());
+                propTest.SetProperty("override_prediction2_name", "LTC");
+                propTest.SetProperty("override_prediction2_emphasize", bEmphasizeLtc.ToString());
 
                 for (int i = 0; i < nMax; i++)
                 {
@@ -1083,8 +1093,8 @@ namespace MyCaffe.test
                             rgTarget[0] = rgHistory[nIdx].Target;
                         }
 
-                        rgWait[0] = mycaffeOp_cfcNoGate.RunCycleAsync(rgInput, rgTimeSteps, rgMask, rgTarget);
-                        rgWait[1] = mycaffeOp_cfcGate.RunCycleAsync(rgInput, rgTimeSteps, rgMask, rgTarget);
+                        rgWait[0] = mycaffeOp_cfcNoGateF.RunCycleAsync(rgInput, rgTimeSteps, rgMask, rgTarget);
+                        rgWait[1] = mycaffeOp_cfcNoGateT.RunCycleAsync(rgInput, rgTimeSteps, rgMask, rgTarget);
                         rgWait[2] = mycaffeOp_ltc.RunCycleAsync(rgInput, rgTimeSteps, rgMask, rgTarget);
 
                         while (!WaitHandle.WaitAll(rgWait, 10))
@@ -1103,34 +1113,24 @@ namespace MyCaffe.test
                         if (evtGlobalCancel.WaitOne(0))
                             break;
 
-                        caCfcNoGate.Add(mycaffeOp_cfcNoGate.TotalMilliseconds);
-                        caCfcGate.Add(mycaffeOp_cfcGate.TotalMilliseconds);
+                        caCfcNoGateF.Add(mycaffeOp_cfcNoGateF.TotalMilliseconds);
+                        caCfcNoGateT.Add(mycaffeOp_cfcNoGateT.TotalMilliseconds);
                         caLtc.Add(mycaffeOp_ltc.TotalMilliseconds);
 
-                        float fPredicted_cfcNoGate = mycaffeOp_cfcNoGate.Output[0];
-                        float fPredicted_cfcGate = mycaffeOp_cfcGate.Output[0];
+                        float fPredicted_cfcNoGate = mycaffeOp_cfcNoGateF.Output[0];
+                        float fPredicted_cfcGate = mycaffeOp_cfcNoGateT.Output[0];
                         float fPredicted_ltc = mycaffeOp_ltc.Output[0];
 
-                        propTest.SetProperty("override_predictions", "3");
-
                         propTest.SetProperty("override_prediction0", fPredicted_cfcNoGate.ToString());
-                        propTest.SetProperty("override_prediction0_name", "CFC no gate");
-                        propTest.SetProperty("override_prediction0_emphasize", bEmphasizeCfcNoGate.ToString());
-
                         propTest.SetProperty("override_prediction1", fPredicted_cfcGate.ToString());
-                        propTest.SetProperty("override_prediction1_name", "CFC gate");
-                        propTest.SetProperty("override_prediction1_emphasize", bEmphasizeCfcGate.ToString());
-
                         propTest.SetProperty("override_prediction2", fPredicted_ltc.ToString());
-                        propTest.SetProperty("override_prediction2_name", "LTC");
-                        propTest.SetProperty("override_prediction2_emphasize", bEmphasizeLtc.ToString());
 
                         if (sw.Elapsed.TotalMilliseconds > 1000)
                         {
                             sw.Restart();
 
-                            m_log.WriteLine("CFC No Gate: " + caCfcNoGate.Average.ToString("N3") + " ms.");
-                            m_log.WriteLine("CFC Gate: " + caCfcGate.Average.ToString("N3") + " ms.");
+                            m_log.WriteLine("CFC No Gate (F): " + caCfcNoGateF.Average.ToString("N3") + " ms.");
+                            m_log.WriteLine("CFC No Gate (T): " + caCfcNoGateT.Average.ToString("N3") + " ms.");
                             m_log.WriteLine("LTC: " + caLtc.Average.ToString("N3") + " ms.");
                             m_log.WriteLine("---------------------------------");
                         }
@@ -1140,12 +1140,12 @@ namespace MyCaffe.test
                         propTest.SetProperty("override_predictions", "3");
 
                         propTest.SetProperty("override_prediction0", "0");
-                        propTest.SetProperty("override_prediction0_name", "CFC no gate");
-                        propTest.SetProperty("override_prediction0_emphasize", bEmphasizeCfcNoGate.ToString());
+                        propTest.SetProperty("override_prediction0_name", "CFC no gate (F)");
+                        propTest.SetProperty("override_prediction0_emphasize", bEmphasizeCfcNoGateF.ToString());
 
                         propTest.SetProperty("override_prediction1", "0");
-                        propTest.SetProperty("override_prediction1_name", "CFC gate");
-                        propTest.SetProperty("override_prediction1_emphasize", bEmphasizeCfcGate.ToString());
+                        propTest.SetProperty("override_prediction1_name", "CFC no gate (T)");
+                        propTest.SetProperty("override_prediction1_emphasize", bEmphasizeCfcNoGateT.ToString());
 
                         propTest.SetProperty("override_prediction2", "0");
                         propTest.SetProperty("override_prediction2_name", "LTC");
@@ -1160,11 +1160,11 @@ namespace MyCaffe.test
             }
             finally
             {
-                if (mycaffeOp_cfcNoGate != null)
-                    mycaffeOp_cfcNoGate.Dispose();
+                if (mycaffeOp_cfcNoGateF != null)
+                    mycaffeOp_cfcNoGateF.Dispose();
 
-                if (mycaffeOp_cfcGate != null)
-                    mycaffeOp_cfcGate.Dispose();
+                if (mycaffeOp_cfcNoGateT != null)
+                    mycaffeOp_cfcNoGateT.Dispose();
 
                 if (mycaffeOp_ltc != null)
                     mycaffeOp_ltc.Dispose();
