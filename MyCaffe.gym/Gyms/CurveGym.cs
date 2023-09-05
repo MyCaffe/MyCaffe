@@ -325,7 +325,7 @@ namespace MyCaffe.gym
                         int nIdx = 1;
                         while (m_rgGeomPredictedLines.Count < m_rgstrLabels.Count && nIdx < m_rgPallete.Count)
                         {
-                            List<Color> rgClr = ((m_rgEmphasize == null || m_rgEmphasize.Count == 0) || (m_rgEmphasize.Count > 0 && m_rgEmphasize[0])) ? m_rgPalleteEmphasize : m_rgPallete;
+                            List<Color> rgClr = ((m_rgEmphasize == null || m_rgEmphasize.Count == 0) || (m_rgEmphasize.Count > 0 && m_rgEmphasize[nIdx])) ? m_rgPalleteEmphasize : m_rgPallete;
                             GeomPolyLine geomPredictLine = new GeomPolyLine(fL, fR, fT, fB, rgClr[nIdx], rgClr[nIdx], m_nMaxPlots);
                             geomPredictLine.Polygon.Clear();
                             geomPredictLine.SetLocation(0, fScale * (fWorldHeight / 2));
