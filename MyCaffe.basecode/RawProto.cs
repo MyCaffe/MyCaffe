@@ -383,6 +383,10 @@ namespace MyCaffe.basecode
         private static List<KeyValuePair<string, int>> tokenize(string str)
         {
             List<KeyValuePair<string, int>> rgstrTokens = new List<KeyValuePair<string, int>>();
+
+            if (string.IsNullOrEmpty(str))
+                return rgstrTokens;
+
             string[] rgLines = str.Split('\n');
 
             for (int i=0; i<rgLines.Length; i++)
