@@ -197,7 +197,7 @@ namespace MyCaffe.test
 
             try
             {
-                ProjectEx prj = new ProjectEx("LeNet");
+                ProjectEx prj = new ProjectEx("TFT");
                 prj.SolverDescription = loadTextFile(strModelPath + "\\tft_electricity_solver.prototxt");
                 prj.ModelDescription = loadTextFile(strModelPath + "\\tft_electricity_train_test.prototxt");
 
