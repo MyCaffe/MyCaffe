@@ -307,7 +307,8 @@ namespace MyCaffe.gym
 
                     if (m_rgGeomPredictedLines.Count == 0)
                     {
-                        List<Color> rgClr = ((m_rgEmphasize == null || m_rgEmphasize.Count == 0) || (m_rgEmphasize.Count > 0 && m_rgEmphasize[0])) ? m_rgPalleteEmphasize : m_rgPallete; 
+                        bool bEmphasize = (m_rgEmphasize == null || m_rgEmphasize.Count == 0) || (m_rgEmphasize.Count > 0 && m_rgEmphasize[0]);
+                        List<Color> rgClr = (bEmphasize) ? m_rgPalleteEmphasize : m_rgPallete; 
                         GeomPolyLine geomPredictLine = new GeomPolyLine(fL, fR, fT, fB, rgClr[0], rgClr[0], m_nMaxPlots);
                         geomPredictLine.Polygon.Clear();
                         geomPredictLine.SetLocation(0, fScale * (fWorldHeight / 2));
@@ -325,7 +326,8 @@ namespace MyCaffe.gym
                         int nIdx = 1;
                         while (m_rgGeomPredictedLines.Count < m_rgstrLabels.Count && nIdx < m_rgPallete.Count)
                         {
-                            List<Color> rgClr = ((m_rgEmphasize == null || m_rgEmphasize.Count == 0) || (m_rgEmphasize.Count > 0 && m_rgEmphasize[nIdx])) ? m_rgPalleteEmphasize : m_rgPallete;
+                            bool bEmphasize = (m_rgEmphasize == null || m_rgEmphasize.Count == 0) || (m_rgEmphasize.Count > 0 && m_rgEmphasize[nIdx]);
+                            List<Color> rgClr = (bEmphasize) ? m_rgPalleteEmphasize : m_rgPallete;
                             GeomPolyLine geomPredictLine = new GeomPolyLine(fL, fR, fT, fB, rgClr[nIdx], rgClr[nIdx], m_nMaxPlots);
                             geomPredictLine.Polygon.Clear();
                             geomPredictLine.SetLocation(0, fScale * (fWorldHeight / 2));
@@ -336,7 +338,11 @@ namespace MyCaffe.gym
 
                     for (int i=0; i < m_rgGeomPredictedLines.Count; i++)
                     {
-                        m_rgGeomPredictedLines[i].Polygon.Add(new PointF((float)dfX, (float)(rgData[nPredictedIdx + i] * m_fYScale)));
+                        double dfPredicted = 0;
+                        if (i+nPredictedIdx < rgData.Length)
+                            dfPredicted = rgData[nPredictedIdx + i];
+
+                        m_rgGeomPredictedLines[i].Polygon.Add(new PointF((float)dfX, (float)(dfPredicted * m_fYScale)));
                     }
 
                     GeomView view = new GeomView();
@@ -349,14 +355,16 @@ namespace MyCaffe.gym
                     {
                         for (int i = 0; i < m_rgGeomPredictedLines.Count && i < m_rgstrLabels.Count; i++)
                         {
-                            Dictionary<Color, Brush> rgClr = ((m_rgEmphasize == null || m_rgEmphasize.Count == 0) || (m_rgEmphasize.Count > i && m_rgEmphasize[i])) ? m_rgBrushesEmphasize : m_rgBrushes;
+                            bool bEmphasize = (m_rgEmphasize == null || m_rgEmphasize.Count == 0) || (m_rgEmphasize.Count > 0 && m_rgEmphasize[i]);
+                            Dictionary<Color, Brush> rgClr = (bEmphasize) ? m_rgBrushesEmphasize : m_rgBrushes;
                             view.RenderText(g, "Predicted Y (" + m_rgstrLabels[i] + ") = " + rgData[nPredictedIdx + i].ToString("N02"), 10, nY, rgClr[m_rgPalleteEmphasize[i]]);
                             nY += 12;
                         }
                     }
                     else
                     {
-                        Dictionary<Color, Brush> rgClr = ((m_rgEmphasize == null || m_rgEmphasize.Count == 0) || (m_rgEmphasize.Count > 0 && m_rgEmphasize[0])) ? m_rgBrushesEmphasize : m_rgBrushes;
+                        bool bEmphasize = (m_rgEmphasize == null || m_rgEmphasize.Count == 0) || (m_rgEmphasize.Count > 0 && m_rgEmphasize[0]);
+                        Dictionary<Color, Brush> rgClr = (bEmphasize) ? m_rgBrushesEmphasize : m_rgBrushes;
                         view.RenderText(g, "Predicted Y = " + rgData[nPredictedIdx].ToString("N02"), 10, nY, rgClr[m_rgPalleteEmphasize[0]]);
                         nY += 12;
                     }
