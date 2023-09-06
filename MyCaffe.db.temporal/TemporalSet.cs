@@ -260,7 +260,7 @@ namespace MyCaffe.db.temporal
             SimpleDatum[] data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bEnableDebug, strDebugPath);
 
             int nRetryCount = 0;
-            while (data == null && nRetryCount < 5)
+            while (data == null && nRetryCount < 40)
             {
                 if (itemSelectionMethod == DB_LABEL_SELECTION_METHOD.RANDOM)
                 {
