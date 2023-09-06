@@ -1,5 +1,6 @@
 ﻿using MyCaffe.basecode;
 using MyCaffe.basecode.descriptors;
+using MyCaffe.db.temporal;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -34,6 +35,17 @@ namespace MyCaffe.layers.tft
         public static DataSchema LoadFromDatasetDescriptor(DatasetDescriptor desc, Phase phase)
         {
             DataSchema schema = new DataSchema();
+
+            if (desc.TestingSource == null && desc.TrainingSource == null)
+            {
+                if (desc.ID == 0)
+                    throw new Exception("The dataset '" + desc.Name + "' has not been saved to the database and cannot be loaded.  The data layer should be configured to use a database dataset, but may be configured to use an .NPY file as a source.");
+
+                DatabaseLoader loader = new DatabaseLoader();
+                int nDsID = desc.ID;
+                desc = loader.LoadDatasetFromDb(nDsID);
+            }
+
             TemporalDescriptor tsd = (phase == Phase.TEST) ? desc.TestingSource.TemporalDescriptor : desc.TrainingSource.TemporalDescriptor;
 
             if (tsd == null)
