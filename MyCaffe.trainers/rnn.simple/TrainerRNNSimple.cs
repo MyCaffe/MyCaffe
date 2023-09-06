@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -105,6 +106,26 @@ namespace MyCaffe.trainers.rnn.simple
             return true;
         }
 
+        private void updateStatus(int nIteration, int nMaxIteration, double dfAccuracy, double dfLoss, double dfLearningRate)
+        {
+            GetStatusArgs args = new GetStatusArgs(0, nIteration, nIteration, nMaxIteration, dfAccuracy, 0, 0, 0, dfLoss, dfLearningRate);
+            m_icallback.OnUpdateStatus(args);
+        }
+
+        private float computeAccuracy(List<Tuple<float, float>> rg, float fThreshold)
+        {
+            int nMatch = 0;
+
+            for (int i=0; i<rg.Count; i++)
+            {
+                float fDiff = Math.Abs(rg[i].Item1 - rg[i].Item2);
+
+                if (fDiff < fThreshold)
+                    nMatch++;
+            }
+
+            return (float)nMatch / (float)rg.Count;
+        }
 
         /// <summary>
         /// Run a single cycle on the environment after the delay.
@@ -140,8 +161,7 @@ namespace MyCaffe.trainers.rnn.simple
         /// <returns>A value of <i>true</i> is returned when handled, <i>false</i> otherwise.</returns>
         public bool Test(int nN, ITERATOR_TYPE type)
         {
-            m_mycaffe.CancelEvent.Reset();
-            return true;
+            return run(nN, type, TRAIN_STEP.NONE, Phase.TEST);
         }
 
         /// <summary>
@@ -153,6 +173,11 @@ namespace MyCaffe.trainers.rnn.simple
         /// <returns>A value of <i>true</i> is returned when handled, <i>false</i> otherwise.</returns>
         public bool Train(int nN, ITERATOR_TYPE type, TRAIN_STEP step)
         {
+            return run(nN, type, step, Phase.TRAIN);
+        }
+
+        private bool run(int nN, ITERATOR_TYPE type, TRAIN_STEP step, Phase phase)
+        { 
             PropertySet prop = new PropertySet();
 
             prop.SetProperty("TrainingStart", "0");
@@ -243,8 +268,15 @@ namespace MyCaffe.trainers.rnn.simple
             float[] rgMask = new float[nInputDim];
             float[] rgTarget = new float[nOutputDim];
 
+            List<Tuple<float, float>> rgAccHistory = new List<Tuple<float, float>>();
+
             for (int i = 0; i < nN; i++)
             {
+                double dfLoss = 0;
+                double dfAccuracy = 0;
+                float fPredictedY = 0;
+                float fTargetY = 0;
+
                 m_icallback.OnGetData(m_getDataTrainArgs);
 
                 if (m_getDataTrainArgs.CancelEvent.WaitOne(0))
@@ -254,6 +286,13 @@ namespace MyCaffe.trainers.rnn.simple
                     break;
 
                 List<DataPoint> rgHistory = m_getDataTrainArgs.State.History;
+                DataPoint dpLast = (rgHistory.Count > 0) ? rgHistory.Last() : null;
+
+                if (dpLast != null)
+                    fTargetY = dpLast.Target;
+                else
+                    fTargetY = -1;
+
                 if (rgHistory.Count >= nInputDim)
                 {
                     for (int j = 0; j < nInputDim; j++)
@@ -270,13 +309,16 @@ namespace MyCaffe.trainers.rnn.simple
                     blobMask.mutable_cpu_data = Utility.ConvertVec<T>(rgMask);
                     blobTarget.mutable_cpu_data = Utility.ConvertVec<T>(rgTarget);
 
-                    net.Forward();
-                    net.Backward();
+                    net.Forward(out dfLoss);
 
-                    solver.Step(1);
+                    if (phase == Phase.TRAIN)
+                    {
+                        net.Backward();
+                        solver.Step(1);
+                    }
 
                     float[] rgOutput = Utility.ConvertVecF<T>(blobXhat.mutable_cpu_data);
-                    float fPredictedY = rgOutput[0];
+                    fPredictedY = rgOutput[0];
 
                     prop.SetProperty("override_prediction", fPredictedY.ToString());
                 }
@@ -284,6 +326,14 @@ namespace MyCaffe.trainers.rnn.simple
                 {
                     Thread.Sleep(50);
                 }
+
+                rgAccHistory.Add(new Tuple<float, float>(fTargetY, fPredictedY));
+                if (rgAccHistory.Count > 100)
+                    rgAccHistory.RemoveAt(0);
+
+                dfAccuracy = computeAccuracy(rgAccHistory, 0.005f);
+
+                updateStatus(i, nN, dfAccuracy, dfLoss, solver.parameter.base_lr);
             }
 
             return false;
