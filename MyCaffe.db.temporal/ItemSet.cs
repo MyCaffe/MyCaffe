@@ -156,15 +156,18 @@ namespace MyCaffe.db.temporal
 
             SimpleDatum sdHistNum = null;
             SimpleDatum sdHistCat = null;
-            getHistoricalData(m_nValIdx, nHistSteps, out sdHistNum, out sdHistCat);
+            if (!getHistoricalData(m_nValIdx, nHistSteps, out sdHistNum, out sdHistCat))
+                return null;
 
             SimpleDatum sdFutNum = null;
             SimpleDatum sdFutCat = null;
-            getFutureData(m_nValIdx + nHistSteps, nFutSteps, out sdFutNum, out sdFutCat);
+            if (!getFutureData(m_nValIdx + nHistSteps, nFutSteps, out sdFutNum, out sdFutCat))
+                return null;
 
             SimpleDatum sdTarget = null;
             SimpleDatum sdTargetHist = null;
-            getTargetData(m_nValIdx, nHistSteps, nFutSteps, m_nTargetStreamNumIdx, out sdTarget, out sdTargetHist);
+            if (!getTargetData(m_nValIdx, nHistSteps, nFutSteps, m_nTargetStreamNumIdx, out sdTarget, out sdTargetHist))
+                return null;
 
             if (bEnableDebug)
             {
@@ -385,10 +388,18 @@ namespace MyCaffe.db.temporal
             m_sdStaticCat = sdCat;
         }
 
-        private void getHistoricalData(int nIdx, int nCount, out SimpleDatum sdNum, out SimpleDatum sdCat)
+        private bool getHistoricalData(int nIdx, int nCount, out SimpleDatum sdNum, out SimpleDatum sdCat)
         {
+            sdNum = null;
+            sdCat = null;
+
             Tuple<float[], float[], DateTime[]> dataObs = m_data.GetObservedValues(nIdx, nCount);
+            if (dataObs == null)
+                return false;
+
             Tuple<float[], float[], DateTime[]> dataKnown = m_data.GetKnownValues(nIdx, nCount);
+            if (dataKnown == null)
+                return false;
 
             // Collect the numeric data
             {
@@ -495,11 +506,18 @@ namespace MyCaffe.db.temporal
                     sdCat = null;
                 }
             }
+
+            return true;
         }
 
-        private void getFutureData(int nIdx, int nCount, out SimpleDatum sdNum, out SimpleDatum sdCat)
+        private bool getFutureData(int nIdx, int nCount, out SimpleDatum sdNum, out SimpleDatum sdCat)
         {
+            sdNum = null;
+            sdCat = null;
+
             Tuple<float[], float[], DateTime[]> dataKnown = m_data.GetKnownValues(nIdx, nCount);
+            if (dataKnown == null)
+                return false;
 
             float[] rgfNum = null;
             if (dataKnown.Item1.Length > 0)
@@ -539,12 +557,22 @@ namespace MyCaffe.db.temporal
             {
                 sdCat = null;
             }
+
+            return true;
         }
 
-        private void getTargetData(int nIdx, int nHistSteps, int nFutSteps, int nTargetIdx, out SimpleDatum sdTarget, out SimpleDatum sdTargetHist)
+        private bool getTargetData(int nIdx, int nHistSteps, int nFutSteps, int nTargetIdx, out SimpleDatum sdTarget, out SimpleDatum sdTargetHist)
         {
+            sdTarget = null;
+            sdTargetHist = null;
+
             Tuple<float[], DateTime[]> rgfTgt = m_data.GetObservedNumValues(nIdx + nHistSteps, nFutSteps, nTargetIdx);
+            if (rgfTgt == null)
+                return false;
+
             Tuple<float[], DateTime[]> rgfTgtH = m_data.GetObservedNumValues(nIdx, nHistSteps, nTargetIdx);
+            if (rgfTgtH == null)
+                return false;
 
             int nC = 1;
             int nH = rgfTgt.Item1.Length;
@@ -557,6 +585,8 @@ namespace MyCaffe.db.temporal
             sdTargetHist = new SimpleDatum(nC, nW, nH, rgfTgtH.Item1, 0, rgfTgtH.Item1.Length);
             sdTargetHist.TagName = "TargetHist";
             sdTargetHist.Tag = rgfTgtH.Item2;
+
+            return true;
         }
 
         private SimpleDatum getTargetData(int nIdx, int nCount, int nTargetIdx)
