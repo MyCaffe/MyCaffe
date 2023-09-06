@@ -395,9 +395,9 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// The base learning rate.
+        /// The base learning rate (default = 0.01).
         /// </summary>
-        [Description("Specifies the base learning rate.")]
+        [Description("Specifies the base learning rate (default = 0.01).")]
         public double base_lr
         {
             get { return m_dfBaseLR; }
@@ -568,10 +568,10 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// The 'gamma' parameter to compute the learning rate.
+        /// Specifies the 'gamma' parameter to compute the 'step', 'exp', 'inv', and 'sigmoid' learning policy (default = 0.1).
         /// </summary>
         [Category("Learning Policy")]
-        [Description("Specifies the 'gamma' parameter to compute the 'step', 'exp', 'inv', and 'sigmoid' learning policy.")]
+        [Description("Specifies the 'gamma' parameter to compute the 'step', 'exp', 'inv', and 'sigmoid' learning policy (default = 0.1).")]
         public double gamma
         {
             get { return m_dfGamma; }
@@ -602,9 +602,9 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// The weight decay.
+        /// Specifies the weight decay (default = 0.0005).
         /// </summary>
-        [Description("Specifies the weight decay.")]
+        [Description("Specifies the weight decay (default = 0.0005).")]
         public double weight_decay
         {
             get { return m_dfWeightDecay; }
@@ -612,14 +612,14 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// The regularization type.
+        /// Specifies the regularization type (default = L2).
         /// </summary>
         /// <remarks>
         /// The regularization types supported are:
         ///    - L1 and L2 controlled by weight_decay.
         /// </remarks>
         [DisplayName("regularization_type")]
-        [Description("Specifies the regularization type.  The regulation types supported are 'L1' and 'L2' controlled by weight decay.")]
+        [Description("Specifies the regularization type (default = L2).  The regulation types supported are 'L1' and 'L2' controlled by weight decay.")]
         public RegularizationType Regularization
         {
             get
@@ -662,13 +662,13 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// The regularization type.
+        /// Specifies the regularization type (default = 'L2').
         /// </summary>
         /// <remarks>
         /// The regularization types supported are:
         ///    - L1 and L2 controlled by weight_decay.
         /// </remarks>
-        [Description("Specifies the regularization type.  The regulation types supported are 'L1' and 'L2' controlled by weight decay.")]
+        [Description("Specifies the regularization type (default = 'L2').  The regulation types supported are 'L1' and 'L2' controlled by weight decay.")]
         [Browsable(false)]
         public string regularization_type
         {
@@ -831,10 +831,10 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Numerical stability for RMSProp, AdaGrad, AdaDelta, Adam and AdamW solvers.
+        /// Numerical stability for RMSProp, AdaGrad, AdaDelta, Adam and AdamW solvers (default = 1e-08).
         /// </summary>
         [Category("Solver - Ada, Adam and RMSProp")]
-        [Description("Specifies the numerical stability for 'RMSProp', 'AdaGrad', 'AdaDelta' and 'Adam' solvers.")]
+        [Description("Specifies the numerical stability for 'RMSProp', 'AdaGrad', 'AdaDelta' and 'Adam' solvers (default = 1e-08).")]
         public double delta
         {
             get { return m_dfDelta; }
@@ -842,10 +842,10 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// An additional momentum property for the Adam and AdamW solvers.
+        /// An additional momentum property for the Adam and AdamW solvers (default = 0.999).
         /// </summary>
         [Category("Solver - Adam")]
-        [Description("Specifies an additional momentum property used by the 'Adam' and 'AdamW' solvers.")]
+        [Description("Specifies an additional momentum property used by the 'Adam' and 'AdamW' solvers (default = 0.999).")]
         public double momentum2
         {
             get { return m_dfMomentum2; }
@@ -853,13 +853,13 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Specifies the 'RMSProp' decay value used by the 'RMSProp' solver.
+        /// Specifies the 'RMSProp' decay value used by the 'RMSProp' solver (default = 0.95).
         /// </summary>
         /// <remarks>
         /// MeanSquare(t) = rms_decay * MeanSquare(t-1) + (1 - rms_decay) * SquareGradient(t)
         /// </remarks>
         [Category("Solver - RMSProp")]
-        [Description("Specifies the 'RMSProp' decay value used by the 'RMSProp' solver.  MeanSquare(t) = 'rms_decay' * MeanSquare(t-1) + (1 - 'rms_decay') * SquareGradient(t).  The 'rms_decay' is only used by the 'RMSProp' solver.")]
+        [Description("Specifies the 'RMSProp' decay value used by the 'RMSProp' solver (default = 0.95).  MeanSquare(t) = 'rms_decay' * MeanSquare(t-1) + (1 - 'rms_decay') * SquareGradient(t).  The 'rms_decay' is only used by the 'RMSProp' solver.")]
         public double rms_decay
         {
             get { return m_dfRmsDecay; }
@@ -867,13 +867,13 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Specifies the 'AdamW' detached weight decay value used by the 'AdamW' solver.
+        /// Specifies the 'AdamW' detached weight decay value used by the 'AdamW' solver (default = 0.1).
         /// </summary>
         /// <remarks>
         /// Decay applied to detached weight decay.
         /// </remarks>
         [Category("Solver - AdamW")]
-        [Description("Specifies the 'AdamW' detached weight decay value used by the 'AdamW' solver.")]
+        [Description("Specifies the 'AdamW' detached weight decay value used by the 'AdamW' solver (default = 0.1).")]
         public double adamw_decay
         {
             get { return m_dfAdamWDecay; }
