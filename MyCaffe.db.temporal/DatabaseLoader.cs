@@ -67,7 +67,7 @@ namespace MyCaffe.db.temporal
 
             int nW = src.ImageWidth.GetValueOrDefault(0);
             int nH = src.ImageHeight.GetValueOrDefault(0);
-            int nC = src.ImageCount.GetValueOrDefault(0);
+            int nC = src.ImageChannels.GetValueOrDefault(0);
             bool bIsReal = src.ImageEncoded.GetValueOrDefault(true);
             int nCount = src.ImageCount.GetValueOrDefault(0);
 
