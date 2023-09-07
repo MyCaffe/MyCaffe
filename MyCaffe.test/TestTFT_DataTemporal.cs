@@ -105,65 +105,68 @@ namespace MyCaffe.test
         }
 
 
-        [TestMethod]
-        public void TestForwardTrainElectricityNpy()
-        {
-            DataTemporalTest test = new DataTemporalTest();
-            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\electricity\\preprocessed";
-            //string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\data\\electricity\\preprocessed";
+        //[DEPRECIATED]
+        //[TestMethod]
+        //public void TestForwardTrainElectricityNpy()
+        //{
+        //    DataTemporalTest test = new DataTemporalTest();
+        //    string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\electricity\\preprocessed";
+        //    //string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data\\data\\electricity\\preprocessed";
 
-            try
-            {
-                foreach (IDataTemporalTest t in test.Tests)
-                {
-                    t.TestForward(100, Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.ELECTRICITY, null);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
+        //    try
+        //    {
+        //        foreach (IDataTemporalTest t in test.Tests)
+        //        {
+        //            t.TestForward(100, Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.ELECTRICITY, null);
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        test.Dispose();
+        //    }
+        //}
 
-        [TestMethod]
-        public void TestForwardTestElectricityNpy()
-        {
-            DataTemporalTest test = new DataTemporalTest();
-            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\electricity\\preprocessed";
-            //string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\electricity\\preprocessed";
+        //[DEPRECIATED]
+        //[TestMethod]
+        //public void TestForwardTestElectricityNpy()
+        //{
+        //    DataTemporalTest test = new DataTemporalTest();
+        //    string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\electricity\\preprocessed";
+        //    //string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\electricity\\preprocessed";
 
-            try
-            {
-                foreach (IDataTemporalTest t in test.Tests)
-                {
-                    t.TestForward(100, Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.ELECTRICITY, null);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
+        //    try
+        //    {
+        //        foreach (IDataTemporalTest t in test.Tests)
+        //        {
+        //            t.TestForward(100, Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.ELECTRICITY, null);
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        test.Dispose();
+        //    }
+        //}
 
-        [TestMethod]
-        public void TestForwardRunElectricityNpy()
-        {
-            DataTemporalTest test = new DataTemporalTest();
-            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\electricity\\preprocessed";
-            //string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\electricity\\preprocessed";
+        //[DEPRECIATED]
+        //[TestMethod]
+        //public void TestForwardRunElectricityNpy()
+        //{
+        //    DataTemporalTest test = new DataTemporalTest();
+        //    string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\electricity\\preprocessed";
+        //    //string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\electricity\\preprocessed";
 
-            try
-            {
-                foreach (IDataTemporalTest t in test.Tests)
-                {
-                    t.TestForward(100, Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.ELECTRICITY, null);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
+        //    try
+        //    {
+        //        foreach (IDataTemporalTest t in test.Tests)
+        //        {
+        //            t.TestForward(100, Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.ELECTRICITY, null);
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        test.Dispose();
+        //    }
+        //}
 
 
         [TestMethod]
@@ -214,65 +217,68 @@ namespace MyCaffe.test
             }
         }
 
-        [TestMethod]
-        public void TestForwardTrainTrafficNpy()
-        {
-            DataTemporalTest test = new DataTemporalTest();
-            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\traffic\\preprocessed";
-            //string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\traffic\\preprocessed";
+        //[DEPRECIATED]
+        //[TestMethod]
+        //public void TestForwardTrainTrafficNpy()
+        //{
+        //    DataTemporalTest test = new DataTemporalTest();
+        //    string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\traffic\\preprocessed";
+        //    //string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\traffic\\preprocessed";
 
-            try
-            {
-                foreach (IDataTemporalTest t in test.Tests)
-                {
-                    t.TestForward(100, Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.TRAFFIC, null);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
+        //    try
+        //    {
+        //        foreach (IDataTemporalTest t in test.Tests)
+        //        {
+        //            t.TestForward(100, Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.TRAFFIC, null);
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        test.Dispose();
+        //    }
+        //}
 
-        [TestMethod]
-        public void TestForwardTestTrafficNpy()
-        {
-            DataTemporalTest test = new DataTemporalTest();
-            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\traffic\\preprocessed";
-            //string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\traffic\\preprocessed";
+        //[DEPRECIATED]
+        //[TestMethod]
+        //public void TestForwardTestTrafficNpy()
+        //{
+        //    DataTemporalTest test = new DataTemporalTest();
+        //    string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\traffic\\preprocessed";
+        //    //string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\traffic\\preprocessed";
 
-            try
-            {
-                foreach (IDataTemporalTest t in test.Tests)
-                {
-                    t.TestForward(100, Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.TRAFFIC, null);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
+        //    try
+        //    {
+        //        foreach (IDataTemporalTest t in test.Tests)
+        //        {
+        //            t.TestForward(100, Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.TRAFFIC, null);
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        test.Dispose();
+        //    }
+        //}
 
-        [TestMethod]
-        public void TestForwardRunTrafficNpy()
-        {
-            DataTemporalTest test = new DataTemporalTest();
-            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\traffic\\preprocessed";
-            //string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\traffic\\preprocessed";
+        //[DEPRECIATED]
+        //[TestMethod]
+        //public void TestForwardRunTrafficNpy()
+        //{
+        //    DataTemporalTest test = new DataTemporalTest();
+        //    string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\traffic\\preprocessed";
+        //    //string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\traffic\\preprocessed";
 
-            try
-            {
-                foreach (IDataTemporalTest t in test.Tests)
-                {
-                    t.TestForward(100, Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.TRAFFIC, null);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
+        //    try
+        //    {
+        //        foreach (IDataTemporalTest t in test.Tests)
+        //        {
+        //            t.TestForward(100, Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.TRAFFIC, null);
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        test.Dispose();
+        //    }
+        //}
 
         [TestMethod]
         public void TestForwardTrainVolatilitySql()
