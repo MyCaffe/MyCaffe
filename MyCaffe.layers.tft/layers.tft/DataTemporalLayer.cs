@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data.SqlTypes;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -17,6 +18,7 @@ using MyCaffe.common;
 using MyCaffe.db.temporal;
 using MyCaffe.param;
 using MyCaffe.param.tft;
+//using SimpleGraphing;
 
 namespace MyCaffe.layers.tft
 {
@@ -106,7 +108,8 @@ namespace MyCaffe.layers.tft
             if (m_data == null)
             {
                 if (m_param.data_temporal_param.source_type == DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE)
-                    m_data = new RawFileData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical);
+                    throw new Exception("The 'numpy' source type is no longer supported - please use the SQL_DB source type instead.");
+                    //m_data = new RawFileData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical);
                 else if (m_param.data_temporal_param.source_type == DataTemporalParameter.SOURCE_TYPE.SQL_DB)
                     m_data = new RawSqlData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical, m_db, m_log);
                 else
@@ -1025,6 +1028,7 @@ namespace MyCaffe.layers.tft
         public abstract bool Add(DataNpy<T> data, int nMaxLoad);
     }
 
+    //[DEPRECIATED] use SQL_DB type instead.
     class DataNpy<T> : Data<T> /** @private */
     {
         DataSchema m_schema;
@@ -1041,6 +1045,7 @@ namespace MyCaffe.layers.tft
         int m_nRowIdx = 0;
         int m_nColIdx = 0;
         int m_nTargetFieldIdx = 0;
+        int m_nIteration = 0;
 
         public DataNpy(Random random, Log log, int nHistoricalSteps, int nFutureSteps, bool bShuffleData, bool bOutputTargetHistorical) 
             : base(random, log, nHistoricalSteps, nFutureSteps, bShuffleData, bOutputTargetHistorical)
@@ -1057,6 +1062,8 @@ namespace MyCaffe.layers.tft
             int nLen;
             m_schema = DataSchema.Load(strPath + "\\" + strType + "_schema.xml");
             m_nTargetFieldIdx = m_schema.Data.ObservedNum.FindFieldIndex(Field.INPUT_TYPE.TARGET);
+
+            m_nIteration = 0;
 
             m_nBatchSize = nBatchSize;
             m_rgstrFiles.Add(DATA_TYPE.SYNC, strPath + "\\" + strType + "_sync.npy");
@@ -1651,9 +1658,62 @@ namespace MyCaffe.layers.tft
                 if (rgHistTarget != null)
                     col[7].mutable_cpu_data = Utility.ConvertVec<T>(rgHistTarget);
 
+                if (bEnableDebug)
+                {
+                    if (Directory.Exists(strDebugPath))
+                    {
+                        //debug(strDebugPath, col[0].shape(), rgStatNum, "stat_num");
+                        //debug(strDebugPath, col[1].shape(), rgStatCat, "stat_cat");
+                        //debug(strDebugPath, col[2].shape(), rgHistNum, "hist_num");
+                        //debug(strDebugPath, col[3].shape(), rgHistCat, "hist_cat");
+                        //debug(strDebugPath, col[4].shape(), rgFutNum, "fut_num");
+                        //debug(strDebugPath, col[5].shape(), rgFutCat, "fut_cat");
+                        //debug(strDebugPath, col[6].shape(), rgTarget, "target");
+
+                        //if (col.Count > 7)
+                        //    debug(strDebugPath, col[7].shape(), rgHistTarget, "hist_target");
+                    }
+                }
+
+                m_nIteration++;
+
                 return null;
             }
         }
+
+        //private void debug(string strPath, List<int> rgShape, float[] rgData, string strName)
+        //{
+        //    if (rgData == null || rgData.Length == 0 || rgShape.Count <= 2)
+        //        return;
+
+        //    string strFile = strPath + "\\" + m_nIteration.ToString() + "_" + m_nRowIdx.ToString() + "_" + m_nColIdx.ToString() + "_" + strName;
+
+        //    int nBatch = rgShape[0];
+        //    int nSeq = rgShape[1];
+        //    int nFields = rgShape[2];
+
+        //    for (int i = 0; i < nFields; i++)
+        //    {
+        //        string strFile1 = strFile + "_field_" + i.ToString() + ".png";
+        //        PlotCollectionSet set = new PlotCollectionSet();
+
+        //        for (int j = 0; j < nBatch; j++)
+        //        {
+        //            PlotCollection plots = new PlotCollection(strName + "_batch_" + j.ToString());
+        //            for (int k = 0; k < nSeq; k++)
+        //            {
+        //                int nIdx = j * nSeq * nFields + k * nFields + i;
+        //                Plot plot = new Plot(k, rgData[nIdx]);
+        //                plots.Add(plot);
+        //            }
+
+        //            set.Add(plots);
+        //        }
+
+        //        Image img = SimpleGraphingControl.QuickRender(set);
+        //        img.Save(strFile1);
+        //    }
+        //}
     }
 
     class BatchPerfSet /** @private */
