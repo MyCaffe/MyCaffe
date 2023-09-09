@@ -31,7 +31,7 @@ namespace MyCaffe.app
         string m_strSqlDownloadUrl = "https://www.microsoft.com/en-us/sql-server/sql-server-downloads";
         CancelEvent m_evtCancel = new CancelEvent();
         CancelEvent m_evtCaffeCancel = new CancelEvent();
-        AutoResetEvent m_evtCommandRead = new AutoResetEvent(false);
+        AutoResetEvent m_evtCommandReady = new AutoResetEvent(false);
         AutoResetEvent m_evtThreadDone = new AutoResetEvent(false);
         IXMyCaffeNoDb<float> m_caffeRun = null;
         COMMAND m_Cmd = COMMAND.NONE;
@@ -941,7 +941,7 @@ namespace MyCaffe.app
 
             m_netType = NET_TYPE.LENET;
             m_Cmd = COMMAND.CREATE;
-            m_evtCommandRead.Set();
+            m_evtCommandReady.Set();
         }
 
         private void createUsingSiameseNETToolStripMenuItem_Click(object sender, EventArgs e)
@@ -964,7 +964,7 @@ namespace MyCaffe.app
 
             m_netType = NET_TYPE.SIAMESENET;
             m_Cmd = COMMAND.CREATE;
-            m_evtCommandRead.Set();
+            m_evtCommandReady.Set();
         }
 
         private void createUsingTripletNETToolStripMenuItem_Click(object sender, EventArgs e)
@@ -987,7 +987,7 @@ namespace MyCaffe.app
 
             m_netType = NET_TYPE.TRIPLETNET;
             m_Cmd = COMMAND.CREATE;
-            m_evtCommandRead.Set();
+            m_evtCommandReady.Set();
         }
 
         private void destroyMyCaffeToolStripMenuItem_Click(object sender, EventArgs e)
@@ -1003,7 +1003,7 @@ namespace MyCaffe.app
             m_evtCancel.Reset();
 
             m_Cmd = COMMAND.DESTROY;
-            m_evtCommandRead.Set();
+            m_evtCommandReady.Set();
         }
 
         private void trainMNISTToolStripMenuItem_Click(object sender, EventArgs e)
@@ -1021,7 +1021,7 @@ namespace MyCaffe.app
             m_evtCaffeCancel.Reset();
 
             m_Cmd = COMMAND.TRAIN;
-            m_evtCommandRead.Set();
+            m_evtCommandReady.Set();
             cancelToolStripMenuItem.Enabled = true;
         }
 
@@ -1040,7 +1040,7 @@ namespace MyCaffe.app
             m_evtCaffeCancel.Reset();
 
             m_Cmd = COMMAND.TEST;
-            m_evtCommandRead.Set();
+            m_evtCommandReady.Set();
             cancelToolStripMenuItem.Enabled = true;
         }
 
@@ -1111,7 +1111,7 @@ namespace MyCaffe.app
             m_evtCancel.Reset();
 
             m_Cmd = COMMAND.DEVICEINFO;
-            m_evtCommandRead.Set();
+            m_evtCommandReady.Set();
         }
 
         private void abortToolStripMenuItem_Click(object sender, EventArgs e)
@@ -1138,7 +1138,7 @@ namespace MyCaffe.app
             {
                 List<WaitHandle> rgWait = new List<WaitHandle>();
                 rgWait.AddRange(m_evtCancel.Handles);
-                rgWait.Add(m_evtCommandRead);
+                rgWait.Add(m_evtCommandReady);
 
                 int nWait = WaitHandle.WaitAny(rgWait.ToArray());
                 if (nWait > 0)
@@ -1385,7 +1385,7 @@ namespace MyCaffe.app
                 m_bwProcess.RunWorkerAsync();
 
             m_Cmd = COMMAND.SPECIALTEST_ALEXNETCIFAR_CUDA8;
-            m_evtCommandRead.Set();
+            m_evtCommandReady.Set();
         }
 
         private void alexNetToolStripMenuItem_Click(object sender, EventArgs e)
@@ -1407,7 +1407,7 @@ namespace MyCaffe.app
                 m_bwProcess.RunWorkerAsync();
 
             m_Cmd = COMMAND.SPECIALTEST_ALEXNETCIFAR;
-            m_evtCommandRead.Set();
+            m_evtCommandReady.Set();
         }
 
         private void resNet56CifarAccuracyBugToolStripMenuItem_Click(object sender, EventArgs e)
@@ -1431,7 +1431,7 @@ namespace MyCaffe.app
                 m_bwProcess.RunWorkerAsync();
 
             m_Cmd = COMMAND.SPECIALTEST_RESNETCIFAR;
-            m_evtCommandRead.Set();
+            m_evtCommandReady.Set();
         }
 
         private MyCaffeControl<float> runTest(COMMAND cmd, Log log)
