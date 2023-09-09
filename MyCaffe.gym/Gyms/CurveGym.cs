@@ -351,7 +351,7 @@ namespace MyCaffe.gym
                     view.RenderText(g, "Y = " + dfY.ToString("N02"), 10, 36);
                     int nY = 48;
 
-                    if (m_rgstrLabels.Count > 0)
+                    if (m_rgstrLabels != null && m_rgstrLabels.Count > 0)
                     {
                         for (int i = 0; i < m_rgGeomPredictedLines.Count && i < m_rgstrLabels.Count; i++)
                         {
