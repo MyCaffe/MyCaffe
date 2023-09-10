@@ -75,7 +75,8 @@ namespace MyCaffe.layers.tft
         {
             int nOffset = (colBottom[0].num_axes == 2) ? 1 : 2;
             int nDim = colBottom[0].count(0, nOffset);
-            int nSpatialDim = colBottom[0].count(colBottom[0].num_axes-1);
+            int nNumInput = m_param.categorical_trans_param.cardinalities.Count;
+            int nSpatialDim = colBottom[0].count(colBottom[0].num_axes-1) / nNumInput;
             List<int> rgShape = new List<int>() { nDim, nSpatialDim };
             Blob<T> blobBtm = null;
 
@@ -86,7 +87,6 @@ namespace MyCaffe.layers.tft
             m_rgEmbTop.Clear();
             m_rgEmbTop.Add(colTop[0]);
 
-            int nNumInput = m_param.categorical_trans_param.cardinalities.Count;
             for (int i = 0; i < nNumInput; i++)
             {
                 blobBtm = new Blob<T>(m_cuda, m_log);
