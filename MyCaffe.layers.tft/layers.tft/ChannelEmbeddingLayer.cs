@@ -267,7 +267,7 @@ namespace MyCaffe.layers.tft
                 m_numericLayer.Forward(m_colBtm, m_colNumericTop);
                 nCount = m_colNumericTop[0].count();
 
-                for (int i=0; i<m_colNumericTop.Count; i++)
+                for (int i = 0; i < m_colNumericTop.Count; i++)
                 {
                     m_cuda.channel_copy(nCount, m_colNumericTop[0].num, 1, nBlocks, nEmb, nIdx, colTop[0].mutable_gpu_data, m_colNumericTop[i].gpu_data, DIR.BWD);
                     nIdx++;
