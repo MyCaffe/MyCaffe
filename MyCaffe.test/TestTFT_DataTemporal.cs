@@ -328,65 +328,68 @@ namespace MyCaffe.test
             }
         }
 
-        [TestMethod]
-        public void TestForwardTrainVolatilityNpy()
-        {
-            DataTemporalTest test = new DataTemporalTest();
-            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\volatility\\preprocessed";
-            //string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\volatility\\preprocessed";
+        //[DEPRECIATED]
+        //[TestMethod]
+        //public void TestForwardTrainVolatilityNpy()
+        //{
+        //    DataTemporalTest test = new DataTemporalTest();
+        //    string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\volatility\\preprocessed";
+        //    //string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\volatility\\preprocessed";
 
-            try
-            {
-                foreach (IDataTemporalTest t in test.Tests)
-                {
-                    t.TestForward(100, Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.VOLATILITY, null);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
+        //    try
+        //    {
+        //        foreach (IDataTemporalTest t in test.Tests)
+        //        {
+        //            t.TestForward(100, Phase.TRAIN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.VOLATILITY, null);
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        test.Dispose();
+        //    }
+        //}
 
-        [TestMethod]
-        public void TestForwardTestVolatilityNpy()
-        {
-            DataTemporalTest test = new DataTemporalTest();
-            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\volatility\\preprocessed";
-            //string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\volatility\\preprocessed";
+        //[DEPRECIATED]
+        //[TestMethod]
+        //public void TestForwardTestVolatilityNpy()
+        //{
+        //    DataTemporalTest test = new DataTemporalTest();
+        //    string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\volatility\\preprocessed";
+        //    //string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\volatility\\preprocessed";
 
-            try
-            {
-                foreach (IDataTemporalTest t in test.Tests)
-                {
-                    t.TestForward(100, Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.VOLATILITY, null);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
+        //    try
+        //    {
+        //        foreach (IDataTemporalTest t in test.Tests)
+        //        {
+        //            t.TestForward(100, Phase.TEST, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.VOLATILITY, null);
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        test.Dispose();
+        //    }
+        //}
 
-        [TestMethod]
-        public void TestForwardRunVolatilityNpy()
-        {
-            DataTemporalTest test = new DataTemporalTest();
-            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\volatility\\preprocessed";
-            //string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\volatility\\preprocessed";
+        //[DEPRECIATED]
+        //[TestMethod]
+        //public void TestForwardRunVolatilityNpy()
+        //{
+        //    DataTemporalTest test = new DataTemporalTest();
+        //    string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\volatility\\preprocessed";
+        //    //string strPath = "C:\\temp\\projects\\TFT\\tft-torch-sample\\tft-torch-sample\\data2\\data\\volatility\\preprocessed";
 
-            try
-            {
-                foreach (IDataTemporalTest t in test.Tests)
-                {
-                    t.TestForward(100, Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.VOLATILITY, null);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
+        //    try
+        //    {
+        //        foreach (IDataTemporalTest t in test.Tests)
+        //        {
+        //            t.TestForward(100, Phase.RUN, DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE, strPath, strPath, 100, SOURCE.VOLATILITY, null);
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        test.Dispose();
+        //    }
+        //}
 
         [TestMethod]
         public void TestBlobLoadNumpyPartial()
