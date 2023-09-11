@@ -108,8 +108,7 @@ namespace MyCaffe.layers.tft
             if (m_data == null)
             {
                 if (m_param.data_temporal_param.source_type == DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE)
-                    throw new Exception("The 'numpy' source type is no longer supported - please use the SQL_DB source type instead.");
-                    //m_data = new RawFileData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical);
+                    m_data = new RawFileData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical);
                 else if (m_param.data_temporal_param.source_type == DataTemporalParameter.SOURCE_TYPE.SQL_DB)
                     m_data = new RawSqlData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical, m_db, m_log);
                 else
