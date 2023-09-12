@@ -384,6 +384,23 @@ namespace MyCaffe.db.image.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to IF NOT EXISTS (SELECT *  FROM sys.indexes  WHERE name=&apos;PK_RawValues_LoadValues&apos;) 
+        ///BEGIN
+        ///CREATE NONCLUSTERED INDEX [PK_RawValues_LoadValues] ON [dbo].[RawValues]
+        ///(
+        ///	[SourceID] ASC,
+        ///	[ItemID] ASC,
+        ///	[TimeStamp] ASC
+        ///)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+        ///END.
+        /// </summary>
+        internal static string CreateRawValuesIndex2 {
+            get {
+                return ResourceManager.GetString("CreateRawValuesIndex2", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to IF OBJECT_ID (N&apos;dbo.RawValues&apos;, N&apos;U&apos;) IS NULL
         ///BEGIN
         ///CREATE TABLE [dbo].[RawValues](

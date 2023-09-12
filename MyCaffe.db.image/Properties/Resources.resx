@@ -388,6 +388,17 @@ CREATE NONCLUSTERED INDEX [_dta_index_RawValues_8_994102582__K3_K4_K2_K12_K5_1_6
 INCLUDE([ID],[DebugDataFormatID],[DataCriteriaFormatID]) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 END</value>
   </data>
+  <data name="CreateRawValuesIndex2" xml:space="preserve">
+    <value>IF NOT EXISTS (SELECT *  FROM sys.indexes  WHERE name='PK_RawValues_LoadValues') 
+BEGIN
+CREATE NONCLUSTERED INDEX [PK_RawValues_LoadValues] ON [dbo].[RawValues]
+(
+	[SourceID] ASC,
+	[ItemID] ASC,
+	[TimeStamp] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+END</value>
+  </data>
   <data name="CreateRawValuesTable" xml:space="preserve">
     <value>IF OBJECT_ID (N'dbo.RawValues', N'U') IS NULL
 BEGIN
