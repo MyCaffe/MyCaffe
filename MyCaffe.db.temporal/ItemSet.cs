@@ -146,8 +146,12 @@ namespace MyCaffe.db.temporal
                 }
             }
 
-            if (nValueIdx.HasValue)
+            if (m_nValIdx < 0)
+                m_nValIdx = 0;
+
+            if (nValueIdx.HasValue && nValueIdx >= 0)
                 m_nValIdx = nValueIdx.Value;
+
             nValueIdx = m_nValIdx;
 
             SimpleDatum sdStatNum = null;
