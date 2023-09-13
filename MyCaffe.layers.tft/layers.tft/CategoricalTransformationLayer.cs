@@ -76,7 +76,8 @@ namespace MyCaffe.layers.tft
             int nOffset = (colBottom[0].num_axes == 2) ? 1 : 2;
             int nDim = colBottom[0].count(0, nOffset);
             int nNumInput = m_param.categorical_trans_param.cardinalities.Count;
-            int nSpatialDim = colBottom[0].count(2) / nNumInput;
+            int nCount  = colBottom[0].count(nOffset);
+            int nSpatialDim = nCount / nNumInput;
             List<int> rgShape = new List<int>() { nDim, nSpatialDim };
             Blob<T> blobBtm = null;
 
