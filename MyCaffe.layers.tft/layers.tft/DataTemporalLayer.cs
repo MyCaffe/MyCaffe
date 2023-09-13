@@ -123,7 +123,7 @@ namespace MyCaffe.layers.tft
             }
 
             if (!m_data.LoadData(phase, m_param.data_temporal_param.source, m_param.data_temporal_param.shuffle_data, (int)m_param.data_temporal_param.batch_size, (int)m_nNumHistoricalSteps, (int)m_nNumFutureSteps, m_param.data_temporal_param.max_load_percent, m_param.data_temporal_param.drip_refresh_rate_in_sec, m_param.data_temporal_param.chunk_count, m_log, m_evtCancel))
-                throw new Exception("DataTemporalLayer data loading aborted!");
+                throw new Exception("DataTemporalLayer - could not find the data for '" + m_param.data_temporal_param.source + "'. You may need to run the SignalPop AI Designer to create this " + m_param.data_temporal_param.source_type.ToString() + " dataset.");
 
             int nTotalSize = m_data.GetTotalSize();
             m_log.CHECK_GE(nTotalSize, m_nBatchSize, "There must be enough items for at least one batch - items found = " + nTotalSize.ToString() + ", batch size = " + m_nBatchSize.ToString());
