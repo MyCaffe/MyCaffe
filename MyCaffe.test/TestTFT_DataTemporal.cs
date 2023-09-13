@@ -929,7 +929,7 @@ namespace MyCaffe.test
                 else if (src == SOURCE.VOLATILITY)
                 {
                     rgCatStaticShape = new int[] { nBatchSize, 1 };             // region id
-                    rgNumHistShape = new int[] { nBatchSize, nNumHist, 2 };     // open_to_close, days from start, 
+                    rgNumHistShape = new int[] { nBatchSize, nNumHist, 3 };     // log vol, open_to_close, days from start, 
                     rgCatHistShape = new int[] { nBatchSize, nNumHist, 4 };     // day of week, day of month, week of year, month
                     rgNumFutShape = new int[] { nBatchSize, nNumFuture, 1 };    // days from start
                     rgCatFutShape = new int[] { nBatchSize, nNumFuture, 4 };    // day of week, day of month, week of year, month
