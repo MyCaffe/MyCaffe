@@ -81,7 +81,6 @@ namespace MyCaffe.db.temporal
             if (m_loadThread != null)
             {
                 m_evtCancel.Set();
-                m_loadThread.Join();
                 m_loadThread = null;
             }
 
