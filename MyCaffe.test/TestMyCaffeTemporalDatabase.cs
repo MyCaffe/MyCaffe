@@ -117,9 +117,9 @@ namespace MyCaffe.test
             {
                 int? nItemIdx = null;
                 int? nValIdx = null;
-                SimpleDatum[] rgData = set.GetData(i, ref nItemIdx, ref nValIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
+                SimpleTemporalDatumCollection rgData = set.GetData(i, ref nItemIdx, ref nValIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
 
-                log.CHECK_EQ(rgData.Length, 8, "There should be 8 simple datums (static num, static cat, hist num, hist cat, fut num, fut cat, target, target hist).");
+                log.CHECK_EQ(rgData.Count, 8, "There should be 8 simple datums (static num, static cat, hist num, hist cat, fut num, fut cat, target, target hist).");
 
                 if (rgData[0] != null)
                     log.CHECK_EQ(rgData[0].ItemCount, 1, "The static item count should = 1.");
@@ -140,11 +140,11 @@ namespace MyCaffe.test
 
                 // Verify the static data.float[] 
                 log.CHECK(rgData[0] == null, "The static numerical data should be null.");
-                float[] rgDataStatic = rgData[1].GetData<float>();
+                float[] rgDataStatic = rgData[1].Data;
                 log.CHECK_EQ(rgDataStatic[0], 1, "The static value should = 1.");
 
                 // Verify the historical numeric data.
-                float[] rgDataHistNum = rgData[2].GetData<float>();
+                float[] rgDataHistNum = rgData[2].Data;
                 for (int j = 0; j < nHistSteps; j++)
                 {
                     float fExp1a = (i + j + 1) * 2;
@@ -159,7 +159,7 @@ namespace MyCaffe.test
                 }
 
                 // Verify the historical categorical data.
-                float[] rgDataHistCat = rgData[3].GetData<float>();
+                float[] rgDataHistCat = rgData[3].Data;
                 for (int j = 0; j < nHistSteps; j++)
                 {
                     float fExp3a = i + j;
@@ -171,7 +171,7 @@ namespace MyCaffe.test
 
                 // Verify the future data.
                 log.CHECK(rgData[4] == null, "The future numerical data should be null.");
-                float[] rgDataFutCat = rgData[5].GetData<float>();
+                float[] rgDataFutCat = rgData[5].Data;
                 for (int j = 0; j < nFutSteps; j++)
                 {
                     float fExp3a = i + (j + nHistSteps);
@@ -186,9 +186,9 @@ namespace MyCaffe.test
             {
                 int? nItemIdx = null;
                 int? nValIdx = null;
-                SimpleDatum[] rgData = set.GetData(i, ref nItemIdx, ref nValIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
+                SimpleTemporalDatumCollection rgData = set.GetData(i, ref nItemIdx, ref nValIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
 
-                log.CHECK_EQ(rgData.Length, 8, "There should be 8 simple datums (static num, static cat, hist num, hist cat, fut num, fut cat, target, target hist).");
+                log.CHECK_EQ(rgData.Count, 8, "There should be 8 simple datums (static num, static cat, hist num, hist cat, fut num, fut cat, target, target hist).");
 
                 if (rgData[0] != null)
                     log.CHECK_EQ(rgData[0].ItemCount, 1, "The static item count should = 1.");
@@ -209,11 +209,11 @@ namespace MyCaffe.test
 
                 // Verify the static data.float[] 
                 log.CHECK(rgData[0] == null, "The static numerical data should be null.");
-                float[] rgDataStatic = rgData[1].GetData<float>();
+                float[] rgDataStatic = rgData[1].Data;
                 log.CHECK_EQ(rgDataStatic[0], 2, "The static value should = 2.");
 
                 // Verify the historical numeric data.
-                float[] rgDataHistNum = rgData[2].GetData<float>();
+                float[] rgDataHistNum = rgData[2].Data;
                 for (int j = 0; j < nHistSteps; j++)
                 {
                     float fExp1a = (i + j + 3) * 4;
@@ -228,7 +228,7 @@ namespace MyCaffe.test
                 }
 
                 // Verify the historical categorical data.
-                float[] rgDataHistCat = rgData[3].GetData<float>();
+                float[] rgDataHistCat = rgData[3].Data;
                 for (int j = 0; j < nHistSteps; j++)
                 {
                     float fExp3a = i + j;
@@ -240,7 +240,7 @@ namespace MyCaffe.test
 
                 // Verify the future data.
                 log.CHECK(rgData[4] == null, "The future numerical data should be null.");
-                float[] rgDataFutCat = rgData[5].GetData<float>();
+                float[] rgDataFutCat = rgData[5].Data;
                 for (int j = 0; j < nFutSteps; j++)
                 {
                     float fExp3a = i + (j + nHistSteps);
