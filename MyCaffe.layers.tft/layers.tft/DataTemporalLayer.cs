@@ -516,75 +516,75 @@ namespace MyCaffe.layers.tft
                 if (m_batchPerfSet != null)
                     m_batchPerfSet.Select(ref nItemIdx, ref nValueIdx);
 
-                SimpleDatum[] rgData = m_db.QueryTemporalItem(i, src.ID, ref nItemIdx, ref nValueIdx, itemSelection, valueSelection, bEnableDebug, strDebugPath);
+                SimpleTemporalDatumCollection rgData = m_db.QueryTemporalItem(i, src.ID, ref nItemIdx, ref nValueIdx, itemSelection, valueSelection, bEnableDebug, strDebugPath);
                 if (rgData == null)
                     throw new Exception("No data could be found for source '" + src.Name + ".  You may need to re-run the dataset creator for the dataset '" + m_ds.Name + "'.");
 
                 m_rgIdx[i, 0] = nItemIdx.Value;
                 m_rgIdx[i, 1] = nValueIdx.Value;
 
-                SimpleDatum sdStatNum = rgData[0];
-                SimpleDatum sdStatCat = rgData[1];
-                SimpleDatum sdHistNum = rgData[2];
-                SimpleDatum sdHistCat = rgData[3];
-                SimpleDatum sdFutureNum = rgData[4];
-                SimpleDatum sdFutureCat = rgData[5];
-                SimpleDatum sdTarget = rgData[6];
-                SimpleDatum sdTargetHist = rgData[7];
+                SimpleTemporalDatum sdStatNum = rgData[0];
+                SimpleTemporalDatum sdStatCat = rgData[1];
+                SimpleTemporalDatum sdHistNum = rgData[2];
+                SimpleTemporalDatum sdHistCat = rgData[3];
+                SimpleTemporalDatum sdFutureNum = rgData[4];
+                SimpleTemporalDatum sdFutureCat = rgData[5];
+                SimpleTemporalDatum sdTarget = rgData[6];
+                SimpleTemporalDatum sdTargetHist = rgData[7];
 
                 // col[0] = STATIC_NUMERIC
                 if (m_rgStaticNum != null)
                 {
-                    float[] rgRawData = sdStatNum.GetData<float>();
+                    float[] rgRawData = sdStatNum.Data;
                     Array.Copy(rgRawData, 0, m_rgStaticNum, i * rgRawData.Length, rgRawData.Length);
                 }
 
                 // col[1] = STATIC_CATEGORICAL
                 if (m_rgStaticCat != null)
                 {
-                    float[] rgRawData = sdStatCat.GetData<float>();
+                    float[] rgRawData = sdStatCat.Data;
                     Array.Copy(rgRawData, 0, m_rgStaticCat, i * rgRawData.Length, rgRawData.Length);
                 }
 
                 // col[2] = HISTORICAL_NUMERIC
                 if (m_rgHistoricalNum != null)
                 {
-                    float[] rgRawData = sdHistNum.GetData<float>();
+                    float[] rgRawData = sdHistNum.Data;
                     Array.Copy(rgRawData, 0, m_rgHistoricalNum, i * rgRawData.Length, rgRawData.Length);
                 }
 
                 // col[3] = HISTORICAL_CATEGORICAL
                 if (m_rgHistoricalCat != null)
                 {
-                    float[] rgRawData = sdHistCat.GetData<float>();
+                    float[] rgRawData = sdHistCat.Data;
                     Array.Copy(rgRawData, 0, m_rgHistoricalCat, i * rgRawData.Length, rgRawData.Length);
                 }
 
                 // col[4] = FUTURE_NUMERIC
                 if (m_rgFutureNum != null)
                 {
-                    float[] rgRawData = sdFutureNum.GetData<float>();
+                    float[] rgRawData = sdFutureNum.Data;
                     Array.Copy(rgRawData, 0, m_rgFutureNum, i * rgRawData.Length, rgRawData.Length);
                 }
 
                 // col[5] = FUTURE_CATEGORICAL
                 if (m_rgFutureCat != null)
                 {
-                    float[] rgRawData = sdFutureCat.GetData<float>();
+                    float[] rgRawData = sdFutureCat.Data;
                     Array.Copy(rgRawData, 0, m_rgFutureCat, i * rgRawData.Length, rgRawData.Length);
                 }
 
                 // col[6] = TARGET
                 if (m_rgTarget != null)
                 {
-                    float[] rgRawData = sdTarget.GetData<float>();
+                    float[] rgRawData = sdTarget.Data;
                     Array.Copy(rgRawData, 0, m_rgTarget, i * rgRawData.Length, rgRawData.Length);
                 }
 
                 // col[7] = Historical Target (optional)
                 if (m_rgTargetHist != null)
                 {
-                    float[] rgRawData = sdTargetHist.GetData<float>();
+                    float[] rgRawData = sdTargetHist.Data;
                     Array.Copy(rgRawData, 0, m_rgTargetHist, i * rgRawData.Length, rgRawData.Length);
                 }
             }
