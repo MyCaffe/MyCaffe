@@ -398,6 +398,7 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Specifies to not use an in-memory database.
         /// </summary>
+        [EnumMember]
         NONE,
         /// <summary>
         /// Specifies to use the original image database.
@@ -412,6 +413,7 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Specifies to use the tempoal database.
         /// </summary>
+        [EnumMember]
         TEMPORAL,
         /// <summary>
         /// Specifies the default version (currently V2)
@@ -454,20 +456,22 @@ namespace MyCaffe.basecode
         /// </summary>
         /// <param name="s">Specifies the caffe settings.</param>
         /// <param name="strDs">Specifies the data set to load.</param>
-        /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
+        /// <param name="strEvtCancel">Optionally, specifies the name of the CancelEvent used to cancel load operations (default = null).</param>
+        /// <param name="prop">Optionally, specifies the properties for the initialization (default = null).</param>
         /// <returns>Returns <i>true</i> on success, <i>false</i> otherwise.</returns>
         [OperationContract(IsOneWay = false)]
-        bool InitializeWithDsName1(SettingsCaffe s, string strDs, string strEvtCancel = null);
+        bool InitializeWithDsName1(SettingsCaffe s, string strDs, string strEvtCancel = null, PropertySet prop = null);
 
         /// <summary>
         /// Initializes the image database.
         /// </summary>
         /// <param name="s">Specifies the caffe settings.</param>
         /// <param name="ds">Specifies the data set to load.</param>
-        /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
+        /// <param name="strEvtCancel">Optionally, specifies the name of the CancelEvent used to cancel load operations (default = null).</param>
+        /// <param name="prop">Optionally, specifies the properties for the initialization (default = null).</param>
         /// <returns>Returns <i>true</i> on success, <i>false</i> otherwise.</returns>
         [OperationContract(IsOneWay = false)]
-        bool InitializeWithDs1(SettingsCaffe s, DatasetDescriptor ds, string strEvtCancel = null);
+        bool InitializeWithDs1(SettingsCaffe s, DatasetDescriptor ds, string strEvtCancel = null, PropertySet prop = null);
 
         /// <summary>
         /// Initializes the image database.
@@ -475,11 +479,12 @@ namespace MyCaffe.basecode
         /// <param name="s">Specifies the caffe settings.</param>
         /// <param name="nDataSetID">Specifies the database ID of the data set to load.</param>
         /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
-        /// <param name="nPadW">Specifies the padding to add to each image width (default = 0).</param>
-        /// <param name="nPadH">Specifies the padding to add to each image height (default = 0).</param>
+        /// <param name="nPadW">Optionally, specifies the padding to add to each image width (default = 0).</param>
+        /// <param name="nPadH">Optionally, specifies the padding to add to each image height (default = 0).</param>
+        /// <param name="prop">Optionally, specifies the properties for the initialization (default = null).</param>
         /// <returns>Returns <i>true</i> on success, <i>false</i> otherwise.</returns>
         [OperationContract(IsOneWay = false)]
-        bool InitializeWithDsId1(SettingsCaffe s, int nDataSetID, string strEvtCancel = null, int nPadW = 0, int nPadH = 0);
+        bool InitializeWithDsId1(SettingsCaffe s, int nDataSetID, string strEvtCancel = null, int nPadW = 0, int nPadH = 0, PropertySet prop = null);
 
         /// <summary>
         /// Load another, 'secondary' dataset.
@@ -825,6 +830,7 @@ namespace MyCaffe.basecode
         /// </summary>
         /// <param name="prop">Specifies the initialization properties.</param>
         /// <remarks>This method must be called before any other initialization methods.</remarks>
+        [OperationContract(IsOneWay = false)]
         void SetInitializationProperties(PropertySet prop);
 
         /// <summary>
@@ -835,6 +841,7 @@ namespace MyCaffe.basecode
         /// <param name="nHistoricalSteps">Specifies the number of historical steps.</param>
         /// <param name="nFutureSteps">Specifies the number of future steps.</param>
         /// <returns>The total number of blocks is returned.</returns>
+        [OperationContract(IsOneWay = false)]
         int GetTotalSize(int nDsId, Phase phase, int nHistoricalSteps, int nFutureSteps);
 
         /// <summary>
@@ -848,9 +855,10 @@ namespace MyCaffe.basecode
         /// <param name="valueSelectionOverride">Optionally, specifies the value selection method used to select the index within the temporal data of the selected item.</param>
         /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
         /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
-        /// <returns>An array containing the static num, statuc cat, historical num, historical cat, future num, future cat, target and target hist data is returned. 
+        /// <returns>An collection of SimpleTemporalDatum containing the static num, statuc cat, historical num, historical cat, future num, future cat, target and target hist data is returned. 
         /// If one of the value types are not produced, null is filled in the array slot.</returns>
-        SimpleDatum[] QueryTemporalItem(int nQueryIdx, int nSrcId, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD? itemSelectionOverride = null, DB_ITEM_SELECTION_METHOD? valueSelectionOverride = null, bool bEnableDebug = false, string strDebugPath = null);
+        [OperationContract(IsOneWay = false)]
+        SimpleTemporalDatumCollection QueryTemporalItem(int nQueryIdx, int nSrcId, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD? itemSelectionOverride = null, DB_ITEM_SELECTION_METHOD? valueSelectionOverride = null, bool bEnableDebug = false, string strDebugPath = null);
 
         /// <summary>
         /// Reset the database indexes.
@@ -858,6 +866,7 @@ namespace MyCaffe.basecode
         /// <remarks>
         /// This method is only used when using sequential selection.
         /// </remarks>
+        [OperationContract(IsOneWay = false)]
         void Reset();
     }
 

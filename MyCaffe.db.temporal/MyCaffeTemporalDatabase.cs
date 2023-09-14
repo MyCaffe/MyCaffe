@@ -401,15 +401,16 @@ namespace MyCaffe.db.temporal
         /// </summary>
         /// <param name="s">Specifies the initial settings that specify the load method and load limit.</param>
         /// <param name="nDataSetID">Specifies the dataset ID to load.</param>
-        /// <param name="strEvtCancel">Specifies the name of a global cancel event.</param>
+        /// <param name="strEvtCancel">Optionally, specifies the name of a global cancel event (default = null).</param>
         /// <param name="nPadW">Not Used</param>
         /// <param name="nPadH">Not Used</param>
+        /// <param name="prop">Optionally specifies the properties for the initialization (default = null).</param>
         /// <returns>If the datset is loaded, true is returned, otherwise false.</returns>
         /// <remarks>
         /// You must call SetInitializationProperties before calling the InitializeWithDsId method.
         /// </remarks>
         /// <exception cref="Exception">An exception is thrown on error, e.g, when missing initialization properties.</exception>
-        public bool InitializeWithDsId1(SettingsCaffe s, int nDataSetID, string strEvtCancel = null, int nPadW = 0, int nPadH = 0)
+        public bool InitializeWithDsId1(SettingsCaffe s, int nDataSetID, string strEvtCancel = null, int nPadW = 0, int nPadH = 0, PropertySet prop = null)
         {
             m_settings = s;
             m_evtAbortInitialization = new AutoResetEvent(false);
@@ -422,13 +423,16 @@ namespace MyCaffe.db.temporal
                 ds = m_rgDataSets.Add(dsd, m_log);
             }
 
-            if (m_prop == null)
+            if (prop == null)
+                prop = m_prop;
+
+            if (prop == null)
                 throw new Exception("You must first call SetInitializationProperties with the properties to use for initialization.");
 
-            bool bNormalizeData = m_prop.GetPropertyAsBool("NormalizedData", true);
-            int nHistSteps = m_prop.GetPropertyAsInt("HistoricalSteps", 0);
-            int nFutureSteps = m_prop.GetPropertyAsInt("FutureSteps", 0);
-            int nChunks = m_prop.GetPropertyAsInt("Chunks", 1024);
+            bool bNormalizeData = prop.GetPropertyAsBool("NormalizedData", true);
+            int nHistSteps = prop.GetPropertyAsInt("HistoricalSteps", 0);
+            int nFutureSteps = prop.GetPropertyAsInt("FutureSteps", 0);
+            int nChunks = prop.GetPropertyAsInt("Chunks", 1024);
 
             if (nHistSteps == 0)
                 throw new Exception("The historical steps are missing from the properties, please add the 'HistoricalSteps' property with a value > 0.");
@@ -446,15 +450,16 @@ namespace MyCaffe.db.temporal
         /// </summary>
         /// <param name="s">Specifies the initial settings that specify the load method and load limit.</param>
         /// <param name="ds1">Specifies the dataset descriptor to load.</param>
-        /// <param name="strEvtCancel">Specifies the name of a global cancel event.</param>
+        /// <param name="strEvtCancel">Optionally, specifies the name of a global cancel event (default = null).</param>
+        /// <param name="prop">Optionally specifies the properties for the initialization (default = null).</param>
         /// <returns>If the datset is loaded, true is returned, otherwise false.</returns>
         /// <remarks>
         /// You must call SetInitializationProperties before calling the InitializeWithDsId method.
         /// </remarks>
         /// <exception cref="Exception">An exception is thrown on error, e.g, when missing initialization properties.</exception>
-        public bool InitializeWithDs1(SettingsCaffe s, DatasetDescriptor ds1, string strEvtCancel = null)
+        public bool InitializeWithDs1(SettingsCaffe s, DatasetDescriptor ds1, string strEvtCancel = null, PropertySet prop = null)
         {
-            return InitializeWithDsId1(s, ds1.ID, strEvtCancel);
+            return InitializeWithDsId1(s, ds1.ID, strEvtCancel, 0, 0, prop);
         }
 
         /// <summary>
@@ -462,13 +467,14 @@ namespace MyCaffe.db.temporal
         /// </summary>
         /// <param name="s">Specifies the initial settings that specify the load method and load limit.</param>
         /// <param name="strDs">Specifies the name of the dataset to load.</param>
-        /// <param name="strEvtCancel">Specifies the name of a global cancel event.</param>
+        /// <param name="strEvtCancel">Optionally, specifies the name of a global cancel event (default = null).</param>
+        /// <param name="prop">Optionally specifies the properties for the initialization (default = null).</param>
         /// <returns>If the datset is loaded, true is returned, otherwise false.</returns>
         /// <remarks>
         /// You must call SetInitializationProperties before calling the InitializeWithDsId method.
         /// </remarks>
         /// <exception cref="Exception">An exception is thrown on error, e.g, when missing initialization properties.</exception>
-        public bool InitializeWithDsName1(SettingsCaffe s, string strDs, string strEvtCancel = null)
+        public bool InitializeWithDsName1(SettingsCaffe s, string strDs, string strEvtCancel = null, PropertySet prop = null)
         {
             int nDsID = m_rgDataSets.GetDatasetID(strDs);
             if (nDsID == 0)
@@ -479,7 +485,7 @@ namespace MyCaffe.db.temporal
                     return false;
             }
 
-            return InitializeWithDsId1(s, nDsID, strEvtCancel);
+            return InitializeWithDsId1(s, nDsID, strEvtCancel, 0, 0, null);
         }
 
         /// <summary>
@@ -539,7 +545,7 @@ namespace MyCaffe.db.temporal
         /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
         /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
         /// <returns>A tuple containing the static, observed and known data is returned.</returns>
-        public SimpleDatum[] QueryTemporalItem(int nQueryIdx, int nSrcId, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD? itemSelectionOverride = null, DB_ITEM_SELECTION_METHOD? valueSelectionOverride = null, bool bEnableDebug = false, string strDebugPath = null)
+        public SimpleTemporalDatumCollection QueryTemporalItem(int nQueryIdx, int nSrcId, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD? itemSelectionOverride = null, DB_ITEM_SELECTION_METHOD? valueSelectionOverride = null, bool bEnableDebug = false, string strDebugPath = null)
         {
             TemporalSet ts = getTemporalSet(nSrcId);
             DB_LABEL_SELECTION_METHOD itemSelection = (itemSelectionOverride.HasValue) ? itemSelectionOverride.Value : m_itemSelectionMethod;
@@ -623,22 +629,22 @@ namespace MyCaffe.db.temporal
 
         public SimpleDatum QueryItem(int nSrcId, int nIdx, DB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, DB_ITEM_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false) /**@private */
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public SimpleDatum QueryItemMean(int nSrcId) /**@private */
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public SimpleDatum QueryItemMeanFromDataset(int nDatasetId) /**@private */
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public SimpleDatum QueryItemMeanFromDb(int nSrcId) /**@private */
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         #endregion

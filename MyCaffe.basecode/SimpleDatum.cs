@@ -6,11 +6,153 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 
 namespace MyCaffe.basecode
 {
+    /// <summary>
+    /// The SimpleTemporalDatum is used to return temporal data 
+    /// </summary>
+    [Serializable]
+    public class SimpleTemporalDatum
+    {
+        int m_nChannels = 0;
+        int m_nWidth = 0;
+        int m_nHeight = 0;
+        float[] m_rgReadDataF = null;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="nChannels">Specifies the channels in the data.</param>
+        /// <param name="nWidth">Specifies the width of the data.</param>
+        /// <param name="nHeight">Specifies the height of the data.</param>
+        /// <param name="rgData">Specifies the data.</param>
+        public SimpleTemporalDatum(int nChannels, int nWidth, int nHeight, float[] rgData)
+        {
+            m_nChannels = nChannels;
+            m_nWidth = nWidth;
+            m_nHeight = nHeight;
+            m_rgReadDataF = rgData;
+        }
+
+        /// <summary>
+        /// Get/set the data which is of length (Channels * Width * Height).
+        /// </summary>
+        public float[] Data
+        {
+            get { return m_rgReadDataF; }
+            set { m_rgReadDataF = value; }
+        }
+
+        /// <summary>
+        /// Returns the number of items in the data.
+        /// </summary>
+        public int ItemCount
+        {
+            get
+            {
+                return m_rgReadDataF.Length;
+            }
+        }
+
+        /// <summary>
+        /// Get the data channels.
+        /// </summary>
+        public int Channels
+        {
+            get { return m_nChannels; }
+        }
+
+        /// <summary>
+        /// Get the data width.
+        /// </summary>
+        public int Width
+        {
+            get { return m_nWidth; }
+        }
+
+        /// <summary>
+        /// Get the data height.
+        /// </summary>
+        public int Height
+        {
+            get { return m_nHeight; }
+        }
+    }
+
+    /// <summary>
+    /// The SimpleTemporalDatumCollection manages a collection of SimpleTemporalDatum objects.
+    /// </summary>
+    [Serializable]
+    public class SimpleTemporalDatumCollection
+    {
+        List<SimpleTemporalDatum> m_rgItems;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        public SimpleTemporalDatumCollection(int nCapacity)
+        {
+            m_rgItems = new List<SimpleTemporalDatum>(nCapacity);
+        }
+
+        /// <summary>
+        /// Add a new datum to the collection (must support the RealDataF data);
+        /// </summary>
+        /// <param name="sd">Specifies the datum to add.</param>
+        public void Add(SimpleDatum sd)
+        {
+            SimpleTemporalDatum sdt = null;
+
+            if (sd != null)
+            {
+                float[] rgData = sd.RealDataF;
+
+                if (rgData == null && sd.RealDataD != null)
+                {
+                    rgData = new float[sd.RealDataD.Length];
+                    for (int i = 0; i < rgData.Length; i++)
+                    {
+                        rgData[i] = (float)sd.RealDataD[i];
+                    }
+                }
+
+                sdt = new SimpleTemporalDatum(sd.Channels, sd.Width, sd.Height, rgData);
+            }
+
+            m_rgItems.Add(sdt);
+        }
+
+        /// <summary>
+        /// Returns the number of items in the collection.
+        /// </summary>
+        public int Count
+        {
+            get { return m_rgItems.Count; }
+        }
+
+        /// <summary>
+        /// Get/set an item within the collection.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index of the item.</param>
+        /// <returns>The item at the index is returned.</returns>
+        public SimpleTemporalDatum this[int nIdx]
+        {
+            get { return m_rgItems[nIdx]; }
+        }
+
+        /// <summary>
+        /// Clear all items from the list.
+        /// </summary>
+        public void Clear()
+        {
+            m_rgItems.Clear();
+        }
+    }
+
     /// <summary>
     /// The SimpleDatum class holds a data input within host memory.
     /// </summary>
@@ -56,63 +198,79 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Specifies the annotation type when using annotations.
         /// </summary>
+        [Serializable]
+        [DataContract]
         public enum ANNOTATION_TYPE
         {
             /// <summary>
             /// Specifies that annotations are not used.
             /// </summary>
+            [EnumMember]
             NONE = -1,
             /// <summary>
             /// Specifies to use the bounding box annoation type.
             /// </summary>
+            [EnumMember]
             BBOX = 0
         }
 
         /// <summary>
         /// Defines the data format of the DebugData and DataCriteria when specified.
         /// </summary>
+        [Serializable]
+        [DataContract]
         public enum DATA_FORMAT
         {
             /// <summary>
             /// Specifies that there is no data.
             /// </summary>
+            [EnumMember]
             NONE,
             /// <summary>
             /// Specifies that the data contains a black and white square image packed as a set of byte values [0-255] in the order: image wxh.
             /// </summary>
+            [EnumMember]
             IMAGE_1CH,
             /// <summary>
             /// Specifies that the data contains a RGB square image packed as a set of byte values [0-255] in the order: wxh of R, wxh of G and wxh of B.
             /// </summary>
+            [EnumMember]
             IMAGE_3CH,
             /// <summary>
             /// Specifies that the data contains segmentation data where the height and width are equal.
             /// </summary>
+            [EnumMember]
             SEGMENTATION,
             /// <summary>
             /// Specifies that the data contains a dictionary of values.
             /// </summary>
+            [EnumMember]
             DICTIONARY,
             /// <summary>
             /// Specifies that the data contains custom data.
             /// </summary>
+            [EnumMember]
             CUSTOM,
             /// <summary>
             /// Specifies that the data contains an image converted to a byte array using ImageTools.ImageToByteArray.
             /// </summary>
             /// <remarks>To convert back to an image, use the ImageTools.ByteArrayToImage method.</remarks>
+            [EnumMember]
             BITMAP,
             /// <summary>
             /// Specifies that the data contains a list of double values where the first item is an Int32 which is the count followed by that many double values.
             /// </summary>
+            [EnumMember]
             LIST_DOUBLE,
             /// <summary>
             /// Specifies that the data contains a list of float values where the first item is an Int32 which is the count followed by that many float values.
             /// </summary>
+            [EnumMember]
             LIST_FLOAT,
             /// <summary>
             /// Specifies that the data contains annotation data used with SSD.
             /// </summary>
+            [EnumMember]
             ANNOTATION_DATA
         }
 
@@ -2793,11 +2951,13 @@ namespace MyCaffe.basecode
     /// <summary>
     /// The SimpleDatumCollection holds a named array of SimpleDatums
     /// </summary>
+    [Serializable]
     public class SimpleDatumCollection : IEnumerable<SimpleDatum>
     {
         string m_strName;
         SimpleDatum[] m_rgItems = null;
         List<int> m_rgShape;
+        [NonSerialized]
         object m_tag = null;
 
         /// <summary>

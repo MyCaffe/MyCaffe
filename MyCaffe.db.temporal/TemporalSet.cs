@@ -236,11 +236,11 @@ namespace MyCaffe.db.temporal
         /// <param name="nValueStepOffset">Optionally, specifies the value step offset from the previous query (default = 1, this parameter only applies when using non random selection).</param>
         /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
         /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
-        /// <returns>An array of SimpleDatum is returned where: [0] = static num, [1] = static cat, [2] = historical num, [3] = historical cat, [4] = future num, [5] = future cat, [6] = target, and [7] = target history
+        /// <returns>An collection of SimpleTemporalDatums is returned where: [0] = static num, [1] = static cat, [2] = historical num, [3] = historical cat, [4] = future num, [5] = future cat, [6] = target, and [7] = target history
         /// for a given item at the temporal selection point.</returns>
         /// <remarks>Note, the ordering for historical value streams is: observed, then known.  Future value streams only contiain known value streams.  If a dataset does not have one of the data types noted above, null
         /// is returned in the array slot (for example, if the dataset does not produce static numeric values, the array slot is set to [0] = null.</remarks>
-        public SimpleDatum[] GetData(int nQueryIdx, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD itemSelectionMethod, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nValueStepOffset = 1, bool bEnableDebug = false, string strDebugPath = null)
+        public SimpleTemporalDatumCollection GetData(int nQueryIdx, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD itemSelectionMethod, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nValueStepOffset = 1, bool bEnableDebug = false, string strDebugPath = null)
         {
             if (itemSelectionMethod == DB_LABEL_SELECTION_METHOD.RANDOM)
             {
@@ -256,7 +256,7 @@ namespace MyCaffe.db.temporal
                 m_nItemIdx = nItemIdx.Value;
             nItemIdx = m_nItemIdx;
 
-            SimpleDatum[] data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bEnableDebug, strDebugPath);
+            SimpleTemporalDatumCollection data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bEnableDebug, strDebugPath);
 
             int nRetryCount = 0;
             while (data == null && nRetryCount < 40)
