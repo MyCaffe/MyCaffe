@@ -11,6 +11,7 @@ namespace MyCaffe.basecode
     /// <summary>
     /// Specifies a key-value pair of properties.
     /// </summary>
+    [Serializable]
     public class PropertySet : IEnumerable<KeyValuePair<string, string>>
     {
         Dictionary<string, string> m_rgProperties = new Dictionary<string, string>();
