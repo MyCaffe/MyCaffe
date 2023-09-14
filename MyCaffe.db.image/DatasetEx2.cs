@@ -124,7 +124,7 @@ namespace MyCaffe.db.image
                 if (!bSkipMeanCheck)
                 {
                     bool bQueryOnly = false;
-                    if (EntitiesConnection.GlobalDatabaseConnectInfo.Location == ConnectInfo.TYPE.AZURE)
+                    if (EntitiesConnection.GlobalDatabaseConnectInfo.Location != ConnectInfo.TYPE.LOCAL)
                         bQueryOnly = true;
 
                     sdMean = m_TrainingImages.GetImageMean(log, rgAbort, bQueryOnly);
@@ -140,7 +140,7 @@ namespace MyCaffe.db.image
                 if (!bSkipMeanCheck)
                 {
                     bool bSave = true;
-                    if (EntitiesConnection.GlobalDatabaseConnectInfo.Location == ConnectInfo.TYPE.AZURE)
+                    if (EntitiesConnection.GlobalDatabaseConnectInfo.Location != ConnectInfo.TYPE.LOCAL)
                         bSave = false;
 
                     m_TestingImages.SetImageMean(sdMean, bSave);
