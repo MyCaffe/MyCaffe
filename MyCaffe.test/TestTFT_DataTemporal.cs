@@ -936,6 +936,10 @@ namespace MyCaffe.test
                     rgTargetShape = new int[] { nBatchSize, nNumFuture, 1 };    // log vol
                 }
 
+                int nStaticOffset = 0;
+                if (srcType == DataTemporalParameter.SOURCE_TYPE.SQL_DB)
+                    nStaticOffset = -1;
+
                 for (int i = 0; i < nMaxIter; i++)
                 {
                     BlobCollection<T> colRes = net.Forward();
@@ -959,6 +963,8 @@ namespace MyCaffe.test
                     verify(i, blob1, rgNumStaticShape, blobStatNum, blobWork, "x_numeric_static");
 
                     blob1 = net.FindBlob("x_categorical_static");
+                    if (nStaticOffset != 0)
+                        blobStatCat.add_scalar(nStaticOffset); // index in database is zero based.
                     verify(i, blob1, rgCatStaticShape, blobStatCat, blobWork, "x_categorical_static");
 
                     blob1 = net.FindBlob("x_numeric_hist");
