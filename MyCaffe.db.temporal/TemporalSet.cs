@@ -1,4 +1,5 @@
-﻿using MyCaffe.basecode;
+﻿using Microsoft.VisualBasic.Devices;
+using MyCaffe.basecode;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.db.image;
 using SimpleGraphing;
@@ -28,6 +29,8 @@ namespace MyCaffe.db.temporal
         AutoResetEvent m_evtDone = new AutoResetEvent(false);
         List<ItemSet> m_rgItems = new List<ItemSet>();
         int m_nLoadLimit = 0;
+        double m_dfReplacementPct;
+        int m_nRefreshUpdateMs;
         DB_LOAD_METHOD m_loadMethod;
         DatabaseTemporal m_db;
         CryptoRandom m_random = null;
@@ -38,6 +41,7 @@ namespace MyCaffe.db.temporal
         int m_nItemIdx = 0;
         bool m_bNormalizeData = false;
         double m_dfLoadPct = 0;
+        object m_objSync = new object();
 
         /// <summary>
         /// The constructor.
@@ -47,11 +51,13 @@ namespace MyCaffe.db.temporal
         /// <param name="src">Specifies the data source.</param>
         /// <param name="loadMethod">Specifies the data load method.</param>
         /// <param name="nLoadLimit">Specifies the data load limit.</param>
+        /// <param name="dfReplacementPct">Specifies the percent of replacement on a load limit event.</param>
+        /// <param name="nRefreshUpdateMs">Specifies the refresh update perod in milliseconds.</param>
         /// <param name="random">Specifies the random number object.</param>
         /// <param name="nHistoricSteps">Specifies the historical steps in a step block.</param>
         /// <param name="nFutureSteps">Specifies the future steps in a step block.</param>
         /// <param name="nChunks">Specifies the number of step items to load on each cycle.</param>
-        public TemporalSet(Log log, DatabaseTemporal db, SourceDescriptor src, DB_LOAD_METHOD loadMethod, int nLoadLimit, CryptoRandom random, int nHistoricSteps, int nFutureSteps, int nChunks)
+        public TemporalSet(Log log, DatabaseTemporal db, SourceDescriptor src, DB_LOAD_METHOD loadMethod, int nLoadLimit, double dfReplacementPct, int nRefreshUpdateMs, CryptoRandom random, int nHistoricSteps, int nFutureSteps, int nChunks)
         {
             m_log = log;
             m_random = random;
@@ -63,6 +69,20 @@ namespace MyCaffe.db.temporal
             m_nFutureSteps = nFutureSteps;
             m_nTotalSteps = m_nHistoricSteps + m_nFutureSteps;
             m_nChunks = nChunks;
+            m_dfReplacementPct = dfReplacementPct;
+            m_nRefreshUpdateMs = nRefreshUpdateMs;
+
+            if (m_nLoadLimit < 0)
+                m_nLoadLimit = 0;
+
+            if (m_nLoadLimit > 0 && m_nLoadLimit < 1000)
+                m_nLoadLimit = 1000;
+
+            if (m_dfReplacementPct > 0.9)
+                m_dfReplacementPct = 0.9;
+
+            if (m_nRefreshUpdateMs < 250)
+                m_nRefreshUpdateMs = 250;
         }
 
         /// <summary>
@@ -122,10 +142,27 @@ namespace MyCaffe.db.temporal
             return true;
         }
 
+        private void removeItem(List<ItemSet> rgItems)
+        {
+            lock (m_objSync)
+            {
+                if (m_rgItems == null)
+                    return;
+
+                if (m_rgItems.Count == 0)
+                    return;
+
+                ItemSet item = rgItems[0];
+                rgItems.RemoveAt(0);
+                item.CleanUp();
+            }
+        }
+
         private void loadThread()
         {
             DatabaseLoader loader = new DatabaseLoader();
             List<ValueItem> rgItems = m_db.GetAllValueItems(m_src.ID);
+            double dfMemMin = 2.0;
 
             try
             {
@@ -147,19 +184,29 @@ namespace MyCaffe.db.temporal
                 Stopwatch sw = new Stopwatch();
                 sw.Start();
                 m_dfLoadPct = 0;
+                int nIdx = 0;
+
+                ComputerInfo info = new ComputerInfo();
+                Stopwatch swReplacement = new Stopwatch();
+
+                swReplacement.Start();
 
                 while (!m_evtCancel.WaitOne(0))
                 {
                     bool bEOD1;
 
                     // Load one chunk for each item.
-                    for (int i=0; i<rgItems.Count; i++)
+                    while (m_rgItems.Count < rgItems.Count && (m_nLoadLimit <= 0 || m_rgItems.Count < m_nLoadLimit))
                     {
-                        ItemSet item = new ItemSet(m_random, m_db, rgItems[i], rgStrm);
+                        ItemSet item = new ItemSet(m_random, m_db, rgItems[nIdx], rgStrm);
                         item.Load(out bEOD1);
-                        m_rgItems.Add(item);
 
-                        m_dfLoadPct = (double)i / rgItems.Count;                       
+                        lock (m_objSync)
+                        {
+                            m_rgItems.Add(item);
+                        }
+
+                        m_dfLoadPct = (double)m_rgItems.Count / rgItems.Count;                       
                         if (bEOD1)
                             bEOD = true;
 
@@ -172,10 +219,57 @@ namespace MyCaffe.db.temporal
 
                         if (m_evtCancel.WaitOne(0))
                             break;
+
+                        nIdx++;
+
+                        if (nIdx >= rgItems.Count)
+                            nIdx = 0;
+
+                        if (nIdx % m_nChunks == 0)
+                            break;
                     }
 
-                    if (bEOD)
-                        break;
+                    if (m_nLoadLimit > 0)
+                    {
+                        int nLoadLimit = m_nLoadLimit;
+                        
+                        if ((int)swReplacement.Elapsed.TotalMilliseconds > m_nRefreshUpdateMs)
+                            nLoadLimit = (int)(m_nLoadLimit * (1 - m_dfReplacementPct));
+
+                        if (nLoadLimit > 1000)
+                        {
+                            while (m_rgItems.Count > nLoadLimit)
+                            {
+                                removeItem(m_rgItems);
+                            }
+
+                            GC.Collect(2, GCCollectionMode.Forced);
+                        }
+                    }
+
+                    ulong nMem = info.AvailablePhysicalMemory;
+                    double dfMb = (double)nMem / (1024.0 * 1024.0);
+                    int nRetryCount = 0;
+
+                    while (dfMb < dfMemMin && nRetryCount < 10 && m_rgItems.Count > 1000)
+                    {
+                        m_log.WriteLine("Waiting for memory to free up...", true);
+
+                        for (int i=0; i<1000 && m_rgItems.Count > 1000; i++)
+                        {
+                            removeItem(m_rgItems);
+                        }
+
+                        GC.Collect(2, GCCollectionMode.Forced);
+                        nMem = info.AvailablePhysicalMemory;
+                        dfMb = (double)nMem / (1024.0 * 1024.0);
+
+                        nRetryCount++;
+                        Thread.Sleep(250);
+                    }
+
+                    if (dfMb < dfMemMin)
+                        return;
                 }
             }
             catch (Exception excpt)
@@ -240,24 +334,9 @@ namespace MyCaffe.db.temporal
         /// is returned in the array slot (for example, if the dataset does not produce static numeric values, the array slot is set to [0] = null.</remarks>
         public SimpleTemporalDatumCollection GetData(int nQueryIdx, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD itemSelectionMethod, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nValueStepOffset = 1, bool bEnableDebug = false, string strDebugPath = null)
         {
-            if (itemSelectionMethod == DB_LABEL_SELECTION_METHOD.RANDOM)
-            {
-                m_nItemIdx = m_random.Next(m_rgItems.Count);
-            }
-            else
-            {
-                if (m_nItemIdx >= m_rgItems.Count)
-                    m_nItemIdx = 0;
-            }
+            SimpleTemporalDatumCollection data = null;
 
-            if (nItemIdx.HasValue)
-                m_nItemIdx = nItemIdx.Value;
-            nItemIdx = m_nItemIdx;
-
-            SimpleTemporalDatumCollection data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bEnableDebug, strDebugPath);
-
-            int nRetryCount = 0;
-            while (data == null && nRetryCount < 40)
+            lock (m_objSync)
             {
                 if (itemSelectionMethod == DB_LABEL_SELECTION_METHOD.RANDOM)
                 {
@@ -265,15 +344,38 @@ namespace MyCaffe.db.temporal
                 }
                 else
                 {
-                    m_nItemIdx++;
-
                     if (m_nItemIdx >= m_rgItems.Count)
                         m_nItemIdx = 0;
                 }
 
+                if (nItemIdx.HasValue)
+                    m_nItemIdx = nItemIdx.Value;
                 nItemIdx = m_nItemIdx;
+
+                if (m_nItemIdx >= m_rgItems.Count)
+                    return null;
+
                 data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bEnableDebug, strDebugPath);
-                nRetryCount++;
+
+                int nRetryCount = 0;
+                while (data == null && nRetryCount < 40)
+                {
+                    if (itemSelectionMethod == DB_LABEL_SELECTION_METHOD.RANDOM)
+                    {
+                        m_nItemIdx = m_random.Next(m_rgItems.Count);
+                    }
+                    else
+                    {
+                        m_nItemIdx++;
+
+                        if (m_nItemIdx >= m_rgItems.Count)
+                            m_nItemIdx = 0;
+                    }
+
+                    nItemIdx = m_nItemIdx;
+                    data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bEnableDebug, strDebugPath);
+                    nRetryCount++;
+                }
             }
 
             return data;
@@ -285,7 +387,10 @@ namespace MyCaffe.db.temporal
         /// <returns>The number of queries available is returned.</returns>
         public int GetCount()
         {
-            return m_rgItems.Sum(p => p.GetCount(m_nHistoricSteps + m_nFutureSteps));
+            lock (m_objSync)
+            {
+                return m_rgItems.Sum(p => p.GetCount(m_nHistoricSteps + m_nFutureSteps));
+            }
         }
 
         /// <summary>
@@ -293,7 +398,13 @@ namespace MyCaffe.db.temporal
         /// </summary>
         public int Count
         {
-            get { return m_rgItems.Count; }
+            get 
+            {
+                lock (m_objSync)
+                {
+                    return m_rgItems.Count;
+                }
+            }
         }
     }
 }

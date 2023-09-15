@@ -108,18 +108,20 @@ namespace MyCaffe.db.temporal
         /// </summary>
         /// <param name="loadMethod">Specifies the loading method.</param>
         /// <param name="nLoadLimit">Specifies the load limit (or 0 to ignore)</param>
+        /// <param name="dfReplacementPct">Specifies the percent of replacement on a load limit event.</param>
+        /// <param name="nRefreshUpdateMs">Specifies the refresh update perod in milliseconds.</param>
         /// <param name="bNormalizedData">Specifies to load the normalized data.</param>
         /// <param name="nHistoricalSteps">Specifies the number of sequential historical steps in each block.</param>
         /// <param name="nFutureSteps">Specifies the number of sequential future steps in each block.</param>
         /// <param name="nChunks">Specifies the number of blocks to load at a time.</param>
         /// <param name="evtCancel">Specifies the event used to cancel the initialization process.</param>
-        public bool Load(DB_LOAD_METHOD loadMethod, int nLoadLimit, bool bNormalizedData, int nHistoricalSteps, int nFutureSteps, int nChunks, EventWaitHandle evtCancel)
+        public bool Load(DB_LOAD_METHOD loadMethod, int nLoadLimit, double dfReplacementPct, int nRefreshUpdateMs, bool bNormalizedData, int nHistoricalSteps, int nFutureSteps, int nChunks, EventWaitHandle evtCancel)
         {
             List<TemporalSet> rgInit = new List<TemporalSet>();
 
             if (!m_rgTemporalSets.ContainsKey(m_ds.TrainingSource.ID))
             {
-                TemporalSet ts = new TemporalSet(m_log, m_db, m_ds.TrainingSource, loadMethod, nLoadLimit, m_random, nHistoricalSteps, nFutureSteps, nChunks);
+                TemporalSet ts = new TemporalSet(m_log, m_db, m_ds.TrainingSource, loadMethod, nLoadLimit, dfReplacementPct, nRefreshUpdateMs, m_random, nHistoricalSteps, nFutureSteps, nChunks);
                 m_rgTemporalSets.Add(m_ds.TrainingSource.ID, ts);
                 m_rgTemporalSetsEx.Add(Phase.TRAIN, ts);
                 rgInit.Add(ts);
@@ -127,7 +129,7 @@ namespace MyCaffe.db.temporal
 
             if (!m_rgTemporalSets.ContainsKey(m_ds.TestingSource.ID))
             {
-                TemporalSet ts = new TemporalSet(m_log, m_db, m_ds.TestingSource, loadMethod, nLoadLimit, m_random, nHistoricalSteps, nFutureSteps, nChunks);
+                TemporalSet ts = new TemporalSet(m_log, m_db, m_ds.TestingSource, loadMethod, nLoadLimit, dfReplacementPct, nRefreshUpdateMs, m_random, nHistoricalSteps, nFutureSteps, nChunks);
                 m_rgTemporalSets.Add(m_ds.TestingSource.ID, ts);
                 m_rgTemporalSetsEx.Add(Phase.TEST, ts);
                 rgInit.Add(ts);

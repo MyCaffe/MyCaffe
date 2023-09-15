@@ -454,7 +454,7 @@ namespace MyCaffe.db.temporal
             if (nHistSteps < 0 || nFutureSteps < 0)
                 throw new Exception("The historical and future steps must be > 0.");
 
-            return ds.Load(s.DbLoadMethod, s.DbLoadLimit, bNormalizeData, nHistSteps, nFutureSteps, nChunks, m_evtAbortInitialization);
+            return ds.Load(s.DbLoadMethod, s.DbLoadLimit, s.DbAutoRefreshScheduledReplacementPercent, s.DbAutoRefreshScheduledUpdateInMs, bNormalizeData, nHistSteps, nFutureSteps, nChunks, m_evtAbortInitialization);
         }
 
         /// <summary>
