@@ -105,7 +105,7 @@ namespace MyCaffe.test
             int nHistSteps = 90;
             int nFutSteps = 30;
             SourceDescriptor src = loadTestData(nHistSteps, nFutSteps, out dtStart, out dtEnd);
-            TemporalSet set = new TemporalSet(log, db, src, DB_LOAD_METHOD.LOAD_ALL, 0, random, nHistSteps, nFutSteps, 1024);
+            TemporalSet set = new TemporalSet(log, db, src, DB_LOAD_METHOD.LOAD_ALL, 0, 0, 0, random, nHistSteps, nFutSteps, 1024);
             AutoResetEvent evtCancel = new AutoResetEvent(false);
 
             int nStreamsNum = 2;
