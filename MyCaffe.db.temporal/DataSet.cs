@@ -89,9 +89,16 @@ namespace MyCaffe.db.temporal
         /// <param name="dfTesting">Specifies the testing percent loaded.</param>
         /// <returns>Returns the total load percent.</returns>
         public double GetLoadPercent(out double dfTraining, out double dfTesting)
-        {            
-            dfTraining = m_rgTemporalSetsEx[Phase.TRAIN].LoadPercent;
-            dfTesting = m_rgTemporalSetsEx[Phase.TEST].LoadPercent;
+        {
+            dfTraining = 0;
+            
+            if (m_rgTemporalSetsEx.ContainsKey(Phase.TRAIN))
+                dfTraining = m_rgTemporalSetsEx[Phase.TRAIN].LoadPercent;
+
+            dfTesting = 0;
+            
+            if (m_rgTemporalSetsEx.ContainsKey(Phase.TEST))
+                dfTesting = m_rgTemporalSetsEx[Phase.TEST].LoadPercent;
 
             return (dfTraining + dfTesting) / 2.0;
         }
@@ -108,17 +115,27 @@ namespace MyCaffe.db.temporal
         /// <param name="evtCancel">Specifies the event used to cancel the initialization process.</param>
         public bool Load(DB_LOAD_METHOD loadMethod, int nLoadLimit, bool bNormalizedData, int nHistoricalSteps, int nFutureSteps, int nChunks, EventWaitHandle evtCancel)
         {
-            TemporalSet ts = new TemporalSet(m_log, m_db, m_ds.TrainingSource, loadMethod, nLoadLimit, m_random, nHistoricalSteps, nFutureSteps, nChunks);
-            m_rgTemporalSets.Add(m_ds.TrainingSource.ID, ts);
-            m_rgTemporalSetsEx.Add(Phase.TRAIN, ts);
+            List<TemporalSet> rgInit = new List<TemporalSet>();
 
-            ts = new TemporalSet(m_log, m_db, m_ds.TestingSource, loadMethod, nLoadLimit, m_random, nHistoricalSteps, nFutureSteps, nChunks);
-            m_rgTemporalSets.Add(m_ds.TestingSource.ID, ts);
-            m_rgTemporalSetsEx.Add(Phase.TEST, ts);
-
-            foreach (KeyValuePair<int, TemporalSet> kv in m_rgTemporalSets)
+            if (!m_rgTemporalSets.ContainsKey(m_ds.TrainingSource.ID))
             {
-                if (!kv.Value.Initialize(bNormalizedData, evtCancel))
+                TemporalSet ts = new TemporalSet(m_log, m_db, m_ds.TrainingSource, loadMethod, nLoadLimit, m_random, nHistoricalSteps, nFutureSteps, nChunks);
+                m_rgTemporalSets.Add(m_ds.TrainingSource.ID, ts);
+                m_rgTemporalSetsEx.Add(Phase.TRAIN, ts);
+                rgInit.Add(ts);
+            }
+
+            if (!m_rgTemporalSets.ContainsKey(m_ds.TestingSource.ID))
+            {
+                TemporalSet ts = new TemporalSet(m_log, m_db, m_ds.TestingSource, loadMethod, nLoadLimit, m_random, nHistoricalSteps, nFutureSteps, nChunks);
+                m_rgTemporalSets.Add(m_ds.TestingSource.ID, ts);
+                m_rgTemporalSetsEx.Add(Phase.TEST, ts);
+                rgInit.Add(ts);
+            }
+
+            foreach (TemporalSet ts1 in rgInit)
+            {
+                if (!ts1.Initialize(bNormalizedData, evtCancel))
                     return false;
             }
 
