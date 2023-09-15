@@ -75,6 +75,11 @@ namespace MyCaffe.db.temporal
         /// <param name="bForce">Not used.</param>
         public void CleanUp(int nDsId = 0, bool bForce = false)
         {
+            foreach (TemporalSet ts in m_rgTemporalSets.Values)
+            {
+                ts.CleanUp();
+            }
+
             m_rgTemporalSets.Clear();
             m_rgDataSets.CleanUp(nDsId);
         }
@@ -351,11 +356,18 @@ namespace MyCaffe.db.temporal
         /// <returns>Returns true if unloaded successfully.</returns>
         public bool UnloadDatasetById(int nDsId)
         {
-            DataSet ds = m_rgDataSets.Find(nDsId);
-            if (ds != null)
+            if (nDsId > 0)
             {
-                m_rgDataSets.CleanUp(nDsId);
-                return true;
+                DataSet ds = m_rgDataSets.Find(nDsId);
+                if (ds != null)
+                {
+                    m_rgDataSets.CleanUp(nDsId);
+                    return true;
+                }
+            }
+            else
+            {
+                m_rgDataSets.CleanUp(0);
             }
 
             return false;

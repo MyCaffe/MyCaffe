@@ -84,11 +84,6 @@ namespace MyCaffe.db.temporal
                 m_loadThread = null;
             }
 
-            foreach (ItemSet item in m_rgItems)
-            {
-                item.CleanUp();
-            }
-
             m_rgItems.Clear();
         }
 
@@ -174,6 +169,9 @@ namespace MyCaffe.db.temporal
                             m_log.Progress = m_dfLoadPct;
                             m_log.WriteLine("Loading '" + m_src.Name + "' data for item " + item.Item.Name + " (" + m_dfLoadPct.ToString("P") + ")...", true);
                         }
+
+                        if (m_evtCancel.WaitOne(0))
+                            break;
                     }
 
                     if (bEOD)
