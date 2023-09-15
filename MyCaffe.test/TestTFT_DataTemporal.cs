@@ -912,12 +912,18 @@ namespace MyCaffe.test
                 int[] rgCatFutShape = new int[] { 0 };
                 int[] rgTargetShape = new int[] { 0 };
 
+                int nStaticOffset = 0;
+
                 if (src == SOURCE.ELECTRICITY)
                 {
                     rgCatStaticShape = new int[] { nBatchSize, 1 };             // station id
                     rgNumHistShape = new int[] { nBatchSize, nNumHist, 3 };     // log power use, hour, hour from start
                     rgNumFutShape = new int[] { nBatchSize, nNumFuture, 2 };    // hour, hour from start
                     rgTargetShape = new int[] { nBatchSize, nNumFuture, 1 };    // log power use
+
+                    // index in database is zero based.
+                    if (srcType == DataTemporalParameter.SOURCE_TYPE.SQL_DB)
+                        nStaticOffset = -1;
                 }
                 else if (src == SOURCE.TRAFFIC)
                 {
@@ -935,10 +941,6 @@ namespace MyCaffe.test
                     rgCatFutShape = new int[] { nBatchSize, nNumFuture, 4 };    // day of week, day of month, week of year, month
                     rgTargetShape = new int[] { nBatchSize, nNumFuture, 1 };    // log vol
                 }
-
-                int nStaticOffset = 0;
-                if (srcType == DataTemporalParameter.SOURCE_TYPE.SQL_DB)
-                    nStaticOffset = -1;
 
                 for (int i = 0; i < nMaxIter; i++)
                 {
@@ -964,7 +966,7 @@ namespace MyCaffe.test
 
                     blob1 = net.FindBlob("x_categorical_static");
                     if (nStaticOffset != 0)
-                        blobStatCat.add_scalar(nStaticOffset); // index in database is zero based.
+                        blobStatCat.add_scalar(nStaticOffset); 
                     verify(i, blob1, rgCatStaticShape, blobStatCat, blobWork, "x_categorical_static");
 
                     blob1 = net.FindBlob("x_numeric_hist");
