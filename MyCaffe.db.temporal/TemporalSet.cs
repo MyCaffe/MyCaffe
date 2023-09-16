@@ -162,7 +162,7 @@ namespace MyCaffe.db.temporal
         {
             DatabaseLoader loader = new DatabaseLoader();
             List<ValueItem> rgItems = m_db.GetAllValueItems(m_src.ID);
-            double dfMemMin = 2.0;
+            double dfMemMin = 1000.0;
 
             try
             {
@@ -270,6 +270,9 @@ namespace MyCaffe.db.temporal
 
                     if (dfMb < dfMemMin)
                         return;
+
+                    if (m_rgItems.Count == rgItems.Count && m_nLoadLimit <= 0)
+                        break;
                 }
             }
             catch (Exception excpt)
