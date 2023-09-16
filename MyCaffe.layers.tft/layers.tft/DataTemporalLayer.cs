@@ -518,7 +518,7 @@ namespace MyCaffe.layers.tft
 
                 SimpleTemporalDatumCollection rgData = m_db.QueryTemporalItem(i, src.ID, ref nItemIdx, ref nValueIdx, itemSelection, valueSelection, bEnableDebug, strDebugPath);
                 if (rgData == null)
-                    throw new Exception("No data could be found for source '" + src.Name + ".  You may need to re-run the dataset creator for the dataset '" + m_ds.Name + "'.");
+                    continue;
 
                 m_rgIdx[i, 0] = nItemIdx.Value;
                 m_rgIdx[i, 1] = nValueIdx.Value;
