@@ -1067,6 +1067,7 @@ namespace MyCaffe.trainers.rnn.simple
                 {
                     int nIdx = 0;
                     List<T> rgInput = getInitialInput(m_bIsDataReal);
+                    Blob<T> blobLossBtm = null;
 
                     for (int i = 0; i < nN; i++)
                     {
@@ -1086,6 +1087,19 @@ namespace MyCaffe.trainers.rnn.simple
 
                         if (m_blobOutput != null)
                             blobOutput = m_blobOutput;
+
+                        if (blobOutput.type == BLOB_TYPE.LOSS)
+                        {
+                            if (blobLossBtm == null)
+                            {
+                                Blob<T> blob = m_net.FindLossBottomBlob();
+                                if (blob != null)
+                                    blobLossBtm = blob;
+                            }
+
+                            if (blobLossBtm != null)
+                                blobOutput = blobLossBtm;
+                        }
 
                         float[] rgResults = Utility.ConvertVecF<T>(blobOutput.update_cpu_data());
                         float fPrediction = getLastPrediction(rgResults, m_rgVocabulary, 1);
