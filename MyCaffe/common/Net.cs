@@ -2658,6 +2658,33 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Find the bottom blob of the Loss layer if it exists, otherwise <i>null</i> is returned.
+        /// </summary>
+        /// <returns>Return the blob of the loss layer or <i>null</i> if not found.</returns>
+        public Blob<T> FindLossBottomBlob()
+        {
+            if (m_rgLayers.Count == 0)
+                return null;
+
+            int nLayerIdx = m_rgLayers.Count - 1;
+            Layer<T> layer = m_rgLayers[nLayerIdx];
+
+            while (nLayerIdx > 0 && (!layer.parent_layer_type.HasValue || layer.parent_layer_type.Value != LayerParameter.LayerType.LOSS))
+            {
+                nLayerIdx--;
+                layer = m_rgLayers[nLayerIdx];
+            }
+
+            if (nLayerIdx > 0)
+            {
+                string strBtm = layer.layer_param.bottom[0];
+                return blob_by_name(strBtm);
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Returns the DebugInformation for the Net.
         /// </summary>
         /// <param name="bDetectNans">Specifies whether or not to detect Nan's in the data.</param>
