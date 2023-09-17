@@ -67,7 +67,7 @@
             this.btnDeleteRecordingData});
             this.toolStrip1.Location = new System.Drawing.Point(3, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(112, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(81, 25);
             this.toolStrip1.TabIndex = 0;
             // 
             // btnShowActionImage
@@ -125,6 +125,7 @@
             this.MinimizeBox = false;
             this.Name = "FormGym";
             this.Text = "Test Gym";
+            this.TopMost = true;
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FormGym_FormClosing);
             this.Load += new System.EventHandler(this.FormGym_Load);
             this.toolStripContainer1.BottomToolStripPanel.ResumeLayout(false);
