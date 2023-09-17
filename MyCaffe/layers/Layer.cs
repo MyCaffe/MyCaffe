@@ -102,6 +102,10 @@ namespace MyCaffe.layers
         /// Specifies whether the reshape is requested from a Net.Reshape call or not.
         /// </summary>
         protected bool m_bNetReshapeRequest = false;
+        /// <summary>
+        /// Specifies the layer type of the parent.
+        /// </summary>
+        protected LayerParameter.LayerType? m_parentLayerType = null;
 
         private List<List<int>> m_rgrgLastBottomShape = new List<List<int>>();
         private List<List<int>> m_rgrgLastTopShape = new List<List<int>>();
@@ -235,6 +239,14 @@ namespace MyCaffe.layers
         /// <param name="layer">Specifies the layer to connect the OnLoss event to.</param>
         public virtual void ConnectLoss(LossLayer<T> layer)
         {
+        }
+
+        /// <summary>
+        /// Optionally, specifies the parent layer type (e.g. LOSS, etc.)
+        /// </summary>
+        public LayerParameter.LayerType? parent_layer_type
+        {
+            get { return m_parentLayerType; }
         }
 
         /// <summary>

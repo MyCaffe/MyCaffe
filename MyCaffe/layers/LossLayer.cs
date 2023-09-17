@@ -62,6 +62,7 @@ namespace MyCaffe.layers
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.LOSS;
+            m_parentLayerType = LayerParameter.LayerType.LOSS;
         }
 
         /// <summary>
