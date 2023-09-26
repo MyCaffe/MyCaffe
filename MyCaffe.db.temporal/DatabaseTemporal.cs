@@ -279,8 +279,9 @@ namespace MyCaffe.db.temporal
         /// <param name="nSrcID">Specifies the source ID.</param>
         /// <param name="nItemID">Specifies the item ID.</param>
         /// <param name="data">Specifies the raw data values.</param>
+        /// <param name="bActive">Specifies the active state of the record.</param>
         /// <exception cref="Exception">An exception is thrown on error.</exception>
-        public void PutRawValue(int nSrcID, int nItemID, RawValueDataCollection data)
+        public void PutRawValue(int nSrcID, int nItemID, RawValueDataCollection data, bool bActive = true)
         {
             DataRow dr = m_rgRawValueCache.NewRow();
 
@@ -289,7 +290,7 @@ namespace MyCaffe.db.temporal
             if (data.TimeStamp.HasValue)
                 dr["TimeStamp"] = data.TimeStamp.Value;
             dr["RawData"] = data.ToBytes();
-            dr["Active"] = true;
+            dr["Active"] = bActive;
 
             m_rgRawValueCache.Rows.Add(dr);
         }
