@@ -111,6 +111,7 @@ namespace MyCaffe.solvers
         bool m_bFirstNanError = true;
         List<double> m_rgAverageAccuracyWindow = null;
         bool m_bForceTest = false;
+        Stopwatch m_swTimer = new Stopwatch();
 
         /// <summary>
         /// The OnStart event fires at the start of each training iteration.
@@ -1126,13 +1127,21 @@ namespace MyCaffe.solvers
                 return;
             }
 
+            m_swTimer.Restart();
+
+            bool bEnabled = m_log.IsEnabled;
+            m_log.Enable = false;
             SnapshotArgs args = GetSnapshotArgs(null, null, m_dfLastAccuracy, m_dfLastError, m_nIter, m_snapshotWeightUpdatemMethod);
             args.Forced = bForced;
             args.Scheduled = bScheduled;
             args.UpdateDatabase = bUpdateDatabase;
 
             OnSnapshot(this, args);
-            m_log.WriteLine("Snapshot completed.");
+            m_log.Enable = bEnabled;
+
+            m_swTimer.Stop();
+
+            m_log.WriteLine("Snapshot completed in " + m_swTimer.Elapsed.TotalMilliseconds.ToString("N2") + " ms.");
         }
 
         private void args_OnGetWeights(object sender, GetBytesArgs e)

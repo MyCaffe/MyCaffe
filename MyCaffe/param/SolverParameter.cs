@@ -207,7 +207,11 @@ namespace MyCaffe.param
             /// <summary>
             /// Use a sigmoid learning rate where the effective learning rate follows a sigmoid decay.  Returns @f$ base_lr * {1/{1 + exp{-gamma * {iter - stepsize}}}} @f$
             /// </summary>
-            SIGMOID
+            SIGMOID,
+            /// <summary>
+            /// Use a inverse sigmoid learning rate where the effective learning rate follows an inverse sigmoid decay.  Returns @f$ base_lr * (1 - {1/{1 + exp{-gamma * {iter - stepsize}}}}) @f$
+            /// </summary>
+            SIGMOID_INV
         }
 
         /// <summary>
@@ -495,6 +499,9 @@ namespace MyCaffe.param
                     case "sigmoid":
                         return LearningRatePolicyType.SIGMOID;
 
+                    case "sigmoid_inv":
+                        return LearningRatePolicyType.SIGMOID_INV;
+
                     case "poly":
                         return LearningRatePolicyType.POLY;
 
@@ -528,6 +535,10 @@ namespace MyCaffe.param
 
                     case LearningRatePolicyType.SIGMOID:
                         m_strLrPolicy = "sigmoid";
+                        break;
+
+                    case LearningRatePolicyType.SIGMOID_INV:
+                        m_strLrPolicy = "sigmoid_inv";
                         break;
 
                     case LearningRatePolicyType.POLY:
@@ -999,7 +1010,7 @@ namespace MyCaffe.param
 
             rgChildren.Add("lr_policy", lr_policy);
 
-            if (lr_policy == "step" || lr_policy == "exp" || lr_policy == "inv" || lr_policy == "sigmoid")
+            if (lr_policy == "step" || lr_policy == "exp" || lr_policy == "inv" || lr_policy == "sigmoid" || lr_policy == "sigmoid_inv")
                 rgChildren.Add("gamma", gamma.ToString());
 
             if (lr_policy == "inv" || lr_policy == "poly")

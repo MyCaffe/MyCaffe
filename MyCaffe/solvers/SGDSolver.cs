@@ -120,6 +120,8 @@ namespace MyCaffe.solvers
         ///            zero by the max_iter.  return @f$ base_lr * {1 - iter/max_iter} ^ {power} @f$
         ///    - sigmoid: the effective learning rate follows a sigmoid decay.
         ///            return @f$ base_lr * {1/{1 + exp{-gamma * {iter - stepsize}}}} @f$
+        ///    - sigmoid_inv: the effective learning rate follows a sigmoid decay.
+        ///            return @f$ base_lr * (1 - {1/{1 + exp{-gamma * {iter - stepsize}}}}) @f$
         ///            
         /// where base_lr, max_iter, gamma, step, stepvalue and power are defined int the
         /// solver protocol buffer, and iter is the current iteration.
@@ -171,9 +173,39 @@ namespace MyCaffe.solvers
                     break;
 
                 case "sigmoid":
+                case "sigmoid_inv":
                     m_log.CHECK_GE(m_param.gamma, 0, "The gamma must be greater than or equal to 0.");
                     m_log.CHECK_GT(m_param.stepsize, 0, "The stepsize must be greater than 0.");
-                    dfRate = m_param.base_lr * (1.0 / (1.0 + Math.Exp(-1.0 * m_param.gamma * (nIterationOverride - m_param.stepsize))));
+                    int nStep1 = (nIterationOverride - m_param.stepsize);
+                    double dfGammaStep = -m_param.gamma * nStep1;
+                    double dfExpGammaStep = Math.Exp(dfGammaStep);
+
+                    if (double.IsInfinity(dfExpGammaStep))
+                    {
+                        m_log.WriteLine("WARNING: Gamma step is infinity, meaning your 'gamma' setting is too high, try lowering by one or two orders of magnitude.");
+                        dfExpGammaStep = 0;
+                    }
+
+                    dfRate = m_param.base_lr;
+                    double dfScale = 1.0;
+
+                    if (dfExpGammaStep != 0)
+                        dfScale = (1.0 / (1.0 + dfExpGammaStep));
+
+                    if (m_param.lr_policy == "sigmoid_inv")
+                    {
+                        if (dfScale != 1.0)
+                            dfScale = 1.0 - dfScale;
+                    }
+
+                    if (dfScale != 1.0)
+                        dfRate *= dfScale;
+
+                    if (dfRate <= 0)
+                    {
+                        m_log.WriteLine("WARNING: Learning rate is zero, meaning your 'stepsize' setting is too low, try increasing the step size to greater than or equal to the max iteration size.");
+                        dfRate = 0;
+                    }
                     break;
 
                 default:
