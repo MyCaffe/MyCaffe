@@ -677,10 +677,10 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// The stepsize for learning rate policy 'step'.
+        /// The stepsize for learning rate policy 'step' and 'sigmoid'.
         /// </summary>
         [Category("Learning Policy")]
-        [Description("Specifies the stepsize for the learning rate policy 'step'.")]
+        [Description("Specifies the stepsize for the learning rate policy 'step' and 'sigmoid'.")]
         public int stepsize
         {
             get { return m_nStepSize; }
@@ -1008,9 +1008,7 @@ namespace MyCaffe.param
             rgChildren.Add("momentum", momentum.ToString());
             rgChildren.Add("weight_decay", weight_decay.ToString());
             rgChildren.Add("regularization_type", regularization_type);
-
-            if (lr_policy == "step")
-                rgChildren.Add("stepsize", stepsize.ToString());
+            rgChildren.Add("stepsize", stepsize.ToString());
 
             if (lr_policy == "multistep")
                 rgChildren.Add<int>("stepvalue", stepvalue);
