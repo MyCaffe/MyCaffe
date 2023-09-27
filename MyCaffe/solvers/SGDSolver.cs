@@ -173,7 +173,7 @@ namespace MyCaffe.solvers
                 case "sigmoid":
                     m_log.CHECK_GE(m_param.gamma, 0, "The gamma must be greater than or equal to 0.");
                     m_log.CHECK_GT(m_param.stepsize, 0, "The stepsize must be greater than 0.");
-                    dfRate = m_param.base_lr * (1.0 / (1.0 + Math.Exp(-1.0 * m_param.gamma * nIterationOverride - m_param.stepsize)));
+                    dfRate = m_param.base_lr * (1.0 / (1.0 + Math.Exp(-1.0 * m_param.gamma * (nIterationOverride - m_param.stepsize))));
                     break;
 
                 default:
