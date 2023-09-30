@@ -24,5 +24,10 @@ namespace MyCaffe.db.temporal
         public Nullable<System.DateTime> EndTime { get; set; }
         public Nullable<int> SecondsPerStep { get; set; }
         public Nullable<int> TotalSteps { get; set; }
+        public Nullable<int> ScalerID { get; set; }
+        public Nullable<int> ScalerLength { get; set; }
+        public Nullable<decimal> ScalerMin { get; set; }
+        public Nullable<decimal> ScalerMax { get; set; }
+        public Nullable<decimal> ScalerScale { get; set; }
     }
 }

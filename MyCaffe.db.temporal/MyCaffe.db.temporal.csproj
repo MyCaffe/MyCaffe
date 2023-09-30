@@ -102,6 +102,7 @@
     <Compile Include="RawValue.cs">
       <DependentUpon>DNNModelTemporal.tt</DependentUpon>
     </Compile>
+    <Compile Include="Scaler.cs" />
     <Compile Include="TemporalSet.cs" />
     <Compile Include="ValueItem.cs">
       <DependentUpon>DNNModelTemporal.tt</DependentUpon>

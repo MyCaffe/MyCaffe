@@ -544,8 +544,9 @@ namespace MyCaffe.db.temporal
         /// <param name="dtEnd">Optionally, specifies the value stream end date (null for STATIC).</param>
         /// <param name="nSecPerStep">Optionally, specifies the value stream seconds per step (null for STATIC).</param>
         /// <param name="nTotalSteps">Optionally, specifies the total number of steps (1 for STATIC).</param>
+        /// <param name="scaler">Optionally, specifies the scaler used.</param>
         /// <returns>The ID of the value stream added is returned.</returns>
-        public int AddValueStream(int nSrcID, string strName, int nOrdering, STREAM_CLASS_TYPE classType, STREAM_VALUE_TYPE valType, DateTime? dtStart = null, DateTime? dtEnd = null, int? nSecPerStep = null, int nTotalSteps = 1)
+        public int AddValueStream(int nSrcID, string strName, int nOrdering, STREAM_CLASS_TYPE classType, STREAM_VALUE_TYPE valType, DateTime? dtStart = null, DateTime? dtEnd = null, int? nSecPerStep = null, int nTotalSteps = 1, Scaler scaler = null)
         {
             using (DNNEntitiesTemporal entities = EntitiesConnectionTemporal.CreateEntities())
             {
@@ -566,6 +567,29 @@ namespace MyCaffe.db.temporal
                 vs.EndTime = dtEnd;
                 vs.SecondsPerStep = nSecPerStep;
                 vs.TotalSteps = nTotalSteps;
+                vs.ScalerID = 0;
+                vs.ScalerMin = null;
+                vs.ScalerMax = null;
+                vs.ScalerScale = null;
+
+                if (scaler != null)
+                {
+                    vs.ScalerID = (int)scaler.ID;
+                    vs.ScalerLength = scaler.Length;
+
+                    decimal? fMin = null;
+                    if (scaler.Minimum.HasValue)
+                        fMin = (decimal)scaler.Minimum.Value;
+                    vs.ScalerMin = fMin;
+
+                    decimal? fMax = null;
+                    if (scaler.Maximum.HasValue)
+                        fMax = (decimal)scaler.Maximum.Value;
+                    vs.ScalerMax = fMax;
+
+                    decimal? fScale = (decimal)scaler.FinalScale; 
+                    vs.ScalerScale = fScale;
+                }
 
                 if (rg.Count == 0)
                     entities.ValueStreams.Add(vs);
@@ -573,6 +597,45 @@ namespace MyCaffe.db.temporal
                 entities.SaveChanges();
 
                 return vs.ID;
+            }
+        }
+
+        /// <summary>
+        /// Update the value stream with the scaler parameters.
+        /// </summary>
+        /// <param name="nValueStreamID">Specifies the ID of the value stream to update.</param>
+        /// <param name="col">Specifies the scaler collection filled after normalization.</param>
+        /// <param name="scalerID">Specifies the scaler ID of the scaler to use.</param>
+        public void UpdateValueStream(int nValueStreamID, ScalerCollection col, Scaler.SCALER scalerID)
+        {
+            using (DNNEntitiesTemporal entities = EntitiesConnectionTemporal.CreateEntities())
+            {
+                ValueStream vs = entities.ValueStreams.Where(p => p.ID == nValueStreamID).FirstOrDefault();
+
+                if (vs == null)
+                    return;
+
+                Scaler scaler = col.Get((int)scalerID);
+                if (scaler == null)
+                    return;
+
+                vs.ScalerID = (int)scaler.ID;
+                vs.ScalerLength = scaler.Length;
+
+                decimal? fMin = null;
+                if (scaler.Minimum.HasValue)
+                    fMin = (decimal)scaler.Minimum.Value;
+                vs.ScalerMin = fMin;
+
+                decimal? fMax = null;
+                if (scaler.Maximum.HasValue)
+                    fMax = (decimal)scaler.Maximum.Value;
+                vs.ScalerMax = fMax;
+
+                decimal? fScale = (decimal)scaler.FinalScale;
+                vs.ScalerScale = fScale;
+
+                entities.SaveChanges();
             }
         }
 

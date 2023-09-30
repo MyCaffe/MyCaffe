@@ -46,6 +46,11 @@
           <Property Name="EndTime" Type="smalldatetime" />
           <Property Name="SecondsPerStep" Type="int" />
           <Property Name="TotalSteps" Type="int" />
+          <Property Name="ScalerID" Type="int" />
+          <Property Name="ScalerLength" Type="int" />
+          <Property Name="ScalerMin" Type="numeric" Precision="18" Scale="9" />
+          <Property Name="ScalerMax" Type="numeric" Precision="18" Scale="9" />
+          <Property Name="ScalerScale" Type="numeric" Precision="18" Scale="9" />
         </EntityType>
         <EntityContainer Name="DNNModelStoreContainer">
           <EntitySet Name="RawValues" EntityType="Self.RawValues" Schema="dbo" store:Type="Tables" />
@@ -102,6 +107,11 @@
           <Property Name="EndTime" Type="DateTime" Precision="0" />
           <Property Name="SecondsPerStep" Type="Int32" />
           <Property Name="TotalSteps" Type="Int32" />
+          <Property Name="ScalerID" Type="Int32" />
+          <Property Name="ScalerLength" Type="Int32" />
+          <Property Name="ScalerMin" Type="Decimal" Precision="18" Scale="9" />
+          <Property Name="ScalerMax" Type="Decimal" Precision="18" Scale="9" />
+          <Property Name="ScalerScale" Type="Decimal" Precision="18" Scale="9" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -141,6 +151,11 @@
           <EntitySetMapping Name="ValueStreams">
             <EntityTypeMapping TypeName="DNNModelTemporal.ValueStream">
               <MappingFragment StoreEntitySet="ValueStreams">
+                <ScalarProperty Name="ScalerScale" ColumnName="ScalerScale" />
+                <ScalarProperty Name="ScalerMax" ColumnName="ScalerMax" />
+                <ScalarProperty Name="ScalerMin" ColumnName="ScalerMin" />
+                <ScalarProperty Name="ScalerLength" ColumnName="ScalerLength" />
+                <ScalarProperty Name="ScalerID" ColumnName="ScalerID" />
                 <ScalarProperty Name="TotalSteps" ColumnName="TotalSteps" />
                 <ScalarProperty Name="SecondsPerStep" ColumnName="SecondsPerStep" />
                 <ScalarProperty Name="EndTime" ColumnName="EndTime" />
