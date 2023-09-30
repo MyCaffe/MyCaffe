@@ -263,7 +263,26 @@ namespace MyCaffe.test
             {
                 foreach (IActivationsTest t in test.Tests)
                 {
-                    t.TestAllActivations();
+                    t.TestAllActivations(false);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+
+        [TestMethod]
+        public void TestAllLnn()
+        {
+            ActivationsTest test = new ActivationsTest();
+
+            try
+            {
+                foreach (IActivationsTest t in test.Tests)
+                {
+                    t.TestAllActivations(true);
                 }
             }
             finally
@@ -276,7 +295,7 @@ namespace MyCaffe.test
     interface IActivationsTest : ITest
     {
         void TestActivation(LayerParameter.LayerType layerType, EngineParameter.Engine engine = EngineParameter.Engine.CAFFE, bool? bExtra = null);
-        void TestAllActivations();
+        void TestAllActivations(bool bLnnActivations);
     }
 
     class ActivationsTest : TestBase
@@ -529,7 +548,7 @@ namespace MyCaffe.test
             TestActivation(layerType, engine, bExtra, null, null);
         }
 
-        public void TestAllActivations()
+        public void TestAllActivations(bool bLnnActivations)
         {
             try
             {
@@ -540,45 +559,64 @@ namespace MyCaffe.test
                 Tuple<float[], float[], float[]> resGelu = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
                 rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("GELU", resGelu, Color.Blue));
 
-                TestActivation(LayerParameter.LayerType.GELU, EngineParameter.Engine.CAFFE, true, m_blob_bottom, m_blob_top);
-                m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
-                Tuple<float[], float[], float[]> resGeluBert = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
-                rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("GELU_BERT", resGeluBert, Color.Red));
+                if (!bLnnActivations)
+                {
+                    TestActivation(LayerParameter.LayerType.GELU, EngineParameter.Engine.CAFFE, true, m_blob_bottom, m_blob_top);
+                    m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
+                    Tuple<float[], float[], float[]> resGeluBert = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
+                    rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("GELU_BERT", resGeluBert, Color.Red));
 
-                TestActivation(LayerParameter.LayerType.SIGMOID, EngineParameter.Engine.CAFFE, null, m_blob_bottom, m_blob_top);
-                m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
-                Tuple<float[], float[], float[]> resSigmoid = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
-                rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("SIGMOID", resSigmoid, Color.Green));
+                    TestActivation(LayerParameter.LayerType.SIGMOID, EngineParameter.Engine.CAFFE, null, m_blob_bottom, m_blob_top);
+                    m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
+                    Tuple<float[], float[], float[]> resSigmoid = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
+                    rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("SIGMOID", resSigmoid, Color.Green));
+                }
 
                 TestActivation(LayerParameter.LayerType.TANH, EngineParameter.Engine.CAFFE, null, m_blob_bottom, m_blob_top);
                 m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
                 Tuple<float[], float[], float[]> resTanh = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
                 rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("TANH", resTanh, Color.Orange));
 
-                TestActivation(LayerParameter.LayerType.ELU, EngineParameter.Engine.CAFFE, null, m_blob_bottom, m_blob_top);
-                m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
-                Tuple<float[], float[], float[]> resElu = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
-                rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("ELU", resElu, Color.Lime));
+                if (!bLnnActivations)
+                {
+                    TestActivation(LayerParameter.LayerType.ELU, EngineParameter.Engine.CAFFE, null, m_blob_bottom, m_blob_top);
+                    m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
+                    Tuple<float[], float[], float[]> resElu = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
+                    rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("ELU", resElu, Color.Lime));
 
-                TestActivation(LayerParameter.LayerType.PRELU, EngineParameter.Engine.CAFFE, null, m_blob_bottom, m_blob_top);
-                m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
-                Tuple<float[], float[], float[]> resPRelu = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
-                rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("PRELU", resPRelu, Color.Purple));
+                    TestActivation(LayerParameter.LayerType.PRELU, EngineParameter.Engine.CAFFE, null, m_blob_bottom, m_blob_top);
+                    m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
+                    Tuple<float[], float[], float[]> resPRelu = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
+                    rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("PRELU", resPRelu, Color.Purple));
+                }
 
                 TestActivation(LayerParameter.LayerType.RELU, EngineParameter.Engine.CAFFE, null, m_blob_bottom, m_blob_top);
                 m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
                 Tuple<float[], float[], float[]> resRelu = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
                 rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("RELU", resRelu, Color.Brown));
 
-                TestActivation(LayerParameter.LayerType.SERF, EngineParameter.Engine.CAFFE, null, m_blob_bottom, m_blob_top);
-                m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
-                Tuple<float[], float[], float[]> resSerf = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
-                rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("SERF", resSerf, Color.Cyan));
+                if (!bLnnActivations)
+                {
+                    TestActivation(LayerParameter.LayerType.SERF, EngineParameter.Engine.CAFFE, null, m_blob_bottom, m_blob_top);
+                    m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
+                    Tuple<float[], float[], float[]> resSerf = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
+                    rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("SERF", resSerf, Color.Cyan));
 
-                TestActivation(LayerParameter.LayerType.MISH, EngineParameter.Engine.CAFFE, null, m_blob_bottom, m_blob_top);
+                    TestActivation(LayerParameter.LayerType.MISH, EngineParameter.Engine.CAFFE, null, m_blob_bottom, m_blob_top);
+                    m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
+                    Tuple<float[], float[], float[]> resMish = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
+                    rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("MISH", resMish, Color.SkyBlue));
+                }
+
+                TestActivation(LayerParameter.LayerType.SILU, EngineParameter.Engine.CAFFE, null, m_blob_bottom, m_blob_top);
                 m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
-                Tuple<float[], float[], float[]> resMish = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
-                rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("MISH", resMish, Color.SkyBlue));
+                Tuple<float[], float[], float[]> resSilu = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
+                rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("SILU", resSilu, Color.Navy));
+
+                TestActivation(LayerParameter.LayerType.LECUN, EngineParameter.Engine.CAFFE, null, m_blob_bottom, m_blob_top);
+                m_cuda.div(m_blob_bottom.count(), m_blob_bottom.gpu_diff, m_blob_bottom.gpu_data, m_blob_bottom.mutable_gpu_diff);
+                Tuple<float[], float[], float[]> resLeCun = new Tuple<float[], float[], float[]>(convertF(m_blob_bottom.mutable_cpu_data), convertF(m_blob_top.mutable_cpu_data), convertF(m_blob_bottom.mutable_cpu_diff));
+                rgRes.Add(new Tuple<string, Tuple<float[], float[], float[]>, Color>("LECUN", resLeCun, Color.Fuchsia));
 
                 string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\results\\activation_test";
                 if (!Directory.Exists(strPath))
@@ -618,7 +656,13 @@ namespace MyCaffe.test
                     g.DrawImage(bmpBwd, bmpFwd.Width, 0);
                 }
 
-                bmp.Save(strPath + "\\activations_all.png");
+                string strFileName = strPath + "\\activations_all";
+                if (bLnnActivations)
+                    strFileName += "_lnn";
+
+                strFileName += ".png";
+
+                bmp.Save(strFileName);
             }
             finally
             {
