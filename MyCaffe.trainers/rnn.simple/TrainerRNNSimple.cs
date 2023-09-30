@@ -55,7 +55,7 @@ namespace MyCaffe.trainers.rnn.simple
             m_properties = properties;
             m_random = random;
             m_rgVocabulary = rgVocabulary;            
-            m_bUsePreloadData = properties.GetPropertyAsBool("UsePreLoadData", true); ;
+            m_bUsePreloadData = properties.GetPropertyAsBool("UsePreLoadData", true);
         }
 
         /// <summary>
