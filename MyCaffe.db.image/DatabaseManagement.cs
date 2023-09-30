@@ -289,6 +289,26 @@ namespace MyCaffe.db.image
                 cmdCreate = new SqlCommand(Properties.Resources.UpdateRawImageResultsTable2, connection);
                 cmdCreate.ExecuteNonQuery();
                 cmdCreate.Dispose();
+
+                cmdCreate = new SqlCommand(Properties.Resources.UpdateValueStreamsTable, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
+
+                cmdCreate = new SqlCommand(Properties.Resources.UpdateValueStreamsTable2, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
+
+                cmdCreate = new SqlCommand(Properties.Resources.UpdateValueStreamsTable3, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
+
+                cmdCreate = new SqlCommand(Properties.Resources.UpdateValueStreamsTable4, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
+
+                cmdCreate = new SqlCommand(Properties.Resources.UpdateValueStreamsTable5, connection);
+                cmdCreate.ExecuteNonQuery();
+                cmdCreate.Dispose();
             }
         }
 

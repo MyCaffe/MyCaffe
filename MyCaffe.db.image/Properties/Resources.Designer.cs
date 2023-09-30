@@ -502,10 +502,10 @@ namespace MyCaffe.db.image.Properties {
         ///	[EndTime] [smalldatetime] NULL,
         ///	[SecondsPerStep] [int] NULL,
         ///	[TotalSteps] [int] NULL,
-        /// CONSTRAINT [PK_ValueStreams] PRIMARY KEY CLUSTERED 
-        ///(
-        ///	[ID] ASC
-        ///)WITH (PAD_INDEX = OFF, STATISTICS_N [rest of string was truncated]&quot;;.
+        ///	[ScalerID] [int] NULL,
+        ///	[ScalerLength] [int] NULL,
+        ///	[ScalerMin] [numeric](18, 9) NULL,
+        ///	[ScalerMax]  [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string CreateValueStreamsTable {
             get {
@@ -551,6 +551,71 @@ namespace MyCaffe.db.image.Properties {
         internal static string UpdateRawImageResultsTable2 {
             get {
                 return ResourceManager.GetString("UpdateRawImageResultsTable2", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.ValueStreams&apos;, &apos;ScalerID&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[ValueStreams] ADD 
+        ///	    [ScalerID] [int] NULL
+        ///END.
+        /// </summary>
+        internal static string UpdateValueStreamsTable {
+            get {
+                return ResourceManager.GetString("UpdateValueStreamsTable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.ValueStreams&apos;, &apos;ScalerLength&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[ValueStreams] ADD 
+        ///	    [ScalerLength] [int] NULL
+        ///END.
+        /// </summary>
+        internal static string UpdateValueStreamsTable2 {
+            get {
+                return ResourceManager.GetString("UpdateValueStreamsTable2", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.ValueStreams&apos;, &apos;ScalerMin&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[ValueStreams] ADD 
+        ///	    [ScalerMin] [numeric](18,9) NULL
+        ///END.
+        /// </summary>
+        internal static string UpdateValueStreamsTable3 {
+            get {
+                return ResourceManager.GetString("UpdateValueStreamsTable3", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.ValueStreams&apos;, &apos;ScalerMax&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[ValueStreams] ADD 
+        ///	    [ScalerMax] [numeric](18,9) NULL
+        ///END.
+        /// </summary>
+        internal static string UpdateValueStreamsTable4 {
+            get {
+                return ResourceManager.GetString("UpdateValueStreamsTable4", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;dbo.ValueStreams&apos;, &apos;ScalerScale&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[ValueStreams] ADD 
+        ///	    [ScalerScale] [numeric](18,9) NULL
+        ///END.
+        /// </summary>
+        internal static string UpdateValueStreamsTable5 {
+            get {
+                return ResourceManager.GetString("UpdateValueStreamsTable5", resourceCulture);
             }
         }
     }

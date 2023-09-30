@@ -482,6 +482,11 @@ CREATE TABLE [dbo].[ValueStreams](
 	[EndTime] [smalldatetime] NULL,
 	[SecondsPerStep] [int] NULL,
 	[TotalSteps] [int] NULL,
+	[ScalerID] [int] NULL,
+	[ScalerLength] [int] NULL,
+	[ScalerMin] [numeric](18, 9) NULL,
+	[ScalerMax] [numeric](18, 9) NULL,
+	[ScalerScale] [numeric](18, 9) NULL,
  CONSTRAINT [PK_ValueStreams] PRIMARY KEY CLUSTERED 
 (
 	[ID] ASC
@@ -510,6 +515,41 @@ END</value>
 BEGIN
     ALTER TABLE [dbo].[RawImageResults] ADD 
 	    [BatchCount] [int] NULL
+END</value>
+  </data>
+  <data name="UpdateValueStreamsTable" xml:space="preserve">
+    <value>IF COL_LENGTH('dbo.ValueStreams', 'ScalerID') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[ValueStreams] ADD 
+	    [ScalerID] [int] NULL
+END</value>
+  </data>
+  <data name="UpdateValueStreamsTable2" xml:space="preserve">
+    <value>IF COL_LENGTH('dbo.ValueStreams', 'ScalerLength') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[ValueStreams] ADD 
+	    [ScalerLength] [int] NULL
+END</value>
+  </data>
+  <data name="UpdateValueStreamsTable3" xml:space="preserve">
+    <value>IF COL_LENGTH('dbo.ValueStreams', 'ScalerMin') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[ValueStreams] ADD 
+	    [ScalerMin] [numeric](18,9) NULL
+END</value>
+  </data>
+  <data name="UpdateValueStreamsTable4" xml:space="preserve">
+    <value>IF COL_LENGTH('dbo.ValueStreams', 'ScalerMax') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[ValueStreams] ADD 
+	    [ScalerMax] [numeric](18,9) NULL
+END</value>
+  </data>
+  <data name="UpdateValueStreamsTable5" xml:space="preserve">
+    <value>IF COL_LENGTH('dbo.ValueStreams', 'ScalerScale') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[ValueStreams] ADD 
+	    [ScalerScale] [numeric](18,9) NULL
 END</value>
   </data>
 </root>
