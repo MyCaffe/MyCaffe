@@ -128,6 +128,22 @@ namespace MyCaffe.gym
         }
 
         /// <summary>
+        /// Reset the value and time of the Gym if supported.
+        /// </summary>
+        public void ResetValue()
+        {
+            if (string.IsNullOrEmpty(m_strName))
+                return;
+
+            string[] rgstrNames = m_strName.Split(' ');
+            IXMyCaffeGym igym = m_colGym.Find(rgstrNames);
+            if (igym == null)
+                return;
+
+            igym.ResetValue();
+        }
+
+        /// <summary>
         /// Renders the Gym visualization.
         /// </summary>
         /// <param name="strName">Specifies the Gym Name.</param>
