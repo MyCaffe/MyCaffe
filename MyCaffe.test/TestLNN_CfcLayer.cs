@@ -12,7 +12,6 @@ using MyCaffe.db.image;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.data;
 using MyCaffe.layers.lnn;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
 using System.IO;
 using System.Diagnostics;
 using MyCaffe.gym.python;
@@ -20,12 +19,9 @@ using MyCaffe.param.tft;
 using MyCaffe.solvers;
 using MyCaffe.gym;
 using System.Drawing;
-using static System.Windows.Forms.AxHost;
 using MyCaffe.param.lnn;
 using System.Threading;
-using System.Runtime.CompilerServices;
 using SimpleGraphing;
-using System.ServiceModel.Syndication;
 
 /// <summary>
 /// Testing the Cfc layer.
@@ -172,7 +168,14 @@ namespace MyCaffe.test
             {
                 foreach (ICfcLayerTest t in test.Tests)
                 {
-                    t.TestTrainingRealTime(false, false, CfcParameter.CELL_TYPE.CFC);
+                    int nStepsForward = -1; // default = -1 for the present value.
+                    int nFutureSteps = 1;  // default = 1 for the present value.
+                    bool bEnableUI = false;
+                    //int nStepsForward = 0; // default = -1 for the present value.
+                    //int nFutureSteps = 25;  // default = 1 for the present value.
+                    //bool bEnableUI = true;
+
+                    t.TestTrainingRealTime(false, bEnableUI, CfcParameter.CELL_TYPE.CFC, nStepsForward, nFutureSteps);
                 }
             }
             finally
@@ -242,7 +245,7 @@ namespace MyCaffe.test
         void TestBackward(bool bNoGate);
         void TestGradient(bool bNoGate);
         void TestTrainingBatch(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type);
-        void TestTrainingRealTime(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type);
+        void TestTrainingRealTime(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, int nStepsForward = -1, int nFutureSteps = 1);
         void TestTrainingRealTimeCombo(bool bEnableUI, bool bEmphasizeCfcNoGateF, bool bEmphasizeCfcNoGateT, bool bEmphasizeLtc);
     }
 
@@ -716,7 +719,7 @@ namespace MyCaffe.test
             solverParam.weight_decay = 0;
             solverParam.momentum = 0.9;
             solverParam.momentum2 = 0.999;
-            solverParam.adamw_decay = 0;
+            solverParam.adamw_decay = 0.01;
             solverParam.lr_policy = "fixed";
 
             return solverParam.ToProto("root").ToString();
@@ -920,11 +923,13 @@ namespace MyCaffe.test
         /// <param name="bNoGate">Specifies the whether the no-gate mode is used.</param>
         /// <param name="bEnableUI">Specifies to turn on the UI display.</param>
         /// <param name="cell_type">Specifies the cell type.</param>
-        public void TestTrainingRealTime(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type)
+        /// <param name="nFutureSteps">Optionally, specifies the number of steps forward into the future to predict (default = 0, the present)</param>
+        /// <param name="nStepsForward">Optionally, specifies the number of future steps to predict (default = 1).  Note, nFutureSteps must be less than or equal to nStepsForward + 1.</param>
+        public void TestTrainingRealTime(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, int nStepsForward = -1, int nFutureSteps = 1)
         {
             int nBatchSize = 1;
             int nInputSize = 82;
-            int nOutputSize = 1;
+            int nOutputSize = nFutureSteps;
             int nHiddenSize = 256;
             int nBackboneLayers = 2;
             int nBackboneUnits = 64;
@@ -978,15 +983,22 @@ namespace MyCaffe.test
                 {
                     List<DataPoint> rgHistory = state.GymState.History;
 
-                    if (rgHistory.Count >= nInputSize)
+                    if (rgHistory.Count >= (nInputSize + nOutputSize + nStepsForward))
                     {
                         for (int j = 0; j < nInputSize; j++)
                         {
-                            int nIdx = rgHistory.Count - nInputSize + j;
+                            int nIdx = rgHistory.Count - (nInputSize + nOutputSize + nStepsForward) + j;
                             rgInput[j] = rgHistory[nIdx].Inputs[0];
                             rgTimeSteps[j] = rgHistory[nIdx].Time;
                             rgMask[j] = rgHistory[nIdx].Mask[0];
-                            rgTarget[0] = rgHistory[nIdx].Target;
+                        }
+
+                        for (int j=nInputSize + nStepsForward; j<nInputSize + nStepsForward + nFutureSteps; j++)
+                        {
+                            int nSrcIdx = rgHistory.Count - (nInputSize + nStepsForward + nFutureSteps) + j;
+                            int nDstIdx = j - (nInputSize + nStepsForward);
+
+                            rgTarget[nDstIdx] = rgHistory[nSrcIdx].Target;
                         }
 
                         blobX.mutable_cpu_data = convert(rgInput);
@@ -994,15 +1006,39 @@ namespace MyCaffe.test
                         blobMask.mutable_cpu_data = convert(rgMask);
                         blobY.mutable_cpu_data = convert(rgTarget);
 
-                        net.Forward();
-                        net.Backward();
-
+                        // Performs forward, backward pass and applies weights.
                         solver.Step(1);
 
+                        float[] rgOutput1 = convertF(blobXhat.mutable_cpu_data);
+
+                        if (nStepsForward >= 0)
+                        {
+                            for (int j = 0; j < nInputSize; j++)
+                            {
+                                int nIdx = rgHistory.Count - nInputSize + j;
+                                rgInput[j] = rgHistory[nIdx].Inputs[0];
+                                rgTimeSteps[j] = rgHistory[nIdx].Time;
+                                rgMask[j] = rgHistory[nIdx].Mask[0];
+                            }
+
+                            net.Forward();
+                        }
+
                         float[] rgOutput = convertF(blobXhat.mutable_cpu_data);
-                        float fPredictedY = rgOutput[0];
+                        float fPredictedY = rgOutput[rgOutput.Length - 1];
 
                         propTest.SetProperty("override_prediction", fPredictedY.ToString());
+                        
+                        if (nFutureSteps > 1)
+                        {
+                            propTest.SetProperty("override_future_predictions", nFutureSteps.ToString());
+                            propTest.SetProperty("override_future_prediction_start", (nStepsForward + 1).ToString());
+
+                            for (int j=0; j<nFutureSteps; j++)
+                            {
+                                propTest.SetProperty("override_future_prediction" + j.ToString(), rgOutput[j].ToString());
+                            }
+                        }
                     }
 
                     state = gym.Step(0, 1, propTest);
