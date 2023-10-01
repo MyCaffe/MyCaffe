@@ -74,6 +74,42 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestSilu()
+        {
+            ActivationsTest test = new ActivationsTest();
+
+            try
+            {
+                foreach (IActivationsTest t in test.Tests)
+                {
+                    t.TestActivation(LayerParameter.LayerType.SILU);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestLeCun()
+        {
+            ActivationsTest test = new ActivationsTest();
+
+            try
+            {
+                foreach (IActivationsTest t in test.Tests)
+                {
+                    t.TestActivation(LayerParameter.LayerType.LECUN);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestSigmoid()
         {
             ActivationsTest test = new ActivationsTest();
