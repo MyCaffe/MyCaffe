@@ -36,6 +36,7 @@
             this.btnRecord = new System.Windows.Forms.ToolStripButton();
             this.btnDeleteRecordingData = new System.Windows.Forms.ToolStripButton();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
+            this.btnResetValue = new System.Windows.Forms.ToolStripButton();
             this.toolStripContainer1.BottomToolStripPanel.SuspendLayout();
             this.toolStripContainer1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
@@ -64,10 +65,11 @@
             this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.btnShowActionImage,
             this.btnRecord,
-            this.btnDeleteRecordingData});
+            this.btnDeleteRecordingData,
+            this.btnResetValue});
             this.toolStrip1.Location = new System.Drawing.Point(3, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(81, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(135, 25);
             this.toolStrip1.TabIndex = 0;
             // 
             // btnShowActionImage
@@ -112,6 +114,17 @@
             this.timerUI.Interval = 250;
             this.timerUI.Tick += new System.EventHandler(this.timerUI_Tick);
             // 
+            // btnResetValue
+            // 
+            this.btnResetValue.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnResetValue.Image = ((System.Drawing.Image)(resources.GetObject("btnResetValue.Image")));
+            this.btnResetValue.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
+            this.btnResetValue.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnResetValue.Name = "btnResetValue";
+            this.btnResetValue.Size = new System.Drawing.Size(23, 22);
+            this.btnResetValue.Text = "Reset Value";
+            this.btnResetValue.Click += new System.EventHandler(this.btnResetValue_Click);
+            // 
             // FormGym
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -146,5 +159,6 @@
         private System.Windows.Forms.ToolStripButton btnRecord;
         private System.Windows.Forms.ToolStripButton btnDeleteRecordingData;
         private System.Windows.Forms.Timer timerUI;
+        private System.Windows.Forms.ToolStripButton btnResetValue;
     }
 }

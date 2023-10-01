@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.IO;
+using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -31,8 +33,9 @@ namespace MyCaffe.gym
         float m_fXScale = 512;
         float m_fYScale = 150;
         float m_fX = 0;
+        float m_fTime = 0;
         float m_fInc = (float)(Math.PI * 2.0f / 360.0f);
-        float m_fMax = (float)(Math.PI * 2.0f);
+        float m_fMax = (float)(Math.PI * 2.0f) * 1000;
         List<DataPoint> m_rgPrevPoints = new List<DataPoint>();
         Dictionary<Color, Brush> m_rgBrushes = new Dictionary<Color, Brush>();
         Dictionary<Color, Brush> m_rgBrushesEmphasize = new Dictionary<Color, Brush>();
@@ -44,6 +47,9 @@ namespace MyCaffe.gym
         List<Color> m_rgPallete = new List<Color>();
         List<Color> m_rgPalleteEmphasize = new List<Color>() { Color.Orange, Color.Green, Color.Red, Color.HotPink, Color.Tomato, Color.Lavender, Color.DarkOrange };
         int m_nAlphaNormal = 64;
+        int m_nFuturePredictions = 0;
+        Mutex m_mtxMm = null;
+        MemoryMappedFile m_mm = null;
 
         Random m_random = new Random();
         CurveState m_state = new CurveState();
@@ -100,6 +106,10 @@ namespace MyCaffe.gym
                 m_rgBrushes.Add(clr, new SolidBrush(clrLite));
                 m_rgBrushesEmphasize.Add(clr, new SolidBrush(clr));
             }
+
+            m_mtxMm = new Mutex(false, "curvegym.mutex");
+            m_mm = MemoryMappedFile.CreateOrOpen("curvegym.values", sizeof(float) * 2, MemoryMappedFileAccess.ReadWrite);
+            setSharedMemoryValues(new float[] { m_fX, m_fTime });
         }
 
         /// <summary>
@@ -115,6 +125,18 @@ namespace MyCaffe.gym
             foreach (KeyValuePair<Color, Brush> kv in m_rgBrushesEmphasize)
             {
                 kv.Value.Dispose();
+            }
+
+            if (m_mm != null)
+            {
+                m_mm.Dispose();
+                m_mm = null;
+            }
+
+            if (m_mtxMm != null)
+            {
+                m_mtxMm.Dispose();
+                m_mtxMm = null;
             }
         }
 
@@ -140,6 +162,93 @@ namespace MyCaffe.gym
             Reset(false);
         }
 
+        private void setSharedMemoryValues(float[] rgf)
+        {
+            bool bAcquired = false;
+
+            try
+            {
+                if (m_mm == null)
+                    throw new Exception("Failed to create the memory mapped file!");
+
+                if (!m_mtxMm.WaitOne(1000))
+                    throw new Exception("Failed to acquire the memory mapped file mutex!");
+
+                bAcquired = true;
+                using (MemoryMappedViewStream stream = m_mm.CreateViewStream())
+                {
+                    using (BinaryWriter writer = new BinaryWriter(stream))
+                    {
+                        writer.Write(rgf.Length);
+                        foreach (float f in rgf)
+                        {
+                            writer.Write(f);
+                        }
+                    }
+                }
+            }
+            catch (Exception excpt)
+            {
+                Trace.WriteLine(excpt.Message);
+            }
+            finally
+            {
+                if (bAcquired)
+                    m_mtxMm.ReleaseMutex();
+            }
+        }
+
+        private float[] getSharedMemoryValues()
+        {
+            bool bAcquired = false;
+
+            try
+            {
+                if (m_mm == null)
+                    throw new Exception("Failed to create the memory mapped file!");
+
+                if (!m_mtxMm.WaitOne(1000))
+                    throw new Exception("Failed to acquire the memory mapped file mutex!");
+
+                bAcquired = true;
+                using (MemoryMappedViewStream stream = m_mm.CreateViewStream())
+                {
+                    using (BinaryReader reader = new BinaryReader(stream))
+                    {
+                        int nLen = reader.ReadInt32();
+                        float[] rgf = new float[nLen];
+
+                        for (int i = 0; i < nLen; i++)
+                        {
+                            rgf[i] = reader.ReadSingle();
+                        }
+
+                        return rgf;
+                    }
+                }
+            }
+            catch (Exception excpt)
+            {
+                Trace.WriteLine(excpt.Message);
+            }
+            finally
+            { 
+                if (bAcquired)
+                    m_mtxMm.ReleaseMutex();
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Reset the X and time values.
+        /// </summary>
+        public void ResetValue()
+        {
+            m_fX = 0;
+            m_fTime = 0;
+            setSharedMemoryValues(new float[] { m_fX, m_fTime });
+        }
 
         /// <summary>
         /// Create a new copy of the gym.
@@ -248,7 +357,7 @@ namespace MyCaffe.gym
             m_rgstrLabels = m_state.PredictedYNames;
             m_rgEmphasize = m_state.PredictedYEmphasize;
             
-            return Render(bShowUi, nWidth, nHeight, rgData.ToArray(), bGetAction);
+            return Render(bShowUi, nWidth, nHeight, rgData.ToArray(), bGetAction, m_state.Predictions);
         }
 
         /// <summary>
@@ -259,8 +368,9 @@ namespace MyCaffe.gym
         /// <param name="nHeight">Specifies the height used to size the Bitmap.</param>
         /// <param name="rgData">Specifies the gym data to render.</param>
         /// <param name="bGetAction">When <i>true</i> the action data is returned as a SimpleDatum.</param>
+        /// <param name="predictions">Optionally, specifies the future predictions.</param>
         /// <returns>A tuple optionally containing a Bitmap and/or Simpledatum is returned.</returns>
-        public Tuple<Bitmap, SimpleDatum> Render(bool bShowUi, int nWidth, int nHeight, double[] rgData, bool bGetAction)
+        public Tuple<Bitmap, SimpleDatum> Render(bool bShowUi, int nWidth, int nHeight, double[] rgData, bool bGetAction, FuturePredictions predictions = null)
         { 
             double dfX = rgData[0];
             double dfY = rgData[1];
@@ -309,10 +419,16 @@ namespace MyCaffe.gym
                     {
                         bool bEmphasize = (m_rgEmphasize == null || m_rgEmphasize.Count == 0) || (m_rgEmphasize.Count > 0 && m_rgEmphasize[0]);
                         List<Color> rgClr = (bEmphasize) ? m_rgPalleteEmphasize : m_rgPallete; 
+                        
                         GeomPolyLine geomPredictLine = new GeomPolyLine(fL, fR, fT, fB, rgClr[0], rgClr[0], m_nMaxPlots);
                         geomPredictLine.Polygon.Clear();
                         geomPredictLine.SetLocation(0, fScale * (fWorldHeight / 2));
                         m_rgGeomPredictedLines.Add(geomPredictLine);
+
+                        GeomPolyLineSet geomPredictionLineSet = new GeomPolyLineSet(fL, fR, fT, fB, Color.Red, Color.Red, m_nMaxPlots);
+                        geomPredictionLineSet.PolyLines.Clear();
+                        geomPredictionLineSet.SetLocation(0, fScale * (fWorldHeight / 2));
+                        m_rgGeomPredictedLines.Add(geomPredictionLineSet);
                     }
 
                     if (m_rgstrLabels != null && m_rgstrLabels.Count > 0)
@@ -336,13 +452,20 @@ namespace MyCaffe.gym
                         }
                     }
 
-                    for (int i=0; i < m_rgGeomPredictedLines.Count; i++)
+                    for (int i=0; i < m_rgGeomPredictedLines.Count-1; i++)
                     {
                         double dfPredicted = 0;
                         if (i+nPredictedIdx < rgData.Length)
                             dfPredicted = rgData[nPredictedIdx + i];
 
                         m_rgGeomPredictedLines[i].Polygon.Add(new PointF((float)dfX, (float)(dfPredicted * m_fYScale)));
+                    }
+
+                    if (predictions != null)
+                    {
+                        GeomPolyLineSet lineSet = m_rgGeomPredictedLines[m_rgGeomPredictedLines.Count - 1] as GeomPolyLineSet;
+                        if (lineSet != null)
+                            lineSet.Add((float)dfX, predictions, m_fYScale);
                     }
 
                     GeomView view = new GeomView();
@@ -472,6 +595,32 @@ namespace MyCaffe.gym
             }
         }
 
+        private void getNewIncrementValues(out float fX, out float fTime)
+        {
+            fX = m_fX;
+            fTime = m_fTime;
+
+            float[] rgmm = getSharedMemoryValues();
+            if (rgmm != null)
+            {
+                fX = rgmm[0];
+                fTime = rgmm[1];
+            }
+
+            fX += m_fInc;
+            fTime += m_fInc / m_fMax;
+            if (fX > m_fMax)
+            {
+                fX = 0;
+                fTime = 0;
+            }
+
+            rgmm[0] = fX;
+            rgmm[1] = fTime;
+
+            setSharedMemoryValues(rgmm);
+        }
+
         /// <summary>
         /// Step the gym one step in its simulation.
         /// </summary>
@@ -486,6 +635,7 @@ namespace MyCaffe.gym
             List<double> rgOverrides = new List<double>();
             List<string> rgOverrideNames = new List<string>();
             List<bool> rgOverrideEmphasize = new List<bool>();
+            FuturePredictions predictions = null;
             double? dfOverride = null;
 
             m_bRenderImage = true;
@@ -524,6 +674,19 @@ namespace MyCaffe.gym
 
                 if (rgOverrides.Count > 0)
                     dfOverride = rgOverrides[0];
+
+                int nFuturePredictionsStart = propExtra.GetPropertyAsInt("override_future_predictions_start", 0);
+                m_nFuturePredictions = propExtra.GetPropertyAsInt("override_future_predictions", 0);
+
+                for (int i = 0; i < m_nFuturePredictions; i++)
+                {
+                    double dfVal = propExtra.GetPropertyAsDouble("override_future_prediction" + i.ToString(), 0);
+
+                    if (predictions == null)
+                        predictions = new FuturePredictions(nFuturePredictionsStart);
+
+                    predictions.Add((float)dfVal);
+                }
             }
 
             processAction((ACTION)nAction, dfOverride);
@@ -532,9 +695,7 @@ namespace MyCaffe.gym
             double dfY = state.Y;
             double dfPredictedY = ((dfOverride.HasValue) ? dfOverride.Value : state.PredictedY);
 
-            m_fX += m_fInc;
-            if (m_fX > m_fMax)
-                m_fX = 0;
+            getNewIncrementValues(out m_fX, out m_fTime);
 
             dfY = calculateTarget(m_fX);
             dfX += 1;
@@ -542,9 +703,9 @@ namespace MyCaffe.gym
             float[] rgInput = new float[] { m_fX };
             float[] rgMask = new float[] { 1 };
             float fTarget = (float)dfY;
-            float fTime = (float)(dfX / m_nMaxPlots);
+            float fTime = m_fTime; // (float)(dfX / m_nMaxPlots);
 
-            DataPoint pt = new DataPoint(rgInput, rgMask, fTarget, rgOverrides, rgOverrideNames, rgOverrideEmphasize, fTime);
+            DataPoint pt = new DataPoint(rgInput, rgMask, fTarget, rgOverrides, rgOverrideNames, rgOverrideEmphasize, fTime, predictions);
             m_rgPrevPoints.Add(pt);
 
             if (m_rgPrevPoints.Count > m_nMaxPlots)
@@ -692,6 +853,17 @@ namespace MyCaffe.gym
         {
             get { return m_rgbPredictedY; }
             set { m_rgbPredictedY = value; }
+        }
+
+        public FuturePredictions Predictions
+        {
+            get
+            {
+                if (m_rgPrevPoints.Count == 0)
+                    return null;
+
+                return m_rgPrevPoints[m_rgPrevPoints.Count - 1].Predictions;
+            }
         }
 
         public override State Clone()

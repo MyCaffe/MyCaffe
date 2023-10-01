@@ -226,6 +226,13 @@ namespace MyCaffe.gym
         }
 
         /// <summary>
+        /// Not used.
+        /// </summary>
+        public void ResetValue()
+        {
+        }
+
+        /// <summary>
         /// Render the gym's current state on a bitmap and SimpleDatum.
         /// </summary>
         /// <param name="bShowUi">When <i>true</i> the Bitmap is drawn.</param>
@@ -247,8 +254,9 @@ namespace MyCaffe.gym
         /// <param name="nHeight">Specifies the height used to size the Bitmap.</param>
         /// <param name="rgData">Specifies the gym data to render.</param>
         /// <param name="bGetAction">When <i>true</i> the action data is returned as a SimpleDatum.</param>
+        /// <param name="predictions">Optionally, specifies the future predictions.</param>
         /// <returns>A tuple optionally containing a Bitmap and/or Simpledatum is returned.</returns>
-        public Tuple<Bitmap, SimpleDatum> Render(bool bShowUi, int nWidth, int nHeight, double[] rgData, bool bGetAction)
+        public Tuple<Bitmap, SimpleDatum> Render(bool bShowUi, int nWidth, int nHeight, double[] rgData, bool bGetAction, FuturePredictions predictions = null)
         {
             return null;
         }

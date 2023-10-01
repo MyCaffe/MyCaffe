@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -418,7 +419,7 @@ namespace MyCaffe.gym
     /// </summary>
     class GeomPolyLine : GeomObj
     {
-        int m_nMaxPlots = int.MaxValue;
+        protected int m_nMaxPlots = int.MaxValue;
 
         /// <summary>
         /// The constructor.
@@ -463,6 +464,112 @@ namespace MyCaffe.gym
                 Pen p = new Pen(m_clrBorder, 1.0f);
                 g.DrawLines(p, rg);
                 p.Dispose();
+            }
+
+            postrender(g);
+        }
+    }
+
+    /// <summary>
+    /// The GeomPolyLinesSet contains a set of lines.
+    /// </summary>
+    class GeomPolyLineSet : GeomPolyLine
+    {
+        List<PointF[]> m_rgrgPoints = new List<PointF[]>();
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="fL">Specifies the left position.</param>
+        /// <param name="fR">Specifies the right position.</param>
+        /// <param name="fT">Specifies the top position.</param>
+        /// <param name="fB">Specifies the bottom position.</param>
+        /// <param name="clrFill">Specifies the fill color.</param>
+        /// <param name="clrBorder">Specifies the border color.</param>
+        /// <param name="nMaxPlots">Specifies the maximum number of plots.</param>
+        public GeomPolyLineSet(float fL, float fR, float fT, float fB, Color clrFill, Color clrBorder, int nMaxPlots = int.MaxValue)
+            : base(fL, fR, fT, fB, clrFill, clrBorder)
+        {
+            m_nMaxPlots = nMaxPlots;
+        }
+
+        /// <summary>
+        /// Add a new set of future predictions by converting the predictions to a set of points.
+        /// </summary>
+        /// <param name="fX"></param>
+        /// <param name="predictions"></param>
+        /// <param name="fYScale"></param>
+        public void Add(float fX, FuturePredictions predictions, float fYScale)
+        {
+            List<PointF> rg = new List<PointF>();
+
+            for (int i=0; i<predictions.Predictions.Count; i++)
+            {
+                float fY = predictions.Predictions[i] * fYScale;
+                rg.Add(new PointF(fX, fY));
+                fX += 1;
+            }
+            
+            m_rgrgPoints.Add(rg.ToArray());
+        }
+
+        /// <summary>
+        /// Returns the set of poly lines..
+        /// </summary>
+        public List<PointF[]> PolyLines
+        {
+            get { return m_rgrgPoints; }
+        }
+
+        private void clipAndShift()
+        {
+            if (m_rgrgPoints.Count > m_nMaxPlots)
+            {
+                PointF[] rg1 = m_rgrgPoints[m_rgrgPoints.Count - 1];
+                PointF[] rg2 = m_rgrgPoints[m_rgrgPoints.Count - 2];
+
+                float fShift = rg1[rg1.Length-1].X - rg2[rg2.Length-1].X;
+                int nDiff = m_rgrgPoints.Count - m_nMaxPlots;
+                m_rgrgPoints.RemoveRange(0, nDiff);
+                m_location.X -= (fShift * nDiff);
+            }
+        }
+
+        /// <summary>
+        /// Renders the rectangle on the Graphics specified.
+        /// </summary>
+        /// <param name="g">Specifies the Graphics used to draw.</param>
+        public override void Render(Graphics g)
+        {
+            prerender(g);
+
+            if (m_rgrgPoints.Count >= 2)
+            {
+                clipAndShift();
+
+                int nStart = 0;
+                int nCount = m_rgrgPoints.Count;
+
+                if (nCount > 50)
+                {
+                    nStart = m_rgrgPoints.Count - 50;
+                    nCount = 50;
+                }
+
+                int nAlpha = 255 - (nCount * 4);
+                if (nAlpha > 16)
+                    nAlpha = 16;
+
+                for (int i=nStart; i<m_rgrgPoints.Count; i++)
+                {
+                    if (i == m_rgrgPoints.Count - 1)
+                        nAlpha = 255;
+
+                    Pen p = new Pen(Color.FromArgb(nAlpha, m_clrBorder), 1.0f);
+                    g.DrawLines(p, m_rgrgPoints[i]);
+                    p.Dispose();
+                    nAlpha += 1;
+                }
             }
 
             postrender(g);

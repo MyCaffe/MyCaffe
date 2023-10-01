@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -140,6 +141,36 @@ namespace MyCaffe.gym
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Find the first Gym that has all names within the list of names contained within its name.
+        /// </summary>
+        /// <param name="rgstrNames">Specifies the list of names to look for.</param>
+        /// <returns>If found the Gym is returned, otherwise null.</returns>
+        public IXMyCaffeGym Find(string[] rgstrNames)
+        {
+            List<IXMyCaffeGym> rgGym = new List<IXMyCaffeGym>(m_rgGym);
+
+            foreach (string strName in rgstrNames)
+            {
+                if (string.IsNullOrEmpty(strName))
+                    continue;
+
+                if (strName == "MyCaffe")
+                    continue;
+
+                for (int i = rgGym.Count - 1; i >= 0; i--)
+                {
+                    if (!rgGym[i].Name.Contains(strName))
+                        rgGym.RemoveAt(i);
+                }
+            }
+
+            if (rgGym.Count == 0)
+                return null;
+
+            return rgGym[0];
         }
 
         /// <summary>

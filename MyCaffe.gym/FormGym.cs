@@ -163,5 +163,10 @@ namespace MyCaffe.gym
         {
             btnDeleteRecordingData.Enabled = m_ctrl.HasRecordingData;
         }
+
+        private void btnResetValue_Click(object sender, EventArgs e)
+        {
+            m_ctrl.ResetValue();
+        }
     }
 }

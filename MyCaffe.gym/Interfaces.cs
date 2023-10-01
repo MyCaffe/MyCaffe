@@ -118,6 +118,10 @@ namespace MyCaffe.gym
         /// </summary>
         string Name { get; }
         /// <summary>
+        /// Reset the base value (if any).
+        /// </summary>
+        void ResetValue();
+        /// <summary>
         /// Resets the state of they gym.
         /// </summary>
         /// <param name="bGetLabel">Optionally, specifies to query the label (default = false).</param>
@@ -149,8 +153,9 @@ namespace MyCaffe.gym
         /// <param name="nHeight">Specifies the height of the user interface.</param>
         /// <param name="rgData">Specifies the state information of the gym.</param>
         /// <param name="bGetAction">Specifies to collect the action data.</param>
+        /// <param name="predictions">Optionally, specifies the future predictions.</param>
         /// <returns>A tuple containing image showing the gym and the action data is returned.</returns>
-        Tuple<Bitmap, SimpleDatum> Render(bool bShowUi, int nWidth, int nHeight, double[] rgData, bool bGetAction);
+        Tuple<Bitmap, SimpleDatum> Render(bool bShowUi, int nWidth, int nHeight, double[] rgData, bool bGetAction, FuturePredictions predictions = null);
         /// <summary>
         /// Returns a dictionary containing the action space where each entry contains the action name and action value.
         /// </summary>
@@ -230,6 +235,173 @@ namespace MyCaffe.gym
     }
 
     /// <summary>
+    /// The FuturePredictions manage the extended future prediction data.
+    /// </summary>
+    public class FuturePredictions
+    {
+        int m_nStartOffset;
+        List<float> m_rgfPredictions = new List<float>();
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="nStartOffset">specifies the offset of the future prediction (offset from the last input data)</param>
+        public FuturePredictions(int nStartOffset)
+        {
+            m_nStartOffset = nStartOffset;
+        }
+
+        /// <summary>
+        /// Return a copy of the FuturePredictions.
+        /// </summary>
+        /// <returns>A copy of the future predictions is returned.</returns>
+        public FuturePredictions Clone()
+        {
+            FuturePredictions fp = new FuturePredictions(m_nStartOffset);
+
+            foreach (float f in m_rgfPredictions)
+            {
+                fp.Add(f);
+            }
+
+            return fp;
+        }
+
+        /// <summary>
+        /// Add a prediction.
+        /// </summary>
+        /// <param name="fVal">Specifies the future prediction to add.</param>
+        public void Add(float fVal)
+        {
+            m_rgfPredictions.Add(fVal);
+        }
+
+        /// <summary>
+        /// Returns the start offset of the future prediction (offset from the last input data).
+        /// </summary>
+        public int StartOffset
+        {
+            get { return m_nStartOffset; }
+        }
+
+        /// <summary>
+        /// Returns the future predictions.
+        /// </summary>
+        public List<float> Predictions
+        {
+            get { return m_rgfPredictions; }
+        }
+    }
+
+    /// <summary>
+    /// The FuturePredictionsCollection manages a collection of FuturePredictions.
+    /// </summary>
+    public class FuturePredictionsCollection : IEnumerable<FuturePredictions> 
+    {
+        int m_nMaxCount;
+        List<FuturePredictions> m_rgItems = new List<FuturePredictions>();
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        public FuturePredictionsCollection(int nMaxCount = int.MaxValue)
+        {
+            m_nMaxCount = nMaxCount;
+        }
+
+        /// <summary>
+        /// The copy constructor.
+        /// </summary>
+        /// <param name="col">Specifies the FuturePredictionCollection to copy.</param>
+        public FuturePredictionsCollection(FuturePredictionsCollection col)
+        {
+            foreach (FuturePredictions fp in col)
+            {
+                Add(fp.Clone());
+            }
+        }
+
+        /// <summary>
+        /// Clear the collection.
+        /// </summary>
+        public void Clear()
+        {
+            m_rgItems.Clear();
+        }
+
+        /// <summary>
+        /// Add a new set of future predictions.
+        /// </summary>
+        /// <param name="fp">Specifies the future predictions to add.</param>
+        public void Add(FuturePredictions fp)
+        {
+            m_rgItems.Add(fp);
+
+            if (m_rgItems.Count > m_nMaxCount)
+                m_rgItems.RemoveAt(0);
+        }
+
+        /// <summary>
+        /// Remove the future predictions at a given index.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index of the item to remove.</param>
+        /// <returns>If the item is removed, True is returned, otherwise False is returned.</returns>
+        public bool RemoveAt(int nIdx)
+        {
+            if (nIdx < 0 || nIdx >= m_rgItems.Count)
+                return false;
+
+            m_rgItems.RemoveAt(nIdx);
+            return true;
+        }
+
+        /// <summary>
+        /// Returns the future predictions at a given index.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index.</param>
+        /// <returns>The future predictions at the index is returned.</returns>
+        public FuturePredictions this[int nIdx]
+        {
+            get { return m_rgItems[nIdx]; }
+        }
+
+        /// <summary>
+        /// Returns the number of future predictions.
+        /// </summary>
+        public int Count
+        {
+            get { return m_rgItems.Count; }
+        }
+
+        /// <summary>
+        /// Returns the maximum number of future predictions.
+        /// </summary>
+        public int MaxCount
+        {
+            get { return m_nMaxCount; }
+        }
+
+        /// <summary>
+        /// Gets the enumerator.
+        /// </summary>
+        /// <returns>Returns the enumerator for the colelction.</returns>
+        public IEnumerator<FuturePredictions> GetEnumerator()
+        {
+            return m_rgItems.GetEnumerator();
+        }
+
+        /// <summary>
+        /// Gets the enumerator.
+        /// </summary>
+        /// <returns>Returns the enumerator for the colelction.</returns>
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return m_rgItems.GetEnumerator();
+        }
+    }
+
+
+    /// <summary>
     /// The DataPoint contains the data used when training.
     /// </summary>
     public class DataPoint
@@ -241,6 +413,7 @@ namespace MyCaffe.gym
         List<double> m_rgdfPredicted = null;
         List<string> m_rgstrPredicted = null;
         List<bool> m_rgbEmphasize = null;
+        FuturePredictions m_predictions = null;
 
         /// <summary>
         /// The constructor.
@@ -252,7 +425,8 @@ namespace MyCaffe.gym
         /// <param name="rgstrPredicted">Specifies the predicted labels.</param>
         /// <param name="rgbEmphasize">Specifies which predicted labels to emphasize.</param>
         /// <param name="fTime">Specifies the time of the data point.</param>
-        public DataPoint(float[] rgfInputs, float[] rgfMask, float fTarget, List<double> rgdfPredicted, List<string> rgstrPredicted, List<bool> rgbEmphasize, float fTime)
+        /// <param name="predictions">Specifies the future predictions.</param>
+        public DataPoint(float[] rgfInputs, float[] rgfMask, float fTarget, List<double> rgdfPredicted, List<string> rgstrPredicted, List<bool> rgbEmphasize, float fTime, FuturePredictions predictions)
         {
             m_rgfInputs = rgfInputs;
             m_rgfMask = rgfMask;
@@ -262,6 +436,7 @@ namespace MyCaffe.gym
             m_rgdfPredicted = rgdfPredicted;
             m_rgstrPredicted = rgstrPredicted;
             m_rgbEmphasize = rgbEmphasize;
+            m_predictions = predictions;
         }
 
         /// <summary>
@@ -321,12 +496,20 @@ namespace MyCaffe.gym
         }
 
         /// <summary>
+        /// Returns the future predictions.
+        /// </summary>
+        public FuturePredictions Predictions
+        {
+            get { return m_predictions; }
+        }
+
+        /// <summary>
         /// Copies the data point to a new data point.
         /// </summary>
         /// <returns>The new copy is returned.</returns>
         public DataPoint Clone()
         {
-            return new DataPoint(m_rgfInputs, m_rgfMask, m_fTarget, Utility.Clone<double>(m_rgdfPredicted), Utility.Clone<string>(m_rgstrPredicted), Utility.Clone<bool>(m_rgbEmphasize), m_fTime);
+            return new DataPoint(m_rgfInputs, m_rgfMask, m_fTarget, Utility.Clone<double>(m_rgdfPredicted), Utility.Clone<string>(m_rgstrPredicted), Utility.Clone<bool>(m_rgbEmphasize), m_fTime, (m_predictions == null) ? null : m_predictions.Clone());
         }
     }
 

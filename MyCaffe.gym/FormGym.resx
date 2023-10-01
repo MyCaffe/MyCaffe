@@ -152,6 +152,14 @@
         GgBnxpCSI7Hr00G6UYS+yKMmuDgKgFc2mByEI0tIFByV6h1k9Q52QGEpuwAAAABJRU5ErkJggg==
 </value>
   </data>
+  <data name="btnResetValue.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABWSURBVDhPYxjGQGmjz39kDBUmDiBr2PpMljxDkAFVDYFy
+        iQMwDXDNDQ7EGwBzMrLzwYYQA5A1wDWCbCfGBdg0wzBUCWGAoZEUv8MAXDMlgGID6AAYGABx+2DITRHe
+        uwAAAABJRU5ErkJggg==
+</value>
+  </data>
   <metadata name="timerUI.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>122, 17</value>
   </metadata>
