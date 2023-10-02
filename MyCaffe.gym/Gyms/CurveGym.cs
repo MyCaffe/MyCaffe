@@ -29,6 +29,7 @@ namespace MyCaffe.gym
         GeomGraph m_geomGraph;
         GeomPolyLine m_geomTargetLine;
         List<GeomPolyLine> m_rgGeomPredictedLines = new List<GeomPolyLine>();
+        int m_nPolyLineSetCount = 0;
         CURVE_TYPE m_curveType = CURVE_TYPE.SIN;
         float m_fXScale = 512;
         float m_fYScale = 150;
@@ -424,11 +425,6 @@ namespace MyCaffe.gym
                         geomPredictLine.Polygon.Clear();
                         geomPredictLine.SetLocation(0, fScale * (fWorldHeight / 2));
                         m_rgGeomPredictedLines.Add(geomPredictLine);
-
-                        GeomPolyLineSet geomPredictionLineSet = new GeomPolyLineSet(fL, fR, fT, fB, Color.Red, Color.Red, m_nMaxPlots);
-                        geomPredictionLineSet.PolyLines.Clear();
-                        geomPredictionLineSet.SetLocation(0, fScale * (fWorldHeight / 2));
-                        m_rgGeomPredictedLines.Add(geomPredictionLineSet);
                     }
 
                     if (m_rgstrLabels != null && m_rgstrLabels.Count > 0)
@@ -450,9 +446,29 @@ namespace MyCaffe.gym
                             m_rgGeomPredictedLines.Add(geomPredictLine);
                             nIdx++;
                         }
+
+                        if (m_rgGeomPredictedLines.Count == m_rgstrLabels.Count && predictions != null)
+                        {
+                            GeomPolyLineSet geomPredictionLineSet = new GeomPolyLineSet(fL, fR, fT, fB, Color.Red, Color.Red, m_nMaxPlots);
+                            geomPredictionLineSet.PolyLines.Clear();
+                            geomPredictionLineSet.SetLocation(0, fScale * (fWorldHeight / 2));
+                            m_rgGeomPredictedLines.Add(geomPredictionLineSet);
+                            m_nPolyLineSetCount = 1;
+                        }
+                    }
+                    else
+                    {
+                        if (m_rgGeomPredictedLines.Count == 1 && predictions != null)
+                        {
+                            GeomPolyLineSet geomPredictionLineSet = new GeomPolyLineSet(fL, fR, fT, fB, Color.Red, Color.Red, m_nMaxPlots);
+                            geomPredictionLineSet.PolyLines.Clear();
+                            geomPredictionLineSet.SetLocation(0, fScale * (fWorldHeight / 2));
+                            m_rgGeomPredictedLines.Add(geomPredictionLineSet);
+                            m_nPolyLineSetCount = 1;
+                        }
                     }
 
-                    for (int i=0; i < m_rgGeomPredictedLines.Count-1; i++)
+                    for (int i=0; i < m_rgGeomPredictedLines.Count-m_nPolyLineSetCount; i++)
                     {
                         double dfPredicted = 0;
                         if (i+nPredictedIdx < rgData.Length)
