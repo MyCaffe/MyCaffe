@@ -22,6 +22,8 @@ using System.Drawing;
 using MyCaffe.param.lnn;
 using System.Threading;
 using SimpleGraphing;
+using static MyCaffe.param.lnn.CfcParameter;
+using System.Windows.Forms;
 
 /// <summary>
 /// Testing the Cfc layer.
@@ -237,6 +239,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestTrainingRealTime_ComboNet()
+        {
+            CfcLayerTest test = new CfcLayerTest();
+
+            try
+            {
+                foreach (ICfcLayerTest t in test.Tests)
+                {
+                    t.TestTrainingRealTimeComboNets(false, true, false, false);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface ICfcLayerTest : ITest
@@ -247,6 +267,7 @@ namespace MyCaffe.test
         void TestTrainingBatch(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type);
         void TestTrainingRealTime(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, int nStepsForward = -1, int nFutureSteps = 1);
         void TestTrainingRealTimeCombo(bool bEnableUI, bool bEmphasizeCfcNoGateF, bool bEmphasizeCfcNoGateT, bool bEmphasizeLtc);
+        void TestTrainingRealTimeComboNets(bool bEnableUI, bool bEmphasizeCfc, bool bEmphasizeLstm, bool bEmphasizeLinear);
     }
 
     class CfcLayerTest : TestBase
@@ -703,6 +724,141 @@ namespace MyCaffe.test
         }
 
         /// <summary>
+        /// Create a simple CFC model with MSE loss.
+        /// </summary>
+        /// <param name="nBatchSize">Specifies the batch size.</param>
+        /// <param name="nInputSize">Specifies the input size (number of time steps)</param>
+        /// <param name="bNoGate">Specifies whether no-gating is used.</param>
+        /// <param name="nHiddenSize">Specifies the hidden size.</param>
+        /// <param name="fDropout">Specifies dropout ratio.</param>
+        /// <param name="nLayers">Specifies the number of backbone layers used.</param>
+        /// <param name="nUnits">Specifies the number of backbone units used.</param>
+        /// <param name="nOutputSize">Specifies the number of outputs.</param>
+        /// <param name="layerType">Specifies the layer type: CFC, LSTM or INNERPRODUCT</param>
+        /// <returns></returns>
+        private string buildModel(int nBatchSize, int nInputSize, bool bNoGate, int nHiddenSize, float fDropout, int nLayers, int nUnits, int nOutputSize, LayerParameter.LayerType layerType)
+        {
+            NetParameter p = new NetParameter();
+            p.name = "test_net";
+
+            //---------------------------------
+            //  Data Temporal Input
+            //---------------------------------
+            LayerParameter data = new LayerParameter(LayerParameter.LayerType.INPUT);
+            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize, 1, 1 }));
+            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize }));
+            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize, 1, 1 }));
+            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nOutputSize }));
+            data.top.Add("x");
+            data.top.Add("tt");
+            data.top.Add("mask");
+            data.top.Add("target");
+            data.include.Add(new NetStateRule(Phase.TRAIN));
+            p.layer.Add(data);
+
+            data = new LayerParameter(LayerParameter.LayerType.INPUT);
+            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize, 1, 1 }));
+            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize }));
+            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize, 1, 1 }));
+            data.top.Add("x");
+            data.top.Add("tt");
+            data.top.Add("mask");
+            data.include.Add(new NetStateRule(Phase.TEST));
+            p.layer.Add(data);
+
+            //---------------------------------
+            //  CFC Layer (Closed form Continuous-time)
+            //---------------------------------
+
+            switch (layerType)
+            {
+                case LayerParameter.LayerType.CFC:
+                    LayerParameter cfc = new LayerParameter(LayerParameter.LayerType.CFC);
+                    cfc.cfc_unit_param.input_size = nInputSize;
+                    cfc.cfc_unit_param.hidden_size = nHiddenSize;
+                    cfc.cfc_unit_param.backbone_activation = param.lnn.CfcUnitParameter.ACTIVATION.TANH;
+                    cfc.cfc_unit_param.backbone_dropout_ratio = fDropout;
+                    cfc.cfc_unit_param.backbone_layers = nLayers;
+                    cfc.cfc_unit_param.backbone_units = nUnits;
+                    cfc.cfc_unit_param.no_gate = bNoGate;
+                    cfc.cfc_unit_param.minimal = false;
+                    cfc.cfc_param.input_features = nInputSize;
+                    cfc.cfc_param.hidden_size = nHiddenSize;
+                    cfc.cfc_param.output_features = nOutputSize;
+                    cfc.cfc_param.cell_type = CELL_TYPE.CFC;
+                    cfc.bottom.Add("x");
+                    cfc.bottom.Add("tt");
+                    cfc.bottom.Add("mask");
+                    cfc.top.Add("x_hat");
+                    p.layer.Add(cfc);
+                    break;
+
+                case LayerParameter.LayerType.LSTM:
+                    LayerParameter silence = new LayerParameter(LayerParameter.LayerType.SILENCE);
+                    silence.bottom.Add("tt");
+                    p.layer.Add(silence);
+
+                    LayerParameter lstm1 = new LayerParameter(LayerParameter.LayerType.LSTM);
+                    lstm1.recurrent_param.dropout_ratio = fDropout;
+                    lstm1.recurrent_param.engine = EngineParameter.Engine.CUDNN;
+                    lstm1.recurrent_param.use_cudnn_rnn8_if_supported = true;
+                    lstm1.recurrent_param.batch_first = true;
+                    lstm1.recurrent_param.num_layers = (uint)nLayers;
+                    lstm1.recurrent_param.num_output = (uint)nInputSize;
+                    lstm1.recurrent_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.5);
+                    lstm1.recurrent_param.bias_filler = new FillerParameter("constant", 0);
+
+                    lstm1.bottom.Add("x");
+                    lstm1.bottom.Add("mask");
+                    lstm1.top.Add("lstm1");
+                    p.layer.Add(lstm1);
+
+                    LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
+                    ip1.inner_product_param.num_output = (uint)nOutputSize;
+                    ip1.inner_product_param.axis = 1;
+                    ip1.inner_product_param.bias_term = true;
+                    ip1.bottom.Add("lstm1");
+                    ip1.top.Add("x_hat");
+                    p.layer.Add(ip1);
+                    break;
+
+                case LayerParameter.LayerType.INNERPRODUCT:
+                    LayerParameter silence_tt = new LayerParameter(LayerParameter.LayerType.SILENCE);
+                    silence_tt.bottom.Add("tt");
+                    p.layer.Add(silence_tt);
+                    LayerParameter silence_mask = new LayerParameter(LayerParameter.LayerType.SILENCE);
+                    silence_mask.bottom.Add("mask");
+                    p.layer.Add(silence_mask);
+
+                    LayerParameter ip = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
+                    ip.inner_product_param.num_output = (uint)nOutputSize;
+                    ip.inner_product_param.axis = 1;
+                    ip.inner_product_param.bias_term = true;
+                    ip.bottom.Add("x");
+                    ip.top.Add("x_hat");
+                    p.layer.Add(ip);
+                    break;
+            }
+
+
+            //---------------------------------
+            //  MSE Loss
+            //---------------------------------
+            LayerParameter loss = new LayerParameter(LayerParameter.LayerType.MEAN_ERROR_LOSS, "loss");
+            loss.mean_error_loss_param.axis = 1;
+            loss.mean_error_loss_param.mean_error_type = MEAN_ERROR.MSE;
+            loss.loss_weight.Add(1); // for loss
+            loss.loss_param.normalization = LossParameter.NormalizationMode.NONE;
+            loss.bottom.Add("x_hat");
+            loss.bottom.Add("target");
+            loss.top.Add("loss");
+            loss.include.Add(new NetStateRule(Phase.TRAIN));
+            p.layer.Add(loss);
+
+            return p.ToProto("root").ToString();
+        }
+
+        /// <summary>
         /// Create the solver using the ADAMW solver.
         /// </summary>
         /// <param name="fLearningRate">Specifies the learning rate.</param>
@@ -828,11 +984,7 @@ namespace MyCaffe.test
                     blobMask.mutable_cpu_data = convert(rgMaskBatch);
                     blobTarget.mutable_cpu_data = convert(rgTargetBatch);
 
-                    // Run the forward and backward pass.
-                    net.Forward();
-                    net.Backward();
-
-                    // Run the solver to perform the weight update.
+                    // Run the solver to perform the forward/backward and weight update.
                     solver.Step(1);
 
                     if (sw.Elapsed.TotalMilliseconds > 1000)
@@ -1213,6 +1365,166 @@ namespace MyCaffe.test
                     mycaffeOp_ltc.Dispose();
             }
         }
+
+        /// <summary>
+        /// Test the training using real-time combo data (with batch = 1).
+        /// </summary>
+        /// <param name="bEnableUI">Specifies to turn on the UI display.</param>
+        public void TestTrainingRealTimeComboNets(bool bEnableUI, bool bEmphasizeCfc, bool bEmphasizeLstm, bool bEmphasizeLinear)
+        {
+            if (m_evtCancel.WaitOne(0))
+                return;
+
+            int nBatchSize = 1;
+            int nInputSize = 82;
+            int nOutputSize = 1;
+            int nHiddenSize = 256;
+            int nBackboneLayers = 2;
+            int nBackboneUnits = 64;
+            string strSolver = buildSolver(0.01f);
+            string strModelCfc = buildModel(nBatchSize, nInputSize, false, nHiddenSize, 0.0f, nBackboneLayers, nBackboneUnits, nOutputSize, LayerParameter.LayerType.CFC);
+            string strModelLstm = buildModel(nBatchSize, nInputSize, true, nHiddenSize, 0.0f, nBackboneLayers, nBackboneUnits, nOutputSize, LayerParameter.LayerType.LSTM);
+            string strModelLinear = buildModel(nBatchSize, nInputSize, false, nHiddenSize, 0.0f, nBackboneLayers, nBackboneUnits, nOutputSize, LayerParameter.LayerType.INNERPRODUCT);
+
+            m_log.EnableTrace = true;
+
+            // Setup MyCaffe and load the model.
+            MyCaffeOperation<T> mycaffeOp_cfc= new MyCaffeOperation<T>("CFC (TANH)");
+            MyCaffeOperation<T> mycaffeOp_lstm = new MyCaffeOperation<T>("LSTM");
+            MyCaffeOperation<T> mycaffeOp_linear = new MyCaffeOperation<T>("Linear");
+
+            try
+            {
+                EventWaitHandle evtGlobalCancel = new EventWaitHandle(false, EventResetMode.ManualReset, "__GRADIENT_CHECKER_CancelEvent__");
+
+                if (!mycaffeOp_cfc.Initialize(evtGlobalCancel, m_evtCancel, m_log, 0, strModelCfc, strSolver, nInputSize, nOutputSize, bEmphasizeCfc))
+                    throw new Exception("Could not initialize the CFC (TANH) model!");
+
+                if (!mycaffeOp_lstm.Initialize(evtGlobalCancel, m_evtCancel, m_log, 0, strModelLstm, strSolver, nInputSize, nOutputSize, bEmphasizeLstm))
+                    throw new Exception("Could not initialize the LSTM model!");
+
+                if (!mycaffeOp_linear.Initialize(evtGlobalCancel, m_evtCancel, m_log, 1, strModelLinear, strSolver, nInputSize, nOutputSize, bEmphasizeLinear))
+                    throw new Exception("Could not initialize the Linear model!");
+
+                // Setup the curve gym for the data.
+                MyCaffePythonGym gym = new MyCaffePythonGym();
+                Random random = new Random();
+
+                // 0 = Sin, 1 = Cos, 2 = Random
+                gym.Initialize("Curve", "CurveType=0");
+
+                // Run the trained model
+                if (bEnableUI)
+                    gym.OpenUi(true);
+
+                PropertySet propTest = new PropertySet();
+                propTest.SetProperty("override_predictions", "3");
+                propTest.SetProperty("override_prediction0", "0");
+                propTest.SetProperty("override_prediction1", "0");
+                propTest.SetProperty("override_prediction2", "0");
+                propTest.SetProperty("override_prediction0_name", "CFC (TANH)");
+                propTest.SetProperty("override_prediction0_emphasize", bEmphasizeCfc.ToString());
+                propTest.SetProperty("override_prediction1_name", "LSTM");
+                propTest.SetProperty("override_prediction1_emphasize", bEmphasizeLstm.ToString());
+                propTest.SetProperty("override_prediction2_name", "Linear");
+                propTest.SetProperty("override_prediction2_emphasize", bEmphasizeLinear.ToString());
+
+                CurrentState state = gym.Step(0, 1, propTest);
+
+                float[] rgInput = new float[nInputSize];
+                float[] rgTimeSteps = new float[nInputSize];
+                float[] rgMask = new float[nInputSize];
+                float[] rgTarget = new float[nOutputSize];
+
+                WaitHandle[] rgWait = new WaitHandle[3];
+
+                CalculationArray caCfc = new CalculationArray(200);
+                CalculationArray caLstm = new CalculationArray(200);
+                CalculationArray caLinear = new CalculationArray(200);
+
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
+
+                int nMax = 100;
+                if (bEnableUI)
+                    nMax = 2000;
+
+                for (int i = 0; i < nMax; i++)
+                {
+                    List<DataPoint> rgHistory = state.GymState.History;
+
+                    if (rgHistory.Count >= nInputSize)
+                    {
+                        for (int j = 0; j < nInputSize; j++)
+                        {
+                            int nIdx = rgHistory.Count - nInputSize + j;
+                            rgInput[j] = rgHistory[nIdx].Inputs[0];
+                            rgTimeSteps[j] = rgHistory[nIdx].Time;
+                            rgMask[j] = rgHistory[nIdx].Mask[0];
+                            rgTarget[0] = rgHistory[nIdx].Target;
+                        }
+
+                        rgWait[0] = mycaffeOp_cfc.RunCycleAsync(rgInput, rgTimeSteps, rgMask, rgTarget);
+                        rgWait[1] = mycaffeOp_lstm.RunCycleAsync(rgInput, rgTimeSteps, rgMask, rgTarget);
+                        rgWait[2] = mycaffeOp_linear.RunCycleAsync(rgInput, rgTimeSteps, rgMask, rgTarget);
+
+                        while (!WaitHandle.WaitAll(rgWait, 10))
+                        {
+                            Thread.Sleep(1);
+                            if (m_evtCancel.WaitOne(i))
+                                break;
+
+                            if (evtGlobalCancel.WaitOne(0))
+                                break;
+                        }
+
+                        if (m_evtCancel.WaitOne(0))
+                            break;
+
+                        if (evtGlobalCancel.WaitOne(0))
+                            break;
+
+                        caCfc.Add(mycaffeOp_cfc.TotalMilliseconds);
+                        caLstm.Add(mycaffeOp_lstm.TotalMilliseconds);
+                        caLinear.Add(mycaffeOp_linear.TotalMilliseconds);
+
+                        float fPredicted_cfc = mycaffeOp_cfc.Output[0];
+                        float fPredicted_lstm = mycaffeOp_lstm.Output[0];
+                        float fPredicted_linear = mycaffeOp_linear.Output[0];
+
+                        propTest.SetProperty("override_prediction0", fPredicted_cfc.ToString());
+                        propTest.SetProperty("override_prediction1", fPredicted_lstm.ToString());
+                        propTest.SetProperty("override_prediction2", fPredicted_linear.ToString());
+
+                        if (sw.Elapsed.TotalMilliseconds > 1000)
+                        {
+                            sw.Restart();
+
+                            m_log.WriteLine("CFC (TANH): " + caCfc.Average.ToString("N3") + " ms.");
+                            m_log.WriteLine("LSTM: " + caLstm.Average.ToString("N3") + " ms.");
+                            m_log.WriteLine("Linear: " + caLinear.Average.ToString("N3") + " ms.");
+                            m_log.WriteLine("---------------------------------");
+                        }
+                    }
+
+                    state = gym.Step(0, 1, propTest);
+                }
+
+                if (bEnableUI)
+                    gym.CloseUi();
+            }
+            finally
+            {
+                if (mycaffeOp_cfc != null)
+                    mycaffeOp_cfc.Dispose();
+
+                if (mycaffeOp_lstm != null)
+                    mycaffeOp_lstm.Dispose();
+
+                if (mycaffeOp_linear != null)
+                    mycaffeOp_linear.Dispose();
+            }
+        }
     }
 
     internal class MyCaffeOperation<T> : IDisposable
@@ -1234,18 +1546,20 @@ namespace MyCaffe.test
         Exception m_err = null;
         Stopwatch m_sw = new Stopwatch();
         EventWaitHandle m_evtGlobalCancel;
+        bool m_bEmphasize = false;
 
         public MyCaffeOperation(string strName)
         {
             m_strName = strName;
         }
 
-        public bool Initialize(EventWaitHandle evtGlobalCancel, ManualResetEvent evtCancel, Log log, int nGpuID, string strModel, string strSolver, int nInputSize, int nOutputSize)
+        public bool Initialize(EventWaitHandle evtGlobalCancel, ManualResetEvent evtCancel, Log log, int nGpuID, string strModel, string strSolver, int nInputSize, int nOutputSize, bool bEmphasize = true)
         {
             m_log = log;
             m_nGpuID = nGpuID;
             m_strModel = strModel;
             m_strSolver = strSolver;
+            m_bEmphasize = bEmphasize;
 
             m_evtCancel = evtCancel;
             m_evtGlobalCancel = evtGlobalCancel;
@@ -1341,16 +1655,18 @@ namespace MyCaffe.test
 
                 while (WaitHandle.WaitAny(rgWait) > 1)
                 {
-                    blobX.mutable_cpu_data = convert(m_rgInput);
-                    blobTt.mutable_cpu_data = convert(m_rgTimeSteps);
-                    blobMask.mutable_cpu_data = convert(m_rgMask);
-                    blobY.mutable_cpu_data = convert(m_rgTarget);
+                    if (m_bEmphasize)
+                    {
+                        blobX.mutable_cpu_data = convert(m_rgInput);
+                        blobTt.mutable_cpu_data = convert(m_rgTimeSteps);
+                        blobMask.mutable_cpu_data = convert(m_rgMask);
+                        blobY.mutable_cpu_data = convert(m_rgTarget);
 
-                    net.Forward();
-                    net.Backward();
-                    solver.Step(1);
+                        solver.Step(1);
+                    }
 
                     m_rgOutput = convertF(blobXhat.mutable_cpu_data);
+
                     m_evtDone.Set();
                     m_sw.Stop();
                 }
