@@ -2,11 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace MyCaffe.gym
 {
@@ -39,7 +34,8 @@ namespace MyCaffe.gym
         /// Specifies that the colors have changed.
         /// </summary>
         protected bool m_bClrDirty = false;
-        System.Drawing.Drawing2D.GraphicsState m_gstate = null;        
+        System.Drawing.Drawing2D.GraphicsState m_gstate = null;
+        RectangleF m_rcBounds;
 
         /// <summary>
         /// The constructor.
@@ -52,13 +48,27 @@ namespace MyCaffe.gym
         /// <param name="clrBorder">Specifies the border color.</param>
         public GeomObj(float fL, float fR, float fT, float fB, Color clrFill, Color clrBorder)
         {
+            Set(fL, fR, fT, fB);
+            m_clrFill = clrFill;
+            m_clrBorder = clrBorder;
+        }
+
+        /// <summary>
+        /// Set the points of the object.
+        /// </summary>
+        /// <param name="fL">Specifies the left position.</param>
+        /// <param name="fR">Specifies the right position.</param>
+        /// <param name="fT">Specifies the top position.</param>
+        /// <param name="fB">Specifies the bottom position.</param>
+        public void Set(float fL, float fR, float fT, float fB)
+        {
+            m_rgPoints.Clear();
             m_rgPoints.Add(new PointF(fL, fB));
             m_rgPoints.Add(new PointF(fL, fT));
             m_rgPoints.Add(new PointF(fR, fT));
             m_rgPoints.Add(new PointF(fR, fB));
             m_rgPoints.Add(new PointF(fL, fB));
-            m_clrFill = clrFill;
-            m_clrBorder = clrBorder;
+            m_rcBounds = new RectangleF(fL, fT, (int)(fR - fL), (int)Math.Abs(fB - fT));
         }
 
         /// <summary>
@@ -83,6 +93,14 @@ namespace MyCaffe.gym
                 g.Restore(m_gstate);
                 m_gstate = null;
             }
+        }
+
+        /// <summary>
+        /// Returns the bounds of the object.
+        /// </summary>
+        public RectangleF Bounds
+        {
+            get { return m_rcBounds; }
         }
 
         /// <summary>
@@ -316,8 +334,10 @@ namespace MyCaffe.gym
     /// <summary>
     /// The GeomEllipse object is used to render an rectangle.
     /// </summary>
-    class GeomRectangle : GeomObj
+    class GeomRectangle : GeomObj, IDisposable
     {
+        Font m_font = null;
+        string m_strName = null;
         ColorMapper m_clrMap = null;
 
         /// <summary>
@@ -337,14 +357,33 @@ namespace MyCaffe.gym
         }
 
         /// <summary>
+        /// Release all resources.
+        /// </summary>
+        public void Dispose()
+        {
+            if (m_font != null)
+            {
+                m_font.Dispose();
+                m_font = null;
+            }
+        }
+
+        /// <summary>
         /// Renders the rectangle on the Graphics specified.
         /// </summary>
         /// <param name="g">Specifies the Graphics used to draw.</param>
         public override void Render(Graphics g)
         {
             prerender(g);
+
             PointF[] rg = m_rgPoints.ToArray();
-            RectangleF rc = new RectangleF(LeftTop(rg).X, LeftTop(rg).Y, Width(rg), Height(rg));
+
+            float fX1 = LeftTop(rg).X;
+            float fY1 = LeftTop(rg).Y;
+            float fW1 = Width(rg);
+            float fH1 = Math.Abs(Height(rg));
+
+            RectangleF rc = new RectangleF(fX1, fY1, fW1, fH1);
             Brush br = new SolidBrush(m_clrFill);
             Pen p = new Pen(m_clrBorder, 1.0f);
             g.FillRectangle(br, rc);
@@ -368,7 +407,48 @@ namespace MyCaffe.gym
             g.DrawRectangle(p, rc.X, rc.Y, rc.Width, rc.Height);
             p.Dispose();
             br.Dispose();
+
+            if (!string.IsNullOrEmpty(m_strName))
+            {
+                if (m_font == null)
+                    m_font = new Font("Calibri Light", 8.0f);
+
+                Color clr = Color.FromArgb(255, m_clrFill);
+                Brush br1 = new SolidBrush(clr);
+
+                SizeF sz = g.MeasureString(m_strName, m_font);
+                float fDy = 200;
+                g.MultiplyTransform(new System.Drawing.Drawing2D.Matrix(1, 0, 0, -1, 0, fDy));
+                g.DrawString(m_strName, m_font, br1, new PointF(rc.X + (rc.Width - sz.Width) / 2, rc.Y - sz.Height));
+
+                br1.Dispose();
+            }
+
             postrender(g);
+        }
+
+        /// <summary>
+        /// Synchronize the position of the rectangle to cover the area of the poly line.
+        /// </summary>
+        /// <param name="line">Specifies the poly line.</param>
+        /// <param name="nOffsetFromEnd">Specifies the offset from the line end where the rectangle is to start.</param>
+        /// <param name="strName">Optionally, specifies a name for the box.</param>
+        public void SyncLocation(GeomPolyLine line, int nOffsetFromEnd, string strName = null)
+        {
+            if (line.Polygon.Count == 0)
+                return;
+
+            RectangleF rc = line.Bounds;
+
+            float fR = line.Polygon[line.Polygon.Count - 1].X;
+            float fL = fR - nOffsetFromEnd;
+            float fT = rc.Y - 44;
+            float fB = fT + rc.Height;
+
+            Set(fL, fR, fT, fB);
+
+            m_location.X = line.Location.X;
+            m_strName = strName;
         }
     }
 
@@ -475,6 +555,7 @@ namespace MyCaffe.gym
     /// </summary>
     class GeomPolyLineSet : GeomPolyLine
     {
+        int m_nMaxPlotsOffset = 0;
         List<PointF[]> m_rgrgPoints = new List<PointF[]>();
 
         /// <summary>
@@ -487,9 +568,11 @@ namespace MyCaffe.gym
         /// <param name="clrFill">Specifies the fill color.</param>
         /// <param name="clrBorder">Specifies the border color.</param>
         /// <param name="nMaxPlots">Specifies the maximum number of plots.</param>
-        public GeomPolyLineSet(float fL, float fR, float fT, float fB, Color clrFill, Color clrBorder, int nMaxPlots = int.MaxValue)
+        /// <param name="nMaxPlotsOffset">Optionally, specifies an offset to the maximum number of plots (default = 0).</param>
+        public GeomPolyLineSet(float fL, float fR, float fT, float fB, Color clrFill, Color clrBorder, int nMaxPlots = int.MaxValue, int nMaxPlotsOffset = 0)
             : base(fL, fR, fT, fB, clrFill, clrBorder)
         {
+            m_nMaxPlotsOffset = nMaxPlotsOffset;
             m_nMaxPlots = nMaxPlots;
         }
 
@@ -523,13 +606,13 @@ namespace MyCaffe.gym
 
         private void clipAndShift()
         {
-            if (m_rgrgPoints.Count > m_nMaxPlots)
+            if (m_rgrgPoints.Count > (m_nMaxPlots + m_nMaxPlotsOffset))
             {
                 PointF[] rg1 = m_rgrgPoints[m_rgrgPoints.Count - 1];
                 PointF[] rg2 = m_rgrgPoints[m_rgrgPoints.Count - 2];
 
                 float fShift = rg1[rg1.Length-1].X - rg2[rg2.Length-1].X;
-                int nDiff = m_rgrgPoints.Count - m_nMaxPlots;
+                int nDiff = m_rgrgPoints.Count - (m_nMaxPlots + m_nMaxPlotsOffset);
                 m_rgrgPoints.RemoveRange(0, nDiff);
                 m_location.X -= (fShift * nDiff);
             }
