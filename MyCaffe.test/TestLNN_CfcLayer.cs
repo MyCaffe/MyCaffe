@@ -223,6 +223,31 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestTrainingRealTimeFuture_CFC()
+        {
+            CfcLayerTest test = new CfcLayerTest();
+
+            try
+            {
+                foreach (ICfcLayerTest t in test.Tests)
+                {
+                    int nStepsForward = 0; // default = -1 for the present value.
+                    int nFutureSteps = 25;  // default = 1 for the present value.
+                    bool bEnableUI = false;
+                    int nCurveType = 2; // default = 0, SIN
+                    bool bRecord = false;
+                    CfcUnitParameter.ACTIVATION activation = CfcUnitParameter.ACTIVATION.TANH;
+
+                    t.TestTrainingRealTimeFuture(false, bEnableUI, CfcParameter.CELL_TYPE.CFC, activation, nStepsForward, nFutureSteps, nCurveType, bRecord);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestTrainingRealTime_Combo()
         {
             CfcLayerTest test = new CfcLayerTest();
@@ -265,9 +290,10 @@ namespace MyCaffe.test
         void TestBackward(bool bNoGate);
         void TestGradient(bool bNoGate);
         void TestTrainingBatch(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type);
-        void TestTrainingRealTime(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, int nStepsForward = -1, int nFutureSteps = 1);
-        void TestTrainingRealTimeCombo(bool bEnableUI, bool bEmphasizeCfcNoGateF, bool bEmphasizeCfcNoGateT, bool bEmphasizeLtc);
-        void TestTrainingRealTimeComboNets(bool bEnableUI, bool bEmphasizeCfc, bool bEmphasizeLstm, bool bEmphasizeLinear);
+        void TestTrainingRealTime(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, int nStepsForward = -1, int nFutureSteps = 1, bool bRecord = false);
+        void TestTrainingRealTimeFuture(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, CfcUnitParameter.ACTIVATION activation, int nStepsForward = -1, int nFutureSteps = 1, int nCurveType = 0, bool bRecord = false);
+        void TestTrainingRealTimeCombo(bool bEnableUI, bool bEmphasizeCfcNoGateF, bool bEmphasizeCfcNoGateT, bool bEmphasizeLtc, bool bRecord = false);
+        void TestTrainingRealTimeComboNets(bool bEnableUI, bool bEmphasizeCfc, bool bEmphasizeLstm, bool bEmphasizeLinear, bool bRecord = false);
     }
 
     class CfcLayerTest : TestBase
@@ -641,9 +667,10 @@ namespace MyCaffe.test
         /// <param name="nLayers">Specifies the number of backbone layers used.</param>
         /// <param name="nUnits">Specifies the number of backbone units used.</param>
         /// <param name="nOutputSize">Specifies the number of outputs.</param>
-        /// <param name="cell_type">Specifies the cell type (default = CFC)</param>
+        /// <param name="cell_type">Optionally, specifies the cell type (default = CFC)</param>
+        /// <param name="activation">Optionally, specifies the activation type (default = RELU).</param>
         /// <returns></returns>
-        private string buildModel(int nBatchSize, int nInputSize, bool bNoGate, int nHiddenSize, float fDropout, int nLayers, int nUnits, int nOutputSize, CfcParameter.CELL_TYPE cell_type = CfcParameter.CELL_TYPE.CFC)
+        private string buildModel(int nBatchSize, int nInputSize, bool bNoGate, int nHiddenSize, float fDropout, int nLayers, int nUnits, int nOutputSize, CfcParameter.CELL_TYPE cell_type = CfcParameter.CELL_TYPE.CFC, CfcUnitParameter.ACTIVATION activation = CfcUnitParameter.ACTIVATION.RELU)
         {
             NetParameter p = new NetParameter();
             p.name = "cfc_net";
@@ -688,7 +715,7 @@ namespace MyCaffe.test
             {
                 cfc.cfc_unit_param.input_size = nInputSize;
                 cfc.cfc_unit_param.hidden_size = nHiddenSize;
-                cfc.cfc_unit_param.backbone_activation = param.lnn.CfcUnitParameter.ACTIVATION.RELU;
+                cfc.cfc_unit_param.backbone_activation = activation;
                 cfc.cfc_unit_param.backbone_dropout_ratio = fDropout;
                 cfc.cfc_unit_param.backbone_layers = nLayers;
                 cfc.cfc_unit_param.backbone_units = nUnits;
@@ -1077,7 +1104,8 @@ namespace MyCaffe.test
         /// <param name="cell_type">Specifies the cell type.</param>
         /// <param name="nFutureSteps">Optionally, specifies the number of steps forward into the future to predict (default = 0, the present)</param>
         /// <param name="nStepsForward">Optionally, specifies the number of future steps to predict (default = 1).  Note, nFutureSteps must be less than or equal to nStepsForward + 1.</param>
-        public void TestTrainingRealTime(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, int nStepsForward = -1, int nFutureSteps = 1)
+        /// <param name="bRecord">Optionally, specifies to record the run (default = false).</param>
+        public void TestTrainingRealTime(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, int nStepsForward = -1, int nFutureSteps = 1, bool bRecord = false)
         {
             int nBatchSize = 1;
             int nInputSize = 82;
@@ -1109,7 +1137,7 @@ namespace MyCaffe.test
 
                 // Run the trained model
                 if (bEnableUI)
-                    gym.OpenUi();
+                    gym.OpenUi(bRecord);
 
                 PropertySet propTest = new PropertySet();
                 CurrentState state = gym.Step(0, 1, propTest);
@@ -1210,7 +1238,11 @@ namespace MyCaffe.test
         /// Test the training using real-time combo data (with batch = 1).
         /// </summary>
         /// <param name="bEnableUI">Specifies to turn on the UI display.</param>
-        public void TestTrainingRealTimeCombo(bool bEnableUI, bool bEmphasizeCfcNoGateF, bool bEmphasizeCfcNoGateT, bool bEmphasizeLtc)
+        /// <param name="bEmphasizeCfcNoGateF">Specifies to emphasize the CfcNoGate=F</param>
+        /// <param name="bEmphasizeCfcNoGateT">Specifies to emphasize the CfcNoGate=T</param>
+        /// <param name="bEmphasizeLtc">Specifies to emphasize the LTC.</param>
+        /// <param name="bRecord">Optionally, specifies to record the run (default = false).</param>
+        public void TestTrainingRealTimeCombo(bool bEnableUI, bool bEmphasizeCfcNoGateF, bool bEmphasizeCfcNoGateT, bool bEmphasizeLtc, bool bRecord = false)
         {
             if (m_evtCancel.WaitOne(0))
                 return;
@@ -1255,7 +1287,7 @@ namespace MyCaffe.test
 
                 // Run the trained model
                 if (bEnableUI)
-                    gym.OpenUi(true);
+                    gym.OpenUi(bRecord);
                
                 PropertySet propTest = new PropertySet();
                 propTest.SetProperty("override_predictions", "3");
@@ -1370,7 +1402,11 @@ namespace MyCaffe.test
         /// Test the training using real-time combo data (with batch = 1).
         /// </summary>
         /// <param name="bEnableUI">Specifies to turn on the UI display.</param>
-        public void TestTrainingRealTimeComboNets(bool bEnableUI, bool bEmphasizeCfc, bool bEmphasizeLstm, bool bEmphasizeLinear)
+        /// <param name="bEmphasizeCfc">Specifies the emphasize the Cfc model.</param>
+        /// <param name="bEmphasizeLstm">Specifies to emphasize the LSTM model.</param>
+        /// <param name="bEmphasizeLinear">Specifies to emphasize the Linear model.</param>
+        /// <param name="bRecord">Optionally, specifies to record the run (default = false).</param>
+        public void TestTrainingRealTimeComboNets(bool bEnableUI, bool bEmphasizeCfc, bool bEmphasizeLstm, bool bEmphasizeLinear, bool bRecord = false)
         {
             if (m_evtCancel.WaitOne(0))
                 return;
@@ -1415,7 +1451,7 @@ namespace MyCaffe.test
 
                 // Run the trained model
                 if (bEnableUI)
-                    gym.OpenUi(true);
+                    gym.OpenUi(bRecord);
 
                 PropertySet propTest = new PropertySet();
                 propTest.SetProperty("override_predictions", "3");
@@ -1523,6 +1559,129 @@ namespace MyCaffe.test
 
                 if (mycaffeOp_linear != null)
                     mycaffeOp_linear.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Test the training using real-time data (with batch = 1).
+        /// </summary>
+        /// <param name="bNoGate">Specifies the whether the no-gate mode is used.</param>
+        /// <param name="bEnableUI">Specifies to turn on the UI display.</param>
+        /// <param name="cell_type">Specifies the cell type.</param>
+        /// <param name="activation">Specifies the activation type to use (only applies when cell_type=CFC)</param>
+        /// <param name="nFutureSteps">Optionally, specifies the number of steps forward into the future to predict (default = 0, the present)</param>
+        /// <param name="nStepsForward">Optionally, specifies the number of future steps to predict (default = 1).  Note, nFutureSteps must be less than or equal to nStepsForward + 1.</param>
+        /// <param name="nCurveType">Optionally, specifies the curve type where nCurveType = 0 for SIN, nCurveType = 1 for COS and nCurveType = 2 for RANDOM.</param>
+        /// <param name="bRecord">Optionally, specifies to record the run (default = false).</param>
+        public void TestTrainingRealTimeFuture(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, CfcUnitParameter.ACTIVATION activation, int nStepsForward = -1, int nFutureSteps = 1, int nCurveType = 0, bool bRecord = false)
+        {
+            int nBatchSize = 1;
+            int nInputSize = 82;
+            int nOutputSize = nFutureSteps;
+            int nHiddenSize = 256;
+            int nBackboneLayers = 2;
+            int nBackboneUnits = 64;
+            string strSolver = buildSolver(0.01f);
+            string strModel = buildModel(nBatchSize, nInputSize, false, nHiddenSize, 0.0f, nBackboneLayers, nBackboneUnits, nOutputSize, cell_type, activation);
+
+            // Setup MyCaffe and load the model.
+            m_log.EnableTrace = true;
+            SettingsCaffe s = new SettingsCaffe();
+            s.GpuIds = "0";
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, new CancelEvent());
+
+            try
+            {
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
+                Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
+                Solver<T> solver = mycaffe.GetInternalSolver();
+
+                // Setup the curve gym for the data.
+                MyCaffePythonGym gym = new MyCaffePythonGym();
+                Random random = new Random();
+
+                // 0 = Sin, 1 = Cos, 2 = Random
+                gym.Initialize("Curve", "CurveType=" + nCurveType.ToString());
+
+                // Run the trained model
+                if (bEnableUI)
+                    gym.OpenUi(bRecord);
+
+                PropertySet propTest = new PropertySet();
+                CurrentState state = gym.Step(0, 1, propTest);
+
+                propTest = new PropertySet();
+
+                Blob<T> blobX = net.FindBlob("x");
+                Blob<T> blobTt = net.FindBlob("tt");
+                Blob<T> blobMask = net.FindBlob("mask");
+                Blob<T> blobY = net.FindBlob("target");
+                Blob<T> blobXhat = net.FindBlob("x_hat");
+
+                float[] rgInput = new float[nInputSize];
+                float[] rgTimeSteps = new float[nInputSize];
+                float[] rgMask = new float[nInputSize];
+                float[] rgTarget = new float[nOutputSize];
+
+                int nMax = 100;
+                if (bEnableUI)
+                    nMax = 2000;
+
+                for (int i = 0; i < nMax; i++)
+                {
+                    List<DataPoint> rgHistory = state.GymState.History;
+
+                    if (rgHistory.Count >= nInputSize + nOutputSize)
+                    {
+                        for (int j = 0; j < nInputSize; j++)
+                        {
+                            int nIdx = rgHistory.Count - (nInputSize + nOutputSize) + j;
+                            rgInput[j] = rgHistory[nIdx].Inputs[0];
+                            rgTimeSteps[j] = rgHistory[nIdx].Time;
+                            rgMask[j] = rgHistory[nIdx].Mask[0];
+                        }
+
+                        for (int j = 0; j < nOutputSize; j++)
+                        {
+                            int nIdx = rgHistory.Count - nOutputSize + j;
+                            rgTarget[j] = rgHistory[nIdx].Target;
+                        }
+
+                        blobX.mutable_cpu_data = convert(rgInput);
+                        blobTt.mutable_cpu_data = convert(rgTimeSteps);
+                        blobMask.mutable_cpu_data = convert(rgMask);
+                        blobY.mutable_cpu_data = convert(rgTarget);
+
+                        // Performs forward, backward pass and applies weights.
+                        solver.Step(1);
+
+                        float[] rgOutput1 = convertF(blobXhat.mutable_cpu_data);
+                        float fPredictedY = rgOutput1[rgOutput1.Length - 1];
+
+                        propTest.SetProperty("override_prediction", fPredictedY.ToString());
+
+                        if (rgOutput1.Length > 1)
+                        {
+                            propTest.SetProperty("override_future_predictions", rgOutput1.Length.ToString());
+                            propTest.SetProperty("override_future_predictions_start", (-nOutputSize + 1).ToString());
+
+                            for (int j = 0; j < rgOutput1.Length; j++)
+                            {
+                                propTest.SetProperty("override_future_prediction" + j.ToString(), rgOutput1[j].ToString());
+                            }
+                        }
+                    }
+
+                    state = gym.Step(0, 1, propTest);
+                }
+
+                if (bEnableUI)
+                    gym.CloseUi();
+            }
+            finally
+            {
+                if (mycaffe != null)
+                    mycaffe.Dispose();
             }
         }
     }
