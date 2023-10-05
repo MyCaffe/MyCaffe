@@ -8,6 +8,7 @@ using System.Drawing.Drawing2D;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -52,6 +53,11 @@ namespace MyCaffe.gym
         int m_nFuturePredictions = 0;
         Mutex m_mtxMm = null;
         MemoryMappedFile m_mm = null;
+        int m_nCsvFileColumn = 0;
+        int m_nCsvFileRow = 0;
+        double[] m_rgdfCsvRows = null;
+        int m_nCsvWindowSize = 500;
+        List<double> m_rgdfRollingCsvHistory = new List<double>();
 
         Random m_random = new Random();
         CurveState m_state = new CurveState();
@@ -88,7 +94,11 @@ namespace MyCaffe.gym
             /// <summary>
             /// Specifies to use a Random curve as the target.
             /// </summary>
-            RANDOM
+            RANDOM,
+            /// <summary>
+            /// Specifies to use a CSV file for the target curve.  Must set 'datasource_columns' to the zero based column to use in the CSV file, otherwise column=0 is used.
+            /// </summary>
+            CSV_FILE
         }
 
         /// <summary>
@@ -250,6 +260,9 @@ namespace MyCaffe.gym
             m_fX = 0;
             m_fTime = 0;
             setSharedMemoryValues(new float[] { m_fX, m_fTime });
+
+            m_nCsvFileRow = 0;
+            m_rgdfRollingCsvHistory = new List<double>();
         }
 
         /// <summary>
@@ -546,22 +559,22 @@ namespace MyCaffe.gym
         }
 
         private SimpleDatum getActionData(float fX, float fY, float fWid, float fHt, Bitmap bmpSrc)
+        {
+            double dfX = (fWid * 0.85);
+            double dfY = (bmpSrc.Height - fY) - (fHt * 0.75);
+
+            RectangleF rc = new RectangleF((float)dfX, (float)dfY, fWid, fHt);
+            Bitmap bmp = new Bitmap((int)fWid, (int)fHt);
+
+            using (Graphics g = Graphics.FromImage(bmp))
             {
-                double dfX = (fWid * 0.85);
-                double dfY = (bmpSrc.Height - fY) - (fHt * 0.75);
-
-                RectangleF rc = new RectangleF((float)dfX, (float)dfY, fWid, fHt);
-                Bitmap bmp = new Bitmap((int)fWid, (int)fHt);
-
-                using (Graphics g = Graphics.FromImage(bmp))
-                {
-                    RectangleF rc1 = new RectangleF(0, 0, (float)fWid, (float)fHt);
-                    g.FillRectangle(Brushes.Black, rc1);
-                    g.DrawImage(bmpSrc, rc1, rc, GraphicsUnit.Pixel);
-                }
-
-                return ImageData.GetImageDataD(bmp, 3, false, -1);
+                RectangleF rc1 = new RectangleF(0, 0, (float)fWid, (float)fHt);
+                g.FillRectangle(Brushes.Black, rc1);
+                g.DrawImage(bmpSrc, rc1, rc, GraphicsUnit.Pixel);
             }
+
+            return ImageData.GetImageDataD(bmp, 3, false, -1);
+        }
 
         /// <summary>
         /// Reset the state of the gym.
@@ -570,85 +583,142 @@ namespace MyCaffe.gym
         /// <param name="props">Optionally, specifies the property set to use.</param>
         /// <returns>A tuple containing state data, the reward, and the done state is returned.</returns>
         public Tuple<State, double, bool> Reset(bool bGetLabel, PropertySet props = null)
+        {
+            double dfX = 0;
+            double dfY = 0;
+            double dfPredictedY = 0;
+
+            m_bRenderImage = true;
+            m_rgPrevPoints.Clear();
+            m_nSteps = 0;
+            m_nCsvFileRow = 0;
+            m_rgdfRollingCsvHistory = new List<double>();
+
+            m_fLastY = 0;
+            m_state = new CurveState(dfX, dfY, new List<double>() { dfPredictedY });
+
+            if (props != null)
             {
-                double dfX = 0;
-                double dfY = 0;
-                double dfPredictedY = 0;
+                bool bTraining = props.GetPropertyAsBool("Training", false);
+                if (bTraining)
+                    m_bRenderImage = false;
 
-                m_bRenderImage = true;
-                m_rgPrevPoints.Clear();
-                m_nSteps = 0;
-
-                m_fLastY = 0;
-                m_state = new CurveState(dfX, dfY, new List<double>() { dfPredictedY });
-
-                if (props != null)
-                {
-                    bool bTraining = props.GetPropertyAsBool("Training", false);
-                    if (bTraining)
-                        m_bRenderImage = false;
-
-                    m_fLastY = (float)props.GetPropertyAsDouble("TrainingStart", 0);
-                }
-
-                return new Tuple<State, double, bool>(m_state.Clone(), 1, false);
+                m_fLastY = (float)props.GetPropertyAsDouble("TrainingStart", 0);
             }
+
+            return new Tuple<State, double, bool>(m_state.Clone(), 1, false);
+        }
 
         private double randomUniform(double dfMin, double dfMax)
+        {
+            double dfRange = dfMax - dfMin;
+            return dfMin + (m_random.NextDouble() * dfRange);
+        }
+
+        private double calculateTarget(double dfX, out bool bEndOfData)
+        {
+            bEndOfData = false;
+
+            switch (m_curveType)
             {
-                double dfRange = dfMax - dfMin;
-                return dfMin + (m_random.NextDouble() * dfRange);
+                case CURVE_TYPE.SIN:
+                    return Math.Sin(dfX);
+
+                case CURVE_TYPE.COS:
+                    return Math.Cos(dfX);
+
+                case CURVE_TYPE.RANDOM:
+                    float fCurve = m_fLastY + (float)(m_random.NextDouble() - 0.5) * (float)(m_random.NextDouble() * 0.20f);
+                    if (fCurve > 1.0f)
+                        fCurve = 1.0f;
+                    if (fCurve < -1.0f)
+                        fCurve = -1.0f;
+                    m_fLastY = fCurve;
+                    return fCurve;
+
+                case CURVE_TYPE.CSV_FILE:
+                    double dfVal = m_rgdfCsvRows[m_nCsvFileRow];
+                    if (m_nCsvFileRow > m_rgdfRollingCsvHistory.Count)
+                    {
+                        m_rgdfRollingCsvHistory.RemoveAt(0);
+                        m_rgdfRollingCsvHistory.Add(dfVal);
+                    }    
+                    m_nCsvFileRow++;
+                    if (m_nCsvFileRow == m_rgdfCsvRows.Length)
+                        bEndOfData = true;
+
+                    double dfMin = m_rgdfRollingCsvHistory.Min();
+                    double dfMax = m_rgdfRollingCsvHistory.Max();
+                    double dfRange = dfMax - dfMin;
+                    double dfNorm = (dfVal - dfMin) / dfRange;
+                    return dfNorm;
+
+                default:
+                    throw new Exception(Name + " does not support the curve type '" + m_curveType.ToString() + "'.");
             }
-
-        private double calculateTarget(double dfX)
-            {
-                switch (m_curveType)
-                {
-                    case CURVE_TYPE.SIN:
-                        return Math.Sin(dfX);
-
-                    case CURVE_TYPE.COS:
-                        return Math.Cos(dfX);
-
-                    case CURVE_TYPE.RANDOM:
-                        float fCurve = m_fLastY + (float)(m_random.NextDouble() - 0.5) * (float)(m_random.NextDouble() * 0.20f);
-                        if (fCurve > 1.0f)
-                            fCurve = 1.0f;
-                        if (fCurve < -1.0f)
-                            fCurve = -1.0f;
-                        m_fLastY = fCurve;
-                        return fCurve;
-
-                    default:
-                        throw new Exception(Name + " does not support the curve type '" + m_curveType.ToString() + "'.");
-                }
-            }
+        }
 
         private void getNewIncrementValues(out float fX, out float fTime)
+        {
+            fX = m_fX;
+            fTime = m_fTime;
+
+            float[] rgmm = getSharedMemoryValues();
+            if (rgmm != null)
             {
-                fX = m_fX;
-                fTime = m_fTime;
-
-                float[] rgmm = getSharedMemoryValues();
-                if (rgmm != null)
-                {
-                    fX = rgmm[0];
-                    fTime = rgmm[1];
-                }
-
-                fX += m_fInc;
-                fTime += m_fInc / m_fMax;
-                if (fX > m_fMax)
-                {
-                    fX = 0;
-                    fTime = 0;
-                }
-
-                rgmm[0] = fX;
-                rgmm[1] = fTime;
-
-                setSharedMemoryValues(rgmm);
+                fX = rgmm[0];
+                fTime = rgmm[1];
             }
+
+            fX += m_fInc;
+            fTime += m_fInc / m_fMax;
+            if (fX > m_fMax)
+            {
+                fX = 0;
+                fTime = 0;
+            }
+
+            rgmm[0] = fX;
+            rgmm[1] = fTime;
+
+            setSharedMemoryValues(rgmm);
+        }
+
+        private void loadData(PropertySet prop)
+        {
+            if (m_rgdfCsvRows != null)
+                return;
+
+            string strCsvFile = prop.GetProperty("datasource_csv_file");
+            if (string.IsNullOrEmpty(strCsvFile))
+                return;
+
+            string[] rgstrCsvRows = File.ReadAllLines(strCsvFile);
+            if (rgstrCsvRows.Length == 0)
+                throw new Exception("The CSV File '" + strCsvFile + "' contains no data!");
+
+            m_nCsvFileColumn = prop.GetPropertyAsInt("datasource_csv_column", 0);
+
+            List<double> rgdf = new List<double>();
+            for (int i = 1; i < rgstrCsvRows.Length; i++)
+            {
+                string[] rgstr = rgstrCsvRows[i].Split(',');
+                if (m_nCsvFileColumn >= rgstr.Length)
+                    throw new Exception("The CSV File '" + strCsvFile + "' does not contain the column '" + m_nCsvFileColumn.ToString() + "'!");
+
+                double dfVal;
+                if (!double.TryParse(rgstr[m_nCsvFileColumn], out dfVal))
+                    throw new Exception("The CSV File '" + rgstr[m_nCsvFileColumn] + "' does not contain a valid value for column '" + m_nCsvFileColumn.ToString() + "'");
+
+                rgdf.Add(dfVal);
+
+                if (m_rgdfRollingCsvHistory.Count() < m_nCsvWindowSize)
+                    m_rgdfRollingCsvHistory.Add(dfVal);
+            }
+
+            m_rgdfCsvRows = rgdf.ToArray();
+            m_nCsvFileRow = 0;
+        }
 
         /// <summary>
         /// Step the gym one step in its simulation.
@@ -658,101 +728,104 @@ namespace MyCaffe.gym
         /// <param name="propExtra">Optionally, specifies extra parameters.</param>
         /// <returns>A tuple containing state data, the reward, and the done state is returned.</returns>
         public Tuple<State, double, bool> Step(int nAction, bool bGetLabel, PropertySet propExtra = null)
+        {
+            CurveState state = new CurveState(m_state);
+            double dfReward = 0;
+            List<double> rgOverrides = new List<double>();
+            List<string> rgOverrideNames = new List<string>();
+            List<bool> rgOverrideEmphasize = new List<bool>();
+            FuturePredictions predictions = null;
+            double? dfOverride = null;
+
+            loadData(propExtra);
+
+            m_bRenderImage = true;
+
+            if (propExtra != null)
             {
-                CurveState state = new CurveState(m_state);
-                double dfReward = 0;
-                List<double> rgOverrides = new List<double>();
-                List<string> rgOverrideNames = new List<string>();
-                List<bool> rgOverrideEmphasize = new List<bool>();
-                FuturePredictions predictions = null;
-                double? dfOverride = null;
+                bool bTraining = propExtra.GetPropertyAsBool("Training", false);
+                if (bTraining)
+                    m_bRenderImage = false;
 
-                m_bRenderImage = true;
-
-                if (propExtra != null)
+                double dfCount = propExtra.GetPropertyAsDouble("override_predictions", 0);
+                if (dfCount > 0)
                 {
-                    bool bTraining = propExtra.GetPropertyAsBool("Training", false);
-                    if (bTraining)
-                        m_bRenderImage = false;
-
-                    double dfCount = propExtra.GetPropertyAsDouble("override_predictions", 0);
-                    if (dfCount > 0)
+                    for (int i = 0; i < (int)dfCount; i++)
                     {
-                        for (int i = 0; i < (int)dfCount; i++)
-                        {
-                            double dfVal = propExtra.GetPropertyAsDouble("override_prediction" + i.ToString(), double.MaxValue);
-                            if (dfVal != double.MaxValue)
-                                rgOverrides.Add(dfVal);
-
-                            string strName = propExtra.GetProperty("override_prediction" + i.ToString() + "_name");
-                            if (!string.IsNullOrEmpty(strName))
-                                rgOverrideNames.Add(strName);
-
-                            string strVal = propExtra.GetProperty("override_prediction" + i.ToString() + "_emphasize");
-                            bool bEmphasize;
-                            if (bool.TryParse(strVal, out bEmphasize))
-                                rgOverrideEmphasize.Add(bEmphasize);
-                        }
-                    }
-                    else
-                    {
-                        double dfVal = propExtra.GetPropertyAsDouble("override_prediction", double.MaxValue);
+                        double dfVal = propExtra.GetPropertyAsDouble("override_prediction" + i.ToString(), double.MaxValue);
                         if (dfVal != double.MaxValue)
                             rgOverrides.Add(dfVal);
-                    }
 
-                    if (rgOverrides.Count > 0)
-                        dfOverride = rgOverrides[0];
+                        string strName = propExtra.GetProperty("override_prediction" + i.ToString() + "_name");
+                        if (!string.IsNullOrEmpty(strName))
+                            rgOverrideNames.Add(strName);
 
-                    int nFuturePredictionsStart = propExtra.GetPropertyAsInt("override_future_predictions_start", 0);
-                    m_nFuturePredictions = propExtra.GetPropertyAsInt("override_future_predictions", 0);
-
-                    for (int i = 0; i < m_nFuturePredictions; i++)
-                    {
-                        double dfVal = propExtra.GetPropertyAsDouble("override_future_prediction" + i.ToString(), 0);
-
-                        if (predictions == null)
-                            predictions = new FuturePredictions(nFuturePredictionsStart);
-
-                        predictions.Add((float)dfVal);
+                        string strVal = propExtra.GetProperty("override_prediction" + i.ToString() + "_emphasize");
+                        bool bEmphasize;
+                        if (bool.TryParse(strVal, out bEmphasize))
+                            rgOverrideEmphasize.Add(bEmphasize);
                     }
                 }
+                else
+                {
+                    double dfVal = propExtra.GetPropertyAsDouble("override_prediction", double.MaxValue);
+                    if (dfVal != double.MaxValue)
+                        rgOverrides.Add(dfVal);
+                }
 
-                processAction((ACTION)nAction, dfOverride);
+                if (rgOverrides.Count > 0)
+                    dfOverride = rgOverrides[0];
 
-                double dfX = state.X;
-                double dfY = state.Y;
-                double dfPredictedY = ((dfOverride.HasValue) ? dfOverride.Value : state.PredictedY);
+                int nFuturePredictionsStart = propExtra.GetPropertyAsInt("override_future_predictions_start", 0);
+                m_nFuturePredictions = propExtra.GetPropertyAsInt("override_future_predictions", 0);
 
-                getNewIncrementValues(out m_fX, out m_fTime);
+                for (int i = 0; i < m_nFuturePredictions; i++)
+                {
+                    double dfVal = propExtra.GetPropertyAsDouble("override_future_prediction" + i.ToString(), 0);
 
-                dfY = calculateTarget(m_fX);
-                dfX += 1;
+                    if (predictions == null)
+                        predictions = new FuturePredictions(nFuturePredictionsStart);
 
-                float[] rgInput = new float[] { m_fX };
-                float[] rgMask = new float[] { 1 };
-                float fTarget = (float)dfY;
-                float fTime = m_fTime; // (float)(dfX / m_nMaxPlots);
-
-                DataPoint pt = new DataPoint(rgInput, rgMask, fTarget, rgOverrides, rgOverrideNames, rgOverrideEmphasize, fTime, predictions);
-                m_rgPrevPoints.Add(pt);
-
-                if (m_rgPrevPoints.Count > m_nMaxPlots)
-                    m_rgPrevPoints.RemoveAt(0);
-
-                CurveState stateOut = m_state;
-                m_state = new CurveState(dfX, dfY, rgOverrides, rgOverrideNames, rgOverrideEmphasize, m_rgPrevPoints);
-
-                dfReward = 1.0 - Math.Abs(dfPredictedY - dfY);
-                if (dfReward < -1)
-                    dfReward = -1;
-
-                m_nSteps++;
-                m_nMaxSteps = Math.Max(m_nMaxSteps, m_nSteps);
-
-                stateOut.Steps = m_nSteps;
-                return new Tuple<State, double, bool>(stateOut.Clone(), dfReward, false);
+                    predictions.Add((float)dfVal);
+                }
             }
+
+            processAction((ACTION)nAction, dfOverride);
+
+            double dfX = state.X;
+            double dfY = state.Y;
+            double dfPredictedY = ((dfOverride.HasValue) ? dfOverride.Value : state.PredictedY);
+
+            getNewIncrementValues(out m_fX, out m_fTime);
+
+            bool bEndOfData;
+            dfY = calculateTarget(m_fX, out bEndOfData);
+            dfX += 1;
+
+            float[] rgInput = new float[] { m_fX };
+            float[] rgMask = new float[] { 1 };
+            float fTarget = (float)dfY;
+            float fTime = m_fTime; // (float)(dfX / m_nMaxPlots);
+
+            DataPoint pt = new DataPoint(rgInput, rgMask, fTarget, rgOverrides, rgOverrideNames, rgOverrideEmphasize, fTime, predictions);
+            m_rgPrevPoints.Add(pt);
+
+            if (m_rgPrevPoints.Count > m_nMaxPlots)
+                m_rgPrevPoints.RemoveAt(0);
+
+            CurveState stateOut = m_state;
+            m_state = new CurveState(dfX, dfY, rgOverrides, rgOverrideNames, rgOverrideEmphasize, m_rgPrevPoints);
+
+            dfReward = 1.0 - Math.Abs(dfPredictedY - dfY);
+            if (dfReward < -1)
+                dfReward = -1;
+
+            m_nSteps++;
+            m_nMaxSteps = Math.Max(m_nMaxSteps, m_nSteps);
+
+            stateOut.Steps = m_nSteps;
+            return new Tuple<State, double, bool>(stateOut.Clone(), dfReward, bEndOfData);
+        }
 
         /// <summary>
         /// Returns the dataset descriptor of the dynamic dataset produced by the Gym.
@@ -761,29 +834,29 @@ namespace MyCaffe.gym
         /// <param name="log">Optionally, specifies the output log to use (default = <i>null</i>).</param>
         /// <returns>The dataset descriptor is returned.</returns>
         public DatasetDescriptor GetDataset(DATA_TYPE dt, Log log = null)
+        {
+            int nH = 1;
+            int nW = 1;
+            int nC = 1;
+
+            if (dt == DATA_TYPE.DEFAULT)
+                dt = DATA_TYPE.VALUES;
+
+            if (dt == DATA_TYPE.BLOB)
             {
-                int nH = 1;
-                int nW = 1;
-                int nC = 1;
-
-                if (dt == DATA_TYPE.DEFAULT)
-                    dt = DATA_TYPE.VALUES;
-
-                if (dt == DATA_TYPE.BLOB)
-                {
-                    nH = 156;
-                    nW = 156;
-                    nC = 3;
-                }
-
-                SourceDescriptor srcTrain = new SourceDescriptor((int)GYM_DS_ID.CURVE, Name + ".training", nW, nH, nC, false, false);
-                SourceDescriptor srcTest = new SourceDescriptor((int)GYM_SRC_TEST_ID.CURVE, Name + ".testing", nW, nH, nC, false, false);
-                DatasetDescriptor ds = new DatasetDescriptor((int)GYM_SRC_TRAIN_ID.CURVE, Name, null, null, srcTrain, srcTest, "CurveGym", "Curve Gym", null, GYM_TYPE.DYNAMIC);
-
-                m_dt = dt;
-
-                return ds;
+                nH = 156;
+                nW = 156;
+                nC = 3;
             }
+
+            SourceDescriptor srcTrain = new SourceDescriptor((int)GYM_DS_ID.CURVE, Name + ".training", nW, nH, nC, false, false);
+            SourceDescriptor srcTest = new SourceDescriptor((int)GYM_SRC_TEST_ID.CURVE, Name + ".testing", nW, nH, nC, false, false);
+            DatasetDescriptor ds = new DatasetDescriptor((int)GYM_SRC_TRAIN_ID.CURVE, Name, null, null, srcTrain, srcTest, "CurveGym", "Curve Gym", null, GYM_TYPE.DYNAMIC);
+
+            m_dt = dt;
+
+            return ds;
+        }
     }
     
 
