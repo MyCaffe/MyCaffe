@@ -96,7 +96,7 @@ namespace MyCaffe.gym
             /// </summary>
             RANDOM,
             /// <summary>
-            /// Specifies to use a CSV file for the target curve.  Must set 'datasource_columns' to the zero based column to use in the CSV file, otherwise column=0 is used.
+            /// Specifies to use a CSV file for the target curve.  Must set 'datasource_csv_file' to the path to the CSV file. Also must set 'datasource_columns' to the zero based column to use in the CSV file, otherwise column=0 is used.
             /// </summary>
             CSV_FILE
         }
@@ -647,6 +647,8 @@ namespace MyCaffe.gym
                     if (m_nCsvFileRow == m_rgdfCsvRows.Length)
                         bEndOfData = true;
 
+                    // Normalize the value to the size of the data
+                    // window displayed in the curve gym (e.g. 500).
                     double dfMin = m_rgdfRollingCsvHistory.Min();
                     double dfMax = m_rgdfRollingCsvHistory.Max();
                     double dfRange = dfMax - dfMin;
