@@ -58,6 +58,9 @@ namespace MyCaffe.gym
         double[] m_rgdfCsvRows = null;
         int m_nCsvWindowSize = 500;
         List<double> m_rgdfRollingCsvHistory = new List<double>();
+        string m_strPredictionsName = "pred";
+        string m_strStatusText = "";
+        int m_nPredictionBoxOffset = 0;
 
         Random m_random = new Random();
         CurveState m_state = new CurveState();
@@ -418,6 +421,8 @@ namespace MyCaffe.gym
                 float fT = fWorldHeight / 2;
                 float fB = -fWorldHeight / 2;
 
+                int nMaxPlots = m_nMaxPlots - m_nFuturePredictions;
+
                 if (m_geomGraph == null)
                 {
                     m_geomGraph = new GeomGraph(fL, fR, fT, fB, Color.Azure, Color.SteelBlue);
@@ -425,7 +430,7 @@ namespace MyCaffe.gym
                 }
                 if (m_geomTargetLine == null)
                 {
-                    m_geomTargetLine = new GeomPolyLine(fL, fR, fT, fB, Color.Blue, Color.Blue, m_nMaxPlots);
+                    m_geomTargetLine = new GeomPolyLine(fL, fR, fT, fB, Color.Blue, Color.Blue, nMaxPlots);
                     m_geomTargetLine.Polygon.Clear();
                     m_geomTargetLine.SetLocation(0, fScale * (fWorldHeight / 2));
                 }
@@ -436,7 +441,7 @@ namespace MyCaffe.gym
                     bool bEmphasize = (m_rgEmphasize == null || m_rgEmphasize.Count == 0) || (m_rgEmphasize.Count > 0 && m_rgEmphasize[0]);
                     List<Color> rgClr = (bEmphasize) ? m_rgPalleteEmphasize : m_rgPallete;
 
-                    GeomPolyLine geomPredictLine = new GeomPolyLine(fL, fR, fT, fB, rgClr[0], rgClr[0], m_nMaxPlots);
+                    GeomPolyLine geomPredictLine = new GeomPolyLine(fL, fR, fT, fB, rgClr[0], rgClr[0], nMaxPlots);
                     geomPredictLine.Polygon.Clear();
                     geomPredictLine.SetLocation(0, fScale * (fWorldHeight / 2));
                     m_rgGeomPredictedLines.Add(geomPredictLine);
@@ -455,7 +460,7 @@ namespace MyCaffe.gym
                     {
                         bool bEmphasize = (m_rgEmphasize == null || m_rgEmphasize.Count == 0) || (m_rgEmphasize.Count > 0 && m_rgEmphasize[nIdx]);
                         List<Color> rgClr = (bEmphasize) ? m_rgPalleteEmphasize : m_rgPallete;
-                        GeomPolyLine geomPredictLine = new GeomPolyLine(fL, fR, fT, fB, rgClr[nIdx], rgClr[nIdx], m_nMaxPlots);
+                        GeomPolyLine geomPredictLine = new GeomPolyLine(fL, fR, fT, fB, rgClr[nIdx], rgClr[nIdx], nMaxPlots);
                         geomPredictLine.Polygon.Clear();
                         geomPredictLine.SetLocation(0, fScale * (fWorldHeight / 2));
                         m_rgGeomPredictedLines.Add(geomPredictLine);
@@ -464,7 +469,7 @@ namespace MyCaffe.gym
 
                     if (m_rgGeomPredictedLines.Count == m_rgstrLabels.Count && predictions != null)
                     {
-                        GeomPolyLineSet geomPredictionLineSet = new GeomPolyLineSet(fL, fR, fT, fB, Color.Red, Color.Red, m_nMaxPlots);
+                        GeomPolyLineSet geomPredictionLineSet = new GeomPolyLineSet(fL, fR, fT, fB, Color.Red, Color.Red, nMaxPlots);
                         geomPredictionLineSet.PolyLines.Clear();
                         geomPredictionLineSet.SetLocation(0, fScale * (fWorldHeight / 2));
                         m_rgGeomPredictedLines.Add(geomPredictionLineSet);
@@ -477,7 +482,7 @@ namespace MyCaffe.gym
                 {
                     if (m_rgGeomPredictedLines.Count == 1 && predictions != null)
                     {
-                        GeomPolyLineSet geomPredictionLineSet = new GeomPolyLineSet(fL, fR, fT, fB, Color.Red, Color.Red, m_nMaxPlots, (-2 * (predictions.Predictions.Count + Math.Abs(predictions.StartOffset - 1)) - 8));
+                        GeomPolyLineSet geomPredictionLineSet = new GeomPolyLineSet(fL, fR, fT, fB, Color.Red, Color.Red, nMaxPlots);
                         geomPredictionLineSet.PolyLines.Clear();
                         geomPredictionLineSet.SetLocation(0, fScale * (fWorldHeight / 2));
                         m_rgGeomPredictedLines.Add(geomPredictionLineSet);
@@ -527,9 +532,17 @@ namespace MyCaffe.gym
                     }
 
                     if (m_geomPredictionBox != null && predictions != null)
-                        m_geomPredictionBox.SyncLocation(m_geomTargetLine, predictions.Predictions.Count, "pred " + predictions.Predictions.Count.ToString());
+                        m_geomPredictionBox.SyncLocation(m_geomTargetLine, m_nPredictionBoxOffset, predictions.Predictions.Count, m_strPredictionsName + predictions.Predictions.Count.ToString());
 
                     view.RenderText(g, "Curve Type = " + m_curveType.ToString(), 10, nY);
+                    nY += 12;
+                    
+                    if (!string.IsNullOrEmpty(m_strStatusText))
+                    {
+                        view.RenderText(g, m_strStatusText, 10, nY);
+                        nY += 12;
+                    }
+
                     view.RenderSteps(g, m_nSteps, m_nMaxSteps);
 
                     // Render the objects.
@@ -593,7 +606,7 @@ namespace MyCaffe.gym
             m_nSteps = 0;
             m_nCsvFileRow = 0;
             m_rgdfRollingCsvHistory = new List<double>();
-
+ 
             m_fLastY = 0;
             m_state = new CurveState(dfX, dfY, new List<double>() { dfPredictedY });
 
@@ -604,7 +617,11 @@ namespace MyCaffe.gym
                     m_bRenderImage = false;
 
                 m_fLastY = (float)props.GetPropertyAsDouble("TrainingStart", 0);
+                m_nPredictionBoxOffset = props.GetPropertyAsInt("override_future_prediction_box_offset", 0);
+                m_nFuturePredictions = props.GetPropertyAsInt("override_future_predictions", 0);
             }
+
+            ResetValue();
 
             return new Tuple<State, double, bool>(m_state.Clone(), 1, false);
         }
@@ -739,12 +756,23 @@ namespace MyCaffe.gym
             FuturePredictions predictions = null;
             double? dfOverride = null;
 
-            loadData(propExtra);
+            if (m_curveType == CURVE_TYPE.CSV_FILE)
+                loadData(propExtra);
 
             m_bRenderImage = true;
 
             if (propExtra != null)
             {
+                m_nPredictionBoxOffset = propExtra.GetPropertyAsInt("override_future_prediction_box_offset", 0);
+
+                string strVal = propExtra.GetProperty("status_text", false);
+                if (!string.IsNullOrEmpty(strVal))
+                    m_strStatusText = strVal;
+
+                strVal = propExtra.GetProperty("override_future_predictions_name", false);
+                if (!string.IsNullOrEmpty(strVal))
+                    m_strPredictionsName = strVal;
+
                 bool bTraining = propExtra.GetPropertyAsBool("Training", false);
                 if (bTraining)
                     m_bRenderImage = false;
@@ -762,7 +790,7 @@ namespace MyCaffe.gym
                         if (!string.IsNullOrEmpty(strName))
                             rgOverrideNames.Add(strName);
 
-                        string strVal = propExtra.GetProperty("override_prediction" + i.ToString() + "_emphasize");
+                        strVal = propExtra.GetProperty("override_prediction" + i.ToString() + "_emphasize");
                         bool bEmphasize;
                         if (bool.TryParse(strVal, out bEmphasize))
                             rgOverrideEmphasize.Add(bEmphasize);
