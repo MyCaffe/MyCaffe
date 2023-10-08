@@ -745,8 +745,12 @@ namespace MyCaffe.solvers
         public virtual void Solve(int nIterationOverride = -1, byte[] rgWeights = null, byte[] rgState = null, TRAIN_STEP step = TRAIN_STEP.NONE)
         {
             m_log.CHECK(is_root_solver, "Solve is only supported by the root solver.");
-            m_log.WriteLine("Solving " + m_net.name);
-            m_log.WriteLine("Learing Rate Policy: " + m_param.lr_policy);
+
+            if (m_param.verbose_optimization_output)
+            {
+                m_log.WriteLine("Solving " + m_net.name);
+                m_log.WriteLine("Learing Rate Policy: " + m_param.lr_policy);
+            }
 
             if (rgWeights != null || rgState != null)
                 Restore(rgWeights, rgState);
@@ -795,7 +799,8 @@ namespace MyCaffe.solvers
                     TestAll();
             }
 
-            m_log.WriteLine("Optimization done.");
+            if (m_param.verbose_optimization_output)
+                m_log.WriteLine("Optimization done.");
 
             if (m_blobBatchInputData != null)
             {
