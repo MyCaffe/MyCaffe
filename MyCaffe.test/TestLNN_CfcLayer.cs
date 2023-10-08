@@ -234,7 +234,7 @@ namespace MyCaffe.test
                     int nStepsForward = 0; // default = -1 for the present value.
                     int nFutureSteps = 25;  // default = 1 for the present value.
                     bool bEnableUI = false;
-                    int nCurveType = 2; // default = 0, SIN
+                    int nCurveType = 0; // default = 0, SIN
                     bool bRecord = false;
                     CfcUnitParameter.ACTIVATION activation = CfcUnitParameter.ACTIVATION.TANH;
 
@@ -256,15 +256,17 @@ namespace MyCaffe.test
             {
                 foreach (ICfcLayerTest t in test.Tests)
                 {
-                    int nStepsForward = 0; // default = -1 for the present value.
-                    int nFutureSteps = 25;  // default = 1 for the present value.
+                    int nStepsForward = -1; // default = -1 for the present value.
+                    int nFutureSteps = 1;  // default = 1 for the present value.
                     bool bEnableUI = false;
                     int nCurveType = 0; // default = 0, SIN
                     bool bRecord = false;
-                    bool bShuffle = false;
+                    bool bShuffle = true;
+                    bool bLiquidInference = true;
+                    int nBatchIdxLock = -1; // Values >= 0 lock on that item within the dataset;
                     CfcUnitParameter.ACTIVATION activation = CfcUnitParameter.ACTIVATION.TANH;
 
-                    t.TestTrainingRealTimeFutureBatch(false, bEnableUI, CfcParameter.CELL_TYPE.CFC, activation, nStepsForward, nFutureSteps, nCurveType, bRecord, bShuffle);
+                    t.TestTrainingRealTimeFutureBatch(false, bEnableUI, CfcParameter.CELL_TYPE.CFC, activation, nStepsForward, nFutureSteps, nCurveType, bRecord, bShuffle, bLiquidInference, nBatchIdxLock);
                 }
             }
             finally
@@ -318,7 +320,7 @@ namespace MyCaffe.test
         void TestTrainingBatch(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type);
         void TestTrainingRealTime(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, int nStepsForward = -1, int nFutureSteps = 1, bool bRecord = false);
         void TestTrainingRealTimeFuture(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, CfcUnitParameter.ACTIVATION activation, int nStepsForward = -1, int nFutureSteps = 1, int nCurveType = 0, bool bRecord = false);
-        void TestTrainingRealTimeFutureBatch(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, CfcUnitParameter.ACTIVATION activation, int nStepsForward = -1, int nFutureSteps = 1, int nCurveType = 0, bool bRecord = false, bool bShuffle = false);
+        void TestTrainingRealTimeFutureBatch(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, CfcUnitParameter.ACTIVATION activation, int nStepsForward = -1, int nFutureSteps = 1, int nCurveType = 0, bool bRecord = false, bool bShuffle = false, bool bLiquidInference = true, int nBatchIdxLock = -1);
         void TestTrainingRealTimeCombo(bool bEnableUI, bool bEmphasizeCfcNoGateF, bool bEmphasizeCfcNoGateT, bool bEmphasizeLtc, bool bRecord = false);
         void TestTrainingRealTimeComboNets(bool bEnableUI, bool bEmphasizeCfc, bool bEmphasizeLstm, bool bEmphasizeLinear, bool bRecord = false);
     }
@@ -349,6 +351,7 @@ namespace MyCaffe.test
         int m_nLossCurveFiles = 0;
         int m_nBatchIdx = 0;
         bool m_bShuffleData = false;
+        int m_nBatchIdxLock = -1;
 
         public CfcLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, null, nDeviceID)
@@ -703,19 +706,22 @@ namespace MyCaffe.test
         /// <param name="nOutputSize">Specifies the number of outputs.</param>
         /// <param name="cell_type">Optionally, specifies the cell type (default = CFC)</param>
         /// <param name="activation">Optionally, specifies the activation type (default = RELU).</param>
+        /// <param name="bFuturePrediction">Optionally, specifies future prediction (default = false).</param>
         /// <returns></returns>
-        private string buildModel(int nBatchSize, int nInputSize, bool bNoGate, int nHiddenSize, float fDropout, int nLayers, int nUnits, int nOutputSize, CfcParameter.CELL_TYPE cell_type = CfcParameter.CELL_TYPE.CFC, CfcUnitParameter.ACTIVATION activation = CfcUnitParameter.ACTIVATION.RELU)
+        private string buildModel(int nBatchSize, int nInputSize, bool bNoGate, int nHiddenSize, float fDropout, int nLayers, int nUnits, int nOutputSize, CfcParameter.CELL_TYPE cell_type = CfcParameter.CELL_TYPE.CFC, CfcUnitParameter.ACTIVATION activation = CfcUnitParameter.ACTIVATION.RELU, bool bFuturePrediction = false)
         {
             NetParameter p = new NetParameter();
             p.name = "cfc_net";
+
+            int nFutureInputSize = (bFuturePrediction) ? nOutputSize : 0;
 
             //---------------------------------
             //  Data Temporal Input
             //---------------------------------
             LayerParameter data = new LayerParameter(LayerParameter.LayerType.INPUT);
-            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize, 1 }));
-            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize }));
-            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize, 1 }));
+            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize + nFutureInputSize, 1 }));
+            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize + nFutureInputSize }));
+            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize + nFutureInputSize, 1 }));
             data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nOutputSize }));
             data.top.Add("x");
             data.top.Add("tt");
@@ -725,9 +731,9 @@ namespace MyCaffe.test
             p.layer.Add(data);
 
             data = new LayerParameter(LayerParameter.LayerType.INPUT);
-            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize, 1 }));
-            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize }));
-            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize, 1 }));
+            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize + nFutureInputSize, 1 }));
+            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize + nFutureInputSize }));
+            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize + nFutureInputSize, 1 }));
             data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nOutputSize }));
             data.top.Add("x");
             data.top.Add("tt");
@@ -743,13 +749,13 @@ namespace MyCaffe.test
 
             if (cell_type == CfcParameter.CELL_TYPE.LTC)
             {
-                cfc.ltc_unit_param.input_size = nInputSize;
+                cfc.ltc_unit_param.input_size = nInputSize + nFutureInputSize;
                 cfc.ltc_unit_param.hidden_size = nHiddenSize;
                 cfc.ltc_unit_param.ode_unfolds = 6;
             }
             else
             {
-                cfc.cfc_unit_param.input_size = nInputSize;
+                cfc.cfc_unit_param.input_size = nInputSize + nFutureInputSize;
                 cfc.cfc_unit_param.hidden_size = nHiddenSize;
                 cfc.cfc_unit_param.backbone_activation = activation;
                 cfc.cfc_unit_param.backbone_dropout_ratio = fDropout;
@@ -759,7 +765,7 @@ namespace MyCaffe.test
                 cfc.cfc_unit_param.minimal = false;
             }
 
-            cfc.cfc_param.input_features = nInputSize;
+            cfc.cfc_param.input_features = nInputSize + nFutureInputSize;
             cfc.cfc_param.hidden_size = nHiddenSize;
             cfc.cfc_param.output_features = nOutputSize;
             cfc.cfc_param.cell_type = cell_type;
@@ -1736,7 +1742,9 @@ namespace MyCaffe.test
         /// <param name="nCurveType">Optionally, specifies the curve type where nCurveType = 0 for SIN, nCurveType = 1 for COS and nCurveType = 2 for RANDOM.</param>
         /// <param name="bRecord">Optionally, specifies to record the run (default = false).</param>
         /// <param name="bShuffle">Optionally, specifies to shuffle the data loaded into each batch (default = false).</param>
-        public void TestTrainingRealTimeFutureBatch(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, CfcUnitParameter.ACTIVATION activation, int nStepsForward = -1, int nFutureSteps = 1, int nCurveType = 0, bool bRecord = false, bool bShuffle = false)
+        /// <param name="bLiquidInference">Optionally, specifies to enable the liquid inferencing where a single step of learning occurs at each inference step (default = true).</param>
+        /// <remarks>WORK IN PROGRESS</remarks>
+        public void TestTrainingRealTimeFutureBatch(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, CfcUnitParameter.ACTIVATION activation, int nStepsForward = -1, int nFutureSteps = 1, int nCurveType = 0, bool bRecord = false, bool bShuffle = false, bool bLiquidInference = true, int nBatchIdxLock = -1)
         {
             int nBatchSize = 64;
             int nInputSize = 82;
@@ -1745,9 +1753,10 @@ namespace MyCaffe.test
             int nBackboneLayers = 2;
             int nBackboneUnits = 64;
             string strSolver = buildSolver(0.01f, 1, false);
-            string strModel = buildModel(nBatchSize, nInputSize, false, nHiddenSize, 0.0f, nBackboneLayers, nBackboneUnits, nOutputSize, cell_type, activation);
+            string strModel = buildModel(nBatchSize, nInputSize, false, nHiddenSize, 0.0f, nBackboneLayers, nBackboneUnits, nOutputSize, cell_type, activation, true);
 
             m_bShuffleData = bShuffle;
+            m_nBatchIdxLock = nBatchIdxLock;
 
             // Setup MyCaffe and load the model.
             m_log.EnableTrace = true;
@@ -1785,9 +1794,9 @@ namespace MyCaffe.test
                 // Generate the data for the curve over time.  Data is 
                 // generated in sequence.
                 //-------------------------------------------------------------
-                float[] rgInput = new float[nInputSize];
-                float[] rgTimeSteps = new float[nInputSize];
-                float[] rgMask = new float[nInputSize];
+                float[] rgInput = new float[nInputSize+nOutputSize];
+                float[] rgTimeSteps = new float[nInputSize+nOutputSize];
+                float[] rgMask = new float[nInputSize+nOutputSize];
                 float[] rgTarget = new float[nOutputSize];
                 int nMax = 2000;
 
@@ -1810,6 +1819,9 @@ namespace MyCaffe.test
                         for (int j = 0; j < nOutputSize; j++)
                         {
                             nIdx = rgHistory.Count - nOutputSize + j;
+                            rgInput[j] = 1;
+                            rgTimeSteps[j] = rgHistory[nIdx].Time;
+                            rgMask[j] = 1;
                             rgTarget[j] = rgHistory[nIdx].Target;
                         }
 
@@ -1819,7 +1831,7 @@ namespace MyCaffe.test
                     state = gym.Step(0, 1, propTest);
                 }
 
-                //debug(m_rgBatch);
+                //debug(m_rgBatch, 64, 129);
 
                 //-------------------------------------------------------------
                 // Train for 130 iterations on the data to learn the initial
@@ -1831,9 +1843,12 @@ namespace MyCaffe.test
                 // Display the loss curve then the gym.
                 if (bEnableUI)
                 {
-                    Process process = new Process();
-                    process.StartInfo = new ProcessStartInfo(m_strLossCurveFile);
-                    process.Start();
+                    if (!string.IsNullOrEmpty(m_strLossCurveFile))
+                    {
+                        Process process = new Process();
+                        process.StartInfo = new ProcessStartInfo(m_strLossCurveFile);
+                        process.Start();
+                    }
 
                     // Show the user interface.
                     gym.OpenUi(bRecord);
@@ -1881,6 +1896,9 @@ namespace MyCaffe.test
                 float[] rgOutput1 = null;
                 float fPredictedY = 0;
 
+                // Disable the loadBatch used in training.
+                solver.OnStart -= Solver_OnStart;
+
                 for (int i = 0; i < nMax; i++)
                 {
                     List<DataPoint> rgHistory = state.GymState.History;
@@ -1899,9 +1917,23 @@ namespace MyCaffe.test
                                 rgMask1.Add(rgHistory[nIdx].Mask[0]);
                             }
 
-                            blobX.mutable_cpu_data = convert(rgInput1.ToArray());
-                            blobTt.mutable_cpu_data = convert(rgTimeSteps1.ToArray());
-                            blobMask.mutable_cpu_data = convert(rgMask1.ToArray());
+                            List<float> rgInputFull = new List<float>(rgInput1);
+                            List<float> rgTimeStepsFull = new List<float>(rgTimeSteps1);
+                            List<float> rgMaskFull = new List<float>(rgMask1);
+                            float fTimeStep = rgTimeStepsFull[rgTimeStepsFull.Count - 1];
+                            float fTimeStepInc = rgTimeStepsFull[rgTimeStepsFull.Count - 1] - rgTimeStepsFull[rgTimeStepsFull.Count - 2];
+
+                            for (int j=0; j < nOutputSize; j++)
+                            {
+                                rgInputFull.Add(0);
+                                rgTimeStepsFull.Add(fTimeStep + fTimeStepInc);
+                                rgMaskFull.Add(0);
+                                fTimeStep += fTimeStepInc;
+                            }
+
+                            blobX.mutable_cpu_data = convert(rgInputFull.ToArray());
+                            blobTt.mutable_cpu_data = convert(rgTimeStepsFull.ToArray());
+                            blobMask.mutable_cpu_data = convert(rgMaskFull.ToArray());
                         }
 
                         // Perform forward pass only for inferencing.
@@ -1954,7 +1986,8 @@ namespace MyCaffe.test
                         blobY.mutable_cpu_data = convert(rgTarget1.ToArray());
 
                         // And perform a single forward/backward/update pass.
-                        solver.Step(1);
+                        if (bLiquidInference)
+                            solver.Step(1);
                     }
                 }
 
@@ -1968,34 +2001,54 @@ namespace MyCaffe.test
             }
         }
 
-        private void debug(List<Tuple<float[], float[], float[], float[]>> rgData)
+        private void debug(List<Tuple<float[], float[], float[], float[]>> rgData, int nBatchSize = 64, int nIdx = -1)
         {
             string strLossCurvePath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\MyCaffe\\test\\images\\debug\\";
             if (!Directory.Exists(strLossCurvePath))
                 Directory.CreateDirectory(strLossCurvePath);
 
-            for (int i = 0; i < rgData.Count; i++)
+            if (nIdx >= 0)
             {
-                PlotCollection plot1 = new PlotCollection("Input");
-                PlotCollection plot2 = new PlotCollection("TimeSteps");
-                PlotCollection plot3 = new PlotCollection("Mask");
-                PlotCollection plot4 = new PlotCollection("Target");
+                int nBatchStartIdx = (nIdx * nBatchSize) % rgData.Count;
 
-                for (int j=0; j < rgData[i].Item1.Length; j++)
+                for (int i=0; i < nBatchSize; i++)
                 {
-                    plot1.Add(new Plot(j, rgData[i].Item1[j]));
-                    plot2.Add(new Plot(j, rgData[i].Item2[j]));
-                    plot3.Add(new Plot(j, rgData[i].Item3[j]));
-
-                    if (j < rgData[i].Item4.Length)
-                        plot4.Add(new Plot(j, rgData[i].Item4[j]));
+                    save(strLossCurvePath, rgData, nBatchStartIdx);
+                    nBatchStartIdx++;
+                    if (nBatchStartIdx >= rgData.Count)
+                        nBatchStartIdx = 0;
                 }
-
-                save(strLossCurvePath, i, "input", plot1);
-                save(strLossCurvePath, i, "timesteps", plot2);
-                save(strLossCurvePath, i, "mask", plot3);
-                save(strLossCurvePath, i, "target", plot4);
             }
+            else
+            {
+                for (int i = 0; i < rgData.Count; i++)
+                {
+                    save(strLossCurvePath, rgData, i);
+                }
+            }
+        }
+
+        private void save(string strLossCurvePath, List<Tuple<float[], float[], float[], float[]>> rgData, int nIdx)
+        {
+            PlotCollection plot1 = new PlotCollection("Input");
+            PlotCollection plot2 = new PlotCollection("TimeSteps");
+            PlotCollection plot3 = new PlotCollection("Mask");
+            PlotCollection plot4 = new PlotCollection("Target");
+
+            for (int j = 0; j < rgData[nIdx].Item1.Length; j++)
+            {
+                plot1.Add(new Plot(j, rgData[nIdx].Item1[j]));
+                plot2.Add(new Plot(j, rgData[nIdx].Item2[j]));
+                plot3.Add(new Plot(j, rgData[nIdx].Item3[j]));
+
+                if (j < rgData[nIdx].Item4.Length)
+                    plot4.Add(new Plot(j, rgData[nIdx].Item4[j]));
+            }
+
+            save(strLossCurvePath, nIdx, "input", plot1);
+            save(strLossCurvePath, nIdx, "timesteps", plot2);
+            save(strLossCurvePath, nIdx, "mask", plot3);
+            save(strLossCurvePath, nIdx, "target", plot4);
         }
 
         private void save(string strPath, int nIdx, string strName, PlotCollection plot)
@@ -2026,10 +2079,10 @@ namespace MyCaffe.test
 
             for (int b = 0; b < nBatchSize; b++)
             {
-                int nIdx = m_nBatchIdx;
+                int nIdx = (m_nBatchIdxLock >= 0) ? m_nBatchIdxLock : m_nBatchIdx;
 
-                if (m_bShuffleData)
-                    nIdx = m_random.Next(nIdx, m_rgBatch.Count - (nInputSize + nOutputSize));
+                if (m_nBatchIdxLock < 0 && m_bShuffleData)
+                    nIdx = m_random.Next(0, m_rgBatch.Count - (nInputSize + nOutputSize));
 
                 Array.Copy(m_rgBatch[nIdx].Item1, 0, rgInputBatch, b * nInputSize, nInputSize);
                 Array.Copy(m_rgBatch[nIdx].Item2, 0, rgTimeStepsBatch, b * nInputSize, nInputSize);
@@ -2037,7 +2090,7 @@ namespace MyCaffe.test
                 Array.Copy(m_rgBatch[nIdx].Item4, 0, rgTargetBatch, b * nOutputSize, nOutputSize);
                 m_nBatchIdx++;
 
-                if (m_nBatchIdx + (nBatchSize * nInputSize + nOutputSize) >= m_rgBatch.Count)
+                if (m_nBatchIdx + nBatchSize >= m_rgBatch.Count)
                     m_nBatchIdx = 0;
             }
 
