@@ -74,6 +74,7 @@ namespace MyCaffe.param
         bool m_bSnapshotIncludeState = true;
         int m_nAverageAccuracyWindow = 0;
         bool m_bEnableClipGradientOutput = false;
+        bool m_bVerboseOptimizationOutput = true;
 
         // SSD Parameters
         EvaluationType m_evalType = EvaluationType.CLASSIFICATION;
@@ -250,6 +251,16 @@ namespace MyCaffe.param
             SolverParameter p = SolverParameter.FromProto(ToProto("clone"));
 
             return p;
+        }
+
+        /// <summary>
+        /// Specifies to output more details during optimization when True (default = true).
+        /// </summary>
+        [Description("Specifies to output more details during optimization when True (default = true).")]
+        public bool verbose_optimization_output
+        {
+            get { return m_bVerboseOptimizationOutput; }
+            set { m_bVerboseOptimizationOutput = value; }
         }
 
         /// <summary>
@@ -1089,7 +1100,8 @@ namespace MyCaffe.param
 
             rgChildren.Add("show_per_class_result", show_per_class_result.ToString());
             rgChildren.Add("accuracy_average_window", accuracy_average_window.ToString());
-
+            rgChildren.Add("verbose_optimization_output", verbose_optimization_output.ToString());
+            
             return new RawProto(strName, "", rgChildren);
         }
 
@@ -1340,6 +1352,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("accuracy_average_window")) != null)
                 p.accuracy_average_window = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("verbose_optimization_output")) != null)
+                p.verbose_optimization_output = bool.Parse(strVal);
 
             return p;
         }
