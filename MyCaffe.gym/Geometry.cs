@@ -646,6 +646,9 @@ namespace MyCaffe.gym
 
                 for (int i=nStart; i<m_rgrgPoints.Count; i++)
                 {
+                    if (m_rgrgPoints[i].Length < 2)
+                        continue;
+
                     if (i == m_rgrgPoints.Count - 1)
                         nAlpha = 255;
 
