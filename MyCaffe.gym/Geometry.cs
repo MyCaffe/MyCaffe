@@ -432,16 +432,17 @@ namespace MyCaffe.gym
         /// </summary>
         /// <param name="line">Specifies the poly line.</param>
         /// <param name="nOffsetFromEnd">Specifies the offset from the line end where the rectangle is to start.</param>
+        /// <param name="nWidth">Specifies the prediction box width.</param>
         /// <param name="strName">Optionally, specifies a name for the box.</param>
-        public void SyncLocation(GeomPolyLine line, int nOffsetFromEnd, string strName = null)
+        public void SyncLocation(GeomPolyLine line, int nOffsetFromEnd, int nWidth, string strName = null)
         {
             if (line.Polygon.Count == 0)
                 return;
 
             RectangleF rc = line.Bounds;
 
-            float fR = line.Polygon[line.Polygon.Count - 1].X;
-            float fL = fR - nOffsetFromEnd;
+            float fL = line.Polygon[line.Polygon.Count - 1].X + nOffsetFromEnd;
+            float fR = fL + nWidth;
             float fT = rc.Y - 44;
             float fB = fT + rc.Height;
 
