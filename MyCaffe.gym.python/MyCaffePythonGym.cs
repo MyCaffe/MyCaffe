@@ -380,14 +380,14 @@ namespace MyCaffe.gym.python
             if (m_igym == null)
                 throw new Exception("You must call 'Initialize' first!");
 
-            Tuple<State, double, bool> state = m_igym.Reset(false, props);
+            Tuple<State, double, bool> state = m_igym.Reset(false, props);           
 
             bool bIsOpen = (m_nUiId >= 0) ? true : false;
             Tuple<Bitmap, SimpleDatum> data = m_igym.Render(bIsOpen, 512, 512, true);
             int nDataLen = 0;
             SimpleDatum sd = state.Item1.GetData(false, out nDataLen);
 
-            if (data.Item1 != null || data.Item2 != null)
+            if (data != null && (data.Item1 != null || data.Item2 != null))
             {
                 Observation obs = new Observation(data.Item1, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, sd.GetData<double>(), state.Item2, state.Item3);
 
@@ -435,7 +435,7 @@ namespace MyCaffe.gym.python
             int nDataLen = 0;
             SimpleDatum sd = state.Item1.GetData(false, out nDataLen);
 
-            if (data.Item1 != null || data.Item2 != null)
+            if (data != null && (data.Item1 != null || data.Item2 != null))
             {
                 Observation obs = new Observation(data.Item1, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, sd.GetData<double>(), state.Item2, state.Item3);
 
