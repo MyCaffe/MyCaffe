@@ -991,6 +991,7 @@ namespace MyCaffe.layers
                 blobTop0 = m_blobTopData;
             }
 
+            m_blobX.ReshapeLike(blobBtm0);
             m_blobX.ShareData(blobBtm0);
             m_blobX.ShareDiff(blobBtm0);
             m_log.CHECK_EQ(m_blobX.count(), m_nT * m_nN * m_nInputSize, "The input should be Sequence * Batch * InputSize in length.");
