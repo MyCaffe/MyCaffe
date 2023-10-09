@@ -256,17 +256,17 @@ namespace MyCaffe.test
             {
                 foreach (ICfcLayerTest t in test.Tests)
                 {
-                    int nStepsForward = -1; // default = -1 for the present value.
-                    int nFutureSteps = 1;  // default = 1 for the present value.
-                    bool bEnableUI = false;
+                    int nStepsForward = 0; // default = -1 for the present value.
+                    int nFutureSteps = 25;  // default = 1 for the present value.
+                    bool bEnableUI = true;
                     int nCurveType = 0; // default = 0, SIN
                     bool bRecord = false;
                     bool bShuffle = true;
-                    bool bLiquidInference = true;
+                    bool bLiquidInference = false;
                     int nBatchIdxLock = -1; // Values >= 0 lock on that item within the dataset;
-                    CfcUnitParameter.ACTIVATION activation = CfcUnitParameter.ACTIVATION.TANH;
+                    LayerParameter.LayerType layerType = LayerParameter.LayerType.CFC;
 
-                    t.TestTrainingRealTimeFutureBatch(false, bEnableUI, CfcParameter.CELL_TYPE.CFC, activation, nStepsForward, nFutureSteps, nCurveType, bRecord, bShuffle, bLiquidInference, nBatchIdxLock);
+                    t.TestTrainingRealTimeFutureBatch(false, bEnableUI, layerType, nStepsForward, nFutureSteps, nCurveType, bRecord, bShuffle, bLiquidInference, nBatchIdxLock);
                 }
             }
             finally
@@ -320,7 +320,7 @@ namespace MyCaffe.test
         void TestTrainingBatch(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type);
         void TestTrainingRealTime(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, int nStepsForward = -1, int nFutureSteps = 1, bool bRecord = false);
         void TestTrainingRealTimeFuture(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, CfcUnitParameter.ACTIVATION activation, int nStepsForward = -1, int nFutureSteps = 1, int nCurveType = 0, bool bRecord = false);
-        void TestTrainingRealTimeFutureBatch(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, CfcUnitParameter.ACTIVATION activation, int nStepsForward = -1, int nFutureSteps = 1, int nCurveType = 0, bool bRecord = false, bool bShuffle = false, bool bLiquidInference = true, int nBatchIdxLock = -1);
+        void TestTrainingRealTimeFutureBatch(bool bNoGate, bool bEnableUI, LayerParameter.LayerType layerType, int nStepsForward = -1, int nFutureSteps = 1, int nCurveType = 0, bool bRecord = false, bool bShuffle = false, bool bLiquidInference = true, int nBatchIdxLock = -1);
         void TestTrainingRealTimeCombo(bool bEnableUI, bool bEmphasizeCfcNoGateF, bool bEmphasizeCfcNoGateT, bool bEmphasizeLtc, bool bRecord = false);
         void TestTrainingRealTimeComboNets(bool bEnableUI, bool bEmphasizeCfc, bool bEmphasizeLstm, bool bEmphasizeLinear, bool bRecord = false);
     }
@@ -1735,8 +1735,7 @@ namespace MyCaffe.test
         /// </summary>
         /// <param name="bNoGate">Specifies the whether the no-gate mode is used.</param>
         /// <param name="bEnableUI">Specifies to turn on the UI display.</param>
-        /// <param name="cell_type">Specifies the cell type.</param>
-        /// <param name="activation">Specifies the activation type to use (only applies when cell_type=CFC)</param>
+        /// <param name="layerType">Specifies the type of network to use.</param>
         /// <param name="nFutureSteps">Optionally, specifies the number of steps forward into the future to predict (default = 0, the present)</param>
         /// <param name="nStepsForward">Optionally, specifies the number of future steps to predict (default = 1).  Note, nFutureSteps must be less than or equal to nStepsForward + 1.</param>
         /// <param name="nCurveType">Optionally, specifies the curve type where nCurveType = 0 for SIN, nCurveType = 1 for COS and nCurveType = 2 for RANDOM.</param>
@@ -1744,7 +1743,7 @@ namespace MyCaffe.test
         /// <param name="bShuffle">Optionally, specifies to shuffle the data loaded into each batch (default = false).</param>
         /// <param name="bLiquidInference">Optionally, specifies to enable the liquid inferencing where a single step of learning occurs at each inference step (default = true).</param>
         /// <remarks>WORK IN PROGRESS</remarks>
-        public void TestTrainingRealTimeFutureBatch(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, CfcUnitParameter.ACTIVATION activation, int nStepsForward = -1, int nFutureSteps = 1, int nCurveType = 0, bool bRecord = false, bool bShuffle = false, bool bLiquidInference = true, int nBatchIdxLock = -1)
+        public void TestTrainingRealTimeFutureBatch(bool bNoGate, bool bEnableUI, LayerParameter.LayerType layerType, int nStepsForward = -1, int nFutureSteps = 1, int nCurveType = 0, bool bRecord = false, bool bShuffle = false, bool bLiquidInference = true, int nBatchIdxLock = -1)
         {
             int nBatchSize = 64;
             int nInputSize = 82;
@@ -1753,7 +1752,7 @@ namespace MyCaffe.test
             int nBackboneLayers = 2;
             int nBackboneUnits = 64;
             string strSolver = buildSolver(0.01f, 1, false);
-            string strModel = buildModel(nBatchSize, nInputSize, false, nHiddenSize, 0.0f, nBackboneLayers, nBackboneUnits, nOutputSize, cell_type, activation, true);
+            string strModel = buildModel(nBatchSize, nInputSize, false, nHiddenSize, 0.0f, nBackboneLayers, nBackboneUnits, nOutputSize, layerType);
 
             m_bShuffleData = bShuffle;
             m_nBatchIdxLock = nBatchIdxLock;
@@ -1837,7 +1836,7 @@ namespace MyCaffe.test
                 // Train for 130 iterations on the data to learn the initial
                 // dynamics (8,320 samples when using a batch size of 64).
                 //-------------------------------------------------------------
-                int nIters = 130;
+                int nIters = 10000;
                 mycaffe.Train(nIters);
 
                 // Display the loss curve then the gym.
