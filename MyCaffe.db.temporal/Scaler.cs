@@ -85,6 +85,11 @@ namespace MyCaffe.db.temporal
             m_ca = new CalculationArray(nLength);
         }
 
+        public virtual void ResetForTesting()
+        {
+            m_ca.Clear();
+        }
+
         /// <summary>
         /// Returns the type of the scaler.
         /// </summary>
@@ -305,6 +310,16 @@ namespace MyCaffe.db.temporal
         }
 
         /// <summary>
+        /// Reset the scaler for testing.
+        /// </summary>
+        public override void ResetForTesting()
+        {
+            base.ResetForTesting();
+            m_rgfPctAccum.Clear();
+            m_fLast = null;
+        }
+
+        /// <summary>
         /// Add a new value to the scaler.
         /// </summary>
         /// <param name="fVal">Specifies the value to add.</param>
@@ -468,6 +483,17 @@ namespace MyCaffe.db.temporal
         public int Count
         {
             get { return m_rgScaler.Count; }
+        }
+
+        /// <summary>
+        /// Give each scaler a chance to reset for testing.
+        /// </summary>
+        public void ResetForTesting()
+        {
+            foreach (KeyValuePair<int, Scaler> kv in m_rgScaler)
+            {
+                kv.Value.ResetForTesting();
+            }
         }
 
         /// <summary>
