@@ -120,7 +120,6 @@ namespace MyCaffe.app
 
         private void m_bw_DoWork(object sender, DoWorkEventArgs e)
         {
-            ProgressInfo pi;
             BackgroundWorker bw = sender as BackgroundWorker;
 
             for (int i = 0; i < m_rgstrUrl.Count; i++)
