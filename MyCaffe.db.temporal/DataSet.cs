@@ -115,7 +115,8 @@ namespace MyCaffe.db.temporal
         /// <param name="nFutureSteps">Specifies the number of sequential future steps in each block.</param>
         /// <param name="nChunks">Specifies the number of blocks to load at a time.</param>
         /// <param name="evtCancel">Specifies the event used to cancel the initialization process.</param>
-        public bool Load(DB_LOAD_METHOD loadMethod, int nLoadLimit, double dfReplacementPct, int nRefreshUpdateMs, bool bNormalizedData, int nHistoricalSteps, int nFutureSteps, int nChunks, EventWaitHandle evtCancel)
+        /// <param name="bLoadTeporalSetData">Optionally, specifies to load the temporal set data (default = true).</param>
+        public bool Load(DB_LOAD_METHOD loadMethod, int nLoadLimit, double dfReplacementPct, int nRefreshUpdateMs, bool bNormalizedData, int nHistoricalSteps, int nFutureSteps, int nChunks, EventWaitHandle evtCancel, bool bLoadTeporalSetData = true)
         {
             List<TemporalSet> rgInit = new List<TemporalSet>();
 
@@ -135,10 +136,13 @@ namespace MyCaffe.db.temporal
                 rgInit.Add(ts);
             }
 
-            foreach (TemporalSet ts1 in rgInit)
+            if (bLoadTeporalSetData)
             {
-                if (!ts1.Initialize(bNormalizedData, evtCancel))
-                    return false;
+                foreach (TemporalSet ts1 in rgInit)
+                {
+                    if (!ts1.Initialize(bNormalizedData, evtCancel))
+                        return false;
+                }
             }
 
             return true;
