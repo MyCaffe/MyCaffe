@@ -20,6 +20,7 @@ using System.Xml;
 using System.ServiceModel.Security;
 using System.Data.Entity.ModelConfiguration.Conventions;
 using MyCaffe.db.temporal;
+using SimpleGraphing;
 
 /// <summary>
 /// Testing the DataTemporal.
@@ -363,6 +364,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestForwardDirect()
+        {
+            DataTemporalTest test = new DataTemporalTest();
+
+            try
+            {
+                foreach (IDataTemporalTest t in test.Tests)
+                {
+                    t.TestForwardDirect();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestForwardRunVolatilityNpy()
         {
             DataTemporalTest test = new DataTemporalTest();
@@ -405,6 +424,7 @@ namespace MyCaffe.test
     interface IDataTemporalTest : ITest
     {
         void TestForward(int nMaxIter, Phase phase, DataTemporalParameter.SOURCE_TYPE srcType, string strSrc, string srcPath, int nBatchSize, SOURCE src, IXDatabaseBase db);
+        void TestForwardDirect();
         void TestBlobLoadNumpyPartial();
     }
 
@@ -1013,6 +1033,58 @@ namespace MyCaffe.test
                 if (net != null)
                     net.Dispose();
             }
+        }
+
+        private MyCaffeTemporalDatabase loadTemporalDatabase(SettingsCaffe s, bool bNormalizedData, int nHistSteps, int nFutureSteps)
+        {
+            // Create sine curve data.
+            PlotCollection plots = new PlotCollection("SineCurve");
+            DateTime dt = DateTime.Now - TimeSpan.FromSeconds(1000);
+            for (int i = 0; i < 1000; i++)
+            {
+                Plot plot = new Plot(dt.ToFileTime(), Math.Sin(i * 0.1));
+                plot.Tag = dt;
+                plots.Add(plot);
+                dt += TimeSpan.FromSeconds(1);
+            }
+
+            // Create in-memory database.
+            PropertySet prop = new PropertySet();
+            prop.SetProperty("NormalizedData", bNormalizedData.ToString());
+            prop.SetProperty("HistoricalSteps", nHistSteps.ToString());
+            prop.SetProperty("FutureSteps", nFutureSteps.ToString());
+            MyCaffeTemporalDatabase db = new MyCaffeTemporalDatabase(m_log, prop);
+
+            // Create simple, single direct stream.
+            Tuple<DatasetDescriptor, int, int> dsd = db.CreateSimpleDirectStream("Direct", "SineCurve", s, prop, plots);
+            int nSrcId = dsd.Item1.TrainingSource.ID;
+
+            // Test iterating through the data sequentially.
+            for (int i = 0; i < 1000 - (nHistSteps + nFutureSteps); i++)
+            {
+                int? nItemIdx = null;
+                int? nValueIdx = null;
+                SimpleTemporalDatumCollection data = db.QueryTemporalItem(i, nSrcId, ref nItemIdx, ref nValueIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
+            }
+
+            return db;
+        }
+
+        // [WORK IN PROGRESS]
+        public void TestForwardDirect()
+        {
+            bool bNormalizedData = false;
+            int nHistSteps = 80;
+            int nFutureSteps = 30;
+
+            Log log = new Log("Test Data Temporal");
+            log.EnableTrace = true;
+
+            SettingsCaffe s = new SettingsCaffe();
+            s.DbLoadLimit = 0;
+            s.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+
+            MyCaffeTemporalDatabase db = loadTemporalDatabase(s, bNormalizedData, nHistSteps, nFutureSteps);
         }
 
         public static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
