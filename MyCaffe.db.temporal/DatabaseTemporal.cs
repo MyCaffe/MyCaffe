@@ -717,6 +717,55 @@ namespace MyCaffe.db.temporal
         }
 
         /// <summary>
+        /// Add a direct value to the raw value set specifying the stream index.
+        /// </summary>
+        /// <param name="plots">Specifies the time synchronized data, where the ordering of the value fields within each item of rgData match the OrderedValueStreamDescriptorSet specified in the constructor.</param>
+        /// <param name="nValIdx">Specifies the value index into the Y_values to add (default = -1, to add all Y_values).</param>
+        /// <param name="rgStreamID">Specifies the array of StreamID's that correspond to the float array items.</param>
+        /// <param name="nStartIdx">Specifies the start index.</param>
+        /// <param name="nEndIdx">Specifies the end index.</param>
+        /// <returns>The date range and count of the data is returned.</returns>
+        /// <remarks>Note, static values are not currently supported with Direct adds.</remarks>
+        public Tuple<DateTime, DateTime, int> AddDirectValues(PlotCollection plots, int[] rgStreamID, int nStartIdx, int nEndIdx, int nValIdx = -1)
+        {
+            if (plots == null)
+                return null;
+
+            if (nStartIdx == -1)
+                nStartIdx = 0;
+
+            if (nEndIdx == -1)
+                nEndIdx = plots.Count;
+
+            if (nStartIdx < 0 || nStartIdx > nEndIdx)
+                throw new Exception("The start index must be in the range [0, " + nEndIdx.ToString() + "]");    
+
+            if (nEndIdx > plots.Count)
+                throw new Exception("The end index must be in the range [" + nStartIdx.ToString() + ", " + plots.Count.ToString() + "]");
+
+            DateTime dtStart = (DateTime)plots[0].Tag;
+            DateTime dtEnd = dtStart;
+
+            for (int i=nStartIdx; i<nEndIdx; i++)
+            {
+                dtEnd = (DateTime)plots[i].Tag;
+
+                float[] rgf = plots[i].Y_values;
+                if (nValIdx != -1)
+                {
+                    if (nValIdx < 0 || nValIdx >= rgf.Length)
+                        throw new Exception("The value index must be in the range [0, " + rgf.Length.ToString() + "]");
+
+                    rgf = new float[] { rgf[nValIdx] };
+                }
+
+                m_rgValues.Add(RawValueDataCollection.LoadFromDirect((DateTime)plots[i].Tag, rgf, rgStreamID));
+            }
+
+            return new Tuple<DateTime, DateTime, int>(dtStart, dtEnd, plots.Count);
+        }
+
+        /// <summary>
         /// Returns the row count of observed and known items.
         /// </summary>
         public int ColCount
@@ -780,6 +829,9 @@ namespace MyCaffe.db.temporal
         /// <returns>The a tuple of the numeric, categorical static values is returned.</returns>
         public Tuple<float[], float[]> GetStaticValues()
         {
+            if (m_staticValues == null)
+                return null;
+
             List<float> rgNum = new List<float>();
             List<float> rgCat = new List<float>();
 
@@ -802,6 +854,9 @@ namespace MyCaffe.db.temporal
         /// <returns>A tuple of the observed numeric and categorical values + time is returned, or null if not enough items exists from 'nIdx'.</returns>
         public Tuple<float[], float[], DateTime[]> GetObservedValues(int nIdx, int nCount)
         {
+            if (m_rgValues == null)
+                return null;
+
             if (nIdx + nCount >= m_rgValues.Count)
                 return null;
 
@@ -843,6 +898,9 @@ namespace MyCaffe.db.temporal
         /// <returns>A tuple of the observed numeric and categorical values is returned, or null if not enough items exists from 'nIdx'.</returns>
         public Tuple<float[],DateTime[]> GetObservedNumValues(int nIdx, int nCount, int nValIdx)
         {
+            if (m_rgValues == null)
+                return null;
+
             if (nIdx + nCount >= m_rgValues.Count)
                 return null;
 
@@ -878,6 +936,9 @@ namespace MyCaffe.db.temporal
         /// <returns>A tuple of the known numeric and categorical values + time is returned, or null if not enough items exists from 'nIdx'.</returns>
         public Tuple<float[], float[], DateTime[]> GetKnownValues(int nIdx, int nCount)
         {
+            if (m_rgValues == null)
+                return null;
+
             if (nIdx + nCount >= m_rgValues.Count)
                 return null;
 
@@ -921,6 +982,9 @@ namespace MyCaffe.db.temporal
         /// <returns>An array of the time values is returned.</returns>
         public DateTime[] GetTimeSyncValues(int nIdx, int nCount)
         {
+            if (m_rgValues == null)
+                return null;
+
             List<DateTime> rgTime = new List<DateTime>();
 
             for (int i = nIdx; i < nIdx + nCount; i++)
@@ -1067,6 +1131,33 @@ namespace MyCaffe.db.temporal
         }
 
         /// <summary>
+        /// Load a new RawValueDataCollection from a list of time synchronized data.
+        /// </summary>
+        /// <param name="dt">Specifies the time for the values.</param>
+        /// <param name="rg">Specifies the array of values.</param>
+        /// <param name="rgStrmID">Specifies the stream ID's associated with the</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public static RawValueDataCollection LoadFromDirect(DateTime dt, float[] rg, int[] rgStrmID)
+        {
+            if (rg.Length != rgStrmID.Length)
+                throw new ArgumentOutOfRangeException("rgStrmID", "The stream ID array must be the same length as the data array.");
+
+            RawValueDataCollection col = new RawValueDataCollection(dt);
+
+            for (int i = 0; i < rg.Length; i++)
+            {
+                float fVal = rg[i];
+
+                RawValueData data = new RawValueData(STREAM_CLASS_TYPE.OBSERVED, STREAM_VALUE_TYPE.NUMERIC, rgStrmID[i], dt);
+                data.Value = fVal;
+                col.Add(data);
+            }
+
+            return col;
+        }
+
+        /// <summary>
         /// Returns an enumerator for the raw value data items.
         /// </summary>
         /// <returns>Returns the enumerator.</returns>
@@ -1120,11 +1211,13 @@ namespace MyCaffe.db.temporal
         /// <param name="classType">Specifies the raw value item class.</param>
         /// <param name="valueType">Specifies the raw value item value type.</param>
         /// <param name="nStrmId">Specifies the stream ID.</param>
-        public RawValueData(STREAM_CLASS_TYPE classType, STREAM_VALUE_TYPE valueType, int nStrmId)
+        /// <param name="dt">Specifies the DateTime for the value.</param>
+        public RawValueData(STREAM_CLASS_TYPE classType, STREAM_VALUE_TYPE valueType, int nStrmId, DateTime? dt = null)
         {
             m_nStrmID = nStrmId;
             m_classType = classType;
             m_valueType = valueType;
+            m_dt = dt;
         }
 
 
