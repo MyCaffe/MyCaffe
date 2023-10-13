@@ -644,7 +644,7 @@ namespace MyCaffe.layers.tft
                 if (m_batchPerfSet != null)
                     m_batchPerfSet.Select(ref nItemIdx, ref nValueIdx);
 
-                SimpleTemporalDatumCollection rgData = m_db.QueryTemporalItem(i, src.ID, ref nItemIdx, ref nValueIdx, itemSelection, valueSelection, bEnableDebug, strDebugPath);
+                SimpleTemporalDatumCollection rgData = m_db.QueryTemporalItem(i, src.ID, ref nItemIdx, ref nValueIdx, itemSelection, valueSelection, m_bOutputTime, m_bOutputMask, bEnableDebug, strDebugPath);
                 if (rgData == null)
                     continue;
 
