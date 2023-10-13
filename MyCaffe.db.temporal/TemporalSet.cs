@@ -108,6 +108,38 @@ namespace MyCaffe.db.temporal
         }
 
         /// <summary>
+        /// Add a direct item set to the temporal set.
+        /// </summary>
+        /// <param name="random">Specifies the random generator.</param>
+        /// <param name="item">Specifies the value item description.</param>
+        /// <param name="rgStrm">Specifies the ordered stream descriptors for the item.</param>
+        /// <returns>The index of the item is returned.</returns>
+        public int AddDirectItemSet(CryptoRandom random, ValueItem item, OrderedValueStreamDescriptorSet rgStrm)
+        {
+            ItemSet itemSet = new ItemSet(random, m_db, item, rgStrm);
+            m_rgItems.Add(itemSet);
+            return m_rgItems.Count - 1;
+        }
+
+        /// <summary>
+        /// Add a set of values directly to the temporal set item values.
+        /// </summary>
+        /// <param name="nItemId">Specifies the ID of the item values to add data to.</param>
+        /// <param name="plots">Specifies the data to add.</param>
+        /// <param name="nStartIdx">Specifies the start index.</param>
+        /// <param name="nEndIdx">Specifies the end index.</param>
+        /// <param name="nValIdx">Specifies the value index into the Y_values to add (default = -1, to add all Y_values).</param>
+        /// <returns>The new start/end date and count are returned.</returns>
+        /// <exception cref="IndexOutOfRangeException">An exception is thrown if the item index is out of range.</exception>
+        public Tuple<DateTime, DateTime, int> AddDirectValues(int nItemId, PlotCollection plots, int nStartIdx, int nEndIdx, int nValIdx = -1)
+        {
+            if (nItemId < 0 || nItemId >= m_rgItems.Count)
+                throw new IndexOutOfRangeException("The item index '" + nItemId.ToString() + "' is out of range.");
+
+            return m_rgItems[nItemId].AddDirectValues(plots, nStartIdx, nEndIdx, nValIdx);
+        }
+
+        /// <summary>
         /// Reset all indexes to their starting locations.
         /// </summary>
         public void Reset()

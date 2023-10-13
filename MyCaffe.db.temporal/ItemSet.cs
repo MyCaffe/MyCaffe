@@ -28,8 +28,8 @@ namespace MyCaffe.db.temporal
         List<int> m_rgRowCount = new List<int>(8);
         int m_nTargetStreamNumIdx = 0;
         RawValueSet m_data = null;
-        SimpleDatum m_sdStaticNum = null;
-        SimpleDatum m_sdStaticCat = null;
+        SimpleTemporalDatum m_sdStaticNum = null;
+        SimpleTemporalDatum m_sdStaticCat = null;
 
         /// <summary>
         /// The constructor.
@@ -107,6 +107,28 @@ namespace MyCaffe.db.temporal
         }
 
         /// <summary>
+        /// Add a direct value to a stream within the item set.
+        /// </summary>
+        /// <param name="plots">Specifies the time synchronized data, where the ordering of the value fields within each plot Y_values of plots match the OrderedValueStreamDescriptorSet specified in the constructor.</param>
+        /// <param name="nValIdx">Specifies the value index into the Y_values to add (default = -1, to add all Y_values).</param>
+        /// <param name="nStartIdx">Specifies the start index.</param>
+        /// <param name="nEndIdx">Specifies the end index.</param>
+        /// <returns>The date range and count of the data is returned.</returns>
+        public Tuple<DateTime, DateTime, int> AddDirectValues(PlotCollection plots, int nStartIdx, int nEndIdx, int nValIdx = -1)
+        {
+            if (m_data == null)
+                m_data = new RawValueSet(m_item.SourceID.Value, m_item.ID);
+
+            List<ValueStreamDescriptor> rgStrm = m_rgStrm.GetStreamDescriptors(STREAM_CLASS_TYPE.OBSERVED, STREAM_VALUE_TYPE.NUMERIC);
+            if (rgStrm == null || rgStrm.Count == 0)
+                throw new Exception("Could not find any OBSERVED:NUMERIC streams!");
+
+            int[] rgStrmID = rgStrm.Select(p => p.ID).ToArray();
+
+            return m_data.AddDirectValues(plots, rgStrmID, nStartIdx, nEndIdx, nValIdx);
+        }
+
+        /// <summary>
         /// Retreives the static, historical and future data at a selected step.
         /// </summary>
         /// <param name="nQueryIdx">Specifies the index of the query, used to show where this query is within a batch.</param>
@@ -141,7 +163,6 @@ namespace MyCaffe.db.temporal
                 if (m_nValIdx >= nColCount - nTotalSteps)
                 {
                     m_nValIdx = 0;
-                    nValueIdx = m_nValIdx;
                     return null;
                 }
             }
@@ -154,22 +175,22 @@ namespace MyCaffe.db.temporal
 
             nValueIdx = m_nValIdx;
 
-            SimpleDatum sdStatNum = null;
-            SimpleDatum sdStatCat = null;
+            SimpleTemporalDatum sdStatNum = null;
+            SimpleTemporalDatum sdStatCat = null;
             getStaticData(ref sdStatNum, ref sdStatCat);
 
-            SimpleDatum sdHistNum = null;
-            SimpleDatum sdHistCat = null;
+            SimpleTemporalDatum sdHistNum = null;
+            SimpleTemporalDatum sdHistCat = null;
             if (!getHistoricalData(m_nValIdx, nHistSteps, out sdHistNum, out sdHistCat))
                 return null;
 
-            SimpleDatum sdFutNum = null;
-            SimpleDatum sdFutCat = null;
+            SimpleTemporalDatum sdFutNum = null;
+            SimpleTemporalDatum sdFutCat = null;
             if (!getFutureData(m_nValIdx + nHistSteps, nFutSteps, out sdFutNum, out sdFutCat))
                 return null;
 
-            SimpleDatum sdTarget = null;
-            SimpleDatum sdTargetHist = null;
+            SimpleTemporalDatum sdTarget = null;
+            SimpleTemporalDatum sdTargetHist = null;
             if (!getTargetData(m_nValIdx, nHistSteps, nFutSteps, m_nTargetStreamNumIdx, out sdTarget, out sdTargetHist))
                 return null;
 
@@ -198,7 +219,7 @@ namespace MyCaffe.db.temporal
             return rgData;
         }
 
-        private void debugStatic(string strTag, int nQueryIdx, string strDebugPath, int nIdx, SimpleDatum sd)
+        private void debugStatic(string strTag, int nQueryIdx, string strDebugPath, int nIdx, SimpleTemporalDatum sd)
         {
             if (string.IsNullOrEmpty(strDebugPath))
                 throw new Exception("You must specify a debug path, when 'EnableDebug' = true.");
@@ -209,7 +230,7 @@ namespace MyCaffe.db.temporal
             string strName = strTag + ": QueryIdx = " + nQueryIdx.ToString() + ", Idx = " + nIdx.ToString() + ", Length = " + sd.ItemCount.ToString() + " Time: None - Static";
             PlotCollection plots = new PlotCollection(strName);
 
-            float[] rgf = sd.GetData<float>();
+            float[] rgf = sd.Data;
             for (int i = 0; i < rgf.Length; i++)
             {
                 float fVal = rgf[i];
@@ -230,7 +251,7 @@ namespace MyCaffe.db.temporal
 
         }
 
-        private void debug(string strTag, int nQueryIdx, string strDebugPath, int nIdx, SimpleDatum sd, STREAM_CLASS_TYPE classType)
+        private void debug(string strTag, int nQueryIdx, string strDebugPath, int nIdx, SimpleTemporalDatum sd, STREAM_CLASS_TYPE classType)
         {
             if (string.IsNullOrEmpty(strDebugPath))
                 throw new Exception("You must specify a debug path, when 'EnableDebug' = true.");
@@ -244,7 +265,7 @@ namespace MyCaffe.db.temporal
 
             string strName = strTag + ": QueryIdx = " + nQueryIdx.ToString() + ", Idx = " + nIdx.ToString() + ", Length = " + sd.ItemCount.ToString() + " Time: " + rgSync[0].ToString() + " - " + rgSync[rgSync.Length - 1].ToString();
             PlotCollectionSet set = new PlotCollectionSet();
-            float[] rgf = sd.GetData<float>();
+            float[] rgf = sd.Data;
 
             for (int i = 0; i < sd.Width; i++)
             {
@@ -279,13 +300,13 @@ namespace MyCaffe.db.temporal
             img.Dispose();
         }
 
-        private void debug(string strTag, int nQueryIdx, string strDebugPath, int nIdx, int nHistSteps, int nFutSteps, SimpleDatum sd1, SimpleDatum sd2)
+        private void debug(string strTag, int nQueryIdx, string strDebugPath, int nIdx, int nHistSteps, int nFutSteps, SimpleTemporalDatum sd1, SimpleTemporalDatum sd2)
         {
             if (string.IsNullOrEmpty(strDebugPath))
                 throw new Exception("You must specify a debug path, when 'EnableDebug' = true.");
 
             DateTime[] rgSync = getTimeSync(nIdx, nHistSteps + nFutSteps);
-            SimpleDatum sd = getTargetData(nIdx, nHistSteps + nFutSteps, m_nTargetStreamNumIdx);
+            SimpleTemporalDatum sd = getTargetData(nIdx, nHistSteps + nFutSteps, m_nTargetStreamNumIdx);
 
             if (rgSync.Length != sd1.ItemCount + sd2.ItemCount)
                 throw new Exception("The sync and data lengths do not match!");
@@ -296,9 +317,9 @@ namespace MyCaffe.db.temporal
             string strName = "TargetData: QueryIdx = " + nQueryIdx.ToString() + ", Idx = " + nIdx.ToString() + ", Hist = " + nHistSteps.ToString() + ", Fut = " + nFutSteps.ToString() + "\nTime: " + rgSync[0].ToString() + " - " + rgSync[rgSync.Length-1].ToString();
             PlotCollection plots = new PlotCollection(strName);
 
-            float[] rgf1 = sd1.GetData<float>();
-            float[] rgf2 = sd2.GetData<float>();
-            float[] rgfE = sd.GetData<float>();
+            float[] rgf1 = sd1.Data;
+            float[] rgf2 = sd2.Data;
+            float[] rgfE = sd.Data;
 
             for (int i=0; i<rgf1.Length; i++)
             {
@@ -355,7 +376,7 @@ namespace MyCaffe.db.temporal
             img.Dispose();
         }
 
-        private void getStaticData(ref SimpleDatum sdNum, ref SimpleDatum sdCat)
+        private void getStaticData(ref SimpleTemporalDatum sdNum, ref SimpleTemporalDatum sdCat)
         {
             if (m_sdStaticNum != null && m_sdStaticCat != null)
             {
@@ -365,6 +386,8 @@ namespace MyCaffe.db.temporal
             }   
 
             Tuple<float[], float[]> data = m_data.GetStaticValues();
+            if (data == null)
+                return;
 
             List<ValueStreamDescriptor> rgDesc = m_rgStrm.GetStreamDescriptors(STREAM_CLASS_TYPE.STATIC, STREAM_VALUE_TYPE.NUMERIC);
             int nC = 1;
@@ -373,7 +396,7 @@ namespace MyCaffe.db.temporal
             {
                 int nH = rgDesc.Count;
                 int nW = rgDesc.Max(p => p.Steps);
-                sdNum = new SimpleDatum(nC, nW, nH, data.Item1, 0, data.Item1.Length);
+                sdNum = new SimpleTemporalDatum(nC, nW, nH, data.Item1);
                 sdNum.TagName = "StaticNumeric";
             }
             else
@@ -388,7 +411,7 @@ namespace MyCaffe.db.temporal
             {
                 int nH = rgDesc.Count;
                 int nW = rgDesc.Max(p => p.Steps);
-                sdCat = new SimpleDatum(nC, nW, nH, data.Item2, 0, data.Item2.Length);
+                sdCat = new SimpleTemporalDatum(nC, nW, nH, data.Item2);
                 sdCat.TagName = "StaticCategorical";
             }
             else
@@ -400,7 +423,7 @@ namespace MyCaffe.db.temporal
             m_sdStaticCat = sdCat;
         }
 
-        private bool getHistoricalData(int nIdx, int nCount, out SimpleDatum sdNum, out SimpleDatum sdCat)
+        private bool getHistoricalData(int nIdx, int nCount, out SimpleTemporalDatum sdNum, out SimpleTemporalDatum sdCat)
         {
             sdNum = null;
             sdCat = null;
@@ -456,7 +479,7 @@ namespace MyCaffe.db.temporal
                     int nH = nCount;
                     int nW = nItemCount;
 
-                    sdNum = new SimpleDatum(nC, nW, nH, rgfNum, 0, rgfNum.Length);
+                    sdNum = new SimpleTemporalDatum(nC, nW, nH, rgfNum);
                     sdNum.TagName = "HistoricalNumeric";
                     sdNum.Tag = dataObs.Item3;
                 }
@@ -509,7 +532,7 @@ namespace MyCaffe.db.temporal
                     int nH = nCount;
                     int nW = nItemCount;
 
-                    sdCat = new SimpleDatum(nC, nW, nH, rgfCat, 0, rgfCat.Length);
+                    sdCat = new SimpleTemporalDatum(nC, nW, nH, rgfCat);
                     sdCat.TagName = "HistoricalCategorical";
                     sdCat.Tag = dataObs.Item3;
                 }
@@ -522,7 +545,7 @@ namespace MyCaffe.db.temporal
             return true;
         }
 
-        private bool getFutureData(int nIdx, int nCount, out SimpleDatum sdNum, out SimpleDatum sdCat)
+        private bool getFutureData(int nIdx, int nCount, out SimpleTemporalDatum sdNum, out SimpleTemporalDatum sdCat)
         {
             sdNum = null;
             sdCat = null;
@@ -546,7 +569,7 @@ namespace MyCaffe.db.temporal
                 int nH = nCount;
                 int nW = rgDescK.Count;
 
-                sdNum = new SimpleDatum(nC, nW, nH, rgfNum, 0, rgfNum.Length);
+                sdNum = new SimpleTemporalDatum(nC, nW, nH, rgfNum);
                 sdNum.TagName = "FutureNumeric";
                 sdNum.Tag = dataKnown.Item3;
             }
@@ -562,7 +585,7 @@ namespace MyCaffe.db.temporal
                 int nH = nCount;
                 int nW = rgDescK.Count;
 
-                sdCat = new SimpleDatum(nC, nW, nH, rgfCat, 0, rgfCat.Length);
+                sdCat = new SimpleTemporalDatum(nC, nW, nH, rgfCat);
                 sdCat.TagName = "FutureCategorical";
             }
             else
@@ -573,7 +596,7 @@ namespace MyCaffe.db.temporal
             return true;
         }
 
-        private bool getTargetData(int nIdx, int nHistSteps, int nFutSteps, int nTargetIdx, out SimpleDatum sdTarget, out SimpleDatum sdTargetHist)
+        private bool getTargetData(int nIdx, int nHistSteps, int nFutSteps, int nTargetIdx, out SimpleTemporalDatum sdTarget, out SimpleTemporalDatum sdTargetHist)
         {
             sdTarget = null;
             sdTargetHist = null;
@@ -589,26 +612,26 @@ namespace MyCaffe.db.temporal
             int nC = 1;
             int nH = rgfTgt.Item1.Length;
             int nW = 1;
-            sdTarget = new SimpleDatum(nC, nW, nH, rgfTgt.Item1, 0, rgfTgt.Item1.Length);
+            sdTarget = new SimpleTemporalDatum(nC, nW, nH, rgfTgt.Item1);
             sdTarget.TagName = "Target";
             sdTarget.Tag = rgfTgt.Item2;
 
             nH = rgfTgtH.Item1.Length;
-            sdTargetHist = new SimpleDatum(nC, nW, nH, rgfTgtH.Item1, 0, rgfTgtH.Item1.Length);
+            sdTargetHist = new SimpleTemporalDatum(nC, nW, nH, rgfTgtH.Item1);
             sdTargetHist.TagName = "TargetHist";
             sdTargetHist.Tag = rgfTgtH.Item2;
 
             return true;
         }
 
-        private SimpleDatum getTargetData(int nIdx, int nCount, int nTargetIdx)
+        private SimpleTemporalDatum getTargetData(int nIdx, int nCount, int nTargetIdx)
         {
             Tuple<float[], DateTime[]> rgfTgt = m_data.GetObservedNumValues(nIdx, nCount, nTargetIdx);
 
             int nC = 1;
             int nH = 1;
             int nW = rgfTgt.Item1.Length;
-            SimpleDatum sd = new SimpleDatum(nC, nW, nH, rgfTgt.Item1, 0, rgfTgt.Item1.Length);
+            SimpleTemporalDatum sd = new SimpleTemporalDatum(nC, nW, nH, rgfTgt.Item1);
             sd.TagName = "Target";
 
             return sd;

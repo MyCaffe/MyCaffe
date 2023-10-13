@@ -1,6 +1,7 @@
 ﻿using MyCaffe.basecode;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.db.image;
+using SimpleGraphing;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -30,7 +31,7 @@ namespace MyCaffe.db.temporal
     {
         SettingsCaffe m_settings;
         PropertySet m_prop;
-        CryptoRandom m_random = null;
+        CryptoRandom m_random = new CryptoRandom();
         EventWaitHandle m_evtInitializing = null;
         EventWaitHandle m_evtInitialized = null;
         EventWaitHandle m_evtAbortInitialization = null;
@@ -44,6 +45,9 @@ namespace MyCaffe.db.temporal
         Guid m_userGuid;
         DatasetCollection m_rgDataSets = new DatasetCollection();
         Dictionary<int, TemporalSet> m_rgTemporalSets = new Dictionary<int, TemporalSet>();
+        static int DIRECT_ID = 1000000;
+        static List<int> m_nDirectIDs = new List<int>();
+        static object m_syncDirect = new object();
         
         /// <summary>
         /// The constructor.
@@ -107,7 +111,6 @@ namespace MyCaffe.db.temporal
                     throw excpt;
             }
         }
-
 
         /// <summary>
         /// Reset the database indexes.
@@ -528,6 +531,182 @@ namespace MyCaffe.db.temporal
             return InitializeWithDsName1(s, strDs, strEvtCancel);
         }
 
+        private static int getNewDirectID()
+        {
+            lock (m_syncDirect)
+            {
+                int nId = DIRECT_ID + m_nDirectIDs.Count;
+                m_nDirectIDs.Add(nId);
+                return nId;
+            }
+        }
+
+        /// <summary>
+        /// Create a simple direct dataset with a single data stream.
+        /// </summary>
+        /// <param name="strDsName">Specifies the dataset name.</param>
+        /// <param name="strStrmName">Specifies the data stream name.</param>
+        /// <param name="s">Specifies the Settings.</param>
+        /// <param name="prop">Specifies the properties.</param>
+        /// <param name="plots">Specifies the single stream data.</param>
+        /// <param name="dfTrainingSplitPct">Specifies the training split for the data (default = 0.8).</param>
+        /// <param name="nValIdx">Specifies the value index into the Y_values to add (default = -1, to add all Y_values).</param>
+        /// <returns>A tuple with the DatasetDesciptor and training item ID and testing item ID is returned.</returns>
+        public Tuple<DatasetDescriptor, int, int> CreateSimpleDirectStream(string strDsName, string strStrmName, SettingsCaffe s, PropertySet prop, PlotCollection plots, double dfTrainingSplitPct = 0.8, int nValIdx = -1)
+        {
+            if (plots == null || plots.Count == 0)
+                throw new Exception("The data must be specified.");
+
+            if (dfTrainingSplitPct <= 0 || dfTrainingSplitPct >= 1.0)
+                throw new Exception("The training split must be > 0 and < 1.0.");
+
+            DatasetDescriptor dsd = CreateDirectDatasetDescriptor(strDsName);
+
+            AddDirectDataset(s, dsd, null, prop);
+            OrderedValueStreamDescriptorSet rgStrm = CreateDirectStreamDescriptor(strStrmName);
+
+            int nTrainingCount = (int)Math.Ceiling(plots.Count * dfTrainingSplitPct);
+            int nTestingCount = plots.Count - nTrainingCount;
+
+            DateTime dtStart = (DateTime)plots[0].Tag;
+            DateTime dtEnd = (DateTime)plots[nTrainingCount - 1].Tag;
+            int nSteps = nTrainingCount;
+            int nItemIDTrain = AddDirectDatasetItemSet(dsd.TrainingSource.ID, "Data", dtStart, dtEnd, nSteps, rgStrm);
+
+            dsd.TrainingSource.SetImageCount(nTrainingCount);
+            AddDirectValues(dsd.TrainingSource.ID, nItemIDTrain, plots, 0, nTrainingCount, nValIdx);
+
+            dtStart = (DateTime)plots[nTrainingCount].Tag;
+            dtEnd = (DateTime)plots[plots.Count - 1].Tag;
+            nSteps = nTestingCount;
+            int nItemIDTest = AddDirectDatasetItemSet(dsd.TestingSource.ID, "Data", dtStart, dtEnd, nSteps, rgStrm);
+
+            dsd.TestingSource.SetImageCount(nTestingCount);
+            AddDirectValues(dsd.TestingSource.ID, nItemIDTest, plots, nTrainingCount, plots.Count, nValIdx);
+
+            return new Tuple<DatasetDescriptor, int, int>(dsd, nItemIDTrain, nItemIDTest);
+        }
+
+
+        /// <summary>
+        /// Create and return a new Direct Dataset Descriptor.
+        /// </summary>
+        /// <param name="strName">Specifies the dataset name.</param>
+        /// <returns>The new DatasetDescriptor is returned.</returns>
+        public DatasetDescriptor CreateDirectDatasetDescriptor(string strName)
+        {
+            int nDs = getNewDirectID();
+            int nSrcTrainID = getNewDirectID();
+            int nSrcTestID = getNewDirectID();
+
+            SourceDescriptor srcTrain = new SourceDescriptor(nSrcTrainID, strName + ".train", 1, 1, 1, true, false);
+            SourceDescriptor srcTest = new SourceDescriptor(nSrcTestID, strName + ".test", 1, 1, 1, true, false);
+            DatasetDescriptor dsd = new DatasetDescriptor(nDs, strName, null, null, srcTrain, srcTest, "direct", "");
+
+            return dsd;
+        }
+
+        /// <summary>
+        /// Create a new Direct Stram Descriptor.
+        /// </summary>
+        /// <param name="strName">Specifies the name.</param>
+        /// <returns>A new Ordered Value Stream Descriptor Set is returned.</returns>
+        public OrderedValueStreamDescriptorSet CreateDirectStreamDescriptor(string strName)
+        {
+            ValueStreamDescriptor vsd = new ValueStreamDescriptor(getNewDirectID(), strName, 1, ValueStreamDescriptor.STREAM_CLASS_TYPE.OBSERVED, ValueStreamDescriptor.STREAM_VALUE_TYPE.NUMERIC);
+            List<ValueStreamDescriptor> rgVsd = new List<ValueStreamDescriptor>() { vsd };
+            return new OrderedValueStreamDescriptorSet(rgVsd);
+        }
+
+        /// <summary>
+        /// Add a new direct dataset to the database.
+        /// </summary>
+        /// <param name="s">Specifies the settings.</param>
+        /// <param name="dsd">Specifies the DatasetDescriptor describing the direct dataset to add.</param>
+        /// <param name="strEvtCancel">Specifies the cancel event.</param>
+        /// <param name="prop">Optionally, specifies the load properties.</param>
+        /// <returns>Upon adding the direct dataset the dataset ID is returned, or 0 on failure.</returns>
+        /// <exception cref="Exception">An exception is thrown when no HistoricalSteps or FutureSteps properties are fount.</exception>
+        public int AddDirectDataset(SettingsCaffe s, DatasetDescriptor dsd, string strEvtCancel = null, PropertySet prop = null)
+        {
+            m_settings = s;
+
+            DataSet ds = m_rgDataSets.Find(dsd.Name);
+            if (ds != null)
+                return 0;
+
+            if (prop == null)
+                prop = m_prop;
+
+            if (prop == null)
+                throw new Exception("You must first call SetInitializationProperties with the properties to use for initialization.");
+
+            bool bNormalizeData = prop.GetPropertyAsBool("NormalizedData", true);
+            int nHistSteps = prop.GetPropertyAsInt("HistoricalSteps", 0);
+            int nFutureSteps = prop.GetPropertyAsInt("FutureSteps", 0);
+            int nChunks = prop.GetPropertyAsInt("Chunks", 1024);
+
+            if (nHistSteps == 0)
+                throw new Exception("The historical steps are missing from the properties, please add the 'HistoricalSteps' property with a value > 0.");
+            if (nFutureSteps == 0)
+                throw new Exception("The future steps are missing from the properties, please add the 'FutureSteps' property with a value > 0.");
+
+            if (nHistSteps < 0 || nFutureSteps < 0)
+                throw new Exception("The historical and future steps must be > 0.");
+
+            ds = new DataSet(dsd, m_log);
+            m_rgDataSets.Add(ds);
+
+            if (!ds.Load(DB_LOAD_METHOD.LOAD_ALL, 0, 0, 0, bNormalizeData, nHistSteps, nFutureSteps, nChunks, m_evtAbortInitialization, false))
+                return 0;
+
+            dsd.TrainingSource.Resize(1, nHistSteps, 1);
+            dsd.TestingSource.Resize(1, nFutureSteps, 1);
+
+            return dsd.ID;
+        }
+
+        /// <summary>
+        /// Add a new direct dataset item set to the temporal set associated with the source ID.
+        /// </summary>
+        /// <param name="nSrcID">Specifies the source ID.</param>
+        /// <param name="strName">Specifies the item set name.</param>
+        /// <param name="dtStart">Specifies the item set start time.</param>
+        /// <param name="dtEnd">Specifies the item set end time.</param>
+        /// <param name="nSteps">Specifies the item set steps.</param>
+        /// <param name="rgStrm">Specifies the item set data streams.</param>
+        /// <returns>The new item set ID is returned.</returns>
+        public int AddDirectDatasetItemSet(int nSrcID, string strName, DateTime dtStart, DateTime dtEnd, int nSteps, OrderedValueStreamDescriptorSet rgStrm)
+        {
+            ValueItem vi = new ValueItem();
+            vi.Name = strName;
+            vi.Steps = nSteps;
+            vi.StartTime = dtStart;
+            vi.EndTime = dtEnd;
+            vi.SourceID = nSrcID;
+            vi.ID = getNewDirectID();
+
+            TemporalSet ts = getTemporalSet(nSrcID);
+            return ts.AddDirectItemSet(m_random, vi, rgStrm);
+        }
+
+        /// <summary>
+        /// Add a set of values directly to the temporal set item values.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the source ID.</param>
+        /// <param name="nItemId">Specifies the ID of the item where data values to add to.</param>
+        /// <param name="plots">Specifies the data to add.</param>
+        /// <param name="nStartIdx">Specifies the start index.</param>
+        /// <param name="nEndIdx">Specifies the end index.</param>
+        /// <param name="nValIdx">Specifies the value index into the Y_values to add (default = -1, to add all Y_values).</param>
+        /// <returns>The new start/end date and count are returned.</returns>
+        /// <exception cref="IndexOutOfRangeException">An exception is thrown if the item index is out of range.</exception>
+        public Tuple<DateTime, DateTime, int> AddDirectValues(int nSrcId, int nItemId, PlotCollection plots, int nStartIdx, int nEndIdx, int nValIdx = -1)
+        {
+            TemporalSet ts = getTemporalSet(nSrcId);
+            return ts.AddDirectValues(nItemId, plots, nStartIdx, nEndIdx, nValIdx);
+        }
+
         private TemporalSet getTemporalSet(int nSrcId)
         {
             TemporalSet ts = null;
@@ -565,7 +744,6 @@ namespace MyCaffe.db.temporal
 
             return ts.GetData(nQueryIdx, ref nItemIdx, ref nValueIdx, itemSelection, valueSelection, 1, bEnableDebug, strDebugPath);
         }
-
 
         /// <summary>
         /// Set the database connection to use.
