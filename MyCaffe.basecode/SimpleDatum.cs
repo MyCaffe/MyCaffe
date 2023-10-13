@@ -22,6 +22,8 @@ namespace MyCaffe.basecode
         int m_nWidth = 0;
         int m_nHeight = 0;
         float[] m_rgReadDataF = null;
+        string m_strTagName = null;
+        object m_tag = null;
 
         /// <summary>
         /// The constructor.
@@ -36,6 +38,24 @@ namespace MyCaffe.basecode
             m_nWidth = nWidth;
             m_nHeight = nHeight;
             m_rgReadDataF = rgData;
+        }
+
+        /// <summary>
+        /// Get/set the tag name.
+        /// </summary>
+        public string TagName
+        {
+            get { return m_strTagName; }
+            set { m_strTagName = value; }
+        }
+
+        /// <summary>
+        /// Get/set the tag.
+        /// </summary>
+        public object Tag
+        {
+            get { return m_tag; }
+            set { m_tag = value; }
         }
 
         /// <summary>
@@ -103,27 +123,9 @@ namespace MyCaffe.basecode
         /// Add a new datum to the collection (must support the RealDataF data);
         /// </summary>
         /// <param name="sd">Specifies the datum to add.</param>
-        public void Add(SimpleDatum sd)
+        public void Add(SimpleTemporalDatum sd)
         {
-            SimpleTemporalDatum sdt = null;
-
-            if (sd != null)
-            {
-                float[] rgData = sd.RealDataF;
-
-                if (rgData == null && sd.RealDataD != null)
-                {
-                    rgData = new float[sd.RealDataD.Length];
-                    for (int i = 0; i < rgData.Length; i++)
-                    {
-                        rgData[i] = (float)sd.RealDataD[i];
-                    }
-                }
-
-                sdt = new SimpleTemporalDatum(sd.Channels, sd.Width, sd.Height, rgData);
-            }
-
-            m_rgItems.Add(sdt);
+            m_rgItems.Add(sd);
         }
 
         /// <summary>
