@@ -251,5 +251,95 @@ namespace MyCaffe.test
                 }
             }
         }
+
+        [TestMethod]
+        public void TestDirect()
+        {
+            bool bNormalizedData = false;
+            int nHistSteps = 80;
+            int nFutureSteps = 30;
+
+            Log log = new Log("Test Data Temporal");
+            log.EnableTrace = true;
+
+            SettingsCaffe s = new SettingsCaffe();
+            s.DbLoadLimit = 0;
+            s.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+
+            PropertySet prop = new PropertySet();
+            prop.SetProperty("NormalizedData", bNormalizedData.ToString());
+            prop.SetProperty("HistoricalSteps", nHistSteps.ToString());
+            prop.SetProperty("FutureSteps", nFutureSteps.ToString());
+
+            // Create sine curve data.
+            PlotCollection plots = new PlotCollection("SineCurve");
+            DateTime dt = DateTime.Now - TimeSpan.FromSeconds(1000);
+            for (int i = 0; i < 1000; i++)
+            {
+                Plot plot = new Plot(dt.ToFileTime(), Math.Sin(i * 0.1));
+                plot.Tag = dt;
+                plots.Add(plot);
+                dt += TimeSpan.FromSeconds(1);
+            }
+
+            // Create in-memory database.
+            MyCaffeTemporalDatabase db = new MyCaffeTemporalDatabase(log, prop);
+
+            // Create simple, single direct stream and load data.
+            Tuple<DatasetDescriptor, int, int> dsd = db.CreateSimpleDirectStream("Direct", "SineCurve", s, prop, plots);
+            DatasetDescriptor ds = dsd.Item1;
+
+            // Test iterating through the data sequentially.
+            int nIdx = 0;
+
+            for (int i = 0; i < ds.TrainingSource.ImageCount - (nHistSteps + nFutureSteps); i++)
+            {
+                int? nItemIdx = null;
+                int? nValueIdx = null;
+
+                SimpleTemporalDatumCollection data = db.QueryTemporalItem(i, ds.TrainingSource.ID, ref nItemIdx, ref nValueIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
+
+                // Observed
+                for (int j=0; j<nHistSteps; j++)
+                {
+                    float fActual = data[2].Data[j];
+                    DateTime dtActual = ((DateTime[])data[2].Tag)[j];
+
+                    float fExpected = plots[i + j].Y;
+                    DateTime dtExpected = (DateTime)plots[i + j].Tag;
+
+                    log.CHECK_EQ(fActual, fExpected, "The value should = " + fExpected.ToString());
+                    log.CHECK_EQ(dtActual.Ticks, dtExpected.Ticks, "The date should = " + dtExpected.ToString());
+                }
+
+                // Target Hist
+                for (int j = 0; j < nHistSteps; j++)
+                {
+                    float fActual = data[7].Data[j];
+                    DateTime dtActual = ((DateTime[])data[7].Tag)[j];
+
+                    float fExpected = plots[i + j].Y;
+                    DateTime dtExpected = (DateTime)plots[i + j].Tag;
+
+                    log.CHECK_EQ(fActual, fExpected, "The value should = " + fExpected.ToString());
+                    log.CHECK_EQ(dtActual.Ticks, dtExpected.Ticks, "The date should = " + dtExpected.ToString());
+                }
+
+                // Target
+                for (int j=0; j<nFutureSteps; j++)
+                {
+                    float fActual = data[6].Data[j];
+                    DateTime dtActual = ((DateTime[])data[6].Tag)[j];
+
+                    float fExpected = plots[i + nHistSteps + j].Y;
+                    DateTime dtExpected = (DateTime)plots[i + nHistSteps + j].Tag;
+
+                    log.CHECK_EQ(fActual, fExpected, "The value should = " + fExpected.ToString());
+                    log.CHECK_EQ(dtActual.Ticks, dtExpected.Ticks, "The date should = " + dtExpected.ToString());
+                }
+
+                nIdx++;
+            }
+        }
     }
 }
