@@ -119,7 +119,15 @@ namespace MyCaffe.common
         /// <summary>
         /// The blob contains attention scores.
         /// </summary>
-        ATTENTION = 0x0400
+        ATTENTION = 0x0400,
+        /// <summary>
+        /// The blob contains time data.
+        /// </summary>
+        TIME = 0x0800,
+        /// <summary>
+        /// The blob contains mask data.
+        /// </summary>
+        MASK = 0x1000
     }
 
     /// <summary>
