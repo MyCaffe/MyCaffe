@@ -87,11 +87,25 @@ namespace MyCaffe.layers.tft
         }
 
         /// <summary>
-        /// Returns the exact number of required top (output) Blobs: static_numeric, static_categorical, hist_numeric, hist_categorical, future_numeric, future_categorical, target
+        /// Returns the exact number of required top (output) Blobs: static_numeric, static_categorical, hist_numeric, hist_categorical, future_numeric, future_categorical, [target_hist], [time], [mask]
         /// </summary>
         public override int MaxTopBlobs
         {
-            get { return (m_param.data_temporal_param.output_target_historical) ? 8 : 7; }
+            get 
+            {
+                int nTops = 7;
+
+                if (m_param.data_temporal_param.output_target_historical)
+                    nTops++;
+
+                if (m_param.data_temporal_param.output_time)
+                    nTops++;
+
+                if (m_param.data_temporal_param.output_mask)
+                    nTops++;
+
+                return nTops;
+            }
         }
 
         /// <summary>
@@ -108,9 +122,11 @@ namespace MyCaffe.layers.tft
             if (m_data == null)
             {
                 if (m_param.data_temporal_param.source_type == DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE)
-                    m_data = new RawFileData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical);
+                    m_data = new RawFileData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical, m_param.data_temporal_param.output_time, m_param.data_temporal_param.output_mask, m_param.data_temporal_param.max_load_percent, m_param.data_temporal_param.drip_refresh_rate_in_sec, m_param.data_temporal_param.chunk_count);
                 else if (m_param.data_temporal_param.source_type == DataTemporalParameter.SOURCE_TYPE.SQL_DB)
-                    m_data = new RawSqlData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical, m_db, m_log);
+                    m_data = new RawSqlData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical, m_param.data_temporal_param.output_time, m_param.data_temporal_param.output_mask, m_db, m_log, m_param.data_temporal_param.max_load_percent, m_param.data_temporal_param.drip_refresh_rate_in_sec, m_param.data_temporal_param.chunk_count);
+                else if (m_param.data_temporal_param.source_type == DataTemporalParameter.SOURCE_TYPE.DIRECT)
+                    m_data = new RawDirectData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical, m_param.data_temporal_param.output_time, m_param.data_temporal_param.output_mask, m_db, m_log);
                 else
                     throw new Exception("Unknown source type: " + m_param.data_temporal_param.source_type.ToString());
             }
@@ -122,7 +138,7 @@ namespace MyCaffe.layers.tft
                 phase = m_param.data_temporal_param.forced_phase.Value;
             }
 
-            if (!m_data.LoadData(phase, m_param.data_temporal_param.source, m_param.data_temporal_param.shuffle_data, (int)m_param.data_temporal_param.batch_size, (int)m_nNumHistoricalSteps, (int)m_nNumFutureSteps, m_param.data_temporal_param.max_load_percent, m_param.data_temporal_param.drip_refresh_rate_in_sec, m_param.data_temporal_param.chunk_count, m_log, m_evtCancel))
+            if (!m_data.LoadData(phase, m_param.data_temporal_param.source, m_param.data_temporal_param.shuffle_data, (int)m_param.data_temporal_param.batch_size, (int)m_nNumHistoricalSteps, (int)m_nNumFutureSteps, m_log, m_evtCancel))
                 throw new Exception("DataTemporalLayer - could not find the data for '" + m_param.data_temporal_param.source + "'. You may need to run the SignalPop AI Designer to create this " + m_param.data_temporal_param.source_type.ToString() + " dataset.");
 
             int nTotalSize = m_data.GetTotalSize();
@@ -164,11 +180,29 @@ namespace MyCaffe.layers.tft
                     colTop[6].type = BLOB_TYPE.TARGET;
                 }
 
-                if (m_param.data_temporal_param.output_target_historical && colTop.Count > 7)
+                int nIdx = 7;
+                if (m_param.data_temporal_param.output_target_historical && colTop.Count > nIdx)
                 {
                     rgShape[1] = (int)m_nNumHistoricalSteps;
-                    colTop[7].Reshape(rgShape);
-                    colTop[7].type = BLOB_TYPE.TARGET | BLOB_TYPE.DATA;
+                    colTop[nIdx].Reshape(rgShape);
+                    colTop[nIdx].type = BLOB_TYPE.TARGET | BLOB_TYPE.DATA;
+                    nIdx++;
+                }
+
+                if (m_param.data_temporal_param.output_time && colTop.Count > nIdx)
+                {
+                    rgShape[1] = (int)m_nNumHistoricalSteps;
+                    colTop[nIdx].Reshape(rgShape);
+                    colTop[nIdx].type = BLOB_TYPE.TIME | BLOB_TYPE.DATA;
+                    nIdx++;
+                }
+
+                if (m_param.data_temporal_param.output_mask && colTop.Count > nIdx)
+                {
+                    rgShape[1] = (int)m_nNumHistoricalSteps;
+                    colTop[nIdx].Reshape(rgShape);
+                    colTop[nIdx].type = BLOB_TYPE.MASK | BLOB_TYPE.DATA;
+                    nIdx++;
                 }
             }
         }
@@ -236,15 +270,35 @@ namespace MyCaffe.layers.tft
         /// Specifies to output the target historical data.
         /// </summary>
         protected bool m_bOutputTargetHistorical;
+        /// <summary>
+        /// Specifies to output the time for each item in a separate blob.
+        /// </summary>
+        protected bool m_bOutputTime;
+        /// <summary>
+        /// Specifies to output the mask (all 1's) matching each item in a separate blob.
+        /// </summary>
+        protected bool m_bOutputMask;
+        /// <summary>
+        /// Specifies that the data is loaded and ready.
+        /// </summary>
+        protected ManualResetEvent m_evtReady = new ManualResetEvent(false);
+        /// <summary>
+        /// Specifies that the data is done loading.
+        /// </summary>
+        protected ManualResetEvent m_evtDone = new ManualResetEvent(false);
 
         /// <summary>
         /// The constructor.
         /// </summary>
         /// <param name="nSeed">Specifies the random number generator seed.</param>
         /// <param name="bOutputTargetHistorical">Specifies to output the target historical data.</param>
-        public RawData(uint? nSeed, bool bOutputTargetHistorical)
+        /// <param name="bOutputTime">Specifies to output the time matching each item in a separate blob.</param>
+        /// <param name="bOutputMask">Specifies to output the mask (all 1's) matching each item in a separate blob.</param>
+        public RawData(uint? nSeed, bool bOutputTargetHistorical, bool bOutputTime, bool bOutputMask)
         {
             m_bOutputTargetHistorical = bOutputTargetHistorical;
+            m_bOutputTime = bOutputTime;
+            m_bOutputMask = bOutputMask;
 
             if (nSeed.HasValue)
                 m_random = new Random((int)nSeed.Value);
@@ -269,21 +323,17 @@ namespace MyCaffe.layers.tft
         /// <param name="nBatchSize">Specifies the batch size.</param>
         /// <param name="nHistoricalSteps">Specifies the number of historical steps.</param>
         /// <param name="nFutureSteps">Specifies the number of future steps.</param>
-        /// <param name="dfPctMaxLoad">Specifies the percent of total items to load in background (default = 1, or 100%).</param>
-        /// <param name="nDripRefreshRateInSec">Specifies the rate in seconds to refresh the data.</param>
-        /// <param name="nChunkCount">Specifies the number of items to load on each cycle.</param>
         /// <param name="log">Specifies the output log.</param>
         /// <param name="evtCancel">Specifies the cancel event.</param>
-        public virtual bool LoadData(Phase phase, string strPath, bool bShuffleData, int nBatchSize, int nHistoricalSteps, int nFutureSteps, double dfPctMaxLoad, int nDripRefreshRateInSec, uint nChunkCount, Log log, CancelEvent evtCancel)
+        public virtual bool LoadData(Phase phase, string strPath, bool bShuffleData, int nBatchSize, int nHistoricalSteps, int nFutureSteps, Log log, CancelEvent evtCancel)
         {
             m_nBatchSize = nBatchSize;
 
-            ManualResetEvent evtReady = new ManualResetEvent(false);
-            ManualResetEvent evtDone = new ManualResetEvent(false);
             Thread threadLoad = new Thread(new ParameterizedThreadStart(loadDataFunction));
-            threadLoad.Start(new DataLoadParameters(phase, strPath, nHistoricalSteps, nFutureSteps, dfPctMaxLoad, nDripRefreshRateInSec, nChunkCount, bShuffleData, log, evtCancel, evtReady, evtDone));
+            DataLoadParameters p = getDataLoadParameters(phase, strPath, bShuffleData, nHistoricalSteps, nFutureSteps, log, evtCancel, m_evtReady, m_evtDone);
+            threadLoad.Start(p);
 
-            while (!evtReady.WaitOne(1000))
+            while (!m_evtReady.WaitOne(1000))
             {
                 if (evtCancel.WaitOne(0))
                     return false;
@@ -292,6 +342,24 @@ namespace MyCaffe.layers.tft
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Get the data load parameters sent to the data load function thread.
+        /// </summary>
+        /// <param name="phase">Specifies the phase to load.</param>
+        /// <param name="strPath">Specifies the base path for all data.</param>
+        /// <param name="bShuffleData">Specifies to randomly select from the data.</param>
+        /// <param name="nHistoricalSteps">Specifies the number of historical steps.</param>
+        /// <param name="nFutureSteps">Specifies the number of future steps.</param>
+        /// <param name="log">Specifies the output log.</param>
+        /// <param name="evtCancel">Specifies the cancel event.</param>
+        /// <param name="evtReady">Specifies the event set when the data is ready.</param>
+        /// <param name="evtDone">Specifies the event set when the data loading is done.</param>
+        /// <returns>A new DataLoadParameters parameter is returned.</returns>
+        protected virtual DataLoadParameters getDataLoadParameters(Phase phase, string strPath, bool bShuffleData, int nHistoricalSteps, int nFutureSteps, Log log, CancelEvent evtCancel, ManualResetEvent evtReady, ManualResetEvent evtDone)
+        {
+            return new DataLoadParameters(phase, strPath, nHistoricalSteps, nFutureSteps, 0, 0, 0, bShuffleData, log, evtCancel, evtReady, evtDone);
         }
 
         /// <summary>
@@ -349,26 +417,84 @@ namespace MyCaffe.layers.tft
     /// The RawSqlData class loads data from a database.
     /// </summary>
     /// <typeparam name="T">Specifies the base type.</typeparam>
-    class RawSqlData<T> : RawData<T>
+    class RawDirectData<T> : RawData<T>
     {
-        IXTemporalDatabaseBase m_db;
-        DatasetDescriptor m_ds;
-        bool m_bShuffleData;
-        int m_nHistoricalSteps;
-        int m_nFutureSteps;
-        int m_nDropRefreshReateInSec;
-        Log m_log;
-        Phase m_phase = Phase.NONE;
-        float[] m_rgStaticNum = null;
-        float[] m_rgStaticCat = null;
-        float[] m_rgHistoricalNum = null;
-        float[] m_rgHistoricalCat = null;
-        float[] m_rgFutureNum = null;
-        float[] m_rgFutureCat = null;
-        float[] m_rgTarget = null;
-        float[] m_rgTargetHist = null;
-        int[,] m_rgIdx = null;
-        BatchPerfSet m_batchPerfSet = null;
+        /// <summary>
+        /// Specifies the dataset descriptor for the data.
+        /// </summary>
+        protected DatasetDescriptor m_ds;
+        /// <summary>
+        /// Specifies the in-memory temporal database.
+        /// </summary>
+        protected IXTemporalDatabaseBase m_db;
+        /// <summary>
+        /// Specifies to shuffle the data when building batches.
+        /// </summary>
+        protected bool m_bShuffleData;
+        /// <summary>
+        /// Specifies the number of historical steps.
+        /// </summary>
+        protected int m_nHistoricalSteps;
+        /// <summary>
+        /// Specifies the number of future steps.
+        /// </summary>
+        protected int m_nFutureSteps;
+        /// <summary>
+        /// Specifies the output log.
+        /// </summary>
+        protected Log m_log;
+        /// <summary>
+        /// Specifies the phase.
+        /// </summary>
+        protected Phase m_phase = Phase.NONE;
+        /// <summary>
+        /// Specifies the static numeric data buffer.
+        /// </summary>
+        protected float[] m_rgStaticNum = null;
+        /// <summary>
+        /// Specifies the static categorical data buffer.
+        /// </summary>
+        protected float[] m_rgStaticCat = null;
+        /// <summary>
+        /// Specifies the historical numeric data buffer.
+        /// </summary>
+        protected float[] m_rgHistoricalNum = null;
+        /// <summary>
+        /// Specifies the historical categorical data buffer.
+        /// </summary>
+        protected float[] m_rgHistoricalCat = null;
+        /// <summary>
+        /// Specifies the future numeric data buffer.
+        /// </summary>
+        protected float[] m_rgFutureNum = null;
+        /// <summary>
+        /// Specifies the future categorical data buffer.
+        /// </summary>
+        protected float[] m_rgFutureCat = null;
+        /// <summary>
+        /// Specifies the target data buffer.
+        /// </summary>
+        protected float[] m_rgTarget = null;
+        /// <summary>
+        /// Specifies the historical target data buffer.
+        /// </summary>
+        protected float[] m_rgTargetHist = null;
+        /// <summary>
+        /// Specifies the time data buffer.
+        /// </summary>
+        protected float[] m_rgTime = null;
+        /// <summary>
+        /// Specifies the mask data buffer.
+        /// </summary>
+        protected float[] m_rgMask = null;
+        /// <summary>
+        /// Specifies the indexes used.
+        /// </summary>
+        protected int[,] m_rgIdx = null;
+        /// <summary>
+        /// Specifies the batch performance set used to select the worst cases.
+        /// </summary>
+        protected BatchPerfSet m_batchPerfSet = null;
 
 
         /// <summary>
@@ -376,9 +502,11 @@ namespace MyCaffe.layers.tft
         /// </summary>
         /// <param name="nSeed">Specifies the random number generator seed.</param>
         /// <param name="bOutputTargetHistorical">Specifies to output the target historical data.</param>
+        /// <param name="bOutputTime">Specifies to output the time matching each item in a separate blob.</param>
+        /// <param name="bOutputMask">Specifies to output the mask (all 1's) matching each item in a separate blob.</param>
         /// <param name="db">Specifies the external database.</param>
         /// <param name="log">Specifies the output log.</param>
-        public RawSqlData(uint? nSeed, bool bOutputTargetHistorical, IXTemporalDatabaseBase db, Log log) : base(nSeed, bOutputTargetHistorical)
+        public RawDirectData(uint? nSeed, bool bOutputTargetHistorical, bool bOutputTime, bool bOutputMask, IXTemporalDatabaseBase db, Log log) : base(nSeed, bOutputTargetHistorical, bOutputTime, bOutputMask)
         {
             m_db = db;
             m_log = log;
@@ -393,31 +521,15 @@ namespace MyCaffe.layers.tft
         /// <param name="nBatchSize">Specifies the batch size.</param>
         /// <param name="nHistoricalSteps">Specifies the number of historical steps (before current time).</param>
         /// <param name="nFutureSteps">Specifies the number of future steps (after current time).</param>
-        /// <param name="dfPctMaxLoad">Specifies the maximum percentage to load into memory.</param>
-        /// <param name="nDripRefreshRateInSec">Specifies how often in seconds to refresh the data.</param>
-        /// <param name="nChunkCount">Specifies the number of chunks (blocks) to refresh.</param>
         /// <param name="log">Specifies the output log.</param>
         /// <param name="evtCancel">Specifies the event used to cancel loading.</param>
         /// <returns>True is returned if the data is loaded successfully, otherwise false.</returns>
-        public override bool LoadData(Phase phase, string strDataset, bool bShuffleData, int nBatchSize, int nHistoricalSteps, int nFutureSteps, double dfPctMaxLoad, int nDripRefreshRateInSec, uint nChunkCount, Log log, CancelEvent evtCancel)
+        public override bool LoadData(Phase phase, string strDataset, bool bShuffleData, int nBatchSize, int nHistoricalSteps, int nFutureSteps, Log log, CancelEvent evtCancel)
         {
-            SettingsCaffe s = null;
-
             m_phase = phase;
 
             if (m_db == null)
-            {
-                s = new SettingsCaffe();
-                s.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
-                s.DbLoadLimit = 0;
-
-                PropertySet prop = new PropertySet();
-                prop.SetProperty("NormalizedData", "True");
-                prop.SetProperty("HistoricalSteps", nHistoricalSteps.ToString());
-                prop.SetProperty("FutureSteps", nFutureSteps.ToString());
-
-                m_db = new MyCaffeTemporalDatabase(m_log, prop);
-            }
+                throw new Exception("The direct load requires an already initialized database.");
 
             m_ds = m_db.GetDatasetByName(strDataset);
             if (m_ds == null)
@@ -426,14 +538,10 @@ namespace MyCaffe.layers.tft
                 return false;
             }
 
-            if (s != null)
-                m_db.InitializeWithDsName1(s, strDataset);
-
             m_bShuffleData = bShuffleData;
             m_nBatchSize = nBatchSize;
             m_nHistoricalSteps = nHistoricalSteps;
             m_nFutureSteps = nFutureSteps;
-            m_nDropRefreshReateInSec = nDripRefreshRateInSec;
 
             return true;
         }
@@ -500,11 +608,31 @@ namespace MyCaffe.layers.tft
                 m_rgFutureCat = getBuffer(col, 5);
             if (m_rgTarget == null)
                 m_rgTarget = getBuffer(col, 6);
-            if (m_rgTargetHist == null)
-                m_rgTargetHist = getBuffer(col, 7);
+
+            int nIdx = 7;
+
+            if (m_bOutputTargetHistorical)
+            {
+                if (m_rgTargetHist == null)
+                    m_rgTargetHist = getBuffer(col, nIdx);
+                nIdx++;
+            }
+
+            if (m_bOutputTime)
+            {
+                if (m_rgTime == null)
+                    m_rgTime = getBuffer(col, nIdx);
+                nIdx++;
+            }
+
+            if (m_bOutputMask)
+            {
+                if (m_rgMask == null)
+                    m_rgMask = getBuffer(col, nIdx);
+            }
 
             if (m_rgIdx == null)
-                m_rgIdx = new int[nBatchSize,2];
+                m_rgIdx = new int[nBatchSize, 2];
 
             for (int i = 0; i < nBatchSize; i++)
             {
@@ -530,7 +658,27 @@ namespace MyCaffe.layers.tft
                 SimpleTemporalDatum sdFutureNum = rgData[4];
                 SimpleTemporalDatum sdFutureCat = rgData[5];
                 SimpleTemporalDatum sdTarget = rgData[6];
-                SimpleTemporalDatum sdTargetHist = rgData[7];
+                SimpleTemporalDatum sdTargetHist = null;
+                SimpleTemporalDatum sdTime = null;
+                SimpleTemporalDatum sdMask = null;
+
+                nIdx = 7;
+                if (m_bOutputTargetHistorical)
+                {
+                    sdTargetHist = rgData[nIdx];
+                    nIdx++;
+                }
+
+                if (m_bOutputTime)
+                {
+                    sdTime = rgData[nIdx];
+                    nIdx++;
+                }
+
+                if (m_bOutputMask)
+                {
+                    sdMask = rgData[nIdx];
+                }
 
                 // col[0] = STATIC_NUMERIC
                 if (m_rgStaticNum != null)
@@ -587,6 +735,20 @@ namespace MyCaffe.layers.tft
                     float[] rgRawData = sdTargetHist.Data;
                     Array.Copy(rgRawData, 0, m_rgTargetHist, i * rgRawData.Length, rgRawData.Length);
                 }
+
+                // col[8] = Time (optional)
+                if (m_rgTime != null)
+                {
+                    float[] rgRawData = sdTime.Data;
+                    Array.Copy(rgRawData, 0, m_rgTime, i * rgRawData.Length, rgRawData.Length);
+                }
+
+                // col[9] = Mask (optional)
+                if (m_rgMask != null)
+                {
+                    float[] rgRawData = sdMask.Data;
+                    Array.Copy(rgRawData, 0, m_rgMask, i * rgRawData.Length, rgRawData.Length);
+                }
             }
 
             setBuffer(col, 0, m_rgStaticNum);
@@ -596,7 +758,26 @@ namespace MyCaffe.layers.tft
             setBuffer(col, 4, m_rgFutureNum);
             setBuffer(col, 5, m_rgFutureCat);
             setBuffer(col, 6, m_rgTarget);
-            setBuffer(col, 7, m_rgTargetHist);
+
+            nIdx = 7;
+
+            if (m_bOutputTargetHistorical)
+            {
+                setBuffer(col, nIdx, m_rgTargetHist);
+                nIdx++;
+            }
+
+            if (m_bOutputTime)
+            {
+                setBuffer(col, nIdx, m_rgTime);
+                nIdx++;
+            }
+
+            if (m_bOutputMask)
+            {
+                setBuffer(col, nIdx, m_rgMask);
+                nIdx++;
+            }
 
             return m_rgIdx;
         }
@@ -699,18 +880,111 @@ namespace MyCaffe.layers.tft
     }
 
     /// <summary>
-    /// The RawFileData object is used to load raw NPY file data.
+    /// The RawSqlData class loads data from a database.
     /// </summary>
-    /// <typeparam name="T">Specifies the base data type of 'float' or 'double'.</typeparam>
-    class RawFileData<T> : RawData<T>
+    /// <typeparam name="T">Specifies the base type.</typeparam>
+    class RawSqlData<T> : RawDirectData<T>
     {
+        int m_nDropRefreshReateInSec;
+        double m_dfPctMaxLoad;
+        uint m_nChunkCount;
+
+
         /// <summary>
         /// The constructor.
         /// </summary>
         /// <param name="nSeed">Specifies the random number generator seed.</param>
         /// <param name="bOutputTargetHistorical">Specifies to output the target historical data.</param>
-        public RawFileData(uint? nSeed, bool bOutputTargetHistorical) : base(nSeed, bOutputTargetHistorical)
+        /// <param name="bOutputTime">Specifies to output the time matching each item in a separate blob.</param>
+        /// <param name="bOutputMask">Specifies to output the mask (all 1's) matching each item in a separate blob.</param>
+        /// <param name="db">Specifies the external database.</param>
+        /// <param name="log">Specifies the output log.</param>
+        /// <param name="nDripRefreshRateInSec">Specifies how often in seconds to refresh the data.</param>
+        /// <param name="dfPctMaxLoad">Specifies the maximum percentage to load into memory.</param>
+        /// <param name="nChunkCount">Specifies the number of chunks (blocks) to refresh.</param>
+        public RawSqlData(uint? nSeed, bool bOutputTargetHistorical, bool bOutputTime, bool bOutputMask, IXTemporalDatabaseBase db, Log log, double dfPctMaxLoad, int nDripRefreshRateInSec, uint nChunkCount) : base(nSeed, bOutputTargetHistorical, bOutputTime, bOutputMask, db, log)
         {
+            m_nDropRefreshReateInSec = nDripRefreshRateInSec;
+            m_dfPctMaxLoad = dfPctMaxLoad;
+            m_nChunkCount = nChunkCount;
+        }
+
+        /// <summary>
+        /// Loads all data values for the phase specified.
+        /// </summary>
+        /// <param name="phase">Specifies the phase for which the data is to be loaded (e.g., TRAIN, TEST)</param>
+        /// <param name="strDataset">Specifies the name of the dataset.</param>
+        /// <param name="bShuffleData">Specifies to shuffle the data.</param>
+        /// <param name="nBatchSize">Specifies the batch size.</param>
+        /// <param name="nHistoricalSteps">Specifies the number of historical steps (before current time).</param>
+        /// <param name="nFutureSteps">Specifies the number of future steps (after current time).</param>
+        /// <param name="log">Specifies the output log.</param>
+        /// <param name="evtCancel">Specifies the event used to cancel loading.</param>
+        /// <returns>True is returned if the data is loaded successfully, otherwise false.</returns>
+        public override bool LoadData(Phase phase, string strDataset, bool bShuffleData, int nBatchSize, int nHistoricalSteps, int nFutureSteps, Log log, CancelEvent evtCancel)
+        {
+            SettingsCaffe s = null;
+
+            m_phase = phase;
+
+            if (m_db == null)
+            {
+                s = new SettingsCaffe();
+                s.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+                s.DbLoadLimit = 0;
+
+                PropertySet prop = new PropertySet();
+                prop.SetProperty("NormalizedData", "True");
+                prop.SetProperty("HistoricalSteps", nHistoricalSteps.ToString());
+                prop.SetProperty("FutureSteps", nFutureSteps.ToString());
+
+                m_db = new MyCaffeTemporalDatabase(m_log, prop);
+            }
+
+            m_ds = m_db.GetDatasetByName(strDataset);
+            if (m_ds == null)
+            {
+                m_log.WriteLine("ERROR: Could not find the dataset '" + strDataset + "'!");
+                return false;
+            }
+
+            if (s != null)
+                m_db.InitializeWithDsName1(s, strDataset);
+
+            m_bShuffleData = bShuffleData;
+            m_nBatchSize = nBatchSize;
+            m_nHistoricalSteps = nHistoricalSteps;
+            m_nFutureSteps = nFutureSteps;
+
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// The RawFileData object is used to load raw NPY file data.
+    /// </summary>
+    /// <typeparam name="T">Specifies the base data type of 'float' or 'double'.</typeparam>
+    class RawFileData<T> : RawData<T>
+    {
+        int m_nDropRefreshReateInSec;
+        double m_dfPctMaxLoad;
+        uint m_nChunkCount;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="nSeed">Specifies the random number generator seed.</param>
+        /// <param name="bOutputTargetHistorical">Specifies to output the target historical data.</param>
+        /// <param name="bOutputTime">Specifies to output the time matching each item in a separate blob.</param>
+        /// <param name="bOutputMask">Specifies to output the mask (all 1's) matching each item in a separate blob.</param>
+        /// <param name="dfPctMaxLoad">Specifies the percent of total items to load in background (default = 1, or 100%).</param>
+        /// <param name="nDripRefreshRateInSec">Specifies the rate in seconds to refresh the data.</param>
+        /// <param name="nChunkCount">Specifies the number of items to load on each cycle.</param>
+        public RawFileData(uint? nSeed, bool bOutputTargetHistorical, bool bOutputTime, bool bOutputMask, double dfPctMaxLoad, int nDripRefreshRateInSec, uint nChunkCount) : base(nSeed, bOutputTargetHistorical, bOutputTime, bOutputMask)
+        {
+            m_nDropRefreshReateInSec = nDripRefreshRateInSec;
+            m_dfPctMaxLoad = dfPctMaxLoad;
+            m_nChunkCount = nChunkCount;
         }
 
         /// <summary>
@@ -751,18 +1025,37 @@ namespace MyCaffe.layers.tft
         /// <param name="nBatchSize">Specifies the batch size.</param>
         /// <param name="nHistoricalSteps">Specifies the number of historical steps.</param>
         /// <param name="nFutureSteps">Specifies the number of future steps.</param>
-        /// <param name="dfPctMaxLoad">Specifies the percent of total items to load in background (default = 1, or 100%).</param>
-        /// <param name="nDripRefreshRateInSec">Specifies the rate in seconds to refresh the data.</param>
-        /// <param name="nChunkCount">Specifies the number of items to load on each cycle.</param>
         /// <param name="log">Specifies the output log.</param>
         /// <param name="evtCancel">Specifies the cancel event.</param>
-        public override bool LoadData(Phase phase, string strPath, bool bShuffleData, int nBatchSize, int nHistoricalSteps, int nFutureSteps, double dfPctMaxLoad, int nDripRefreshRateInSec, uint nChunkCount, Log log, CancelEvent evtCancel)
+        public override bool LoadData(Phase phase, string strPath, bool bShuffleData, int nBatchSize, int nHistoricalSteps, int nFutureSteps, Log log, CancelEvent evtCancel)
         {
             VerifyFiles(phase, strPath);
             m_data = new DataNpy<T>(m_random, log, nHistoricalSteps, nFutureSteps, bShuffleData, m_bOutputTargetHistorical);
-            return base.LoadData(phase, strPath, bShuffleData, nBatchSize, nHistoricalSteps, nFutureSteps, dfPctMaxLoad, nDripRefreshRateInSec, nChunkCount, log, evtCancel);
+            return base.LoadData(phase, strPath, bShuffleData, nBatchSize, nHistoricalSteps, nFutureSteps, log, evtCancel);
         }
 
+        /// <summary>
+        /// Get the data load parameters sent to the data load function thread.
+        /// </summary>
+        /// <param name="phase">Specifies the phase to load.</param>
+        /// <param name="strPath">Specifies the base path for all data.</param>
+        /// <param name="bShuffleData">Specifies to randomly select from the data.</param>
+        /// <param name="nHistoricalSteps">Specifies the number of historical steps.</param>
+        /// <param name="nFutureSteps">Specifies the number of future steps.</param>
+        /// <param name="log">Specifies the output log.</param>
+        /// <param name="evtCancel">Specifies the cancel event.</param>
+        /// <param name="evtReady">Specifies the event set when the data is ready.</param>
+        /// <param name="evtDone">Specifies the event set when the data loading is done.</param>
+        /// <returns>A new DataLoadParameters parameter is returned.</returns>
+        protected override DataLoadParameters getDataLoadParameters(Phase phase, string strPath, bool bShuffleData, int nHistoricalSteps, int nFutureSteps, Log log, CancelEvent evtCancel, ManualResetEvent evtReady, ManualResetEvent evtDone)
+        {
+            return new DataLoadParameters(phase, strPath, nHistoricalSteps, nFutureSteps, m_dfPctMaxLoad, m_nDropRefreshReateInSec, m_nChunkCount, bShuffleData, log, evtCancel, evtReady, evtDone);
+        }
+
+        /// <summary>
+        /// The loadDataFunction performs a background loading of the numpy data.
+        /// </summary>
+        /// <param name="obj">Specifies the DataLoadParameters.</param>
         protected override void loadDataFunction(object obj)
         {
             DataLoadParameters arg = obj as DataLoadParameters;
@@ -1027,7 +1320,6 @@ namespace MyCaffe.layers.tft
         public abstract bool Add(DataNpy<T> data, int nMaxLoad);
     }
 
-    //[DEPRECIATED] use SQL_DB type instead.
     class DataNpy<T> : Data<T> /** @private */
     {
         DataSchema m_schema;
