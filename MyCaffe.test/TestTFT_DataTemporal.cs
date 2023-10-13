@@ -1035,7 +1035,7 @@ namespace MyCaffe.test
             }
         }
 
-        private MyCaffeTemporalDatabase loadTemporalDatabase(SettingsCaffe s, bool bNormalizedData, int nHistSteps, int nFutureSteps)
+        private Tuple<DatasetDescriptor, MyCaffeTemporalDatabase, PlotCollection> loadTemporalDatabase(SettingsCaffe s, bool bNormalizedData, int nHistSteps, int nFutureSteps)
         {
             // Create sine curve data.
             PlotCollection plots = new PlotCollection("SineCurve");
@@ -1057,17 +1057,8 @@ namespace MyCaffe.test
 
             // Create simple, single direct stream.
             Tuple<DatasetDescriptor, int, int> dsd = db.CreateSimpleDirectStream("Direct", "SineCurve", s, prop, plots);
-            int nSrcId = dsd.Item1.TrainingSource.ID;
 
-            // Test iterating through the data sequentially.
-            for (int i = 0; i < 1000 - (nHistSteps + nFutureSteps); i++)
-            {
-                int? nItemIdx = null;
-                int? nValueIdx = null;
-                SimpleTemporalDatumCollection data = db.QueryTemporalItem(i, nSrcId, ref nItemIdx, ref nValueIdx, DB_LABEL_SELECTION_METHOD.NONE, DB_ITEM_SELECTION_METHOD.NONE);
-            }
-
-            return db;
+            return new Tuple<DatasetDescriptor, MyCaffeTemporalDatabase, PlotCollection>(dsd.Item1, db, plots);
         }
 
         // [WORK IN PROGRESS]
@@ -1084,7 +1075,102 @@ namespace MyCaffe.test
             s.DbLoadLimit = 0;
             s.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
 
-            MyCaffeTemporalDatabase db = loadTemporalDatabase(s, bNormalizedData, nHistSteps, nFutureSteps);
+            Tuple<DatasetDescriptor, MyCaffeTemporalDatabase, PlotCollection> db1 = loadTemporalDatabase(s, bNormalizedData, nHistSteps, nFutureSteps);
+            DatasetDescriptor ds = db1.Item1;
+            MyCaffeTemporalDatabase db = db1.Item2;
+            PlotCollection plots = db1.Item3;
+
+            // Create the temporal data layer.
+            int nBatch = 32;
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.DATA_TEMPORAL);
+            p.data_temporal_param.batch_size = 32;
+            p.data_temporal_param.source_type = DataTemporalParameter.SOURCE_TYPE.DIRECT;
+            p.data_temporal_param.source = "Direct";
+            p.data_temporal_param.output_mask = true;
+            p.data_temporal_param.output_time = true;
+            p.data_temporal_param.output_target_historical = true;
+            p.data_temporal_param.num_future_steps = 30;
+            p.data_temporal_param.num_historical_steps = 80;
+            p.data_temporal_param.shuffle_data = false;
+
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent(), db);
+
+            try
+            {
+                m_log.CHECK_EQ((int)layer.type, (int)LayerParameter.LayerType.DATA_TEMPORAL, "The layer type should be DATA_TEMPORAL.");
+
+                BottomVec.Clear();
+                TopVec.Clear();
+
+                Blob<T> blobStaticNum = new Blob<T>(m_cuda, m_log);
+                Blob<T> blobStaticCat = new Blob<T>(m_cuda, m_log);
+                Blob<T> blobHistoricalNum = new Blob<T>(m_cuda, m_log);
+                Blob<T> blobHistoricalCat = new Blob<T>(m_cuda, m_log);
+                Blob<T> blobFutureNum = new Blob<T>(m_cuda, m_log);
+                Blob<T> blobFutureCat = new Blob<T>(m_cuda, m_log);
+                Blob<T> blobTarget = new Blob<T>(m_cuda, m_log);
+                Blob<T> blobTargetHist = new Blob<T>(m_cuda, m_log);
+                Blob<T> blobTime = new Blob<T>(m_cuda, m_log);
+                Blob<T> blobMask = new Blob<T>(m_cuda, m_log);
+
+                TopVec.Add(blobStaticNum);
+                TopVec.Add(blobStaticCat);
+                TopVec.Add(blobHistoricalNum);
+                TopVec.Add(blobHistoricalCat);
+                TopVec.Add(blobFutureNum);
+                TopVec.Add(blobFutureCat);
+                TopVec.Add(blobTarget);
+                TopVec.Add(blobTargetHist);
+                TopVec.Add(blobTime);
+                TopVec.Add(blobMask);
+
+                layer.Setup(BottomVec, TopVec);
+
+                layer.Forward(BottomVec, TopVec);
+
+                verifyBlob(blobStaticNum, "Static Num", 0, 0, 0, 0);
+                verifyBlob(blobStaticCat, "Static Cat", 0, 0, 0, 0);
+                verifyBlob(blobHistoricalNum, "Historical Num", nBatch, nHistSteps, 1, 1);
+                verifyBlob(blobHistoricalCat, "Historical Cat", 0, 0, 0, 0);
+                verifyBlob(blobFutureNum, "Future Num", 0, 0, 0, 0);
+                verifyBlob(blobFutureCat, "Future Cat", 0, 0, 0, 0);
+                verifyBlob(blobTarget, "Target", nBatch, nFutureSteps, 1, 1);
+                verifyBlob(blobTargetHist, "Target Hist", nBatch, nHistSteps, 1, 1);
+                verifyBlob(blobTime, "Time", nBatch, nHistSteps, 1, 1);
+                verifyBlob(blobTime, "Mask", nBatch, nHistSteps, 1, 1);
+
+                layer.Forward(BottomVec, TopVec);
+
+                verifyBlob(blobStaticNum, "Static Num", 0, 0, 0, 0);
+                verifyBlob(blobStaticCat, "Static Cat", 0, 0, 0, 0);
+                verifyBlob(blobHistoricalNum, "Historical Num", nBatch, nHistSteps, 1, 1);
+                verifyBlob(blobHistoricalCat, "Historical Cat", 0, 0, 0, 0);
+                verifyBlob(blobFutureNum, "Future Num", 0, 0, 0, 0);
+                verifyBlob(blobFutureCat, "Future Cat", 0, 0, 0, 0);
+                verifyBlob(blobTarget, "Target", nBatch, nFutureSteps, 1, 1);
+                verifyBlob(blobTargetHist, "Target Hist", nBatch, nHistSteps, 1, 1);
+                verifyBlob(blobTime, "Time", nBatch, nHistSteps, 1, 1);
+                verifyBlob(blobTime, "Mask", nBatch, nHistSteps, 1, 1);
+            }
+            finally
+            {
+                if (layer != null)
+                    layer.Dispose();
+            }
+        }
+
+        private void verifyBlob(Blob<T> b, string strName, int nBatch, int nCh, int nHt, int nWd)
+        {
+            int nCount = b.count();
+            int nCount1 = nBatch * nCh * nHt * nWd;
+
+            if (nCount == 0 && nCount1 == 0)
+                return;
+
+            m_log.CHECK_EQ(b.num, nBatch, "The " + strName + " should have batch size = " + nBatch.ToString());
+            m_log.CHECK_EQ(b.channels, nCh, "The " + strName + " should have channel size = " + nCh.ToString());
+            m_log.CHECK_EQ(b.height, nHt, "The " + strName + " should have height size = " + nHt.ToString());
+            m_log.CHECK_EQ(b.width, nWd, "The " + strName + " should have width size = " + nWd.ToString());
         }
 
         public static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
