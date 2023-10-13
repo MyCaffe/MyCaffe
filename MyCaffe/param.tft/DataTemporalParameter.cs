@@ -30,6 +30,8 @@ namespace MyCaffe.param.tft
         uint? m_nSeed = null;
         bool m_bShuffleData = true;
         bool m_bOutputTargetHistorical = false;
+        bool m_bOutputTime = false;
+        bool m_bOutputMask = false;
         bool m_bEnableDebugOutput = false;
         string m_strDebugOutputPath = null;
 
@@ -61,7 +63,11 @@ namespace MyCaffe.param.tft
             /// <summary>
             /// Specifies the source path is the name of a data source within the SQL (or SQL Express) database.
             /// </summary>
-            SQL_DB
+            SQL_DB,
+            /// <summary>
+            /// Specifies to use the direct data, pre-loaded into the MyCaffe Temporal In-Memory Database.
+            /// </summary>
+            DIRECT
         }
 
         /** @copydoc LayerParameterBase */
@@ -70,11 +76,32 @@ namespace MyCaffe.param.tft
         }
 
         /// <summary>
+        /// Optionally, specifies to output the time data associated with each item, in a separate top blob.
+        /// </summary>
+        [Description("Optionally, specifies to output the time data associated with each item, in a separate top blob.")]
+        public bool output_time
+        {
+            get { return m_bOutputTime; }
+            set { m_bOutputTime = value; }
+        }
+
+        /// <summary>
+        /// Optionally, specifies to output the mask data associated with each item, where the mask is set to 1, in a separate top blob.
+        /// </summary>
+        [Description("Optionally, specifies to output the mask data associated with each item, where the mask is set to 1, in a separate top blob.")]
+        public bool output_mask
+        {
+            get { return m_bOutputMask; }
+            set { m_bOutputMask = value; }
+        }
+
+        /// <summary>
         /// Optionally, specifies to output debug information (slower) on each pass.
         /// </summary>
         /// <remarks>
         /// When true, the 'debug_output_path' must be specified.   
         /// </remarks>
+        [Description("Optionally, specifies to output debug information (slower) on each pass. When true, the 'debug_output_path' must be specified.")]
         public bool enable_debug_output
         {
             get { return m_bEnableDebugOutput; }
@@ -84,6 +111,7 @@ namespace MyCaffe.param.tft
         /// <summary>
         /// Specifies the debug output path where debug images are placed when enable_debug_output = true.
         /// </summary>
+        [Description("Specifies the debug output path where debug images are placed when enable_debug_output = true.")]
         public string debug_output_path
         {
             get { return m_strDebugOutputPath; }
@@ -248,6 +276,8 @@ namespace MyCaffe.param.tft
             m_forcedPhase = p.forced_phase;
             m_bOutputTargetHistorical = p.output_target_historical;
 
+            m_bOutputTime = p.output_time;
+            m_bOutputMask = p.output_mask;
             m_bEnableDebugOutput = p.enable_debug_output;
             m_strDebugOutputPath = p.debug_output_path;
         }
@@ -282,6 +312,8 @@ namespace MyCaffe.param.tft
             rgChildren.Add("shuffle_data", shuffle_data.ToString());
             rgChildren.Add("output_target_historical", output_target_historical.ToString());
 
+            rgChildren.Add("output_time", output_time.ToString());
+            rgChildren.Add("output_mask", output_mask.ToString());
             rgChildren.Add("enable_debug_output", enable_debug_output.ToString());
             rgChildren.Add("debug_output_path", debug_output_path);
 
@@ -358,6 +390,12 @@ namespace MyCaffe.param.tft
 
             if ((strVal = rp.FindValue("output_target_historical")) != null)
                 p.output_target_historical = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("output_time")) != null)
+                p.output_time = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("output_mask")) != null)
+                p.output_mask = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("enable_debug_output")) != null)
                 p.enable_debug_output = bool.Parse(strVal);
