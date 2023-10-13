@@ -211,6 +211,15 @@ namespace MyCaffe.basecode.descriptors
         }
 
         /// <summary>
+        /// Set the image count.
+        /// </summary>
+        /// <param name="nCount">Specifies the new count.</param>
+        public void SetImageCount(int nCount)
+        {
+            m_nImageCount = nCount;
+        }
+
+        /// <summary>
         /// Returns the number of inactive images within this data source.
         /// </summary>
         [Description("Specifies the number of inactive images within this data source.")]
