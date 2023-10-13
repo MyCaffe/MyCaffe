@@ -137,13 +137,15 @@ namespace MyCaffe.db.temporal
         /// <param name="nHistSteps">Specifies the number of historical steps.</param>
         /// <param name="nFutSteps">Specifies the number of future steps.</param>
         /// <param name="nValueStepOffset">Specifes the step offset to apply when advancing the step index.</param>
+        /// <param name="bOutputTime">Optionally, output the time data.</param>
+        /// <param name="bOutputMask">Optionally, output the mask data.</param>
         /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
         /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
         /// <returns>An collection of SimpleTemporalDatum is returned where: [0] = static num, [1] = static cat, [2] = historical num, [3] = historical cat, [4] = future num, [5] = future cat, [6] = target, and [7] = target history
         /// for a given item at the temporal selection point.</returns>
         /// <remarks>Note, the ordering for historical value streams is: observed, then known.  Future value streams only contiain known value streams.  If a dataset does not have one of the data types noted above, null
         /// is returned in the array slot (for example, if the dataset does not produce static numeric values, the array slot is set to [0] = null.</remarks>
-        public SimpleTemporalDatumCollection GetData(int nQueryIdx, ref int? nValueIdx, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nHistSteps, int nFutSteps, int nValueStepOffset = 1, bool bEnableDebug = false, string strDebugPath = null)
+        public SimpleTemporalDatumCollection GetData(int nQueryIdx, ref int? nValueIdx, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nHistSteps, int nFutSteps, int nValueStepOffset = 1, bool bOutputTime = false, bool bOutputMask = false, bool bEnableDebug = false, string strDebugPath = null)
         {
             int nTotalSteps = nHistSteps + nFutSteps;
             int nColCount = m_nColCount;
@@ -214,6 +216,19 @@ namespace MyCaffe.db.temporal
             rgData.Add(sdFutCat);
             rgData.Add(sdTarget);
             rgData.Add(sdTargetHist);
+
+            if (bOutputTime)
+            {
+                SimpleTemporalDatum sdTime = getHistoricalTime(m_nValIdx, nHistSteps);
+                rgData.Add(sdTime);
+            }
+
+            if (bOutputMask)
+            {
+                SimpleTemporalDatum sdMask = getHistoricalMask(m_nValIdx, nHistSteps);
+                rgData.Add(sdMask);
+            }
+
             m_nValIdx++;
 
             return rgData;
@@ -421,6 +436,49 @@ namespace MyCaffe.db.temporal
 
             m_sdStaticNum = sdNum;
             m_sdStaticCat = sdCat;
+        }
+
+        private SimpleTemporalDatum getHistoricalTime(int nIdx, int nCount)
+        {
+            DateTime[] rgSync = getTimeSync(nIdx, nCount);
+            if (rgSync == null)
+                return null;
+
+            int nC = 1;
+            int nH = rgSync.Length;
+            int nW = 1;
+
+            DateTime dtStart = m_item.StartTime.Value;
+
+            float[] rgf = new float[nCount];
+            for (int i = 0; i < rgSync.Length; i++)
+            {
+                rgf[i] = (float)(rgSync[i] - dtStart).TotalSeconds;
+            }
+
+            SimpleTemporalDatum sd = new SimpleTemporalDatum(nC, nW, nH, rgf);
+            sd.TagName = "HistoricalTime";
+
+            return sd;
+        }
+
+        private SimpleTemporalDatum getHistoricalMask(int nIdx, int nCount)
+        {
+            float[] rgf = new float[nCount];
+
+            for (int i = 0; i < nCount; i++)
+            {
+                rgf[i] = 1.0f;
+            }
+
+            int nC = 1;
+            int nH = rgf.Length;
+            int nW = 1;
+
+            SimpleTemporalDatum sd = new SimpleTemporalDatum(nC, nW, nH, rgf);
+            sd.TagName = "HistoricalMask";
+
+            return sd;
         }
 
         private bool getHistoricalData(int nIdx, int nCount, out SimpleTemporalDatum sdNum, out SimpleTemporalDatum sdCat)

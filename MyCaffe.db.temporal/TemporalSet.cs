@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using static MyCaffe.basecode.descriptors.ValueStreamDescriptor;
 
 namespace MyCaffe.db.temporal
 {
@@ -113,10 +114,50 @@ namespace MyCaffe.db.temporal
         /// <param name="random">Specifies the random generator.</param>
         /// <param name="item">Specifies the value item description.</param>
         /// <param name="rgStrm">Specifies the ordered stream descriptors for the item.</param>
+        /// <param name="src">Optionally, specifies a source descriptor to update with temporal information.</param>
         /// <returns>The index of the item is returned.</returns>
-        public int AddDirectItemSet(CryptoRandom random, ValueItem item, OrderedValueStreamDescriptorSet rgStrm)
+        public int AddDirectItemSet(CryptoRandom random, ValueItem item, OrderedValueStreamDescriptorSet rgStrm, SourceDescriptor src = null)
         {
             ItemSet itemSet = new ItemSet(random, m_db, item, rgStrm);
+
+            if (src != null)
+            {
+                if (src.TemporalDescriptor == null)
+                    src.TemporalDescriptor = new TemporalDescriptor();
+
+                bool bFound = false;
+                foreach (ValueItemDescriptor vid in src.TemporalDescriptor.ValueItemDescriptors)
+                {
+                    if (vid.ID == item.ID)
+                    { 
+                        bFound = true; 
+                        break; 
+                    }
+                }
+
+                if (!bFound)
+                {
+                    ValueItemDescriptor vid1 = new ValueItemDescriptor(item.ID, item.Name, item.StartTime, item.EndTime, item.Steps);
+                    src.TemporalDescriptor.ValueItemDescriptors.Add(vid1);
+                }
+
+                foreach (ValueStreamDescriptor vsd1 in rgStrm.Descriptors)
+                {
+                    bFound = false;
+                    foreach (ValueStreamDescriptor vsd in src.TemporalDescriptor.ValueStreamDescriptors)
+                    {
+                        if (vsd.ID == vsd1.ID)
+                        {
+                            bFound = true;
+                            break;
+                        }
+                    }
+
+                    if (!bFound)
+                        src.TemporalDescriptor.ValueStreamDescriptors.Add(vsd1);
+                }
+            }
+
             m_rgItems.Add(itemSet);
             return m_rgItems.Count - 1;
         }
@@ -361,13 +402,15 @@ namespace MyCaffe.db.temporal
         /// <param name="itemSelectionMethod">Specifies the item index selection method.</param>
         /// <param name="valueSelectionMethod">Specifies the value starting point selection method.</param>
         /// <param name="nValueStepOffset">Optionally, specifies the value step offset from the previous query (default = 1, this parameter only applies when using non random selection).</param>
+        /// <param name="bOutputTime">Optionally, output the time data.</param>
+        /// <param name="bOutputMask">Optionally, output the mask data.</param>
         /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
         /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
         /// <returns>An collection of SimpleTemporalDatums is returned where: [0] = static num, [1] = static cat, [2] = historical num, [3] = historical cat, [4] = future num, [5] = future cat, [6] = target, and [7] = target history
         /// for a given item at the temporal selection point.</returns>
         /// <remarks>Note, the ordering for historical value streams is: observed, then known.  Future value streams only contiain known value streams.  If a dataset does not have one of the data types noted above, null
         /// is returned in the array slot (for example, if the dataset does not produce static numeric values, the array slot is set to [0] = null.</remarks>
-        public SimpleTemporalDatumCollection GetData(int nQueryIdx, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD itemSelectionMethod, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nValueStepOffset = 1, bool bEnableDebug = false, string strDebugPath = null)
+        public SimpleTemporalDatumCollection GetData(int nQueryIdx, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD itemSelectionMethod, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nValueStepOffset = 1, bool bOutputTime = false, bool bOutputMask = false, bool bEnableDebug = false, string strDebugPath = null)
         {
             SimpleTemporalDatumCollection data = null;
 
@@ -390,7 +433,7 @@ namespace MyCaffe.db.temporal
                 if (m_nItemIdx >= m_rgItems.Count)
                     return null;
 
-                data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bEnableDebug, strDebugPath);
+                data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bEnableDebug, strDebugPath);
 
                 int nRetryCount = 0;
                 while (data == null && nRetryCount < 40)
@@ -408,7 +451,7 @@ namespace MyCaffe.db.temporal
                     }
 
                     nItemIdx = m_nItemIdx;
-                    data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bEnableDebug, strDebugPath);
+                    data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bEnableDebug, strDebugPath);
                     nRetryCount++;
                 }
             }

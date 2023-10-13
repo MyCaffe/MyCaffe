@@ -571,7 +571,7 @@ namespace MyCaffe.db.temporal
             DateTime dtStart = (DateTime)plots[0].Tag;
             DateTime dtEnd = (DateTime)plots[nTrainingCount - 1].Tag;
             int nSteps = nTrainingCount;
-            int nItemIDTrain = AddDirectDatasetItemSet(dsd.TrainingSource.ID, "Data", dtStart, dtEnd, nSteps, rgStrm);
+            int nItemIDTrain = AddDirectDatasetItemSet(dsd.TrainingSource.ID, "Data", dtStart, dtEnd, nSteps, rgStrm, dsd.TrainingSource);
 
             dsd.TrainingSource.SetImageCount(nTrainingCount);
             AddDirectValues(dsd.TrainingSource.ID, nItemIDTrain, plots, 0, nTrainingCount, nValIdx);
@@ -579,7 +579,7 @@ namespace MyCaffe.db.temporal
             dtStart = (DateTime)plots[nTrainingCount].Tag;
             dtEnd = (DateTime)plots[plots.Count - 1].Tag;
             nSteps = nTestingCount;
-            int nItemIDTest = AddDirectDatasetItemSet(dsd.TestingSource.ID, "Data", dtStart, dtEnd, nSteps, rgStrm);
+            int nItemIDTest = AddDirectDatasetItemSet(dsd.TestingSource.ID, "Data", dtStart, dtEnd, nSteps, rgStrm, dsd.TestingSource);
 
             dsd.TestingSource.SetImageCount(nTestingCount);
             AddDirectValues(dsd.TestingSource.ID, nItemIDTest, plots, nTrainingCount, plots.Count, nValIdx);
@@ -675,8 +675,9 @@ namespace MyCaffe.db.temporal
         /// <param name="dtEnd">Specifies the item set end time.</param>
         /// <param name="nSteps">Specifies the item set steps.</param>
         /// <param name="rgStrm">Specifies the item set data streams.</param>
+        /// <param name="src">Optionally, specifies a source descriptor to update with temporal information.</param>
         /// <returns>The new item set ID is returned.</returns>
-        public int AddDirectDatasetItemSet(int nSrcID, string strName, DateTime dtStart, DateTime dtEnd, int nSteps, OrderedValueStreamDescriptorSet rgStrm)
+        public int AddDirectDatasetItemSet(int nSrcID, string strName, DateTime dtStart, DateTime dtEnd, int nSteps, OrderedValueStreamDescriptorSet rgStrm, SourceDescriptor src = null)
         {
             ValueItem vi = new ValueItem();
             vi.Name = strName;
@@ -687,7 +688,7 @@ namespace MyCaffe.db.temporal
             vi.ID = getNewDirectID();
 
             TemporalSet ts = getTemporalSet(nSrcID);
-            return ts.AddDirectItemSet(m_random, vi, rgStrm);
+            return ts.AddDirectItemSet(m_random, vi, rgStrm, src);
         }
 
         /// <summary>
@@ -733,16 +734,18 @@ namespace MyCaffe.db.temporal
         /// <param name="nValueIdx">Specifies the value index override when not null, returns the index used with in the item.</param>
         /// <param name="itemSelectionOverride">Optionally, specifies the item selection method used to select the item (e.g., customer, station, stock symbol)</param>
         /// <param name="valueSelectionOverride">Optionally, specifies the value selection method used to select the index within the temporal data of the selected item.</param>
+        /// <param name="bOutputTime">Optionally, output the time data.</param>
+        /// <param name="bOutputMask">Optionally, output the mask data.</param>
         /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
         /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
         /// <returns>A tuple containing the static, observed and known data is returned.</returns>
-        public SimpleTemporalDatumCollection QueryTemporalItem(int nQueryIdx, int nSrcId, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD? itemSelectionOverride = null, DB_ITEM_SELECTION_METHOD? valueSelectionOverride = null, bool bEnableDebug = false, string strDebugPath = null)
+        public SimpleTemporalDatumCollection QueryTemporalItem(int nQueryIdx, int nSrcId, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD? itemSelectionOverride = null, DB_ITEM_SELECTION_METHOD? valueSelectionOverride = null, bool bOutputTime = false, bool bOutputMask = false, bool bEnableDebug = false, string strDebugPath = null)
         {
             TemporalSet ts = getTemporalSet(nSrcId);
             DB_LABEL_SELECTION_METHOD itemSelection = (itemSelectionOverride.HasValue) ? itemSelectionOverride.Value : m_itemSelectionMethod;
             DB_ITEM_SELECTION_METHOD valueSelection = (valueSelectionOverride.HasValue) ? valueSelectionOverride.Value : m_valueSelectionMethod;
 
-            return ts.GetData(nQueryIdx, ref nItemIdx, ref nValueIdx, itemSelection, valueSelection, 1, bEnableDebug, strDebugPath);
+            return ts.GetData(nQueryIdx, ref nItemIdx, ref nValueIdx, itemSelection, valueSelection, 1, bOutputTime, bOutputMask, bEnableDebug, strDebugPath);
         }
 
         /// <summary>
