@@ -27,6 +27,7 @@ namespace MyCaffe.db.temporal
         int m_nColCount = 0;
         List<int> m_rgRowCount = new List<int>(8);
         int m_nTargetStreamNumIdx = 0;
+        bool m_bTargetStreamOverlapsObserved = true;
         RawValueSet m_data = null;
         SimpleTemporalDatum m_sdStaticNum = null;
         SimpleTemporalDatum m_sdStaticCat = null;
@@ -125,6 +126,14 @@ namespace MyCaffe.db.temporal
 
             int[] rgStrmID = rgStrm.Select(p => p.ID).ToArray();
 
+            double? dfTargetIdx = plots.GetParameter("StreamTargetIdx");
+            if (dfTargetIdx.HasValue)
+                m_nTargetStreamNumIdx = (int)dfTargetIdx.Value;
+
+            double? dfTargetOverlapsNum = plots.GetParameter("StreamTargetOverlapsNum");
+            if (dfTargetOverlapsNum.HasValue)
+                m_bTargetStreamOverlapsObserved = dfTargetOverlapsNum.Value == 1.0 ? true : false;
+
             return m_data.AddDirectValues(plots, rgStrmID, nStartIdx, nEndIdx, nValIdx);
         }
 
@@ -183,7 +192,7 @@ namespace MyCaffe.db.temporal
 
             SimpleTemporalDatum sdHistNum = null;
             SimpleTemporalDatum sdHistCat = null;
-            if (!getHistoricalData(m_nValIdx, nHistSteps, out sdHistNum, out sdHistCat))
+            if (!getHistoricalData(m_nValIdx, nHistSteps, m_nTargetStreamNumIdx, m_bTargetStreamOverlapsObserved, out sdHistNum, out sdHistCat))
                 return null;
 
             SimpleTemporalDatum sdFutNum = null;
@@ -481,12 +490,12 @@ namespace MyCaffe.db.temporal
             return sd;
         }
 
-        private bool getHistoricalData(int nIdx, int nCount, out SimpleTemporalDatum sdNum, out SimpleTemporalDatum sdCat)
+        private bool getHistoricalData(int nIdx, int nCount, int nTargetIdx, bool bTargetOverlapsNum, out SimpleTemporalDatum sdNum, out SimpleTemporalDatum sdCat)
         {
             sdNum = null;
             sdCat = null;
 
-            Tuple<float[], float[], DateTime[]> dataObs = m_data.GetObservedValues(nIdx, nCount);
+            Tuple<float[], float[], DateTime[]> dataObs = m_data.GetObservedValues(nIdx, nCount, nTargetIdx, bTargetOverlapsNum);
             if (dataObs == null)
                 return false;
 
