@@ -21,7 +21,7 @@ The C# based MyCaffe open-source project is independently maintained by <a href=
 available under the Apache 2.0 License.
 <h3>Supported Development Environments:</h3>
 * Visual Studio 2022 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 11.8.0</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 8.8.0</a> (current test pass)</br>
-* Visual Studio 2022 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 12.2.1</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 8.9.4</a></br>
+* Visual Studio 2022 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 12.2.2</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 8.9.5</a></br>
 </br>
 
 NOTE: Compute 5.3 and above required for CUDA 11.8.0/cuDNN 8.8.0 when using __half sized memory.
