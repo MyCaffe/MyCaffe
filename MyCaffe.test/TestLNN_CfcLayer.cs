@@ -24,6 +24,7 @@ using System.Threading;
 using SimpleGraphing;
 using static MyCaffe.param.lnn.CfcParameter;
 using System.Windows.Forms;
+using MyCaffe.db.temporal;
 
 /// <summary>
 /// Testing the Cfc layer.
@@ -223,7 +224,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestTrainingRealTimeFuture_CFC()
+        public void TestTrainingRealTimeMultiValue_CFC()
         {
             CfcLayerTest test = new CfcLayerTest();
 
@@ -238,7 +239,7 @@ namespace MyCaffe.test
                     bool bRecord = false;
                     CfcUnitParameter.ACTIVATION activation = CfcUnitParameter.ACTIVATION.TANH;
 
-                    t.TestTrainingRealTimeFuture(false, bEnableUI, CfcParameter.CELL_TYPE.CFC, activation, nStepsForward, nFutureSteps, nCurveType, bRecord);
+                    t.TestTrainingRealTimeMultiValue(false, bEnableUI, CfcParameter.CELL_TYPE.CFC, activation, nStepsForward, nFutureSteps, nCurveType, bRecord);
                 }
             }
             finally
@@ -262,11 +263,12 @@ namespace MyCaffe.test
                     int nCurveType = 0; // default = 0, SIN
                     bool bRecord = false;
                     bool bShuffle = true;
-                    bool bLiquidInference = false;
+                    bool bLiquidInference = true;
                     int nBatchIdxLock = -1; // Values >= 0 lock on that item within the dataset;
-                    LayerParameter.LayerType layerType = LayerParameter.LayerType.CFC;
+                    LayerParameter.LayerType layerType = LayerParameter.LayerType.INNERPRODUCT;
+                    int nTrainIter = 12000;
 
-                    t.TestTrainingRealTimeFutureBatch(false, bEnableUI, layerType, nStepsForward, nFutureSteps, nCurveType, bRecord, bShuffle, bLiquidInference, nBatchIdxLock);
+                    t.TestTrainingRealTimeFutureBatch(false, bEnableUI, layerType, nStepsForward, nFutureSteps, nCurveType, bRecord, bShuffle, bLiquidInference, nBatchIdxLock, nTrainIter);
                 }
             }
             finally
@@ -319,8 +321,8 @@ namespace MyCaffe.test
         void TestGradient(bool bNoGate);
         void TestTrainingBatch(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type);
         void TestTrainingRealTime(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, int nStepsForward = -1, int nFutureSteps = 1, bool bRecord = false);
-        void TestTrainingRealTimeFuture(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, CfcUnitParameter.ACTIVATION activation, int nStepsForward = -1, int nFutureSteps = 1, int nCurveType = 0, bool bRecord = false);
-        void TestTrainingRealTimeFutureBatch(bool bNoGate, bool bEnableUI, LayerParameter.LayerType layerType, int nStepsForward = -1, int nFutureSteps = 1, int nCurveType = 0, bool bRecord = false, bool bShuffle = false, bool bLiquidInference = true, int nBatchIdxLock = -1);
+        void TestTrainingRealTimeMultiValue(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, CfcUnitParameter.ACTIVATION activation, int nStepsForward = -1, int nFutureSteps = 1, int nCurveType = 0, bool bRecord = false);
+        void TestTrainingRealTimeFutureBatch(bool bNoGate, bool bEnableUI, LayerParameter.LayerType layerType, int nStepsForward = -1, int nFutureSteps = 1, int nCurveType = 0, bool bRecord = false, bool bShuffle = false, bool bLiquidInference = true, int nBatchIdxLock = -1, int nTrainIter = 1000);
         void TestTrainingRealTimeCombo(bool bEnableUI, bool bEmphasizeCfcNoGateF, bool bEmphasizeCfcNoGateT, bool bEmphasizeLtc, bool bRecord = false);
         void TestTrainingRealTimeComboNets(bool bEnableUI, bool bEmphasizeCfc, bool bEmphasizeLstm, bool bEmphasizeLinear, bool bRecord = false);
     }
@@ -708,7 +710,7 @@ namespace MyCaffe.test
         /// <param name="activation">Optionally, specifies the activation type (default = RELU).</param>
         /// <param name="bFuturePrediction">Optionally, specifies future prediction (default = false).</param>
         /// <returns></returns>
-        private string buildModel(int nBatchSize, int nInputSize, bool bNoGate, int nHiddenSize, float fDropout, int nLayers, int nUnits, int nOutputSize, CfcParameter.CELL_TYPE cell_type = CfcParameter.CELL_TYPE.CFC, CfcUnitParameter.ACTIVATION activation = CfcUnitParameter.ACTIVATION.RELU, bool bFuturePrediction = false)
+        private string buildModel(int nBatchSize, int nInputSize, bool bNoGate, int nHiddenSize, float fDropout, int nLayers, int nUnits, int nOutputSize, CfcParameter.CELL_TYPE cell_type, CfcUnitParameter.ACTIVATION activation = CfcUnitParameter.ACTIVATION.RELU, bool bFuturePrediction = false)
         {
             NetParameter p = new NetParameter();
             p.name = "cfc_net";
@@ -804,8 +806,10 @@ namespace MyCaffe.test
         /// <param name="nUnits">Specifies the number of backbone units used.</param>
         /// <param name="nOutputSize">Specifies the number of outputs.</param>
         /// <param name="layerType">Specifies the layer type: CFC, LSTM or INNERPRODUCT</param>
+        /// <param name="bUseDataLayer">Specifies to use a DataTemporal layer instead of an input layer (default = false).</param>
+        /// <param name="strDataSource">Optionally, specifies the data source (default = "").</param>
         /// <returns></returns>
-        private string buildModel(int nBatchSize, int nInputSize, bool bNoGate, int nHiddenSize, float fDropout, int nLayers, int nUnits, int nOutputSize, LayerParameter.LayerType layerType)
+        private string buildModel(int nBatchSize, int nInputSize, bool bNoGate, int nHiddenSize, float fDropout, int nLayers, int nUnits, int nOutputSize, LayerParameter.LayerType layerType, bool bUseDataLayer = false, string strDataSource = "")
         {
             NetParameter p = new NetParameter();
             p.name = "test_net";
@@ -813,27 +817,100 @@ namespace MyCaffe.test
             //---------------------------------
             //  Data Temporal Input
             //---------------------------------
-            LayerParameter data = new LayerParameter(LayerParameter.LayerType.INPUT);
-            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize, 1, 1 }));
-            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize }));
-            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize, 1, 1 }));
-            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nOutputSize }));
-            data.top.Add("x");
-            data.top.Add("tt");
-            data.top.Add("mask");
-            data.top.Add("target");
-            data.include.Add(new NetStateRule(Phase.TRAIN));
-            p.layer.Add(data);
+            if (bUseDataLayer)
+            {
+                LayerParameter data = new LayerParameter(LayerParameter.LayerType.DATA_TEMPORAL);
+                data.data_temporal_param.batch_size = (uint)nBatchSize;
+                data.data_temporal_param.num_historical_steps = (uint)nInputSize;
+                data.data_temporal_param.num_future_steps = (uint)nOutputSize;
+                data.data_temporal_param.shuffle_data = true;
+                data.data_temporal_param.source_type = DataTemporalParameter.SOURCE_TYPE.DIRECT;
+                data.data_temporal_param.source = strDataSource;
+                data.data_temporal_param.enable_debug_output = false;
+                data.data_temporal_param.output_target_historical = true;
+                data.data_temporal_param.output_time = true;
+                data.data_temporal_param.output_mask = true;
+                data.top.Add("ns");
+                data.top.Add("cs");
+                data.top.Add("x"); // nh
+                data.top.Add("ch");
+                data.top.Add("nf");
+                data.top.Add("cf");
+                data.top.Add("target");
+                data.top.Add("trg_hist");
+                data.top.Add("tt");
+                data.top.Add("mask");
+                data.include.Add(new NetStateRule(Phase.TRAIN));
+                p.layer.Add(data);
 
-            data = new LayerParameter(LayerParameter.LayerType.INPUT);
-            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize, 1, 1 }));
-            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize }));
-            data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize, 1, 1 }));
-            data.top.Add("x");
-            data.top.Add("tt");
-            data.top.Add("mask");
-            data.include.Add(new NetStateRule(Phase.TEST));
-            p.layer.Add(data);
+                data = new LayerParameter(LayerParameter.LayerType.DATA_TEMPORAL);
+                data.data_temporal_param.batch_size = (uint)nBatchSize;
+                data.data_temporal_param.num_historical_steps = (uint)nInputSize;
+                data.data_temporal_param.num_future_steps = (uint)nOutputSize;
+                data.data_temporal_param.shuffle_data = true;
+                data.data_temporal_param.source_type = DataTemporalParameter.SOURCE_TYPE.DIRECT;
+                data.data_temporal_param.source = strDataSource;
+                data.data_temporal_param.enable_debug_output = false;
+                data.data_temporal_param.output_target_historical = true;
+                data.data_temporal_param.output_time = true;
+                data.data_temporal_param.output_mask = true;
+                data.top.Add("ns");
+                data.top.Add("cs");
+                data.top.Add("x"); // nh
+                data.top.Add("ch");
+                data.top.Add("nf");
+                data.top.Add("cf");
+                data.top.Add("target");
+                data.top.Add("trg_hist");
+                data.top.Add("tt");
+                data.top.Add("mask");
+                data.include.Add(new NetStateRule(Phase.TEST));
+                p.layer.Add(data);
+
+                LayerParameter silence = new LayerParameter(LayerParameter.LayerType.SILENCE);
+                silence.bottom.Add("ns");
+                p.layer.Add(silence);
+
+                silence = new LayerParameter(LayerParameter.LayerType.SILENCE);
+                silence.bottom.Add("cs");
+                p.layer.Add(silence);
+
+                silence = new LayerParameter(LayerParameter.LayerType.SILENCE);
+                silence.bottom.Add("ch");
+                p.layer.Add(silence);
+
+                silence = new LayerParameter(LayerParameter.LayerType.SILENCE);
+                silence.bottom.Add("nf");
+                p.layer.Add(silence);
+
+                silence = new LayerParameter(LayerParameter.LayerType.SILENCE);
+                silence.bottom.Add("cf");
+                p.layer.Add(silence);
+            }
+            else
+            {
+                LayerParameter data = new LayerParameter(LayerParameter.LayerType.INPUT);
+                data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize, 1, 1 }));
+                data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize }));
+                data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize, 1, 1 }));
+                data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nOutputSize }));
+                data.top.Add("x");
+                data.top.Add("tt");
+                data.top.Add("mask");
+                data.top.Add("target");
+                data.include.Add(new NetStateRule(Phase.TRAIN));
+                p.layer.Add(data);
+
+                data = new LayerParameter(LayerParameter.LayerType.INPUT);
+                data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize, 1, 1 }));
+                data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize }));
+                data.input_param.shape.Add(new BlobShape(new List<int>() { nBatchSize, nInputSize, 1, 1 }));
+                data.top.Add("x");
+                data.top.Add("tt");
+                data.top.Add("mask");
+                data.include.Add(new NetStateRule(Phase.TEST));
+                p.layer.Add(data);
+            }
 
             //---------------------------------
             //  CFC Layer (Closed form Continuous-time)
@@ -873,20 +950,31 @@ namespace MyCaffe.test
                     lstm1.recurrent_param.use_cudnn_rnn8_if_supported = true;
                     lstm1.recurrent_param.batch_first = true;
                     lstm1.recurrent_param.num_layers = (uint)nLayers;
-                    lstm1.recurrent_param.num_output = (uint)nInputSize;
+                    lstm1.recurrent_param.num_output = (uint)nHiddenSize;
                     lstm1.recurrent_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.5);
                     lstm1.recurrent_param.bias_filler = new FillerParameter("constant", 0);
-
                     lstm1.bottom.Add("x");
                     lstm1.bottom.Add("mask");
                     lstm1.top.Add("lstm1");
                     p.layer.Add(lstm1);
 
+                    LayerParameter slice = new LayerParameter(LayerParameter.LayerType.SLICE);
+                    slice.slice_param.axis = 1;
+                    slice.slice_param.slice_point.Add((uint)(nInputSize - 1));
+                    slice.bottom.Add("lstm1");
+                    slice.top.Add("lstmx");
+                    slice.top.Add("lstm");
+                    p.layer.Add(slice);
+
+                    LayerParameter silence_lstmx = new LayerParameter(LayerParameter.LayerType.SILENCE);
+                    silence_lstmx.bottom.Add("lstmx");
+                    p.layer.Add(silence_lstmx);
+
                     LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
                     ip1.inner_product_param.num_output = (uint)nOutputSize;
                     ip1.inner_product_param.axis = 1;
                     ip1.inner_product_param.bias_term = true;
-                    ip1.bottom.Add("lstm1");
+                    ip1.bottom.Add("lstm");
                     ip1.top.Add("x_hat");
                     p.layer.Add(ip1);
                     break;
@@ -914,10 +1002,10 @@ namespace MyCaffe.test
             //  MSE Loss
             //---------------------------------
             LayerParameter loss = new LayerParameter(LayerParameter.LayerType.MEAN_ERROR_LOSS, "loss");
-            loss.mean_error_loss_param.axis = 1;
+            loss.mean_error_loss_param.axis = 2;
             loss.mean_error_loss_param.mean_error_type = MEAN_ERROR.MSE;
             loss.loss_weight.Add(1); // for loss
-            loss.loss_param.normalization = LossParameter.NormalizationMode.NONE;
+            loss.loss_param.normalization = LossParameter.NormalizationMode.VALID;
             loss.bottom.Add("x_hat");
             loss.bottom.Add("target");
             loss.top.Add("loss");
@@ -938,10 +1026,10 @@ namespace MyCaffe.test
             solverParam.base_lr = fLearningRate;
             solverParam.type = SolverParameter.SolverType.ADAMW;
             solverParam.test_initialization = false;
-            solverParam.test_interval = 10000;
+            solverParam.test_interval = 100000;
             solverParam.display = 10;
             solverParam.test_iter.Add(1);
-            solverParam.weight_decay = 0;
+            solverParam.weight_decay = 0.0;
             solverParam.momentum = 0.9;
             solverParam.momentum2 = 0.999;
             solverParam.adamw_decay = 0.01;
@@ -1617,7 +1705,7 @@ namespace MyCaffe.test
         /// <param name="nStepsForward">Optionally, specifies the number of future steps to predict (default = 1).  Note, nFutureSteps must be less than or equal to nStepsForward + 1.</param>
         /// <param name="nCurveType">Optionally, specifies the curve type where nCurveType = 0 for SIN, nCurveType = 1 for COS and nCurveType = 2 for RANDOM.</param>
         /// <param name="bRecord">Optionally, specifies to record the run (default = false).</param>
-        public void TestTrainingRealTimeFuture(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, CfcUnitParameter.ACTIVATION activation, int nStepsForward = -1, int nFutureSteps = 1, int nCurveType = 0, bool bRecord = false)
+        public void TestTrainingRealTimeMultiValue(bool bNoGate, bool bEnableUI, CfcParameter.CELL_TYPE cell_type, CfcUnitParameter.ACTIVATION activation, int nStepsForward = -1, int nFutureSteps = 1, int nCurveType = 0, bool bRecord = false)
         {
             int nBatchSize = 1;
             int nInputSize = 82;
@@ -1730,6 +1818,113 @@ namespace MyCaffe.test
             }
         }
 
+        private Tuple<DatasetDescriptor, MyCaffeTemporalDatabase, PlotCollectionSet> loadTemporalDatabaseSet(SettingsCaffe s, bool bNormalizedData, int nHistSteps, int nFutureSteps, int nCurveType)
+        {
+            MyCaffePythonGym gym = new MyCaffePythonGym();
+
+            // 0 = Sin, 1 = Cos, 2 = Random
+            gym.Initialize("Curve", "CurveType=" + nCurveType.ToString());
+
+            PropertySet propTest = new PropertySet();
+
+            propTest.SetProperty("Training", "True");
+            gym.Reset(propTest);
+            CurrentState state = gym.Step(0, 1, propTest);
+
+            // Create sine curve data.
+            PlotCollection plots = new PlotCollection("SineCurve");
+
+            plots.SetParameter("StreamCount", 1);
+            plots.SetParameter("StreamTargetIdx", 0); // Specifies target index.
+            plots.SetParameter("StreamTargetOverlapsNum", 1); // Keep target ans inputs separate.
+            plots.ParametersEx.Add("Stream0", "Input");
+
+            DateTime dt = DateTime.Now - TimeSpan.FromSeconds(1000);
+
+            for (int i = 0; i < 360; i++)
+            {
+                state = gym.Step(0, 1, propTest);
+
+                List<DataPoint> rgHistory = state.GymState.History;
+                DataPoint pt = rgHistory[rgHistory.Count - 1];
+
+                float[] rgf = new float[] { pt.Target };
+                Plot plot = new Plot(dt.ToFileTime(), rgf);
+                plot.Tag = dt;
+                plots.Add(plot);
+                dt += TimeSpan.FromSeconds(1);
+            }
+
+            PlotCollectionSet set = new PlotCollectionSet();
+            set.Add(plots);
+            set.Add(plots);
+            set.Add(plots);
+            set.Add(plots);
+            set.Add(plots);
+
+            // Create in-memory database.
+            PropertySet prop = new PropertySet();
+            prop.SetProperty("NormalizedData", bNormalizedData.ToString());
+            prop.SetProperty("HistoricalSteps", nHistSteps.ToString());
+            prop.SetProperty("FutureSteps", nFutureSteps.ToString());
+            MyCaffeTemporalDatabase db = new MyCaffeTemporalDatabase(m_log, prop);
+
+            // Create simple, single direct stream.
+            Tuple<DatasetDescriptor, int[], int[]> dsd = db.CreateSimpleDirectStream("Direct", "SineCurve", s, prop, set);
+
+            return new Tuple<DatasetDescriptor, MyCaffeTemporalDatabase, PlotCollectionSet>(dsd.Item1, db, set);
+        }
+
+        private Tuple<DatasetDescriptor, MyCaffeTemporalDatabase, PlotCollection> loadTemporalDatabasePlots(SettingsCaffe s, bool bNormalizedData, int nHistSteps, int nFutureSteps, int nCurveType)
+        {
+            MyCaffePythonGym gym = new MyCaffePythonGym();
+
+            // 0 = Sin, 1 = Cos, 2 = Random
+            gym.Initialize("Curve", "CurveType=" + nCurveType.ToString());
+
+            PropertySet propTest = new PropertySet();
+
+            propTest.SetProperty("Training", "True");
+            gym.Reset(propTest);
+            CurrentState state = gym.Step(0, 1, propTest);
+
+            // Create sine curve data.
+            PlotCollection plots = new PlotCollection("SineCurve");
+
+            plots.SetParameter("StreamCount", 1);
+            plots.SetParameter("StreamTargetIdx", 0); // Specifies target index.
+            plots.SetParameter("StreamTargetOverlapsNum", 1); // Keep target ans inputs separate.
+            plots.ParametersEx.Add("Stream0", "Input");
+
+            DateTime dt = DateTime.Now - TimeSpan.FromSeconds(1000);
+
+            for (int i = 0; i < 1000; i++)
+            {
+                state = gym.Step(0, 1, propTest);
+
+                List<DataPoint> rgHistory = state.GymState.History;
+                DataPoint pt = rgHistory[rgHistory.Count - 1];
+
+                float[] rgf = new float[] { pt.Target };
+                Plot plot = new Plot(dt.ToFileTime(), rgf);
+                plot.Tag = dt;
+                plots.Add(plot);
+                dt += TimeSpan.FromSeconds(1);
+            }
+
+            // Create in-memory database.
+            PropertySet prop = new PropertySet();
+            prop.SetProperty("NormalizedData", bNormalizedData.ToString());
+            prop.SetProperty("HistoricalSteps", nHistSteps.ToString());
+            prop.SetProperty("FutureSteps", nFutureSteps.ToString());
+            MyCaffeTemporalDatabase db = new MyCaffeTemporalDatabase(m_log, prop);
+
+            // Create simple, single direct stream.
+            Tuple<DatasetDescriptor, int, int> dsd = db.CreateSimpleDirectStream("Direct", "SineCurve", s, prop, plots);
+
+            return new Tuple<DatasetDescriptor, MyCaffeTemporalDatabase, PlotCollection>(dsd.Item1, db, plots);
+        }
+
         /// <summary>
         /// Test the training using real-time data to test prediction of unseen future values (with batch = 16).
         /// </summary>
@@ -1743,16 +1938,16 @@ namespace MyCaffe.test
         /// <param name="bShuffle">Optionally, specifies to shuffle the data loaded into each batch (default = false).</param>
         /// <param name="bLiquidInference">Optionally, specifies to enable the liquid inferencing where a single step of learning occurs at each inference step (default = true).</param>
         /// <remarks>WORK IN PROGRESS</remarks>
-        public void TestTrainingRealTimeFutureBatch(bool bNoGate, bool bEnableUI, LayerParameter.LayerType layerType, int nStepsForward = -1, int nFutureSteps = 1, int nCurveType = 0, bool bRecord = false, bool bShuffle = false, bool bLiquidInference = true, int nBatchIdxLock = -1)
+        public void TestTrainingRealTimeFutureBatch(bool bNoGate, bool bEnableUI, LayerParameter.LayerType layerType, int nStepsForward = -1, int nFutureSteps = 1, int nCurveType = 0, bool bRecord = false, bool bShuffle = false, bool bLiquidInference = true, int nBatchIdxLock = -1, int nTrainIter = 1000)
         {
             int nBatchSize = 64;
             int nInputSize = 82;
             int nOutputSize = nFutureSteps;
             int nHiddenSize = 256;
-            int nBackboneLayers = 2;
+            int nBackboneLayers = 1;
             int nBackboneUnits = 64;
             string strSolver = buildSolver(0.01f, 1, false);
-            string strModel = buildModel(nBatchSize, nInputSize, false, nHiddenSize, 0.0f, nBackboneLayers, nBackboneUnits, nOutputSize, layerType);
+            string strModel = buildModel(nBatchSize, nInputSize, false, nHiddenSize, 0.0f, nBackboneLayers, nBackboneUnits, nOutputSize, layerType, true, "Direct");
 
             m_bShuffleData = bShuffle;
             m_nBatchIdxLock = nBatchIdxLock;
@@ -1765,13 +1960,15 @@ namespace MyCaffe.test
 
             try
             {
-                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false);
-                Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
-                Net<T> netTest = mycaffe.GetInternalNet(Phase.TEST);
-                Solver<T> solver = mycaffe.GetInternalSolver();
+                Tuple<DatasetDescriptor, MyCaffeTemporalDatabase, PlotCollection> db1 = loadTemporalDatabasePlots(s, false, nInputSize, nFutureSteps, nCurveType);
+                DatasetDescriptor ds = db1.Item1;
+                MyCaffeTemporalDatabase db = db1.Item2;
+                PlotCollection plots = db1.Item3;
 
+                mycaffe.LoadLite(Phase.TRAIN, strSolver, strModel, null, false, false, null, null, false, db);
                 mycaffe.OnTrainingIteration += Mycaffe_OnTrainingIteration;
-                solver.OnStart += Solver_OnStart;         
+                Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
+                Solver<T> solver = mycaffe.GetInternalSolver();
 
                 // Setup the curve gym for the data.
                 MyCaffePythonGym gym = new MyCaffePythonGym();
@@ -1786,58 +1983,11 @@ namespace MyCaffe.test
                 gym.Reset(propTest);
                 CurrentState state = gym.Step(0, 1, propTest);
 
-                int nIdx = 0;
-
-
                 //-------------------------------------------------------------
-                // Generate the data for the curve over time.  Data is 
-                // generated in sequence.
+                // Pre-train the model.
                 //-------------------------------------------------------------
-                float[] rgInput = new float[nInputSize+nOutputSize];
-                float[] rgTimeSteps = new float[nInputSize+nOutputSize];
-                float[] rgMask = new float[nInputSize+nOutputSize];
-                float[] rgTarget = new float[nOutputSize];
-                int nMax = 2000;
-
-                propTest.SetProperty("status_text", "loading training data (" + nMax + " steps)...");
-
-                for (int i = 0; i < nMax; i++)
-                {
-                    List<DataPoint> rgHistory = state.GymState.History;
-
-                    if (rgHistory.Count >= nInputSize + nOutputSize)
-                    {
-                        for (int j = 0; j < nInputSize; j++)
-                        {
-                            nIdx = rgHistory.Count - (nInputSize + nOutputSize) + j;
-                            rgInput[j] = rgHistory[nIdx].Inputs[0];
-                            rgTimeSteps[j] = rgHistory[nIdx].Time;
-                            rgMask[j] = rgHistory[nIdx].Mask[0];
-                        }
-
-                        for (int j = 0; j < nOutputSize; j++)
-                        {
-                            nIdx = rgHistory.Count - nOutputSize + j;
-                            rgInput[j] = 1;
-                            rgTimeSteps[j] = rgHistory[nIdx].Time;
-                            rgMask[j] = 1;
-                            rgTarget[j] = rgHistory[nIdx].Target;
-                        }
-
-                        m_rgBatch.Add(new Tuple<float[], float[], float[], float[]>(new List<float>(rgInput).ToArray(), new List<float>(rgTimeSteps).ToArray(), new List<float>(rgMask).ToArray(), new List<float>(rgTarget).ToArray()));
-                    }
-
-                    state = gym.Step(0, 1, propTest);
-                }
-
-                //debug(m_rgBatch, 64, 129);
-
-                //-------------------------------------------------------------
-                // Train for 130 iterations on the data to learn the initial
-                // dynamics (8,320 samples when using a batch size of 64).
-                //-------------------------------------------------------------
-                int nIters = 10000;
-                mycaffe.Train(nIters);
+                if (nTrainIter > 0)
+                    mycaffe.Train(nTrainIter);
 
                 // Display the loss curve then the gym.
                 if (bEnableUI)
@@ -1861,8 +2011,9 @@ namespace MyCaffe.test
                 // by the model during training for the same curve is created
                 // each time the Gym runs.
                 //-------------------------------------------------------------
+                int nMax = 100;
                 if (bEnableUI)
-                    nMax = 1000;
+                    nMax = 2000;
 
                 Blob<T> blobX = net.FindBlob("x");
                 Blob<T> blobTt = net.FindBlob("tt");
@@ -1872,12 +2023,9 @@ namespace MyCaffe.test
 
                 // Reshape the blobs and net to a single batch.
                 // Note we are using the training net here on purpose.
-                blobX.Reshape(1, blobX.channels, blobX.height, blobX.width);
-                blobY.Reshape(1, blobY.channels, blobY.height, blobY.width);
-                blobTt.Reshape(1, blobTt.channels, blobTt.height, blobTt.width);
-                blobMask.Reshape(1, blobMask.channels, blobMask.height, blobMask.width);
-                blobXhat.Reshape(1, blobXhat.channels, blobXhat.height, blobXhat.width);
-                net.Reshape();
+                net.layers[0].layer_param.data_temporal_param.batch_size = 1;
+                if (!bLiquidInference)
+                    net.Reshape();
 
                 propTest.SetProperty("status_text", "running 'pseudo' inference...");
                 propTest.SetProperty("Training", "False");
@@ -1889,19 +2037,22 @@ namespace MyCaffe.test
                 gym.Reset(propTest);
                 state = gym.Step(0, 1, propTest);
 
+                List<Tuple<List<float>, List<float>>> rgInputQueue = new List<Tuple<List<float>, List<float>>>();
                 List<float> rgInput1 = new List<float>();
                 List<float> rgTimeSteps1 = new List<float>();
                 List<float> rgMask1 = new List<float>();
+                List<float> rgTarget1 = new List<float>();
                 float[] rgOutput1 = null;
                 float fPredictedY = 0;
 
                 // Disable the loadBatch used in training.
                 solver.OnStart -= Solver_OnStart;
+                int nIdx = 0;
+
+                List<DataPoint> rgHistory = state.GymState.History;
 
                 for (int i = 0; i < nMax; i++)
                 {
-                    List<DataPoint> rgHistory = state.GymState.History;
-
                     if (rgHistory.Count > nInputSize)
                     {
                         // Load the initial input from the history.
@@ -1911,7 +2062,7 @@ namespace MyCaffe.test
                             {
                                 nIdx = rgHistory.Count - nInputSize + j;
 
-                                rgInput1.Add(rgHistory[nIdx].Inputs[0]);
+                                rgInput1.Add(rgHistory[nIdx].Target);
                                 rgTimeSteps1.Add(rgHistory[nIdx].Time);
                                 rgMask1.Add(rgHistory[nIdx].Mask[0]);
                             }
@@ -1922,21 +2073,14 @@ namespace MyCaffe.test
                             float fTimeStep = rgTimeStepsFull[rgTimeStepsFull.Count - 1];
                             float fTimeStepInc = rgTimeStepsFull[rgTimeStepsFull.Count - 1] - rgTimeStepsFull[rgTimeStepsFull.Count - 2];
 
-                            for (int j=0; j < nOutputSize; j++)
-                            {
-                                rgInputFull.Add(0);
-                                rgTimeStepsFull.Add(fTimeStep + fTimeStepInc);
-                                rgMaskFull.Add(0);
-                                fTimeStep += fTimeStepInc;
-                            }
-
                             blobX.mutable_cpu_data = convert(rgInputFull.ToArray());
                             blobTt.mutable_cpu_data = convert(rgTimeStepsFull.ToArray());
                             blobMask.mutable_cpu_data = convert(rgMaskFull.ToArray());
                         }
 
-                        // Perform forward pass only for inferencing.
-                        net.Forward();
+                        // Perform forward pass only for inferencing, skipping the data layer
+                        // so that the blob values set above are used.
+                        net.ForwardFromTo(1);
 
                         // Get the predicted output.
                         rgOutput1 = convertF(blobXhat.mutable_cpu_data);
@@ -1955,38 +2099,46 @@ namespace MyCaffe.test
 
                     // Step to the next step in the curve for the next cycle.
                     state = gym.Step(0, 1, propTest);
+                    rgHistory = state.GymState.History;
 
                     // Update the input with the next step, and the
                     // target with the predicted values, then replace
                     // the first target value with the new input value
                     // from this step.
-                    if (rgHistory.Count > nInputSize)
+                    if (rgInput1.Count == nInputSize && rgHistory.Count > nInputSize)
                     {
                         // Remove the old input, time and mask values.
                         rgInput1.RemoveAt(0);
                         rgTimeSteps1.RemoveAt(0);
                         rgMask1.RemoveAt(0);
 
-                        // Set the target to all of the predicted values.
-                        List<float> rgTarget1 = new List<float>(rgOutput1);
-                        // Replace just the first target value with the 
-                        // 'known' input value from the curve.
-                        rgTarget1[0] = rgHistory[rgHistory.Count - 1].Target;
-
                         // Add the new input, time step, mask and target.
-                        rgInput1.Add(rgHistory[rgHistory.Count - 1].Inputs[0]);
+                        rgInput1.Add(rgHistory[rgHistory.Count - 1].Target);
                         rgTimeSteps1.Add(rgHistory[rgHistory.Count - 1].Time);
                         rgMask1.Add(rgHistory[rgHistory.Count - 1].Mask[0]);
 
-                        // Set the blob data.
+                        // Set the target to all of the predicted values.
+                        rgTarget1.Add(rgHistory[rgHistory.Count - 1].Target);
+                        rgInputQueue.Add(new Tuple<List<float>, List<float>>(new List<float>(rgInput1), new List<float>(rgTimeSteps1)));
+
+                        // Once the target fills up, perform a single training cycle.
+                        if (bLiquidInference && rgTarget1.Count == nOutputSize)
+                        {
+                            blobX.mutable_cpu_data = convert(rgInputQueue[0].Item1.ToArray());
+                            blobTt.mutable_cpu_data = convert(rgInputQueue[0].Item2.ToArray());
+                            blobY.mutable_cpu_data = convert(rgTarget1.ToArray());
+
+                            // And perform a single forward/backward/update pass.
+                            solver.Step(1);
+
+                            rgInputQueue.RemoveAt(0);
+                            rgTarget1.RemoveAt(0);
+                        }
+
+                        // Set the blob data to the current input.
                         blobX.mutable_cpu_data = convert(rgInput1.ToArray());
                         blobTt.mutable_cpu_data = convert(rgTimeSteps1.ToArray());
                         blobMask.mutable_cpu_data = convert(rgMask1.ToArray());
-                        blobY.mutable_cpu_data = convert(rgTarget1.ToArray());
-
-                        // And perform a single forward/backward/update pass.
-                        if (bLiquidInference)
-                            solver.Step(1);
                     }
                 }
 
