@@ -1508,8 +1508,9 @@ namespace MyCaffe
         /// <param name="sdMean">Optionally, specifies the image mean to use (default = null).</param>
         /// <param name="strStage">Optionally, specifies a stage under which to load the model.</param>
         /// <param name="bEnableMemTrace">Optionally, specifies to enable the memory tracing (only available in debug builds).</param>
+        /// <param name="db">Optionally, specifies the in-memory MyCaffeDatabase to use.  When <i>null</i>, an instance if the MyCaffeImageDatabase or MyCaffeTemporalDatabase is created internally depending on the DB_VERSION used.</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        public bool LoadLite(Phase phase, string strSolver, string strModel, byte[] rgWeights = null, bool bResetFirst = false, bool bCreateRunNet = true, SimpleDatum sdMean = null, string strStage = null, bool bEnableMemTrace = false)
+        public bool LoadLite(Phase phase, string strSolver, string strModel, byte[] rgWeights = null, bool bResetFirst = false, bool bCreateRunNet = true, SimpleDatum sdMean = null, string strStage = null, bool bEnableMemTrace = false, IXDatabaseBase db = null)
         {
             try
             {
@@ -1520,7 +1521,7 @@ namespace MyCaffe
                 m_strModel = strModel;
 
                 m_strStage = strStage;
-                m_db = null;
+                m_db = db;
                 m_bDbOwner = false;
 
                 RawProto protoSolver = RawProto.Parse(strSolver);
