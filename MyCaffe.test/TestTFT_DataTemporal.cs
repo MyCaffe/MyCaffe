@@ -1061,7 +1061,6 @@ namespace MyCaffe.test
             return new Tuple<DatasetDescriptor, MyCaffeTemporalDatabase, PlotCollection>(dsd.Item1, db, plots);
         }
 
-        // [WORK IN PROGRESS]
         public void TestForwardDirect()
         {
             bool bNormalizedData = false;
