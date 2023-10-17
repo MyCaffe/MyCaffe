@@ -229,6 +229,30 @@ namespace MyCaffe.basecode.descriptors
 
             return m_rgOrdered[classType][valueType];
         }
+
+        /// <summary>
+        /// Returns the full set of stream descriptors.
+        /// </summary>
+        public List<ValueStreamDescriptor> Descriptors
+        {
+            get
+            {
+                List<ValueStreamDescriptor> rg = new List<ValueStreamDescriptor>();
+
+                foreach (KeyValuePair<STREAM_CLASS_TYPE, Dictionary<STREAM_VALUE_TYPE, List<ValueStreamDescriptor>>> kv in m_rgOrdered)
+                {
+                    foreach (KeyValuePair<STREAM_VALUE_TYPE, List<ValueStreamDescriptor>> kv2 in kv.Value)
+                    {
+                        foreach (ValueStreamDescriptor vsd in kv2.Value)
+                        {
+                            rg.Add(vsd);
+                        }
+                    }
+                }
+
+                return rg;
+            }
+        }
     }
 
     /// <summary>
