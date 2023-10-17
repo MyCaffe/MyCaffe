@@ -1,4 +1,5 @@
-﻿using MyCaffe.basecode;
+﻿using Microsoft.VisualBasic.Devices;
+using MyCaffe.basecode;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.db.image;
 using SimpleGraphing;
@@ -563,7 +564,7 @@ namespace MyCaffe.db.temporal
             DatasetDescriptor dsd = CreateDirectDatasetDescriptor(strDsName);
 
             AddDirectDataset(s, dsd, null, prop);
-            OrderedValueStreamDescriptorSet rgStrm = CreateDirectStreamDescriptor(strStrmName);
+            OrderedValueStreamDescriptorSet rgStrm = CreateDirectStreamDescriptor(strStrmName, plots);
 
             int nTrainingCount = (int)Math.Ceiling(plots.Count * dfTrainingSplitPct);
             int nTestingCount = plots.Count - nTrainingCount;
@@ -585,6 +586,76 @@ namespace MyCaffe.db.temporal
             AddDirectValues(dsd.TestingSource.ID, nItemIDTest, plots, nTrainingCount, plots.Count, nValIdx);
 
             return new Tuple<DatasetDescriptor, int, int>(dsd, nItemIDTrain, nItemIDTest);
+        }
+
+        /// <summary>
+        /// Create a simple direct dataset with a single data stream.
+        /// </summary>
+        /// <param name="strDsName">Specifies the dataset name.</param>
+        /// <param name="strStrmName">Specifies the data stream name.</param>
+        /// <param name="s">Specifies the Settings.</param>
+        /// <param name="prop">Specifies the properties.</param>
+        /// <param name="set">Specifies the set of stream data.</param>
+        /// <param name="dfTrainingSplitPct">Specifies the training split for the data (default = 0.8).</param>
+        /// <param name="nValIdx">Specifies the value index into the Y_values to add (default = -1, to add all Y_values).</param>
+        /// <returns>A tuple with the DatasetDesciptor and array of training item IDs and array of testing item IDs is returned.</returns>
+        public Tuple<DatasetDescriptor, int[], int[]> CreateSimpleDirectStream(string strDsName, string strStrmName, SettingsCaffe s, PropertySet prop, PlotCollectionSet set, double dfTrainingSplitPct = 0.8, int nValIdx = -1)
+        {
+            if (set == null || set.Count == 0)
+                throw new Exception("The data must be specified.");
+
+            if (dfTrainingSplitPct <= 0 || dfTrainingSplitPct >= 1.0)
+                throw new Exception("The training split must be > 0 and < 1.0.");
+
+            DatasetDescriptor dsd = CreateDirectDatasetDescriptor(strDsName);
+
+            AddDirectDataset(s, dsd, null, prop);
+            OrderedValueStreamDescriptorSet rgStrm = CreateDirectStreamDescriptor(strStrmName, set[0]);
+
+            int nTrainingCount = (int)Math.Ceiling(set.Count * dfTrainingSplitPct);
+            int nTestingCount = set.Count - nTrainingCount;
+
+            if (nTestingCount == 0)
+            {
+                nTestingCount = 1;
+                nTrainingCount--;
+            }
+
+            DateTime dtStart = (DateTime)set[0][0].Tag;
+            DateTime dtEnd = (DateTime)set[0][set[0].Count - 1].Tag;
+            int nSteps = set[0].Count;
+            int nItemCount = 0;
+
+            List<int> rgnItemIDTrain = new List<int>();
+            for (int i = 0; i < nTrainingCount; i++)
+            {
+                int nItemIDTrain = AddDirectDatasetItemSet(dsd.TrainingSource.ID, "Data", dtStart, dtEnd, nSteps, rgStrm, dsd.TrainingSource);
+
+                Tuple<DateTime, DateTime, int> steps = AddDirectValues(dsd.TrainingSource.ID, nItemIDTrain, set[i], 0, set[i].Count, nValIdx);
+                rgnItemIDTrain.Add(nItemIDTrain);
+                nItemCount += steps.Item3;
+            }
+
+            dsd.TrainingSource.SetImageCount(nItemCount);
+
+            dtStart = (DateTime)set[nTrainingCount][0].Tag;
+            dtEnd = (DateTime)set[nTrainingCount][set[nTrainingCount].Count-1].Tag;
+            nSteps = set[nTrainingCount].Count;
+            nItemCount = 0;
+
+            List<int> rgnItemIDTest = new List<int>();
+            for (int i = 0; i < nTestingCount; i++)
+            {
+                int nItemIDTest = AddDirectDatasetItemSet(dsd.TestingSource.ID, "Data", dtStart, dtEnd, nSteps, rgStrm, dsd.TestingSource);
+
+                Tuple<DateTime, DateTime, int> steps = AddDirectValues(dsd.TestingSource.ID, nItemIDTest, set[nTrainingCount+i], 0, set[nTrainingCount + i].Count, nValIdx);
+                rgnItemIDTest.Add(nItemIDTest);
+                nItemCount += steps.Item3;
+            }
+
+            dsd.TestingSource.SetImageCount(nItemCount);
+
+            return new Tuple<DatasetDescriptor, int[], int[]>(dsd, rgnItemIDTrain.ToArray(), rgnItemIDTest.ToArray());
         }
 
 
@@ -610,11 +681,35 @@ namespace MyCaffe.db.temporal
         /// Create a new Direct Stram Descriptor.
         /// </summary>
         /// <param name="strName">Specifies the name.</param>
+        /// <param name="plots">Optionally, specifies the data plots that may contains 'StreamCount' and 'Stream0_name' streams as parameters.</param>
         /// <returns>A new Ordered Value Stream Descriptor Set is returned.</returns>
-        public OrderedValueStreamDescriptorSet CreateDirectStreamDescriptor(string strName)
+        public OrderedValueStreamDescriptorSet CreateDirectStreamDescriptor(string strName, PlotCollection plots = null)
         {
-            ValueStreamDescriptor vsd = new ValueStreamDescriptor(getNewDirectID(), strName, 1, ValueStreamDescriptor.STREAM_CLASS_TYPE.OBSERVED, ValueStreamDescriptor.STREAM_VALUE_TYPE.NUMERIC);
-            List<ValueStreamDescriptor> rgVsd = new List<ValueStreamDescriptor>() { vsd };
+            List<ValueStreamDescriptor> rgVsd = new List<ValueStreamDescriptor>();
+
+            double? dfCount = plots.GetParameter("StreamCount");
+            if (!dfCount.HasValue)
+            {
+                rgVsd.Add(new ValueStreamDescriptor(getNewDirectID(), strName, 1, ValueStreamDescriptor.STREAM_CLASS_TYPE.OBSERVED, ValueStreamDescriptor.STREAM_VALUE_TYPE.NUMERIC));
+            }
+            else
+            {
+                int nCount = (int)dfCount.Value;
+                int nOrdering = 1;
+
+                for (int i=0; i<nCount; i++)
+                {
+                    string strmName = "Stream" + i.ToString();
+                    if (!plots.ParametersEx.ContainsKey(strmName))
+                        throw new Exception("The expected ParameterEx '" + strmName + "' is missing.");
+
+                    string strStreamName = strName + "_" + strmName;
+
+                    rgVsd.Add(new ValueStreamDescriptor(getNewDirectID(), strStreamName, nOrdering, ValueStreamDescriptor.STREAM_CLASS_TYPE.OBSERVED, ValueStreamDescriptor.STREAM_VALUE_TYPE.NUMERIC));
+                    nOrdering++;
+                }
+            }
+
             return new OrderedValueStreamDescriptorSet(rgVsd);
         }
 
