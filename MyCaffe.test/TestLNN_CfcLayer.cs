@@ -259,7 +259,7 @@ namespace MyCaffe.test
                 {
                     int nStepsForward = 0; // default = -1 for the present value.
                     int nFutureSteps = 25;  // default = 1 for the present value.
-                    bool bEnableUI = true;
+                    bool bEnableUI = false;
                     int nCurveType = 0; // default = 0, SIN
                     bool bRecord = false;
                     bool bShuffle = true;
