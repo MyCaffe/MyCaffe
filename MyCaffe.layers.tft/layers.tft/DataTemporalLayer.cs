@@ -115,7 +115,7 @@ namespace MyCaffe.layers.tft
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            m_nBatchSize = m_param.data_temporal_param.batch_size;
+            int nBatchSize = (int)m_param.data_temporal_param.batch_size;
             m_nNumHistoricalSteps = m_param.data_temporal_param.num_historical_steps;
             m_nNumFutureSteps = m_param.data_temporal_param.num_future_steps;
 
@@ -142,7 +142,7 @@ namespace MyCaffe.layers.tft
                 throw new Exception("DataTemporalLayer - could not find the data for '" + m_param.data_temporal_param.source + "'. You may need to run the SignalPop AI Designer to create this " + m_param.data_temporal_param.source_type.ToString() + " dataset.");
 
             int nTotalSize = m_data.GetTotalSize();
-            m_log.CHECK_GE(nTotalSize, m_nBatchSize, "There must be enough items for at least one batch - items found = " + nTotalSize.ToString() + ", batch size = " + m_nBatchSize.ToString());
+            m_log.CHECK_GE(nTotalSize, nBatchSize, "There must be enough items for at least one batch - items found = " + nTotalSize.ToString() + ", batch size = " + nBatchSize.ToString());
         }
 
         /// <summary>
@@ -152,6 +152,12 @@ namespace MyCaffe.layers.tft
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            if (m_nBatchSize == m_param.data_temporal_param.batch_size)
+                return;
+
+            m_nBatchSize = m_param.data_temporal_param.batch_size;
+            m_data.BatchSize = (int)m_nBatchSize;
+
             int[] rgShape;
 
             if ((rgShape = m_data.GetShape(DataNpy<T>.OUTPUT_TYPE.STATIC_NUMERIC)) != null)
@@ -304,6 +310,15 @@ namespace MyCaffe.layers.tft
                 m_random = new Random((int)nSeed.Value);
             else
                 m_random = new Random();
+        }
+
+        /// <summary>
+        /// Get/set the batch size.
+        /// </summary>
+        public int BatchSize
+        {
+            get { return m_nBatchSize; }
+            set { m_nBatchSize = value; }
         }
 
         /// <summary>
@@ -495,7 +510,7 @@ namespace MyCaffe.layers.tft
         /// Specifies the batch performance set used to select the worst cases.
         /// </summary>
         protected BatchPerfSet m_batchPerfSet = null;
-
+        private int m_nLastBatchSize = 0;
 
         /// <summary>
         /// The constructor.
@@ -594,44 +609,44 @@ namespace MyCaffe.layers.tft
             DB_LABEL_SELECTION_METHOD itemSelection = (m_bShuffleData) ? DB_LABEL_SELECTION_METHOD.RANDOM : DB_LABEL_SELECTION_METHOD.NONE;
             DB_ITEM_SELECTION_METHOD valueSelection = (m_bShuffleData) ? DB_ITEM_SELECTION_METHOD.RANDOM : DB_ITEM_SELECTION_METHOD.NONE;
 
-            if (m_rgStaticNum == null)
+            if (m_rgStaticNum == null || m_nLastBatchSize != nBatchSize)
                 m_rgStaticNum = getBuffer(col, 0);
-            if (m_rgStaticCat == null)
+            if (m_rgStaticCat == null || m_nLastBatchSize != nBatchSize)
                 m_rgStaticCat = getBuffer(col, 1);
-            if (m_rgHistoricalNum == null)
+            if (m_rgHistoricalNum == null || m_nLastBatchSize != nBatchSize)
                 m_rgHistoricalNum = getBuffer(col, 2);
-            if (m_rgHistoricalCat == null)
+            if (m_rgHistoricalCat == null || m_nLastBatchSize != nBatchSize)
                 m_rgHistoricalCat = getBuffer(col, 3);
-            if (m_rgFutureNum == null)
+            if (m_rgFutureNum == null || m_nLastBatchSize != nBatchSize)
                 m_rgFutureNum = getBuffer(col, 4);
-            if (m_rgFutureCat == null)
+            if (m_rgFutureCat == null || m_nLastBatchSize != nBatchSize)
                 m_rgFutureCat = getBuffer(col, 5);
-            if (m_rgTarget == null)
+            if (m_rgTarget == null || m_nLastBatchSize != nBatchSize)
                 m_rgTarget = getBuffer(col, 6);
 
             int nIdx = 7;
 
             if (m_bOutputTargetHistorical)
             {
-                if (m_rgTargetHist == null)
+                if (m_rgTargetHist == null || m_nLastBatchSize != nBatchSize)
                     m_rgTargetHist = getBuffer(col, nIdx);
                 nIdx++;
             }
 
             if (m_bOutputTime)
             {
-                if (m_rgTime == null)
+                if (m_rgTime == null || m_nLastBatchSize != nBatchSize)
                     m_rgTime = getBuffer(col, nIdx);
                 nIdx++;
             }
 
             if (m_bOutputMask)
             {
-                if (m_rgMask == null)
+                if (m_rgMask == null || m_nLastBatchSize != nBatchSize)
                     m_rgMask = getBuffer(col, nIdx);
             }
 
-            if (m_rgIdx == null)
+            if (m_rgIdx == null || m_nLastBatchSize != nBatchSize)
                 m_rgIdx = new int[nBatchSize, 2];
 
             for (int i = 0; i < nBatchSize; i++)
@@ -750,6 +765,8 @@ namespace MyCaffe.layers.tft
                     Array.Copy(rgRawData, 0, m_rgMask, i * rgRawData.Length, rgRawData.Length);
                 }
             }
+
+            m_nLastBatchSize = nBatchSize;
 
             setBuffer(col, 0, m_rgStaticNum);
             setBuffer(col, 1, m_rgStaticCat);
