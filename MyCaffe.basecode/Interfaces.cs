@@ -853,12 +853,14 @@ namespace MyCaffe.basecode
         /// <param name="nValueIdx">Specifies the value index override when not null, returns the index used with in the item.</param>
         /// <param name="itemSelectionOverride">Optionally, specifies the item selection method used to select the item (e.g., customer, station, stock symbol)</param>
         /// <param name="valueSelectionOverride">Optionally, specifies the value selection method used to select the index within the temporal data of the selected item.</param>
+        /// <param name="bOutputTime">Optionally, output the time data.</param>
+        /// <param name="bOutputMask">Optionally, output the mask data.</param>
         /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
         /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
         /// <returns>An collection of SimpleTemporalDatum containing the static num, statuc cat, historical num, historical cat, future num, future cat, target and target hist data is returned. 
         /// If one of the value types are not produced, null is filled in the array slot.</returns>
         [OperationContract(IsOneWay = false)]
-        SimpleTemporalDatumCollection QueryTemporalItem(int nQueryIdx, int nSrcId, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD? itemSelectionOverride = null, DB_ITEM_SELECTION_METHOD? valueSelectionOverride = null, bool bEnableDebug = false, string strDebugPath = null);
+        SimpleTemporalDatumCollection QueryTemporalItem(int nQueryIdx, int nSrcId, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD? itemSelectionOverride = null, DB_ITEM_SELECTION_METHOD? valueSelectionOverride = null, bool bOutputTime = false, bool bOutputMask = false, bool bEnableDebug = false, string strDebugPath = null);
 
         /// <summary>
         /// Reset the database indexes.
