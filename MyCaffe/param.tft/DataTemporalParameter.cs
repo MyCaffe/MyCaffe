@@ -348,6 +348,8 @@ namespace MyCaffe.param.tft
                     p.source_type = SOURCE_TYPE.PATH_NPY_FILE;
                 else if (strVal == SOURCE_TYPE.SQL_DB.ToString())
                     p.source_type = SOURCE_TYPE.SQL_DB;
+                else if (strVal == SOURCE_TYPE.DIRECT.ToString())
+                    p.source_type = SOURCE_TYPE.DIRECT;
                 else
                     throw new Exception("Unknown source_type '" + strVal + "'!");
             }
