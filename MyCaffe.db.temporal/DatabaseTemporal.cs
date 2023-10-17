@@ -851,8 +851,10 @@ namespace MyCaffe.db.temporal
         /// </summary>
         /// <param name="nIdx">Specifies the start index.</param>
         /// <param name="nCount">Specifies the number of items to collect.</param>
+        /// <param name="nTargetIdx">Specifies the index of the target value within the observed values.</param>
+        /// <param name="bTargetOverlapsNum">Specifies that the target is also used as an input when true, otherwise the target is kept separate.</param>
         /// <returns>A tuple of the observed numeric and categorical values + time is returned, or null if not enough items exists from 'nIdx'.</returns>
-        public Tuple<float[], float[], DateTime[]> GetObservedValues(int nIdx, int nCount)
+        public Tuple<float[], float[], DateTime[]> GetObservedValues(int nIdx, int nCount, int nTargetIdx, bool bTargetOverlapsNum)
         {
             if (m_rgValues == null)
                 return null;
@@ -872,16 +874,30 @@ namespace MyCaffe.db.temporal
 
             for (int i=nIdx; i<nIdx + nCount; i++)
             {
-                foreach (RawValueData data in m_rgValues[i])
+                int nObsIdx = 0;
+                int nTimeIdx = 0;
+
+                for (int j=0; j < m_rgValues[i].Count; j++)
                 {
+                    RawValueData data = m_rgValues[i][j];
+
                     if (data.ClassType == STREAM_CLASS_TYPE.OBSERVED)
                     {
-                        if (data.ValueType == STREAM_VALUE_TYPE.NUMERIC)
-                            rgNum.Add(data.ValueNormalized.GetValueOrDefault(data.Value));
-                        else
-                            rgCat.Add(data.Value);
+                        if (bTargetOverlapsNum || nTargetIdx != nObsIdx)
+                        {
+                            if (data.ValueType == STREAM_VALUE_TYPE.NUMERIC)
+                                rgNum.Add(data.ValueNormalized.GetValueOrDefault(data.Value));
+                            else
+                                rgCat.Add(data.Value);
 
-                        rgTime.Add(data.TimeStamp.Value);
+                            if (nTimeIdx == 0)
+                            {
+                                rgTime.Add(data.TimeStamp.Value);
+                                nTimeIdx = 0;
+                            }
+                        }
+
+                        nObsIdx++;
                     }
                 }
             }
