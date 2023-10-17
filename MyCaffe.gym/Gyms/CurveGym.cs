@@ -38,7 +38,7 @@ namespace MyCaffe.gym
         float m_fX = 0;
         float m_fTime = 0;
         float m_fInc = (float)(Math.PI * 2.0f / 360.0f);
-        float m_fMax = (float)(Math.PI * 2.0f) * 1000;
+        float m_fMax = (float)360;
         List<DataPoint> m_rgPrevPoints = new List<DataPoint>();
         Dictionary<Color, Brush> m_rgBrushes = new Dictionary<Color, Brush>();
         Dictionary<Color, Brush> m_rgBrushesEmphasize = new Dictionary<Color, Brush>();
