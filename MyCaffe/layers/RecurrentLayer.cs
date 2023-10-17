@@ -9,6 +9,7 @@ using MyCaffe.common;
 using MyCaffe.param;
 using MyCaffe.fillers;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace MyCaffe.layers
 {
@@ -112,6 +113,9 @@ namespace MyCaffe.layers
         bool m_bWarningShown = false;
         bool m_bCudnnRnn8Supported = false;
         bool m_bUseCudnnRnn8 = false;
+        bool m_bFirstReshape = true;
+        List<int> m_rgShapeBtm0 = null;
+        List<int> m_rgShapeBtm1 = null;
 
         /// <summary>
         /// The RecurrentLayer constructor.
@@ -927,12 +931,33 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Returns true if a reshape is needed.
+        /// </summary>
+        /// <param name="colBottom">Specifies the bottom blobs.</param>
+        /// <param name="colTop">Specifies the top blobs.</param>
+        /// <param name="bReset">Specifies to reset the reshape needed.</param>
+        /// <returns>Returns true when a reshape is needed.</returns>
+        protected override bool reshapeNeeded(BlobCollection<T> colBottom, BlobCollection<T> colTop, bool bReset = true)
+        {
+            if (!bReset && m_rgShapeBtm0 != null && m_rgShapeBtm1 != null && colBottom[0].CompareShape(m_rgShapeBtm0) && colBottom[1].CompareShape(m_rgShapeBtm1))
+                return false;
+
+            m_rgShapeBtm0 = Utility.Clone<int>(colBottom[0].shape());
+            m_rgShapeBtm1 = Utility.Clone<int>(colBottom[1].shape());
+
+            return true;
+        }
+
+        /// <summary>
         /// Reshape the bottom (input) and top (output) blobs.
         /// </summary>
         /// <param name="colBottom">Specifies the collection of bottom (input) Blobs.</param>
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            if (!reshapeNeeded(colBottom, colTop, false))
+                return;
+
             Blob<T> blobBtm0 = colBottom[0];
             Blob<T> blobBtm1 = colBottom[1];
 
@@ -1019,6 +1044,24 @@ namespace MyCaffe.layers
                 colTop[2].ShareData(m_blobCy);
                 colTop[2].ShareDiff(m_blobCy);
             }
+
+            int nBidirectionalScale = (m_param.recurrent_param.bidirectional) ? 2 : 1;
+            m_cuda.SetRnn8(m_hCuDnn,
+                           m_hRnn8,
+                           (m_phase == Phase.TRAIN) ? true : false,
+                           RNN_DATALAYOUT.RNN_SEQ_MAJOR_PACKED,
+                           m_rnnMode,
+                           RNN_BIAS_MODE.RNN_DOUBLE_BIAS,
+                           m_nT,
+                           m_nN,
+                           m_nInputSize,
+                           m_nHiddenSize,
+                           m_nHiddenSize * nBidirectionalScale, // Outputs
+                           m_nHiddenSize,                       // Projection
+                           m_nNumLayers,
+                           (float)m_param.recurrent_param.dropout_ratio,
+                           (ulong)m_param.recurrent_param.dropout_seed,
+                           m_param.recurrent_param.bidirectional);
         }
 
         private void reshapeCudnnRnn(BlobCollection<T> colBottom, BlobCollection<T> colTop)
@@ -1058,6 +1101,9 @@ namespace MyCaffe.layers
                 colTop[2].ShareData(m_blobCy);
                 colTop[2].ShareDiff(m_blobCy);
             }
+
+            m_cuda.SetRnnDataDesc(m_hXDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR_UNPACKED, m_nT, m_nN, m_nInputSize, false);
+            m_cuda.SetRnnDataDesc(m_hYDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR_UNPACKED, m_nT, m_nN, m_nHiddenSize, m_param.recurrent_param.bidirectional);
         }
 
         private void reshapeCaffe(BlobCollection<T> colBottom, BlobCollection<T> colTop)
