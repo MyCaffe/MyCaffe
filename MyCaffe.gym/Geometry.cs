@@ -500,6 +500,9 @@ namespace MyCaffe.gym
     /// </summary>
     class GeomPolyLine : GeomObj
     {
+        /// <summary>
+        /// Specifies the maximum number of plots.
+        /// </summary>
         protected int m_nMaxPlots = int.MaxValue;
 
         /// <summary>
