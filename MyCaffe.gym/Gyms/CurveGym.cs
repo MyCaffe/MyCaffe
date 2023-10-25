@@ -55,6 +55,8 @@ namespace MyCaffe.gym
         MemoryMappedFile m_mm = null;
         int m_nCsvFileColumn = 0;
         int m_nCsvFileRow = 0;
+        double m_dfCsvScale = 1;
+        double m_dfCsvOffset = 0;
         double[] m_rgdfCsvRows = null;
         int m_nCsvWindowSize = 500;
         List<double> m_rgdfRollingCsvHistory = new List<double>();
@@ -657,7 +659,8 @@ namespace MyCaffe.gym
                     double dfVal = m_rgdfCsvRows[m_nCsvFileRow];
                     if (m_nCsvFileRow > m_rgdfRollingCsvHistory.Count)
                     {
-                        m_rgdfRollingCsvHistory.RemoveAt(0);
+                        if (m_rgdfRollingCsvHistory.Count > m_nCsvWindowSize)  
+                            m_rgdfRollingCsvHistory.RemoveAt(0);
                         m_rgdfRollingCsvHistory.Add(dfVal);
                     }    
                     m_nCsvFileRow++;
@@ -666,11 +669,18 @@ namespace MyCaffe.gym
 
                     // Normalize the value to the size of the data
                     // window displayed in the curve gym (e.g. 500).
-                    double dfMin = m_rgdfRollingCsvHistory.Min();
-                    double dfMax = m_rgdfRollingCsvHistory.Max();
-                    double dfRange = dfMax - dfMin;
-                    double dfNorm = (dfVal - dfMin) / dfRange;
-                    return dfNorm;
+                    if (m_rgdfRollingCsvHistory.Count >= m_nCsvWindowSize)
+                    {
+                        double dfMin = m_rgdfRollingCsvHistory.Min();
+                        double dfMax = m_rgdfRollingCsvHistory.Max();
+                        double dfRange = dfMax - dfMin;
+                        double dfNorm = (dfVal - dfMin) / dfRange;
+                        return dfNorm;
+                    }
+                    else
+                    {
+                        return dfVal;
+                    }
 
                 default:
                     throw new Exception(Name + " does not support the curve type '" + m_curveType.ToString() + "'.");
@@ -708,6 +718,9 @@ namespace MyCaffe.gym
             if (m_rgdfCsvRows != null)
                 return;
 
+            m_dfCsvScale = prop.GetPropertyAsDouble("datasource_csv_scale", 1);
+            m_dfCsvOffset = prop.GetPropertyAsDouble("datasource_csv_offset", 0);
+
             string strCsvFile = prop.GetProperty("datasource_csv_file");
             if (string.IsNullOrEmpty(strCsvFile))
                 return;
@@ -728,6 +741,12 @@ namespace MyCaffe.gym
                 double dfVal;
                 if (!double.TryParse(rgstr[m_nCsvFileColumn], out dfVal))
                     throw new Exception("The CSV File '" + rgstr[m_nCsvFileColumn] + "' does not contain a valid value for column '" + m_nCsvFileColumn.ToString() + "'");
+
+                if (m_dfCsvScale != 1)
+                    dfVal *= m_dfCsvScale;
+
+                if (m_dfCsvOffset != 0)
+                    dfVal += m_dfCsvOffset;
 
                 rgdf.Add(dfVal);
 
