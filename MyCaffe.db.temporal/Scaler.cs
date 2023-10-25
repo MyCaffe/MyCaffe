@@ -85,6 +85,9 @@ namespace MyCaffe.db.temporal
             m_ca = new CalculationArray(nLength);
         }
 
+        /// <summary>
+        /// Reset the scaler for testing.
+        /// </summary>
         public virtual void ResetForTesting()
         {
             m_ca.Clear();
