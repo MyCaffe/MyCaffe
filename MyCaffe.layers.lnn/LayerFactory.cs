@@ -14,7 +14,7 @@ using MyCaffe.param;
 namespace MyCaffe.layers.lnn
 {
     /// <summary>
-    /// The LayerFactor is responsible for creating all layers implemented in the MyCaffe.layers.tft namespace.
+    /// The LayerFactor is responsible for creating all layers implemented in the MyCaffe.layers.lnn namespace.
     /// </summary>
     public class LayerFactory : ILayerCreator
     {
