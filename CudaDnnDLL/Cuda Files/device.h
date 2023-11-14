@@ -452,6 +452,7 @@ class Device
 		long cuda_channel_min(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_max(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_mean(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long cuda_channel_stdev(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_sub(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_sum(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_div(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);

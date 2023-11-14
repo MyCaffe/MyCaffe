@@ -4010,6 +4010,126 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestMath_channel_stdev()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+            Log log = new Log("Test Channel stdev within channels");
+            long hDataMatrix = 0;
+            long hDstVector = 0;
+            long hMeanVector = 0;
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    try
+                    {
+                        int nNum = 2;
+                        int nChannels = 3;
+                        int nSpatialDim = 10;
+                        int nCount = nNum * nChannels * nSpatialDim;
+
+                        // Data matrix is an nNum x nDim matrix.  Dst matrix is the same size.
+                        List<double> rgDataMatrix = new List<double>()
+                        {
+                            1.0, -1.1, -1.2,  1.3, -1.4,  1.5, -1.6,  1.7,  1.8, 1.9,
+                            2.0,  2.1, -2.2, -2.3,  2.4,  2.5, -2.6,  2.7, -2.8, 2.9,
+                            3.0, -3.1,  3.2,  3.3, -3.4, -3.5,  3.6, -3.7,  3.8, 3.9,
+
+                            -4.0,  4.1,  4.2,  4.3,  4.4,  4.5, -4.6, -4.7,  4.8,  4.9,
+                             5.0,  5.1, -5.2,  5.3,  5.4, -5.5,  5.6, -5.7,  5.8, -5.9,
+                             6.0, -6.1,  6.2, -6.3,  6.4,  6.5,  6.6, -6.7,  6.8,  6.9
+                        };
+
+                        hDataMatrix = t.Cuda.AllocMemory(rgDataMatrix);
+                        hDstVector = t.Cuda.AllocMemory(nNum * nChannels);
+                        hMeanVector = t.Cuda.AllocMemory(nNum * nChannels);
+
+                        t.Cuda.channel_stdev(nCount, nNum, nChannels, nSpatialDim, hDataMatrix, hDstVector, hMeanVector);
+
+                        double[] rgDst = t.Cuda.GetMemoryDouble(hDstVector);
+                        double[] rgDstMean = t.Cuda.GetMemoryDouble(hMeanVector);
+                        double[] rgExpected = new double[nNum * nChannels];
+                        double[] rgExpectedMean = new double[nNum * nChannels];
+
+                        for (int n = 0; n < nNum; n++)
+                        {
+                            for (int c = 0; c < nChannels; c++)
+                            {
+                                for (int i = 0; i < nSpatialDim; i++)
+                                {
+                                    int nIdxData = n * nChannels * nSpatialDim + c * nSpatialDim + i;
+                                    int nIdxExp = n * nChannels + c;
+                                    rgExpectedMean[nIdxExp] += rgDataMatrix[nIdxData];
+                                }
+                            }
+                        }
+
+                        for (int i = 0; i < rgExpected.Length; i++)
+                        {
+                            rgExpectedMean[i] /= nSpatialDim;
+                        }
+
+                        for (int n = 0; n < nNum; n++)
+                        {
+                            for (int c = 0; c < nChannels; c++)
+                            {
+                                int nIdxExp = n * nChannels + c;
+
+                                for (int i = 0; i < nSpatialDim; i++)
+                                {
+                                    int nIdxData = n * nChannels * nSpatialDim + c * nSpatialDim + i;
+
+                                    double dfDiff = rgDataMatrix[nIdxData] - rgExpectedMean[nIdxExp];
+                                    rgExpected[nIdxExp] += dfDiff * dfDiff;
+                                }
+
+                                rgExpected[nIdxExp] /= nSpatialDim;
+                                rgExpected[nIdxExp] = Math.Sqrt(rgExpected[nIdxExp]);
+                            }
+                        }
+
+                        for (int i = 0; i < nNum * nChannels; i++)
+                        {
+                            double dfExpected = rgExpected[i];
+                            double dfExpectedMean = rgExpectedMean[i];
+                            double dfActual = rgDst[i];
+                            double dfActualMean = rgDstMean[i];
+                            double dfErr = 1e-06;
+
+                            log.EXPECT_NEAR(dfExpected, dfActual, dfErr, "The values do not match!");
+                            log.EXPECT_NEAR(dfExpectedMean, dfActualMean, dfErr, "The values do not match!");
+                        }
+                    }
+                    finally
+                    {
+                        if (hDataMatrix != 0)
+                        {
+                            t.Cuda.FreeMemory(hDataMatrix);
+                            hDataMatrix = 0;
+                        }
+
+                        if (hDstVector != 0)
+                        {
+                            t.Cuda.FreeMemory(hDstVector);
+                            hDstVector = 0;
+                        }
+
+                        if (hMeanVector != 0)
+                        {
+                            t.Cuda.FreeMemory(hMeanVector);
+                            hMeanVector = 0;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestStream()
         {
             CudaDnnTest test = new CudaDnnTest();

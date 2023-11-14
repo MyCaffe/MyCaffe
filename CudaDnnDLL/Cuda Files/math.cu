@@ -6071,6 +6071,55 @@ long Math<T>::channel_mean(int n, int nOutNum, int nChannels, int nInNum, long h
 template long Math<double>::channel_mean(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 template long Math<float>::channel_mean(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 
+template <typename T>
+__global__ void channel_stdev_kernel(const int num, const int channels, const int spatial_dim, const T* x, const T* z, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * channels && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const T* x1 = x + (i * spatial_dim);
+		double val = 0;
+		double dfSum = 0;
+
+		for (int j = 0; j < spatial_dim; j++)
+		{
+			val = (double)x1[j] - (double)z[i];
+			val *= val;
+			dfSum += val;
+		}
+
+		y[i] = (T)sqrt(dfSum / (double)spatial_dim);
+	}
+}
+
+template <typename T>
+long Math<T>::channel_stdev(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, long hZ)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+	MemoryItem* pZ;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hZ, &pZ))
+		return lErr;
+
+	channel_mean_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pZ->Data());
+	
+	if (lErr = cudaStreamSynchronize(0))
+		return lErr;
+
+	channel_stdev_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pZ->Data(), (T*)pY->Data());
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::channel_stdev(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, long hZ);
+template long Math<float>::channel_stdev(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, long hZ);
 
 
 template <typename T>

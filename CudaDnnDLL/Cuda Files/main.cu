@@ -647,6 +647,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, lon
 		case CUDA_FN_CHANNEL_MEAN:
 			return m_device.cuda_channel_mean(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
+		case CUDA_FN_CHANNEL_STDEV:
+			return m_device.cuda_channel_stdev(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
 		case CUDA_FN_CHANNEL_SUB:
 			return m_device.cuda_channel_sub(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
