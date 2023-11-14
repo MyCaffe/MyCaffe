@@ -3179,9 +3179,12 @@ long Device<T>::cuda_channel_stdev(long lInput, T* pfInput, long llInput, LONGLO
 {
 	LONG lErr;
 
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
 	if (lErr = verifyInput(llInput, plInput, 7, 7))
 		return lErr;
 
+	T fEps = pfInput[0];
 	int n = (int)plInput[0];
 	int nOutNum = (int)plInput[1];
 	int nChannels = (int)plInput[2];
@@ -3190,7 +3193,7 @@ long Device<T>::cuda_channel_stdev(long lInput, T* pfInput, long llInput, LONGLO
 	long hY = (long)plInput[5];
 	long hZ = (long)plInput[6];
 
-	return m_math.channel_stdev(n, nOutNum, nChannels, nInNum, hX, hY, hZ);
+	return m_math.channel_stdev(n, nOutNum, nChannels, nInNum, hX, hY, hZ, fEps);
 }
 
 template long Device<double>::cuda_channel_stdev(long lInput, double* pfInput, long llInput, LONGLONG* plInput, long* plOutput, double** ppfOutput);
