@@ -52,11 +52,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="CudaControlLib, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f59a5464a77ea1ad, processorArchitecture=MSIL">
-      <HintPath>..\packages\CudaControl.1.12.2.70\lib\net40\CudaControlLib.dll</HintPath>
+      <HintPath>..\packages\CudaControl.1.12.2.71\lib\net40\CudaControlLib.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
-    <Reference Include="Google.Protobuf, Version=3.25.0.0, Culture=neutral, PublicKeyToken=a7d26565bac4d604, processorArchitecture=MSIL">
-      <HintPath>..\packages\Google.Protobuf.3.25.0\lib\net45\Google.Protobuf.dll</HintPath>
+    <Reference Include="Google.Protobuf, Version=3.25.1.0, Culture=neutral, PublicKeyToken=a7d26565bac4d604, processorArchitecture=MSIL">
+      <HintPath>..\packages\Google.Protobuf.3.25.1\lib\net45\Google.Protobuf.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -226,6 +226,7 @@
     <Compile Include="param.lnn\CfcParameter.cs" />
     <Compile Include="param.lnn\LtcUnitParameter.cs" />
     <Compile Include="param.lnn\CfcUnitParameter.cs" />
+    <Compile Include="param.ptst\RevINParameter.cs" />
     <Compile Include="param.python\PythonParameter.cs" />
     <Compile Include="param.tft\CategoricalTransformationParameter.cs" />
     <Compile Include="param.tft\GateAddNormParameter.cs" />

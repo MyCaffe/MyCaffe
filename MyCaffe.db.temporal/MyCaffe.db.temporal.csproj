@@ -52,8 +52,8 @@
       <HintPath>..\packages\EntityFramework.6.4.4\lib\net45\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.VisualBasic" />
-    <Reference Include="SimpleGraphing, Version=1.12.2.70, Culture=neutral, PublicKeyToken=db1fd361618e40f6, processorArchitecture=MSIL">
-      <HintPath>..\packages\SimpleGraphingControl.1.12.2.70\lib\net40\SimpleGraphing.dll</HintPath>
+    <Reference Include="SimpleGraphing, Version=1.12.2.71, Culture=neutral, PublicKeyToken=db1fd361618e40f6, processorArchitecture=MSIL">
+      <HintPath>..\packages\SimpleGraphingControl.1.12.2.71\lib\net40\SimpleGraphing.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
