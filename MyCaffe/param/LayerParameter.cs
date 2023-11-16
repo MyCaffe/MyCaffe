@@ -477,6 +477,10 @@ namespace MyCaffe.param
             /// </summary>
             RESHAPE_TEMPORAL,
             /// <summary>
+            /// Initializes a parameter for the RevINLayer.
+            /// </summary>
+            REVIN,
+            /// <summary>
             /// Initializes a parameter for the ScalarLayer.
             /// </summary>
             SCALAR,
@@ -1605,6 +1609,12 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("reshape_t");
                     m_rgLayerParameters[lt] = new ReshapeTemporalParameter();
+                    break;
+
+                case LayerType.REVIN:
+                    expected_bottom.Add("input");
+                    expected_top.Add("revin");
+                    m_rgLayerParameters[lt] = new RevINParameter();
                     break;
 
                 case LayerType.SQUEEZE:
@@ -2743,6 +2753,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.REVIN
+        /// </summary>
+        public RevINParameter revin_param
+        {
+            get { return (RevINParameter)m_rgLayerParameters[LayerType.REVIN]; }
+            set { m_rgLayerParameters[LayerType.REVIN] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.RESHAPE
         /// </summary>
         public SqueezeParameter squeeze_param
@@ -3398,6 +3417,9 @@ namespace MyCaffe.param
                 case LayerType.RESHAPE_TEMPORAL:
                     return "ReshapeTemporal";
 
+                case LayerType.REVIN:
+                    return "RevIN";
+
                 case LayerType.SQUEEZE:
                     return "Squeeze";
 
@@ -3675,6 +3697,9 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(reshape_temporal_param, "reshape_temporal_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(quantile_loss_param, "quantile_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(quantile_accuracy_param, "quantile_accuracy_param"));
+
+            // PTST Layers
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(revin_param, "revin_param"));
 
             // LNN Layers
             rgParam.Add(new KeyValuePair<BaseParameter, string>(cfc_param, "cfc_param"));
@@ -4079,8 +4104,11 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("quantile_accuracy_param")) != null)
                 p.quantile_accuracy_param = QuantileAccuracyParameter.FromProto(rpp);
 
-            // LNN Layers
+            // PTST Layers
+            if ((rpp = rp.FindChild("revin_param")) != null)
+                p.revin_param = RevINParameter.FromProto(rpp);
 
+            // LNN Layers
             if ((rpp = rp.FindChild("cfc_param")) != null)
                 p.cfc_param = CfcParameter.FromProto(rpp);
 
@@ -4491,6 +4519,9 @@ namespace MyCaffe.param
 
                 case "reshapetemporal":
                     return LayerType.RESHAPE_TEMPORAL;
+
+                case "revin":
+                    return LayerType.REVIN;
 
                 case "squeeze":
                     return LayerType.SQUEEZE;
