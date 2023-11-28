@@ -767,6 +767,12 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, lon
 		case CUDA_FN_MEAN_ERROR_LOSS_BWD:
 			return m_device.cuda_mean_error_loss_bwd(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
+		case CUDA_FN_BCE_WITH_LOGITS_LOSS_FWD:
+			return m_device.cuda_bce_with_logits_loss_fwd(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDA_FN_BCE_WITH_LOGITS_LOSS_BWD:
+			return m_device.cuda_bce_with_logits_loss_bwd(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
 		case CUDA_FN_MISH_FWD:
 			return m_device.cuda_mish_fwd(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
@@ -1856,6 +1862,12 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_MEAN_ERROR_LOSS_BWD:
 		return "CUDA_FN_MEAN_ERROR_LOSS_BWD";
+
+	case CUDA_FN_BCE_WITH_LOGITS_LOSS_FWD:
+		return "CUDA_FN_BCE_WITH_LOGITS_LOSS_FWD";
+
+	case CUDA_FN_BCE_WITH_LOGITS_LOSS_BWD:
+		return "CUDA_FN_BCE_WITH_LOGITS_LOSS_BWD";
 
 	case CUDA_FN_MISH_FWD:
 		return "CUDA_FN_MISH_FWD";

@@ -137,6 +137,10 @@ namespace MyCaffe.param
             /// </summary>
             ATTENTION,
             /// <summary>
+            /// Initializes a parameter for the BatchReindexLayer.
+            /// </summary>
+            BCE_WITH_LOGITS_LOSS,
+            /// <summary>
             /// Initializes a parameter for the BiasLayer.
             /// </summary>
             BIAS,
@@ -1009,6 +1013,13 @@ namespace MyCaffe.param
                     expected_bottom.Add("bias");
                     expected_top.Add("bias");
                     m_rgLayerParameters[lt] = new BiasParameter();
+                    break;
+
+                case LayerType.BCE_WITH_LOGITS_LOSS:
+                    expected_bottom.Add("pred");
+                    expected_bottom.Add("trgt");
+                    expected_top.Add("loss");
+                    m_rgLayerParameters[LayerType.LOSS] = new LossParameter();
                     break;
 
                 case LayerType.BNLL:
@@ -3150,6 +3161,9 @@ namespace MyCaffe.param
                 case LayerType.BATCHREINDEX:
                     return "BatchReIndex";
 
+                case LayerType.BCE_WITH_LOGITS_LOSS:
+                    return "BCEWithLogitsLoss";
+
                 case LayerType.BIAS:
                     return "Bias";
 
@@ -4231,6 +4245,10 @@ namespace MyCaffe.param
 
                 case "batchreindex":
                     return LayerType.BATCHREINDEX;
+
+                case "bce_with_logits_loss":
+                case "bcewithlogitsloss":
+                    return LayerType.BCE_WITH_LOGITS_LOSS;
 
                 case "bias":
                     return LayerType.BIAS;

@@ -1,0 +1,163 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using MyCaffe.basecode;
+using MyCaffe.common;
+using MyCaffe.param;
+using MyCaffe.param.beta;
+
+namespace MyCaffe.layers.beta
+{
+    /// <summary>
+    /// The BCEWithLogitsLossLayer computes the loss using binary cross entropy with logistics regression using the function below.
+    /// This type of loss is often used in image classification tasks by measuring how well a model is able to predict the correct 
+    /// class for an input image.
+    /// 
+    /// @f$ \ell(x, y) = -\frac{1}{N} \sum_{i=1}^N \left[ y_i \cdot \log \sigma(x_i) + (1 - y_i) \cdot \log (1 - \sigma(x_i)) \right] @f$ 
+    /// where @f$ x @f$ is the input and @f$ y @f$ is the predicted value.
+    /// </summary>
+    /// <remarks>
+    /// @see [BCEWithLogitsLoss](https://pytorch.org/docs/stable/generated/torch.nn.BCEWithLogitsLoss) by PyTorch
+    /// @see [What does BCEWithLogitsLoss actually do?](https://kamilelukosiute.com/2022/04/14/bce-with-logits-loss/) by Kamile Lukosiute, 2022
+    /// @see [How to Use PyTorch's BCEWithLogitsLoss Function](https://reason.town/pytorch-bcewithlogitsloss/) by joseph, 2022
+    /// </remarks>
+    /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.</typeparam>
+    public class BCEWithLogitsLossLayer<T> : LossLayer<T>
+    {
+        Blob<T> m_blobWork;
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="cuda">Cuda engine.</param>
+        /// <param name="log">General log.</param>
+        /// <param name="p">provides LossParameter loss_param.
+        /// </param>
+        public BCEWithLogitsLossLayer(CudaDnn<T> cuda, Log log, LayerParameter p)
+            : base(cuda, log, p)
+        {
+            m_type = LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS;
+            m_blobWork = new Blob<T>(cuda, log, false);
+        }
+
+        /** @copydoc Layer::dispose */
+        protected override void dispose()
+        {
+            if (m_blobWork != null)
+            {
+                m_blobWork.Dispose();
+                m_blobWork = null;
+            }
+
+            base.dispose();
+        }
+
+        /// <summary>
+        /// Returns the exact number of required top (output) Blobs as variable.
+        /// </summary>
+        public override int ExactNumTopBlobs
+        {
+            get { return 1; }
+        }
+
+        /// <summary>
+        /// Setup the layer.
+        /// </summary>
+        /// <param name="colBottom">Specifies the collection of bottom (input) Blobs.</param>
+        /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
+        public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            base.LayerSetUp(colBottom, colTop);
+        }
+
+        /// <summary>
+        /// Reshape the bottom (input) and top (output) blobs.
+        /// </summary>
+        /// <param name="colBottom">Specifies the collection of bottom (input) Blobs.</param>
+        /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
+        public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            m_nOuterNum = colBottom[0].num;
+            m_nInnerNum = colBottom[0].count(1);
+            m_blobWork.ReshapeLike(colBottom[0]);
+            base.Reshape(colBottom, colTop);
+        }
+
+        /// <summary>
+        /// The forward computation.
+        /// </summary>
+        /// <param name="colBottom">bottom input blob vector (length 2)
+        ///  -# @f$ (N \times C \times H \times W) @f$
+        ///     the predictions @f$ x @f$, a blob with values in
+        ///     @f$ [-\infty, +\infty] @f$ indicating the predicted values.
+        ///  -# @f$ (N \times C \times H \times W) @f$
+        ///     the targets @f$ y @f$, a blob with values in
+        ///     @f$ [-\infty, +\infty] @f$ indicating the target values.
+        /// </param>
+        /// <param name="colTop">top output blob vector (length 1)
+        ///     BSEWithLogitsLoss - the computed binary cross entropy loss:
+        ///     @f$ \ell(x, y) = -\frac{1}{N} \sum_{i=1}^N \left[ y_i \cdot \log \sigma(x_i) + (1 - y_i) \cdot \log (1 - \sigma(x_i)) \right] @f$ 
+        ///     where @f$ x @f$ is the input and @f$ y @f$ is the predicted value.
+        /// </param>
+        protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            long hPredicted = colBottom[0].gpu_data;
+            long hTarget = colBottom[1].gpu_data;
+            int nCount = colBottom[0].count();
+
+            m_log.CHECK_EQ(nCount, colBottom[1].count(), "The bottom(0) predicted and bottom(1) target must have the same shapes!");
+
+            m_cuda.bce_with_logits_loss_fwd(nCount, hPredicted, hTarget, 0, 0, colTop[0].mutable_gpu_data, m_blobWork.mutable_gpu_data);
+
+            double dfNormalizer = get_normalizer(m_normalization, -1);
+            double dfLoss = convertD(colTop[0].GetData(0));
+            colTop[0].SetData(dfLoss / dfNormalizer, 0);
+
+            // Clear scratch memory to prevent with interfering with backward pass (see #602)
+            colBottom[0].SetDiff(0);
+        }
+
+        /// <summary>
+        /// Computes the BSE with logits loss error gradient w.r.t the predictions.
+        /// </summary>
+        /// <param name="colTop">top output blob vector (length 1), providing the error gradient with
+        /// respect to the outputs.
+        ///   -# @f$ (1 \times 1 \times 1 \times 1) @f$
+        ///      This blob's diff will simply contain the loss_weight * @f$ \lambda @f$ as
+        ///      @f$ \lambda @f$ is the coefficient of this layer's output
+        ///      @f$ \ell_i @f$ in the overall Net loss.
+        ///      @f$ E = \lambda_i \ell_i + \mbox{other loss terms}; hence
+        ///        \frac{partial E}{\partial \ell_i} = \lambda_i
+        ///      @f$
+        ///        (*Assuming that this top blob is not used as a bottom (input) by any
+        ///        other layer of the Net.)
+        /// </param>
+        /// <param name="rgbPropagateDown">see Layer::Backward.  propagate_down[1] must be false as
+        /// we can't compute gradients with respect to the labels.</param>
+        /// <param name="colBottom">bottom input blob vector (length 1)
+        ///  -# @f$ (N \times C \times H \times W) @f$
+        ///     the gradients @f$ \hat{x} @f$; backward computes diff @f$
+        ///       \frac{\partial E}{\partial x}
+        ///     @f$
+        /// </param>
+        protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
+        {
+            if (!rgbPropagateDown[0])
+                return;
+
+            long hPredicted = colBottom[0].gpu_data;
+            long hTarget = colBottom[1].gpu_data;
+            long hBottomDiff = colBottom[0].mutable_gpu_diff;
+            int nCount = colBottom[0].count();
+
+            m_cuda.bce_with_logits_loss_bwd(nCount, hPredicted, hTarget, 0, 0, hBottomDiff);
+
+            double dfTopDiff = convertD(colTop[0].GetDiff(0));
+            double dfNormalizer = get_normalizer(m_normalization, -1);
+            double dfLossWeight = dfTopDiff / dfNormalizer;
+
+            m_cuda.scal(nCount, dfLossWeight, hBottomDiff);
+        }
+    }
+}
