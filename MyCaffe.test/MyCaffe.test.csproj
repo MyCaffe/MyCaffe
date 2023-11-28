@@ -123,6 +123,7 @@
     <Compile Include="TestLNN_LtcUnitLayer.cs" />
     <Compile Include="TestMyCaffeTemporalDatabase.cs" />
     <Compile Include="TestPersistPytorch.cs" />
+    <Compile Include="TestBCEWithLogitsLossLayer.cs" />
     <Compile Include="TestTFT_GateAddNormLayer.cs" />
     <Compile Include="TestLNN_CfcUnitLayer.cs" />
     <Compile Include="TestTFT_MultiHeadAttentionInterpLayer.cs" />
