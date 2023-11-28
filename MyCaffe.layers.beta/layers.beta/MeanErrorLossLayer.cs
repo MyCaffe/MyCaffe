@@ -129,7 +129,7 @@ namespace MyCaffe.layers.beta
         ///     the predictions @f$ x @f$, a blob with values in
         ///     @f$ [-\infty, +\infty] @f$ indicating the predicted values.
         ///  -# @f$ (N \times C \times H \times W) @f$
-        ///     the predictions @f$ x @f$, a blob with values in
+        ///     the targets @f$ y @f$, a blob with values in
         ///     @f$ [-\infty, +\infty] @f$ indicating the target values.
         /// </param>
         /// <param name="colTop">top output blob vector (length 1)
