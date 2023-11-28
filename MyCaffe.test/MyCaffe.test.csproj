@@ -131,7 +131,7 @@
     <Compile Include="TestTFT_TransformInputs.cs" />
     <Compile Include="TestTFT_StaticEnrichment.cs" />
     <Compile Include="TestTFT_SequenceProcessing.cs" />
-    <Compile Include="TestTFT_TemporalFustionTransformer.cs" />
+    <Compile Include="TestTFT_TemporalFusionTransformer.cs" />
     <Compile Include="TestTFT_VarSelNetLayer.cs" />
     <Compile Include="TestTFT_GrnLayer.cs" />
     <Compile Include="TestTFT_GluLayer.cs" />
