@@ -52,7 +52,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="CudaControlLib, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f59a5464a77ea1ad, processorArchitecture=MSIL">
-      <HintPath>..\packages\CudaControl.1.12.2.71\lib\net40\CudaControlLib.dll</HintPath>
+      <HintPath>..\packages\CudaControl.1.12.2.73\lib\net40\CudaControlLib.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Google.Protobuf, Version=3.25.1.0, Culture=neutral, PublicKeyToken=a7d26565bac4d604, processorArchitecture=MSIL">
@@ -242,6 +242,7 @@
     <Compile Include="param\ConstantParameter.cs" />
     <Compile Include="param.beta\GatherParameter.cs" />
     <Compile Include="param.gpt\NLLLossParameter.cs" />
+    <Compile Include="param.beta\BCEWithLogitsLossParameter.cs" />
     <Compile Include="param\MathParameter.cs" />
     <Compile Include="param\ImageDataParameter.cs" />
     <Compile Include="param\DataLabelMappingParameter.cs" />
