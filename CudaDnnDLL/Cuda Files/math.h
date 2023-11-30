@@ -298,7 +298,7 @@ class Math
 
 		long mean_error_loss_bwd(int nCount, long hPredicted, long hTarget, long hBottomDiff, int nMeanErr);
 
-		long cuda_bce_with_logits_loss_fwd(int nCount, long hX, long hY, long hW, long hPosW, long hLossData);
+		long cuda_bce_with_logits_loss_fwd(int nCount, int nN, long hX, long hY, long hW, long hPosW, long hLossData);
 		long cuda_bce_with_logits_loss_bwd(int nCount, int nN, long hX, long hY, long hW, long hPosW, bool bMeanReduction, long hGrad);
 
 		long mish_fwd(int nCount, long hBottomData, long hTopData, T fThreshold);

@@ -9024,6 +9024,7 @@ namespace MyCaffe.common
         /// Calculates the BCEWithLogitsLoss forward pass in Cuda.
         /// </summary>
         /// <param name="nCount">Specifies the number of elements in hX, hY, hW (optional), hPosW (optional) and hLossData.</param>
+        /// <param name="nN">Specifies the number of batches in the data.</param>
         /// <param name="hX">Specifies the GPU memory containing the input data.</param>
         /// <param name="hY">Specifies the GPU memory containing the target data.</param>
         /// <param name="hW">Specifies the GPU memory optionally containing the weights, or 0 to ignore.</param>
@@ -9033,19 +9034,19 @@ namespace MyCaffe.common
         /// @see [What does BCEWithLogitsLoss actually do?](https://kamilelukosiute.com/2022/04/14/bce-with-logits-loss/) by Kamile Lukosiute, 2022
         /// @see [How to Use PyTorch's BCEWithLogitsLoss Function](https://reason.town/pytorch-bcewithlogitsloss/) by joseph, 2022
         /// </remarks>
-        public void bce_with_logits_loss_fwd(int nCount, long hX, long hY, long hW, long hPosW, long hLossData)
+        public void bce_with_logits_loss_fwd(int nCount, int nN, long hX, long hY, long hW, long hPosW, long hLossData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDAFN_BCE_WITH_LOGITS_LOSS_FWD, null, m_param.AsLong(nCount, hX, hY, hW, hPosW, hLossData));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDAFN_BCE_WITH_LOGITS_LOSS_FWD, null, m_param.AsLong(nCount, nN, hX, hY, hW, hPosW, hLossData));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDAFN_BCE_WITH_LOGITS_LOSS_FWD, null, m_param.AsLong(nCount, hX, hY, hW, hPosW, hLossData));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDAFN_BCE_WITH_LOGITS_LOSS_FWD, null, m_param.AsLong(nCount, nN, hX, hY, hW, hPosW, hLossData));
         }
 
         /// <summary>
         /// Calculates the BCEWithLogitsLoss backward pass in Cuda.
         /// </summary>
         /// <param name="nCount">Specifies the number of elements in hX, hY, hW (optional) and hPosW (optional).</param>
-        /// <param name="nN">Specifies the number of weights sets or nCount of none.</param>
+        /// <param name="nN">Specifies the number of batches in the data.</param>
         /// <param name="hX">Specifies the GPU memory containing the input data.</param>
         /// <param name="hY">Specifies the GPU memory containing the target data.</param>
         /// <param name="hW">Specifies the GPU memory optionally containing the weights, or 0 to ignore.</param>

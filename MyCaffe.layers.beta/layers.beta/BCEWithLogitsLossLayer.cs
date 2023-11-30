@@ -126,13 +126,14 @@ namespace MyCaffe.layers.beta
             long hTarget = colBottom[1].gpu_data;
             long hWeights = 0;
             int nCount = colBottom[0].count();
+            int nN = colBottom[0].num;
 
             if (m_blobWeights.count() > 0)
                 hWeights = m_blobWeights.gpu_data;  
 
             m_log.CHECK_EQ(nCount, colBottom[1].count(), "The bottom(0) predicted and bottom(1) target must have the same shapes!");
             
-            m_cuda.bce_with_logits_loss_fwd(nCount, hPredicted, hTarget, hWeights, 0, m_blobLoss.mutable_gpu_data);
+            m_cuda.bce_with_logits_loss_fwd(nCount, nN, hPredicted, hTarget, hWeights, 0, m_blobLoss.mutable_gpu_data);
 
             T fVal = m_blobLoss.asum_data();
             double dfLoss = convertD(fVal);
@@ -179,14 +180,11 @@ namespace MyCaffe.layers.beta
             long hTarget = colBottom[1].gpu_data;
             long hBottomDiff = colBottom[0].mutable_gpu_diff;
             int nCount = colBottom[0].count();
+            int nN = colBottom[0].num;
             long hWeights = 0;
-            int nN = nCount;
 
             if (m_blobWeights.count() > 0)
-            {
                 hWeights = m_blobWeights.gpu_data;
-                nN = m_blobWeights.channels;
-            }
 
             m_cuda.bce_with_logits_loss_bwd(nCount, nN, hPredicted, hTarget, hWeights, 0, m_bMeanReduction, hBottomDiff);
 

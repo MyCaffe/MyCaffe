@@ -1,5 +1,5 @@
 //=============================================================================
-//  Copyright (c) 2016-2020, SignalPOP.  All rights reserved.
+//  Copyright (c) 2016-2023, SignalPOP.  All rights reserved.
 //
 //	--CAFFE--
 //  Portions Copyright (c) 2014, 2015, The Regents of the University of California (Regents)
@@ -102,6 +102,42 @@ inline __device__ double truncate(const double val)
 		return 255.0;
 	else		
 		return val;
+}
+
+template <typename T>
+inline __device__ T sigmoid1(const T x);
+
+template <>
+inline __device__ double sigmoid1(const double x)
+{
+	return 1.0 / (1.0 + exp(-x));
+}
+
+template <>
+inline __device__ float sigmoid1(const float x)
+{
+	return 1.0f / (1.0f + expf(-x));
+}
+
+template <typename T>
+inline __device__ T log1(const T x);
+
+template <>
+inline __device__ double log1(const double x)
+{
+	return log(x);
+}
+
+template <>
+inline __device__ float log1(const float x)
+{
+	return logf(x);
+}
+
+template <typename T>
+inline __device__ T tanh(const T x)
+{
+	return T(2) * sigmoid1(T(2) * x) - T(1);
 }
 
 template<typename T>
@@ -8096,6 +8132,7 @@ long Math<T>::rng_gaussian(int n, T fMu, T fSigma, long hY)
 		return lErr;
 
 	rng_gaussian(n, fMu, fSigma, (T*)pY->Data(), pY->Size());
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::rng_gaussian(int n, double fMu, double fSigma, long hY);
@@ -9984,61 +10021,57 @@ template long Math<double>::mean_error_loss_bwd(int nCount, long hPredicted, lon
 template long Math<float>::mean_error_loss_bwd(int nCount, long hPredicted, long hTarget, long hBottomDiff, int nMeanErr);
 
 template<typename T>
-__global__ void cuda_bce_with_logits_loss_fwd_kernel_pw_w(const int n, const T* x, const T* y, const T* pw, const T* w, T* work)
+__global__ void cuda_bce_with_logits_loss_fwd_kernel_pw_w(const int n, const int nN, const int nC, const T* x, const T* y, const T* pw, const T* w, T* work)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		// Clamp the input to avoid overflow.
-		const T z = max((T)0, -x[i]);
-		// Calculate the position weighted target
-		const T log_wt = (pw[i] - 1) * y[i] + 1;
-		// Calculate the log weighted terms.
-		const T exp_z1 = exp(-z);
-		const T exp_z2 = exp(-x[i] - z);
-		const T log_z = log(exp_z1 + exp_z2);
+		const int pw_idx = i / nN; // One weight for each item in channel x spatial dimension.
+		const int w_idx = i / nC;  // One weight per batch.
+		const T pw_val = pw[pw_idx];
+		const T w_val = w[w_idx];
 
-		// Compute the loss element-wise.
-		work[i] = (1 - y[i]) * x[i] + log_wt * (z + log_z);
-		work[i] *= w[i];
+		const T input_sigmoid = sigmoid1(x[i]);
+		const T log_input_sigmoid = log1(input_sigmoid);
+		const T log_1_minus_input_sigmoid = log1((T)1.0 - input_sigmoid);
+		T loss = -(pw_val * y[i]) * log_input_sigmoid - ((T)1.0 - y[i]) * log_1_minus_input_sigmoid;
+		loss = loss * w_val;
+
+		work[i] = loss;
 	}
 }
 
 template<typename T>
-__global__ void cuda_bce_with_logits_loss_fwd_kernel_pw(const int n, const T* x, const T* y, const T* pw, T* work)
+__global__ void cuda_bce_with_logits_loss_fwd_kernel_pw(const int n, int nN, int nC, const T* x, const T* y, const T* pw, T* work)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		// Clamp the input to avoid overflow.
-		const T z = max((T)0, -x[i]);
-		// Calculate the position weighted target
-		const T log_wt = (pw[i] - 1) * y[i] + 1;
-		// Calculate the log weighted terms.
-		const T exp_z1 = exp(-z);
-		const T exp_z2 = exp(-x[i] - z);
-		const T log_z = log(exp_z1 + exp_z2);
+		const int pw_idx = i / nN; // One weight for each item in channel x spatial dimension.
+		const T pw_val = pw[pw_idx];
 
-		// Compute the loss element-wise.
-		work[i] = (1 - y[i]) * x[i] + log_wt * (z + log_z);
+		const T input_sigmoid = sigmoid1(x[i]);
+		const T log_input_sigmoid = log1(input_sigmoid);
+		const T log_1_minus_input_sigmoid = log1((T)1.0 - input_sigmoid);
+		T loss = -(pw_val * y[i]) * log_input_sigmoid - ((T)1.0 - y[i]) * log_1_minus_input_sigmoid;
+
+		work[i] = loss;
 	}
 }
 
 template<typename T>
-__global__ void cuda_bce_with_logits_loss_fwd_kernel_w(const int n, const T* x, const T* y, const T* w, T* work)
+__global__ void cuda_bce_with_logits_loss_fwd_kernel_w(const int n, int nN, int nC, const T* x, const T* y, const T* w, T* work)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		// Clamp the input to avoid overflow.
-		const T z = max((T)0, -x[i]);
-		// Calculate the position weighted target
-		const T log_wt = 1;
-		// Calculate the log weighted terms.
-		const T exp_z1 = exp(-z);
-		const T exp_z2 = exp(-x[i] - z);
-		const T log_z = log(exp_z1 + exp_z2);
+		const int w_idx = i / nC;  // One weight per batch.
+		const T w_val = w[w_idx];
 
-		// Compute the loss element-wise.
-		work[i] = (1 - y[i]) * x[i] + log_wt * (z + log_z);
-		work[i] *= w[i];
+		const T input_sigmoid = sigmoid1(x[i]);
+		const T log_input_sigmoid = log1(input_sigmoid);
+		const T log_1_minus_input_sigmoid = log1((T)1.0 - input_sigmoid);
+		T loss = -(y[i]) * log_input_sigmoid - ((T)1.0 - y[i]) * log_1_minus_input_sigmoid;
+		loss = loss * w_val;
+
+		work[i] = loss;
 	}
 }
 
@@ -10047,22 +10080,17 @@ __global__ void cuda_bce_with_logits_loss_fwd_kernel(const int n, const T* x, co
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		// Clamp the input to avoid overflow.
-		const T z = max((T)0, -x[i]);
-		// Calculate the position weighted target
-		const T log_wt = 1;
-		// Calculate the log weighted terms.
-		const T exp_z1 = exp(-z);
-		const T exp_z2 = exp(-x[i] - z);
-		const T log_z = log(exp_z1 + exp_z2);
+		const T input_sigmoid = sigmoid1(x[i]);
+		const T log_input_sigmoid = log1(input_sigmoid);
+		const T log_1_minus_input_sigmoid = log1((T)1.0 - input_sigmoid);
+		T loss = -(y[i]) * log_input_sigmoid - ((T)1.0 - y[i]) * log_1_minus_input_sigmoid;
 
-		// Compute the loss element-wise.
-		work[i] = (1 - y[i]) * x[i] + log_wt * (z + log_z);
+		work[i] = loss;
 	}
 }
 
 template <class T>
-long Math<T>::cuda_bce_with_logits_loss_fwd(int n, long hX, long hY, long hW, long hPosW, long hLossData)
+long Math<T>::cuda_bce_with_logits_loss_fwd(int n, int nN, long hX, long hY, long hW, long hPosW, long hLossData)
 {
 	LONG lErr;
 	MemoryItem* pX;
@@ -10085,6 +10113,8 @@ long Math<T>::cuda_bce_with_logits_loss_fwd(int n, long hX, long hY, long hW, lo
 	T* y = (T*)pY->Data();
 	T* loss = (T*)pLossData->Data();
 
+	int nC = n / nN;
+
 	if (hPosW != 0 && hW != 0)
 	{
 		if (lErr = m_pMemCol->GetData(hW, &pW))
@@ -10094,7 +10124,7 @@ long Math<T>::cuda_bce_with_logits_loss_fwd(int n, long hX, long hY, long hW, lo
 		T* w = (T*)pW->Data();
 		T* pw = (T*)pPw->Data();
 
-		cuda_bce_with_logits_loss_fwd_kernel_pw_w<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, x, y, pw, w, loss);
+		cuda_bce_with_logits_loss_fwd_kernel_pw_w<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, nN, nC, x, y, pw, w, loss);
 	}
 	else if (hPosW != 0)
 	{
@@ -10102,7 +10132,7 @@ long Math<T>::cuda_bce_with_logits_loss_fwd(int n, long hX, long hY, long hW, lo
 			return lErr;
 		T* pw = (T*)pPw->Data();
 
-		cuda_bce_with_logits_loss_fwd_kernel_pw << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, y, pw, loss);
+		cuda_bce_with_logits_loss_fwd_kernel_pw << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nN, nC, x, y, pw, loss);
 	}
 	else if (hW != 0)
 	{
@@ -10110,7 +10140,7 @@ long Math<T>::cuda_bce_with_logits_loss_fwd(int n, long hX, long hY, long hW, lo
 			return lErr;
 		T* w = (T*)pW->Data();
 
-		cuda_bce_with_logits_loss_fwd_kernel_w << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, y, w, loss);
+		cuda_bce_with_logits_loss_fwd_kernel_w << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nN, nC, x, y, w, loss);
 	}
 	else
 	{
@@ -10120,33 +10150,55 @@ long Math<T>::cuda_bce_with_logits_loss_fwd(int n, long hX, long hY, long hW, lo
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::cuda_bce_with_logits_loss_fwd(int nCount, long hX, long hY, long hW, long hPosW, long hLossData);
-template long Math<float>::cuda_bce_with_logits_loss_fwd(int nCount, long hX, long hY, long hW, long hPosW, long hLossData);
+template long Math<double>::cuda_bce_with_logits_loss_fwd(int nCount, int nN, long hX, long hY, long hW, long hPosW, long hLossData);
+template long Math<float>::cuda_bce_with_logits_loss_fwd(int nCount, int nN, long hX, long hY, long hW, long hPosW, long hLossData);
 
 template<typename T>
-__global__ void cuda_bce_with_logits_loss_bwd_kernel_pw(const int n, const T* x, const T* y, const T* pw, T* bottom_diff)
+__global__ void cuda_bce_with_logits_loss_bwd_kernel_pw_w(const int n, const int nN, const int nC, const T* x, const T* y, const T* pw, const T* w, T* bottom_diff)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		const T input_sigmoid = 1. / (1. + exp(-x[i]));
-		const T grad = -y[i] * (1 - input_sigmoid) + (1 - y[i]) * input_sigmoid;
-		const T grad_pw = (pw[i] * y[i] + (1 - y[i]));
+		const T input_sigmoid = sigmoid1(x[i]);
+		const int pw_idx = i / nN; // One weight for each item in channel x spatial dimension.
+		const int w_idx = i / nC;  // One weight per batch.
+		const T pw_val = pw[pw_idx];
+		const T w_val = w[w_idx];
+
+		const T grad = -(pw_val * y[i]) * (1 - input_sigmoid) + (1 - y[i]) * input_sigmoid;
+		const T grad_pw = (pw_val * y[i] + (1 - y[i]));		
+
+		bottom_diff[i] = grad * grad_pw * w_val;
+	}
+}
+
+template<typename T>
+__global__ void cuda_bce_with_logits_loss_bwd_kernel_pw(const int n, const int nN, const int nC, const T* x, const T* y, const T* pw, T* bottom_diff)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const T input_sigmoid = sigmoid1(x[i]);
+		const int pw_idx = i / nN; // One weight for each item in channel x spatial dimension.
+		const T pw_val = pw[pw_idx];
+
+		const T grad = -(pw_val * y[i]) * (1 - input_sigmoid) + (1 - y[i]) * input_sigmoid;
+		const T grad_pw = (pw_val * y[i] + (1 - y[i]));
 
 		bottom_diff[i] = grad * grad_pw;
 	}
 }
 
 template<typename T>
-__global__ void cuda_bce_with_logits_loss_bwd_kernel_pw_mean(const int n, const int nN, const T* x, const T* y, const T* pw, T* bottom_diff)
+__global__ void cuda_bce_with_logits_loss_bwd_kernel_w(const int n, const int nN, const int nC, const T* x, const T* y, const T* w, T* bottom_diff)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		const T input_sigmoid = 1. / (1. + exp(-x[i]));
-		const T grad = -y[i] * (1 - input_sigmoid) + (1 - y[i]) * input_sigmoid;
-		const T grad_pw = (pw[i] * y[i] + (1 - y[i]));
+		const T input_sigmoid = sigmoid1(x[i]);
+		const int w_idx = i / nC;  // One weight per batch.
+		const T w_val = w[w_idx];
 
-		bottom_diff[i] = grad * grad_pw;
-		bottom_diff[i] /= nN;
+		const T grad = -(y[i]) * (1 - input_sigmoid) + (1 - y[i]) * input_sigmoid;
+
+		bottom_diff[i] = grad * w_val;
 	}
 }
 
@@ -10155,21 +10207,9 @@ __global__ void cuda_bce_with_logits_loss_bwd_kernel(const int n, const T* x, co
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		const T input_sigmoid = 1. / (1. + exp(-x[i]));
-		const T grad = -y[i] * (1 - input_sigmoid) + (1 - y[i]) * input_sigmoid;
+		const T input_sigmoid = sigmoid1(x[i]);
+		const T grad = -(y[i]) * (1 - input_sigmoid) + (1 - y[i]) * input_sigmoid;
 		bottom_diff[i] = grad;
-	}
-}
-
-template<typename T>
-__global__ void cuda_bce_with_logits_loss_bwd_kernel_mean(const int n, const int nN, const T* x, const T* y, T* bottom_diff)
-{
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
-	{
-		const T input_sigmoid = 1. / (1. + exp(-x[i]));
-		const T grad = -y[i] * (1 - input_sigmoid) + (1 - y[i]) * input_sigmoid;
-		bottom_diff[i] = grad;
-		bottom_diff[i] /= nN;
 	}
 }
 
@@ -10180,6 +10220,7 @@ long Math<T>::cuda_bce_with_logits_loss_bwd(int n, int nN, long hX, long hY, lon
 	MemoryItem* pX;
 	MemoryItem* pY;
 	MemoryItem* pPw = NULL;
+	MemoryItem* pW = NULL;
 	MemoryItem* pBtmDiff;
 
 	if (lErr = m_pMemCol->GetData(hX, &pX))
@@ -10195,23 +10236,46 @@ long Math<T>::cuda_bce_with_logits_loss_bwd(int n, int nN, long hX, long hY, lon
 	T* y = (T*)pY->Data();
 	T* btm_diff = (T*)pBtmDiff->Data();
 
-	if (hPosW != 0)
+	int nC = n / nN;
+
+	if (hPosW != 0 && hW != 0)
+	{
+		if (lErr = m_pMemCol->GetData(hW, &pW))
+			return lErr;
+		if (lErr = m_pMemCol->GetData(hPosW, &pPw))
+			return lErr;
+		T* w = (T*)pW->Data();
+		T* pw = (T*)pPw->Data();
+
+		cuda_bce_with_logits_loss_bwd_kernel_pw_w << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nN, nC, x, y, pw, w, btm_diff);
+	}
+	else if (hPosW != 0)
 	{
 		if (lErr = m_pMemCol->GetData(hPosW, &pPw))
 			return lErr;
 		T* pw = (T*)pPw->Data();
 
-		if (bMeanReduction)
-			cuda_bce_with_logits_loss_bwd_kernel_pw_mean<< <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nN, x, y, pw, btm_diff);
-		else
-			cuda_bce_with_logits_loss_bwd_kernel_pw << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, y, pw, btm_diff);
+		cuda_bce_with_logits_loss_bwd_kernel_pw << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nN, nC, x, y, pw, btm_diff);
+	}
+	else if (hW != 0)
+	{
+		if (lErr = m_pMemCol->GetData(hW, &pW))
+			return lErr;
+		T* w = (T*)pW->Data();
+
+		cuda_bce_with_logits_loss_bwd_kernel_w << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nN, nC, x, y, w, btm_diff);
 	}
 	else
 	{
-		if (bMeanReduction)
-			cuda_bce_with_logits_loss_bwd_kernel_mean << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, nN, x, y, btm_diff);
-		else
-			cuda_bce_with_logits_loss_bwd_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, y, btm_diff);
+		cuda_bce_with_logits_loss_bwd_kernel << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, y, btm_diff);
+	}
+
+	if (bMeanReduction)
+	{
+		if (lErr = cudaStreamSynchronize(0))
+			return lErr;
+
+		return scal(n, (T)(1.0 / nN), btm_diff);
 	}
 
 	return cudaStreamSynchronize(0);
@@ -13176,18 +13240,6 @@ long Math<T>::lrn_computediff(int n, long hBottomData, long hTopData, long hScal
 template long Math<double>::lrn_computediff(int n, long hBottomData, long hTopData, long hScaleData, long hTopDiff, int nNum, int nChannels, int nHeight, int nWidth, int nSize, double fB, double fA, long hBottomDiff);
 template long Math<float>::lrn_computediff(int n, long hBottomData, long hTopData, long hScaleData, long hTopDiff, int nNum, int nChannels, int nHeight, int nWidth, int nSize, float fB, float fA, long hBottomDiff);
 
-
-template <typename T>
-__device__ T sigmoid(const T x)
-{
-	return T(1) / (T(1) + exp(-x));
-}
-
-template <typename T>
-__device__ T tanh(const T x)
-{
-	return T(2) * sigmoid(T(2) * x) - T(1);
-}
 
 template <typename T>
 __global__ void clip_add_kernel(const int nthreads, const int dim, int t, const T* clip, const T* add_vec, T* data)

@@ -116,7 +116,7 @@ namespace MyCaffe.test
 
     class BCEWithLogitsLossLayerTest<T> : TestEx<T>, IBCEWithLogitsLossLayerTest
     {
-        BCEWithLogitsLoss m_bce = new BCEWithLogitsLoss();
+        BCEWithLogitsLoss<T> m_bce;
         Blob<T> m_blob_bottom_targets;
 
         public BCEWithLogitsLossLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
@@ -147,6 +147,39 @@ namespace MyCaffe.test
             base.dispose();
         }
 
+        /// <summary>
+        /// Assuming batch size = 21
+        /// </summary>
+        /// <returns>Returns the weights.</returns>
+        private List<float> getWeights()
+        {
+            double[] rgWts = new double[21]
+            {
+                11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
+                10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10
+            };
+            return rgWts.Select(p => (float)p).ToList();
+        }
+
+        /// <summary>
+        /// Assumes shape = (21, 1), batch size = 21.
+        /// </summary>
+        /// <param name="rgInput">Specifies the input data.</param>
+        /// <param name="rgTarget">Specifies the target data.</param>
+        public void getData(out double[] rgInput, out double[] rgTarget)
+        {
+            rgInput = new double[21]
+            {
+                0.2066, -0.1471, -0.0830, -0.0881, -0.0279, 0.1623, 0.0013, -0.0695,  0.0622, -0.0600,
+                0.1123,  0.0305,  0.1389, -0.0661,  0.3031, 0.0825, 0.0655, -0.0051, -0.0726, -0.0868, -0.0136
+            };
+            rgTarget = new double[21]
+            {
+                1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            };
+        }
+
         public Blob<T> BottomTargets
         {
             get { return m_blob_bottom_targets; }
@@ -163,15 +196,17 @@ namespace MyCaffe.test
 
             try
             {
+                m_bce = new BCEWithLogitsLoss<T>(21, 1);
                 m_log.CHECK(layer.type == LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS, "The layer type is incorrect.");
 
-                double[] rgInput = new double[] { 0.2, -0.5, 1.3, 0.7, -1.2 };
-                double[] rgTarget = new double[] { 1, 0, 1, 0, 1 };
+                double[] rgInput;
+                double[] rgTarget;
+                getData(out rgInput, out rgTarget);
                 double[] rgExpectedLoss = m_bce.ComputeLoss(rgInput, rgTarget);
                 double dfExpectedLoss = rgExpectedLoss[0];
 
-                m_blob_bottom.Reshape(1, 5, 1, 1);
-                m_blob_bottom_targets.Reshape(1, 5, 1, 1);
+                m_blob_bottom.Reshape(21, 1, 1, 1);
+                m_blob_bottom_targets.Reshape(21, 1, 1, 1);
 
                 m_blob_bottom.mutable_cpu_data = convert(rgInput);
                 m_blob_bottom_targets.mutable_cpu_data = convert(rgTarget);
@@ -210,16 +245,18 @@ namespace MyCaffe.test
             try
             {
                 m_log.CHECK(layer.type == LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS, "The layer type is incorrect.");
+                m_bce = new BCEWithLogitsLoss<T>(21, 1);
 
-                double[] rgInput = new double[] { 0.2, -0.5, 1.3, 0.7, -1.2 };
-                double[] rgTarget = new double[] { 1, 0, 1, 0, 1 };
+                double[] rgInput;
+                double[] rgTarget;
+                getData(out rgInput, out rgTarget);
                 double[] rgGrad = new double[] { 1.0 };
                 double[] rgExpectedLoss = m_bce.ComputeLoss(rgInput, rgTarget);
                 double dfExpectedLoss = rgExpectedLoss[0];
                 double[] rgExpectedGrad = m_bce.ComputeGradient(rgGrad);
 
-                m_blob_bottom.Reshape(1, 5, 1, 1);
-                m_blob_bottom_targets.Reshape(1, 5, 1, 1);
+                m_blob_bottom.Reshape(21, 1, 1, 1);
+                m_blob_bottom_targets.Reshape(21, 1, 1, 1);
 
                 m_blob_bottom.mutable_cpu_data = convert(rgInput);
                 m_blob_bottom_targets.mutable_cpu_data = convert(rgTarget);
@@ -262,22 +299,6 @@ namespace MyCaffe.test
             }
         }
 
-        private List<float> getWeights(int n, int nOffset)
-        {
-            List<float> rgWts = new List<float>();
-
-            for (int i=0; i<n; i++)
-            {
-                float fWt = 10.0f;
-                if (i >= nOffset)
-                    fWt += 2.0f;
-
-                rgWts.Add(fWt);
-            }
-
-            return rgWts;
-        }
-
         /// <summary>
         /// Test function for forward with a single batch.
         /// </summary>
@@ -285,21 +306,22 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS);
             p.loss_param.normalization = LossParameter.NormalizationMode.NONE;
-            p.bce_with_logits_loss_param.weights = getWeights(5, 3);
+            p.bce_with_logits_loss_param.weights = getWeights();
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
 
             try
             {
                 m_log.CHECK(layer.type == LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS, "The layer type is incorrect.");
-                m_bce.SetWeights(p.bce_with_logits_loss_param.weights);
+                m_bce = new BCEWithLogitsLoss<T>(21, 1, null, p.bce_with_logits_loss_param.weights);
 
-                double[] rgInput = new double[] { 0.2, -0.5, 1.3, 0.7, -1.2 };
-                double[] rgTarget = new double[] { 1, 0, 1, 0, 1 };
+                double[] rgInput;
+                double[] rgTarget;
+                getData(out rgInput, out rgTarget);
                 double[] rgExpectedLoss = m_bce.ComputeLoss(rgInput, rgTarget);
                 double dfExpectedLoss = rgExpectedLoss[0];
 
-                m_blob_bottom.Reshape(1, 5, 1, 1);
-                m_blob_bottom_targets.Reshape(1, 5, 1, 1);
+                m_blob_bottom.Reshape(21, 1, 1, 1);
+                m_blob_bottom_targets.Reshape(21, 1, 1, 1);
 
                 m_blob_bottom.mutable_cpu_data = convert(rgInput);
                 m_blob_bottom_targets.mutable_cpu_data = convert(rgTarget);
@@ -333,24 +355,25 @@ namespace MyCaffe.test
         public void TestBackwardWeights()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS);
-            p.bce_with_logits_loss_param.weights = getWeights(5, 3);
+            p.bce_with_logits_loss_param.weights = getWeights();
             p.loss_param.normalization = LossParameter.NormalizationMode.NONE;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
 
             try
             {
-                m_bce.SetWeights(p.bce_with_logits_loss_param.weights);
                 m_log.CHECK(layer.type == LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS, "The layer type is incorrect.");
+                m_bce = new BCEWithLogitsLoss<T>(21, 1, null, p.bce_with_logits_loss_param.weights);
 
-                double[] rgInput = new double[] { 0.2, -0.5, 1.3, 0.7, -1.2 };
-                double[] rgTarget = new double[] { 1, 0, 1, 0, 1 };
+                double[] rgInput;
+                double[] rgTarget;
+                getData(out rgInput, out rgTarget);
                 double[] rgGrad = new double[] { 1.0 };
                 double[] rgExpectedLoss = m_bce.ComputeLoss(rgInput, rgTarget);
                 double dfExpectedLoss = rgExpectedLoss[0];
                 double[] rgExpectedGrad = m_bce.ComputeGradient(rgGrad);
 
-                m_blob_bottom.Reshape(1, 5, 1, 1);
-                m_blob_bottom_targets.Reshape(1, 5, 1, 1);
+                m_blob_bottom.Reshape(21, 1, 1, 1);
+                m_blob_bottom_targets.Reshape(21, 1, 1, 1);
 
                 m_blob_bottom.mutable_cpu_data = convert(rgInput);
                 m_blob_bottom_targets.mutable_cpu_data = convert(rgTarget);
@@ -403,21 +426,38 @@ namespace MyCaffe.test
     /// @see [What does BCEWithLogitsLoss actually do?](https://kamilelukosiute.com/2022/04/14/bce-with-logits-loss/) by Kamile Lukosiute, 2022
     /// @see [How to Use PyTorch's BCEWithLogitsLoss Function](https://reason.town/pytorch-bcewithlogitsloss/) by joseph, 2022
     /// </remarks>
-    /// <summary>
-    /// A sclass that implements the BCEWithLogitsLoss function
-    /// </summary>
-    /// <remarks>
-    /// @see [What does BCEWithLogitsLoss actually do?](https://kamilelukosiute.com/2022/04/14/bce-with-logits-loss/) by Kamile Lukosiute, 2022
-    /// @see [How to Use PyTorch's BCEWithLogitsLoss Function](https://reason.town/pytorch-bcewithlogitsloss/) by joseph, 2022
-    /// </remarks>
-    public class BCEWithLogitsLoss
+    public class BCEWithLogitsLoss<T>
     {
         // A constructor that takes optional parameters for weight, reduction and pos_weight
-        public BCEWithLogitsLoss(string reduction = "mean", double[] pos_weight = null, double[] weight = null)
+        public BCEWithLogitsLoss(int nN, int nC, T[] pos_weight = null, List<float> weight = null, string reduction="mean")
         {
             this.m_reduction = reduction;
             this.m_pos_weight = pos_weight;
-            this.m_weight = weight;
+            this.m_weight = (weight != null) ? weight.Select(p => (T)Convert.ChangeType(p, typeof(T))).ToArray() : null;
+            this.m_nN = nN;
+            this.m_nC = nC;
+
+            if (pos_weight != null)
+            {
+                if (pos_weight.Length != nC)
+                    throw new ArgumentException("pos_weight must have the same length as the input channel");
+            }
+
+            if (weight != null)
+            {
+                if (weight.Count != nN)
+                    throw new ArgumentException("weight must have the same length as the input num");
+            }
+        }
+
+        public void SetWeights(List<float> rgW)
+        {
+            m_weight = new T[rgW.Count];
+
+            for (int i=0; i<rgW.Count; i++)
+            {
+                m_weight[i] = (T)Convert.ChangeType(rgW[i], typeof(T));
+            }
         }
 
         public void ClearWeights()
@@ -425,22 +465,10 @@ namespace MyCaffe.test
             m_weight = null;
         }
 
-        public void SetWeights(List<float> rgWts)
-        {
-            m_weight = rgWts.ToArray().Select(p => (double)p).ToArray();
-        }
-
-        public double[] Weight
-        {
-            get { return m_weight; }
-            set { m_weight = value; }
-        }
-
-        // A method that computes the loss given the input and target tensors
         public double[] ComputeLoss(double[] input, double[] target)
         {
-            this.m_input = input;
-            this.m_target = target;
+            this.m_input = input.Select(p => (T)Convert.ChangeType(p, typeof(T))).ToArray();
+            this.m_target = target.Select(p => (T)Convert.ChangeType(p, typeof(T))).ToArray();
 
             // Check that the input and target have the same length
             if (input.Length != target.Length)
@@ -448,24 +476,53 @@ namespace MyCaffe.test
                 throw new ArgumentException("Input and target must have the same length");
             }
 
+            if (typeof(T) == typeof(double))
+            {
+                double[] rgInput = input;
+                double[] rgTarget = target;
+                double[] rgPosWt = (m_pos_weight != null) ? m_pos_weight.Select(p => (double)Convert.ChangeType(p, typeof(double))).ToArray() : null;
+                double[] rgWt = (m_weight != null) ? m_weight.Select(p => (double)Convert.ChangeType(p, typeof(double))).ToArray() : null;
+                double[] rgLoss = ComputeLossD(rgInput, rgTarget, rgPosWt, rgWt);
+                return rgLoss;
+            }
+            else
+            {
+                float[] rgInput = input.Select(p => (float)Convert.ChangeType(p, typeof(float))).ToArray();
+                float[] rgTarget = target.Select(p => (float)Convert.ChangeType(p, typeof(float))).ToArray();
+                float[] rgPosWt = (m_pos_weight != null) ? m_pos_weight.Select(p => (float)Convert.ChangeType(p, typeof(float))).ToArray() : null;
+                float[] rgWt = (m_weight != null) ? m_weight.Select(p => (float)Convert.ChangeType(p, typeof(float))).ToArray() : null;
+                float[] rgLoss = ComputeLossF(rgInput, rgTarget, rgPosWt, rgWt);
+                return rgLoss.Select(p => (double)Convert.ChangeType(p, typeof(double))).ToArray();
+            }
+        }
+
+        // A method that computes the loss given the input and target tensors
+        public double[] ComputeLossD(double[] input, double[] target, double[] pos_weight, double[] weight)
+        {
             // Initialize the loss variable
             double[] loss = new double[input.Length];
 
             // Loop over the input and target elements
             for (int i = 0; i < input.Length; i++)
             {
-                // Clamp the input to avoid overflow
-                double z = Math.Max(0, -input[i]);
+                // Compute the sigmoid of the input
+                double input_sigmoid = 1 / (1 + Math.Exp(-input[i]));
+                double dfY = target[i];
 
-                // Apply the pos_weight if defined
-                double log_weight = 1;
                 if (m_pos_weight != null)
                 {
-                    log_weight = (m_pos_weight[i] - 1) * target[i] + 1;
+                    dfY *= pos_weight[i / m_nN];
                 }
 
-                // Compute the loss element-wise
-                loss[i] = (1 - target[i]) * input[i] + log_weight * (z + Math.Log(Math.Exp(-z) + Math.Exp(-input[i] - z)));
+                // Compute the binary cross entropy loss
+                double dfLogSigmoid = Math.Log(input_sigmoid);
+                double dfLogOneMinusSigmoid = Math.Log(1 - input_sigmoid);
+                loss[i] = -dfY * dfLogSigmoid - (1 - target[i]) * dfLogOneMinusSigmoid;
+
+                if (pos_weight != null)
+                {
+                    loss[i] *= (pos_weight[i] * target[i] + (1 - target[i]));
+                }
             }
 
             // Apply the weight if defined
@@ -473,7 +530,7 @@ namespace MyCaffe.test
             {
                 for (int i = 0; i < loss.Length; i++)
                 {
-                    loss[i] *= m_weight[i];
+                    loss[i] *= weight[i / m_nC];
                 }
             }
 
@@ -502,11 +559,73 @@ namespace MyCaffe.test
             return new double[] { dfLoss };
         }
 
+        public float[] ComputeLossF(float[] input, float[] target, float[] pos_weight, float[] weight)
+        {
+            // Initialize the loss variable
+            float[] loss = new float[input.Length];
+
+            // Loop over the input and target elements
+            for (int i = 0; i < input.Length; i++)
+            {
+                // Compute the sigmoid of the input
+                float input_sigmoid = 1 / (1 + (float)Math.Exp(-input[i]));
+                float fY = target[i];
+
+                if (m_pos_weight != null)
+                {
+                    fY *= pos_weight[i / m_nN];
+                }
+
+                // Compute the binary cross entropy loss
+                float fLogSigmoid = (float)Math.Log(input_sigmoid);
+                float fLogOneMinusSigmoid = (float)Math.Log(1 - input_sigmoid);
+                loss[i] = -fY * fLogSigmoid - (1 - target[i]) * fLogOneMinusSigmoid;
+
+                if (pos_weight != null)
+                {
+                    loss[i] *= (pos_weight[i] * target[i] + (1 - target[i]));
+                }
+            }
+
+            // Apply the weight if defined
+            if (m_weight != null)
+            {
+                for (int i = 0; i < loss.Length; i++)
+                {
+                    loss[i] *= weight[i / m_nC];
+                }
+            }
+
+            float fLoss = 0;
+
+            // Apply the reduction if defined
+            if (m_reduction == "mean")
+            {
+                fLoss = loss.Sum();
+                fLoss /= input.Length;
+            }
+            else if (m_reduction == "sum")
+            {
+                fLoss = loss.Sum();
+            }
+            else if (m_reduction == "none")
+            {
+                return loss;
+            }
+            else
+            {
+                throw new ArgumentException("Invalid reduction option");
+            }
+
+            // Return the loss as a scalar
+            return new float[] { fLoss };
+        }
+
         // A method that computes the gradient of the loss with respect to the input tensor
         public double[] ComputeGradient(double[] grad)
         {
-            double[] input = m_input;
-            double[] target = m_target;
+            T[] input = m_input;
+            T[] target = m_target;
 
             // Check that the input and target have the same length
             if (input.Length != target.Length)
@@ -514,32 +633,62 @@ namespace MyCaffe.test
                 throw new ArgumentException("Input and target must have the same length");
             }
 
+            if (typeof(T) == typeof(double))
+            {
+                double[] rgInput = input.Select(p => (double)Convert.ChangeType(p, typeof(double))).ToArray();
+                double[] rgTarget = target.Select(p => (double)Convert.ChangeType(p, typeof(double))).ToArray();
+                double[] rgPosWt = (m_pos_weight != null) ? m_pos_weight.Select(p => (double)Convert.ChangeType(p, typeof(double))).ToArray() : null;
+                double[] rgWt = (m_weight != null) ? m_weight.Select(p => (double)Convert.ChangeType(p, typeof(double))).ToArray() : null;
+                double[] rgGrad = grad;
+                double[] rgGradOut = ComputeGradientD(rgInput, rgTarget, rgPosWt, rgWt, rgGrad);
+                return rgGradOut;
+            }
+            else
+            {
+                float[] rgGrad = grad.Select(p => (float)Convert.ChangeType(p, typeof(float))).ToArray();
+                float[] rgInput = input.Select(p => (float)Convert.ChangeType(p, typeof(float))).ToArray();
+                float[] rgTarget = target.Select(p => (float)Convert.ChangeType(p, typeof(float))).ToArray();
+                float[] rgPosWt = (m_pos_weight != null) ? m_pos_weight.Select(p => (float)Convert.ChangeType(p, typeof(float))).ToArray() : null;
+                float[] rgWt = (m_weight != null) ? m_weight.Select(p => (float)Convert.ChangeType(p, typeof(float))).ToArray() : null;
+                float[] rgGradOut = ComputeGradientF(rgInput, rgTarget, rgPosWt, rgWt, rgGrad);
+                return rgGradOut.Select(p => (double)Convert.ChangeType(p, typeof(double))).ToArray();    
+            }
+        }
+
+        public double[] ComputeGradientD(double[] input, double[] target, double[] pos_weight, double[] weight, double[] rgGrad)
+        {
+
             // Initialize the gradient variable
             double[] gradient = new double[input.Length];
 
-            // Calculate the gradient
-            // compute the sigmoid of the input
-            double[] input_sigmoid = input.Select(x => 1 / (1 + Math.Exp(-x))).ToArray();
-
-            // compute the gradient of the binary cross entropy loss with respect to the input
+            // Loop over the input and target elements
             for (int i = 0; i < input.Length; i++)
             {
-                gradient[i] = -target[i] * (1 - input_sigmoid[i]) + (1 - target[i]) * input_sigmoid[i];
-            }
+                // Compute the sigmoid of the input
+                double input_sigmoid = 1 / (1 + Math.Exp(-input[i]));
+                double dfY = target[i];
 
-            // apply the posittive weight if defined
-            if (m_pos_weight != null)
-            {
-                for (int i = 0; i < gradient.Length; i++)
+                if (pos_weight != null)
                 {
-                    gradient[i] *= (m_pos_weight[i] * target[i] + (1 - target[i]));
+                    dfY *= pos_weight[i / m_nN];
+                }
+
+                // Compute the derivative of the binary cross entropy loss with respect to the input
+                gradient[i] = -dfY * (1 - input_sigmoid) + (1 - target[i]) * input_sigmoid;
+
+                if (m_pos_weight != null)
+                {
+                    gradient[i] *= (pos_weight[i] * target[i] + (1 - target[i]));
                 }
             }
 
-            // Apply chain rule.
-            for (int i = 0; i < gradient.Length; i++)
+            // Apply the weight if defined
+            if (m_weight != null)
             {
-                gradient[i] *= grad[0];
+                for (int i = 0; i < gradient.Length; i++)
+                {
+                    gradient[i] *= weight[i / m_nC];
+                }
             }
 
             // Apply the reduction if defined
@@ -552,11 +701,10 @@ namespace MyCaffe.test
             }
             else if (m_reduction == "sum")
             {
-                // Do nothing, the gradient is already summed
+                // Do nothing
             }
             else if (m_reduction == "none")
             {
-                // Return an array of gradients instead of a scalar
                 return gradient;
             }
             else
@@ -564,15 +712,89 @@ namespace MyCaffe.test
                 throw new ArgumentException("Invalid reduction option");
             }
 
-            // Return the gradient as a scalar
+            // Apply chain rule.
+            for (int i = 0; i < gradient.Length; i++)
+            {
+                gradient[i] *= rgGrad[0];
+            }
+
+            // Return the gradient as an array
+            return gradient;
+        }
+
+        public float[] ComputeGradientF(float[] input, float[] target, float[] pos_weight, float[] weight, float[] rgGrad)
+        {
+            // Initialize the gradient variable
+            float[] gradient = new float[input.Length];
+
+            // Loop over the input and target elements
+            for (int i = 0; i < input.Length; i++)
+            {
+                // Compute the sigmoid of the input
+                float input_sigmoid = 1 / (1 + (float)Math.Exp(-input[i]));
+                float fY = target[i];
+
+                if (pos_weight != null)
+                {
+                    fY *= pos_weight[i / m_nN];
+                }
+
+                // Compute the derivative of the binary cross entropy loss with respect to the input
+                gradient[i] = -fY * (1 - input_sigmoid) + (1 - target[i]) * input_sigmoid;
+
+                if (m_pos_weight != null)
+                {
+                    gradient[i] *= (pos_weight[i] * target[i] + (1 - target[i]));
+                }
+            }
+
+            // Apply the weight if defined
+            if (m_weight != null)
+            {
+                for (int i = 0; i < gradient.Length; i++)
+                {
+                    gradient[i] *= weight[i / m_nC];
+                }
+            }
+
+            // Apply the reduction if defined
+            if (m_reduction == "mean")
+            {
+                for (int i = 0; i < gradient.Length; i++)
+                {
+                    gradient[i] /= input.Length;
+                }
+            }
+            else if (m_reduction == "sum")
+            {
+                // Do nothing
+            }
+            else if (m_reduction == "none")
+            {
+                return gradient;
+            }
+            else
+            {
+                throw new ArgumentException("Invalid reduction option");
+            }
+
+            // Apply chain rule.
+            for (int i = 0; i < gradient.Length; i++)
+            {
+                gradient[i] *= rgGrad[0];
+            }
+
+            // Return the gradient as an array
             return gradient;
         }
 
         // The weight, reduction and pos_weight parameters
-        private double[] m_weight;
+        private T[] m_weight;
         private string m_reduction;
-        private double[] m_pos_weight;
-        private double[] m_target;
-        private double[] m_input;
+        private T[] m_pos_weight;
+        private T[] m_target;
+        private T[] m_input;
+        private int m_nN;
+        private int m_nC;
     }
 }
