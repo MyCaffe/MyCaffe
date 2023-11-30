@@ -25,7 +25,9 @@ namespace MyCaffe.layers.beta
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.</typeparam>
     public class BCEWithLogitsLossLayer<T> : LossLayer<T>
     {
-        Blob<T> m_blobWork;
+        Blob<T> m_blobLoss;
+        Blob<T> m_blobWeights;
+        bool m_bMeanReduction = false;
 
         /// <summary>
         /// Constructor.
@@ -38,16 +40,23 @@ namespace MyCaffe.layers.beta
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS;
-            m_blobWork = new Blob<T>(cuda, log, false);
+            m_blobLoss = new Blob<T>(cuda, log, false);
+            m_blobWeights = new Blob<T>(cuda, log, false);
         }
 
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
-            if (m_blobWork != null)
+            if (m_blobLoss != null)
             {
-                m_blobWork.Dispose();
-                m_blobWork = null;
+                m_blobLoss.Dispose();
+                m_blobLoss = null;
+            }
+
+            if (m_blobWeights != null)
+            {
+                m_blobWeights.Dispose();
+                m_blobWeights = null;
             }
 
             base.dispose();
@@ -69,6 +78,17 @@ namespace MyCaffe.layers.beta
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             base.LayerSetUp(colBottom, colTop);
+
+            if (m_param.bce_with_logits_loss_param.weights != null && m_param.bce_with_logits_loss_param.weights.Count > 0)
+            {
+                if (m_param.bce_with_logits_loss_param.weights.Count != colBottom[0].num * colBottom[0].channels)
+                    m_log.FAIL("The weights count must equal the Num x Channels in the bottom(0) blob.");
+
+                m_blobWeights.Reshape(colBottom[0].num, colBottom[0].channels, 1, 1);
+                m_blobWeights.SetData(convert(m_param.bce_with_logits_loss_param.weights.ToArray()));
+            }
+
+            m_bMeanReduction = (m_param.bce_with_logits_loss_param.reduction == BCEWithLogitsLossParameter.REDUCTION.MEAN);
         }
 
         /// <summary>
@@ -80,7 +100,7 @@ namespace MyCaffe.layers.beta
         {
             m_nOuterNum = colBottom[0].num;
             m_nInnerNum = colBottom[0].count(1);
-            m_blobWork.ReshapeLike(colBottom[0]);
+            m_blobLoss.ReshapeLike(colBottom[0]);
             base.Reshape(colBottom, colTop);
         }
 
@@ -104,14 +124,23 @@ namespace MyCaffe.layers.beta
         {
             long hPredicted = colBottom[0].gpu_data;
             long hTarget = colBottom[1].gpu_data;
+            long hWeights = 0;
             int nCount = colBottom[0].count();
 
+            if (m_blobWeights.count() > 0)
+                hWeights = m_blobWeights.gpu_data;  
+
             m_log.CHECK_EQ(nCount, colBottom[1].count(), "The bottom(0) predicted and bottom(1) target must have the same shapes!");
+            
+            m_cuda.bce_with_logits_loss_fwd(nCount, hPredicted, hTarget, hWeights, 0, m_blobLoss.mutable_gpu_data);
 
-            m_cuda.bce_with_logits_loss_fwd(nCount, hPredicted, hTarget, 0, 0, colTop[0].mutable_gpu_data, m_blobWork.mutable_gpu_data);
+            T fVal = m_blobLoss.asum_data();
+            double dfLoss = convertD(fVal);
 
+            if (m_param.bce_with_logits_loss_param.reduction == BCEWithLogitsLossParameter.REDUCTION.MEAN)
+                dfLoss /= nCount;
+                       
             double dfNormalizer = get_normalizer(m_normalization, -1);
-            double dfLoss = convertD(colTop[0].GetData(0));
             colTop[0].SetData(dfLoss / dfNormalizer, 0);
 
             // Clear scratch memory to prevent with interfering with backward pass (see #602)
@@ -150,8 +179,16 @@ namespace MyCaffe.layers.beta
             long hTarget = colBottom[1].gpu_data;
             long hBottomDiff = colBottom[0].mutable_gpu_diff;
             int nCount = colBottom[0].count();
+            long hWeights = 0;
+            int nN = nCount;
 
-            m_cuda.bce_with_logits_loss_bwd(nCount, hPredicted, hTarget, 0, 0, hBottomDiff);
+            if (m_blobWeights.count() > 0)
+            {
+                hWeights = m_blobWeights.gpu_data;
+                nN = m_blobWeights.channels;
+            }
+
+            m_cuda.bce_with_logits_loss_bwd(nCount, nN, hPredicted, hTarget, hWeights, 0, m_bMeanReduction, hBottomDiff);
 
             double dfTopDiff = convertD(colTop[0].GetDiff(0));
             double dfNormalizer = get_normalizer(m_normalization, -1);

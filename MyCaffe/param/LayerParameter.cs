@@ -1019,6 +1019,7 @@ namespace MyCaffe.param
                     expected_bottom.Add("pred");
                     expected_bottom.Add("trgt");
                     expected_top.Add("loss");
+                    m_rgLayerParameters[lt] = new BCEWithLogitsLossParameter();
                     m_rgLayerParameters[LayerType.LOSS] = new LossParameter();
                     break;
 
@@ -2075,6 +2076,15 @@ namespace MyCaffe.param
         {
             get { return (BatchNormParameter)m_rgLayerParameters[LayerType.BATCHNORM]; }
             set { m_rgLayerParameters[LayerType.BATCHNORM] = value; }
+        }
+
+        /// <summary>
+        /// Returns the parameter set when initialized with LayerType.BCE_WITH_LOGITS_LOSS
+        /// </summary>
+        public BCEWithLogitsLossParameter bce_with_logits_loss_param
+        {
+            get { return (BCEWithLogitsLossParameter)m_rgLayerParameters[LayerType.BCE_WITH_LOGITS_LOSS]; }
+            set { m_rgLayerParameters[LayerType.BCE_WITH_LOGITS_LOSS] = value; }
         }
 
         /// <summary>
@@ -3616,6 +3626,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter,string>(accuracy_param, "accuracy_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(argmax_param, "argmax_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(batch_norm_param, "batch_norm_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(bce_with_logits_loss_param, "bce_with_logits_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(bias_param, "bias_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(clip_param, "clip_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(concat_param, "concat_param"));

@@ -51,6 +51,42 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestForwardWeights()
+        {
+            BCEWithLogitsLossLayerTest test = new BCEWithLogitsLossLayerTest();
+
+            try
+            {
+                foreach (IBCEWithLogitsLossLayerTest t in test.Tests)
+                {
+                    t.TestForwardWeights();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestBackwardWeights()
+        {
+            BCEWithLogitsLossLayerTest test = new BCEWithLogitsLossLayerTest();
+
+            try
+            {
+                foreach (IBCEWithLogitsLossLayerTest t in test.Tests)
+                {
+                    t.TestBackwardWeights();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -58,6 +94,8 @@ namespace MyCaffe.test
     {
         void TestForward();
         void TestBackward();
+        void TestForwardWeights();
+        void TestBackwardWeights();
     }
 
     class BCEWithLogitsLossLayerTest : TestBase
@@ -120,145 +158,239 @@ namespace MyCaffe.test
         public void TestForward()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS);
+            p.loss_param.normalization = LossParameter.NormalizationMode.NONE;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
-            m_log.CHECK(layer.type == LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS, "The layer type is incorrect.");
 
-            double[] rgInput = new double[] { 0.2, -0.5, 1.3, 0.7, -1.2 };
-            double[] rgTarget = new double[] { 1, 0, 1, 0, 1 };
-            double dfExpectedLoss = m_bce.ComputeLoss(rgInput, rgTarget);
+            try
+            {
+                m_log.CHECK(layer.type == LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS, "The layer type is incorrect.");
 
-            m_blob_bottom.Reshape(1, 5, 1, 1);
-            m_blob_bottom_targets.Reshape(1, 5, 1, 1);
+                double[] rgInput = new double[] { 0.2, -0.5, 1.3, 0.7, -1.2 };
+                double[] rgTarget = new double[] { 1, 0, 1, 0, 1 };
+                double[] rgExpectedLoss = m_bce.ComputeLoss(rgInput, rgTarget);
+                double dfExpectedLoss = rgExpectedLoss[0];
 
-            m_blob_bottom.mutable_cpu_data = convert(rgInput);
-            m_blob_bottom_targets.mutable_cpu_data = convert(rgTarget);
+                m_blob_bottom.Reshape(1, 5, 1, 1);
+                m_blob_bottom_targets.Reshape(1, 5, 1, 1);
 
-            BottomVec.Clear();
-            BottomVec.Add(m_blob_bottom);
-            BottomVec.Add(m_blob_bottom_targets);
-            TopVec.Clear();
-            TopVec.Add(m_blob_top);
+                m_blob_bottom.mutable_cpu_data = convert(rgInput);
+                m_blob_bottom_targets.mutable_cpu_data = convert(rgTarget);
 
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
+                BottomVec.Clear();
+                BottomVec.Add(m_blob_bottom);
+                BottomVec.Add(m_blob_bottom_targets);
+                TopVec.Clear();
+                TopVec.Add(m_blob_top);
 
-            double dfActualLoss = convert(m_blob_top.GetData(0));
-            double dfDiff = Math.Abs(dfExpectedLoss - dfActualLoss);
-            double dfErr = 1e-7;
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-            if (dfDiff > dfErr)
-                m_log.FAIL("The loss values do not match!");            
+                double dfActualLoss = convert(m_blob_top.GetData(0));
+                double dfDiff = Math.Abs(dfExpectedLoss - dfActualLoss);
+                double dfErr = 1e-7;
+
+                if (dfDiff > dfErr)
+                    m_log.FAIL("The loss values do not match!");
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         /// <summary>
         /// Test function for backward with a single batch.
         /// </summary>
-        /// <remarks>
-        /// Test code used to compare results:
-        /// <code>
-        /// import torch
-        /// import torch.nn as nn
-        /// import torch
-        /// torch.manual_seed(1)
-        ///
-        /// class DebugFunction(torch.autograd.Function):
-        ///    @staticmethod
-        ///    def forward(ctx, input) :
-        ///        ctx.save_for_backward(input)       
-        ///        return input
-        ///
-        ///    @staticmethod
-        ///    def backward(ctx, grad_output):
-        ///        input, = ctx.saved_tensors
-        ///        name = input_dict.get(input)
-        ///        
-        ///        if name == None:
-        ///            name = "unknown";
-        ///
-        ///        b = grad_output.detach().cpu().numpy()
-        ///        print(name, input.shape, grad_output)
-        ///        return grad_output
-        /// 
-        /// def NLLLoss(logs, targets, reduce= True):
-        /// out = torch.zeros_like(targets, dtype=torch.float)
-        /// for n in range(len(targets)) :
-        ///    for i in range(len(targets[n])) :
-        ///       out[n][i] = logs[n][i][targets[n][i]]
-        /// outSum = out.sum()
-        /// outLen = len(out) * len(out[0])
-        /// loss = -(outSum/outLen)
-        /// return loss if reduce else out
-        ///
-        /// x = torch.tensor([[[-0.1, 0.2, -0.3, 0.4],
-        ///                    [0.5, -0.6, 0.7, -0.8],
-        ///                    [-0.9, 0.1, -0.11, 0.12]]])
-        /// x.requires_grad = True
-        /// y = torch.LongTensor([[0, 1, 2]])
-        ///
-        /// torch.set_printoptions(precision=10)
-        /// debug = DebugFunction.apply
-        ///
-        /// cross_entropy_loss = torch.nn.CrossEntropyLoss()
-        ///
-        /// x = debug(x)
-        /// input_dict.update({x: "x"})
-        /// 
-        /// x = x.view(-1, x.size(-1))
-        /// y = y.view(-1)
-        /// celoss = cross_entropy_loss(x, y)
-        /// print("Torch CrossEntropyLoss: ", celoss)
-        /// 
-        /// celoss.backward()
-        /// </code>
-        /// </remarks>
         public void TestBackward()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS);
+            p.loss_param.normalization = LossParameter.NormalizationMode.NONE;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
-            m_log.CHECK(layer.type == LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS, "The layer type is incorrect.");
 
-            double[] rgInput = new double[] { 0.2, -0.5, 1.3, 0.7, -1.2 };
-            double[] rgTarget = new double[] { 1, 0, 1, 0, 1 };
-            double[] rgGrad = new double[] { 1.0 };
-            double dfExpectedLoss = m_bce.ComputeLoss(rgInput, rgTarget);
-            double[] rgExpectedGrad = m_bce.ComputeGradient(rgGrad);
-
-            m_blob_bottom.Reshape(1, 5, 1, 1);
-            m_blob_bottom_targets.Reshape(1, 5, 1, 1);
-
-            m_blob_bottom.mutable_cpu_data = convert(rgInput);
-            m_blob_bottom_targets.mutable_cpu_data = convert(rgTarget);
-
-            BottomVec.Clear();
-            BottomVec.Add(m_blob_bottom);
-            BottomVec.Add(m_blob_bottom_targets);
-            TopVec.Clear();
-            TopVec.Add(m_blob_top);
-
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
-
-            double dfActualLoss = convert(m_blob_top.GetData(0));
-            double dfDiff = Math.Abs(dfExpectedLoss - dfActualLoss);
-            double dfErr = 1e-7;
-
-            if (dfDiff > dfErr)
-                m_log.FAIL("The loss values do not match!");
-
-            m_blob_top.mutable_cpu_diff = convert(rgGrad);
-            layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
-
-            double[] rgActualGrad = convert(m_blob_bottom.mutable_cpu_diff);
-
-            for (int i = 0; i < rgActualGrad.Length; i++)
+            try
             {
-                double dfExpected = rgExpectedGrad[i];
-                double dfActual = rgActualGrad[i];
-                double dfDiffGrad = Math.Abs(dfExpected - dfActual);
-                double dfErrGrad = 1e-7;
+                m_log.CHECK(layer.type == LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS, "The layer type is incorrect.");
 
-                if (dfDiffGrad > dfErrGrad)
-                    m_log.FAIL("The gradient values do not match!");
+                double[] rgInput = new double[] { 0.2, -0.5, 1.3, 0.7, -1.2 };
+                double[] rgTarget = new double[] { 1, 0, 1, 0, 1 };
+                double[] rgGrad = new double[] { 1.0 };
+                double[] rgExpectedLoss = m_bce.ComputeLoss(rgInput, rgTarget);
+                double dfExpectedLoss = rgExpectedLoss[0];
+                double[] rgExpectedGrad = m_bce.ComputeGradient(rgGrad);
+
+                m_blob_bottom.Reshape(1, 5, 1, 1);
+                m_blob_bottom_targets.Reshape(1, 5, 1, 1);
+
+                m_blob_bottom.mutable_cpu_data = convert(rgInput);
+                m_blob_bottom_targets.mutable_cpu_data = convert(rgTarget);
+
+                BottomVec.Clear();
+                BottomVec.Add(m_blob_bottom);
+                BottomVec.Add(m_blob_bottom_targets);
+                TopVec.Clear();
+                TopVec.Add(m_blob_top);
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                double dfActualLoss = convert(m_blob_top.GetData(0));
+                double dfDiff = Math.Abs(dfExpectedLoss - dfActualLoss);
+                double dfErr = 1e-7;
+
+                if (dfDiff > dfErr)
+                    m_log.FAIL("The loss values do not match!");
+
+                m_blob_top.mutable_cpu_diff = convert(rgGrad);
+                layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
+
+                double[] rgActualGrad = convert(m_blob_bottom.mutable_cpu_diff);
+
+                for (int i = 0; i < rgActualGrad.Length; i++)
+                {
+                    double dfExpected = rgExpectedGrad[i];
+                    double dfActual = rgActualGrad[i];
+                    double dfDiffGrad = Math.Abs(dfExpected - dfActual);
+                    double dfErrGrad = 1e-7;
+
+                    if (dfDiffGrad > dfErrGrad)
+                        m_log.FAIL("The gradient values do not match!");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
+            }
+        }
+
+        private List<float> getWeights(int n, int nOffset)
+        {
+            List<float> rgWts = new List<float>();
+
+            for (int i=0; i<n; i++)
+            {
+                float fWt = 10.0f;
+                if (i >= nOffset)
+                    fWt += 2.0f;
+
+                rgWts.Add(fWt);
+            }
+
+            return rgWts;
+        }
+
+        /// <summary>
+        /// Test function for forward with a single batch.
+        /// </summary>
+        public void TestForwardWeights()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS);
+            p.loss_param.normalization = LossParameter.NormalizationMode.NONE;
+            p.bce_with_logits_loss_param.weights = getWeights(5, 3);
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
+
+            try
+            {
+                m_log.CHECK(layer.type == LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS, "The layer type is incorrect.");
+                m_bce.SetWeights(p.bce_with_logits_loss_param.weights);
+
+                double[] rgInput = new double[] { 0.2, -0.5, 1.3, 0.7, -1.2 };
+                double[] rgTarget = new double[] { 1, 0, 1, 0, 1 };
+                double[] rgExpectedLoss = m_bce.ComputeLoss(rgInput, rgTarget);
+                double dfExpectedLoss = rgExpectedLoss[0];
+
+                m_blob_bottom.Reshape(1, 5, 1, 1);
+                m_blob_bottom_targets.Reshape(1, 5, 1, 1);
+
+                m_blob_bottom.mutable_cpu_data = convert(rgInput);
+                m_blob_bottom_targets.mutable_cpu_data = convert(rgTarget);
+
+                BottomVec.Clear();
+                BottomVec.Add(m_blob_bottom);
+                BottomVec.Add(m_blob_bottom_targets);
+                TopVec.Clear();
+                TopVec.Add(m_blob_top);
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                double dfActualLoss = convert(m_blob_top.GetData(0));
+                double dfDiff = Math.Abs(dfExpectedLoss - dfActualLoss);
+                double dfErr = 1e-6;
+
+                if (dfDiff > dfErr)
+                    m_log.FAIL("The loss values do not match!");
+            }
+            finally
+            {
+                layer.Dispose();
+                m_bce.ClearWeights();
+            }
+        }
+
+        /// <summary>
+        /// Test function for backward with a single batch.
+        /// </summary>
+        public void TestBackwardWeights()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS);
+            p.bce_with_logits_loss_param.weights = getWeights(5, 3);
+            p.loss_param.normalization = LossParameter.NormalizationMode.NONE;
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
+
+            try
+            {
+                m_bce.SetWeights(p.bce_with_logits_loss_param.weights);
+                m_log.CHECK(layer.type == LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS, "The layer type is incorrect.");
+
+                double[] rgInput = new double[] { 0.2, -0.5, 1.3, 0.7, -1.2 };
+                double[] rgTarget = new double[] { 1, 0, 1, 0, 1 };
+                double[] rgGrad = new double[] { 1.0 };
+                double[] rgExpectedLoss = m_bce.ComputeLoss(rgInput, rgTarget);
+                double dfExpectedLoss = rgExpectedLoss[0];
+                double[] rgExpectedGrad = m_bce.ComputeGradient(rgGrad);
+
+                m_blob_bottom.Reshape(1, 5, 1, 1);
+                m_blob_bottom_targets.Reshape(1, 5, 1, 1);
+
+                m_blob_bottom.mutable_cpu_data = convert(rgInput);
+                m_blob_bottom_targets.mutable_cpu_data = convert(rgTarget);
+
+                BottomVec.Clear();
+                BottomVec.Add(m_blob_bottom);
+                BottomVec.Add(m_blob_bottom_targets);
+                TopVec.Clear();
+                TopVec.Add(m_blob_top);
+
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
+
+                double dfActualLoss = convert(m_blob_top.GetData(0));
+                double dfDiff = Math.Abs(dfExpectedLoss - dfActualLoss);
+                double dfErr = 1e-6;
+
+                if (dfDiff > dfErr)
+                    m_log.FAIL("The loss values do not match!");
+
+                m_blob_top.mutable_cpu_diff = convert(rgGrad);
+                layer.Backward(TopVec, new List<bool>() { true }, BottomVec);
+
+                double[] rgActualGrad = convert(m_blob_bottom.mutable_cpu_diff);
+
+                for (int i = 0; i < rgActualGrad.Length; i++)
+                {
+                    double dfExpected = rgExpectedGrad[i];
+                    double dfActual = rgActualGrad[i];
+                    double dfDiffGrad = Math.Abs(dfExpected - dfActual);
+                    double dfErrGrad = 1e-7;
+
+                    if (dfDiffGrad > dfErrGrad)
+                        m_log.FAIL("The gradient values do not match!");
+                }
+            }
+            finally
+            {
+                layer.Dispose();
+                m_bce.ClearWeights();
             }
         }
     }
@@ -271,19 +403,42 @@ namespace MyCaffe.test
     /// @see [What does BCEWithLogitsLoss actually do?](https://kamilelukosiute.com/2022/04/14/bce-with-logits-loss/) by Kamile Lukosiute, 2022
     /// @see [How to Use PyTorch's BCEWithLogitsLoss Function](https://reason.town/pytorch-bcewithlogitsloss/) by joseph, 2022
     /// </remarks>
+    /// <summary>
+    /// A sclass that implements the BCEWithLogitsLoss function
+    /// </summary>
+    /// <remarks>
+    /// @see [What does BCEWithLogitsLoss actually do?](https://kamilelukosiute.com/2022/04/14/bce-with-logits-loss/) by Kamile Lukosiute, 2022
+    /// @see [How to Use PyTorch's BCEWithLogitsLoss Function](https://reason.town/pytorch-bcewithlogitsloss/) by joseph, 2022
+    /// </remarks>
     public class BCEWithLogitsLoss
     {
         // A constructor that takes optional parameters for weight, reduction and pos_weight
-        public BCEWithLogitsLoss(string reduction = "mean", double[] pos_weight = null)
+        public BCEWithLogitsLoss(string reduction = "mean", double[] pos_weight = null, double[] weight = null)
         {
             this.m_reduction = reduction;
             this.m_pos_weight = pos_weight;
+            this.m_weight = weight;
+        }
+
+        public void ClearWeights()
+        {
+            m_weight = null;
+        }
+
+        public void SetWeights(List<float> rgWts)
+        {
+            m_weight = rgWts.ToArray().Select(p => (double)p).ToArray();
+        }
+
+        public double[] Weight
+        {
+            get { return m_weight; }
+            set { m_weight = value; }
         }
 
         // A method that computes the loss given the input and target tensors
-        public double ComputeLoss(double[] input, double[] target, double[] weight = null)
+        public double[] ComputeLoss(double[] input, double[] target)
         {
-            this.m_weight = weight;
             this.m_input = input;
             this.m_target = target;
 
@@ -294,7 +449,7 @@ namespace MyCaffe.test
             }
 
             // Initialize the loss variable
-            double loss = 0;
+            double[] loss = new double[input.Length];
 
             // Loop over the input and target elements
             for (int i = 0; i < input.Length; i++)
@@ -310,27 +465,32 @@ namespace MyCaffe.test
                 }
 
                 // Compute the loss element-wise
-                loss += (1 - target[i]) * input[i] + log_weight * (z + Math.Log(Math.Exp(-z) + Math.Exp(-input[i] - z)));
+                loss[i] = (1 - target[i]) * input[i] + log_weight * (z + Math.Log(Math.Exp(-z) + Math.Exp(-input[i] - z)));
             }
 
             // Apply the weight if defined
-            if (weight != null)
+            if (m_weight != null)
             {
-                loss = weight.Select((w, i) => w * loss).Sum();
+                for (int i = 0; i < loss.Length; i++)
+                {
+                    loss[i] *= m_weight[i];
+                }
             }
+
+            double dfLoss = 0;
 
             // Apply the reduction if defined
             if (m_reduction == "mean")
             {
-                loss /= input.Length;
+                dfLoss = loss.Sum();
+                dfLoss /= input.Length;
             }
             else if (m_reduction == "sum")
             {
-                // Do nothing, the loss is already summed
+                dfLoss = loss.Sum();
             }
             else if (m_reduction == "none")
             {
-                // Return an array of losses instead of a scalar
                 return loss;
             }
             else
@@ -339,7 +499,7 @@ namespace MyCaffe.test
             }
 
             // Return the loss as a scalar
-            return loss;
+            return new double[] { dfLoss };
         }
 
         // A method that computes the gradient of the loss with respect to the input tensor

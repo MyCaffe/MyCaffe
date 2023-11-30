@@ -9023,44 +9023,45 @@ namespace MyCaffe.common
         /// <summary>
         /// Calculates the BCEWithLogitsLoss forward pass in Cuda.
         /// </summary>
-        /// <param name="nCount">Specifies the number of elements in hX, hY, hW (optional), hPosW (optional) and hWork.</param>
+        /// <param name="nCount">Specifies the number of elements in hX, hY, hW (optional), hPosW (optional) and hLossData.</param>
         /// <param name="hX">Specifies the GPU memory containing the input data.</param>
         /// <param name="hY">Specifies the GPU memory containing the target data.</param>
         /// <param name="hW">Specifies the GPU memory optionally containing the weights, or 0 to ignore.</param>
         /// <param name="hPosW">Specifies the GPU memory optionally containing the position weights, or 0 to ignore.</param>
-        /// <param name="hLossData">Specifies the GPU memory where the calculated loss is placed.</param>
-        /// <param name="hWork">Specifies the GPU memory used for temporary work storage with the same size as hX</param>
+        /// <param name="hLossData">Specifies the GPU memory where the calculated loss is placed as a vector of same size as X and Y.</param>
         /// <remarks>
         /// @see [What does BCEWithLogitsLoss actually do?](https://kamilelukosiute.com/2022/04/14/bce-with-logits-loss/) by Kamile Lukosiute, 2022
         /// @see [How to Use PyTorch's BCEWithLogitsLoss Function](https://reason.town/pytorch-bcewithlogitsloss/) by joseph, 2022
         /// </remarks>
-        public void bce_with_logits_loss_fwd(int nCount, long hX, long hY, long hW, long hPosW, long hLossData, long hWork)
+        public void bce_with_logits_loss_fwd(int nCount, long hX, long hY, long hW, long hPosW, long hLossData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDAFN_BCE_WITH_LOGITS_LOSS_FWD, null, m_param.AsLong(nCount, hX, hY, hW, hPosW, hLossData, hWork));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDAFN_BCE_WITH_LOGITS_LOSS_FWD, null, m_param.AsLong(nCount, hX, hY, hW, hPosW, hLossData));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDAFN_BCE_WITH_LOGITS_LOSS_FWD, null, m_param.AsLong(nCount, hX, hY, hW, hPosW, hLossData, hWork));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDAFN_BCE_WITH_LOGITS_LOSS_FWD, null, m_param.AsLong(nCount, hX, hY, hW, hPosW, hLossData));
         }
 
         /// <summary>
         /// Calculates the BCEWithLogitsLoss backward pass in Cuda.
         /// </summary>
         /// <param name="nCount">Specifies the number of elements in hX, hY, hW (optional) and hPosW (optional).</param>
+        /// <param name="nN">Specifies the number of weights sets or nCount of none.</param>
         /// <param name="hX">Specifies the GPU memory containing the input data.</param>
         /// <param name="hY">Specifies the GPU memory containing the target data.</param>
         /// <param name="hW">Specifies the GPU memory optionally containing the weights, or 0 to ignore.</param>
         /// <param name="hPosW">Specifies the GPU memory optionally containing the position weights, or 0 to ignore.</param>
+        /// <param name="bMeanReduction">Specifies that mean-reduction was used.</param>
         /// <param name="hGrad">Specifies the GPU memory where the newly calculated gradients are placed.</param>
         /// <remarks>
         /// @see [What does BCEWithLogitsLoss actually do?](https://kamilelukosiute.com/2022/04/14/bce-with-logits-loss/) by Kamile Lukosiute, 2022
         /// @see [How to Use PyTorch's BCEWithLogitsLoss Function](https://reason.town/pytorch-bcewithlogitsloss/) by joseph, 2022
         /// </remarks>
-        public void bce_with_logits_loss_bwd(int nCount, long hX, long hY, long hW, long hPosW, long hGrad)
+        public void bce_with_logits_loss_bwd(int nCount, int nN, long hX, long hY, long hW, long hPosW, bool bMeanReduction, long hGrad)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDAFN_BCE_WITH_LOGITS_LOSS_BWD, null, m_param.AsLong(nCount, hX, hY, hW, hPosW, hGrad));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDAFN_BCE_WITH_LOGITS_LOSS_BWD, null, m_param.AsLong(nCount, nN, hX, hY, hW, hPosW, (bMeanReduction) ? 1 : 0, hGrad));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDAFN_BCE_WITH_LOGITS_LOSS_BWD, null, m_param.AsLong(nCount, hX, hY, hW, hPosW, hGrad));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDAFN_BCE_WITH_LOGITS_LOSS_BWD, null, m_param.AsLong(nCount, nN, hX, hY, hW, hPosW, (bMeanReduction) ? 1 : 0, hGrad));
         }
 
         /// <summary>

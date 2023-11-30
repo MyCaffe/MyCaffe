@@ -2969,25 +2969,6 @@ inline long Device<T>::cuda_bce_with_logits_loss_fwd(long lInput, T* pfInput, lo
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(llInput, plInput, 7, 7))
-		return lErr;
-
-	int nCount = (int)plInput[0];
-	long hX = (long)plInput[1];
-	long hY = (long)plInput[2];
-	long hW = (long)plInput[3];
-	long hPosW = (long)plInput[4];
-	long hLoss = (long)plInput[5];
-	long hWork = (long)plInput[6];
-
-	return m_math.cuda_bce_with_logits_loss_fwd(nCount, hX, hY, hW, hPosW, hLoss, hWork);
-}
-
-template <class T>
-inline long Device<T>::cuda_bce_with_logits_loss_bwd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
-{
-	LONG lErr;
-
 	if (lErr = verifyInput(llInput, plInput, 6, 6))
 		return lErr;
 
@@ -2996,9 +2977,29 @@ inline long Device<T>::cuda_bce_with_logits_loss_bwd(long lInput, T* pfInput, lo
 	long hY = (long)plInput[2];
 	long hW = (long)plInput[3];
 	long hPosW = (long)plInput[4];
-	long hGrad = (long)plInput[5];
+	long hLoss = (long)plInput[5];
 
-	return m_math.cuda_bce_with_logits_loss_bwd(nCount, hX, hY, hW, hPosW, hGrad);
+	return m_math.cuda_bce_with_logits_loss_fwd(nCount, hX, hY, hW, hPosW, hLoss);
+}
+
+template <class T>
+inline long Device<T>::cuda_bce_with_logits_loss_bwd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 8, 8))
+		return lErr;
+
+	int nCount = (int)plInput[0];
+	int nN = (int)plInput[1];
+	long hX = (long)plInput[2];
+	long hY = (long)plInput[3];
+	long hW = (long)plInput[4];
+	long hPosW = (long)plInput[5];
+	bool bMeanReduction = (plInput[6] != 0) ? true : false;
+	long hGrad = (long)plInput[7];
+
+	return m_math.cuda_bce_with_logits_loss_bwd(nCount, nN, hX, hY, hW, hPosW, bMeanReduction, hGrad);
 }
 
 template <class T>
