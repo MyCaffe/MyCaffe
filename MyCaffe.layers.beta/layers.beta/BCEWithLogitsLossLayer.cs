@@ -6,6 +6,7 @@ using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
 using MyCaffe.param.beta;
+using static MyCaffe.param.beta.BCEWithLogitsLossParameter;
 
 namespace MyCaffe.layers.beta
 {
@@ -14,8 +15,10 @@ namespace MyCaffe.layers.beta
     /// This type of loss is often used in image classification tasks by measuring how well a model is able to predict the correct 
     /// class for an input image.
     /// 
-    /// @f$ \ell(x, y) = -\frac{1}{N} \sum_{i=1}^N \left[ y_i \cdot \log \sigma(x_i) + (1 - y_i) \cdot \log (1 - \sigma(x_i)) \right] @f$ 
-    /// where @f$ x @f$ is the input and @f$ y @f$ is the predicted value.
+    /// @f$ \ell_n = -w_n \left[ t_n \cdot \log \sigma(x_n) + (1 - t_n) \cdot \log (1 - \sigma(x_n)) \right] @f$
+    /// 
+    /// where @f$ x_n @f$​ is the model output, @f$ t_n @f$​ is the target label, @f$ w_n @f$​ is the weight, and σ is the sigmoid function.
+    /// The loss is then reduced by either taking the mean or the sum over all the elements, depending on the reduction argument.
     /// </summary>
     /// <remarks>
     /// @see [BCEWithLogitsLoss](https://pytorch.org/docs/stable/generated/torch.nn.BCEWithLogitsLoss) by PyTorch
@@ -117,8 +120,10 @@ namespace MyCaffe.layers.beta
         /// </param>
         /// <param name="colTop">top output blob vector (length 1)
         ///     BSEWithLogitsLoss - the computed binary cross entropy loss:
-        ///     @f$ \ell(x, y) = -\frac{1}{N} \sum_{i=1}^N \left[ y_i \cdot \log \sigma(x_i) + (1 - y_i) \cdot \log (1 - \sigma(x_i)) \right] @f$ 
-        ///     where @f$ x @f$ is the input and @f$ y @f$ is the predicted value.
+        ///     @f$ \ell_n = -w_n \left[ t_n \cdot \log \sigma(x_n) + (1 - t_n) \cdot \log (1 - \sigma(x_n)) \right] @f$
+        /// 
+        ///     where @f$ x_n @f$​ is the model output, @f$ t_n @f$​ is the target label, @f$ w_n @f$​ is the weight, and σ is the sigmoid function.
+        ///     The loss is then reduced by either taking the mean or the sum over all the elements, depending on the reduction argument.
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
