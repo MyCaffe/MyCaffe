@@ -350,7 +350,7 @@ LONG LayerNormData<T>::Forward(long hXdata, long hYdata)
 	LONG lErr;
 	
 	// mean = x.mean(dim-1, keepdim=True)
-	if (lErr = m_pMath->channel_mean(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, hXdata, m_mu.gpu_data()))
+	if (lErr = m_pMath->channel_mean(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, hXdata, m_mu.gpu_data(), 0))
 		return lErr;
 	
 	// Copy mean values across all items in the channel.
@@ -366,7 +366,7 @@ LONG LayerNormData<T>::Forward(long hXdata, long hYdata)
 		return lErr;
 
 	// var = xmusq.mean(dim-1, keepdim=True)
-	if (lErr = m_pMath->channel_mean(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_xmusq.gpu_data(), m_var.gpu_data()))
+	if (lErr = m_pMath->channel_mean(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_xmusq.gpu_data(), m_var.gpu_data(), 0))
 		return lErr;
 		
 	// stdev = sqrt(var + eps)
@@ -404,11 +404,11 @@ LONG LayerNormData<T>::Backward(long hYdata, long hYdiff, long hXdiff)
 		return lErr;
 
 	// Average (dx * dy) across channel, dx1 = dx1.mean()
-	if (lErr = m_pMath->channel_mean(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_work.gpu_diff(), m_var.gpu_diff()))
+	if (lErr = m_pMath->channel_mean(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, m_work.gpu_diff(), m_var.gpu_diff(), 0))
 		return lErr;
 
 	// Average dy across channel, dx2 = dy.mean()
-	if (lErr = m_pMath->channel_mean(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, hYdiff, m_stdev.gpu_diff()))
+	if (lErr = m_pMath->channel_mean(m_nCount, m_nOuterNum, m_nChannels, m_nInnerNum, hYdiff, m_stdev.gpu_diff(), 0))
 		return lErr;
 
 	// Multiply previous dx with dx1 (average across channel of dx * dy)

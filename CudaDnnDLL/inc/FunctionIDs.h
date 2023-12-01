@@ -275,6 +275,7 @@ const int CUDA_FN_MULBSX = 270;
 const int CUDA_FN_DIVBSX = 271;
 
 const int CUDA_FN_MAX_BWD2 = 272;
+const int CUDA_FN_INVERT = 273;
 
 const int CUDA_FN_IM2COL = 280;
 const int CUDA_FN_IM2COL_ND = 281;

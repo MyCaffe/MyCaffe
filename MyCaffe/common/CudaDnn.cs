@@ -864,8 +864,11 @@ namespace MyCaffe.common
         void channel_fillfrom(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, DIR dir);
         void channel_scale(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hA, long hY);
         void channel_mulv(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hA, long hX, long hC);
+        void channel_min(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bReturnIdx = false, bool bAcrossChannels = false);
+        void channel_max(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bReturnIdx = false, bool bAcrossChannels = false);
+
         void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bSumAcrossChannels = true, DIR dir = DIR.FWD, int nChanalesY = -1);
-        void channel_mean(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
+        void channel_mean(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, int nXOff = 0);
         void channel_stdev(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, long hZ, float fEps);
         void channel_copy(int nCount, int nOuterNum, int nChannels, int nBlocks, int nInnerNum, int nOffset, long hX, long hY, DIR dir);
         void channel_copyall(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
@@ -908,6 +911,7 @@ namespace MyCaffe.common
         void abs(int n, long hA, long hY);
         void exp(int n, long hA, long hY);
         void log(int n, long hA, long hY);
+        void invert(int n, long hA, long hY, int nAOff = 0, int nYOff = 0);
         void powx(int n, long hA, double fAlpha, long hY, int nAOff = 0, int nYOff = 0);
         void powx(int n, long hA, float fAlpha, long hY, int nAOff = 0, int nYOff = 0);
         void sign(int n, long hX, long hY, int nXOff = 0, int nYOff = 0);
@@ -1249,6 +1253,7 @@ namespace MyCaffe.common
             CUDA_DIVBSX = 271,
 
             CUDA_MAX_BWD2 = 272,
+            CUDA_INVERT = 273,
 
             CUDA_IM2COL = 280,
             CUDA_IM2COL_ND = 281,
@@ -7584,6 +7589,22 @@ namespace MyCaffe.common
                 m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_SIGN, null, m_param.AsLong(n, hX, hY, nXOff, nYOff));
         }
 
+        /// <summary>
+        /// Computes the invert of each element of X and places the result in Y where the inver Y = 1/X.
+        /// </summary>
+        /// <param name="n">Specifies the number of items (not bytes) in the vectors A and Y.</param>
+        /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
+        /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
+        /// <param name="nXOff">Specifies an offset (in items, not bytes) into the memory of X.</param>
+        /// <param name="nYOff">Specifies an offset (in items, not bytes) into the memory of Y.</param>
+        public void invert(int n, long hX, long hY, int nXOff = 0, int nYOff = 0)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_INVERT, null, m_param.AsLong(n, hX, hY, nXOff, nYOff));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_INVERT, null, m_param.AsLong(n, hX, hY, nXOff, nYOff));
+        }
+
 #pragma warning disable 1591
 
         public void student(int n, long hX, long hY) /** @private */
@@ -8074,7 +8095,7 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Calculates the minimum value within each channel of X and places the result in Y.
+        /// Calculates the minimum value within each channel or across the channels of X and places the result in Y.
         /// </summary>
         /// <param name="nCount">Specifies the number of elements in X.</param>
         /// <param name="nOuterNum">Specifies the number of images within X.</param>
@@ -8083,16 +8104,17 @@ namespace MyCaffe.common
         /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
         /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
         /// <param name="bReturnIdx">Optionally, specifies to return the index of the minimum value, otherwise the minimum value is returned.</param>
-        public void channel_min(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bReturnIdx = false)
+        /// <param name="bAcrossChannels">Optionally, specifies to find the min across channels as opposed to within each channel (default = true).</param>
+        public void channel_min(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bReturnIdx = false, bool bAcrossChannels = true)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MIN, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bReturnIdx) ? 1 : 0));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MIN, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bReturnIdx) ? 1 : 0, (bAcrossChannels) ? 1 : 0));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MIN, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bReturnIdx) ? 1 : 0));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MIN, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bReturnIdx) ? 1 : 0, (bAcrossChannels) ? 1 : 0));
         }
 
         /// <summary>
-        /// Calculates the maximum value within each channel of X and places the result in Y.
+        /// Calculates the maximum value either within each channel or across the channels of X and places the result in Y.
         /// </summary>
         /// <param name="nCount">Specifies the number of elements in X.</param>
         /// <param name="nOuterNum">Specifies the number of images within X.</param>
@@ -8101,12 +8123,13 @@ namespace MyCaffe.common
         /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
         /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
         /// <param name="bReturnIdx">Optionally, specifies to return the index of the maximum value, otherwise the maximum value is returned.</param>
-        public void channel_max(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bReturnIdx = false)
+        /// <param name="bAcrossChannels">Optionally, specifies to find the max across channels as opposed to within each channel (default = true).</param>
+        public void channel_max(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bReturnIdx = false, bool bAcrossChannels = true)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MAX, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bReturnIdx) ? 1 : 0));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MAX, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bReturnIdx) ? 1 : 0, (bAcrossChannels) ? 1 : 0));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MAX, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bReturnIdx) ? 1 : 0));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MAX, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, (bReturnIdx) ? 1 : 0, (bAcrossChannels) ? 1 : 0));
         }
 
         /// <summary>
@@ -8118,12 +8141,13 @@ namespace MyCaffe.common
         /// <param name="nInnerNum">Specifies the dimension of each item in X.</param>
         /// <param name="hX">Specifies a handle to the vector X in GPU memory. This vector should be of shape NxCxHxW.</param>
         /// <param name="hY">Specifies a handle to the vector Y in GPU memory. This vector should be of shape HxCx1x1</param>
-        public void channel_mean(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY)
+        /// <param name="nXOff">Optionally, specifies an offset into the channel within X (default = 0).</param>
+        public void channel_mean(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, int nXOff = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MEAN, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MEAN, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, nXOff));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MEAN, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MEAN, null, m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, nXOff));
         }
 
         /// <summary>

@@ -208,6 +208,7 @@ class Math
 		long exp(int n, long hA, long hY, int nAOff = 0, int nYOff = 0, T fBeta = 1);
 		long log(int n, long hA, long hY, T fBeta = 1, T fAlpha = 0);
 		long powx(int n, long hA, T fAlpha, long hY, int nAOff = 0, int nYOff = 0);
+		long invert(int n, long hX, long hY, int nXOff = 0, int nYOff = 0);
 		long sign(int n, long hX, long hY, int nXOff = 0, int nYOff = 0);
 		long sqrt(int n, long hX, long hY);
 		long sqrt_scale(int n, long hX, long hY);
@@ -239,9 +240,9 @@ class Math
 		long denan(int n, long hX, T fReplacement);
 		long set_bounds(int n, T fMin, T fMax, long hX);
 
-		long channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx);
-		long channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx);
-		long channel_mean(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
+		long channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx, bool bAcrossChannels);
+		long channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx, bool bAcrossChannels);
+		long channel_mean(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nXOff);
 		long channel_stdev(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, long hZ, T fEps);
 		long channel_sub(int n, int nOutNum, int nChannels, int nInNum, long hA, long hX, long hY);
 		long channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bSumAcrossChannels, int nDir, int nChannelsY);

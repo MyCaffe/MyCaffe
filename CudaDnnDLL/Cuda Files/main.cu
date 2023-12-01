@@ -572,6 +572,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, lon
 		case CUDA_FN_SIGN:
 			return m_device.cuda_sign(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
+		case CUDA_FN_INVERT:
+			return m_device.cuda_invert(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
 		case CUDA_FN_SQRT:
 			return m_device.cuda_sqrt(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
@@ -1682,6 +1685,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_SIGN:
 		return "CUDA_FN_SIGN";
+
+	case CUDA_FN_INVERT:
+		return "CUDA_FN_INVERT";
 
 	case CUDA_FN_SQRT:
 		return "CUDA_FN_SQRT";

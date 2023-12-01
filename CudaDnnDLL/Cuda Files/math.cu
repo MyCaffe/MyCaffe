@@ -5615,6 +5615,45 @@ long Math<float>::powx(int n, long hA, float fAlpha, long hY, int nAOff, int nYO
 }
 
 
+template <typename T>
+__global__ void invert_kernel(const int n, T* x, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		y[i] = (x[i] == 0) ? 0 : (T)1 / x[i];
+	}
+}
+
+template <typename T>
+long Math<T>::invert(int n, long hX, long hY, int nXOff, int nYOff)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	T* x = (T*)pX->Data();
+	T* y = (T*)pY->Data();
+
+	if (nXOff > 0)
+		x += nXOff;
+
+	if (nYOff > 0)
+		y += nYOff;
+
+	invert_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, y);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::invert(int n, long hA, long hY, int nXOff, int nYOff);
+template long Math<float>::invert(int n, long hA, long hY, int nXOff, int nYOff);
+
 
 template <typename T>
 __global__ void sign_kernel(const int n, T* x, T* y)
@@ -5982,36 +6021,55 @@ template long Math<float>::logistic2(int n, long hA, long hY);
 
 
 template <typename T>
-__global__ void channel_min_kernel(const int num, const int channels, const int spatial_dim, const T* x, T* y)
-{
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * spatial_dim && i>=0; i += blockDim.x * gridDim.x)
-	{
-		const int n = i / spatial_dim;
-		const int s = i % spatial_dim;
-		T val = FLT_MAX;
-
-		for (int c = 0; c < channels; c++)
-		{
-			val = min(x[(n * channels + c) * spatial_dim + s], val);
-		}
-
-		y[i] = val;
-	}
-}
-
-template <typename T>
-__global__ void channel_min_idx_kernel(const int num, const int channels, const int spatial_dim, const T* x, T* y)
+__global__ void channel_min_kernel_acrosschannels(const int num, const int channels, const int spatial_dim, const T* x, T* y)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * spatial_dim && i >= 0; i += blockDim.x * gridDim.x)
 	{
 		const int n = i / spatial_dim;
 		const int s = i % spatial_dim;
+		const int offset = n * channels;
+		T val = FLT_MAX;
+
+		for (int c = 0; c < channels; c++)
+		{
+			val = min(x[(offset + c) * spatial_dim + s], val);
+		}
+
+		y[i] = (T)val;
+	}
+}
+
+template <typename T>
+__global__ void channel_min_kernel_withinchannel(const int num, const int channels, const int spatial_dim, const T* x, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * spatial_dim && i>=0; i += blockDim.x * gridDim.x)
+	{
+		const T* x1 = x + (i * spatial_dim);
+		T val = -FLT_MAX;
+
+		for (int j = 0; j < spatial_dim; j++)
+		{
+			val = min(x1[j], val);
+		}
+
+		y[i] = (T)val;
+	}
+}
+
+template <typename T>
+__global__ void channel_min_idx_kernel_acrosschannels(const int num, const int channels, const int spatial_dim, const T* x, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * spatial_dim && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const int n = i / spatial_dim;
+		const int s = i % spatial_dim;
+		const int offset = n * channels;
 		T val = FLT_MAX;
 		int nIdx = 0;
 
 		for (int c = 0; c < channels; c++)
 		{
-			const T val1 = x[(n * channels + c) * spatial_dim + s];
+			const T val1 = x[(offset + c) * spatial_dim + s];
 			if (val1 < val)
 			{
 				val = val1;
@@ -6023,9 +6081,32 @@ __global__ void channel_min_idx_kernel(const int num, const int channels, const 
 	}
 }
 
+template <typename T>
+__global__ void channel_min_idx_kernel_withinchannel(const int num, const int channels, const int spatial_dim, const T* x, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * spatial_dim && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const T* x1 = x + (i * spatial_dim);
+		T val = -FLT_MAX;
+		int nIdx = 0;
+
+		for (int j = 0; j < spatial_dim; j++)
+		{
+			const T val1 = x1[j];
+			if (val1 < val)
+			{
+				val = val1;
+				nIdx = j;
+			}
+		}
+
+		y[i] = nIdx;
+	}
+}
+
 
 template <typename T>
-long Math<T>::channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx)
+long Math<T>::channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx, bool bAcrossChannels)
 {
 	LONG lErr;
 	MemoryItem* pX;
@@ -6038,48 +6119,76 @@ long Math<T>::channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX
 		return lErr;
 
 	if (bReturnIdx)
-		channel_min_idx_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+	{
+		if (bAcrossChannels)
+			channel_min_idx_kernel_acrosschannels<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+		else
+			channel_min_idx_kernel_withinchannel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+	}
 	else
-		channel_min_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+	{
+		if (bAcrossChannels)
+			channel_min_kernel_acrosschannels<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+		else
+			channel_min_kernel_withinchannel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+	}
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx);
-template long Math<float>::channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx);
-
-
-template <typename T>
-__global__ void channel_max_kernel(const int num, const int channels, const int spatial_dim, const T* x, T* y)
-{
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<num * spatial_dim && i>=0; i += blockDim.x * gridDim.x)
-	{
-		const int n = i / spatial_dim;
-		const int s = i % spatial_dim;
-		T val = -FLT_MAX;
-
-		for (int c=0; c<channels; c++)
-		{
-			val = max(x[(n * channels + c) * spatial_dim + s], val);
-		}
-
-		y[i] = val;
-	}
-}
+template long Math<double>::channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx, bool bAcrossChannels);
+template long Math<float>::channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx, bool bAcrossChannels);
 
 template <typename T>
-__global__ void channel_max_idx_kernel(const int num, const int channels, const int spatial_dim, const T* x, T* y)
+__global__ void channel_max_kernel_acrosschannels(const int num, const int channels, const int spatial_dim, const T* x, T* y)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * spatial_dim && i >= 0; i += blockDim.x * gridDim.x)
 	{
 		const int n = i / spatial_dim;
 		const int s = i % spatial_dim;
+		const int offset = n * channels;
 		T val = -FLT_MAX;
-		int nIdx = 0;
-		
+
 		for (int c = 0; c < channels; c++)
 		{
-			const T val1 = x[(n * channels + c) * spatial_dim + s];
+			val = max(x[(offset + c) * spatial_dim + s], val);
+		}
+
+		y[i] = (T)val;
+	}
+}
+
+template <typename T>
+__global__ void channel_max_kernel_withinchannel(const int num, const int channels, const int spatial_dim, const T* x, T* y)
+{
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<num * spatial_dim && i>=0; i += blockDim.x * gridDim.x)
+	{
+		const T* x1 = x + (i * spatial_dim);
+		T val = -FLT_MAX;
+
+		for (int j = 0; j < spatial_dim; j++)
+		{
+			val = max(x1[j], val);
+		}
+
+		y[i] = (T)val;
+	}
+}
+
+template <typename T>
+__global__ void channel_max_idx_kernel_acrosschannels(const int num, const int channels, const int spatial_dim, const T* x, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * spatial_dim && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const int n = i / spatial_dim;
+		const int s = i % spatial_dim;
+		const int offset = n * channels;
+		T val = -FLT_MAX;
+		int nIdx = 0;
+
+		for (int c = 0; c < channels; c++)
+		{
+			const T val1 = x[(offset + c) * spatial_dim + s];
 			if (val1 > val)
 			{
 				val = val1;
@@ -6091,8 +6200,32 @@ __global__ void channel_max_idx_kernel(const int num, const int channels, const 
 	}
 }
 
+
+template <typename T>
+__global__ void channel_max_idx_kernel_withinchannel(const int num, const int channels, const int spatial_dim, const T* x, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * spatial_dim && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		const T* x1 = x + (i * spatial_dim);
+		T val = -FLT_MAX;
+		int nIdx = 0;
+
+		for (int j = 0; j < spatial_dim; j++)
+		{
+			const T val1 = x1[j];
+			if (val1 > val)
+			{
+				val = val1;
+				nIdx = j;
+			}
+		}
+
+		y[i] = nIdx;
+	}
+}
+
 template <typename T> 
-long Math<T>::channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx)
+long Math<T>::channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx, bool bAcrossChannels)
 {
 	LONG lErr;
 	MemoryItem* pX;
@@ -6105,19 +6238,29 @@ long Math<T>::channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX
 		return lErr;
 
 	if (bReturnIdx)
-		channel_max_idx_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+	{
+		if (bAcrossChannels)
+			channel_max_idx_kernel_acrosschannels<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+		else
+			channel_max_idx_kernel_withinchannel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+	}
 	else
-		channel_max_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+	{
+		if (bAcrossChannels)
+			channel_max_kernel_acrosschannels<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+		else
+			channel_max_kernel_withinchannel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+	}
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx);
-template long Math<float>::channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx);
+template long Math<double>::channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx, bool bAcrossChannels);
+template long Math<float>::channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, bool bReturnIdx, bool bAcrossChannels);
 
 
 template <typename T>
-__global__ void channel_mean_kernel(const int num, const int channels, const int spatial_dim, const T* x, T* y)
+__global__ void channel_mean_kernel(const int num, const int channels, const int spatial_dim, const T* x, T* y, int nXOff)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * channels && i >= 0; i += blockDim.x * gridDim.x)
 	{
@@ -6126,7 +6269,7 @@ __global__ void channel_mean_kernel(const int num, const int channels, const int
 
 		for (int j = 0; j < spatial_dim; j++)
 		{
-			val += (double)x1[j];
+			val += (double)x1[j + nXOff];
 		}
 
 		y[i] = (T)(val / (double)spatial_dim);
@@ -6134,7 +6277,7 @@ __global__ void channel_mean_kernel(const int num, const int channels, const int
 }
 
 template <typename T>
-long Math<T>::channel_mean(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY)
+long Math<T>::channel_mean(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nXOff)
 {
 	LONG lErr;
 	MemoryItem* pX;
@@ -6146,13 +6289,13 @@ long Math<T>::channel_mean(int n, int nOutNum, int nChannels, int nInNum, long h
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	channel_mean_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+	channel_mean_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data(), nXOff);
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::channel_mean(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
-template long Math<float>::channel_mean(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
+template long Math<double>::channel_mean(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nXOff);
+template long Math<float>::channel_mean(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nXOff);
 
 template <typename T>
 __global__ void channel_stdev_kernel(const int num, const int channels, const int spatial_dim, T fEps, const T* x, const T* z, T* y)
@@ -6191,7 +6334,7 @@ long Math<T>::channel_stdev(int n, int nOutNum, int nChannels, int nInNum, long 
 	if (lErr = m_pMemCol->GetData(hZ, &pZ))
 		return lErr;
 
-	channel_mean_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pZ->Data());
+	channel_mean_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pZ->Data(), 0);
 	
 	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
