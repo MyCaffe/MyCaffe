@@ -241,6 +241,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Cuda Files\cpd.h" />
     <ClInclude Include="Cuda Files\device.h" />
     <ClInclude Include="Cuda Files\extension.h" />
     <ClInclude Include="Cuda Files\handlecol.h" />
@@ -266,6 +267,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
     <ClInclude Include="Cuda Files\main.h" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="Cuda Files\cpd.cu" />
     <CudaCompile Include="Cuda Files\device.cu" />
     <CudaCompile Include="Cuda Files\extension.cu" />
     <CudaCompile Include="Cuda Files\imgop.cu" />
