@@ -205,6 +205,12 @@ const int CUDNN_FN_RNN8_INIT_WEIGHTS = 155;
 const int CUDNN_FN_RNN8_FWD = 156;
 const int CUDNN_FN_RNN8_BWD = 157;
 
+const int CUDA_FN_CPD_CREATE = 180;
+const int CUDA_FN_CPD_FREE = 181;
+const int CUDA_FN_CPD_SET = 182;
+const int CUDA_FN_CPD_COMPUTE_T_VALUEAT = 183;
+const int CUDA_FN_CPD_COMPUTE_S_VALUES = 184;
+
 const int CUDA_FN_SET = 200;
 const int CUDA_FN_GET = 201;
 const int CUDA_FN_COPY = 202;

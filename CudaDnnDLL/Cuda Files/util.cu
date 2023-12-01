@@ -284,6 +284,14 @@ bool GetErrorString(long lKernel, long lErr, char* szErr, long lMaxErr)
 		case ERROR_RNN8_INVALID_FILLER:
 			_snprintf(szErr, lMaxErr, "RNN8: The RNN8 does not support the filler specified. (%ld), Kernel = %ld", lErr, lKernel);
 			return true;
+
+		case ERROR_CPD:
+			_snprintf(szErr, lMaxErr, "CPD: A general CPD error occurred. (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
+
+		case ERROR_CPD_NOT_INITIALIZED:
+			_snprintf(szErr, lMaxErr, "CPD: The CPD is not initialized. (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
 	}
 
 	return false;

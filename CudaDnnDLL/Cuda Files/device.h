@@ -352,6 +352,12 @@ class Device
 		long Rnn8Forward(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long Rnn8Backward(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 
+		long CreateCpd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long FreeCpd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long SetCpd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long ComputeCpdTvalueAt(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+		long ComputeCpdSvalues(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
+
 		long CreatePCA(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long FreePCA(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
 		long RunPCA(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput);
@@ -2417,6 +2423,86 @@ inline long Device<T>::Rnn8Backward(long lInput, T* pfInput, long llInput, LONGL
 	long hReserved = (long)plInput[15];
 
 	return m_memory.BackwardRnn8(hCuda, hRnn, hY, hdY, hX, hdX, hhX, hdhY, hdhX, hcX, hdcY, hdcX, hWt, hdWt, hWork, hReserved);
+}
+
+template <class T>
+inline long Device<T>::CreateCpd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+	long hHandle = 0;
+
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+
+	if (lErr = m_memory.CreateCpd(&hHandle, &m_math))
+		return lErr;
+
+	return setOutput(hHandle, plOutput, ppfOutput);
+}
+
+template <class T>
+inline long Device<T>::FreeCpd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+
+	return m_memory.FreeCpd(hHandle);
+}
+
+template <class T>
+inline long Device<T>::SetCpd(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 3, 3))
+		return lErr;
+
+	long hCpd = (long)plInput[0];
+	int nN = (int)plInput[1];
+	int nB = (int)plInput[2];
+
+	return m_memory.SetCpd(hCpd, nN, nB);
+}
+
+template <class T>
+inline long Device<T>::ComputeCpdTvalueAt(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 5, 5))
+		return lErr;
+
+	long hCpd = (long)plInput[0];
+	int nT = (int)plInput[1];
+	int nTau = (int)plInput[2];
+	int nZ = (int)plInput[3];
+	long hZ = (long)plInput[4];
+
+	T fTVal;
+
+	if (lErr = m_memory.ComputeCpdTvalueAt(hCpd, nT, nTau, nZ, hZ, &fTVal))
+		return lErr;
+
+	return setOutput(fTVal, plOutput, ppfOutput);
+}
+
+template <class T>
+inline long Device<T>::ComputeCpdSvalues(long lInput, T* pfInput, long llInput, LONGLONG* plInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(llInput, plInput, 3, 3))
+		return lErr;
+
+	long hCpd = (long)plInput[0];
+	int nS = (int)plInput[1];
+	long hS = (long)plInput[2];
+
+	return m_memory.ComputeCpdSvalues(hCpd, nS, hS);
 }
 
 template <class T>

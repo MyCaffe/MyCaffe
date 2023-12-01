@@ -401,6 +401,21 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LONGLONG* plInput, lon
 		case CUDNN_FN_RNN8_BWD:
 			return m_device.Rnn8Backward(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
+		case CUDA_FN_CPD_CREATE:
+			return m_device.CreateCpd(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDA_FN_CPD_FREE:
+			return m_device.FreeCpd(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDA_FN_CPD_SET:
+			return m_device.SetCpd(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDA_FN_CPD_COMPUTE_T_VALUEAT:
+			return m_device.ComputeCpdTvalueAt(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
+		case CUDA_FN_CPD_COMPUTE_S_VALUES:
+			return m_device.ComputeCpdSvalues(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
+
 		case CUDNN_FN_LRN_CC_FWD:
 			return m_device.LRNForwardCC(lCount, pfInput, llCount, plInput, plCount, ppfOutput);
 
@@ -1514,6 +1529,21 @@ char* GetApiName(long lfnIdx)
 
 	case CUDNN_FN_RNN8_BWD:
 		return "CUDNN_FN_RNN8_BWD";
+
+	case CUDA_FN_CPD_CREATE:
+		return "CUDA_FN_CPD_CREATE";
+
+	case CUDA_FN_CPD_FREE:
+		return "CUDA_FN_CPD_FREE";
+
+	case CUDA_FN_CPD_SET:
+		return "CUDA_FN_CPD_SET";
+
+	case CUDA_FN_CPD_COMPUTE_T_VALUEAT:
+		return "CUDA_FN_CPD_COMPUTE_T_VALUEAT";
+
+	case CUDA_FN_CPD_COMPUTE_S_VALUES:
+		return "CUDA_FN_CPD_COMPUTE_S_VALUES";
 
 	case CUDNN_FN_LRN_CC_FWD:
 		return "CUDNN_FN_LRN_CC_FWD";

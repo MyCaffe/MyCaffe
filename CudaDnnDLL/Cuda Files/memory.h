@@ -15,6 +15,7 @@
 #include "pca.h"
 #include "rnnData.h"
 #include "rnn8.h"
+#include "cpd.h"
 #include "tsne_gp.h"
 #include "tsne_g.h"
 #include "nccl.h"
@@ -163,6 +164,7 @@ class Memory
 		HandleCollection<MIN_HANDLES> m_imgop;
 		HandleCollection<MIN_HANDLES> m_nccl;
 		HandleCollection<MIN_HANDLES> m_ssd;
+		HandleCollection<MIN_HANDLES> m_cpd;
 		HandleCollection<MIN_HANDLES> m_layernorm;
 		HandleCollection<MIN_HANDLES> m_extensions;
 		T m_tOne;
@@ -447,6 +449,13 @@ class Memory
 		long InitializeRnn8Weights(long hCuda, long hRnn, long hWt, FillerType ftWt, T fWtVal, T fWtVal2, FillerType ftBias, T fBiasVal, T fBiasVal2);
 		long ForwardRnn8(long hCuda, long hRnn, long hX, long hY, long hhX, long hhY, long hcX, long hcY, long hWt, long hWork, long hReserved);
 		long BackwardRnn8(long hCuda, long hRnn, long hY, long hdY, long hX, long hdX, long hhX, long hdhY, long hdhX, long hcX, long hdcY, long hdcX, long hWt, long hdWt, long hWork, long hReserved);
+
+		long CreateCpd(long* phHandle, Math<T>* pMath);
+		long FreeCpd(long hCpd);
+		cpdHandle<T>* GetCpd(long hCpd);
+		long SetCpd(long hCpd, int nN, int nB);
+		long ComputeCpdTvalueAt(long hCpd, int nT, int nTau, int nZ, long hZ, T* pfTVal);
+		long ComputeCpdSvalues(long hCpd, int nS, long hS);
 
 		long CreatePCA(int nMaxIterations, int nM, int nN, int nK, long hData, long hScoresResult, long hLoadsResult, long hResiduals, long hEigenvalues, Math<T>* pMath, long* phHandle);
 		long FreePCA(long hHandle);
@@ -1442,6 +1451,9 @@ inline long Memory<T>::SetRnn8(long hCuda, long hRnn, bool bTraining, RnnDataLay
 {
 	LONG lErr;
 	rnn8Handle<T>* rnn = (rnn8Handle<T>*)m_rnn.GetData(hRnn);
+	if (rnn == NULL)
+		return ERROR_PARAM_NULL;
+
 	cudnnDataType_t computeType = (sizeof(T) == sizeof(double)) ? CUDNN_DATA_DOUBLE : CUDNN_DATA_FLOAT;
 	cudnnForwardMode_t fwdMode = (bTraining) ? CUDNN_FWD_MODE_TRAINING : CUDNN_FWD_MODE_INFERENCE;
 	cudnnRNNDataLayout_t rnnLayout = (cudnnRNNDataLayout_t)layout;
@@ -1458,6 +1470,8 @@ template <class T>
 inline long Memory<T>::InitializeRnn8Weights(long hCuda, long hRnn, long hWt, FillerType ftWt, T fWtVal, T fWtVal2, FillerType ftBias, T fBiasVal, T fBiasVal2)
 {
 	rnn8Handle<T>* rnn = (rnn8Handle<T>*)m_rnn.GetData(hRnn);
+	if (rnn == NULL)
+		return ERROR_PARAM_NULL;
 	return rnn->InitializeWeights(hCuda, hWt, (FILLER_TYPE)ftWt, fWtVal, fWtVal2, (FILLER_TYPE)ftBias, fBiasVal, fBiasVal2);
 }
 
@@ -1465,6 +1479,8 @@ template <class T>
 inline long Memory<T>::GetRnn8MemorySizes(long hCuda, long hRnn, size_t* pWeightCount, size_t* pWorkSize, size_t* pReserveSize)
 {
 	rnn8Handle<T>* rnn = (rnn8Handle<T>*)m_rnn.GetData(hRnn);
+	if (rnn == NULL)
+		return ERROR_PARAM_NULL;
 	return rnn->GetMemorySizes(hCuda, pWeightCount, pWorkSize, pReserveSize);
 }
 
@@ -1472,6 +1488,8 @@ template <class T>
 inline long Memory<T>::ForwardRnn8(long hCuda, long hRnn, long hX, long hY, long hhX, long hhY, long hcX, long hcY, long hWt, long hWork, long hReserved)
 {
 	rnn8Handle<T>* rnn = (rnn8Handle<T>*)m_rnn.GetData(hRnn);
+	if (rnn == NULL)
+		return ERROR_PARAM_NULL;
 	return rnn->Forward(hCuda, hX, hY, hhX, hhY, hcX, hcY, hWt, hWork, hReserved);
 }
 
@@ -1479,7 +1497,101 @@ template <class T>
 inline long Memory<T>::BackwardRnn8(long hCuda, long hRnn, long hY, long hdY, long hX, long hdX, long hhX, long hdhY, long hdhX, long hcX, long hdcY, long hdcX, long hWt, long hdWt, long hWork, long hReserved)
 {
 	rnn8Handle<T>* rnn = (rnn8Handle<T>*)m_rnn.GetData(hRnn);
+	if (rnn == NULL)
+		return ERROR_PARAM_NULL;
 	return rnn->Backward(hCuda, hY, hdY, hX, hdX, hhX, hdhY, hdhX, hcX, hdcY, hdcX, hWt, hdWt, hWork, hReserved);
+}
+
+
+template <class T>
+inline long Memory<T>::CreateCpd(long* phHandle, Math<T>* pMath)
+{
+	LONG lErr;
+	cpdHandle<T>* cpd = NULL;
+
+	if (phHandle == NULL)
+		return ERROR_PARAM_NULL;
+
+	if ((cpd = new cpdHandle<T>()) == NULL)
+		return ERROR_MEMORY_OUT;
+
+	if (lErr = cpd->Initialize(this, pMath))
+	{
+		delete cpd;
+		return lErr;
+	}
+
+	long hHandle = m_cpd.Allocate(cpd);
+	if (hHandle < 0)
+	{
+		delete cpd;
+		return ERROR_MEMORY_OUT;
+	}
+
+	*phHandle = hHandle;
+	return 0;
+}
+
+template <class T>
+inline long Memory<T>::FreeCpd(long hHandle)
+{
+	cpdHandle<T>* cpd = (cpdHandle<T>*)m_cpd.Free(hHandle);
+
+	if (cpd != NULL)
+	{
+		cpd->CleanUp();
+		delete cpd;
+	}
+
+	return 0;
+}
+
+template <class T>
+inline cpdHandle<T>* Memory<T>::GetCpd(long hHandle)
+{
+	return (cpdHandle<T>*)m_cpd.GetData(hHandle);
+}
+
+template <class T>
+inline long Memory<T>::SetCpd(long hCpd, int nN, int nB)
+{
+	LONG lErr;
+	cpdHandle<T>* cpd = (cpdHandle<T>*)m_cpd.GetData(hCpd);
+	if (cpd == NULL)
+		return ERROR_PARAM_NULL;
+
+	if (lErr = cpd->Set(nN, nB))
+		return lErr;
+
+	return CUDNN_STATUS_SUCCESS;
+}
+
+template <class T>
+inline long Memory<T>::ComputeCpdTvalueAt(long hCpd, int nT, int nTau, int nZ, long hZ, T* pfTVal)
+{
+	LONG lErr;
+	cpdHandle<T>* cpd = (cpdHandle<T>*)m_cpd.GetData(hCpd);
+	if (cpd == NULL)
+		return ERROR_PARAM_NULL;
+
+	if (lErr = cpd->ComputeTvalueAt(nT, nTau, nZ, hZ, pfTVal))
+		return lErr;
+
+	return CUDNN_STATUS_SUCCESS;
+}
+
+template <class T>
+inline long Memory<T>::ComputeCpdSvalues(long hCpd, int nS, long hS)
+{
+	LONG lErr;
+	cpdHandle<T>* cpd = (cpdHandle<T>*)m_cpd.GetData(hCpd);
+	if (cpd == NULL)
+		return ERROR_PARAM_NULL;
+
+	if (lErr = cpd->ComputeSvalues(nS, hS))
+		return lErr;
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template <class T>

@@ -1183,6 +1183,12 @@ namespace MyCaffe.common
             RNN8_FWD = 156,
             RNN8_BWD = 157,
 
+            CPD_CREATE = 180,
+            CPD_FREE = 181,
+            CPD_SET = 182,
+            CPD_COMPUTE_T_VALUE_AT = 183,
+            CPD_COMPUTE_S_VALUES = 184,
+
             CUDA_SET = 200,
             CUDA_GET = 201,
             CUDA_COPY = 202,
@@ -5313,6 +5319,88 @@ namespace MyCaffe.common
                 m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.RNN8_BWD, null, m_param.AsLong(hCuDnn, hRnn, hY, hdY, hX, hdX, hhX, hdhY, hdhX, hcX, hdcY, hdcX, hWt, hdWt, hWork, hReserved));
             else
                 m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.RNN8_BWD, null, m_param.AsLong(hCuDnn, hRnn, hY, hdY, hX, hdX, hhX, hdhY, hdhX, hcX, hdcY, hdcX, hWt, hdWt, hWork, hReserved));
+        }
+
+
+        /// <summary>
+        /// Create the CPD for change point detection primitives.
+        /// </summary>
+        /// <returns>A handle to the CPD is returned.</returns>
+        public long CreateCpd()
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CPD_CREATE, null);
+                return (long)rg[0];
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CPD_CREATE, null);
+                return (long)rg[0];
+            }
+        }
+
+        /// <summary>
+        /// Free an existing CPD.
+        /// </summary>
+        /// <param name="h">Specifies the handle to the CPD created with CreateCpd</param>
+        public void FreeCpd(long h)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CPD_FREE, m_param.AsDouble(h));
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CPD_FREE, m_param.AsFloat(h));
+        }
+
+        /// <summary>
+        /// Set the CPD parameters.
+        /// </summary>
+        /// <param name="hCpd">Specifies the handle to the CPD created with CreateCpd.</param>
+        /// <param name="nN">Specifies the number of items in the sequence.</param>
+        /// <param name="nB">Specifies the clipping range for numerical stability (default = 10).</param>
+        public void SetCpd(long hCpd, int nN, int nB = 10)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CPD_SET, null, m_param.AsLong(hCpd, nN, nB));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CPD_SET, null, m_param.AsLong(hCpd, nN, nB));
+        }
+
+        /// <summary>
+        /// Compute the Cpd T value at a given position.
+        /// </summary>
+        /// <param name="hCpd">Specifies the handle to the CPD created with CreateCpd.</param>
+        /// <param name="nT">Specifies the number of items in the curren t sequence.</param>
+        /// <param name="nTau">Specifies the position within the sequence to calcualte the T value.</param>
+        /// <param name="nZ">Specifies the number of items int the Z memory.</param>
+        /// <param name="hZ">Specifies a handle to the GPU memory containing the Z data output from the Neural Net having the length of 't'.</param>
+        /// <returns>The calculated T value is returned.</returns>
+        public double ComputeCpdTvalueAt(long hCpd, int nT, int nTau, int nZ, long hZ)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CPD_COMPUTE_T_VALUE_AT, null, m_param.AsLong(hCpd, nT, nTau, nZ, hZ));
+                return rg[0];
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CPD_COMPUTE_T_VALUE_AT, null, m_param.AsLong(hCpd, nT, nTau, nZ, hZ));
+                return rg[0];
+            }
+        }
+
+        /// <summary>
+        /// Compute the Cpd S values from the internal T matrix of values (previously filled with ComputeTvaluesAt).
+        /// </summary>
+        /// <param name="hCpd">Specifies the handle to the CPD created with CreateCpd.</param>
+        /// <param name="nS">Specifies the number of items int the S memory.</param>
+        /// <param name="hS">Specifies a handle to the GPU memory containing the S data where the output values are placed.  This memory shoudl be 'nN' in lenght as specified in the SetCpd method.</param>
+        public void ComputeCpdSvalues(long hCpd, int nS, long hS)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CPD_COMPUTE_S_VALUES, null, m_param.AsLong(hCpd, nS, hS));
+            else
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CPD_COMPUTE_S_VALUES, null, m_param.AsLong(hCpd, nS, hS));
         }
 
         /// <summary>
