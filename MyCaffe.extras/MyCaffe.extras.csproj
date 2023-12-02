@@ -57,6 +57,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ChangePointDetector.cs" />
     <Compile Include="DeepDraw.cs" />
     <Compile Include="NeuralStyleTransfer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
