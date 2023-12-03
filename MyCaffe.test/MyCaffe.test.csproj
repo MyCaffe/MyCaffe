@@ -119,7 +119,7 @@
     <Compile Include="TestActivations.cs" />
     <Compile Include="TestAccuracyEncodingLayer.cs" />
     <Compile Include="TestAnnotatedDataLayer.cs" />
-    <Compile Include="TestChangePointDetectionPrimitives.cs" />
+    <Compile Include="TestChangePointDetection.cs" />
     <Compile Include="TestLNN_CfcLayer.cs" />
     <Compile Include="TestLNN_LtcUnitLayer.cs" />
     <Compile Include="TestMyCaffeTemporalDatabase.cs" />

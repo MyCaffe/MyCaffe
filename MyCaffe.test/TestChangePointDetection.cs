@@ -11,12 +11,35 @@ using MyCaffe.layers;
 using System.Diagnostics;
 using MyCaffe.param.beta;
 using MyCaffe.solvers;
+using MyCaffe.extras;
+using System.Windows.Forms;
+using System.Data.Entity.Migrations.Model;
+using SimpleGraphing;
+using System.Drawing;
 
 namespace MyCaffe.test
 {
     [TestClass]
-    public class TestChangePointDetectionPrimitives
+    public class TestChangePointDetection
     {
+        [TestMethod]
+        public void TestCPDPrimitives()
+        {
+            ChangePointDetectionPrimitivesTest test = new ChangePointDetectionPrimitivesTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IChangePointDetectionTest t in test.Tests)
+                {
+                    t.TestCPDPrimitives();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
         [TestMethod]
         public void TestCPD()
         {
@@ -24,7 +47,7 @@ namespace MyCaffe.test
 
             try
             {
-                foreach (IChangePointDetectionPrimitivesTest t in test.Tests)
+                foreach (IChangePointDetectionTest t in test.Tests)
                 {
                     t.TestCPD();
                 }
@@ -36,8 +59,9 @@ namespace MyCaffe.test
         }
     }
 
-    interface IChangePointDetectionPrimitivesTest : ITest
+    interface IChangePointDetectionTest : ITest
     {
+        void TestCPDPrimitives();
         void TestCPD();
     }
 
@@ -51,18 +75,19 @@ namespace MyCaffe.test
         protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
         {
             if (dt == common.DataType.DOUBLE)
-                return new ChangePointDetectionPrimitivesTest2<double>(strName, nDeviceID, engine);
+                return new ChangePointDetectionTest2<double>(strName, nDeviceID, engine);
             else
-                return new ChangePointDetectionPrimitivesTest2<float>(strName, nDeviceID, engine);
+                return new ChangePointDetectionTest2<float>(strName, nDeviceID, engine);
         }
     }
 
-    class ChangePointDetectionPrimitivesTest2<T> : TestEx<T>, IChangePointDetectionPrimitivesTest
+    class ChangePointDetectionTest2<T> : TestEx<T>, IChangePointDetectionTest
     {
         Blob<T> m_blobZ;
         Blob<T> m_blobTval;
+        Random m_rand = new Random(1);
 
-        public ChangePointDetectionPrimitivesTest2(string strName, int nDeviceID, EngineParameter.Engine engine)
+        public ChangePointDetectionTest2(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, new List<int>() { 3, 2, 4, 1 }, nDeviceID)
         {
             m_engine = engine;
@@ -77,15 +102,6 @@ namespace MyCaffe.test
             return base.getFillerParam();
         }
 
-        private void dispose1(ref Blob<T> b)
-        {
-            if (b != null)
-            {
-                b.Dispose();
-                b = null;
-            }
-        }
-
         protected override void dispose()
         {
             dispose(ref m_blobZ);
@@ -93,7 +109,130 @@ namespace MyCaffe.test
             base.dispose();
         }
 
+        // A method to generate a random float from a normal distribution
+        public float Randn()
+        {
+            // Use the Box-Muller transform to generate two independent standard normal random variables
+            // See https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
+            double u1 = 1.0 - m_rand.NextDouble(); // Uniform(0,1] random doubles
+            double u2 = 1.0 - m_rand.NextDouble();
+            double r = Math.Sqrt(-2.0 * Math.Log(u1)); // Radius
+            double theta = 2.0 * Math.PI * u2; // Angle
+                                               // Use one of the normal random variables
+            return (float)(r * Math.Cos(theta));
+        }
+
+        // A method to generate an array of random floats from a normal distribution
+        public float[] Randn(int nTau, double dfMu, double dfSigma, params int[] shape)
+        {
+            // Check if the shape is valid
+            if (shape == null || shape.Length == 0)
+            {
+                throw new ArgumentException("Shape must be a non-empty array of positive integers.");
+            }
+            if (shape.Any(x => x <= 0))
+            {
+                throw new ArgumentException("Shape must be a non-empty array of positive integers.");
+            }
+            // Compute the total size of the array
+            int size = shape.Aggregate((x, y) => x * y);
+            // Create an array of random floats
+            float[] array = new float[size];
+            for (int i = 0; i < size; i++)
+            {
+                array[i] = (float)dfSigma * Randn();
+
+                if (i >= nTau)
+                    array[i] += (float)dfMu;
+            }
+            return array;
+        }
+
+        private PlotCollection createPlots(Blob<T> blob)
+        {
+            PlotCollection plots = new PlotCollection(blob.Name);
+
+            for (int i = 0; i < blob.count(); i++)
+            {
+                double dfVal = (double)Convert.ChangeType(blob.GetData(i), typeof(double));
+                plots.Add(i, dfVal);
+            }
+
+            return plots;
+        }
+
         public void TestCPD()
+        {
+            Blob<T> blobX = null;
+            Blob<T> blobS = null;
+            Blob<T> blobScumsum = null;
+            ChangePointDetectorNN<T> cpd = null;
+            ChangePointDetectorCUMSUM<T> cpdCumsum = null;
+            int nN = 150;           // number of observations.
+            int nTau = 75;          // true change point location.
+            double dfMu = 0.2;      // shift size.
+            double dfSigma = 0.1;   // Standard deviation (noise level).
+            int nB = 10;
+            int nEpochs = 10;
+            int nOutMin = 10;
+            int nTMin = 10;
+            Stopwatch sw = new Stopwatch();
+            Random random = new Random(1);
+            string strResultFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\cpd\\result.png";
+
+            try
+            {
+                blobX = new Blob<T>(m_cuda, m_log);
+                blobX.Name = "X";
+                blobX.Reshape(nN, 1, 1, 1);
+                blobX.SetData(0);
+
+                // Generate a gaussian signal with a change point at tau.
+                float[] rgX = Randn(nTau, dfMu, dfSigma, nN);
+                blobX.mutable_cpu_data = convert(rgX);
+
+                cpd = new ChangePointDetectorNN<T>(m_cuda, m_log, "1");
+                cpdCumsum = new ChangePointDetectorCUMSUM<T>();
+
+                m_log.WriteLine("Initializing CPD...");
+                sw.Start();
+                cpd.Initialize(nN, blobX, nOutMin, nEpochs, nB);
+                double dfTime = sw.Elapsed.TotalMilliseconds;
+                m_log.WriteLine("CPD Initialization timing = " + dfTime.ToString("N2") + " ms");
+
+                sw.Restart();
+                m_log.WriteLine("Computing CPD...");
+                blobS = cpd.ComputeSvalues(nTMin, false);
+                dfTime = sw.Elapsed.TotalMilliseconds;
+                m_log.WriteLine("CPD Compute timing = " + dfTime.ToString("N2") + " ms");
+
+                sw.Restart();
+                m_log.WriteLine("Computing CUMSUM CPD...");
+                blobScumsum = cpdCumsum.ComputeSvalues(blobX);
+
+                PlotCollection plotsX = createPlots(blobX);
+                PlotCollection plotsS = createPlots(blobS);
+                PlotCollection plotsScumsum = createPlots(blobScumsum);
+                PlotCollectionSet set = new PlotCollectionSet() {  plotsX, plotsS, plotsScumsum };
+
+                Image img = SimpleGraphingControl.QuickRender(set, 1000, 800);
+                img.Save(strResultFile);
+            }
+            finally
+            {
+                dispose(ref blobX);
+                dispose(ref blobS);
+                dispose(ref blobScumsum);
+
+                if (cpd != null)
+                {
+                    cpd.Dispose();
+                    cpd = null;
+                }
+            }
+        }
+
+        public void TestCPDPrimitives()
         {
             string strDataPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\cpd\\";
             List<Tuple<string, string>> rgFiles = new List<Tuple<string, string>>()
