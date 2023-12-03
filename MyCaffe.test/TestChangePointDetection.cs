@@ -287,14 +287,14 @@ namespace MyCaffe.test
 
             using (Graphics g = Graphics.FromImage(img))
             {
-                g.DrawLine(penTrueCp, nTau * 5, 0, nTau * 5, img.Height);
-                g.DrawString("True Change Point", fontCp, Brushes.Fuchsia, nTau * 5 + 5, 10);
+                g.DrawLine(penTrueCp, (nTau + 1) * 5, 0, (nTau + 1) * 5, img.Height);
+                g.DrawString("True Change Point", fontCp, Brushes.Fuchsia, (nTau + 1) * 5 + 5, 30);
 
-                int nY = 50;
+                int nY = 70;
                 if (!string.IsNullOrEmpty(strDesc))
                 {
                     g.DrawString(strDesc, fontTitle, Brushes.Black, 10, nY);
-                    nY += 20;
+                    nY += 40;
                 }
 
                 g.DrawString("Total Time: " + dfSeconds.ToString("N2") + " sec", fontStats, Brushes.Black, 10, nY);
