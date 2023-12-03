@@ -60,7 +60,7 @@ public:
 	long CleanUp();
 	long Set(int nN, int nB);
 	long ComputeTvalueAt(int nT, int nTau, int nZ, long hZ, T* pfTVal);
-	long ComputeSvalues(int nS, long hS);
+	long ComputeSvalues(int nS, long hS, int nT, long hT);
 };
 
 

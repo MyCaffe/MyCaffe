@@ -180,23 +180,32 @@ template long cpdHandle<float>::ComputeTvalueAt(int nT, int nTau, int nZ, long h
 
 
 template <class T>
-long cpdHandle<T>::ComputeSvalues(int nS, long hS)
+long cpdHandle<T>::ComputeSvalues(int nS, long hS, int nT, long hT)
 {
 	LONG lErr;
+	
+	if (hT == 0)
+	{
+		nT = m_nN * m_nN;
+		hT = m_hT;
+	}
 
-	if (m_hT == 0 || m_hD == 0 || m_hWork == 0)
+	if (hT == 0)
 		return ERROR_CPD_NOT_INITIALIZED;
+
+	if (nT < m_nN * m_nN)
+		return ERROR_PARAM_OUT_OF_RANGE;
 
 	if (nS < m_nN)
 		return ERROR_PARAM_OUT_OF_RANGE;
 
-	if (lErr = m_pMath->channel_max(m_nN * m_nN, 1, m_nN, m_nN, m_hT, hS, false, true))
+	if (lErr = m_pMath->channel_max(m_nN * m_nN, 1, m_nN, m_nN, hT, hS, false, true))
 		return lErr;
 
 	return 0;
 }
 
-template long cpdHandle<double>::ComputeSvalues(int nS, long hS);
-template long cpdHandle<float>::ComputeSvalues(int nS, long hS);
+template long cpdHandle<double>::ComputeSvalues(int nS, long hS, int nT, long hT);
+template long cpdHandle<float>::ComputeSvalues(int nS, long hS, int nT, long hT);
 
 // end
