@@ -166,33 +166,33 @@ namespace MyCaffe.test
 
         public void TestCPD()
         {
-            TestCPDEx(150, 75, 3.5, 2.3, 0.5, 10, "Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 10");
-            TestCPDEx(150, 75, 0.0, 2.3, 0.5, 10, "NO Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 10");
-            TestCPDEx(150, 75, 0.0, 1.0, 3.5, 10, "NO Shift Up, NO noise increase, Start with high noise 3.5 - small epochs of 10");
-            TestCPDEx(150, 75, -1.0, 3.5, 0.5, 10, "Shift Down, Increase Noise 3.5x, Start for low noise 0.5 - small epochs of 10");
-            TestCPDEx(150, 75, 0.1, 1.0, 0.1, 10, "Shift Up small 0.1, NO noise increase, Start with very low noise 0.1 - small epochs of 10");
-            TestCPDEx(150, 75, 0.0, 1.0, 0.1, 10, "(No Changes) NO Shift Up, NO noise increase, Start with very low noise 0.1 - small epochs of 10");
+            TestCPDEx(150, 75, 3.5, 2.3, 0.5, 10, "Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 10", 3.5);
+            TestCPDEx(150, 75, 0.0, 2.3, 0.5, 10, "NO Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 10", 3.5);
+            TestCPDEx(150, 75, 0.0, 1.0, 3.5, 10, "NO Shift Up, NO noise increase, Start with high noise 3.5 - small epochs of 10", 3.5);
+            TestCPDEx(150, 75, -1.0, 3.5, 0.5, 10, "Shift Down, Increase Noise 3.5x, Start for low noise 0.5 - small epochs of 10", 3.5);
+            TestCPDEx(150, 75, 0.1, 1.0, 0.1, 10, "Shift Up small 0.1, NO noise increase, Start with very low noise 0.1 - small epochs of 10", 2.5);
+            TestCPDEx(150, 75, 0.0, 1.0, 0.1, 10, "(No Changes) NO Shift Up, NO noise increase, Start with very low noise 0.1 - small epochs of 10", 2.5);
 
-            TestCPDEx(150, 75, 3.5, 2.3, 0.5, 20, "Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 20");
-            TestCPDEx(150, 75, 0.0, 2.3, 0.5, 20, "NO Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 20");
-            TestCPDEx(150, 75, 0.0, 1.0, 3.5, 20, "NO Shift Up, NO noise increase, Start with high noise 3.5 - small epochs of 20");
-            TestCPDEx(150, 75, -1.0, 3.5, 0.5, 20, "Shift Down, Increase Noise 3.5x, Start for low noise 0.5 - small epochs of 20");
-            TestCPDEx(150, 75, 0.1, 1.0, 0.1, 20, "Shift Up small 0.1, NO noise increase, Start with very low noise 0.1 - small epochs of 20");
-            TestCPDEx(150, 75, 0.0, 1.0, 0.1, 20, "(No Changes) NO Shift Up, NO noise increase, Start with very low noise 0.1 - small epochs of 20");
+            TestCPDEx(150, 75, 3.5, 2.3, 0.5, 20, "Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 20", 3.5);
+            TestCPDEx(150, 75, 0.0, 2.3, 0.5, 20, "NO Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 20", 3.5);
+            TestCPDEx(150, 75, 0.0, 1.0, 3.5, 20, "NO Shift Up, NO noise increase, Start with high noise 3.5 - small epochs of 20", 3.5);
+            TestCPDEx(150, 75, -1.0, 3.5, 0.5, 20, "Shift Down, Increase Noise 3.5x, Start for low noise 0.5 - small epochs of 20", 3.5);
+            TestCPDEx(150, 75, 0.1, 1.0, 0.1, 20, "Shift Up small 0.1, NO noise increase, Start with very low noise 0.1 - small epochs of 20", 2.5);
+            TestCPDEx(150, 75, 0.0, 1.0, 0.1, 20, "(No Changes) NO Shift Up, NO noise increase, Start with very low noise 0.1 - small epochs of 20", 2.5);
 
-            TestCPDEx(150, 75, 3.5, 2.3, 0.5, 50, "Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 50");
-            TestCPDEx(150, 75, 0.0, 2.3, 0.5, 50, "NO Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 50");
-            TestCPDEx(150, 75, 0.0, 1.0, 3.5, 50, "NO Shift Up, NO noise increase, Start with high noise 3.5 - small epochs of 50");
-            TestCPDEx(150, 75, -1.0, 3.5, 0.5, 50, "Shift Down, Increase Noise 3.5x, Start for low noise 0.5 - small epochs of 50");
-            TestCPDEx(150, 75, 0.1, 1.0, 0.1, 50, "Shift Up small 0.1, NO noise increase, Start with very low noise 0.1 - small epochs of 50");
-            TestCPDEx(150, 75, 0.0, 1.0, 0.1, 50, "(No Changes) NO Shift Up, NO noise increase, Start with very low noise 0.1 - small epochs of 50");
+            TestCPDEx(150, 75, 3.5, 2.3, 0.5, 50, "Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 50", 3.5);
+            TestCPDEx(150, 75, 0.0, 2.3, 0.5, 50, "NO Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 50", 3.5);
+            TestCPDEx(150, 75, 0.0, 1.0, 3.5, 50, "NO Shift Up, NO noise increase, Start with high noise 3.5 - small epochs of 50", 3.5);
+            TestCPDEx(150, 75, -1.0, 3.5, 0.5, 50, "Shift Down, Increase Noise 3.5x, Start for low noise 0.5 - small epochs of 50", 3.5);
+            TestCPDEx(150, 75, 0.1, 1.0, 0.1, 50, "Shift Up small 0.1, NO noise increase, Start with very low noise 0.1 - small epochs of 50", 2.5);
+            TestCPDEx(150, 75, 0.0, 1.0, 0.1, 50, "(No Changes) NO Shift Up, NO noise increase, Start with very low noise 0.1 - small epochs of 50", 2.5);
 
-            TestCPDEx(150, 75, 3.5, 2.3, 0.5, 100, "Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 100");
-            TestCPDEx(150, 75, 0.0, 2.3, 0.5, 100, "NO Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 100");
-            TestCPDEx(150, 75, 0.0, 1.0, 3.5, 100, "NO Shift Up, NO noise increase, Start with high noise 3.5 - small epochs of 100");
-            TestCPDEx(150, 75, -1.0, 3.5, 0.5, 100, "Shift Down, Increase Noise 3.5x, Start for low noise 0.5 - small epochs of 100");
-            TestCPDEx(150, 75, 0.1, 1.0, 0.1, 100, "Shift Up small 0.1, NO noise increase, Start with very low noise 0.1 - small epochs of 100");
-            TestCPDEx(150, 75, 0.0, 1.0, 0.1, 100, "(No Changes) NO Shift Up, NO noise increase, Start with very low noise 0.1 - small epochs of 100");
+            TestCPDEx(150, 75, 3.5, 2.3, 0.5, 100, "Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 100", 3.5);
+            TestCPDEx(150, 75, 0.0, 2.3, 0.5, 100, "NO Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 100", 3.5);
+            TestCPDEx(150, 75, 0.0, 1.0, 3.5, 100, "NO Shift Up, NO noise increase, Start with high noise 3.5 - small epochs of 100", 3.5);
+            TestCPDEx(150, 75, -1.0, 3.5, 0.5, 100, "Shift Down, Increase Noise 3.5x, Start for low noise 0.5 - small epochs of 100", 3.5);
+            TestCPDEx(150, 75, 0.1, 1.0, 0.1, 100, "Shift Up small 0.1, NO noise increase, Start with very low noise 0.1 - small epochs of 100", 2.5);
+            TestCPDEx(150, 75, 0.0, 1.0, 0.1, 100, "(No Changes) NO Shift Up, NO noise increase, Start with very low noise 0.1 - small epochs of 100", 2.5);
         }
 
         /// <summary>
@@ -205,7 +205,8 @@ namespace MyCaffe.test
         /// <param name="dfSigma">Specifies the noise applied to the entire sample.</param>
         /// <param name="nEpochs">Specifies the number of epochs used for training.</param>
         /// <param name="strDesc">Specifies a description.</param>
-        public void TestCPDEx(int nN = 150, int nTau = 75, double dfMu = 0.2, double dfSigma2 = 1.0, double dfSigma = 0.1, int nEpochs = 10, string strDesc = "")
+        /// <param name="dfTarget">Specifies the threshold level.</param>
+        public void TestCPDEx(int nN = 150, int nTau = 75, double dfMu = 0.2, double dfSigma2 = 1.0, double dfSigma = 0.1, int nEpochs = 10, string strDesc = "", double dfTarget = 0.0)
         {
             Blob<T> blobX = null;
             Blob<T> blobS = null;
@@ -260,7 +261,11 @@ namespace MyCaffe.test
                 PlotCollection plotsScumsum = createPlots(blobScumsum);
                 PlotCollectionSet set = new PlotCollectionSet() {  plotsX, plotsS, plotsScumsum };
 
-                Image img = SimpleGraphingControl.QuickRender(set, 1000, 800);
+                ConfigurationTargetLine line = new ConfigurationTargetLine(15, Color.White);
+                ConfigurationTargetLine threshold = new ConfigurationTargetLine(dfTarget, Color.Lime, ConfigurationTargetLine.LINE_TYPE.VALUE, true, Color.Black, "Threshold");
+                List<ConfigurationTargetLine> rgLines = new List<ConfigurationTargetLine>() { line, threshold };
+
+                Image img = SimpleGraphingControl.QuickRender(set, 1000, 800, false, null, null, true, rgLines);
                 img = renderStats(img, strDesc, nN, nTau, dfMu, dfSigma2, dfSigma, nEpochs, swTiming.Elapsed.TotalSeconds);
                 img.Save(strResultFile);
             }
