@@ -6,10 +6,10 @@
 #ifndef __MATH_CU__
 #define __MATH_CU__
 
+#include <map>
 #include "util.h"
 #include "memorycol.h"
 #include "handlecol.h"
-
 
 //=============================================================================
 //	Flags
@@ -87,8 +87,8 @@ class Math
 		Memory<T>* m_pMem;
 		MemoryCollection* m_pMemCol;
 		HandleCollection<MAX_HANDLES>* m_pStreamCol;
-		cublasHandle_t m_cublas;
-		curandGenerator_t m_curand;
+		std::map<int, cublasHandle_t> m_mapCublas;
+		std::map<int, curandGenerator_t> m_mapCurand;
 
 		T get_random(T min, T max)
 		{
@@ -128,8 +128,8 @@ class Math
 			m_pMem = NULL;
 			m_pMemCol = NULL;
 			m_pStreamCol = NULL;
-			m_cublas = NULL;
-			m_curand = NULL;
+			m_mapCublas.clear();	
+			m_mapCurand.clear();
 		}
 
 		~Math()
@@ -138,7 +138,12 @@ class Math
 
 		cublasHandle_t GetCublasHandle()
 		{
-			return m_cublas;
+			return m_mapCublas[m_nDeviceID];
+		}
+
+		curandGenerator_t GetCurandHandle()
+		{
+			return m_mapCurand[m_nDeviceID];
 		}
 
 		void Connect(Memory<T>* pMem);
@@ -146,8 +151,8 @@ class Math
 		void SetHandles(int nDeviceID, cublasHandle_t cublas, curandGenerator_t curand)
 		{
 			m_nDeviceID = nDeviceID;
-			m_cublas = cublas;
-			m_curand = curand;
+			m_mapCublas[nDeviceID] = cublas;
+			m_mapCurand[nDeviceID] = curand;
 		}
 
 		long set(int nCount, T* pMem, T fVal);

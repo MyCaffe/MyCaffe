@@ -11,7 +11,6 @@
 #include "memory.h"
 #include "math.h"
 
-
 //=============================================================================
 //	Flags
 //=============================================================================
@@ -102,8 +101,8 @@ class Device
 		Memory<T> m_memory;
 		Math<T> m_math;
 		HwInfo<T> m_hwInfo;
-		cublasHandle_t m_cublas;
-		curandGenerator_t m_curand;
+		map<int, cublasHandle_t> m_mapCublas;
+		map<int, curandGenerator_t> m_mapCurand;
 		long m_lSeed;
 		int m_nDevice;
 		HANDLE m_hEventSrc;
@@ -130,6 +129,16 @@ class Device
 		bool IsInitialized()
 		{
 			return m_bInitialized;
+		}
+
+		cublasHandle_t getCublas(int nDevice)
+		{
+			return m_mapCublas[nDevice];
+		}
+
+		curandGenerator_t getCurand(int nDevice)
+		{
+			return m_mapCurand[nDevice];
 		}
 
 		long GetDeviceName(int nDevice, LPTSTR* pszDevice);
@@ -733,8 +742,6 @@ inline Device<T>::Device() : m_memory(), m_math(), m_hwInfo()
 {
 	m_hSetMemHost = 0;
 	m_math.Connect(&m_memory);
-	m_cublas = NULL;
-	m_curand = NULL;
 	m_lSeed = 0;
 	m_nDevice = 0;
 	m_hEventSrc = RegisterEventSource(NULL, L"MyCaffe");
@@ -770,22 +777,26 @@ inline Device<T>::~Device()
 		}
 	}
 
-	if (m_curand != NULL)
+	map<int, cublasHandle_t>::iterator it1;
+	for (it1 = m_mapCublas.begin(); it1 != m_mapCublas.end(); it1++)
 	{
-		curandDestroyGenerator(m_curand);
-		m_curand = NULL;
+		cublasDestroy(it1->second);
 	}
+
+	m_mapCublas.clear();
+
+	map<int, curandGenerator_t>::iterator it2;
+	for (it2 = m_mapCurand.begin(); it2 != m_mapCurand.end(); it2++)
+	{
+		curandDestroyGenerator(it2->second);
+	}
+
+	m_mapCurand.clear();
 
 	if (m_hEventSrc != NULL)
 	{
 		DeregisterEventSource(m_hEventSrc);
 		m_hEventSrc = NULL;
-	}
-
-	if (m_cublas != NULL)
-	{
-		cublasDestroy(m_cublas);
-		m_cublas = NULL;
 	}
 
 	CleanUp();
@@ -2495,14 +2506,23 @@ inline long Device<T>::ComputeCpdSvalues(long lInput, T* pfInput, long llInput, 
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(llInput, plInput, 3, 3))
+	if (lErr = verifyInput(llInput, plInput, 3, 5))
 		return lErr;
 
 	long hCpd = (long)plInput[0];
 	int nS = (int)plInput[1];
 	long hS = (long)plInput[2];
+	int nT = 0;
+	long hT = 0;
 
-	return m_memory.ComputeCpdSvalues(hCpd, nS, hS);
+	if (llInput > 4)
+	{
+		nT = (int)plInput[3];
+		hT = (long)plInput[4];
+	
+	}
+
+	return m_memory.ComputeCpdSvalues(hCpd, nS, hS, nT, hT);
 }
 
 template <class T>

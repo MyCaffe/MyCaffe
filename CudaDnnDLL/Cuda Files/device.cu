@@ -747,29 +747,31 @@ long Device<T>::SetDevice(int nDeviceID, int nInitFlags, long lSeed)
 
 	if ((nInitFlags & DEVINIT_CUBLAS) == DEVINIT_CUBLAS)
 	{
-		if (m_cublas != NULL)
+		auto it = m_mapCublas.find(nDeviceID);
+		if (it == m_mapCublas.end())
 		{
-			cublasDestroy(m_cublas);
-			m_cublas = NULL;
-		}
+			cublasHandle_t cublas;
+			if (lErr = cublasCreate(&cublas))
+				return lErr;
 
-		if (lErr = cublasCreate(&m_cublas))
-			return lErr;
+			m_mapCublas[nDeviceID] = cublas;
+		}
 	}
 
 	if ((nInitFlags & DEVINIT_CURAND) == DEVINIT_CURAND)
 	{
-		if (m_curand != NULL)
+		auto it = m_mapCurand.find(nDeviceID);
+		if (it == m_mapCurand.end())
 		{
-			curandDestroyGenerator(m_curand);
-			m_curand = NULL;
-		}
+			curandGenerator_t curand;
+			if (lErr = curandCreateGenerator(&curand, CURAND_RNG_PSEUDO_DEFAULT))
+				return lErr;
 
-		if (lErr = curandCreateGenerator(&m_curand, CURAND_RNG_PSEUDO_DEFAULT))
-			return lErr;
+			m_mapCurand[nDeviceID] = curand;
+		}
 	}
 
-	m_math.SetHandles(nDeviceID, m_cublas, m_curand);
+	m_math.SetHandles(m_nDevice, m_mapCublas[m_nDevice], m_mapCurand[m_nDevice]);
 
 	if ((nInitFlags & DEVINIT_SETSEED) == DEVINIT_SETSEED)
 	{

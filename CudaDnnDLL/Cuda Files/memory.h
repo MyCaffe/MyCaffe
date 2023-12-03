@@ -455,7 +455,7 @@ class Memory
 		cpdHandle<T>* GetCpd(long hCpd);
 		long SetCpd(long hCpd, int nN, int nB);
 		long ComputeCpdTvalueAt(long hCpd, int nT, int nTau, int nZ, long hZ, T* pfTVal);
-		long ComputeCpdSvalues(long hCpd, int nS, long hS);
+		long ComputeCpdSvalues(long hCpd, int nS, long hS, int nT, long hT);
 
 		long CreatePCA(int nMaxIterations, int nM, int nN, int nK, long hData, long hScoresResult, long hLoadsResult, long hResiduals, long hEigenvalues, Math<T>* pMath, long* phHandle);
 		long FreePCA(long hHandle);
@@ -1581,14 +1581,14 @@ inline long Memory<T>::ComputeCpdTvalueAt(long hCpd, int nT, int nTau, int nZ, l
 }
 
 template <class T>
-inline long Memory<T>::ComputeCpdSvalues(long hCpd, int nS, long hS)
+inline long Memory<T>::ComputeCpdSvalues(long hCpd, int nS, long hS, int nT, long hT)
 {
 	LONG lErr;
 	cpdHandle<T>* cpd = (cpdHandle<T>*)m_cpd.GetData(hCpd);
 	if (cpd == NULL)
 		return ERROR_PARAM_NULL;
 
-	if (lErr = cpd->ComputeSvalues(nS, hS))
+	if (lErr = cpd->ComputeSvalues(nS, hS, nT, hT))
 		return lErr;
 
 	return CUDNN_STATUS_SUCCESS;
