@@ -43,7 +43,7 @@ namespace MyCaffe.layers.beta
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS;
-            m_blobLoss = new Blob<T>(cuda, log, false);
+            m_blobLoss = new Blob<T>(cuda, log);
             m_blobWeights = new Blob<T>(cuda, log, false);
         }
 
@@ -140,7 +140,8 @@ namespace MyCaffe.layers.beta
             
             m_cuda.bce_with_logits_loss_fwd(nCount, nN, hPredicted, hTarget, hWeights, 0, m_blobLoss.mutable_gpu_data);
 
-            T fVal = m_blobLoss.asum_data();
+            m_cuda.sum(m_blobLoss.count(), 1, m_blobLoss.count(), m_blobLoss.gpu_data, m_blobLoss.mutable_gpu_diff);
+            T fVal = m_blobLoss.GetDiff(0);
             double dfLoss = convertD(fVal);
 
             if (m_param.bce_with_logits_loss_param.reduction == BCEWithLogitsLossParameter.REDUCTION.MEAN)
