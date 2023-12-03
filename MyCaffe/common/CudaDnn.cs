@@ -994,6 +994,7 @@ namespace MyCaffe.common
         static object m_createSync = new object();
         static object m_getconvSync = new object();
         static ulong m_lBaseSize = (ulong)((typeof(T) == typeof(float)) ? sizeof(float) : sizeof(double));
+        static object m_cleanupSync = new object();
 
         /// <summary>
         /// Specifies the type of string information to quer from the Cuda C++ layer.
@@ -1627,15 +1628,18 @@ namespace MyCaffe.common
         /// <param name="bDisposing">When true, specifies that the call is from a Dispose call.</param>
         protected virtual void Dispose(bool bDisposing)
         {
-            if (m_bOwner && m_hKernel != 0)
+            lock (m_cleanupSync)
             {
-                if (m_dt == DataType.DOUBLE)
-                    m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CLEANUP, null);
-                else
-                    m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CLEANUP, null);
+                if (m_bOwner && m_hKernel != 0)
+                {
+                    if (m_dt == DataType.DOUBLE)
+                        m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CLEANUP, new double[] { m_nIdx });
+                    else
+                        m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CLEANUP, new float[] { m_nIdx });
 
-                m_hKernel = 0;
-                m_cuda = null;
+                    m_hKernel = 0;
+                    m_cuda = null;
+                }
             }
         }
 
@@ -5395,12 +5399,14 @@ namespace MyCaffe.common
         /// <param name="hCpd">Specifies the handle to the CPD created with CreateCpd.</param>
         /// <param name="nS">Specifies the number of items int the S memory.</param>
         /// <param name="hS">Specifies a handle to the GPU memory containing the S data where the output values are placed.  This memory shoudl be 'nN' in lenght as specified in the SetCpd method.</param>
-        public void ComputeCpdSvalues(long hCpd, int nS, long hS)
+        /// <param name="nT">Optionally, specifies the number of items in the hT matrix, or 0 to ignore (default = 0).</param>
+        /// <param name="hT">Optionally, specifies a handle to the GPU memory containing the T data with shape (nN, nN, 1, 1).  When specified, this T matrix overrides the internal T matrix previously calculated when calling ComputeCpdTvalueAt.</param>
+        public void ComputeCpdSvalues(long hCpd, int nS, long hS, int nT = 0, long hT = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CPD_COMPUTE_S_VALUES, null, m_param.AsLong(hCpd, nS, hS));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CPD_COMPUTE_S_VALUES, null, m_param.AsLong(hCpd, nS, hS, nT, hT));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CPD_COMPUTE_S_VALUES, null, m_param.AsLong(hCpd, nS, hS));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CPD_COMPUTE_S_VALUES, null, m_param.AsLong(hCpd, nS, hS, nT, hT));
         }
 
         /// <summary>
