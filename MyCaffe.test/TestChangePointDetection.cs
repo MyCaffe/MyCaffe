@@ -123,7 +123,7 @@ namespace MyCaffe.test
         }
 
         // A method to generate an array of random floats from a normal distribution
-        public float[] Randn(int nTau, double dfMu, double dfSigma, params int[] shape)
+        public float[] Randn(int nTau, double dfMu, double dfSigma2, double dfSigma, params int[] shape)
         {
             // Check if the shape is valid
             if (shape == null || shape.Length == 0)
@@ -143,7 +143,10 @@ namespace MyCaffe.test
                 array[i] = (float)dfSigma * Randn();
 
                 if (i >= nTau)
+                {
                     array[i] += (float)dfMu;
+                    array[i] *= (float)dfSigma2;
+                }
             }
             return array;
         }
@@ -163,22 +166,60 @@ namespace MyCaffe.test
 
         public void TestCPD()
         {
+            TestCPDEx(150, 75, 3.5, 2.3, 0.5, 10, "Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 10");
+            TestCPDEx(150, 75, 0.0, 2.3, 0.5, 10, "NO Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 10");
+            TestCPDEx(150, 75, 0.0, 1.0, 3.5, 10, "NO Shift Up, NO noise increase, Start with high noise 3.5 - small epochs of 10");
+            TestCPDEx(150, 75, -1.0, 3.5, 0.5, 10, "Shift Down, Increase Noise 3.5x, Start for low noise 0.5 - small epochs of 10");
+            TestCPDEx(150, 75, 0.1, 1.0, 0.1, 10, "Shift Up small 0.1, NO noise increase, Start with very low noise 0.1 - small epochs of 10");
+            TestCPDEx(150, 75, 0.0, 1.0, 0.1, 10, "(No Changes) NO Shift Up, NO noise increase, Start with very low noise 0.1 - small epochs of 10");
+
+            TestCPDEx(150, 75, 3.5, 2.3, 0.5, 20, "Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 20");
+            TestCPDEx(150, 75, 0.0, 2.3, 0.5, 20, "NO Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 20");
+            TestCPDEx(150, 75, 0.0, 1.0, 3.5, 20, "NO Shift Up, NO noise increase, Start with high noise 3.5 - small epochs of 20");
+            TestCPDEx(150, 75, -1.0, 3.5, 0.5, 20, "Shift Down, Increase Noise 3.5x, Start for low noise 0.5 - small epochs of 20");
+            TestCPDEx(150, 75, 0.1, 1.0, 0.1, 20, "Shift Up small 0.1, NO noise increase, Start with very low noise 0.1 - small epochs of 20");
+            TestCPDEx(150, 75, 0.0, 1.0, 0.1, 20, "(No Changes) NO Shift Up, NO noise increase, Start with very low noise 0.1 - small epochs of 20");
+
+            TestCPDEx(150, 75, 3.5, 2.3, 0.5, 50, "Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 50");
+            TestCPDEx(150, 75, 0.0, 2.3, 0.5, 50, "NO Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 50");
+            TestCPDEx(150, 75, 0.0, 1.0, 3.5, 50, "NO Shift Up, NO noise increase, Start with high noise 3.5 - small epochs of 50");
+            TestCPDEx(150, 75, -1.0, 3.5, 0.5, 50, "Shift Down, Increase Noise 3.5x, Start for low noise 0.5 - small epochs of 50");
+            TestCPDEx(150, 75, 0.1, 1.0, 0.1, 50, "Shift Up small 0.1, NO noise increase, Start with very low noise 0.1 - small epochs of 50");
+            TestCPDEx(150, 75, 0.0, 1.0, 0.1, 50, "(No Changes) NO Shift Up, NO noise increase, Start with very low noise 0.1 - small epochs of 50");
+
+            TestCPDEx(150, 75, 3.5, 2.3, 0.5, 100, "Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 100");
+            TestCPDEx(150, 75, 0.0, 2.3, 0.5, 100, "NO Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 100");
+            TestCPDEx(150, 75, 0.0, 1.0, 3.5, 100, "NO Shift Up, NO noise increase, Start with high noise 3.5 - small epochs of 100");
+            TestCPDEx(150, 75, -1.0, 3.5, 0.5, 100, "Shift Down, Increase Noise 3.5x, Start for low noise 0.5 - small epochs of 100");
+            TestCPDEx(150, 75, 0.1, 1.0, 0.1, 100, "Shift Up small 0.1, NO noise increase, Start with very low noise 0.1 - small epochs of 100");
+            TestCPDEx(150, 75, 0.0, 1.0, 0.1, 100, "(No Changes) NO Shift Up, NO noise increase, Start with very low noise 0.1 - small epochs of 100");
+        }
+
+        /// <summary>
+        /// Test the Change Point Detection (CPD) algorithm.
+        /// </summary>
+        /// <param name="nN">Specifies the sample size.</param>
+        /// <param name="nTau">Specifies the true change point location.</param>
+        /// <param name="dfMu">Specifies the shift applied at and after Tau steps.</param>
+        /// <param name="dfSigma2">Specifies the noise applied at and after Tau steps.</param>
+        /// <param name="dfSigma">Specifies the noise applied to the entire sample.</param>
+        /// <param name="nEpochs">Specifies the number of epochs used for training.</param>
+        /// <param name="strDesc">Specifies a description.</param>
+        public void TestCPDEx(int nN = 150, int nTau = 75, double dfMu = 0.2, double dfSigma2 = 1.0, double dfSigma = 0.1, int nEpochs = 10, string strDesc = "")
+        {
             Blob<T> blobX = null;
             Blob<T> blobS = null;
             Blob<T> blobScumsum = null;
             ChangePointDetectorNN<T> cpd = null;
             ChangePointDetectorCUMSUM<T> cpdCumsum = null;
-            int nN = 150;           // number of observations.
-            int nTau = 75;          // true change point location.
-            double dfMu = 0.2;      // shift size.
-            double dfSigma = 0.1;   // Standard deviation (noise level).
             int nB = 10;
-            int nEpochs = 10;
             int nOutMin = 10;
             int nTMin = 10;
             Stopwatch sw = new Stopwatch();
             Random random = new Random(1);
-            string strResultFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\cpd\\result.png";
+            string strType = (typeof(T) == typeof(double)) ? "double" : "float";
+            string strResultFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\cpd\\result_" + strType + "_" + nN.ToString() + "_" + nTau.ToString() + "_" + nEpochs.ToString() + "_" + dfMu.ToString() + "_" + dfSigma2.ToString() + "_" + dfSigma.ToString() + ".png";
+            Stopwatch swTiming = new Stopwatch();
 
             try
             {
@@ -188,7 +229,7 @@ namespace MyCaffe.test
                 blobX.SetData(0);
 
                 // Generate a gaussian signal with a change point at tau.
-                float[] rgX = Randn(nTau, dfMu, dfSigma, nN);
+                float[] rgX = Randn(nTau, dfMu, dfSigma2, dfSigma, nN);
                 blobX.mutable_cpu_data = convert(rgX);
 
                 cpd = new ChangePointDetectorNN<T>(m_cuda, m_log, "1");
@@ -200,6 +241,8 @@ namespace MyCaffe.test
                 double dfTime = sw.Elapsed.TotalMilliseconds;
                 m_log.WriteLine("CPD Initialization timing = " + dfTime.ToString("N2") + " ms");
 
+                swTiming.Start();
+
                 sw.Restart();
                 m_log.WriteLine("Computing CPD...");
                 blobS = cpd.ComputeSvalues(nTMin, false);
@@ -210,12 +253,15 @@ namespace MyCaffe.test
                 m_log.WriteLine("Computing CUMSUM CPD...");
                 blobScumsum = cpdCumsum.ComputeSvalues(blobX);
 
+                swTiming.Stop();
+
                 PlotCollection plotsX = createPlots(blobX);
                 PlotCollection plotsS = createPlots(blobS);
                 PlotCollection plotsScumsum = createPlots(blobScumsum);
                 PlotCollectionSet set = new PlotCollectionSet() {  plotsX, plotsS, plotsScumsum };
 
                 Image img = SimpleGraphingControl.QuickRender(set, 1000, 800);
+                img = renderStats(img, strDesc, nN, nTau, dfMu, dfSigma2, dfSigma, nEpochs, swTiming.Elapsed.TotalSeconds);
                 img.Save(strResultFile);
             }
             finally
@@ -230,6 +276,46 @@ namespace MyCaffe.test
                     cpd = null;
                 }
             }
+        }
+
+        private Image renderStats(Image img, string strDesc, int nN, int nTau, double dfMu, double dfSigma2, double dfSigma, int nEpochs, double dfSeconds)
+        {
+            Pen penTrueCp = new Pen(Color.FromArgb(128, Color.Fuchsia));
+            Font fontTitle = new Font("Century Gothic", 14, FontStyle.Bold);
+            Font fontStats = new Font("Century Gotich", 10);
+            Font fontCp = new Font("Century Gotich", 8);
+
+            using (Graphics g = Graphics.FromImage(img))
+            {
+                g.DrawLine(penTrueCp, nTau * 5, 0, nTau * 5, img.Height);
+                g.DrawString("True Change Point", fontCp, Brushes.Fuchsia, nTau * 5 + 5, 10);
+
+                int nY = 50;
+                if (!string.IsNullOrEmpty(strDesc))
+                {
+                    g.DrawString(strDesc, fontTitle, Brushes.Black, 10, nY);
+                    nY += 20;
+                }
+
+                g.DrawString("Total Time: " + dfSeconds.ToString("N2") + " sec", fontStats, Brushes.Black, 10, nY);
+                nY += 20;
+                g.DrawString("Sample Size: " + nN.ToString(), fontStats, Brushes.Black, 10, nY);
+                nY += 20;
+                g.DrawString("Epochs: " + nEpochs.ToString(), fontStats, Brushes.Black, 10, nY);
+                nY += 20;
+                g.DrawString("True Change Point (Tau): " + nTau.ToString(), fontStats, Brushes.Black, 10, nY);
+                nY += 20;
+                g.DrawString("Shift (after Tau): " + dfMu.ToString("N2"), fontStats, Brushes.Black, 10, nY);
+                nY += 20;
+                g.DrawString("Noise (after Tau): " + dfSigma2.ToString("N2"), fontStats, Brushes.Black, 10, nY);
+                nY += 20;
+                g.DrawString("Noise (all): " + dfSigma.ToString("N2"), fontStats, Brushes.Black, 10, nY);
+                nY += 20;
+            }
+
+            penTrueCp.Dispose();
+
+            return img;
         }
 
         public void TestCPDPrimitives()
