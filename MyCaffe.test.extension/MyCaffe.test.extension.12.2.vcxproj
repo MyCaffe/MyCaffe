@@ -31,6 +31,7 @@
     <None Include="MyCaffe.test.extension.12.2.def" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\CudaDnnDLL\Cuda Files\cpd.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\imgop.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\layernorm.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\math.h" />
@@ -54,6 +55,7 @@
     <ResourceCompile Include="MyCaffe.test.extension.12.2.rc" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="..\CudaDnnDLL\Cuda Files\cpd.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\imgop.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\layernorm.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\math.cu" />
