@@ -16,6 +16,9 @@ using System.Windows.Forms;
 using System.Data.Entity.Migrations.Model;
 using SimpleGraphing;
 using System.Drawing;
+using System.Threading;
+using System.IO;
+using System.Runtime.InteropServices;
 
 namespace MyCaffe.test
 {
@@ -41,7 +44,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestCPD()
+        public void TestCPDStationary()
         {
             ChangePointDetectionPrimitivesTest test = new ChangePointDetectionPrimitivesTest(EngineParameter.Engine.CAFFE);
 
@@ -49,7 +52,25 @@ namespace MyCaffe.test
             {
                 foreach (IChangePointDetectionTest t in test.Tests)
                 {
-                    t.TestCPD();
+                    t.TestCPDStationary(true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestCPDNonStationary()
+        {
+            ChangePointDetectionPrimitivesTest test = new ChangePointDetectionPrimitivesTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IChangePointDetectionTest t in test.Tests)
+                {
+                    t.TestCPDNonStationary();
                 }
             }
             finally
@@ -62,7 +83,8 @@ namespace MyCaffe.test
     interface IChangePointDetectionTest : ITest
     {
         void TestCPDPrimitives();
-        void TestCPD();
+        void TestCPDStationary(bool bFull);
+        void TestCPDNonStationary();
     }
 
     class ChangePointDetectionPrimitivesTest : TestBase
@@ -85,7 +107,7 @@ namespace MyCaffe.test
     {
         Blob<T> m_blobZ;
         Blob<T> m_blobTval;
-        Random m_rand = new Random(1);
+        static object m_syncCuda = new object();
 
         public ChangePointDetectionTest2(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, new List<int>() { 3, 2, 4, 1 }, nDeviceID)
@@ -110,12 +132,12 @@ namespace MyCaffe.test
         }
 
         // A method to generate a random float from a normal distribution
-        public float Randn()
+        public float Randn(Random rand)
         {
             // Use the Box-Muller transform to generate two independent standard normal random variables
             // See https://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
-            double u1 = 1.0 - m_rand.NextDouble(); // Uniform(0,1] random doubles
-            double u2 = 1.0 - m_rand.NextDouble();
+            double u1 = 1.0 - rand.NextDouble(); // Uniform(0,1] random doubles
+            double u2 = 1.0 - rand.NextDouble();
             double r = Math.Sqrt(-2.0 * Math.Log(u1)); // Radius
             double theta = 2.0 * Math.PI * u2; // Angle
                                                // Use one of the normal random variables
@@ -125,6 +147,8 @@ namespace MyCaffe.test
         // A method to generate an array of random floats from a normal distribution
         public float[] Randn(int nTau, double dfMu, double dfSigma2, double dfSigma, params int[] shape)
         {
+            Random random = new Random(1024);
+
             // Check if the shape is valid
             if (shape == null || shape.Length == 0)
             {
@@ -140,12 +164,12 @@ namespace MyCaffe.test
             float[] array = new float[size];
             for (int i = 0; i < size; i++)
             {
-                array[i] = (float)dfSigma * Randn();
+                array[i] = (float)dfSigma * Randn(random);
 
                 if (i >= nTau)
                 {
-                    array[i] += (float)dfMu;
                     array[i] *= (float)dfSigma2;
+                    array[i] += (float)dfMu;
                 }
             }
             return array;
@@ -164,35 +188,373 @@ namespace MyCaffe.test
             return plots;
         }
 
-        public void TestCPD()
+        private int? getThreshold(PlotCollection plots, double dfThreshold)
         {
-            TestCPDEx(150, 75, 3.5, 2.3, 0.5, 10, "Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 10", 3.5);
-            TestCPDEx(150, 75, 0.0, 2.3, 0.5, 10, "NO Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 10", 3.5);
-            TestCPDEx(150, 75, 0.0, 1.0, 3.5, 10, "NO Shift Up, NO noise increase, Start with high noise 3.5 - small epochs of 10", 3.5);
-            TestCPDEx(150, 75, -1.0, 3.5, 0.5, 10, "Shift Down, Increase Noise 3.5x, Start for low noise 0.5 - small epochs of 10", 3.5);
-            TestCPDEx(150, 75, 0.1, 1.0, 0.1, 10, "Shift Up small 0.1, NO noise increase, Start with very low noise 0.1 - small epochs of 10", 2.5);
-            TestCPDEx(150, 75, 0.0, 1.0, 0.1, 10, "(No Changes) NO Shift Up, NO noise increase, Start with very low noise 0.1 - small epochs of 10", 2.5);
+            for (int i = 0; i < plots.Count; i++)
+            {
+                if (plots[i].Y >= dfThreshold)
+                    return i;
+            }
 
-            TestCPDEx(150, 75, 3.5, 2.3, 0.5, 20, "Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 20", 3.5);
-            TestCPDEx(150, 75, 0.0, 2.3, 0.5, 20, "NO Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 20", 3.5);
-            TestCPDEx(150, 75, 0.0, 1.0, 3.5, 20, "NO Shift Up, NO noise increase, Start with high noise 3.5 - small epochs of 20", 3.5);
-            TestCPDEx(150, 75, -1.0, 3.5, 0.5, 20, "Shift Down, Increase Noise 3.5x, Start for low noise 0.5 - small epochs of 20", 3.5);
-            TestCPDEx(150, 75, 0.1, 1.0, 0.1, 20, "Shift Up small 0.1, NO noise increase, Start with very low noise 0.1 - small epochs of 20", 2.5);
-            TestCPDEx(150, 75, 0.0, 1.0, 0.1, 20, "(No Changes) NO Shift Up, NO noise increase, Start with very low noise 0.1 - small epochs of 20", 2.5);
+            return null;
+        }
 
-            TestCPDEx(150, 75, 3.5, 2.3, 0.5, 50, "Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 50", 3.5);
-            TestCPDEx(150, 75, 0.0, 2.3, 0.5, 50, "NO Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 50", 3.5);
-            TestCPDEx(150, 75, 0.0, 1.0, 3.5, 50, "NO Shift Up, NO noise increase, Start with high noise 3.5 - small epochs of 50", 3.5);
-            TestCPDEx(150, 75, -1.0, 3.5, 0.5, 50, "Shift Down, Increase Noise 3.5x, Start for low noise 0.5 - small epochs of 50", 3.5);
-            TestCPDEx(150, 75, 0.1, 1.0, 0.1, 50, "Shift Up small 0.1, NO noise increase, Start with very low noise 0.1 - small epochs of 50", 2.5);
-            TestCPDEx(150, 75, 0.0, 1.0, 0.1, 50, "(No Changes) NO Shift Up, NO noise increase, Start with very low noise 0.1 - small epochs of 50", 2.5);
+        private int? getThreshold(Blob<T> blob, double dfThreshold)
+        {
+            float[] rgData = Utility.ConvertVecF<T>(blob.mutable_cpu_data);
 
-            TestCPDEx(150, 75, 3.5, 2.3, 0.5, 100, "Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 100", 3.5);
-            TestCPDEx(150, 75, 0.0, 2.3, 0.5, 100, "NO Shift Up, Increase Noise 2.3x, Start with low noise 0.5 - small epochs of 100", 3.5);
-            TestCPDEx(150, 75, 0.0, 1.0, 3.5, 100, "NO Shift Up, NO noise increase, Start with high noise 3.5 - small epochs of 100", 3.5);
-            TestCPDEx(150, 75, -1.0, 3.5, 0.5, 100, "Shift Down, Increase Noise 3.5x, Start for low noise 0.5 - small epochs of 100", 3.5);
-            TestCPDEx(150, 75, 0.1, 1.0, 0.1, 100, "Shift Up small 0.1, NO noise increase, Start with very low noise 0.1 - small epochs of 100", 2.5);
-            TestCPDEx(150, 75, 0.0, 1.0, 0.1, 100, "(No Changes) NO Shift Up, NO noise increase, Start with very low noise 0.1 - small epochs of 100", 2.5);
+            for (int i = 0; i < rgData.Length; i++)
+            {
+                if (rgData[i] >= dfThreshold)
+                    return i;
+            }
+
+            return null;
+        }
+
+        public PlotCollection loadPlots(string strFileCsv)
+        {
+            PlotCollection plots = new PlotCollection("SPY");
+
+            using (StreamReader sr = new StreamReader(strFileCsv))
+            {
+                string strLine = sr.ReadLine();
+
+                while (!sr.EndOfStream)
+                {
+                    strLine = sr.ReadLine();
+                    string[] rgstr = strLine.Split(',');
+                    DateTime dt = DateTime.Parse(rgstr[0]);
+                    double dfOpen = double.Parse(rgstr[1]);
+                    double dfHigh = double.Parse(rgstr[2]);
+                    double dfLow = double.Parse(rgstr[3]);
+                    double dfClose = double.Parse(rgstr[4]);
+
+                    Plot p = new Plot(dt.ToFileTime(), new float[] { (float)dfOpen, (float)dfHigh, (float)dfLow, (float)dfClose });
+                    p.Tag = dt;
+                    plots.Add(p);
+                }
+            }
+
+            return plots;
+        }
+
+        public Tuple<float, float> calculateStats(PlotCollection plots, int nIdx, int nWindowSize)
+        {
+            CalculationArray ca = new CalculationArray(nWindowSize);
+
+            for (int i=nIdx-nWindowSize; i<nIdx; i++)
+            {
+                ca.Add(plots[i].Y);
+            }
+
+            double dfMean = ca.Average;
+            double dfStdev = ca.CalculateStandardDeviation(dfMean);
+
+            return new Tuple<float, float>((float)dfMean, (float)dfStdev);
+        }
+
+        public float[] preprocessWindow(PlotCollection plots, int nIdx, int nWindowSize, Tuple<float, float> stats)
+        {
+            float[] rgData = new float[nWindowSize];
+            int nIdx1 = 0;
+
+            for (int i = nIdx - nWindowSize; i < nIdx; i++)
+            {
+                rgData[nIdx1] = (plots[i].Y - stats.Item1) / stats.Item2;
+                nIdx1++;
+            }
+
+            return rgData;
+        }
+
+        private float[] getWindowData(float[] rgData, int nIdx, int nWindowSize)
+        {
+            int nIdx1 = 0;
+            float[] rgWindow = new float[nWindowSize];
+
+            for (int i = nIdx - nWindowSize; i < nIdx; i++)
+            {
+                rgWindow[nIdx1] = rgData[i];
+                nIdx1++;
+            }
+
+            return rgWindow;
+        }
+
+        private Configuration createDefaultCfg(PlotCollection plots, double dfThresholdNN1, double dfThresholdCs)
+        {
+            Configuration cfg = SimpleGraphingControl.GetQuickRenderConfiguration("SPY", plots.Count, 2000, 1000, false, ConfigurationAxis.VALUE_RESOLUTION.DAY, null, true, null, true);
+            while (cfg.Frames.Count > 1)
+            {
+                cfg.Frames.RemoveAt(1);
+            }
+
+            cfg.Frames[0].Plots[0].PlotFillColor = Color.Transparent;
+            cfg.Frames[0].Plots[0].PlotLineColor = Color.Transparent;
+            cfg.Frames[0].Plots[0].EnableLabel = true;
+            cfg.Frames[0].Plots[0].LineColor = Color.DarkGray;
+            cfg.Frames[0].Plots[0].FlagColor = Color.DarkGray;
+
+            ConfigurationPlot plotsSnn = new ConfigurationPlot();
+            plotsSnn.PlotType = ConfigurationPlot.PLOTTYPE.LINE;
+            plotsSnn.LineWidth = 1;
+            plotsSnn.PlotShape = ConfigurationPlot.PLOTSHAPE.SQUARE;
+            plotsSnn.LineColor = Color.Transparent;
+            plotsSnn.PlotFillColor = Color.Red;
+            plotsSnn.PlotLineColor = Color.Maroon;
+            plotsSnn.FlagColor = Color.Maroon;
+            plotsSnn.DataIndex = 1;
+            plotsSnn.DataIndexOnRender = 1;
+            plotsSnn.EnableLabel = true;
+            plotsSnn.Name = "SPY CPD NN (" + dfThresholdNN1.ToString("N2") + ")";
+            cfg.Frames[0].Plots.Add(plotsSnn);
+
+            ConfigurationPlot plotScs = new ConfigurationPlot();
+            plotScs.PlotType = ConfigurationPlot.PLOTTYPE.LINE;
+            plotScs.LineWidth = 1;
+            plotScs.PlotShape = ConfigurationPlot.PLOTSHAPE.ELLIPSE;
+            plotScs.LineColor = Color.Transparent;
+            plotScs.PlotFillColor = Color.Lime;
+            plotScs.PlotLineColor = Color.Green;
+            plotScs.FlagColor = Color.Green;
+            plotScs.DataIndex = 3;
+            plotScs.DataIndexOnRender = 3;
+            plotScs.EnableLabel = true;
+            plotScs.Name = "SPY CPD Cumulative Sum (" + dfThresholdCs.ToString("N2") + ")";
+            cfg.Frames[0].Plots.Add(plotScs);
+
+            return cfg;
+        }
+
+        public void TestCPDNonStationary()
+        {
+            if (typeof(T) == typeof(double))
+                return;
+
+            CudaDnn<T> cuda = null;
+            Log log = new Log("Test CPD");
+            ChangePointDetectorNN<T> cpdNN = null;
+            ChangePointDetectorCumulativeSUM<T> cpdCS = null;
+            string strDataPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\cpd\\";
+            string strDataFileCsv = strDataPath + "SPY.csv";
+            string strResultPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\cpd\\results\\";
+            string strResultFile = strResultPath + "SPY_result.png";
+            Blob<T> blobX = null;
+            Blob<T> blobSnn = null;
+            Blob<T> blobScs = null;
+            int nWindowSize = 30;
+            int nOutMin = 1;
+            int nEpochs = 20;
+            int nB = 10;
+            int nTMin = 5;
+            double dfThresholdS1 = 4.0;
+            double dfThresholdScs = 1.2;
+
+            try
+            {
+                log.EnableTrace = true;
+
+                if (!Directory.Exists(strResultPath))
+                    Directory.CreateDirectory(strResultPath);
+
+                cuda = new CudaDnn<T>(0);
+
+                cpdNN = new ChangePointDetectorNN<T>(cuda, log);
+                cpdCS = new ChangePointDetectorCumulativeSUM<T>();
+
+                blobX = new Blob<T>(cuda, log);
+                blobX.Reshape(nWindowSize, 1, 1, 1);
+                cpdNN.Initialize(nWindowSize, blobX, true, nOutMin, nEpochs, nB);
+
+                PlotCollection plots = loadPlots(strDataFileCsv);
+                PlotCollection plotsS1 = plots.Clone(0, true, null, false, true, null, true);
+                plotsS1.Name = "SPY CPD NN (" + dfThresholdS1.ToString("N1") + ")";
+                PlotCollection plotsScumsum = plots.Clone(0, true, null, false, true, null, true);
+                plotsScumsum.Name = "SPY CPD Cumulative Sum";
+                Configuration cfg = createDefaultCfg(plots, dfThresholdS1, dfThresholdScs);
+
+                Tuple<float, float> stats = calculateStats(plots, nWindowSize, nWindowSize);
+                for (int i = nWindowSize+2; i < plots.Count; i += 2)
+                {
+                    float[] rgWindow = preprocessWindow(plots, i, nWindowSize, stats);
+                    stats = calculateStats(plots, i, nWindowSize);
+                    blobX.mutable_cpu_data = convert(rgWindow);
+
+                    DateTime dtStart = (DateTime)plots[i-nWindowSize].Tag;
+                    DateTime dtEnd = (DateTime)plots[i].Tag;
+                    m_log.WriteLine("Running CPD on " + dtStart.ToShortDateString() + " to " + dtEnd.ToShortDateString());
+
+                    // Operate on the current blobX values.
+                    blobSnn = cpdNN.ComputeSvalues(nTMin, false);
+                    blobScs = cpdCS.ComputeSvalues(blobX);
+
+                    double dfMaxSnn = blobSnn.max_data;
+                    double dfMaxScs = blobScs.max_data;
+
+                    m_log.WriteLine("MaxSnn = " + dfMaxSnn.ToString("N2") + ", MaxScs = " + dfMaxScs.ToString("N2") + ", Threshold = " + dfThresholdS1.ToString("N2"));
+
+                    int? nIdxSnn = getThreshold(blobSnn, dfThresholdS1);
+                    int? nIdxScs = getThreshold(blobScs, dfThresholdScs);
+
+                    blobSnn.Dispose();
+                    blobSnn = null;
+                    blobScs.Dispose();
+                    blobScs = null;
+
+                    if (nIdxSnn.HasValue)
+                    {
+                        nIdxSnn = (i - nWindowSize) + nIdxSnn.Value;
+                        plotsS1[nIdxSnn.Value].Active = true;
+                    }
+
+                    if (nIdxScs.HasValue)
+                    {
+                        nIdxScs = (i - nWindowSize) + nIdxScs.Value;
+                        plotsScumsum[nIdxScs.Value].Active = true;
+                    }
+                }
+
+                PlotCollectionSet set = new PlotCollectionSet() { plots, plotsS1, plotsScumsum };
+                Image img = SimpleGraphingControl.QuickRenderEx(set, cfg, 2000, 800, false, ConfigurationAxis.VALUE_RESOLUTION.DAY, true, null, true);
+                img.Save(strResultFile);
+            }
+            finally
+            {
+                dispose(ref blobX);
+                dispose(ref blobSnn);
+                dispose(ref blobScs);
+
+                if (cpdNN != null)
+                {
+                    cpdNN.Dispose();
+                    cpdNN = null;
+                }
+
+                if (cuda != null)
+                    cuda.Dispose();
+            }
+        }
+
+        public void TestCPDStationary(bool bFull)
+        {
+            EventWaitHandle evtCancel = new EventWaitHandle(false, EventResetMode.AutoReset, "__GRADIENT_CHECKER_CancelEvent__");
+
+            if (bFull && typeof(T) == typeof(double))
+                return;
+
+            double dfStartLowNoise = 0.1;
+            double dfStartHighNoise = 2.5;
+            double dfNoNoiseChange = 1.0;
+            double dfSmallNoiseChangeUp = 1.1;
+            double dfSmallNoiseChangeDn = 0.9;
+            double dfLargeNoiseChangeUp = 2.5;
+            double dfLargeNoiseChangeDn = 0.1;
+
+            List<Tuple<int, double, double, string, ManualResetEvent>> rgScenarios = new List<Tuple<int, double, double, string, ManualResetEvent>>()
+            {
+                new Tuple<int, double, double, string, ManualResetEvent>(1, dfStartLowNoise, dfNoNoiseChange, "Low Start Noise, No Noise Change", new ManualResetEvent(false)),
+                new Tuple<int, double, double, string, ManualResetEvent>(2, dfStartLowNoise, dfSmallNoiseChangeUp, "Low Start Noise, Small Noise Change UP", new ManualResetEvent(false)),
+                new Tuple<int, double, double, string, ManualResetEvent>(3, dfStartLowNoise, dfSmallNoiseChangeDn, "Low Start Noise, Small Noise Change DN", new ManualResetEvent(false)),
+                new Tuple<int, double, double, string, ManualResetEvent>(4, dfStartLowNoise, dfLargeNoiseChangeUp, "Low Start Noise, Large Noise Change UP", new ManualResetEvent(false)),
+                new Tuple<int, double, double, string, ManualResetEvent>(5, dfStartLowNoise, dfLargeNoiseChangeDn, "Low Start Noise, Large Noise Change DN", new ManualResetEvent(false)),
+                new Tuple<int, double, double, string, ManualResetEvent>(6, dfStartHighNoise, dfNoNoiseChange, "High Start Noise, No Noise Change", new ManualResetEvent(false)),
+                new Tuple<int, double, double, string, ManualResetEvent>(7, dfStartHighNoise, dfSmallNoiseChangeUp, "High Start Noise, Small Noise Change UP", new ManualResetEvent(false)),
+                new Tuple<int, double, double, string, ManualResetEvent>(8, dfStartHighNoise, dfSmallNoiseChangeDn, "High Start Noise, Small Noise Change DN", new ManualResetEvent(false)),
+                new Tuple<int, double, double, string, ManualResetEvent>(9, dfStartHighNoise, dfLargeNoiseChangeUp, "High Start Noise, Large Noise Change UP", new ManualResetEvent(false)),
+                new Tuple<int, double, double, string, ManualResetEvent>(10, dfStartHighNoise, dfLargeNoiseChangeDn, "High Start Noise, Large Noise Change DN", new ManualResetEvent(false)),
+            };
+
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
+            List<WaitHandle> rgWait = new List<WaitHandle>();
+            for (int i = 0; i < rgScenarios.Count; i++)
+            {
+                if (bFull || i == 3)
+                {
+                    Thread th = new Thread(new ParameterizedThreadStart(test_cpd_thread));
+                    th.Start(new Tuple<Tuple<int, double, double, string, ManualResetEvent>, bool>(rgScenarios[i], bFull));
+                    rgScenarios[i].Item5.WaitOne();
+
+                    if (evtCancel.WaitOne(0))
+                        return;
+
+                    sw.Stop();
+                    double dfPct = (double)i / (double)rgScenarios.Count;
+                    m_log.WriteLine("=====================================================================================");
+                    m_log.WriteLine("Test #" + i.ToString() + " '" + rgScenarios[i].Item4 + "' at " + dfPct.ToString("P") + " - " + sw.Elapsed.TotalSeconds.ToString("N2") + " sec");
+                    sw.Restart();
+                }
+            }
+        }
+
+        private void test_cpd_thread(object obj)
+        {
+            EventWaitHandle evtCancel = new EventWaitHandle(false, EventResetMode.AutoReset, "__GRADIENT_CHECKER_CancelEvent__");
+            Tuple<Tuple<int, double, double, string, ManualResetEvent>, bool> arg = obj as Tuple<Tuple<int, double, double, string, ManualResetEvent>, bool>;
+            Tuple<int, double, double, string, ManualResetEvent> tuple = arg.Item1;
+            bool bFull = arg.Item2;
+            int nThreadIdx = tuple.Item1;
+            double dfStartNoise = tuple.Item2;
+            double dfNoiseChange = tuple.Item3;
+            string strDesc = tuple.Item4;
+            ManualResetEvent evtDone = tuple.Item5;
+            double dfNoShift = 0.0;
+            double dfSmallShift = 0.1;
+            double dfLargeShift = 2.5;
+            int nN = 150;
+            int nTau = 75;
+            List<int> rgEpochs = new List<int>() { 10 };
+
+            try
+            {
+                if (bFull)
+                {
+                    rgEpochs.Add(20);
+                    rgEpochs.Add(50);
+                    rgEpochs.Add(100);
+                }
+
+                List<Tuple<double, string>> rgThreadConfig = new List<Tuple<double, string>>()
+                {
+                    new Tuple<double, string>(dfNoShift, "No Shift"),
+                    new Tuple<double, string>(dfSmallShift, "Small Shift UP"),
+                    new Tuple<double, string>(dfLargeShift, "Large Shift UP"),
+                    new Tuple<double, string>(-dfLargeShift, "Large Shift DN"),
+                };
+
+                int nTotal = rgEpochs.Count * rgThreadConfig.Count;
+                int nIdx = 0;
+
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
+
+                int nScenarioIdx = 0;
+                for (int j = 0; j < rgEpochs.Count; j++)
+                {
+                    Trace.WriteLine("Thread #" + nThreadIdx.ToString() + " starting '" + strDesc + "' Epochs = " + rgEpochs[j].ToString() + "...");
+
+                    for (int i = 0; i < rgThreadConfig.Count; i++)
+                    {
+                        TestCPDEx(nN, nTau, rgThreadConfig[i].Item1, dfNoiseChange, dfStartNoise, rgEpochs[j], strDesc + ", " + rgThreadConfig[i].Item2, 3.5, 2.5, bFull, nThreadIdx, nScenarioIdx);
+                        nIdx++;
+
+                        sw.Stop();
+                        double dfPct = (double)nIdx / (double)nTotal;
+                        Trace.WriteLine("Thread #" + nThreadIdx.ToString() + " '" + strDesc + "' at " + dfPct.ToString("P") + " completed in " + sw.Elapsed.TotalSeconds.ToString() + " sec.");
+                        if (evtCancel.WaitOne(0))
+                            return;
+
+                        nScenarioIdx++;
+                        sw.Restart();
+                    }
+                }
+            }
+            finally
+            {
+                evtDone.Set();
+            }
         }
 
         /// <summary>
@@ -206,25 +568,44 @@ namespace MyCaffe.test
         /// <param name="nEpochs">Specifies the number of epochs used for training.</param>
         /// <param name="strDesc">Specifies a description.</param>
         /// <param name="dfTarget">Specifies the threshold level.</param>
-        public void TestCPDEx(int nN = 150, int nTau = 75, double dfMu = 0.2, double dfSigma2 = 1.0, double dfSigma = 0.1, int nEpochs = 10, string strDesc = "", double dfTarget = 0.0)
+        /// <param name="dfTarget2">Optionally, specifies a secondary target.</param>
+        /// <param name="bFull">Specifies whether or not to run the full test.</param>
+        /// <param name="nThreadIdx">Specifies the thread.</param>
+        /// <param name="nScenarioIdx">Specifies the scenario.</param>
+        public void TestCPDEx(int nN = 150, int nTau = 75, double dfMu = 0.2, double dfSigma2 = 1.0, double dfSigma = 0.1, int nEpochs = 10, string strDesc = "", double dfTarget = 0.0, double? dfTarget2 = null, bool bFull = false, int nThreadIdx = 0, int nScenarioIdx = 0)
         {
+            CudaDnn<T> cuda = null;
+            Log log = new Log("Test CPD");
             Blob<T> blobX = null;
-            Blob<T> blobS = null;
-            Blob<T> blobScumsum = null;
-            ChangePointDetectorNN<T> cpd = null;
-            ChangePointDetectorCUMSUM<T> cpdCumsum = null;
+            Blob<T> blobSnn = null;
+            Blob<T> blobScs = null;
+            ChangePointDetectorNN<T> cpdNN = null;
+            ChangePointDetectorCumulativeSUM<T> cpdCS = null;
             int nB = 10;
             int nOutMin = 10;
             int nTMin = 10;
             Stopwatch sw = new Stopwatch();
-            Random random = new Random(1);
             string strType = (typeof(T) == typeof(double)) ? "double" : "float";
-            string strResultFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\cpd\\result_" + strType + "_" + nN.ToString() + "_" + nTau.ToString() + "_" + nEpochs.ToString() + "_" + dfMu.ToString() + "_" + dfSigma2.ToString() + "_" + dfSigma.ToString() + ".png";
+            string strResultPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\cpd\\results\\";
+            string strResultFile = strResultPath + nThreadIdx.ToString() + "_" + nScenarioIdx.ToString() + "_result_" + strType + "_" + nN.ToString() + "_" + nTau.ToString() + "_" + nEpochs.ToString() + "_" + dfMu.ToString() + "_" + dfSigma2.ToString() + "_" + dfSigma.ToString() + ".png";
             Stopwatch swTiming = new Stopwatch();
+
+            if (!bFull)
+                log.EnableTrace = true;
+
+            if (!Directory.Exists(strResultPath))
+                Directory.CreateDirectory(strResultPath);
 
             try
             {
-                blobX = new Blob<T>(m_cuda, m_log);
+                Trace.WriteLine("Mu = " + dfMu.ToString() + ", Sigma2 = " + dfSigma2.ToString() + ", Sigma = " + dfSigma.ToString() + ", Epochs = " + nEpochs.ToString() + ", Desc = '" + strDesc + "'");
+
+                lock (m_syncCuda)
+                {
+                    cuda = new CudaDnn<T>(0);
+                }
+
+                blobX = new Blob<T>(cuda, log);
                 blobX.Name = "X";
                 blobX.Reshape(nN, 1, 1, 1);
                 blobX.SetData(0);
@@ -233,12 +614,12 @@ namespace MyCaffe.test
                 float[] rgX = Randn(nTau, dfMu, dfSigma2, dfSigma, nN);
                 blobX.mutable_cpu_data = convert(rgX);
 
-                cpd = new ChangePointDetectorNN<T>(m_cuda, m_log, "1");
-                cpdCumsum = new ChangePointDetectorCUMSUM<T>();
+                cpdNN = new ChangePointDetectorNN<T>(cuda, log, (bFull) ? "0,1" : null);
+                cpdCS = new ChangePointDetectorCumulativeSUM<T>();
 
                 m_log.WriteLine("Initializing CPD...");
                 sw.Start();
-                cpd.Initialize(nN, blobX, nOutMin, nEpochs, nB);
+                cpdNN.Initialize(nN, blobX, false, nOutMin, nEpochs, nB);
                 double dfTime = sw.Elapsed.TotalMilliseconds;
                 m_log.WriteLine("CPD Initialization timing = " + dfTime.ToString("N2") + " ms");
 
@@ -246,54 +627,80 @@ namespace MyCaffe.test
 
                 sw.Restart();
                 m_log.WriteLine("Computing CPD...");
-                blobS = cpd.ComputeSvalues(nTMin, false);
+                blobSnn = cpdNN.ComputeSvalues(nTMin, false);
                 dfTime = sw.Elapsed.TotalMilliseconds;
                 m_log.WriteLine("CPD Compute timing = " + dfTime.ToString("N2") + " ms");
 
                 sw.Restart();
                 m_log.WriteLine("Computing CUMSUM CPD...");
-                blobScumsum = cpdCumsum.ComputeSvalues(blobX);
+                blobScs = cpdCS.ComputeSvalues(blobX);
 
                 swTiming.Stop();
 
                 PlotCollection plotsX = createPlots(blobX);
-                PlotCollection plotsS = createPlots(blobS);
-                PlotCollection plotsScumsum = createPlots(blobScumsum);
-                PlotCollectionSet set = new PlotCollectionSet() {  plotsX, plotsS, plotsScumsum };
+                PlotCollection plotsSnn = createPlots(blobSnn);
+                PlotCollection plotsScs = createPlots(blobScs);
+                PlotCollectionSet set = new PlotCollectionSet() {  plotsX, plotsSnn, plotsScs };
 
                 ConfigurationTargetLine line = new ConfigurationTargetLine(15, Color.White);
                 ConfigurationTargetLine threshold = new ConfigurationTargetLine(dfTarget, Color.Lime, ConfigurationTargetLine.LINE_TYPE.VALUE, true, Color.Black, "Threshold");
                 List<ConfigurationTargetLine> rgLines = new List<ConfigurationTargetLine>() { line, threshold };
 
+                if (dfTarget2.HasValue)
+                {
+                    ConfigurationTargetLine threshold2 = new ConfigurationTargetLine(dfTarget2.Value, Color.Yellow, ConfigurationTargetLine.LINE_TYPE.VALUE, true, Color.Black, "Threshold Low");
+                    rgLines.Add(threshold2);
+                }
+
+                int? nIdxSThreshold = getThreshold(plotsSnn, dfTarget);
+                int? nIdxSCumSumThreshold = getThreshold(plotsScs, dfTarget);
+
                 Image img = SimpleGraphingControl.QuickRender(set, 1000, 800, false, null, null, true, rgLines);
-                img = renderStats(img, strDesc, nN, nTau, dfMu, dfSigma2, dfSigma, nEpochs, swTiming.Elapsed.TotalSeconds);
+                img = renderStats(img, strDesc, nN, nTau, dfMu, dfSigma2, dfSigma, nEpochs, swTiming.Elapsed.TotalSeconds, nIdxSThreshold, nIdxSCumSumThreshold);
                 img.Save(strResultFile);
             }
             finally
             {
                 dispose(ref blobX);
-                dispose(ref blobS);
-                dispose(ref blobScumsum);
+                dispose(ref blobSnn);
+                dispose(ref blobScs);
 
-                if (cpd != null)
-                {
-                    cpd.Dispose();
-                    cpd = null;
-                }
+                if (cpdNN != null)
+                    cpdNN.Dispose();
+
+                if (cuda != null)
+                    cuda.Dispose();
             }
         }
 
-        private Image renderStats(Image img, string strDesc, int nN, int nTau, double dfMu, double dfSigma2, double dfSigma, int nEpochs, double dfSeconds)
+        private Image renderStats(Image img, string strDesc, int nN, int nTau, double dfMu, double dfSigma2, double dfSigma, int nEpochs, double dfSeconds, int? nIdxSThreshold, int? nIdxSCumSumThreshold)
         {
             Pen penTrueCp = new Pen(Color.FromArgb(128, Color.Fuchsia));
+            Pen penSCp = new Pen(Color.FromArgb(128, Color.Blue));
+            Pen penSCumSumCp = new Pen(Color.FromArgb(128, Color.Green));
             Font fontTitle = new Font("Century Gothic", 14, FontStyle.Bold);
             Font fontStats = new Font("Century Gotich", 10);
             Font fontCp = new Font("Century Gotich", 8);
+
+            penSCp.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
+            penSCumSumCp.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
 
             using (Graphics g = Graphics.FromImage(img))
             {
                 g.DrawLine(penTrueCp, (nTau + 1) * 5, 0, (nTau + 1) * 5, img.Height);
                 g.DrawString("True Change Point", fontCp, Brushes.Fuchsia, (nTau + 1) * 5 + 5, 30);
+
+                if (nIdxSCumSumThreshold.HasValue)
+                {
+                    g.DrawLine(penSCumSumCp, (nIdxSCumSumThreshold.Value + 1) * 5, 0, (nIdxSCumSumThreshold.Value + 1) * 5, img.Height);
+                    g.DrawString("CPD CumSum Change Point", fontCp, Brushes.Green, (nIdxSCumSumThreshold.Value + 1) * 5 + 5, 45);
+                }
+
+                if (nIdxSThreshold.HasValue)
+                {
+                    g.DrawLine(penSCp, (nIdxSThreshold.Value + 1) * 5, 0, (nIdxSThreshold.Value + 1) * 5, img.Height);
+                    g.DrawString("CPD NN Change Point", fontCp, Brushes.Blue, (nIdxSThreshold.Value + 1) * 5 + 5, 60);
+                }
 
                 int nY = 70;
                 if (!string.IsNullOrEmpty(strDesc))
@@ -319,6 +726,8 @@ namespace MyCaffe.test
             }
 
             penTrueCp.Dispose();
+            penSCp.Dispose();
+            penSCumSumCp.Dispose();
 
             return img;
         }
