@@ -91,15 +91,14 @@ namespace MyCaffe.extras
         /// Initialize the change point detector.
         /// </summary>
         /// <param name="nN">Specifies the number of items in the sequence.</param>
-        /// <param name="blobTSlice">Specifies a signle slice of the T matrix, and should have shape (nN, 1, 1, 1).</param>
-        /// <param name="blobT">Specifies the matrix of T values with shape (nN, nN, 1, 1).</param>
         /// <param name="blobX">Specifies the input data to be analyzed with shape (nN, 1, 1, 1)</param>
+        /// <param name="bRefreshX">Specifies to refresh the X values on each run.</param>
         /// <param name="nOutMin">Optionally, specifies the out min which provides a margin around the data (default = 10).</param>
         /// <param name="nEpochs">Optionally, specifies the training epochs spent on each candidate (default = 50).</param>
         /// <param name="nB">Optionally, specifies the bounding value for numerical stability (default = 10).</param>
         /// <returns>If successfully initialized, 'True' is returned.</returns>
         /// <exception cref="Exception">Exceptions are thrown when the blobT or blobTSlice are not properly shaped.</exception>
-        public bool Initialize(int nN, Blob<T> blobX, int nOutMin = 10, int nEpochs = 50, int nB = 10)
+        public bool Initialize(int nN, Blob<T> blobX, bool bRefreshX, int nOutMin = 10, int nEpochs = 50, int nB = 10)
         {
             if (nN > 64 * 3)
                 throw new Exception("The maximum nN is 64 * 3, or 192.  Ideally nN should be a factor of 64.");
@@ -110,7 +109,7 @@ namespace MyCaffe.extras
             m_nN = nN;
             m_nB = nB;
 
-            return m_colCandidates.Initialize(nOutMin, nN, nB, nEpochs, blobX, m_rgGpuID);
+            return m_colCandidates.Initialize(nOutMin, nN, nB, nEpochs, blobX, bRefreshX, m_rgGpuID);
         }
 
         private void onProgress(string strSrc, string strMsg, double dfPct = 0)
@@ -297,9 +296,10 @@ namespace MyCaffe.extras
         /// <param name="nB">Specifies a bounding value used for numerical stability.</param>
         /// <param name="nEpochs">Specifies the number of training epochs used.</param>
         /// <param name="blobX">Specifies the input X data.</param>
+        /// <param name="bRefreshX">Specifies to refresh the X values on each run.</param>
         /// <param name="rgGpuId">Specifies the GPU ID's to run on.</param>
         /// <returns>On successful initialization, 'True' is returned.</returns>
-        public bool Initialize(int nOutMin, int nN, int nB, int nEpochs, Blob<T> blobX, List<int> rgGpuId)
+        public bool Initialize(int nOutMin, int nN, int nB, int nEpochs, Blob<T> blobX, bool bRefreshX, List<int> rgGpuId)
         {
             List<WaitHandle> rgWait = new List<WaitHandle>();
 
@@ -317,7 +317,7 @@ namespace MyCaffe.extras
                 int nGpuID = rgGpuId[nGpuIdx];
 
                 ChangePointCandidate<T> item = new ChangePointCandidate<T>(nN, nB, nEpochs, nGpuID);
-                rgWait.Add(item.Initialize(blobX));
+                rgWait.Add(item.Initialize(blobX, bRefreshX));
                 m_rgItems.Add(item);
             }
 
@@ -409,6 +409,7 @@ namespace MyCaffe.extras
         int m_nEpochs;
         double m_dfTval;
         int m_nGPUID = 0;
+        bool m_bRefreshX = false;
         static object m_objSync = new object();
 
         /// <summary>
@@ -438,9 +439,11 @@ namespace MyCaffe.extras
         /// Initialize the ChangePointCandidate and start its internal thread.
         /// </summary>
         /// <param name="blobX">Specifies the input data.</param>
+        /// <param name="bRefreshX">Specifies to refresh the X data on each run.</param>
         /// <returns>A wait handle is returned for the ready event.</returns>
-        public WaitHandle Initialize(Blob<T> blobX)
+        public WaitHandle Initialize(Blob<T> blobX, bool bRefreshX)
         {
+            m_bRefreshX = bRefreshX;
             m_evtReleased.Reset();
             m_evtDone.Reset();
             m_evtCancel.Reset();
@@ -626,6 +629,10 @@ namespace MyCaffe.extras
                     int nWait = WaitHandle.WaitAny(rgWait.ToArray());
                     if (nWait != 0)
                         return;
+
+                    // Refresh the input values if needed.
+                    if (m_bRefreshX)
+                        cuda.KernelCopy(blobLocalX.count(), m_blobInput.gpu_data, 0, blobLocalX.Cuda.KernelHandle, blobLocalX.mutable_gpu_data, 0, hHostBuffer, cuda.KernelHandle, -1, m_blobInput.Cuda.KernelHandle);
 
                     blobX.Reshape(m_nT, 1, 1, 1);
                     blobY.Reshape(m_nT, 1, 1, 1);
