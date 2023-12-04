@@ -52,7 +52,7 @@ namespace MyCaffe.test
             {
                 foreach (IChangePointDetectionTest t in test.Tests)
                 {
-                    t.TestCPDStationary(false);
+                    t.TestCPDStationary(true);
                 }
             }
             finally
@@ -356,7 +356,7 @@ namespace MyCaffe.test
 
             CudaDnn<T> cuda = null;
             Log log = new Log("Test CPD");
-            ChangePointDetectorNN<T> cpdNN = null;
+            ChangePointDetectorContrastiveNN<T> cpdNN = null;
             ChangePointDetectorCumulativeSUM<T> cpdCS = null;
             string strDataPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\cpd\\";
             string strDataFileCsv = strDataPath + "SPY.csv";
@@ -384,7 +384,7 @@ namespace MyCaffe.test
 
                 cuda = new CudaDnn<T>(0);
 
-                cpdNN = new ChangePointDetectorNN<T>(cuda, log);
+                cpdNN = new ChangePointDetectorContrastiveNN<T>(cuda, log);
                 cpdCS = new ChangePointDetectorCumulativeSUM<T>();
 
                 blobX = new Blob<T>(cuda, log);
@@ -707,7 +707,7 @@ namespace MyCaffe.test
             Blob<T> blobX = null;
             Blob<T> blobSnn = null;
             Blob<T> blobScs = null;
-            ChangePointDetectorNN<T> cpdNN = null;
+            ChangePointDetectorContrastiveNN<T> cpdNN = null;
             ChangePointDetectorCumulativeSUM<T> cpdCS = null;
             int nB = 10;
             int nOutMin = 10;
@@ -742,7 +742,7 @@ namespace MyCaffe.test
                 float[] rgX = Randn(nTau, dfMu, dfSigma2, dfSigma, nN);
                 blobX.mutable_cpu_data = convert(rgX);
 
-                cpdNN = new ChangePointDetectorNN<T>(cuda, log, (bFull) ? "0,1" : null);
+                cpdNN = new ChangePointDetectorContrastiveNN<T>(cuda, log, (bFull) ? "0,1" : null);
                 cpdCS = new ChangePointDetectorCumulativeSUM<T>();
 
                 m_log.WriteLine("Initializing CPD...");
@@ -760,7 +760,7 @@ namespace MyCaffe.test
                 m_log.WriteLine("CPD Compute timing = " + dfTime.ToString("N2") + " ms");
 
                 sw.Restart();
-                m_log.WriteLine("Computing CUMSUM CPD...");
+                m_log.WriteLine("Computing Cumulative Sum CPD...");
                 blobScs = cpdCS.ComputeSvalues(blobX);
 
                 swTiming.Stop();
@@ -780,11 +780,11 @@ namespace MyCaffe.test
                     rgLines.Add(threshold2);
                 }
 
-                int? nIdxSThreshold = getThreshold(plotsSnn, dfTarget);
-                int? nIdxSCumSumThreshold = getThreshold(plotsScs, dfTarget);
+                int? nIdxSnnThreshold = getThreshold(plotsSnn, dfTarget);
+                int? nIdxScsThreshold = getThreshold(plotsScs, dfTarget);
 
                 Image img = SimpleGraphingControl.QuickRender(set, 1000, 800, false, null, null, true, rgLines);
-                img = renderStats(img, strDesc, nN, nTau, dfMu, dfSigma2, dfSigma, nEpochs, swTiming.Elapsed.TotalSeconds, nIdxSThreshold, nIdxSCumSumThreshold);
+                img = renderStats(img, strDesc, nN, nTau, dfMu, dfSigma2, dfSigma, nEpochs, swTiming.Elapsed.TotalSeconds, nIdxSnnThreshold, nIdxScsThreshold);
                 img.Save(strResultFile);
             }
             finally
@@ -801,32 +801,32 @@ namespace MyCaffe.test
             }
         }
 
-        private Image renderStats(Image img, string strDesc, int nN, int nTau, double dfMu, double dfSigma2, double dfSigma, int nEpochs, double dfSeconds, int? nIdxSThreshold, int? nIdxSCumSumThreshold)
+        private Image renderStats(Image img, string strDesc, int nN, int nTau, double dfMu, double dfSigma2, double dfSigma, int nEpochs, double dfSeconds, int? nIdxSThreshold, int? nIdxScsThreshold)
         {
             Pen penTrueCp = new Pen(Color.FromArgb(128, Color.Fuchsia));
-            Pen penSCp = new Pen(Color.FromArgb(128, Color.Blue));
-            Pen penSCumSumCp = new Pen(Color.FromArgb(128, Color.Green));
+            Pen penSnnCp = new Pen(Color.FromArgb(128, Color.Blue));
+            Pen penScsCp = new Pen(Color.FromArgb(128, Color.Green));
             Font fontTitle = new Font("Century Gothic", 14, FontStyle.Bold);
             Font fontStats = new Font("Century Gotich", 10);
             Font fontCp = new Font("Century Gotich", 8);
 
-            penSCp.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
-            penSCumSumCp.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
+            penSnnCp.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
+            penScsCp.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
 
             using (Graphics g = Graphics.FromImage(img))
             {
                 g.DrawLine(penTrueCp, (nTau + 1) * 5, 0, (nTau + 1) * 5, img.Height);
                 g.DrawString("True Change Point", fontCp, Brushes.Fuchsia, (nTau + 1) * 5 + 5, 30);
 
-                if (nIdxSCumSumThreshold.HasValue)
+                if (nIdxScsThreshold.HasValue)
                 {
-                    g.DrawLine(penSCumSumCp, (nIdxSCumSumThreshold.Value + 1) * 5, 0, (nIdxSCumSumThreshold.Value + 1) * 5, img.Height);
-                    g.DrawString("CPD CumSum Change Point", fontCp, Brushes.Green, (nIdxSCumSumThreshold.Value + 1) * 5 + 5, 45);
+                    g.DrawLine(penScsCp, (nIdxScsThreshold.Value + 1) * 5, 0, (nIdxScsThreshold.Value + 1) * 5, img.Height);
+                    g.DrawString("CPD Cumulative Sum Change Point", fontCp, Brushes.Green, (nIdxScsThreshold.Value + 1) * 5 + 5, 45);
                 }
 
                 if (nIdxSThreshold.HasValue)
                 {
-                    g.DrawLine(penSCp, (nIdxSThreshold.Value + 1) * 5, 0, (nIdxSThreshold.Value + 1) * 5, img.Height);
+                    g.DrawLine(penSnnCp, (nIdxSThreshold.Value + 1) * 5, 0, (nIdxSThreshold.Value + 1) * 5, img.Height);
                     g.DrawString("CPD NN Change Point", fontCp, Brushes.Blue, (nIdxSThreshold.Value + 1) * 5 + 5, 60);
                 }
 
@@ -854,8 +854,8 @@ namespace MyCaffe.test
             }
 
             penTrueCp.Dispose();
-            penSCp.Dispose();
-            penSCumSumCp.Dispose();
+            penSnnCp.Dispose();
+            penScsCp.Dispose();
 
             return img;
         }

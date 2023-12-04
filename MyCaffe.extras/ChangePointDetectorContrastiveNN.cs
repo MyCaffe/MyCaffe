@@ -15,7 +15,7 @@ using System.Diagnostics;
 namespace MyCaffe.extras
 {
     /// <summary>
-    /// The ChangePointDetectorNN is a multithreaded online change point detection system that uses a simple neural network for nonparametric scenarios to 
+    /// The ChangePointDetectorContrastiveNN is a multithreaded online change point detection system that uses a simple neural network for nonparametric scenarios to 
     /// detect both mean and variance change points in time-series data.
     /// </summary>
     /// <remarks>
@@ -23,7 +23,7 @@ namespace MyCaffe.extras
     /// @see [Numerical experiments on the WISDM data set described in the paper "A Contrastive Approach to Online Change Point Detection"](https://github.com/npuchkin/contrastive_change_point_detection/blob/main/WISDM_experiments.ipynb) by npuchkin, GitHub 2023
     /// </remarks>
     /// <typeparam name="T">Specifies the base type of <i>float</i> or <i>double</i>.</typeparam>
-    public class ChangePointDetectorNN<T> : IDisposable
+    public class ChangePointDetectorContrastiveNN<T> : IDisposable
     {
         CudaDnn<T> m_cuda;
         Log m_log;
@@ -45,7 +45,7 @@ namespace MyCaffe.extras
         /// <param name="cuda">Specifies the connection to CUDA.</param>
         /// <param name="log">Specifies the output log.</param>
         /// <param name="strGpus">Optionally, specifies the GPU's to run the internal threads on specified as a comma delinated list (ex. '0,1').</param>
-        public ChangePointDetectorNN(CudaDnn<T> cuda, Log log, string strGpus = null)
+        public ChangePointDetectorContrastiveNN(CudaDnn<T> cuda, Log log, string strGpus = null)
         {
             m_cuda = cuda;
             m_log = log;

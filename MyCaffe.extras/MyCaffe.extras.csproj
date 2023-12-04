@@ -58,7 +58,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ChangePointDetectorCumulativeSUM.cs" />
-    <Compile Include="ChangePointDetectorNN.cs" />
+    <Compile Include="ChangePointDetectorContrastiveNN.cs" />
     <Compile Include="DeepDraw.cs" />
     <Compile Include="NeuralStyleTransfer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
