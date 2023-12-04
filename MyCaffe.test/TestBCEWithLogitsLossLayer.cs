@@ -306,13 +306,14 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS);
             p.loss_param.normalization = LossParameter.NormalizationMode.NONE;
-            p.bce_with_logits_loss_param.weights = getWeights();
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
+            List<float> rgWts = getWeights();
+            Blob<T> blobWts = new Blob<T>(m_cuda, m_log);
 
             try
             {
                 m_log.CHECK(layer.type == LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS, "The layer type is incorrect.");
-                m_bce = new BCEWithLogitsLoss<T>(21, 1, null, p.bce_with_logits_loss_param.weights);
+                m_bce = new BCEWithLogitsLoss<T>(21, 1, null, rgWts);
 
                 double[] rgInput;
                 double[] rgTarget;
@@ -326,9 +327,13 @@ namespace MyCaffe.test
                 m_blob_bottom.mutable_cpu_data = convert(rgInput);
                 m_blob_bottom_targets.mutable_cpu_data = convert(rgTarget);
 
+                blobWts.Reshape(rgWts.Count, 1, 1, 1);
+                blobWts.mutable_cpu_data = convert(rgWts.ToArray());
+
                 BottomVec.Clear();
                 BottomVec.Add(m_blob_bottom);
                 BottomVec.Add(m_blob_bottom_targets);
+                BottomVec.Add(blobWts);
                 TopVec.Clear();
                 TopVec.Add(m_blob_top);
 
@@ -344,6 +349,7 @@ namespace MyCaffe.test
             }
             finally
             {
+                dispose(ref blobWts);
                 layer.Dispose();
                 m_bce.ClearWeights();
             }
@@ -355,14 +361,15 @@ namespace MyCaffe.test
         public void TestBackwardWeights()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS);
-            p.bce_with_logits_loss_param.weights = getWeights();
             p.loss_param.normalization = LossParameter.NormalizationMode.NONE;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
+            List<float> rgWts = getWeights();
+            Blob<T> blobWts = new Blob<T>(m_cuda, m_log);
 
             try
             {
                 m_log.CHECK(layer.type == LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS, "The layer type is incorrect.");
-                m_bce = new BCEWithLogitsLoss<T>(21, 1, null, p.bce_with_logits_loss_param.weights);
+                m_bce = new BCEWithLogitsLoss<T>(21, 1, null, rgWts);
 
                 double[] rgInput;
                 double[] rgTarget;
@@ -378,9 +385,13 @@ namespace MyCaffe.test
                 m_blob_bottom.mutable_cpu_data = convert(rgInput);
                 m_blob_bottom_targets.mutable_cpu_data = convert(rgTarget);
 
+                blobWts.Reshape(rgWts.Count, 1, 1, 1);
+                blobWts.mutable_cpu_data = convert(rgWts.ToArray());
+
                 BottomVec.Clear();
                 BottomVec.Add(m_blob_bottom);
                 BottomVec.Add(m_blob_bottom_targets);
+                BottomVec.Add(blobWts);
                 TopVec.Clear();
                 TopVec.Add(m_blob_top);
 
@@ -412,6 +423,7 @@ namespace MyCaffe.test
             }
             finally
             {
+                dispose(ref blobWts);
                 layer.Dispose();
                 m_bce.ClearWeights();
             }

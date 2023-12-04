@@ -16,7 +16,6 @@ namespace MyCaffe.param.beta
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class BCEWithLogitsLossParameter : LayerParameterBase
     {
-        List<float> m_rgWeights = null;
         REDUCTION m_reduction = REDUCTION.MEAN;
 
         /// <summary>
@@ -37,16 +36,6 @@ namespace MyCaffe.param.beta
         /** @copydoc LayerParameterBase */
         public BCEWithLogitsLossParameter()
         {
-        }
-
-        /// <summary>
-        /// Specifies the fixed weights.
-        /// </summary>
-        [Description("Specifies the fixed weights.")]
-        public List<float> weights
-        {
-            get { return m_rgWeights; }
-            set { m_rgWeights = value; }
         }
 
         /// <summary>
@@ -76,7 +65,6 @@ namespace MyCaffe.param.beta
         {
             BCEWithLogitsLossParameter p = (BCEWithLogitsLossParameter)src;
             m_reduction = p.m_reduction;
-            m_rgWeights = Utility.Clone<float>(p.m_rgWeights);
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -97,7 +85,6 @@ namespace MyCaffe.param.beta
             RawProtoCollection rgChildren = new RawProtoCollection();
 
             rgChildren.Add("reduction", reduction.ToString());
-            rgChildren.Add<float>("weight", m_rgWeights);
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -111,8 +98,6 @@ namespace MyCaffe.param.beta
         {
             string strVal;
             BCEWithLogitsLossParameter p = new BCEWithLogitsLossParameter();
-
-            p.m_rgWeights = rp.FindArray<float>("weight");
 
             if ((strVal = rp.FindValue("reduction")) != null)
             {

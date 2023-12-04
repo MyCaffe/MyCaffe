@@ -29,7 +29,6 @@ namespace MyCaffe.layers.beta
     public class BCEWithLogitsLossLayer<T> : LossLayer<T>
     {
         Blob<T> m_blobLoss;
-        Blob<T> m_blobWeights;
         bool m_bMeanReduction = false;
 
         /// <summary>
@@ -44,7 +43,6 @@ namespace MyCaffe.layers.beta
         {
             m_type = LayerParameter.LayerType.BCE_WITH_LOGITS_LOSS;
             m_blobLoss = new Blob<T>(cuda, log);
-            m_blobWeights = new Blob<T>(cuda, log, false);
         }
 
         /** @copydoc Layer::dispose */
@@ -56,13 +54,31 @@ namespace MyCaffe.layers.beta
                 m_blobLoss = null;
             }
 
-            if (m_blobWeights != null)
-            {
-                m_blobWeights.Dispose();
-                m_blobWeights = null;
-            }
-
             base.dispose();
+        }
+
+        /// <summary>
+        /// Specifies the minimum number of bottom (input) Blobs: predicted, target.
+        /// </summary>
+        public override int MinBottomBlobs
+        {
+            get { return 2; }
+        }
+
+        /// <summary>
+        /// Specifies the maximum number of bottom (input) Blobs: predicted, target, weights.   
+        /// </summary>
+        public override int MaxBottomBlobs
+        {
+            get { return 3; }
+        }
+
+        /// <summary>
+        /// Override to force using Min/Max bottom blobs.
+        /// </summary>
+        public override int ExactNumBottomBlobs
+        {
+            get { return -1; }
         }
 
         /// <summary>
@@ -81,16 +97,6 @@ namespace MyCaffe.layers.beta
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             base.LayerSetUp(colBottom, colTop);
-
-            if (m_param.bce_with_logits_loss_param.weights != null && m_param.bce_with_logits_loss_param.weights.Count > 0)
-            {
-                if (m_param.bce_with_logits_loss_param.weights.Count != colBottom[0].num * colBottom[0].channels)
-                    m_log.FAIL("The weights count must equal the Num x Channels in the bottom(0) blob.");
-
-                m_blobWeights.Reshape(colBottom[0].num, colBottom[0].channels, 1, 1);
-                m_blobWeights.SetData(convert(m_param.bce_with_logits_loss_param.weights.ToArray()));
-            }
-
             m_bMeanReduction = (m_param.bce_with_logits_loss_param.reduction == BCEWithLogitsLossParameter.REDUCTION.MEAN);
         }
 
@@ -133,8 +139,9 @@ namespace MyCaffe.layers.beta
             int nCount = colBottom[0].count();
             int nN = colBottom[0].num;
 
-            if (m_blobWeights.count() > 0)
-                hWeights = m_blobWeights.gpu_data;  
+            // Set the weights if provided.
+            if (colBottom.Count == 3)
+                hWeights = colBottom[2].gpu_data;
 
             m_log.CHECK_EQ(nCount, colBottom[1].count(), "The bottom(0) predicted and bottom(1) target must have the same shapes!");
             
@@ -189,8 +196,9 @@ namespace MyCaffe.layers.beta
             int nN = colBottom[0].num;
             long hWeights = 0;
 
-            if (m_blobWeights.count() > 0)
-                hWeights = m_blobWeights.gpu_data;
+            // Set the weights if provided.
+            if (colBottom.Count == 3)
+                hWeights = colBottom[2].gpu_data;
 
             m_cuda.bce_with_logits_loss_bwd(nCount, nN, hPredicted, hTarget, hWeights, 0, m_bMeanReduction, hBottomDiff);
 
