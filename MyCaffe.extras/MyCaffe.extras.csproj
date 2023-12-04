@@ -57,7 +57,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ChangePointDetectorCUMSUM.cs" />
+    <Compile Include="ChangePointDetectorCumulativeSUM.cs" />
     <Compile Include="ChangePointDetectorNN.cs" />
     <Compile Include="DeepDraw.cs" />
     <Compile Include="NeuralStyleTransfer.cs" />
