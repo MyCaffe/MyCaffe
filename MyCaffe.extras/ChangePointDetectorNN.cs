@@ -15,7 +15,8 @@ using System.Diagnostics;
 namespace MyCaffe.extras
 {
     /// <summary>
-    /// The ChangePointDetector is used to detect change points in a time series using a simple neural network.
+    /// The ChangePointDetectorNN is a multithreaded online change point detection system that uses a simple neural network for nonparametric scenarios to 
+    /// detect both mean and variance change points in time-series data.
     /// </summary>
     /// <remarks>
     /// @see [A Contrastive Approach to Online Change Point Detection](https://arxiv.org/abs/2206.10143) by Artur Goldman, Nikita Puchkin, Valeriia Shcherbakova, and Uliana Vinogradova, 2022, arXiv
@@ -521,8 +522,10 @@ namespace MyCaffe.extras
             LayerParameter data = new LayerParameter(LayerParameter.LayerType.INPUT);
             data.input_param.shape.Add(new BlobShape(new List<int>() { 1, nIn }));
             data.input_param.shape.Add(new BlobShape(new List<int>() { 1, nIn }));
+            data.input_param.shape.Add(new BlobShape(new List<int>() { 1, nIn }));
             data.top.Add("input");
             data.top.Add("target");
+            data.top.Add("weights");
             p.layer.Add(data);
 
             LayerParameter fc1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "fc1");
@@ -570,6 +573,7 @@ namespace MyCaffe.extras
             loss.bce_with_logits_loss_param.reduction = BCEWithLogitsLossParameter.REDUCTION.MEAN;
             loss.bottom.Add("out");
             loss.bottom.Add("target");
+            loss.bottom.Add("weights");
             loss.top.Add("loss");
             loss.include.Add(new NetStateRule(Phase.TRAIN));
             p.layer.Add(loss);
@@ -587,6 +591,7 @@ namespace MyCaffe.extras
             Blob<T> blobX;
             Blob<T> blobY;
             Blob<T> blobZ;
+            Blob<T> blobWts;
             long hCpd = 0;
 
             string strModel = build_model(1, 1);
@@ -601,10 +606,10 @@ namespace MyCaffe.extras
             Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
             CudaDnn<T> cuda = mycaffe.Cuda;
             long hHostBuffer = cuda.AllocHostBuffer(m_nN * m_nN);
-            Blob<T> blobWts = new Blob<T>(cuda, log);
             Blob<T> blobLocalX = new Blob<T>(cuda, log);
             blobX = net.FindBlob("input");
             blobY = net.FindBlob("target");
+            blobWts = net.FindBlob("weights");
             blobZ = net.FindBlob("out");
 
             blobLocalX.ReshapeLike(m_blobInput);
@@ -682,7 +687,6 @@ namespace MyCaffe.extras
                     cuda.FreeHostBuffer(hHostBuffer);
 
                 blobLocalX.Dispose();
-                blobWts.Dispose();
                 mycaffe.Dispose();
                 m_evtDone.Set();
                 m_evtReleased.Set();
