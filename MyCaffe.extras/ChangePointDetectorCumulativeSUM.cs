@@ -9,8 +9,15 @@ using System.Threading.Tasks;
 namespace MyCaffe.extras
 {
     /// <summary>
-    /// The ChangePointDetectionCUMSUM class computes the CUMSUM of the input data.
+    /// The ChangePointDetectionCUMSUM class computes the Cumulative Sum of the input data.
     /// </summary>
+    /// <remarks>
+    /// The cumulative sum algorithm is used to detect changes in the mean or variance of a time series.  
+    /// It involves calculating the cumulative sum of derivations of the observations from a target
+    /// value or reference level, and comparing it to a threshold value.
+    /// 
+    /// @see [CUMSUM](https://en.wikipedia.org/wiki/CUSUM) Wikipedia
+    /// </remarks>
     /// <typeparam name="T">Specifies the base type of <i>double</i> or <i>float</i>.</typeparam>
     public class ChangePointDetectorCumulativeSUM<T> : IDisposable
     {
@@ -41,7 +48,7 @@ namespace MyCaffe.extras
         }
 
         /// <summary>
-        /// Compute the CUMSUM of the input data.
+        /// Compute the Cumulative Sum of the input data.
         /// </summary>
         /// <param name="blobX">Specifies the input data.</param>
         /// <returns>The S values are returned in a new blob.</returns>
