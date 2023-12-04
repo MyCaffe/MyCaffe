@@ -12,12 +12,12 @@ namespace MyCaffe.extras
     /// The ChangePointDetectionCUMSUM class computes the CUMSUM of the input data.
     /// </summary>
     /// <typeparam name="T">Specifies the base type of <i>double</i> or <i>float</i>.</typeparam>
-    public class ChangePointDetectorCUMSUM<T> : IDisposable
+    public class ChangePointDetectorCumulativeSUM<T> : IDisposable
     {
         /// <summary>
         /// The constructor.
         /// </summary>
-        public ChangePointDetectorCUMSUM()
+        public ChangePointDetectorCumulativeSUM()
         {
         }
 
