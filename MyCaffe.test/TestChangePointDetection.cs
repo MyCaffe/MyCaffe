@@ -349,6 +349,9 @@ namespace MyCaffe.test
             return cfg;
         }
 
+        /// <summary>
+        /// Test the ChangePointDetectors on non-stationary, daily stock Data using the SPY ETF.
+        /// </summary>
         public void TestCPDNonStationary()
         {
             if (typeof(T) == typeof(double))
@@ -564,6 +567,10 @@ namespace MyCaffe.test
             }
         }
 
+        /// <summary>
+        /// Test the ChangePointDetectors on stationary, simulated data created with known distributions, shifts and noise.
+        /// </summary>
+        /// <param name="bFull">Specifies to run full tests - this takes a few days to run.</param>
         public void TestCPDStationary(bool bFull)
         {
             EventWaitHandle evtCancel = new EventWaitHandle(false, EventResetMode.AutoReset, "__GRADIENT_CHECKER_CancelEvent__");
@@ -617,6 +624,13 @@ namespace MyCaffe.test
             }
         }
 
+        /// <summary>
+        /// Run one test scenario for the static TestCPDStationary test.
+        /// </summary>
+        /// <remarks>
+        /// Each test_cpd_thread runsn the scenarios No Shift, Small Shift UP, Large Shift UP, Large Shift DN.
+        /// </remarks>
+        /// <param name="obj">Specifies the parameters, including the start noise, and noise change.</param>
         private void test_cpd_thread(object obj)
         {
             EventWaitHandle evtCancel = new EventWaitHandle(false, EventResetMode.AutoReset, "__GRADIENT_CHECKER_CancelEvent__");
@@ -860,6 +874,9 @@ namespace MyCaffe.test
             return img;
         }
 
+        /// <summary>
+        /// Test the ChangePointDetection primitives.
+        /// </summary>
         public void TestCPDPrimitives()
         {
             string strDataPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\data\\cpd\\";
@@ -917,7 +934,7 @@ namespace MyCaffe.test
     }
 
     /// <summary>
-    /// Change point detection primitives.
+    /// Change point detection primitives - used to check the GPU implementation results.
     /// </summary>
     /// <remarks>
     /// @see [A Contrastive Approach to Online Change Point Detection](https://arxiv.org/abs/2206.10143) by Artur Goldman, Nikita Puchkin, Valeriia Shcherbakova, and Uliana Vinogradova, 2022, arXiv
