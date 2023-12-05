@@ -52,7 +52,7 @@ namespace MyCaffe.test
             {
                 foreach (IChangePointDetectionTest t in test.Tests)
                 {
-                    t.TestCPDStationary(true);
+                    t.TestCPDStationary(false);
                 }
             }
             finally
