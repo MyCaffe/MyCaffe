@@ -19,6 +19,7 @@ using System.Drawing;
 using System.Threading;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 
 namespace MyCaffe.test
 {
@@ -221,40 +222,23 @@ namespace MyCaffe.test
             return null;
         }
 
-        public PlotCollection loadPlots(string strFileCsv)
-        {
-            PlotCollection plots = new PlotCollection("SPY");
-
-            using (StreamReader sr = new StreamReader(strFileCsv))
-            {
-                string strLine = sr.ReadLine();
-
-                while (!sr.EndOfStream)
-                {
-                    strLine = sr.ReadLine();
-                    string[] rgstr = strLine.Split(',');
-                    DateTime dt = DateTime.Parse(rgstr[0]);
-                    double dfOpen = double.Parse(rgstr[1]);
-                    double dfHigh = double.Parse(rgstr[2]);
-                    double dfLow = double.Parse(rgstr[3]);
-                    double dfClose = double.Parse(rgstr[4]);
-
-                    Plot p = new Plot(dt.ToFileTime(), new float[] { (float)dfOpen, (float)dfHigh, (float)dfLow, (float)dfClose });
-                    p.Tag = dt;
-                    plots.Add(p);
-                }
-            }
-
-            return plots;
-        }
-
         private float[] preprocess(PlotCollection plots)
         {
             float[] rgData = new float[plots.Count];
+            CalculationArray ca = new CalculationArray(plots.Count);
 
             for (int i = 1; i < plots.Count; i++)
             {
-                rgData[i] = (plots[i].Y - plots[i - 1].Y);
+                rgData[i] = plots[i].Y;
+                ca.Add(plots[i].Y);
+            }
+
+            double dfAve = ca.Average;
+            double dfStdev = ca.CalculateStandardDeviation(dfAve);
+
+            for (int i = 1; i < plots.Count; i++)
+            {
+                rgData[i] = (float)((rgData[i] - dfAve) / dfStdev);
             }
 
             return rgData;
@@ -283,14 +267,17 @@ namespace MyCaffe.test
             return new Tuple<double, double>(dfAve, dfStdDev);
         }
 
-        private float[] getWindowData(float[] rgData, int nIdx, int nWindowSize, Tuple<double, double> stats)
+        private float[] getWindowData(float[] rgData, int nIdx, int nWindowSize, Tuple<double, double> stats = null)
         {
             int nIdx1 = 0;
             float[] rgWindow = new float[nWindowSize];
 
             for (int i = nIdx - nWindowSize; i < nIdx; i++)
             {
-                rgWindow[nIdx1] = (float)((rgData[i] - stats.Item1) / stats.Item2);
+                if (stats != null)
+                    rgWindow[nIdx1] = (float)((rgData[i] - stats.Item1) / stats.Item2);
+                else
+                    rgWindow[nIdx1] = rgData[i];
                 nIdx1++;
             }
 
@@ -316,6 +303,7 @@ namespace MyCaffe.test
             plotHighLow.DataIndex = 0;
             plotHighLow.DataIndexOnRender = 0;
             plotHighLow.Properties.Add("MinLevelVisible", 1);
+            plotHighLow.Visible = false;
             cfg.Frames[0].Plots.Add(plotHighLow);
 
             ConfigurationPlot plotsSnn = new ConfigurationPlot();
@@ -352,6 +340,9 @@ namespace MyCaffe.test
         /// <summary>
         /// Test the ChangePointDetectors on non-stationary, daily stock Data using the SPY ETF.
         /// </summary>
+        /// <remarks>
+        /// WORK IN PROGRESS
+        /// </remarks>
         public void TestCPDNonStationary()
         {
             if (typeof(T) == typeof(double))
@@ -373,19 +364,23 @@ namespace MyCaffe.test
             int nEpochs = 20;
             int nB = 10;
             int nTMin = 5;
-            double dfThresholdS1 = 2.5;
+            double dfThresholdSnn = 2.5;
             double dfThresholdScs = 2.5;
             Dictionary<DateTime, Tuple<Blob<T>, PlotCollection>> rgSnn = new Dictionary<DateTime, Tuple<Blob<T>, PlotCollection>>();
             Dictionary<DateTime, Tuple<Blob<T>, PlotCollection>> rgScs = new Dictionary<DateTime, Tuple<Blob<T>, PlotCollection>>();
 
+
             try
             {
+                cuda = new CudaDnn<T>(0);
+
                 log.EnableTrace = true;
 
                 if (!Directory.Exists(strResultPath))
                     Directory.CreateDirectory(strResultPath);
 
-                cuda = new CudaDnn<T>(0);
+                rgSnn = load(strResultPath, "nn", cuda, log);
+                rgScs = load(strResultPath, "cs", cuda, log);
 
                 cpdNN = new ChangePointDetectorContrastiveNN<T>(cuda, log);
                 cpdCS = new ChangePointDetectorCumulativeSUM<T>();
@@ -394,121 +389,153 @@ namespace MyCaffe.test
                 blobX.Reshape(nWindowSize, 1, 1, 1);
                 cpdNN.Initialize(nWindowSize, blobX, true, nOutMin, nEpochs, nB);
 
-                PlotCollection plots = loadPlots(strDataFileCsv);
+                PlotCollection plots = PlotCollection.LoadFromCsvFile("SPY", strDataFileCsv, PlotCollection.CSV_FORMAT.DATE_OHLCAV, null, 5);
                 PlotCollection plotsSnn = plots.Clone(0, true, null, false, true, null, true);
-                plotsSnn.Name = "SPY CPD NN (" + dfThresholdS1.ToString("N1") + ")";
+                plotsSnn.Name = "SPY CPD NN (" + dfThresholdSnn.ToString("N1") + ")";
                 PlotCollection plotsScs = plots.Clone(0, true, null, false, true, null, true);
                 plotsScs.Name = "SPY CPD Cumulative Sum";
-                Configuration cfg = createDefaultCfg(plots, dfThresholdS1, dfThresholdScs);
+                Configuration cfg = createDefaultCfg(plots, dfThresholdSnn, dfThresholdScs);
 
                 Dictionary<DateTime, Tuple<DateTime, double, DateTime, double>> rgMaxes = new Dictionary<DateTime, Tuple<DateTime, double, DateTime, double>>();
                 Dictionary<DateTime, int> rgMaxSnn = new Dictionary<DateTime, int>();
                 Dictionary<DateTime, int> rgMaxScs = new Dictionary<DateTime, int>();
                 Dictionary<DateTime, int> rgMaxBoth = new Dictionary<DateTime, int>();
 
-                float[] rgData = preprocess(plots);
-                for (int i = nWindowSize*3; i < rgData.Length; i += 1)
+                DateTime dtStart = (DateTime)plots[nWindowSize * 3 - nWindowSize].Tag;
+                DateTime dtEnd = (DateTime)plots[nWindowSize * 3].Tag;
+
+                if (rgSnn.Count == 0 && rgScs.Count == 0)
                 {
-                    Tuple<double, double> stats = getStats(rgData, i, nWindowSize * 3);
-                    float[] rgWindow = getWindowData(rgData, i, nWindowSize, stats);
-                    blobX.mutable_cpu_data = convert(rgWindow);
-
-                    DateTime dtStart = (DateTime)plots[i-nWindowSize].Tag;
-                    DateTime dtEnd = (DateTime)plots[i].Tag;
-                    m_log.WriteLine("Running CPD on " + dtStart.ToShortDateString() + " to " + dtEnd.ToShortDateString());
-
-                    // Operate on the current blobX values.
-                    blobSnn = cpdNN.ComputeSvalues(nTMin, false);
-                    blobScs = cpdCS.ComputeSvalues(blobX);
-
-                    double dfMaxSnn = blobSnn.max_data;
-                    double dfMaxScs = blobScs.max_data;
-
-                    int nMaxIdxSnn = -1;
-                    int? nIdxSnn = getThreshold(blobSnn, dfThresholdS1, out nMaxIdxSnn);
-                    int nMaxIdxScs = -1;
-                    int? nIdxScs = getThreshold(blobScs, dfThresholdScs, out nMaxIdxScs);
-
-                    DateTime dtMaxSnn = (DateTime)plotsSnn[i - nWindowSize + nMaxIdxSnn].Tag;
-                    DateTime dtMaxScs = (DateTime)plotsScs[i - nWindowSize + nMaxIdxScs].Tag;
-                    rgMaxes.Add(dtEnd, new Tuple<DateTime, double, DateTime, double>(dtMaxSnn, dfMaxSnn, dtMaxScs, dfMaxScs));
-
-                    m_log.WriteLine(dtStart.ToShortDateString() + " -->| dtSnn = " + dtMaxSnn.ToShortDateString() + " MaxSnn = " + dfMaxSnn.ToString("N2") + ", " + dtMaxScs.ToShortDateString() + " MaxScs = " + dfMaxScs.ToString("N2") + ", Threshold = " + dfThresholdS1.ToString("N2") + " |<-- " + dtEnd.ToShortDateString());
-
-                    if (!rgMaxSnn.ContainsKey(dtMaxSnn))
-                        rgMaxSnn.Add(dtMaxSnn, 1);
-                    else
-                        rgMaxSnn[dtMaxSnn]++;
-
-                    if (!rgMaxScs.ContainsKey(dtMaxScs))
-                        rgMaxScs.Add(dtMaxScs, 1);
-                    else
-                        rgMaxScs[dtMaxScs]++;
-
-                    if (!rgMaxBoth.ContainsKey(dtMaxSnn))
-                        rgMaxBoth.Add(dtMaxSnn, 1);
-                    else
-                        rgMaxBoth[dtMaxSnn]++;
-
-                    if (!rgMaxBoth.ContainsKey(dtMaxScs))
-                        rgMaxBoth.Add(dtMaxScs, 1);
-                    else
-                        rgMaxBoth[dtMaxScs]++;
-
-                    PlotCollection plotsSnn1 = createPlots(blobSnn);
-                    PlotCollection plotsScs1 = createPlots(blobScs);
-
-                    //if (nIdxSnn.HasValue)
-                    //{
-                    //    nIdxSnn = (i - nWindowSize) + nIdxSnn.Value;
-                    //    plotsSnn[nIdxSnn.Value].Active = true;
-                    //}
-
-                    //if (nIdxScs.HasValue)
-                    //{
-                    //    nIdxScs = (i - nWindowSize) + nIdxScs.Value;
-                    //    plotsScs[nIdxScs.Value].Active = true;
-                    //}
-
-                    //if (rgMaxBoth.Count > 0)
-                    //{
-                    //    List<KeyValuePair<DateTime, int>> rg = rgMaxBoth.Where(p => p.Value >= 4).ToList();
-                    //    for (int j = 0; j < rg.Count; j++)
-                    //    {
-                    //        int nPlotIdx = plotsSnn.Find(rg[j].Key);
-                    //        if (nPlotIdx >= 0)
-                    //            plotsSnn[nPlotIdx].Active = true;
-                    //    }
-                    //}
-
-                    if (rgMaxSnn.Count > 0)
+                    float[] rgData = preprocess(plots);
+                    for (int i = nWindowSize; i < rgData.Length; i += 4)
                     {
-                        List<KeyValuePair<DateTime, int>> rg = rgMaxSnn.Where(p => p.Value >= 2).ToList();
-                        for (int j = 0; j < rg.Count; j++)
+                        float[] rgWindow = getWindowData(rgData, i, nWindowSize);
+                        blobX.mutable_cpu_data = convert(rgWindow);
+
+                        dtStart = (DateTime)plots[i - nWindowSize].Tag;
+                        dtEnd = (DateTime)plots[i].Tag;
+                        m_log.WriteLine("Running CPD on " + dtStart.ToShortDateString() + " to " + dtEnd.ToShortDateString());
+
+                        // Operate on the current blobX values.
+                        blobSnn = cpdNN.ComputeSvalues(nTMin, false);
+                        blobScs = cpdCS.ComputeSvalues(blobX);
+
+                        double dfMaxSnn = blobSnn.max_data;
+                        double dfMaxScs = blobScs.max_data;
+
+                        int nMaxIdxSnn = -1;
+                        int? nIdxSnn = getThreshold(blobSnn, dfThresholdSnn, out nMaxIdxSnn);
+                        int nMaxIdxScs = -1;
+                        int? nIdxScs = getThreshold(blobScs, dfThresholdScs, out nMaxIdxScs);
+
+                        DateTime dtMaxSnn = (DateTime)plotsSnn[i - nWindowSize + nMaxIdxSnn].Tag;
+                        DateTime dtMaxScs = (DateTime)plotsScs[i - nWindowSize + nMaxIdxScs].Tag;
+                        rgMaxes.Add(dtEnd, new Tuple<DateTime, double, DateTime, double>(dtMaxSnn, dfMaxSnn, dtMaxScs, dfMaxScs));
+
+                        m_log.WriteLine(dtStart.ToShortDateString() + " -->| dtSnn = " + dtMaxSnn.ToShortDateString() + " MaxSnn = " + dfMaxSnn.ToString("N2") + ", " + dtMaxScs.ToShortDateString() + " MaxScs = " + dfMaxScs.ToString("N2") + ", Threshold = " + dfThresholdSnn.ToString("N2") + " |<-- " + dtEnd.ToShortDateString());
+
+                        if (!rgMaxSnn.ContainsKey(dtMaxSnn))
+                            rgMaxSnn.Add(dtMaxSnn, 1);
+                        else
+                            rgMaxSnn[dtMaxSnn]++;
+
+                        if (!rgMaxScs.ContainsKey(dtMaxScs))
+                            rgMaxScs.Add(dtMaxScs, 1);
+                        else
+                            rgMaxScs[dtMaxScs]++;
+
+                        if (!rgMaxBoth.ContainsKey(dtMaxSnn))
+                            rgMaxBoth.Add(dtMaxSnn, 1);
+                        else
+                            rgMaxBoth[dtMaxSnn]++;
+
+                        if (!rgMaxBoth.ContainsKey(dtMaxScs))
+                            rgMaxBoth.Add(dtMaxScs, 1);
+                        else
+                            rgMaxBoth[dtMaxScs]++;
+
+                        PlotCollection plotsSnn1 = createPlots(blobSnn);
+                        PlotCollection plotsScs1 = createPlots(blobScs);
+
+                        if (nIdxSnn.HasValue)
                         {
-                            int nPlotIdx = plotsSnn.Find(rg[j].Key);
-                            if (nPlotIdx >= 0)
-                                plotsSnn[nPlotIdx].Active = true;
+                            nIdxSnn = (i - nWindowSize) + nIdxSnn.Value;
+                            plotsSnn[nIdxSnn.Value].Active = true;
                         }
+
+                        if (nIdxScs.HasValue)
+                        {
+                            nIdxScs = (i - nWindowSize) + nIdxScs.Value;
+                            plotsScs[nIdxScs.Value].Active = true;
+                        }
+
+                        //if (rgMaxSnn.Count > 0)
+                        //{
+                        //    List<KeyValuePair<DateTime, int>> rg = rgMaxSnn.Where(p => p.Value >= 2).ToList();
+                        //    for (int j = 0; j < rg.Count; j++)
+                        //    {
+                        //        int nPlotIdx = plotsSnn.Find(rg[j].Key);
+                        //        if (nPlotIdx >= 0)
+                        //            plotsSnn[nPlotIdx].Active = true;
+                        //    }
+                        //}
+
+                        //if (rgMaxScs.Count > 0)
+                        //{
+                        //    List<KeyValuePair<DateTime, int>> rg = rgMaxScs.Where(p => p.Value >= 2).ToList();
+                        //    for (int j = 0; j < rg.Count; j++)
+                        //    {
+                        //        int nPlotIdx = plotsScs.Find(rg[j].Key);
+                        //        if (nPlotIdx >= 0)
+                        //            plotsScs[nPlotIdx].Active = true;
+                        //    }
+                        //}
+
+                        rgSnn.Add(dtEnd, new Tuple<Blob<T>, PlotCollection>(blobSnn, plotsSnn1));
+                        rgScs.Add(dtEnd, new Tuple<Blob<T>, PlotCollection>(blobScs, plotsScs1));
                     }
 
-                    if (rgMaxScs.Count > 0)
-                    {
-                        List<KeyValuePair<DateTime, int>> rg = rgMaxScs.Where(p => p.Value >= 2).ToList();
-                        for (int j = 0; j < rg.Count; j++)
-                        {
-                            int nPlotIdx = plotsScs.Find(rg[j].Key);
-                            if (nPlotIdx >= 0)
-                                plotsScs[nPlotIdx].Active = true;
-                        }
-                    }
-
-                    rgSnn.Add(dtEnd, new Tuple<Blob<T>, PlotCollection>(blobSnn, plotsSnn1));
-                    rgScs.Add(dtEnd, new Tuple<Blob<T>, PlotCollection>(blobScs, plotsScs1));
+                    save(strResultPath, rgSnn, "nn");
+                    save(strResultPath, rgScs, "cs");
                 }
+                else
+                {
+                    foreach (KeyValuePair<DateTime, Tuple<Blob<T>, PlotCollection>> kv in rgSnn)
+                    {
+                        int nIdx1 = plotsSnn.Find(kv.Key, 0);
+                        DateTime dtEnd1 = (DateTime)plotsSnn[nIdx1].Tag;
+                        DateTime dtStart1 = (DateTime)plotsSnn[nIdx1 - nWindowSize].Tag;
 
-                save(strResultPath, rgSnn, "nn");
-                save(strResultPath, rgScs, "cs");
+                        int nMaxIdxSnn = -1;
+                        int? nIdxSnn = getThreshold(kv.Value.Item1, dfThresholdSnn, out nMaxIdxSnn);
+                        int nIdx = plotsSnn.Find(kv.Key, 0);
+                        int nIdxCp = nIdx - nWindowSize;
+
+                        if (nIdxSnn.HasValue)
+                        {
+                            nIdxCp += nIdxSnn.Value;
+                            plotsSnn[nIdxCp-1].Active = true;
+                        }
+                    }
+
+                    foreach (KeyValuePair<DateTime, Tuple<Blob<T>, PlotCollection>> kv in rgScs)
+                    {
+                        int nIdx1 = plotsSnn.Find(kv.Key, 0);
+                        DateTime dtEnd1 = (DateTime)plotsSnn[nIdx1].Tag;
+                        DateTime dtStart1 = (DateTime)plotsSnn[nIdx1 - nWindowSize].Tag;
+
+                        int nMaxIdxScs = -1;
+                        int? nIdxScs = getThreshold(kv.Value.Item1, dfThresholdScs, out nMaxIdxScs);
+                        int nIdx = plotsScs.Find(kv.Key, 0);
+                        int nIdxCp = nIdx - nWindowSize;
+
+                        if (nIdxScs.HasValue)
+                        {
+                            nIdxCp += nIdxScs.Value;
+                            plotsScs[nIdxCp-1].Active = true;
+                        }
+                    }
+                }
 
                 PlotCollectionSet set = new PlotCollectionSet() { plots, plotsSnn, plotsScs };
                 Image img = SimpleGraphingControl.QuickRenderEx(set, cfg, 2000, 800, false, ConfigurationAxis.VALUE_RESOLUTION.DAY, true, null, true);
@@ -557,6 +584,39 @@ namespace MyCaffe.test
                     sw.WriteLine(sb.ToString());
                 }
             }
+        }
+
+        private Dictionary<DateTime, Tuple<Blob<T>, PlotCollection>> load(string strPath, string strTag, CudaDnn<T> cuda, Log log)
+        {
+            Dictionary<DateTime, Tuple<Blob<T>, PlotCollection>> rg = new Dictionary<DateTime, Tuple<Blob<T>, PlotCollection>>();
+            string strFile = strPath + strTag + ".csv";
+
+            if (File.Exists(strFile))
+            {
+                using (StreamReader sr = new StreamReader(strFile))
+                {
+                    while (!sr.EndOfStream)
+                    {
+                        string strLine = sr.ReadLine();
+                        string[] rgstr = strLine.Split(',');
+                        DateTime dt = DateTime.Parse(rgstr[0]);
+                        float[] rgData = new float[rgstr.Length - 1];
+
+                        for (int i = 1; i < rgstr.Length; i++)
+                        {
+                            rgData[i - 1] = float.Parse(rgstr[i]);
+                        }
+
+                        Blob<T> blob = new Blob<T>(cuda, log);
+                        blob.Reshape(rgData.Length, 1, 1, 1);
+                        blob.mutable_cpu_data = convert(rgData);
+                        PlotCollection plots = createPlots(blob);
+                        rg.Add(dt, new Tuple<Blob<T>, PlotCollection>(blob, plots));
+                    }
+                }
+            }
+
+            return rg;
         }
 
         private void cleanup(Dictionary<DateTime, Tuple<Blob<T>, PlotCollection>> blobs)
