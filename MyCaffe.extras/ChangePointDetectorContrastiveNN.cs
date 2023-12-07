@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using MyCaffe.solvers;
 using System.Diagnostics;
 
-///WORK IN PROGRESS
 namespace MyCaffe.extras
 {
     /// <summary>
