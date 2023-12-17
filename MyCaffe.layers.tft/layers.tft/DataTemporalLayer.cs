@@ -124,9 +124,9 @@ namespace MyCaffe.layers.tft
                 if (m_param.data_temporal_param.source_type == DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE)
                     m_data = new RawFileData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical, m_param.data_temporal_param.output_time, m_param.data_temporal_param.output_mask, m_param.data_temporal_param.max_load_percent, m_param.data_temporal_param.drip_refresh_rate_in_sec, m_param.data_temporal_param.chunk_count);
                 else if (m_param.data_temporal_param.source_type == DataTemporalParameter.SOURCE_TYPE.SQL_DB)
-                    m_data = new RawSqlData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical, m_param.data_temporal_param.output_time, m_param.data_temporal_param.output_mask, m_db, m_log, m_param.data_temporal_param.max_load_percent, m_param.data_temporal_param.drip_refresh_rate_in_sec, m_param.data_temporal_param.chunk_count);
+                    m_data = new RawSqlData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical, m_param.data_temporal_param.output_time, m_param.data_temporal_param.output_mask, m_db, m_log, m_param.data_temporal_param.max_load_percent, m_param.data_temporal_param.drip_refresh_rate_in_sec, m_param.data_temporal_param.chunk_count, m_param.data_temporal_param.target_source);
                 else if (m_param.data_temporal_param.source_type == DataTemporalParameter.SOURCE_TYPE.DIRECT)
-                    m_data = new RawDirectData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical, m_param.data_temporal_param.output_time, m_param.data_temporal_param.output_mask, m_db, m_log);
+                    m_data = new RawDirectData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical, m_param.data_temporal_param.output_time, m_param.data_temporal_param.output_mask, m_db, m_log, m_param.data_temporal_param.target_source);
                 else
                     throw new Exception("Unknown source type: " + m_param.data_temporal_param.source_type.ToString());
             }
@@ -510,6 +510,10 @@ namespace MyCaffe.layers.tft
         /// Specifies the batch performance set used to select the worst cases.
         /// </summary>
         protected BatchPerfSet m_batchPerfSet = null;
+        /// <summary>
+        /// Specifies the target source of FUTURE (default) or HISTORICAL.
+        /// </summary>
+        protected DataTemporalParameter.TARGET_SOURCE m_targetSrc = DataTemporalParameter.TARGET_SOURCE.FUTURE;
         private int m_nLastBatchSize = 0;
 
         /// <summary>
@@ -521,10 +525,12 @@ namespace MyCaffe.layers.tft
         /// <param name="bOutputMask">Specifies to output the mask (all 1's) matching each item in a separate blob.</param>
         /// <param name="db">Specifies the external database.</param>
         /// <param name="log">Specifies the output log.</param>
-        public RawDirectData(uint? nSeed, bool bOutputTargetHistorical, bool bOutputTime, bool bOutputMask, IXTemporalDatabaseBase db, Log log) : base(nSeed, bOutputTargetHistorical, bOutputTime, bOutputMask)
+        /// <param name="targetSrc">Specifies the target source of FUTURE (default) or HISTORICAL.</param>
+        public RawDirectData(uint? nSeed, bool bOutputTargetHistorical, bool bOutputTime, bool bOutputMask, IXTemporalDatabaseBase db, Log log, DataTemporalParameter.TARGET_SOURCE targetSrc) : base(nSeed, bOutputTargetHistorical, bOutputTime, bOutputMask)
         {
             m_db = db;
             m_log = log;
+            m_targetSrc = targetSrc;
         }
 
         /// <summary>
@@ -672,7 +678,7 @@ namespace MyCaffe.layers.tft
                 SimpleTemporalDatum sdHistCat = rgData[3];
                 SimpleTemporalDatum sdFutureNum = rgData[4];
                 SimpleTemporalDatum sdFutureCat = rgData[5];
-                SimpleTemporalDatum sdTarget = rgData[6];
+                SimpleTemporalDatum sdTarget = (m_targetSrc == DataTemporalParameter.TARGET_SOURCE.HISTORICAL) ? rgData[7] : rgData[6];
                 SimpleTemporalDatum sdTargetHist = null;
                 SimpleTemporalDatum sdTime = null;
                 SimpleTemporalDatum sdMask = null;
@@ -889,7 +895,7 @@ namespace MyCaffe.layers.tft
                     return new int[] { m_nBatchSize, m_nFutureSteps, nKnownNumCount, 1 };
 
                 case Data<T>.OUTPUT_TYPE.TARGET:
-                    return new int[] { m_nBatchSize, m_nFutureSteps, 1, 1 };
+                    return new int[] { m_nBatchSize, (m_targetSrc == DataTemporalParameter.TARGET_SOURCE.HISTORICAL) ? m_nHistoricalSteps : m_nFutureSteps, 1, 1 };
             }
 
             return null;
@@ -919,11 +925,13 @@ namespace MyCaffe.layers.tft
         /// <param name="nDripRefreshRateInSec">Specifies how often in seconds to refresh the data.</param>
         /// <param name="dfPctMaxLoad">Specifies the maximum percentage to load into memory.</param>
         /// <param name="nChunkCount">Specifies the number of chunks (blocks) to refresh.</param>
-        public RawSqlData(uint? nSeed, bool bOutputTargetHistorical, bool bOutputTime, bool bOutputMask, IXTemporalDatabaseBase db, Log log, double dfPctMaxLoad, int nDripRefreshRateInSec, uint nChunkCount) : base(nSeed, bOutputTargetHistorical, bOutputTime, bOutputMask, db, log)
+        /// <param name="targetSrc">Specifies the target source of FUTURE (default) or HISTORICAL.</param>
+        public RawSqlData(uint? nSeed, bool bOutputTargetHistorical, bool bOutputTime, bool bOutputMask, IXTemporalDatabaseBase db, Log log, double dfPctMaxLoad, int nDripRefreshRateInSec, uint nChunkCount, DataTemporalParameter.TARGET_SOURCE targetSrc) : base(nSeed, bOutputTargetHistorical, bOutputTime, bOutputMask, db, log, targetSrc)
         {
             m_nDropRefreshReateInSec = nDripRefreshRateInSec;
             m_dfPctMaxLoad = dfPctMaxLoad;
             m_nChunkCount = nChunkCount;
+            m_targetSrc = targetSrc;
         }
 
         /// <summary>
