@@ -282,22 +282,45 @@ namespace MyCaffe.layers.tft
         private void generate_mask(Blob<T> mask)
         {
             m_rgShape.Clear();
-            m_rgShape.Add(m_nNumFut);
-            m_rgShape.Add(m_nNumFut + m_nNumHist);
-            mask.Reshape(m_rgShape);
+            float[] rgData = null;
 
-            int nRow = m_nNumFut + m_nNumHist;
-            int nOutSeqLen = m_nNumFut; //- m_nTargetWindowStartIdx;  not used
-            float[] rgData = new float[mask.count()];
-
-            for (int i = 0; i < m_nNumFut; i++)
+            if (m_bDecoderOnly)
             {
-                for (int j = 0; j < m_nNumHist + nOutSeqLen; j++)
-                {
-                    int nIdx = i * nRow + j;
+                m_rgShape.Add(m_nNumHist);
+                m_rgShape.Add(m_nNumHist);
+                mask.Reshape(m_rgShape);
+                rgData = new float[mask.count()];
 
-                    if (j > m_nNumHist && j-m_nNumHist > i)
-                        rgData[nIdx] = 1;
+                for (int i = 0; i < m_nNumHist; i++)
+                {
+                    for (int j = 0; j < m_nNumHist; j++)
+                    {
+                        int nIdx = i * m_nNumHist + j;
+
+                        if (j > i)
+                            rgData[nIdx] = 1;
+                    }
+                }
+            }
+            else
+            {
+                m_rgShape.Add(m_nNumFut);
+                m_rgShape.Add(m_nNumFut + m_nNumHist);
+                mask.Reshape(m_rgShape);
+                rgData = new float[mask.count()];
+
+                int nRow = m_nNumFut + m_nNumHist;
+                int nOutSeqLen = m_nNumFut; //- m_nTargetWindowStartIdx;  not used
+
+                for (int i = 0; i < m_nNumFut; i++)
+                {
+                    for (int j = 0; j < m_nNumHist + nOutSeqLen; j++)
+                    {
+                        int nIdx = i * nRow + j;
+
+                        if (j > m_nNumHist && j - m_nNumHist > i)
+                            rgData[nIdx] = 1;
+                    }
                 }
             }
 
@@ -328,15 +351,18 @@ namespace MyCaffe.layers.tft
             m_nNumHist = (int)m_param.multihead_attention_interp_param.num_historical_steps;
             m_log.CHECK_EQ(m_nNumFut + m_nNumHist, colBottom[0].channels, "The number of future + historical steps must equal the bottom(0).channels.");
 
+            // Run as decoder only if num_fut is zero.
             if (m_nNumFut == 0)
             {
-                m_nNumFut = m_nNumHist;
                 m_bDecoderOnly = true;
+                m_nBlocks = m_nNumHist;
             }
-
-            m_log.CHECK_GT(m_nNumHist, 0, "The number of historical steps must be greater than zero.");
-            m_log.CHECK_EQ(m_nNumHist % m_nNumFut, 0, "The historical steps must be a multiple of the future steps!  For example, historical steps = 90 and future steps = 30.");
-            m_nBlocks = (m_nNumHist + m_nNumFut) / m_nNumFut;
+            else
+            {
+                m_log.CHECK_GT(m_nNumHist, 0, "The number of historical steps must be greater than zero.");
+                m_log.CHECK_EQ(m_nNumHist % m_nNumFut, 0, "The historical steps must be a multiple of the future steps!  For example, historical steps = 90 and future steps = 30.");
+                m_nBlocks = (m_nNumHist + m_nNumFut) / m_nNumFut;
+            }
 
             if (colBottom.Count == 1)
                 generate_mask(m_blobMask);
@@ -361,7 +387,7 @@ namespace MyCaffe.layers.tft
                 {
                     m_rgShape.Clear();
                     m_rgShape.Add(colBottom[0].num);
-                    m_rgShape.Add(m_nNumFut);
+                    m_rgShape.Add((m_bDecoderOnly) ? m_nNumHist : m_nNumFut);
                     m_rgShape.Add(colBottom[0].count(2));
                     m_blobQ.Reshape(m_rgShape);
                 }
@@ -539,7 +565,7 @@ namespace MyCaffe.layers.tft
             {
                 m_rgShape.Clear();
                 m_rgShape.Add(colBottom[0].num);
-                m_rgShape.Add(m_nNumFut);
+                m_rgShape.Add((m_bDecoderOnly) ? m_nNumHist : m_nNumFut);
                 m_rgShape.Add(colBottom[0].count(2));
                 m_blobQ.Reshape(m_rgShape);
             }
