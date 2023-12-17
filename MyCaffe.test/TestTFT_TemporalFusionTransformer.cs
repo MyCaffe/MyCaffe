@@ -190,7 +190,7 @@ namespace MyCaffe.test
                 data.data_temporal_param.num_future_steps = (uint)nNumFutureSteps;
                 data.data_temporal_param.source = strSrc;
                 data.data_temporal_param.source_type = DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE;
-                data.data_temporal_param.shuffle_data = false;
+                data.data_temporal_param.shuffle_item_data = false;
                 data.data_temporal_param.seed = 1704;
                 data.include.Add(new NetStateRule(Phase.TRAIN));
                 data.top.Add("x_numeric_static");
@@ -208,7 +208,7 @@ namespace MyCaffe.test
                 data.data_temporal_param.num_future_steps = (uint)nNumFutureSteps;
                 data.data_temporal_param.source = strSrc;
                 data.data_temporal_param.source_type = DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE;
-                data.data_temporal_param.shuffle_data = false;
+                data.data_temporal_param.shuffle_item_data = false;
                 data.data_temporal_param.seed = 1704;
                 data.include.Add(new NetStateRule(Phase.TEST));
                 data.top.Add("x_numeric_static");
@@ -226,7 +226,7 @@ namespace MyCaffe.test
                 data.data_temporal_param.num_future_steps = (uint)nNumFutureSteps;
                 data.data_temporal_param.source = strSrc;
                 data.data_temporal_param.source_type = DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE;
-                data.data_temporal_param.shuffle_data = false;
+                data.data_temporal_param.shuffle_item_data = false;
                 data.data_temporal_param.seed = 1704;
                 data.include.Add(new NetStateRule(Phase.RUN));
                 data.top.Add("x_numeric_static");

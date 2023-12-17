@@ -823,7 +823,7 @@ namespace MyCaffe.test
                 data.data_temporal_param.batch_size = (uint)nBatchSize;
                 data.data_temporal_param.num_historical_steps = (uint)nInputSize;
                 data.data_temporal_param.num_future_steps = (uint)nOutputSize;
-                data.data_temporal_param.shuffle_data = true;
+                data.data_temporal_param.shuffle_item_data = true;
                 data.data_temporal_param.source_type = DataTemporalParameter.SOURCE_TYPE.DIRECT;
                 data.data_temporal_param.source = strDataSource;
                 data.data_temporal_param.enable_debug_output = false;
@@ -847,7 +847,7 @@ namespace MyCaffe.test
                 data.data_temporal_param.batch_size = (uint)nBatchSize;
                 data.data_temporal_param.num_historical_steps = (uint)nInputSize;
                 data.data_temporal_param.num_future_steps = (uint)nOutputSize;
-                data.data_temporal_param.shuffle_data = true;
+                data.data_temporal_param.shuffle_item_data = true;
                 data.data_temporal_param.source_type = DataTemporalParameter.SOURCE_TYPE.DIRECT;
                 data.data_temporal_param.source = strDataSource;
                 data.data_temporal_param.enable_debug_output = false;

@@ -493,7 +493,7 @@ namespace MyCaffe.test
             data.data_temporal_param.num_future_steps = (uint)nNumFuture;
             data.data_temporal_param.source = strSrc;
             data.data_temporal_param.source_type = srcType;
-            data.data_temporal_param.shuffle_data = false;
+            data.data_temporal_param.shuffle_item_data = false;
             data.data_temporal_param.chunk_count = 1024;
             data.data_temporal_param.drip_refresh_rate_in_sec = 0;
             data.data_temporal_param.max_load_percent = 1.0;
@@ -1090,7 +1090,7 @@ namespace MyCaffe.test
             p.data_temporal_param.output_target_historical = true;
             p.data_temporal_param.num_future_steps = 30;
             p.data_temporal_param.num_historical_steps = 80;
-            p.data_temporal_param.shuffle_data = false;
+            p.data_temporal_param.shuffle_item_data = false;
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent(), db);
 

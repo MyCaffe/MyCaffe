@@ -28,7 +28,8 @@ namespace MyCaffe.param.tft
         uint m_nChunkCount = 1024;
         int m_nDripRefreshRate = 0;
         uint? m_nSeed = null;
-        bool m_bShuffleData = true;
+        bool m_bShuffleItemData = true;
+        bool m_bShuffleValueData = true;
         bool m_bOutputTargetHistorical = false;
         bool m_bOutputTime = false;
         bool m_bOutputMask = false;
@@ -165,13 +166,23 @@ namespace MyCaffe.param.tft
         }
 
         /// <summary>
-        /// Specifies to randomly select from the data (default = true).
+        /// Specifies to randomly select from the item data (default = true).
         /// </summary>
-        [Description("Specifies to randomly select from the data (default = true).")]
-        public bool shuffle_data
+        [Description("Specifies to randomly select from the item data (default = true).")]
+        public bool shuffle_item_data
         {
-            get { return m_bShuffleData; }
-            set { m_bShuffleData = value; }
+            get { return m_bShuffleItemData; }
+            set { m_bShuffleItemData = value; }
+        }
+
+        /// <summary>
+        /// Specifies to randomly select from the value data (default = true).
+        /// </summary>
+        [Description("Specifies to randomly select from the value data (default = true).")]
+        public bool shuffle_value_data
+        {
+            get { return m_bShuffleValueData; }
+            set { m_bShuffleValueData = value; }
         }
 
         /// <summary>
@@ -298,7 +309,8 @@ namespace MyCaffe.param.tft
             m_nDripRefreshRate = p.drip_refresh_rate_in_sec;
             m_nSeed = p.seed;
             m_nChunkCount = p.chunk_count;
-            m_bShuffleData = p.shuffle_data;
+            m_bShuffleItemData = p.shuffle_item_data;
+            m_bShuffleValueData = p.shuffle_value_data;
             m_forcedPhase = p.forced_phase;
             m_bOutputTargetHistorical = p.output_target_historical;
 
@@ -336,7 +348,8 @@ namespace MyCaffe.param.tft
             rgChildren.Add("max_load_percent", max_load_percent.ToString());
             rgChildren.Add("drip_refresh_rate_in_sec", drip_refresh_rate_in_sec.ToString());
             rgChildren.Add("chunk_count", chunk_count.ToString());
-            rgChildren.Add("shuffle_data", shuffle_data.ToString());
+            rgChildren.Add("shuffle_item_data", shuffle_item_data.ToString());
+            rgChildren.Add("shuffle_value_data", shuffle_value_data.ToString());
             rgChildren.Add("output_target_historical", output_target_historical.ToString());
 
             rgChildren.Add("output_time", output_time.ToString());
@@ -413,8 +426,11 @@ namespace MyCaffe.param.tft
             if ((strVal = rp.FindValue("seed")) != null)
                 p.seed = uint.Parse(strVal);
 
-            if ((strVal = rp.FindValue("shuffle_data")) != null)
-                p.shuffle_data = bool.Parse(strVal);
+            if ((strVal = rp.FindValue("shuffle_item_data")) != null)
+                p.shuffle_item_data = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("shuffle_value_data")) != null)
+                p.shuffle_value_data = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("forced_phase")) != null)
             {
