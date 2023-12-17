@@ -58,6 +58,12 @@ namespace MyCaffe.layers.tft
                 case LayerParameter.LayerType.RESHAPE_TEMPORAL:
                     return new ReshapeTemporalLayer<double>(cuda, log, p);
 
+                case LayerParameter.LayerType.SHARPE_ACCURACY:
+                    return new SharpeAccuracyLayer<double>(cuda, log, p);
+
+                case LayerParameter.LayerType.SHARPE_LOSS:
+                    return new SharpeLossLayer<double>(cuda, log, p);
+
                 case LayerParameter.LayerType.VARSELNET:
                     return new VarSetNetLayer<double>(cuda, log, p);
 
@@ -111,6 +117,12 @@ namespace MyCaffe.layers.tft
 
                 case LayerParameter.LayerType.RESHAPE_TEMPORAL:
                     return new ReshapeTemporalLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.SHARPE_ACCURACY:
+                    return new SharpeAccuracyLayer<float>(cuda, log, p);
+
+                case LayerParameter.LayerType.SHARPE_LOSS:
+                    return new SharpeLossLayer<float>(cuda, log, p);
 
                 case LayerParameter.LayerType.VARSELNET:
                     return new VarSetNetLayer<float>(cuda, log, p);
