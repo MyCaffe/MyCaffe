@@ -38,6 +38,7 @@ namespace MyCaffe.layers.tft
         int m_nNumFut = 0;
         int m_nNumHist = 0;
         int m_nBlocks = 0;
+        bool m_bDecoderOnly = false;
         double m_dfScale;
         Layer<T> m_ipQLayer;
         Layer<T> m_ipKLayer;
@@ -323,10 +324,17 @@ namespace MyCaffe.layers.tft
             m_log.CHECK(colBottom.Count == 1 || colBottom.Count == 4, "The bottom count must be 1 (input ->q,k,v, mask generated) or 4 for q,k,q,mask");
 
             m_nNumFut = (int)m_param.multihead_attention_interp_param.num_future_steps;
-            m_log.CHECK_GT(m_nNumFut, 0, "The number of future steps must be greater than zero.");
+            m_log.CHECK_GE(m_nNumFut, 0, "The number of future steps must be greater than or equal to zero.");
             m_nNumHist = (int)m_param.multihead_attention_interp_param.num_historical_steps;
-            m_log.CHECK_GT(m_nNumHist, 0, "The number of historical steps must be greater than zero.");
             m_log.CHECK_EQ(m_nNumFut + m_nNumHist, colBottom[0].channels, "The number of future + historical steps must equal the bottom(0).channels.");
+
+            if (m_nNumFut == 0)
+            {
+                m_nNumFut = m_nNumHist;
+                m_bDecoderOnly = true;
+            }
+
+            m_log.CHECK_GT(m_nNumHist, 0, "The number of historical steps must be greater than zero.");
             m_log.CHECK_EQ(m_nNumHist % m_nNumFut, 0, "The historical steps must be a multiple of the future steps!  For example, historical steps = 90 and future steps = 30.");
             m_nBlocks = (m_nNumHist + m_nNumFut) / m_nNumFut;
 
