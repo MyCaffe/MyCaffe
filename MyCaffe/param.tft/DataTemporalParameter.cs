@@ -34,6 +34,22 @@ namespace MyCaffe.param.tft
         bool m_bOutputMask = false;
         bool m_bEnableDebugOutput = false;
         string m_strDebugOutputPath = null;
+        TARGET_SOURCE m_targetSource = TARGET_SOURCE.FUTURE;
+
+        /// <summary>
+        /// Defines the target source.
+        /// </summary>
+        public enum TARGET_SOURCE
+        {
+            /// <summary>
+            /// Specifies to use the future data as the target (default).
+            /// </summary>
+            FUTURE,
+            /// <summary>
+            /// Specifies to use the historical data as the target.
+            /// </summary>
+            HISTORICAL
+        }
 
         /// <summary>
         /// Defines the type of source data.
@@ -73,6 +89,16 @@ namespace MyCaffe.param.tft
         /** @copydoc LayerParameterBase */
         public DataTemporalParameter()
         {
+        }
+
+        /// <summary>
+        /// Specifies the target source (default = TARGET_SOURCE.FUTURE).   
+        /// </summary>
+        [Description("Specifies the target source (default = TARGET_SOURCE.FUTURE).")]
+        public TARGET_SOURCE target_source
+        {
+            get { return m_targetSource; }
+            set { m_targetSource = value; }
         }
 
         /// <summary>
@@ -280,6 +306,7 @@ namespace MyCaffe.param.tft
             m_bOutputMask = p.output_mask;
             m_bEnableDebugOutput = p.enable_debug_output;
             m_strDebugOutputPath = p.debug_output_path;
+            m_targetSource = p.target_source;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -316,6 +343,7 @@ namespace MyCaffe.param.tft
             rgChildren.Add("output_mask", output_mask.ToString());
             rgChildren.Add("enable_debug_output", enable_debug_output.ToString());
             rgChildren.Add("debug_output_path", debug_output_path);
+            rgChildren.Add("target_source", target_source.ToString());
 
             if (seed.HasValue)
                 rgChildren.Add("seed", seed.Value.ToString());
@@ -352,6 +380,16 @@ namespace MyCaffe.param.tft
                     p.source_type = SOURCE_TYPE.DIRECT;
                 else
                     throw new Exception("Unknown source_type '" + strVal + "'!");
+            }
+
+            if ((strVal = rp.FindValue("target_source")) != null)
+            {
+                if (strVal == TARGET_SOURCE.FUTURE.ToString())
+                    p.target_source = TARGET_SOURCE.FUTURE;
+                else if (strVal == TARGET_SOURCE.HISTORICAL.ToString())
+                    p.target_source = TARGET_SOURCE.HISTORICAL;
+                else
+                    throw new Exception("Unknown target_source '" + strVal + "'!");
             }
 
             if ((strVal = rp.FindValue("num_historical_steps")) != null)

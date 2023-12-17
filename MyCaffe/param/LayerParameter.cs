@@ -533,6 +533,14 @@ namespace MyCaffe.param
             /// </summary>
             SMOOTHL1_LOSS,
             /// <summary>
+            /// Initializes a parameter for the SharpeAccuracyLayer.
+            /// </summary>
+            SHARPE_ACCURACY,
+            /// <summary>
+            /// Initializes a parameter for the SharpeLossLayer.
+            /// </summary>
+            SHARPE_LOSS,
+            /// <summary>
             /// Initializes a parameter for the SPPLayer.
             /// </summary>
             SPP,
@@ -1705,6 +1713,20 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     break;
 
+                case LayerType.SHARPE_ACCURACY:
+                    expected_bottom.Add("pred_pos");
+                    expected_bottom.Add("trg_ret");
+                    expected_top.Add("sharpe");
+                    m_rgLayerParameters[lt] = new SharpeAccuracyParameter();
+                    break;
+
+                case LayerType.SHARPE_LOSS:
+                    expected_bottom.Add("pred_pos");
+                    expected_bottom.Add("trg_ret");
+                    expected_top.Add("loss");
+                    m_rgLayerParameters[LayerType.LOSS] = new LossParameter();
+                    break;
+
                 case LayerType.SLICE:
                     expected_bottom.Add("input");
                     expected_top.Add("sl1");
@@ -2828,6 +2850,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.SHARPE_ACCURACY
+        /// </summary>
+        public SharpeAccuracyParameter sharpe_accuracy_param
+        {
+            get { return (SharpeAccuracyParameter)m_rgLayerParameters[LayerType.SHARPE_ACCURACY]; }
+            set { m_rgLayerParameters[LayerType.SHARPE_ACCURACY] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.SOFTMAX
         /// </summary>
         public SoftmaxParameter softmax_param
@@ -3483,6 +3514,12 @@ namespace MyCaffe.param
                 case LayerType.SLICE:
                     return "Slice";
 
+                case LayerType.SHARPE_ACCURACY:
+                    return "SharpeAccuracy";
+
+                case LayerType.SHARPE_LOSS:
+                    return "SharpeLoss";
+
                 case LayerType.SOFTMAX:
                     return "Softmax";
 
@@ -3722,6 +3759,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(reshape_temporal_param, "reshape_temporal_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(quantile_loss_param, "quantile_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(quantile_accuracy_param, "quantile_accuracy_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(sharpe_accuracy_param, "sharpe_accuracy_param"));
 
             // PTST Layers
             rgParam.Add(new KeyValuePair<BaseParameter, string>(revin_param, "revin_param"));
@@ -4128,6 +4166,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("quantile_accuracy_param")) != null)
                 p.quantile_accuracy_param = QuantileAccuracyParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("sharpe_accuracy_param")) != null)
+                p.sharpe_accuracy_param = SharpeAccuracyParameter.FromProto(rpp);
 
             // PTST Layers
             if ((rpp = rp.FindChild("revin_param")) != null)
@@ -4593,6 +4634,14 @@ namespace MyCaffe.param
 
                 case "slice":
                     return LayerType.SLICE;
+
+                case "sharpeaccuracy":
+                case "sharpe_accuracy":
+                    return LayerType.SHARPE_ACCURACY;
+
+                case "sharpeloss":
+                case "sharpe_loss":
+                    return LayerType.SHARPE_LOSS;
 
                 case "softmax":
                     return LayerType.SOFTMAX;
