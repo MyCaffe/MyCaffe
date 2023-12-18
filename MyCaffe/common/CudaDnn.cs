@@ -869,7 +869,7 @@ namespace MyCaffe.common
 
         void channel_sum(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, bool bSumAcrossChannels = true, DIR dir = DIR.FWD, int nChanalesY = -1);
         void channel_mean(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, int nXOff = 0);
-        void channel_stdev(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, long hZ, float fEps);
+        void channel_stdev(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, long hZ, float fEps, bool bUnbiased);
         void channel_copy(int nCount, int nOuterNum, int nChannels, int nBlocks, int nInnerNum, int nOffset, long hX, long hY, DIR dir);
         void channel_copyall(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
         void channel_duplicate(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
@@ -8271,12 +8271,13 @@ namespace MyCaffe.common
         /// <param name="hY">Specifies a handle to the vector Y in GPU memory. This vector should be of shape NxCx1x1.</param>
         /// <param name="hZ">Specifies a handle to the vector Y in GPU memory. This vector should be of shape NxCx1x1</param>
         /// <param name="fEps">Specifies the small value added before the sqrt to avoid Nan.</param>
-        public void channel_stdev(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, long hZ, float fEps)
+        /// <param name="bUnbiased">Specifies to calculated the unbiased standard deviation.</param>
+        public void channel_stdev(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, long hZ, float fEps, bool bUnbiased)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_STDEV, m_param.AsDouble(fEps), m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, hZ));
+                m_cuda.RunDoubleEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_STDEV, m_param.AsDouble(fEps), m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, hZ, (bUnbiased) ? 1 : 0));
             else
-                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_STDEV, m_param.AsFloat(fEps), m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, hZ));
+                m_cuda.RunFloatEx2((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_STDEV, m_param.AsFloat(fEps), m_param.AsLong(nCount, nOuterNum, nChannels, nInnerNum, hX, hY, hZ, (bUnbiased) ? 1 : 0));
         }
 
         /// <summary>

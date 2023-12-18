@@ -6344,7 +6344,7 @@ template long Math<double>::channel_mean(int n, int nOutNum, int nChannels, int 
 template long Math<float>::channel_mean(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nXOff);
 
 template <typename T>
-__global__ void channel_stdev_kernel(const int num, const int channels, const int spatial_dim, T fEps, const T* x, const T* z, T* y)
+__global__ void channel_stdev_kernel(const int num, const int channels, const int spatial_dim, T fEps, int nBias, const T* x, const T* z, T* y)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * channels && i >= 0; i += blockDim.x * gridDim.x)
 	{
@@ -6359,12 +6359,13 @@ __global__ void channel_stdev_kernel(const int num, const int channels, const in
 			dfSum += val;
 		}
 
-		y[i] = (T)sqrt(fEps + dfSum / (double)spatial_dim);
+		double dfVar = dfSum / (double)(spatial_dim - nBias);
+		y[i] = (T)sqrt(fEps + dfVar);
 	}
 }
 
 template <typename T>
-long Math<T>::channel_stdev(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, long hZ, T fEps)
+long Math<T>::channel_stdev(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, long hZ, T fEps, bool bUnbiased)
 {
 	LONG lErr;
 	MemoryItem* pX;
@@ -6385,13 +6386,14 @@ long Math<T>::channel_stdev(int n, int nOutNum, int nChannels, int nInNum, long 
 	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
 
-	channel_stdev_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, fEps, (T*)pX->Data(), (T*)pZ->Data(), (T*)pY->Data());
+	int nBias = (bUnbiased) ? 1 : 0;
+	channel_stdev_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (nOutNum, nChannels, nInNum, fEps, nBias, (T*)pX->Data(), (T*)pZ->Data(), (T*)pY->Data());
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::channel_stdev(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, long hZ, double fEps);
-template long Math<float>::channel_stdev(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, long hZ, float fEps);
+template long Math<double>::channel_stdev(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, long hZ, double fEps, bool bUnbiased);
+template long Math<float>::channel_stdev(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, long hZ, float fEps, bool bUnbiased);
 
 
 template <typename T>
