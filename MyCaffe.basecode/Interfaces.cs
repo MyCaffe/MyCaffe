@@ -325,6 +325,30 @@ namespace MyCaffe.basecode
     }
 
     /// <summary>
+    /// Specifies the the items are to be selected from the database when using 'NONE' as the selection for both the item and value.
+    /// </summary>
+    [Serializable]
+    [DataContract]
+    public enum DB_INDEX_ORDER
+    {
+        /// <summary>
+        /// Specifies to use a row-major ordering where indexes along each row are indexed until the end of the row is reached, then the next row is indexed.
+        /// </summary>
+        [EnumMember]
+        ROW_MAJOR,
+        /// <summary>
+        /// Specifies to use a column-major ordering where indexes along each column are indexed until the end of the column is reached, then the next column is indexed.
+        /// </summary>
+        [EnumMember]
+        COL_MAJOR,
+        /// <summary>
+        /// Specifies to use the default ordering (currently ROW_MAJOR).
+        /// </summary>
+        [EnumMember]
+        DEFAULT = ROW_MAJOR
+    }
+
+    /// <summary>
     /// Defines the label selection method.
     /// </summary>
     [Serializable]
@@ -853,6 +877,7 @@ namespace MyCaffe.basecode
         /// <param name="nValueIdx">Specifies the value index override when not null, returns the index used with in the item.</param>
         /// <param name="itemSelectionOverride">Optionally, specifies the item selection method used to select the item (e.g., customer, station, stock symbol)</param>
         /// <param name="valueSelectionOverride">Optionally, specifies the value selection method used to select the index within the temporal data of the selected item.</param>
+        /// <param name="ordering">Optionally, specifies the ordering of item selection (only applies when itemSelectionOverride and valueSelectionOverride are both set to 'NONE').</param>
         /// <param name="bOutputTime">Optionally, output the time data.</param>
         /// <param name="bOutputMask">Optionally, output the mask data.</param>
         /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
@@ -860,7 +885,7 @@ namespace MyCaffe.basecode
         /// <returns>An collection of SimpleTemporalDatum containing the static num, statuc cat, historical num, historical cat, future num, future cat, target and target hist data is returned. 
         /// If one of the value types are not produced, null is filled in the array slot.</returns>
         [OperationContract(IsOneWay = false)]
-        SimpleTemporalDatumCollection QueryTemporalItem(int nQueryIdx, int nSrcId, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD? itemSelectionOverride = null, DB_ITEM_SELECTION_METHOD? valueSelectionOverride = null, bool bOutputTime = false, bool bOutputMask = false, bool bEnableDebug = false, string strDebugPath = null);
+        SimpleTemporalDatumCollection QueryTemporalItem(int nQueryIdx, int nSrcId, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD? itemSelectionOverride = null, DB_ITEM_SELECTION_METHOD? valueSelectionOverride = null, DB_INDEX_ORDER? ordering = null, bool bOutputTime = false, bool bOutputMask = false, bool bEnableDebug = false, string strDebugPath = null);
 
         /// <summary>
         /// Reset the database indexes.

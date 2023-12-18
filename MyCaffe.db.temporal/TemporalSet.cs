@@ -43,6 +43,7 @@ namespace MyCaffe.db.temporal
         bool m_bNormalizeData = false;
         double m_dfLoadPct = 0;
         object m_objSync = new object();
+        List<int> m_rgItemIdx = new List<int>();
 
         /// <summary>
         /// The constructor.
@@ -115,10 +116,11 @@ namespace MyCaffe.db.temporal
         /// <param name="item">Specifies the value item description.</param>
         /// <param name="rgStrm">Specifies the ordered stream descriptors for the item.</param>
         /// <param name="src">Optionally, specifies a source descriptor to update with temporal information.</param>
+        /// <param name="nTargetStreamIdx">Specifies the target stream index.</param>
         /// <returns>The index of the item is returned.</returns>
-        public int AddDirectItemSet(CryptoRandom random, ValueItem item, OrderedValueStreamDescriptorSet rgStrm, SourceDescriptor src = null)
+        public int AddDirectItemSet(CryptoRandom random, ValueItem item, OrderedValueStreamDescriptorSet rgStrm, int nTargetStreamIdx, SourceDescriptor src = null)
         {
-            ItemSet itemSet = new ItemSet(random, m_db, item, rgStrm);
+            ItemSet itemSet = new ItemSet(random, m_db, item, rgStrm, nTargetStreamIdx);
 
             if (src != null)
             {
@@ -243,6 +245,7 @@ namespace MyCaffe.db.temporal
 
                 TemporalDescriptor td = loader.LoadTemporalFromDb(m_src.ID);
                 OrderedValueStreamDescriptorSet rgStrm = td.OrderedValueStreamDescriptors;
+                int nTargetStreamIdx = td.TargetStreamIndex;
                 
                 m_dtStart = td.StartDate;
                 m_dtEnd = td.EndDate;
@@ -271,7 +274,7 @@ namespace MyCaffe.db.temporal
                     // Load one chunk for each item.
                     while (m_rgItems.Count < rgItems.Count && (m_nLoadLimit <= 0 || m_rgItems.Count < m_nLoadLimit))
                     {
-                        ItemSet item = new ItemSet(m_random, m_db, rgItems[nIdx], rgStrm);
+                        ItemSet item = new ItemSet(m_random, m_db, rgItems[nIdx], rgStrm, nTargetStreamIdx);
                         item.Load(out bEOD1);
 
                         lock (m_objSync)
@@ -401,6 +404,7 @@ namespace MyCaffe.db.temporal
         /// <param name="nValueIdx">Specifies the value index override when not null, returns the index used with in the item.</param>
         /// <param name="itemSelectionMethod">Specifies the item index selection method.</param>
         /// <param name="valueSelectionMethod">Specifies the value starting point selection method.</param>
+        /// <param name="ordering">Optionally, specifies the index ordering (only used when the valueSelectionOverride is set to 'NONE'</param>
         /// <param name="nValueStepOffset">Optionally, specifies the value step offset from the previous query (default = 1, this parameter only applies when using non random selection).</param>
         /// <param name="bOutputTime">Optionally, output the time data.</param>
         /// <param name="bOutputMask">Optionally, output the mask data.</param>
@@ -410,9 +414,12 @@ namespace MyCaffe.db.temporal
         /// for a given item at the temporal selection point.</returns>
         /// <remarks>Note, the ordering for historical value streams is: observed, then known.  Future value streams only contiain known value streams.  If a dataset does not have one of the data types noted above, null
         /// is returned in the array slot (for example, if the dataset does not produce static numeric values, the array slot is set to [0] = null.</remarks>
-        public SimpleTemporalDatumCollection GetData(int nQueryIdx, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD itemSelectionMethod, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nValueStepOffset = 1, bool bOutputTime = false, bool bOutputMask = false, bool bEnableDebug = false, string strDebugPath = null)
+        public SimpleTemporalDatumCollection GetData(int nQueryIdx, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD itemSelectionMethod, DB_ITEM_SELECTION_METHOD valueSelectionMethod, DB_INDEX_ORDER? ordering = null, int nValueStepOffset = 1, bool bOutputTime = false, bool bOutputMask = false, bool bEnableDebug = false, string strDebugPath = null)
         {
             SimpleTemporalDatumCollection data = null;
+
+            if (valueSelectionMethod == DB_ITEM_SELECTION_METHOD.NONE && ordering.GetValueOrDefault(DB_INDEX_ORDER.DEFAULT) == DB_INDEX_ORDER.COL_MAJOR)
+                return GetDataColMajor(itemSelectionMethod, ref nItemIdx, ref nValueIdx, nValueStepOffset, bOutputTime, bOutputMask, bEnableDebug, strDebugPath);
 
             lock (m_objSync)
             {
@@ -445,7 +452,6 @@ namespace MyCaffe.db.temporal
                     else
                     {
                         m_nItemIdx++;
-
                         if (m_nItemIdx >= m_rgItems.Count)
                             m_nItemIdx = 0;
                     }
@@ -457,6 +463,64 @@ namespace MyCaffe.db.temporal
             }
 
             return data;
+        }
+
+        /// <summary>
+        /// Get the next data in column major order (e.g., in col 0 - read row 1, row 2, ... row n-1, go to col 1, read row 1, row 2, ... row n-1, etc.)
+        /// </summary>
+        /// <param name="itemSelectionMethod">Specifies the item index selection method.</param>
+        /// <param name="nItemIdx">Returns the item index (row).</param>
+        /// <param name="nValueIdx">Returns the value index (col).</param>
+        /// <param name="nValueStepOffset">Specifies the number of steps to apply to the value index (default = 1)</param>
+        /// <param name="bOutputTime">Specifies to output the time.</param>
+        /// <param name="bOutputMask">Specifies to output the mask.</param>
+        /// <param name="bEnableDebug">Specifies to enable debug output.</param>
+        /// <param name="strDebugPath">Specifies the debug output path.</param>
+        /// <returns>A SimpleTemporalDatumCollection containing the data is returned.</returns>
+        public SimpleTemporalDatumCollection GetDataColMajor(DB_LABEL_SELECTION_METHOD itemSelectionMethod, ref int? nItemIdx, ref int? nValueIdx, int nValueStepOffset, bool bOutputTime, bool bOutputMask, bool bEnableDebug, string strDebugPath)
+        {
+            SimpleTemporalDatumCollection data = null;
+
+            lock (m_objSync)
+            {
+                if (m_rgItemIdx.Count == 0)
+                {
+                    for (int i = 0; i < m_rgItems.Count; i++)
+                    {
+                        m_rgItemIdx.Add(i);
+                    }
+                }
+
+                if (itemSelectionMethod == DB_LABEL_SELECTION_METHOD.RANDOM)
+                {
+                    int nIdx = m_random.Next(m_rgItemIdx.Count);
+                    m_nItemIdx = m_rgItemIdx[nIdx];
+                    m_rgItemIdx.RemoveAt(nIdx);
+                }
+
+                if (nItemIdx.HasValue)
+                    m_nItemIdx = nItemIdx.Value;
+
+                data = m_rgItems[m_nItemIdx].GetData(0, ref nValueIdx, DB_ITEM_SELECTION_METHOD.NONE, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bEnableDebug, strDebugPath);
+                if (data == null)
+                    data = m_rgItems[m_nItemIdx].GetData(0, ref nValueIdx, DB_ITEM_SELECTION_METHOD.NONE, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bEnableDebug, strDebugPath);
+
+                if (data == null)   
+                    return null;
+
+                if (itemSelectionMethod == DB_LABEL_SELECTION_METHOD.NONE)
+                {
+                    m_nItemIdx++;
+                    if (m_nItemIdx >= m_rgItems.Count)
+                    {
+                        m_nItemIdx = 0;
+                    }
+                }
+
+                nItemIdx = m_nItemIdx;
+            }
+
+            return data;    
         }
 
         /// <summary>

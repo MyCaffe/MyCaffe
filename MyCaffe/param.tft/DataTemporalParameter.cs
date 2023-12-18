@@ -30,6 +30,7 @@ namespace MyCaffe.param.tft
         uint? m_nSeed = null;
         bool m_bShuffleItemData = true;
         bool m_bShuffleValueData = true;
+        bool m_bEnableColumnMajorOrdering = false;
         bool m_bOutputTargetHistorical = false;
         bool m_bOutputTime = false;
         bool m_bOutputMask = false;
@@ -186,6 +187,16 @@ namespace MyCaffe.param.tft
         }
 
         /// <summary>
+        /// Specifies to enable column major ordering (default = false).
+        /// </summary>
+        [Description("Specifies to enable column major ordering (default = false).")]
+        public bool enable_column_major_ordering
+        {
+            get { return m_bEnableColumnMajorOrdering; }
+            set { m_bEnableColumnMajorOrdering = value; }
+        }
+
+        /// <summary>
         /// Specifies the number of items to load per cycle when background loading (default = 1024).
         /// </summary>
         /// <remarks>
@@ -311,6 +322,7 @@ namespace MyCaffe.param.tft
             m_nChunkCount = p.chunk_count;
             m_bShuffleItemData = p.shuffle_item_data;
             m_bShuffleValueData = p.shuffle_value_data;
+            m_bEnableColumnMajorOrdering = p.enable_column_major_ordering;
             m_forcedPhase = p.forced_phase;
             m_bOutputTargetHistorical = p.output_target_historical;
 
@@ -350,6 +362,7 @@ namespace MyCaffe.param.tft
             rgChildren.Add("chunk_count", chunk_count.ToString());
             rgChildren.Add("shuffle_item_data", shuffle_item_data.ToString());
             rgChildren.Add("shuffle_value_data", shuffle_value_data.ToString());
+            rgChildren.Add("enable_column_major_ordering", enable_column_major_ordering.ToString());
             rgChildren.Add("output_target_historical", output_target_historical.ToString());
 
             rgChildren.Add("output_time", output_time.ToString());
@@ -431,6 +444,9 @@ namespace MyCaffe.param.tft
 
             if ((strVal = rp.FindValue("shuffle_value_data")) != null)
                 p.shuffle_value_data = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("enable_column_major_ordering")) != null)
+                p.enable_column_major_ordering = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("forced_phase")) != null)
             {
