@@ -379,7 +379,6 @@ namespace MyCaffe.layers.tft
                 ipQ.inner_product_param.sigma_init = m_param.multihead_attention_interp_param.sigma_init;
                 ipQ.inner_product_param.bias_filler = m_param.multihead_attention_interp_param.bias_filler;
                 ipQ.inner_product_param.weight_filler = m_param.multihead_attention_interp_param.weight_filler;
-                ipQ.inner_product_param.bias_grad_scale = 1000000.0; // helps improve bias gradient accuracy.
 
                 m_ipQLayer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ipQ, m_param), null);
 
@@ -411,7 +410,6 @@ namespace MyCaffe.layers.tft
                 ipK.inner_product_param.sigma_init = m_param.multihead_attention_interp_param.sigma_init;
                 ipK.inner_product_param.bias_filler = m_param.multihead_attention_interp_param.bias_filler;
                 ipK.inner_product_param.weight_filler = m_param.multihead_attention_interp_param.weight_filler;
-                ipK.inner_product_param.bias_grad_scale = 1000000.0; // helps improve bias gradient accuracy.
 
                 m_ipKLayer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ipK, m_param), null);
                 m_blobK.ReshapeLike((colBottom.Count == 1) ? colBottom[0] : colBottom[1]);
