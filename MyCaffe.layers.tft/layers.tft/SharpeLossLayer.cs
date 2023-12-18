@@ -31,11 +31,10 @@ namespace MyCaffe.layers
     {
         List<int> m_rgShape = new List<int>(4);
         Blob<T> m_blobCapturedReturns;
-        Blob<T> m_blobCapturedReturnsSq;
         Blob<T> m_blobMeanCapturedReturns;
-        Blob<T> m_blobMeanCapturedReturnsSq;
-        Blob<T> m_blobSquareMeanCapturedReturns;
-        Blob<T> m_blobStdev;
+        Blob<T> m_blobStdevCapturedReturns;
+        Blob<T> m_blobStdevCapturedReturnsFull;
+        Blob<T> m_blobMeanCapturedReturnsFull;
         Blob<T> m_blobLoss;
 
         /// <summary>
@@ -51,16 +50,14 @@ namespace MyCaffe.layers
 
             m_blobCapturedReturns = new Blob<T>(cuda, log);
             m_blobCapturedReturns.Name = m_param.name + ".captured_returns";
-            m_blobCapturedReturnsSq = new Blob<T>(cuda, log);
-            m_blobCapturedReturnsSq.Name = m_param.name + ".captured_returns_sq";
             m_blobMeanCapturedReturns = new Blob<T>(cuda, log);
             m_blobMeanCapturedReturns.Name = m_param.name + ".mean.captured_returns";
-            m_blobMeanCapturedReturnsSq = new Blob<T>(cuda, log);
-            m_blobMeanCapturedReturnsSq.Name = m_param.name + ".mean.captured_returns_sq";
-            m_blobSquareMeanCapturedReturns = new Blob<T>(cuda, log);
-            m_blobSquareMeanCapturedReturns.Name = m_param.name + ".square.mean.captured_returns";
-            m_blobStdev = new Blob<T>(cuda, log);
-            m_blobStdev.Name = m_param.name + ".stdev";
+            m_blobStdevCapturedReturns = new Blob<T>(cuda, log);
+            m_blobStdevCapturedReturns.Name = m_param.name + ".stdev";
+            m_blobStdevCapturedReturnsFull = new Blob<T>(cuda, log);
+            m_blobStdevCapturedReturnsFull.Name = m_param.name + ".stdev.full";
+            m_blobMeanCapturedReturnsFull = new Blob<T>(cuda, log);
+            m_blobMeanCapturedReturnsFull.Name = m_param.name + ".stdev.full";
             m_blobLoss = new Blob<T>(cuda, log);
             m_blobLoss.Name = m_param.name + ".loss";
         }
@@ -69,15 +66,29 @@ namespace MyCaffe.layers
         protected override void dispose()
         {
             dispose(ref m_blobCapturedReturns);
-            dispose(ref m_blobCapturedReturnsSq);
             dispose(ref m_blobMeanCapturedReturns);
-            dispose(ref m_blobMeanCapturedReturnsSq);
-            dispose(ref m_blobSquareMeanCapturedReturns);
-            dispose(ref m_blobStdev);
+            dispose(ref m_blobStdevCapturedReturns);
+            dispose(ref m_blobStdevCapturedReturnsFull);
+            dispose(ref m_blobMeanCapturedReturnsFull);
             dispose(ref m_blobLoss);
 
             base.dispose();
         }
+
+        /** @copydoc Layer::setup_internal_blobs */
+        protected override void setup_internal_blobs(BlobCollection<T> col)
+        {
+            if (col.Count > 0)
+                return;
+
+            col.Add(m_blobCapturedReturns);
+            col.Add(m_blobMeanCapturedReturns);
+            col.Add(m_blobStdevCapturedReturns);
+            col.Add(m_blobStdevCapturedReturnsFull);
+            col.Add(m_blobMeanCapturedReturnsFull);
+            col.Add(m_blobLoss);
+        }
+
 
         /// <summary>
         /// Unlike most loss layers, in the SharpeLossLayer we can backpropagate
@@ -116,12 +127,11 @@ namespace MyCaffe.layers
             m_nInnerNum = colBottom[0].count(1);
 
             m_blobCapturedReturns.ReshapeLike(colBottom[0]);
-            m_blobCapturedReturnsSq.ReshapeLike(colBottom[0]);
+            m_blobStdevCapturedReturnsFull.ReshapeLike(colBottom[0]);
+            m_blobMeanCapturedReturnsFull.ReshapeLike(colBottom[0]);
 
             m_blobMeanCapturedReturns.Reshape(m_nOuterNum, 1, 1, 1);
-            m_blobMeanCapturedReturnsSq.Reshape(m_nOuterNum, 1, 1, 1);
-            m_blobSquareMeanCapturedReturns.Reshape(m_nOuterNum, 1, 1, 1);
-            m_blobStdev.Reshape(m_nOuterNum, 1, 1, 1);
+            m_blobStdevCapturedReturns.Reshape(m_nOuterNum, 1, 1, 1);
             m_blobLoss.Reshape(m_nOuterNum, 1, 1, 1);
 
             m_rgShape.Clear();
@@ -146,36 +156,16 @@ namespace MyCaffe.layers
         {
             // captured_returns = weights * y_true
             m_cuda.mul(m_blobCapturedReturns.count(), colBottom[0].gpu_data, colBottom[1].gpu_data, m_blobCapturedReturns.mutable_gpu_data);
-            // captured_returns_sq = captured_returns^2
-            m_cuda.powx(m_blobCapturedReturns.count(), m_blobCapturedReturns.gpu_data, 2.0, m_blobCapturedReturnsSq.mutable_gpu_data);
-
-            // mean_returns = tf.reduce_mean(captured_returns)
-            m_cuda.channel_mean(m_blobCapturedReturns.count(), m_nOuterNum, 1, m_nInnerNum, m_blobCapturedReturns.gpu_data, m_blobMeanCapturedReturns.mutable_gpu_data);
-
-            // mean_returns_sq = tf.reduce_mean(captured_returns_sq)
-            m_cuda.channel_mean(m_blobCapturedReturnsSq.count(), m_nOuterNum, 1, m_nInnerNum, m_blobCapturedReturnsSq.gpu_data, m_blobMeanCapturedReturnsSq.mutable_gpu_data);
-
-            m_blobMeanCapturedReturns.Reshape(m_nOuterNum, 1, 1, 1);
-            m_blobMeanCapturedReturnsSq.Reshape(m_nOuterNum, 1, 1, 1);
-
-            // mean_returns_sq = mean_returns^2
-            m_cuda.powx(m_blobMeanCapturedReturns.count(), m_blobMeanCapturedReturns.gpu_data, 2.0, m_blobSquareMeanCapturedReturns.mutable_gpu_data);
-            // subtract mean_returns_sq from mean_returns_sq
-            m_cuda.sub(m_blobMeanCapturedReturnsSq.count(), m_blobMeanCapturedReturnsSq.gpu_data, m_blobSquareMeanCapturedReturns.gpu_data, m_blobStdev.mutable_gpu_data);
-            // Add 1e-9 to avoid division by zero.
-            m_cuda.add_scalar(m_blobStdev.count(), convert(1e-9), m_blobStdev.mutable_gpu_data);
-
-            // take the square root of the difference.
-            m_cuda.powx(m_blobStdev.count(), m_blobStdev.gpu_data, 0.5, m_blobStdev.mutable_gpu_data);
-
-            // divide mean_returns by the difference.
-            m_cuda.div(m_blobStdev.count(), m_blobMeanCapturedReturns.gpu_data, m_blobStdev.gpu_data, m_blobLoss.mutable_gpu_data);
-            // multiply by 252.0 to annualize.
-            m_cuda.scal(m_blobLoss.count(), convert(Math.Sqrt(252.0)), m_blobLoss.mutable_gpu_data);
+            // mean and stdev of captured_returns
+            m_cuda.add_scalar(m_blobCapturedReturns.count(), 1e-9f, m_blobCapturedReturns.mutable_gpu_data);
+            m_cuda.channel_stdev(m_blobCapturedReturns.count(), m_nOuterNum, 1, m_nInnerNum, m_blobCapturedReturns.gpu_data, m_blobStdevCapturedReturns.mutable_gpu_data, m_blobMeanCapturedReturns.gpu_data, 1e-9f, true);
+            // mean / stdev
+            m_cuda.div(m_blobLoss.count(), m_blobMeanCapturedReturns.gpu_data, m_blobStdevCapturedReturns.gpu_data, m_blobLoss.mutable_gpu_data);
 
             // average the loss over the batches.
+            m_blobLoss.scale_data(-1.0);
             double dfLoss = m_blobLoss.mean();
-            colTop[0].SetData(-1.0 * dfLoss, 0);
+            colTop[0].SetData(dfLoss, 0);
         }
 
         /// <summary>
@@ -188,21 +178,51 @@ namespace MyCaffe.layers
         /// </param>
         /// <param name="rgbPropagateDown">see Layer::Backward.</param>
         /// <param name="colBottom">inpub Blob vector (length 1)</param>
+        /// <remarks>
+        /// Calculate the gradients:
+        ///     mean_grad  --> 1 / n broadcast acorss all elements
+        ///     stdev_grad --> (2.0 / (n-1)) * grad_output * (x - mean) / (std * 2)
+        ///     div_grad   --> ((mean_grad * stdev) - (stdev_grad * mean)) / (stdev * stdev)
+        ///     final_grad = div_grad * -1.0
+        ///     
+        /// @see [Notes on PyTorch implementation of std_backward](https://github.com/vishwakftw/pytorch/blob/ede9bc97c3d734f3c80f4c0c08e1fe3dc2ab0250/tools/autograd/templates/Functions.cpp#L758-L770)
+        /// </remarks>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
             if (!rgbPropagateDown[0])
                 return;
 
-            // sharpe = mean_returns / stdev * sqrt(252.0)
-            m_cuda.div(m_blobStdev.count(), m_blobMeanCapturedReturns.gpu_data, m_blobStdev.gpu_data, m_blobMeanCapturedReturns.mutable_gpu_diff);
-            m_cuda.scal(m_blobMeanCapturedReturns.count(), convert(Math.Sqrt(252.0)), m_blobMeanCapturedReturns.mutable_gpu_diff);
-            // grad = y * sharpe / (stdev^2)
-            m_cuda.powx(m_blobStdev.count(), m_blobStdev.gpu_data, 2.0, m_blobStdev.mutable_gpu_diff);
-            m_cuda.div(m_blobStdev.count(), m_blobMeanCapturedReturns.mutable_gpu_diff, m_blobStdev.gpu_diff, m_blobMeanCapturedReturns.mutable_gpu_diff);
-            // grad fill along all values of the channel.
-            m_cuda.channel_fillfrom(colBottom[0].count(), m_nOuterNum, 1, m_nInnerNum, m_blobMeanCapturedReturns.gpu_diff, colBottom[0].mutable_gpu_diff, DIR.FWD);
-            // grad = y * grad
-            m_cuda.mul(colBottom[0].count(), colBottom[1].gpu_data, colBottom[0].gpu_diff, colBottom[0].mutable_gpu_diff);
+            // calculate the mean gradient: (1/n)
+            m_blobMeanCapturedReturns.SetDiff(1.0 / m_nInnerNum, 0);
+
+            // calculate the stdev gradient: (2.0 / (n-1)) * grad_output * (x - mean) / (std * 2)
+            //                                                             ^^^^^^^^^^
+            m_cuda.channel_fillfrom(m_blobMeanCapturedReturnsFull.count(), m_nOuterNum, 1, m_nInnerNum, m_blobMeanCapturedReturns.gpu_data, m_blobMeanCapturedReturnsFull.mutable_gpu_data, DIR.FWD);
+            m_cuda.sub(m_blobMeanCapturedReturnsFull.count(), m_blobCapturedReturns.gpu_data, m_blobMeanCapturedReturnsFull.gpu_data, m_blobMeanCapturedReturnsFull.mutable_gpu_diff);
+
+            // calculate the stdev gradient: (2.0 / (n-1)) * grad_output * (x - mean) / (std * 2)
+            //                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            double dfScale = (2.0 / (m_nInnerNum - 1)) * convertD(colTop[0].GetDiff(0));
+            m_blobMeanCapturedReturnsFull.scale_diff(dfScale);
+
+            // calculate the stdev gradient: (2.0 / (n-1)) * grad_output * (x - mean) / (std * 2)
+            //                                                                        ^^^^^^^^^^^
+            m_cuda.scale(m_blobStdevCapturedReturns.count(), 2.0, m_blobStdevCapturedReturns.gpu_data, m_blobStdevCapturedReturns.mutable_gpu_diff);
+            m_cuda.channel_fillfrom(m_blobStdevCapturedReturnsFull.count(), m_nOuterNum, 1, m_nInnerNum, m_blobStdevCapturedReturns.gpu_data, m_blobStdevCapturedReturnsFull.mutable_gpu_data, DIR.FWD);
+            m_cuda.channel_fillfrom(m_blobStdevCapturedReturnsFull.count(), m_nOuterNum, 1, m_nInnerNum, m_blobStdevCapturedReturns.gpu_diff, m_blobStdevCapturedReturnsFull.mutable_gpu_diff, DIR.FWD);
+
+            m_cuda.div(m_blobMeanCapturedReturnsFull.count(), m_blobMeanCapturedReturnsFull.gpu_diff, m_blobStdevCapturedReturnsFull.gpu_diff, m_blobStdevCapturedReturnsFull.mutable_gpu_diff);
+
+            // calculate the div gradient, Apply the quotient rule for mean/stdev
+            // ((mean_grad * stdev) - (stdev_grad * mean)) / (stdev * stdev)
+            m_cuda.channel_fillfrom(m_blobMeanCapturedReturnsFull.count(), m_nOuterNum, 1, m_nInnerNum, m_blobMeanCapturedReturns.gpu_diff, m_blobMeanCapturedReturnsFull.mutable_gpu_diff, DIR.FWD);
+            m_cuda.mul(m_blobMeanCapturedReturnsFull.count(), m_blobMeanCapturedReturnsFull.gpu_diff, m_blobStdevCapturedReturnsFull.gpu_data, m_blobMeanCapturedReturnsFull.mutable_gpu_diff);
+            m_cuda.mul(m_blobStdevCapturedReturnsFull.count(), m_blobMeanCapturedReturnsFull.gpu_data, m_blobStdevCapturedReturnsFull.gpu_diff, m_blobStdevCapturedReturnsFull.mutable_gpu_diff);
+            m_cuda.sub(colBottom[0].count(), m_blobMeanCapturedReturnsFull.gpu_diff, m_blobStdevCapturedReturnsFull.gpu_diff, colBottom[0].mutable_gpu_diff);
+            m_cuda.powx(m_blobStdevCapturedReturnsFull.count(), m_blobStdevCapturedReturnsFull.gpu_data, 2.0, m_blobStdevCapturedReturnsFull.mutable_gpu_data);
+            m_cuda.div(colBottom[0].count(), colBottom[0].gpu_diff, m_blobStdevCapturedReturnsFull.gpu_data, colBottom[0].mutable_gpu_diff);
+
+            m_cuda.scal(colBottom[0].count(), -1.0, colBottom[0].gpu_diff);
         }
     }
 }
