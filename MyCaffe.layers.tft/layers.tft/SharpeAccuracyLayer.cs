@@ -142,7 +142,7 @@ namespace MyCaffe.layers.tft
                 int nW = colBottom[0].width;
 
                 // stdev_returns = tf.reduce_stdev(captured_returns) and mean_returns = tf.reduce_mean(captured_returns)
-                m_cuda.channel_stdev(m_blobCapturedReturns.count(), nN, 1, nH * nW, m_blobCapturedReturns.gpu_data, m_blobMeanCapturedReturns.mutable_gpu_diff, m_blobMeanCapturedReturns.mutable_gpu_data, 1e-9f);
+                m_cuda.channel_stdev(m_blobCapturedReturns.count(), nN, 1, nH * nW, m_blobCapturedReturns.gpu_data, m_blobMeanCapturedReturns.mutable_gpu_diff, m_blobMeanCapturedReturns.mutable_gpu_data, 1e-9f, true);
                 m_cuda.channel_sum(m_blobCapturedReturns.count(), nN, 1, nH * nW, m_blobCapturedReturns.gpu_data, m_blobCapturedReturnsSum.mutable_gpu_data, false, DIR.FWD);
 
                 // calculate Shape as returns/stdev
