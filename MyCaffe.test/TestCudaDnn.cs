@@ -4209,7 +4209,7 @@ namespace MyCaffe.test
                         hDstVector = t.Cuda.AllocMemory(nNum * nChannels);
                         hMeanVector = t.Cuda.AllocMemory(nNum * nChannels);
 
-                        t.Cuda.channel_stdev(nCount, nNum, nChannels, nSpatialDim, hDataMatrix, hDstVector, hMeanVector, 1e-07f);
+                        t.Cuda.channel_stdev(nCount, nNum, nChannels, nSpatialDim, hDataMatrix, hDstVector, hMeanVector, 1e-07f, false);
 
                         double[] rgDst = t.Cuda.GetMemoryDouble(hDstVector);
                         double[] rgDstMean = t.Cuda.GetMemoryDouble(hMeanVector);
