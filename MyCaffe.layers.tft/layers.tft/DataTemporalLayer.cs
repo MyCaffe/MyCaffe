@@ -138,7 +138,7 @@ namespace MyCaffe.layers.tft
                 phase = m_param.data_temporal_param.forced_phase.Value;
             }
 
-            if (!m_data.LoadData(phase, m_param.data_temporal_param.source, m_param.data_temporal_param.shuffle_item_data, m_param.data_temporal_param.shuffle_value_data, (int)m_param.data_temporal_param.batch_size, (int)m_nNumHistoricalSteps, (int)m_nNumFutureSteps, m_log, m_evtCancel))
+            if (!m_data.LoadData(phase, m_param.data_temporal_param.source, m_param.data_temporal_param.shuffle_item_data, m_param.data_temporal_param.shuffle_value_data, m_param.data_temporal_param.enable_column_major_ordering, (int)m_param.data_temporal_param.batch_size, (int)m_nNumHistoricalSteps, (int)m_nNumFutureSteps, m_log, m_evtCancel))
                 throw new Exception("DataTemporalLayer - could not find the data for '" + m_param.data_temporal_param.source + "'. You may need to run the SignalPop AI Designer to create this " + m_param.data_temporal_param.source_type.ToString() + " dataset.");
 
             int nTotalSize = m_data.GetTotalSize();
@@ -336,12 +336,13 @@ namespace MyCaffe.layers.tft
         /// <param name="strPath">Specifies the base path for all data.</param>
         /// <param name="bShuffleItemData">Specifies to shuffle the item data.</param>
         /// <param name="bShuffleValueData">Specifies to shuffle the value data.</param>
+        /// <param name="bColMajorOrdering">Specifies to use column major ordering (only applies when item and value shuffling are false and data is loaded from the database).</param>
         /// <param name="nBatchSize">Specifies the batch size.</param>
         /// <param name="nHistoricalSteps">Specifies the number of historical steps.</param>
         /// <param name="nFutureSteps">Specifies the number of future steps.</param>
         /// <param name="log">Specifies the output log.</param>
         /// <param name="evtCancel">Specifies the cancel event.</param>
-        public virtual bool LoadData(Phase phase, string strPath, bool bShuffleItemData, bool bShuffleValueData, int nBatchSize, int nHistoricalSteps, int nFutureSteps, Log log, CancelEvent evtCancel)
+        public virtual bool LoadData(Phase phase, string strPath, bool bShuffleItemData, bool bShuffleValueData, bool bColMajorOrdering, int nBatchSize, int nHistoricalSteps, int nFutureSteps, Log log, CancelEvent evtCancel)
         {
             m_nBatchSize = nBatchSize;
 
@@ -453,6 +454,10 @@ namespace MyCaffe.layers.tft
         /// </summary>
         protected bool m_bShuffleValueData;
         /// <summary>
+        /// Specifies the ordering of data selection (only applies when shuffling is disabled for both item and value).
+        /// </summary>
+        protected bool m_bColMajorOrdering = false;
+        /// <summary>
         /// Specifies the number of historical steps.
         /// </summary>
         protected int m_nHistoricalSteps;
@@ -546,13 +551,14 @@ namespace MyCaffe.layers.tft
         /// <param name="strDataset">Specifies the name of the dataset.</param>
         /// <param name="bShuffleItemData">Specifies to shuffle the item data.</param>
         /// <param name="bShuffleValueData">Specifies to shuffle the value data.</param>
+        /// <param name="bColMajorOrdering">Specifies to use column major ordering (only applies when item and value shuffling are false).</param>
         /// <param name="nBatchSize">Specifies the batch size.</param>
         /// <param name="nHistoricalSteps">Specifies the number of historical steps (before current time).</param>
         /// <param name="nFutureSteps">Specifies the number of future steps (after current time).</param>
         /// <param name="log">Specifies the output log.</param>
         /// <param name="evtCancel">Specifies the event used to cancel loading.</param>
         /// <returns>True is returned if the data is loaded successfully, otherwise false.</returns>
-        public override bool LoadData(Phase phase, string strDataset, bool bShuffleItemData, bool bShuffleValueData, int nBatchSize, int nHistoricalSteps, int nFutureSteps, Log log, CancelEvent evtCancel)
+        public override bool LoadData(Phase phase, string strDataset, bool bShuffleItemData, bool bShuffleValueData, bool bColMajorOrdering, int nBatchSize, int nHistoricalSteps, int nFutureSteps, Log log, CancelEvent evtCancel)
         {
             m_phase = phase;
 
@@ -568,6 +574,7 @@ namespace MyCaffe.layers.tft
 
             m_bShuffleItemData = bShuffleItemData;
             m_bShuffleValueData = bShuffleValueData;
+            m_bColMajorOrdering = bColMajorOrdering;
             m_nBatchSize = nBatchSize;
             m_nHistoricalSteps = nHistoricalSteps;
             m_nFutureSteps = nFutureSteps;
@@ -622,6 +629,7 @@ namespace MyCaffe.layers.tft
             SourceDescriptor src = (phase == Phase.TRAIN) ? m_ds.TrainingSource : m_ds.TestingSource;
             DB_LABEL_SELECTION_METHOD itemSelection = (m_bShuffleItemData) ? DB_LABEL_SELECTION_METHOD.RANDOM : DB_LABEL_SELECTION_METHOD.NONE;
             DB_ITEM_SELECTION_METHOD valueSelection = (m_bShuffleValueData) ? DB_ITEM_SELECTION_METHOD.RANDOM : DB_ITEM_SELECTION_METHOD.NONE;
+            DB_INDEX_ORDER ordering = (m_bColMajorOrdering) ? DB_INDEX_ORDER.COL_MAJOR : DB_INDEX_ORDER.ROW_MAJOR;
 
             if (m_rgStaticNum == null || m_nLastBatchSize != nBatchSize)
                 m_rgStaticNum = getBuffer(col, 0);
@@ -673,7 +681,7 @@ namespace MyCaffe.layers.tft
                 if (m_batchPerfSet != null)
                     m_batchPerfSet.Select(ref nItemIdx, ref nValueIdx);
 
-                SimpleTemporalDatumCollection rgData = m_db.QueryTemporalItem(i, src.ID, ref nItemIdx, ref nValueIdx, itemSelection, valueSelection, m_bOutputTime, m_bOutputMask, bEnableDebug, strDebugPath);
+                SimpleTemporalDatumCollection rgData = m_db.QueryTemporalItem(i, src.ID, ref nItemIdx, ref nValueIdx, itemSelection, valueSelection, ordering, m_bOutputTime, m_bOutputMask, bEnableDebug, strDebugPath);
                 if (rgData == null)
                     continue;
 
@@ -949,13 +957,14 @@ namespace MyCaffe.layers.tft
         /// <param name="strDataset">Specifies the name of the dataset.</param>
         /// <param name="bShuffleItemData">Specifies to shuffle the item data.</param>
         /// <param name="bShuffleValueData">Specifies to shuffle the value data.</param>
+        /// <param name="bColMajorOrdering">Specifies to use column major ordering (only applies when item and value shuffling are false).</param>
         /// <param name="nBatchSize">Specifies the batch size.</param>
         /// <param name="nHistoricalSteps">Specifies the number of historical steps (before current time).</param>
         /// <param name="nFutureSteps">Specifies the number of future steps (after current time).</param>
         /// <param name="log">Specifies the output log.</param>
         /// <param name="evtCancel">Specifies the event used to cancel loading.</param>
         /// <returns>True is returned if the data is loaded successfully, otherwise false.</returns>
-        public override bool LoadData(Phase phase, string strDataset, bool bShuffleItemData, bool bShuffleValueData, int nBatchSize, int nHistoricalSteps, int nFutureSteps, Log log, CancelEvent evtCancel)
+        public override bool LoadData(Phase phase, string strDataset, bool bShuffleItemData, bool bShuffleValueData, bool bColMajorOrdering, int nBatchSize, int nHistoricalSteps, int nFutureSteps, Log log, CancelEvent evtCancel)
         {
             SettingsCaffe s = null;
 
@@ -987,6 +996,7 @@ namespace MyCaffe.layers.tft
 
             m_bShuffleItemData = bShuffleItemData;
             m_bShuffleValueData = bShuffleValueData;
+            m_bColMajorOrdering = bColMajorOrdering;
             m_nBatchSize = nBatchSize;
             m_nHistoricalSteps = nHistoricalSteps;
             m_nFutureSteps = nFutureSteps;
@@ -1058,16 +1068,17 @@ namespace MyCaffe.layers.tft
         /// <param name="strPath">Specifies the base path for all data.</param>
         /// <param name="bShuffleItemData">Specifies to randomly select from the item data.</param>
         /// <param name="bShuffleValueData">Specifies to randomly select from the value data.</param>
+        /// <param name="bColMajorOrdering">Not supported with file-based data.</param>
         /// <param name="nBatchSize">Specifies the batch size.</param>
         /// <param name="nHistoricalSteps">Specifies the number of historical steps.</param>
         /// <param name="nFutureSteps">Specifies the number of future steps.</param>
         /// <param name="log">Specifies the output log.</param>
         /// <param name="evtCancel">Specifies the cancel event.</param>
-        public override bool LoadData(Phase phase, string strPath, bool bShuffleItemData, bool bShuffleValueData, int nBatchSize, int nHistoricalSteps, int nFutureSteps, Log log, CancelEvent evtCancel)
+        public override bool LoadData(Phase phase, string strPath, bool bShuffleItemData, bool bShuffleValueData, bool bColMajorOrdering, int nBatchSize, int nHistoricalSteps, int nFutureSteps, Log log, CancelEvent evtCancel)
         {
             VerifyFiles(phase, strPath);
             m_data = new DataNpy<T>(m_random, log, nHistoricalSteps, nFutureSteps, bShuffleItemData, bShuffleValueData, m_bOutputTargetHistorical);
-            return base.LoadData(phase, strPath, bShuffleItemData, bShuffleValueData, nBatchSize, nHistoricalSteps, nFutureSteps, log, evtCancel);
+            return base.LoadData(phase, strPath, bShuffleItemData, bShuffleValueData, false, nBatchSize, nHistoricalSteps, nFutureSteps, log, evtCancel);
         }
 
         /// <summary>

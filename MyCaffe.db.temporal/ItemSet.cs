@@ -39,12 +39,14 @@ namespace MyCaffe.db.temporal
         /// <param name="db">Specifies the database connection.</param>
         /// <param name="item">Specifies the value item.</param>
         /// <param name="rgStrm">Specifies the value streams associated with the item set.</param>
-        public ItemSet(CryptoRandom random, DatabaseTemporal db, ValueItem item, OrderedValueStreamDescriptorSet rgStrm)
+        /// <param name="nTargetStreamNumIdx">Specifies the target stream index.</param>
+        public ItemSet(CryptoRandom random, DatabaseTemporal db, ValueItem item, OrderedValueStreamDescriptorSet rgStrm, int nTargetStreamNumIdx)
         {
             m_random = random;
             m_db = db;
             m_item = item;
             m_rgStrm = rgStrm;
+            m_nTargetStreamNumIdx = nTargetStreamNumIdx;
         }
 
         /// <summary>
@@ -238,7 +240,7 @@ namespace MyCaffe.db.temporal
                 rgData.Add(sdMask);
             }
 
-            m_nValIdx++;
+            m_nValIdx += nValueStepOffset;
 
             return rgData;
         }

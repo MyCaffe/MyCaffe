@@ -21,6 +21,7 @@ namespace MyCaffe.basecode.descriptors
     {
         List<ValueStreamDescriptor> m_rgValStrmDesc = new List<ValueStreamDescriptor>();
         List<ValueItemDescriptor> m_rgValItemDesc = new List<ValueItemDescriptor>();
+        int m_nTargetStreamIdx = 0;
 
         /// <summary>
         /// The constructor.
@@ -35,8 +36,15 @@ namespace MyCaffe.basecode.descriptors
         /// <param name="td">Specifies a TemporalDescriptor to copy.</param>
         public TemporalDescriptor(TemporalDescriptor td)
         {
-            foreach (ValueStreamDescriptor vsd in td.m_rgValStrmDesc)
+            m_nTargetStreamIdx = 0;
+
+            for (int i=0; i< td.m_rgValStrmDesc.Count; i++)
             {
+                ValueStreamDescriptor vsd = td.m_rgValStrmDesc[i];
+
+                if ((vsd.ClassType & STREAM_CLASS_TYPE.TARGET) == STREAM_CLASS_TYPE.TARGET)
+                    m_nTargetStreamIdx = i;
+
                 m_rgValStrmDesc.Add(new ValueStreamDescriptor(vsd));
             }
 
@@ -44,6 +52,14 @@ namespace MyCaffe.basecode.descriptors
             {
                 m_rgValItemDesc.Add(new ValueItemDescriptor(vid));
             }
+        }
+
+        /// <summary>
+        /// Returns the target stream index.
+        /// </summary>
+        public int TargetStreamIndex
+        {
+            get { return m_nTargetStreamIdx; }
         }
 
         /// <summary>
@@ -448,7 +464,11 @@ namespace MyCaffe.basecode.descriptors
             /// <summary>
             /// Specifies raw values that are known in both the past and future.
             /// </summary>
-            KNOWN = 0x04
+            KNOWN = 0x04,
+            /// <summary>
+            /// Specifies the target value stream (may be or'ed with another field).
+            /// </summary>
+            TARGET = 0x08
         }
 
         /// <summary>
