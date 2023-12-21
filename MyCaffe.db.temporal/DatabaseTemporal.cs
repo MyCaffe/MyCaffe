@@ -697,6 +697,15 @@ namespace MyCaffe.db.temporal
         }
 
         /// <summary>
+        /// Returns the dates of the data in the value set.
+        /// </summary>
+        /// <returns></returns>
+        public List<DateTime?> GetDates()
+        {
+            return m_rgValues.Select(p => p.TimeStamp).ToList();
+        }
+
+        /// <summary>
         /// Add a raw value to the set.
         /// </summary>
         /// <param name="val">Specifies the raw value loaded from the dataset.</param>
@@ -995,13 +1004,17 @@ namespace MyCaffe.db.temporal
         /// </summary>
         /// <param name="nIdx">Specifies the start index.</param>
         /// <param name="nCount">Specifies the number of items to collect.</param>
+        /// <param name="dtStart">Returns the very start of the master time sync.</param>
         /// <returns>An array of the time values is returned.</returns>
-        public DateTime[] GetTimeSyncValues(int nIdx, int nCount)
+        public DateTime[] GetTimeSyncValues(int nIdx, int nCount, out DateTime dtStart)
         {
+            dtStart = DateTime.MinValue;
+
             if (m_rgValues == null)
                 return null;
 
             List<DateTime> rgTime = new List<DateTime>();
+            dtStart = m_rgValues[0].TimeStamp.Value;
 
             for (int i = nIdx; i < nIdx + nCount; i++)
             {
