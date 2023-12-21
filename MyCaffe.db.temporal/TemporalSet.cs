@@ -110,6 +110,62 @@ namespace MyCaffe.db.temporal
         }
 
         /// <summary>
+        /// Synchronize all items in time by setting the column start index for each item.
+        /// </summary>
+        /// <exception cref="Exception"></exception>
+        public void SynchronizeItemSetsInTime()
+        {
+            List<DateTime?> rgDateIdx = new List<DateTime?>();
+            Dictionary<int, List<DateTime?>> rgCounts = new Dictionary<int, List<DateTime?>>();
+            Dictionary<int, int> rgFreqeuncy = new Dictionary<int, int>();
+
+            foreach (ItemSet item in m_rgItems)
+            {
+                List<DateTime?> rgCounts1 = item.DataDates;
+                int nCount = rgCounts1.Count;
+
+                if (!rgCounts.ContainsKey(nCount))
+                    rgCounts.Add(nCount, rgCounts1);
+
+                if (!rgFreqeuncy.ContainsKey(nCount))
+                    rgFreqeuncy.Add(nCount, 1);
+                else
+                    rgFreqeuncy[nCount]++;
+            }
+
+            List<KeyValuePair<int, int>> rgFreqList = rgFreqeuncy.OrderByDescending(p => p.Value).ToList();
+            int nTopCount = rgFreqList[0].Key;
+            rgDateIdx = rgCounts[nTopCount];
+
+            foreach (ItemSet item in m_rgItems)
+            {
+                int nSteps = -1;
+
+                for (int i = 0; i < rgDateIdx.Count; i++)
+                {
+                    if (item.Item.StartTime == rgDateIdx[i])
+                    {
+                        nSteps = i;
+                        break;
+                    }
+                }
+
+                if (nSteps >= 0)
+                    item.ColumnStart = nSteps;
+                else
+                    item.Active = false;
+            }
+        }
+
+        /// <summary>
+        /// Returns the source descriptor.
+        /// </summary>
+        public SourceDescriptor Source
+        {
+            get { return m_src; }
+        }
+
+        /// <summary>
         /// Add a direct item set to the temporal set.
         /// </summary>
         /// <param name="random">Specifies the random generator.</param>
@@ -139,7 +195,7 @@ namespace MyCaffe.db.temporal
 
                 if (!bFound)
                 {
-                    ValueItemDescriptor vid1 = new ValueItemDescriptor(item.ID, item.Name, item.StartTime, item.EndTime, item.Steps);
+                    ValueItemDescriptor vid1 = new ValueItemDescriptor(item.ID, item.Idx, item.Name, item.StartTime, item.EndTime, item.Steps);
                     src.TemporalDescriptor.ValueItemDescriptors.Add(vid1);
                 }
 
@@ -350,6 +406,8 @@ namespace MyCaffe.db.temporal
                     if (m_rgItems.Count == rgItems.Count && m_nLoadLimit <= 0)
                         break;
                 }
+
+                SynchronizeItemSetsInTime();
             }
             catch (Exception excpt)
             {
@@ -408,18 +466,19 @@ namespace MyCaffe.db.temporal
         /// <param name="nValueStepOffset">Optionally, specifies the value step offset from the previous query (default = 1, this parameter only applies when using non random selection).</param>
         /// <param name="bOutputTime">Optionally, output the time data.</param>
         /// <param name="bOutputMask">Optionally, output the mask data.</param>
+        /// <param name="bOutputItemIDs">Optionally, output the item ID data.</param>
         /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
         /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
         /// <returns>An collection of SimpleTemporalDatums is returned where: [0] = static num, [1] = static cat, [2] = historical num, [3] = historical cat, [4] = future num, [5] = future cat, [6] = target, and [7] = target history
         /// for a given item at the temporal selection point.</returns>
         /// <remarks>Note, the ordering for historical value streams is: observed, then known.  Future value streams only contiain known value streams.  If a dataset does not have one of the data types noted above, null
         /// is returned in the array slot (for example, if the dataset does not produce static numeric values, the array slot is set to [0] = null.</remarks>
-        public SimpleTemporalDatumCollection GetData(int nQueryIdx, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD itemSelectionMethod, DB_ITEM_SELECTION_METHOD valueSelectionMethod, DB_INDEX_ORDER? ordering = null, int nValueStepOffset = 1, bool bOutputTime = false, bool bOutputMask = false, bool bEnableDebug = false, string strDebugPath = null)
+        public SimpleTemporalDatumCollection GetData(int nQueryIdx, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD itemSelectionMethod, DB_ITEM_SELECTION_METHOD valueSelectionMethod, DB_INDEX_ORDER? ordering = null, int nValueStepOffset = 1, bool bOutputTime = false, bool bOutputMask = false, bool bOutputItemIDs = false, bool bEnableDebug = false, string strDebugPath = null)
         {
             SimpleTemporalDatumCollection data = null;
 
-            if (valueSelectionMethod == DB_ITEM_SELECTION_METHOD.NONE && ordering.GetValueOrDefault(DB_INDEX_ORDER.DEFAULT) == DB_INDEX_ORDER.COL_MAJOR)
-                return GetDataColMajor(itemSelectionMethod, ref nItemIdx, ref nValueIdx, nValueStepOffset, bOutputTime, bOutputMask, bEnableDebug, strDebugPath);
+            if (ordering.GetValueOrDefault(DB_INDEX_ORDER.DEFAULT) == DB_INDEX_ORDER.COL_MAJOR)
+                return GetDataColMajor(nQueryIdx, itemSelectionMethod, ref nItemIdx, ref nValueIdx, nValueStepOffset, bOutputTime, bOutputMask, bOutputItemIDs, bEnableDebug, strDebugPath);
 
             lock (m_objSync)
             {
@@ -440,7 +499,7 @@ namespace MyCaffe.db.temporal
                 if (m_nItemIdx >= m_rgItems.Count)
                     return null;
 
-                data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bEnableDebug, strDebugPath);
+                data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bOutputItemIDs, bEnableDebug, strDebugPath);
 
                 int nRetryCount = 0;
                 while (data == null && nRetryCount < 40)
@@ -457,7 +516,7 @@ namespace MyCaffe.db.temporal
                     }
 
                     nItemIdx = m_nItemIdx;
-                    data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bEnableDebug, strDebugPath);
+                    data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bOutputItemIDs, bEnableDebug, strDebugPath);
                     nRetryCount++;
                 }
             }
@@ -468,16 +527,18 @@ namespace MyCaffe.db.temporal
         /// <summary>
         /// Get the next data in column major order (e.g., in col 0 - read row 1, row 2, ... row n-1, go to col 1, read row 1, row 2, ... row n-1, etc.)
         /// </summary>
+        /// <param name="nQueryIdx">Specifies the item query (usually the batch index).</param>
         /// <param name="itemSelectionMethod">Specifies the item index selection method.</param>
         /// <param name="nItemIdx">Returns the item index (row).</param>
         /// <param name="nValueIdx">Returns the value index (col).</param>
         /// <param name="nValueStepOffset">Specifies the number of steps to apply to the value index (default = 1)</param>
         /// <param name="bOutputTime">Specifies to output the time.</param>
         /// <param name="bOutputMask">Specifies to output the mask.</param>
+        /// <param name="bOutputItemIDs">Optionally, output the item ID data.</param>
         /// <param name="bEnableDebug">Specifies to enable debug output.</param>
         /// <param name="strDebugPath">Specifies the debug output path.</param>
         /// <returns>A SimpleTemporalDatumCollection containing the data is returned.</returns>
-        public SimpleTemporalDatumCollection GetDataColMajor(DB_LABEL_SELECTION_METHOD itemSelectionMethod, ref int? nItemIdx, ref int? nValueIdx, int nValueStepOffset, bool bOutputTime, bool bOutputMask, bool bEnableDebug, string strDebugPath)
+        public SimpleTemporalDatumCollection GetDataColMajor(int nQueryIdx, DB_LABEL_SELECTION_METHOD itemSelectionMethod, ref int? nItemIdx, ref int? nValueIdx, int nValueStepOffset, bool bOutputTime, bool bOutputMask, bool bOutputItemIDs, bool bEnableDebug, string strDebugPath)
         {
             SimpleTemporalDatumCollection data = null;
 
@@ -501,12 +562,13 @@ namespace MyCaffe.db.temporal
                 if (nItemIdx.HasValue)
                     m_nItemIdx = nItemIdx.Value;
 
-                data = m_rgItems[m_nItemIdx].GetData(0, ref nValueIdx, DB_ITEM_SELECTION_METHOD.NONE, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bEnableDebug, strDebugPath);
-                if (data == null)
-                    data = m_rgItems[m_nItemIdx].GetData(0, ref nValueIdx, DB_ITEM_SELECTION_METHOD.NONE, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bEnableDebug, strDebugPath);
-
-                if (data == null)   
-                    return null;
+                data = null;
+                if (m_rgItems[m_nItemIdx].HasEnoughData(ref nValueIdx, m_nHistoricSteps, m_nFutureSteps))
+                {
+                    data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, DB_ITEM_SELECTION_METHOD.NONE, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bOutputItemIDs, bEnableDebug, strDebugPath, true);
+                    if (data == null)
+                        data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, DB_ITEM_SELECTION_METHOD.NONE, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bOutputItemIDs, bEnableDebug, strDebugPath, true);
+                }
 
                 if (itemSelectionMethod == DB_LABEL_SELECTION_METHOD.NONE)
                 {
@@ -547,6 +609,18 @@ namespace MyCaffe.db.temporal
                     return m_rgItems.Count;
                 }
             }
+        }
+
+        /// <summary>
+        /// Checks whether or not the value index is valid at a given index.  An index is considered invalid if the value index + nStepsForward is greater than the number of values in the items.
+        /// </summary>
+        /// <param name="nItemIndex">Specifies the item index.</param>
+        /// <param name="nValueIndex">Specifies the value index.</param>
+        /// <param name="nStepsForward">Specifies the number of steps (hist + fut) forward from the value index.</param>
+        /// <returns>If there is enough data from the value index + steps, true is returned, otherwise false.</returns>
+        public bool IsValueIndexValid(int nItemIndex, int nValueIndex, int nStepsForward)
+        {
+            return m_rgItems[nItemIndex].IsValueIndexValid(nValueIndex, nStepsForward);
         }
     }
 }
