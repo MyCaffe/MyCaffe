@@ -279,6 +279,7 @@ namespace MyCaffe.basecode.descriptors
     public class ValueItemDescriptor
     {
         int m_nID;
+        int? m_nIdx;
         string m_strName;
         DateTime? m_dtStart;
         DateTime? m_dtEnd;
@@ -288,13 +289,15 @@ namespace MyCaffe.basecode.descriptors
         /// The constructor.
         /// </summary>
         /// <param name="nID">Specifies the value item ID.</param>
+        /// <param name="nIdx">Specifies the value item index.</param>
         /// <param name="strName">Specifies the value item name.</param>
         /// <param name="dtStart">Optionally, specifies the start time of the item data.</param>
         /// <param name="dtEnd">Optionally, specifies the end time of the item data.</param>
         /// <param name="nSteps">Optionally, specifies teh steps in the item data.</param>
-        public ValueItemDescriptor(int nID, string strName, DateTime? dtStart, DateTime? dtEnd, int? nSteps)
+        public ValueItemDescriptor(int nID, int? nIdx, string strName, DateTime? dtStart, DateTime? dtEnd, int? nSteps)
         {
             m_nID = nID;
+            m_nIdx = nIdx;
             m_strName = strName;
             m_dtStart = dtStart;
             m_dtEnd = dtEnd;
@@ -308,6 +311,7 @@ namespace MyCaffe.basecode.descriptors
         public ValueItemDescriptor(ValueItemDescriptor vid)
         {
             m_nID = vid.m_nID;
+            m_nIdx = vid.m_nIdx;
             m_strName = vid.m_strName;
             m_dtStart = vid.m_dtStart;
             m_dtEnd = vid.m_dtEnd;
@@ -334,7 +338,17 @@ namespace MyCaffe.basecode.descriptors
                 nSteps = br.ReadInt32();
             }
 
-            ValueItemDescriptor desc = new ValueItemDescriptor(nID, strName, dtStart, dtEnd, nSteps);
+            int nIdx = 0;
+
+            try
+            {
+                nIdx = br.ReadInt32();
+            }
+            catch (Exception)
+            {
+            }
+
+            ValueItemDescriptor desc = new ValueItemDescriptor(nID, nIdx, strName, dtStart, dtEnd, nSteps);
             return desc;
         }
 
@@ -359,6 +373,8 @@ namespace MyCaffe.basecode.descriptors
             {
                 bw.Write(false);
             }
+
+            bw.Write(m_nIdx.Value);
         }
 
         /// <summary>
@@ -368,6 +384,15 @@ namespace MyCaffe.basecode.descriptors
         public int ID
         {
             get { return m_nID; }
+        }
+
+        /// <summary>
+        /// Returns the value item Index.
+        /// </summary>
+        [ReadOnly(true)]
+        public int? Index
+        {
+            get { return m_nIdx; }
         }
 
         /// <summary>
@@ -412,7 +437,7 @@ namespace MyCaffe.basecode.descriptors
         /// <returns>The string representation is returned.</returns>
         public override string ToString()
         {
-            return m_strName;
+            return m_strName + "(" + m_nIdx.ToString() + ")";
         }
     }
 
