@@ -880,12 +880,13 @@ namespace MyCaffe.basecode
         /// <param name="ordering">Optionally, specifies the ordering of item selection (only applies when itemSelectionOverride and valueSelectionOverride are both set to 'NONE').</param>
         /// <param name="bOutputTime">Optionally, output the time data.</param>
         /// <param name="bOutputMask">Optionally, output the mask data.</param>
+        /// <param name="bOutputItemIDs">Optionally, output the item IDs.</param>
         /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
         /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
         /// <returns>An collection of SimpleTemporalDatum containing the static num, statuc cat, historical num, historical cat, future num, future cat, target and target hist data is returned. 
         /// If one of the value types are not produced, null is filled in the array slot.</returns>
         [OperationContract(IsOneWay = false)]
-        SimpleTemporalDatumCollection QueryTemporalItem(int nQueryIdx, int nSrcId, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD? itemSelectionOverride = null, DB_ITEM_SELECTION_METHOD? valueSelectionOverride = null, DB_INDEX_ORDER? ordering = null, bool bOutputTime = false, bool bOutputMask = false, bool bEnableDebug = false, string strDebugPath = null);
+        SimpleTemporalDatumCollection QueryTemporalItem(int nQueryIdx, int nSrcId, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD? itemSelectionOverride = null, DB_ITEM_SELECTION_METHOD? valueSelectionOverride = null, DB_INDEX_ORDER? ordering = null, bool bOutputTime = false, bool bOutputMask = false, bool bOutputItemIDs = false, bool bEnableDebug = false, string strDebugPath = null);
 
         /// <summary>
         /// Reset the database indexes.
@@ -895,6 +896,17 @@ namespace MyCaffe.basecode
         /// </remarks>
         [OperationContract(IsOneWay = false)]
         void Reset();
+
+        /// <summary>
+        /// Checks whether or not the value index is valid.  An index is considered invalid if the value index + nStepsForward is greater than the number of values in the items.
+        /// </summary>
+        /// <param name="strSource">Specifies the source name of the temporal dataset.</param>
+        /// <param name="nItemIndex">Specifies the item index.</param>
+        /// <param name="nValueIndex">Specifies the value index.</param>
+        /// <param name="nStepsForward">Specifies the number of steps (hist + fut) forward from the value index.</param>
+        /// <returns>If there is enough data from the value index + steps, true is returned, otherwise false.</returns>
+        [OperationContract(IsOneWay = false)]
+        bool IsValueIndexValid(string strSource, int nItemIndex, int nValueIndex, int nStepsForward);
     }
 
     /// <summary>
