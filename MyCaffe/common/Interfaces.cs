@@ -127,7 +127,11 @@ namespace MyCaffe.common
         /// <summary>
         /// The blob contains mask data.
         /// </summary>
-        MASK = 0x1000
+        MASK = 0x1000,
+        /// <summary>
+        /// The blob contains ID data.
+        /// </summary>
+        ID = 0x2000
     }
 
     /// <summary>
