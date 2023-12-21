@@ -1979,7 +1979,7 @@ namespace MyCaffe.app
                 if (evtOpenUi != null)
                     evtOpenUi.Set();
             }
-            catch (Exception excpt)
+            catch (Exception)
             {
             }
         }
