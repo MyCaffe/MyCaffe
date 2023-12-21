@@ -104,6 +104,9 @@ namespace MyCaffe.layers.tft
                 if (m_param.data_temporal_param.output_mask)
                     nTops++;
 
+                if (m_param.data_temporal_param.output_item_ids)
+                    nTops++;
+
                 return nTops;
             }
         }
@@ -124,9 +127,9 @@ namespace MyCaffe.layers.tft
                 if (m_param.data_temporal_param.source_type == DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE)
                     m_data = new RawFileData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical, m_param.data_temporal_param.output_time, m_param.data_temporal_param.output_mask, m_param.data_temporal_param.max_load_percent, m_param.data_temporal_param.drip_refresh_rate_in_sec, m_param.data_temporal_param.chunk_count);
                 else if (m_param.data_temporal_param.source_type == DataTemporalParameter.SOURCE_TYPE.SQL_DB)
-                    m_data = new RawSqlData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical, m_param.data_temporal_param.output_time, m_param.data_temporal_param.output_mask, m_db, m_log, m_param.data_temporal_param.max_load_percent, m_param.data_temporal_param.drip_refresh_rate_in_sec, m_param.data_temporal_param.chunk_count, m_param.data_temporal_param.target_source);
+                    m_data = new RawSqlData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical, m_param.data_temporal_param.output_time, m_param.data_temporal_param.output_mask, m_param.data_temporal_param.output_item_ids, m_param.data_temporal_param.verify_time_sync, m_db, m_log, m_param.data_temporal_param.max_load_percent, m_param.data_temporal_param.drip_refresh_rate_in_sec, m_param.data_temporal_param.chunk_count, m_param.data_temporal_param.target_source);
                 else if (m_param.data_temporal_param.source_type == DataTemporalParameter.SOURCE_TYPE.DIRECT)
-                    m_data = new RawDirectData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical, m_param.data_temporal_param.output_time, m_param.data_temporal_param.output_mask, m_db, m_log, m_param.data_temporal_param.target_source);
+                    m_data = new RawDirectData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical, m_param.data_temporal_param.output_time, m_param.data_temporal_param.output_mask, m_param.data_temporal_param.output_item_ids, m_param.data_temporal_param.verify_time_sync, m_db, m_log, m_param.data_temporal_param.target_source);
                 else
                     throw new Exception("Unknown source type: " + m_param.data_temporal_param.source_type.ToString());
             }
@@ -210,6 +213,13 @@ namespace MyCaffe.layers.tft
                     colTop[nIdx].type = BLOB_TYPE.MASK | BLOB_TYPE.DATA;
                     nIdx++;
                 }
+
+                if (m_param.data_temporal_param.output_item_ids && colTop.Count > nIdx)
+                {
+                    colTop[nIdx].Reshape(rgShape[0], 1, 1, 1);
+                    colTop[nIdx].type = BLOB_TYPE.ID | BLOB_TYPE.DATA;
+                    nIdx++;
+                }
             }
         }
 
@@ -242,7 +252,7 @@ namespace MyCaffe.layers.tft
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             Phase phase = layer_param.data_temporal_param.forced_phase.GetValueOrDefault(m_phase);
-            m_rgIdx = m_data.LoadBatch(phase, (int)m_nBatchSize, colTop, m_param.data_temporal_param.enable_debug_output, m_param.data_temporal_param.debug_output_path);
+            m_rgIdx = m_data.LoadBatch(phase, (int)m_nBatchSize, colTop, m_param.data_temporal_param.enable_debug_output, m_param.data_temporal_param.debug_output_path, m_param.data_temporal_param.value_start_index_override);
 
             if (m_param.data_temporal_param.enable_debug_output)
                 m_log.WriteLine("WARNING: Debugging is enabled with path = " + m_param.data_temporal_param.debug_output_path + " and will slow down training!");
@@ -285,6 +295,10 @@ namespace MyCaffe.layers.tft
         /// </summary>
         protected bool m_bOutputMask;
         /// <summary>
+        /// Specifies to output the item ids.
+        /// </summary>
+        protected bool m_bOutputItemIds = false;
+        /// <summary>
         /// Specifies that the data is loaded and ready.
         /// </summary>
         protected ManualResetEvent m_evtReady = new ManualResetEvent(false);
@@ -300,11 +314,13 @@ namespace MyCaffe.layers.tft
         /// <param name="bOutputTargetHistorical">Specifies to output the target historical data.</param>
         /// <param name="bOutputTime">Specifies to output the time matching each item in a separate blob.</param>
         /// <param name="bOutputMask">Specifies to output the mask (all 1's) matching each item in a separate blob.</param>
-        public RawData(uint? nSeed, bool bOutputTargetHistorical, bool bOutputTime, bool bOutputMask)
+        /// <param name="bOutputItemIDs">Specifies to output the Item ID's for each batch.  NOTE: This setting only applies to the SQL data source with COL_MAJOR_ORDERING.</param>
+        public RawData(uint? nSeed, bool bOutputTargetHistorical, bool bOutputTime, bool bOutputMask, bool bOutputItemIDs)
         {
             m_bOutputTargetHistorical = bOutputTargetHistorical;
             m_bOutputTime = bOutputTime;
             m_bOutputMask = bOutputMask;
+            m_bOutputItemIds = bOutputItemIDs;
 
             if (nSeed.HasValue)
                 m_random = new Random((int)nSeed.Value);
@@ -397,9 +413,9 @@ namespace MyCaffe.layers.tft
         /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
         /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
         /// <returns>An array of the selected item and indexes is returned.</returns>
-        public virtual int[,] LoadBatch(Phase phase, int nBatchSize, BlobCollection<T> col, bool bEnableDebug = false, string strDebugPath = null)
+        public virtual int[,] LoadBatch(Phase phase, int nBatchSize, BlobCollection<T> col, bool bEnableDebug = false, string strDebugPath = null, int nValueIndexStartOverride = -1)
         {
-            return m_data.LoadBatch(nBatchSize, col, bEnableDebug, strDebugPath);
+            return m_data.LoadBatch(nBatchSize, col, bEnableDebug, strDebugPath, nValueIndexStartOverride);
         }
 
         /// <summary>
@@ -514,6 +530,10 @@ namespace MyCaffe.layers.tft
         /// </summary>
         protected float[] m_rgMask = null;
         /// <summary>
+        /// Specifies the item ID data buffer.
+        /// </summary>
+        protected float[] m_rgItemIDs = null;
+        /// <summary>
         /// Specifies the indexes used.
         /// </summary>
         protected int[,] m_rgIdx = null;
@@ -522,10 +542,17 @@ namespace MyCaffe.layers.tft
         /// </summary>
         protected BatchPerfSet m_batchPerfSet = null;
         /// <summary>
+        /// Specifies the first time in a batch of synchronized data (only applies during Col-Major ordering).
+        /// </summary>
+        protected DateTime m_dtLast = DateTime.MinValue;
+        /// <summary>
         /// Specifies the target source of FUTURE (default) or HISTORICAL.
         /// </summary>
         protected DataTemporalParameter.TARGET_SOURCE m_targetSrc = DataTemporalParameter.TARGET_SOURCE.FUTURE;
         private int m_nLastBatchSize = 0;
+        private int m_nColMajorValIdx = 0;
+        Dictionary<int, int> m_rgMaxSrcItemSteps = new Dictionary<int, int>();
+        bool m_bVerifyTimeSync = false;
 
         /// <summary>
         /// The constructor.
@@ -534,14 +561,17 @@ namespace MyCaffe.layers.tft
         /// <param name="bOutputTargetHistorical">Specifies to output the target historical data.</param>
         /// <param name="bOutputTime">Specifies to output the time matching each item in a separate blob.</param>
         /// <param name="bOutputMask">Specifies to output the mask (all 1's) matching each item in a separate blob.</param>
+        /// <param name="bOutputItemIDs">Specifies to output the Item ID's for each batch.  NOTE: This setting only applies to the SQL data source with COL_MAJOR_ORDERING.</param>
+        /// <param name="bVerifyTimeSync">Specifies to verify the time sync (useful when using COL_MAJOR_ORDERING to make sure all items are aligned in time).</param>
         /// <param name="db">Specifies the external database.</param>
         /// <param name="log">Specifies the output log.</param>
         /// <param name="targetSrc">Specifies the target source of FUTURE (default) or HISTORICAL.</param>
-        public RawDirectData(uint? nSeed, bool bOutputTargetHistorical, bool bOutputTime, bool bOutputMask, IXTemporalDatabaseBase db, Log log, DataTemporalParameter.TARGET_SOURCE targetSrc) : base(nSeed, bOutputTargetHistorical, bOutputTime, bOutputMask)
+        public RawDirectData(uint? nSeed, bool bOutputTargetHistorical, bool bOutputTime, bool bOutputMask, bool bOutputItemIDs, bool bVerifyTimeSync, IXTemporalDatabaseBase db, Log log, DataTemporalParameter.TARGET_SOURCE targetSrc) : base(nSeed, bOutputTargetHistorical, bOutputTime, bOutputMask, bOutputItemIDs)
         {
             m_db = db;
             m_log = log;
             m_targetSrc = targetSrc;
+            m_bVerifyTimeSync = bVerifyTimeSync;
         }
 
         /// <summary>
@@ -572,6 +602,9 @@ namespace MyCaffe.layers.tft
                 return false;
             }
 
+            DatabaseLoader dbl = new DatabaseLoader();
+            dbl.LoadTemporalFromDb(m_ds);
+
             m_bShuffleItemData = bShuffleItemData;
             m_bShuffleValueData = bShuffleValueData;
             m_bColMajorOrdering = bColMajorOrdering;
@@ -594,12 +627,15 @@ namespace MyCaffe.layers.tft
             return new float[nItemCount];
         }
 
-        private void setBuffer(BlobCollection<T> col, int nIdx, float[] rg)
+        private void setBuffer(BlobCollection<T> col, int nIdx, float[] rg, DateTime? dt = null)
         {
             if (rg == null)
                 return;
 
             col[nIdx].mutable_cpu_data = Utility.ConvertVec<T>(rg);
+
+            if (dt.HasValue)
+                col[nIdx].Tag = dt.Value;
         }
 
         /// <summary>
@@ -623,8 +659,9 @@ namespace MyCaffe.layers.tft
         /// <param name="col">Specifies the collection of blobs to load.</param>
         /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
         /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
+        /// <param name="nValueIndexStartOverride">Optionally, specifies the value index start override (default = -1 to ignore)</param>
         /// <returns>The list of selected indexes is returned.</returns>
-        public override int[,] LoadBatch(Phase phase, int nBatchSize, BlobCollection<T> col, bool bEnableDebug = false, string strDebugPath = null)
+        public override int[,] LoadBatch(Phase phase, int nBatchSize, BlobCollection<T> col, bool bEnableDebug = false, string strDebugPath = null, int nValueIndexStartOverride = -1)
         {
             SourceDescriptor src = (phase == Phase.TRAIN) ? m_ds.TrainingSource : m_ds.TestingSource;
             DB_LABEL_SELECTION_METHOD itemSelection = (m_bShuffleItemData) ? DB_LABEL_SELECTION_METHOD.RANDOM : DB_LABEL_SELECTION_METHOD.NONE;
@@ -666,27 +703,45 @@ namespace MyCaffe.layers.tft
             {
                 if (m_rgMask == null || m_nLastBatchSize != nBatchSize)
                     m_rgMask = getBuffer(col, nIdx);
+                nIdx++;
+            }
+
+            if (m_bOutputItemIds)
+            {
+                if (m_rgItemIDs == null || m_nLastBatchSize != nBatchSize)
+                    m_rgItemIDs = getBuffer(col, nIdx);
             }
 
             if (m_rgIdx == null || m_nLastBatchSize != nBatchSize)
                 m_rgIdx = new int[nBatchSize, 2];
 
-            for (int i = 0; i < nBatchSize; i++)
+            float[] rgRawDataLast = null;
+            int nBatchIdx = 0;
+            while (nBatchIdx < nBatchSize)
             {
                 int? nItemIdx = null;
                 int? nValueIdx = null;
 
-                // When using the batch performance set, the indexes are selected from the set,
-                // seeking to select from the 25% worst performing items.
-                if (m_batchPerfSet != null)
+                if (ordering == DB_INDEX_ORDER.COL_MAJOR)
+                {
+                    nValueIdx = m_nColMajorValIdx;
+                }
+                else if (m_batchPerfSet != null)
+                {
+                    // When using the batch performance set, the indexes are selected from the set,
+                    // seeking to select from the 25% worst performing items.
                     m_batchPerfSet.Select(ref nItemIdx, ref nValueIdx);
+                }
 
-                SimpleTemporalDatumCollection rgData = m_db.QueryTemporalItem(i, src.ID, ref nItemIdx, ref nValueIdx, itemSelection, valueSelection, ordering, m_bOutputTime, m_bOutputMask, bEnableDebug, strDebugPath);
+                if (nValueIndexStartOverride >= 0)
+                    nValueIdx = nValueIndexStartOverride;
+
+                SimpleTemporalDatumCollection rgData = m_db.QueryTemporalItem(nBatchIdx, src.ID, ref nItemIdx, ref nValueIdx, itemSelection, valueSelection, ordering, m_bOutputTime, m_bOutputMask, m_bOutputItemIds, bEnableDebug, strDebugPath);
                 if (rgData == null)
                     continue;
 
-                m_rgIdx[i, 0] = nItemIdx.Value;
-                m_rgIdx[i, 1] = nValueIdx.Value;
+                m_rgIdx[nBatchIdx, 0] = nItemIdx.Value;
+                m_rgIdx[nBatchIdx, 1] = nValueIdx.Value;
 
                 SimpleTemporalDatum sdStatNum = rgData[0];
                 SimpleTemporalDatum sdStatCat = rgData[1];
@@ -698,13 +753,12 @@ namespace MyCaffe.layers.tft
                 SimpleTemporalDatum sdTargetHist = null;
                 SimpleTemporalDatum sdTime = null;
                 SimpleTemporalDatum sdMask = null;
+                SimpleTemporalDatum sdItemID = null;
 
                 nIdx = 7;
                 if (m_bOutputTargetHistorical)
-                {
                     sdTargetHist = rgData[nIdx];
-                    nIdx++;
-                }
+                nIdx++;
 
                 if (m_bOutputTime)
                 {
@@ -715,77 +769,135 @@ namespace MyCaffe.layers.tft
                 if (m_bOutputMask)
                 {
                     sdMask = rgData[nIdx];
+                    nIdx++;
                 }
+
+                if (m_bOutputItemIds)
+                    sdItemID = rgData[nIdx];
 
                 // col[0] = STATIC_NUMERIC
                 if (m_rgStaticNum != null)
                 {
                     float[] rgRawData = sdStatNum.Data;
-                    Array.Copy(rgRawData, 0, m_rgStaticNum, i * rgRawData.Length, rgRawData.Length);
+                    Array.Copy(rgRawData, 0, m_rgStaticNum, nBatchIdx * rgRawData.Length, rgRawData.Length);
                 }
 
                 // col[1] = STATIC_CATEGORICAL
                 if (m_rgStaticCat != null)
                 {
                     float[] rgRawData = sdStatCat.Data;
-                    Array.Copy(rgRawData, 0, m_rgStaticCat, i * rgRawData.Length, rgRawData.Length);
+                    Array.Copy(rgRawData, 0, m_rgStaticCat, nBatchIdx * rgRawData.Length, rgRawData.Length);
                 }
 
                 // col[2] = HISTORICAL_NUMERIC
                 if (m_rgHistoricalNum != null)
                 {
                     float[] rgRawData = sdHistNum.Data;
-                    Array.Copy(rgRawData, 0, m_rgHistoricalNum, i * rgRawData.Length, rgRawData.Length);
+                    Array.Copy(rgRawData, 0, m_rgHistoricalNum, nBatchIdx * rgRawData.Length, rgRawData.Length);
                 }
 
                 // col[3] = HISTORICAL_CATEGORICAL
                 if (m_rgHistoricalCat != null)
                 {
                     float[] rgRawData = sdHistCat.Data;
-                    Array.Copy(rgRawData, 0, m_rgHistoricalCat, i * rgRawData.Length, rgRawData.Length);
+                    Array.Copy(rgRawData, 0, m_rgHistoricalCat, nBatchIdx * rgRawData.Length, rgRawData.Length);
                 }
 
                 // col[4] = FUTURE_NUMERIC
                 if (m_rgFutureNum != null)
                 {
                     float[] rgRawData = sdFutureNum.Data;
-                    Array.Copy(rgRawData, 0, m_rgFutureNum, i * rgRawData.Length, rgRawData.Length);
+                    Array.Copy(rgRawData, 0, m_rgFutureNum, nBatchIdx * rgRawData.Length, rgRawData.Length);
                 }
 
                 // col[5] = FUTURE_CATEGORICAL
                 if (m_rgFutureCat != null)
                 {
                     float[] rgRawData = sdFutureCat.Data;
-                    Array.Copy(rgRawData, 0, m_rgFutureCat, i * rgRawData.Length, rgRawData.Length);
+                    Array.Copy(rgRawData, 0, m_rgFutureCat, nBatchIdx * rgRawData.Length, rgRawData.Length);
                 }
 
                 // col[6] = TARGET
                 if (m_rgTarget != null)
                 {
                     float[] rgRawData = sdTarget.Data;
-                    Array.Copy(rgRawData, 0, m_rgTarget, i * rgRawData.Length, rgRawData.Length);
+                    Array.Copy(rgRawData, 0, m_rgTarget, nBatchIdx * rgRawData.Length, rgRawData.Length);
                 }
 
                 // col[7] = Historical Target (optional)
                 if (m_rgTargetHist != null)
                 {
                     float[] rgRawData = sdTargetHist.Data;
-                    Array.Copy(rgRawData, 0, m_rgTargetHist, i * rgRawData.Length, rgRawData.Length);
+                    Array.Copy(rgRawData, 0, m_rgTargetHist, nBatchIdx * rgRawData.Length, rgRawData.Length);
                 }
 
                 // col[8] = Time (optional)
                 if (m_rgTime != null)
                 {
                     float[] rgRawData = sdTime.Data;
-                    Array.Copy(rgRawData, 0, m_rgTime, i * rgRawData.Length, rgRawData.Length);
+                    Array.Copy(rgRawData, 0, m_rgTime, nBatchIdx * rgRawData.Length, rgRawData.Length);
+
+                    if (m_bVerifyTimeSync)
+                    {
+                        if (rgRawDataLast == null)
+                        {
+                            rgRawDataLast = new float[rgRawData.Length];
+                        }
+                        else if (nBatchIdx > 0)
+                        {
+                            int nOutOfSyncAt = -1;
+                            for (int k = 0; k < rgRawData.Length; k++)
+                            {
+                                if (rgRawData[k] != rgRawDataLast[k])
+                                {
+                                    nOutOfSyncAt = k;
+                                    break;
+                                }
+                            }
+
+                            if (nOutOfSyncAt >= 0)
+                                m_log.WriteLine("WARNING: Data out " + nOutOfSyncAt.ToString() + " at batch index " + nBatchIdx.ToString());
+                        }
+
+                        Array.Copy(rgRawData, rgRawDataLast, rgRawData.Length);
+                    }
+
+                    m_dtLast = sdTime.TimeStamp;
                 }
 
                 // col[9] = Mask (optional)
                 if (m_rgMask != null)
                 {
                     float[] rgRawData = sdMask.Data;
-                    Array.Copy(rgRawData, 0, m_rgMask, i * rgRawData.Length, rgRawData.Length);
+                    Array.Copy(rgRawData, 0, m_rgMask, nBatchIdx * rgRawData.Length, rgRawData.Length);
                 }
+
+                // col[10] = ItemID (optional)
+                if (m_rgItemIDs != null)
+                {
+                    float[] rgRawData = sdItemID.Data;
+                    Array.Copy(rgRawData, 0, m_rgItemIDs, nBatchIdx * rgRawData.Length, rgRawData.Length);
+                }
+
+                nBatchIdx++;
+            }
+
+            if (!m_rgMaxSrcItemSteps.ContainsKey(src.ID))
+            {
+                int nMax = src.TemporalDescriptor.ValueItemDescriptors.Max(p => p.Steps.Value);
+                nMax -= (m_nHistoricalSteps + m_nFutureSteps);
+                m_rgMaxSrcItemSteps.Add(src.ID, nMax);
+            }
+
+            if (valueSelection == DB_ITEM_SELECTION_METHOD.RANDOM)
+            {
+                m_nColMajorValIdx = m_random.Next(m_rgMaxSrcItemSteps[src.ID]);
+            }
+            else
+            {
+                m_nColMajorValIdx++;
+                if (m_nColMajorValIdx >= m_rgMaxSrcItemSteps[src.ID])
+                    m_nColMajorValIdx = 0;
             }
 
             m_nLastBatchSize = nBatchSize;
@@ -808,13 +920,19 @@ namespace MyCaffe.layers.tft
 
             if (m_bOutputTime)
             {
-                setBuffer(col, nIdx, m_rgTime);
+                setBuffer(col, nIdx, m_rgTime, m_dtLast);
                 nIdx++;
             }
 
             if (m_bOutputMask)
             {
                 setBuffer(col, nIdx, m_rgMask);
+                nIdx++;
+            }
+
+            if (m_bOutputItemIds)
+            {
+                setBuffer(col, nIdx, m_rgItemIDs);
                 nIdx++;
             }
 
@@ -936,13 +1054,15 @@ namespace MyCaffe.layers.tft
         /// <param name="bOutputTargetHistorical">Specifies to output the target historical data.</param>
         /// <param name="bOutputTime">Specifies to output the time matching each item in a separate blob.</param>
         /// <param name="bOutputMask">Specifies to output the mask (all 1's) matching each item in a separate blob.</param>
+        /// <param name="bOutputItemIDs">Specifies to output the Item ID's for each batch.  NOTE: This setting only applies to the SQL data source with COL_MAJOR_ORDERING.</param>
+        /// <param name="bVerifyTimeSync">Specifies to verify the time sync (useful when debugging the COL_MAJOR_ORDERING to make sure all items are synchronized in time).</param>
         /// <param name="db">Specifies the external database.</param>
         /// <param name="log">Specifies the output log.</param>
         /// <param name="nDripRefreshRateInSec">Specifies how often in seconds to refresh the data.</param>
         /// <param name="dfPctMaxLoad">Specifies the maximum percentage to load into memory.</param>
         /// <param name="nChunkCount">Specifies the number of chunks (blocks) to refresh.</param>
         /// <param name="targetSrc">Specifies the target source of FUTURE (default) or HISTORICAL.</param>
-        public RawSqlData(uint? nSeed, bool bOutputTargetHistorical, bool bOutputTime, bool bOutputMask, IXTemporalDatabaseBase db, Log log, double dfPctMaxLoad, int nDripRefreshRateInSec, uint nChunkCount, DataTemporalParameter.TARGET_SOURCE targetSrc) : base(nSeed, bOutputTargetHistorical, bOutputTime, bOutputMask, db, log, targetSrc)
+        public RawSqlData(uint? nSeed, bool bOutputTargetHistorical, bool bOutputTime, bool bOutputMask, bool bOutputItemIDs, bool bVerifyTimeSync, IXTemporalDatabaseBase db, Log log, double dfPctMaxLoad, int nDripRefreshRateInSec, uint nChunkCount, DataTemporalParameter.TARGET_SOURCE targetSrc) : base(nSeed, bOutputTargetHistorical, bOutputTime, bOutputMask, bOutputItemIDs, bVerifyTimeSync, db, log, targetSrc)
         {
             m_nDropRefreshReateInSec = nDripRefreshRateInSec;
             m_dfPctMaxLoad = dfPctMaxLoad;
@@ -1025,7 +1145,7 @@ namespace MyCaffe.layers.tft
         /// <param name="dfPctMaxLoad">Specifies the percent of total items to load in background (default = 1, or 100%).</param>
         /// <param name="nDripRefreshRateInSec">Specifies the rate in seconds to refresh the data.</param>
         /// <param name="nChunkCount">Specifies the number of items to load on each cycle.</param>
-        public RawFileData(uint? nSeed, bool bOutputTargetHistorical, bool bOutputTime, bool bOutputMask, double dfPctMaxLoad, int nDripRefreshRateInSec, uint nChunkCount) : base(nSeed, bOutputTargetHistorical, bOutputTime, bOutputMask)
+        public RawFileData(uint? nSeed, bool bOutputTargetHistorical, bool bOutputTime, bool bOutputMask, double dfPctMaxLoad, int nDripRefreshRateInSec, uint nChunkCount) : base(nSeed, bOutputTargetHistorical, bOutputTime, bOutputMask, false)
         {
             m_nDropRefreshReateInSec = nDripRefreshRateInSec;
             m_dfPctMaxLoad = dfPctMaxLoad;
@@ -1367,7 +1487,7 @@ namespace MyCaffe.layers.tft
 
         public abstract void Close();
 
-        public abstract int[,] LoadBatch(int nBatchSize, BlobCollection<T> col, bool bEnableDebug, string strDebugPath);
+        public abstract int[,] LoadBatch(int nBatchSize, BlobCollection<T> col, bool bEnableDebug, string strDebugPath, int nValueIndexStartOverride);
 
         public abstract int[] GetShape(OUTPUT_TYPE ot);
 
@@ -1952,7 +2072,7 @@ namespace MyCaffe.layers.tft
             }
         }
 
-        public override int[,] LoadBatch(int nBatchSize, BlobCollection<T> col, bool bEnableDebug, string strDebugPath)
+        public override int[,] LoadBatch(int nBatchSize, BlobCollection<T> col, bool bEnableDebug, string strDebugPath, int nValueIndexStartOverride)
         {
             lock (m_syncObj)
             {
