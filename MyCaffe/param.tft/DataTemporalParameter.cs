@@ -34,9 +34,12 @@ namespace MyCaffe.param.tft
         bool m_bOutputTargetHistorical = false;
         bool m_bOutputTime = false;
         bool m_bOutputMask = false;
+        bool m_bOutputItemIDs = false;
+        bool m_bVerifyTimeSync = false;
         bool m_bEnableDebugOutput = false;
         string m_strDebugOutputPath = null;
         TARGET_SOURCE m_targetSource = TARGET_SOURCE.FUTURE;
+        int m_nValueStartIndexOverride = -1;
 
         /// <summary>
         /// Defines the target source.
@@ -121,6 +124,26 @@ namespace MyCaffe.param.tft
         {
             get { return m_bOutputMask; }
             set { m_bOutputMask = value; }
+        }
+
+        /// <summary>
+        /// Optionally, specifies to output the item ids data associated with each item, where the ID is set to the id of the item in the batch.  NOTE: This setting only applies to the SQL data source with COL_MAJOR_ORDERING.
+        /// </summary>
+        [Description("Optionally, specifies to output the item ids data associated with each item, where the ID is set to the id of the item in the batch.  NOTE: This setting only applies to the SQL data source with COL_MAJOR_ORDERING.")]
+        public bool output_item_ids
+        {
+            get { return m_bOutputItemIDs; }
+            set { m_bOutputItemIDs = value; }
+        }
+
+        /// <summary>
+        /// Optionally, specifies to verify that the time data is in sync with the item data to make sure that all items within a batch are aligned in time (useful for debugging COL_MAJOR_ORDERING).
+        /// </summary>
+        [Description("Optionally, specifies to verify that the time data is in sync with the item data to make sure that all items within a batch are aligned in time (useful for debugging COL_MAJOR_ORDERING).")]
+        public bool verify_time_sync
+        {
+            get { return m_bVerifyTimeSync; }
+            set { m_bVerifyTimeSync = value; }
         }
 
         /// <summary>
@@ -292,6 +315,16 @@ namespace MyCaffe.param.tft
             set { m_nNumFutureSteps = value; }
         }
 
+        /// <summary>
+        /// Optionally, specifies the start index used to collect value items (default = -1 to ignore).
+        /// </summary>
+        [Description]
+        public int value_start_index_override
+        {
+            get { return m_nValueStartIndexOverride; }
+            set { m_nValueStartIndexOverride = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -328,9 +361,12 @@ namespace MyCaffe.param.tft
 
             m_bOutputTime = p.output_time;
             m_bOutputMask = p.output_mask;
+            m_bOutputItemIDs = p.output_item_ids;
+            m_bVerifyTimeSync = p.verify_time_sync;
             m_bEnableDebugOutput = p.enable_debug_output;
             m_strDebugOutputPath = p.debug_output_path;
             m_targetSource = p.target_source;
+            m_nValueStartIndexOverride = p.value_start_index_override;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -367,9 +403,12 @@ namespace MyCaffe.param.tft
 
             rgChildren.Add("output_time", output_time.ToString());
             rgChildren.Add("output_mask", output_mask.ToString());
+            rgChildren.Add("output_item_ids", output_item_ids.ToString());
+            rgChildren.Add("verify_time_sync", verify_time_sync.ToString());
             rgChildren.Add("enable_debug_output", enable_debug_output.ToString());
             rgChildren.Add("debug_output_path", debug_output_path);
             rgChildren.Add("target_source", target_source.ToString());
+            rgChildren.Add("value_start_index_override", value_start_index_override.ToString());
 
             if (seed.HasValue)
                 rgChildren.Add("seed", seed.Value.ToString());
@@ -448,6 +487,9 @@ namespace MyCaffe.param.tft
             if ((strVal = rp.FindValue("enable_column_major_ordering")) != null)
                 p.enable_column_major_ordering = bool.Parse(strVal);
 
+            if ((strVal = rp.FindValue("value_start_index_override")) != null)
+                p.value_start_index_override = int.Parse(strVal);
+
             if ((strVal = rp.FindValue("forced_phase")) != null)
             {
                 if (strVal == Phase.TRAIN.ToString())
@@ -468,6 +510,12 @@ namespace MyCaffe.param.tft
 
             if ((strVal = rp.FindValue("output_mask")) != null)
                 p.output_mask = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("output_item_ids")) != null)
+                p.output_item_ids = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("verify_time_sync")) != null)
+                p.verify_time_sync = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("enable_debug_output")) != null)
                 p.enable_debug_output = bool.Parse(strVal);
