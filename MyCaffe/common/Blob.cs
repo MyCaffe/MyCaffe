@@ -2430,6 +2430,70 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Lods array data from a binary reader.
+        /// </summary>
+        /// <param name="br">Specifies the binary reader.</param>
+        /// <param name="strName">Returns the string name of the data.</param>
+        /// <param name="bDiff">Specifies whether to read in the diff (true) or data (false).</param>
+        /// <returns>The array of data is returned.</returns>
+        public static double[] Load(BinaryReader br, out string strName, bool bDiff = false)
+        {
+            strName = "";
+            int nNameLen = br.ReadInt32();
+            if (nNameLen > 0)
+                strName = br.ReadString();
+
+            List<int> rgShape = new List<int>();
+            int nCount = br.ReadInt32();
+
+            for (int i = 0; i < nCount; i++)
+            {
+                rgShape.Add(br.ReadInt32());
+            }
+
+            int nItemCount = br.ReadInt32();
+            int nDataCount = br.ReadInt32();
+
+            if (nDataCount > nItemCount)
+                throw new Exception("Invalid data count read!");
+
+            double[] rgData = null;
+            if (!bDiff)
+                rgData = new double[nDataCount];
+
+            for (int i = 0; i < nDataCount; i++)
+            {
+                double dfVal = br.ReadDouble();
+                if (!bDiff)
+                    rgData[i] = dfVal;
+            }
+
+            double[] rgDiff = null;
+            if (bDiff)
+            {
+                int nDiffCount = br.ReadInt32();
+
+                if (nDiffCount > nItemCount)
+                    throw new Exception("Invalid diff count read!");
+
+                if (bDiff)
+                    rgDiff = new double[nDiffCount];
+
+                for (int i = 0; i < nDiffCount; i++)
+                {
+                    double dfVal = br.ReadDouble();
+                    if (bDiff)
+                        rgDiff[i] = dfVal;
+                }
+            }
+
+            if (bDiff)
+                return rgDiff;
+            else
+                return rgData;
+        }
+
+        /// <summary>
         /// Saves this Blob to a byte array.
         /// </summary>
         /// <returns>The byte array containing all data of the blob is returned.</returns>
@@ -2456,6 +2520,22 @@ namespace MyCaffe.common
             using (BinaryReader br = new BinaryReader(ms))
             {
                 return Load(cuda, log, br, true, true);
+            }
+        }
+
+        /// <summary>
+        /// A new Blob is created from the byte array, previously saved with ToByteArray.
+        /// </summary>
+        /// <param name="rg">Specifies the byte array to convert.</param>
+        /// <param name="strName">Returns the name of the data.</param>
+        /// <param name="bDiff">Specifies to returive the diff when <i>true</i>.</param>
+        /// <returns>The array of data (or diff) in the byte array.</returns>
+        public static double[] FromByteArray(byte[] rg, out string strName, bool bDiff = false)
+        {
+            using (MemoryStream ms = new MemoryStream(rg))
+            using (BinaryReader br = new BinaryReader(ms))
+            {
+                return Load(br, out strName, bDiff);
             }
         }
 
