@@ -18,12 +18,14 @@ namespace MyCaffe.basecode
     [Serializable]
     public class SimpleTemporalDatum
     {
+        DateTime m_dt = DateTime.MinValue;
         int m_nChannels = 0;
         int m_nWidth = 0;
         int m_nHeight = 0;
         float[] m_rgReadDataF = null;
         string m_strTagName = null;
         object m_tag = null;
+        DateTime? m_dtStart = null;
 
         /// <summary>
         /// The constructor.
@@ -32,12 +34,32 @@ namespace MyCaffe.basecode
         /// <param name="nWidth">Specifies the width of the data.</param>
         /// <param name="nHeight">Specifies the height of the data.</param>
         /// <param name="rgData">Specifies the data.</param>
+        /// <param name="dt">Specifies the time stamp of the temporal datum.</param>
         public SimpleTemporalDatum(int nChannels, int nWidth, int nHeight, float[] rgData)
         {
             m_nChannels = nChannels;
             m_nWidth = nWidth;
             m_nHeight = nHeight;
             m_rgReadDataF = rgData;
+            m_dt = DateTime.MinValue;
+        }
+
+        /// <summary>
+        /// Specifies the timestamp of the temporal datum.
+        /// </summary>
+        public DateTime TimeStamp
+        {
+            get { return m_dt; }
+            set { m_dt = value; }
+        }
+
+        /// <summary>
+        /// Get/set the start time of the data.
+        /// </summary>
+        public DateTime? StartTime
+        {
+            get { return m_dtStart; }
+            set { m_dtStart = value; }
         }
 
         /// <summary>
