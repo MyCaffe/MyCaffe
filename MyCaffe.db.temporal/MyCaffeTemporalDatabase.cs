@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.ServiceModel;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -821,6 +822,12 @@ namespace MyCaffe.db.temporal
             return ts;
         }
 
+        private TemporalSet getTemporalSet(string strSrc)
+        {
+            int nSrcId = GetSourceID(strSrc);
+            return getTemporalSet(nSrcId);
+        }
+
         /// <summary>
         /// Returns a block of static, observed and known data from the database where one block is a set of (historical and future steps).
         /// </summary>
@@ -833,16 +840,17 @@ namespace MyCaffe.db.temporal
         /// <param name="ordering">Optionally, specifies the index ordering (only used when the valueSelectionOverride is set to 'NONE'</param>
         /// <param name="bOutputTime">Optionally, output the time data.</param>
         /// <param name="bOutputMask">Optionally, output the mask data.</param>
+        /// <param name="bOutputItemIDs">Optionally, output the item ID data.</param>
         /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
         /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
         /// <returns>A tuple containing the static, observed and known data is returned.</returns>
-        public SimpleTemporalDatumCollection QueryTemporalItem(int nQueryIdx, int nSrcId, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD? itemSelectionOverride = null, DB_ITEM_SELECTION_METHOD? valueSelectionOverride = null, DB_INDEX_ORDER? ordering = null, bool bOutputTime = false, bool bOutputMask = false, bool bEnableDebug = false, string strDebugPath = null)
+        public SimpleTemporalDatumCollection QueryTemporalItem(int nQueryIdx, int nSrcId, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD? itemSelectionOverride = null, DB_ITEM_SELECTION_METHOD? valueSelectionOverride = null, DB_INDEX_ORDER? ordering = null, bool bOutputTime = false, bool bOutputMask = false, bool bOutputItemIDs = false, bool bEnableDebug = false, string strDebugPath = null)
         {
             TemporalSet ts = getTemporalSet(nSrcId);
             DB_LABEL_SELECTION_METHOD itemSelection = (itemSelectionOverride.HasValue) ? itemSelectionOverride.Value : m_itemSelectionMethod;
             DB_ITEM_SELECTION_METHOD valueSelection = (valueSelectionOverride.HasValue) ? valueSelectionOverride.Value : m_valueSelectionMethod;
 
-            return ts.GetData(nQueryIdx, ref nItemIdx, ref nValueIdx, itemSelection, valueSelection, ordering, 1, bOutputTime, bOutputMask, bEnableDebug, strDebugPath);
+            return ts.GetData(nQueryIdx, ref nItemIdx, ref nValueIdx, itemSelection, valueSelection, ordering, 1, bOutputTime, bOutputMask, bOutputItemIDs, bEnableDebug, strDebugPath);
         }
 
         /// <summary>
@@ -866,6 +874,21 @@ namespace MyCaffe.db.temporal
             if (value.HasValue)
                 m_valueSelectionMethod = value.Value;
         }
+
+        /// <summary>
+        /// Checks whether or not the value index is valid.  An index is considered invalid if the value index + nStepsForward is greater than the number of values in the items.
+        /// </summary>
+        /// <param name="strSource">Specifies the source name of the temporal dataset.</param>
+        /// <param name="nItemIndex">Specifies the item index.</param>
+        /// <param name="nValueIndex">Specifies the value index.</param>
+        /// <param name="nStepsForward">Specifies the number of steps (hist + fut) forward from the value index.</param>
+        /// <returns>If there is enough data from the value index + steps, true is returned, otherwise false.</returns>
+        public bool IsValueIndexValid(string strSource, int nItemIndex, int nValueIndex, int nStepsForward)
+        {
+            TemporalSet ts = getTemporalSet(strSource);
+            return ts.IsValueIndexValid(nItemIndex, nValueIndex, nStepsForward);
+        }
+
 
         //---------------------------------------------------------------------
         //  Not Implemented
