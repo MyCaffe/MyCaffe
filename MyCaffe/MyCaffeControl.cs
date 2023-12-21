@@ -2848,19 +2848,108 @@ namespace MyCaffe
             m_log.WriteLine("INFO: Running TestMany with the " + phase.ToString() + " phase.");
             net = GetInternalNet(phase);
 
+            int nItemIndexVerify = customInput.GetPropertyAsInt("ItemIndexVerify", 1);
+            int nDataStartIndex = customInput.GetPropertyAsInt("DataStartIndex", -1);
+            if (nDataStartIndex >= 0)
+            {
+                // Set the value index stating point for the forward pass.  A batch of items will
+                // be loaded starting at this index.  This setting allows external users to
+                // specifiy the exact starting point for the forward pass.
+                Layer<T> dataLayer = net.FindLayer(LayerParameter.LayerType.DATA_TEMPORAL, null);
+                if (dataLayer != null)
+                {
+                    IXTemporalDatabaseBase db = m_db as IXTemporalDatabaseBase;
+                    if (db != null)
+                    {
+                        phase = dataLayer.layer_param.data_temporal_param.forced_phase.GetValueOrDefault(phase);
+                        string strSrc = dataLayer.layer_param.data_temporal_param.source;
+                        if (!strSrc.EndsWith("." + phase.ToString().ToLower()))
+                            strSrc += "." + phase.ToString().ToLower();
+
+                        try
+                        {
+                            if (!db.IsValueIndexValid(strSrc, nItemIndexVerify, nDataStartIndex, (int)(dataLayer.layer_param.data_temporal_param.num_historical_steps + dataLayer.layer_param.data_temporal_param.num_future_steps)))
+                            {
+                                PropertySet res1 = new PropertySet();
+                                res1.SetProperty("Error", "Out of data, reset the 'DataStartIndex' to 0.");
+                                return res1;
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            PropertySet res1 = new PropertySet();
+                            res1.SetProperty("Error", "Could not find the source '" + strSrc + "'.");
+                            return res1;
+                        }
+
+                        dataLayer.layer_param.data_temporal_param.value_start_index_override = nDataStartIndex;
+                    }
+                }
+            }
+
+            if (nDataStartIndex == -1 || nDataStartIndex == 80)
+                Trace.Write("Found it.");
+
             BlobCollection<T> colTop = net.Forward();
+            BlobCollection<T> colRes = null;
+
+            string strPredictionBlob = customInput.GetProperty("PredictionBlob");
+            string strLabelBlob = customInput.GetProperty("LabelBlob");
+            string strTimeBlob = customInput.GetProperty("TimeBlob");
+            string strIDBlob = customInput.GetProperty("IDBlob");
+            DateTime? dtLast = null;
+
+            if (!string.IsNullOrEmpty(strPredictionBlob) || !string.IsNullOrEmpty(strLabelBlob))
+            {
+                colRes = new BlobCollection<T>();
+
+                if (!string.IsNullOrEmpty(strPredictionBlob))
+                {
+                    Blob<T> blob = net.FindBlob(strPredictionBlob);
+                    if (blob != null)
+                        colRes.Add(blob);
+                }
+
+                if (!string.IsNullOrEmpty(strLabelBlob))
+                {
+                    Blob<T> blob = net.FindBlob(strLabelBlob);
+                    if (blob != null)
+                        colRes.Add(blob);
+                }
+
+                if (!string.IsNullOrEmpty(strTimeBlob))
+                {
+                    Blob<T> blob = net.FindBlob(strTimeBlob);
+                    if (blob != null)
+                    {
+                        colRes.Add(blob);
+                        if (blob.Tag != null && blob.Tag is DateTime)
+                            dtLast = (DateTime)blob.Tag;
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(strIDBlob))
+                {
+                    Blob<T> blob = net.FindBlob(strIDBlob);
+                    if (blob != null)
+                        colRes.Add(blob);
+                }
+            }
+
+            if (colRes == null)
+                colRes = colTop;
 
             PropertySet res = new PropertySet();
 
-            foreach (Blob<T> blob in colTop)
+            foreach (Blob<T> blob in colRes)
             {
-                string strName = blob.Name;
-                float[] rgData = Utility.ConvertVecF<T>(blob.mutable_cpu_data);
                 byte[] rgBytes = blob.ToByteArray();
-
-                res.SetPropertyBlob(strName, rgBytes);
-                res.SetPropertyInt(strName, (int)blob.type);
+                res.SetPropertyBlob(blob.Name, rgBytes);
+                res.SetPropertyInt(blob.Name, (int)blob.type);
             }
+
+            if (dtLast.HasValue)
+                res.SetProperty("Time", dtLast.Value.ToString("yyyy-MM-dd HH:mm:ss"));
 
             return res;
         }
