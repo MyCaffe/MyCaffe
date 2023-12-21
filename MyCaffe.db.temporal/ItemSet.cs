@@ -24,6 +24,7 @@ namespace MyCaffe.db.temporal
         DatabaseTemporal m_db;
         ValueItem m_item = null;
         OrderedValueStreamDescriptorSet m_rgStrm;
+        int m_nColStart = 0;
         int m_nColCount = 0;
         List<int> m_rgRowCount = new List<int>(8);
         int m_nTargetStreamNumIdx = 0;
@@ -31,6 +32,7 @@ namespace MyCaffe.db.temporal
         RawValueSet m_data = null;
         SimpleTemporalDatum m_sdStaticNum = null;
         SimpleTemporalDatum m_sdStaticCat = null;
+        bool m_bActive = true;
 
         /// <summary>
         /// The constructor.
@@ -66,11 +68,42 @@ namespace MyCaffe.db.temporal
         }
 
         /// <summary>
+        /// Set/get the active state of the item set.
+        /// </summary>
+        public bool Active
+        {
+            get { return m_bActive; }
+            set { m_bActive = value; }
+        }
+
+        /// <summary>
         /// Returns the value item.
         /// </summary>
         public ValueItem Item
         {
             get { return m_item; }
+        }
+
+        /// <summary>
+        /// Returns the value item dates in this item set.
+        /// </summary>
+        public List<DateTime?> DataDates
+        {
+            get 
+            { 
+                if (m_data == null)
+                    return new List<DateTime?>();
+                return m_data.GetDates(); 
+            }
+        }
+
+        /// <summary>
+        /// Get/set the start column in a synchronized data set.
+        /// </summary>
+        public int ColumnStart
+        {
+            get { return m_nColStart; }
+            set { m_nColStart = value; }
         }
 
         /// <summary>
@@ -140,6 +173,30 @@ namespace MyCaffe.db.temporal
         }
 
         /// <summary>
+        /// Returns whether or not the current value index is within the range of the synchronized data.
+        /// </summary>
+        /// <param name="nValIdx">Optionally, specifies a value index override.</param>
+        /// <param name="nHistoricSteps">Specifies the number of historical steps.</param>
+        /// <param name="nFutureSteps">Specifies the number of future steps.</param>
+        /// <returns>If the value index is within the data range, true is returned, otherwise false.</returns>
+        public bool HasEnoughData(ref int? nValIdx, int nHistoricSteps, int nFutureSteps)
+        {
+            if (!m_bActive)
+                return false;
+
+            int nTotalSteps = nHistoricSteps + nFutureSteps;
+            int nValIdx1 = nValIdx.GetValueOrDefault(m_nValIdx);
+
+            if (nValIdx1 < m_nColStart)
+                return false;
+
+            if (nValIdx1 + nTotalSteps > m_nColStart + m_nColCount)
+                return false;
+
+            return true;
+        }
+
+        /// <summary>
         /// Retreives the static, historical and future data at a selected step.
         /// </summary>
         /// <param name="nQueryIdx">Specifies the index of the query, used to show where this query is within a batch.</param>
@@ -150,13 +207,14 @@ namespace MyCaffe.db.temporal
         /// <param name="nValueStepOffset">Specifes the step offset to apply when advancing the step index.</param>
         /// <param name="bOutputTime">Optionally, output the time data.</param>
         /// <param name="bOutputMask">Optionally, output the mask data.</param>
+        /// <param name="bOutputItemIDs">Optionally, output the item ID data.</param>
         /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
         /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
         /// <returns>An collection of SimpleTemporalDatum is returned where: [0] = static num, [1] = static cat, [2] = historical num, [3] = historical cat, [4] = future num, [5] = future cat, [6] = target, and [7] = target history
         /// for a given item at the temporal selection point.</returns>
         /// <remarks>Note, the ordering for historical value streams is: observed, then known.  Future value streams only contiain known value streams.  If a dataset does not have one of the data types noted above, null
         /// is returned in the array slot (for example, if the dataset does not produce static numeric values, the array slot is set to [0] = null.</remarks>
-        public SimpleTemporalDatumCollection GetData(int nQueryIdx, ref int? nValueIdx, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nHistSteps, int nFutSteps, int nValueStepOffset = 1, bool bOutputTime = false, bool bOutputMask = false, bool bEnableDebug = false, string strDebugPath = null)
+        public SimpleTemporalDatumCollection GetData(int nQueryIdx, ref int? nValueIdx, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nHistSteps, int nFutSteps, int nValueStepOffset = 1, bool bOutputTime = false, bool bOutputMask = false, bool bOutputItemIDs = false, bool bEnableDebug = false, string strDebugPath = null, bool bLockValueIdx = false)
         {
             int nTotalSteps = nHistSteps + nFutSteps;
             int nColCount = m_nColCount;
@@ -240,7 +298,14 @@ namespace MyCaffe.db.temporal
                 rgData.Add(sdMask);
             }
 
-            m_nValIdx += nValueStepOffset;
+            if (bOutputItemIDs)
+            {
+                SimpleTemporalDatum sdID = getItemIdx();
+                rgData.Add(sdID);
+            }
+
+            if (!bLockValueIdx || nQueryIdx == 0)
+                m_nValIdx += nValueStepOffset;
 
             return rgData;
         }
@@ -285,7 +350,8 @@ namespace MyCaffe.db.temporal
             if (sd == null)
                 return;
 
-            DateTime[] rgSync = getTimeSync(nIdx, sd.Height);
+            DateTime dtStart;
+            DateTime[] rgSync = getTimeSync(nIdx, sd.Height, out dtStart);
             if (rgSync.Length != sd.Height)
                 throw new Exception("The sync and data lengths do not match!");
 
@@ -331,7 +397,8 @@ namespace MyCaffe.db.temporal
             if (string.IsNullOrEmpty(strDebugPath))
                 throw new Exception("You must specify a debug path, when 'EnableDebug' = true.");
 
-            DateTime[] rgSync = getTimeSync(nIdx, nHistSteps + nFutSteps);
+            DateTime dtStart;
+            DateTime[] rgSync = getTimeSync(nIdx, nHistSteps + nFutSteps, out dtStart);
             SimpleTemporalDatum sd = getTargetData(nIdx, nHistSteps + nFutSteps, m_nTargetStreamNumIdx);
 
             if (rgSync.Length != sd1.ItemCount + sd2.ItemCount)
@@ -451,7 +518,8 @@ namespace MyCaffe.db.temporal
 
         private SimpleTemporalDatum getHistoricalTime(int nIdx, int nCount)
         {
-            DateTime[] rgSync = getTimeSync(nIdx, nCount);
+            DateTime dtStart;
+            DateTime[] rgSync = getTimeSync(nIdx, nCount, out dtStart);
             if (rgSync == null)
                 return null;
 
@@ -459,17 +527,30 @@ namespace MyCaffe.db.temporal
             int nH = rgSync.Length;
             int nW = 1;
 
-            DateTime dtStart = m_item.StartTime.Value;
-
             float[] rgf = new float[nCount];
+            TimeSpan ts = TimeSpan.Zero;
+
             for (int i = 0; i < rgSync.Length; i++)
             {
-                rgf[i] = (float)(rgSync[i] - dtStart).TotalSeconds;
+                ts = rgSync[i] - dtStart;
+                double dfSeconds = ts.TotalSeconds / 10000.0;
+                rgf[i] = (float)dfSeconds;
             }
 
             SimpleTemporalDatum sd = new SimpleTemporalDatum(nC, nW, nH, rgf);
             sd.TagName = "HistoricalTime";
+            sd.StartTime = dtStart;
+            sd.TimeStamp = dtStart + ts;
 
+            return sd;
+        }
+
+        private SimpleTemporalDatum getItemIdx()
+        {
+            float[] rgf = new float[1];
+            rgf[0] = m_item.Idx.GetValueOrDefault();
+            SimpleTemporalDatum sd = new SimpleTemporalDatum(1, 1, 1, rgf);
+            sd.TagName = "ItemID";
             return sd;
         }
 
@@ -706,9 +787,9 @@ namespace MyCaffe.db.temporal
             return sd;
         }
 
-        private DateTime[] getTimeSync(int nIdx, int nCount)
+        private DateTime[] getTimeSync(int nIdx, int nCount, out DateTime dtStart)
         {
-            return m_data.GetTimeSyncValues(nIdx, nCount);
+            return m_data.GetTimeSyncValues(nIdx, nCount, out dtStart);
         }
 
         /// <summary>
@@ -724,6 +805,21 @@ namespace MyCaffe.db.temporal
 
             return nCount;
         }
+
+        /// <summary>
+        /// Checks whether or not the value index is valid.  An index is considered invalid if the value index + nStepsForward is greater than the number of values in the items.
+        /// </summary>
+        /// <param name="nValueIndex">Specifies the value index.</param>
+        /// <param name="nStepsForward">Specifies the number of steps (hist + fut) forward from the value index.</param>
+        /// <returns>If there is enough data from the value index + steps, true is returned, otherwise false.</returns>
+        public bool IsValueIndexValid(int nValueIndex, int nStepsForward)
+        {
+            if (nValueIndex + nStepsForward > m_nColCount)
+                return false;
+
+            return true;
+        }
+
     }
 
     [Serializable]
