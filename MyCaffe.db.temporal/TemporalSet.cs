@@ -469,16 +469,17 @@ namespace MyCaffe.db.temporal
         /// <param name="bOutputItemIDs">Optionally, output the item ID data.</param>
         /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
         /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
+        /// <param name="bIgnoreFuture">Optionally, specifies to ignore the future data.</param>
         /// <returns>An collection of SimpleTemporalDatums is returned where: [0] = static num, [1] = static cat, [2] = historical num, [3] = historical cat, [4] = future num, [5] = future cat, [6] = target, and [7] = target history
         /// for a given item at the temporal selection point.</returns>
         /// <remarks>Note, the ordering for historical value streams is: observed, then known.  Future value streams only contiain known value streams.  If a dataset does not have one of the data types noted above, null
         /// is returned in the array slot (for example, if the dataset does not produce static numeric values, the array slot is set to [0] = null.</remarks>
-        public SimpleTemporalDatumCollection GetData(int nQueryIdx, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD itemSelectionMethod, DB_ITEM_SELECTION_METHOD valueSelectionMethod, DB_INDEX_ORDER? ordering = null, int nValueStepOffset = 1, bool bOutputTime = false, bool bOutputMask = false, bool bOutputItemIDs = false, bool bEnableDebug = false, string strDebugPath = null)
+        public SimpleTemporalDatumCollection GetData(int nQueryIdx, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD itemSelectionMethod, DB_ITEM_SELECTION_METHOD valueSelectionMethod, DB_INDEX_ORDER? ordering = null, int nValueStepOffset = 1, bool bOutputTime = false, bool bOutputMask = false, bool bOutputItemIDs = false, bool bEnableDebug = false, string strDebugPath = null, bool bIgnoreFuture = false)
         {
             SimpleTemporalDatumCollection data = null;
 
             if (ordering.GetValueOrDefault(DB_INDEX_ORDER.DEFAULT) == DB_INDEX_ORDER.COL_MAJOR)
-                return GetDataColMajor(nQueryIdx, itemSelectionMethod, ref nItemIdx, ref nValueIdx, nValueStepOffset, bOutputTime, bOutputMask, bOutputItemIDs, bEnableDebug, strDebugPath);
+                return GetDataColMajor(nQueryIdx, itemSelectionMethod, ref nItemIdx, ref nValueIdx, nValueStepOffset, bOutputTime, bOutputMask, bOutputItemIDs, bEnableDebug, strDebugPath, bIgnoreFuture);
 
             lock (m_objSync)
             {
@@ -499,7 +500,7 @@ namespace MyCaffe.db.temporal
                 if (m_nItemIdx >= m_rgItems.Count)
                     return null;
 
-                data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bOutputItemIDs, bEnableDebug, strDebugPath);
+                data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bOutputItemIDs, bEnableDebug, strDebugPath, bIgnoreFuture);
 
                 int nRetryCount = 0;
                 while (data == null && nRetryCount < 40)
@@ -516,7 +517,7 @@ namespace MyCaffe.db.temporal
                     }
 
                     nItemIdx = m_nItemIdx;
-                    data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bOutputItemIDs, bEnableDebug, strDebugPath);
+                    data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, valueSelectionMethod, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bOutputItemIDs, bEnableDebug, strDebugPath, bIgnoreFuture);
                     nRetryCount++;
                 }
             }
@@ -537,8 +538,9 @@ namespace MyCaffe.db.temporal
         /// <param name="bOutputItemIDs">Optionally, output the item ID data.</param>
         /// <param name="bEnableDebug">Specifies to enable debug output.</param>
         /// <param name="strDebugPath">Specifies the debug output path.</param>
+        /// <param name="bIgnoreFuture">Specifies to ignore the future data.</param>
         /// <returns>A SimpleTemporalDatumCollection containing the data is returned.</returns>
-        public SimpleTemporalDatumCollection GetDataColMajor(int nQueryIdx, DB_LABEL_SELECTION_METHOD itemSelectionMethod, ref int? nItemIdx, ref int? nValueIdx, int nValueStepOffset, bool bOutputTime, bool bOutputMask, bool bOutputItemIDs, bool bEnableDebug, string strDebugPath)
+        public SimpleTemporalDatumCollection GetDataColMajor(int nQueryIdx, DB_LABEL_SELECTION_METHOD itemSelectionMethod, ref int? nItemIdx, ref int? nValueIdx, int nValueStepOffset, bool bOutputTime, bool bOutputMask, bool bOutputItemIDs, bool bEnableDebug, string strDebugPath, bool bIgnoreFuture)
         {
             SimpleTemporalDatumCollection data = null;
 
@@ -565,9 +567,9 @@ namespace MyCaffe.db.temporal
                 data = null;
                 if (m_rgItems[m_nItemIdx].HasEnoughData(ref nValueIdx, m_nHistoricSteps, m_nFutureSteps))
                 {
-                    data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, DB_ITEM_SELECTION_METHOD.NONE, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bOutputItemIDs, bEnableDebug, strDebugPath, true);
+                    data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, DB_ITEM_SELECTION_METHOD.NONE, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bOutputItemIDs, bEnableDebug, strDebugPath, true, bIgnoreFuture);
                     if (data == null)
-                        data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, DB_ITEM_SELECTION_METHOD.NONE, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bOutputItemIDs, bEnableDebug, strDebugPath, true);
+                        data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, DB_ITEM_SELECTION_METHOD.NONE, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bOutputItemIDs, bEnableDebug, strDebugPath, true, bIgnoreFuture);
                 }
 
                 if (itemSelectionMethod == DB_LABEL_SELECTION_METHOD.NONE)

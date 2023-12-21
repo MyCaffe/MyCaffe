@@ -842,14 +842,15 @@ namespace MyCaffe.db.temporal
         /// <param name="bOutputItemIDs">Optionally, output the item ID data.</param>
         /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
         /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
+        /// <param name="bIgnoreFuture">Optionally, ignore the future data values.</param>
         /// <returns>A tuple containing the static, observed and known data is returned.</returns>
-        public SimpleTemporalDatumCollection QueryTemporalItem(int nQueryIdx, int nSrcId, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD? itemSelectionOverride = null, DB_ITEM_SELECTION_METHOD? valueSelectionOverride = null, DB_INDEX_ORDER? ordering = null, bool bOutputTime = false, bool bOutputMask = false, bool bOutputItemIDs = false, bool bEnableDebug = false, string strDebugPath = null)
+        public SimpleTemporalDatumCollection QueryTemporalItem(int nQueryIdx, int nSrcId, ref int? nItemIdx, ref int? nValueIdx, DB_LABEL_SELECTION_METHOD? itemSelectionOverride = null, DB_ITEM_SELECTION_METHOD? valueSelectionOverride = null, DB_INDEX_ORDER? ordering = null, bool bOutputTime = false, bool bOutputMask = false, bool bOutputItemIDs = false, bool bEnableDebug = false, string strDebugPath = null, bool bIgnoreFuture = false)
         {
             TemporalSet ts = getTemporalSet(nSrcId);
             DB_LABEL_SELECTION_METHOD itemSelection = (itemSelectionOverride.HasValue) ? itemSelectionOverride.Value : m_itemSelectionMethod;
             DB_ITEM_SELECTION_METHOD valueSelection = (valueSelectionOverride.HasValue) ? valueSelectionOverride.Value : m_valueSelectionMethod;
 
-            return ts.GetData(nQueryIdx, ref nItemIdx, ref nValueIdx, itemSelection, valueSelection, ordering, 1, bOutputTime, bOutputMask, bOutputItemIDs, bEnableDebug, strDebugPath);
+            return ts.GetData(nQueryIdx, ref nItemIdx, ref nValueIdx, itemSelection, valueSelection, ordering, 1, bOutputTime, bOutputMask, bOutputItemIDs, bEnableDebug, strDebugPath, bIgnoreFuture);
         }
 
         /// <summary>

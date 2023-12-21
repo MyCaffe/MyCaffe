@@ -868,7 +868,7 @@ namespace MyCaffe.db.temporal
             if (m_rgValues == null)
                 return null;
 
-            if (nIdx + nCount >= m_rgValues.Count)
+            if (nIdx + nCount > m_rgValues.Count)
                 return null;
 
             List<float> rgNum = new List<float>();
@@ -926,7 +926,7 @@ namespace MyCaffe.db.temporal
             if (m_rgValues == null)
                 return null;
 
-            if (nIdx + nCount >= m_rgValues.Count)
+            if (nIdx + nCount > m_rgValues.Count)
                 return null;
 
             List<float> rgNum = new List<float>();
@@ -964,7 +964,7 @@ namespace MyCaffe.db.temporal
             if (m_rgValues == null)
                 return null;
 
-            if (nIdx + nCount >= m_rgValues.Count)
+            if (nIdx + nCount > m_rgValues.Count)
                 return null;
 
             List<float> rgNum = new List<float>();

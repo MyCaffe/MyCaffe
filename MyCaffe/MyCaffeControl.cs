@@ -2887,7 +2887,7 @@ namespace MyCaffe
                 }
             }
 
-            if (nDataStartIndex == -1 || nDataStartIndex == 80)
+            if (nDataStartIndex == -1 || nDataStartIndex == 187)
                 Trace.Write("Found it.");
 
             BlobCollection<T> colTop = net.Forward();

@@ -36,6 +36,7 @@ namespace MyCaffe.param.tft
         bool m_bOutputMask = false;
         bool m_bOutputItemIDs = false;
         bool m_bVerifyTimeSync = false;
+        bool m_bIgnoreFutureData = false;
         bool m_bEnableDebugOutput = false;
         string m_strDebugOutputPath = null;
         TARGET_SOURCE m_targetSource = TARGET_SOURCE.FUTURE;
@@ -144,6 +145,16 @@ namespace MyCaffe.param.tft
         {
             get { return m_bVerifyTimeSync; }
             set { m_bVerifyTimeSync = value; }
+        }
+
+        /// <summary>
+        /// Specifies to ignore the future data (typically used when running inference on database data). NOTE, this setting only applies to SQL based datasets.
+        /// </summary>
+        [Description("Specifies to ignore the future data (typically used when running inference on database data).  NOTE, this setting only applies to SQL based datasets.")]
+        public bool ignore_future_data
+        {
+            get { return m_bIgnoreFutureData; }
+            set { m_bIgnoreFutureData = value; }
         }
 
         /// <summary>
@@ -363,6 +374,7 @@ namespace MyCaffe.param.tft
             m_bOutputMask = p.output_mask;
             m_bOutputItemIDs = p.output_item_ids;
             m_bVerifyTimeSync = p.verify_time_sync;
+            m_bIgnoreFutureData = p.ignore_future_data;
             m_bEnableDebugOutput = p.enable_debug_output;
             m_strDebugOutputPath = p.debug_output_path;
             m_targetSource = p.target_source;
@@ -405,6 +417,7 @@ namespace MyCaffe.param.tft
             rgChildren.Add("output_mask", output_mask.ToString());
             rgChildren.Add("output_item_ids", output_item_ids.ToString());
             rgChildren.Add("verify_time_sync", verify_time_sync.ToString());
+            rgChildren.Add("ignore_future_data", ignore_future_data.ToString());
             rgChildren.Add("enable_debug_output", enable_debug_output.ToString());
             rgChildren.Add("debug_output_path", debug_output_path);
             rgChildren.Add("target_source", target_source.ToString());
@@ -516,6 +529,9 @@ namespace MyCaffe.param.tft
 
             if ((strVal = rp.FindValue("verify_time_sync")) != null)
                 p.verify_time_sync = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("ignore_future_data")) != null)
+                p.ignore_future_data = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("enable_debug_output")) != null)
                 p.enable_debug_output = bool.Parse(strVal);

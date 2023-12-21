@@ -210,11 +210,13 @@ namespace MyCaffe.db.temporal
         /// <param name="bOutputItemIDs">Optionally, output the item ID data.</param>
         /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
         /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
+        /// <param name="bLockValueIdx">Optionally, lock the value index setting.</param>
+        /// <param name="bIgnoreFuture">Optionally, ignore the future data.</param>
         /// <returns>An collection of SimpleTemporalDatum is returned where: [0] = static num, [1] = static cat, [2] = historical num, [3] = historical cat, [4] = future num, [5] = future cat, [6] = target, and [7] = target history
         /// for a given item at the temporal selection point.</returns>
         /// <remarks>Note, the ordering for historical value streams is: observed, then known.  Future value streams only contiain known value streams.  If a dataset does not have one of the data types noted above, null
         /// is returned in the array slot (for example, if the dataset does not produce static numeric values, the array slot is set to [0] = null.</remarks>
-        public SimpleTemporalDatumCollection GetData(int nQueryIdx, ref int? nValueIdx, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nHistSteps, int nFutSteps, int nValueStepOffset = 1, bool bOutputTime = false, bool bOutputMask = false, bool bOutputItemIDs = false, bool bEnableDebug = false, string strDebugPath = null, bool bLockValueIdx = false)
+        public SimpleTemporalDatumCollection GetData(int nQueryIdx, ref int? nValueIdx, DB_ITEM_SELECTION_METHOD valueSelectionMethod, int nHistSteps, int nFutSteps, int nValueStepOffset = 1, bool bOutputTime = false, bool bOutputMask = false, bool bOutputItemIDs = false, bool bEnableDebug = false, string strDebugPath = null, bool bLockValueIdx = false, bool bIgnoreFuture = false)
         {
             int nTotalSteps = nHistSteps + nFutSteps;
             int nColCount = m_nColCount;
@@ -231,7 +233,7 @@ namespace MyCaffe.db.temporal
             }
             else if (valueSelectionMethod == DB_ITEM_SELECTION_METHOD.NONE)
             {
-                if (m_nValIdx >= nColCount - nTotalSteps)
+                if (m_nValIdx + nTotalSteps > nColCount)
                 {
                     m_nValIdx = 0;
                     return null;
@@ -257,8 +259,11 @@ namespace MyCaffe.db.temporal
 
             SimpleTemporalDatum sdFutNum = null;
             SimpleTemporalDatum sdFutCat = null;
-            if (!getFutureData(m_nValIdx + nHistSteps, nFutSteps, out sdFutNum, out sdFutCat))
-                return null;
+            if (!bIgnoreFuture)
+            {
+                if (!getFutureData(m_nValIdx + nHistSteps, nFutSteps, out sdFutNum, out sdFutCat))
+                    return null;
+            }
 
             SimpleTemporalDatum sdTarget = null;
             SimpleTemporalDatum sdTargetHist = null;
