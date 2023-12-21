@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TrayNotify;
 
 namespace MyCaffe.basecode
 {
@@ -407,6 +408,30 @@ namespace MyCaffe.basecode
             }
 
             return m_clrDefault;
+        }
+
+        /// <summary>
+        /// Convert a transparent color to a solid color.
+        /// </summary>
+        /// <param name="clr">Specifies the color to convert.</param>
+        /// <returns>The solid color with a white background is returned.</returns>
+        public Color ConvertTransparentToSolid(Color clr)
+        {
+            double dfAlpha = clr.A / 255.0;
+            int nR = (int)(clr.R * (1.0 - dfAlpha)) + (int)(255 * dfAlpha);
+            int nG = (int)(clr.G * (1.0 - dfAlpha)) + (int)(255 * dfAlpha);
+            int nB = (int)(clr.B * (1.0 - dfAlpha)) + (int)(255 * dfAlpha);
+
+            if (nR > 255)
+                nR = 255;
+
+            if (nG > 255)
+                nG = 255;
+
+            if (nB > 255)
+                nB = 255;
+
+            return Color.FromArgb(nR, nG, nB);
         }
     }
 }
