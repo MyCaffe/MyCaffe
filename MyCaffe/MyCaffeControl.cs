@@ -2848,8 +2848,8 @@ namespace MyCaffe
             m_log.WriteLine("INFO: Running TestMany with the " + phase.ToString() + " phase.");
             net = GetInternalNet(phase);
 
-            int nItemIndexVerify = customInput.GetPropertyAsInt("ItemIndexVerify", 1);
-            int nDataStartIndex = customInput.GetPropertyAsInt("DataStartIndex", -1);
+            int nItemIndexVerify = (customInput != null) ? customInput.GetPropertyAsInt("ItemIndexVerify", 1) : 1;
+            int nDataStartIndex = (customInput != null) ? customInput.GetPropertyAsInt("DataStartIndex", -1) : -1;
             if (nDataStartIndex >= 0)
             {
                 // Set the value index stating point for the forward pass.  A batch of items will
@@ -2893,11 +2893,19 @@ namespace MyCaffe
             BlobCollection<T> colTop = net.Forward();
             BlobCollection<T> colRes = null;
 
-            string strPredictionBlob = customInput.GetProperty("PredictionBlob");
-            string strLabelBlob = customInput.GetProperty("LabelBlob");
-            string strTimeBlob = customInput.GetProperty("TimeBlob");
-            string strIDBlob = customInput.GetProperty("IDBlob");
+            string strPredictionBlob = null;
+            string strLabelBlob = null;
+            string strTimeBlob = null;
+            string strIDBlob = null;
             DateTime? dtLast = null;
+
+            if (customInput != null)
+            {
+                strPredictionBlob = customInput.GetProperty("PredictionBlob");
+                strLabelBlob = customInput.GetProperty("LabelBlob");
+                strTimeBlob = customInput.GetProperty("TimeBlob");
+                strIDBlob = customInput.GetProperty("IDBlob");
+            }
 
             if (!string.IsNullOrEmpty(strPredictionBlob) || !string.IsNullOrEmpty(strLabelBlob))
             {
