@@ -265,10 +265,12 @@ namespace MyCaffe.common
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class NCCL<T> : GPUParams<T>, IDisposable 
     {
-        long m_hNccl;
+        long m_hNccl = 0;
+        bool m_bOwnNccl = false;
         Solver<T> m_solver;
         ManualResetEvent m_evtGradientsReady = new ManualResetEvent(false);
         List<ManualResetEvent> m_rgGradientReady = new List<ManualResetEvent>();
+        Solver<T> m_root_solver = null;
 
         /// <summary>
         /// The NCCL constructor.
@@ -288,9 +290,11 @@ namespace MyCaffe.common
 
             m_solver = root_solver;
             m_hNccl = hNccl;
+            m_bOwnNccl = false;
             Configure(root_solver);
 
             root_solver.OnGradientsReady += Solver_OnGradientsReady;
+            m_root_solver = root_solver;
         }
 
         /// <summary>
@@ -302,8 +306,22 @@ namespace MyCaffe.common
 
             if (m_hNccl != 0)
             {
-                m_cuda.FreeNCCL(m_hNccl);
+                m_cuda.FreeNCCL(m_hNccl, !m_bOwnNccl);
                 m_hNccl = 0;
+            }
+
+            Detach();
+        }
+
+        /// <summary>
+        /// Detach from the root solver.
+        /// </summary>
+        public void Detach()
+        {
+            if (m_root_solver != null)
+            {
+                m_root_solver.OnGradientsReady -= Solver_OnGradientsReady;
+                m_root_solver = null;
             }
         }
 
@@ -364,6 +382,7 @@ namespace MyCaffe.common
 
             m_cuda.NcclInitializeSingleProcess(rghNccl.ToArray());
             m_hNccl = rghNccl[0];
+            m_bOwnNccl = true;
             m_evtGradientsReady = m_rgGradientReady[0];
 
             List<WaitHandle> rgWaitAllInit = new List<WaitHandle>();
@@ -427,8 +446,6 @@ namespace MyCaffe.common
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class Worker<T> : InternalThread<T>
     {
-        CudaDnn<T> m_cuda;
-
         /// <summary>
         /// The Worker constructor.
         /// </summary>
@@ -441,11 +458,12 @@ namespace MyCaffe.common
         {
             SolverInfo<T> info = e.Arg as SolverInfo<T>;
             NCCL<T> nccl = null;
-
-            m_cuda = new common.CudaDnn<T>(e.DeviceID, DEVINIT.CUBLAS | DEVINIT.CURAND, null, info.CudaPath);
+            CudaDnn<T> cuda = null;
 
             try
             {
+                cuda = new common.CudaDnn<T>(e.DeviceID, DEVINIT.CUBLAS | DEVINIT.CURAND, null, info.CudaPath);
+
                 Solver<T> rank0 = info.Rank0;
                 Log log = new Log("Worker solver for DeviceID = " + e.DeviceID.ToString());
 
@@ -458,13 +476,13 @@ namespace MyCaffe.common
                 //  the nccl and be responsible for its 
                 //  destruction.
                 //-----------------------------------------
-                long hNccl = m_cuda.KernelCopyNccl(info.KernelHandle, info.NcclHandle);
+                long hNccl = cuda.KernelCopyNccl(info.KernelHandle, info.NcclHandle);
 
                 // Create solver and install callbacks
                 SolverParameter param = rank0.parameter.Clone();
                 param.device_id = e.DeviceID;
                 param.type = rank0.parameter.type;
-                Solver<T> solver = Solver<T>.Create(m_cuda, log, param, rank0.CancelEvent, null, null, rank0.Database, null, rank0.solver_count, info.SolverRank);
+                Solver<T> solver = Solver<T>.Create(cuda, log, param, rank0.CancelEvent, null, null, rank0.Database, null, rank0.solver_count, info.SolverRank);
                 info.StartedEvent.Set();
                 log.CHECK_EQ((int)solver.type, (int)rank0.type, "The solver types should be the same.");
 
@@ -474,10 +492,10 @@ namespace MyCaffe.common
                 //-----------------------------------------
                 log.Enable = false;
 
-                nccl = new NCCL<T>(m_cuda, log, solver, e.DeviceID, hNccl, info.GradientReadyEvents);
+                nccl = new NCCL<T>(cuda, log, solver, e.DeviceID, hNccl, info.GradientReadyEvents);
 
                 info.InitializedEvent.Set();
-                m_cuda.SynchronizeDevice();
+                cuda.SynchronizeDevice();
 
                 List<WaitHandle> rgWait = new List<WaitHandle>();
                 rgWait.AddRange(rank0.CancelEvent.Handles);
@@ -504,10 +522,10 @@ namespace MyCaffe.common
             finally
             {
                 if (nccl != null)
-                    nccl.Dispose();
+                    nccl.Detach();
 
-                m_cuda.Dispose();
-                m_cuda = null;
+                if (cuda != null)
+                    cuda.Dispose();
             }
         }
     }
