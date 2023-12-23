@@ -348,7 +348,7 @@ namespace MyCaffe.db.temporal
         }
 
         /// <summary>
-        /// Load the static value stream categorical values for a given source and item.
+        /// Load the raw data values for a given source and item.
         /// </summary>
         /// <param name="nSrcID">Specifies the source ID.</param>
         /// <param name="nItemID">Specifies the item ID.</param>
@@ -357,7 +357,7 @@ namespace MyCaffe.db.temporal
         {
             using (DNNEntitiesTemporal entities = EntitiesConnectionTemporal.CreateEntities())
             {
-                List<RawValue> rgData = entities.RawValues.AsNoTracking().Where(p => p.SourceID == nSrcID && p.ItemID == nItemID).OrderBy(p => p.TimeStamp).ToList();
+                List<RawValue> rgData = entities.RawValues.AsNoTracking().Where(p => p.SourceID == nSrcID && p.ItemID == nItemID && p.Active == true).OrderBy(p => p.TimeStamp).ToList();
                 return RawValueSet.FromData(nSrcID, nItemID, rgData);
             }
         }
