@@ -106,7 +106,7 @@ namespace MyCaffe.basecode
         {
             foreach (RawProto p in m_rgChildren)
             {
-                if (p.Name == strName)
+                if (p.Name == strName && !string.IsNullOrEmpty(p.Value))
                     return p.Value.Trim('\"');
             }
 
