@@ -549,6 +549,7 @@ namespace MyCaffe.layers.tft
         protected DataTemporalParameter.TARGET_SOURCE m_targetSrc = DataTemporalParameter.TARGET_SOURCE.FUTURE;
         private int m_nLastBatchSize = 0;
         private int m_nColMajorValIdx = 0;
+        private int m_nColMajorItemIdx = 0;
         Dictionary<int, int> m_rgMaxSrcItemSteps = new Dictionary<int, int>();
         bool m_bVerifyTimeSync = false;
 
@@ -714,6 +715,12 @@ namespace MyCaffe.layers.tft
             if (m_rgIdx == null || m_nLastBatchSize != nBatchSize)
                 m_rgIdx = new int[nBatchSize, 2];
 
+            List<int> rgItemIdx = new List<int>();
+            for (int i=0; i<src.TemporalDescriptor.ValueItemDescriptorItems.Count; i++)
+            {
+                rgItemIdx.Add(i);
+            }
+
             DateTime dtLast = DateTime.MinValue;
             float[] rgRawDataLast = null;
             int nBatchIdx = 0;
@@ -725,6 +732,7 @@ namespace MyCaffe.layers.tft
                 if (ordering == DB_INDEX_ORDER.COL_MAJOR)
                 {
                     nValueIdx = m_nColMajorValIdx;
+                    nItemIdx = m_nColMajorItemIdx;
                 }
                 else if (m_batchPerfSet != null)
                 {
@@ -737,150 +745,183 @@ namespace MyCaffe.layers.tft
                     nValueIdx = nValueIndexStartOverride;
 
                 SimpleTemporalDatumCollection rgData = m_db.QueryTemporalItem(nBatchIdx, src.ID, ref nItemIdx, ref nValueIdx, itemSelection, valueSelection, ordering, m_bOutputTime, m_bOutputMask, m_bOutputItemIds, bEnableDebug, strDebugPath, bIgnoreFutureData);
-                if (rgData == null)
-                    continue;
-
-                m_rgIdx[nBatchIdx, 0] = nItemIdx.Value;
-                m_rgIdx[nBatchIdx, 1] = nValueIdx.Value;
-
-                SimpleTemporalDatum sdStatNum = rgData[0];
-                SimpleTemporalDatum sdStatCat = rgData[1];
-                SimpleTemporalDatum sdHistNum = rgData[2];
-                SimpleTemporalDatum sdHistCat = rgData[3];
-                SimpleTemporalDatum sdFutureNum = rgData[4];
-                SimpleTemporalDatum sdFutureCat = rgData[5];
-                SimpleTemporalDatum sdTarget = (m_targetSrc == DataTemporalParameter.TARGET_SOURCE.HISTORICAL) ? rgData[7] : rgData[6];
-                SimpleTemporalDatum sdTargetHist = null;
-                SimpleTemporalDatum sdTime = null;
-                SimpleTemporalDatum sdMask = null;
-                SimpleTemporalDatum sdItemID = null;
-
-                nIdx = 7;
-                if (m_bOutputTargetHistorical)
-                    sdTargetHist = rgData[nIdx];
-                nIdx++;
-
-                if (m_bOutputTime)
+                if (rgData != null)
                 {
-                    sdTime = rgData[nIdx];
+                    m_rgIdx[nBatchIdx, 0] = nItemIdx.Value;
+                    m_rgIdx[nBatchIdx, 1] = nValueIdx.Value;
+
+                    SimpleTemporalDatum sdStatNum = rgData[0];
+                    SimpleTemporalDatum sdStatCat = rgData[1];
+                    SimpleTemporalDatum sdHistNum = rgData[2];
+                    SimpleTemporalDatum sdHistCat = rgData[3];
+                    SimpleTemporalDatum sdFutureNum = rgData[4];
+                    SimpleTemporalDatum sdFutureCat = rgData[5];
+                    SimpleTemporalDatum sdTarget = (m_targetSrc == DataTemporalParameter.TARGET_SOURCE.HISTORICAL) ? rgData[7] : rgData[6];
+                    SimpleTemporalDatum sdTargetHist = null;
+                    SimpleTemporalDatum sdTime = null;
+                    SimpleTemporalDatum sdMask = null;
+                    SimpleTemporalDatum sdItemID = null;
+
+                    nIdx = 7;
+                    if (m_bOutputTargetHistorical)
+                        sdTargetHist = rgData[nIdx];
                     nIdx++;
-                }
 
-                if (m_bOutputMask)
-                {
-                    sdMask = rgData[nIdx];
-                    nIdx++;
-                }
-
-                if (m_bOutputItemIds)
-                    sdItemID = rgData[nIdx];
-
-                // col[0] = STATIC_NUMERIC
-                if (m_rgStaticNum != null)
-                {
-                    float[] rgRawData = sdStatNum.Data;
-                    Array.Copy(rgRawData, 0, m_rgStaticNum, nBatchIdx * rgRawData.Length, rgRawData.Length);
-                }
-
-                // col[1] = STATIC_CATEGORICAL
-                if (m_rgStaticCat != null)
-                {
-                    float[] rgRawData = sdStatCat.Data;
-                    Array.Copy(rgRawData, 0, m_rgStaticCat, nBatchIdx * rgRawData.Length, rgRawData.Length);
-                }
-
-                // col[2] = HISTORICAL_NUMERIC
-                if (m_rgHistoricalNum != null)
-                {
-                    float[] rgRawData = sdHistNum.Data;
-                    Array.Copy(rgRawData, 0, m_rgHistoricalNum, nBatchIdx * rgRawData.Length, rgRawData.Length);
-                }
-
-                // col[3] = HISTORICAL_CATEGORICAL
-                if (m_rgHistoricalCat != null)
-                {
-                    float[] rgRawData = sdHistCat.Data;
-                    Array.Copy(rgRawData, 0, m_rgHistoricalCat, nBatchIdx * rgRawData.Length, rgRawData.Length);
-                }
-
-                // col[4] = FUTURE_NUMERIC
-                if (m_rgFutureNum != null && !bIgnoreFutureData)
-                {
-                    float[] rgRawData = sdFutureNum.Data;
-                    Array.Copy(rgRawData, 0, m_rgFutureNum, nBatchIdx * rgRawData.Length, rgRawData.Length);
-                }
-
-                // col[5] = FUTURE_CATEGORICAL
-                if (m_rgFutureCat != null && !bIgnoreFutureData)
-                {
-                    float[] rgRawData = sdFutureCat.Data;
-                    Array.Copy(rgRawData, 0, m_rgFutureCat, nBatchIdx * rgRawData.Length, rgRawData.Length);
-                }
-
-                // col[6] = TARGET
-                if (m_rgTarget != null)
-                {
-                    float[] rgRawData = sdTarget.Data;
-                    Array.Copy(rgRawData, 0, m_rgTarget, nBatchIdx * rgRawData.Length, rgRawData.Length);
-                }
-
-                // col[7] = Historical Target (optional)
-                if (m_rgTargetHist != null)
-                {
-                    float[] rgRawData = sdTargetHist.Data;
-                    Array.Copy(rgRawData, 0, m_rgTargetHist, nBatchIdx * rgRawData.Length, rgRawData.Length);
-                }
-
-                // col[8] = Time (optional)
-                if (m_rgTime != null)
-                {
-                    float[] rgRawData = sdTime.Data;
-                    Array.Copy(rgRawData, 0, m_rgTime, nBatchIdx * rgRawData.Length, rgRawData.Length);
-
-                    if (m_bVerifyTimeSync)
+                    if (m_bOutputTime)
                     {
-                        if (rgRawDataLast == null)
-                        {
-                            rgRawDataLast = new float[rgRawData.Length];
-                        }
-                        else if (nBatchIdx > 0)
-                        {
-                            int nOutOfSyncAt = -1;
-                            for (int k = 0; k < rgRawData.Length; k++)
-                            {
-                                if (rgRawData[k] != rgRawDataLast[k])
-                                {
-                                    nOutOfSyncAt = k;
-                                    break;
-                                }
-                            }
-
-                            if (nOutOfSyncAt >= 0)
-                                m_log.WriteLine("WARNING: Data out " + nOutOfSyncAt.ToString() + " at batch index " + nBatchIdx.ToString());
-                        }
-
-                        Array.Copy(rgRawData, rgRawDataLast, rgRawData.Length);
+                        sdTime = rgData[nIdx];
+                        nIdx++;
                     }
 
-                    if (dtLast == DateTime.MinValue)
-                        dtLast = sdTime.TimeStamp;
-                }
+                    if (m_bOutputMask)
+                    {
+                        sdMask = rgData[nIdx];
+                        nIdx++;
+                    }
 
-                // col[9] = Mask (optional)
-                if (m_rgMask != null)
+                    if (m_bOutputItemIds)
+                        sdItemID = rgData[nIdx];
+
+                    // col[0] = STATIC_NUMERIC
+                    if (m_rgStaticNum != null)
+                    {
+                        float[] rgRawData = sdStatNum.Data;
+                        Array.Copy(rgRawData, 0, m_rgStaticNum, nBatchIdx * rgRawData.Length, rgRawData.Length);
+                    }
+
+                    // col[1] = STATIC_CATEGORICAL
+                    if (m_rgStaticCat != null)
+                    {
+                        float[] rgRawData = sdStatCat.Data;
+                        Array.Copy(rgRawData, 0, m_rgStaticCat, nBatchIdx * rgRawData.Length, rgRawData.Length);
+                    }
+
+                    // col[2] = HISTORICAL_NUMERIC
+                    if (m_rgHistoricalNum != null)
+                    {
+                        float[] rgRawData = sdHistNum.Data;
+                        Array.Copy(rgRawData, 0, m_rgHistoricalNum, nBatchIdx * rgRawData.Length, rgRawData.Length);
+                    }
+
+                    // col[3] = HISTORICAL_CATEGORICAL
+                    if (m_rgHistoricalCat != null)
+                    {
+                        float[] rgRawData = sdHistCat.Data;
+                        Array.Copy(rgRawData, 0, m_rgHistoricalCat, nBatchIdx * rgRawData.Length, rgRawData.Length);
+                    }
+
+                    // col[4] = FUTURE_NUMERIC
+                    if (m_rgFutureNum != null && !bIgnoreFutureData)
+                    {
+                        float[] rgRawData = sdFutureNum.Data;
+                        Array.Copy(rgRawData, 0, m_rgFutureNum, nBatchIdx * rgRawData.Length, rgRawData.Length);
+                    }
+
+                    // col[5] = FUTURE_CATEGORICAL
+                    if (m_rgFutureCat != null && !bIgnoreFutureData)
+                    {
+                        float[] rgRawData = sdFutureCat.Data;
+                        Array.Copy(rgRawData, 0, m_rgFutureCat, nBatchIdx * rgRawData.Length, rgRawData.Length);
+                    }
+
+                    // col[6] = TARGET
+                    if (m_rgTarget != null)
+                    {
+                        float[] rgRawData = sdTarget.Data;
+                        Array.Copy(rgRawData, 0, m_rgTarget, nBatchIdx * rgRawData.Length, rgRawData.Length);
+                    }
+
+                    // col[7] = Historical Target (optional)
+                    if (m_rgTargetHist != null)
+                    {
+                        float[] rgRawData = sdTargetHist.Data;
+                        Array.Copy(rgRawData, 0, m_rgTargetHist, nBatchIdx * rgRawData.Length, rgRawData.Length);
+                    }
+
+                    // col[8] = Time (optional)
+                    if (m_rgTime != null)
+                    {
+                        float[] rgRawData = sdTime.Data;
+                        Array.Copy(rgRawData, 0, m_rgTime, nBatchIdx * rgRawData.Length, rgRawData.Length);
+
+                        if (m_bVerifyTimeSync)
+                        {
+                            if (rgRawDataLast == null)
+                            {
+                                rgRawDataLast = new float[rgRawData.Length];
+                            }
+                            else if (nBatchIdx > 0)
+                            {
+                                int nOutOfSyncAt = -1;
+                                for (int k = 0; k < rgRawData.Length; k++)
+                                {
+                                    if (rgRawData[k] != rgRawDataLast[k])
+                                    {
+                                        nOutOfSyncAt = k;
+                                        break;
+                                    }
+                                }
+
+                                if (nOutOfSyncAt >= 0)
+                                    m_log.WriteLine("WARNING: Data out " + nOutOfSyncAt.ToString() + " at batch index " + nBatchIdx.ToString());
+                            }
+
+                            Array.Copy(rgRawData, rgRawDataLast, rgRawData.Length);
+                        }
+
+                        if (dtLast == DateTime.MinValue)
+                            dtLast = sdTime.TimeStamp;
+                    }
+
+                    // col[9] = Mask (optional)
+                    if (m_rgMask != null)
+                    {
+                        float[] rgRawData = sdMask.Data;
+                        Array.Copy(rgRawData, 0, m_rgMask, nBatchIdx * rgRawData.Length, rgRawData.Length);
+                    }
+
+                    // col[10] = ItemID (optional)
+                    if (m_rgItemIDs != null)
+                    {
+                        float[] rgRawData = sdItemID.Data;
+                        Array.Copy(rgRawData, 0, m_rgItemIDs, nBatchIdx * rgRawData.Length, rgRawData.Length);
+                    }
+
+                    nBatchIdx++;
+                }
+                
+                if (ordering == DB_INDEX_ORDER.COL_MAJOR)
                 {
-                    float[] rgRawData = sdMask.Data;
-                    Array.Copy(rgRawData, 0, m_rgMask, nBatchIdx * rgRawData.Length, rgRawData.Length);
-                }
+                    int nIdx1 = 0;
 
-                // col[10] = ItemID (optional)
-                if (m_rgItemIDs != null)
-                {
-                    float[] rgRawData = sdItemID.Data;
-                    Array.Copy(rgRawData, 0, m_rgItemIDs, nBatchIdx * rgRawData.Length, rgRawData.Length);
-                }
+                    if (itemSelection == DB_LABEL_SELECTION_METHOD.RANDOM)
+                        nIdx1 = m_random.Next(rgItemIdx.Count);
 
-                nBatchIdx++;
+                    m_nColMajorItemIdx = rgItemIdx[nIdx1];
+                    rgItemIdx.RemoveAt(nIdx1);
+
+                    if (rgItemIdx.Count == 0)
+                    {
+                        for (int i = 0; i < src.TemporalDescriptor.ValueItemDescriptorItems.Count; i++)
+                        {
+                            rgItemIdx.Add(i);
+                        }
+
+                        if (nBatchIdx == 0)
+                        {
+                            if (valueSelection == DB_ITEM_SELECTION_METHOD.RANDOM)
+                            {
+                                m_nColMajorValIdx = m_random.Next(m_rgMaxSrcItemSteps[src.ID]);
+                            }
+                            else
+                            {
+                                m_nColMajorValIdx++;
+                                if (m_nColMajorValIdx >= m_rgMaxSrcItemSteps[src.ID])
+                                    m_nColMajorValIdx = 0;
+                            }
+                        }
+                    }
+                }
             }
 
             if (!m_rgMaxSrcItemSteps.ContainsKey(src.ID))
