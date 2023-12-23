@@ -24,6 +24,7 @@ namespace MyCaffe.db.temporal
         DatabaseTemporal m_db;
         ValueItem m_item = null;
         OrderedValueStreamDescriptorSet m_rgStrm;
+        DateTime? m_dtSyncStartTime = null;
         int m_nColStart = 0;
         int m_nColCount = 0;
         List<int> m_rgRowCount = new List<int>(8);
@@ -98,12 +99,22 @@ namespace MyCaffe.db.temporal
         }
 
         /// <summary>
+        /// Set the column start and start sync time.
+        /// </summary>
+        /// <param name="nColStart"></param>
+        /// <param name="dtSyncStartTime"></param>
+        public void SetColumnStart(int nColStart, DateTime dtSyncStartTime)
+        {
+            m_nColStart = nColStart;
+            m_dtSyncStartTime = dtSyncStartTime;
+        }
+
+        /// <summary>
         /// Get/set the start column in a synchronized data set.
         /// </summary>
         public int ColumnStart
         {
             get { return m_nColStart; }
-            set { m_nColStart = value; }
         }
 
         /// <summary>
@@ -127,6 +138,9 @@ namespace MyCaffe.db.temporal
 
             if (m_data == null)
                 m_data = m_db.GetValues(nSrcID, nItemID);
+
+            m_item.StartTime = m_data.StartTime;
+            m_item.EndTime = m_data.EndTime;
 
             bEOD = true;
             m_nColCount = m_data.ColCount;
@@ -248,37 +262,39 @@ namespace MyCaffe.db.temporal
 
             nValueIdx = m_nValIdx;
 
+            int nActualValIdx = m_nValIdx - m_nColStart;
+
             SimpleTemporalDatum sdStatNum = null;
             SimpleTemporalDatum sdStatCat = null;
             getStaticData(ref sdStatNum, ref sdStatCat);
 
             SimpleTemporalDatum sdHistNum = null;
             SimpleTemporalDatum sdHistCat = null;
-            if (!getHistoricalData(m_nValIdx, nHistSteps, m_nTargetStreamNumIdx, m_bTargetStreamOverlapsObserved, out sdHistNum, out sdHistCat))
+            if (!getHistoricalData(nActualValIdx, nHistSteps, m_nTargetStreamNumIdx, m_bTargetStreamOverlapsObserved, out sdHistNum, out sdHistCat))
                 return null;
 
             SimpleTemporalDatum sdFutNum = null;
             SimpleTemporalDatum sdFutCat = null;
             if (!bIgnoreFuture)
             {
-                if (!getFutureData(m_nValIdx + nHistSteps, nFutSteps, out sdFutNum, out sdFutCat))
+                if (!getFutureData(nActualValIdx + nHistSteps, nFutSteps, out sdFutNum, out sdFutCat))
                     return null;
             }
 
             SimpleTemporalDatum sdTarget = null;
             SimpleTemporalDatum sdTargetHist = null;
-            if (!getTargetData(m_nValIdx, nHistSteps, nFutSteps, m_nTargetStreamNumIdx, out sdTarget, out sdTargetHist))
+            if (!getTargetData(nActualValIdx, nHistSteps, nFutSteps, m_nTargetStreamNumIdx, out sdTarget, out sdTargetHist))
                 return null;
 
             if (bEnableDebug)
             {
-                debug("trg", nQueryIdx, strDebugPath, m_nValIdx, nHistSteps, nFutSteps, sdTargetHist, sdTarget);
-                debugStatic("stat_cat", nQueryIdx, strDebugPath, m_nValIdx, sdStatCat);
-                debugStatic("stat_num", nQueryIdx, strDebugPath, m_nValIdx, sdStatNum);
-                debug("hist_cat", nQueryIdx, strDebugPath, m_nValIdx, sdHistCat, STREAM_CLASS_TYPE.OBSERVED);
-                debug("hist_num", nQueryIdx, strDebugPath, m_nValIdx, sdHistNum, STREAM_CLASS_TYPE.OBSERVED);
-                debug("fut_cat", nQueryIdx, strDebugPath, m_nValIdx, sdFutCat, STREAM_CLASS_TYPE.KNOWN);
-                debug("fut_num", nQueryIdx, strDebugPath, m_nValIdx, sdFutNum, STREAM_CLASS_TYPE.KNOWN);
+                debug("trg", nQueryIdx, strDebugPath, nActualValIdx, nHistSteps, nFutSteps, sdTargetHist, sdTarget);
+                debugStatic("stat_cat", nQueryIdx, strDebugPath, nActualValIdx, sdStatCat);
+                debugStatic("stat_num", nQueryIdx, strDebugPath, nActualValIdx, sdStatNum);
+                debug("hist_cat", nQueryIdx, strDebugPath, nActualValIdx, sdHistCat, STREAM_CLASS_TYPE.OBSERVED);
+                debug("hist_num", nQueryIdx, strDebugPath, nActualValIdx, sdHistNum, STREAM_CLASS_TYPE.OBSERVED);
+                debug("fut_cat", nQueryIdx, strDebugPath, nActualValIdx, sdFutCat, STREAM_CLASS_TYPE.KNOWN);
+                debug("fut_num", nQueryIdx, strDebugPath, nActualValIdx, sdFutNum, STREAM_CLASS_TYPE.KNOWN);
             }
 
             SimpleTemporalDatumCollection rgData = new SimpleTemporalDatumCollection(8);
@@ -293,13 +309,13 @@ namespace MyCaffe.db.temporal
 
             if (bOutputTime)
             {
-                SimpleTemporalDatum sdTime = getHistoricalTime(m_nValIdx, nHistSteps);
+                SimpleTemporalDatum sdTime = getHistoricalTime(nActualValIdx, nHistSteps);
                 rgData.Add(sdTime);
             }
 
             if (bOutputMask)
             {
-                SimpleTemporalDatum sdMask = getHistoricalMask(m_nValIdx, nHistSteps);
+                SimpleTemporalDatum sdMask = getHistoricalMask(nActualValIdx, nHistSteps);
                 rgData.Add(sdMask);
             }
 
@@ -794,7 +810,9 @@ namespace MyCaffe.db.temporal
 
         private DateTime[] getTimeSync(int nIdx, int nCount, out DateTime dtStart)
         {
-            return m_data.GetTimeSyncValues(nIdx, nCount, out dtStart);
+            DateTime[] rg = m_data.GetTimeSyncValues(nIdx, nCount, out dtStart);
+            dtStart = m_dtSyncStartTime.GetValueOrDefault(dtStart);
+            return rg;
         }
 
         /// <summary>
