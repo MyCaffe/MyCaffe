@@ -142,7 +142,7 @@ Memory<T>::~Memory()
 
 	for (int i = 0; i < m_nccl.GetCount(); i++)
 	{
-		FreeNCCL(i);
+		FreeNCCL(i, false);
 	}
 
 	for (int i = 0; i < m_ssd.GetCount(); i++)

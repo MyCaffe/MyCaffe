@@ -484,7 +484,7 @@ class Memory
 		long DistortImage(long hHandle, int nCount, int nNum, int nDim, long hX, long hY);
 
 		long CreateNCCL(int nGpuID, int nCount, int nRank, char* szId, Math<T>* pMath, long* phHandle);
-		long FreeNCCL(long hHandle);
+		long FreeNCCL(long hHandle, bool bDetachOnly);
 		ncclHandle<T>* GetNCCL(long hHandle);
 		long Memory<T>::SetNCCL(ncclHandle<T>* pNccl, long* hHandle);
 		long NcclInitSingleProcess(long lBufferCount, long rgNcclHandle[], int nCount);
@@ -2135,11 +2135,11 @@ inline long Memory<T>::CreateNCCL(int nGpuID, int nCount, int nRank, char* szId,
 }
 
 template <class T>
-inline long Memory<T>::FreeNCCL(long hHandle)
+inline long Memory<T>::FreeNCCL(long hHandle, bool bDetachOnly)
 {
 	ncclHandle<T>* nccl = (ncclHandle<T>*)m_nccl.Free(hHandle);
 
-	if (nccl != NULL && nccl->IsOwner())
+	if (!bDetachOnly && nccl != NULL && nccl->IsOwner())
 	{
 		nccl->CleanUp();
 

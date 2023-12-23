@@ -3702,12 +3702,16 @@ inline long Device<T>::FreeNCCL(long lInput, T* pfInput, long llInput, LONGLONG*
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+	if (lErr = verifyInput(lInput, pfInput, 1, 2))
 		return lErr;
 
 	long hNccl = (long)pfInput[0];
+	bool bDetachOnly = false;
 
-	return m_memory.FreeNCCL(hNccl);
+	if (lInput > 1)
+		bDetachOnly = (pfInput[1] == 0) ? false : true;	
+
+	return m_memory.FreeNCCL(hNccl, bDetachOnly);
 }
 
 template <class T>

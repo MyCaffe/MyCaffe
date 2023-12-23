@@ -3388,12 +3388,13 @@ namespace MyCaffe.common
         /// Free an instance of NCCL.
         /// </summary>
         /// <param name="hNccl">Specifies the handle to NCCL.</param>
-        public void FreeNCCL(long hNccl)
+        /// <param name="bDetachOnly">Optionally, specifies to detach the NCCL only and do not delete it (used when sharing NCCL between threads).</param>
+        public void FreeNCCL(long hNccl, bool bDetachOnly = false)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_NCCL, m_param.AsDouble(hNccl));
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_NCCL, m_param.AsDouble(hNccl, (bDetachOnly) ? 1 : 0));
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_NCCL, m_param.AsFloat(hNccl));
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_NCCL, m_param.AsFloat(hNccl, (bDetachOnly) ? 1 : 0));
         }
 
         /// <summary>
