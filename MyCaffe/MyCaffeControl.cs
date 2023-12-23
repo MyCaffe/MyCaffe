@@ -1904,6 +1904,7 @@ namespace MyCaffe
                     m_log.WriteLine("Starting multi-GPU training on GPUs: " + listToString(m_rgGpu));
                     NCCL<T> nccl = new NCCL<T>(m_cuda, m_log, m_solver, m_rgGpu[0], 0, null);
                     nccl.Run(m_rgGpu, m_solver.TrainingIterationOverride);
+                    nccl.Detach();
                 }
                 else
                 {
