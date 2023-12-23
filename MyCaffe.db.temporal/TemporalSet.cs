@@ -140,6 +140,7 @@ namespace MyCaffe.db.temporal
             foreach (ItemSet item in m_rgItems)
             {
                 int nSteps = -1;
+                DateTime? dtSync = rgDateIdx[0];
 
                 for (int i = 0; i < rgDateIdx.Count; i++)
                 {
@@ -151,7 +152,7 @@ namespace MyCaffe.db.temporal
                 }
 
                 if (nSteps >= 0)
-                    item.ColumnStart = nSteps;
+                    item.SetColumnStart(nSteps, dtSync.Value);
                 else
                     item.Active = false;
             }
