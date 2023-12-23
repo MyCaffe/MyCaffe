@@ -808,14 +808,17 @@ namespace MyCaffe.db.temporal
         {
             TemporalSet ts = null;
 
-            if (m_rgTemporalSets.ContainsKey(nSrcId))
+            lock (m_syncObject)
             {
-                ts = m_rgTemporalSets[nSrcId];
-            }
-            else
-            {
-                ts = m_rgDataSets.FindTemporalSetBySourceID(nSrcId);
-                m_rgTemporalSets.Add(nSrcId, ts);
+                if (m_rgTemporalSets.ContainsKey(nSrcId))
+                {
+                    ts = m_rgTemporalSets[nSrcId];
+                }
+                else
+                {
+                    ts = m_rgDataSets.FindTemporalSetBySourceID(nSrcId);
+                    m_rgTemporalSets.Add(nSrcId, ts);
+                }
             }
 
             return ts;
