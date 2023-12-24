@@ -625,7 +625,7 @@ namespace MyCaffe.layers.tft
 
         private void copy_to_q_fwd(int nCount, Blob<T> bBtm, Blob<T> bTop)
         {
-            if (nCount == 1)
+            if (nCount == 1 && bBtm.count() != bTop.count())
             {
                 // Copy just the future items to the top, so if future = 30,
                 // with input shape is btm(256,120,64) just the last (256,30,64) are copied to top 
@@ -642,7 +642,7 @@ namespace MyCaffe.layers.tft
 
         private void copy_to_q_bwd(int nCount, Blob<T> bBtm, Blob<T> bTop)
         {
-            if (nCount == 1)
+            if (nCount == 1 && bBtm.count() != bTop.count())
             {
                 // Copy just the future items to the top, so if future = 30,
                 // with input shape is btm(256,120,64) just the last (256,30,64) are copied to top 
