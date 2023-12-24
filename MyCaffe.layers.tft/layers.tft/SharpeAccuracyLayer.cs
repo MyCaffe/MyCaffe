@@ -22,10 +22,12 @@ namespace MyCaffe.layers.tft
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class SharpeAccuracyLayer<T> : Layer<T>
     {
+        Blob<T> m_blobPredictedPos;
         Blob<T> m_blobCapturedReturns;
         Blob<T> m_blobMeanCapturedReturns;
         Blob<T> m_blobMeanCapturedReturnsFull;
         Blob<T> m_blobCapturedReturnsSum;
+        T m_tLarge;
 
         /// <summary>
         /// The constructor.
@@ -37,7 +39,10 @@ namespace MyCaffe.layers.tft
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.SHARPE_ACCURACY;
+            m_tLarge = (T)Convert.ChangeType(1e9, typeof(T));
 
+            m_blobPredictedPos = new Blob<T>(cuda, log);
+            m_blobPredictedPos.Name = m_param.name + ".predicted_pos";
             m_blobCapturedReturns = new Blob<T>(cuda, log);
             m_blobCapturedReturns.Name = m_param.name + ".captured_returns";
             m_blobMeanCapturedReturns = new Blob<T>(cuda, log);
@@ -51,6 +56,7 @@ namespace MyCaffe.layers.tft
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
+            dispose(ref m_blobPredictedPos);
             dispose(ref m_blobCapturedReturns);
             dispose(ref m_blobMeanCapturedReturns);
             dispose(ref m_blobMeanCapturedReturnsFull);
@@ -101,6 +107,7 @@ namespace MyCaffe.layers.tft
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            m_blobPredictedPos.ReshapeLike(colBottom[0]);
             m_blobCapturedReturns.ReshapeLike(colBottom[0]);
 
             if (m_param.sharpe_accuracy_param.accuracy_type == param.tft.SharpeAccuracyParameter.ACCURACY_TYPE.SHARPE)
@@ -126,8 +133,10 @@ namespace MyCaffe.layers.tft
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            // Clip the predicted positions to [0,+)
+            m_cuda.clip_fwd(colBottom[0].count(), colBottom[0].gpu_data, m_blobPredictedPos.mutable_gpu_data, m_tZero, m_tLarge);
             // captured_returns = weights * y_true
-            m_cuda.mul(m_blobCapturedReturns.count(), colBottom[0].gpu_data, colBottom[1].gpu_data, m_blobCapturedReturns.mutable_gpu_data);
+            m_cuda.mul(m_blobCapturedReturns.count(), m_blobPredictedPos.gpu_data, colBottom[1].gpu_data, m_blobCapturedReturns.mutable_gpu_data);
 
             if (m_param.sharpe_accuracy_param.accuracy_type == param.tft.SharpeAccuracyParameter.ACCURACY_TYPE.RETURNS)
             {
