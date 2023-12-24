@@ -568,9 +568,9 @@ namespace MyCaffe.db.temporal
                 data = null;
                 if (m_rgItems[m_nItemIdx].HasEnoughData(ref nValueIdx, m_nHistoricSteps, m_nFutureSteps))
                 {
-                    data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, DB_ITEM_SELECTION_METHOD.NONE, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bOutputItemIDs, bEnableDebug, strDebugPath, true, bIgnoreFuture);
+                    data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, DB_ITEM_SELECTION_METHOD.NONE, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bOutputItemIDs, bEnableDebug, strDebugPath, true, bIgnoreFuture, true);
                     if (data == null)
-                        data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, DB_ITEM_SELECTION_METHOD.NONE, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bOutputItemIDs, bEnableDebug, strDebugPath, true, bIgnoreFuture);
+                        data = m_rgItems[m_nItemIdx].GetData(nQueryIdx, ref nValueIdx, DB_ITEM_SELECTION_METHOD.NONE, m_nHistoricSteps, m_nFutureSteps, nValueStepOffset, bOutputTime, bOutputMask, bOutputItemIDs, bEnableDebug, strDebugPath, true, bIgnoreFuture, true);
                 }
 
                 if (itemSelectionMethod == DB_LABEL_SELECTION_METHOD.NONE)
