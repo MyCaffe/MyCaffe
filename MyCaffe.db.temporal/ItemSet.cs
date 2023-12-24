@@ -265,7 +265,13 @@ namespace MyCaffe.db.temporal
 
             int nActualValIdx = m_nValIdx;
             if (bColumnOrdering)
-                nActualValIdx -= m_nColCount;            
+                nActualValIdx -= m_nColStart;
+
+            if (nActualValIdx < 0)
+            {
+                Trace.WriteLine("ItemSet '" + m_item.Name + "' is out of sync at value index " + m_nValIdx.ToString() + "!");
+                nActualValIdx = 0;
+            }
 
             SimpleTemporalDatum sdStatNum = null;
             SimpleTemporalDatum sdStatCat = null;
