@@ -163,7 +163,6 @@ namespace MyCaffe.layers
             m_cuda.div(m_blobLoss.count(), m_blobMeanCapturedReturns.gpu_data, m_blobStdevCapturedReturns.gpu_data, m_blobLoss.mutable_gpu_data);
 
             // average the loss over the batches.
-            m_blobLoss.scale_data(-1.0);
             double dfLoss = m_blobLoss.mean();
             colTop[0].SetData(dfLoss, 0);
         }
@@ -221,8 +220,6 @@ namespace MyCaffe.layers
             m_cuda.sub(colBottom[0].count(), m_blobMeanCapturedReturnsFull.gpu_diff, m_blobStdevCapturedReturnsFull.gpu_diff, colBottom[0].mutable_gpu_diff);
             m_cuda.powx(m_blobStdevCapturedReturnsFull.count(), m_blobStdevCapturedReturnsFull.gpu_data, 2.0, m_blobStdevCapturedReturnsFull.mutable_gpu_data);
             m_cuda.div(colBottom[0].count(), colBottom[0].gpu_diff, m_blobStdevCapturedReturnsFull.gpu_data, colBottom[0].mutable_gpu_diff);
-
-            m_cuda.scal(colBottom[0].count(), -1.0, colBottom[0].gpu_diff);
         }
     }
 }
