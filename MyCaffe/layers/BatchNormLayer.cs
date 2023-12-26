@@ -417,6 +417,8 @@ namespace MyCaffe.layers
                 m_blobPrivateTop.ReshapeLike(colTop[0]);
                 m_blobPrivateBottom.ReshapeLike(colBottom[0]);
             }
+
+            colTop[0].type = colBottom[0].type;
         }
 
         /// <summary>
