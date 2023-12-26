@@ -2902,10 +2902,10 @@ namespace MyCaffe
 
             if (customInput != null)
             {
-                strPredictionBlob = customInput.GetProperty("PredictionBlob");
-                strLabelBlob = customInput.GetProperty("LabelBlob");
-                strTimeBlob = customInput.GetProperty("TimeBlob");
-                strIDBlob = customInput.GetProperty("IDBlob");
+                strPredictionBlob = customInput.GetProperty("PredictionBlob", false);
+                strLabelBlob = customInput.GetProperty("LabelBlob", false);
+                strTimeBlob = customInput.GetProperty("TimeBlob", false);
+                strIDBlob = customInput.GetProperty("IDBlob", false);
             }
 
             if (!string.IsNullOrEmpty(strPredictionBlob) || !string.IsNullOrEmpty(strLabelBlob))
