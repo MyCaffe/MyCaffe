@@ -12,7 +12,6 @@ using MyCaffe.db.image;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.data;
 using MyCaffe.layers.nt;
-using System.Security.Cryptography;
 
 /// <summary>
 /// Testing the SharpeLoss layer.
@@ -127,7 +126,43 @@ namespace MyCaffe.test
             try
             {
                 if (!(layer is SharpeLossLayer<T>))
-                    m_log.FAIL("The layer is not a SharpeLossLayer!");  
+                    m_log.FAIL("The layer is not a SharpeLossLayer!");
+
+                float[] rgBtmTrue = new float[]
+                {
+                    0.3399f,
+                    0.9907f,
+                    0.7453f,
+                    0.0616f,
+                    0.7079f,
+                    1.3399f,
+                    1.9907f,
+                    1.7453f,
+                    1.0616f,
+                    1.7079f
+                };
+                float[] rgBtmPred = new float[]
+                {
+                    0.2f,
+                    0.2f,
+                    0.2f,
+                    0.3f,
+                    0.3f,
+                    0.5f,
+                    0.5f,
+                    0.5f,
+                    0.5f,
+                    0.5f
+                };
+
+                m_blob_bottom.Reshape(2, 5, 1, 1);
+                m_blob_bottom2.ReshapeLike(m_blob_bottom);
+                m_blob_bottom.mutable_cpu_data = convert(rgBtmPred);
+                m_blob_bottom2.mutable_cpu_data = convert(rgBtmTrue);
+
+                BottomVec.Clear();
+                BottomVec.Add(m_blob_bottom);
+                BottomVec.Add(m_blob_bottom2);
 
                 layer.Setup(BottomVec, TopVec);
 
@@ -147,19 +182,37 @@ namespace MyCaffe.test
 
             try
             {
-                float[] rgBtm = new float[] 
+                float[] rgBtmTrue = new float[] 
                 { 
                     0.3399f,
                     0.9907f,
                     0.7453f,
                     0.0616f,
-                    0.7079f
+                    0.7079f,
+                    1.3399f,
+                    1.9907f,
+                    1.7453f,
+                    1.0616f,
+                    1.7079f
+                };
+                float[] rgBtmPred = new float[]
+                {
+                    0.2f,
+                    0.2f,
+                    0.2f,
+                    0.3f,
+                    0.3f,
+                    0.5f,
+                    0.5f,
+                    0.5f,
+                    0.5f,
+                    0.5f
                 };
 
-                m_blob_bottom.Reshape(1, 5, 1, 1);
+                m_blob_bottom.Reshape(2, 5, 1, 1);
                 m_blob_bottom2.ReshapeLike(m_blob_bottom);
-                m_blob_bottom.mutable_cpu_data = convert(rgBtm);
-                m_blob_bottom2.SetData(1.0);
+                m_blob_bottom.mutable_cpu_data = convert(rgBtmPred);
+                m_blob_bottom2.mutable_cpu_data = convert(rgBtmTrue);
 
                 BottomVec.Clear();
                 BottomVec.Add(m_blob_bottom);
@@ -169,7 +222,7 @@ namespace MyCaffe.test
                 layer.Forward(BottomVec, TopVec);
 
                 double[] rgTop = convert(m_blob_top.update_cpu_data());
-                float fExpected = -1.5515f;
+                float fExpected = -1.2994f;
                 float fActual = (float)rgTop[0];
 
                 m_log.EXPECT_EQUAL<float>(fActual, fExpected, "The loss is not as expected.");
@@ -184,28 +237,38 @@ namespace MyCaffe.test
         /// Test the gradient.
         /// </summary>
         /// <remarks>
-        /// Python code to duplicate the test.
-        /// 
-        /// x = np.array([0.3399, 0.9907, 0.7453, 0.0616, 0.7079])
-        /// x = torch.from_numpy(x)
-        /// x.requires_grad = True
-        /// 
-        /// y = -torch.mean(x)/ torch.std(x)
-        /// print("y", y)
-        /// y.backward()
-        /// print("x", x)
-        /// print("y loss grad", x.grad)
-        /// 
-        /// Output: y loss grad tensor([-1.2060,  0.6703, -0.0372, -2.0084, -0.1450], dtype=torch.float64)
-        /// 
         /// Direct gradient calculation in python:
-        /// def neg_mean_div_std_grad(x, mean, std, grad_output):
-        ///    n = x.numel()
-        ///    mean_grad = np.full(n, grad_output) / n
-        ///    mean_grad = torch.from_numpy(mean_grad)
-        ///    std_grad = (2.0 / (n - 1)) * grad_output / (std * 2) * (x - mean)
-        ///    grad = ((mean_grad* std) - (mean* std_grad)) / std**2
-        ///    return -1 * grad        
+        ///    def custom_loss1_grad(y_true, weights, grad_y):
+        ///        # Loss calculation
+        ///        captured_returns = weights* y_true
+        ///        mean_returns = torch.mean(captured_returns)
+        ///        mean_returns_sq = torch.square(mean_returns)
+        ///        captured_returns_sq = torch.square(captured_returns)
+        ///        mean_captured_returns_sq = torch.mean(captured_returns_sq)
+        ///        mean_captured_returns_sq_minus_mean_returns_sq = mean_captured_returns_sq - mean_returns_sq # + 1e-9
+        ///        mean_captured_returns_sq_minus_mean_returns_sqrt = torch.sqrt(mean_captured_returns_sq_minus_mean_returns_sq)
+        ///
+        ///        loss1 = (mean_returns / mean_captured_returns_sq_minus_mean_returns_sqrt) # * torch.sqrt(twofiftytwo))
+        ///        loss = loss1* -1
+        ///
+        ///        # Gradient calculation
+        ///        loss1_grad = grad_y* -1
+        ///        mean_captured_returns_sq_minus_mean_returns_sqrt_grad = -1 * mean_returns / mean_captured_returns_sq_minus_mean_returns_sqrt**2 * loss1_grad
+        ///        mean_captured_returns_sq_minus_mean_returns_sq_grad = 0.5 * mean_captured_returns_sq_minus_mean_returns_sq * *-0.5 * mean_captured_returns_sq_minus_mean_returns_sqrt_grad
+        ///        mean_captured_returns_sq_grad = mean_captured_returns_sq_minus_mean_returns_sq_grad # + 1
+        ///        captured_returns_sq_grad = torch.ones_like(captured_returns) / captured_returns.numel() * mean_captured_returns_sq_grad
+        ///        mean_returns_sq_grad = -1 * mean_captured_returns_sq_grad
+        ///        mean_returns_grad = (2 * mean_returns * mean_returns_sq_grad) + (1 / mean_captured_returns_sq_minus_mean_returns_sqrt * loss1_grad)
+        ///
+        ///        captured_returns_grad_1 = mean_returns_grad / captured_returns.numel()
+        ///        captured_returns_grad_2 = 2 * captured_returns * captured_returns_sq_grad
+        ///        captured_returns_grad = captured_returns_grad_1 + captured_returns_grad_2
+        ///
+        ///        weights_grad_1 = y_true * captured_returns_grad_1
+        ///        weights_grad_2 = y_true* captured_returns_grad_2
+        ///        weights_grad = weights_grad_1 + weights_grad_2
+        ///             
+        ///        return weights_grad
         /// </remarks>
         public void TestGradient()
         {
@@ -214,28 +277,50 @@ namespace MyCaffe.test
 
             try
             {
-                float[] rgBtm = new float[]
+                float[] rgBtmTrue = new float[]
                 {
                     0.3399f,
                     0.9907f,
                     0.7453f,
                     0.0616f,
-                    0.7079f
+                    0.7079f,
+                    1.3399f,
+                    1.9907f,
+                    1.7453f,
+                    1.0616f,
+                    1.7079f
                 };
-
+                float[] rgBtmPred = new float[]
+                {
+                    0.2f,
+                    0.2f,
+                    0.2f,
+                    0.3f,
+                    0.3f,
+                    0.5f,
+                    0.5f,
+                    0.5f,
+                    0.5f,
+                    0.5f
+                };
                 float[] rgExpectedGrad = new float[]
                 {
-                    -1.2060f,
-                     0.6703f,
-                    -0.0372f,
-                    -2.0084f,
-                    -0.1450f
+                    -0.23560524f,
+                    -0.55118006f,
+                    -0.45309797f,
+                    -0.04590359f,
+                    -0.38325533f,
+                    -0.08100017f,
+                     0.560508f,
+                     0.26632923f,
+                    -0.21944097f,
+                     0.22705352f
                 };
 
-                m_blob_bottom.Reshape(1, 5, 1, 1);
+                m_blob_bottom.Reshape(2, 5, 1, 1);
                 m_blob_bottom2.ReshapeLike(m_blob_bottom);
-                m_blob_bottom.mutable_cpu_data = convert(rgBtm);
-                m_blob_bottom2.SetData(1.0);
+                m_blob_bottom.mutable_cpu_data = convert(rgBtmPred);
+                m_blob_bottom2.mutable_cpu_data = convert(rgBtmTrue);
 
                 BottomVec.Clear();
                 BottomVec.Add(m_blob_bottom);
@@ -245,7 +330,7 @@ namespace MyCaffe.test
                 layer.Forward(BottomVec, TopVec);
 
                 double[] rgTop = convert(m_blob_top.update_cpu_data());
-                float fExpected = -1.5515f;
+                float fExpected = -1.2994f;
                 float fActual = (float)rgTop[0];
 
                 m_log.EXPECT_EQUAL<float>(fActual, fExpected, "The loss is not as expected.");
