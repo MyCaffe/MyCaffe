@@ -240,6 +240,8 @@ namespace MyCaffe.db.temporal
     /// </summary>
     public class ScalerMinMax : Scaler
     {
+        float? m_fMinOriginal = null;
+        float? m_fMaxOriginal = null;
         float m_fRange = 0;
 
         /// <summary>
@@ -248,9 +250,18 @@ namespace MyCaffe.db.temporal
         /// <param name="fMin">Specifies the min value.</param>
         /// <param name="fMax">Specifies the max value.</param>
         /// <param name="fFinalScale">Optionally, specifies the final scale applied to the calculated scale value (default = 1.0).</param>
-        public ScalerMinMax(float fMin, float fMax, float fFinalScale = 1.0f) : base(1, fFinalScale, fMin, fMax)
+        public ScalerMinMax(float? fMin, float? fMax, float fFinalScale = 1.0f) : base(1, fFinalScale, fMin, fMax)
         {
-            m_fRange = fMax - fMin;
+            m_fMinOriginal = fMin;
+            m_fMaxOriginal = fMax;
+
+            if (fMin.HasValue && fMax.HasValue)
+            {
+                m_fRange = fMax.Value - fMin.Value;
+                m_fMax = fMax.Value;
+                m_fMin = fMin.Value;
+            }
+
             m_type = SCALER.MINMAX;
         }
 
@@ -261,6 +272,13 @@ namespace MyCaffe.db.temporal
         /// <returns>This method always returns true for the MinMax scaler does not require a length of items.</returns>
         public override bool Add(float fVal)
         {
+            if (!m_fMinOriginal.HasValue && !m_fMaxOriginal.HasValue)
+            {
+                m_fMin = (m_fMin.HasValue) ? Math.Min(m_fMin.Value, fVal) : fVal;
+                m_fMax = (m_fMax.HasValue) ? Math.Max(m_fMax.Value, fVal) : fVal;
+                m_fRange = m_fMax.Value - m_fMin.Value;
+            }
+
             return true;
         }
 
@@ -455,7 +473,7 @@ namespace MyCaffe.db.temporal
         /// <param name="dfMax">Specifies the maximum value.</param>
         /// <param name="fScale">Optionally, specifies a scaler multiplier.</param>
         /// <returns>The created Scaler is returned.</returns>
-        public static Scaler CreateScaler(Scaler.SCALER scaler, int nLength, float dfMin, float dfMax, float fScale = 1.0f)
+        public static Scaler CreateScaler(Scaler.SCALER scaler, int nLength, float? dfMin = null, float? dfMax = null, float fScale = 1.0f)
         {
             switch (scaler)
             {
@@ -477,6 +495,66 @@ namespace MyCaffe.db.temporal
                 case Scaler.SCALER.IDENTITY:
                 default:
                     return new ScalerIdentity(nLength);
+            }
+        }
+
+        /// <summary>
+        /// Add the fields to the collection of scalers.
+        /// </summary>
+        /// <param name="rgFields">Specifies the fields to add, must match the number of scalers in the collection.</param>
+        /// <returns>Returns whether or not the data is ready.</returns>
+        public bool Add(double[] rgFields)
+        {
+            bool bReady = true;
+            for (int i = 0; i < rgFields.Length; i++)
+            {
+                if (!m_rgScaler[i].Add((float)rgFields[i]))
+                    bReady = false;
+            }
+
+            return bReady;
+        }
+
+        /// <summary>
+        /// Add the fields to the collection of scalers.
+        /// </summary>
+        /// <param name="rgFields">Specifies the fields to add, must match the number of scalers in the collection.</param>
+        /// <returns>Returns whether or not the data is ready.</returns>
+        public bool Add(float[] rgFields)
+        {
+            bool bReady = true;
+            for (int i = 0; i < rgFields.Length; i++)
+            {
+                if (!m_rgScaler[i].Add(rgFields[i]))
+                    bReady = false;
+            }
+
+            return bReady;
+        }
+
+        /// <summary>
+        /// Scale all fields and place the results in rgDst.
+        /// </summary>
+        /// <param name="rgSrc">Specifies the source fields to scale.</param>
+        /// <param name="rgDst">Specifies the scaled results.</param>
+        public void Scale(double[] rgSrc, double[] rgDst)
+        {
+            for (int i = 0; i < rgSrc.Length; i++)
+            {
+                rgDst[i] = m_rgScaler[i].Scale((float)rgSrc[i]).Value;
+            }
+        }
+
+        /// <summary>
+        /// Scale all fields and place the results in rgDst.
+        /// </summary>
+        /// <param name="rgSrc">Specifies the source fields to scale.</param>
+        /// <param name="rgDst">Specifies the scaled results.</param>
+        public void Scale(float[] rgSrc, float[] rgDst)
+        {
+            for (int i = 0; i < rgSrc.Length; i++)
+            {
+                rgDst[i] = m_rgScaler[i].Scale(rgSrc[i]).Value;
             }
         }
 
