@@ -863,7 +863,7 @@ namespace MyCaffe.layers.tft
                                 }
 
                                 if (nOutOfSyncAt >= 0)
-                                    m_log.WriteLine("WARNING: Data out " + nOutOfSyncAt.ToString() + " at batch index " + nBatchIdx.ToString());
+                                    m_log.WriteLine("WARNING: Data " + nOutOfSyncAt.ToString() + " out of sync at batch index " + nBatchIdx.ToString());
                             }
 
                             Array.Copy(rgRawData, rgRawDataLast, rgRawData.Length);
