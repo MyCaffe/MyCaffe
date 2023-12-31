@@ -224,6 +224,9 @@ namespace MyCaffe.layers.tft
             if (rgShape == null)
                 rgShape = b.shape();
 
+            if (rgShape.Count <= 3)
+                return;
+
             m_rgShape.Add(rgShape[0]);
             m_rgShape.Add(rgShape[1]);
             m_rgShape.Add(rgShape[2] * rgShape[3]);
