@@ -195,11 +195,11 @@ namespace MyCaffe.layers.tft
             m_colTop.Add(top);
         }
 
-        private void reshapeRepeat(Blob<T> b, List<int> rgShape, int nRepeat)
+        private void reshapeRepeat(Blob<T> b, List<int> rgShape, int nRepeat, int nIdx = 3)
         {
             m_rgShape.Clear();
             m_rgShape.AddRange(rgShape);
-            m_rgShape[3] *= nRepeat;
+            m_rgShape[nIdx] *= nRepeat;
             b.Reshape(m_rgShape);
         }
 
@@ -447,8 +447,8 @@ namespace MyCaffe.layers.tft
                 // values tensor  - v: [num_samples x num_total_steps x state_size]
                 reshapeFwd(m_blobIpQ, m_nNumHeads);
                 reshapeFwd(m_blobIpK, m_nNumHeads);
-                reshapeFwd(m_blobIpV, m_nNumHeads);
-                reshapeRepeat(m_blobIpVfull, m_blobIpV.shape(), m_nNumHeads);
+                reshapeRepeat(m_blobIpVfull, m_blobIpV.shape(), m_nNumHeads, 2);
+                reshapeFwd(m_blobIpVfull, m_nNumHeads);
 
                 LayerParameter transpose = new LayerParameter(LayerParameter.LayerType.TRANSPOSE, m_param.name + ".trans");
                 transpose.transpose_param.dim[1] = 2;
@@ -589,8 +589,8 @@ namespace MyCaffe.layers.tft
             // values tensor  - v: [num_samples x num_total_steps x state_size]
             reshapeFwd(m_blobIpQ, m_nNumHeads);
             reshapeFwd(m_blobIpK, m_nNumHeads);
-            reshapeFwd(m_blobIpV, m_nNumHeads);
-            reshapeRepeat(m_blobIpVfull, m_blobIpV.shape(), m_nNumHeads);
+            reshapeRepeat(m_blobIpVfull, m_blobIpV.shape(), m_nNumHeads, 2);
+            reshapeFwd(m_blobIpVfull, m_nNumHeads);
 
             addBtmTop(m_blobIpQ, m_blobIpQt);
             m_transpose.Reshape(m_colBtm, m_colTop);
@@ -692,8 +692,8 @@ namespace MyCaffe.layers.tft
             // values tensor  - v: [num_samples x num_total_steps x num_heads x state_size]
             reshapeFwd(m_blobIpQ, m_nNumHeads);
             reshapeFwd(m_blobIpK, m_nNumHeads);
-            reshapeFwd(m_blobIpV, m_nNumHeads);
-            reshapeRepeat(m_blobIpVfull, m_blobIpV.shape(), m_nNumHeads);
+            reshapeRepeat(m_blobIpVfull, m_blobIpV.shape(), m_nNumHeads, 2);
+            reshapeFwd(m_blobIpVfull, m_nNumHeads);
 
             // repeat blobIpV width to V full.
             int nInnerNum = m_blobIpV.count(2);
