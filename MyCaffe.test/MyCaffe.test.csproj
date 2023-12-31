@@ -131,6 +131,7 @@
     <Compile Include="TestTFT_MultiHeadAttentionInterpLayer.cs" />
     <Compile Include="TestTFT_DataTemporal.cs" />
     <Compile Include="TestTFT_QuartileLoss.cs" />
+    <Compile Include="TestTFT_TemporalFusionTransformerSharpe.cs" />
     <Compile Include="TestTFT_TransformInputs.cs" />
     <Compile Include="TestTFT_StaticEnrichment.cs" />
     <Compile Include="TestTFT_SequenceProcessing.cs" />
