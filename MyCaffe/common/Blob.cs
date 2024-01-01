@@ -213,6 +213,16 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Replace all NaN values with the specified value.
+        /// </summary>
+        /// <param name="dfReplacement">Specifies the replacement value.</param>
+        /// <param name="bDiff">Optionally, specifies to DeNan the diff values (default = false).</param>
+        public void DeNan(double dfReplacement, bool bDiff = false)
+        {
+            m_cuda.denan(count(), (bDiff) ? mutable_gpu_diff : mutable_gpu_data, dfReplacement);
+        }
+
+        /// <summary>
         /// Get a blob parameter.
         /// </summary>
         /// <param name="strName">Specifies the name of the blob parameter.</param>
