@@ -61,6 +61,11 @@ namespace MyCaffe.layers.tft
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
+            if (m_data != null)
+            {
+                m_data.Dispose();
+                m_data = null;
+            }
         }
 
         /** @copydoc Layer::setup_internal_blobs */
@@ -127,9 +132,9 @@ namespace MyCaffe.layers.tft
                 if (m_param.data_temporal_param.source_type == DataTemporalParameter.SOURCE_TYPE.PATH_NPY_FILE)
                     m_data = new RawFileData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical, m_param.data_temporal_param.output_time, m_param.data_temporal_param.output_mask, m_param.data_temporal_param.max_load_percent, m_param.data_temporal_param.drip_refresh_rate_in_sec, m_param.data_temporal_param.chunk_count);
                 else if (m_param.data_temporal_param.source_type == DataTemporalParameter.SOURCE_TYPE.SQL_DB)
-                    m_data = new RawSqlData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical, m_param.data_temporal_param.output_time, m_param.data_temporal_param.output_mask, m_param.data_temporal_param.output_item_ids, m_param.data_temporal_param.verify_time_sync, m_db, m_log, m_param.data_temporal_param.max_load_percent, m_param.data_temporal_param.drip_refresh_rate_in_sec, m_param.data_temporal_param.chunk_count, m_param.data_temporal_param.target_source);
+                    m_data = new RawSqlData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical, m_param.data_temporal_param.output_time, m_param.data_temporal_param.output_mask, m_param.data_temporal_param.output_item_ids, m_param.data_temporal_param.verify_time_sync, m_param.data_temporal_param.enable_input_denan, m_param.data_temporal_param.input_denan_notify_count, m_db, m_log, m_param.data_temporal_param.max_load_percent, m_param.data_temporal_param.drip_refresh_rate_in_sec, m_param.data_temporal_param.chunk_count, m_param.data_temporal_param.target_source);
                 else if (m_param.data_temporal_param.source_type == DataTemporalParameter.SOURCE_TYPE.DIRECT)
-                    m_data = new RawDirectData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical, m_param.data_temporal_param.output_time, m_param.data_temporal_param.output_mask, m_param.data_temporal_param.output_item_ids, m_param.data_temporal_param.verify_time_sync, m_db, m_log, m_param.data_temporal_param.target_source);
+                    m_data = new RawDirectData<T>(m_param.data_temporal_param.seed, m_param.data_temporal_param.output_target_historical, m_param.data_temporal_param.output_time, m_param.data_temporal_param.output_mask, m_param.data_temporal_param.output_item_ids, m_param.data_temporal_param.verify_time_sync, m_param.data_temporal_param.enable_input_denan, m_param.data_temporal_param.input_denan_notify_count, m_db, m_log, m_param.data_temporal_param.target_source);
                 else
                     throw new Exception("Unknown source type: " + m_param.data_temporal_param.source_type.ToString());
             }
@@ -268,7 +273,7 @@ namespace MyCaffe.layers.tft
     /// The RawData class is the base class for all raw data types.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    abstract class RawData<T>
+    abstract class RawData<T> : IDisposable
     {
         /// <summary>
         /// Specifies the base data object used to store data blocks loaded from disk or database.
@@ -326,6 +331,21 @@ namespace MyCaffe.layers.tft
                 m_random = new Random((int)nSeed.Value);
             else
                 m_random = new Random();
+        }
+
+        /// <summary>
+        /// Release all resources.
+        /// </summary>
+        public void Dispose()
+        {
+            dispose();
+        }
+
+        /// <summary>
+        /// Release all resources.
+        /// </summary>
+        protected virtual void dispose()
+        {
         }
 
         /// <summary>
@@ -476,6 +496,14 @@ namespace MyCaffe.layers.tft
         /// </summary>
         protected bool m_bColMajorOrdering = false;
         /// <summary>
+        /// Specifies to DeNan all input data.
+        /// </summary>
+        protected bool m_bEnableInputDeNan = false;
+        /// <summary>
+        /// Specifies the DeNan notify count.
+        /// </summary>
+        protected int m_nDeNanNotifyCount = 10;
+        /// <summary>
         /// Specifies the number of historical steps.
         /// </summary>
         protected int m_nHistoricalSteps;
@@ -552,6 +580,7 @@ namespace MyCaffe.layers.tft
         private int m_nColMajorItemIdx = 0;
         Dictionary<int, int> m_rgMaxSrcItemSteps = new Dictionary<int, int>();
         bool m_bVerifyTimeSync = false;
+        Blob<T> m_blobWork = null;
 
         /// <summary>
         /// The constructor.
@@ -562,15 +591,31 @@ namespace MyCaffe.layers.tft
         /// <param name="bOutputMask">Specifies to output the mask (all 1's) matching each item in a separate blob.</param>
         /// <param name="bOutputItemIDs">Specifies to output the Item ID's for each batch.  NOTE: This setting only applies to the SQL data source with COL_MAJOR_ORDERING.</param>
         /// <param name="bVerifyTimeSync">Specifies to verify the time sync (useful when using COL_MAJOR_ORDERING to make sure all items are aligned in time).</param>
+        /// <param name="bEnableInputDeNan">Specifies to denan the input data.</param>
+        /// <param name="nInputDenanNotifyCount">Specifies the number of times to notify when NaN's or Inf's are found in the input data.</param>
         /// <param name="db">Specifies the external database.</param>
         /// <param name="log">Specifies the output log.</param>
         /// <param name="targetSrc">Specifies the target source of FUTURE (default) or HISTORICAL.</param>
-        public RawDirectData(uint? nSeed, bool bOutputTargetHistorical, bool bOutputTime, bool bOutputMask, bool bOutputItemIDs, bool bVerifyTimeSync, IXTemporalDatabaseBase db, Log log, DataTemporalParameter.TARGET_SOURCE targetSrc) : base(nSeed, bOutputTargetHistorical, bOutputTime, bOutputMask, bOutputItemIDs)
+        public RawDirectData(uint? nSeed, bool bOutputTargetHistorical, bool bOutputTime, bool bOutputMask, bool bOutputItemIDs, bool bVerifyTimeSync, bool bEnableInputDeNan, int nInputDenanNotifyCount, IXTemporalDatabaseBase db, Log log, DataTemporalParameter.TARGET_SOURCE targetSrc) : base(nSeed, bOutputTargetHistorical, bOutputTime, bOutputMask, bOutputItemIDs)
         {
             m_db = db;
             m_log = log;
             m_targetSrc = targetSrc;
             m_bVerifyTimeSync = bVerifyTimeSync;
+            m_bEnableInputDeNan = bEnableInputDeNan;
+            m_nDeNanNotifyCount = nInputDenanNotifyCount;
+        }
+
+        /// <summary>
+        /// Release all resources used.
+        /// </summary>
+        protected override void dispose()
+        {
+            if (m_blobWork != null)
+            {
+                m_blobWork.Dispose();
+                m_blobWork = null;
+            }
         }
 
         /// <summary>
@@ -632,6 +677,35 @@ namespace MyCaffe.layers.tft
                 return;
 
             col[nIdx].mutable_cpu_data = Utility.ConvertVec<T>(rg);
+            if (m_bEnableInputDeNan)
+            {
+                if (m_nDeNanNotifyCount > 0)
+                {
+                    if (m_blobWork == null)
+                        m_blobWork = new Blob<T>(col[nIdx].Cuda, col[nIdx].Log);
+                    m_blobWork.ReshapeLike(col[nIdx]);
+
+                    Tuple<double, double, double, double> minmax = col[nIdx].minmax_data(m_blobWork, true);
+                    int nNanCount = (int)minmax.Item3;
+                    int nInfCount = (int)minmax.Item4;
+
+                    if (nNanCount > 0 || nInfCount > 0)
+                    {
+                        if (nInfCount == 0)
+                            col[nIdx].Log.WriteLine("WARNING: Found " + nNanCount.ToString() + " NaN's in the input data at Top[" + nIdx.ToString() + "] '" + col[nIdx].Name + "'.  These values will be set to 0.");
+                        else if (nNanCount == 0)
+                            col[nIdx].Log.WriteLine("WARNING: Found " + nInfCount.ToString() + " Inf's in the input data at Top[" + nIdx.ToString() + "] '" + col[nIdx].Name + "'.  These values will be set to 0.");
+                        else
+                            col[nIdx].Log.WriteLine("WARNING: Found " + nNanCount.ToString() + " NaN's and " + nInfCount.ToString() + " Inf's in the input data at Top[" + nIdx.ToString() + "] '" + col[nIdx].Name + "'.  These values will be set to 0.");
+                        col[nIdx].DeNan(0);
+                        m_nDeNanNotifyCount--;
+                    }
+                }
+                else
+                {
+                    col[nIdx].DeNan(0);
+                }
+            }
 
             if (dt.HasValue)
                 col[nIdx].Tag = dt.Value;
@@ -1101,13 +1175,15 @@ namespace MyCaffe.layers.tft
         /// <param name="bOutputMask">Specifies to output the mask (all 1's) matching each item in a separate blob.</param>
         /// <param name="bOutputItemIDs">Specifies to output the Item ID's for each batch.  NOTE: This setting only applies to the SQL data source with COL_MAJOR_ORDERING.</param>
         /// <param name="bVerifyTimeSync">Specifies to verify the time sync (useful when debugging the COL_MAJOR_ORDERING to make sure all items are synchronized in time).</param>
+        /// <param name="bEnableInputDeNan">Specifies to de-nan all input data.</param>
+        /// <param name="nInputDenanNotifyCount">Specifies the number of times to notify when NaN's or Inf's are found in the input data.</param>
         /// <param name="db">Specifies the external database.</param>
         /// <param name="log">Specifies the output log.</param>
         /// <param name="nDripRefreshRateInSec">Specifies how often in seconds to refresh the data.</param>
         /// <param name="dfPctMaxLoad">Specifies the maximum percentage to load into memory.</param>
         /// <param name="nChunkCount">Specifies the number of chunks (blocks) to refresh.</param>
         /// <param name="targetSrc">Specifies the target source of FUTURE (default) or HISTORICAL.</param>
-        public RawSqlData(uint? nSeed, bool bOutputTargetHistorical, bool bOutputTime, bool bOutputMask, bool bOutputItemIDs, bool bVerifyTimeSync, IXTemporalDatabaseBase db, Log log, double dfPctMaxLoad, int nDripRefreshRateInSec, uint nChunkCount, DataTemporalParameter.TARGET_SOURCE targetSrc) : base(nSeed, bOutputTargetHistorical, bOutputTime, bOutputMask, bOutputItemIDs, bVerifyTimeSync, db, log, targetSrc)
+        public RawSqlData(uint? nSeed, bool bOutputTargetHistorical, bool bOutputTime, bool bOutputMask, bool bOutputItemIDs, bool bVerifyTimeSync, bool bEnableInputDeNan, int nInputDenanNotifyCount, IXTemporalDatabaseBase db, Log log, double dfPctMaxLoad, int nDripRefreshRateInSec, uint nChunkCount, DataTemporalParameter.TARGET_SOURCE targetSrc) : base(nSeed, bOutputTargetHistorical, bOutputTime, bOutputMask, bOutputItemIDs, bVerifyTimeSync, bEnableInputDeNan, nInputDenanNotifyCount, db, log, targetSrc)
         {
             m_nDropRefreshReateInSec = nDripRefreshRateInSec;
             m_dfPctMaxLoad = dfPctMaxLoad;

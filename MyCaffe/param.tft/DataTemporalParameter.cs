@@ -38,6 +38,8 @@ namespace MyCaffe.param.tft
         bool m_bVerifyTimeSync = false;
         bool m_bIgnoreFutureData = false;
         bool m_bEnableDebugOutput = false;
+        bool m_bEnableInputDeNan = false;
+        int m_nInputDeNanNotifyCount = 0;
         string m_strDebugOutputPath = null;
         TARGET_SOURCE m_targetSource = TARGET_SOURCE.FUTURE;
         int m_nValueStartIndexOverride = -1;
@@ -231,6 +233,26 @@ namespace MyCaffe.param.tft
         }
 
         /// <summary>
+        /// Specifies to enable input de-nan (default = false).
+        /// </summary>
+        [Description("Specifies to enable input de-nan (default = false).")]
+        public bool enable_input_denan
+        {
+            get { return m_bEnableInputDeNan; }
+            set { m_bEnableInputDeNan = value; }
+        }
+
+        /// <summary>
+        /// Specifies the input de-nan notification count used when NaNs are found. (default = 0, which ignores the notifications).
+        /// </summary>
+        [Description("Specifies the input de-nan notification count usedwhen NaNs are found (default = 0, which ignores the notifications).")]
+        public int input_denan_notify_count
+        {
+            get { return m_nInputDeNanNotifyCount; }
+            set { m_nInputDeNanNotifyCount = value; }
+        }
+
+        /// <summary>
         /// Specifies the number of items to load per cycle when background loading (default = 1024).
         /// </summary>
         /// <remarks>
@@ -367,6 +389,7 @@ namespace MyCaffe.param.tft
             m_bShuffleItemData = p.shuffle_item_data;
             m_bShuffleValueData = p.shuffle_value_data;
             m_bEnableColumnMajorOrdering = p.enable_column_major_ordering;
+            m_bEnableInputDeNan = p.enable_input_denan;
             m_forcedPhase = p.forced_phase;
             m_bOutputTargetHistorical = p.output_target_historical;
 
@@ -376,6 +399,7 @@ namespace MyCaffe.param.tft
             m_bVerifyTimeSync = p.verify_time_sync;
             m_bIgnoreFutureData = p.ignore_future_data;
             m_bEnableDebugOutput = p.enable_debug_output;
+            m_nInputDeNanNotifyCount = p.input_denan_notify_count;
             m_strDebugOutputPath = p.debug_output_path;
             m_targetSource = p.target_source;
             m_nValueStartIndexOverride = p.value_start_index_override;
@@ -411,6 +435,8 @@ namespace MyCaffe.param.tft
             rgChildren.Add("shuffle_item_data", shuffle_item_data.ToString());
             rgChildren.Add("shuffle_value_data", shuffle_value_data.ToString());
             rgChildren.Add("enable_column_major_ordering", enable_column_major_ordering.ToString());
+            rgChildren.Add("enable_input_denan", enable_input_denan.ToString());
+            rgChildren.Add("input_denan_notify_count", input_denan_notify_count.ToString());
             rgChildren.Add("output_target_historical", output_target_historical.ToString());
 
             rgChildren.Add("output_time", output_time.ToString());
@@ -499,6 +525,12 @@ namespace MyCaffe.param.tft
 
             if ((strVal = rp.FindValue("enable_column_major_ordering")) != null)
                 p.enable_column_major_ordering = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("enable_input_denan")) != null)
+                p.enable_input_denan = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("input_denan_notify_count")) != null)
+                p.input_denan_notify_count = int.Parse(strVal);
 
             if ((strVal = rp.FindValue("value_start_index_override")) != null)
                 p.value_start_index_override = int.Parse(strVal);
