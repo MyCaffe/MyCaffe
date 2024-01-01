@@ -580,7 +580,7 @@ namespace MyCaffe.db.temporal
             float[] rgf = new float[1];
             rgf[0] = m_item.Idx.GetValueOrDefault();
             SimpleTemporalDatum sd = new SimpleTemporalDatum(1, 1, 1, rgf);
-            sd.TagName = "ItemID";
+            sd.TagName = "ItemIdx";
             return sd;
         }
 
