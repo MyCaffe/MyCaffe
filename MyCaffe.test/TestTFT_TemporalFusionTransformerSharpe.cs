@@ -111,19 +111,16 @@ namespace MyCaffe.test
         private string getTestBaseDataPath(int nIter=0)
         {
             return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft-sharpe\\test\\tft.sharpe\\batch256\\batch_0\\";
-            //return "C:\\temp\\projects\\timeseries\\TFT_Momentum_Pytorch\\TFT_Momentum_Pytorch\\test\\tft.sharpe\\batch256\\batch_0\\";
         }
 
         private string getTestDataPath(string strTag, int nIter = 0)
         {
-            return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft-sharpe\\test\\";
-            //return "C:\\temp\\projects\\timeseries\\TFT_Momentum_Pytorch\\TFT_Momentum_Pytorch\\test\\";
+            return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft-sharpe\\test\\" + strTag + "\\";
         }
 
         private string getTestWtsPath(string strTag, int nIter = 0)
         {
             return Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft-sharpe\\test\\tft.sharpe\\weights\\";
-            //return "C:\\temp\\projects\\timeseries\\TFT_Momentum_Pytorch\\TFT_Momentum_Pytorch\\test\\tft.sharpe\\weights\\";
         }
 
         private void verifyFileDownload(string strPath, string strFile)
@@ -1454,7 +1451,7 @@ namespace MyCaffe.test
         {
             string strSrc = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\sharpe\\";
             string strPathBase = getTestBaseDataPath();
-            string strPath = getTestDataPath("full");
+            string strPath = getTestDataPath("all");
             string strPathWt = getTestWtsPath("full");
             Blob<T> blobVal = null;
             Blob<T> blobWork = null;
@@ -1624,7 +1621,7 @@ namespace MyCaffe.test
         {
             string strSrc = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\sharpe\\";
             string strPathBase = getTestBaseDataPath();
-            string strPath = getTestDataPath("full");
+            string strPath = getTestDataPath("all");
             string strPathWt = getTestWtsPath("full");
             Blob<T> blobVal = null;
             Blob<T> blobWork = null;
