@@ -34,7 +34,6 @@ namespace MyCaffe.basecode
         /// <param name="nWidth">Specifies the width of the data.</param>
         /// <param name="nHeight">Specifies the height of the data.</param>
         /// <param name="rgData">Specifies the data.</param>
-        /// <param name="dt">Specifies the time stamp of the temporal datum.</param>
         public SimpleTemporalDatum(int nChannels, int nWidth, int nHeight, float[] rgData)
         {
             m_nChannels = nChannels;
