@@ -167,7 +167,11 @@ namespace MyCaffe.layers
             double dfMeanCapturedReturnsSqMinusMeanReturnsSqSqrt = Math.Sqrt(dfMeanCapturedReturnsSqMinusMeanReturnsSq);
 
             // E = -mean_returns / Math.Sqrt(mean_captured_returns_sq - mean_returns_sq + 1e-9)
-            double dfLoss = -1 * dfMeanReturns / (dfMeanCapturedReturnsSqMinusMeanReturnsSqSqrt); // * Math.Sqrt(252.0));
+            double dfLoss = (dfMeanReturns / dfMeanCapturedReturnsSqMinusMeanReturnsSqSqrt);
+
+            dfLoss *= Math.Sqrt(252);
+
+            dfLoss *= -1;
 
             // Set the loss output
             colTop[0].SetData(dfLoss, 0);
@@ -197,7 +201,7 @@ namespace MyCaffe.layers
                 return;
             
             // Get the grad input
-            double dfLossGrad = -1 * convertD(colTop[0].GetDiff(0));
+            double dfLossGrad = -1 * convertD(colTop[0].GetDiff(0)) * Math.Sqrt(252);
 
             double dfMeanCapturedReturnsSqMinusMeanReturnsSqSqrtGrad = -1 * m_dfMeanReturns  / Math.Pow(m_dfMeanCapturedReturnsSqMinusMeanReturnsSqSqrt, 2) * dfLossGrad;
             double dfMeanCapturedReturnsSqMinusMeanReturnsSqGrad = 0.5 * 1.0 / Math.Sqrt(m_dfMeanCapturedReturnsSqMinusMeanReturnsSq + 1e-9) * dfMeanCapturedReturnsSqMinusMeanReturnsSqSqrtGrad;
