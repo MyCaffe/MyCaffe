@@ -25,7 +25,7 @@ namespace MyCaffe.layers.tft
         Blob<T> m_blobPredictedPos;
         Blob<T> m_blobCapturedReturns;
         Blob<T> m_blobMeanCapturedReturns;
-        Blob<T> m_blobMeanCapturedReturnsFull;
+        Blob<T> m_blobStdevCapturedReturns;
         Blob<T> m_blobCapturedReturnsSum;
         T m_tLarge;
 
@@ -47,8 +47,8 @@ namespace MyCaffe.layers.tft
             m_blobCapturedReturns.Name = m_param.name + ".captured_returns";
             m_blobMeanCapturedReturns = new Blob<T>(cuda, log);
             m_blobMeanCapturedReturns.Name = m_param.name + ".mean_captured_returns";
-            m_blobMeanCapturedReturnsFull = new Blob<T>(cuda, log);
-            m_blobMeanCapturedReturnsFull.Name = m_param.name + ".mean_captured_returns.full";
+            m_blobStdevCapturedReturns = new Blob<T>(cuda, log);
+            m_blobStdevCapturedReturns.Name = m_param.name + ".stdev_captured_returns";
             m_blobCapturedReturnsSum = new Blob<T>(cuda, log);
             m_blobCapturedReturnsSum.Name = m_param.name + ".mean_captured_returns.sum";
         }
@@ -59,7 +59,7 @@ namespace MyCaffe.layers.tft
             dispose(ref m_blobPredictedPos);
             dispose(ref m_blobCapturedReturns);
             dispose(ref m_blobMeanCapturedReturns);
-            dispose(ref m_blobMeanCapturedReturnsFull);
+            dispose(ref m_blobStdevCapturedReturns);
             dispose(ref m_blobCapturedReturnsSum);
 
             base.dispose();
@@ -112,9 +112,9 @@ namespace MyCaffe.layers.tft
 
             if (m_param.sharpe_accuracy_param.accuracy_type == param.tft.SharpeAccuracyParameter.ACCURACY_TYPE.SHARPE)
             {
-                m_blobMeanCapturedReturns.Reshape(colBottom[0].num, 1, 1, 1);
-                m_blobMeanCapturedReturnsFull.ReshapeLike(colBottom[0]);
-                m_blobCapturedReturnsSum.Reshape(colBottom[0].num, 1, 1, 1);
+                m_blobMeanCapturedReturns.Reshape(colBottom[0].channels, 1, 1, 1);
+                m_blobStdevCapturedReturns.Reshape(colBottom[0].channels, 1, 1, 1);
+                m_blobCapturedReturnsSum.Reshape(colBottom[0].channels, 1, 1, 1);
             }
 
             colTop[0].Reshape(1, 1, 1, 1);
@@ -133,31 +133,34 @@ namespace MyCaffe.layers.tft
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            // Clip the predicted positions to [0,+)
-            m_cuda.clip_fwd(colBottom[0].count(), colBottom[0].gpu_data, m_blobPredictedPos.mutable_gpu_data, m_tZero, m_tLarge);
+            int nN = colBottom[0].num;
+            int nC = colBottom[0].channels;
+
             // captured_returns = weights * y_true
-            m_cuda.mul(m_blobCapturedReturns.count(), m_blobPredictedPos.gpu_data, colBottom[1].gpu_data, m_blobCapturedReturns.mutable_gpu_data);
+            m_cuda.mul(m_blobCapturedReturns.count(), colBottom[0].gpu_data, colBottom[1].gpu_data, m_blobCapturedReturns.mutable_gpu_data);
+            // Add the returns of all assets in the batch.
+            m_cuda.channel_sum(m_blobCapturedReturns.count(), nN, nC, 1, m_blobCapturedReturns.gpu_data, m_blobCapturedReturnsSum.mutable_gpu_data, true);
 
             if (m_param.sharpe_accuracy_param.accuracy_type == param.tft.SharpeAccuracyParameter.ACCURACY_TYPE.RETURNS)
             {
+                double dfAnnualized = Math.Sqrt(252.0 / nC);
                 double dfReturns = m_blobCapturedReturns.sum();
+                dfReturns *= dfAnnualized;
+
                 colTop[0].SetData(dfReturns, 0);
             }
             else
             {
-                int nN = colBottom[0].num;
-                int nC = colBottom[0].channels;
-                int nH = colBottom[0].height;
-                int nW = colBottom[0].width;
-
                 // mean and stdev of captured_returns
-                m_cuda.add_scalar(m_blobCapturedReturns.count(), 1e-9f, m_blobCapturedReturns.mutable_gpu_data);
-                m_cuda.channel_stdev(m_blobCapturedReturns.count(), nN, 1, nC, m_blobCapturedReturns.gpu_data, m_blobMeanCapturedReturns.gpu_diff, m_blobMeanCapturedReturns.mutable_gpu_data, 1e-9f, true);
-                // mean / stdev
-                m_cuda.div(m_blobMeanCapturedReturns.count(), m_blobMeanCapturedReturns.gpu_data, m_blobMeanCapturedReturns.gpu_diff, m_blobMeanCapturedReturns.mutable_gpu_data);
-                // return the average sharpe ratio across all batches.
-                double dfMeanSharpe = m_blobMeanCapturedReturns.mean();
-                colTop[0].SetData(dfMeanSharpe * Math.Sqrt(colBottom[0].channels), 0);
+                m_cuda.channel_stdev(m_blobCapturedReturnsSum.count(), 1, 1, nC, m_blobCapturedReturnsSum.gpu_data, m_blobStdevCapturedReturns.gpu_data, m_blobMeanCapturedReturns.mutable_gpu_data, 1e-9f, true);
+
+                double dfSum = m_blobMeanCapturedReturns.sum();
+                double dfStdev = convertD(m_blobStdevCapturedReturns.GetData(0));
+
+                double dfAnnualized = Math.Sqrt(252.0 / nC);
+                double dfSharpe = dfSum / dfStdev;
+                dfSharpe *= dfAnnualized;
+                colTop[0].SetData(dfSharpe, 0);
             }
         }
 
