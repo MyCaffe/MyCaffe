@@ -10,10 +10,10 @@ using MyCaffe.param;
 namespace MyCaffe.layers.tft
 {
     /// <summary>
-    /// The GrnLayer implements the Gated Linear Unit layer.
+    /// The GrnLayer implements the Gated Residual Network layer.
     /// </summary>
     /// <remarks>
-    /// This layer takes as input a primary input 'x' and optional context vector 'c'.  A GLU (Gated Linear Unit) is used
+    /// This layer takes as input a primary input 'x' and optional context vector 'c'.  An internal GLU (Gated Linear Unit) is used
     /// for controlling the extent to which the module will contribute to the original input 'x', potentially skipping
     /// over the layer entirely as the GLU outputs could all be close to zero by the GLU supressing.  In cases where
     /// no context vector is used, the GRN treats the context input as zero.  During training dropout is applied before
