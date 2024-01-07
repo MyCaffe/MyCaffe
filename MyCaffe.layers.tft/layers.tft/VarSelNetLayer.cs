@@ -391,7 +391,7 @@ namespace MyCaffe.layers.tft
 
             // Sum up the weights to create a weighted sum representation of width state_size for each time-step and
             // dimension [(num_samples * num_temporal_steps) x state_size x num_inputs]
-            m_cuda.channel_sum(m_blobProcessedInputs1.count(), m_blobProcessedInputs1.num, m_blobProcessedInputs1.channels, nInnerNum, m_blobProcessedInputs1.gpu_data, colTop[0].mutable_gpu_data, false);
+            m_cuda.channel_sum(m_blobProcessedInputs1.count(), m_blobProcessedInputs1.num, m_blobProcessedInputs1.channels, nInnerNum, m_blobProcessedInputs1.gpu_data, colTop[0].mutable_gpu_data, false, DIR.FWD);
             if (colTop.Count > 1)
                 colTop[1].CopyFrom(m_blobSparseWts);
         }
@@ -424,7 +424,7 @@ namespace MyCaffe.layers.tft
         {
             // Expand the top(0) diff to each channel in the processed inputs.
             int nInnerNum = m_blobProcessedInputs.count(2);
-            m_cuda.channel_fillfrom(m_blobProcessedInputs1.count(), m_blobProcessedInputs1.num, m_blobProcessedInputs1.channels, nInnerNum, colTop[0].gpu_diff, m_blobProcessedInputs1.mutable_gpu_diff, DIR.FWD);
+            m_cuda.channel_sum(m_blobProcessedInputs1.count(), m_blobProcessedInputs1.num, m_blobProcessedInputs1.channels, nInnerNum, m_blobProcessedInputs1.gpu_diff, colTop[0].mutable_gpu_diff, false, DIR.BWD);
 
             // Apply the transposed smx weightings to the processed inputs.
             m_cuda.channel_mulv(m_blobProcessedInputs.count(), m_blobProcessedInputs.num, m_blobProcessedInputs.channels, nInnerNum, m_blobProcessedInputs1.gpu_diff, m_blobSparseWtsSmxT.gpu_data, m_blobProcessedInputs.mutable_gpu_diff);
