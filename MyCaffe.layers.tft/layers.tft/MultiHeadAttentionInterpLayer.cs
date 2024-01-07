@@ -80,7 +80,7 @@ namespace MyCaffe.layers.tft
             m_blobQ = new Blob<T>(cuda, log);
             m_blobQ.Name = p.name + ".q";
             m_blobK = new Blob<T>(cuda, log);
-            m_blobQ.Name = p.name + ".k";
+            m_blobK.Name = p.name + ".k";
             m_blobV = new Blob<T>(cuda, log);
             m_blobV.Name = p.name + ".v";
             m_blobIpQ = new Blob<T>(cuda, log);
@@ -656,7 +656,7 @@ namespace MyCaffe.layers.tft
             }
             else
             {
-                bTop.CopyFrom(bBtm, true);
+                bBtm.CopyFrom(bTop, true);
             }
         }
 
