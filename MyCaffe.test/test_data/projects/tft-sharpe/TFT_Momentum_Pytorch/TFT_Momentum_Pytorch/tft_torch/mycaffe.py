@@ -1,12 +1,19 @@
 from contextlib import nullcontext
 from curses.ascii import isalnum
+from numpy._typing import _128Bit
 #from constants import *
 import torch
 import clr
 import os
 import numpy as np
 import System
-clr.AddReference("C:\\temp\\projects\\timeseries\\TFT_Momentum_Pytorch\\MyCaffeConnector\\bin\\Debug\\MyCaffeConnector.dll")
+
+path = os.getcwd()
+os.chdir('../')
+mycaffe_path = os.getcwd() + "\\MyCaffeConnector\\bin\\Debug\\MyCaffeConnector.dll"
+clr.AddReference(mycaffe_path)
+os.chdir(path)
+
 from MyCaffeConnector import *
 from System import Array, Single
 import ctypes
@@ -17,20 +24,19 @@ device = torch.device("cuda" if is_cuda else "cpu")
 from System.Runtime.InteropServices import GCHandle, GCHandleType
 
 class MyCaffe():
-    def __init__(self, bFullInit):
+    def __init__(self):
         pid = os.getpid()
         print("OS PID = {%d}" % (pid))
         self.mycaffe = MyCaffeConnector()
-        if bFullInit:
-            self.mycaffe.InitializeTFT()
-        else:
-            self.mycaffe.Initialize()
+        self.mycaffe.Initialize()
         print("Loaded MyCaffe.")
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
         self.lstm_layers = 2
         self.start = None
+        self.end = None
+        self.start_b = None
 
-    def get_input_data(self, rgX, bGrad):
+    def get_input_data(self, rgX):
         rgIn = np.array(len(rgX), dtype=float)
         for i in range(0, len(rgX)):
             x = rgX[i]
@@ -86,107 +92,119 @@ class MyCaffe():
             nOffset += count
         return rgData
 
-    def model_fwd_start(self):
-        rgOut = self.mycaffe.model_fwd(None, 0, 0)
-        return self.get_output_data(rgOut)
+    def model_fwd(self, x1, x2, y):
+        rgIn = self.get_input_data([x1, x2,y])
+        rgOut = self.mycaffe.model_fwd(rgIn)
+        outVal = self.get_output_data(rgOut)
+        return { "loss" : outVal[0], "predicted_quantiles" : outVal[0] }
 
-    def model_fwd_full(self):
-        nStart = 0
-        nEnd = -1
-        rgIn = self.get_input_data([], False);
-        valIn = None
-        if len(rgIn.shape) > 0:
-            valIn = list(rgIn.data)
-        rgOut = self.mycaffe.model_fwd(valIn, nStart, nEnd)
-        res = self.get_output_data(rgOut)
-        return res
+    def model_fwd0(self, x1,x2,x3):
+        self.start = 0
+        self.end = 26
+        rgIn = self.get_input_data([x1,x2,x3])
+        rgOut = self.mycaffe.model_fwd(rgIn, self.start, self.end)
+        outVal = self.get_output_data(rgOut)
+        return outVal       
 
-    def model_fwd(self, x1, trg):
-        nStart = 28
-        self.start = nStart
-        nEnd = -1
-        rgIn = self.get_input_data([x1, trg], False);
-        valIn = None
-        if len(rgIn.shape) > 0:
-            valIn = list(rgIn.data)
-        rgOut = self.mycaffe.model_fwd(valIn, nStart, nEnd)
-        return self.get_output_data(rgOut)
+    def model_fwd3(self, x1,x2):
+        self.start = 3
+        self.end = 26
+        rgIn = self.get_input_data([x1,x2])
+        rgOut = self.mycaffe.model_fwd(rgIn, self.start, self.end)
+        outVal = self.get_output_data(rgOut)
+        return outVal       
+    
+    def model_fwd4(self, x1,x2):
+        self.start = 4
+        self.end = 26
+        rgIn = self.get_input_data([x1,x2])
+        rgOut = self.mycaffe.model_fwd(rgIn, self.start, self.end)
+        outVal = self.get_output_data(rgOut)
+        return outVal       
 
-    def model_fwd2(self, x1, x2, trg):
-        nStart = 23
-        self.start = nStart
-        nEnd = -1
-        rgIn = self.get_input_data([x1, x2, trg], False);
-        valIn = None
-        if len(rgIn.shape) > 0:
-            valIn = list(rgIn.data)
-        rgOut = self.mycaffe.model_fwd(valIn, nStart, nEnd)
-        return self.get_output_data(rgOut)
+    def model_fwd9(self, x1,x2,x3,x4,x5):
+        self.start = 9
+        self.end = 26
+        rgIn = self.get_input_data([x1,x2,x3,x4,x5])
+        rgOut = self.mycaffe.model_fwd(rgIn, self.start, self.end)
+        outVal = self.get_output_data(rgOut)
+        return outVal       
 
-    def model_fwd3(self, x1, x2, x3, trg):
-        nStart = 23
-        self.start = nStart
-        nEnd = -1
-        rgIn = self.get_input_data([x1, x2, x3, trg], False);
-        valIn = None
-        if len(rgIn.shape) > 0:
-            valIn = list(rgIn.data)
-        rgOut = self.mycaffe.model_fwd(valIn, nStart, nEnd)
-        return self.get_output_data(rgOut)
+    def model_fwd12(self, x1,x2,x3,x4):
+        self.start = 12
+        self.end = 26
+        rgIn = self.get_input_data([x1,x2,x3,x4])
+        rgOut = self.mycaffe.model_fwd(rgIn, self.start, self.end)
+        outVal = self.get_output_data(rgOut)
+        return outVal       
 
-    def model_fwd4(self, x1, x2, x3, x4, trg):
-        nStart = 17
-        self.start = nStart
-        nEnd = -1
-        rgIn = self.get_input_data([x1, x2, x3, x4, trg], False);
-        valIn = None
-        if len(rgIn.shape) > 0:
-            valIn = list(rgIn.data)
-        rgOut = self.mycaffe.model_fwd(valIn, nStart, nEnd)
-        return self.get_output_data(rgOut)
+    def model_fwd15(self, x1,x2):
+        self.start = 15
+        self.end = 26
+        rgIn = self.get_input_data([x1,x2])
+        rgOut = self.mycaffe.model_fwd(rgIn, self.start, self.end)
+        outVal = self.get_output_data(rgOut)
+        return outVal       
 
-    def model_fwd5(self, x1, x2, x3, x4, x5, trg):
-        nStart = 17
-        self.start = nStart
-        nEnd = -1
-        rgIn = self.get_input_data([x1, x2, x3, x4, x5, trg], False);
-        valIn = None
-        if len(rgIn.shape) > 0:
-            valIn = list(rgIn.data)
-        rgOut = self.mycaffe.model_fwd(valIn, nStart, nEnd)
-        return self.get_output_data(rgOut)
+    def model_fwd19(self, x1,x2):
+        self.start = 19
+        self.end = 26
+        rgIn = self.get_input_data([x1,x2])
+        rgOut = self.mycaffe.model_fwd(rgIn, self.start, self.end)
+        outVal = self.get_output_data(rgOut)
+        return outVal       
 
-    def model_fwd6(self, x1, x2, x3, x4, x5, x6, trg):
-        nStart = 10
-        self.start = nStart
-        nEnd = -1
-        rgIn = self.get_input_data([x1, x2, x3, x4, x5, x6, trg], False);
-        valIn = None
-        if len(rgIn.shape) > 0:
-            valIn = list(rgIn.data)
-        rgOut = self.mycaffe.model_fwd(valIn, nStart, nEnd)
-        return self.get_output_data(rgOut)
+    def model_fwd23(self, x1,x2):
+        self.start = 23
+        self.end = 26
+        rgIn = self.get_input_data([x1,x2])
+        rgOut = self.mycaffe.model_fwd(rgIn, self.start, self.end)
+        outVal = self.get_output_data(rgOut)
+        return outVal       
 
-    def model_fwd7(self, x1, x2, x3, x4, x5, x6, x7, trg):
-        nStart = 11
-        self.start = nStart
-        nEnd = -1
-        rgIn = self.get_input_data([x1, x2, x3, x4, x5, x6, x7, trg], False);
-        valIn = None
-        if len(rgIn.shape) > 0:
-            valIn = list(rgIn.data)
-        rgOut = self.mycaffe.model_fwd(valIn, nStart, nEnd)
-        return self.get_output_data(rgOut)
+    def model_fwd24(self, x1, x2):
+        self.start = 24
+        self.end = 26
+        rgIn = self.get_input_data([x1, x2])
+        rgOut = self.mycaffe.model_fwd(rgIn, self.start, self.end)
+        outVal = self.get_output_data(rgOut)
+        return outVal       
 
-    def model_bwd(self, y):
-        nStart = self.start if self.start != None else 0
-        nEnd = -1
-        rgInGrad = self.get_input_data([y], True)
-        rgOut = self.mycaffe.model_bwd(list(rgInGrad.data), nStart, nEnd)
-        return self.get_output_data(rgOut);
+    def model_fwd25(self, x):
+        self.start = 25
+        self.end = 26
+        rgIn = self.get_input_data([x])
+        rgOut = self.mycaffe.model_fwd(rgIn, self.start, self.end)
+        outVal = self.get_output_data(rgOut)
+        return outVal       
 
+    def model_bwd(self, ygrad, x):
+        rgIn = self.get_input_data([ygrad])
+        rgOut = self.mycaffe.model_bwd(rgIn, self.start, self.end)
+        outVal = self.get_output_data(rgOut)
+        return outVal       
+    
+    def model_fwd27(self, x, y):
+        self.start_b = 27
+        rgIn = self.get_input_data([x,y])
+        rgOut = self.mycaffe.model_fwd(rgIn, self.start_b)
+        outVal = self.get_output_data(rgOut)
+        return outVal       
+
+    def model_bwd27(self, ygrad, xhat):
+        rgIn = self.get_input_data([ygrad])
+        rgOut = self.mycaffe.model_bwd(rgIn, self.start_b)
+        outVal = self.get_output_data(rgOut)
+        return outVal       
+    
     def model_update(self, nIter):
         self.mycaffe.model_update(nIter)
+
+    def model_loss(self):
+        return self.mycaffe.CurrentLoss
+    
+    def model_accuracy(self):
+        return self.mycaffe.CurrentAccuracy
 
     def test(self, val):
         self.mycaffe.Test(list(val.data))
@@ -200,17 +218,27 @@ class MyCaffe():
                 name1 += char
         return name1
 
-    def sumEx(self, x, axis):
+    def channel_sum_fwd(self, x):
         n = x.shape[0]
         c = x.shape[1] if len(x.shape) > 1 else 1
         h = x.shape[2] if len(x.shape) > 2 else 1
         w = x.shape[3] if len(x.shape) > 3 else 1
-        rgIn = self.get_input_data([x], True)
-        rgOut = self.mycaffe.sum(n, c, h, w, list(rgIn.data))
-        outVal = self.get_output_data(rgOut)
-        outVal = torch.from_numpy(outVal[0].reshape((n, c))).to(device)
+        rgIn = x.detach().cpu().numpy().flatten()
+        rgOut = self.mycaffe.channel_sum_fwd(n, c, h * w, list(rgIn.data))
+        out = asNumpyArray(rgOut)
+        outVal = torch.from_numpy(out.reshape((n, c))).to(device)
         return outVal
 
+    def channel_sum_bwd(self, y, h):
+        n = y.shape[0]
+        c = y.shape[1]
+        h1 = h.shape[0]
+        rgIn = y.detach().cpu().numpy().flatten()
+        rgOut = self.mycaffe.channel_sum_bwd(n, c, h1, list(rgIn.data))
+        out = asNumpyArray(rgOut)
+        outVal = torch.from_numpy(out.reshape((n, c, h1))).to(device)
+        return outVal
+        
     def lstm_wts(self, tag):
         rgOut = self.mycaffe.lstm_wts(tag)
         out = asNumpyArray(rgOut)
@@ -237,9 +265,6 @@ class MyCaffe():
             data.append(data1)
         return data         
     
-    def lstm_update_wts(self, tag, lr, decay, beta1, beta2, nT, eps):
-        self.mycaffe.lstm_update_wts(tag, lr, decay, beta1, beta2, nT, eps)
-
     def lstm_fwd(self, tag, x, h, c, nState, nLayers):
         rgShape = x.shape
         nN = x.shape[0]
@@ -257,15 +282,16 @@ class MyCaffe():
         y = torch.from_numpy(data).float()
         y = y.reshape(rgShape)
         y = y.to(device)
-        y.requires_grad = True
-        h1 = torch.from_numpy(hidden).float()
-        h1 = h1.reshape((nLayers, nN, nH))
-        h1 = h1.to(device)
-        h1.requires_grad = True
-        c1 = torch.from_numpy(cell).float()
-        c1 = c1.reshape((nLayers, nN, nH))
-        c1 = c1.to(device)
-        c1.requires_grad = True
+        h1 = None
+        if (len(hidden) > 0):
+            h1 = torch.from_numpy(hidden).float()         
+            h1 = h1.reshape((nLayers, nN, nH))
+            h1 = h1.to(device)
+        c1 = None
+        if (len(cell) > 0):
+            c1 = torch.from_numpy(cell).float()
+            c1 = c1.reshape((nLayers, nN, nH))
+            c1 = c1.to(device)
 
         del rgOut
         del out
@@ -281,13 +307,13 @@ class MyCaffe():
         nH = y.shape[2] if len(y.shape) > 2 else 1
         rgH = list(h.detach().cpu().numpy().flatten().data)
         rgC = list(c.detach().cpu().numpy().flatten().data)
+        rgHdx = None
+        rgCdx = None
 
-        if hgrad[0][0][0].item() != 0 or hgrad[0][0][1].item() != 0 or hgrad[0][0][2].item() != 0 or cgrad[0][0][0].item() != 0 or cgrad[0][0][1].item() != 0 or cgrad[0][0][2].item() != 0:
-            rgHdx = list(hgrad.detach().cpu().numpy().flatten().data)
-            rgCdx = list(cgrad.detach().cpu().numpy().flatten().data)
-        else:
-            rgHdx = None
-            rgCdx = None
+        if hgrad != None and cgrad != None:            
+            if hgrad[0][0][0].item() != 0 or hgrad[0][0][1].item() != 0 or hgrad[0][0][2].item() != 0 or cgrad[0][0][0].item() != 0 or cgrad[0][0][1].item() != 0 or cgrad[0][0][2].item() != 0:
+                rgHdx = list(hgrad.detach().cpu().numpy().flatten().data)
+                rgCdx = list(cgrad.detach().cpu().numpy().flatten().data)
 
         rgOut = self.mycaffe.lstm_bwd(tag, self.lstm_layers, nN, nC, nH, list(y.detach().cpu().numpy().flatten().data), rgH, rgC, list(ygrad.detach().cpu().numpy().flatten().data), rgHdx, rgCdx)
         out = asNumpyArray(rgOut)
@@ -299,30 +325,34 @@ class MyCaffe():
         cell = out[2+nData+nHidden:]
 
         nLayers = self.lstm_layers
-        y = torch.from_numpy(data).float()
-        y = y.reshape(rgShape)
-        y = y.to(device)
-        h = torch.from_numpy(hidden).float()
-        h = h.reshape((nLayers, nN, nH))
-        h = h.to(device)
-        c = torch.from_numpy(cell).float()
-        c = c.reshape((nLayers, nN, nH))
-        c = c.to(device)
+        xgrad = torch.from_numpy(data).float()
+        xgrad = xgrad.reshape(rgShape)
+        xgrad = xgrad.to(device)
+        h = None
+        if len(hidden) > 0:
+            h = torch.from_numpy(hidden).float()
+            h = h.reshape((nLayers, nN, nH))
+            h = h.to(device)
+        c = None
+        if len(cell) > 0:
+            c = torch.from_numpy(cell).float()
+            c = c.reshape((nLayers, nN, nH))
+            c = c.to(device)
 
         del rgOut
         del out
         del data
         del hidden
         del cell
-        return [y, h, c]
+        return [xgrad, h, c]
 
-    def softmax_fwd(self, tag, x, nAxis):
+    def softmax_fwd(self, tag, x, axis):
         rgShape = x.shape
         nN = x.shape[0]
         nC = x.shape[1]
         nH = x.shape[2] if len(x.shape) > 2 else 1
         nW = x.shape[3] if len(x.shape) > 3 else 1
-        rgOut = self.mycaffe.softmax_fwd(tag, nAxis, nN, nC, nH, nW, list(x.detach().cpu().numpy().flatten().data))        
+        rgOut = self.mycaffe.softmax_fwd(tag, axis, nN, nC, nH, nW, list(x.detach().cpu().numpy().flatten().data))        
         out = asNumpyArray(rgOut)
         y = torch.from_numpy(out).float()
         y = y.reshape(rgShape)
@@ -405,36 +435,6 @@ class MyCaffe():
         del rgOut
         del out
         return xgrad
-
-    def logsoftmax_fwd(self, tag, x):
-        rgShape = x.shape
-        nN = x.shape[0]
-        nC = x.shape[1]
-        nH = x.shape[2]
-        nW = x.shape[3] if len(x.shape) > 3 else 1
-        rgOut = self.mycaffe.logsoftmax_fwd(tag, nN, nC, nH, nW, list(x.detach().cpu().numpy().flatten().data))        
-        out = asNumpyArray(rgOut)
-        y = torch.from_numpy(out).float()
-        y = y.reshape(rgShape)
-        y = y.to(device)
-        del rgOut
-        del out
-        return y
-    
-    def logsoftmax_bwd(self, tag, y, ygrad):
-        rgShape = y.shape
-        nN = y.shape[0]
-        nC = y.shape[1]
-        nH = y.shape[2]
-        nW = y.shape[3] if len(y.shape) > 3 else 1
-        rgOut = self.mycaffe.logsoftmax_bwd(tag, nN, nC, nH, nW, list(y.detach().cpu().numpy().flatten().data), list(ygrad.detach().cpu().numpy().flatten().data))
-        out = asNumpyArray(rgOut)
-        xgrad = torch.from_numpy(out).float()
-        xgrad = xgrad.reshape(rgShape)
-        xgrad = xgrad.to(device)
-        del rgOut
-        del out
-        return xgrad
     
     def layernorm_fwd(self, tag, x):
         rgShape = x.shape
@@ -465,19 +465,46 @@ class MyCaffe():
         del rgOut
         del out
         return xgrad
+    
+    def innerproduct_diff(self, tag, bBias, diff):
+        rgOut = self.mycaffe.innerproduct_diff(tag, bBias)
+        out = asNumpyArray(rgOut)
+        d = torch.from_numpy(out).float()
+        d.reshape(diff.shape)
+        del rgOut
+        del out
+        return d
+
+    def innerproduct_init(self, tag, x, bBias, nNumOut, nAxis, wt, b):
+        nN = x.shape[0]
+        nC = x.shape[1]
+        nH = x.shape[2] if len(x.shape) > 2 else 1
+        nW = x.shape[3] if len(x.shape) > 3 else 1
+        nAxis = len(x.shape) - 1
+        rgWt = list(wt.detach().cpu().numpy().flatten().data)
+        rgB = list(b.detach().cpu().numpy().flatten().data)
+        self.mycaffe.innerproduct_init(tag, bBias, nAxis, nNumOut, nN, nC, nH, nW, rgWt, rgB)
 
     def innerproduct_fwd(self, tag, x, bBias, nNumOut, nAxis):
+        if tag == None or tag == "":
+            breakpoint()           
         rgShape = x.shape
+        if len(rgShape) == 2 and nAxis != 1:
+            breakpoint()
         nN = x.shape[0]
         nC = x.shape[1]
         nH = x.shape[2] if len(x.shape) > 2 else 1
         nW = x.shape[3] if len(x.shape) > 3 else 1
         rgIn = list(x.detach().cpu().numpy().flatten().data)
-        rgOut = self.mycaffe.innerproduct_fwd(tag, bBias, nNumOut, nAxis, nN, nC, nH, nW, rgIn)        
+        rgOut = self.mycaffe.innerproduct_fwd(tag, nN, nC, nH, nW, rgIn)        
         out = asNumpyArray(rgOut)
         y = torch.from_numpy(out).float()
-        if (nNumOut != rgShape[1]):
-            rgShape = [rgShape[0], nNumOut]
+        if len(rgShape) > 2:
+            if (nNumOut != rgShape[2]):
+                rgShape = [rgShape[0], rgShape[1], nNumOut]
+        else:
+            if (nNumOut != rgShape[1]):
+                rgShape = [rgShape[0], nNumOut]
         y = y.reshape(rgShape)
         y = y.to(device)
         del rgOut
@@ -487,10 +514,13 @@ class MyCaffe():
     def innerproduct_bwd(self, tag, y, x, ygrad):
         rgShape = y.shape
         nN = y.shape[0]
-        nC = y.shape[1]
-        nH = y.shape[2] if len(y.shape) > 2 else 1
-        nW = y.shape[3] if len(y.shape) > 3 else 1
-        rgOut = self.mycaffe.innerproduct_bwd(tag, nN, nC, nH, nW, list(y.detach().cpu().numpy().flatten().data), list(ygrad.detach().cpu().numpy().flatten().data))
+        nCy = y.shape[1]
+        nCx = x.shape[1]
+        nHy = y.shape[2] if len(y.shape) > 2 else 1
+        nWy = y.shape[3] if len(y.shape) > 3 else 1
+        nHx = x.shape[2] if len(x.shape) > 2 else 1
+        nWx = x.shape[3] if len(x.shape) > 3 else 1
+        rgOut = self.mycaffe.innerproduct_bwd(tag, nN, nCy, nHy, nWy, nCx, nHx, nWx, list(y.detach().cpu().numpy().flatten().data), list(ygrad.detach().cpu().numpy().flatten().data))
         out = asNumpyArray(rgOut)
         xgrad = torch.from_numpy(out).float()
         xgrad = xgrad.reshape(x.shape)
@@ -513,15 +543,6 @@ class MyCaffe():
         del out
         return y
 
-    def step(self, iter, enc, dec, trg, e_mask, d_mask):
-        rgOut = self.mycaffe.Step(iter, list(enc.detach().cpu().numpy().flatten().data), list(dec.detach().cpu().numpy().flatten().data), list(trg.detach().cpu().numpy().flatten().data), list(e_mask.detach().cpu().numpy().flatten().data), list(d_mask.detach().cpu().numpy().flatten().data))
-        out = asNumpyArray(rgOut)        
-        tensorOutput = torch.from_numpy(out).float()
-        tensorOutput = tensorOutput.reshape(batch_size, seq_len, sp_vocab_size);
-        del out
-        
-        return tensorOutput
-    
     def current_loss(self):
         return self.mycaffe.CurrentLoss
 

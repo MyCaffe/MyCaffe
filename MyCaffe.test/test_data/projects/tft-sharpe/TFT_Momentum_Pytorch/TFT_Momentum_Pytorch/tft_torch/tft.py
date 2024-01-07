@@ -1,6 +1,6 @@
 import copy
 import math
-from re import I
+from re import I, S
 from typing import List, Dict, Tuple, Optional
 import torch
 import numpy as np
@@ -11,16 +11,14 @@ from tft_torch.base_blocks import TimeDistributed, NullTransform
 from utility import DebugFunction
 from tft_torch.mycaffe import MyCaffe
 
-mycaffe = MyCaffe(False)
-#full_mycaffe = MyCaffe(True)
+mycaffe = MyCaffe()
 
-# Softmax
-#
 tag_list = []
 smx_axis = []
 ip_axis = []
 ip_bias = []
 ip_numout = []
+emb_numout = []
 lstm_num = []
 lstm_state = []
 lstm_ctx = {}
@@ -31,6 +29,302 @@ last_x_grad = None
 # Set the devie to CUDA if available
 is_cuda = torch.cuda.is_available()
 device = torch.device("cuda" if is_cuda else "cpu")
+
+class MyCaffeModel(nn.Module):
+    def __init__(self, tag, path=""):
+        super(MyCaffeModel, self).__init__()
+        self.tag = tag
+        self.path = path
+
+    def forward0(self,x_static_categorical, x_hist_numeric, tmp):
+        return ModelFunction0.apply(x_static_categorical, x_hist_numeric, tmp)
+    
+    def forward3(self, static_rep, historical_ts_rep):
+        return ModelFunction3.apply(static_rep, historical_ts_rep)
+
+    def forward4(self, selected_static, historical_ts_rep):
+        return ModelFunction4.apply(selected_static, historical_ts_rep)
+        
+    def forward9(self, historical_ts_rep, c_selection_h, c_seq_hidden, c_seq_cell, c_enrichment):
+        return ModelFunction9.apply(historical_ts_rep, c_selection_h, c_seq_hidden, c_seq_cell, c_enrichment)
+
+    def forward12(self,selected_historical, c_seq_hidden, c_seq_cell, c_enrichment):
+        return ModelFunction12.apply(selected_historical, c_seq_hidden, c_seq_cell, c_enrichment)
+    
+    def forward15(self,gated_lstm_output, c_enrichment):
+        return ModelFunction15.apply(gated_lstm_output, c_enrichment)
+
+    def forward19(self,enriched_sequence, gated_lstm_output):
+        return ModelFunction19.apply(enriched_sequence, gated_lstm_output)
+
+    def forward23(self, gated_post_attention, gated_lstm_output):
+        return ModelFunction23.apply(gated_post_attention, gated_lstm_output)
+
+    def forward24(self, post_poswise_ff_grn, gated_lstm_output_pos):
+        return ModelFunction24.apply(post_poswise_ff_grn, gated_lstm_output_pos)
+
+    def forward25(self, gated_poswise_ff):
+        return ModelFunction25.apply(gated_poswise_ff)
+
+    def forward27(self, xhat, tgt):
+        return ModelFunction27.apply(xhat, tgt)
+    
+    def update(self, nIter):
+        mycaffe.update(nIter)
+
+class ModelFunction0(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x1,x2,x3):
+        res = mycaffe.model_fwd0(x1,x2,x3)        
+        ctx.save_for_backward(x1,x2,x3)
+        y = torch.from_numpy(res[0]).to(device)
+        y.requires_grad = True
+        return y
+    
+    @staticmethod
+    def backward(ctx, grad_output):
+        x1,x2,x3 = ctx.saved_tensors
+        res = mycaffe.model_bwd(grad_output, x1)
+        x1_grad = x2_grad = x3_grad = None
+        if ctx.needs_input_grad[0]:
+            x1_grad = torch.from_numpy(res[0]).to(device)
+            x1_grad.requires_grad = True
+        if ctx.needs_input_grad[1]:
+            x2_grad = torch.from_numpy(res[1]).to(device)
+            x2_grad.requires_grad = True
+        if ctx.needs_input_grad[2]:
+            x3_grad = torch.from_numpy(res[2]).to(device)
+            x3_grad.requires_grad = True
+        return x1_grad, x2_grad, x3_grad
+
+class ModelFunction3(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x1,x2):
+        res = mycaffe.model_fwd3(x1,x2)        
+        ctx.save_for_backward(x1,x2)
+        y = torch.from_numpy(res[0]).to(device)
+        y.requires_grad = True
+        return y
+    
+    @staticmethod
+    def backward(ctx, grad_output):
+        x1,x2 = ctx.saved_tensors
+        res = mycaffe.model_bwd(grad_output, x1)
+        x1_grad = x2_grad = None
+        if ctx.needs_input_grad[0]:
+            x1_grad = torch.from_numpy(res[0]).to(device)
+            x1_grad.requires_grad = True
+        if ctx.needs_input_grad[1]:
+            x2_grad = torch.from_numpy(res[1]).to(device)
+            x2_grad.requires_grad = True
+        return x1_grad, x2_grad
+
+class ModelFunction4(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x1,x2):
+        res = mycaffe.model_fwd4(x1,x2)        
+        ctx.save_for_backward(x1,x2)
+        y = torch.from_numpy(res[0]).to(device)
+        y.requires_grad = True
+        return y
+    
+    @staticmethod
+    def backward(ctx, grad_output):
+        x1,x2 = ctx.saved_tensors
+        res = mycaffe.model_bwd(grad_output, x1)
+        x1_grad = x2_grad = None
+        if ctx.needs_input_grad[0]:
+            x1_grad = torch.from_numpy(res[0]).to(device)
+            x1_grad.requires_grad = True
+        if ctx.needs_input_grad[1]:
+            x2_grad = torch.from_numpy(res[1]).to(device)
+            x2_grad.requires_grad = True
+        return x1_grad, x2_grad
+
+class ModelFunction9(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x1,x2,x3,x4,x5):
+        res = mycaffe.model_fwd9(x1,x2,x3,x4,x5)        
+        ctx.save_for_backward(x1,x2,x3,x4,x5)
+        y = torch.from_numpy(res[0]).to(device)
+        y.requires_grad = True
+        return y
+    
+    @staticmethod
+    def backward(ctx, grad_output):
+        x1,x2,x3,x4,x5 = ctx.saved_tensors
+        res = mycaffe.model_bwd(grad_output, x1)
+        x1_grad = x2_grad = x3_grad = x4_grad = x5_grad = None
+        if ctx.needs_input_grad[0]:
+            x1_grad = torch.from_numpy(res[0]).to(device)
+            x1_grad.requires_grad = True
+        if ctx.needs_input_grad[1]:
+            x2_grad = torch.from_numpy(res[1]).to(device)
+            x2_grad.requires_grad = True
+        if ctx.needs_input_grad[2]:
+            x3_grad = torch.from_numpy(res[2]).to(device)
+            x3_grad.requires_grad = True
+        if ctx.needs_input_grad[3]:
+            x4_grad = torch.from_numpy(res[3]).to(device)
+            x4_grad.requires_grad = True
+        if ctx.needs_input_grad[4]:
+            x5_grad = torch.from_numpy(res[4]).to(device)
+            x5_grad.requires_grad = True
+        return x1_grad, x2_grad, x3_grad, x4_grad, x5_grad
+
+class ModelFunction12(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x1,x2,x3,x4):
+        res = mycaffe.model_fwd12(x1,x2,x3,x4)        
+        ctx.save_for_backward(x1,x2,x3,x4)
+        y = torch.from_numpy(res[0]).to(device)
+        y.requires_grad = True
+        return y
+    
+    @staticmethod
+    def backward(ctx, grad_output):
+        x1,x2,x3,x4 = ctx.saved_tensors
+        res = mycaffe.model_bwd(grad_output, x1)
+        x1_grad = x2_grad = x3_grad = x4_grad = None
+        if ctx.needs_input_grad[0]:
+            x1_grad = torch.from_numpy(res[0]).to(device)
+            x1_grad.requires_grad = True
+        if ctx.needs_input_grad[1]:
+            x2_grad = torch.from_numpy(res[1]).to(device)
+            x2_grad.requires_grad = True
+        if ctx.needs_input_grad[2]:
+            x3_grad = torch.from_numpy(res[2]).to(device)
+            x3_grad.requires_grad = True
+        if ctx.needs_input_grad[3]:
+            x4_grad = torch.from_numpy(res[3]).to(device)
+            x4_grad.requires_grad = True
+        return x1_grad, x2_grad, x3_grad, x4_grad
+
+class ModelFunction15(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x1,x2):
+        res = mycaffe.model_fwd15(x1,x2)        
+        ctx.save_for_backward(x1,x2)
+        y = torch.from_numpy(res[0]).to(device)
+        y.requires_grad = True
+        return y
+    
+    @staticmethod
+    def backward(ctx, grad_output):
+        x1,x2 = ctx.saved_tensors
+        res = mycaffe.model_bwd(grad_output, x1)
+        x1_grad = x2_grad = None
+        if ctx.needs_input_grad[0]:
+            x1_grad = torch.from_numpy(res[0]).to(device)
+            x1_grad.requires_grad = True
+        if ctx.needs_input_grad[1]:
+            x2_grad = torch.from_numpy(res[1]).to(device)
+            x2_grad.requires_grad = True
+        return x1_grad, x2_grad
+
+class ModelFunction19(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x1,x2):
+        res = mycaffe.model_fwd19(x1,x2)        
+        ctx.save_for_backward(x1,x2)
+        y = torch.from_numpy(res[0]).to(device)
+        y.requires_grad = True
+        return y
+    
+    @staticmethod
+    def backward(ctx, grad_output):
+        x1,x2 = ctx.saved_tensors
+        res = mycaffe.model_bwd(grad_output, x1)
+        x1_grad = x2_grad = None
+        if ctx.needs_input_grad[0]:
+            x1_grad = torch.from_numpy(res[0]).to(device)
+            x1_grad.requires_grad = True
+        if ctx.needs_input_grad[1]:
+            x2_grad = torch.from_numpy(res[1]).to(device)
+            x2_grad.requires_grad = True
+        return x1_grad, x2_grad
+
+class ModelFunction23(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x1,x2):
+        res = mycaffe.model_fwd23(x1,x2)        
+        ctx.save_for_backward(x1,x2)
+        y = torch.from_numpy(res[0]).to(device)
+        y.requires_grad = True
+        return y
+    
+    @staticmethod
+    def backward(ctx, grad_output):
+        x1,x2 = ctx.saved_tensors
+        res = mycaffe.model_bwd(grad_output, x1)
+        x1_grad = x2_grad = None
+        if ctx.needs_input_grad[0]:
+            x1_grad = torch.from_numpy(res[0]).to(device)
+            x1_grad.requires_grad = True
+        if ctx.needs_input_grad[1]:
+            x2_grad = torch.from_numpy(res[1]).to(device)
+            x2_grad.requires_grad = True
+        return x1_grad, x2_grad
+
+class ModelFunction24(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x1, x2):
+        res = mycaffe.model_fwd24(x1, x2)        
+        ctx.save_for_backward(x1, x2)
+        y = torch.from_numpy(res[0]).to(device)
+        y.requires_grad = True
+        return y
+    
+    @staticmethod
+    def backward(ctx, grad_output):
+        x1, x2 = ctx.saved_tensors
+        res = mycaffe.model_bwd(grad_output, x1)
+        x1_grad = x2_grad = None
+        if ctx.needs_input_grad[0]:
+            x1_grad = torch.from_numpy(res[0]).to(device)
+            x1_grad.requires_grad = True
+        if ctx.needs_input_grad[1]:
+            x2_grad = torch.from_numpy(res[1]).to(device)
+            x2_grad.requires_grad = True
+        return x1_grad, x2_grad
+
+class ModelFunction25(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x):
+        res = mycaffe.model_fwd25(x)        
+        ctx.save_for_backward(x)
+        y = torch.from_numpy(res[0]).to(device)
+        y.requires_grad = True
+        return y
+    
+    @staticmethod
+    def backward(ctx, grad_output):
+        x = ctx.saved_tensors
+        res = mycaffe.model_bwd(grad_output, x)
+        xhat_grad = None
+        if ctx.needs_input_grad[0]:
+            xhat_grad = torch.from_numpy(res[0]).to(device)
+            xhat_grad.requires_grad = True
+        return xhat_grad, None
+
+class ModelFunction27(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, xhat, tgt):
+        res = mycaffe.model_fwd27(xhat, tgt)        
+        ctx.save_for_backward(xhat,tgt)
+        y = torch.from_numpy(res[0]).to(device)
+        y.requires_grad = True
+        return y
+    
+    @staticmethod
+    def backward(ctx, grad_output):
+        xhat,tgt = ctx.saved_tensors
+        res = mycaffe.model_bwd27(grad_output, xhat)
+        xhat_grad = None
+        if ctx.needs_input_grad[0]:
+            xhat_grad = torch.from_numpy(res[0]).to(device)
+            xhat_grad.requires_grad = True
+        return xhat_grad, None
 
 #
 # @see [Parameters in Tensorflow Keras RNN and CUDNN RNN](https://kaixih.github.io/keras-cudnn-rnn/) by Kaixi Hou, 2021
@@ -82,242 +376,6 @@ def get_cudnn_lstm_weights(lstm):
     
     full_cudnnwts = torch.concat(all_wts, axis=0) if num_layers > 1 else all_wts[0]
     return full_cudnnwts
-
-class MyCaffeModel(nn.Module):
-    def __init__(self, tag, path=""):
-        super(MyCaffeModel, self).__init__()
-        self.tag = tag
-        self.path = path
-
-    def forward(self, x1, t1):
-        modelFn = ModelFunction.apply
-        return modelFn(x1, t1)
-
-    def forward2(self, x1, x2, t1):
-        modelFn = ModelFunction2.apply
-        return modelFn(x1, x2, t1)
-
-    def forward3(self, x1, x2, x3, t1):
-        modelFn = ModelFunction3.apply
-        return modelFn(x1, x2, x3, t1)
-
-    def forward4(self, x1, x2, x3, x4, t1):
-        modelFn = ModelFunction4.apply
-        return modelFn(x1, x2, x3, x4, t1)
-
-    def forward5(self, x1, x2, x3, x4, x5, t1):
-        modelFn = ModelFunction5.apply
-        return modelFn(x1, x2, x3, x4, x5, t1)
-
-    def forward6(self, x1, x2, x3, x4, x5, x6, t1):
-        modelFn = ModelFunction6.apply
-        return modelFn(x1, x2, x3, x4, x5, x6, t1)
-
-    def forward7(self, x1, x2, x3, x4, x5, x6, x7, t1):
-        modelFn = ModelFunction7.apply
-        return modelFn(x1, x2, x3, x4, x5, x6, x7, t1)
-
-    def forward_direct_full(self):
-        res = full_mycaffe.model_fwd_full()
-        return res
-
-    def forward_direct(self, s1, s2, h1, h2, f1, f2, trg):
-        return full_mycaffe.model_fwd(s1, s2, h1, h2, f1, f2, trg)
-
-    def backward_direct(self, y):
-        return full_mycaffe.model_bwd(y)
-
-    def update(self, nIter):
-        full_mycaffe.model_update(nIter)
-
-class ModelFunction(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, x1, t1):
-        res = full_mycaffe.model_fwd(x1, t1)
-        ctx.save_for_backward(x1, t1)              
-        y = torch.from_numpy(res[0]).to(device)
-        y.requires_grad = True
-        return y
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        x1, t1 = ctx.saved_tensors
-        res = full_mycaffe.model_bwd(grad_output)
-
-        x1_grad = t1_grad = None
-        if ctx.needs_input_grad[0]:
-            x1_grad = torch.from_numpy(res[0]).to(device)
-        if ctx.needs_input_grad[1]:
-            t1_grad = torch.from_numpy(res[1]).to(device)
-        return x1_grad, t1_grad
-
-class ModelFunction2(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, x1, x2, t1):
-        res = full_mycaffe.model_fwd2(x1, x2, t1)
-        ctx.save_for_backward(x1, x2, t1)              
-        y = torch.from_numpy(res[0]).to(device)
-        y.requires_grad = True
-        return y
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        x1, x2, t1 = ctx.saved_tensors
-        res = full_mycaffe.model_bwd(grad_output)
-
-        x1_grad = x2_grad = t1_grad = None
-        if ctx.needs_input_grad[0]:
-            x1_grad = torch.from_numpy(res[0]).to(device)
-        if ctx.needs_input_grad[1]:
-            x2_grad = torch.from_numpy(res[1]).to(device)
-        if ctx.needs_input_grad[2]:
-            t1_grad = torch.from_numpy(res[2]).to(device)
-        return x1_grad, x2_grad, t1_grad
-
-class ModelFunction3(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, x1, x2, x3, t1):
-        res = full_mycaffe.model_fwd3(x1, x2, x3, t1)
-        ctx.save_for_backward(x1, x2, x3, t1)              
-        y = torch.from_numpy(res[0]).to(device)
-        y.requires_grad = True
-        return y
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        x1, x2, x3, t1 = ctx.saved_tensors
-        res = full_mycaffe.model_bwd(grad_output)
-
-        x1_grad = x2_grad = x3_grad = t1_grad = None
-        if ctx.needs_input_grad[0]:
-            x1_grad = torch.from_numpy(res[0]).to(device)
-        if ctx.needs_input_grad[1]:
-            x2_grad = torch.from_numpy(res[1]).to(device)
-        if ctx.needs_input_grad[2]:
-            x3_grad = torch.from_numpy(res[2]).to(device)
-        if ctx.needs_input_grad[3]:
-            t1_grad = torch.from_numpy(res[3]).to(device)
-        return x1_grad, x2_grad, x3_grad, t1_grad
-
-class ModelFunction4(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, x1, x2, x3, x4, t1):
-        res = full_mycaffe.model_fwd4(x1, x2, x3, x4, t1)
-        ctx.save_for_backward(x1, x2, x3, x4, t1)              
-        y = torch.from_numpy(res[0]).to(device)
-        y.requires_grad = True
-        return y
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        x1, x2, x3, x4, t1 = ctx.saved_tensors
-        res = full_mycaffe.model_bwd(grad_output)
-
-        x1_grad = x2_grad = x3_grad = x4_grad = t1_grad = None
-        if ctx.needs_input_grad[0]:
-            x1_grad = torch.from_numpy(res[0]).to(device)
-        if ctx.needs_input_grad[1]:
-            x2_grad = torch.from_numpy(res[1]).to(device)
-        if ctx.needs_input_grad[2]:
-            x3_grad = torch.from_numpy(res[2]).to(device)
-        if ctx.needs_input_grad[3]:
-            x4_grad = torch.from_numpy(res[3]).to(device)
-        if ctx.needs_input_grad[4]:
-            t1_grad = torch.from_numpy(res[4]).to(device)
-        return x1_grad, x2_grad, x3_grad, x4_grad, t1_grad
-
-class ModelFunction5(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, x1, x2, x3, x4, x5, t1):
-        res = full_mycaffe.model_fwd5(x1, x2, x3, x4, x5, t1)
-        ctx.save_for_backward(x1, x2, x3, x4, x5, t1)              
-        y = torch.from_numpy(res[0]).to(device)
-        y.requires_grad = True
-        return y
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        x1, x2, x3, x4, x5, t1 = ctx.saved_tensors
-        res = full_mycaffe.model_bwd(grad_output)
-
-        x1_grad = x2_grad = x3_grad = x4_grad = x5_grad = t1_grad = None
-        if ctx.needs_input_grad[0]:
-            x1_grad = torch.from_numpy(res[0]).to(device)
-        if ctx.needs_input_grad[1]:
-            x2_grad = torch.from_numpy(res[1]).to(device)
-        if ctx.needs_input_grad[2]:
-            x3_grad = torch.from_numpy(res[2]).to(device)
-        if ctx.needs_input_grad[3]:
-            x4_grad = torch.from_numpy(res[3]).to(device)
-        if ctx.needs_input_grad[4]:
-            x5_grad = torch.from_numpy(res[4]).to(device)
-        if ctx.needs_input_grad[5]:
-            t1_grad = torch.from_numpy(res[5]).to(device)
-        return x1_grad, x2_grad, x3_grad, x4_grad, x5_grad, t1_grad
-
-class ModelFunction6(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, x1, x2, x3, x4, x5, x6, t1):
-        res = full_mycaffe.model_fwd6(x1, x2, x3, x4, x5, x6, t1)
-        ctx.save_for_backward(x1, x2, x3, x4, x5, x6, t1)              
-        y = torch.from_numpy(res[0]).to(device)
-        y.requires_grad = True
-        return y
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        x1, x2, x3, x4, x5, x6, t1 = ctx.saved_tensors
-        res = full_mycaffe.model_bwd(grad_output)
-
-        x1_grad = x2_grad = x3_grad = x4_grad = x5_grad = x6_grad = t1_grad = None
-        if ctx.needs_input_grad[0]:
-            x1_grad = torch.from_numpy(res[0]).to(device)
-        if ctx.needs_input_grad[1]:
-            x2_grad = torch.from_numpy(res[1]).to(device)
-        if ctx.needs_input_grad[2]:
-            x3_grad = torch.from_numpy(res[2]).to(device)
-        if ctx.needs_input_grad[3]:
-            x4_grad = torch.from_numpy(res[3]).to(device)
-        if ctx.needs_input_grad[4]:
-            x5_grad = torch.from_numpy(res[4]).to(device)
-        if ctx.needs_input_grad[5]:
-            x6_grad = torch.from_numpy(res[5]).to(device)
-        if ctx.needs_input_grad[6]:
-            t1_grad = torch.from_numpy(res[6]).to(device)
-        return x1_grad, x2_grad, x3_grad, x4_grad, x5_grad, x6_grad, t1_grad
-
-class ModelFunction7(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, x1, x2, x3, x4, x5, x6, x7, t1):
-        res = full_mycaffe.model_fwd7(x1, x2, x3, x4, x5, x6, x7, t1)
-        ctx.save_for_backward(x1, x2, x3, x4, x5, x6, x7, t1)              
-        y = torch.from_numpy(res[0]).to(device)
-        y.requires_grad = True
-        return y
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        x1, x2, x3, x4, x5, x6, x7, t1 = ctx.saved_tensors
-        res = full_mycaffe.model_bwd(grad_output)
-
-        x1_grad = x2_grad = x3_grad = x4_grad = x5_grad = x6_grad = x7_grad = t1_grad = None
-        if ctx.needs_input_grad[0]:
-            x1_grad = torch.from_numpy(res[0]).to(device)
-        if ctx.needs_input_grad[1]:
-            x2_grad = torch.from_numpy(res[1]).to(device)
-        if ctx.needs_input_grad[2]:
-            x3_grad = torch.from_numpy(res[2]).to(device)
-        if ctx.needs_input_grad[3]:
-            x4_grad = torch.from_numpy(res[3]).to(device)
-        if ctx.needs_input_grad[4]:
-            x5_grad = torch.from_numpy(res[4]).to(device)
-        if ctx.needs_input_grad[5]:
-            x6_grad = torch.from_numpy(res[5]).to(device)
-        if ctx.needs_input_grad[6]:
-            x7_grad = torch.from_numpy(res[6]).to(device)
-        if ctx.needs_input_grad[7]:
-            t1_grad = torch.from_numpy(res[7]).to(device)
-        return x1_grad, x2_grad, x3_grad, x4_grad, x5_grad, x6_grad, x7_grad, t1_grad
 
 class LstmEx(nn.Module):
     def __init__(self, tag, use_mycaffe, state=64, num=1, debug=False, path=""):
@@ -377,8 +435,10 @@ class LstmEx(nn.Module):
         if self.debug:
             DebugFunction.trace(y, self.tag + ".lstm.y")
             y = debug(y)
-            DebugFunction.trace(h2[0], self.tag + ".lstm.h1")
-            DebugFunction.trace(h2[1], self.tag + ".lstm.c1")
+            if (h2[0] != None):
+                DebugFunction.trace(h2[0], self.tag + ".lstm.h1")
+            if (h2[1] != None):
+                DebugFunction.trace(h2[1], self.tag + ".lstm.c1")
         return y, h2
 
 class LstmFunction(torch.autograd.Function):
@@ -569,7 +629,8 @@ class LinearEx(nn.Module):
         else:
             self.register_parameter('bias', None)
         self.reset_parameters(weight_init, bias_init)
-
+        self.init = False
+   
     def reset_parameters(self, weight_init=None, bias_init=None):
         if weight_init is None:
             weight_init = torch.nn.init.xavier_uniform_
@@ -578,12 +639,16 @@ class LinearEx(nn.Module):
         weight_init(self.weight)
         if self.bias is not None:
             bias_init(self.bias)
-   
+            
     def forward(self, input):
         if self.debug:
             debug = DebugFunction.apply
 
         if self.use_mycaffe:
+            if self.init == False:
+                mycaffe.innerproduct_init(self.tag, input, self.biasval, self.numout, self.axis, self.weight, self.bias)
+                self.init = True
+
             ip = InnerProductFunction.apply
             tag_list.append(self.tag)
             ip_bias.append(self.biasval)
@@ -628,6 +693,97 @@ class InnerProductFunction(torch.autograd.Function):
         bias = ip_bias.pop()
         numout = ip_numout.pop()
         return mycaffe.innerproduct_bwd(tag, y,x, grad_output)
+
+class ChannelSum(nn.Module):
+    def __init__(self, tag, use_mycaffe=False, debug=False):
+        super(ChannelSum, self).__init__()
+        self.tag = tag
+        self.debug = debug
+        self.use_mycaffe = use_mycaffe
+        
+    def forward(self, x):
+        if self.debug:
+            debug = DebugFunction.apply
+            DebugFunction.trace(x, self.tag + ".x")
+            x = debug(x)
+
+        if self.use_mycaffe:
+            chsum = ChannelSumFunction.apply
+            tag_list.append(self.tag)
+            y = chsum(x)
+        else:
+            y = x.sum(axis=-1)
+            
+        if self.debug:
+            DebugFunction.trace(y, self.tag + ".y")
+            y = debug(y)
+        return y
+
+class ChannelSumFunction(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x):
+        tag = tag_list[-1]
+        y = mycaffe.channel_sum_fwd(x)
+        h = torch.zeros(x.shape[2]);
+        ctx.save_for_backward(x,h)
+        return y
+    
+    @staticmethod
+    def backward(ctx, grad_output):
+        x,h = ctx.saved_tensors
+        tag = tag_list.pop()
+        return mycaffe.channel_sum_bwd(grad_output, h)
+
+#
+# EmbedEx
+#     
+class EmbedEx(nn.Module):
+    def __init__(self,
+                 out_features,
+                 debug: Optional[bool] = False, tag = None, path = "", use_mycaffe: Optional[bool] = False):
+        super(EmbedEx, self).__init__()
+        self.embed = nn.Embedding(out_features)
+        self.debug = debug
+        self.path = path
+        self.tag = tag if tag != None else ""
+        self.out_features = out_features
+        self.use_mycaffe = use_mycaffe
+        self.numout = out_features
+   
+    def forward(self, input):
+        if self.debug:
+            debug = DebugFunction.apply
+
+        if self.use_mycaffe:
+            emb = EmbedFunction.apply
+            tag_list.append(self.tag)
+            emb_numout.append(self.numout)
+            x2 = emb(input)
+
+        else:
+            x2 = self.embed(input)
+
+        if self.debug:
+            DebugFunction.trace(x2, self.tag + ".emb.x2")
+            x2 = debug(x2)
+
+        return x2
+
+class EmbedFunction(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x):
+        tag = tag_list[-1]
+        numout = emb_numout[-1]
+        y = mycaffe.embedding_fwd(tag, x, numout)
+        ctx.save_for_backward(y,x)
+        return y
+    
+    @staticmethod
+    def backward(ctx, grad_output):
+        y,x = ctx.saved_tensors
+        tag = tag_list.pop()
+        numout = ip_numout.pop()
+        return mycaffe.embedding_bwd(tag, y,x, grad_output)
 
 #
 # LayerNormEx
@@ -784,9 +940,9 @@ class GatedLinearUnit(nn.Module):
         # Two dimension-preserving dense layers
         #self.fc1 = nn.Linear(input_dim, input_dim)
         #self.fc2 = nn.Linear(input_dim, input_dim)
-        self.fc1 = LinearEx(input_dim, input_dim)
-        self.fc2 = LinearEx(input_dim, input_dim)
         self.tag = tag + "_" if tag != None else ""
+        self.fc1 = LinearEx(input_dim, input_dim, use_mycaffe=use_mycaffe, tag=self.tag + ".fc1")
+        self.fc2 = LinearEx(input_dim, input_dim, use_mycaffe=use_mycaffe, tag=self.tag + ".fc2")
         self.sigmoid = SigmoidEx(use_mycaffe=use_mycaffe, debug=debug, tag=self.tag)
         self.debug = debug
         self.path = path
@@ -882,7 +1038,7 @@ class GatedResidualNetwork(nn.Module):
             self.skip_layer = TimeDistributed(LinearEx(self.input_dim, self.output_dim))
 
         # A linear layer for projecting the primary input (acts across time if necessary)
-        self.fc1 = TimeDistributed(LinearEx(self.input_dim, self.hidden_dim, use_mycaffe=use_mycaffe_linear_fc1, tag=self.tag+"_fc1"), batch_first=batch_first)
+        self.fc1 = TimeDistributed(LinearEx(self.input_dim, self.hidden_dim, use_mycaffe=use_mycaffe_linear_fc1, tag=self.tag+"_fc1", axis=1, debug=self.debug), batch_first=batch_first)
 
         # In case we expect context input, an additional linear layer will project the context
         if self.context_dim is not None:
@@ -898,7 +1054,7 @@ class GatedResidualNetwork(nn.Module):
         # Further projection components (Eq.3 in the original paper)
         # ============================================================
         # additional projection on top of the non-linearity
-        self.fc2 = TimeDistributed(LinearEx(self.hidden_dim, self.output_dim, use_mycaffe=use_mycaffe_linear_fc2, tag=self.tag+"_fc2"), batch_first=batch_first)
+        self.fc2 = TimeDistributed(LinearEx(self.hidden_dim, self.output_dim, use_mycaffe=use_mycaffe_linear_fc2, tag=self.tag+"_fc2", axis=1, debug=self.debug), batch_first=batch_first)
 
         # ============================================================
         # Output gating components (Eq.2 in the original paper)
@@ -907,7 +1063,7 @@ class GatedResidualNetwork(nn.Module):
         tag1 = tag + "_grn" if tag != None else ""
         self.gate = TimeDistributed(GatedLinearUnit(self.output_dim, debug=debug, use_mycaffe=use_mycaffe, tag=tag1, path=self.path), batch_first=batch_first)
         #self.layernorm = TimeDistributed(nn.LayerNorm(self.output_dim), batch_first=batch_first)
-        self.layernorm = TimeDistributed(LayerNormEx(self.output_dim,debug=self.debug, tag=self.tag, use_mycaffe=use_mycaffe_linear_fcout, path=self.path), batch_first=batch_first)
+        self.layernorm = TimeDistributed(LayerNormEx(self.output_dim,debug=self.debug, tag=self.tag, use_mycaffe=use_mycaffe, path=self.path), batch_first=batch_first)
 
     def forward(self, x, context=None):
         if self.debug:
@@ -1035,6 +1191,7 @@ class VariableSelectionNetwork(nn.Module):
                  batch_first: Optional[bool] = True,
                  debug: Optional[bool] = False,
                  use_mycaffe: Optional[bool] = False,
+                 use_mycaffe_linear: Optional[bool] = False,
                  tag = None, path=""):
         super(VariableSelectionNetwork, self).__init__()
 
@@ -1059,9 +1216,15 @@ class VariableSelectionNetwork(nn.Module):
                                                   batch_first=batch_first,
                                                   debug = debug,
                                                   tag = tag1,
-                                                  use_mycaffe=use_mycaffe, path=self.path)
+                                                  use_mycaffe=use_mycaffe,
+                                                  use_mycaffe_linear_fc1=use_mycaffe_linear,
+                                                  use_mycaffe_linear_fc2=use_mycaffe_linear,
+                                                  use_mycaffe_linear_fcout=use_mycaffe_linear,
+                                                  path=self.path)
         # activation for transforming the GRN output to weights
         self.softmax = SoftmaxEx(self.tag + ".smx", use_mycaffe=use_mycaffe,dim=1)
+
+        self.chan_sum = ChannelSum(self.tag + ".chsum", use_mycaffe=use_mycaffe, debug=debug)
 
         # In addition, each input variable (after transformed to its wide representation) goes through its own GRN.
         self.single_variable_grns = nn.ModuleList()
@@ -1075,7 +1238,11 @@ class VariableSelectionNetwork(nn.Module):
                                      batch_first=batch_first,
                                      debug=debug,
                                      tag=tag1,
-                                     use_mycaffe=use_mycaffe, path=self.path))
+                                     use_mycaffe=use_mycaffe,
+                                     use_mycaffe_linear_fc1=use_mycaffe_linear,
+                                     use_mycaffe_linear_fc2=use_mycaffe_linear,
+                                     use_mycaffe_linear_fcout=use_mycaffe_linear,
+                                     path=self.path))
 
     def forward(self, flattened_embedding, context=None):
         if self.debug:
@@ -1104,7 +1271,7 @@ class VariableSelectionNetwork(nn.Module):
         # After that step "sparse_weights" is of shape [(num_samples * num_temporal_steps) x num_inputs x 1]
 
         if self.debug:
-            DebugFunction.trace(flattened_embedding, "varsel_flattened_embedding_1b");
+            DebugFunction.trace(flattened_embedding, self.tag + "varsel_flattened_embedding_1b");
             flattened_embedding = debug(flattened_embedding)
 
         # Before weighting the variables - apply a GRN on each transformed input
@@ -1153,10 +1320,11 @@ class VariableSelectionNetwork(nn.Module):
         # outputs: [(num_samples * num_temporal_steps) x state_size x num_inputs]
 
         # and finally sum up - for creating a weighted sum representation of width state_size for every time-step
-        #if self.use_mycaffe == True:
-        #    outputs_sum = mycaffe.sumEx(outputs, -1)
-        #else:
-        outputs_sum = outputs.sum(axis=-1)
+        if self.use_mycaffe == True:
+            outputs_sum = self.chan_sum(outputs)
+        else:
+            outputs_sum = outputs.sum(axis=-1)
+
         if self.debug:
             DebugFunction.trace(outputs_sum, self.tag + "varsel_outputs_sum")
             outputs_sum = debug(outputs_sum)
@@ -1189,7 +1357,7 @@ class InputChannelEmbedding(nn.Module):
     """
 
     def __init__(self, state_size: int, num_numeric: int, num_categorical: int, categorical_cardinalities: List[int],
-                 time_distribute: Optional[bool] = False, debug: Optional[bool] = False, tag = None, path=""):
+                 time_distribute: Optional[bool] = False, debug: Optional[bool] = False, tag = None, path="", use_mycaffe: Optional[bool] = False):
         super(InputChannelEmbedding, self).__init__()
 
         self.tag = tag if tag != None else ""
@@ -1210,15 +1378,15 @@ class InputChannelEmbedding(nn.Module):
 
         if self.time_distribute:
             self.numeric_transform = TimeDistributed(
-                NumericInputTransformation(num_inputs=num_numeric, state_size=state_size, debug=self.debug, tag = self.tag + ".numeric",path=self.path), return_reshaped=False)
+                NumericInputTransformation(num_inputs=num_numeric, state_size=state_size, debug=self.debug, tag = self.tag + ".numeric",path=self.path, use_mycaffe=use_mycaffe), return_reshaped=False)
             self.categorical_transform = TimeDistributed(
                 CategoricalInputTransformation(num_inputs=num_categorical, state_size=state_size,
-                                               cardinalities=categorical_cardinalities, debug=self.debug, tag = self.tag + ".categorical",path=self.path), return_reshaped=False)
+                                               cardinalities=categorical_cardinalities, debug=self.debug, tag = self.tag + ".categorical",path=self.path, use_mycaffe=use_mycaffe), return_reshaped=False)
         else:
-            self.numeric_transform = NumericInputTransformation(num_inputs=num_numeric, state_size=state_size, debug=self.debug, tag = self.tag + ".numeric",path=self.path)
+            self.numeric_transform = NumericInputTransformation(num_inputs=num_numeric, state_size=state_size, debug=self.debug, tag = self.tag + ".numeric",path=self.path, use_mycaffe=use_mycaffe)
             self.categorical_transform = CategoricalInputTransformation(num_inputs=num_categorical,
                                                                         state_size=state_size,
-                                                                        cardinalities=categorical_cardinalities, debug=self.debug, tag = self.tag + ".categorical",path=self.path)
+                                                                        cardinalities=categorical_cardinalities, debug=self.debug, tag = self.tag + ".categorical",path=self.path, use_mycaffe=use_mycaffe)
 
         # in case some input types are not expected there is no need in the type specific transformation.
         # instead the "transformation" will return an empty list
@@ -1350,7 +1518,7 @@ class CategoricalInputTransformation(nn.Module):
         The quantity of categories associated with each of the input variables.
     """
 
-    def __init__(self, num_inputs: int, state_size: int, cardinalities: List[int], debug: Optional[bool] = False, tag = None,path=""):
+    def __init__(self, num_inputs: int, state_size: int, cardinalities: List[int], debug: Optional[bool] = False, tag = None,path="", use_mycaffe: Optional[bool] = False):
         super(CategoricalInputTransformation, self).__init__()
         self.debug = debug
         self.path = path
@@ -1423,7 +1591,7 @@ class GateAddNorm(nn.Module):
         self.layernorm = TimeDistributed(LayerNormEx(input_dim, use_mycaffe=use_mycaffe, debug=debug, tag=tag1,path=self.path, enable_pass_through=disable_layer_norm), batch_first=True)
 
     def forward(self, x, residual=None):
-        debug1 = False
+        debug1 = True
         if self.debug or debug1:
             debug = DebugFunction.apply
             DebugFunction.trace(x, self.tag + ".gan_x")
@@ -1496,14 +1664,14 @@ class InterpretableMultiHeadAttention(nn.Module):
         self.num_heads = num_heads  # the number of attention heads
         self.all_heads_dim = embed_dim * num_heads  # the width of the projection for the keys and queries
 
-        self.w_q = LinearEx(embed_dim, self.all_heads_dim)  # multi-head projection for the queries
-        self.w_k = LinearEx(embed_dim, self.all_heads_dim)  # multi-head projection for the keys
-        self.w_v = LinearEx(embed_dim, embed_dim)  # a single, shared, projection for the values
+        self.w_q = LinearEx(embed_dim, self.all_heads_dim, use_mycaffe=use_mycaffe, tag=self.tag + ".wq")  # multi-head projection for the queries
+        self.w_k = LinearEx(embed_dim, self.all_heads_dim, use_mycaffe=use_mycaffe, tag=self.tag + ".wk")  # multi-head projection for the keys
+        self.w_v = LinearEx(embed_dim, embed_dim, use_mycaffe=use_mycaffe, tag=self.tag + ".wv")  # a single, shared, projection for the values
 
         self.softmax = SoftmaxEx(self.tag + ".smx", use_mycaffe=use_mycaffe, dim=-1, path=self.path)
 
         # the last layer is used for final linear mapping (corresponds to W_H in the paper)
-        self.out = LinearEx(self.d_model, self.d_model, path=self.path)
+        self.out = LinearEx(self.d_model, self.d_model, path=self.path, use_mycaffe=use_mycaffe, tag=self.tag + ".out")
        
 
     def forward(self, q, k, v, mask=None):
@@ -1686,7 +1854,7 @@ class TemporalFusionTransformer(nn.Module):
         which are required for creating the model.
     """
 
-    def __init__(self, decoder_only: bool, config: DictConfig, debug: Optional[bool] = False, tag = "tft", use_mycaffe: Optional[bool] = False, lstm_use_mycaffe: Optional[bool] = False, path="", use_mycaffe_model: Optional[bool] = False):
+    def __init__(self, decoder_only: bool, config: DictConfig, debug: Optional[bool] = False, tag = "tft", use_mycaffe: Optional[bool] = False, lstm_use_mycaffe: Optional[bool] = False, linear_use_mycaffe: Optional[bool] = False, path="", use_mycaffe_model: Optional[bool] = False):
         super().__init__()
 
         self.debug = debug;
@@ -1745,14 +1913,14 @@ class TemporalFusionTransformer(nn.Module):
                                                       num_numeric=self.num_static_numeric,
                                                       num_categorical=self.num_static_categorical,
                                                       categorical_cardinalities=self.static_categorical_cardinalities,
-                                                      time_distribute=False, debug=self.debug, tag = self.tag + ".static", path=self.path)
+                                                      time_distribute=False, debug=self.debug, tag = self.tag + ".static", path=self.path, use_mycaffe=False)
 
         self.historical_ts_transform = InputChannelEmbedding(
             state_size=self.state_size,
             num_numeric=self.num_historical_numeric,
             num_categorical=self.num_historical_categorical,
             categorical_cardinalities=self.historical_categorical_cardinalities,
-            time_distribute=True, debug=self.debug, tag = self.tag + ".historical", path=self.path)
+            time_distribute=True, debug=self.debug, tag = self.tag + ".historical", path=self.path, use_mycaffe=False)
 
         if self.decoder_only == False:
             self.future_ts_transform = InputChannelEmbedding(
@@ -1760,7 +1928,7 @@ class TemporalFusionTransformer(nn.Module):
                 num_numeric=self.num_future_numeric,
                 num_categorical=self.num_future_categorical,
                 categorical_cardinalities=self.future_categorical_cardinalities,
-                time_distribute=True, debug=self.debug, tag = self.tag + ".future", path=self.path)
+                time_distribute=True, debug=self.debug, tag = self.tag + ".future", path=self.path, use_mycaffe=False)
         else:
             self.future_ts_transform = None
 
@@ -1778,7 +1946,10 @@ class TemporalFusionTransformer(nn.Module):
             num_inputs=self.num_historical_numeric + self.num_historical_categorical,
             hidden_dim=self.state_size,
             dropout=self.dropout,
-            context_dim=self.state_size, use_mycaffe=use_mycaffe, debug=self.debug, tag = self.tag + ".historical", path=self.path)
+            context_dim=self.state_size, 
+            use_mycaffe=use_mycaffe,
+            use_mycaffe_linear=linear_use_mycaffe,
+            debug=self.debug, tag = self.tag + ".historical", path=self.path)
 
         if self.decoder_only == False:
             self.future_ts_selection = VariableSelectionNetwork(
@@ -1796,19 +1967,40 @@ class TemporalFusionTransformer(nn.Module):
         self.static_encoder_selection = GatedResidualNetwork(input_dim=self.state_size,
                                                         hidden_dim=self.state_size,
                                                         output_dim=self.state_size,
-                                                        dropout=self.dropout, use_mycaffe=use_mycaffe, path=self.path, debug=self.debug,tag=self.tag+".static_encoder_selection")
+                                                        dropout=self.dropout, 
+                                                        use_mycaffe=use_mycaffe, 
+                                                        use_mycaffe_linear_fc1=linear_use_mycaffe,
+                                                        use_mycaffe_linear_fc2=linear_use_mycaffe,
+                                                        use_mycaffe_linear_fcout=linear_use_mycaffe,
+                                                        path=self.path, debug=self.debug,tag=self.tag+".static_encoder_selection")
         self.static_encoder_enrichment = GatedResidualNetwork(input_dim=self.state_size,
                                                         hidden_dim=self.state_size,
                                                         output_dim=self.state_size,
-                                                        dropout=self.dropout, use_mycaffe=use_mycaffe, path=self.path, debug=self.debug,tag=self.tag+".static_encoder_enrichment")
+                                                        dropout=self.dropout, 
+                                                        use_mycaffe=use_mycaffe, 
+                                                        use_mycaffe_linear_fc1=linear_use_mycaffe,
+                                                        use_mycaffe_linear_fc2=linear_use_mycaffe,
+                                                        use_mycaffe_linear_fcout=linear_use_mycaffe,
+                                                        path=self.path, 
+                                                        debug=self.debug,tag=self.tag+".static_encoder_enrichment")
         self.static_encoder_sequential_cell_init = GatedResidualNetwork(input_dim=self.state_size,
                                                         hidden_dim=self.state_size,
                                                         output_dim=self.state_size,
-                                                        dropout=self.dropout, use_mycaffe=use_mycaffe, path=self.path, debug=self.debug,tag=self.tag+".static_encoder_sequential_cell_init")
+                                                        dropout=self.dropout, 
+                                                        use_mycaffe=use_mycaffe, 
+                                                        use_mycaffe_linear_fc1=linear_use_mycaffe,
+                                                        use_mycaffe_linear_fc2=linear_use_mycaffe,
+                                                        use_mycaffe_linear_fcout=linear_use_mycaffe,
+                                                        path=self.path, debug=self.debug,tag=self.tag+".static_encoder_sequential_cell_init")
         self.static_encoder_sequential_state_init = GatedResidualNetwork(input_dim=self.state_size,
                                                         hidden_dim=self.state_size,
                                                         output_dim=self.state_size,
-                                                        dropout=self.dropout, use_mycaffe=use_mycaffe, path=self.path, debug=self.debug,tag=self.tag+".static_encoder_sequential_state_init")
+                                                        dropout=self.dropout, 
+                                                        use_mycaffe=use_mycaffe, 
+                                                        use_mycaffe_linear_fc1=linear_use_mycaffe,
+                                                        use_mycaffe_linear_fc2=linear_use_mycaffe,
+                                                        use_mycaffe_linear_fcout=linear_use_mycaffe,
+                                                        path=self.path, debug=self.debug,tag=self.tag+".static_encoder_sequential_state_init")
         
 
         # ============================================================
@@ -1834,14 +2026,14 @@ class TemporalFusionTransformer(nn.Module):
                                state=self.state_size,
                                num=self.lstm_layers,
                                debug=self.debug,
-                               use_mycaffe=True, path=self.path)
+                               use_mycaffe=self.lstm_use_mycaffe, path=self.path)
         
             if self.decoder_only == False:
                 self.future_lstm = LstmEx(tag="YYY.future_lstm", 
                                    state=self.state_size,
                                    num=self.lstm_layers,
                                    debug=self.debug,
-                                   use_mycaffe=True, path=self.path)
+                                   use_mycaffe=self.lstm_use_mycaffe, path=self.path)
             else:
                 self.future_lstm = None
 
@@ -1854,7 +2046,12 @@ class TemporalFusionTransformer(nn.Module):
                                                           hidden_dim=self.state_size,
                                                           output_dim=self.state_size,
                                                           context_dim=self.state_size,
-                                                          dropout=self.dropout, use_mycaffe=use_mycaffe, debug=self.debug, tag=self.tag + ".statenr_grn", path=self.path)
+                                                          dropout=self.dropout, 
+                                                          use_mycaffe=use_mycaffe,
+                                                          use_mycaffe_linear_fc1=linear_use_mycaffe,
+                                                          use_mycaffe_linear_fc2=linear_use_mycaffe,
+                                                          use_mycaffe_linear_fcout=linear_use_mycaffe,
+                                                          debug=self.debug, tag=self.tag + ".statenr_grn", path=self.path)
 
         # ============================================================
         # Temporal Self-Attention
@@ -1868,18 +2065,29 @@ class TemporalFusionTransformer(nn.Module):
         self.pos_wise_ff_grn = GatedResidualNetwork(input_dim=self.state_size,
                                                     hidden_dim=self.state_size,
                                                     output_dim=self.state_size,
-                                                    dropout=self.dropout, path=self.path, use_mycaffe=use_mycaffe, debug=debug, tag="pwff_grn")
+                                                    dropout=self.dropout, 
+                                                    path=self.path, 
+                                                    use_mycaffe=use_mycaffe, 
+                                                    use_mycaffe_linear_fc1=linear_use_mycaffe,
+                                                    use_mycaffe_linear_fc2=linear_use_mycaffe,
+                                                    use_mycaffe_linear_fcout=linear_use_mycaffe,
+                                                    debug=debug, tag="pwff_grn")
         self.pos_wise_ff_gating = GateAddNorm(input_dim=self.state_size, dropout=None, debug=self.debug, use_mycaffe=use_mycaffe, path=self.path, tag="pwff")
 
         # ============================================================
         # Output layer
         # ============================================================
-        self.output_layer = LinearEx(self.state_size, self.num_outputs)
+        self.output_layer = LinearEx(self.state_size, self.num_outputs, use_mycaffe=linear_use_mycaffe, tag="output")
+        self.activation = nn.Tanh()
 
         if use_mycaffe_model:
             self.mycaffe_model = MyCaffeModel(self.tag, self.path)
         else:
             self.mycaffe_model = None
+
+    def save_grad(self, path):
+        if self.output_layer is LinearEx:
+            self.output_layer.save_grad(path, "output_layer")
 
     def apply_temporal_selection(self, temporal_representation: torch.tensor,
                                  static_selection_signal: torch.tensor,
@@ -1920,27 +2128,27 @@ class TemporalFusionTransformer(nn.Module):
             time_distributed_context = debug(time_distributed_context);
 
         # applying the selection module across time
-        temporal_selection_output, temporal_selection_weights = temporal_selection_module(
+        temporal_selection_output1, temporal_selection_weights = temporal_selection_module(
             flattened_embedding=temporal_flattened_embedding, context=time_distributed_context)
         # Dimensions:
         # temporal_selection_output: [(num_samples * num_temporal_steps) x state_size]
         # temporal_selection_weights: [(num_samples * num_temporal_steps) x (num_temporal_inputs) x 1]
 
         if self.debug:
-            DebugFunction.trace(temporal_selection_output, full_tag + ".temporal_selection_output")
-            temporal_selection_output = debug(temporal_selection_output);
+            DebugFunction.trace(temporal_selection_output1, full_tag + ".temporal_selection_output1.ZZ")
+            temporal_selection_output1 = debug(temporal_selection_output1);
             DebugFunction.trace(temporal_selection_weights, full_tag + ".temporal_selection_weights")
             temporal_selection_weights = debug(temporal_selection_weights);
 
         # Reshape the selection outputs and selection weights - to represent the temporal dimension separately
-        temporal_selection_output = temporal_selection_output.view(num_samples, num_temporal_steps, -1)
+        temporal_selection_output = temporal_selection_output1.view(num_samples, num_temporal_steps, -1)
         temporal_selection_weights = temporal_selection_weights.squeeze(-1).view(num_samples, num_temporal_steps, -1)
         # Dimensions:
         # temporal_selection_output: [num_samples x num_temporal_steps x state_size)]
         # temporal_selection_weights: [num_samples x num_temporal_steps x num_temporal_inputs)]
 
         if self.debug:
-            DebugFunction.trace(temporal_representation, full_tag + ".temporal_selection_output");
+            DebugFunction.trace(temporal_selection_output, full_tag + ".temporal_selection_output.YYY");
             temporal_selection_output = debug(temporal_selection_output)
             DebugFunction.trace(static_selection_signal, full_tag + ".temporal_selection_weights");
             static_selection_signal = debug(static_selection_signal)
@@ -2120,12 +2328,16 @@ class TemporalFusionTransformer(nn.Module):
         if self.debug:
             DebugFunction.trace(past_lstm_output, self.tag + ".asp.past_lstm_output")
             past_lstm_output = debug(past_lstm_output)
-            hidden0 = hidden[0]
-            DebugFunction.trace(hidden0, self.tag + ".asp.hidden_0")
-            hidden0 = debug(hidden0)
-            hidden1 = hidden[1]
-            DebugFunction.trace(hidden1, self.tag + ".asp.hidden_1")
-            hidden1 = debug(hidden1)
+            hidden0 = None
+            hidden1 = None
+            if (hidden[0] != None):
+                hidden0 = hidden[0]
+                DebugFunction.trace(hidden0, self.tag + ".asp.hidden_0")
+                hidden0 = debug(hidden0)
+            if (hidden[1] != None):
+                hidden1 = hidden[1]
+                DebugFunction.trace(hidden1, self.tag + ".asp.hidden_1")
+                hidden1 = debug(hidden1)                
             hidden = (hidden0, hidden1)
 
         # the future (known) temporal signal is fed into the second recurrent module
@@ -2244,17 +2456,16 @@ class TemporalFusionTransformer(nn.Module):
         # mask: [output_sequence_length x (num_historical_steps + num_future_steps)]
 
         # apply the InterpretableMultiHeadAttention mechanism
-        val = torch.zeros(1).to(device)
-
-        enriched_sequence1 = enriched_sequence + val
+        enriched_sequence_a = enriched_sequence.clone()
+        enriched_sequence_b = enriched_sequence.clone();
 
         if self.debug or debug1:
-            DebugFunction.trace(enriched_sequence1, self.tag + ".ada.enriched_sequence1");
-            enriched_sequence1 = debug(enriched_sequence1)
+            DebugFunction.trace(enriched_sequence_a, self.tag + ".ada.enriched_sequence_a");
+            enriched_sequence_a = debug(enriched_sequence_a)
 
-        q1 = enriched_sequence1[:, (num_historical_steps + self.target_window_start_idx):, :] if self.decoder_only == False else enriched_sequence1
-        k1 = enriched_sequence1 + val
-        v1 = enriched_sequence1 + val
+        q1 = enriched_sequence_a[:, (num_historical_steps + self.target_window_start_idx):, :] if self.decoder_only == False else enriched_sequence_a.clone()
+        k1 = enriched_sequence_a.clone()
+        v1 = enriched_sequence_a.clone()
 
         if self.debug or debug1:
             DebugFunction.trace(q1, self.tag + ".ada.q1");
@@ -2287,7 +2498,11 @@ class TemporalFusionTransformer(nn.Module):
         # Because the output of the attention layer is only for the future time-steps,
         # the residual connection is only to the future time-steps of the temporal input signal
 
-        enriched_sequence_post = enriched_sequence[:, (num_historical_steps + self.target_window_start_idx):, :] if self.decoder_only == False else enriched_sequence
+        if self.debug or debug1:
+            DebugFunction.trace(enriched_sequence_b, self.tag + ".ada.enriched_sequence_b");
+            enriched_sequence_b = debug(enriched_sequence_b)
+
+        enriched_sequence_post = enriched_sequence_b[:, (num_historical_steps + self.target_window_start_idx):, :] if self.decoder_only == False else enriched_sequence_b
 
         gated_post_attention = self.post_attention_gating(
             x=post_attention,
@@ -2308,10 +2523,8 @@ class TemporalFusionTransformer(nn.Module):
         if self.mycaffe_model != None:
             self.mycaffe_model.update(nIter)
 
-    def backward_direct(self):
-        y = np.array([1])
-        y = torch.from_numpy(y).to(device)
-        self.mycaffe_model.backward_direct(y)
+    def forward_direct(self, xhat, tgt):
+        return self.mycaffe_model.forward27(xhat, tgt)
 
     def forward(self, batch):
         if self.debug:
@@ -2333,27 +2546,34 @@ class TemporalFusionTransformer(nn.Module):
         num_future_steps = batch[self.future_ts_representative_key].shape[1] if self.decoder_only == False else 0
         # define output_sequence_length : num_future_steps - self.target_window_start_idx
 
-        if self.mycaffe_model != None:
-            #x_num_stat = batch['static_feats_numeric']
-            #x_cat_stat = batch['static_feats_categorical']
-            #x_num_hist = batch['historical_ts_numeric']
-            #x_cat_hist = batch['historical_ts_categorical']
-            #x_num_fut = batch['future_ts_numeric']
-            #x_cat_fut = batch['future_ts_categorical']
-            x_target = batch['target']
+        # *** Model Selection for Debugging ***
+        # Select one of the model levels to run the top portion of the model in PyTorch, and the model level down in MyCaffe.
+        #mycaffe_model_level = None
+        mycaffe_model_level = 0 # run full model using MyCaffe
+        #mycaffe_model_level = 3 # run MyCaffe from static selection down (run input transformation in PyTorch)
+        #mycaffe_model_level = 4 # run MyCaffe from static encoders down (run input transformation, static selection in MyCaffe)
+        #mycaffe_model_level = 9 # run MyCaffe from historical selection down (run input transformation, static selection, static encoders in MyCaffe)
+        #mycaffe_model_level = 12 # run MyCaffe from sequential processing down (run input transformation, static selection, static encoders, historical selection in MyCaffe)
+        #mycaffe_model_level = 15 # run MyCaffe from static enrichment down (run input transformation, static selection, static encoders, historical selection, sequential processing in MyCaffe)
+        #mycaffe_model_level = 19 # run MyCaffe from attention down (run input transformation, static selection, static encoders, historical selection, sequential processing, static enrichment in MyCaffe)
+        #mycaffe_model_level = 23 # run MyCaffe from position-wise feed fwd down (run input transformation, static selection, static encoders, historical selection, sequential processing, static enrichment, attention in MyCaffe)
+        #mycaffe_model_level = 24 # run MyCaffe from pos wise gating layer down (run input transformation, static selection, static encoders, historical selection, sequential processing, static enrichment, attention, position-wise feed fwd in MyCaffe)
+        #mycaffe_model_level = 25 # run MyCaffe from output layer down (run input transformation, static selection, static encoders, historical selection, sequential processing, static enrichment, attention, position-wise feed fwd, pos wise gating layer in MyCaffe)
 
-            # ok
-            #gated_lstm_output, lstm_input = self.apply_sequential_processing(selected_historical=selected_historical,
-            #                                                     selected_future=selected_future,
-            #                                                     c_seq_hidden=c_seq_hidden,
-            #                                                     c_seq_cell=c_seq_cell, pre_gan=True)
+        # =========== Transform all input channels ==============
+        if self.mycaffe_model and mycaffe_model_level == 0:
+            empty_tensor = torch.empty((0, 0))
+            x_static_categorical = x_categorical=batch.get('static_feats_categorical', empty_tensor)
+            x_hist_numeric = x_numeric=batch.get('historical_ts_numeric', empty_tensor)
+            force_grad_tensor = torch.ones(1).to(device)
+            force_grad_tensor.requires_grad = True
 
-            return (self.mycaffe_model.forward_direct_full(), None)
-            #return (self.mycaffe_model.forward_direct(x_cat_stat, x_num_hist, x_cat_hist, x_num_fut, x_cat_fut, x_target), None)
-            #return (self.mycaffe_model.forward3(gated_lstm_output, lstm_input, c_enrichment, x_target), None)
-            #return (self.mycaffe_model.forward6(historical_ts_rep, future_ts_rep, c_selection, c_seq_hidden, c_seq_cell, c_enrichment, x_target), None)
+            predicted_quantiles = self.mycaffe_model.forward0(x_static_categorical, x_hist_numeric, force_grad_tensor)
+            attention_scores = None
+            historical_selection_weights = None
+            future_selection_weights = None
+            static_weights = None
         else:
-            # =========== Transform all input channels ==============
             future_ts_rep, historical_ts_rep, static_rep = self.transform_inputs(batch)
 
             if self.debug:
@@ -2365,156 +2585,201 @@ class TemporalFusionTransformer(nn.Module):
                 DebugFunction.trace(static_rep, self.tag + ".static_rep")
                 static_rep = debug(static_rep)
 
-            # Dimensions:
-            # static_rep: [num_samples x (total_num_static_inputs * state_size)]
-            # historical_ts_rep: [num_samples x num_historical_steps x (total_num_historical_inputs * state_size)]
-            # future_ts_rep: [num_samples x num_future_steps x (total_num_future_inputs * state_size)]
-
-            # =========== Static Variables Selection ==============
-            selected_static, static_weights = self.static_selection(static_rep)
-
-            if self.debug:
-                DebugFunction.trace(selected_static, self.tag + ".selected_static")
-                selected_static = debug(selected_static)
-
-            # Dimensions:
-            # selected_static: [num_samples x state_size]
-            # static_weights: [num_samples x num_static_inputs x 1]
-
-            # =========== Static Covariate Encoding ==============
-            c_enrichment, c_selection, c_seq_cell, c_seq_hidden = self.get_static_encoders(selected_static)
-            # each of the static encoders signals is of shape: [num_samples x state_size]
-
-            val = torch.zeros(1).to(device)
-            c_selection = c_selection + val
-
-            val = torch.zeros(1).to(device)
-            c_selection_h = c_selection + val
-            c_selection_f = c_selection + val
-
-            if self.debug:
-                DebugFunction.trace(c_enrichment, self.tag + ".c_enrichment.XX")
-                c_enrichment = debug(c_enrichment)
-                DebugFunction.trace(c_selection, self.tag + ".c_selection.XX")
-                c_selection = debug(c_selection)
-                DebugFunction.trace(c_seq_hidden, self.tag + ".c_seq_hidden.XX")
-                c_seq_hidden = debug(c_seq_hidden)
-                DebugFunction.trace(c_seq_cell, self.tag + ".c_seq_cell.XX")
-                c_seq_cell = debug(c_seq_cell)
-
-            # =========== Historical variables selection ==============
-            if self.debug:
-                DebugFunction.trace(c_selection_h, self.tag + ".c_selection_h")
-                c_selection_h = debug(c_selection_h)
-
-            selected_historical, historical_selection_weights = self.apply_temporal_selection(
-                temporal_representation=historical_ts_rep,
-                static_selection_signal=c_selection_h,
-                temporal_selection_module=self.historical_ts_selection, tag = "hist")
-
-            if self.debug:
-                DebugFunction.trace(selected_historical, self.tag + ".selected_historical")
-                selected_historical = debug(selected_historical)
-
-            # Dimensions:
-            # selected_historical: [num_samples x num_historical_steps x state_size]
-            # historical_selection_weights: [num_samples x num_historical_steps x total_num_historical_inputs]
-
-            # =========== Future variables selection ==============
-            if self.debug:
-                DebugFunction.trace(c_selection_f, self.tag + ".c_selection_f")
-                c_selection_f = debug(c_selection_f)
-
-            if self.decoder_only == False:
-                selected_future, future_selection_weights = self.apply_temporal_selection(
-                    temporal_representation=future_ts_rep,
-                    static_selection_signal=c_selection_f,
-                    temporal_selection_module=self.future_ts_selection, tag = "future")
-                if self.debug:
-                    DebugFunction.trace(selected_future, self.tag + ".selected_future")
-                    selected_future = debug(selected_future)
-            else:
-                selected_future = None
+            if self.mycaffe_model and mycaffe_model_level == 3:
+                predicted_quantiles = self.mycaffe_model.forward3(static_rep, historical_ts_rep)
+                attention_scores = None
+                historical_selection_weights = None
                 future_selection_weights = None
-            # Dimensions:
-            # selected_future: [num_samples x num_future_steps x state_size]
-            # future_selection_weights: [num_samples x num_future_steps x total_num_future_inputs]
+                static_weights = None
+            else:
+                # Dimensions:
+                # static_rep: [num_samples x (total_num_static_inputs * state_size)]
+                # historical_ts_rep: [num_samples x num_historical_steps x (total_num_historical_inputs * state_size)]
+                # future_ts_rep: [num_samples x num_future_steps x (total_num_future_inputs * state_size)]
 
-            # =========== Locality Enhancement - Sequential Processing ==============
-            gated_lstm_output = self.apply_sequential_processing(selected_historical=selected_historical,
-                                                                 selected_future=selected_future,
-                                                                 c_seq_hidden=c_seq_hidden,
-                                                                 c_seq_cell=c_seq_cell)
-            if self.debug:
-                DebugFunction.trace(gated_lstm_output, self.tag + ".gated_lstm_output")
-                gated_lstm_output = debug(gated_lstm_output)
+                # =========== Static Variables Selection ==============
+                selected_static, static_weights = self.static_selection(static_rep)
 
-            # Dimensions:
-            # gated_lstm_output : [num_samples x (num_historical_steps + num_future_steps) x state_size]
+                if self.debug:
+                    DebugFunction.trace(selected_static, self.tag + ".selected_static")
+                    selected_static = debug(selected_static)
 
-            # =========== Static enrichment ==============
-            enriched_sequence = self.apply_static_enrichment(gated_lstm_output=gated_lstm_output,
-                                                             static_enrichment_signal=c_enrichment)
-            if self.debug:
-                DebugFunction.trace(enriched_sequence, self.tag + ".enriched_sequence")
-                enriched_sequence = debug(enriched_sequence)
-            # Dimensions:
-            # enriched_sequence: [num_samples x (num_historical_steps + num_future_steps) x state_size]
+                if self.mycaffe_model and mycaffe_model_level == 4:
+                    predicted_quantiles = self.mycaffe_model.forward4(selected_static, historical_ts_rep)
+                    attention_scores = None
+                    historical_selection_weights = None
+                    future_selection_weights = None
+                else:
+                    # Dimensions:
+                    # selected_static: [num_samples x state_size]
+                    # static_weights: [num_samples x num_static_inputs x 1]
 
-            # =========== self-attention ==============
-            gated_post_attention, attention_scores = self.apply_self_attention(enriched_sequence=enriched_sequence,
-                                                                               num_historical_steps=num_historical_steps,
-                                                                               num_future_steps=num_future_steps)
-            if self.debug:
-                DebugFunction.trace(gated_post_attention, self.tag + ".gated_post_attention")
-                gated_post_attention = debug(gated_post_attention)
-                DebugFunction.trace(attention_scores, self.tag + ".attention_scores")
-                attention_scores = debug(attention_scores)
+                    # =========== Static Covariate Encoding ==============
+                    c_enrichment, c_selection, c_seq_cell, c_seq_hidden = self.get_static_encoders(selected_static)
+                    # each of the static encoders signals is of shape: [num_samples x state_size]
 
-            # =========== position-wise feed-forward ==============
-            # Applying an additional non-linear processing to the outputs of the self-attention layer using a GRN,
-            # where its weights are shared across the entire layer
-            post_poswise_ff_grn = self.pos_wise_ff_grn(gated_post_attention)
+                    val = torch.zeros(1).to(device)
+                    c_selection = c_selection + val
 
-            if self.debug:
-                DebugFunction.trace(post_poswise_ff_grn, self.tag + ".post_poswise_ff_grn")
-                post_poswise_ff_grn = debug(post_poswise_ff_grn)
+                    val = torch.zeros(1).to(device)
+                    c_selection_h = c_selection + val
+                    c_selection_f = c_selection + val
 
-            # Also applying a gated residual connection skipping over the
-            # attention block (using sequential processing output), providing a direct path to the sequence-to-sequence
-            # layer, yielding a simpler model if additional complexity is not required
-            gated_lstm_output_pos = gated_lstm_output[:, (num_historical_steps + self.target_window_start_idx):, :] if self.decoder_only == False else gated_lstm_output
+                    if self.mycaffe_model and mycaffe_model_level == 9:
+                        predicted_quantiles = self.mycaffe_model.forward9(historical_ts_rep, c_selection_h, c_seq_hidden, c_seq_cell, c_enrichment)
+                        attention_scores = None
+                        historical_selection_weights = None
+                        future_selection_weights = None
+                    else:
+                        if self.debug:
+                            DebugFunction.trace(c_enrichment, self.tag + ".c_enrichment.XX")
+                            c_enrichment = debug(c_enrichment)
+                            DebugFunction.trace(c_selection, self.tag + ".c_selection.XX")
+                            c_selection = debug(c_selection)
+                            DebugFunction.trace(c_seq_hidden, self.tag + ".c_seq_hidden.XX")
+                            c_seq_hidden = debug(c_seq_hidden)
+                            DebugFunction.trace(c_seq_cell, self.tag + ".c_seq_cell.XX")
+                            c_seq_cell = debug(c_seq_cell)
 
-            gated_poswise_ff = self.pos_wise_ff_gating(
-                post_poswise_ff_grn,
-                residual=gated_lstm_output_pos)
+                        # =========== Historical variables selection ==============
+                        if self.debug:
+                            DebugFunction.trace(c_selection_h, self.tag + ".c_selection_h")
+                            c_selection_h = debug(c_selection_h)
 
-            if self.debug:
-                DebugFunction.trace(gated_poswise_ff, self.tag + ".gated_poswise_ff")
-                gated_poswise_ff = debug(gated_poswise_ff)
+                        selected_historical, historical_selection_weights = self.apply_temporal_selection(
+                            temporal_representation=historical_ts_rep,
+                            static_selection_signal=c_selection_h,
+                            temporal_selection_module=self.historical_ts_selection, tag = "hist")
 
-            # Dimensions:
-            # gated_poswise_ff: [num_samples x output_sequence_length x state_size]
+                        if self.debug:
+                            DebugFunction.trace(selected_historical, self.tag + ".selected_historical")
+                            selected_historical = debug(selected_historical)
 
-            # =========== output projection ==============
-            # Each predicted quantile has its own projection weights (all gathered in a single linear layer)
-            predicted_quantiles = self.output_layer(gated_poswise_ff)
-            # Dimensions:
-            # predicted_quantiles: [num_samples x num_future_steps x num_quantiles]
+                        if self.mycaffe_model and mycaffe_model_level == 12:
+                            predicted_quantiles = self.mycaffe_model.forward12(selected_historical, c_seq_hidden, c_seq_cell, c_enrichment)
+                            attention_scores = None
+                            future_selection_weights = None
+                        else:
+                            # Dimensions:
+                            # selected_historical: [num_samples x num_historical_steps x state_size]
+                            # historical_selection_weights: [num_samples x num_historical_steps x total_num_historical_inputs]
 
-            if self.debug:
-                DebugFunction.trace(predicted_quantiles, self.tag + ".predicted_quantiles")
-                predicted_quantiles = debug(predicted_quantiles)
-                DebugFunction.trace(attention_scores, self.tag + ".attention_scores")
-                attention_scores = debug(attention_scores)
+                            # =========== Future variables selection ==============
+                            if self.debug:
+                                DebugFunction.trace(c_selection_f, self.tag + ".c_selection_f")
+                                c_selection_f = debug(c_selection_f)
 
-            return {
-                'predicted_quantiles': predicted_quantiles,  # [num_samples x output_sequence_length x num_quantiles]
-                'static_weights': static_weights.squeeze(-1),  # [num_samples x num_static_inputs]
-                'historical_selection_weights': historical_selection_weights,
-                # [num_samples x num_historical_steps x total_num_historical_inputs]
-                'future_selection_weights': future_selection_weights,
-                # [num_samples x num_future_steps x total_num_future_inputs]
-                'attention_scores': attention_scores
-                # [num_samples x output_sequence_length x (num_historical_steps + num_future_steps)]
-            }
+                            if self.decoder_only == False:
+                                selected_future, future_selection_weights = self.apply_temporal_selection(
+                                    temporal_representation=future_ts_rep,
+                                    static_selection_signal=c_selection_f,
+                                    temporal_selection_module=self.future_ts_selection, tag = "future")
+                                if self.debug:
+                                    DebugFunction.trace(selected_future, self.tag + ".selected_future")
+                                    selected_future = debug(selected_future)
+                            else:
+                                selected_future = None
+                                future_selection_weights = None
+                            # Dimensions:
+                            # selected_future: [num_samples x num_future_steps x state_size]
+                            # future_selection_weights: [num_samples x num_future_steps x total_num_future_inputs]
+
+                            # =========== Locality Enhancement - Sequential Processing ==============
+                            gated_lstm_output = self.apply_sequential_processing(selected_historical=selected_historical,
+                                                                                 selected_future=selected_future,
+                                                                                 c_seq_hidden=c_seq_hidden,
+                                                                                 c_seq_cell=c_seq_cell)
+                            if self.debug:
+                                DebugFunction.trace(gated_lstm_output, self.tag + ".gated_lstm_output")
+                                gated_lstm_output = debug(gated_lstm_output)
+
+                            if self.mycaffe_model and mycaffe_model_level == 15:
+                                predicted_quantiles = self.mycaffe_model.forward15(gated_lstm_output, c_enrichment)
+                                attention_scores = None
+                            else:
+                                # Dimensions:
+                                # gated_lstm_output : [num_samples x (num_historical_steps + num_future_steps) x state_size]
+
+                                # =========== Static enrichment ==============
+                                enriched_sequence = self.apply_static_enrichment(gated_lstm_output=gated_lstm_output,
+                                                                                 static_enrichment_signal=c_enrichment)
+                                if self.debug:
+                                    DebugFunction.trace(enriched_sequence, self.tag + ".enriched_sequence")
+                                    enriched_sequence = debug(enriched_sequence)
+                                # Dimensions:
+                                # enriched_sequence: [num_samples x (num_historical_steps + num_future_steps) x state_size]
+
+                                if self.mycaffe_model and mycaffe_model_level == 19:
+                                    predicted_quantiles = self.mycaffe_model.forward19(enriched_sequence, gated_lstm_output)
+                                    attention_scores = None
+                                else:
+                                    # =========== self-attention ==============
+                                    gated_post_attention, attention_scores = self.apply_self_attention(enriched_sequence=enriched_sequence,
+                                                                                                       num_historical_steps=num_historical_steps,
+                                                                                                       num_future_steps=num_future_steps)
+                                    if self.debug:
+                                        DebugFunction.trace(gated_post_attention, self.tag + ".gated_post_attention")
+                                        gated_post_attention = debug(gated_post_attention)
+                                        DebugFunction.trace(attention_scores, self.tag + ".attention_scores")
+                                        attention_scores = debug(attention_scores)
+
+                                    if self.mycaffe_model and mycaffe_model_level == 23:
+                                        predicted_quantiles = self.mycaffe_model.forward23(gated_post_attention, gated_lstm_output)
+                                    else:
+                                        # =========== position-wise feed-forward ==============
+                                        # Applying an additional non-linear processing to the outputs of the self-attention layer using a GRN,
+                                        # where its weights are shared across the entire layer
+                                        post_poswise_ff_grn = self.pos_wise_ff_grn(gated_post_attention)
+
+                                        if self.debug:
+                                            DebugFunction.trace(post_poswise_ff_grn, self.tag + ".post_poswise_ff_grn")
+                                            post_poswise_ff_grn = debug(post_poswise_ff_grn)
+
+                                        # Also applying a gated residual connection skipping over the
+                                        # attention block (using sequential processing output), providing a direct path to the sequence-to-sequence
+                                        # layer, yielding a simpler model if additional complexity is not required
+                                        gated_lstm_output_pos = gated_lstm_output[:, (num_historical_steps + self.target_window_start_idx):, :] if self.decoder_only == False else gated_lstm_output
+
+                                        if self.mycaffe_model and mycaffe_model_level == 24:
+                                            predicted_quantiles = self.mycaffe_model.forward24(post_poswise_ff_grn, gated_lstm_output_pos)
+                                        else:
+                                            gated_poswise_ff = self.pos_wise_ff_gating(
+                                                post_poswise_ff_grn,
+                                                residual=gated_lstm_output_pos)
+
+                                            if self.debug:
+                                                DebugFunction.trace(gated_poswise_ff, self.tag + ".gated_poswise_ff")
+                                                gated_poswise_ff = debug(gated_poswise_ff)
+
+                                            # Dimensions:
+                                            # gated_poswise_ff: [num_samples x output_sequence_length x state_size]
+                                            if self.mycaffe_model and mycaffe_model_level == 25:
+                                                predicted_quantiles = self.mycaffe_model.forward25(gated_poswise_ff)
+                                            else:
+                                                # =========== output projection ==============
+                                                # Each predicted quantile has its own projection weights (all gathered in a single linear layer)
+                                                predicted_quantiles1 = self.output_layer(gated_poswise_ff)
+                                                if self.debug:
+                                                    DebugFunction.trace(predicted_quantiles1, self.tag + ".predicted_quantiles1")
+                                                    predicted_quantiles1 = debug(predicted_quantiles1)
+
+                                                # Dimensions:
+                                                # predicted_quantiles: [num_samples x num_future_steps x num_quantiles]
+                                                predicted_quantiles = self.activation(predicted_quantiles1)
+
+                                                if self.debug:
+                                                    DebugFunction.trace(predicted_quantiles, self.tag + ".predicted_quantiles")
+                                                    predicted_quantiles = debug(predicted_quantiles)
+                                                    DebugFunction.trace(attention_scores, self.tag + ".attention_scores")
+                                                    attention_scores = debug(attention_scores)
+
+        return {
+            'predicted_quantiles': predicted_quantiles,  # [num_samples x output_sequence_length x num_quantiles]
+            'static_weights': static_weights.squeeze(-1) if static_weights != None else None,  # [num_samples x num_static_inputs]
+            'historical_selection_weights': historical_selection_weights,
+            # [num_samples x num_historical_steps x total_num_historical_inputs]
+            'future_selection_weights': future_selection_weights,
+            # [num_samples x num_future_steps x total_num_future_inputs]
+            'attention_scores': attention_scores
+            # [num_samples x output_sequence_length x (num_historical_steps + num_future_steps)]
+        }

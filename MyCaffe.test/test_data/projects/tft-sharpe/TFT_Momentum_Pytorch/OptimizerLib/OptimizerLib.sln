@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33103.184
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OptimizerLib", "OptimizerLib\OptimizerLib.csproj", "{29A9053D-61CF-4AF6-A586-E05213415C29}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{29A9053D-61CF-4AF6-A586-E05213415C29}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{29A9053D-61CF-4AF6-A586-E05213415C29}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{29A9053D-61CF-4AF6-A586-E05213415C29}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{29A9053D-61CF-4AF6-A586-E05213415C29}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {219EF02E-1FBB-4ABB-8D8C-B06380E59428}
+	EndGlobalSection
+EndGlobal

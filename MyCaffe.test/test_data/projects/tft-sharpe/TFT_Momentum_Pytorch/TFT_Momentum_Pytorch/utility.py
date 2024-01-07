@@ -8,9 +8,10 @@ loss_weight = 1
 
 def save_blob(strPath, strName, batch : Dict[str,torch.tensor]):
     if strName in batch.keys():  
-        
+        save_blob1(strPath, strName, batch[strName])
+
+def save_blob1(strPath, strName, data):
         strFile = strPath + "/" + strName + ".npy";
-        data = batch[strName]
         np.save(strFile, data.cpu().detach().numpy())
 
 def save_batch(nIdx, name, batch):
@@ -25,6 +26,23 @@ def save_batch(nIdx, name, batch):
     save_blob(strPath, "future_ts_categorical", batch)
     save_blob(strPath, "target", batch)
 
+def save_loss(nIdx, name, loss):
+    strPath = "test/" + name + "/batch256/batch_%d" % (nIdx)
+    if not os.path.exists(strPath):
+        os.makedirs(strPath)
+    save_blob1(strPath, "loss", loss)
+
+def save_weights_ex(nIdx, name, model):
+    strPath = "test/" + name + "/weights/batch_%d" % (nIdx)
+    if not os.path.exists(strPath):
+        os.makedirs(strPath)
+    idx = 0
+    for param in model.state_dict():
+        data = model.state_dict()[param].cpu().detach().numpy()        
+        strFile = strPath + "/" + param + ".npy"
+        np.save(strFile, data)
+        idx = idx + 1
+    
 def load_blob(strPath, strName, batch : Dict[str, torch.tensor], maxCount):
     strFile = strPath + "/" + strName + ".npy";
     data = torch.from_numpy(np.load(strFile))
@@ -59,6 +77,22 @@ def save_weights1(model, name, subPath):
         np.save(strFile, data)
         idx = idx + 1
 
+def save_weights1b(strPath, model, subPath):    
+    if model == None:
+        return
+    strPath1 = strPath + "/weights"
+    strPath = strPath + "/" + subPath
+    idx = 0
+
+    if not os.path.exists(strPath):
+        os.makedirs(strPath)
+
+    for param in model.state_dict():
+        data = model.state_dict()[param].cpu().detach().numpy()        
+        strFile = strPath + "/" + param + ".npy"
+        np.save(strFile, data)
+        idx = idx + 1
+
 def save_weights(model, name):
     save_weights1(model.static_transform, name, "static_transform")
     save_weights1(model.historical_ts_transform, name, "hist_ts_transform")
@@ -79,6 +113,31 @@ def save_weights(model, name):
     save_weights1(model.pos_wise_ff_grn, name, "pos_wise_ff_grn")
     save_weights1(model.pos_wise_ff_gating, name, "pos_wise_ff_gating")
     save_weights1(model.output_layer, name, "output_layer")
+
+def save_weights_ex(nIdx, model, name):
+    strPath = "test/" + name + "/weights/batch_%d" % (nIdx)
+    if not os.path.exists(strPath):
+        os.makedirs(strPath)
+    save_weights1b(strPath, model.static_transform, "static_transform")
+    save_weights1b(strPath, model.historical_ts_transform, "hist_ts_transform")
+    save_weights1b(strPath, model.future_ts_transform, "future_ts_transform")
+    save_weights1b(strPath, model.static_selection, "static_selection")
+    save_weights1b(strPath, model.historical_ts_selection, "hist_ts_selection")
+    save_weights1b(strPath, model.future_ts_selection, "future_ts_selection")
+    save_weights1b(strPath, model.static_encoder_selection, "static_encoder_selection")
+    save_weights1b(strPath, model.static_encoder_enrichment, "static_encoder_enrichment")
+    save_weights1b(strPath, model.static_encoder_sequential_cell_init, "static_encoder_sequential_cell_init")
+    save_weights1b(strPath, model.static_encoder_sequential_state_init, "static_encoder_sequential_state_init")
+    save_weights1b(strPath, model.past_lstm, "past_lstm")
+    model.past_lstm.save_wts("", name + "/weights/batch_%d" % (nIdx) + "/past_lstm")    
+    save_weights1b(strPath, model.future_lstm, "future_lstm")
+    save_weights1b(strPath, model.post_lstm_gating, "post_lstm_gating")
+    save_weights1b(strPath, model.static_enrichment_grn, "static_enrichment_grn")
+    save_weights1b(strPath, model.multihead_attn, "multihead_attn")
+    save_weights1b(strPath, model.post_attention_gating, "post_attention_gating")
+    save_weights1b(strPath, model.pos_wise_ff_grn, "pos_wise_ff_grn")
+    save_weights1b(strPath, model.pos_wise_ff_gating, "pos_wise_ff_gating")
+    save_weights1b(strPath, model.output_layer, "output_layer")
 
 class DebugFunction(torch.autograd.Function):
     out_path = "test/"
@@ -123,12 +182,9 @@ class DebugFunction(torch.autograd.Function):
         if name == None:
             name = "unknown";
 
-        if name == "tft.all.asp.past_lstm_output":
-            print("found it")
-            
-        if name == "15_loss":
+        if name == "sharpe.loss":
             grad_output = grad_output * loss_weight
-
+            
         #print("bwd: " + name)
         np.save(DebugFunction.out_path + name + ".grad", grad_output.detach().cpu().numpy())
         return grad_output

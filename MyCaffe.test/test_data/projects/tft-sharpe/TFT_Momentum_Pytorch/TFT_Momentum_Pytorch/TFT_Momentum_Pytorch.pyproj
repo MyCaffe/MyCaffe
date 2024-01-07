@@ -12,7 +12,8 @@
     <Name>TFT_Momentum_Pytorch</Name>
     <RootNamespace>TFT_Momentum_Pytorch</RootNamespace>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
-    <CommandLineArguments>"ICE_SB" "data\\quandl_cpd_21lbw\\ICE_SB2.csv" "1990-01-01" "2021-12-31" "128"</CommandLineArguments>
+    <CommandLineArguments>
+    </CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
     <InterpreterId>Global|PythonCore|3.9</InterpreterId>
   </PropertyGroup>
@@ -35,6 +36,7 @@
     <Compile Include="settings\default.py" />
     <Compile Include="settings\fixed_params.py" />
     <Compile Include="settings\hp_grid.py" />
+    <Compile Include="test_sharpe_loss.py" />
     <Compile Include="TFT_Momentum_Pytorch.py" />
     <Compile Include="tft_torch\adamEx.py" />
     <Compile Include="tft_torch\adamw.py" />
@@ -44,6 +46,7 @@
     <Compile Include="tft_torch\tft.py" />
     <Compile Include="tft_torch\visualize.py" />
     <Compile Include="tft_torch\__init__.py" />
+    <Compile Include="utility.py" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="mom_trans\" />

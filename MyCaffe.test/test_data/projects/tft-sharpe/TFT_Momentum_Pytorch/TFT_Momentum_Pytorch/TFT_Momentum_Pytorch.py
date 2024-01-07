@@ -1,4 +1,5 @@
 import os
+from pickle import NONE
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 cwd = os.getcwd()
 
@@ -17,14 +18,27 @@ from tqdm import tqdm
 
 from mom_trans.model_inputs import ModelFeatures
 from settings.default import QUANDL_TICKERS
-from tft_torch.tft import TemporalFusionTransformer, LinearEx, LstmEx
-from utility import DebugFunction, save_weights, save_batch
+from tft_torch.tft import TemporalFusionTransformer, LinearEx, LstmEx, mycaffe
+from utility import DebugFunction, save_weights, save_batch, save_loss, save_weights_ex
 
 torch.manual_seed(42)
 torch.cuda.seed_all()
 
 os.chdir(cwd)
 print (os.getcwd())
+
+debug = False
+use_mycaffe = True
+use_mycaffe_data = False
+use_mycaffe_model_direct = False
+use_mycaffe_model = True
+lstm_use_mycaffe = True
+linear_use_mycaffe = True
+save_data = True
+tag = "tft.all"
+test = False
+path = "all"
+strName = "tft.sharpe"
 
 ASSET_CLASS_MAPPING = dict(zip(QUANDL_TICKERS, ["COMB"] * len(QUANDL_TICKERS)))
 
@@ -132,7 +146,7 @@ def recycle(iterable):
 
 def get_set_and_loaders(raw_data)-> Tuple[torch.utils.data.Dataset, torch.utils.data.DataLoader, torch.utils.data.DataLoader]:
     dataset = ModelDataSet(raw_data)
-    loader = DataLoader(dataset, batch_size=configuration['optimization']['batch_size']['training'], shuffle=True)
+    loader = DataLoader(dataset, batch_size=configuration['optimization']['batch_size']['training'], shuffle=False)
     return dataset, iter(recycle(loader))
 
 train_set, train_loader = get_set_and_loaders(model_features.train)
@@ -154,18 +168,11 @@ structure = {
 # Add the input structure to the configuration
 configuration['data_props'] = structure
 
-debug = True
-use_mycaffe = True
-use_mycaffe_data = False
-use_mycaffe_model_direct = False
-use_mycaffe_model = False
-lstm_use_mycaffe = True
-tag = "tft.all"
-test = False
-path = "all"
-strName = "tft.sharpe"
+model = None
+opt = None
 
-model = TemporalFusionTransformer(decoder_only=True,config=OmegaConf.create(configuration), debug=debug, tag=tag, use_mycaffe=use_mycaffe, path=path, lstm_use_mycaffe=lstm_use_mycaffe, use_mycaffe_model=use_mycaffe_model)
+if use_mycaffe_model_direct == False:
+    model = TemporalFusionTransformer(decoder_only=True,config=OmegaConf.create(configuration), debug=debug, tag=tag, use_mycaffe=use_mycaffe, path=path, lstm_use_mycaffe=lstm_use_mycaffe, linear_use_mycaffe=linear_use_mycaffe, use_mycaffe_model=use_mycaffe_model)
 
 # initialize the weights of the model
 def weight_init(m):
@@ -241,17 +248,18 @@ def weight_init(m):
             else:
                 init.normal_(param.data)
 
-model.apply(weight_init)
+if use_mycaffe_model_direct == False:
+    model.apply(weight_init)
 
 # Set the devie to CUDA if available
 is_cuda = torch.cuda.is_available()
 device = torch.device("cuda" if is_cuda else "cpu")
 
-model.to(device)
-save_weights(model, strName)
-
-opt = optim.Adam(filter(lambda p: p.requires_grad, list(model.parameters())),
-                    lr=configuration['optimization']['learning_rate'])
+if use_mycaffe_model_direct == False:
+    model.to(device)
+    save_weights(model, strName)
+    opt = optim.Adam(filter(lambda p: p.requires_grad, list(model.parameters())),
+                        lr=configuration['optimization']['learning_rate'])
 
 # Training Procedure - The QueueAggregator helps iwth orchestration of the training process, by
 # operating as a running-window aggregator of the training performance metric. This is used for 
@@ -345,20 +353,82 @@ loss_aggregator = QueueAggregator(max_size=ma_queue_size)
 batch_idx = 0
 epoch_idx = 0
 
+activation = nn.Tanh()
+
 def sharpe_loss(weights, y_true):
-        captured_returns = weights * y_true              
+        debug = DebugFunction.apply  
+        
+        if debug:
+            DebugFunction.trace(weights, "sharpe.weights")
+            weights = debug(weights)
+
+        if debug:        
+            DebugFunction.trace(y_true, "sharpe.y_true")
+            y_true = debug(y_true)
+    
+        captured_returns = weights * y_true         
+
+        if debug:        
+            DebugFunction.trace(captured_returns, "sharpe.captured_returns")
+            captured_returns = debug(captured_returns)
+
+        #sum_returns = torch.sum(captured_returns)
+             
         mean_returns = torch.mean(captured_returns)
+
+        if debug:
+            DebugFunction.trace(mean_returns, "sharpe.mean_returns")
+            mean_returns = debug(mean_returns)
+
         mean_returns_sq = torch.square(mean_returns)
+
+        if debug:
+            DebugFunction.trace(mean_returns_sq, "sharpe.mean_returns_sq")
+            mean_returns_sq = debug(mean_returns_sq)        
+
         captured_returns_sq = torch.square(captured_returns)
+
+        if debug:        
+            DebugFunction.trace(captured_returns_sq, "sharpe.captured_returns_sq")
+            captured_returns_sq = debug(captured_returns_sq)        
+
         mean_captured_returns_sq = torch.mean(captured_returns_sq)
-        mean_captured_returns_sq_minus_mean_returns_sq = mean_captured_returns_sq - mean_returns_sq # + 1e-9
+
+        if debug:   
+            DebugFunction.trace(mean_captured_returns_sq, "sharpe.mean_captured_returns_sq")
+            mean_captured_returns_sq = debug(mean_captured_returns_sq)        
+
+        mean_captured_returns_sq_minus_mean_returns_sq = mean_captured_returns_sq - mean_returns_sq
+
+        if debug:
+            DebugFunction.trace(mean_captured_returns_sq_minus_mean_returns_sq, "sharpe.mean_captured_returns_sq_minus_mean_returns_sq")
+            mean_captured_returns_sq_minus_mean_returns_sq = debug(mean_captured_returns_sq_minus_mean_returns_sq)        
 
         twofiftytwo = torch.tensor(252.0)
 
         mean_captured_returns_sq_minus_mean_returns_sqrt = torch.sqrt(mean_captured_returns_sq_minus_mean_returns_sq) 
 
-        loss1 = (mean_returns / mean_captured_returns_sq_minus_mean_returns_sqrt) # * torch.sqrt(twofiftytwo)
-        loss = loss1 * -1
+        if debug:   
+            DebugFunction.trace(mean_captured_returns_sq_minus_mean_returns_sqrt, "sharpe.mean_captured_returns_sq_minus_mean_returns_sqrt")
+            mean_captured_returns_sq_minus_mean_returns_sqrt = debug(mean_captured_returns_sq_minus_mean_returns_sqrt)        
+
+        loss1 = (mean_returns / mean_captured_returns_sq_minus_mean_returns_sqrt)
+
+        if debug:        
+            DebugFunction.trace(loss1, "sharpe.loss1")
+            loss1 = debug(loss1)        
+
+        loss2 = loss1 * torch.sqrt(twofiftytwo)
+
+        if debug:        
+            DebugFunction.trace(loss2, "sharpe.loss2")
+            loss2 = debug(loss2)        
+
+        loss = loss2 * -1
+
+        if debug:   
+            DebugFunction.trace(loss, "sharpe.loss")
+            loss = debug(loss)        
         
         return loss
 
@@ -376,16 +446,27 @@ def process_batch(idx, batch: Dict[str,torch.tensor],
     if debug:
         save_batch(idx, strName, batch)
 
-    batch_outputs = model(batch)
-    labels = batch['target']
+    if use_mycaffe_model_direct == False:
+        batch_outputs = model(batch)
+        labels = batch['target']
 
-    predicted_pos = batch_outputs['predicted_quantiles']
-    s_loss = sharpe_loss(predicted_pos, labels)
-
-    if debug:
+        predicted_pos = batch_outputs['predicted_quantiles']
+        
         DebugFunction.trace(predicted_pos, "predicted_pos")
-        DebugFunction.trace(s_loss, "s_loss")
+        predicted_pos = DebugFunction.apply(predicted_pos)
 
+        if use_mycaffe_model == False:
+            s_loss = sharpe_loss(predicted_pos, labels)
+        else:
+            s_loss = model.forward_direct(predicted_pos, labels)
+
+        if debug:
+            DebugFunction.trace(predicted_pos, "predicted_pos")
+            DebugFunction.trace(s_loss, "s_loss")
+    else:
+        batch_outputs = mycaffe.model_fwd(batch["static_feats_categorical"], batch["historical_ts_numeric"], batch["target"])    
+        s_loss = batch_outputs["loss"]
+        
     return s_loss
 
 #========================================================================
@@ -431,7 +512,8 @@ while epoch_idx < max_epochs:
                       f"s_loss = {eval_loss:.5f} ")
 
     # switch to training mode
-    model.train()
+    if model != None:
+        model.train()
 
     # update early stopping mechanism and stop if triggered
     if validation_loss != None:
@@ -446,24 +528,46 @@ while epoch_idx < max_epochs:
         # get training batch
         batch = next(train_loader)
 
-        opt.zero_grad()
+        num_samples, num_historical_steps, _ = batch['historical_ts_numeric'].shape
+        if num_samples != configuration['optimization']['batch_size']['training']:
+            continue
+        
+        if save_data:
+            save_batch(i, 'tft.sharpe.dbg', batch)
+
+        if opt != None:
+            opt.zero_grad()
         # process batch
         loss = process_batch(idx=i, batch=batch,
                               model=model,
                               device=device)
-        
-        if debug:
-            model.past_lstm.save_wts("", strName + "\\weights\\past_lstm")
+        print(f"**Pre Backward*** Epoch: {epoch_idx}, Batch Index: {batch_idx} - Train Loss = {loss.item()}")
+        if model != None:        
+            if save_data:
+                save_loss(i, 'tft.sharpe.dbg', loss)
+            if debug:
+                model.past_lstm.save_wts("", strName + "\\weights\\past_lstm")
 
-        # compute gradients
-        loss.backward()
+            # compute gradients
+            loss.backward()
 
-        # gradient clipping
-        if configuration['optimization']['max_grad_norm'] > 0:
-            nn.utils.clip_grad_norm_(model.parameters(), configuration['optimization']['max_grad_norm'])
-        # update weights
+            model.save_grad("tft.sharpe.dbg")
 
-        opt.step()
+            # gradient clipping
+            if configuration['optimization']['max_grad_norm'] > 0:
+                nn.utils.clip_grad_norm_(model.parameters(), configuration['optimization']['max_grad_norm'])
+            # update weights
+
+            opt.step()
+        else:
+            loss_grad = torch.tensor(1.0)
+            mycaffe.model_bwd(loss_grad)    
+
+        if use_mycaffe and use_mycaffe_model == False and use_mycaffe_model_direct == False:
+            model.update(i)
+
+        if save_data and model != None:
+            save_weights_ex(i, model, 'tft.sharpe.dbg')
 
         # accumulate performance
         loss_aggregator.append(loss.item())

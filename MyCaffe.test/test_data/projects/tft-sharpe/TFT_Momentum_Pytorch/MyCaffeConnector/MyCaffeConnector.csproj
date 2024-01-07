@@ -64,19 +64,90 @@
       <HintPath>..\packages\Microsoft.SqlServer.Types.14.0.1016.290\lib\net40\Microsoft.SqlServer.Types.dll</HintPath>
     </Reference>
     <Reference Include="MyCaffe, Version=1.12.3.7, Culture=neutral, PublicKeyToken=e967ea19bfd47a89, processorArchitecture=MSIL">
-      <HintPath>..\packages\MyCaffe.1.12.3.7\lib\net40\MyCaffe.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Binaries\SS_Projects\_Debug\MyCaffe.dll</HintPath>
     </Reference>
     <Reference Include="MyCaffe.basecode, Version=1.12.3.7, Culture=neutral, PublicKeyToken=2541b18e2b82928f, processorArchitecture=MSIL">
-      <HintPath>..\packages\MyCaffe.1.12.3.7\lib\net40\MyCaffe.basecode.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Binaries\SS_Projects\_Debug\MyCaffe.basecode.dll</HintPath>
+    </Reference>
+    <Reference Include="MyCaffe.converter.onnx, Version=1.12.3.7, Culture=neutral, PublicKeyToken=35a95b9c364e4794, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Binaries\SS_Projects\_Debug\MyCaffe.converter.onnx.dll</HintPath>
+    </Reference>
+    <Reference Include="MyCaffe.converter.pytorch">
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Binaries\SS_Projects\_Debug\MyCaffe.converter.pytorch.dll</HintPath>
+    </Reference>
+    <Reference Include="MyCaffe.data, Version=1.12.3.7, Culture=neutral, PublicKeyToken=5ee1e9f5e32cff5e, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Binaries\SS_Projects\_Debug\MyCaffe.data.dll</HintPath>
     </Reference>
     <Reference Include="MyCaffe.db.image, Version=1.12.3.7, Culture=neutral, PublicKeyToken=e3ffe6b7993441fb, processorArchitecture=MSIL">
-      <HintPath>..\packages\MyCaffe.1.12.3.7\lib\net40\MyCaffe.db.image.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Binaries\SS_Projects\_Debug\MyCaffe.db.image.dll</HintPath>
+    </Reference>
+    <Reference Include="MyCaffe.db.stream, Version=1.12.3.7, Culture=neutral, PublicKeyToken=30d0651acf6a56e6, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Binaries\SS_Projects\_Debug\MyCaffe.db.stream.dll</HintPath>
     </Reference>
     <Reference Include="MyCaffe.db.temporal, Version=1.12.3.7, Culture=neutral, PublicKeyToken=22fdd224009b38e4, processorArchitecture=MSIL">
-      <HintPath>..\packages\MyCaffe.1.12.3.7\lib\net40\MyCaffe.db.temporal.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Binaries\SS_Projects\_Debug\MyCaffe.db.temporal.dll</HintPath>
+    </Reference>
+    <Reference Include="MyCaffe.extras, Version=1.12.3.7, Culture=neutral, PublicKeyToken=c3800940030c776b, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Binaries\SS_Projects\_Debug\MyCaffe.extras.dll</HintPath>
+    </Reference>
+    <Reference Include="MyCaffe.gym, Version=1.12.3.7, Culture=neutral, PublicKeyToken=d8eaadd8ff4ae38b, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Binaries\SS_Projects\_Debug\MyCaffe.gym.dll</HintPath>
+    </Reference>
+    <Reference Include="MyCaffe.gym.python, Version=1.12.3.7, Culture=neutral, PublicKeyToken=509864af876d3fce, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Binaries\SS_Projects\_Debug\MyCaffe.gym.python.dll</HintPath>
+    </Reference>
+    <Reference Include="MyCaffe.layers.alpha, Version=1.12.3.7, Culture=neutral, PublicKeyToken=400129fbac0a49d0, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Binaries\SS_Projects\_Debug\MyCaffe.layers.alpha.dll</HintPath>
+    </Reference>
+    <Reference Include="MyCaffe.layers.beta, Version=1.12.3.7, Culture=neutral, PublicKeyToken=2ce3179af427881e, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Binaries\SS_Projects\_Debug\MyCaffe.layers.beta.dll</HintPath>
+    </Reference>
+    <Reference Include="MyCaffe.layers.gpt, Version=1.12.3.7, Culture=neutral, PublicKeyToken=7576be6fbbfa51ef, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Binaries\SS_Projects\_Debug\MyCaffe.layers.gpt.dll</HintPath>
+    </Reference>
+    <Reference Include="MyCaffe.layers.hdf5, Version=1.12.3.7, Culture=neutral, PublicKeyToken=9ee70ac6204bc333, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Binaries\SS_Projects\_Debug\MyCaffe.layers.hdf5.dll</HintPath>
+    </Reference>
+    <Reference Include="MyCaffe.layers.lnn, Version=1.12.3.7, Culture=neutral, PublicKeyToken=b8e43b73d1216683, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Binaries\SS_Projects\_Debug\MyCaffe.layers.lnn.dll</HintPath>
+    </Reference>
+    <Reference Include="MyCaffe.layers.nt, Version=1.12.3.7, Culture=neutral, PublicKeyToken=2959ca5ee300fd0a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Binaries\SS_Projects\_Debug\MyCaffe.layers.nt.dll</HintPath>
     </Reference>
     <Reference Include="MyCaffe.layers.python, Version=1.12.3.7, Culture=neutral, PublicKeyToken=e76bffca6f0cab77, processorArchitecture=MSIL">
-      <HintPath>..\packages\MyCaffe.1.12.3.7\lib\net40\MyCaffe.layers.python.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Binaries\SS_Projects\_Debug\MyCaffe.layers.python.dll</HintPath>
+    </Reference>
+    <Reference Include="MyCaffe.layers.ssd, Version=1.12.3.7, Culture=neutral, PublicKeyToken=bb6319f0e555fef7, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Binaries\SS_Projects\_Debug\MyCaffe.layers.ssd.dll</HintPath>
+    </Reference>
+    <Reference Include="MyCaffe.layers.tft, Version=1.12.3.7, Culture=neutral, PublicKeyToken=7b00092ef8460b8d, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Binaries\SS_Projects\_Debug\MyCaffe.layers.tft.dll</HintPath>
+    </Reference>
+    <Reference Include="MyCaffe.model, Version=1.12.3.7, Culture=neutral, PublicKeyToken=17f273f87d1a9802, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Binaries\SS_Projects\_Debug\MyCaffe.model.dll</HintPath>
+    </Reference>
+    <Reference Include="MyCaffe.python">
+      <HintPath>..\..\..\..\..\..\..\..\..\..\..\Binaries\SS_Projects\_Debug\MyCaffe.python.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
