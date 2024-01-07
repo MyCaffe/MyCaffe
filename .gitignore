@@ -3,6 +3,7 @@
 *.user
 *.sln.docstates
 *.bak
+*.csv
 
 # Private Files
 **/MyCaffe.app.setup/*
