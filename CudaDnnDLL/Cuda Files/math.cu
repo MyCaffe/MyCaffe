@@ -6472,12 +6472,18 @@ __global__ void channel_sum_kernel_withinchannel(const int num, const int channe
 template <typename T>
 __global__ void channel_sum_kernel_acrosschannels_bwd(const int num, const int channels, const int spatial_dim, T* x, const T* y)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * channels * spatial_dim && i >= 0; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * spatial_dim && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		const int n = (i / (channels * spatial_dim)) * (channels);
+		const int n = i / spatial_dim;
 		const int s = i % spatial_dim;
-		const int nSrcIdx = n + s;
-		x[i] = y[nSrcIdx];
+		const int offset = n * channels;
+		double val = 0;
+
+		for (int c = 0; c < channels; c++)
+		{
+			const int nDstIdx = (offset + c) * spatial_dim + s;
+			x[nDstIdx] = y[i];
+		}
 	}
 }
 
@@ -6496,12 +6502,13 @@ __global__ void channel_sum_kernel_acrosschannels_bwd1(const int num, const int 
 template <typename T>
 __global__ void channel_sum_kernel_withinchannel_bwd(const int num, const int channels, const int spatial_dim, T* x, const T* y)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * channels * spatial_dim && i >= 0; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * channels && i >= 0; i += blockDim.x * gridDim.x)
 	{
-		const int n = (i / (channels * spatial_dim)) * (channels);
-		const int s = i / spatial_dim;
-		const int nSrcIdx = n + s;
-		x[i] = y[nSrcIdx];
+		for (int j = 0; j < spatial_dim; j++)
+		{
+			const int nDstIdx = (i * spatial_dim) + j;
+			x[nDstIdx] = y[i];
+		}
 	}
 }
 
