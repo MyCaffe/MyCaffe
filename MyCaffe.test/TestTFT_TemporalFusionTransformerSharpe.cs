@@ -16,6 +16,7 @@ using MyCaffe.solvers;
 using System.Diagnostics;
 using System.IO;
 using MyCaffe.param.tft;
+using System.Xml.XPath;
 
 /// <summary>
 /// Testing the TemporalFusionTransformer network.
@@ -60,12 +61,50 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestTraining()
+        {
+            TemporalFutionTransformerSharpeTest test = new TemporalFutionTransformerSharpeTest();
+
+            try
+            {
+                foreach (ITemporalFutionTransformerSharpeTest t in test.Tests)
+                {
+                    t.TestTraining();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSharpeLoss()
+        {
+            TemporalFutionTransformerSharpeTest test = new TemporalFutionTransformerSharpeTest();
+
+            try
+            {
+                foreach (ITemporalFutionTransformerSharpeTest t in test.Tests)
+                {
+                    t.TestSharpeLoss();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface ITemporalFutionTransformerSharpeTest : ITest
     {
         void TestForward();
         void TestBackward();
+        void TestTraining();
+        void TestSharpeLoss();
     }
 
     class TemporalFutionTransformerSharpeTest : TestBase
@@ -127,6 +166,23 @@ namespace MyCaffe.test
         {
             if (!File.Exists(strPath + strFile))
                 throw new Exception("ERROR: You need to download the TFT test data by running the MyCaffe Test Application and selecting the 'Download Test Data | TFT' menu.");
+        }
+
+        private string buildSolver(double dfLr)
+        {
+            SolverParameter p = new SolverParameter();
+
+            p.base_lr = dfLr;
+            p.weight_decay = 0;
+            p.momentum = 0.9;
+            p.momentum2 = 0.999;
+            p.delta = 1e-8;
+            p.lr_policy = "fixed";
+            p.type = SolverParameter.SolverType.ADAM;
+            p.test_iter.Clear();
+            p.test_interval = -1;
+            
+            return p.ToProto("root").ToString();
         }
 
         private string buildModel(string strSrc, bool bDecoderOnly, bool bAddDataLayer, int nNumSamples, int nNumHeads, float fDropout, int nLstmLayers, int nNumOutputs, int nStateSize, int nNumHistSteps, int nNumFutureSteps,
@@ -584,6 +640,11 @@ namespace MyCaffe.test
             output.top.Add("predicted_quantiles");
             p.layer.Add(output);
 
+            LayerParameter tanh = new LayerParameter(LayerParameter.LayerType.TANH, "tanh");
+            tanh.bottom.Add("predicted_quantiles");
+            tanh.top.Add("predicted_quantiles");
+            p.layer.Add(tanh);
+
 
             //---------------------------------
             //  Loss
@@ -1026,365 +1087,391 @@ namespace MyCaffe.test
 
             try
             {
-                int nIdx = 362;
+                int nIdx = (nNumFutureCategorical == 0 && nNumFutureNumeric == 0) ? 182 : 362;
 
                 //---------------------------------
                 //  *Output (idx=360)
                 //---------------------------------
+                strTag = "output_layer\\";
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".output_layer.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".output_layer.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "weight.npy");
 
 
                 //---------------------------------
                 //  *Pos wise FF Gate (idx=356)
                 //---------------------------------
+                strTag = "pos_wise_ff_gating\\";
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".pos_wise_ff_gating.gate.module.fc2.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc2.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".pos_wise_ff_gating.gate.module.fc2.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc2.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".pos_wise_ff_gating.gate.module.fc1.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc1.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".pos_wise_ff_gating.gate.module.fc1.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc1.weight.npy");
 
                 //---------------------------------
                 //  *Pos wise FF (idx=348)
                 //---------------------------------
+                strTag = "pos_wise_ff_grn\\";
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".pos_wise_ff_grn.gate.module.fc2.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc2.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".pos_wise_ff_grn.gate.module.fc2.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc2.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".pos_wise_ff_grn.gate.module.fc1.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc1.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".pos_wise_ff_grn.gate.module.fc1.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc1.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".pos_wise_ff_grn.fc2.module.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc2.module.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".pos_wise_ff_grn.fc2.module.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc2.module.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".pos_wise_ff_grn.fc1.module.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc1.module.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".pos_wise_ff_grn.fc1.module.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc1.module.weight.npy");
 
                 //---------------------------------
                 //  *Temporal Self-attention (idx=336)
                 //---------------------------------
+                strTag = "post_attention_gating\\";
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".post_attention_gating.gate.module.fc2.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc2.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".post_attention_gating.gate.module.fc2.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc2.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".post_attention_gating.gate.module.fc1.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc1.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".post_attention_gating.gate.module.fc1.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc1.weight.npy");
+                strTag = "multihead_attn\\";
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".multihead_attn.out.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "out.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".multihead_attn.out.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "out.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".multihead_attn.w_v.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "w_v.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".multihead_attn.w_v.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "w_v.weight.npy");
                 nIdx--;
-/*BUG->*/       compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".multihead_attn.w_k.bias.npy");
+/*BUG->*/       compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "w_k.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".multihead_attn.w_k.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "w_k.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".multihead_attn.w_q.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "w_q.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".multihead_attn.w_q.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "w_q.weight.npy");
 
                 //---------------------------------
                 //  *Temporal Static Enrichment (idx=327)
                 //---------------------------------
+                strTag = "static_enrichment_grn\\";
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_enrichment_grn.gate.module.fc2.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc2.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_enrichment_grn.gate.module.fc2.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc2.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_enrichment_grn.gate.module.fc1.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc1.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_enrichment_grn.gate.module.fc1.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc1.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_enrichment_grn.fc2.module.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc2.module.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_enrichment_grn.fc2.module.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc2.module.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_enrichment_grn.context_projection.module.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "context_projection.module.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_enrichment_grn.fc1.module.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc1.module.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_enrichment_grn.fc1.module.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc1.module.weight.npy");
 
                 //---------------------------------
                 //  *Locality Enhancement with Seq2Seq processing (idx=321)
                 //---------------------------------
+                strTag = "post_lstm_gating\\";
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".post_lstm_gating.gate.module.fc2.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc2.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".post_lstm_gating.gate.module.fc2.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc2.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".post_lstm_gating.gate.module.fc1.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc1.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".post_lstm_gating.gate.module.fc1.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc1.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".ZZZ.YYY.future_lstm.lstm.wt0.npy");
-                nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".ZZZ.YYY.past_lstm.lstm.wt0.npy");
+
+                strTag = "past_lstm\\";
+                if (nNumFutureCategorical > 0 || nNumFutureNumeric > 0)
+                {
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "ZZZ.YYY.future_lstm.lstm.wt0.npy");
+                    nIdx--;
+                }
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "ZZZ.YYY.past_lstm.lstm.wt0.npy");
 
                 //-------------------------------------------
                 // *Load varselnet weights - future (idx=246)
                 //-------------------------------------------
-                for (int i = (nNumFutureNumeric + nNumFutureCategorical) - 1; i>=0; i--)
+                if (nNumFutureCategorical > 0 || nNumFutureNumeric > 0)
                 {
+                    strTag = "future_ts_selection\\";
+                    for (int i = (nNumFutureNumeric + nNumFutureCategorical) - 1; i >= 0; i--)
+                    {
+                        nIdx--;
+                        compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".gate.module.fc2.bias.npy");
+                        nIdx--;
+                        compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".gate.module.fc2.weight.npy");
+                        nIdx--;
+                        compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".gate.module.fc1.bias.npy");
+                        nIdx--;
+                        compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".gate.module.fc1.weight.npy");
+                        nIdx--;
+                        compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".fc2.module.bias.npy");
+                        nIdx--;
+                        compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".fc2.module.weight.npy");
+                        nIdx--;
+                        compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".fc1.module.bias.npy");
+                        nIdx--;
+                        compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".fc1.module.weight.npy");
+                    }
+
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".future_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc2.bias.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.gate.module.fc2.bias.npy");
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".future_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc2.weight.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.gate.module.fc2.weight.npy");
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".future_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc1.bias.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.gate.module.fc1.bias.npy");
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".future_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc1.weight.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.gate.module.fc1.weight.npy");
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".future_ts_selection.single_variable_grns." + i.ToString() + ".fc2.module.bias.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.fc2.module.bias.npy");
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".future_ts_selection.single_variable_grns." + i.ToString() + ".fc2.module.weight.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.fc2.module.weight.npy");
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".future_ts_selection.single_variable_grns." + i.ToString() + ".fc1.module.bias.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.context_projection.module.weight.npy");
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".future_ts_selection.single_variable_grns." + i.ToString() + ".fc1.module.weight.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.fc1.module.bias.npy");
+                    nIdx--;
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.fc1.module.weight.npy");
+                    nIdx--;
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.skip_layer.module.bias.npy");
+                    nIdx--;
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.skip_layer.module.weight.npy");
                 }
-
-                nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".future_ts_selection.flattened_grn.gate.module.fc2.bias.npy");
-                nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".future_ts_selection.flattened_grn.gate.module.fc2.weight.npy");
-                nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".future_ts_selection.flattened_grn.gate.module.fc1.bias.npy");
-                nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".future_ts_selection.flattened_grn.gate.module.fc1.weight.npy");
-                nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".future_ts_selection.flattened_grn.fc2.module.bias.npy");
-                nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".future_ts_selection.flattened_grn.fc2.module.weight.npy");
-                nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".future_ts_selection.flattened_grn.context_projection.module.weight.npy");
-                nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".future_ts_selection.flattened_grn.fc1.module.bias.npy");
-                nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".future_ts_selection.flattened_grn.fc1.module.weight.npy");
-                nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".future_ts_selection.flattened_grn.skip_layer.module.bias.npy");
-                nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".future_ts_selection.flattened_grn.skip_layer.module.weight.npy");
-
 
                 //-------------------------------------------
                 // *Load varselnet weights - historical (idx=147)
                 //-------------------------------------------
+                strTag = "hist_ts_selection\\";
                 for (int i = (nNumHistNumeric + nNumHistCategorical) - 1; i>=0; i--)
                 {
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".historical_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc2.bias.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".gate.module.fc2.bias.npy");
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".historical_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc2.weight.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".gate.module.fc2.weight.npy");
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".historical_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc1.bias.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".gate.module.fc1.bias.npy");
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".historical_ts_selection.single_variable_grns." + i.ToString() + ".gate.module.fc1.weight.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".gate.module.fc1.weight.npy");
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".historical_ts_selection.single_variable_grns." + i.ToString() + ".fc2.module.bias.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".fc2.module.bias.npy");
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".historical_ts_selection.single_variable_grns." + i.ToString() + ".fc2.module.weight.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".fc2.module.weight.npy");
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".historical_ts_selection.single_variable_grns." + i.ToString() + ".fc1.module.bias.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".fc1.module.bias.npy");
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".historical_ts_selection.single_variable_grns." + i.ToString() + ".fc1.module.weight.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".fc1.module.weight.npy");
                 }
 
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".historical_ts_selection.flattened_grn.gate.module.fc2.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.gate.module.fc2.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".historical_ts_selection.flattened_grn.gate.module.fc2.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.gate.module.fc2.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".historical_ts_selection.flattened_grn.gate.module.fc1.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.gate.module.fc1.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".historical_ts_selection.flattened_grn.gate.module.fc1.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.gate.module.fc1.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".historical_ts_selection.flattened_grn.fc2.module.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.fc2.module.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".historical_ts_selection.flattened_grn.fc2.module.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.fc2.module.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".historical_ts_selection.flattened_grn.context_projection.module.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.context_projection.module.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".historical_ts_selection.flattened_grn.fc1.module.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.fc1.module.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".historical_ts_selection.flattened_grn.fc1.module.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.fc1.module.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".historical_ts_selection.flattened_grn.skip_layer.module.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.skip_layer.module.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".historical_ts_selection.flattened_grn.skip_layer.module.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.skip_layer.module.weight.npy");
 
                 //---------------------------------
                 //  *Static covariate encoders (idx=115)
                 //---------------------------------
+                strTag = "static_encoder_sequential_state_init\\";
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_sequential_state_init.gate.module.fc2.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc2.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_sequential_state_init.gate.module.fc2.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc2.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_sequential_state_init.gate.module.fc1.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc1.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_sequential_state_init.gate.module.fc1.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc1.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_sequential_state_init.fc2.module.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc2.module.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_sequential_state_init.fc2.module.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc2.module.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_sequential_state_init.fc1.module.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc1.module.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_sequential_state_init.fc1.module.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc1.module.weight.npy");
 
+                strTag = "static_encoder_sequential_cell_init\\";
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_sequential_cell_init.gate.module.fc2.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc2.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_sequential_cell_init.gate.module.fc2.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc2.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_sequential_cell_init.gate.module.fc1.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc1.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_sequential_cell_init.gate.module.fc1.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc1.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_sequential_cell_init.fc2.module.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc2.module.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_sequential_cell_init.fc2.module.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc2.module.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_sequential_cell_init.fc1.module.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc1.module.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_sequential_cell_init.fc1.module.weight.npy");
-
-                // Sample gradients for each are 0, which appear to be incorrect.
-                nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_enrichment.gate.module.fc2.bias.npy");
-                nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_enrichment.gate.module.fc2.weight.npy");
-                nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_enrichment.gate.module.fc1.bias.npy");
-                nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_enrichment.gate.module.fc1.weight.npy");
-                nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_enrichment.fc2.module.bias.npy");
-                nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_enrichment.fc2.module.weight.npy");
-                nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_enrichment.fc1.module.bias.npy");
-                nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_enrichment.fc1.module.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc1.module.weight.npy");
 
                 // Sample gradients for each are 0, which appear to be incorrect.
+                strTag = "static_encoder_enrichment\\";
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_selection.gate.module.fc2.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc2.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_selection.gate.module.fc2.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc2.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_selection.gate.module.fc1.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc1.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_selection.gate.module.fc1.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc1.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_selection.fc2.module.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc2.module.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_selection.fc2.module.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc2.module.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_selection.fc1.module.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc1.module.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_encoder_selection.fc1.module.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc1.module.weight.npy");
+
+                // Sample gradients for each are 0, which appear to be incorrect.
+                strTag = "static_encoder_selection\\";
+                nIdx--;
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc2.bias.npy");
+                nIdx--;
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc2.weight.npy");
+                nIdx--;
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc1.bias.npy");
+                nIdx--;
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "gate.module.fc1.weight.npy");
+                nIdx--;
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc2.module.bias.npy");
+                nIdx--;
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc2.module.weight.npy");
+                nIdx--;
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc1.module.bias.npy");
+                nIdx--;
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "fc1.module.weight.npy");
 
 
                 //-------------------------------------------
                 // *Load varselnet weights - static (idx=33)
                 //-------------------------------------------
                 // Sample gradients for each are 0, which appear to be incorrect.
+                strTag = "static_selection\\";
                 for (int i = (nNumStaticNumeric + nNumStaticCategorical) - 1; i>=0; i--)
                 {
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_selection.single_variable_grns." + i.ToString() + ".gate.module.fc2.bias.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".gate.module.fc2.bias.npy");
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_selection.single_variable_grns." + i.ToString() + ".gate.module.fc2.weight.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".gate.module.fc2.weight.npy");
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_selection.single_variable_grns." + i.ToString() + ".gate.module.fc1.bias.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".gate.module.fc1.bias.npy");
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_selection.single_variable_grns." + i.ToString() + ".gate.module.fc1.weight.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".gate.module.fc1.weight.npy");
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_selection.single_variable_grns." + i.ToString() + ".fc2.module.bias.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".fc2.module.bias.npy");
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_selection.single_variable_grns." + i.ToString() + ".fc2.module.weight.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".fc2.module.weight.npy");
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_selection.single_variable_grns." + i.ToString() + ".fc1.module.bias.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".fc1.module.bias.npy");
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_selection.single_variable_grns." + i.ToString() + ".fc1.module.weight.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "single_variable_grns." + i.ToString() + ".fc1.module.weight.npy");
                 }
 
                 // Sample gradients for each are 0, which appear to be incorrect.
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_selection.flattened_grn.gate.module.fc2.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.gate.module.fc2.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_selection.flattened_grn.gate.module.fc2.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.gate.module.fc2.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_selection.flattened_grn.gate.module.fc1.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.gate.module.fc1.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_selection.flattened_grn.gate.module.fc1.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.gate.module.fc1.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_selection.flattened_grn.fc2.module.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.fc2.module.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_selection.flattened_grn.fc2.module.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.fc2.module.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_selection.flattened_grn.fc1.module.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.fc1.module.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_selection.flattened_grn.fc1.module.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.fc1.module.weight.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_selection.flattened_grn.skip_layer.module.bias.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.skip_layer.module.bias.npy");
                 nIdx--;
-                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_selection.flattened_grn.skip_layer.module.weight.npy");
+                compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "flattened_grn.skip_layer.module.weight.npy");
 
 
                 //-------------------------------------------
                 // *Load input channel embedding weights.
                 //-------------------------------------------
 
+                strTag = "future_ts_transform\\";
                 for (int i = nNumFutureCategorical-1; i>=0; i--)
                 {
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".future_ts_transform.categorical_transform.module.categorical_embedding_layers." + i.ToString() + ".weight.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "categorical_transform.module.categorical_embedding_layers." + i.ToString() + ".weight.npy");
                 }
 
+                strTag = "future_ts_transform\\";
                 for (int i = nNumFutureNumeric-1; i>=0; i--)
                 {
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".future_ts_transform.numeric_transform.module.numeric_projection_layers." + i.ToString() + ".bias.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "numeric_transform.module.numeric_projection_layers." + i.ToString() + ".bias.npy");
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".future_ts_transform.numeric_transform.module.numeric_projection_layers." + i.ToString() + ".weight.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "numeric_transform.module.numeric_projection_layers." + i.ToString() + ".weight.npy");
                 }
 
+                strTag = "hist_ts_transform\\";
                 for (int i = nNumHistCategorical-1; i>=0; i--)
                 {
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".historical_ts_transform.categorical_transform.module.categorical_embedding_layers." + i.ToString() + ".weight.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "categorical_transform.module.categorical_embedding_layers." + i.ToString() + ".weight.npy");
                 }
 
+                strTag = "hist_ts_transform\\";
                 for (int i = nNumHistNumeric-1; i>=0; i--)
                 {
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".historical_ts_transform.numeric_transform.module.numeric_projection_layers." + i.ToString() + ".bias.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "numeric_transform.module.numeric_projection_layers." + i.ToString() + ".bias.npy");
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".historical_ts_transform.numeric_transform.module.numeric_projection_layers." + i.ToString() + ".weight.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "numeric_transform.module.numeric_projection_layers." + i.ToString() + ".weight.npy");
                 }
 
+                strTag = "static_transform\\";
                 for (int i = nNumStaticCategorical-1; i>=0; i--)
                 {
                     nIdx--;
-                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + ".static_transform.categorical_transform.categorical_embedding_layers." + i.ToString() + ".weight.npy");
+                    compare(dfTol, rgErrors, nIdx, blobVal, net.parameters[nIdx], blobWork, strPath + strTag + "categorical_transform.categorical_embedding_layers." + i.ToString() + ".weight.npy");
                 }
             }
             finally
@@ -1442,10 +1529,7 @@ namespace MyCaffe.test
         /// </summary>
         /// <remarks>
         /// To generate test data:
-        /// Run test_11_tft_full.py on fresh 'test\iter_0' data
-        /// 
-        /// Fresh test\iter_0 data generated by running:
-        /// training.py with TemporalFusionTransformer options: debug=True, tag='tft.full', use_mycaffe=True
+        /// Run tft-sharpe project
         /// </remarks>
         public void TestForward()
         {
@@ -1612,10 +1696,7 @@ namespace MyCaffe.test
         /// </summary>
         /// <remarks>
         /// To generate test data:
-        /// Run test_11_tft_full.py on fresh 'test\iter_0' data
-        /// 
-        /// Fresh test\iter_0 data generated by running:
-        /// training.py with TemporalFusionTransformer options: debug=True, tag='tft.full', use_mycaffe=True
+        /// Run tft-sharpe project.
         /// </remarks>
         public void TestBackward()
         {
@@ -1891,6 +1972,203 @@ namespace MyCaffe.test
             {
                 dispose(ref blobVal);
                 dispose(ref blobWork);
+
+                if (net != null)
+                    net.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Test the training for for full model
+        /// </summary>
+        /// <remarks>
+        /// To generate test data:
+        /// Run tft-sharpe project
+        /// </remarks>
+        public void TestTraining()
+        {
+            string strSrc = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\sharpe\\";
+            string strPathBase = getTestBaseDataPath();
+            string strPath = getTestDataPath("all");
+            string strPathWt = getTestWtsPath("full");
+            Blob<T> blobVal = null;
+            Blob<T> blobWork = null;
+            Blob<T> blob1 = null;
+
+            Net<T> net = null;
+            Solver<T> solver = null;
+            int nNumSamples = 256;
+            int nNumHeads = 4;
+            float fDropout = 0;
+            int nLstmLayers = 2;
+            int nNumOutputs = 1;
+            int nStateSize = 10;
+            int nNumHistSteps = 63;
+            int nNumFutureSteps = 0;
+            int nNumStaticNumeric = 0;
+            int nNumStaticCategorical = 1;
+            List<int> rgStaticCardinalities = new List<int>() { 512 };
+            int nNumHistNumeric = 8;
+            int nNumHistCategorical = 0;
+            List<int> rgHistCardinalities = new List<int>();
+            int nNumFutureNumeric = 0;
+            int nNumFutureCategorical = 0;
+            List<int> rgFutureCardinalities = new List<int>();
+            string strTag = "tft.sharpe";
+            CancelEvent evtCancel = new CancelEvent();
+
+            verifyFileDownload(strPathBase, "historical_ts_numeric.npy");
+
+            try
+            {
+                blobVal = new Blob<T>(m_cuda, m_log);
+                blobWork = new Blob<T>(m_cuda, m_log);
+
+                string strModel = buildModel(strSrc, true, false, nNumSamples, nNumHeads, fDropout, nLstmLayers, nNumOutputs, nStateSize, nNumHistSteps, nNumFutureSteps, nNumStaticNumeric, nNumStaticCategorical, rgStaticCardinalities, nNumHistNumeric, nNumHistCategorical, rgHistCardinalities, nNumFutureNumeric, nNumFutureCategorical, rgFutureCardinalities);
+                RawProto rp = RawProto.Parse(strModel);
+                NetParameter netParam = NetParameter.FromProto(rp);
+
+                string strSolver = buildSolver(0.01);
+                RawProto rpSolver = RawProto.Parse(strSolver);
+                SolverParameter solverParam = SolverParameter.FromProto(rpSolver);
+
+                solverParam.train_net_param = netParam;
+
+                solver = Solver<T>.Create(m_cuda, m_log, solverParam, evtCancel, null, null, null, null);
+                net = solver.TrainingNet;
+
+                load_weights(strTag, net, strPathWt, nNumStaticNumeric, nNumStaticCategorical, nNumHistNumeric, nNumHistCategorical, nNumFutureNumeric, nNumFutureCategorical);
+
+                string strBatchBase = "C:\\Data\\Data\\SS_Projects\\Intelligence\\GitHub\\MyCaffe\\MyCaffe.test\\test_data\\projects\\tft-sharpe\\TFT_Momentum_Pytorch\\TFT_Momentum_Pytorch\\test\\tft.sharpe.dbg\\batch256\\batch_";
+                string strBatchWtBase = "C:\\Data\\Data\\SS_Projects\\Intelligence\\GitHub\\MyCaffe\\MyCaffe.test\\test_data\\projects\\tft-sharpe\\TFT_Momentum_Pytorch\\TFT_Momentum_Pytorch\\test\\tft.sharpe.dbg\\weights\\batch_";
+                strPath = "C:\\Data\\Data\\SS_Projects\\Intelligence\\GitHub\\MyCaffe\\MyCaffe.test\\test_data\\projects\\tft-sharpe\\TFT_Momentum_Pytorch\\TFT_Momentum_Pytorch\\test\\";
+
+                for (int i = 0; i < 10; i++)
+                {
+                    string strBatch = strBatchBase + i.ToString() + "\\";
+                    string strBatchWt = strBatchWtBase + i.ToString() + "\\";
+
+                    // inputs
+                    blob1 = net.FindBlob("x_categorical_static");
+                    blob1.LoadFromNumpy(strBatch + "static_feats_categorical.npy");
+                    blob1 = net.FindBlob("x_numeric_hist");
+                    blob1.LoadFromNumpy(strBatch + "historical_ts_numeric.npy");
+                    blob1 = net.FindBlob("target");
+                    blob1.LoadFromNumpy(strBatch + "target.npy");
+
+                    BlobCollection<T> colRes = net.Forward();
+
+                    Blob<T> blobLoss = colRes[1];
+                    blobVal.LoadFromNumpy(strBatch + "loss.npy");
+                    m_log.CHECK(blobVal.Compare(blobLoss, blobWork, false, 4e-07), "The blobs are different!");
+
+                    net.ClearParamDiffs();
+                    net.Backward();
+
+                    blobVal.LoadFromNumpy(strPath + "predicted_pos.grad.npy", true);
+                    blob1 = net.FindBlob("predicted_quantiles");
+                    m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 3e-07), "The gradients are different!");
+
+                    solver.ApplyUpdate(i);
+
+                    compare_weights("tft.sharpe", net, strBatchWt, nNumStaticNumeric, nNumStaticCategorical, nNumHistNumeric, nNumHistCategorical, nNumFutureNumeric, nNumFutureCategorical);
+                }
+            }
+            finally
+            {
+                dispose(ref blobVal);
+                dispose(ref blobWork);
+
+                if (net != null)
+                    net.Dispose();
+
+                if (solver != null)
+                    solver.Dispose();
+            }
+        }
+
+        public void TestSharpeLoss()
+        {
+            string strSrc = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\sharpe\\";
+            string strPathBase = getTestBaseDataPath();
+            string strPath = getTestDataPath("all");
+            string strPathWt = getTestWtsPath("full");
+            Blob<T> blobVal = null;
+            Blob<T> blobWork = null;
+            Blob<T> blobLoss = null;
+            Blob<T> blobPredPos = null;
+            Blob<T> blobTarget = null;
+
+            Net<T> net = null;
+            int nNumSamples = 256;
+            int nNumHeads = 4;
+            float fDropout = 0;
+            int nLstmLayers = 2;
+            int nNumOutputs = 1;
+            int nStateSize = 10;
+            int nNumHistSteps = 63;
+            int nNumFutureSteps = 0;
+            int nNumStaticNumeric = 0;
+            int nNumStaticCategorical = 1;
+            List<int> rgStaticCardinalities = new List<int>() { 512 };
+            int nNumHistNumeric = 8;
+            int nNumHistCategorical = 0;
+            List<int> rgHistCardinalities = new List<int>();
+            int nNumFutureNumeric = 0;
+            int nNumFutureCategorical = 0;
+            List<int> rgFutureCardinalities = new List<int>();
+            string strTag = "tft.sharpe";
+            CancelEvent evtCancel = new CancelEvent();
+
+            verifyFileDownload(strPathBase, "historical_ts_numeric.npy");
+
+            try
+            {
+                blobVal = new Blob<T>(m_cuda, m_log);
+                blobWork = new Blob<T>(m_cuda, m_log);
+
+                string strModel = buildModel(strSrc, true, false, nNumSamples, nNumHeads, fDropout, nLstmLayers, nNumOutputs, nStateSize, nNumHistSteps, nNumFutureSteps, nNumStaticNumeric, nNumStaticCategorical, rgStaticCardinalities, nNumHistNumeric, nNumHistCategorical, rgHistCardinalities, nNumFutureNumeric, nNumFutureCategorical, rgFutureCardinalities);
+                RawProto rp = RawProto.Parse(strModel);
+                NetParameter netParam = NetParameter.FromProto(rp);
+
+                net = new Net<T>(m_cuda, m_log, netParam, null, null, Phase.TRAIN);
+                load_weights(strTag, net, strPathWt, nNumStaticNumeric, nNumStaticCategorical, nNumHistNumeric, nNumHistCategorical, nNumFutureNumeric, nNumFutureCategorical);
+
+                strPath = "C:\\Data\\Data\\SS_Projects\\Intelligence\\GitHub\\MyCaffe\\MyCaffe.test\\test_data\\projects\\tft-sharpe\\TFT_Momentum_Pytorch\\TFT_Momentum_Pytorch\\test\\";
+
+                blobPredPos = new Blob<T>(m_cuda, m_log);
+                blobTarget = new Blob<T>(m_cuda, m_log);
+                blobLoss = new Blob<T>(m_cuda, m_log, 1, 1, 1, 1);
+
+                blobPredPos.LoadFromNumpy(strPath + "sharpe.weights.npy");
+                blobTarget.LoadFromNumpy(strPath + "y_true.npy");
+
+                Layer<T> layer = net.FindLastLayer(LayerParameter.LayerType.SHARPE_LOSS);
+
+                BlobCollection<T> colBtm = new BlobCollection<T>();
+                colBtm.Add(blobPredPos);
+                colBtm.Add(blobTarget);
+                BlobCollection<T> colTop = new BlobCollection<T>();
+                colTop.Add(blobLoss);
+
+                layer.Forward(colBtm, colTop);
+
+                blobVal.LoadFromNumpy(strPath + "sharpe.loss.npy");
+                m_log.CHECK(blobVal.Compare(blobLoss, blobWork, false, 5e-07), "The blobs are different!");
+
+                blobLoss.SetDiff(1);
+                layer.Backward(colTop, new List<bool>() { true , false }, colBtm);
+
+                blobVal.LoadFromNumpy(strPath + "tft.all.predicted_quantiles.grad.npy", true);
+                m_log.CHECK(blobVal.Compare(blobPredPos, blobWork, true, 1e-06), "The gradients are different!");
+            }
+            finally
+            {
+                dispose(ref blobVal);
+                dispose(ref blobWork);
+                dispose(ref blobLoss);
+                dispose(ref blobPredPos);
+                dispose(ref blobTarget);
 
                 if (net != null)
                     net.Dispose();
