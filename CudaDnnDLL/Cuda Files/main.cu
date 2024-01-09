@@ -1767,6 +1767,9 @@ char* GetApiName(long lfnIdx)
 	case CUDA_FN_TRANSPOSE:
 		return "CUDA_FN_TRANSPOSE";
 
+	case CUDA_FN_TRANSPOSE_HW:
+		return "CUDA_FN_TRANSPOSE_HW";
+
 	case CUDA_FN_SUMSQ:
 		return "CUDA_FN_SUMSQ";
 
@@ -2234,6 +2237,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_LAYERNORM_BWD:
 		return "CUDA_FN_LAYERNORM_BWD";
+
+	case CUDA_FN_DEBUG:
+		return "******** CUDA_FN_DEBUG ********";
 
 	default:
 		return "UNKNOWN";
