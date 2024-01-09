@@ -1204,13 +1204,21 @@ char* GetApiName(long lfnIdx)
 	switch (lfnIdx)
 	{
 	case CUDA_FN_SETDEVICE:
+#ifdef _TRACESLIM
+		return "";
+#else
 		return "CUDA_FN_SETDEVICE";
+#endif
 
 	case CUDA_FN_SETRANDOMSEED:
 		return "CUDA_FN_SETRANDOMSEED";
 
 	case CUDA_FN_GETDEVICE:
+#ifdef _TRACESLIM
+		return "";
+#else
 		return "CUDA_FN_GETDEVICE";
+#endif
 
 	case CUDA_FN_RESETDEVICE:
 		return "CUDA_FN_RESETDEVICE";
@@ -1240,19 +1248,39 @@ char* GetApiName(long lfnIdx)
 		return "CUDA_FN_DEVICE_DISABLEPEERACCESS";
 
 	case CUDA_FN_ALLOCMEM:
+#ifdef _TRACESLIM
+		return "";
+#else
 		return "CUDA_FN_ALLOCMEM";
+#endif
 
 	case CUDA_FN_FREEMEM:
+#ifdef _TRACESLIM
+		return "";
+#else
 		return "CUDA_FN_FREEMEM";
+#endif
 
 	case CUDA_FN_GETMEM:
+#ifdef _TRACESLIM
+		return "";
+#else
 		return "CUDA_FN_GETMEM";
+#endif
 
 	case CUDA_FN_SETMEM:
+#ifdef _TRACESLIM
+		return "";
+#else
 		return "CUDA_FN_SETMEM";
+#endif
 
 	case CUDA_FN_SETMEMAT:
+#ifdef _TRACESLIM
+		return "";
+#else
 		return "CUDA_FN_SETMEMAT";
+#endif
 
 	case CUDA_FN_SETPIXEL:
 		return "CUDA_FN_SETPIXEL";
@@ -1351,7 +1379,11 @@ char* GetApiName(long lfnIdx)
 		return "CUDNN_FN_FREE_TENSORDESC";
 
 	case CUDNN_FN_SET_TENSORDESC:
+#ifdef _TRACESLIM
+		return "";
+#else
 		return "CUDNN_FN_SET_TENSORDESC";
+#endif
 
 	case CUDNN_FN_SET_TENSORNDDESC:
 		return "CUDNN_FN_SET_TENSORNDDESC";
@@ -1588,10 +1620,18 @@ char* GetApiName(long lfnIdx)
 		return "CUDA_FN_TSNE_COMPUTE_ERROR1";
 
 	case CUDA_FN_SET:
+#ifdef _TRACESLIM
+		return "";
+#else
 		return "CUDA_FN_SET";
+#endif
 
 	case CUDA_FN_GET:
+#ifdef _TRACESLIM
+		return "";
+#else
 		return "CUDA_FN_GET";
+#endif
 
 	case CUDA_FN_COPY:
 		return "CUDA_FN_COPY";
