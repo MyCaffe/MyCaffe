@@ -1564,6 +1564,12 @@ namespace MyCaffeConnector
             return null;
         }
 
+        public void model_clear_diffs()
+        {
+            Net<float> net = m_mycaffe.GetInternalNet(Phase.TRAIN);
+            net.ClearParamDiffs();
+        }
+
         public void model_update(int nIter)
         {
             Solver<float> solver = m_mycaffe.GetInternalSolver();
@@ -1660,6 +1666,16 @@ namespace MyCaffeConnector
             m_blobBtm2.mutable_cpu_data = rgH;
             m_blobBtm3.Reshape(new List<int>() { nNumLayers, nN, nH });
             m_blobBtm3.mutable_cpu_data = rgC;
+            
+            if (m_blobTop1 != null)
+                m_blobTop1.Dispose();
+
+            m_blobTop1 = m_mycaffe.CreateBlob("top1");
+
+            if (m_blobTop2 != null)
+                m_blobTop2.Dispose();
+
+            m_blobTop2 = m_mycaffe.CreateBlob("top2");
 
             m_colBtm.Add(m_blobBtm1);
             m_colBtm.Add(m_blobBtm2);
@@ -2093,6 +2109,71 @@ namespace MyCaffeConnector
             m_blobTop.Reshape(rgShapeT);
             m_blobTop.mutable_cpu_diff = rgY;
             m_mycaffe.Cuda.channel_sum(m_blobBtm.count(), nN, nC, nH, m_blobBtm.mutable_gpu_diff, m_blobTop.gpu_diff, false, DIR.BWD);
+            return m_blobBtm.mutable_cpu_diff;
+        }
+
+        public float[] matmul_fwd(int nN, int nC, int nHa, int nWa, int nHb, int nWb, float[] rgA, float[] rgB)
+        {
+            List<int> rgShapeA = new List<int>() { nN, nC, nHa, nWa };
+            List<int> rgShapeB = new List<int>() { nN, nC, nHb, nWb };
+            Blob<float> blobA = m_blobBtm;
+            Blob<float> blobB = m_blobBtm1;
+            blobA.Reshape(rgShapeA);
+            blobB.Reshape(rgShapeB);
+            blobA.mutable_cpu_data = rgA;
+            blobB.mutable_cpu_data = rgB;
+
+            m_blobTop.MatMul(blobA, blobB, true);
+
+            return m_blobTop.mutable_cpu_data;
+        }
+
+        public float[] matmul_bwd_grad_a(int nN, int nC, int nHg, int nWg, int nHa, int nWa, int nHb, int nWb, float[] rgGrad, float[] rgA, float[] rgB)
+        {
+            List<int> rgShapeG = new List<int>() { nN, nC, nHg, nWg };
+            List<int> rgShapeA = new List<int>() { nN, nC, nHa, nWa };
+            List<int> rgShapeB = new List<int>() { nN, nC, nHb, nWb };
+            Blob<float> blobA = m_blobBtm;
+            Blob<float> blobB = m_blobBtm1;
+            Blob<float> blobWork = m_blobBtm2;
+            Blob<float> blobGrad = m_blobTop;
+
+            blobGrad.Reshape(rgShapeG);
+            blobA.Reshape(rgShapeA);
+            blobB.Reshape(rgShapeB);
+            blobA.mutable_cpu_data = rgA;
+            blobB.mutable_cpu_data = rgB;
+            blobGrad.mutable_cpu_diff = rgGrad;
+
+            blobGrad.MatMulGrad(blobA, blobB, blobWork);
+
+            return blobA.mutable_cpu_diff;
+        }
+
+        public float[] matmul_bwd_grad_b()
+        {
+            return m_blobBtm1.mutable_cpu_diff;
+        }
+
+        public float[] clone_fwd(int nN, int nC, int nH, int nW, float[] rgX)
+        {
+            List<int> rgShape = new List<int>() { nN, nC, nH, nW };
+            m_blobBtm.Reshape(rgShape);
+            m_blobBtm.mutable_cpu_data = rgX;
+            m_blobTop.CopyFrom(m_blobBtm, false, true);
+            return m_blobTop.mutable_cpu_data;
+        }
+
+        public float[] clone_bwd(int nN, int nC, int nH, int nW, float[] rgY, float[] rgGradX)
+        {
+            List<int> rgShapeX = new List<int>() { nN, nC, nH, nW };
+            List<int> rgShapeG = new List<int>() { nN, nC, nH, nW };
+            m_blobBtm.Reshape(rgShapeX);
+            m_blobTop1.Reshape(rgShapeG);
+            m_blobTop.Reshape(rgShapeX);
+            m_blobTop.mutable_cpu_diff = rgY;
+            m_blobTop1.mutable_cpu_diff = rgGradX;
+            m_mycaffe.Cuda.add(m_blobBtm.count(), m_blobTop1.gpu_diff, m_blobTop.gpu_diff, m_blobBtm.mutable_gpu_diff);
             return m_blobBtm.mutable_cpu_diff;
         }
 

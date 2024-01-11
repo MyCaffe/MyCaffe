@@ -21,6 +21,7 @@ ip_numout = []
 emb_numout = []
 lstm_num = []
 lstm_state = []
+clone_zerograd = []
 lstm_ctx = {}
 
 last_y = None
@@ -70,7 +71,10 @@ class MyCaffeModel(nn.Module):
         return ModelFunction27.apply(xhat, tgt)
     
     def update(self, nIter):
-        mycaffe.update(nIter)
+        mycaffe.model_update(nIter)
+        
+    def clear_diffs(self):
+        mycaffe.model_clear_diffs()
 
 class ModelFunction0(torch.autograd.Function):
     @staticmethod
@@ -386,8 +390,10 @@ class LstmEx(nn.Module):
         self.debug = debug
         self.path = path
         self.use_mycaffe = use_mycaffe
-        if self.use_mycaffe != True:
+        if self.use_mycaffe != True:            
             self.lstm1 = nn.LSTM(input_size = state, hidden_size = state, num_layers = num, dropout = 0, batch_first = True)
+        else:
+            self.lstm1 = None
 
     def save_wts(self, tag="",path=""):
         if self.use_mycaffe:
@@ -734,6 +740,86 @@ class ChannelSumFunction(torch.autograd.Function):
         tag = tag_list.pop()
         return mycaffe.channel_sum_bwd(grad_output, h)
 
+class MatMulEx(nn.Module):
+    def __init__(self, tag, use_mycaffe=False, debug=False):
+        super(MatMulEx, self).__init__()
+        self.tag = tag
+        self.debug = debug
+        self.use_mycaffe = use_mycaffe
+
+    def forward(self, x1, x2):
+        if self.debug:
+            debug = DebugFunction.apply
+            DebugFunction.trace(x1, self.tag + ".x1")
+            DebugFunction.trace(x2, self.tag + ".x2")
+            x1 = debug(x1)
+            x2 = debug(x2)
+
+        if self.use_mycaffe:
+            matmul = MatMulFunction.apply
+            tag_list.append(self.tag)
+            y = matmul(x1, x2)
+        else:
+            y = torch.matmul(x1, x2)
+
+        if self.debug:
+            DebugFunction.trace(y, self.tag + ".y")
+            y = debug(y)
+
+        return y
+
+class MatMulFunction(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x1, x2):
+        tag = tag_list[-1]
+        y = mycaffe.matmul_fwd(x1, x2)
+        ctx.save_for_backward(x1,x2)
+        return y
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        x1,x2 = ctx.saved_tensors
+        tag = tag_list.pop()
+        gradX1 = mycaffe.matmul_bwd_grad_a(grad_output, x1, x2)
+        gradX2 = mycaffe.matmul_bwd_grad_b(grad_output, x1, x2)
+        return gradX1, gradX2
+
+class CloneEx(nn.Module):
+    def __init__(self, tag, use_mycaffe=False, debug=False):
+        super(CloneEx, self).__init__()
+        self.tag = tag
+        self.debug = debug
+        self.use_mycaffe = use_mycaffe
+
+    def forward(self, x):
+        if self.debug:
+            debug = DebugFunction.apply
+            DebugFunction.trace(x, self.tag + ".x")
+            x = debug(x)
+
+        if self.use_mycaffe:
+            clone = CloneFunction.apply
+            tag_list.append(self.tag)
+            q,k,v = clone(x)
+        else:
+            q = x.clone()
+            k = x.clone()
+            v = x.clone()
+        return q,k,v
+
+class CloneFunction(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x):
+        q,k,v = mycaffe.clone_fwd(x)
+        ctx.save_for_backward(q,k,v)
+        return q,k,v
+    
+    @staticmethod
+    def backward(ctx, grad_output1, grad_output2, grad_output3):
+        q,k,v = ctx.saved_tensors
+        tag = tag_list.pop()
+        gradX = mycaffe.clone_bwd(grad_output1, grad_output2, grad_output3)
+        return gradX
 #
 # EmbedEx
 #     
@@ -1654,7 +1740,7 @@ class InterpretableMultiHeadAttention(nn.Module):
         The number of attention heads composing the Multi-head attention component.
     """
 
-    def __init__(self, embed_dim: int, num_heads: int, debug: Optional[bool] = False, tag = None, use_mycaffe: Optional[bool] = False, path=""):
+    def __init__(self, embed_dim: int, num_heads: int, debug: Optional[bool] = False, tag = None, use_mycaffe: Optional[bool] = False, matmul_use_mycaffe: Optional[bool] = False, path=""):
         super(InterpretableMultiHeadAttention, self).__init__()
 
         self.debug = debug
@@ -1672,7 +1758,7 @@ class InterpretableMultiHeadAttention(nn.Module):
 
         # the last layer is used for final linear mapping (corresponds to W_H in the paper)
         self.out = LinearEx(self.d_model, self.d_model, path=self.path, use_mycaffe=use_mycaffe, tag=self.tag + ".out")
-       
+        self.matmul = MatMulEx(tag=self.tag + ".matmul", use_mycaffe=matmul_use_mycaffe, debug=debug)
 
     def forward(self, q, k, v, mask=None):
         debug1 = False
@@ -1788,8 +1874,11 @@ class InterpretableMultiHeadAttention(nn.Module):
         if self.debug or debug != None:
             DebugFunction.trace(k1, self.tag + "imha_k1")
             k1 = debug(k1)
+            DebugFunction.trace(q, self.tag + "imha_q1")
+            q = debug(q)
 
-        attention_scores1 = torch.matmul(q, k1)
+        #attention_scores1 = torch.matmul(q, k1)
+        attention_scores1 = self.matmul(q, k1)
 
         if self.debug or debug != None:
             DebugFunction.trace(attention_scores1, self.tag + "imha_attention_scores1")
@@ -1826,7 +1915,7 @@ class InterpretableMultiHeadAttention(nn.Module):
             attention_scores4 = debug(attention_scores4)
 
         # matrix multiplication is performed on the last two-dimensions to retrieve attention outputs
-        attention_outputs = torch.matmul(attention_scores4, v)
+        attention_outputs = self.matmul(attention_scores4, v)
         # Dimensions:
         # attention_outputs: [num_samples x num_heads x num_future_steps x state_size]
 
@@ -1854,7 +1943,7 @@ class TemporalFusionTransformer(nn.Module):
         which are required for creating the model.
     """
 
-    def __init__(self, decoder_only: bool, config: DictConfig, debug: Optional[bool] = False, tag = "tft", use_mycaffe: Optional[bool] = False, lstm_use_mycaffe: Optional[bool] = False, linear_use_mycaffe: Optional[bool] = False, path="", use_mycaffe_model: Optional[bool] = False):
+    def __init__(self, decoder_only: bool, config: DictConfig, debug: Optional[bool] = False, tag = "tft", use_mycaffe: Optional[bool] = False, lstm_use_mycaffe: Optional[bool] = False, linear_use_mycaffe: Optional[bool] = False, matmul_use_mycaffe: Optional[bool] = False, clone_use_mycaffe: Optional[bool] = False, path="", use_mycaffe_model: Optional[bool] = False):
         super().__init__()
 
         self.debug = debug;
@@ -2006,7 +2095,7 @@ class TemporalFusionTransformer(nn.Module):
         # ============================================================
         # Locality Enhancement with Sequence-to-Sequence processing
         # ============================================================
-        if use_mycaffe == False and self.lstm_use_mycaffe == False:
+        if self.lstm_use_mycaffe == False:
             self.past_lstm = nn.LSTM(input_size=self.state_size,
                                      hidden_size=self.state_size,
                                      num_layers=self.lstm_layers,
@@ -2026,14 +2115,14 @@ class TemporalFusionTransformer(nn.Module):
                                state=self.state_size,
                                num=self.lstm_layers,
                                debug=self.debug,
-                               use_mycaffe=self.lstm_use_mycaffe, path=self.path)
+                               use_mycaffe=True, path=self.path)
         
             if self.decoder_only == False:
                 self.future_lstm = LstmEx(tag="YYY.future_lstm", 
                                    state=self.state_size,
                                    num=self.lstm_layers,
                                    debug=self.debug,
-                                   use_mycaffe=self.lstm_use_mycaffe, path=self.path)
+                                   use_mycaffe=True, path=self.path)
             else:
                 self.future_lstm = None
 
@@ -2056,7 +2145,9 @@ class TemporalFusionTransformer(nn.Module):
         # ============================================================
         # Temporal Self-Attention
         # ============================================================
-        self.multihead_attn = InterpretableMultiHeadAttention(embed_dim=self.state_size, num_heads=self.attention_heads, use_mycaffe=use_mycaffe, path=self.path, debug=self.debug)
+        self.clone_use_mycaffe = clone_use_mycaffe
+        self.clone = CloneEx(tag=self.tag + ".clone", debug=self.debug, use_mycaffe=clone_use_mycaffe)
+        self.multihead_attn = InterpretableMultiHeadAttention(embed_dim=self.state_size, num_heads=self.attention_heads, use_mycaffe=use_mycaffe, path=self.path, debug=self.debug, matmul_use_mycaffe=matmul_use_mycaffe)
         self.post_attention_gating = GateAddNorm(input_dim=self.state_size, dropout=self.dropout, use_mycaffe=use_mycaffe, path=self.path, debug=self.debug, tag="pag")
 
         # ============================================================
@@ -2408,6 +2499,12 @@ class TemporalFusionTransformer(nn.Module):
         # flattened_gated_lstm_output: [(num_samples * num_temporal_steps) x state_size]
         # time_distributed_context: [(num_samples * num_temporal_steps) x state_size]
 
+        if self.debug:
+            DebugFunction.trace(flattened_gated_lstm_output, self.tag + ".statenr.flattened_gated_lstm_output")
+            flattened_gated_lstm_output = debug(flattened_gated_lstm_output)
+            DebugFunction.trace(time_distributed_context, self.tag + ".statenr.time_distributed_context")
+            time_distributed_context = debug(time_distributed_context)
+
         # applying the GRN using the static enrichment signal as context data
         enriched_sequence = self.static_enrichment_grn(flattened_gated_lstm_output,
                                                        context=time_distributed_context)
@@ -2463,9 +2560,15 @@ class TemporalFusionTransformer(nn.Module):
             DebugFunction.trace(enriched_sequence_a, self.tag + ".ada.enriched_sequence_a");
             enriched_sequence_a = debug(enriched_sequence_a)
 
-        q1 = enriched_sequence_a[:, (num_historical_steps + self.target_window_start_idx):, :] if self.decoder_only == False else enriched_sequence_a.clone()
-        k1 = enriched_sequence_a.clone()
-        v1 = enriched_sequence_a.clone()
+        if self.clone_use_mycaffe == False:            
+            if self.decoder_only == False:
+                q1 = enriched_sequence_a[:, (num_historical_steps + self.target_window_start_idx):, :] 
+            else:
+                q1 = enriched_sequence_a.clone()
+            k1 = enriched_sequence_a.clone()
+            v1 = enriched_sequence_a.clone()
+        else:        
+            q1, k1, v1 = self.clone(enriched_sequence_a)
 
         if self.debug or debug1:
             DebugFunction.trace(q1, self.tag + ".ada.q1");
@@ -2519,6 +2622,10 @@ class TemporalFusionTransformer(nn.Module):
 
         return gated_post_attention, attention_scores
 
+    def model_clear_diffs(self):
+        if self.mycaffe_model != None:
+            self.mycaffe_model.clear_diffs()
+
     def update(self, nIter):
         if self.mycaffe_model != None:
             self.mycaffe_model.update(nIter)
@@ -2548,7 +2655,7 @@ class TemporalFusionTransformer(nn.Module):
 
         # *** Model Selection for Debugging ***
         # Select one of the model levels to run the top portion of the model in PyTorch, and the model level down in MyCaffe.
-        #mycaffe_model_level = None
+        mycaffe_model_level = None
         mycaffe_model_level = 0 # run full model using MyCaffe
         #mycaffe_model_level = 3 # run MyCaffe from static selection down (run input transformation in PyTorch)
         #mycaffe_model_level = 4 # run MyCaffe from static encoders down (run input transformation, static selection in MyCaffe)

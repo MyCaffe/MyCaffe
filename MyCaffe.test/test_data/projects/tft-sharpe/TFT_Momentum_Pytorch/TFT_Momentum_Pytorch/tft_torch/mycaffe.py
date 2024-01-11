@@ -199,6 +199,9 @@ class MyCaffe():
     
     def model_update(self, nIter):
         self.mycaffe.model_update(nIter)
+        
+    def model_clear_diffs(self):
+        self.mycaffe.model_clear_diffs()
 
     def model_loss(self):
         return self.mycaffe.CurrentLoss
@@ -239,6 +242,98 @@ class MyCaffe():
         outVal = torch.from_numpy(out.reshape((n, c, h1))).to(device)
         return outVal
         
+    def matmul_fwd(self, x1, x2):
+        n = x1.shape[0]
+        c = x1.shape[1] if len(x1.shape) > 1 else 1
+        x1h = x1.shape[2] if len(x1.shape) > 2 else 1
+        x1w = x1.shape[3] if len(x1.shape) > 3 else 1
+        x2h = x2.shape[2] if len(x2.shape) > 2 else 1
+        x2w = x2.shape[3] if len(x2.shape) > 3 else 1
+        rgIn1 = x1.detach().cpu().numpy().flatten()
+        rgIn2 = x2.detach().cpu().numpy().flatten()
+        rgOut = self.mycaffe.matmul_fwd(n, c, x1h, x1w, x2h, x2w, list(rgIn1.data), list(rgIn2.data))
+        out = asNumpyArray(rgOut)
+        outVal = torch.from_numpy(out.reshape((n, c, x1h, x2w))).to(device)
+        return outVal
+    
+    def matmul_bwd_grad_a(self, y, x1, x2):
+        n = y.shape[0]
+        c = y.shape[1] if len(y.shape) > 1 else 1
+        yh = y.shape[2] if len(y.shape) > 2 else 1
+        yw = y.shape[3] if len(y.shape) > 3 else 1
+        x1h = x1.shape[2] if len(x1.shape) > 2 else 1
+        x1w = x1.shape[3] if len(x1.shape) > 3 else 1
+        x2h = x2.shape[2] if len(x2.shape) > 2 else 1
+        x2w = x2.shape[3] if len(x2.shape) > 3 else 1
+        rgIny = y.detach().cpu().numpy().flatten()
+        rgIn1 = x1.detach().cpu().numpy().flatten()
+        rgIn2 = x2.detach().cpu().numpy().flatten()
+        rgOut = self.mycaffe.matmul_bwd_grad_a(n, c, yh, yw, x1h, x1w, x2h, x2w, list(rgIny.data), list(rgIn1.data), list(rgIn2.data))
+        out = asNumpyArray(rgOut)
+        outVal = torch.from_numpy(out.reshape((n, c, x1h, x1w))).to(device)
+        return outVal
+        
+    def matmul_bwd_grad_b(self, y, x1, x2):
+        n = y.shape[0]
+        c = y.shape[1] if len(y.shape) > 1 else 1
+        yh = y.shape[2] if len(y.shape) > 2 else 1
+        yw = y.shape[3] if len(y.shape) > 3 else 1
+        x1h = x1.shape[2] if len(x1.shape) > 2 else 1
+        x1w = x1.shape[3] if len(x1.shape) > 3 else 1
+        x2h = x2.shape[2] if len(x2.shape) > 2 else 1
+        x2w = x2.shape[3] if len(x2.shape) > 3 else 1
+        rgOut = self.mycaffe.matmul_bwd_grad_b();
+        out = asNumpyArray(rgOut)
+        outVal = torch.from_numpy(out.reshape((n, c, x2h, x2w))).to(device)
+        return outVal
+
+    def clone_fwd(self, x):
+        n = x.shape[0]
+        c = x.shape[1] if len(x.shape) > 1 else 1
+        xh = x.shape[2] if len(x.shape) > 2 else 1
+        xw = x.shape[3] if len(x.shape) > 3 else 1
+        rgIn = x.detach().cpu().numpy().flatten()
+        rgOut = self.mycaffe.clone_fwd(n, c, xh, xw, list(rgIn.data))
+        out = asNumpyArray(rgOut)
+        if xw > 1:
+            q = torch.from_numpy(out.reshape((n, c, xh, xw))).to(device)
+        else:
+            q = torch.from_numpy(out.reshape((n, c, xh))).to(device)
+        rgOut = self.mycaffe.clone_fwd(n, c, xh, xw, list(rgIn.data))
+        out = asNumpyArray(rgOut)
+        if xw > 1:
+            k = torch.from_numpy(out.reshape((n, c, xh, xw))).to(device)
+        else:
+            k = torch.from_numpy(out.reshape((n, c, xh))).to(device)
+        rgOut = self.mycaffe.clone_fwd(n, c, xh, xw, list(rgIn.data))
+        out = asNumpyArray(rgOut)
+        if xw > 1:
+            v= torch.from_numpy(out.reshape((n, c, xh, xw))).to(device)
+        else:
+            v = torch.from_numpy(out.reshape((n, c, xh))).to(device)
+        return q,k,v
+    
+    def clone_bwd(self, q,k,v):
+        n = q.shape[0]
+        c = q.shape[1] if len(q.shape) > 1 else 1
+        h = q.shape[2] if len(q.shape) > 2 else 1
+        w = q.shape[3] if len(q.shape) > 3 else 1
+        rgOut = np.zeros((n, c, h, w), dtype=float).flatten()        
+        rgIn = q.detach().cpu().numpy().flatten()
+        rgOut = self.mycaffe.clone_bwd(n, c, h, w, list(rgIn.data), list(rgOut.data))
+        out = asNumpyArray(rgOut)
+        rgIn = k.detach().cpu().numpy().flatten()
+        rgOut = self.mycaffe.clone_bwd(n, c, h, w, list(rgIn.data), list(out.data))
+        out = asNumpyArray(rgOut)
+        rgIn = v.detach().cpu().numpy().flatten()
+        rgOut = self.mycaffe.clone_bwd(n, c, h, w, list(rgIn.data), list(out.data))
+        out = asNumpyArray(rgOut)
+        if w > 1:
+            outVal = torch.from_numpy(out.reshape((n, c, h, w))).to(device)
+        else:
+            outVal = torch.from_numpy(out.reshape((n, c, h))).to(device)
+        return outVal
+
     def lstm_wts(self, tag):
         rgOut = self.mycaffe.lstm_wts(tag)
         out = asNumpyArray(rgOut)

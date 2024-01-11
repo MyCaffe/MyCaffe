@@ -28,13 +28,15 @@ os.chdir(cwd)
 print (os.getcwd())
 
 debug = False
-use_mycaffe = True
+use_mycaffe = False
 use_mycaffe_data = False
 use_mycaffe_model_direct = False
 use_mycaffe_model = True
-lstm_use_mycaffe = True
-linear_use_mycaffe = True
-save_data = True
+lstm_use_mycaffe = False
+linear_use_mycaffe = False
+matmul_use_mycaffe = False
+clone_use_mycaffe = False
+save_data = False
 tag = "tft.all"
 test = False
 path = "all"
@@ -172,7 +174,7 @@ model = None
 opt = None
 
 if use_mycaffe_model_direct == False:
-    model = TemporalFusionTransformer(decoder_only=True,config=OmegaConf.create(configuration), debug=debug, tag=tag, use_mycaffe=use_mycaffe, path=path, lstm_use_mycaffe=lstm_use_mycaffe, linear_use_mycaffe=linear_use_mycaffe, use_mycaffe_model=use_mycaffe_model)
+    model = TemporalFusionTransformer(decoder_only=True,config=OmegaConf.create(configuration), debug=debug, tag=tag, use_mycaffe=use_mycaffe, path=path, lstm_use_mycaffe=lstm_use_mycaffe, linear_use_mycaffe=linear_use_mycaffe, matmul_use_mycaffe=matmul_use_mycaffe, clone_use_mycaffe=clone_use_mycaffe, use_mycaffe_model=use_mycaffe_model)
 
 # initialize the weights of the model
 def weight_init(m):
@@ -250,6 +252,12 @@ def weight_init(m):
 
 if use_mycaffe_model_direct == False:
     model.apply(weight_init)
+
+wtpath = "C:\\Data\\Data\\SS_Projects\\Intelligence\\GitHub\\MyCaffe\\MyCaffe.test\\test_data\\projects\\tft-sharpe\\TFT_Momentum_Pytorch\\TFT_Momentum_Pytorch\\test\\tft.sharpe\\weights\\past_lstm\\"
+if lstm_use_mycaffe == False:
+    torch.save(model.past_lstm.state_dict(), wtpath + "lstm.pth")
+elif use_mycaffe == False and model.past_lstm.lstm1 != None:
+    model.past_lstm.lstm1.load_state_dict(torch.load(wtpath + "lstm.pth"))
 
 # Set the devie to CUDA if available
 is_cuda = torch.cuda.is_available()
@@ -535,6 +543,9 @@ while epoch_idx < max_epochs:
         if save_data:
             save_batch(i, 'tft.sharpe.dbg', batch)
 
+        if use_mycaffe == True or use_mycaffe_model == True:
+            model.model_clear_diffs()
+
         if opt != None:
             opt.zero_grad()
         # process batch
@@ -551,7 +562,8 @@ while epoch_idx < max_epochs:
             # compute gradients
             loss.backward()
 
-            model.save_grad("tft.sharpe.dbg")
+            #if debug:
+            #    model.save_grad("tft.sharpe.dbg")
 
             # gradient clipping
             if configuration['optimization']['max_grad_norm'] > 0:
@@ -563,7 +575,7 @@ while epoch_idx < max_epochs:
             loss_grad = torch.tensor(1.0)
             mycaffe.model_bwd(loss_grad)    
 
-        if use_mycaffe and use_mycaffe_model == False and use_mycaffe_model_direct == False:
+        if use_mycaffe == True or use_mycaffe_model == True:
             model.update(i)
 
         if save_data and model != None:
