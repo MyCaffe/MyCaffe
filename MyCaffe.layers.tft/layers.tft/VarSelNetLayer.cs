@@ -429,24 +429,6 @@ namespace MyCaffe.layers.tft
             // Apply the transposed smx weightings to the processed inputs.
             m_cuda.channel_mulv(m_blobProcessedInputs.count(), m_blobProcessedInputs.num, m_blobProcessedInputs.channels, nInnerNum, m_blobProcessedInputs1.gpu_diff, m_blobSparseWtsSmxT.gpu_data, m_blobProcessedInputs.mutable_gpu_diff);
 
-            // Calculate the SparseWtsT gradient as
-            // sparseWtsT.grad = ProcessedInput.dataT * colTop[0].diff
-            copyShape(m_rgShapeOringal, m_blobProcessedInputs);
-            copyShape(m_rgShape, m_blobProcessedInputs);
-            m_rgShape.Insert(1, 1);
-            m_blobProcessedInputs.Reshape(m_rgShape);
-            m_blobProcessedInputsT.CopyFromAndTransposeHeightWidth(m_blobProcessedInputs);
-            m_blobProcessedInputs.Reshape(m_rgShapeOringal);
-
-            copyShape(m_rgShapeOringal, colTop[0]);
-            copyShape(m_rgShape, colTop[0]);
-            m_rgShape.Insert(1, 1);
-            m_rgShape.Add(1);
-            colTop[0].Reshape(m_rgShape);
-
-            m_blobSparseWtsSmxT.MatMul(m_blobProcessedInputsT, colTop[0], true, false, false, 1, false, true, true);
-            colTop[0].Reshape(m_rgShapeOringal);
-
             // Apply the transposed smx weightings to the processed inputs.
             // GRN is applied ot each transformed input.
             for (int i = 0; i < m_param.varselnet_param.num_inputs; i++)
@@ -465,6 +447,11 @@ namespace MyCaffe.layers.tft
                 // Copy the variable specific data to the GRN input.
                 m_cuda.channel_copy(m_blobGrn1.count(), m_blobGrn1.num, 1, m_param.varselnet_param.num_inputs, m_blobGrn1.channels, i, m_blobBtm.gpu_diff, m_blobGrn1.mutable_gpu_diff, DIR.BWD);
             }
+
+            // Calculate the SparseWtsT gradeints 
+            // sparseWtsT.grad = channel_sum(processed_iputs1 * outputs.grad)
+            m_cuda.mul(m_blobProcessedInputs.count(), m_blobProcessedInputs1.gpu_diff, m_blobProcessedInputs.gpu_data, m_blobProcessedInputs1.mutable_gpu_diff);
+            m_cuda.channel_sum(m_blobProcessedInputs1.count(), m_blobProcessedInputs1.num, m_blobProcessedInputs1.channels, m_blobProcessedInputs1.count(2), m_blobProcessedInputs1.gpu_diff, m_blobSparseWtsSmxT.mutable_gpu_diff, true, DIR.FWD);
 
             // Weigh the processed inputs with the weights viewed as [(num_samples * num_temporal_steps) x 1 x num_inputs]
             // so that the weight given to each variable (for each time-step/observation) multiplies the entire state
