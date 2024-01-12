@@ -530,6 +530,36 @@ class MyCaffe():
         del rgOut
         del out
         return xgrad
+
+    def tanh_fwd(self, tag, x):
+        rgShape = x.shape
+        nN = x.shape[0]
+        nC = x.shape[1]
+        nH = x.shape[2] if len(x.shape) > 2 else 1
+        nW = x.shape[3] if len(x.shape) > 3 else 1
+        rgOut = self.mycaffe.tanh_fwd(tag, nN, nC, nH, nW, list(x.detach().cpu().numpy().flatten().data))        
+        out = asNumpyArray(rgOut)
+        y = torch.from_numpy(out).float()
+        y = y.reshape(rgShape)
+        y = y.to(device)
+        del rgOut
+        del out
+        return y
+    
+    def tanh_bwd(self, tag, y, ygrad):
+        rgShape = y.shape
+        nN = y.shape[0]
+        nC = y.shape[1]
+        nH = y.shape[2] if len(y.shape) > 2 else 1
+        nW = y.shape[3] if len(y.shape) > 3 else 1
+        rgOut = self.mycaffe.tanh_bwd(tag, nN, nC, nH, nW, list(y.detach().cpu().numpy().flatten().data), list(ygrad.detach().cpu().numpy().flatten().data))
+        out = asNumpyArray(rgOut)
+        xgrad = torch.from_numpy(out).float()
+        xgrad = xgrad.reshape(rgShape)
+        xgrad = xgrad.to(device)
+        del rgOut
+        del out
+        return xgrad
     
     def layernorm_fwd(self, tag, x):
         rgShape = x.shape

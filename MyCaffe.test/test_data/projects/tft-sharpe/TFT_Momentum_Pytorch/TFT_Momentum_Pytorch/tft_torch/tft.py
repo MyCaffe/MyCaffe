@@ -568,6 +568,48 @@ class SigmoidFunction(torch.autograd.Function):
         tag = tag_list.pop()
         return mycaffe.sigmoid_bwd(tag, y, grad_output)
 
+class TanhEx(nn.Module):
+    def __init__(self, tag, use_mycaffe=False, debug=False):
+        super(TanhEx, self).__init__()
+        self.tag = tag + ".elu" if tag != None else ""
+        self.debug = debug
+        self.use_mycaffe = use_mycaffe
+        if self.use_mycaffe == False:
+            self.tanh = nn.TanH()
+        
+    def forward(self, x):
+        if self.debug:
+            debug = DebugFunction.apply
+            DebugFunction.trace(x, self.tag + ".x")
+            x = debug(x)
+
+        if self.use_mycaffe:
+            tanh = TanHFunction.apply
+            tag_list.append(self.tag)
+            y = tanh(x)
+        else:
+            y = self.tanh(x)
+            
+        if self.debug:
+            DebugFunction.trace(y, self.tag + ".y")
+            y = debug(y)
+        return y
+    
+class TanHFunction(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x):
+        tag = tag_list[-1]
+        y = mycaffe.tanh_fwd(tag, x)
+        ctx.save_for_backward(y)
+        return y
+    
+    @staticmethod
+    def backward(ctx, grad_output):
+        y, = ctx.saved_tensors
+        tag = tag_list.pop()
+        return mycaffe.tanh_bwd(tag, y, grad_output)
+
+
 class ELUEx(nn.Module):
     def __init__(self, tag, use_mycaffe=False, debug=False):
         super(ELUEx, self).__init__()
@@ -2169,7 +2211,7 @@ class TemporalFusionTransformer(nn.Module):
         # Output layer
         # ============================================================
         self.output_layer = LinearEx(self.state_size, self.num_outputs, use_mycaffe=linear_use_mycaffe, tag="output")
-        self.activation = nn.Tanh()
+        self.activation = TanhEx(tag = "tanh", use_mycaffe=use_mycaffe, debug=debug)
 
         if use_mycaffe_model:
             self.mycaffe_model = MyCaffeModel(self.tag, self.path)

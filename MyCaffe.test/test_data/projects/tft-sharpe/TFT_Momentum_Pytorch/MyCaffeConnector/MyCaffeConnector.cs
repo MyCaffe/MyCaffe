@@ -1844,6 +1844,40 @@ namespace MyCaffeConnector
             return m_blobBtm.mutable_cpu_diff;
         }
 
+        public float[] tanh_fwd(string strTag, int nN, int nC, int nH, int nW, float[] rg)
+        {
+            m_blobBtm.Reshape(nN, nC, nH, nW);
+            m_blobBtm.mutable_cpu_data = rg;
+
+            if (!m_rgLayers.ContainsKey(strTag))
+            {
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.TANH);
+                p.tanh_param.engine = EngineParameter.Engine.DEFAULT;
+                Layer<float> layer1 = Layer<float>.Create(m_mycaffe.Cuda, m_mycaffe.Log, p, null);
+
+                layer1.Setup(m_colBtm, m_colTop);
+                m_rgLayers.Add(strTag, layer1);
+            }
+
+            Layer<float> layer = m_rgLayers[strTag];
+            layer.Forward(m_colBtm, m_colTop);
+
+            return m_blobTop.mutable_cpu_data;
+        }
+
+        public float[] tanh_bwd(string strTag, int nN, int nC, int nH, int nW, float[] rgY, float[] rgYGrad)
+        {
+            m_blobTop.Reshape(nN, nC, nH, nW);
+            m_blobBtm.Reshape(nN, nC, nH, nW);
+            m_blobTop.mutable_cpu_data = rgY;
+            m_blobTop.mutable_cpu_diff = rgYGrad;
+
+            Layer<float> layer = m_rgLayers[strTag];
+            layer.Backward(m_colTop, new List<bool>() { true }, m_colBtm);
+
+            return m_blobBtm.mutable_cpu_diff;
+        }
+
         public float[] innerproduct_wts(string strTag)
         {
             Layer<float> layer = findLayer(LayerParameter.LayerType.INNERPRODUCT, strTag);
