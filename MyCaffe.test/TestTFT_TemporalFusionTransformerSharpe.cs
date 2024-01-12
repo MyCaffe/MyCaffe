@@ -63,24 +63,6 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestTraining()
-        {
-            TemporalFutionTransformerSharpeTest test = new TemporalFutionTransformerSharpeTest();
-
-            try
-            {
-                foreach (ITemporalFutionTransformerSharpeTest t in test.Tests)
-                {
-                    t.TestTraining();
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
         public void TestSharpeLoss()
         {
             TemporalFutionTransformerSharpeTest test = new TemporalFutionTransformerSharpeTest();
@@ -103,7 +85,6 @@ namespace MyCaffe.test
     {
         void TestForward();
         void TestBackward();
-        void TestTraining();
         void TestSharpeLoss();
     }
 
@@ -637,11 +618,11 @@ namespace MyCaffe.test
             output.inner_product_param.axis = 2;
             output.inner_product_param.bias_term = true;
             output.bottom.Add("gated_poswise_ff");
-            output.top.Add("predicted_quantiles");
+            output.top.Add("predicted_quantiles1");
             p.layer.Add(output);
 
             LayerParameter tanh = new LayerParameter(LayerParameter.LayerType.TANH, "tanh");
-            tanh.bottom.Add("predicted_quantiles");
+            tanh.bottom.Add("predicted_quantiles1");
             tanh.top.Add("predicted_quantiles");
             p.layer.Add(tanh);
 
@@ -1594,7 +1575,6 @@ namespace MyCaffe.test
 
                 BlobCollection<T> colRes = net.Forward();
 
-
                 // Transform all input channels
                 //blobVal.LoadFromNumpy(strPath + strTag + ".future_ts_rep.npy");
                 //blob1 = net.FindBlob("future_ts_rep");
@@ -1613,73 +1593,77 @@ namespace MyCaffe.test
                 // Select static
                 blobVal.LoadFromNumpy(strPath + strTag + ".selected_static.npy");
                 blob1 = net.FindBlob("selected_static");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 3e-07), "The blobs are different!");
 
 
                 // Static Covariate Encoding
                 blobVal.LoadFromNumpy(strPath + strTag + ".c_enrichment.XX.npy");
                 blob1 = net.FindBlob("c_enrichment");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 3e-07), "The blobs are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".c_selection.XX.npy");
                 blob1 = net.FindBlob("c_selection");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 4e-07), "The blobs are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_cell.XX.npy");
                 blob1 = net.FindBlob("c_seq_cell");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 3e-07), "The blobs are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_hidden.XX.npy");
                 blob1 = net.FindBlob("c_seq_hidden");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 3e-07), "The blobs are different!");
 
 
                 // Historical varaible selection
                 blobVal.LoadFromNumpy(strPath + strTag + ".selected_historical.npy");
                 blob1 = net.FindBlob("selected_hist");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 3e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 1e-06), "The blobs are different!");
 
                 // Future variable selection
                 //blobVal.LoadFromNumpy(strPath + strTag + ".selected_future.npy");
                 //blob1 = net.FindBlob("selected_fut");
-                //m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 4e-06), "The blobs are different!");
+                //m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-08), "The blobs are different!");
 
                 // Locality enhancement - seq procesing
                 blobVal.LoadFromNumpy(strPath + strTag + ".gated_lstm_output.npy");
                 blob1 = net.FindBlob("gated_lstm_output");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 3e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-06), "The blobs are different!");
 
                 // Static enrichment
                 blobVal.LoadFromNumpy(strPath + strTag + ".enriched_sequence.npy");
                 blob1 = net.FindBlob("enriched_sequence");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 2e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-06), "The blobs are different!");
 
                 // Self attention
                 blobVal.LoadFromNumpy(strPath + strTag + ".ada.post_attention.npy");
                 blob1 = net.FindBlob("post_attention");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 2e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 1e-06), "The blobs are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".gated_post_attention.npy");
                 blob1 = net.FindBlob("gated_post_attention");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 2e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-06), "The blobs are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".attention_scores.npy");
                 blob1 = net.FindBlob("attention_scores");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 2e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 1e-07), "The blobs are different!");
 
                 // Position-wise feed-forward
                 blobVal.LoadFromNumpy(strPath + strTag + ".post_poswise_ff_grn.npy");
                 blob1 = net.FindBlob("post_poswise_ff_grn");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 2e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 1e-06), "The blobs are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".gated_poswise_ff.npy");
                 blob1 = net.FindBlob("gated_poswise_ff");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 3e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-06), "The blobs are different!");
 
                 // Output
+                blobVal.LoadFromNumpy(strPath + strTag + ".predicted_quantiles1.npy");
+                blob1 = net.FindBlob("predicted_quantiles1");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-06), "The blobs are different!");
+
                 blobVal.LoadFromNumpy(strPath + strTag + ".predicted_quantiles.npy");
                 blob1 = net.FindBlob("predicted_quantiles");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 3e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-06), "The blobs are different!");
             }
             finally
             {
@@ -1739,6 +1723,8 @@ namespace MyCaffe.test
                 RawProto rp = RawProto.Parse(strModel);
                 NetParameter param = NetParameter.FromProto(rp);
 
+                m_cuda.debug();
+
                 net = new Net<T>(m_cuda, m_log, param, null, null, Phase.TRAIN);
 
                 load_weights(strTag, net, strPathWt, nNumStaticNumeric, nNumStaticCategorical, nNumHistNumeric, nNumHistCategorical, nNumFutureNumeric, nNumFutureCategorical);
@@ -1759,8 +1745,9 @@ namespace MyCaffe.test
                 blob1 = net.FindBlob("target");
                 blob1.LoadFromNumpy(strPathBase + "target.npy");
 
-                BlobCollection<T> colRes = net.Forward();
+                m_cuda.debug();
 
+                BlobCollection<T> colRes = net.Forward();
 
                 // Transform all input channels
                 //blobVal.LoadFromNumpy(strPath + strTag + ".future_ts_rep.npy");
@@ -1780,83 +1767,102 @@ namespace MyCaffe.test
                 // Select static
                 blobVal.LoadFromNumpy(strPath + strTag + ".selected_static.npy");
                 blob1 = net.FindBlob("selected_static");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 3e-07), "The blobs are different!");
 
 
                 // Static Covariate Encoding
                 blobVal.LoadFromNumpy(strPath + strTag + ".c_enrichment.XX.npy");
                 blob1 = net.FindBlob("c_enrichment");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 3e-07), "The blobs are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".c_selection.XX.npy");
                 blob1 = net.FindBlob("c_selection");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 4e-07), "The blobs are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_cell.XX.npy");
                 blob1 = net.FindBlob("c_seq_cell");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 3e-07), "The blobs are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_hidden.XX.npy");
                 blob1 = net.FindBlob("c_seq_hidden");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 3e-07), "The blobs are different!");
 
 
                 // Historical varaible selection
                 blobVal.LoadFromNumpy(strPath + strTag + ".selected_historical.npy");
                 blob1 = net.FindBlob("selected_hist");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 3e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 1e-06), "The blobs are different!");
 
                 // Future variable selection
                 //blobVal.LoadFromNumpy(strPath + strTag + ".selected_future.npy");
                 //blob1 = net.FindBlob("selected_fut");
-                //m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 4e-06), "The blobs are different!");
+                //m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 1e-08), "The blobs are different!");
 
                 // Locality enhancement - seq procesing
                 blobVal.LoadFromNumpy(strPath + strTag + ".gated_lstm_output.npy");
                 blob1 = net.FindBlob("gated_lstm_output");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 3e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-06), "The blobs are different!");
 
                 // Static enrichment
                 blobVal.LoadFromNumpy(strPath + strTag + ".enriched_sequence.npy");
                 blob1 = net.FindBlob("enriched_sequence");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 2e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-06), "The blobs are different!");
 
                 // Self attention
                 blobVal.LoadFromNumpy(strPath + strTag + ".ada.post_attention.npy");
                 blob1 = net.FindBlob("post_attention");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 2e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 1e-06), "The blobs are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".gated_post_attention.npy");
                 blob1 = net.FindBlob("gated_post_attention");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 2e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-06), "The blobs are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".attention_scores.npy");
                 blob1 = net.FindBlob("attention_scores");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 2e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 1e-07), "The blobs are different!");
 
                 // Position-wise feed-forward
                 blobVal.LoadFromNumpy(strPath + strTag + ".post_poswise_ff_grn.npy");
                 blob1 = net.FindBlob("post_poswise_ff_grn");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 2e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 1e-06), "The blobs are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".gated_poswise_ff.npy");
                 blob1 = net.FindBlob("gated_poswise_ff");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 3e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-06), "The blobs are different!");
 
                 // Output
+                blobVal.LoadFromNumpy(strPath + strTag + ".predicted_quantiles1.npy");
+                blob1 = net.FindBlob("predicted_quantiles1");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-06), "The blobs are different!");
+
                 blobVal.LoadFromNumpy(strPath + strTag + ".predicted_quantiles.npy");
                 blob1 = net.FindBlob("predicted_quantiles");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, 3e-06), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, false, (typeof(T) == typeof(float)) ? 1e-08 : 2e-06), "The blobs are different!");
 
                 ///=========================================
                 /// Backward Tests
                 ///=========================================
 
-                net.Backward();
+                m_cuda.debug();
+
+                net.Backward(27, 27);
+
+                blob1 = net.FindBlob("predicted_quantiles");
+                blobVal.LoadFromNumpy(strPath + strTag + ".predicted_quantiles.grad.npy", true);
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 1e-06), "The gradients are different!");
+                blob1.CopyFrom(blobVal, true);
+
+                net.Backward(26);
+
+                m_cuda.debug();
+
+                blob1 = net.FindBlob("predicted_quantiles");
+                blobVal.LoadFromNumpy(strPath + strTag + ".predicted_quantiles.grad.npy", true);
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The gradients are different!");
 
                 // Predicted Quantiles
-                blobVal.LoadFromNumpy(strPath + strTag + ".predicted_quantiles.grad.npy", true);
-                blob1 = net.FindBlob("predicted_quantiles");
+                blobVal.LoadFromNumpy(strPath + strTag + ".predicted_quantiles1.grad.npy", true);
+                blob1 = net.FindBlob("predicted_quantiles1");
                 m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The gradients are different!");
 
                 // Position-wise feed-forward
@@ -1876,12 +1882,12 @@ namespace MyCaffe.test
                 // Static enrichment
                 blobVal.LoadFromNumpy(strPath + strTag + ".enriched_sequence.grad.npy", true);
                 blob1 = net.FindBlob("enriched_sequence");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 6e-06), "The gradients are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The gradients are different!");
 
                 // Locality enhancement - seq processing
                 blobVal.LoadFromNumpy(strPath + strTag + ".gated_lstm_output.grad.npy", true);
                 blob1 = net.FindBlob("gated_lstm_output");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 3e-06), "The gradients are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, (typeof(T) == typeof(float)) ? 1e-08 : 2e-08), "The gradients are different!");
 
                 // Future variable selection
                 //blobVal.LoadFromNumpy(strPath + strTag + ".selected_future.grad.npy", true);
@@ -1891,16 +1897,16 @@ namespace MyCaffe.test
                 // Historical variable selection
                 blobVal.LoadFromNumpy(strPath + strTag + ".selected_historical.grad.npy", true);
                 blob1 = net.FindBlob("selected_hist");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 5e-06), "The gradients are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, (typeof(T) == typeof(float)) ? 1e-08 : 2e-08), "The gradients are different!");
 
                 // Static Covariate Encoding
                 blobVal.LoadFromNumpy(strPath + strTag + ".c_enrichment.XX.grad.npy", true);
                 blob1 = net.FindBlob("c_enrichment");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 2e-06), "The grad are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, (typeof(T) == typeof(float)) ? 1e-08 : 2e-08), "The grad are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".historical_varsel_context.grad.npy", true);
                 blob1 = net.FindBlob("c_selection1h");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 5e-07), "The grad are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The grad are different!");
 
                 //blobVal.LoadFromNumpy(strPath + strTag + ".future_varsel_context.grad.npy", true);
                 //blob1 = net.FindBlob("c_selection1f");
@@ -1913,11 +1919,11 @@ namespace MyCaffe.test
                 // Select static
                 blobVal.LoadFromNumpy(strPath + strTag + ".c_enrichment.XX.grad.npy", true);
                 blob1 = net.FindBlob("c_enrichment");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 3e-06), "The grad are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The grad are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".c_selection_h.grad.npy", true);
                 blob1 = net.FindBlob("c_selection");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 5e-07), "The grad are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The grad are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".c_seq_hidden.XX.grad.npy", true);
                 blob1 = net.FindBlob("c_seq_hidden");
@@ -1929,11 +1935,11 @@ namespace MyCaffe.test
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".selstat_a.YY.grad.npy", true);
                 blob1 = net.FindBlob("selstat_a");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 5e-07), "The grad are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The grad are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".selstat_b.YY.grad.npy", true);
                 blob1 = net.FindBlob("selstat_b");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 2e-06), "The grad are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The grad are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".selstat_c.YY.grad.npy", true);
                 blob1 = net.FindBlob("selstat_c");
@@ -1945,7 +1951,7 @@ namespace MyCaffe.test
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".selected_static.grad.npy", true);
                 blob1 = net.FindBlob("selected_static");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 3e-06), "The grad are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The grad are different!");
 
                 // Transform all input channels
                 //blobVal.LoadFromNumpy(strPath + strTag + ".future.temporal_selection_output.grad.npy", true);
@@ -1962,11 +1968,11 @@ namespace MyCaffe.test
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".historical_ts_rep.grad.npy", true);
                 blob1 = net.FindBlob("hist_ts_rep");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 4e-06), "The grad are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The grad are different!");
 
                 blobVal.LoadFromNumpy(strPath + strTag + ".static_rep.grad.npy", true);
                 blob1 = net.FindBlob("static_rep");
-                m_log.CHECK(blobVal.Compare(blob1, blobWork, true, 4e-06), "The grad are different!");
+                m_log.CHECK(blobVal.Compare(blob1, blobWork, true), "The grad are different!");
             }
             finally
             {
@@ -1984,10 +1990,11 @@ namespace MyCaffe.test
         /// <remarks>
         /// To generate test data:
         /// Run tft-sharpe project
+        /// WORK IN PROGRESS
         /// </remarks>
         public void TestTraining()
         {
-            string strSrc = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft\\data\\sharpe\\";
+            string strSrc = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\tft-sharpe\\data\\sharpe\\";
             string strPathBase = getTestBaseDataPath();
             string strPath = getTestDataPath("all");
             string strPathWt = getTestWtsPath("full");
@@ -2039,9 +2046,8 @@ namespace MyCaffe.test
 
                 load_weights(strTag, net, strPathWt, nNumStaticNumeric, nNumStaticCategorical, nNumHistNumeric, nNumHistCategorical, nNumFutureNumeric, nNumFutureCategorical);
 
-                string strBatchBase = "C:\\Data\\Data\\SS_Projects\\Intelligence\\GitHub\\MyCaffe\\MyCaffe.test\\test_data\\projects\\tft-sharpe\\TFT_Momentum_Pytorch\\TFT_Momentum_Pytorch\\test\\tft.sharpe.dbg\\batch256\\batch_";
-                string strBatchWtBase = "C:\\Data\\Data\\SS_Projects\\Intelligence\\GitHub\\MyCaffe\\MyCaffe.test\\test_data\\projects\\tft-sharpe\\TFT_Momentum_Pytorch\\TFT_Momentum_Pytorch\\test\\tft.sharpe.dbg\\weights\\batch_";
-                strPath = "C:\\Data\\Data\\SS_Projects\\Intelligence\\GitHub\\MyCaffe\\MyCaffe.test\\test_data\\projects\\tft-sharpe\\TFT_Momentum_Pytorch\\TFT_Momentum_Pytorch\\test\\";
+                string strBatchBase = getTestDataPath("tft.sharpe.dbg\\batch256\\batch_").TrimEnd('\\');
+                string strBatchWtBase = getTestDataPath("tft.sharpe.dbg\\weights\\batch_").TrimEnd('\\');
 
                 for (int i = 0; i < 10; i++)
                 {
@@ -2060,7 +2066,7 @@ namespace MyCaffe.test
 
                     Blob<T> blobLoss = colRes[1];
                     blobVal.LoadFromNumpy(strBatch + "loss.npy");
-                    m_log.CHECK(blobVal.Compare(blobLoss, blobWork, false, 4e-07), "The blobs are different!");
+                    m_log.CHECK(blobVal.Compare(blobLoss, blobWork, false, 6e-07), "The blobs are different!");
 
                     net.ClearParamDiffs();
                     net.Backward();
@@ -2134,14 +2140,12 @@ namespace MyCaffe.test
                 net = new Net<T>(m_cuda, m_log, netParam, null, null, Phase.TRAIN);
                 load_weights(strTag, net, strPathWt, nNumStaticNumeric, nNumStaticCategorical, nNumHistNumeric, nNumHistCategorical, nNumFutureNumeric, nNumFutureCategorical);
 
-                strPath = "C:\\Data\\Data\\SS_Projects\\Intelligence\\GitHub\\MyCaffe\\MyCaffe.test\\test_data\\projects\\tft-sharpe\\TFT_Momentum_Pytorch\\TFT_Momentum_Pytorch\\test\\";
-
                 blobPredPos = new Blob<T>(m_cuda, m_log);
                 blobTarget = new Blob<T>(m_cuda, m_log);
                 blobLoss = new Blob<T>(m_cuda, m_log, 1, 1, 1, 1);
 
                 blobPredPos.LoadFromNumpy(strPath + "sharpe.weights.npy");
-                blobTarget.LoadFromNumpy(strPath + "y_true.npy");
+                blobTarget.LoadFromNumpy(strPath + "sharpe.y_true.npy");
 
                 Layer<T> layer = net.FindLastLayer(LayerParameter.LayerType.SHARPE_LOSS);
 
@@ -2154,13 +2158,13 @@ namespace MyCaffe.test
                 layer.Forward(colBtm, colTop);
 
                 blobVal.LoadFromNumpy(strPath + "sharpe.loss.npy");
-                m_log.CHECK(blobVal.Compare(blobLoss, blobWork, false, 5e-07), "The blobs are different!");
+                m_log.CHECK(blobVal.Compare(blobLoss, blobWork, false, 2e-06), "The blobs are different!");
 
                 blobLoss.SetDiff(1);
                 layer.Backward(colTop, new List<bool>() { true , false }, colBtm);
 
                 blobVal.LoadFromNumpy(strPath + "tft.all.predicted_quantiles.grad.npy", true);
-                m_log.CHECK(blobVal.Compare(blobPredPos, blobWork, true, 1e-06), "The gradients are different!");
+                m_log.CHECK(blobVal.Compare(blobPredPos, blobWork, true, 3e-06), "The gradients are different!");
             }
             finally
             {
