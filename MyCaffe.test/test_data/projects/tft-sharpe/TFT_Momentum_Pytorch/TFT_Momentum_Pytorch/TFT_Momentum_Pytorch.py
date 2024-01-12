@@ -27,15 +27,15 @@ torch.cuda.seed_all()
 os.chdir(cwd)
 print (os.getcwd())
 
-debug = False
-use_mycaffe = False
+debug = True
+use_mycaffe = True
 use_mycaffe_data = False
 use_mycaffe_model_direct = False
-use_mycaffe_model = True
-lstm_use_mycaffe = False
-linear_use_mycaffe = False
-matmul_use_mycaffe = False
-clone_use_mycaffe = False
+use_mycaffe_model = False
+lstm_use_mycaffe = True
+linear_use_mycaffe = True
+matmul_use_mycaffe = True
+clone_use_mycaffe = True
 save_data = False
 tag = "tft.all"
 test = False
@@ -562,8 +562,8 @@ while epoch_idx < max_epochs:
             # compute gradients
             loss.backward()
 
-            #if debug:
-            #    model.save_grad("tft.sharpe.dbg")
+            if debug:
+                model.save_grad("tft.sharpe.dbg")
 
             # gradient clipping
             if configuration['optimization']['max_grad_norm'] > 0:
