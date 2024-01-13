@@ -70,7 +70,7 @@ namespace MyCaffe.layers.lnn
             if (m_nNumLayers < 1)
                 m_nNumLayers = 1;
 
-            LayerParameter concat = new LayerParameter(LayerParameter.LayerType.CONCAT, "concat");
+            LayerParameter concat = new LayerParameter(LayerParameter.LayerType.CONCAT, m_param.name + ".concat", m_phase);
             concat.concat_param.axis = 1;
             m_cat = Layer<T>.Create(m_cuda, m_log, convertLayerParam(concat, p), null);
 
@@ -106,7 +106,7 @@ namespace MyCaffe.layers.lnn
 
             for (int i = 0; i < m_nNumLayers; i++)
             {
-                LayerParameter ip = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "bb_" + i.ToString());
+                LayerParameter ip = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".bb_" + i.ToString(), m_phase);
                 ip.inner_product_param.num_output = (uint)m_nNumUnits;
                 ip.inner_product_param.bias_term = true;
                 ip.inner_product_param.weight_filler = new FillerParameter("xavier", 0.0, 0.01);
@@ -117,23 +117,23 @@ namespace MyCaffe.layers.lnn
                 switch (m_param.cfc_unit_param.backbone_activation)
                 {
                     case CfcUnitParameter.ACTIVATION.SILU:
-                        act = new LayerParameter(LayerParameter.LayerType.SILU, "bb_act_" + i.ToString());
+                        act = new LayerParameter(LayerParameter.LayerType.SILU, m_param.name + ".bb_act_" + i.ToString(), m_phase);
                         break;
 
                     case CfcUnitParameter.ACTIVATION.RELU:
-                        act = new LayerParameter(LayerParameter.LayerType.RELU, "bb_act_" + i.ToString());
+                        act = new LayerParameter(LayerParameter.LayerType.RELU, m_param.name + ".bb_act_" + i.ToString(), m_phase);
                         break;
 
                     case CfcUnitParameter.ACTIVATION.TANH:
-                        act = new LayerParameter(LayerParameter.LayerType.TANH, "bb_act_" + i.ToString());
+                        act = new LayerParameter(LayerParameter.LayerType.TANH, m_param.name + ".bb_act_" + i.ToString(), m_phase);
                         break;
 
                     case CfcUnitParameter.ACTIVATION.GELU:
-                        act = new LayerParameter(LayerParameter.LayerType.GELU, "bb_act_" + i.ToString());
+                        act = new LayerParameter(LayerParameter.LayerType.GELU, m_param.name + ".bb_act_" + i.ToString(), m_phase);
                         break;
 
                     case CfcUnitParameter.ACTIVATION.LECUN:
-                        act = new LayerParameter(LayerParameter.LayerType.LECUN, "bb_act_" + i.ToString());
+                        act = new LayerParameter(LayerParameter.LayerType.LECUN, m_param.name + ".bb_act_" + i.ToString(), m_phase);
                         break;
 
                     default:
@@ -144,7 +144,7 @@ namespace MyCaffe.layers.lnn
 
                 if (i > 0 && m_rgDropoutLayers != null)
                 {
-                    LayerParameter drop = new LayerParameter(LayerParameter.LayerType.DROPOUT, "bb_drop_" + i.ToString());
+                    LayerParameter drop = new LayerParameter(LayerParameter.LayerType.DROPOUT, m_param.name + ".bb_drop_" + i.ToString(), m_phase);
                     drop.dropout_param.dropout_ratio = m_param.cfc_unit_param.backbone_dropout_ratio;
 
                     m_rgDropoutLayers[i] = Layer<T>.Create(m_cuda, m_log, convertLayerParam(drop, p), null);
@@ -155,7 +155,7 @@ namespace MyCaffe.layers.lnn
             m_blobX.Name = "x";
 
             // FF1 Layer
-            LayerParameter ff1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "ff1");
+            LayerParameter ff1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".ff1", m_phase);
             ff1.inner_product_param.num_output = (uint)m_param.cfc_unit_param.hidden_size;
             ff1.inner_product_param.bias_term = true;
             ff1.inner_product_param.weight_filler = new FillerParameter("xavier", 0.0, 0.01);
@@ -166,11 +166,11 @@ namespace MyCaffe.layers.lnn
             m_blobFF1.Name = "ff1";
 
             // Tanh Layer
-            LayerParameter tanh = new LayerParameter(LayerParameter.LayerType.TANH, "tanh");
+            LayerParameter tanh = new LayerParameter(LayerParameter.LayerType.TANH, m_param.name + ".tanh", m_phase);
             m_tanh = Layer<T>.Create(m_cuda, m_log, convertLayerParam(tanh, p), null);
 
             // FF2 Layer
-            LayerParameter ff2 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "ff2");
+            LayerParameter ff2 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".ff2", m_phase);
             ff2.inner_product_param.num_output = (uint)m_param.cfc_unit_param.hidden_size;
             ff2.inner_product_param.bias_term = true;
             ff2.inner_product_param.weight_filler = new FillerParameter("xavier", 0.0, 0.01);
@@ -181,7 +181,7 @@ namespace MyCaffe.layers.lnn
             m_blobFF2.Name = "ff2";
 
             // Time A Layer
-            LayerParameter timeA = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "time_a");
+            LayerParameter timeA = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".time_a", m_phase);
             timeA.inner_product_param.num_output = (uint)m_param.cfc_unit_param.hidden_size;
             timeA.inner_product_param.bias_term = true;
             timeA.inner_product_param.weight_filler = new FillerParameter("xavier", 0.0, 0.01);
@@ -192,7 +192,7 @@ namespace MyCaffe.layers.lnn
             m_blobTimeA.Name = "time_a";
 
             // Time B Layer
-            LayerParameter timeB = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "time_b");
+            LayerParameter timeB = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".time_b", m_phase);
             timeB.inner_product_param.num_output = (uint)m_param.cfc_unit_param.hidden_size;
             timeB.inner_product_param.bias_term = true;
             timeB.inner_product_param.weight_filler = new FillerParameter("xavier", 0.0, 0.01);
@@ -203,7 +203,7 @@ namespace MyCaffe.layers.lnn
             m_blobTimeB.Name = "time_b";
 
             // Sigmoid Layer
-            LayerParameter sigmoid = new LayerParameter(LayerParameter.LayerType.SIGMOID, "sigmoid");
+            LayerParameter sigmoid = new LayerParameter(LayerParameter.LayerType.SIGMOID, m_param.name + ".sigmoid", m_phase);
             m_sigmoid = Layer<T>.Create(m_cuda, m_log, convertLayerParam(sigmoid, p), null);
 
             // T-Interp

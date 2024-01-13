@@ -103,7 +103,7 @@ namespace MyCaffe.layers.lnn
 
             m_blobOutputSequence = new Blob<T>(m_cuda, m_log);
 
-            LayerParameter cat = new LayerParameter(LayerParameter.LayerType.CONCAT);
+            LayerParameter cat = new LayerParameter(LayerParameter.LayerType.CONCAT, m_param.name + ".concat", m_phase);
             cat.concat_param.axis = 1;
             m_cat = Layer<T>.Create(m_cuda, m_log, convertLayerParam(cat, p), null);
 
@@ -122,7 +122,7 @@ namespace MyCaffe.layers.lnn
 
             m_rnn_cell = Layer<T>.Create(m_cuda, m_log, convertLayerParam(rnn, p), null);
 
-            LayerParameter fc = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "fc");
+            LayerParameter fc = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".fc", m_phase);
             fc.inner_product_param.num_output = (uint)m_param.cfc_param.output_features;
             fc.inner_product_param.bias_term = true;
             fc.inner_product_param.weight_filler = new FillerParameter("xavier");
