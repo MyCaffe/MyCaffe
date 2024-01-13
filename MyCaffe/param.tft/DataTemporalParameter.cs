@@ -43,6 +43,7 @@ namespace MyCaffe.param.tft
         string m_strDebugOutputPath = null;
         TARGET_SOURCE m_targetSource = TARGET_SOURCE.FUTURE;
         int m_nValueStartIndexOverride = -1;
+        int m_nValueStepSize = 1;
 
         /// <summary>
         /// Defines the target source.
@@ -351,11 +352,21 @@ namespace MyCaffe.param.tft
         /// <summary>
         /// Optionally, specifies the start index used to collect value items (default = -1 to ignore).
         /// </summary>
-        [Description]
+        [Description("Optionally, specifies the start index used to collect value items (default = -1 to ignore).")]
         public int value_start_index_override
         {
             get { return m_nValueStartIndexOverride; }
             set { m_nValueStartIndexOverride = value; }
+        }
+
+        /// <summary>
+        /// Optionally, specifies the step size used to step the value index when using NONE, non shuffled selection type (default = 1).  Note, this setting only applies when using 'enable_column_major_ordering' = True.
+        /// </summary>
+        [Description("Optionally, specifies the step size used to step the value index when using NONE, non shuffled selection type (default = 1).  Note, this setting only applies when using 'enable_column_major_ordering' = True.")]
+        public int value_step_size
+        {
+            get { return m_nValueStepSize; }
+            set { m_nValueStepSize = value; }
         }
 
         /** @copydoc LayerParameterBase::Load */
@@ -403,6 +414,7 @@ namespace MyCaffe.param.tft
             m_strDebugOutputPath = p.debug_output_path;
             m_targetSource = p.target_source;
             m_nValueStartIndexOverride = p.value_start_index_override;
+            m_nValueStepSize = p.value_step_size;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -448,6 +460,7 @@ namespace MyCaffe.param.tft
             rgChildren.Add("debug_output_path", debug_output_path);
             rgChildren.Add("target_source", target_source.ToString());
             rgChildren.Add("value_start_index_override", value_start_index_override.ToString());
+            rgChildren.Add("value_step_size", value_step_size.ToString());
 
             if (seed.HasValue)
                 rgChildren.Add("seed", seed.Value.ToString());
@@ -534,6 +547,9 @@ namespace MyCaffe.param.tft
 
             if ((strVal = rp.FindValue("value_start_index_override")) != null)
                 p.value_start_index_override = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("value_step_size")) != null)
+                p.value_step_size = int.Parse(strVal);
 
             if ((strVal = rp.FindValue("forced_phase")) != null)
             {
