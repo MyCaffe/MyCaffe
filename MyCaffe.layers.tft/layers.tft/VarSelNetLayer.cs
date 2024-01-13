@@ -172,7 +172,7 @@ namespace MyCaffe.layers.tft
             // possibly provided with context information.
             if (m_grnFlatten == null)
             {
-                LayerParameter p = new LayerParameter(LayerParameter.LayerType.GRN, m_param.name + ".flat");
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.GRN, m_param.name + ".flat", m_phase);
                 p.grn_param.axis = m_param.varselnet_param.axis;
                 p.grn_param.batch_first = m_param.varselnet_param.batch_first;
                 p.grn_param.bias_filler = m_param.varselnet_param.bias_filler;
@@ -193,7 +193,7 @@ namespace MyCaffe.layers.tft
             // Activation for transforming the GRN output to weights.
             if (m_softmax == null)
             {
-                LayerParameter p = new LayerParameter(LayerParameter.LayerType.SOFTMAX, m_param.name + ".smx");
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.SOFTMAX, m_param.name + ".smx", m_phase);
                 p.softmax_param.axis = m_param.varselnet_param.axis;
                 p.softmax_param.engine = EngineParameter.Engine.DEFAULT;
                 m_softmax = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
@@ -210,7 +210,7 @@ namespace MyCaffe.layers.tft
             // Setup transpose applied to smx.
             if (m_transpose == null)
             {
-                LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSPOSE, m_param.name + ".trfm");
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRANSPOSE, m_param.name + ".trfm", m_phase);
                 p.transpose_param.dim[1] = 2;
                 p.transpose_param.dim[2] = 1;
                 m_transpose = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
@@ -229,7 +229,7 @@ namespace MyCaffe.layers.tft
             {
                 for (int i = 0; i < m_param.varselnet_param.num_inputs; i++)
                 {
-                    LayerParameter p = new LayerParameter(LayerParameter.LayerType.GRN, m_param.name + ".grn" + i.ToString());
+                    LayerParameter p = new LayerParameter(LayerParameter.LayerType.GRN, m_param.name + ".grn" + i.ToString(), m_phase);
                     p.grn_param.axis = m_param.varselnet_param.axis;
                     p.grn_param.batch_first = m_param.varselnet_param.batch_first;
                     p.grn_param.bias_filler = m_param.varselnet_param.bias_filler;

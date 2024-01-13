@@ -28,6 +28,7 @@ namespace MyCaffe.layers.tft
         Blob<T> m_blobStdevCapturedReturns;
         Blob<T> m_blobCapturedReturnsSum;
         T m_tLarge;
+        List<double> m_rgValues = new List<double>();
 
         /// <summary>
         /// The constructor.
@@ -133,6 +134,7 @@ namespace MyCaffe.layers.tft
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            double dfVal = 0;
             int nN = colBottom[0].num;
             int nC = colBottom[0].channels;
 
@@ -147,7 +149,7 @@ namespace MyCaffe.layers.tft
                 double dfReturns = m_blobCapturedReturns.sum();
                 dfReturns *= dfAnnualized;
 
-                colTop[0].SetData(dfReturns, 0);
+                dfVal = dfReturns;
             }
             else
             {
@@ -160,8 +162,18 @@ namespace MyCaffe.layers.tft
                 double dfAnnualized = Math.Sqrt(252.0 / nC);
                 double dfSharpe = dfSum / dfStdev;
                 dfSharpe *= dfAnnualized;
-                colTop[0].SetData(dfSharpe, 0);
+
+                dfVal = dfSharpe;
             }
+
+            m_rgValues.Add(dfVal);
+            while (m_rgValues.Count > m_param.sharpe_accuracy_param.averaging_periods)
+            {
+                m_rgValues.RemoveAt(0);
+            }
+
+            double dfAveVal = m_rgValues.Average();
+            colTop[0].SetData(dfAveVal, 0);
         }
 
         /// @brief Not implemented -- SharpeAccuracyLayer cannot be used as a loss.

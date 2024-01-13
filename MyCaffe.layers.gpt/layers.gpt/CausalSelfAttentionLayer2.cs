@@ -38,7 +38,7 @@ namespace MyCaffe.layers.gpt
         {
             m_type = LayerParameter.LayerType.CAUSAL_SELF_ATTENTION;
 
-            LayerParameter p1 = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION);
+            LayerParameter p1 = new LayerParameter(LayerParameter.LayerType.MULTIHEAD_ATTENTION, m_param.name + ".mh", m_phase);
             p1.multihead_attention_param.heads = p.causal_self_attention_param.heads;
             p1.multihead_attention_param.embed = p.causal_self_attention_param.embed;
             p1.multihead_attention_param.block_size = p.causal_self_attention_param.block_size;

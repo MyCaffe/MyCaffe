@@ -119,7 +119,7 @@ namespace MyCaffe.layers.tft
 
             if (m_ip1Layer == null)
             {
-                LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".fc1");
+                LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".fc1", m_phase);
                 ip1.inner_product_param.num_output = (uint)m_param.glu_param.input_dim;
                 ip1.inner_product_param.axis = m_param.glu_param.axis;
                 ip1.inner_product_param.bias_term = m_param.glu_param.bias_term;
@@ -139,7 +139,7 @@ namespace MyCaffe.layers.tft
             {
                 if (m_param.glu_param.modulation == param.tft.GluParameter.MODULATION.SIGMOID)
                 {
-                    LayerParameter mod = new LayerParameter(LayerParameter.LayerType.SIGMOID, m_param.name + ".mod");
+                    LayerParameter mod = new LayerParameter(LayerParameter.LayerType.SIGMOID, m_param.name + ".mod", m_phase);
                     mod.sigmoid_param.engine = EngineParameter.Engine.DEFAULT;
 
                     m_modLayer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(mod, m_param), null);
@@ -155,7 +155,7 @@ namespace MyCaffe.layers.tft
 
             if (m_ip2Layer == null)
             {
-                LayerParameter ip2 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".fc2");
+                LayerParameter ip2 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".fc2", m_phase);
                 ip2.inner_product_param.num_output = (uint)m_param.glu_param.input_dim;
                 ip2.inner_product_param.axis = m_param.glu_param.axis;
                 ip2.inner_product_param.bias_term = m_param.glu_param.bias_term;

@@ -160,7 +160,7 @@ namespace MyCaffe.layers.tft
             {
                 if (m_ipSkipLayer == null)
                 {
-                    LayerParameter ip = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".skip");
+                    LayerParameter ip = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".skip", m_phase);
                     ip.inner_product_param.num_output = (uint)m_param.grn_param.output_dim;
                     ip.inner_product_param.axis = m_param.grn_param.axis;
                     ip.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
@@ -176,7 +176,7 @@ namespace MyCaffe.layers.tft
             // Create the linear layer for projecting the primary input (across time if necessary)
             if (m_ipFc1 == null)
             {
-                LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".fc1");
+                LayerParameter ip1 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".fc1", m_phase);
                 ip1.inner_product_param.num_output = (uint)m_param.grn_param.hidden_dim;
                 ip1.inner_product_param.axis = m_param.grn_param.axis;
                 ip1.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
@@ -194,7 +194,7 @@ namespace MyCaffe.layers.tft
             {
                 if (m_ipContext == null)
                 {
-                    LayerParameter ip = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".context");
+                    LayerParameter ip = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".context", m_phase);
                     ip.inner_product_param.num_output = (uint)m_param.grn_param.hidden_dim;
                     ip.inner_product_param.axis = m_param.grn_param.axis;
                     ip.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
@@ -219,12 +219,12 @@ namespace MyCaffe.layers.tft
             {
                 if (m_param.grn_param.activation == param.tft.GrnParameter.ACTIVATION.RELU)
                 {
-                    LayerParameter act = new LayerParameter(LayerParameter.LayerType.RELU, m_param.name + ".act");
+                    LayerParameter act = new LayerParameter(LayerParameter.LayerType.RELU, m_param.name + ".act", m_phase);
                     m_act = Layer<T>.Create(m_cuda, m_log, convertLayerParam(act, m_param), null);
                 }
                 else
                 {
-                    LayerParameter act = new LayerParameter(LayerParameter.LayerType.ELU, m_param.name + ".act");
+                    LayerParameter act = new LayerParameter(LayerParameter.LayerType.ELU, m_param.name + ".act", m_phase);
                     act.elu_param.engine = EngineParameter.Engine.CAFFE;
                     act.elu_param.alpha = 1.0;
                     m_act = Layer<T>.Create(m_cuda, m_log, convertLayerParam(act, m_param), null);
@@ -241,7 +241,7 @@ namespace MyCaffe.layers.tft
             // Create the linear layer for projecting top of the activation function
             if (m_ipFc2 == null)
             {
-                LayerParameter ip2 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".fc2");
+                LayerParameter ip2 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".fc2", m_phase);
                 ip2.inner_product_param.num_output = (uint)m_param.grn_param.output_dim;
                 ip2.inner_product_param.axis = m_param.grn_param.axis;
                 ip2.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
@@ -261,7 +261,7 @@ namespace MyCaffe.layers.tft
             {
                 if (m_dropout == null)
                 {
-                    LayerParameter drop = new LayerParameter(LayerParameter.LayerType.DROPOUT, m_param.name + ".drop");
+                    LayerParameter drop = new LayerParameter(LayerParameter.LayerType.DROPOUT, m_param.name + ".drop", m_phase);
                     drop.dropout_param.dropout_ratio = m_param.grn_param.dropout_ratio;
                     m_dropout = Layer<T>.Create(m_cuda, m_log, convertLayerParam(drop, m_param), null);
 
@@ -272,7 +272,7 @@ namespace MyCaffe.layers.tft
 
             if (m_gate == null)
             {
-                LayerParameter gate = new LayerParameter(LayerParameter.LayerType.GLU, m_param.name + ".gate");
+                LayerParameter gate = new LayerParameter(LayerParameter.LayerType.GLU, m_param.name + ".gate", m_phase);
                 gate.glu_param.input_dim = m_param.grn_param.output_dim;
                 gate.glu_param.axis = m_param.grn_param.axis;
                 gate.glu_param.weight_filler = m_param.grn_param.weight_filler;
@@ -286,7 +286,7 @@ namespace MyCaffe.layers.tft
 
             if (m_layerNorm == null)
             {
-                LayerParameter layerNorm = new LayerParameter(LayerParameter.LayerType.LAYERNORM, m_param.name + ".layernorm");
+                LayerParameter layerNorm = new LayerParameter(LayerParameter.LayerType.LAYERNORM, m_param.name + ".layernorm", m_phase);
                 layerNorm.layer_norm_param.epsilon = 1e-10;
                 m_layerNorm = Layer<T>.Create(m_cuda, m_log, convertLayerParam(layerNorm, m_param), null);
 

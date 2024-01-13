@@ -257,7 +257,7 @@ namespace MyCaffe.layers.tft
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             Phase phase = layer_param.data_temporal_param.forced_phase.GetValueOrDefault(m_phase);
-            m_rgIdx = m_data.LoadBatch(phase, (int)m_nBatchSize, colTop, m_param.data_temporal_param.enable_debug_output, m_param.data_temporal_param.debug_output_path, m_param.data_temporal_param.value_start_index_override, m_param.data_temporal_param.ignore_future_data);
+            m_rgIdx = m_data.LoadBatch(phase, (int)m_nBatchSize, colTop, m_param.data_temporal_param.enable_debug_output, m_param.data_temporal_param.debug_output_path, m_param.data_temporal_param.value_start_index_override, m_param.data_temporal_param.value_step_size, m_param.data_temporal_param.ignore_future_data);
 
             if (m_param.data_temporal_param.enable_debug_output)
                 m_log.WriteLine("WARNING: Debugging is enabled with path = " + m_param.data_temporal_param.debug_output_path + " and will slow down training!");
@@ -433,11 +433,12 @@ namespace MyCaffe.layers.tft
         /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
         /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
         /// <param name="nValueIndexStartOverride">Optionally, specifies to use this value as the value index (default = -1, to ignore).</param>
+        /// <param name="nValueStepSize">Optionally, specifies the value step size used when non shuffle selection used (default = 1).</param>
         /// <param name="bIgnoreFutureData">Optionally, specifies to ignore the future data (default = false).</param>
         /// <returns>An array of the selected item and indexes is returned.</returns>
-        public virtual int[,] LoadBatch(Phase phase, int nBatchSize, BlobCollection<T> col, bool bEnableDebug = false, string strDebugPath = null, int nValueIndexStartOverride = -1, bool bIgnoreFutureData = false)
+        public virtual int[,] LoadBatch(Phase phase, int nBatchSize, BlobCollection<T> col, bool bEnableDebug = false, string strDebugPath = null, int nValueIndexStartOverride = -1, int nValueStepSize = 1, bool bIgnoreFutureData = false)
         {
-            return m_data.LoadBatch(nBatchSize, col, bEnableDebug, strDebugPath, nValueIndexStartOverride, bIgnoreFutureData);
+            return m_data.LoadBatch(nBatchSize, col, bEnableDebug, strDebugPath, nValueIndexStartOverride, nValueStepSize, bIgnoreFutureData);
         }
 
         /// <summary>
@@ -733,9 +734,10 @@ namespace MyCaffe.layers.tft
         /// <param name="bEnableDebug">Optionally, specifies to enable debug output (default = false).</param>
         /// <param name="strDebugPath">Optionally, specifies the debug path where debug images are placed when 'EnableDebug' = true.</param>
         /// <param name="nValueIndexStartOverride">Optionally, specifies the value index start override (default = -1 to ignore)</param>
+        /// <param name="nValueStepSize">Optionally, specifies the value step size used with non shuffled selection (default = 1).</param>
         /// <param name="bIgnoreFutureData">Optionally, specifies to ignore the future data.</param>
         /// <returns>The list of selected indexes is returned.</returns>
-        public override int[,] LoadBatch(Phase phase, int nBatchSize, BlobCollection<T> col, bool bEnableDebug = false, string strDebugPath = null, int nValueIndexStartOverride = -1, bool bIgnoreFutureData = false)
+        public override int[,] LoadBatch(Phase phase, int nBatchSize, BlobCollection<T> col, bool bEnableDebug = false, string strDebugPath = null, int nValueIndexStartOverride = -1, int nValueStepSize = 1, bool bIgnoreFutureData = false)
         {
             SourceDescriptor src = (phase == Phase.TRAIN) ? m_ds.TrainingSource : m_ds.TestingSource;
             DB_LABEL_SELECTION_METHOD itemSelection = (m_bShuffleItemData) ? DB_LABEL_SELECTION_METHOD.RANDOM : DB_LABEL_SELECTION_METHOD.NONE;
@@ -989,7 +991,7 @@ namespace MyCaffe.layers.tft
                             }
                             else
                             {
-                                m_nColMajorValIdx++;
+                                m_nColMajorValIdx += nValueStepSize;
                                 if (m_nColMajorValIdx >= m_rgMaxSrcItemSteps[src.ID])
                                     m_nColMajorValIdx = 0;
                             }
@@ -1011,7 +1013,7 @@ namespace MyCaffe.layers.tft
             }
             else
             {
-                m_nColMajorValIdx++;
+                m_nColMajorValIdx += nValueStepSize;
                 if (m_nColMajorValIdx >= m_rgMaxSrcItemSteps[src.ID])
                     m_nColMajorValIdx = 0;
             }
@@ -1608,7 +1610,7 @@ namespace MyCaffe.layers.tft
 
         public abstract void Close();
 
-        public abstract int[,] LoadBatch(int nBatchSize, BlobCollection<T> col, bool bEnableDebug, string strDebugPath, int nValueIndexStartOverride, bool bIgnoreFutureData);
+        public abstract int[,] LoadBatch(int nBatchSize, BlobCollection<T> col, bool bEnableDebug, string strDebugPath, int nValueIndexStartOverride, int nValueStepSize, bool bIgnoreFutureData);
 
         public abstract int[] GetShape(OUTPUT_TYPE ot);
 
@@ -2193,7 +2195,7 @@ namespace MyCaffe.layers.tft
             }
         }
 
-        public override int[,] LoadBatch(int nBatchSize, BlobCollection<T> col, bool bEnableDebug, string strDebugPath, int nValueIndexStartOverride, bool bIgnoreFutureData)
+        public override int[,] LoadBatch(int nBatchSize, BlobCollection<T> col, bool bEnableDebug, string strDebugPath, int nValueIndexStartOverride, int nValueStepSize, bool bIgnoreFutureData)
         {
             lock (m_syncObj)
             {

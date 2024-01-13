@@ -87,7 +87,7 @@ namespace MyCaffe.layers.gpt
 
             // Query projection for all heads, but in a batch.
             // input features = m_nHeads
-            LayerParameter ipAttnQ = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_attnQ");
+            LayerParameter ipAttnQ = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_attnQ", m_phase);
             ipAttnQ.inner_product_param.num_output = (uint)m_nEmbed;
             ipAttnQ.inner_product_param.bias_term = true;            
             if (m_param.multihead_attention_param.weight_init == MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER)
@@ -107,7 +107,7 @@ namespace MyCaffe.layers.gpt
 
             // Key projection for all heads, but in a batch.
             // input features = m_nHeads
-            LayerParameter ipAttnK = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_attnK");
+            LayerParameter ipAttnK = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_attnK", m_phase);
             ipAttnK.inner_product_param.num_output = (uint)m_nEmbed;
             ipAttnK.inner_product_param.bias_term = true;
             if (m_param.multihead_attention_param.weight_init == MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER)
@@ -127,7 +127,7 @@ namespace MyCaffe.layers.gpt
 
             // Value projection for all heads, but in a batch.
             // input features = m_nHeads
-            LayerParameter ipAttnV = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_attnV");
+            LayerParameter ipAttnV = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_attnV", m_phase);
             ipAttnV.inner_product_param.num_output = (uint)m_nEmbed;
             ipAttnV.inner_product_param.bias_term = true;
             if (m_param.multihead_attention_param.weight_init == MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER)
@@ -147,7 +147,7 @@ namespace MyCaffe.layers.gpt
 
             // Output projection.
             // input features = m_nEmbed
-            LayerParameter ipProj = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_proj");
+            LayerParameter ipProj = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, p.name + ".c_proj", m_phase);
             ipProj.inner_product_param.num_output = (uint)m_nEmbed;
             ipProj.inner_product_param.bias_term = true;
             if (m_param.multihead_attention_param.weight_init == MultiheadAttentionParameter.WEIGHT_INIT.ENCODER_DECODER)
@@ -168,31 +168,31 @@ namespace MyCaffe.layers.gpt
             // Regularization
             if (m_dfAttnDropout > 0)
             {
-                LayerParameter dropoutAttn = new LayerParameter(LayerParameter.LayerType.DROPOUT, p.name + ".drop_attn");
+                LayerParameter dropoutAttn = new LayerParameter(LayerParameter.LayerType.DROPOUT, p.name + ".drop.attn", m_phase);
                 dropoutAttn.dropout_param.dropout_ratio = m_dfAttnDropout;
                 m_attn_dropout = Layer<T>.Create(cuda, log, convertLayerParam(dropoutAttn, p), null);
             }
 
             if (m_dfResidDropout > 0)
             {
-                LayerParameter dropoutResid = new LayerParameter(LayerParameter.LayerType.DROPOUT, p.name + ".drop_resid");
+                LayerParameter dropoutResid = new LayerParameter(LayerParameter.LayerType.DROPOUT, p.name + ".drop.resid", m_phase);
                 dropoutResid.dropout_param.dropout_ratio = m_dfResidDropout;
                 m_resid_dropout = Layer<T>.Create(cuda, log, convertLayerParam(dropoutResid, p), null);
             }
 
             // Transpose
-            LayerParameter transpose = new LayerParameter(LayerParameter.LayerType.TRANSPOSE, p.name + ".trans");
+            LayerParameter transpose = new LayerParameter(LayerParameter.LayerType.TRANSPOSE, p.name + ".trans", m_phase);
             transpose.transpose_param.dim[1] = 2;
             transpose.transpose_param.dim[2] = 1;
             m_transpose = Layer<T>.Create(cuda, log, convertLayerParam(transpose, p), null);
 
-            LayerParameter transposeQ = new LayerParameter(LayerParameter.LayerType.TRANSPOSE, p.name + ".transQ");
+            LayerParameter transposeQ = new LayerParameter(LayerParameter.LayerType.TRANSPOSE, p.name + ".transQ", m_phase);
             transposeQ.transpose_param.dim[2] = 3;
             transposeQ.transpose_param.dim[3] = 2;
             m_transposeQ = Layer<T>.Create(cuda, log, convertLayerParam(transposeQ, p), null);
 
             // Softmax
-            LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX, p.name + ".softmax");
+            LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX, p.name + ".softmax", m_phase);
             softmax.softmax_param.axis = -1;
             softmax.softmax_param.engine = EngineParameter.Engine.CUDNN;
             m_softmax = Layer<T>.Create(cuda, log, convertLayerParam(softmax, p), null);

@@ -145,7 +145,7 @@ namespace MyCaffe.layers.tft
             {
                 if (m_dropout == null)
                 {
-                    p = new LayerParameter(LayerParameter.LayerType.DROPOUT, m_param.name + ".drop");
+                    p = new LayerParameter(LayerParameter.LayerType.DROPOUT, m_param.name + ".drop", m_phase);
                     p.dropout_param.Copy(m_param.dropout_param);
                     m_dropout = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
 
@@ -157,7 +157,7 @@ namespace MyCaffe.layers.tft
 
             if (m_gate == null)
             {
-                p = new LayerParameter(LayerParameter.LayerType.GLU, m_param.name + ".glu");
+                p = new LayerParameter(LayerParameter.LayerType.GLU, m_param.name + ".glu", m_phase);
                 p.glu_param.Copy(m_param.glu_param);
                 m_gate = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
 
@@ -169,7 +169,7 @@ namespace MyCaffe.layers.tft
 
             if (m_layerNorm == null)
             {
-                p = new LayerParameter(LayerParameter.LayerType.LAYERNORM, m_param.name + ".layernorm");
+                p = new LayerParameter(LayerParameter.LayerType.LAYERNORM, m_param.name + ".layernorm", m_phase);
                 p.layer_norm_param.Copy(m_param.layer_norm_param);
                 m_layerNorm = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
                 addBtmTop(m_blobGate, colTop[0]);

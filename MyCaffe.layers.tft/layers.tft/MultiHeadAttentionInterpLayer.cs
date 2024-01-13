@@ -374,7 +374,7 @@ namespace MyCaffe.layers.tft
 
             if (m_ipQLayer == null)
             {
-                LayerParameter ipQ = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".ipQ");
+                LayerParameter ipQ = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".ipQ", m_phase);
                 ipQ.inner_product_param.num_output = (uint)m_nAllHeadsDim;
                 ipQ.inner_product_param.axis = 2;
                 ipQ.inner_product_param.bias_term = true;
@@ -405,7 +405,7 @@ namespace MyCaffe.layers.tft
 
             if (m_ipKLayer == null)
             {
-                LayerParameter ipK = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".ipK");
+                LayerParameter ipK = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".ipK", m_phase);
                 ipK.inner_product_param.num_output = (uint)m_nAllHeadsDim;
                 ipK.inner_product_param.axis = 2;
                 ipK.inner_product_param.bias_term = true;
@@ -424,7 +424,7 @@ namespace MyCaffe.layers.tft
 
             if (m_ipVLayer == null)
             {
-                LayerParameter ipV = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".ipV");
+                LayerParameter ipV = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".ipV", m_phase);
                 ipV.inner_product_param.num_output = (uint)m_param.multihead_attention_interp_param.embed_dim;
                 ipV.inner_product_param.axis = 2;
                 ipV.inner_product_param.bias_term = true;
@@ -453,7 +453,7 @@ namespace MyCaffe.layers.tft
                 reshapeRepeat(m_blobIpVfull, m_blobIpV.shape(), m_nNumHeads, 2);
                 reshapeFwd(m_blobIpVfull, m_nNumHeads);
 
-                LayerParameter transpose = new LayerParameter(LayerParameter.LayerType.TRANSPOSE, m_param.name + ".trans");
+                LayerParameter transpose = new LayerParameter(LayerParameter.LayerType.TRANSPOSE, m_param.name + ".trans", m_phase);
                 transpose.transpose_param.dim[1] = 2;
                 transpose.transpose_param.dim[2] = 1;
                 m_transpose = Layer<T>.Create(m_cuda, m_log, convertLayerParam(transpose, m_param), null);
@@ -481,7 +481,7 @@ namespace MyCaffe.layers.tft
             // Softmax
             if (m_softmax == null)
             {
-                LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX, m_param.name + ".softmax");
+                LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX, m_param.name + ".softmax", m_phase);
                 softmax.softmax_param.axis = -1;
                 softmax.softmax_param.engine = EngineParameter.Engine.CUDNN;
                 m_softmax = Layer<T>.Create(m_cuda, m_log, convertLayerParam(softmax, m_param), null);
@@ -494,7 +494,7 @@ namespace MyCaffe.layers.tft
 
             if (m_ipOutLayer == null)
             {
-                LayerParameter ipOut = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".ipOut");
+                LayerParameter ipOut = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".ipOut", m_phase);
                 ipOut.inner_product_param.num_output = (uint)m_param.multihead_attention_interp_param.embed_dim;
                 ipOut.inner_product_param.axis = 2;
                 ipOut.inner_product_param.bias_term = true;

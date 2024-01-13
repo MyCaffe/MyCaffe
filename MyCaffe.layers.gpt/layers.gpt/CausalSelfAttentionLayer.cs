@@ -85,7 +85,7 @@ namespace MyCaffe.layers.gpt
 
             // Key, query, value projections for all heads, but in a batch.
             // input features = m_nHeads
-            LayerParameter ipAttn = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".c_attn");
+            LayerParameter ipAttn = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".c_attn", m_phase);
             ipAttn.inner_product_param.num_output = (uint)(3 * m_nEmbed);
             ipAttn.inner_product_param.bias_term = true;
             ipAttn.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02); 
@@ -97,7 +97,7 @@ namespace MyCaffe.layers.gpt
 
             // Output projection.
             // input features = m_nEmbed
-            LayerParameter ipProj = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".c_proj");
+            LayerParameter ipProj = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".c_proj", m_phase);
             ipProj.inner_product_param.num_output = (uint)m_nEmbed;
             ipProj.inner_product_param.bias_term = true;
             ipProj.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.02 / Math.Sqrt(2 * m_param.causal_self_attention_param.layers)); 
@@ -110,31 +110,31 @@ namespace MyCaffe.layers.gpt
             // Regularization
             if (m_dfAttnDropout > 0)
             {
-                LayerParameter dropoutAttn = new LayerParameter(LayerParameter.LayerType.DROPOUT);
+                LayerParameter dropoutAttn = new LayerParameter(LayerParameter.LayerType.DROPOUT, m_param.name + ".drop.attn", m_phase);
                 dropoutAttn.dropout_param.dropout_ratio = m_dfAttnDropout;
                 m_attn_dropout = Layer<T>.Create(cuda, log, convertLayerParam(dropoutAttn, p), null);
             }
 
             if (m_dfResidDropout > 0)
             {
-                LayerParameter dropoutResid = new LayerParameter(LayerParameter.LayerType.DROPOUT);
+                LayerParameter dropoutResid = new LayerParameter(LayerParameter.LayerType.DROPOUT, m_param.name + ".drop.res", m_phase);
                 dropoutResid.dropout_param.dropout_ratio = m_dfResidDropout;
                 m_resid_dropout = Layer<T>.Create(cuda, log, convertLayerParam(dropoutResid, p), null);
             }
 
             // Transpose
-            LayerParameter transpose = new LayerParameter(LayerParameter.LayerType.TRANSPOSE);
+            LayerParameter transpose = new LayerParameter(LayerParameter.LayerType.TRANSPOSE, m_param.name + ".trans", m_phase);
             transpose.transpose_param.dim[1] = 2;
             transpose.transpose_param.dim[2] = 1;
             m_transpose = Layer<T>.Create(cuda, log, convertLayerParam(transpose, p), null);
 
-            LayerParameter transposeK = new LayerParameter(LayerParameter.LayerType.TRANSPOSE);
+            LayerParameter transposeK = new LayerParameter(LayerParameter.LayerType.TRANSPOSE, m_param.name + ".trans.k", m_phase);
             transposeK.transpose_param.dim[2] = 3;
             transposeK.transpose_param.dim[3] = 2;
             m_transposeQ = Layer<T>.Create(cuda, log, convertLayerParam(transposeK, p), null);
 
             // Softmax
-            LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
+            LayerParameter softmax = new LayerParameter(LayerParameter.LayerType.SOFTMAX, m_param.name + ".smx", m_phase);
             softmax.softmax_param.axis = -1;
             softmax.softmax_param.engine = EngineParameter.Engine.CAFFE;
             m_softmax = Layer<T>.Create(cuda, log, convertLayerParam(softmax, p), null);

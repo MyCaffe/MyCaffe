@@ -98,7 +98,7 @@ namespace MyCaffe.layers.tft
                 m_rgEmbTop[0] = colTop[i];
 
                 int nCardinality = m_param.categorical_trans_param.cardinalities[i];
-                LayerParameter p = new LayerParameter(LayerParameter.LayerType.EMBED, m_param.name + ".emb" + i.ToString());
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.EMBED, m_param.name + ".emb" + i.ToString(), m_phase);
                 p.embed_param.num_output = m_param.categorical_trans_param.state_size;
                 p.embed_param.input_dim = (uint)nCardinality;
                 p.embed_param.bias_term = false;
