@@ -707,7 +707,8 @@ namespace MyCaffe.param
         /// </summary>
         /// <param name="lt">Assignes this LayerType to the layer.</param>
         /// <param name="strName">Assigns this name to the layer.</param>
-        public LayerParameter(LayerType lt, string strName = null)
+        /// <param name="phase">Optionally, assigns this phase to the parmeter.</param>
+        public LayerParameter(LayerType lt, string strName = null, Phase? phase = null)
             : base()
         {
             m_type = lt;
@@ -715,6 +716,9 @@ namespace MyCaffe.param
 
             if (m_strName == null)
                 m_strName = lt.ToString();
+
+            if (phase.HasValue)
+                m_phase = phase.Value;
 
             for (int i = 0; i < (int)LayerType._MAX; i++)
             {
