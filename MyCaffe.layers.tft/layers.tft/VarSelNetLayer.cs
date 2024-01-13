@@ -35,7 +35,6 @@ namespace MyCaffe.layers.tft
         Blob<T> m_blobSparseWtsSmxT;
         Blob<T> m_blobGrn1;
         Blob<T> m_blobProcessedInputs;
-        Blob<T> m_blobProcessedInputsT;
         Blob<T> m_blobProcessedInputs1;
         Blob<T> m_blobBtm;
         List<Layer<T>> m_rgSingleVarGrn = new List<Layer<T>>();
@@ -66,8 +65,6 @@ namespace MyCaffe.layers.tft
             m_blobGrn1.Name = p.name + ".grn1";
             m_blobProcessedInputs = new Blob<T>(cuda, log);
             m_blobProcessedInputs.Name = p.name + ".proc_in";
-            m_blobProcessedInputsT = new Blob<T>(cuda, log);
-            m_blobProcessedInputsT.Name = p.name + ".proc_inT";
             m_blobProcessedInputs1 = new Blob<T>(cuda, log);
             m_blobProcessedInputs1.Name = p.name + ".proc_in1";
             m_blobBtm = new Blob<T>(cuda, log);
@@ -82,7 +79,6 @@ namespace MyCaffe.layers.tft
             dispose(ref m_blobSparseWtsSmxT);
             dispose(ref m_blobGrn1);
             dispose(ref m_blobProcessedInputs);
-            dispose(ref m_blobProcessedInputsT);
             dispose(ref m_blobProcessedInputs1);
             dispose(ref m_blobBtm);
 
@@ -115,7 +111,6 @@ namespace MyCaffe.layers.tft
             col.Add(m_blobSparseWtsSmxT);
             col.Add(m_blobGrn1);
             col.Add(m_blobProcessedInputs);
-            col.Add(m_blobProcessedInputsT);
             col.Add(m_blobProcessedInputs1);
             col.Add(m_blobBtm);
         }
