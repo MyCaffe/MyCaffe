@@ -4,6 +4,8 @@
 *.sln.docstates
 *.bak
 *.csv
+*.pth
+*.pyc
 
 # Private Files
 **/MyCaffe.app.setup/*
@@ -16,6 +18,7 @@
 **/_nuget/*
 **/bin/*
 *.pro.*
+**/__pycache__/
 
 # Build results
 
