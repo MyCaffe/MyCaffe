@@ -19,6 +19,7 @@ namespace MyCaffe.param.tft
     public class SharpeAccuracyParameter : LayerParameterBase
     {
         ACCURACY_TYPE m_type = ACCURACY_TYPE.SHARPE;
+        int m_nAveragingPeriods = 4;
 
         /// <summary>
         /// Defines the accuracy type to return.
@@ -50,6 +51,16 @@ namespace MyCaffe.param.tft
             set { m_type = value; }
         }
 
+        /// <summary>
+        /// Specifies the number of averaging periods to use when calculating the sharpe ratio or returns.
+        /// </summary>
+        [Description("Specifies the number of averaging periods to use when calculating the sharpe ratio or returns (default = 4).")]
+        public int averaging_periods
+        {
+            get { return m_nAveragingPeriods; }
+            set { m_nAveragingPeriods = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -67,6 +78,7 @@ namespace MyCaffe.param.tft
         {
             SharpeAccuracyParameter p = (SharpeAccuracyParameter)src;
             m_type = p.m_type;
+            m_nAveragingPeriods = p.m_nAveragingPeriods;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -87,6 +99,7 @@ namespace MyCaffe.param.tft
             RawProtoCollection rgChildren = new RawProtoCollection();
 
             rgChildren.Add("accuracy_type", accuracy_type.ToString());
+            rgChildren.Add("averaging_periods", averaging_periods.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -106,6 +119,9 @@ namespace MyCaffe.param.tft
                 if (!Enum.TryParse<ACCURACY_TYPE>(strVal, out p.m_type))
                     p.m_type = ACCURACY_TYPE.SHARPE;
             }
+
+            if ((strVal = rp.FindValue("averaging_periods")) != null)
+                p.m_nAveragingPeriods = int.Parse(strVal);
 
             return p;
         }
