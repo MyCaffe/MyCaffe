@@ -156,11 +156,14 @@ namespace MyCaffe.layers.tft
                 // mean and stdev of captured_returns
                 m_cuda.channel_stdev(m_blobCapturedReturnsSum.count(), 1, 1, nC, m_blobCapturedReturnsSum.gpu_data, m_blobStdevCapturedReturns.gpu_data, m_blobMeanCapturedReturns.mutable_gpu_data, 1e-9f, true);
 
-                double dfSum = m_blobMeanCapturedReturns.sum();
+                double dfSum = m_blobCapturedReturnsSum.sum();
                 double dfStdev = convertD(m_blobStdevCapturedReturns.GetData(0));
+                double dfAnnualStdev = dfStdev * Math.Sqrt(252.0);
 
                 double dfAnnualized = Math.Sqrt(252.0 / nC);
-                double dfSharpe = dfSum / dfStdev;
+                double dfAnnualReturns = dfSum * dfAnnualized;
+
+                double dfSharpe = dfAnnualReturns / dfAnnualStdev;
                 dfSharpe *= dfAnnualized;
 
                 dfVal = dfSharpe;
