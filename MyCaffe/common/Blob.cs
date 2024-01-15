@@ -477,6 +477,9 @@ namespace MyCaffe.common
             str = str.TrimEnd(' ', ',');
             str += "}";
 
+            if (m_bFreezeLearning)
+                str += " (Frozen)";
+
             return str;
         }
 
