@@ -120,6 +120,14 @@ namespace MyCaffe.db.temporal
         {
             List<TemporalSet> rgInit = new List<TemporalSet>();
 
+            if (nLoadLimit != 0)
+            {
+                m_log.WriteLine("WARNING: Currently only load limit = 0 is supported for temporal databases. Loading dataset '" + m_ds.Name + "' with a load limit of 0.");
+                nLoadLimit = 0;
+                dfReplacementPct = 0;
+                nRefreshUpdateMs = 0;
+            }
+
             if (!m_rgTemporalSets.ContainsKey(m_ds.TrainingSource.ID))
             {
                 TemporalSet ts = new TemporalSet(m_log, m_db, m_ds.TrainingSource, loadMethod, nLoadLimit, dfReplacementPct, nRefreshUpdateMs, m_random, nHistoricalSteps, nFutureSteps, nChunks);
