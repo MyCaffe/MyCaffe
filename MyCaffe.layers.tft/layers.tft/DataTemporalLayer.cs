@@ -797,7 +797,7 @@ namespace MyCaffe.layers.tft
                 rgItemIdx.Add(i);
             }
 
-            DateTime dtLast = DateTime.MinValue;
+            DateTime dtStart = DateTime.MinValue;
             float[] rgRawDataLast = null;
             int nBatchIdx = 0;
             while (nBatchIdx < nBatchSize)
@@ -945,8 +945,8 @@ namespace MyCaffe.layers.tft
                             Array.Copy(rgRawData, rgRawDataLast, rgRawData.Length);
                         }
 
-                        if (dtLast == DateTime.MinValue)
-                            dtLast = sdTime.TimeStamp;
+                        if (dtStart == DateTime.MinValue)
+                            dtStart = sdTime.StartTime.GetValueOrDefault(sdTime.TimeStamp);
                     }
 
                     // col[9] = Mask (optional)
@@ -1041,7 +1041,7 @@ namespace MyCaffe.layers.tft
 
             if (m_bOutputTime)
             {
-                setBuffer(col, nIdx, m_rgTime, dtLast);
+                setBuffer(col, nIdx, m_rgTime, dtStart);
                 nIdx++;
             }
 
