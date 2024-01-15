@@ -260,6 +260,7 @@ namespace MyCaffe.param.tft
         /// Note the chunk count must be larger than the batch size.
         /// </remarks>
         [Description("Specifies the number of items to load per cycle when background loading (default = 1024).")]
+        [Browsable(false)]
         public uint chunk_count
         {
             get { return m_nChunkCount; }
