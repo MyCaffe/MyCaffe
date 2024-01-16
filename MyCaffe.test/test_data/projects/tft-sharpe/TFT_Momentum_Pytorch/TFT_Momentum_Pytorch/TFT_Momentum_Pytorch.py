@@ -253,12 +253,6 @@ def weight_init(m):
 if use_mycaffe_model_direct == False:
     model.apply(weight_init)
 
-wtpath = "C:\\Data\\Data\\SS_Projects\\Intelligence\\GitHub\\MyCaffe\\MyCaffe.test\\test_data\\projects\\tft-sharpe\\TFT_Momentum_Pytorch\\TFT_Momentum_Pytorch\\test\\tft.sharpe\\weights\\past_lstm\\"
-if lstm_use_mycaffe == False:
-    torch.save(model.past_lstm.state_dict(), wtpath + "lstm.pth")
-elif use_mycaffe == False and model.past_lstm.lstm1 != None:
-    model.past_lstm.lstm1.load_state_dict(torch.load(wtpath + "lstm.pth"))
-
 # Set the devie to CUDA if available
 is_cuda = torch.cuda.is_available()
 device = torch.device("cuda" if is_cuda else "cpu")
