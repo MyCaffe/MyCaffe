@@ -388,6 +388,7 @@ namespace MyCaffe.common
         double m_dfDataInfCount = 0;
         double m_dfDiffNanCount = 0;
         double m_dfDiffInfCount = 0;
+        bool m_bFrozen = false;
 
         /// <summary>
         /// Defines the Blob type.
@@ -441,6 +442,7 @@ namespace MyCaffe.common
             m_location = loc;
             m_strName = b.Name;
             m_strSize = b.ToSizeString();
+            m_bFrozen = b.freeze_learning;
 
             Tuple<double, double, double, double> data = b.minmax_data(work, bDetectNans);
             Tuple<double, double, double, double> diff = b.minmax_diff(work, bDetectNans);
@@ -469,6 +471,14 @@ namespace MyCaffe.common
         public string Size
         {
             get { return m_strSize; }
+        }
+
+        /// <summary>
+        /// Returns whether or not the Blob has its learning frozen or not.
+        /// </summary>
+        public bool Frozen
+        {
+            get { return m_bFrozen; }
         }
 
         /// <summary>
