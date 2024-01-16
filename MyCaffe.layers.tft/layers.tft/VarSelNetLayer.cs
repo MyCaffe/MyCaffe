@@ -181,6 +181,9 @@ namespace MyCaffe.layers.tft
                 p.grn_param.hidden_dim = m_param.varselnet_param.hidden_dim;
                 p.grn_param.output_dim = m_param.varselnet_param.num_inputs;
                 p.grn_param.context_dim = m_param.varselnet_param.context_dim;
+                p.grn_param.dropout_ratio = m_param.varselnet_param.dropout_ratio;
+                p.grn_param.enable_noise = m_param.varselnet_param.enable_noise;
+                p.grn_param.sigma_init = m_param.varselnet_param.sigma_init;
                 m_grnFlatten = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
 
                 addBtmTop(colBottom[0], m_blobSparseWts);
@@ -238,6 +241,8 @@ namespace MyCaffe.layers.tft
                     p.grn_param.hidden_dim = m_param.varselnet_param.hidden_dim;
                     p.grn_param.output_dim = m_param.varselnet_param.hidden_dim;
                     p.grn_param.dropout_ratio = m_param.varselnet_param.dropout_ratio;
+                    p.grn_param.enable_noise = m_param.varselnet_param.enable_noise;
+                    p.grn_param.sigma_init = m_param.varselnet_param.sigma_init;
                     Layer<T> grn = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
 
                     Blob<T> blobGrn = new Blob<T>(m_cuda, m_log);

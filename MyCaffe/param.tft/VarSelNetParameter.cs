@@ -9,71 +9,53 @@ using static MyCaffe.param.tft.GluParameter;
 namespace MyCaffe.param.tft
 {
     /// <summary>
-    /// Specifies the parameters for the GrnLayer (Gated Response Network).  
+    /// Specifies the parameters for the VarSelNetLayer (Variable Selection Network).  
     /// </summary>
     /// <remarks>
-    /// This layer takes as input a primary input 'x' and optional context vector 'c'.  A GLU (Gated Linear Unit) is used
-    /// for controlling the extent to which the module will contribute to the original input 'x', potentially skipping
-    /// over the layer entirely as the GLU outputs could all be close to zero by the GLU supressing.  In cases where
-    /// no context vector is used, the GRN treats the context input as zero.  During training dropout is applied before
-    /// gating.
+    /// The VSN enables instance-wise variable selection and is applied to both the static covariates and time-dependent covariates as the
+    /// specific contribution of each input to the output is typically unknown.  The VSN provides insights into which variables contribute
+    /// the most for the prediction problem and allows the model to remove unnecessarily noisy inputs which could negatively impact the
+    /// performance.
     /// 
     /// @see [Temporal Fusion Transformers for Interpretable Multi-horizon Time Series Forecasting](https://arxiv.org/abs/1912.09363) by Bryan Lim, Sercan O. Arik, Nicolas Loeff, and Tomas Pfister, 2019, arXiv 1912.09363
     /// @see [Github - PlaytikaOSS/tft-torch](https://github.com/PlaytikaOSS/tft-torch) by Playtika Research, 2021.
-    /// @see [Github - PlaytikaOSS/tft-torch tft.py](https://github.com/PlaytikaOSS/tft-torch/blob/main/tft_torch/tft.py#L44) by Playtika Research, 2021.
+    /// @see [Github - PlaytikaOSS/tft-torch tft.py](https://github.com/PlaytikaOSS/tft-torch/blob/main/tft_torch/tft.py#L149) by Playtika Research, 2021.
     /// </remarks>
     [Serializable]
     [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class GrnParameter : LayerParameterBase
+    public class VarSelNetParameter : LayerParameterBase
     {
+        int m_nNumInputs;
         int m_nInputDim;
         int m_nHiddenDim;
-        int m_nOutputDim;
-        float m_fDropoutRatio = 0.05f;
+        float m_fDropout = 0.05f;
         int? m_nContextDim = null;
         bool m_bBatchFirst = true;
         FillerParameter m_fillerParam_weights = new FillerParameter("xavier");
         FillerParameter m_fillerParam_bias = new FillerParameter("constant", 0.1);
-        int m_nAxis = 1;
         bool m_bEnableNoise = false;
         double m_dfSigmaInit = 0.017;
-        ACTIVATION m_activaiton = ACTIVATION.ELU;
-
-        /// <summary>
-        /// Defines the activation type.
-        /// </summary>
-        public enum ACTIVATION
-        {
-            /// <summary>
-            /// Specifies to use an ELU activation (default).
-            /// </summary>
-            ELU,
-
-            /// <summary>
-            /// Specifies to use a RELU activation.
-            /// </summary>
-            RELU
-        }
+        int m_nAxis = 1;
 
         /** @copydoc LayerParameterBase */
-        public GrnParameter()
+        public VarSelNetParameter()
         {
         }
 
         /// <summary>
-        /// Specifies the activation type to use (default=ELU)
+        /// Specifies the quantity of input variables, including both numeric and categorical for the relevant channel.
         /// </summary>
-        [Description("Specifies the activation type to use (default=ELU)")]
-        public ACTIVATION activation
+        [Description("Specifies the quantity of input variables, including both numeric and categorical for the relevant channel.")]
+        public int num_inputs
         {
-            get { return m_activaiton; }
-            set { m_activaiton = value; }
+            get { return m_nNumInputs; }
+            set { m_nNumInputs = value; }
         }
 
         /// <summary>
-        /// Specifies the input dimension.
+        /// Specifies the attribute/embedding dimension of the input, associated witht he 'state_size' of the model.
         /// </summary>
-        [Description("Specifies the input dimension.")]
+        [Description("Specifies the attribute/embedding dimension of the input, associated witht he 'state_size' of the model.")]
         public int input_dim
         {
             get { return m_nInputDim; }
@@ -81,9 +63,9 @@ namespace MyCaffe.param.tft
         }
 
         /// <summary>
-        /// Specifies the input dimension.
+        /// Specifies the embedding width of the output.
         /// </summary>
-        [Description("Specifies the hidden dimension.")]
+        [Description("Specifies the embedding width of the output.")]
         public int hidden_dim
         {
             get { return m_nHiddenDim; }
@@ -91,19 +73,9 @@ namespace MyCaffe.param.tft
         }
 
         /// <summary>
-        /// Specifies the output dimension.
+        /// Specifies the embedding width of the context signal expected to be fed as an auxiliary input (optional, can be null).
         /// </summary>
-        [Description("Specifies the output dimension.")]
-        public int output_dim
-        {
-            get { return m_nOutputDim; }
-            set { m_nOutputDim = value; }
-        }
-
-        /// <summary>
-        /// Specifies the context dimension, or null to ignore.
-        /// </summary>
-        [Description("Specifies the context dimension, or null to ignore.")]
+        [Description("Specifies the embedding width of the context signal expected to be fed as an auxiliary input (optional, can be null).")]
         public int? context_dim
         {
             get { return m_nContextDim; }
@@ -111,19 +83,19 @@ namespace MyCaffe.param.tft
         }
 
         /// <summary>
-        /// Specifies the dropout ratio (default = 0.05 or 5%).
+        /// Specifies the dropout ratio used with the GRNs (default = 0.05 or 5%).
         /// </summary>
-        [Description("Specifies the dropout ratio (default = 0.05 or 5%).")]
+        [Description("Specifies the dropout ratio used with the GRNs (default = 0.05 or 5%).")]
         public float dropout_ratio
         {
-            get { return m_fDropoutRatio; }
-            set { m_fDropoutRatio = value; }
+            get { return m_fDropout; }
+            set { m_fDropout = value; }
         }
 
         /// <summary>
-        /// Specifies the batch_first setting.
+        /// Specifies a boolean indicating whether the batch dimension is expected to be the first dimension of the input or not.
         /// </summary>
-        [Description("Specifies the batch_first setting.")]
+        [Description("Specifies a boolean indicating whether the batch dimension is expected to be the first dimension of the input or not.")]
         public bool batch_first
         {
             get { return m_bBatchFirst; }
@@ -176,7 +148,7 @@ namespace MyCaffe.param.tft
         }
 
         /// <summary>
-        /// Specifies the first axis to be lumped into a single inner product computation;
+        /// Specifies the first axis to be lumped into a single inner product computations;
         /// all preceding axes are retained in the output.
         /// May be negative to index from the end (e.g., -1 for the last axis)
         /// </summary>
@@ -191,7 +163,7 @@ namespace MyCaffe.param.tft
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
             RawProto proto = RawProto.Parse(br.ReadString());
-            GrnParameter p = FromProto(proto);
+            VarSelNetParameter p = FromProto(proto);
 
             if (!bNewInstance)
                 Copy(p);
@@ -202,16 +174,15 @@ namespace MyCaffe.param.tft
         /** @copydoc LayerParameterBase::Copy */
         public override void Copy(LayerParameterBase src)
         {
-            GrnParameter p = (GrnParameter)src;
+            VarSelNetParameter p = (VarSelNetParameter)src;
 
+            m_nNumInputs = p.num_inputs;
             m_nInputDim = p.input_dim;
             m_nHiddenDim = p.hidden_dim;
-            m_nOutputDim = p.output_dim;
             m_nContextDim = p.context_dim;
-            m_fDropoutRatio = p.dropout_ratio;
+            m_fDropout = p.dropout_ratio;
             m_bBatchFirst = p.batch_first;
             m_nAxis = p.m_nAxis;
-            m_activaiton = p.activation;
             m_bEnableNoise = p.m_bEnableNoise;
             m_dfSigmaInit = p.m_dfSigmaInit;
 
@@ -225,7 +196,7 @@ namespace MyCaffe.param.tft
         /** @copydoc LayerParameterBase::Clone */
         public override LayerParameterBase Clone()
         {
-            GrnParameter p = new GrnParameter();
+            VarSelNetParameter p = new VarSelNetParameter();
             p.Copy(this);
             return p;
         }
@@ -241,7 +212,7 @@ namespace MyCaffe.param.tft
 
             rgChildren.Add("input_dim", input_dim.ToString());
             rgChildren.Add("hidden_dim", hidden_dim.ToString());
-            rgChildren.Add("output_dim", output_dim.ToString());
+            rgChildren.Add("num_inputs", num_inputs.ToString());
             if (context_dim.HasValue)
                 rgChildren.Add("context_dim", context_dim.Value.ToString());
             rgChildren.Add("dropout_ratio", dropout_ratio.ToString());
@@ -254,7 +225,6 @@ namespace MyCaffe.param.tft
                 rgChildren.Add(bias_filler.ToProto("bias_filler"));
 
             rgChildren.Add("axis", axis.ToString());
-            rgChildren.Add("activation", activation.ToString());
 
             if (m_bEnableNoise)
             {
@@ -270,10 +240,10 @@ namespace MyCaffe.param.tft
         /// </summary>
         /// <param name="rp">Specifies the RawProto to parse.</param>
         /// <returns>A new instance of the parameter is returned.</returns>
-        public static GrnParameter FromProto(RawProto rp)
+        public static VarSelNetParameter FromProto(RawProto rp)
         {
             string strVal;
-            GrnParameter p = new GrnParameter();
+            VarSelNetParameter p = new VarSelNetParameter();
 
             if ((strVal = rp.FindValue("input_dim")) != null)
                 p.input_dim = int.Parse(strVal);
@@ -281,8 +251,8 @@ namespace MyCaffe.param.tft
             if ((strVal = rp.FindValue("hidden_dim")) != null)
                 p.hidden_dim = int.Parse(strVal);
 
-            if ((strVal = rp.FindValue("output_dim")) != null)
-                p.output_dim = int.Parse(strVal);
+            if ((strVal = rp.FindValue("num_inputs")) != null)
+                p.num_inputs = int.Parse(strVal);
 
             if ((strVal = rp.FindValue("context_dim")) != null)
                 p.context_dim = int.Parse(strVal);
@@ -303,14 +273,6 @@ namespace MyCaffe.param.tft
 
             if ((strVal = rp.FindValue("axis")) != null)
                 p.axis = int.Parse(strVal);
-
-            if ((strVal = rp.FindValue("activation")) != null)
-            {
-                if (strVal == ACTIVATION.RELU.ToString())
-                    p.activation = ACTIVATION.RELU;
-                else
-                    p.activation = ACTIVATION.ELU;
-            }
 
             if ((strVal = rp.FindValue("enable_noise")) != null)
                 p.enable_noise = bool.Parse(strVal);

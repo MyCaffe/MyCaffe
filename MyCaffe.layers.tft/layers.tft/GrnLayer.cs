@@ -165,6 +165,8 @@ namespace MyCaffe.layers.tft
                     ip.inner_product_param.axis = m_param.grn_param.axis;
                     ip.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
                     ip.inner_product_param.bias_filler = m_param.grn_param.bias_filler;
+                    ip.inner_product_param.enable_noise = m_param.grn_param.enable_noise;
+                    ip.inner_product_param.sigma_init = m_param.grn_param.sigma_init;
                     m_ipSkipLayer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ip, m_param), null);
 
                     addBtmTop(colBottom[0], m_blobResidual);
@@ -181,6 +183,8 @@ namespace MyCaffe.layers.tft
                 ip1.inner_product_param.axis = m_param.grn_param.axis;
                 ip1.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
                 ip1.inner_product_param.bias_filler = m_param.grn_param.bias_filler;
+                ip1.inner_product_param.enable_noise = m_param.grn_param.enable_noise;
+                ip1.inner_product_param.sigma_init = m_param.grn_param.sigma_init;
                 m_ipFc1 = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ip1, m_param), null);
 
                 addBtmTop(colBottom[0], m_blobIp1);
@@ -199,6 +203,8 @@ namespace MyCaffe.layers.tft
                     ip.inner_product_param.axis = m_param.grn_param.axis;
                     ip.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
                     ip.inner_product_param.bias_term = false;
+                    ip.inner_product_param.enable_noise = m_param.grn_param.enable_noise;
+                    ip.inner_product_param.sigma_init = m_param.grn_param.sigma_init;
                     m_ipContext = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ip, m_param), null);
                     m_blobContext = new Blob<T>(m_cuda, m_log);
                     m_blobContext.Name = m_param.name + ".ctx";
@@ -246,6 +252,8 @@ namespace MyCaffe.layers.tft
                 ip2.inner_product_param.axis = m_param.grn_param.axis;
                 ip2.inner_product_param.weight_filler = m_param.grn_param.weight_filler;
                 ip2.inner_product_param.bias_filler = m_param.grn_param.bias_filler;
+                ip2.inner_product_param.enable_noise = m_param.grn_param.enable_noise;
+                ip2.inner_product_param.sigma_init = m_param.grn_param.sigma_init;
                 m_ipFc2 = Layer<T>.Create(m_cuda, m_log, convertLayerParam(ip2, m_param), null);
 
                 addBtmTop(blobIp1, m_blobIp2);
