@@ -477,9 +477,6 @@ namespace MyCaffe.common
             str = str.TrimEnd(' ', ',');
             str += "}";
 
-            if (m_bFreezeLearning)
-                str += " (Frozen)";
-
             return str;
         }
 
@@ -2558,8 +2555,9 @@ namespace MyCaffe.common
         /// <returns></returns>
         public override string ToString()
         {
+            string strFrozen = (m_bFreezeLearning) ? "[Frozen] " : "";
             string strSize = (HalfSize) ? "HALF " : "FULL ";
-            return strSize + m_strName + " (" + shape_string + ")";
+            return strFrozen + strSize + m_strName + " (" + shape_string + ")";
         }
 
         /// <summary>
