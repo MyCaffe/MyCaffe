@@ -171,5 +171,18 @@ namespace MyCaffe.db.temporal
 
             return true;
         }
+
+        /// <summary>
+        /// Returns the master time sync for a specified source ID.
+        /// </summary>
+        /// <param name="nSrcID">Specifies the source ID.</param>
+        /// <returns>If the source ID is loaded, the master time sync is returned, otherwise null.</returns>
+        public List<DateTime> GetMasterTimeSync(int nSrcID)
+        {
+            if (!m_rgTemporalSets.ContainsKey(nSrcID))
+                return null;
+
+            return m_rgTemporalSets[nSrcID].MasterTimeSync;
+        }
     }
 }

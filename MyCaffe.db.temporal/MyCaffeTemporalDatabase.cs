@@ -452,8 +452,8 @@ namespace MyCaffe.db.temporal
 
             if (nHistSteps == 0)
                 throw new Exception("The historical steps are missing from the properties, please add the 'HistoricalSteps' property with a value > 0.");
-            if (nFutureSteps == 0)
-                throw new Exception("The future steps are missing from the properties, please add the 'FutureSteps' property with a value > 0.");
+            if (nFutureSteps < 0)
+                throw new Exception("The future steps are missing from the properties, please add the 'FutureSteps' property with a value >= 0.");
 
             if (nHistSteps < 0 || nFutureSteps < 0)
                 throw new Exception("The historical and future steps must be > 0.");
@@ -530,6 +530,28 @@ namespace MyCaffe.db.temporal
             s.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
             s.DbLoadLimit = 0;
             return InitializeWithDsName1(s, strDs, strEvtCancel);
+        }
+
+        /// <summary>
+        /// Returns the master time sync for a specified phase of a given dataset.
+        /// </summary>
+        /// <param name="nDataSetID">Specifies the dataset ID.</param>
+        /// <param name="phase">Specifies the phase.</param>
+        /// <returns>The time sync for the phase of the dataset is returned.</returns>
+        public List<DateTime> GetMasterTimeSync(int nDataSetID, Phase phase)
+        {
+            DataSet ds = m_rgDataSets.Find(nDataSetID);
+            DatasetDescriptor dsd = null;
+
+            if (ds == null)
+            {
+                DatabaseLoader dsLoader = new DatabaseLoader();
+                dsd = dsLoader.LoadDatasetFromDb(nDataSetID);
+                ds = m_rgDataSets.Add(dsd, m_log);
+            }
+
+            int nSrcID = (phase == Phase.TRAIN) ? ds.Dataset.TrainingSource.ID : ds.Dataset.TestingSource.ID;
+            return ds.GetMasterTimeSync(nSrcID);
         }
 
         private static int getNewDirectID()

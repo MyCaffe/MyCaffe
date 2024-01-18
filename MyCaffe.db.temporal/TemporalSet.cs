@@ -44,6 +44,7 @@ namespace MyCaffe.db.temporal
         double m_dfLoadPct = 0;
         object m_objSync = new object();
         List<int> m_rgItemIdx = new List<int>();
+        List<DateTime> m_rgMasterTimeSync = null;
 
         /// <summary>
         /// The constructor.
@@ -110,32 +111,40 @@ namespace MyCaffe.db.temporal
         }
 
         /// <summary>
+        /// Returns the master time sync used to synchronize all items in time.
+        /// </summary>
+        public List<DateTime> MasterTimeSync
+        {
+            get { return m_rgMasterTimeSync; }
+        }
+
+        /// <summary>
         /// Synchronize all items in time by setting the column start index for each item.
         /// </summary>
         /// <exception cref="Exception"></exception>
-        public void SynchronizeItemSetsInTime()
+        /// <returns>Returns the master time sync list.</returns>
+        public List<DateTime> SynchronizeItemSetsInTime()
         {
-            List<DateTime?> rgDateIdx = new List<DateTime?>();
-            Dictionary<int, List<DateTime?>> rgCounts = new Dictionary<int, List<DateTime?>>();
-            Dictionary<int, int> rgFreqeuncy = new Dictionary<int, int>();
+            List<DateTime> rgDateIdx = new List<DateTime>();
+            int nDateIdx = -1;
+            int nMax = 0;
 
             foreach (ItemSet item in m_rgItems)
             {
-                List<DateTime?> rgCounts1 = item.DataDates;
-                int nCount = rgCounts1.Count;
+                if (nMax < item.DataDates.Count)
+                {
+                    nMax = item.DataDates.Count;
+                    nDateIdx = m_rgItems.IndexOf(item);
+                }
 
-                if (!rgCounts.ContainsKey(nCount))
-                    rgCounts.Add(nCount, rgCounts1);
-
-                if (!rgFreqeuncy.ContainsKey(nCount))
-                    rgFreqeuncy.Add(nCount, 1);
-                else
-                    rgFreqeuncy[nCount]++;
+                foreach (DateTime dt in item.DataDates)
+                {
+                    if (!rgDateIdx.Contains(dt))
+                        rgDateIdx.Add(dt);
+                }
             }
 
-            List<KeyValuePair<int, int>> rgFreqList = rgFreqeuncy.OrderByDescending(p => p.Value).ToList();
-            int nTopCount = rgFreqList[0].Key;
-            rgDateIdx = rgCounts[nTopCount];
+            rgDateIdx = rgDateIdx.OrderBy(p => p).ToList();
 
             foreach (ItemSet item in m_rgItems)
             {
@@ -156,6 +165,8 @@ namespace MyCaffe.db.temporal
                 else
                     item.Active = false;
             }
+
+            return rgDateIdx;
         }
 
         /// <summary>
@@ -408,7 +419,7 @@ namespace MyCaffe.db.temporal
                         break;
                 }
 
-                SynchronizeItemSetsInTime();
+                m_rgMasterTimeSync = SynchronizeItemSetsInTime();
             }
             catch (Exception excpt)
             {
@@ -547,23 +558,30 @@ namespace MyCaffe.db.temporal
 
             lock (m_objSync)
             {
-                if (m_rgItemIdx.Count == 0)
+                if (!nItemIdx.HasValue)
                 {
-                    for (int i = 0; i < m_rgItems.Count; i++)
+                    if (m_rgItemIdx.Count == 0)
                     {
-                        m_rgItemIdx.Add(i);
+                        for (int i = 0; i < m_rgItems.Count; i++)
+                        {
+                            m_rgItemIdx.Add(i);
+                        }
+                    }
+
+                    if (itemSelectionMethod == DB_LABEL_SELECTION_METHOD.RANDOM)
+                    {
+                        int nIdx = m_random.Next(m_rgItemIdx.Count);
+                        m_nItemIdx = m_rgItemIdx[nIdx];
+                        m_rgItemIdx.RemoveAt(nIdx);
                     }
                 }
-
-                if (itemSelectionMethod == DB_LABEL_SELECTION_METHOD.RANDOM)
+                else
                 {
-                    int nIdx = m_random.Next(m_rgItemIdx.Count);
-                    m_nItemIdx = m_rgItemIdx[nIdx];
-                    m_rgItemIdx.RemoveAt(nIdx);
+                    m_nItemIdx = nItemIdx.Value;
                 }
 
-                if (nItemIdx.HasValue)
-                    m_nItemIdx = nItemIdx.Value;
+                if (m_nItemIdx >= m_rgItems.Count)
+                    return null;
 
                 data = null;
                 if (m_rgItems[m_nItemIdx].HasEnoughData(ref nValueIdx, m_nHistoricSteps, m_nFutureSteps))
