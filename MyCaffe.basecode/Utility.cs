@@ -1096,5 +1096,31 @@ namespace MyCaffe.basecode
 
             return rgstr;
         }
+
+        /// <summary>
+        /// Round the time to the nearest date/time minutes.
+        /// </summary>
+        /// <param name="dt">Specifies the time to round.</param>
+        /// <param name="nMinutes">Optionally, specifies the minutes to round to (default = 24 * 60).</param>
+        /// <param name="nDir">Optionally, specifies the direction where 0 uses the default (nearest), -1 rounds down, and 1 rounds up.</param>
+        /// <returns>The rounded time is returned.</returns>
+        public static DateTime RoundDateTime(DateTime dt, int nMinutes = 24 * 60, int nDir = 0)
+        {
+            TimeSpan t;
+            switch (nDir)
+            {
+                case 1:
+                    t = (dt.Subtract(DateTime.MinValue)).Add(new TimeSpan(0, nMinutes, 0));
+                    break;
+                case -1:
+                    t = (dt.Subtract(DateTime.MinValue));
+                    break;
+                default:
+                    t = (dt.Subtract(DateTime.MinValue)).Add(new TimeSpan(0, nMinutes / 2, 0));
+                    break;
+            }
+            return DateTime.MinValue.Add(new TimeSpan(0, (((int)t.TotalMinutes) / nMinutes) * nMinutes, 0));
+        }
+
     }
 }
