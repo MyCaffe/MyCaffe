@@ -672,7 +672,7 @@ namespace MyCaffe.layers.tft
             return new float[nItemCount];
         }
 
-        private void setBuffer(BlobCollection<T> col, int nIdx, float[] rg, DateTime? dt = null)
+        private void setBuffer(BlobCollection<T> col, int nIdx, float[] rg, BLOB_TYPE type = BLOB_TYPE.DATA, DateTime? dt = null)
         {
             if (rg == null)
                 return;
@@ -710,6 +710,8 @@ namespace MyCaffe.layers.tft
 
             if (dt.HasValue)
                 col[nIdx].Tag = dt.Value;
+
+            col[nIdx].type = type;
         }
 
         /// <summary>
@@ -759,12 +761,32 @@ namespace MyCaffe.layers.tft
             if (m_rgTarget == null || m_nLastBatchSize != nBatchSize)
                 m_rgTarget = getBuffer(col, 6);
 
+            if (itemSelection == DB_LABEL_SELECTION_METHOD.NONE && ordering == DB_INDEX_ORDER.COL_MAJOR)
+            {
+                if (m_rgStaticNum != null)
+                    Array.Clear(m_rgStaticNum, 0, m_rgStaticNum.Length);
+                if (m_rgStaticCat != null)
+                    Array.Clear(m_rgStaticCat, 0, m_rgStaticCat.Length);
+                if (m_rgHistoricalNum != null)
+                    Array.Clear(m_rgHistoricalNum, 0, m_rgHistoricalNum.Length);
+                if (m_rgHistoricalCat != null)
+                    Array.Clear(m_rgHistoricalCat, 0, m_rgHistoricalCat.Length);
+                if (m_rgFutureNum != null)
+                    Array.Clear(m_rgFutureNum, 0, m_rgFutureNum.Length);
+                if (m_rgFutureCat != null)
+                    Array.Clear(m_rgFutureCat, 0, m_rgFutureCat.Length);
+                if (m_rgTarget != null)
+                    Array.Clear(m_rgTarget, 0, m_rgTarget.Length);
+            }
+
             int nIdx = 7;
 
             if (m_bOutputTargetHistorical)
             {
                 if (m_rgTargetHist == null || m_nLastBatchSize != nBatchSize)
                     m_rgTargetHist = getBuffer(col, nIdx);
+                else
+                    Array.Clear(m_rgTargetHist, 0, m_rgTargetHist.Length);
                 nIdx++;
             }
 
@@ -772,6 +794,8 @@ namespace MyCaffe.layers.tft
             {
                 if (m_rgTime == null || m_nLastBatchSize != nBatchSize)
                     m_rgTime = getBuffer(col, nIdx);
+                else
+                    Array.Clear(m_rgTime, 0, m_rgTime.Length);
                 nIdx++;
             }
 
@@ -779,6 +803,8 @@ namespace MyCaffe.layers.tft
             {
                 if (m_rgMask == null || m_nLastBatchSize != nBatchSize)
                     m_rgMask = getBuffer(col, nIdx);
+                else
+                    Array.Clear(m_rgMask, 0, m_rgMask.Length);
                 nIdx++;
             }
 
@@ -786,15 +812,38 @@ namespace MyCaffe.layers.tft
             {
                 if (m_rgItemIDs == null || m_nLastBatchSize != nBatchSize)
                     m_rgItemIDs = getBuffer(col, nIdx);
+                else
+                    Array.Clear(m_rgItemIDs, 0, m_rgItemIDs.Length);
             }
 
             if (m_rgIdx == null || m_nLastBatchSize != nBatchSize)
                 m_rgIdx = new int[nBatchSize, 2];
 
+
+            if (!m_rgMaxSrcItemSteps.ContainsKey(src.ID))
+            {
+                int nMax = src.TemporalDescriptor.ValueItemDescriptors.Max(p => p.Steps.Value);
+                nMax -= (m_nHistoricalSteps + m_nFutureSteps);
+                m_rgMaxSrcItemSteps.Add(src.ID, nMax);
+            }
+
             List<int> rgItemIdx = new List<int>();
             for (int i=0; i<src.TemporalDescriptor.ValueItemDescriptorItems.Count; i++)
             {
                 rgItemIdx.Add(i);
+            }
+
+            if (ordering == DB_INDEX_ORDER.COL_MAJOR)
+            {
+                int nIdx1 = 0;
+                if (itemSelection == DB_LABEL_SELECTION_METHOD.RANDOM)
+                    nIdx1 = m_random.Next(rgItemIdx.Count);
+
+                m_nColMajorItemIdx = rgItemIdx[nIdx1];
+                rgItemIdx.RemoveAt(nIdx1);
+
+                if (valueSelection == DB_ITEM_SELECTION_METHOD.RANDOM)
+                    m_nColMajorValIdx = m_random.Next(m_rgMaxSrcItemSteps[src.ID]);
             }
 
             DateTime dtStart = DateTime.MinValue;
@@ -965,46 +1014,28 @@ namespace MyCaffe.layers.tft
 
                     nBatchIdx++;
                 }
-                
+
                 if (ordering == DB_INDEX_ORDER.COL_MAJOR)
                 {
-                    int nIdx1 = 0;
+                    if (rgItemIdx.Count == 0)
+                    {
+                        m_nColMajorItemIdx = 0;
+                        if (itemSelection == DB_LABEL_SELECTION_METHOD.NONE)
+                            break;
 
+                        for (int i = 0; i < src.TemporalDescriptor.ValueItemDescriptorItems.Count; i++)
+                        {
+                            rgItemIdx.Add(i);
+                        }
+                    }
+
+                    int nIdx1 = 0;
                     if (itemSelection == DB_LABEL_SELECTION_METHOD.RANDOM)
                         nIdx1 = m_random.Next(rgItemIdx.Count);
 
                     m_nColMajorItemIdx = rgItemIdx[nIdx1];
                     rgItemIdx.RemoveAt(nIdx1);
-
-                    if (rgItemIdx.Count == 0)
-                    {
-                        for (int i = 0; i < src.TemporalDescriptor.ValueItemDescriptorItems.Count; i++)
-                        {
-                            rgItemIdx.Add(i);
-                        }
-
-                        if (nBatchIdx == 0)
-                        {
-                            if (valueSelection == DB_ITEM_SELECTION_METHOD.RANDOM)
-                            {
-                                m_nColMajorValIdx = m_random.Next(m_rgMaxSrcItemSteps[src.ID]);
-                            }
-                            else
-                            {
-                                m_nColMajorValIdx += nValueStepSize;
-                                if (m_nColMajorValIdx >= m_rgMaxSrcItemSteps[src.ID])
-                                    m_nColMajorValIdx = 0;
-                            }
-                        }
-                    }
                 }
-            }
-
-            if (!m_rgMaxSrcItemSteps.ContainsKey(src.ID))
-            {
-                int nMax = src.TemporalDescriptor.ValueItemDescriptors.Max(p => p.Steps.Value);
-                nMax -= (m_nHistoricalSteps + m_nFutureSteps);
-                m_rgMaxSrcItemSteps.Add(src.ID, nMax);
             }
 
             if (valueSelection == DB_ITEM_SELECTION_METHOD.RANDOM)
@@ -1041,19 +1072,19 @@ namespace MyCaffe.layers.tft
 
             if (m_bOutputTime)
             {
-                setBuffer(col, nIdx, m_rgTime, dtStart);
+                setBuffer(col, nIdx, m_rgTime, BLOB_TYPE.TIME, dtStart);
                 nIdx++;
             }
 
             if (m_bOutputMask)
             {
-                setBuffer(col, nIdx, m_rgMask);
+                setBuffer(col, nIdx, m_rgMask, BLOB_TYPE.MASK);
                 nIdx++;
             }
 
             if (m_bOutputItemIds)
             {
-                setBuffer(col, nIdx, m_rgItemIDs);
+                setBuffer(col, nIdx, m_rgItemIDs, BLOB_TYPE.ID);
                 nIdx++;
             }
 
