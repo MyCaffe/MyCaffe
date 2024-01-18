@@ -908,6 +908,15 @@ namespace MyCaffe.basecode
         /// <returns>If there is enough data from the value index + steps, true is returned, otherwise false.</returns>
         [OperationContract(IsOneWay = false)]
         bool IsValueIndexValid(string strSource, int nItemIndex, int nValueIndex, int nStepsForward);
+
+        /// <summary>
+        /// Returns the master time sync for a given phase of a dataset.
+        /// </summary>
+        /// <param name="nDataSetID">Specifies the dataset ID.</param>
+        /// <param name="phase">Specifies the phase of the dataset.</param>
+        /// <returns>The master time sync is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        List<DateTime> GetMasterTimeSync(int nDataSetID, Phase phase);
     }
 
     /// <summary>
