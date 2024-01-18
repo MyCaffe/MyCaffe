@@ -852,6 +852,14 @@ namespace MyCaffe.db.temporal
             return true;
         }
 
+        /// <summary>
+        /// Returns a string representation of the item set.    
+        /// </summary>
+        /// <returns>The string representing the item set is returned.</returns>
+        public override string ToString()
+        {
+            return "[" + (m_bActive ? "Active" : "Inactive") + "] " + m_item.Name + " (" + m_item.ID.ToString() + ")" + " -> " + m_nColCount.ToString() + " columns";
+        }
     }
 
     [Serializable]
