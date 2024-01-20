@@ -826,7 +826,8 @@ namespace MyCaffe.test
                 data.data_temporal_param.shuffle_item_data = true;
                 data.data_temporal_param.source_type = DataTemporalParameter.SOURCE_TYPE.DIRECT;
                 data.data_temporal_param.source = strDataSource;
-                data.data_temporal_param.enable_debug_output = false;
+                data.data_temporal_param.enable_debug_output_image = false;
+                data.data_temporal_param.enable_debug_output_stat = false;
                 data.data_temporal_param.output_target_historical = true;
                 data.data_temporal_param.output_time = true;
                 data.data_temporal_param.output_mask = true;
@@ -850,7 +851,8 @@ namespace MyCaffe.test
                 data.data_temporal_param.shuffle_item_data = true;
                 data.data_temporal_param.source_type = DataTemporalParameter.SOURCE_TYPE.DIRECT;
                 data.data_temporal_param.source = strDataSource;
-                data.data_temporal_param.enable_debug_output = false;
+                data.data_temporal_param.enable_debug_output_image = false;
+                data.data_temporal_param.enable_debug_output_stat = false;
                 data.data_temporal_param.output_target_historical = true;
                 data.data_temporal_param.output_time = true;
                 data.data_temporal_param.output_mask = true;
