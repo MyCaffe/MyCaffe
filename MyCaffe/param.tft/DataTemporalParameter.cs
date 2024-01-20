@@ -30,6 +30,7 @@ namespace MyCaffe.param.tft
         uint? m_nSeed = null;
         bool m_bShuffleItemData = true;
         bool m_bShuffleValueData = true;
+        bool m_bEnforceTimeSync = false;
         bool m_bEnableColumnMajorOrdering = false;
         bool m_bOutputTargetHistorical = false;
         bool m_bOutputTime = false;
@@ -37,7 +38,8 @@ namespace MyCaffe.param.tft
         bool m_bOutputItemIDs = false;
         bool m_bVerifyTimeSync = false;
         bool m_bIgnoreFutureData = false;
-        bool m_bEnableDebugOutput = false;
+        bool m_bEnableDebugStatOutput = false;
+        bool m_bEnableDebugImageOutput = false;
         bool m_bEnableInputDeNan = false;
         int m_nInputDeNanNotifyCount = 0;
         string m_strDebugOutputPath = null;
@@ -161,16 +163,29 @@ namespace MyCaffe.param.tft
         }
 
         /// <summary>
-        /// Optionally, specifies to output debug information (slower) on each pass.
+        /// Optionally, specifies to output debug image information (slower) on each pass.
         /// </summary>
         /// <remarks>
         /// When true, the 'debug_output_path' must be specified.   
         /// </remarks>
-        [Description("Optionally, specifies to output debug information (slower) on each pass. When true, the 'debug_output_path' must be specified.")]
-        public bool enable_debug_output
+        [Description("Optionally, specifies to output debug image information (slower) on each pass. When true, the 'debug_output_path' must be specified.")]
+        public bool enable_debug_output_image
         {
-            get { return m_bEnableDebugOutput; }
-            set { m_bEnableDebugOutput = value; }
+            get { return m_bEnableDebugImageOutput; }
+            set { m_bEnableDebugImageOutput = value; }
+        }
+
+        /// <summary>
+        /// Optionally, specifies to output debug statistic information (slower) on each pass.
+        /// </summary>
+        /// <remarks>
+        /// When true, the 'debug_output_path' must be specified.   
+        /// </remarks>
+        [Description("Optionally, specifies to output debug statistic information (slower) on each pass. When true, the 'debug_output_path' must be specified.")]
+        public bool enable_debug_output_stat
+        {
+            get { return m_bEnableDebugStatOutput; }
+            set { m_bEnableDebugStatOutput = value; }
         }
 
         /// <summary>
@@ -221,6 +236,19 @@ namespace MyCaffe.param.tft
         {
             get { return m_bShuffleValueData; }
             set { m_bShuffleValueData = value; }
+        }
+
+        /// <summary>
+        /// Specifies to enforce the time synchronization across all items in the batch even when the shuffle_value_data = true (default = false).
+        /// </summary>
+        /// <remarks>
+        /// Note, when this setting is false, the value time sync will not match across each item within the batch and 'verify_time_sync' will fail when set to true.
+        /// This setting is used when using column ordering.
+        /// </remarks>
+        public bool enforce_time_sync
+        {
+            get { return m_bEnforceTimeSync; }
+            set { m_bEnforceTimeSync = value; }
         }
 
         /// <summary>
@@ -400,6 +428,7 @@ namespace MyCaffe.param.tft
             m_nChunkCount = p.chunk_count;
             m_bShuffleItemData = p.shuffle_item_data;
             m_bShuffleValueData = p.shuffle_value_data;
+            m_bEnforceTimeSync = p.enforce_time_sync;
             m_bEnableColumnMajorOrdering = p.enable_column_major_ordering;
             m_bEnableInputDeNan = p.enable_input_denan;
             m_forcedPhase = p.forced_phase;
@@ -410,7 +439,8 @@ namespace MyCaffe.param.tft
             m_bOutputItemIDs = p.output_item_ids;
             m_bVerifyTimeSync = p.verify_time_sync;
             m_bIgnoreFutureData = p.ignore_future_data;
-            m_bEnableDebugOutput = p.enable_debug_output;
+            m_bEnableDebugImageOutput = p.enable_debug_output_image;
+            m_bEnableDebugStatOutput = p.enable_debug_output_stat;
             m_nInputDeNanNotifyCount = p.input_denan_notify_count;
             m_strDebugOutputPath = p.debug_output_path;
             m_targetSource = p.target_source;
@@ -447,6 +477,7 @@ namespace MyCaffe.param.tft
             rgChildren.Add("chunk_count", chunk_count.ToString());
             rgChildren.Add("shuffle_item_data", shuffle_item_data.ToString());
             rgChildren.Add("shuffle_value_data", shuffle_value_data.ToString());
+            rgChildren.Add("enforce_time_sync", enforce_time_sync.ToString());
             rgChildren.Add("enable_column_major_ordering", enable_column_major_ordering.ToString());
             rgChildren.Add("enable_input_denan", enable_input_denan.ToString());
             rgChildren.Add("input_denan_notify_count", input_denan_notify_count.ToString());
@@ -457,7 +488,8 @@ namespace MyCaffe.param.tft
             rgChildren.Add("output_item_ids", output_item_ids.ToString());
             rgChildren.Add("verify_time_sync", verify_time_sync.ToString());
             rgChildren.Add("ignore_future_data", ignore_future_data.ToString());
-            rgChildren.Add("enable_debug_output", enable_debug_output.ToString());
+            rgChildren.Add("enable_debug_output_image", enable_debug_output_image.ToString());
+            rgChildren.Add("enable_debug_output_stat", enable_debug_output_stat.ToString());
             rgChildren.Add("debug_output_path", debug_output_path);
             rgChildren.Add("target_source", target_source.ToString());
             rgChildren.Add("value_start_index_override", value_start_index_override.ToString());
@@ -537,6 +569,9 @@ namespace MyCaffe.param.tft
             if ((strVal = rp.FindValue("shuffle_value_data")) != null)
                 p.shuffle_value_data = bool.Parse(strVal);
 
+            if ((strVal = rp.FindValue("enforce_time_sync")) != null)
+                p.enforce_time_sync = bool.Parse(strVal);
+
             if ((strVal = rp.FindValue("enable_column_major_ordering")) != null)
                 p.enable_column_major_ordering = bool.Parse(strVal);
 
@@ -582,8 +617,11 @@ namespace MyCaffe.param.tft
             if ((strVal = rp.FindValue("ignore_future_data")) != null)
                 p.ignore_future_data = bool.Parse(strVal);
 
-            if ((strVal = rp.FindValue("enable_debug_output")) != null)
-                p.enable_debug_output = bool.Parse(strVal);
+            if ((strVal = rp.FindValue("enable_debug_output_image")) != null)
+                p.enable_debug_output_image = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("enable_debug_output_stat")) != null)
+                p.enable_debug_output_stat = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("debug_output_path")) != null)
                 p.debug_output_path = strVal;
