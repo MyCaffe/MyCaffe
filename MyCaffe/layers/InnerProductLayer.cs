@@ -364,8 +364,10 @@ namespace MyCaffe.layers
 
             if (m_bEnableNoise && m_phase == Phase.TRAIN)
             {
+                int nSigmaWtIdx = (m_bBiasTerm) ? 2 : 1;
+
                 // Multiply the sigma weight by the noise vector.
-                m_cuda.mul(m_colBlobs[2].count(), m_colBlobs[2].gpu_data, m_blobEpsilonWeight.gpu_data, m_blobEpsilonWeight.mutable_gpu_diff);
+                m_cuda.mul(m_colBlobs[nSigmaWtIdx].count(), m_colBlobs[nSigmaWtIdx].gpu_data, m_blobEpsilonWeight.gpu_data, m_blobEpsilonWeight.mutable_gpu_diff);
                 // Add the sigma noise to the weights.
                 m_cuda.add(m_colBlobs[0].count(), m_colBlobs[0].gpu_data, m_blobEpsilonWeight.gpu_diff, m_blobEpsilonWeight.mutable_gpu_diff);
                 hWeight = m_blobEpsilonWeight.gpu_diff;
@@ -449,8 +451,10 @@ namespace MyCaffe.layers
 
             if (m_bEnableNoise && m_phase == Phase.TRAIN)
             {
+                int nSigmaWtIdx = (m_bBiasTerm) ? 2 : 1;
+
                 // Gradient with respect to the sigma weight
-                m_cuda.mul(m_colBlobs[2].count(), m_colBlobs[0].gpu_diff, m_blobEpsilonWeight.gpu_data, m_colBlobs[2].mutable_gpu_diff);
+                m_cuda.mul(m_colBlobs[nSigmaWtIdx].count(), m_colBlobs[0].gpu_diff, m_blobEpsilonWeight.gpu_data, m_colBlobs[nSigmaWtIdx].mutable_gpu_diff);
 
                 if (m_bBiasTerm)
                 {
