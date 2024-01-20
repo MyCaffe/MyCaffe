@@ -29,6 +29,10 @@ namespace MyCaffe.layers.tft
         Blob<T> m_blobCapturedReturnsSum;
         T m_tLarge;
         List<double> m_rgValues = new List<double>();
+        Blob<T> m_blobTime = null;
+        Blob<T> m_blobID = null;
+        List<List<int>> m_rgTimeStamp = new List<List<int>>();
+        List<List<int>> m_rgID = new List<List<int>>();
 
         /// <summary>
         /// The constructor.
@@ -74,11 +78,19 @@ namespace MyCaffe.layers.tft
         }
 
         /// <summary>
-        /// Returns the exact number of required bottom (input) Blobs: x, target
+        /// Returns the minimum number of required bottom (input) Blobs: x, target
         /// </summary>
-        public override int ExactNumBottomBlobs
+        public override int MinBottomBlobs
         {
             get { return 2; }
+        }
+
+        /// <summary>
+        /// Returns the maximum number of required bottom (input) Blobs: x, target, time, id
+        /// </summary>
+        public override int MaxBottomBlobs
+        {
+            get { return 4; }
         }
 
         /// <summary>
@@ -99,6 +111,14 @@ namespace MyCaffe.layers.tft
             int nN = colBottom[0].num;
             int nC = colBottom[0].channels;
             m_log.CHECK_EQ(colBottom[0].height, 1, "Currently, the Sharpe Accuracy Layer only supports 1 position prediction.");
+
+            for (int i = 2; i < colBottom.Count; i++)
+            {
+                if ((colBottom[i].type & BLOB_TYPE.TIME) == BLOB_TYPE.TIME)
+                    m_blobTime = colBottom[i];
+                else if ((colBottom[i].type & BLOB_TYPE.ID) == BLOB_TYPE.ID)
+                    m_blobID = colBottom[i];
+            }
         }
 
         /// <summary>
@@ -138,6 +158,17 @@ namespace MyCaffe.layers.tft
             int nN = colBottom[0].num;
             int nC = colBottom[0].channels;
 
+            if (m_blobTime != null)
+            {
+                float[] rgTime = convertF(m_blobTime.mutable_cpu_data);
+                int[] rgnTime = rgTime.Select(p => (int)Math.Round(p)).ToArray();
+                m_rgTimeStamp.Add(rgnTime.ToList());
+
+                float[] rgID = convertF(m_blobID.mutable_cpu_data);
+                int[] rgnID = rgID.Select(p => (int)Math.Round(p)).ToArray();
+                m_rgID.Add(rgnID.ToList());
+            }
+
             // captured_returns = weights * y_true
             m_cuda.mul(m_blobCapturedReturns.count(), colBottom[0].gpu_data, colBottom[1].gpu_data, m_blobCapturedReturns.mutable_gpu_data);
             // Add the returns of all assets in the batch.
@@ -173,6 +204,14 @@ namespace MyCaffe.layers.tft
             while (m_rgValues.Count > m_param.sharpe_accuracy_param.averaging_periods)
             {
                 m_rgValues.RemoveAt(0);
+            }
+            while (m_rgTimeStamp.Count > m_param.sharpe_accuracy_param.averaging_periods)
+            {
+                m_rgTimeStamp.RemoveAt(0);
+            }
+            while (m_rgID.Count > m_param.sharpe_accuracy_param.averaging_periods)
+            {
+                m_rgID.RemoveAt(0);
             }
 
             double dfAveVal = m_rgValues.Average();
