@@ -12,6 +12,9 @@ using System.Threading.Tasks;
 using System.Threading;
 using MyCaffe.db.temporal;
 using SimpleGraphing;
+using MyCaffe.param;
+using MyCaffe.layers;
+using MyCaffe.common;
 
 namespace MyCaffe.test
 {
@@ -429,6 +432,931 @@ namespace MyCaffe.test
                 }
 
                 nIdx++;
+            }
+        }
+
+        [TestMethod]
+        public void TestDataset_TFT_commodities_none_train()
+        {
+            TestDataset_TFT_commodities_none(Phase.TRAIN);
+        }
+
+        [TestMethod]
+        public void TestDataset_TFT_commodities_none_test()
+        {
+            TestDataset_TFT_commodities_none(Phase.TEST);
+        }
+
+        public void TestDataset_TFT_commodities_none(Phase phase)
+        {
+            DatabaseLoader loader = new DatabaseLoader();
+            DatasetDescriptor ds = loader.LoadDatasetFromDb("TFT.commodities");
+
+            if (ds == null)
+                return;
+
+            Log log = new Log("Test log");
+            int nHistSteps = 63;
+            int nFutureSteps = 0;
+            bool bNormalizedData = false;
+
+            PropertySet prop = new PropertySet();
+            prop.SetProperty("NormalizedData", bNormalizedData.ToString());
+            prop.SetProperty("HistoricalSteps", nHistSteps.ToString());
+            prop.SetProperty("FutureSteps", nFutureSteps.ToString());
+
+            MyCaffeTemporalDatabase db = new MyCaffeTemporalDatabase(log, prop);
+
+            SettingsCaffe s = new SettingsCaffe();
+            s.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+
+            db.InitializeWithDsName1(s, ds.Name);
+            List<DateTime> rgMasterTimeSync = db.GetMasterTimeSync(ds.ID, phase);
+
+            //---------------------------------------------------------------------
+            // Test non-random queryies.
+            //---------------------------------------------------------------------
+
+            int nColItemIdx = 0;
+            int nColValueIdx = 0;
+            int? nItemIdx = 0;
+            int? nValueIdx = 0;
+            DB_LABEL_SELECTION_METHOD? itemSel = DB_LABEL_SELECTION_METHOD.NONE;
+            DB_ITEM_SELECTION_METHOD? valueSel = DB_ITEM_SELECTION_METHOD.NONE;
+            int nSteps = nHistSteps + nFutureSteps;
+            int nBatch = 256;
+            double dfBatchQueries = (rgMasterTimeSync.Count - nSteps) / (double)nSteps;
+            int nBatchQueries = (int)Math.Round(dfBatchQueries) + 1;
+            Dictionary<int, int> rgAvailableValid = new Dictionary<int, int>();
+            SourceDescriptor src = (phase == Phase.TRAIN) ? ds.TrainingSource : ds.TestingSource;
+
+            for (int m = 0; m < nBatchQueries; m++)
+            {
+                Dictionary<int, SimpleTemporalDatumCollection> rgData = new Dictionary<int, SimpleTemporalDatumCollection>();
+                int nValidCount = 0;
+                List<DateTime> rgTimeSync = null;
+
+                for (int k = 0; k < nBatch; k++)
+                {
+                    nItemIdx = nColItemIdx;
+                    nValueIdx = nColValueIdx;
+
+                    SimpleTemporalDatumCollection data = db.QueryTemporalItem(0, src.ID, ref nItemIdx, ref nValueIdx, itemSel, valueSel, DB_INDEX_ORDER.COL_MAJOR, true, false, true, false, null, true);
+
+                    rgData.Add(nColItemIdx, data);
+                    if (data != null)
+                    {
+                        // Get the time sync.
+                        SimpleTemporalDatum time = data[8];
+                        DateTime dtStart = time.StartTime.Value;
+                        List<DateTime> rgTime = new List<DateTime>();
+
+                        for (int j = 0; j < time.Data.Count(); j++)
+                        {
+                            float fSeconds = time.Data[j];
+                            fSeconds *= 10000;
+                            fSeconds = (float)Math.Round(fSeconds);
+                            DateTime dt = dtStart.AddSeconds(fSeconds);
+                            rgTime.Add(dt);
+                        }
+
+                        // Verify the time sync.
+                        if (rgTimeSync == null)
+                        {
+                            rgTimeSync = rgTime;
+                        }
+                        else
+                        {
+                            for (int j = 0; j < rgTime.Count; j++)
+                            {
+                                if (rgTime[j] != rgTimeSync[j])
+                                    log.FAIL("The time sync error at index " + j.ToString() + "!");
+                            }
+                        }
+
+                        nValidCount++;
+                    }
+
+                    nColItemIdx++;
+                }
+
+                rgAvailableValid.Add(m, nValidCount);
+
+                DateTime dtFirst = rgTimeSync[0];
+                DateTime dtLast = rgTimeSync[rgTimeSync.Count - 1];
+                List<int> rgnInvalidIdx = new List<int>();
+                int nExpectedValidCount = 0;
+
+                for (int i = 0; i < src.TemporalDescriptor.ValueItemDescriptorItems.Count; i++)
+                {
+                    if (src.TemporalDescriptor.ValueItemDescriptorItems[i].Start > dtFirst)
+                    {
+                        if (rgData[i] != null)
+                            rgnInvalidIdx.Add(i);
+                        continue;
+                    }
+
+                    if (src.TemporalDescriptor.ValueItemDescriptorItems[i].End < dtLast)
+                    {
+                        if (rgData[i] != null)
+                            rgnInvalidIdx.Add(i);
+                        continue;
+                    }
+
+                    nExpectedValidCount++;
+                }
+
+                log.CHECK_EQ(nExpectedValidCount, nValidCount, "The valid count should = " + nExpectedValidCount.ToString());
+                log.CHECK_EQ(rgnInvalidIdx.Count, 0, "Invalid records found.");
+
+                nColValueIdx += nSteps;
+                nColItemIdx = 0;
+            }
+
+            log.EnableTrace = true;
+            log.WriteLine("Available " + nSteps.ToString() + " data sets");
+            int nMasterIdx = 0;
+
+            foreach (KeyValuePair<int, int> kv in rgAvailableValid)
+            {
+                DateTime dt = rgMasterTimeSync[nMasterIdx];
+                string strStars = "";
+                strStars = strStars.PadRight(kv.Value, '*');
+
+                log.WriteLine(dt.ToShortDateString() + "  " + kv.Key.ToString() + " = " + "(" + kv.Value.ToString() + ") " + strStars);
+
+                nMasterIdx += nSteps;
+            }
+        }
+
+        [TestMethod]
+        public void TestDataset_TFT_commodities_random_item()
+        {
+            DatabaseLoader loader = new DatabaseLoader();
+            DatasetDescriptor ds = loader.LoadDatasetFromDb("TFT.commodities");
+
+            if (ds == null)
+                return;
+
+            Log log = new Log("Test log");
+            int nHistSteps = 63;
+            int nFutureSteps = 0;
+            bool bNormalizedData = false;
+
+            PropertySet prop = new PropertySet();
+            prop.SetProperty("NormalizedData", bNormalizedData.ToString());
+            prop.SetProperty("HistoricalSteps", nHistSteps.ToString());
+            prop.SetProperty("FutureSteps", nFutureSteps.ToString());
+
+            MyCaffeTemporalDatabase db = new MyCaffeTemporalDatabase(log, prop);
+
+            SettingsCaffe s = new SettingsCaffe();
+            s.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+
+            db.InitializeWithDsName1(s, ds.Name);
+            List<DateTime> rgMasterTimeSync = db.GetMasterTimeSync(ds.ID, Phase.TRAIN);
+
+            //---------------------------------------------------------------------
+            // Test random item queryies.
+            //---------------------------------------------------------------------
+
+            int nColItemIdx = 0;
+            int nColValueIdx = 0;
+            int? nItemIdx = 0;
+            int? nValueIdx = 0;
+            DB_LABEL_SELECTION_METHOD? itemSel = DB_LABEL_SELECTION_METHOD.NONE;
+            DB_ITEM_SELECTION_METHOD? valueSel = DB_ITEM_SELECTION_METHOD.NONE;
+            int nSteps = nHistSteps + nFutureSteps;
+            int nBatch = 256;
+            int nBatchQueries = (rgMasterTimeSync.Count - nSteps) / nSteps;
+            Random random = new Random();
+
+            for (int m = 0; m < nBatchQueries; m++)
+            {
+                Dictionary<int, SimpleTemporalDatumCollection> rgData = new Dictionary<int, SimpleTemporalDatumCollection>();
+                int nValidCount = 0;
+                List<DateTime> rgTimeSync = null;
+
+                List<int> rgColIdx = new List<int>();
+                for (int n = 0; n < ds.TrainingSource.TemporalDescriptor.ValueItemDescriptors.Count; n++)
+                {
+                    rgColIdx.Add(n);
+                }
+
+                for (int k = 0; k < nBatch; k++)
+                {
+                    int nIdx1 = random.Next(rgColIdx.Count);
+                    nColItemIdx = rgColIdx[nIdx1];
+                    rgColIdx.RemoveAt(nIdx1);
+
+                    if (rgColIdx.Count == 0)
+                    {
+                        for (int n = 0; n < ds.TrainingSource.TemporalDescriptor.ValueItemDescriptors.Count; n++)
+                        {
+                            rgColIdx.Add(n);
+                        }
+                    }
+
+                    nItemIdx = nColItemIdx;
+                    nValueIdx = nColValueIdx;
+
+                    SimpleTemporalDatumCollection data = db.QueryTemporalItem(0, ds.TrainingSource.ID, ref nItemIdx, ref nValueIdx, itemSel, valueSel, DB_INDEX_ORDER.COL_MAJOR, true, false, true, false, null, true);
+
+                    bool bExists = false;
+                    if (!rgData.ContainsKey(nColItemIdx))
+                        rgData.Add(nColItemIdx, data);
+                    else
+                    {
+                        rgData[nColItemIdx] = data;
+                        bExists = true;
+                    }
+
+                    if (data != null)
+                    {
+                        // Get the time sync.
+                        SimpleTemporalDatum time = data[8];
+                        DateTime dtStart = time.StartTime.Value;
+                        List<DateTime> rgTime = new List<DateTime>();
+
+                        for (int j = 0; j < time.Data.Count(); j++)
+                        {
+                            float fSeconds = time.Data[j];
+                            fSeconds *= 10000;
+                            fSeconds = (float)Math.Round(fSeconds);
+                            DateTime dt = dtStart.AddSeconds(fSeconds);
+                            rgTime.Add(dt);
+                        }
+
+                        // Verify the time sync.
+                        if (rgTimeSync == null)
+                        {
+                            rgTimeSync = rgTime;
+                        }
+                        else
+                        {
+                            for (int j = 0; j < rgTime.Count; j++)
+                            {
+                                if (rgTime[j] != rgTimeSync[j])
+                                    log.FAIL("The time sync error at index " + j.ToString() + "!");
+                            }
+                        }
+
+                        if (!bExists)
+                            nValidCount++;
+                    }
+                }
+
+                DateTime dtFirst = rgTimeSync[0];
+                DateTime dtLast = rgTimeSync[rgTimeSync.Count - 1];
+                List<int> rgnInvalidIdx = new List<int>();
+                int nExpectedValidCount = 0;
+
+                for (int i = 0; i < ds.TrainingSource.TemporalDescriptor.ValueItemDescriptorItems.Count; i++)
+                {
+                    if (ds.TrainingSource.TemporalDescriptor.ValueItemDescriptorItems[i].Start > dtFirst)
+                    {
+                        if (rgData[i] != null)
+                            rgnInvalidIdx.Add(i);
+                        continue;
+                    }
+
+                    if (ds.TrainingSource.TemporalDescriptor.ValueItemDescriptorItems[i].End < dtLast)
+                    {
+                        if (rgData[i] != null)
+                            rgnInvalidIdx.Add(i);
+                        continue;
+                    }
+
+                    nExpectedValidCount++;
+                }
+
+                log.CHECK_EQ(nExpectedValidCount, nValidCount, "The valid count should = " + nExpectedValidCount.ToString());
+                log.CHECK_EQ(rgnInvalidIdx.Count, 0, "Invalid records found.");
+
+                nColValueIdx += nSteps;
+                nColItemIdx = 0;
+            }
+        }
+
+        [TestMethod]
+        public void TestDataset_TFT_commodities_random_value()
+        {
+            DatabaseLoader loader = new DatabaseLoader();
+            DatasetDescriptor ds = loader.LoadDatasetFromDb("TFT.commodities");
+
+            if (ds == null)
+                return;
+
+            Log log = new Log("Test log");
+            int nHistSteps = 63;
+            int nFutureSteps = 0;
+            bool bNormalizedData = false;
+
+            PropertySet prop = new PropertySet();
+            prop.SetProperty("NormalizedData", bNormalizedData.ToString());
+            prop.SetProperty("HistoricalSteps", nHistSteps.ToString());
+            prop.SetProperty("FutureSteps", nFutureSteps.ToString());
+
+            MyCaffeTemporalDatabase db = new MyCaffeTemporalDatabase(log, prop);
+
+            SettingsCaffe s = new SettingsCaffe();
+            s.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+
+            db.InitializeWithDsName1(s, ds.Name);
+            List<DateTime> rgMasterTimeSync = db.GetMasterTimeSync(ds.ID, Phase.TRAIN);
+
+            //---------------------------------------------------------------------
+            // Test random value queryies.
+            //---------------------------------------------------------------------
+
+            int nColItemIdx = 0;
+            int nColValueIdx = 0;
+            int? nItemIdx = 0;
+            int? nValueIdx = 0;
+            DB_LABEL_SELECTION_METHOD? itemSel = DB_LABEL_SELECTION_METHOD.NONE;
+            DB_ITEM_SELECTION_METHOD? valueSel = DB_ITEM_SELECTION_METHOD.NONE;
+            int nSteps = nHistSteps + nFutureSteps;
+            int nBatch = 256;
+            int nBatchQueries = (rgMasterTimeSync.Count - nSteps) / nSteps;
+            Random random = new Random();
+
+            List<int> rgValueIdx = new List<int>();
+            for (int i=0; i<rgMasterTimeSync.Count - nSteps; i++)
+            {
+                rgValueIdx.Add(i);
+            }
+
+            for (int m = 0; m < nBatchQueries; m++)
+            {
+                Dictionary<int, SimpleTemporalDatumCollection> rgData = new Dictionary<int, SimpleTemporalDatumCollection>();
+                int nValidCount = 0;
+
+                for (int k = 0; k < nBatch; k++)
+                {
+                    int nIdx = random.Next(rgValueIdx.Count);
+                    nColValueIdx = rgValueIdx[nIdx];
+                    rgValueIdx.RemoveAt(nIdx);
+
+                    if (rgValueIdx.Count == 0)
+                    {
+                        for (int i = 0; i < rgMasterTimeSync.Count - nSteps; i++)
+                        {
+                            rgValueIdx.Add(i);
+                        }
+                    }
+
+                    nItemIdx = nColItemIdx;
+                    nValueIdx = nColValueIdx;
+
+                    SimpleTemporalDatumCollection data = db.QueryTemporalItem(0, ds.TrainingSource.ID, ref nItemIdx, ref nValueIdx, itemSel, valueSel, DB_INDEX_ORDER.COL_MAJOR, true, false, true, false, null, true);
+
+                    rgData.Add(nColItemIdx, data);
+                    if (data != null)
+                    {
+                        // Get the time sync.
+                        SimpleTemporalDatum time = data[8];
+                        DateTime dtStart = time.StartTime.Value;
+                        List<DateTime> rgTime = new List<DateTime>();
+
+                        for (int j = 0; j < time.Data.Count(); j++)
+                        {
+                            float fSeconds = time.Data[j];
+                            fSeconds *= 10000;
+                            DateTime dt = dtStart.AddSeconds(fSeconds);
+                            dt = Utility.RoundDateTime(dt);
+                            rgTime.Add(dt);
+                        }
+
+                        // Verify the time sync.
+                        int nMasterIdx = 0;
+                        for (int j=0; j<rgMasterTimeSync.Count; j++)
+                        {
+                            if (rgMasterTimeSync[j] == rgTime[0])
+                            {
+                                nMasterIdx = j;
+                                break;
+                            }
+                        }
+
+                        for (int j = 0; j < rgTime.Count; j++)
+                        {
+                            if (rgTime[j] != rgMasterTimeSync[nMasterIdx + j])
+                                log.FAIL("The time sync error at index " + j.ToString() + "!");
+                        }
+
+                        nValidCount++;
+                    }
+
+                    nColItemIdx++;
+                }
+
+                nColItemIdx = 0;
+            }
+        }
+
+        [TestMethod]
+        public void TestDataset_TFT_commodities_none_DataTemporalLayer_train()
+        {
+            TestDataset_TFT_commodities_none_DataTemporalLayer(Phase.TRAIN);
+        }
+
+        [TestMethod]
+        public void TestDataset_TFT_commodities_none_DataTemporalLayer_test()
+        {
+            TestDataset_TFT_commodities_none_DataTemporalLayer(Phase.TEST);
+        }
+
+        public void TestDataset_TFT_commodities_none_DataTemporalLayer(Phase phase)
+        {
+            DatabaseLoader loader = new DatabaseLoader();
+            DatasetDescriptor ds = loader.LoadDatasetFromDb("TFT.commodities");
+
+            if (ds == null)
+                return;
+
+            Log log = new Log("Test log");
+            int nHistSteps = 63;
+            int nFutureSteps = 0;
+            bool bNormalizedData = false;
+            int nSteps = nHistSteps + nFutureSteps;
+
+            SettingsCaffe s = new SettingsCaffe();
+            s.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+
+            PropertySet prop = new PropertySet();
+            prop.SetProperty("NormalizedData", bNormalizedData.ToString());
+            prop.SetProperty("HistoricalSteps", nHistSteps.ToString());
+            prop.SetProperty("FutureSteps", nFutureSteps.ToString());
+
+            MyCaffeTemporalDatabase db1 = new MyCaffeTemporalDatabase(log, prop);
+            db1.InitializeWithDsName1(s, ds.Name);
+
+            CudaDnn<float> cuda = new CudaDnn<float>(0);
+
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.DATA_TEMPORAL, "data", phase);
+            p.data_temporal_param.batch_size = 256;
+            p.data_temporal_param.num_historical_steps = (uint)nHistSteps;
+            p.data_temporal_param.num_future_steps = (uint)nFutureSteps;
+            p.data_temporal_param.shuffle_value_data = false;
+            p.data_temporal_param.shuffle_item_data = false;
+            p.data_temporal_param.source_type = param.tft.DataTemporalParameter.SOURCE_TYPE.SQL_DB;
+            p.data_temporal_param.source = "TFT.commodities";
+            p.data_temporal_param.enable_column_major_ordering = true;
+            p.data_temporal_param.ignore_future_data = true;
+            p.data_temporal_param.output_target_historical = true;
+            p.data_temporal_param.output_time = true;
+            p.data_temporal_param.output_item_ids = true;
+            p.data_temporal_param.value_step_size = nSteps;
+            p.data_temporal_param.target_source = param.tft.DataTemporalParameter.TARGET_SOURCE.HISTORICAL;
+
+            Layer<float> layer = Layer<float>.Create(cuda, log, p, null, db1);
+            Blob<float> blobTopSn = new Blob<float>(cuda, log);
+            Blob<float> blobTopSc = new Blob<float>(cuda, log);
+            Blob<float> blobTopHn = new Blob<float>(cuda, log);
+            Blob<float> blobTopHc = new Blob<float>(cuda, log);
+            Blob<float> blobTopFn = new Blob<float>(cuda, log);
+            Blob<float> blobTopFc = new Blob<float>(cuda, log);
+            Blob<float> blobTopTrg = new Blob<float>(cuda, log);
+            Blob<float> blobTopTrgHist = new Blob<float>(cuda, log);
+            Blob<float> blobTopTime = new Blob<float>(cuda, log);
+            Blob<float> blobTopID = new Blob<float>(cuda, log);
+
+            BlobCollection<float> colTop = new BlobCollection<float>();
+            BlobCollection<float> colBtm = new BlobCollection<float>();
+            colTop.Add(blobTopSn);
+            colTop.Add(blobTopSc);
+            colTop.Add(blobTopHn);
+            colTop.Add(blobTopHc);
+            colTop.Add(blobTopFn);
+            colTop.Add(blobTopFc);
+            colTop.Add(blobTopTrg);
+            colTop.Add(blobTopTrgHist);
+            colTop.Add(blobTopTime);
+            colTop.Add(blobTopID);
+
+            try
+            {
+                layer.Setup(colBtm, colTop);
+
+
+                MyCaffeTemporalDatabase db = new MyCaffeTemporalDatabase(log, prop);
+
+                db.InitializeWithDsName1(s, ds.Name);
+                List<DateTime> rgMasterTimeSync = db.GetMasterTimeSync(ds.ID, phase);
+
+                //---------------------------------------------------------------------
+                // Test non-random queryies.
+                //---------------------------------------------------------------------
+
+                int nColItemIdx = 0;
+                int nColValueIdx = 0;
+                int? nItemIdx = 0;
+                int? nValueIdx = 0;
+                DB_LABEL_SELECTION_METHOD? itemSel = DB_LABEL_SELECTION_METHOD.NONE;
+                DB_ITEM_SELECTION_METHOD? valueSel = DB_ITEM_SELECTION_METHOD.NONE;
+                int nBatch = 256;
+                double dfBatchQueries = (rgMasterTimeSync.Count - nSteps) / (double)nSteps;
+                int nBatchQueries = (int)Math.Round(dfBatchQueries) + 1;
+                Dictionary<int, int> rgAvailableValid = new Dictionary<int, int>();
+                SourceDescriptor src = (phase == Phase.TRAIN) ? ds.TrainingSource : ds.TestingSource;
+
+                for (int m = 0; m < nBatchQueries; m++)
+                {
+                    Dictionary<int, SimpleTemporalDatumCollection> rgData = new Dictionary<int, SimpleTemporalDatumCollection>();
+                    int nValidCount = 0;
+                    List<DateTime> rgTimeSync = null;
+
+                    layer.Forward(colBtm, colTop);
+
+                    float[] rgTime1 = blobTopTime.mutable_cpu_data;
+                    float[] rgID = blobTopID.mutable_cpu_data;
+
+                    for (int k = 0; k < nBatch; k++)
+                    {
+                        nItemIdx = nColItemIdx;
+                        nValueIdx = nColValueIdx;
+
+                        SimpleTemporalDatumCollection data = db.QueryTemporalItem(0, src.ID, ref nItemIdx, ref nValueIdx, itemSel, valueSel, DB_INDEX_ORDER.COL_MAJOR, true, false, true, false, null, true);
+
+                        rgData.Add(nColItemIdx, data);
+                        if (data != null)
+                        {
+                            // Get the time sync.
+                            SimpleTemporalDatum time = data[8];
+                            SimpleTemporalDatum id = data[9];
+                            DateTime dtStart = time.StartTime.Value;
+                            List<DateTime> rgTime = new List<DateTime>();
+
+                            for (int j = 0; j < time.Data.Count(); j++)
+                            {
+                                float fSeconds = time.Data[j];
+                                fSeconds *= 10000;
+                                fSeconds = (float)Math.Round(fSeconds);
+                                DateTime dt = dtStart.AddSeconds(fSeconds);
+                                dt = Utility.RoundDateTime(dt);
+                                rgTime.Add(dt);
+                            }
+
+                            // Verify the time sync.
+                            if (rgTimeSync == null)
+                            {
+                                rgTimeSync = rgTime;
+                            }
+                            else
+                            {
+                                for (int j = 0; j < rgTime.Count; j++)
+                                {
+                                    if (rgTime[j] != rgTimeSync[j])
+                                        log.FAIL("The time sync error at index " + j.ToString() + "!");
+                                }
+                            }
+
+                            int nIdx = nSteps * nValidCount;
+                            for (int j = 0; j < nSteps; j++)
+                            {
+                                float fSeconds = time.Data[j];
+                                fSeconds *= 10000;
+                                fSeconds = (float)Math.Round(fSeconds);
+                                DateTime dtExpected = dtStart.AddSeconds(fSeconds);
+                                dtExpected = Utility.RoundDateTime(dtExpected);
+
+                                fSeconds = rgTime1[nIdx + j];
+                                fSeconds *= 10000;
+                                fSeconds = (float)Math.Round(fSeconds);
+                                DateTime dtActual = dtStart.AddSeconds(fSeconds);
+                                dtActual = Utility.RoundDateTime(dtActual);
+
+                                if (dtActual != dtExpected)
+                                    log.FAIL("The actual data time is the the same as the expected time!");
+                            }
+
+                            int nIdExpected = (int)id.Data[0];
+                            int nIdActual = (int)rgID[nValidCount];
+
+                            if (nIdActual != nIdExpected)
+                                log.FAIL("The ID's do not match!"); 
+
+                            nValidCount++;
+                        }
+
+                        nColItemIdx++;
+                    }
+
+                    rgAvailableValid.Add(m, nValidCount);
+
+                    DateTime dtFirst = rgTimeSync[0];
+                    DateTime dtLast = rgTimeSync[rgTimeSync.Count - 1];
+                    List<int> rgnInvalidIdx = new List<int>();
+                    int nExpectedValidCount = 0;
+
+                    for (int i = 0; i < src.TemporalDescriptor.ValueItemDescriptorItems.Count; i++)
+                    {
+                        if (src.TemporalDescriptor.ValueItemDescriptorItems[i].Start > dtFirst)
+                        {
+                            if (rgData[i] != null)
+                                rgnInvalidIdx.Add(i);
+                            continue;
+                        }
+
+                        if (src.TemporalDescriptor.ValueItemDescriptorItems[i].End < dtLast)
+                        {
+                            if (rgData[i] != null)
+                                rgnInvalidIdx.Add(i);
+                            continue;
+                        }
+
+                        nExpectedValidCount++;
+                    }
+
+                    log.CHECK_EQ(nExpectedValidCount, nValidCount, "The valid count should = " + nExpectedValidCount.ToString());
+                    log.CHECK_EQ(rgnInvalidIdx.Count, 0, "Invalid records found.");
+
+                    nColValueIdx += nSteps;
+                    nColItemIdx = 0;
+                }
+
+                log.EnableTrace = true;
+                log.WriteLine("Available " + nSteps.ToString() + " data sets");
+                int nMasterIdx = 0;
+
+                foreach (KeyValuePair<int, int> kv in rgAvailableValid)
+                {
+                    DateTime dt = rgMasterTimeSync[nMasterIdx];
+                    string strStars = "";
+                    strStars = strStars.PadRight(kv.Value, '*');
+
+                    log.WriteLine(dt.ToShortDateString() + "  " + kv.Key.ToString() + " = " + "(" + kv.Value.ToString() + ") " + strStars);
+
+                    nMasterIdx += nSteps;
+                }
+            }
+            finally
+            {
+                if (colTop != null)
+                    colTop.Dispose();
+
+                if (layer != null)
+                    layer.Dispose();
+
+                if (cuda != null)
+                    cuda.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestDataset_TFT_commodities_random_DataTemporalLayer_train()
+        {
+            TestDataset_TFT_commodities_random_DataTemporalLayer(Phase.TRAIN);
+        }
+
+        public void TestDataset_TFT_commodities_random_DataTemporalLayer(Phase phase)
+        {
+            DatabaseLoader loader = new DatabaseLoader();
+            DatasetDescriptor ds = loader.LoadDatasetFromDb("TFT.commodities");
+
+            if (ds == null)
+                return;
+
+            Log log = new Log("Test log");
+            int nHistSteps = 63;
+            int nFutureSteps = 0;
+            bool bNormalizedData = false;
+            int nSteps = nHistSteps + nFutureSteps;
+
+            SettingsCaffe s = new SettingsCaffe();
+            s.DbLoadMethod = DB_LOAD_METHOD.LOAD_ALL;
+
+            PropertySet prop = new PropertySet();
+            prop.SetProperty("NormalizedData", bNormalizedData.ToString());
+            prop.SetProperty("HistoricalSteps", nHistSteps.ToString());
+            prop.SetProperty("FutureSteps", nFutureSteps.ToString());
+
+            MyCaffeTemporalDatabase db1 = new MyCaffeTemporalDatabase(log, prop);
+            db1.InitializeWithDsName1(s, ds.Name);
+
+            CudaDnn<float> cuda = new CudaDnn<float>(0);
+
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.DATA_TEMPORAL, "data", phase);
+            p.data_temporal_param.batch_size = 256;
+            p.data_temporal_param.num_historical_steps = (uint)nHistSteps;
+            p.data_temporal_param.num_future_steps = (uint)nFutureSteps;
+            p.data_temporal_param.shuffle_value_data = true;
+            p.data_temporal_param.shuffle_item_data = true;
+            p.data_temporal_param.source_type = param.tft.DataTemporalParameter.SOURCE_TYPE.SQL_DB;
+            p.data_temporal_param.source = "TFT.commodities";
+            p.data_temporal_param.enable_column_major_ordering = true;
+            p.data_temporal_param.ignore_future_data = true;
+            p.data_temporal_param.output_target_historical = true;
+            p.data_temporal_param.output_time = true;
+            p.data_temporal_param.output_item_ids = true;
+            p.data_temporal_param.value_step_size = 1;
+            p.data_temporal_param.target_source = param.tft.DataTemporalParameter.TARGET_SOURCE.HISTORICAL;
+            p.data_temporal_param.seed = 142;
+
+            Layer<float> layer = Layer<float>.Create(cuda, log, p, null, db1);
+            Blob<float> blobTopSn = new Blob<float>(cuda, log);
+            Blob<float> blobTopSc = new Blob<float>(cuda, log);
+            Blob<float> blobTopHn = new Blob<float>(cuda, log);
+            Blob<float> blobTopHc = new Blob<float>(cuda, log);
+            Blob<float> blobTopFn = new Blob<float>(cuda, log);
+            Blob<float> blobTopFc = new Blob<float>(cuda, log);
+            Blob<float> blobTopTrg = new Blob<float>(cuda, log);
+            Blob<float> blobTopTrgHist = new Blob<float>(cuda, log);
+            Blob<float> blobTopTime = new Blob<float>(cuda, log);
+            Blob<float> blobTopID = new Blob<float>(cuda, log);
+
+            BlobCollection<float> colTop = new BlobCollection<float>();
+            BlobCollection<float> colBtm = new BlobCollection<float>();
+            colTop.Add(blobTopSn);
+            colTop.Add(blobTopSc);
+            colTop.Add(blobTopHn);
+            colTop.Add(blobTopHc);
+            colTop.Add(blobTopFn);
+            colTop.Add(blobTopFc);
+            colTop.Add(blobTopTrg);
+            colTop.Add(blobTopTrgHist);
+            colTop.Add(blobTopTime);
+            colTop.Add(blobTopID);
+
+            try
+            {
+                layer.Setup(colBtm, colTop);
+
+
+                MyCaffeTemporalDatabase db = new MyCaffeTemporalDatabase(log, prop);
+
+                db.InitializeWithDsName1(s, ds.Name);
+                List<DateTime> rgMasterTimeSync = db.GetMasterTimeSync(ds.ID, phase);
+
+                //---------------------------------------------------------------------
+                // Test non-random queryies.
+                //---------------------------------------------------------------------
+
+                int nColItemIdx = 0;
+                int nColValueIdx = 0;
+                int? nItemIdx = 0;
+                int? nValueIdx = 0;
+                DB_LABEL_SELECTION_METHOD? itemSel = DB_LABEL_SELECTION_METHOD.NONE;
+                DB_ITEM_SELECTION_METHOD? valueSel = DB_ITEM_SELECTION_METHOD.NONE;
+                int nBatch = 256;
+                double dfBatchQueries = (rgMasterTimeSync.Count - nSteps) / (double)nSteps;
+                int nBatchQueries = (int)Math.Round(dfBatchQueries) + 1;
+                Dictionary<int, int> rgAvailableValid = new Dictionary<int, int>();
+                SourceDescriptor src = (phase == Phase.TRAIN) ? ds.TrainingSource : ds.TestingSource;
+                Random random = new Random(142);
+
+                List<int> rgValueIdx = new List<int>();
+                for (int i = 0; i < rgMasterTimeSync.Count - nSteps; i++)
+                {
+                    rgValueIdx.Add(i);
+                }
+
+                for (int m = 0; m < nBatchQueries; m++)
+                {
+                    int nValidCount = 0;
+                    List<List<DateTime>> rgrgTimeSync = new List<List<DateTime>>();
+                    List<int> rgIdActual = new List<int>();
+
+                    layer.Forward(colBtm, colTop);
+
+                    float[] rgTime1 = blobTopTime.mutable_cpu_data;
+                    float[] rgID = blobTopID.mutable_cpu_data;
+
+                    List<int> rgColIdx = new List<int>();
+                    for (int n = 0; n < ds.TrainingSource.TemporalDescriptor.ValueItemDescriptors.Count; n++)
+                    {
+                        rgColIdx.Add(n);
+                    }
+
+                    while (rgIdActual.Count < nBatch)
+                    {
+                        int nIdx1 = random.Next(rgColIdx.Count);
+                        nColItemIdx = rgColIdx[nIdx1];
+                        rgColIdx.RemoveAt(nIdx1);
+
+                        if (rgColIdx.Count == 0)
+                        {
+                            for (int n = 0; n < ds.TrainingSource.TemporalDescriptor.ValueItemDescriptors.Count; n++)
+                            {
+                                rgColIdx.Add(n);
+                            }
+                        }
+
+                        nIdx1 = random.Next(rgValueIdx.Count);
+                        nColValueIdx = rgValueIdx[nIdx1];
+                        rgValueIdx.RemoveAt(nIdx1);
+
+                        if (rgValueIdx.Count == 0)
+                        {
+                            for (int i = 0; i < rgMasterTimeSync.Count - nSteps; i++)
+                            {
+                                rgValueIdx.Add(i);
+                            }
+                        }
+
+                        nItemIdx = nColItemIdx;
+                        nValueIdx = nColValueIdx;
+
+                        SimpleTemporalDatumCollection data = db.QueryTemporalItem(0, src.ID, ref nItemIdx, ref nValueIdx, itemSel, valueSel, DB_INDEX_ORDER.COL_MAJOR, true, false, true, false, null, true);
+
+                        if (data != null)
+                        {
+                            // Get the time sync.
+                            SimpleTemporalDatum time = data[8];
+                            SimpleTemporalDatum id = data[9];
+                            DateTime dtStart = time.StartTime.Value;
+                            List<DateTime> rgTimeSync = new List<DateTime>();
+
+                            int nIdx = nSteps * nValidCount;
+                            for (int j = 0; j < nSteps; j++)
+                            {
+                                float fSeconds = rgTime1[nIdx + j];
+                                if (fSeconds == 0)
+                                    log.FAIL("The time should not be 0!");
+
+                                fSeconds *= 10000;
+                                fSeconds = (float)Math.Round(fSeconds);
+                                DateTime dtActual = dtStart.AddSeconds(fSeconds);
+                                dtActual = Utility.RoundDateTime(dtActual);
+                                rgTimeSync.Add(dtActual);
+                            }
+
+                            rgrgTimeSync.Add(rgTimeSync);
+
+                            int nIdActual = (int)rgID[nValidCount];
+                            if (nIdActual == 0)
+                                log.FAIL("The ID should not be 0!");
+
+                            rgIdActual.Add(nIdActual);
+
+                            nValidCount++;
+                        }
+
+                        nColItemIdx++;
+                    }
+
+                    rgAvailableValid.Add(m, nValidCount);
+
+                    List<int> rgnInvalidIdx = new List<int>();
+                    int nExpectedValidCount = 0;
+
+                    for (int i = 0; i < rgIdActual.Count; i++)
+                    {
+                        DateTime dtFirst = rgrgTimeSync[i][0];
+                        DateTime dtLast = rgrgTimeSync[i][rgrgTimeSync[i].Count - 1];
+                        int nIdActual = rgIdActual[i];
+
+                        int nIdxItem = 0;
+                        for (int j=0; j<src.TemporalDescriptor.ValueItemDescriptorItems.Count; j++)
+                        {
+                            if (src.TemporalDescriptor.ValueItemDescriptorItems[j].Index == nIdActual)
+                            {
+                                nIdxItem = j;
+                                break;
+                            }
+                        }
+
+                        if (src.TemporalDescriptor.ValueItemDescriptorItems[nIdxItem].Start > dtFirst)
+                            continue;
+
+                        if (src.TemporalDescriptor.ValueItemDescriptorItems[nIdxItem].End < dtLast)
+                            continue;
+
+                        nExpectedValidCount++;
+                    }
+
+                    log.CHECK_EQ(nExpectedValidCount, nValidCount, "The valid count should = " + nExpectedValidCount.ToString());
+                    log.CHECK_EQ(rgnInvalidIdx.Count, 0, "Invalid records found.");
+
+                    nColValueIdx += nSteps;
+                    nColItemIdx = 0;
+                }
+
+                log.EnableTrace = true;
+                log.WriteLine("Available " + nSteps.ToString() + " data sets");
+                int nMasterIdx = 0;
+
+                foreach (KeyValuePair<int, int> kv in rgAvailableValid)
+                {
+                    DateTime dt = rgMasterTimeSync[nMasterIdx];
+                    string strStars = "";
+                    strStars = strStars.PadRight(kv.Value, '*');
+
+                    log.WriteLine(dt.ToShortDateString() + "  " + kv.Key.ToString() + " = " + "(" + kv.Value.ToString() + ") " + strStars);
+
+                    nMasterIdx += nSteps;
+                }
+            }
+            finally
+            {
+                if (colTop != null)
+                    colTop.Dispose();
+
+                if (layer != null)
+                    layer.Dispose();
+
+                if (cuda != null)
+                    cuda.Dispose();
             }
         }
     }
