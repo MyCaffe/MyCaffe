@@ -518,7 +518,7 @@ namespace MyCaffe.trainers.pg.simple
 
             for (int i = 0; i < res.Count; i++)
             {
-                if (res[i].type != BLOB_TYPE.LOSS)
+                if (res[i].blob_type != BLOB_TYPE.LOSS)
                 {
                     rgfAprob = Utility.ConvertVecF<T>(res[i].update_cpu_data());
                     break;

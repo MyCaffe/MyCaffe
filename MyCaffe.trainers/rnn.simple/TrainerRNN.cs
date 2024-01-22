@@ -1088,7 +1088,7 @@ namespace MyCaffe.trainers.rnn.simple
                         if (m_blobOutput != null)
                             blobOutput = m_blobOutput;
 
-                        if (blobOutput.type == BLOB_TYPE.LOSS)
+                        if (blobOutput.blob_type == BLOB_TYPE.LOSS)
                         {
                             if (blobLossBtm == null)
                             {
