@@ -151,6 +151,66 @@ namespace MyCaffe.layers.tft
 
             int nTotalSize = m_data.GetTotalSize();
             m_log.CHECK_GE(nTotalSize, nBatchSize, "There must be enough items for at least one batch - items found = " + nTotalSize.ToString() + ", batch size = " + nBatchSize.ToString());
+
+            string strTops = "";
+            List<string> rgExpectedTops = getExpectedTops(out strTops);
+            m_log.CHECK_EQ(rgExpectedTops.Count, colTop.Count, "The number of top blobs specified in the prototxt file does not meet the expected top count of '" + rgExpectedTops.Count.ToString() + ".  The expected tops are: " + strTops);
+        }
+
+        private List<string> getExpectedTops(out string strTops)
+        {
+            List<string> rgstr = new List<string>();
+            strTops = "";
+
+            rgstr.Add("ns");
+            strTops += "ns, ";
+
+            rgstr.Add("cs");
+            strTops += "cs, ";
+
+            rgstr.Add("nh");
+            strTops += "nh, ";
+
+            rgstr.Add("ch");
+            strTops += "ch, ";
+
+            if (!m_param.data_temporal_param.ignore_future_data)
+            {
+                rgstr.Add("nf");
+                strTops += "nf, ";
+
+                rgstr.Add("cf");
+                strTops += "cf, ";
+            }
+
+            rgstr.Add("trg");
+            strTops += "trg, ";
+
+            if (m_param.data_temporal_param.output_target_historical)
+            {
+                rgstr.Add("trgh");
+                strTops += "trgh, ";
+            }
+
+            if (m_param.data_temporal_param.output_time)
+            {
+                rgstr.Add("tm");
+                strTops += "tm, ";
+            }
+
+            if (m_param.data_temporal_param.output_mask)
+            {
+                rgstr.Add("msk");
+                strTops += "msk, ";
+            }
+
+            if (m_param.data_temporal_param.output_item_ids)
+            {
+                rgstr.Add("ids");
+                strTops += "ids, ";
+            }
+
+            return rgstr;
         }
 
         /// <summary>
@@ -167,39 +227,49 @@ namespace MyCaffe.layers.tft
             m_data.BatchSize = (int)m_nBatchSize;
 
             int[] rgShape;
+            int nIdx = 0;
 
             if ((rgShape = m_data.GetShape(DataNpy<T>.OUTPUT_TYPE.STATIC_NUMERIC)) != null)
-                colTop[0].Reshape(rgShape);
+                colTop[nIdx].Reshape(rgShape);
+            nIdx++;
 
             if ((rgShape = m_data.GetShape(DataNpy<T>.OUTPUT_TYPE.STATIC_CATEGORICAL)) != null)
-                colTop[1].Reshape(rgShape);
+                colTop[nIdx].Reshape(rgShape);
+            nIdx++;
 
             if ((rgShape = m_data.GetShape(DataNpy<T>.OUTPUT_TYPE.HISTORICAL_NUMERIC)) != null)
-                colTop[2].Reshape(rgShape);
+                colTop[nIdx].Reshape(rgShape);
+            nIdx++;
 
             if ((rgShape = m_data.GetShape(DataNpy<T>.OUTPUT_TYPE.HISTORICAL_CATEGORICAL)) != null)
-                colTop[3].Reshape(rgShape);
+                colTop[nIdx].Reshape(rgShape);
+            nIdx++;
 
-            if ((rgShape = m_data.GetShape(DataNpy<T>.OUTPUT_TYPE.FUTURE_NUMERIC)) != null)
-                colTop[4].Reshape(rgShape);
+            if (!m_param.data_temporal_param.ignore_future_data)
+            {
+                if ((rgShape = m_data.GetShape(DataNpy<T>.OUTPUT_TYPE.FUTURE_NUMERIC)) != null)
+                    colTop[nIdx].Reshape(rgShape);
+                nIdx++;
 
-            if ((rgShape = m_data.GetShape(DataNpy<T>.OUTPUT_TYPE.FUTURE_CATEGORICAL)) != null)
-                colTop[5].Reshape(rgShape);
+                if ((rgShape = m_data.GetShape(DataNpy<T>.OUTPUT_TYPE.FUTURE_CATEGORICAL)) != null)
+                    colTop[nIdx].Reshape(rgShape);
+                nIdx++;
+            }
 
-            if (colTop.Count > 6)
+            if (colTop.Count > nIdx)
             {
                 if ((rgShape = m_data.GetShape(DataNpy<T>.OUTPUT_TYPE.TARGET)) != null)
                 {
-                    colTop[6].Reshape(rgShape);
-                    colTop[6].type = BLOB_TYPE.TARGET;
+                    colTop[nIdx].Reshape(rgShape);
+                    colTop[nIdx].blob_type = BLOB_TYPE.TARGET;
                 }
+                nIdx++;
 
-                int nIdx = 7;
                 if (m_param.data_temporal_param.output_target_historical && colTop.Count > nIdx)
                 {
                     rgShape[1] = (int)m_nNumHistoricalSteps;
                     colTop[nIdx].Reshape(rgShape);
-                    colTop[nIdx].type = BLOB_TYPE.TARGET | BLOB_TYPE.DATA;
+                    colTop[nIdx].blob_type = BLOB_TYPE.TARGET | BLOB_TYPE.DATA;
                     nIdx++;
                 }
 
@@ -207,7 +277,7 @@ namespace MyCaffe.layers.tft
                 {
                     rgShape[1] = (int)m_nNumHistoricalSteps;
                     colTop[nIdx].Reshape(rgShape);
-                    colTop[nIdx].type = BLOB_TYPE.TIME | BLOB_TYPE.DATA;
+                    colTop[nIdx].blob_type = BLOB_TYPE.TIME | BLOB_TYPE.DATA;
                     nIdx++;
                 }
 
@@ -215,14 +285,14 @@ namespace MyCaffe.layers.tft
                 {
                     rgShape[1] = (int)m_nNumHistoricalSteps;
                     colTop[nIdx].Reshape(rgShape);
-                    colTop[nIdx].type = BLOB_TYPE.MASK | BLOB_TYPE.DATA;
+                    colTop[nIdx].blob_type = BLOB_TYPE.MASK | BLOB_TYPE.DATA;
                     nIdx++;
                 }
 
                 if (m_param.data_temporal_param.output_item_ids && colTop.Count > nIdx)
                 {
                     colTop[nIdx].Reshape(rgShape[0], 1, 1, 1);
-                    colTop[nIdx].type = BLOB_TYPE.ID | BLOB_TYPE.DATA;
+                    colTop[nIdx].blob_type = BLOB_TYPE.ID | BLOB_TYPE.DATA;
                     nIdx++;
                 }
             }
@@ -713,7 +783,7 @@ namespace MyCaffe.layers.tft
             if (dt.HasValue)
                 col[nIdx].Tag = dt.Value;
 
-            col[nIdx].type = type;
+            col[nIdx].blob_type = type;
         }
 
         /// <summary>
@@ -749,20 +819,33 @@ namespace MyCaffe.layers.tft
             DB_ITEM_SELECTION_METHOD valueSelection = (m_bShuffleValueData) ? DB_ITEM_SELECTION_METHOD.RANDOM : DB_ITEM_SELECTION_METHOD.NONE;
             DB_INDEX_ORDER ordering = (m_bColMajorOrdering) ? DB_INDEX_ORDER.COL_MAJOR : DB_INDEX_ORDER.ROW_MAJOR;
 
+            int nIdx = 0;
             if (m_rgStaticNum == null || m_nLastBatchSize != nBatchSize)
-                m_rgStaticNum = getBuffer(col, 0);
+                m_rgStaticNum = getBuffer(col, nIdx);
+            nIdx++;
             if (m_rgStaticCat == null || m_nLastBatchSize != nBatchSize)
-                m_rgStaticCat = getBuffer(col, 1);
+                m_rgStaticCat = getBuffer(col, nIdx);
+            nIdx++;
             if (m_rgHistoricalNum == null || m_nLastBatchSize != nBatchSize)
-                m_rgHistoricalNum = getBuffer(col, 2);
+                m_rgHistoricalNum = getBuffer(col, nIdx);
+            nIdx++;
             if (m_rgHistoricalCat == null || m_nLastBatchSize != nBatchSize)
-                m_rgHistoricalCat = getBuffer(col, 3);
-            if (m_rgFutureNum == null || m_nLastBatchSize != nBatchSize)
-                m_rgFutureNum = getBuffer(col, 4);
-            if (m_rgFutureCat == null || m_nLastBatchSize != nBatchSize)
-                m_rgFutureCat = getBuffer(col, 5);
+                m_rgHistoricalCat = getBuffer(col, nIdx);
+            nIdx++;
+
+            if (!bIgnoreFutureData)
+            {
+                if (m_rgFutureNum == null || m_nLastBatchSize != nBatchSize)
+                    m_rgFutureNum = getBuffer(col, nIdx);
+                nIdx++;
+                if (m_rgFutureCat == null || m_nLastBatchSize != nBatchSize)
+                    m_rgFutureCat = getBuffer(col, nIdx);
+                nIdx++;
+            }
+
             if (m_rgTarget == null || m_nLastBatchSize != nBatchSize)
-                m_rgTarget = getBuffer(col, 6);
+                m_rgTarget = getBuffer(col, nIdx);
+            nIdx++;
 
             if (itemSelection == DB_LABEL_SELECTION_METHOD.NONE && ordering == DB_INDEX_ORDER.COL_MAJOR)
             {
@@ -781,8 +864,6 @@ namespace MyCaffe.layers.tft
                 if (m_rgTarget != null)
                     Array.Clear(m_rgTarget, 0, m_rgTarget.Length);
             }
-
-            int nIdx = 7;
 
             if (m_bOutputTargetHistorical)
             {
@@ -1057,22 +1138,29 @@ namespace MyCaffe.layers.tft
 
             m_nLastBatchSize = nBatchSize;
 
-            setBuffer(col, 0, m_rgStaticNum);
-            setBuffer(col, 1, m_rgStaticCat);
-            setBuffer(col, 2, m_rgHistoricalNum);
-            setBuffer(col, 3, m_rgHistoricalCat);
+            nIdx = 0;
+            setBuffer(col, nIdx, m_rgStaticNum);
+            nIdx++;
+            setBuffer(col, nIdx, m_rgStaticCat);
+            nIdx++;
+            setBuffer(col, nIdx, m_rgHistoricalNum);
+            nIdx++;
+            setBuffer(col, nIdx, m_rgHistoricalCat);
+            nIdx++;
+
             if (!bIgnoreFutureData)
             {
-                setBuffer(col, 4, m_rgFutureNum);
-                setBuffer(col, 5, m_rgFutureCat);
+                setBuffer(col, nIdx, m_rgFutureNum);
+                nIdx++;
+                setBuffer(col, nIdx, m_rgFutureCat);
+                nIdx++;
             }
-            setBuffer(col, 6, m_rgTarget);
-
-            nIdx = 7;
+            setBuffer(col, nIdx, m_rgTarget, BLOB_TYPE.TARGET);
+            nIdx++;
 
             if (m_bOutputTargetHistorical)
             {
-                setBuffer(col, nIdx, m_rgTargetHist);
+                setBuffer(col, nIdx, m_rgTargetHist, BLOB_TYPE.TARGET | BLOB_TYPE.DATA);
                 nIdx++;
             }
 
