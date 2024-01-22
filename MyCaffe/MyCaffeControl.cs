@@ -2546,7 +2546,7 @@ namespace MyCaffe
                 List<Result> rgResults = new List<Result>();
                 float[] rgData = Utility.ConvertVecF<T>(colResults[0].update_cpu_data());
 
-                if (colResults[0].type == BLOB_TYPE.MULTIBBOX)
+                if (colResults[0].blob_type == BLOB_TYPE.MULTIBBOX)
                 {
                     int nNum = rgData.Length / 7;
 
@@ -2745,7 +2745,7 @@ namespace MyCaffe
             {
                 List<Result> rgResults = new List<Result>();
 
-                if (colResults[0].type == BLOB_TYPE.MULTIBBOX)
+                if (colResults[0].blob_type == BLOB_TYPE.MULTIBBOX)
                 {
                     int i = (int)rgData[(n * 7)];
                     int nLabel = (int)rgData[(n * 7) + 1];
@@ -2954,7 +2954,7 @@ namespace MyCaffe
             {
                 byte[] rgBytes = blob.ToByteArray();
                 res.SetPropertyBlob(blob.Name, rgBytes);
-                res.SetPropertyInt(blob.Name, (int)blob.type);
+                res.SetPropertyInt(blob.Name, (int)blob.blob_type);
             }
 
             if (dtLast.HasValue)
