@@ -25,6 +25,7 @@ namespace MyCaffe.layers.tft
         Dictionary<float, List<float>> m_rgAccuracies = new Dictionary<float, List<float>>();
         Dictionary<float, List<float>> m_rgAcccuracyAverages = new Dictionary<float, List<float>>();
         Dictionary<float, int> m_rgWithinTargetCounts;
+        List<float> m_rgDirectionAccuracy = new List<float>();
 
         /// <summary>
         /// The constructor.
@@ -124,61 +125,104 @@ namespace MyCaffe.layers.tft
             if (nQ != 3)
                 throw new Exception("There should only be 3 quantile predictions (upper, center, lower).");
 
-            foreach (KeyValuePair<float, List<float>> kv in m_rgAccuracies)
+            if (m_param.quantile_accuracy_param.accuracy_type == param.tft.QuantileAccuracyParameter.ACCURACY_TYPE.DIRECTION)
             {
-                kv.Value.Clear();
-            }
+                int nTotalCount = 0;
+                int nTotalCorrect = 0;
 
-            for (int i = 0; i < nN; i++)
-            {
-                foreach (float fRange in m_param.quantile_accuracy_param.accuracy_ranges)
+                int nMax = 0;
+                if (m_param.quantile_accuracy_param.direction_item_count > 0 &&
+                    m_param.quantile_accuracy_param.direction_item_count < nC)
+                    nMax = (int)m_param.quantile_accuracy_param.direction_item_count;
+
+                for (int n = 0; n < nN; n++)
                 {
-                    m_rgWithinTargetCounts[fRange] = 0;
-                }
+                    int nIdx = 0;
 
-                for (int c = 0; c < nC; c++)
-                {
-                    int nIdx = i * nC * nQ + c * nQ;
-                    float fUpper = rgX[nIdx + 2];
-                    float fCenter = rgX[nIdx + 1];
-                    float fLower = rgX[nIdx];
-
-                    float fUpperRange = Math.Abs(fUpper - fCenter);
-                    float fLowerRange = Math.Abs(fCenter - fLower);
-
-                    for (int r = 0; r < m_param.quantile_accuracy_param.accuracy_ranges.Count; r++)
+                    for (int c = 0; c < nC; c++)
                     {
-                        float fUpperTarget = fCenter + fUpperRange * m_param.quantile_accuracy_param.accuracy_ranges[r];
-                        float fLowerTarget = fCenter - fLowerRange * m_param.quantile_accuracy_param.accuracy_ranges[r];
-                        float fTarget = rgTgt[i * nC + c];
+                        int nTrgIdx = n * nC + c;
+                        float fTarget = rgTgt[nTrgIdx];
+                        int nPredIdx = n * nC * nQ + c * nQ + 1;
+                        float fPredicted = rgX[nPredIdx];
 
-                        if (fTarget <= fUpperTarget && fTarget >= fLowerTarget)
-                            m_rgWithinTargetCounts[m_param.quantile_accuracy_param.accuracy_ranges[r]]++;
+                        if (fTarget == 0 && fPredicted == 0)
+                            nTotalCorrect++;
+                        else if (fTarget != 0 && fPredicted != 0 && Math.Sign(fTarget) == Math.Sign(fPredicted))
+                            nTotalCorrect++;
+
+                        nTotalCount++;
+                        nIdx++;
+
+                        if (nMax > 0 && nIdx >= nMax)
+                            break;
                     }
                 }
 
-                foreach (KeyValuePair<float, int> kvp in m_rgWithinTargetCounts)
+                float fAccuracy = (float)nTotalCorrect / nTotalCount;
+                m_rgDirectionAccuracy.Add(fAccuracy);
+
+                fAccuracy = m_rgDirectionAccuracy.Average();
+                colTop[0].SetData(fAccuracy);
+            }
+            else
+            {
+                foreach (KeyValuePair<float, List<float>> kv in m_rgAccuracies)
                 {
-                    float fAccuracy = (float)kvp.Value / nC;
-                    m_rgAccuracies[kvp.Key].Add(fAccuracy);
+                    kv.Value.Clear();
                 }
-            }
 
-            int nIdx1 = 0;
-            foreach (KeyValuePair<float, List<float>> kvp in m_rgAccuracies)
-            {
-                float fAccuracy = kvp.Value.Average();
+                for (int i = 0; i < nN; i++)
+                {
+                    foreach (float fRange in m_param.quantile_accuracy_param.accuracy_ranges)
+                    {
+                        m_rgWithinTargetCounts[fRange] = 0;
+                    }
 
-                m_rgAcccuracyAverages[kvp.Key].Add(fAccuracy);
-                if (m_rgAcccuracyAverages[kvp.Key].Count > m_param.quantile_accuracy_param.average_period)
-                    m_rgAcccuracyAverages[kvp.Key].RemoveAt(0);
-            }
+                    for (int c = 0; c < nC; c++)
+                    {
+                        int nIdx = i * nC * nQ + c * nQ;
+                        float fUpper = rgX[nIdx + 2];
+                        float fCenter = rgX[nIdx + 1];
+                        float fLower = rgX[nIdx];
 
-            foreach (KeyValuePair<float, List<float>> kvp in m_rgAcccuracyAverages)
-            {
-                float fAveAccuracy = average(kvp.Value, m_param.quantile_accuracy_param.average_period);
-                colTop[nIdx1].SetData(fAveAccuracy);
-                nIdx1++;
+                        float fUpperRange = Math.Abs(fUpper - fCenter);
+                        float fLowerRange = Math.Abs(fCenter - fLower);
+
+                        for (int r = 0; r < m_param.quantile_accuracy_param.accuracy_ranges.Count; r++)
+                        {
+                            float fUpperTarget = fCenter + fUpperRange * m_param.quantile_accuracy_param.accuracy_ranges[r];
+                            float fLowerTarget = fCenter - fLowerRange * m_param.quantile_accuracy_param.accuracy_ranges[r];
+                            float fTarget = rgTgt[i * nC + c];
+
+                            if (fTarget <= fUpperTarget && fTarget >= fLowerTarget)
+                                m_rgWithinTargetCounts[m_param.quantile_accuracy_param.accuracy_ranges[r]]++;
+                        }
+                    }
+
+                    foreach (KeyValuePair<float, int> kvp in m_rgWithinTargetCounts)
+                    {
+                        float fAccuracy = (float)kvp.Value / nC;
+                        m_rgAccuracies[kvp.Key].Add(fAccuracy);
+                    }
+                }
+
+                int nIdx1 = 0;
+                foreach (KeyValuePair<float, List<float>> kvp in m_rgAccuracies)
+                {
+                    float fAccuracy = kvp.Value.Average();
+
+                    m_rgAcccuracyAverages[kvp.Key].Add(fAccuracy);
+                    if (m_rgAcccuracyAverages[kvp.Key].Count > m_param.quantile_accuracy_param.average_period)
+                        m_rgAcccuracyAverages[kvp.Key].RemoveAt(0);
+                }
+
+                foreach (KeyValuePair<float, List<float>> kvp in m_rgAcccuracyAverages)
+                {
+                    float fAveAccuracy = average(kvp.Value, m_param.quantile_accuracy_param.average_period);
+                    colTop[nIdx1].SetData(fAveAccuracy);
+                    nIdx1++;
+                }
             }
         }
 
