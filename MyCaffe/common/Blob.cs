@@ -39,7 +39,7 @@ namespace MyCaffe.common
         int m_nCapacity = 0;
         List<int> m_rgShape = new List<int>();
         int m_nIdx = -1;
-        BLOB_TYPE m_type = BLOB_TYPE.DATA;
+        BLOB_TYPE m_blobType = BLOB_TYPE.DATA;
         object m_tag = null;
         bool m_bFreezeLearning = false;
         bool m_bCpuDataReadyForPush = false;
@@ -2848,10 +2848,10 @@ namespace MyCaffe.common
         /// <summary>
         /// Returns the BLOB_TYPE of the Blob.
         /// </summary>
-        public BLOB_TYPE type
+        public BLOB_TYPE blob_type
         {
-            get { return m_type; }
-            set { m_type = value; }
+            get { return m_blobType; }
+            set { m_blobType = value; }
         }
 
         /// <summary>
