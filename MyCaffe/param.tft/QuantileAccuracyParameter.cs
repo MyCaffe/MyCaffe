@@ -19,10 +19,47 @@ namespace MyCaffe.param.tft
     {
         List<float> m_rgAccuracyRanges = new List<float>();
         uint m_nAveragePeriod = 30;
+        ACCURACY_TYPE m_type = ACCURACY_TYPE.QUANTILE;
+        uint m_nDirectionItemCount = 0;
+
+        /// <summary>
+        /// Defines the accuracy type to return.
+        /// </summary>
+        public enum ACCURACY_TYPE
+        {
+            /// <summary>
+            /// Specifies to return the quantile accuracy.
+            /// </summary>
+            QUANTILE = 0,
+            /// <summary>
+            /// Specifies to return the quantile direction where directions that match the target are counted as correct.
+            /// </summary>
+            DIRECTION = 1
+        }
 
         /** @copydoc LayerParameterBase */
         public QuantileAccuracyParameter()
         {
+        }
+
+        /// <summary>
+        /// Specifies the accuracy type to return (default = QUANTILE).
+        /// </summary>
+        [Description("Specifies the accuracy type to return (default = QUANTILE).")]
+        public ACCURACY_TYPE accuracy_type
+        {
+            get { return m_type; }
+            set { m_type = value; }
+        }
+
+        /// <summary>
+        /// Specifies the number of items in the direction to check (default = 0, which means all items).
+        /// </summary>
+        [Description("Specifies the number of items in the direction to check (default = 0, which means all items).")]
+        public uint direction_item_count
+        {
+            get { return m_nDirectionItemCount; }
+            set { m_nDirectionItemCount = value; }
         }
 
         /// <summary>
@@ -63,6 +100,8 @@ namespace MyCaffe.param.tft
             QuantileAccuracyParameter p = (QuantileAccuracyParameter)src;
             m_rgAccuracyRanges = Utility.Clone<float>(p.accuracy_ranges);
             m_nAveragePeriod = p.m_nAveragePeriod;
+            m_type = p.m_type;
+            m_nDirectionItemCount = p.m_nDirectionItemCount;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -82,8 +121,10 @@ namespace MyCaffe.param.tft
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
+            rgChildren.Add("accuracy_type", accuracy_type.ToString());
             rgChildren.Add<float>("accuracy_range", accuracy_ranges);
             rgChildren.Add("average_period", average_period.ToString());
+            rgChildren.Add("direction_item_count", direction_item_count.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -98,10 +139,19 @@ namespace MyCaffe.param.tft
             string strVal;
             QuantileAccuracyParameter p = new QuantileAccuracyParameter();
 
+            if ((strVal = rp.FindValue("accuracy_type")) != null)
+            {
+                if (!Enum.TryParse<ACCURACY_TYPE>(strVal, out p.m_type))
+                    p.m_type = ACCURACY_TYPE.QUANTILE;
+            }
+
             p.accuracy_ranges = rp.FindArray<float>("accuracy_range");
 
             if ((strVal = rp.FindValue("average_period")) != null)
                 p.average_period = uint.Parse(strVal);
+
+            if ((strVal = rp.FindValue("direction_item_count")) != null)
+                p.direction_item_count = uint.Parse(strVal);
 
             return p;
         }
