@@ -76,6 +76,9 @@ namespace MyCaffe.layers.tft
             int nOffset = (colBottom[0].num_axes == 2) ? 1 : 2;
             int nDim = colBottom[0].count(0, nOffset);
             int nNumInput = m_param.categorical_trans_param.cardinalities.Count;
+
+            m_log.CHECK_GT(nNumInput, 0, "You must specify the cardinalities of the categorical inputs for the '" + m_param.name + "' layer!");
+
             int nCount  = colBottom[0].count(nOffset);
             int nSpatialDim = nCount / nNumInput;
             List<int> rgShape = new List<int>() { nDim, nSpatialDim };
@@ -101,7 +104,7 @@ namespace MyCaffe.layers.tft
                 LayerParameter p = new LayerParameter(LayerParameter.LayerType.EMBED, m_param.name + ".emb" + i.ToString(), m_phase);
                 p.embed_param.num_output = m_param.categorical_trans_param.state_size;
                 p.embed_param.input_dim = (uint)nCardinality;
-                p.embed_param.bias_term = false;
+                p.embed_param.bias_term = m_param.categorical_trans_param.bias_term;
 
                 Layer<T> emb_layer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
                 m_rgEmbLayers.Add(emb_layer);
@@ -144,7 +147,7 @@ namespace MyCaffe.layers.tft
             for (int i = 0; i < nNumInput; i++)
             {
                 int nCount = m_rgBtm[i].count();
-                m_cuda.channel_copy(nCount, nCount, 1, nNumInput, 1, i, colBottom[0].gpu_data, m_rgBtm[i].mutable_gpu_data, DIR.FWD);
+                m_cuda.channel_copy(nCount, colBottom[0].num, colBottom[0].channels, nNumInput, 1, i, colBottom[0].gpu_data, m_rgBtm[i].mutable_gpu_data, DIR.FWD);
 
                 m_rgEmbBtm[0] = m_rgBtm[i];
                 m_rgEmbTop[0] = colTop[i];
