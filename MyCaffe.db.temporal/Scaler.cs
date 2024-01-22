@@ -502,11 +502,12 @@ namespace MyCaffe.db.temporal
         /// Add the fields to the collection of scalers.
         /// </summary>
         /// <param name="rgFields">Specifies the fields to add, must match the number of scalers in the collection.</param>
+        /// <param name="nMax">Optionally, specifies a maximum number of scalers (default = int.MaxValue).</param>
         /// <returns>Returns whether or not the data is ready.</returns>
-        public bool Add(double[] rgFields)
+        public bool Add(double[] rgFields, int nMax = int.MaxValue)
         {
             bool bReady = true;
-            for (int i = 0; i < rgFields.Length; i++)
+            for (int i = 0; i < rgFields.Length && i < nMax; i++)
             {
                 if (!m_rgScaler[i].Add((float)rgFields[i]))
                     bReady = false;
@@ -519,11 +520,12 @@ namespace MyCaffe.db.temporal
         /// Add the fields to the collection of scalers.
         /// </summary>
         /// <param name="rgFields">Specifies the fields to add, must match the number of scalers in the collection.</param>
+        /// <param name="nMax">Optionally, specifies a maximum number of scalers (default = int.MaxValue).</param>
         /// <returns>Returns whether or not the data is ready.</returns>
-        public bool Add(float[] rgFields)
+        public bool Add(float[] rgFields, int nMax = int.MaxValue)
         {
             bool bReady = true;
-            for (int i = 0; i < rgFields.Length; i++)
+            for (int i = 0; i < rgFields.Length && i < nMax; i++)
             {
                 if (!m_rgScaler[i].Add(rgFields[i]))
                     bReady = false;
@@ -537,9 +539,10 @@ namespace MyCaffe.db.temporal
         /// </summary>
         /// <param name="rgSrc">Specifies the source fields to scale.</param>
         /// <param name="rgDst">Specifies the scaled results.</param>
-        public void Scale(double[] rgSrc, double[] rgDst)
+        /// <param name="nMax">Optionally, specifies a maximum number of scalers (default = int.MaxValue).</param>
+        public void Scale(double[] rgSrc, double[] rgDst, int nMax = int.MaxValue)
         {
-            for (int i = 0; i < rgSrc.Length; i++)
+            for (int i = 0; i < rgSrc.Length && i < nMax; i++)
             {
                 rgDst[i] = m_rgScaler[i].Scale((float)rgSrc[i]).Value;
             }
@@ -550,9 +553,10 @@ namespace MyCaffe.db.temporal
         /// </summary>
         /// <param name="rgSrc">Specifies the source fields to scale.</param>
         /// <param name="rgDst">Specifies the scaled results.</param>
-        public void Scale(float[] rgSrc, float[] rgDst)
+        /// <param name="nMax">Optionally, specifies a maximum number of scalers (default = int.MaxValue).</param>
+        public void Scale(float[] rgSrc, float[] rgDst, int nMax = int.MaxValue)
         {
-            for (int i = 0; i < rgSrc.Length; i++)
+            for (int i = 0; i < rgSrc.Length && i < nMax; i++)
             {
                 rgDst[i] = m_rgScaler[i].Scale(rgSrc[i]).Value;
             }
