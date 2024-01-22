@@ -520,7 +520,7 @@ namespace MyCaffe.layers
 
             for (int i=1; i<colTop.Count; i++)
             {
-                if (blobClip == null && (colTop[i].type == BLOB_TYPE.CLIP || colTop[i].Name.ToLower().Contains("clip")))
+                if (blobClip == null && (colTop[i].blob_type == BLOB_TYPE.CLIP || colTop[i].Name.ToLower().Contains("clip")))
                     blobClip = colTop[i];
                 else
                     blobLabel = colTop[i];

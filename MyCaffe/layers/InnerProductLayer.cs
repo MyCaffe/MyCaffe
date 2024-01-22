@@ -209,7 +209,7 @@ namespace MyCaffe.layers
                 double dfNoiseRange = 1.0 / Math.Sqrt(rgWeightShape[1]);
                 Blob<T> blobWeight = new Blob<T>(m_cuda, m_log);
                 blobWeight.Name = m_param.name + " weights";
-                blobWeight.type = BLOB_TYPE.IP_WEIGHT;
+                blobWeight.blob_type = BLOB_TYPE.IP_WEIGHT;
 
                 if (!shareParameter(blobWeight, rgWeightShape, true))
                 {
@@ -228,7 +228,7 @@ namespace MyCaffe.layers
                     List<int> rgBiasShape = Utility.Create<int>(1, m_nN);
                     Blob<T> blobBias = new Blob<T>(m_cuda, m_log);
                     blobBias.Name = m_param.name + " bias";
-                    blobBias.type = BLOB_TYPE.IP_WEIGHT;
+                    blobBias.blob_type = BLOB_TYPE.IP_WEIGHT;
 
                     if (!shareParameter(blobBias, rgBiasShape, true))
                     {
@@ -252,7 +252,7 @@ namespace MyCaffe.layers
 
                     Blob<T> blobSigmaWeight = new Blob<T>(m_cuda, m_log);
                     blobSigmaWeight.Name = m_param.name + " sigma_wt";
-                    blobSigmaWeight.type = BLOB_TYPE.WEIGHT;
+                    blobSigmaWeight.blob_type = BLOB_TYPE.WEIGHT;
                     blobSigmaWeight.ReshapeLike(m_colBlobs[0]);
                     blobSigmaWeight.SetData(m_dfSigmaInit / Math.Sqrt(blobSigmaWeight.shape(1)));
                     m_colBlobs.Add(blobSigmaWeight);
@@ -262,7 +262,7 @@ namespace MyCaffe.layers
                     {
                         Blob<T> blobSigmaBias = new Blob<T>(m_cuda, m_log);
                         blobSigmaBias.Name = m_param.name + " sigma_bias";
-                        blobSigmaBias.type = BLOB_TYPE.WEIGHT;
+                        blobSigmaBias.blob_type = BLOB_TYPE.WEIGHT;
                         blobSigmaBias.ReshapeLike(m_colBlobs[1]);
                         blobSigmaBias.SetData(m_dfSigmaInit / Math.Sqrt(blobSigmaBias.shape(0)));
                         m_colBlobs.Add(blobSigmaBias);
@@ -315,7 +315,7 @@ namespace MyCaffe.layers
 
             colTop[0].Reshape(rgTopShape);
             if (m_param.inner_product_param.output_contains_predictions)
-                colTop[0].type = BLOB_TYPE.PREDICTION;
+                colTop[0].blob_type = BLOB_TYPE.PREDICTION;
 
             // Set up the bias multiplier
             if (m_bBiasTerm)

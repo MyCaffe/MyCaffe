@@ -100,7 +100,7 @@ namespace MyCaffe.layers
             for (int i = 0; i < colTop.Count; i++)
             {
                 m_cuda.copy(nCount, hBottom, colTop[i].mutable_gpu_data);
-                colTop[i].type = colBottom[0].type;
+                colTop[i].blob_type = colBottom[0].blob_type;
             }
         }
 

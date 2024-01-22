@@ -42,7 +42,7 @@ namespace MyCaffe.common
         public void AddBlob(Blob<T> b)
         {
             string strName = m_names.GetName(b.Name);
-            m_rgBlobInfo.Add(strName, new Tuple<List<int>, BLOB_TYPE>(b.shape(), b.type));
+            m_rgBlobInfo.Add(strName, new Tuple<List<int>, BLOB_TYPE>(b.shape(), b.blob_type));
         }
 
         /// <summary>

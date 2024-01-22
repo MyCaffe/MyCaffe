@@ -208,7 +208,7 @@ namespace MyCaffe.layers
                 List<int> rgShape1 = new List<int>() { 4 * m_nH, m_nI };
                 Blob<T> blobWeights_I_H = new Blob<T>(m_cuda, m_log);
                 blobWeights_I_H.Name = m_param.name + " weights I to H";
-                blobWeights_I_H.type = BLOB_TYPE.WEIGHT;
+                blobWeights_I_H.blob_type = BLOB_TYPE.WEIGHT;
 
                 if (!shareParameter(blobWeights_I_H, rgShape1))
                 {
@@ -222,7 +222,7 @@ namespace MyCaffe.layers
                 List<int> rgShape2 = new List<int>() { 4 * m_nH, m_nH };
                 Blob<T> blobWeights_H_H = new Blob<T>(m_cuda, m_log);
                 blobWeights_H_H.Name = m_param.name + " weights H to H";
-                blobWeights_H_H.type = BLOB_TYPE.WEIGHT;
+                blobWeights_H_H.blob_type = BLOB_TYPE.WEIGHT;
 
                 if (!shareParameter(blobWeights_H_H, rgShape2))
                 {
@@ -235,7 +235,7 @@ namespace MyCaffe.layers
                 List<int> rgShape3 = new List<int>() { 4 * m_nH };
                 Blob<T> blobBias = new Blob<T>(m_cuda, m_log);
                 blobBias.Name = m_param.name + " bias weights";
-                blobBias.type = BLOB_TYPE.WEIGHT;
+                blobBias.blob_type = BLOB_TYPE.WEIGHT;
 
                 if (!shareParameter(blobBias, rgShape3))
                 {

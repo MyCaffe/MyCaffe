@@ -523,7 +523,7 @@ namespace MyCaffe.layers
                 // output channels x input channels per-group x kernel height x kernel width.
                 Blob<T> blobWts = new Blob<T>(m_cuda, m_log, true, m_bUseHalfSize);
                 blobWts.Name = m_param.name + " weights";
-                blobWts.type = BLOB_TYPE.WEIGHT;
+                blobWts.blob_type = BLOB_TYPE.WEIGHT;
 
                 if (m_bUseHalfSize || !shareParameter(blobWts, rgWeightShape))
                 {
@@ -554,7 +554,7 @@ namespace MyCaffe.layers
                 {
                     Blob<T> blobBias = new Blob<T>(m_cuda, m_log, true, m_bUseHalfSize);
                     blobBias.Name = m_param.name + " bias";
-                    blobBias.type = BLOB_TYPE.WEIGHT;
+                    blobBias.blob_type = BLOB_TYPE.WEIGHT;
 
                     if (m_bUseHalfSize || !shareParameter(blobBias, rgBiasShape))
                     {

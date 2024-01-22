@@ -176,7 +176,7 @@ namespace MyCaffe.layers
                 List<int> rgWeightShape = new List<int>() { m_nK, m_nN };
                 Blob<T> blobWeight = new Blob<T>(m_cuda, m_log);
                 blobWeight.Name = m_param.name + " weights";
-                blobWeight.type = BLOB_TYPE.WEIGHT;
+                blobWeight.blob_type = BLOB_TYPE.WEIGHT;
 
                 if (!shareParameter(blobWeight, rgWeightShape))
                 {
@@ -195,7 +195,7 @@ namespace MyCaffe.layers
                     List<int> rgBiasShape = new List<int>() { m_nN };
                     Blob<T> blobBias = new Blob<T>(m_cuda, m_log);
                     blobBias.Name = m_param.name + " bias";
-                    blobBias.type = BLOB_TYPE.WEIGHT;
+                    blobBias.blob_type = BLOB_TYPE.WEIGHT;
 
                     if (!shareParameter(blobBias, rgBiasShape))
                     {

@@ -25,6 +25,11 @@ namespace MyCaffe.layers
         int m_nLastBatchIdx = 0;
         int m_nMaxBatches;
         bool m_bBufferFull = false;
+        int m_nTotalItems = 1;
+        int m_nLabelItems = 1;
+        int m_nIgnoreItems = 0;
+        List<int> m_rgLabelShape;
+        List<int> m_rgDataShape;
 
         /// <summary>
         /// The DebugLayer constructor.
@@ -98,6 +103,14 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Returns the maximum number of bottom (input) Blobs: data, label, ignore
+        /// </summary>
+        public override int MaxBottomBlobs  
+        {
+            get { return 3; }
+        }
+
+        /// <summary>
         /// Returns the minimum number of top (output) Blobs: data (passthrough)
         /// </summary>
         public override int MinTopBlobs
@@ -113,17 +126,33 @@ namespace MyCaffe.layers
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             m_log.CHECK_GE(colBottom.Count, 2, "There should be at least two bottom items: data (embeddings) and labels.");
-            m_log.CHECK_EQ(colTop.Count, colBottom.Count - 1, "The top count should equal the bottom count - 1");
+            m_log.CHECK_EQ(colTop.Count, 1, "The top count should equal 1");
+
+            m_nLabelItems = colBottom[1].height;
+            if (colBottom.Count == 3)
+                m_nIgnoreItems = colBottom[2].height;
+
+            m_nTotalItems = m_nLabelItems + m_nIgnoreItems;
+
+            Blob<T> data = new Blob<T>(m_cuda, m_log);
+            m_rgDataShape = Utility.Clone<int>(colBottom[0].shape());
+
+            Blob<T> label = new common.Blob<T>(m_cuda, m_log, false);
+            m_rgLabelShape = Utility.Clone<int>(colBottom[1].shape());
+
+            if (colBottom[1].num_axes > 2 && colBottom[1].shape(2) > 1)
+            {
+                m_rgDataShape[2] /= m_nTotalItems;
+                m_rgLabelShape[2] /= m_nLabelItems;
+            }
 
             // Allocate the temp batch storage.
             for (int i = 0; i < m_nMaxBatches; i++)
             {
-                Blob<T> data = new Blob<T>(m_cuda, m_log);
-                data.ReshapeLike(colBottom[0]);
+                data.Reshape(m_rgDataShape);
                 m_rgBatchData.Add(data);
 
-                Blob<T> label = new common.Blob<T>(m_cuda, m_log, false);
-                label.ReshapeLike(colBottom[1]);
+                label.Reshape(m_rgLabelShape);
                 m_rgBatchLabels.Add(label);
             }
         }
@@ -141,8 +170,8 @@ namespace MyCaffe.layers
             // Reshape the temp batch storage.
             for (int i = 0; i < m_nMaxBatches; i++)
             {
-                m_rgBatchData[i].ReshapeLike(colBottom[0]);
-                m_rgBatchLabels[i].ReshapeLike(colBottom[1]);
+                m_rgBatchData[i].Reshape(m_rgDataShape);
+                m_rgBatchLabels[i].Reshape(m_rgLabelShape);
             }
 
             colTop[0].ReshapeLike(colBottom[0]);
@@ -153,18 +182,27 @@ namespace MyCaffe.layers
         /// </summary>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            if (m_nCurrentBatchIdx == m_nMaxBatches)
+            int nCount = m_nTotalItems - m_nIgnoreItems;
+
+            for (int i = 0; i < nCount; i++)
             {
-                m_nCurrentBatchIdx = 0;
-                m_bBufferFull = true;
+                if (m_param.debug_param.item_index < 0 || i == m_param.debug_param.item_index)
+                {
+                    if (m_nCurrentBatchIdx == m_nMaxBatches)
+                    {
+                        m_nCurrentBatchIdx = 0;
+                        m_bBufferFull = true;
+                    }
+
+                    // Copy the data into the batch storage.
+                    int nEmbSize = colBottom[0].count(2) / m_nTotalItems;
+                    m_cuda.channel_copy(m_rgBatchData[m_nCurrentBatchIdx].count(), colBottom[0].num, colBottom[0].channels, m_nTotalItems, nEmbSize, m_nIgnoreItems + i, colBottom[0].gpu_data, m_rgBatchData[m_nCurrentBatchIdx].mutable_gpu_data, DIR.FWD);
+                    m_cuda.channel_copy(m_rgBatchLabels[m_nCurrentBatchIdx].count(), colBottom[1].num, colBottom[1].channels, m_nLabelItems, 1, i, colBottom[1].gpu_data, m_rgBatchLabels[m_nCurrentBatchIdx].mutable_gpu_data, DIR.FWD);
+
+                    m_nLastBatchIdx = m_nCurrentBatchIdx;
+                    m_nCurrentBatchIdx++;
+                }
             }
-
-            // Copy the data into the batch storage.
-            m_cuda.copy(colBottom[0].count(), colBottom[0].gpu_data, m_rgBatchData[m_nCurrentBatchIdx].mutable_gpu_data);
-            m_cuda.copy(colBottom[1].count(), colBottom[1].gpu_data, m_rgBatchLabels[m_nCurrentBatchIdx].mutable_gpu_data);
-
-            m_nLastBatchIdx = m_nCurrentBatchIdx;
-            m_nCurrentBatchIdx++;
 
             m_cuda.copy(colBottom[0].count(), colBottom[0].gpu_data, colTop[0].mutable_gpu_data);
         }
@@ -178,7 +216,8 @@ namespace MyCaffe.layers
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
             // Copy the diff into the batch storage.
-            m_cuda.copy(colTop[0].count(), colTop[0].gpu_diff, m_rgBatchData[m_nLastBatchIdx].mutable_gpu_diff);
+            if (m_nTotalItems - m_nIgnoreItems == 1)
+                m_cuda.copy(colTop[0].count(), colTop[0].gpu_diff, m_rgBatchData[m_nLastBatchIdx].mutable_gpu_diff);
 
             m_cuda.copy(colTop[0].count(), colTop[0].gpu_diff, colBottom[0].mutable_gpu_diff);
         }

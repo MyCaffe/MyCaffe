@@ -769,7 +769,7 @@ namespace MyCaffe.common
                 //  not match the skip type, if specified.
                 //-----------------------------------------
 
-                if (!bMisSized && (strSkipBlobType == null || blob.type.ToString() != strSkipBlobType))
+                if (!bMisSized && (strSkipBlobType == null || blob.blob_type.ToString() != strSkipBlobType))
                 {
                     ProtoBufField pbData = colFieldBlobs[nFieldIdx].Array.FindFirstChild("data");
                     FieldDescriptor.TYPE type = FieldDescriptor.TYPE.FLOAT;
