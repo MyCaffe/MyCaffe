@@ -15,6 +15,7 @@ namespace MyCaffe.param
     public class DebugParameter : LayerParameterBase 
     {
         int m_nMaxBatchesToStore = 1000;
+        int m_nItemIdx = -1;
 
         /** @copydoc LayerParameterBase */
         public DebugParameter()
@@ -29,6 +30,16 @@ namespace MyCaffe.param
         {
             get { return m_nMaxBatchesToStore; }
             set { m_nMaxBatchesToStore = value; }
+        }
+
+        /// <summary>
+        /// Specifies the item index to debug. Only applies when more than one item is present in the batch.
+        /// </summary>
+        [Description("Specifies the item index to debug. Only applies when more than one item is present in the batch.")]
+        public int item_index
+        {
+            get { return m_nItemIdx; }
+            set { m_nItemIdx = value; }
         }
 
         /** @copydoc LayerParameterBase::Load */
@@ -48,6 +59,7 @@ namespace MyCaffe.param
         {
             DebugParameter p = (DebugParameter)src;
             m_nMaxBatchesToStore = p.m_nMaxBatchesToStore;
+            m_nItemIdx = p.m_nItemIdx;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -68,6 +80,7 @@ namespace MyCaffe.param
             RawProtoCollection rgChildren = new RawProtoCollection();
 
             rgChildren.Add("max_stored_batches", max_stored_batches.ToString());
+            rgChildren.Add("item_index", item_index.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -84,6 +97,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("max_stored_batches")) != null)
                 p.max_stored_batches = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("item_index")) != null)
+                p.item_index = int.Parse(strVal);
 
             return p;
         }
