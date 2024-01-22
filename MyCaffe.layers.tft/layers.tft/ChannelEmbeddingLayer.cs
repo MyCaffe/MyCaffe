@@ -201,7 +201,7 @@ namespace MyCaffe.layers.tft
                 m_colBtm.Add(blobCategorical);
                 m_categoricalLayer.Reshape(m_colBtm, m_colCategoricalTop);
 
-                if (colBottom[0].num_axes > 2)
+                if (colBottom[1].num_axes > 2)
                 {
                     if (nC != 0)
                         m_log.CHECK_EQ(colBottom[1].channels, nC, "The bottom(0).channels and bottom(1).channels must be equal!");
@@ -314,24 +314,9 @@ namespace MyCaffe.layers.tft
             int nCount;
             int nBlocks = (int)m_param.numeric_trans_param.num_input + (int)m_param.categorical_trans_param.num_input;
             int nEmb = (int)m_param.numeric_trans_param.state_size;
-            int nIdx = 0;
+            int nIdx = m_colCategoricalTop.Count + m_colNumericTop.Count;
 
             getBlobs(colBottom, out blobNumeric, out blobCategorical);
-
-            if (blobNumeric != null)
-            {
-                nCount = m_colNumericTop[0].count();
-
-                for (int i = 0; i < m_colNumericTop.Count; i++)
-                {
-                    m_cuda.channel_copy(nCount, m_colNumericTop[0].num, 1, nBlocks, nEmb, nIdx, colTop[0].gpu_diff, m_colNumericTop[i].mutable_gpu_diff, DIR.FWD);
-                    nIdx++;
-                }
-
-                m_colBtm.Clear();
-                m_colBtm.Add(blobNumeric);
-                m_numericLayer.Backward(m_colNumericTop, new List<bool>() { true }, m_colBtm);
-            }
 
             if (blobCategorical != null)
             {
@@ -339,13 +324,28 @@ namespace MyCaffe.layers.tft
 
                 for (int i = 0; i < m_colCategoricalTop.Count; i++)
                 {
+                    nIdx--;
                     m_cuda.channel_copy(nCount, m_colCategoricalTop[0].num, 1, nBlocks, nEmb, nIdx, colTop[0].gpu_diff, m_colCategoricalTop[i].mutable_gpu_diff, DIR.FWD);
-                    nIdx++;
                 }
 
                 m_colBtm.Clear();
                 m_colBtm.Add(blobCategorical);
                 m_categoricalLayer.Backward(m_colCategoricalTop, new List<bool>() { true }, m_colBtm);
+            }
+
+            if (blobNumeric != null)
+            {
+                nCount = m_colNumericTop[0].count();
+
+                for (int i = 0; i < m_colNumericTop.Count; i++)
+                {
+                    nIdx--;
+                    m_cuda.channel_copy(nCount, m_colNumericTop[0].num, 1, nBlocks, nEmb, nIdx, colTop[0].gpu_diff, m_colNumericTop[i].mutable_gpu_diff, DIR.FWD);
+                }
+
+                m_colBtm.Clear();
+                m_colBtm.Add(blobNumeric);
+                m_numericLayer.Backward(m_colNumericTop, new List<bool>() { true }, m_colBtm);
             }
         }
     }
