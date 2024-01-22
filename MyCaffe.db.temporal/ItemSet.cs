@@ -34,6 +34,7 @@ namespace MyCaffe.db.temporal
         SimpleTemporalDatum m_sdStaticNum = null;
         SimpleTemporalDatum m_sdStaticCat = null;
         bool m_bActive = true;
+        int m_nDebugIdx = 0;
 
         /// <summary>
         /// The constructor.
@@ -304,6 +305,7 @@ namespace MyCaffe.db.temporal
                 debug("hist_num", nQueryIdx, strDebugPath, nActualValIdx, sdHistNum, STREAM_CLASS_TYPE.OBSERVED);
                 debug("fut_cat", nQueryIdx, strDebugPath, nActualValIdx, sdFutCat, STREAM_CLASS_TYPE.KNOWN);
                 debug("fut_num", nQueryIdx, strDebugPath, nActualValIdx, sdFutNum, STREAM_CLASS_TYPE.KNOWN);
+                m_nDebugIdx++;
             }
 
             SimpleTemporalDatumCollection rgData = new SimpleTemporalDatumCollection(8);
@@ -364,7 +366,7 @@ namespace MyCaffe.db.temporal
                 Directory.CreateDirectory(strDebugPath);
 
             strDebugPath = strDebugPath.TrimEnd('\\') + "\\";
-            string strFile = strDebugPath + nQueryIdx.ToString() + "." + nIdx.ToString() + "." + strTag + ".png";
+            string strFile = strDebugPath + m_nDebugIdx.ToString() + "." + nQueryIdx.ToString() + "." + nIdx.ToString() + "." + strTag + ".png";
             Image img = SimpleGraphingControl.QuickRender(plots, 1000, 600, true, ConfigurationAxis.VALUE_RESOLUTION.MINUTE, null, true, null, true);
 
             img.Save(strFile);
@@ -415,7 +417,7 @@ namespace MyCaffe.db.temporal
                 dt = rgSync[rgSync.Length - 1];
 
             strDebugPath = strDebugPath.TrimEnd('\\') + "\\";
-            string strFile = strDebugPath + nQueryIdx.ToString() + "." + dt.Year.ToString() + "." + dt.Month.ToString() + "." + dt.Day.ToString() + "_" + dt.Hour.ToString() + "." + dt.Minute.ToString() + "." + dt.Second.ToString() + "." + nIdx.ToString() + "." + strTag + ".png";
+            string strFile = strDebugPath + m_nDebugIdx.ToString() + "." + nQueryIdx.ToString() + "." + dt.Year.ToString() + "." + dt.Month.ToString() + "." + dt.Day.ToString() + "_" + dt.Hour.ToString() + "." + dt.Minute.ToString() + "." + dt.Second.ToString() + "." + nIdx.ToString() + "." + strTag + ".png";
             Image img = SimpleGraphingControl.QuickRender(set, 1000, 600, true, ConfigurationAxis.VALUE_RESOLUTION.MINUTE, null, true, null, true);
 
             img.Save(strFile);
@@ -475,7 +477,7 @@ namespace MyCaffe.db.temporal
             DateTime dt = rgSync[rgf1.Length];
 
             strDebugPath = strDebugPath.TrimEnd('\\') + "\\";
-            string strFile = strDebugPath + nQueryIdx.ToString() + "." + dt.Year.ToString() + "." + dt.Month.ToString() + "." + dt.Day.ToString() + "_" + dt.Hour.ToString() + "." + dt.Minute.ToString() + "." + dt.Second.ToString() + "." + nIdx.ToString() + "." + strTag + ".png";
+            string strFile = strDebugPath + m_nDebugIdx.ToString() + "." + nQueryIdx.ToString() + "." + dt.Year.ToString() + "." + dt.Month.ToString() + "." + dt.Day.ToString() + "_" + dt.Hour.ToString() + "." + dt.Minute.ToString() + "." + dt.Second.ToString() + "." + nIdx.ToString() + "." + strTag + ".png";
             int nImgWid = 1000;
             int nActualWid = plots.Count * 5 + 55;
 
