@@ -620,7 +620,7 @@ namespace MyCaffe.layers.tft
 
             reshapeSansHead(colTop[1], m_blobAttnOutputAllHeads.shape());
             reshapeSansHead(colTop[2], m_blobAttnScoresAllHeads.shape());
-            colTop[2].type = BLOB_TYPE.ATTENTION;
+            colTop[2].blob_type = BLOB_TYPE.ATTENTION;
 
             addBtmTop(colTop[1], colTop[0]);
             m_ipOutLayer.Reshape(m_colBtm, m_colTop);

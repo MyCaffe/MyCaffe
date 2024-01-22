@@ -114,9 +114,9 @@ namespace MyCaffe.layers.tft
 
             for (int i = 2; i < colBottom.Count; i++)
             {
-                if ((colBottom[i].type & BLOB_TYPE.TIME) == BLOB_TYPE.TIME)
+                if ((colBottom[i].blob_type & BLOB_TYPE.TIME) == BLOB_TYPE.TIME)
                     m_blobTime = colBottom[i];
-                else if ((colBottom[i].type & BLOB_TYPE.ID) == BLOB_TYPE.ID)
+                else if ((colBottom[i].blob_type & BLOB_TYPE.ID) == BLOB_TYPE.ID)
                     m_blobID = colBottom[i];
             }
         }

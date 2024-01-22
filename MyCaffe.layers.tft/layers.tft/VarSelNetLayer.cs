@@ -321,7 +321,7 @@ namespace MyCaffe.layers.tft
             if (colTop.Count > 1)
             {
                 colTop[1].ReshapeLike(m_blobSparseWts);
-                colTop[1].type = BLOB_TYPE.WEIGHT;
+                colTop[1].blob_type = BLOB_TYPE.WEIGHT;
             }
         }
 

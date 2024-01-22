@@ -298,7 +298,7 @@ namespace MyCaffe.layers
                 List<int> rgShape1 = new List<int>() { 4 * m_nH, m_nI };
                 Blob<T> blobWeights_I_H = new Blob<T>(m_cuda, m_log);
                 blobWeights_I_H.Name = m_param.name + " weights I to H";
-                blobWeights_I_H.type = BLOB_TYPE.WEIGHT;
+                blobWeights_I_H.blob_type = BLOB_TYPE.WEIGHT;
 
                 if (!shareParameter(blobWeights_I_H, rgShape1))
                 {
@@ -313,7 +313,7 @@ namespace MyCaffe.layers
                 List<int> rgShape2 = new List<int>() { 4 * m_nH, m_nH };
                 Blob<T> blobWeights_H_H = new Blob<T>(m_cuda, m_log);
                 blobWeights_H_H.Name = m_param.name + " weights H to H";
-                blobWeights_H_H.type = BLOB_TYPE.WEIGHT;
+                blobWeights_H_H.blob_type = BLOB_TYPE.WEIGHT;
 
                 if (!shareParameter(blobWeights_H_H, rgShape2))
                 {
@@ -327,7 +327,7 @@ namespace MyCaffe.layers
                 List<int> rgShape3 = new List<int>() { 4 * m_nH };
                 Blob<T> blobBias = new Blob<T>(m_cuda, m_log);
                 blobBias.Name = m_param.name + " bias weights";
-                blobBias.type = BLOB_TYPE.WEIGHT;
+                blobBias.blob_type = BLOB_TYPE.WEIGHT;
 
                 if (!shareParameter(blobBias, rgShape3))
                 {
@@ -356,7 +356,7 @@ namespace MyCaffe.layers
                 {
                     Blob<T> blobWeightWhd = new Blob<T>(m_cuda, m_log);
                     blobWeightWhd.Name = m_param.name + " weights Whd";
-                    blobWeightWhd.type = BLOB_TYPE.WEIGHT;
+                    blobWeightWhd.blob_type = BLOB_TYPE.WEIGHT;
 
                     List<int> rgShapeWhd = new List<int>() { m_nH, (int)m_param.lstm_attention_param.num_output_ip };
                     if (!shareParameter(blobWeightWhd, rgShapeWhd))
@@ -369,7 +369,7 @@ namespace MyCaffe.layers
 
                     Blob<T> blobWeightWhdb = new Blob<T>(m_cuda, m_log);
                     blobWeightWhdb.Name = m_param.name + " weights Whdb";
-                    blobWeightWhdb.type = BLOB_TYPE.WEIGHT;
+                    blobWeightWhdb.blob_type = BLOB_TYPE.WEIGHT;
 
                     List<int> rgShapeWhdb = new List<int>() { 1, (int)m_param.lstm_attention_param.num_output_ip };
                     if (!shareParameter(blobWeightWhdb, rgShape1))
@@ -387,7 +387,7 @@ namespace MyCaffe.layers
                     // Initialize the weight.
                     Blob<T> blobWeights_C_H = new Blob<T>(m_cuda, m_log);
                     blobWeights_C_H.Name = m_param.name + " weights C to H";
-                    blobWeights_C_H.type = BLOB_TYPE.WEIGHT;
+                    blobWeights_C_H.blob_type = BLOB_TYPE.WEIGHT;
 
                     if (!shareParameter(blobWeights_C_H, rgShape1))
                     {
