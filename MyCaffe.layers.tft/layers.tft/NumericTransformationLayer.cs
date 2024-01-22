@@ -112,6 +112,7 @@ namespace MyCaffe.layers.tft
 
                 LayerParameter p = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, m_param.name + ".ip" + i.ToString(), m_phase);
                 p.inner_product_param.num_output = m_param.numeric_trans_param.state_size;
+                p.inner_product_param.bias_term = true;
                 p.inner_product_param.axis = 1;
 
                 Layer<T> ip_layer = Layer<T>.Create(m_cuda, m_log, convertLayerParam(p, m_param), null);
