@@ -21,6 +21,7 @@ namespace MyCaffe.param.tft
     {
         uint m_nNumInput = 0;
         uint m_nStateSize = 0;
+        bool m_bBiasTerm = true;
         List<int> m_rgCardinalities = new List<int>();
 
         /** @copydoc LayerParameterBase */
@@ -58,6 +59,16 @@ namespace MyCaffe.param.tft
             set { m_rgCardinalities = value; }
         }
 
+        /// <summary>
+        /// Whether to have bias terms or not on each embedding (default = false).
+        /// </summary>
+        [Description("Whether to have bias terms or not on each embedding (default = false).")]
+        public bool bias_term
+        {
+            get { return m_bBiasTerm; }
+            set { m_bBiasTerm = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -78,6 +89,7 @@ namespace MyCaffe.param.tft
             m_nNumInput = p.m_nNumInput;
             m_nStateSize = p.m_nStateSize;
             m_rgCardinalities = new List<int>(p.m_rgCardinalities);
+            m_bBiasTerm = p.m_bBiasTerm;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -100,6 +112,7 @@ namespace MyCaffe.param.tft
             rgChildren.Add("num_input", num_input.ToString());
             rgChildren.Add("state_size", state_size.ToString());
             rgChildren.Add<int>("cardinality", m_rgCardinalities);
+            rgChildren.Add("bias_term", bias_term.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -121,6 +134,9 @@ namespace MyCaffe.param.tft
                 p.state_size = uint.Parse(strVal);
 
             p.cardinalities = rp.FindArray<int>("cardinality");
+
+            if ((strVal = rp.FindValue("bias_term")) != null)
+                p.bias_term = bool.Parse(strVal);
 
             return p;
         }
