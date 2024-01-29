@@ -52,7 +52,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="CudaControlLib, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f59a5464a77ea1ad, processorArchitecture=MSIL">
-      <HintPath>..\packages\CudaControl.1.12.3.14\lib\net40\CudaControlLib.dll</HintPath>
+      <HintPath>..\packages\CudaControl.1.12.3.16\lib\net40\CudaControlLib.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="Google.Protobuf, Version=3.25.2.0, Culture=neutral, PublicKeyToken=a7d26565bac4d604, processorArchitecture=MSIL">
@@ -201,6 +201,8 @@
     <Compile Include="MyCaffeControl.Designer.cs">
       <DependentUpon>MyCaffeControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="output_adapters\OutputAdapter.cs" />
+    <Compile Include="output_adapters\OutputAdapterLoRA.cs" />
     <Compile Include="param.gpt\CausalSelfAttentionParameter.cs" />
     <Compile Include="param.gpt\GeluParameter.cs" />
     <Compile Include="param.gpt\LayerNormParameter.cs" />
@@ -274,6 +276,7 @@
     <Compile Include="param.ssd\Normalization2Parameter.cs" />
     <Compile Include="param.nt\OneHotParameter.cs" />
     <Compile Include="param.nt\ScalarParameter.cs" />
+    <Compile Include="param\OutputAdapterParameter.cs" />
     <Compile Include="param\ParameterParameter.cs" />
     <Compile Include="param.nt\TVLossParameter.cs" />
     <Compile Include="param.nt\GramParameter.cs" />

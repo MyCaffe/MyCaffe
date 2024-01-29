@@ -23,6 +23,10 @@ namespace MyCaffe.param
     public class LayerParameter : BaseParameter, ICloneable, IComparable, IBinaryPersist  
     {
         /// <summary>
+        /// Specifies the output adapter for the layer (default = NONE type and disabled).
+        /// </summary>
+        protected OutputAdapterParameter m_outputAdapter = new OutputAdapterParameter();
+        /// <summary>
         /// Specifies the level of conversion support for the layer.
         /// </summary>
         protected ONNX_CONVERSION_SUPPORT m_onnxConversionSupport = ONNX_CONVERSION_SUPPORT.NONE;
@@ -750,6 +754,7 @@ namespace MyCaffe.param
             m_nSolverCount = p.m_nSolverCount;
             m_nSolverRank = p.m_nSolverRank;
             m_bGroupStart = p.m_bGroupStart;
+            m_outputAdapter = p.m_outputAdapter.Clone();
         }
 
         /// <summary>
@@ -1930,6 +1935,15 @@ namespace MyCaffe.param
         {
             get { return m_bUseHalfSize; }
             set { m_bUseHalfSize = value; }
+        }
+
+        /// <summary>
+        /// Specifies the output adapter to process outputs just after running the layer forward pass, and just before running the layer backward pass.
+        /// </summary>
+        public OutputAdapterParameter output_adapter
+        {
+            get { return m_outputAdapter; }
+            set { m_outputAdapter = value; }
         }
 
         /// <summary>
@@ -3119,6 +3133,8 @@ namespace MyCaffe.param
         {
             LayerParameter p = new LayerParameter(m_type, m_strName);
 
+            p.m_outputAdapter = m_outputAdapter.Clone();
+
             p.m_rgstrBottom = Utility.Clone<string>(m_rgstrBottom);
             p.m_rgstrTop = Utility.Clone<string>(m_rgstrTop);
             p.m_phase = m_phase;
@@ -3615,6 +3631,7 @@ namespace MyCaffe.param
             rgChildren.Add<string>("bottom", bottom);
             rgChildren.Add<string>("top", top);
             rgChildren.Add<double>("loss_weight", loss_weight);
+            rgChildren.Add(output_adapter.ToProto("output_adapter"));
 
             if (group_start)
                 rgChildren.Add("group_start", group_start.ToString());
@@ -3834,6 +3851,10 @@ namespace MyCaffe.param
                 p.phase = parsePhase(strVal);
 
             p.loss_weight = rp.FindArray<double>("loss_weight");
+
+            RawProto rpOutputAdapter = rp.FindChild("output_adapter");
+            if (rpOutputAdapter != null)
+                p.output_adapter = OutputAdapterParameter.FromProto(rpOutputAdapter);
 
             if ((strVal = rp.FindValue("group_start")) != null)
                 p.group_start = bool.Parse(strVal);

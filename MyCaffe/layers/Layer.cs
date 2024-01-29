@@ -11,6 +11,7 @@ using MyCaffe.common;
 using MyCaffe.param;
 using System.IO;
 using System.Reflection;
+using MyCaffe.output_adapters;
 
 /// <summary>
 /// The MyCaffe.layers namespace contains all layers that have a solidified code base, including the Layer class.
@@ -117,6 +118,7 @@ namespace MyCaffe.layers
         private double m_dfAverageInterval = 20.0;
         private Stopwatch m_swTiming = new Stopwatch();
         private WorkspaceArgs m_argsWs = new WorkspaceArgs(0, 0);
+        private OutputAdapter<T> m_outputAdatper = null;
 
         /// <summary>
         /// Specifies the OnGetWorkspace event that fires when the getWorkspace() function is called by a layer to get a shareable workspace to conserve GPU memory.
@@ -447,6 +449,7 @@ namespace MyCaffe.layers
                 setup_internal_blobs(m_colInternalBlobs);
                 LayerSetUp(colBottom, colTop);
                 Reshape(colBottom, colTop);
+                setupOutputAdapter(colBottom, colTop);
                 setShapes(colBottom, colTop);
                 SetLossWeights(colTop);
 
@@ -468,6 +471,24 @@ namespace MyCaffe.layers
                 else
                     throw excpt;
             }
+        }
+
+        private void setupOutputAdapter(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            if (colBottom == colTop)
+                return;
+
+            if (colBottom.Count == colTop.Count)
+                return;
+
+            if (m_param.output_adapter == null ||
+                m_param.output_adapter.OutputAdapterTypeMethod == OutputAdapterParameter.OutputAdapterType.NONE ||
+                m_param.output_adapter.enabled == false)
+                return;
+
+            m_outputAdatper = OutputAdapter<T>.Create(m_cuda, m_log, m_param.output_adapter);
+            m_outputAdatper.Setup(m_param, colBottom, colTop);
+            m_outputAdatper.Reshape(colBottom, colTop);
         }
 
         /// <summary>
@@ -742,6 +763,9 @@ namespace MyCaffe.layers
 
                 forward(colBottom, colTop);
 
+                if (m_outputAdatper != null)
+                    m_outputAdatper.Forward(colBottom, colTop);
+
                 for (int i = 0; i < colTop.Count; i++)
                 {
                     if (loss(i) == 0)
@@ -822,6 +846,9 @@ namespace MyCaffe.layers
                     convert(colTop);
 
                 convert(colBottom);
+
+                if (m_outputAdatper != null)
+                    m_outputAdatper.Backward(colTop, rgbPropagateDown, colBottom);
 
                 backward(colTop, rgbPropagateDown, colBottom);
                 m_swTiming.Stop();
