@@ -1,5 +1,6 @@
 ﻿using MyCaffe.basecode;
 using MyCaffe.common;
+using MyCaffe.fillers;
 using MyCaffe.layers;
 using MyCaffe.param;
 using System;
@@ -8,7 +9,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-/// WORK IN PROGRESS
 namespace MyCaffe.output_adapters
 {
     /// <summary>
@@ -24,8 +24,11 @@ namespace MyCaffe.output_adapters
         Blob<T> m_blobDrop;
         Blob<T> m_blobxA;
         Blob<T> m_blobxAB;
+        Blob<T> m_blobAfull;
+        Blob<T> m_blobBfull;
         Blob<T> m_blobWork;
         double m_dfScale = 1.0;
+        int[] m_rgShape = new int[] { 1, 1, 1, 1 };
 
         /// <summary>
         /// Constructor.
@@ -72,6 +75,18 @@ namespace MyCaffe.output_adapters
                 m_blobWork = null;
             }
 
+            if (m_blobAfull != null)
+            {
+                m_blobAfull.Dispose();
+                m_blobAfull = null;
+            }
+
+            if (m_blobBfull != null)
+            {
+                m_blobBfull.Dispose();
+                m_blobBfull = null;
+            }
+
             base.dispose();
         }
 
@@ -105,9 +120,14 @@ namespace MyCaffe.output_adapters
             Blob<T> blob = new Blob<T>(m_cuda, m_log);
             blob.Name = p.name + ".LoRA_a";
 
-            List<int> rgShapeA = new List<int>() { (int)m_param.rank, nNumInput };
+            List<int> rgShapeA = new List<int>() { nNumInput, (int)m_param.rank };
             blob.Reshape(rgShapeA);
-            blob.SetData(0.0);
+
+            FillerParameter fp = new FillerParameter("xavier");
+            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
+            filler.Fill(blob);
+            blob.scale_data(1.0 / m_param.rank);
+
             blob.SetDiff(0.0);
             m_colBlobs.Add(blob);
 
@@ -115,7 +135,7 @@ namespace MyCaffe.output_adapters
             blob = new Blob<T>(m_cuda, m_log);
             blob.Name = p.name + ".LoRA_b";
 
-            List<int> rgShapeB = new List<int>() { nNumOutput, (int)m_param.rank };
+            List<int> rgShapeB = new List<int>() { (int)m_param.rank, nNumOutput };
             blob.Reshape(rgShapeB);
             blob.SetData(0.0);
             blob.SetDiff(0.0);
@@ -129,6 +149,12 @@ namespace MyCaffe.output_adapters
 
             m_blobWork = new Blob<T>(m_cuda, m_log);
             m_blobWork.Name = p.name + ".LoRA.work";
+
+            m_blobAfull = new Blob<T>(m_cuda, m_log);
+            m_blobAfull.Name = p.name + ".LoRA.Afull";
+
+            m_blobBfull = new Blob<T>(m_cuda, m_log);
+            m_blobBfull.Name = p.name + ".LoRA.Bfull";
 
             m_dfScale = m_param.alpha / m_param.rank;
         }
@@ -145,6 +171,18 @@ namespace MyCaffe.output_adapters
                 addBtmTop(colBottom[0], m_blobDrop);
                 m_dropout.Reshape(colBottom, m_colTop);
             }
+
+            m_rgShape[0] = colBottom[0].num;
+            m_rgShape[1] = colBottom[0].channels;
+            m_rgShape[2] = m_colBlobs[0].shape(0);
+            m_rgShape[3] = m_colBlobs[0].shape(1);
+            m_blobAfull.Reshape(m_rgShape);
+
+            m_rgShape[0] = colBottom[0].num;
+            m_rgShape[1] = colBottom[0].channels;
+            m_rgShape[2] = m_colBlobs[1].shape(0);
+            m_rgShape[3] = m_colBlobs[1].shape(1);
+            m_blobBfull.Reshape(m_rgShape);
         }
 
         /// <summary>
@@ -168,8 +206,12 @@ namespace MyCaffe.output_adapters
                 blobBtm = m_blobDrop;
             }
 
-            m_blobxA.MatMul(blobBtm, m_colBlobs[0], true, false, true);
-            m_blobxAB.MatMul(m_blobxA, m_colBlobs[1], false, false, true);
+            m_cuda.channel_duplicate(m_blobAfull.count(), 1, m_colBlobs[0].count(), m_blobAfull.count(0, 2), m_colBlobs[0].gpu_data, m_blobAfull.mutable_gpu_data);
+            m_blobxA.MatMul(blobBtm, m_blobAfull, true);
+
+            m_cuda.channel_duplicate(m_blobBfull.count(), 1, m_colBlobs[1].count(), m_blobBfull.count(0, 2), m_colBlobs[1].gpu_data, m_blobBfull.mutable_gpu_data);
+            m_blobxAB.MatMul(m_blobxA, m_blobBfull, true);
+
             m_blobxAB.scale_data(m_dfScale);
 
             m_cuda.add(colTop[0].count(), colTop[0].gpu_data, m_blobxAB.gpu_data, colTop[0].mutable_gpu_data);
@@ -187,10 +229,15 @@ namespace MyCaffe.output_adapters
         /// </remarks>
         public override void Backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
+            colTop[0].Unsqueeze(4);
+
             m_cuda.scale(colTop[0].count(), m_dfScale, colTop[0].gpu_diff, m_blobxAB.mutable_gpu_diff);
 
-            m_blobxAB.MatMulGrad(m_blobxA, m_colBlobs[1], m_blobWork);
-            m_blobxA.MatMulGrad(colBottom[0], m_colBlobs[0], m_blobWork);
+            m_blobxAB.MatMulGrad(m_blobxA, m_blobBfull, m_blobWork);
+            m_cuda.channel_sum(m_blobBfull.count(), 1, m_blobBfull.count(0, 2), m_colBlobs[0].count(), m_blobBfull.gpu_diff, m_colBlobs[0].mutable_gpu_diff, true, DIR.FWD);
+
+            m_blobxA.MatMulGrad(colBottom[0], m_blobAfull, m_blobWork);
+            m_cuda.channel_sum(m_blobAfull.count(), 1, m_blobAfull.count(0, 2), m_colBlobs[0].count(), m_blobAfull.gpu_diff, m_colBlobs[0].mutable_gpu_diff, true, DIR.FWD);
 
             m_cuda.add(colTop[0].count(), colTop[0].gpu_diff, colBottom[0].gpu_diff, colBottom[0].mutable_gpu_diff);
         }
