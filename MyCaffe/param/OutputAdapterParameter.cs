@@ -123,6 +123,8 @@ namespace MyCaffe.param
                     case "lora":
                         return OutputAdapterType.LORA;
 
+                    case "none":
+                        return OutputAdapterType.NONE;
 
                     default:
                         throw new Exception("Unknown output adapter type '" + m_strType + "'");
@@ -144,6 +146,9 @@ namespace MyCaffe.param
             {
                 case OutputAdapterType.LORA:
                     return "lora";
+
+                case OutputAdapterType.NONE:
+                    return "none";
 
                 default:
                     throw new NotImplementedException("The output adapter type '" + type.ToString() + "' is not implemented!");
