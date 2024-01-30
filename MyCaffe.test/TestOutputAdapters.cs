@@ -231,7 +231,6 @@ namespace MyCaffe.test
             }
         }
 
-        // WORK IN PROGRESS
         public void TestLayerGradient(bool bEnabled, string strType)
         {
             CancelEvent evtCancel = new CancelEvent();
