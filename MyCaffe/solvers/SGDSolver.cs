@@ -305,7 +305,7 @@ namespace MyCaffe.solvers
             // Scale gradient to counterbalance accumulation.
             BlobCollection<T> colNetParams = m_net.all_learnable_parameters;
 
-            if (!colNetParams[param_id].DiffExists)
+            if (!colNetParams[param_id].DiffExists || colNetParams[param_id].freeze_learning)
                 return;
 
             double dfAccumNormalization = 1.0 / m_param.iter_size;
@@ -320,7 +320,7 @@ namespace MyCaffe.solvers
         {
             BlobCollection<T> colNetParams = m_net.all_learnable_parameters;
 
-            if (!colNetParams[param_id].DiffExists)
+            if (!colNetParams[param_id].DiffExists || colNetParams[param_id].freeze_learning)
                 return;
 
             List<double?> rgNetParamWeightDecay = m_net.all_params_weight_decay;
@@ -354,7 +354,7 @@ namespace MyCaffe.solvers
         {
             BlobCollection<T> colNetParams = m_net.all_learnable_parameters;
 
-            if (!colNetParams[param_id].DiffExists)
+            if (!colNetParams[param_id].DiffExists || colNetParams[param_id].freeze_learning)
                 return;
 
             List<double?> net_params_lr = m_net.all_params_lr;

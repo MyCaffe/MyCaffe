@@ -52,7 +52,7 @@ namespace MyCaffe.solvers
         {
             BlobCollection<T> colNetParams = m_net.all_learnable_parameters;
 
-            if (!colNetParams[param_id].DiffExists)
+            if (!colNetParams[param_id].DiffExists || colNetParams[param_id].freeze_learning)
                 return;
 
             List<double?> net_params_lr = m_net.all_params_lr;
