@@ -198,6 +198,10 @@ namespace MyCaffe.output_adapters
         public override void Forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             Blob<T> blobBtm = colBottom[0];
+            int nNumAxes = blobBtm.num_axes;
+
+            if (nNumAxes < 4)
+                blobBtm.Unsqueeze(4);
 
             if (m_dropout != null)
             {
@@ -215,6 +219,9 @@ namespace MyCaffe.output_adapters
             m_blobxAB.scale_data(m_dfScale);
 
             m_cuda.add(colTop[0].count(), colTop[0].gpu_data, m_blobxAB.gpu_data, colTop[0].mutable_gpu_data);
+
+            if (nNumAxes < 4)
+                blobBtm.Squeeze(nNumAxes);
         }
 
         /// <summary>
@@ -229,17 +236,23 @@ namespace MyCaffe.output_adapters
         /// </remarks>
         public override void Backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
-            colTop[0].Unsqueeze(4);
+            int nNumAxes = colTop[0].num_axes;
+
+            if (nNumAxes < 4)
+                colTop[0].Unsqueeze(4);
 
             m_cuda.scale(colTop[0].count(), m_dfScale, colTop[0].gpu_diff, m_blobxAB.mutable_gpu_diff);
 
             m_blobxAB.MatMulGrad(m_blobxA, m_blobBfull, m_blobWork);
-            m_cuda.channel_sum(m_blobBfull.count(), 1, m_blobBfull.count(0, 2), m_colBlobs[0].count(), m_blobBfull.gpu_diff, m_colBlobs[0].mutable_gpu_diff, true, DIR.FWD);
+            m_cuda.channel_sum(m_blobBfull.count(), 1, m_blobBfull.count(0, 2), m_colBlobs[1].count(), m_blobBfull.gpu_diff, m_colBlobs[1].mutable_gpu_diff, true, DIR.FWD);
 
             m_blobxA.MatMulGrad(colBottom[0], m_blobAfull, m_blobWork);
             m_cuda.channel_sum(m_blobAfull.count(), 1, m_blobAfull.count(0, 2), m_colBlobs[0].count(), m_blobAfull.gpu_diff, m_colBlobs[0].mutable_gpu_diff, true, DIR.FWD);
 
             m_cuda.add(colTop[0].count(), colTop[0].gpu_diff, colBottom[0].gpu_diff, colBottom[0].mutable_gpu_diff);
+
+            if (nNumAxes < 4)
+                colTop[0].Squeeze(nNumAxes);
         }
     }
 }
