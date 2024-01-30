@@ -108,6 +108,14 @@ namespace MyCaffe.output_adapters
         }
 
         /// <summary>
+        /// Returns the output adapter parameters.
+        /// </summary>
+        public OutputAdapterParameter output_adapter_param
+        {
+            get { return m_param; }
+        }
+
+        /// <summary>
         /// Specifies the weight blobs of the output adapter.
         /// </summary>
         public BlobCollection<T> blobs

@@ -23,6 +23,9 @@ namespace MyCaffe.param
         double m_dfAlpha = 1.0;
         uint m_nRank = 4;
         double m_dfDropoutRatio = 0.0;
+        // Specifies training parameters (multipliers on global learning constants,
+        // and the name and other settings used for weight sharing).
+        List<ParamSpec> m_rgParams = new List<ParamSpec>();
 
         /// <summary>
         /// Defines the output adapter type.
@@ -68,6 +71,15 @@ namespace MyCaffe.param
         {
             get { return m_strType; }
             set { m_strType = value; }
+        }
+
+        /// <summary>
+        /// Specifies the ParamSpec parameters of the LayerParameter.
+        /// </summary>
+        public List<ParamSpec> parameters
+        {
+            get { return m_rgParams; }
+            set { m_rgParams = value; }
         }
 
         /// <summary>
@@ -164,6 +176,7 @@ namespace MyCaffe.param
             OutputAdapterParameter type = new OutputAdapterParameter();
             type.m_bEnable = m_bEnable;
             type.m_strType = m_strType;
+            type.m_rgParams = Utility.Clone<ParamSpec>(m_rgParams);
             return type;
         }
 
@@ -180,6 +193,11 @@ namespace MyCaffe.param
             rgChildren.Add(new RawProto("alpha", alpha.ToString()));
             rgChildren.Add(new RawProto("rank", rank.ToString()));
             rgChildren.Add(new RawProto("dropout_ratio", dropout_ratio.ToString()));
+
+            foreach (ParamSpec ps in parameters)
+            {
+                rgChildren.Add(ps.ToProto("param"));
+            }
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -209,6 +227,12 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("dropout_ratio")) != null)
                 p.dropout_ratio = ParseDouble(strVal);
+
+            RawProtoCollection rgrp = rp.FindChildren("param");
+            foreach (RawProto rpChild in rgrp)
+            {
+                p.parameters.Add(ParamSpec.FromProto(rpChild));
+            }
 
             return p;
         }
