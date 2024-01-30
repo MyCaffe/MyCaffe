@@ -297,12 +297,12 @@ namespace MyCaffe
             Net<T> netSrc = GetInternalNet(Phase.TRAIN);
             Net<T> netDst = mycaffe.GetInternalNet(Phase.TRAIN);
 
-            m_log.CHECK_EQ(netSrc.learnable_parameters.Count, netDst.learnable_parameters.Count, "The src and dst networks do not have the same number of learnable parameters!");
+            m_log.CHECK_EQ(netSrc.all_learnable_parameters.Count, netDst.all_learnable_parameters.Count, "The src and dst networks do not have the same number of learnable parameters!");
 
-            for (int i = 0; i < netSrc.learnable_parameters.Count; i++)
+            for (int i = 0; i < netSrc.all_learnable_parameters.Count; i++)
             {
-                Blob<T> bSrc = netSrc.learnable_parameters[i];
-                Blob<T> bDst = netDst.learnable_parameters[i];
+                Blob<T> bSrc = netSrc.all_learnable_parameters[i];
+                Blob<T> bDst = netDst.all_learnable_parameters[i];
 
                 mycaffe.m_hCopyBuffer = bDst.CopyFrom(bSrc, false, false, mycaffe.m_hCopyBuffer);
             }
@@ -339,12 +339,12 @@ namespace MyCaffe
             Net<T> netSrc = src.GetInternalNet(Phase.TRAIN);
             Net<T> netDst = GetInternalNet(Phase.TRAIN);
 
-            m_log.CHECK_EQ(netSrc.learnable_parameters.Count, netDst.learnable_parameters.Count, "The src and dst networks do not have the same number of learnable parameters!");
+            m_log.CHECK_EQ(netSrc.all_learnable_parameters.Count, netDst.all_learnable_parameters.Count, "The src and dst networks do not have the same number of learnable parameters!");
 
-            for (int i = 0; i < netSrc.learnable_parameters.Count; i++)
+            for (int i = 0; i < netSrc.all_learnable_parameters.Count; i++)
             {
-                Blob<T> bSrc = netSrc.learnable_parameters[i];
-                Blob<T> bDst = netDst.learnable_parameters[i];
+                Blob<T> bSrc = netSrc.all_learnable_parameters[i];
+                Blob<T> bDst = netDst.all_learnable_parameters[i];
 
                 m_hCopyBuffer = bDst.CopyFrom(bSrc, false, false, m_hCopyBuffer);
             }
@@ -1800,7 +1800,7 @@ namespace MyCaffe
         /// <returns>If the weights are identical, <i>true</i> is returned, otherwise <i>false</i>.</returns>
         public bool CompareWeights(Net<T> net1, Net<T> net2)
         {
-            if (net1.learnable_parameters.Count != net2.learnable_parameters.Count)
+            if (net1.all_learnable_parameters.Count != net2.all_learnable_parameters.Count)
             {
                 m_log.WriteLine("WARNING: The number of learnable parameters differs between the two nets!");
                 return false;
@@ -1810,10 +1810,10 @@ namespace MyCaffe
 
             try
             {
-                for (int i = 0; i < net1.learnable_parameters.Count; i++)
+                for (int i = 0; i < net1.all_learnable_parameters.Count; i++)
                 {
-                    Blob<T> blob1 = net1.learnable_parameters[i];
-                    Blob<T> blob2 = net2.learnable_parameters[i];
+                    Blob<T> blob1 = net1.all_learnable_parameters[i];
+                    Blob<T> blob2 = net2.all_learnable_parameters[i];
 
                     if (blob1.Name != blob2.Name)
                     {
@@ -3320,12 +3320,12 @@ namespace MyCaffe
                     {
                         int nCopyCount = 0;
 
-                        if (m_solver.net.learnable_parameters.Count == m_net.learnable_parameters.Count)
+                        if (m_solver.net.all_learnable_parameters.Count == m_net.all_learnable_parameters.Count)
                         {
-                            for (int i = 0; i < m_solver.net.learnable_parameters.Count; i++)
+                            for (int i = 0; i < m_solver.net.all_learnable_parameters.Count; i++)
                             {
-                                Blob<T> b = m_solver.net.learnable_parameters[i];
-                                Blob<T> bRun = m_net.learnable_parameters[i];
+                                Blob<T> b = m_solver.net.all_learnable_parameters[i];
+                                Blob<T> bRun = m_net.all_learnable_parameters[i];
 
                                 m_log.CHECK(b.Name == bRun.Name, "The learnable parameter names do not match!");
                                 if (bRun.CopyFrom(b, false, true) != 0)
@@ -3334,9 +3334,9 @@ namespace MyCaffe
                         }
                         else
                         {
-                            for (int i = 0; i < m_net.learnable_parameters.Count; i++)
+                            for (int i = 0; i < m_net.all_learnable_parameters.Count; i++)
                             {
-                                Blob<T> bRun = m_net.learnable_parameters[i];
+                                Blob<T> bRun = m_net.all_learnable_parameters[i];
                                 Blob<T> b = m_solver.net.FindBlob(bRun.Name);
 
                                 if (b == null)
@@ -3382,13 +3382,13 @@ namespace MyCaffe
 
             List<string> rgExpectedShapes = new List<string>();
 
-            foreach (Blob<T> b in m_solver.TrainingNet.learnable_parameters)
+            foreach (Blob<T> b in m_solver.TrainingNet.all_learnable_parameters)
             {
                 rgExpectedShapes.Add(b.shape_string);
             }
 
             bool bLoadDiffs;
-            m_persist.LoadWeights(rgWeights, rgExpectedShapes, m_solver.TrainingNet.learnable_parameters, false, out bLoadDiffs);
+            m_persist.LoadWeights(rgWeights, rgExpectedShapes, m_solver.TrainingNet.all_learnable_parameters, false, out bLoadDiffs);
 
             m_solver.WeightsUpdated = true;
             m_log.WriteLine("Solver weights updated.");
