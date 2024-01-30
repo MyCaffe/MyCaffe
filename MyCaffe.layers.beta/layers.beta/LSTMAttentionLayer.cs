@@ -436,7 +436,7 @@ namespace MyCaffe.layers
                 if (m_param is LayerParameterEx<T>)
                 {
                     LayerParameterEx<T> pEx = m_param as LayerParameterEx<T>;
-                    attentionParam = new LayerParameterEx<T>(attentionParam, pEx.SharedBlobs, pEx.SharedLayerBlobs, pEx.SharedLayer);
+                    attentionParam = new LayerParameterEx<T>(attentionParam, pEx.SharedBlobs, pEx.SharedAdaptedBlobs, pEx.SharedLayerBlobs, pEx.SharedLayer);
                 }
 
                 m_attention = new AttentionLayer<T>(m_cuda, m_log, attentionParam);
