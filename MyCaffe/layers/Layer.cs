@@ -481,7 +481,12 @@ namespace MyCaffe.layers
                 m_param.output_adapter.enabled == false)
                 return;
 
-            m_outputAdatper = OutputAdapter<T>.Create(m_cuda, m_log, m_param.output_adapter);
+            OutputAdapterParameter pOutputAdapter = m_param.output_adapter;
+            LayerParameterEx<T> pEx = m_param as LayerParameterEx<T>;
+            if (pEx != null)
+                pOutputAdapter = new OutputAdapterParameterEx<T>(pOutputAdapter, pEx.SharedAdaptedBlobs);
+
+            m_outputAdatper = OutputAdapter<T>.Create(m_cuda, m_log, pOutputAdapter);
             m_outputAdatper.Setup(m_param, colBottom, colTop);
             m_outputAdatper.Reshape(colBottom, colTop);
         }
@@ -1166,7 +1171,7 @@ namespace MyCaffe.layers
             if (pParent is LayerParameterEx<T>)
             {
                 LayerParameterEx<T> pEx = pParent as LayerParameterEx<T>;
-                return new LayerParameterEx<T>(pChild, pEx.SharedBlobs, pEx.SharedLayerBlobs, null);
+                return new LayerParameterEx<T>(pChild, pEx.SharedBlobs, pEx.SharedAdaptedBlobs, pEx.SharedLayerBlobs, null);
             }
 
             return pChild;
@@ -1798,6 +1803,7 @@ namespace MyCaffe.layers
     public class LayerParameterEx<T> : LayerParameter
     {
         BlobCollection<T> m_colSharedBlobs = null;
+        BlobCollection<T> m_colSharedAdaptedBlobs = null;
         BlobCollection<T> m_colLayerBlobs = new BlobCollection<T>();
         Layer<T> m_layer;
 
@@ -1806,12 +1812,14 @@ namespace MyCaffe.layers
         /// </summary>
         /// <param name="p">Specifies the original LayerParameter that is wrapped.</param>
         /// <param name="colBlobs">Specifies the Net parameter Blobs to share.</param>
+        /// <param name="colAdaptedBlobs">Specifies the Net adapted parameter Blobs to share.</param>
         /// <param name="colLayerBlobs">Specifies the Net layer Blobs to share.</param>
         /// <param name="sharedLayer">Specifies the shared Net layer matching this one that we are creating.</param>
-        public LayerParameterEx(LayerParameter p, BlobCollection<T> colBlobs, BlobCollection<T> colLayerBlobs, Layer<T> sharedLayer)
+        public LayerParameterEx(LayerParameter p, BlobCollection<T> colBlobs, BlobCollection<T> colAdaptedBlobs, BlobCollection<T> colLayerBlobs, Layer<T> sharedLayer)
             : base(p)
         {
             m_colSharedBlobs = colBlobs;
+            m_colSharedAdaptedBlobs = colAdaptedBlobs;
             m_colLayerBlobs = colLayerBlobs;
             m_layer = sharedLayer;
         }
@@ -1833,6 +1841,14 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Returns the shared adapted parameter Blobs.
+        /// </summary>
+        public BlobCollection<T> SharedAdaptedBlobs
+        {
+            get { return m_colSharedAdaptedBlobs; }
+        }
+
+        /// <summary>
         /// Returns the shared Layer Blobs.
         /// </summary>
         public BlobCollection<T> SharedLayerBlobs
@@ -1847,7 +1863,7 @@ namespace MyCaffe.layers
         /// <returns>The cloned LayerParameter is returned.</returns>
         public override LayerParameter Clone(bool bCloneBlobs)
         {
-            return new LayerParameterEx<T>(base.Clone(bCloneBlobs), m_colSharedBlobs, m_colLayerBlobs, m_layer);
+            return new LayerParameterEx<T>(base.Clone(bCloneBlobs), m_colSharedBlobs, m_colSharedAdaptedBlobs, m_colLayerBlobs, m_layer);
         }
     }
 }

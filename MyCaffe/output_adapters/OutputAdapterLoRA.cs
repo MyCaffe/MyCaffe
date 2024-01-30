@@ -36,7 +36,7 @@ namespace MyCaffe.output_adapters
         /// <param name="cuda">Instance of CudaDnn - connection to cuda.</param>
         /// <param name="log">Log used for output.</param>
         /// <param name="p">OutputAdapter parameter that defines the adapter settings.</param>
-        public OutputAdapterLoRA(CudaDnn<T> cuda, Log log, OutputAdapterParameter p) : base (cuda, log, p)
+        public OutputAdapterLoRA(CudaDnn<T> cuda, Log log, OutputAdapterParameter p) : base(cuda, log, p)
         {
         }
 
@@ -119,26 +119,35 @@ namespace MyCaffe.output_adapters
             // LoRA_a
             Blob<T> blob = new Blob<T>(m_cuda, m_log);
             blob.Name = p.name + ".LoRA_a";
+            blob.blob_type = BLOB_TYPE.WEIGHT;
 
             List<int> rgShapeA = new List<int>() { nNumInput, (int)m_param.rank };
-            blob.Reshape(rgShapeA);
 
-            FillerParameter fp = new FillerParameter("xavier");
-            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
-            filler.Fill(blob);
-            blob.scale_data(1.0 / m_param.rank);
+            if (!shareParameter(blob, rgShapeA))
+            {
+                blob.Reshape(rgShapeA);
 
-            blob.SetDiff(0.0);
+                FillerParameter fp = new FillerParameter("xavier");
+                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
+                filler.Fill(blob);
+                blob.scale_data(1.0 / m_param.rank);
+
+                blob.SetDiff(0.0);
+            }
             m_colBlobs.Add(blob);
 
             // LoRA_b
             blob = new Blob<T>(m_cuda, m_log);
             blob.Name = p.name + ".LoRA_b";
+            blob.blob_type = BLOB_TYPE.WEIGHT;
 
             List<int> rgShapeB = new List<int>() { (int)m_param.rank, nNumOutput };
-            blob.Reshape(rgShapeB);
-            blob.SetData(0.0);
-            blob.SetDiff(0.0);
+            if (!shareParameter(blob, rgShapeB))
+            {
+                blob.Reshape(rgShapeB);
+                blob.SetData(0.0);
+                blob.SetDiff(0.0);
+            }
             m_colBlobs.Add(blob);
 
             m_blobxA = new Blob<T>(m_cuda, m_log);

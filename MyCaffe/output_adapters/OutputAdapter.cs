@@ -1,5 +1,6 @@
 ﻿using MyCaffe.basecode;
 using MyCaffe.common;
+using MyCaffe.layers;
 using MyCaffe.param;
 using System;
 using System.Collections.Generic;
@@ -74,6 +75,25 @@ namespace MyCaffe.output_adapters
         /// </summary>
         protected virtual void dispose()
         {
+        }
+
+        /// <summary>
+        /// Attempts to share a parameter Blob if another parameter Blob with the same name and accpetable size is found.
+        /// </summary>
+        /// <param name="b">Specifies the Blob to share.</param>
+        /// <param name="rgMinShape">Specifies the minimum shape requried to share.</param>
+        /// <param name="bAllowEndsWithComparison">Optionally, allow name comparison where end of blob 'b' name is compared with the share blob names (default = false).</param>
+        /// <returns>If the Blob is shared, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        protected bool shareParameter(Blob<T> b, List<int> rgMinShape, bool bAllowEndsWithComparison = false)
+        {
+            OutputAdapterParameterEx<T> paramEx = m_param as OutputAdapterParameterEx<T>;
+            if (paramEx == null)
+                return false;
+
+            if (paramEx.SharedBlobs == null)
+                return false;
+
+            return paramEx.SharedBlobs.Share(b, rgMinShape, false, bAllowEndsWithComparison);
         }
 
         /// <summary>
@@ -152,5 +172,32 @@ namespace MyCaffe.output_adapters
         /// <param name="rgbPropagateDown">Specifies what gets propagated.</param>
         /// <param name="colBottom">Specifies the output gradients (which are then the input gradients to the layer's Backward call).</param>
         public abstract void Backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom);
+    }
+
+    /// <summary>
+    /// The OutputAdapterParameterEx is used to pass the shared adapted blobs to the output adapter.
+    /// </summary>
+    /// <typeparam name="T">Specifies the double or float base type.</typeparam>
+    public class OutputAdapterParameterEx<T> : OutputAdapterParameter
+    {
+        BlobCollection<T> m_colSharedBlobs = null;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="p">Specifies the original parameters.</param>
+        /// <param name="colSharedBlobs">Specifies the shared adapted blobs.</param>
+        public OutputAdapterParameterEx(OutputAdapterParameter p, BlobCollection<T> colSharedBlobs) : base(p)
+        {
+            m_colSharedBlobs = colSharedBlobs;
+        }
+
+        /// <summary>
+        /// Returns the shared parameter Blobs.
+        /// </summary>
+        public BlobCollection<T> SharedBlobs
+        {
+            get { return m_colSharedBlobs; }
+        }
     }
 }

@@ -390,7 +390,7 @@ namespace MyCaffe.common
                     if (m_sharedNet != null)
                     {
                         Layer<T> sharedLayer = m_sharedNet.FindLayer(layer_param.type, layer_param.name);
-                        layer_paramEx = new LayerParameterEx<T>(layer_param, m_sharedNet.parameters, m_sharedNet.layer_blobs(layer_param.name), sharedLayer);
+                        layer_paramEx = new LayerParameterEx<T>(layer_param, m_sharedNet.parameters, m_sharedNet.learnable_adapted_parameters, m_sharedNet.layer_blobs(layer_param.name), sharedLayer);
                     }
 
                     layer_paramEx.solver_count = m_param.solver_count;
