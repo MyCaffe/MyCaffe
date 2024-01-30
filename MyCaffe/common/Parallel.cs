@@ -46,7 +46,7 @@ namespace MyCaffe.common
         /// <param name="root_solver">Specifies the root Solver.</param>
         public Params(Solver<T> root_solver)
         {
-            m_lCount = total_size(root_solver.net.learnable_parameters);
+            m_lCount = total_size(root_solver.net.all_learnable_parameters);
             m_lExtra = 1000;
             m_hData = 0;
             m_hDiff = 0;
@@ -156,7 +156,7 @@ namespace MyCaffe.common
             m_hData = m_cuda.AllocMemory(m_lCount);
 
             // Copy blob values
-            BlobCollection<T> net = root_solver.net.learnable_parameters;
+            BlobCollection<T> net = root_solver.net.all_learnable_parameters;
             apply_buffers(net, m_hData, m_lCount, Op.copy);
 
             m_hDiff = m_cuda.AllocMemory(m_lCount);
@@ -206,7 +206,7 @@ namespace MyCaffe.common
         /// <param name="solver"></param>
         public void Configure(Solver<T> solver)
         {
-            BlobCollection<T> net = solver.net.learnable_parameters;
+            BlobCollection<T> net = solver.net.all_learnable_parameters;
             apply_buffers(net, m_hData, m_lCount, Op.replace_gpu);
             apply_buffers(net, m_hDiff, m_lCount, Op.replace_gpu_diff);
         }

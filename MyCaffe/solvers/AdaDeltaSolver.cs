@@ -49,7 +49,7 @@ namespace MyCaffe.solvers
         {
             // Add the extra history entries for AdaDelta after those from
             // SGDSolver::PreSolve
-            BlobCollection<T> colNetParams = m_net.learnable_parameters;
+            BlobCollection<T> colNetParams = m_net.all_learnable_parameters;
 
             for (int i = 0; i < colNetParams.Count; i++)
             {
@@ -67,12 +67,12 @@ namespace MyCaffe.solvers
         /// <param name="nIterationOverride">Optionally, specifies an iteration override, or -1 which is ignored.</param>
         public override void ComputeUpdateValue(int param_id, double dfRate, int nIterationOverride = -1)
         {
-            BlobCollection<T> colNetParams = m_net.learnable_parameters;
+            BlobCollection<T> colNetParams = m_net.all_learnable_parameters;
 
             if (!colNetParams[param_id].DiffExists)
                 return;
 
-            List<double?> net_params_lr = m_net.params_lr;
+            List<double?> net_params_lr = m_net.all_params_lr;
             T fDelta = Utility.ConvertVal<T>(m_param.delta);
             T fMomentum = Utility.ConvertVal<T>(m_param.momentum);
             T fLocalRate = Utility.ConvertVal<T>(dfRate * net_params_lr[param_id].GetValueOrDefault(0));

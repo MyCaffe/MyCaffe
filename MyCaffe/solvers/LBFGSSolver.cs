@@ -109,13 +109,13 @@ namespace MyCaffe.solvers
         {
             try
             {
-                BlobCollection<T> net_params = m_net.learnable_parameters;
+                BlobCollection<T> net_params = m_net.all_learnable_parameters;
 
                 m_nN = 0;
 
                 for (int i = 0; i < net_params.Count; i++)
                 {
-                    if (m_net.params_lr[i] != 0)
+                    if (m_net.all_params_lr[i] != 0)
                         m_nN += net_params[i].count();
                 }
 
@@ -184,9 +184,9 @@ namespace MyCaffe.solvers
         {
             if (m_nN == 0)
             {
-                for (int i = 0; i < m_net.learnable_parameters.Count; i++)
+                for (int i = 0; i < m_net.all_learnable_parameters.Count; i++)
                 {
-                    m_net.learnable_parameters[i].SetDiff(0);
+                    m_net.all_learnable_parameters[i].SetDiff(0);
                 }
 
                 return 0;
@@ -213,7 +213,7 @@ namespace MyCaffe.solvers
         /// </summary>
         public virtual void CollectGradients()
         {
-            BlobCollection<T> net_params = m_net.learnable_parameters;
+            BlobCollection<T> net_params = m_net.all_learnable_parameters;
 
             if (m_nIter != 0)
                 m_cuda.copy(m_nN, m_blobGradients.gpu_data, m_blobGradientsPrev.mutable_gpu_data);
@@ -371,20 +371,20 @@ namespace MyCaffe.solvers
         {
             m_cuda.scal(m_nN, m_dfStep, m_blobDirection.mutable_gpu_data);
 
-            BlobCollection<T> net_params = m_net.learnable_parameters;
+            BlobCollection<T> net_params = m_net.all_learnable_parameters;
 
             int nOffset = 0;
             for (int i = 0; i < net_params.Count; i++)
             {
                 int nCount = net_params[i].count();
 
-                if (m_net.params_lr[i] != 0)
+                if (m_net.all_params_lr[i] != 0)
                 {
-                    double dfLr = m_net.params_lr[i].GetValueOrDefault(1.0) * m_param.base_lr;
+                    double dfLr = m_net.all_params_lr[i].GetValueOrDefault(1.0) * m_param.base_lr;
 
                     if (dfLr != 1.0)
                     {
-                        T fLr = (T)Convert.ChangeType(m_net.params_lr[i], typeof(T));
+                        T fLr = (T)Convert.ChangeType(m_net.all_params_lr[i], typeof(T));
                         m_cuda.scale(nCount, fLr, m_blobDirection.gpu_data, net_params[i].mutable_gpu_diff, nOffset, 0);
                     }
 

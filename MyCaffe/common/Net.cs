@@ -74,6 +74,7 @@ namespace MyCaffe.common
         BlobCollection<T> m_colParams = new BlobCollection<T>();
         BlobCollection<T> m_colLearnableParams = new BlobCollection<T>();
         BlobCollection<T> m_colLearnableAdaptedParams = new BlobCollection<T>();
+        BlobCollection<T> m_colAllLearnableParams = new BlobCollection<T>();
 
         // The mapping from params -> learnable_params : we have
         // learnable_param_ids.Count == params.Count,
@@ -84,9 +85,16 @@ namespace MyCaffe.common
         
         // The learning rate multipliers from learnable params.
         List<double?> m_rgdfParamsLr = new List<double?>();
-
         // The weight decay multipliers for learnable params.
         List<double?> m_rgdfParamsWeightDecay = new List<double?>();
+        // The learning rate multipliers from learnable adapted params.
+        List<double?> m_rgdfAdaptedParamsLr = new List<double?>();
+        // The weight decay multipliers for learnable adapted params.
+        List<double?> m_rgdfAdaptedParamsWeightDecay = new List<double?>();
+        // The learning rate multipliers from all learnable params.
+        List<double?> m_rgdfAllParamsLr = new List<double?>();
+        // The weight decay multipliers for all learnable params.
+        List<double?> m_rgdfAllParamsWeightDecay = new List<double?>();
 
         // The bytes of memory used by this net
         long m_lMemoryUsed = 0;
@@ -757,6 +765,10 @@ namespace MyCaffe.common
                 m_rgnLearnableParamIds.Clear();
                 m_rgdfParamsLr.Clear();
                 m_rgdfParamsWeightDecay.Clear();
+                m_rgdfAdaptedParamsLr.Clear();
+                m_rgdfAdaptedParamsWeightDecay.Clear();
+                m_rgdfAllParamsLr.Clear();
+                m_rgdfAllParamsWeightDecay.Clear();
                 m_lMemoryUsed = 0;
                 m_bDebugInfo = false;
                 m_db = null;
@@ -1310,7 +1322,22 @@ namespace MyCaffe.common
         /// <param name="adapted_param_id">Specifies the Blob index of the (adapted parameter) Blob.</param>
         protected void AppendAdaptedParam(NetParameter param, int layer_id, int adapted_param_id)
         {
-            m_colLearnableAdaptedParams.Add(m_rgLayers[layer_id].blobs_adapted[adapted_param_id]);
+            LayerParameter layer_param = m_rgLayers[layer_id].layer_param;
+
+            if (layer_param.output_adapter == null)
+                return;
+
+            ParamSpec default_param_spec = new ParamSpec();
+            ParamSpec param_spec = (layer_param.output_adapter.parameters.Count > adapted_param_id) ? layer_param.parameters[adapted_param_id] : default_param_spec;
+            Blob<T> blob = m_rgLayers[layer_id].blobs_adapted[adapted_param_id];
+
+            m_colLearnableAdaptedParams.Add(blob);
+            m_rgdfAdaptedParamsLr.Add(param_spec.lr_mult);
+            m_rgdfAdaptedParamsWeightDecay.Add(param_spec.decay_mult);
+            m_rgdfAllParamsLr.Add(param_spec.lr_mult);
+            m_rgdfAllParamsWeightDecay.Add(param_spec.decay_mult);
+
+            m_colAllLearnableParams.Add(blob);
         }
 
         /// <summary>
@@ -1358,6 +1385,10 @@ namespace MyCaffe.common
                 m_rgnLearnableParamIds.Add(learnable_param_id);
                 m_rgdfParamsLr.Add(param_spec.lr_mult);
                 m_rgdfParamsWeightDecay.Add(param_spec.decay_mult);
+                m_rgdfAllParamsLr.Add(param_spec.lr_mult);
+                m_rgdfAllParamsWeightDecay.Add(param_spec.decay_mult);
+
+                m_colAllLearnableParams.Add(m_colParams[net_param_id]);
             }
             else
             {
@@ -1914,14 +1945,9 @@ namespace MyCaffe.common
         /// </summary>
         public void Update()
         {
-            for (int i = 0; i < m_colLearnableParams.Count; i++)
+            for (int i = 0; i < m_colAllLearnableParams.Count; i++)
             {
-                m_colLearnableParams[i].Update();
-            }
-
-            for (int i = 0; i < m_colLearnableAdaptedParams.Count; i++)
-            {
-                m_colLearnableAdaptedParams[i].Update();
+                m_colAllLearnableParams[i].Update();
             }
         }
 
@@ -1930,14 +1956,9 @@ namespace MyCaffe.common
         /// </summary>
         public void ClearParamDiffs()
         {
-            for (int i = 0; i < m_colLearnableParams.Count; i++)
+            for (int i = 0; i < m_colAllLearnableParams.Count; i++)
             {
-                m_colLearnableParams[i].SetDiff(0.0);
-            }
-
-            for (int i = 0; i < m_colLearnableAdaptedParams.Count; i++)
-            {
-                m_colLearnableAdaptedParams[i].SetDiff(0.0);
+                m_colAllLearnableParams[i].SetDiff(0.0);
             }
         }
 
@@ -2147,6 +2168,22 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Returns the learnable adapted parameters (adapted with an Output Adapter like LoRA)
+        /// </summary>
+        public BlobCollection<T> learnable_adapted_parameters
+        {
+            get { return m_colLearnableAdaptedParams; }
+        }
+
+        /// <summary>
+        /// Returns all learnable parameters including both learnable and adapted learnable params.
+        /// </summary>
+        public BlobCollection<T> all_learnable_parameters
+        {
+            get { return m_colAllLearnableParams; }
+        }
+
+        /// <summary>
         /// Returns the learnable parameter learning rate multipliers.
         /// </summary>
         public List<double?> params_lr
@@ -2160,6 +2197,38 @@ namespace MyCaffe.common
         public List<double?> params_weight_decay
         {
             get { return m_rgdfParamsWeightDecay; }
+        }
+
+        /// <summary>
+        /// Returns the adapted learnable parameter learning rate multipliers.
+        /// </summary>
+        public List<double?> adapted_params_lr
+        {
+            get { return m_rgdfAdaptedParamsLr; }
+        }
+
+        /// <summary>
+        /// Returns the adapted learnable parameter decay multipliers.
+        /// </summary>
+        public List<double?> Adaptedparams_weight_decay
+        {
+            get { return m_rgdfAdaptedParamsWeightDecay; }
+        }
+
+        /// <summary>
+        /// Returns the all learnable parameter learning rate multipliers.
+        /// </summary>
+        public List<double?> all_params_lr
+        {
+            get { return m_rgdfAllParamsLr; }
+        }
+
+        /// <summary>
+        /// Returns the all learnable parameter decay multipliers.
+        /// </summary>
+        public List<double?> all_params_weight_decay
+        {
+            get { return m_rgdfAllParamsWeightDecay; }
         }
 
         /// <summary>

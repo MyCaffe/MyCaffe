@@ -91,7 +91,7 @@ namespace MyCaffe.solvers
         /// </summary>
         public void PreSolve()
         {
-            BlobCollection<T> colNetParams = m_net.learnable_parameters;
+            BlobCollection<T> colNetParams = m_net.all_learnable_parameters;
             m_colHistory.Clear(true);
 //            m_colUpdate.Clear(true);
             m_colTemp.Clear(true);
@@ -239,7 +239,7 @@ namespace MyCaffe.solvers
 
             ClipGradients();
 
-            for (int i = 0; i < m_net.learnable_parameters.Count; i++)
+            for (int i = 0; i < m_net.all_learnable_parameters.Count; i++)
             {
                 Normalize(i);
                 Regularize(i);
@@ -303,7 +303,7 @@ namespace MyCaffe.solvers
                 return;
 
             // Scale gradient to counterbalance accumulation.
-            BlobCollection<T> colNetParams = m_net.learnable_parameters;
+            BlobCollection<T> colNetParams = m_net.all_learnable_parameters;
 
             if (!colNetParams[param_id].DiffExists)
                 return;
@@ -318,12 +318,12 @@ namespace MyCaffe.solvers
         /// <param name="param_id">Specifies the id of the Blob.</param>
         public virtual void Regularize(int param_id)
         {
-            BlobCollection<T> colNetParams = m_net.learnable_parameters;
+            BlobCollection<T> colNetParams = m_net.all_learnable_parameters;
 
             if (!colNetParams[param_id].DiffExists)
                 return;
 
-            List<double?> rgNetParamWeightDecay = m_net.params_weight_decay;
+            List<double?> rgNetParamWeightDecay = m_net.all_params_weight_decay;
             double dfWeightDecay = m_param.weight_decay;
             double dfLocalDecay = dfWeightDecay * rgNetParamWeightDecay[param_id].GetValueOrDefault(0);
 
@@ -352,12 +352,12 @@ namespace MyCaffe.solvers
         /// <param name="nIterationOverride">Optionally, specifies an iteration override, or -1 which is ignored.</param>
         public virtual void ComputeUpdateValue(int param_id, double dfRate, int nIterationOverride = -1)
         {
-            BlobCollection<T> colNetParams = m_net.learnable_parameters;
+            BlobCollection<T> colNetParams = m_net.all_learnable_parameters;
 
             if (!colNetParams[param_id].DiffExists)
                 return;
 
-            List<double?> net_params_lr = m_net.params_lr;
+            List<double?> net_params_lr = m_net.all_params_lr;
             T fMomentum = Utility.ConvertVal<T>(m_param.momentum);
             T fLocalRate = Utility.ConvertVal<T>(dfRate * net_params_lr[param_id].GetValueOrDefault(0));
 
@@ -376,7 +376,7 @@ namespace MyCaffe.solvers
             if (dfClipGradients < 0)
                 return;
 
-            BlobCollection<T> colNetParams = m_net.learnable_parameters;
+            BlobCollection<T> colNetParams = m_net.all_learnable_parameters;
             double dfSumsqDiff = 0;
 
             for (int i = 0; i < colNetParams.Count; i++)
