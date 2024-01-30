@@ -18,6 +18,7 @@ namespace MyCaffe.param
     /// </remarks>
     public class OutputAdapterParameter : BaseParameter, ICloneable
     {
+        string m_strName;
         string m_strType;
         bool m_bEnable = false;
         double m_dfAlpha = 1.0;
@@ -46,20 +47,44 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Specifies the constuctor.
+        /// The constuctor.
         /// </summary>
+        /// <param name="strName">Specifies the name of the output adapter.</param>
         /// <param name="strType">Specifies the output adapter type.</param>
         /// <param name="bEnable">Specifies to enable the parameter.</param>
         /// <param name="dfAlpha">Specifies the alpha value.</param>
         /// <param name="nRank">Specifies the rank value.</param>
         /// <param name="dfDropoutRatio">Specifies the dropout_ratio.</param>
-        public OutputAdapterParameter(string strType = "lora", bool bEnable = false, double dfAlpha = 1.0, uint nRank = 4, double dfDropoutRatio = 0.0)
+        public OutputAdapterParameter(string strName, string strType = "lora", bool bEnable = false, double dfAlpha = 1.0, uint nRank = 4, double dfDropoutRatio = 0.0)
         {
+            m_strName = strName;
             m_strType = strType;
             m_bEnable = bEnable;
             m_dfAlpha = dfAlpha;
             m_nRank = nRank;
             m_dfDropoutRatio = dfDropoutRatio;
+        }
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="p">Specifies the parameter to copy.</param>
+        public OutputAdapterParameter(OutputAdapterParameter p) : this(p.name, p.type, p.enabled, p.alpha, p.rank, p.dropout_ratio)
+        {
+            foreach (ParamSpec ps in p.parameters)
+            {
+                m_rgParams.Add(ps);
+            }
+        }
+
+        /// <summary>
+        /// Get/set the name of the parameter.
+        /// </summary>
+        [Description("Specifies the name of the parameter.")]
+        public string name
+        {
+            get { return m_strName; }
+            set { m_strName = value; }
         }
 
         /// <summary>
@@ -173,9 +198,7 @@ namespace MyCaffe.param
         /// <returns>A new instance of this parameter is returned.</returns>
         public OutputAdapterParameter Clone()
         {
-            OutputAdapterParameter type = new OutputAdapterParameter();
-            type.m_bEnable = m_bEnable;
-            type.m_strType = m_strType;
+            OutputAdapterParameter type = new OutputAdapterParameter(m_strName, m_strType, m_bEnable);
             type.m_rgParams = Utility.Clone<ParamSpec>(m_rgParams);
             return type;
         }
@@ -188,6 +211,7 @@ namespace MyCaffe.param
         public override RawProto ToProto(string strName)
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
+            rgChildren.Add(new RawProto("name", "\"" + name + "\""));
             rgChildren.Add(new RawProto("type", "\"" + type + "\""));
             rgChildren.Add(new RawProto("enabled", enabled.ToString()));
             rgChildren.Add(new RawProto("alpha", alpha.ToString()));
@@ -209,12 +233,16 @@ namespace MyCaffe.param
         /// <returns>A new instance of the parameter is returned.</returns>
         public static OutputAdapterParameter FromProto(RawProto rp)
         {
+            string strName;
             string strVal;
+
+            if ((strName = rp.FindValue("name")) == null)
+                strName = "";
 
             if ((strVal = rp.FindValue("type")) == null)
                 throw new Exception("Could not find 'type'");
 
-            OutputAdapterParameter p = new OutputAdapterParameter(strVal);
+            OutputAdapterParameter p = new OutputAdapterParameter(strName, strVal);
 
             if ((strVal = rp.FindValue("enabled")) != null)
                 p.enabled = bool.Parse(strVal);

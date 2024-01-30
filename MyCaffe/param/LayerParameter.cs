@@ -25,7 +25,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Specifies the output adapter for the layer (default = NONE type and disabled).
         /// </summary>
-        protected OutputAdapterParameter m_outputAdapter = new OutputAdapterParameter();
+        protected OutputAdapterParameter m_outputAdapter = new OutputAdapterParameter("");
         /// <summary>
         /// Specifies the level of conversion support for the layer.
         /// </summary>
